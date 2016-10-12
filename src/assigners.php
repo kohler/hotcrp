@@ -167,7 +167,7 @@ class AssignmentState {
         foreach ($pids as $p)
             if (!isset($this->prows[$p]))
                 $fetch_pids[] = $p;
-        if (count($fetch_pids)) {
+        if (!empty($fetch_pids)) {
             $result = $this->contact->paper_result(["paperId" => $fetch_pids, "tags" => $this->conf->has_tracks()]);
             while ($result && ($prow = PaperInfo::fetch($result, $this->contact)))
                 $this->prows[$prow->paperId] = $prow;
@@ -591,7 +591,7 @@ class ReviewAssigner extends Assigner {
         $matches = $state->remove($revmatch);
 
         if ($rdata->newtype) {
-            if ($rdata->creator() && !count($matches)) {
+            if ($rdata->creator() && empty($matches)) {
                 $revmatch["_round"] = $rdata->newround;
                 $matches[] = $revmatch;
             }
@@ -846,7 +846,7 @@ class ConflictAssigner extends Assigner {
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         $res = $state->remove(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
-        if (count($res) && $res[0]["_ctype"] >= CONFLICT_AUTHOR)
+        if (!empty($res) && $res[0]["_ctype"] >= CONFLICT_AUTHOR)
             $state->add($res[0]);
         else if ($this->ctype)
             $state->add(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId, "_ctype" => $this->ctype));
@@ -923,7 +923,7 @@ class NextTagAssigner {
         foreach ($this->pidindex as $pid => $index)
             if ($index >= $this->first_index && $index < $this->next_index) {
                 $x = $state->query_unmodified(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
-                if (count($x)) {
+                if (!empty($x)) {
                     $item = $state->add(["type" => "tag", "pid" => $pid, "ltag" => $ltag,
                                          "_tag" => $this->tag,
                                          "_index" => $this->next_index($this->isseq)]);
@@ -1018,7 +1018,7 @@ class TagAssigner extends Assigner {
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
             $twiddlecids = ContactSearch::make_pc($c, $state->contact)->ids;
-            if (count($twiddlecids) == 0)
+            if (empty($twiddlecids))
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) > 1)
                 return "“" . htmlspecialchars($c) . "” matches more than one PC member; be more specific to disambiguate.";
@@ -1074,7 +1074,7 @@ class TagAssigner extends Assigner {
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
             $twiddlecids = ContactSearch::make_pc($c, $state->contact)->ids;
-            if (count($twiddlecids) == 0)
+            if (empty($twiddlecids))
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) == 1)
                 $m[1] = $twiddlecids[0] . "~";
@@ -1353,16 +1353,16 @@ class AssignmentSet {
     }
 
     public function pop_override() {
-        if (count($this->override_stack))
+        if (!empty($this->override_stack))
             $this->astate->override = array_pop($this->override_stack);
     }
 
     public function has_assigners() {
-        return count($this->assigners) > 0;
+        return !empty($this->assigners);
     }
 
     public function has_errors() {
-        return count($this->errors_) > 0;
+        return !empty($this->errors_);
     }
 
     public function clear_errors() {
@@ -1394,7 +1394,7 @@ class AssignmentSet {
             if ($linenos && $e[0] && $e[1])
                 $t = '<span class="lineno">' . htmlspecialchars($e[0])
                     . ':' . $e[1] . ':</span> ' . $t;
-            if (!count($es) || $es[count($es) - 1] !== $t)
+            if (empty($es) || $es[count($es) - 1] !== $t)
                 $es[] = $t;
         }
         return $es;
@@ -1406,14 +1406,14 @@ class AssignmentSet {
             $t = htmlspecialchars_decode(preg_replace(',<(?:[^\'">]|\'[^\']*\'|"[^"]*")*>,', "", $e[2]));
             if ($linenos && $e[2])
                 $t = $e[0] . ':' . $e[1] . ': ' . $t;
-            if (!count($es) || $es[count($es) - 1] !== $t)
+            if (empty($es) || $es[count($es) - 1] !== $t)
                 $es[] = $t;
         }
         return $es;
     }
 
     public function report_errors() {
-        if (count($this->errors_))
+        if (!empty($this->errors_))
             Conf::msg_error('Assignment errors: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div> Please correct these errors and try again.');
     }
 
@@ -1521,7 +1521,7 @@ class AssignmentSet {
             $ret = ContactSearch::make_cset($text, $this->contact, $cset);
             if (count($ret->ids) == 1)
                 return $ret->contacts();
-            else if (count($ret->ids) == 0)
+            else if (empty($ret->ids))
                 $this->error("No user matches “" . self::req_user_html($req) . "”.");
             else
                 $this->error("“" . self::req_user_html($req) . "” matches more than one user, use a full email address to disambiguate.");
@@ -1615,7 +1615,7 @@ class AssignmentSet {
             $lines[] = [$csv->lineno(), $req];
             $this->collect_papers($req, $pids, false);
         }
-        if (count($pids)) {
+        if (!empty($pids)) {
             $this->astate->lineno = $csv->lineno();
             $this->astate->fetch_prows(array_keys($pids));
         }
@@ -1650,7 +1650,7 @@ class AssignmentSet {
             }
             foreach ($this->searches[$pfield] as $pid)
                 $pids[$pid] = 1;
-            if (!count($this->searches[$pfield]) && $report_error)
+            if (empty($this->searches[$pfield]) && $report_error)
                 $this->error("No papers match “" . htmlspecialchars($pfield) . "”");
         } else if ($report_error)
             $this->error("Bad paper column");
@@ -1660,7 +1660,7 @@ class AssignmentSet {
         // parse paper
         $pids = [];
         $this->collect_papers($req, $pids, true);
-        if (!count($pids))
+        if (empty($pids))
             return false;
         $pfield_straight = join(",", array_values($pids)) === "2";
         $pids = array_keys($pids);
@@ -1863,7 +1863,7 @@ class AssignmentSet {
                         . "<hr class=\"c\" /></div></div>";
                     $summary[] = $t;
                 }
-            if (count($summary))
+            if (!empty($summary))
                 echo "<div class=\"g\"></div>\n",
                     "<h3>Summary</h3>\n",
                     '<div class="pc_ctable">', join("", $summary), "</div>\n";
@@ -1890,12 +1890,12 @@ class AssignmentSet {
     }
 
     function is_empty() {
-        return count($this->assigners) == 0;
+        return empty($this->assigners);
     }
 
     function execute($verbose = false) {
         global $Now;
-        if (count($this->errors_) || !count($this->assigners)) {
+        if (!empty($this->errors_) || empty($this->assigners)) {
             if ($verbose && count($this->errors_))
                 $this->report_errors();
             else if ($verbose)
@@ -1947,7 +1947,7 @@ class AssignmentSet {
             if ($assigner->pid > 0 && $assigner->notify_tracker())
                 $pids[$assigner->pid] = true;
         }
-        if (count($pids) && $this->conf->opt("trackerCometSite"))
+        if (!empty($pids) && $this->conf->opt("trackerCometSite"))
             MeetingTracker::contact_tracker_comet($this->conf, array_keys($pids));
 
         return true;
@@ -1968,7 +1968,7 @@ class AssignmentSet {
             $x[] = self::_review_count_link($ct->pri, "primary", false, "pri", $pc);
         if ($ct->sec != 0 && $ct->sec != $ct->rev && $ct->pri + $ct->sec != $ct->rev)
             $x[] = self::_review_count_link($ct->sec, "secondary", false, "sec", $pc);
-        if (count($x))
+        if (!empty($x))
             $t .= " (" . join(", ", $x) . ")";
         return $t;
     }
