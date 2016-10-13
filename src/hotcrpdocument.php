@@ -70,12 +70,12 @@ class HotCRPDocument extends Filer {
                 $oabbr = $o ? "-" . $o->abbr : "-unknown";
             }
             if ($o && $o->has_attachments()
-                && ($afn = get($doc, "unique_filename") ? : $doc->filename))
+                && ($afn = $doc->unique_filename ? : $doc->filename))
                 // do not decorate with MIME type suffix
                 return $fn . $oabbr . "/" . $afn;
             $fn .= $oabbr;
         }
-        $mimetype = get($doc, "mimetype");
+        $mimetype = $doc->mimetype;
         if ($filters === null && isset($doc->filters_applied))
             $filters = $doc->filters_applied;
         if ($filters)
@@ -87,8 +87,14 @@ class HotCRPDocument extends Filer {
                     $mimetype = $filter->mimetype($doc, $mimetype);
                 }
             }
-        if ($mimetype)
-            $fn .= Mimetype::extension($mimetype);
+        if ($mimetype) {
+            if (($ext = Mimetype::extension($mimetype)))
+                $fn .= $ext;
+            else if ($doc->filename
+                     && preg_match('/(\.[a-z0-9]{1,5})\z/', $doc->filename, $m)
+                     && (!$filters || $mimetype === $doc->mimetype))
+                $fn .= $m[1];
+        }
         return $fn;
     }
 
