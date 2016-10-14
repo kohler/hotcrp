@@ -18,6 +18,7 @@ class Mimetype {
     const PPT_TYPE = "application/vnd.ms-powerpoint";
     const JPG_TYPE = "image/jpeg";
     const PNG_TYPE = "image/png";
+    const GIF_TYPE = "image/gif";
     const TAR_TYPE = "application/x-tar";
     const ZIP_TYPE = "application/zip";
     const RAR_TYPE = "application/x-rar-compressed";
@@ -97,12 +98,14 @@ class Mimetype {
     static function mime_types_extension($type) {
         if (self::$mime_types === null) {
             self::$mime_types = [];
-            $x = @file_get_contents("/etc/mime.types");
-            if ($x === false)
-                $x = (string) @file_get_contents("/etc/apache2/mime.types");
-            preg_match_all('{^([-a-z0-9]+/\S+)[ \t]+(\S+)[ \t]*(.*?)[ \t]*$}m', $x, $m, PREG_SET_ORDER);
+            $x = false;
+            if (is_readable("/etc/mime.types"))
+                $x = @file_get_contents("/etc/mime.types");
+            else if (is_readable("/etc/apache2/mime.types"))
+                $x = @file_get_contents("/etc/apache2/mime.types");
+            preg_match_all('{^([-a-z0-9]+/\S+)[ \t]+(\S+)[ \t]*(.*?)[ \t]*$}m', (string) $x, $m, PREG_SET_ORDER);
             foreach ($m as $info)
-                self::$mime_types[$info[0]] = $info[1];
+                self::$mime_types[$info[1]] = "." . $info[2];
         }
         return get(self::$mime_types, $type);
     }
@@ -177,6 +180,10 @@ class Mimetype {
                 return self::JPG_TYPE;
             if (strncmp($content, "\x89PNG\r\n\x1A\x0A", 8) == 0)
                 return self::PNG_TYPE;
+            if ((strncmp($content, "GIF87a", 6) == 0
+                 || strncmp($content, "GIF89a", 6) == 0)
+                && str_ends_with($content, "\x00;"))
+                return self::GIF_TYPE;
             if (strncmp($content, "Rar!\x1A\x07\x00", 7) == 0
                 || strncmp($content, "Rar!\x1A\x07\x01\x00", 8) == 0)
                 return self::RAR_TYPE;
@@ -196,6 +203,6 @@ class Mimetype {
             $type = self::$finfo->buffer($content);
         }
         // type obtained, or octet-stream if nothing else works
-        return $type ? : "application/octet-stream";
+        return self::type($type ? : "application/octet-stream");
     }
 }

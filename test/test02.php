@@ -318,4 +318,11 @@ xassert_eqq($ms->x("bx"), "a");
 xassert_eqq($ms->x("%FOO% friend"), "100 friend");
 xassert_eqq($ms->x("%xOOB%x friend", 10, 11), "aOOBb friend");
 
+// MIME types
+xassert_eqq(Mimetype::content_type("%PDF-3.0\nwhatever\n"), Mimetype::PDF_TYPE);
+if (file_exists("/etc/mime.types") || file_exists("/etc/apache2/mime.types")) {
+    xassert_eqq(Mimetype::mime_types_extension("application/pdf"), ".pdf");
+    xassert_eqq(Mimetype::mime_types_extension("image/gif"), ".gif");
+}
+
 xassert_exit();
