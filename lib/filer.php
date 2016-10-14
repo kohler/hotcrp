@@ -615,13 +615,7 @@ class Filer {
         // Clean up mimetype and timestamp.
         if (!isset($doc->mimetype) && isset($doc->type) && is_string($doc->type))
             $doc->mimetype = $doc->type;
-        if (isset($doc->content)
-            && (!get($doc, "mimetype")
-                || Mimetype::is_sniffable($doc->mimetype)
-                || Mimetype::is_sniff_content_reliable($doc->content)))
-            $doc->mimetype = Mimetype::sniff_content($doc->content);
-        if (!get($doc, "mimetype"))
-            $doc->mimetype = "application/octet-stream";
+        $doc->mimetype = Mimetype::content_type(get($doc, "content"), get($doc, "mimetype"));
         if (($m = Mimetype::lookup($doc->mimetype)))
             $doc->mimetypeid = $m->mimetypeid;
         if (!get($doc, "timestamp"))

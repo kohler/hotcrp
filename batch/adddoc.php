@@ -41,11 +41,6 @@ $docarg = ["paperId" => (int) $arg["p"], "documentType" => (int) $arg["d"],
            "content" => $content];
 if (get($arg, "f"))
     $docarg["filename"] = $arg["f"];
-if (get($arg, "m"))
-    $docarg["mimetype"] = $arg["m"];
-else if (($mt = Mimetype::sniff_content($content)))
-    $docarg["mimetype"] = $mt;
-else
-    $docarg["mimetype"] = "application/octet-stream";
+$docarg["mimetype"] = Mimetype::content_type($content, get($arg, "m"));
 $doc = new DocumentInfo($docarg);
 $docclass->store($doc);
