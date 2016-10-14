@@ -28,28 +28,26 @@ class Mimetype {
     public $extension;
     public $description;
     public $inline;
-    public $sniffable;
 
     private static $tmap = [];
 
-
     const F_INLINE = 1;
-    const F_SNIFFABLE = 2;
     private static $tinfo = [
         "text/plain" => [self::TXT, 1, "text", ".txt"],
-        self::PDF_TYPE => [self::PDF, 3, "PDF", ".pdf"],
+        self::PDF_TYPE => [self::PDF, 1, "PDF", ".pdf"],
         self::PS_TYPE => [self::PS, 0, "PostScript", ".ps"],
-        self::PPT_TYPE => [self::PPT, 2, "PowerPoint", ".ppt", "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
+        self::PPT_TYPE => [self::PPT, 0, "PowerPoint", ".ppt", "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
         "application/vnd.openxmlformats-officedocument.presentationml.presentation" => [5, 0, "PowerPoint", ".pptx"],
         "video/mp4" => [6, 0, ".mp4"],
         "video/x-msvideo" => [7, 0, ".avi"],
         "application/json" => [self::JSON, 0, "JSON", ".json"],
-        self::JPG_TYPE => [self::JPG, 3, "JPEG", ".jpg", ".jpeg"],
-        self::PNG_TYPE => [self::PNG, 3, "PNG", ".png"]
+        self::JPG_TYPE => [self::JPG, 1, "JPEG", ".jpg", ".jpeg"],
+        self::PNG_TYPE => [self::PNG, 1, "PNG", ".png"]
     ];
 
     private static $invalid_types = " application/application application/binary application/download application/download-dummy application/downloads application/force application/force-download application/name application/octect-stream application/octet-binary application/save application/save-as application/\$type application/unknown application/x-file-download application/x-forcedownload application/x-force-download application/x-msdownload application/x-octetstream application/x-octet-stream application/x-unknown attachment/download binary/octet-stream invalid/octet-stream mimetype octet/stream unknown/doc_type unknown/unknown x-unknown/stream ";
     private static $mime_types = null;
+    private static $finfo = null;
 
     static function lookup($type, $nocreate = false) {
         if (!$type)
@@ -62,7 +60,6 @@ class Mimetype {
                 $m->mimetypeid = $data[0];
                 $m->mimetype = $type;
                 $m->inline = ($data[1] & self::F_INLINE) != 0;
-                $m->sniffable = ($data[1] & self::F_SNIFFABLE) != 0;
                 self::$tmap[$type] = self::$tmap[$data[0]] = $m;
                 for ($i = 2; $i < count($data); ++$i)
                     if ($data[$i][0] == ".") {

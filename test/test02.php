@@ -324,5 +324,6 @@ if (file_exists("/etc/mime.types") || file_exists("/etc/apache2/mime.types")) {
     xassert_eqq(Mimetype::mime_types_extension("application/pdf"), ".pdf");
     xassert_eqq(Mimetype::mime_types_extension("image/gif"), ".gif");
 }
+xassert_eqq(Mimetype::content_type("<html><head></head><body></body></html>"), "text/html");
 
 xassert_exit();
