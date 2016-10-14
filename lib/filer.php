@@ -618,8 +618,8 @@ class Filer {
         if (isset($doc->content)
             && (!get($doc, "mimetype")
                 || Mimetype::is_sniffable($doc->mimetype)
-                || Mimetype::is_sniff_type_reliable($doc->content)))
-            $doc->mimetype = Mimetype::sniff_type($doc->content);
+                || Mimetype::is_sniff_content_reliable($doc->content)))
+            $doc->mimetype = Mimetype::sniff_content($doc->content);
         if (!get($doc, "mimetype"))
             $doc->mimetype = "application/octet-stream";
         if (($m = Mimetype::lookup($doc->mimetype)))

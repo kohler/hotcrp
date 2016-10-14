@@ -133,7 +133,7 @@ class Mimetype {
         return $x;
     }
 
-    static function sniff_type($content) {
+    static function sniff_content($content) {
         if (strncmp("%PDF-", $content, 5) == 0)
             return self::PDF_TYPE;
         else if (strncmp("%!PS-", $content, 5) == 0)
@@ -156,7 +156,7 @@ class Mimetype {
             return null;
     }
 
-    static function is_sniff_type_reliable($content) {
+    static function is_sniff_content_reliable($content) {
         return strncmp("%PDF-", $content, 5) == 0
             || substr($content, 512, 4) == "\x00\x6E\x1E\xF0"
             || strncmp($content, "\xFF\xD8\xFF\xD8", 4) == 0

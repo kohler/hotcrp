@@ -37,7 +37,7 @@ foreach ($arg["_"] as $fn) {
         if ($extensions && preg_match('/(\.\w+)\z/', $fn, $m)
             && ($mtx = Mimetype::lookup_extension($m[1])))
             $doc->mimetype = $mtx->mimetype;
-        else if (($mt = Mimetype::sniff_type($content)))
+        else if (($mt = Mimetype::sniff_content($content)))
             $doc->mimetype = $mt;
         $s3fn = HotCRPDocument::s3_filename($doc);
         if (!$s3doc->check($s3fn)) {

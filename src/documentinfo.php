@@ -107,8 +107,8 @@ class DocumentInfo implements JsonSerializable {
             $args["mimetype"] = Mimetype::type(get($upload, "type"));
         if (!isset($args["mimetype"])
             || Mimetype::is_sniffable($args["mimetype"])
-            || Mimetype::is_sniff_type_reliable($content))
-            $args["mimetype"] = Mimetype::sniff_type($content) ? : "application/octet-stream";
+            || Mimetype::is_sniff_content_reliable($content))
+            $args["mimetype"] = Mimetype::sniff_content($content) ? : "application/octet-stream";
         return new DocumentInfo($args);
     }
 
