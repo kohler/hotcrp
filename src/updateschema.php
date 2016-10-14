@@ -231,6 +231,17 @@ function update_schema_drop_keys_if_exist($conf, $table, $key) {
         return true;
 }
 
+function update_schema_mimetype_extensions($conf) {
+    if (!($result = $conf->ql("select * from Mimetype where extension is null")))
+        return false;
+    $qv = [];
+    while (($row = $result->fetch_object()))
+        if (($extension = Mimetype::mime_types_extension($row->mimetype)))
+            $qv[] = [$row->mimetypeid, $row->mimetype, $extension];
+    Dbl::free($result);
+    return empty($qv) || $conf->ql("insert into Mimetype (mimetypeid, mimetype, extension) values ?v on duplicate key update extension=values(extension)", $qv);
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1064,6 +1075,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperComment add key `timeModifiedContact` (`timeModified`,`contactId`)")
         && $conf->ql("alter table PaperReview add key `reviewSubmittedContact` (`reviewSubmitted`,`contactId`)"))
         $conf->update_schema_version(153);
+    if ($conf->sversion == 153
+        && update_schema_mimetype_extensions($conf))
+        $conf->update_schema_version(154);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }
