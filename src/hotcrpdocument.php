@@ -91,7 +91,7 @@ class HotCRPDocument extends Filer {
             if (($ext = Mimetype::extension($mimetype)))
                 $fn .= $ext;
             else if ($doc->filename
-                     && preg_match('/(\.[a-z0-9]{1,5})\z/', $doc->filename, $m)
+                     && preg_match('/(\.[A-Za-z0-9]{1,5})\z/', $doc->filename, $m)
                      && (!$filters || $mimetype === $doc->mimetype))
                 $fn .= $m[1];
         }
