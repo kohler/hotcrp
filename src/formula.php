@@ -6,7 +6,7 @@
 class Fexpr_Error {
     public $expr;
     public $error_html;
-    public function __construct($expr, $error_html) {
+    function __construct($expr, $error_html) {
         $this->expr = $expr;
         $this->error_html = $error_html;
     }
@@ -36,7 +36,7 @@ class Fexpr {
     const FPREFEXPERTISE = 5;
     const FREVIEWER = 6;
 
-    public function __construct($op = null) {
+    function __construct($op = null) {
         $this->op = $op;
         if ($this->op === "trunc")
             $this->op = "floor";
@@ -46,18 +46,18 @@ class Fexpr {
         else if (count($args) > 1)
             $this->args = array_slice($args, 1);
     }
-    public function add($x) {
+    function add($x) {
         $this->args[] = $x;
     }
-    public function set_landmark($left, $right) {
+    function set_landmark($left, $right) {
         $this->left_landmark = $left;
         $this->right_landmark = $right;
     }
 
-    public function format() {
+    function format() {
         return $this->format_;
     }
-    public function format_comparator($cmp, $other_expr = null) {
+    function format_comparator($cmp, $other_expr = null) {
         if ($this->format_
             && $this->format_ instanceof ReviewField
             && $this->format_->option_letter
@@ -71,11 +71,11 @@ class Fexpr {
         }
         return $cmp;
     }
-    public function is_null() {
+    function is_null() {
         return false;
     }
 
-    public function typecheck_format() {
+    function typecheck_format() {
         if ($this->op === "greatest" || $this->op === "least"
             || $this->op === "?:" || $this->op === "&&" || $this->op === "||") {
             $format = false;
@@ -96,7 +96,7 @@ class Fexpr {
             return null;
     }
 
-    public function typecheck(Conf $conf) {
+    function typecheck(Conf $conf) {
         // comparison operators help us resolve
         if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠)\z,', $this->op)
             && count($this->args) === 2) {
@@ -114,7 +114,7 @@ class Fexpr {
         return false;
     }
 
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         if ($this->op == "?:") {
             $t = $this->args[0]->view_score($user);
             $tt = $this->args[1]->view_score($user);
@@ -131,11 +131,11 @@ class Fexpr {
         }
     }
 
-    public static function cast_bool($t) {
+    static function cast_bool($t) {
         return "($t !== null ? (bool) $t : null)";
     }
 
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $op = $this->op;
         if ($op == "?:") {
             $t = $state->_addltemp($this->args[0]->compile($state));
@@ -204,14 +204,14 @@ class Fexpr {
         return "null";
     }
 
-    public function can_combine() {
+    function can_combine() {
         foreach ($this->args as $e)
             if (!$e->can_combine())
                 return false;
         return true;
     }
 
-    public function compile_fragments(FormulaCompiler $state) {
+    function compile_fragments(FormulaCompiler $state) {
         foreach ($this->args as $e)
             if ($e instanceof Fexpr)
                 $e->compile_fragments($state);
@@ -220,20 +220,20 @@ class Fexpr {
 
 class ConstantFexpr extends Fexpr {
     private $x;
-    public function __construct($x, $format = null) {
+    function __construct($x, $format = null) {
         parent::__construct("");
         $this->x = $x;
         $this->format_ = $format;
     }
-    public function is_null() {
+    function is_null() {
         return $this->x === "null";
     }
-    public function typecheck(Conf $conf) {
+    function typecheck(Conf $conf) {
         if ($this->format_ !== false)
             return false;
         return new Fexpr_Error($this, "undefined name “" . htmlspecialchars($this->x) . "”");
     }
-    public function typecheck_neighbor(Conf $conf, $e) {
+    function typecheck_neighbor(Conf $conf, $e) {
         if ($this->format_ !== false || !($e instanceof Fexpr)
             || $e->typecheck($conf))
             return;
@@ -257,29 +257,29 @@ class ConstantFexpr extends Fexpr {
             return;
         $this->format_ = $format;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         return $this->x;
     }
-    public static function cnull() {
+    static function cnull() {
         return new ConstantFexpr("null");
     }
-    public static function czero() {
+    static function czero() {
         return new ConstantFexpr("0");
     }
-    public static function cfalse() {
+    static function cfalse() {
         return new ConstantFexpr("false", self::FBOOL);
     }
-    public static function ctrue() {
+    static function ctrue() {
         return new ConstantFexpr("true", self::FBOOL);
     }
 }
 
 class NegateFexpr extends Fexpr {
-    public function __construct(Fexpr $e) {
+    function __construct(Fexpr $e) {
         parent::__construct("!", $e);
         $this->format_ = self::FBOOL;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
         return "!$t";
     }
@@ -287,19 +287,19 @@ class NegateFexpr extends Fexpr {
 
 class InFexpr extends Fexpr {
     private $values;
-    public function __construct(Fexpr $e, array $values) {
+    function __construct(Fexpr $e, array $values) {
         parent::__construct("in", $e);
         $this->values = $values;
         $this->format_ = self::FBOOL;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
         return "(array_search($t, [" . join(", ", $this->values) . "]) !== false)";
     }
 }
 
 class AggregateFexpr extends Fexpr {
-    static public function make($op, $args) {
+    static function make($op, $args) {
         if ($op === "average" || $op === "mean"
             || ($op === "wavg" && count($args) == 1))
             $op = "avg";
@@ -317,7 +317,7 @@ class AggregateFexpr extends Fexpr {
         return new AggregateFexpr($op, $args);
     }
 
-    public function typecheck_format() {
+    function typecheck_format() {
         if ($this->op === "all" || $this->op === "any")
             return self::FBOOL;
         else if (($this->op === "avg" || $this->op === "wavg"
@@ -330,7 +330,7 @@ class AggregateFexpr extends Fexpr {
             return null;
     }
 
-    public static function quantile($a, $p) {
+    static function quantile($a, $p) {
         // The “R-7” quantile implementation
         if (count($a) === 0 || $p < 0 || $p > 1)
             return null;
@@ -397,7 +397,7 @@ class AggregateFexpr extends Fexpr {
         return null;
     }
 
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         if ($this->op == "my")
             return $state->_compile_my($this->args[0]);
         if (($li = $this->loop_info($state))) {
@@ -407,7 +407,7 @@ class AggregateFexpr extends Fexpr {
         return "null";
     }
 
-    public function can_combine() {
+    function can_combine() {
         if ($this->op == "my")
             return $this->args[0]->can_combine();
         if ($this->op == "quantile")
@@ -415,7 +415,7 @@ class AggregateFexpr extends Fexpr {
         return true;
     }
 
-    public function compile_fragments(FormulaCompiler $state) {
+    function compile_fragments(FormulaCompiler $state) {
         foreach ($this->args as $i => $e)
             if (($i == 0 && $this->op == "my")
                 || ($i == 1 && $this->op == "quantile"))
@@ -426,30 +426,30 @@ class AggregateFexpr extends Fexpr {
 }
 
 class SubFexpr extends Fexpr {
-    public function can_combine() {
+    function can_combine() {
         return false;
     }
 }
 
 class PidFexpr extends SubFexpr {
-    public function __construct() {
+    function __construct() {
         parent::__construct("");
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         return '$prow->paperId';
     }
 }
 
 class ScoreFexpr extends SubFexpr {
     private $field;
-    public function __construct(ReviewField $field) {
+    function __construct(ReviewField $field) {
         parent::__construct("rf");
         $this->field = $this->format_ = $field;
     }
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         return $this->field->view_score;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         if ($this->field->view_score <= $state->contact->permissive_view_score_bound())
             return "null";
         $fid = $this->field->id;
@@ -464,14 +464,14 @@ class ScoreFexpr extends SubFexpr {
 
 class PrefFexpr extends SubFexpr {
     private $isexpertise;
-    public function __construct($isexpertise) {
+    function __construct($isexpertise) {
         $this->isexpertise = $isexpertise;
         $this->format_ = $this->isexpertise ? self::FPREFEXPERTISE : null;
     }
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         if (!$state->contact->is_reviewer())
             return "null";
         $state->queryOptions["allReviewerPreference"] = true;
@@ -484,17 +484,17 @@ class PrefFexpr extends SubFexpr {
 class TagFexpr extends SubFexpr {
     private $tag;
     private $isvalue;
-    public function __construct($tag, $isvalue) {
+    function __construct($tag, $isvalue) {
         $this->tag = $tag;
         $this->isvalue = $isvalue;
         $this->format_ = $isvalue ? null : self::FBOOL;
     }
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         $tagger = new Tagger($user);
         $e_tag = $tagger->check($this->tag);
         return $tagger->view_score($e_tag, $user);
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $state->queryOptions["tags"] = true;
         $tagger = new Tagger($state->contact);
         $e_tag = $tagger->check($this->tag);
@@ -510,12 +510,12 @@ class TagFexpr extends SubFexpr {
 
 class OptionFexpr extends SubFexpr {
     private $option;
-    public function __construct(PaperOption $option) {
+    function __construct(PaperOption $option) {
         $this->option = $this->format_ = $option;
         if ($this->option->type === "checkbox")
             $this->format_ = self::FBOOL;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $id = $this->option->id;
         $ovar = "\$opt$id";
         if ($state->check_gvar($ovar)) {
@@ -533,10 +533,10 @@ class OptionFexpr extends SubFexpr {
 }
 
 class DecisionFexpr extends SubFexpr {
-    public function __construct() {
+    function __construct() {
         $this->format_ = self::FDECISION;
     }
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         if ($user->conf->timeAuthorViewDecision())
             return VIEWSCORE_AUTHOR;
         else if ($user->conf->timePCViewDecision(false))
@@ -544,7 +544,7 @@ class DecisionFexpr extends SubFexpr {
         else
             return VIEWSCORE_ADMINONLY;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         if ($state->check_gvar('$decision'))
             $state->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow, \$forceShow) ? (int) \$prow->outcome : 0;";
         return '$decision';
@@ -553,19 +553,19 @@ class DecisionFexpr extends SubFexpr {
 
 class TimeFieldFexpr extends SubFexpr {
     private $field;
-    public function __construct($field) {
+    function __construct($field) {
         $this->field = $field;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         return "((int) \$prow->" . $this->field . ")";
     }
 }
 
 class TopicScoreFexpr extends SubFexpr {
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $state->datatype |= Fexpr::APCCANREV;
         $state->queryOptions["topics"] = true;
         if ($state->looptype == self::LMY)
@@ -576,13 +576,13 @@ class TopicScoreFexpr extends SubFexpr {
 }
 
 class RevtypeFexpr extends SubFexpr {
-    public function __construct() {
+    function __construct() {
         $this->format_ = self::FREVTYPE;
     }
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         if ($state->looptype == self::LMY)
             $rt = $state->define_gvar("myrevtype", "\$prow->review_type(\$contact)");
@@ -599,13 +599,13 @@ class RevtypeFexpr extends SubFexpr {
 }
 
 class ReviewRoundFexpr extends SubFexpr {
-    public function __construct() {
+    function __construct() {
         $this->format_ = self::FROUND;
     }
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         if ($state->looptype == self::LMY)
             $rt = $state->define_gvar("myrevround", "\$prow->review_round(\$contact->contactId)");
@@ -623,11 +623,11 @@ class ReviewRoundFexpr extends SubFexpr {
 
 class ConflictFexpr extends SubFexpr {
     private $ispc;
-    public function __construct($ispc) {
+    function __construct($ispc) {
         $this->ispc = $ispc;
         $this->format_ = self::FBOOL;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         // XXX the actual search is different
         $state->datatype |= self::ACONF;
         if ($state->looptype == self::LMY)
@@ -643,7 +643,7 @@ class ConflictFexpr extends SubFexpr {
 }
 
 class ReviewFexpr extends SubFexpr {
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         if (!$user->conf->setting("rev_blind"))
             return VIEWSCORE_AUTHOR;
         else if ($user->conf->setting("pc_seeblindrev"))
@@ -654,13 +654,13 @@ class ReviewFexpr extends SubFexpr {
 }
 
 class ReviewerFexpr extends ReviewFexpr {
-    public function __construct() {
+    function __construct() {
         $this->format_ = Fexpr::FREVIEWER;
     }
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         $state->queryOptions["reviewIdentities"] = true;
         return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact, $forceShow) ? ' . $state->_rrow_cid() . ' : null)';
@@ -673,15 +673,15 @@ class ReviewerMatchFexpr extends ReviewFexpr {
     private $istag;
     private static $tagmap = array();
     private static $tagmap_conf = null;
-    public function __construct(Conf $conf, $arg) {
+    function __construct(Conf $conf, $arg) {
         $this->arg = $arg;
         $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && $conf->pc_tag_exists($arg));
         $this->format_ = self::FBOOL;
     }
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         return $this->istag ? VIEWSCORE_PC : parent::view_score($user);
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         $state->queryOptions["reviewIdentities"] = true;
         $flags = 0;
@@ -707,7 +707,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
         }
         return $e;
     }
-    public static function check_tagmap(Conf $conf, $cid, $tag) {
+    static function check_tagmap(Conf $conf, $cid, $tag) {
         if ($conf !== self::$tagmap_conf) {
             self::$tagmap = [];
             self::$tagmap_conf = $conf;
@@ -724,10 +724,10 @@ class ReviewerMatchFexpr extends ReviewFexpr {
 }
 
 class ReviewWordCountFexpr extends SubFexpr {
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
-    public function compile(FormulaCompiler $state) {
+    function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         if ($state->looptype == self::LMY)
             $rt = $state->define_gvar("myrevwordcount", "\$prow->submitted_review_word_count(\$contact->contactId)");
@@ -766,7 +766,7 @@ class FormulaCompiler {
         $this->clear();
     }
 
-    public function clear() {
+    function clear() {
         $this->gvar = $this->gstmt = $this->lstmt = array();
         $this->looptype = Fexpr::LNONE;
         $this->datatype = 0;
@@ -775,7 +775,7 @@ class FormulaCompiler {
         $this->_stack = array();
     }
 
-    public function check_gvar($gvar) {
+    function check_gvar($gvar) {
         if (get($this->gvar, $gvar))
             return false;
         else {
@@ -783,7 +783,7 @@ class FormulaCompiler {
             return true;
         }
     }
-    public function define_gvar($name, $expr) {
+    function define_gvar($name, $expr) {
         if (preg_match(',\A\$?(.*[^A-Ya-z0-9_].*)\z,', $name, $m))
             $name = '$' . preg_replace_callback(',[^A-Ya-z0-9_],', function ($m) { return "Z" . dechex(ord($m[0])); }, $m[1]);
         else
@@ -795,39 +795,39 @@ class FormulaCompiler {
         return $name;
     }
 
-    public function _add_pc_can_review() {
+    function _add_pc_can_review() {
         if ($this->check_gvar('$pc_can_review'))
             $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer();";
         return '$pc_can_review';
     }
-    public function _add_submitted_reviewers() {
+    function _add_submitted_reviewers() {
         if ($this->check_gvar('$submitted_reviewers')) {
             $this->queryOptions["reviewContactIds"] = true;
             $this->gstmt[] = "\$submitted_reviewers = array_flip(\$prow->viewable_submitted_reviewers(\$contact, \$forceShow));";
         }
         return '$submitted_reviewers';
     }
-    public function _add_review_prefs() {
+    function _add_review_prefs() {
         if ($this->check_gvar('$allrevprefs')) {
             $this->queryOptions["allReviewerPreference"] = true;
             $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null, \$forceShow) ? \$prow->reviewer_preferences() : [];";
         }
         return '$allrevprefs';
     }
-    public function _add_conflicts() {
+    function _add_conflicts() {
         if ($this->check_gvar('$conflicts')) {
             $this->queryOptions["allConflictType"] = true;
             $this->gstmt[] = "\$conflicts = \$contact->can_view_conflicts(\$prow, \$forceShow) ? \$prow->conflicts() : [];";
         }
         return '$conflicts';
     }
-    public function _add_pc() {
+    function _add_pc() {
         if ($this->check_gvar('$pc'))
             $this->gstmt[] = "\$pc = \$contact->conf->pc_members();";
         return '$pc';
     }
 
-    public function _rrow_cid() {
+    function _rrow_cid() {
         if ($this->looptype == Fexpr::LNONE)
             return '$rrow_cid';
         else if ($this->looptype == Fexpr::LMY)
@@ -851,7 +851,7 @@ class FormulaCompiler {
         $this->indent -= 2;
         $this->lstmt[] = $content;
     }
-    public function _addltemp($expr = "null", $always_var = false) {
+    function _addltemp($expr = "null", $always_var = false) {
         if (!$always_var && preg_match('/\A(?:[\d.]+|\$\w+|null)\z/', $expr))
             return $expr;
         $tname = "\$t" . $this->lprefix . "_" . count($this->lstmt);
@@ -866,7 +866,7 @@ class FormulaCompiler {
             return join($indent, $this->lstmt);
     }
 
-    public function loop_variable($datatype) {
+    function loop_variable($datatype) {
         $g = array();
         if ($datatype & Fexpr::APCCANREV)
             $g[] = $this->_add_pc_can_review();
@@ -884,7 +884,7 @@ class FormulaCompiler {
         else
             return $this->define_gvar("trivial_loop", "[0]");
     }
-    public function _compile_loop($initial_value, $combiner, AggregateFexpr $e) {
+    function _compile_loop($initial_value, $combiner, AggregateFexpr $e) {
         $t_result = $this->_addltemp($initial_value, true);
         $combiner = str_replace("~r~", $t_result, $combiner);
         $p = $this->_push();
@@ -922,7 +922,7 @@ class FormulaCompiler {
         return $t_result;
     }
 
-    public function _compile_my(Fexpr $e) {
+    function _compile_my(Fexpr $e) {
         $p = $this->_push();
         $this->looptype = Fexpr::LMY;
         $t = $this->_addltemp($e->compile($this));
@@ -941,7 +941,7 @@ class Formula {
     public $expression = null;
     public $allowReview = false;
     private $needsReview = false;
-    public $datatypes = 0;
+    private $datatypes = 0;
     public $createdBy = 0;
     public $timeModified = 0;
 
@@ -954,7 +954,7 @@ class Formula {
 
     const DEBUG = 0;
 
-    public static $opprec = array(
+    static public $opprec = array(
         "**" => 13,
         "u+" => 12, "u-" => 12, "u!" => 12,
         "*" => 11, "/" => 11, "%" => 11,
@@ -980,7 +980,7 @@ class Formula {
     );
 
 
-    public function __construct(Contact $user, $expr = null, $allow_review = false) {
+    function __construct(Contact $user, $expr = null, $allow_review = false) {
         $this->conf = $user->conf;
         $this->user = $user;
         if ($expr !== null) {
@@ -995,7 +995,7 @@ class Formula {
         $this->formulaId = (int) $this->formulaId;
     }
 
-    static public function fetch(Contact $user, $result) {
+    static function fetch(Contact $user, $result) {
         $formula = $result ? $result->fetch_object("Formula", [$user]) : null;
         if ($formula && !is_int($formula->formulaId)) {
             $formula->conf = $user->conf;
@@ -1008,7 +1008,7 @@ class Formula {
 
     /* parsing */
 
-    public function check(Contact $user = null) {
+    function check(Contact $user = null) {
         if ($this->_parse !== null && (!$user || $user === $this->user))
             return !!$this->_parse;
 
@@ -1048,13 +1048,16 @@ class Formula {
                 $this->_format = $e->format();
             }
         }
-        $this->_parse = (count($this->_error_html) ? false : $e);
+        $this->_parse = empty($this->_error_html) ? $e : false;
         return !!$this->_parse;
     }
 
-    public function error_html() {
+    function error_html() {
         $this->check();
         return join("<br/>", $this->_error_html);
+    }
+    function add_error_html($e) {
+        $this->_error_html[] = $e;
     }
 
     private function _parse_ternary(&$t, $in_qc) {
@@ -1339,10 +1342,10 @@ class Formula {
     }
 
 
-    private static function compile_body($contact, FormulaCompiler $state, $expr) {
+    private static function compile_body($user, FormulaCompiler $state, $expr) {
         $t = "";
-        if ($contact)
-            $t .= "assert(\$contact->contactId == $contact->contactId);\n  ";
+        if ($user)
+            $t .= "assert(\$contact->contactId == $user->contactId);\n  ";
         $t .= join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
             . join("\n  ", $state->lstmt) . "\n";
@@ -1354,29 +1357,29 @@ class Formula {
         return $t;
     }
 
-    public function compile_function() {
+    function compile_function() {
         $this->check();
         $state = new FormulaCompiler($this->user);
         $expr = $this->_parse ? $this->_parse->compile($state) : "0";
         $t = self::compile_body($this->user, $state, $expr);
 
         $args = '$prow, $rrow_cid, $contact, $format = 0, $forceShow = false';
-        self::DEBUG && Conf::msg_info(Ht::pre_text("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n"));
+        self::DEBUG && Conf::msg_debugt("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n");
         return create_function($args, $t);
     }
 
-    static public function compile_indexes_function(Contact $contact, $datatypes) {
-        $state = new FormulaCompiler($contact);
+    static function compile_indexes_function(Contact $user, $datatypes) {
+        $state = new FormulaCompiler($user);
         $g = $state->loop_variable($datatypes);
-        $t = "assert(\$contact->contactId == $contact->contactId);\n  "
+        $t = "assert(\$contact->contactId == $user->contactId);\n  "
             . join("\n  ", $state->gstmt)
             . "\n  return array_keys($g);\n";
         $args = '$prow, $contact, $forceShow = false';
-        self::DEBUG && Conf::msg_info(Ht::pre_text("function ($args) {\n  $t}\n"));
+        self::DEBUG && Conf::msg_debugt("function ($args) {\n  $t}\n");
         return create_function($args, $t);
     }
 
-    public function compile_combine_functions() {
+    function compile_combine_functions() {
         $this->check();
         $state = new FormulaCompiler($this->user);
         $this->_parse && $this->_parse->compile_fragments($state);
@@ -1386,7 +1389,7 @@ class Formula {
         else
             $t .= "  return [" . join(", ", $state->fragments) . "];\n";
         $args = '$prow, $rrow_cid, $contact, $format = 0, $forceShow = false';
-        self::DEBUG && Conf::msg_info(Ht::pre_text("function ($args) {\n  // fragments " . simplify_whitespace($this->expression) . "\n  $t}\n"));
+        self::DEBUG && Conf::msg_debugt("function ($args) {\n  // fragments " . simplify_whitespace($this->expression) . "\n  $t}\n");
         $outf = create_function($args, $t);
 
         // regroup function
@@ -1395,13 +1398,13 @@ class Formula {
         $expr = $this->_parse ? $this->_parse->compile($state) : "0";
         $t = self::compile_body(null, $state, $expr);
         $args = '$groups, $format = null, $forceShow = false';
-        self::DEBUG && Conf::msg_info(Ht::pre_text("function ($args) {\n  // combine " . simplify_whitespace($this->expression) . "\n  $t}\n"));
+        self::DEBUG && Conf::msg_debugt("function ($args) {\n  // combine " . simplify_whitespace($this->expression) . "\n  $t}\n");
         $inf = create_function($args, $t);
 
         return [$outf, $inf];
     }
 
-    public function unparse_html($x) {
+    function unparse_html($x) {
         if ($x === null || $x === false)
             return "";
         else if ($x === true)
@@ -1416,14 +1419,14 @@ class Formula {
             return round($x * 100) / 100;
     }
 
-    public function unparse_text($x) {
+    function unparse_text($x) {
         if (is_int($x) && $x && $this->_format === Fexpr::FREVIEWER)
             return $contact->name_text_for($x);
         else
             return $this->unparse_html($x);
     }
 
-    public function add_query_options(&$queryOptions) {
+    function add_query_options(&$queryOptions) {
         if ($this->check()) {
             $state = new FormulaCompiler($this->user);
             $state->queryOptions =& $queryOptions;
@@ -1433,26 +1436,26 @@ class Formula {
         }
     }
 
-    public function view_score(Contact $user) {
+    function view_score(Contact $user) {
         if ($this->check())
             return $this->_parse->view_score($user);
         else
             return VIEWSCORE_FALSE;
     }
 
-    public function column_header() {
+    function column_header() {
         return $this->heading ? : ($this->name ? : $this->expression);
     }
 
-    public function needs_review() {
+    function is_indexed() {
         $this->check();
         return $this->needsReview;
     }
 
-    public function result_format() {
+    function result_format() {
         return $this->check() ? $this->_format : null;
     }
-    public function result_format_is_real() {
+    function result_format_is_real() {
         if (!$this->check())
             return null;
         else if ($this->_format instanceof ReviewField)
@@ -1464,15 +1467,15 @@ class Formula {
             return true;
     }
 
-    public function can_combine() {
+    function can_combine() {
         return $this->check() && $this->_parse->can_combine();
     }
 
-    public function is_sum() {
+    function is_sum() {
         return $this->check() && $this->_parse->op === "sum";
     }
 
-    public function datatypes() {
+    function datatypes() {
         return $this->check() ? $this->datatypes : 0;
     }
 }

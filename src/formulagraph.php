@@ -99,8 +99,8 @@ class FormulaGraph {
 
         $fxf = $this->fx->compile_function();
         $reviewf = null;
-        if ($this->fx->needs_review())
-            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes);
+        if ($this->fx->is_indexed())
+            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes());
 
         while (($prow = PaperInfo::fetch($result, $this->user))) {
             if (!$this->user->can_view_paper($prow))
@@ -169,8 +169,8 @@ class FormulaGraph {
         $fxf = $this->fx->compile_function();
         $fyf = $this->fy->compile_function();
         $reviewf = null;
-        if ($this->fx->needs_review() || $this->fy->needs_review())
-            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes | $this->fy->datatypes);
+        if ($this->fx->is_indexed() || $this->fy->is_indexed())
+            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes() | $this->fy->datatypes());
 
         while (($prow = PaperInfo::fetch($result, $this->user))) {
             if (!$this->user->can_view_paper($prow))
@@ -218,8 +218,8 @@ class FormulaGraph {
         $fxf = $this->fx->compile_function();
         list($fytrack, $fycombine) = $this->fy->compile_combine_functions();
         $reviewf = null;
-        if ($this->fx->needs_review() || $this->fy->datatypes)
-            $reviewf = Formula::compile_indexes_function($this->user, ($this->fx->needs_review() ? $this->fx->datatypes : 0) | $this->fy->datatypes);
+        if ($this->fx->is_indexed() || $this->fy->datatypes())
+            $reviewf = Formula::compile_indexes_function($this->user, ($this->fx->is_indexed() ? $this->fx->datatypes() : 0) | $this->fy->datatypes());
 
         while (($prow = PaperInfo::fetch($result, $this->user))) {
             if (!$this->user->can_view_paper($prow))
@@ -363,7 +363,7 @@ class FormulaGraph {
         $queryOptions = array("paperId" => $paperIds, "tags" => true);
         $this->fx->add_query_options($queryOptions);
         $this->fy->add_query_options($queryOptions);
-        if ($this->fx->needs_review() || $this->fy->needs_review())
+        if ($this->fx->is_indexed() || $this->fy->is_indexed())
             $queryOptions["reviewOrdinals"] = true;
         $result = $this->user->paper_result($queryOptions);
 
@@ -383,7 +383,7 @@ class FormulaGraph {
     public function axis_info_settings($axis) {
         $f = $axis == "x" ? $this->fx : $this->fy;
         $t = array();
-        $counttype = $this->fx->needs_review() ? "reviews" : "papers";
+        $counttype = $this->fx->is_indexed() ? "reviews" : "papers";
         if ($axis == "y" && $this->type == self::FBARCHART)
             $t[] = "label:\"fraction of $counttype\",fraction:true";
         else if ($axis == "y" && $this->type == self::BARCHART
