@@ -19,16 +19,15 @@ class CapabilityManager {
         $paperId = get($options, "paperId", 0);
         $timeExpires = get($options, "timeExpires", time() + 259200);
         $data = get($options, "data");
-        $capid = false;
+        $ok = false;
 
-        for ($tries = 0; !$capid && $tries < 4; ++$tries)
+        for ($tries = 0; !$ok && $tries < 4; ++$tries)
             if (($salt = random_bytes(16)) !== false) {
-                Dbl::ql($this->dblink, "insert into Capability set capabilityType=?, contactId=?, paperId=?, timeExpires=?, salt=?, data=?",
-                        $capabilityType, $contactId, $paperId, $timeExpires, $salt, $data);
-                $capid = $this->dblink->insert_id;
+                $result = Dbl::ql($this->dblink, "insert into Capability set capabilityType=?, contactId=?, paperId=?, timeExpires=?, salt=?, data=?", $capabilityType, $contactId, $paperId, $timeExpires, $salt, $data);
+                $ok = $result && $result->affected_rows > 0;
             }
 
-        if (!$capid)
+        if (!$ok)
             return false;
         return $this->prefix . "1"
             . str_replace(array("+", "/", "="),
