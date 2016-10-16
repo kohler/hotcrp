@@ -549,7 +549,7 @@ class PaperList {
                 }
             } else if ($fid == "formulas") {
                 if ($this->scoresOk) {
-                    foreach (FormulaPaperColumn::all_column_names($this->contact) as $name)
+                    foreach (Formula_PaperColumn::all_column_names($this->contact) as $name)
                         $nf[] = $this->find_column($name);
                 }
             } else if ($fid == "tagreports") {

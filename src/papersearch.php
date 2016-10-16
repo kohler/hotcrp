@@ -58,10 +58,10 @@ class SearchTerm {
     }
     private function append($term) {
         if ($term && $term->float) {
-            $this->float = $this->float ? : array();
+            $this->float = $this->float ? : [];
             foreach ($term->float as $k => $v)
-                if ($k === "sort" && isset($this->float["sort"]))
-                    array_splice($this->float["sort"], count($this->float["sort"]), 0, $v);
+                if ($k === "sort" && isset($this->float[$k]))
+                    array_splice($this->float[$k], count($this->float[$k]), 0, $v);
                 else if (is_array(get($this->float, $k)) && is_array($v))
                     $this->float[$k] = array_replace_recursive($this->float[$k], $v);
                 else if ($k !== "opinfo" || !isset($this->float[$k]))
@@ -2026,14 +2026,14 @@ class PaperSearch {
             }
             if ($wtype !== "" && $keyword !== "sort")
                 $views[$wtype] = $a;
-            $f = array("view" => $views);
+            $f = ["view" => $views];
             if ($sorting)
-                $f["sort"] = array($word);
+                $f["sort"] = [$word];
             $qt[] = SearchTerm::make_float($f);
         }
 
         // Finally, look for a review field.
-        if ($keyword && !isset(self::$_keywords[$keyword]) && count($qt) == 0) {
+        if ($keyword && !isset(self::$_keywords[$keyword]) && empty($qt)) {
             if (($field = $this->conf->review_field_search($keyword)))
                 $this->_search_review_field($word, $field, $qt, $quoted);
             else if (!$this->_search_options("$keyword:$word", $qt, false)
@@ -3056,7 +3056,7 @@ class PaperSearch {
     // BASIC QUERY FUNCTION
 
     private function _add_sorters($qe, $thenmap) {
-        foreach ($qe->get_float("sort", array()) as $s)
+        foreach ($qe->get_float("sort", []) as $s)
             if (($s = ListSorter::parse_sorter($s))) {
                 $s->thenmap = $thenmap;
                 $this->sorters[] = $s;
@@ -3341,7 +3341,7 @@ class PaperSearch {
 
         // view and sort information
         $this->viewmap = $qe->get_float("view", array());
-        $this->sorters = array();
+        $this->sorters = [];
         $this->_add_sorters($qe, null);
         if ($qe->type === "then")
             for ($i = 0; $i < $qe->nthen; ++$i)

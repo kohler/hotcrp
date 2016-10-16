@@ -949,7 +949,6 @@ class Formula {
     private $_format;
     private $_error_html = array();
 
-    const SORTABLE = 1;
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
     const DEBUG = 0;
@@ -1342,30 +1341,39 @@ class Formula {
     }
 
 
-    private static function compile_body($user, FormulaCompiler $state, $expr) {
+    private static function compile_body($user, FormulaCompiler $state, $expr,
+                                         $sortable = false) {
         $t = "";
         if ($user)
             $t .= "assert(\$contact->contactId == $user->contactId);\n  ";
         $t .= join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
             . join("\n  ", $state->lstmt) . "\n";
-        if ($expr !== null)
-            $t .= "  \$x = $expr;\n\n"
-                . "  if (\$x === true && \$format == Formula::SORTABLE)\n"
-                . "    \$x = 1;\n"
-                . "  return \$x;\n";
+        if ($expr !== null && !$sortable)
+            $t .= "\n  return $expr;\n";
+        else if ($expr !== null)
+            $t .= "\n  \$x = $expr;\n"
+                . "  return is_bool(\$x) ? (int) \$x : \$x;\n";
         return $t;
     }
 
-    function compile_function() {
+    private function _compile_function($sortable) {
         $this->check();
         $state = new FormulaCompiler($this->user);
         $expr = $this->_parse ? $this->_parse->compile($state) : "0";
         $t = self::compile_body($this->user, $state, $expr);
 
-        $args = '$prow, $rrow_cid, $contact, $format = 0, $forceShow = false';
+        $args = '$prow, $rrow_cid, $contact, $forceShow = false';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n");
         return create_function($args, $t);
+    }
+
+    function compile_function() {
+        return $this->_compile_function(false);
+    }
+
+    function compile_sortable_function() {
+        return $this->_compile_function(true);
     }
 
     static function compile_indexes_function(Contact $user, $datatypes) {
@@ -1388,7 +1396,7 @@ class Formula {
             $t .= "  return " . $state->fragments[0] . ";\n";
         else
             $t .= "  return [" . join(", ", $state->fragments) . "];\n";
-        $args = '$prow, $rrow_cid, $contact, $format = 0, $forceShow = false';
+        $args = '$prow, $rrow_cid, $contact, $forceShow = false';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // fragments " . simplify_whitespace($this->expression) . "\n  $t}\n");
         $outf = create_function($args, $t);
 
@@ -1397,7 +1405,7 @@ class Formula {
         $state->combining = 0;
         $expr = $this->_parse ? $this->_parse->compile($state) : "0";
         $t = self::compile_body(null, $state, $expr);
-        $args = '$groups, $format = null, $forceShow = false';
+        $args = '$groups, $forceShow = false';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // combine " . simplify_whitespace($this->expression) . "\n  $t}\n");
         $inf = create_function($args, $t);
 

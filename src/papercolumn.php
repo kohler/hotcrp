@@ -1391,14 +1391,14 @@ class Option_PaperColumn extends PaperColumn {
     }
 }
 
-class FormulaPaperColumn extends PaperColumn {
+class Formula_PaperColumn extends PaperColumn {
     public $formula;
     private $formula_function;
     public $statistics;
     private $results;
     private $any_real;
     static private $nregistered;
-    public function __construct($name, $formula) {
+    public function __construct($name, Formula $formula = null) {
         parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("minimal" => true, "comparator" => "formula_compare"));
         $this->className = "pl_formula";
@@ -1412,7 +1412,7 @@ class FormulaPaperColumn extends PaperColumn {
         $starts_with_formula = str_starts_with($name, "formula");
         foreach ($dfm as $f)
             if (strcasecmp($f->name, $name) == 0 || ($starts_with_formula && $name === "formula{$f->formulaId}"))
-                return new FormulaPaperColumn("formula{$f->formulaId}", $f);
+                return new Formula_PaperColumn("formula{$f->formulaId}", $f);
         if (substr($name, 0, 4) === "edit")
             return null;
         $formula = new Formula($user, $name);
@@ -1422,7 +1422,7 @@ class FormulaPaperColumn extends PaperColumn {
             return null;
         }
         ++self::$nregistered;
-        return new FormulaPaperColumn("formulax" . self::$nregistered, $formula);
+        return new Formula_PaperColumn("formulax" . self::$nregistered, $formula);
     }
     public function completion_name() {
         if ($this->formula && $this->formula->name) {
@@ -1453,10 +1453,10 @@ class FormulaPaperColumn extends PaperColumn {
         return $f;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
-        $formulaf = $this->formula_function;
+        $formulaf = $this->formula->compile_sortable_function();
         $this->formula_sorter = $sorter = "_formula_sort_info." . $this->formula->name;
         foreach ($rows as $row)
-            $row->$sorter = $formulaf($row, null, $pl->contact, Formula::SORTABLE);
+            $row->$sorter = $formulaf($row, null, $pl->contact);
     }
     public function formula_compare($a, $b) {
         $sorter = $this->formula_sorter;
@@ -1483,7 +1483,7 @@ class FormulaPaperColumn extends PaperColumn {
         foreach ($rows as $row) {
             $s = $this->results[$row->paperId] = $formulaf($row, null, $pl->contact);
             if ($row->conflictType > 0 && $pl->contact->allow_administer($row))
-                $s = $formulaf($row, null, $pl->contact, null, true);
+                $s = $formulaf($row, null, $pl->contact, true);
             if ($isreal && !$this->any_real && is_float($s)
                 && round($s * 100) % 100 != 0)
                 $this->any_real = true;
@@ -1500,7 +1500,7 @@ class FormulaPaperColumn extends PaperColumn {
         $formulaf = $this->formula_function;
         $t = $this->unparse($this->results[$row->paperId]);
         if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
-            $ss = $formulaf($row, null, $pl->contact, null, true);
+            $ss = $formulaf($row, null, $pl->contact, true);
             $tt = $this->unparse($ss);
             if ($tt !== $t) {
                 $this->statistics->add($ss);
@@ -1762,7 +1762,7 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, null));
     PaperColumn::register_factory("pref:", new PreferencePaperColumn(null, false));
     PaperColumn::register_factory("tagrep:", new TagReportPaperColumn(null));
-    PaperColumn::register_factory("", new FormulaPaperColumn("", null));
+    PaperColumn::register_factory("", new Formula_PaperColumn("", null));
     PaperColumn::register_factory("", new Option_PaperColumn(null));
     PaperColumn::register_factory("", new ScorePaperColumn(null));
 }
