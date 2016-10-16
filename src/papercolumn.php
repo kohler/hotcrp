@@ -1216,9 +1216,7 @@ class ScorePaperColumn extends PaperColumn {
     public function __construct(ReviewField $form_field = null) {
         $score = $form_field ? $form_field->id : null;
         parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
-                            array("comparator" => "score_compare"));
-        $this->minimal = true;
-        $this->className = "pl_score";
+                            ["minimal" => true, "className" => "pl_score", "comparator" => "score_compare"]);
         $this->score = $score;
         $this->form_field = $form_field;
     }
@@ -1259,23 +1257,16 @@ class ScorePaperColumn extends PaperColumn {
                 $scoreinfo = new ScoreInfo($scores);
                 $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
                 $row->$avginfo = $scoreinfo->mean();
-            } else {
-                $row->$sortinfo = ScoreInfo::empty_sort_data($sorter->score);
-                $row->$avginfo = -1;
-            }
-        $this->_textual_sort = ScoreInfo::sort_by_strcmp($sorter->score);
+            } else
+                $row->$sortinfo = $row->$avginfo = null;
     }
     public function score_compare($a, $b) {
         $sortinfo = $this->_sortinfo;
-        if ($this->_textual_sort)
-            $x = strcmp($b->$sortinfo, $a->$sortinfo);
-        else
-            $x = $b->$sortinfo - $a->$sortinfo;
-        if (!$x) {
+        if (!($x = ScoreInfo::compare($b->$sortinfo, $a->$sortinfo))) {
             $avginfo = $this->_avginfo;
-            $x = $b->$avginfo - $a->$avginfo;
+            $x = ScoreInfo::compare($b->$avginfo, $a->$avginfo);
         }
-        return $x < 0 ? -1 : ($x == 0 ? 0 : 1);
+        return $x;
     }
     public function header($pl, $ordinal) {
         return $this->form_field->web_abbreviation();

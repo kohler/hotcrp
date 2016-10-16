@@ -321,9 +321,30 @@ xassert_eqq($ms->x("%xOOB%x friend", 10, 11), "aOOBb friend");
 // MIME types
 xassert_eqq(Mimetype::content_type("%PDF-3.0\nwhatever\n"), Mimetype::PDF_TYPE);
 if (file_exists("/etc/mime.types") || file_exists("/etc/apache2/mime.types")) {
+    // test that we can parse /etc/mime.types for file extensions
     xassert_eqq(Mimetype::mime_types_extension("application/pdf"), ".pdf");
     xassert_eqq(Mimetype::mime_types_extension("image/gif"), ".gif");
 }
+// `fileinfo` test
 xassert_eqq(Mimetype::content_type("<html><head></head><body></body></html>"), "text/html");
+
+// score sorting
+$s = [];
+foreach (["1,2,3,4,5", "1,2,3,5,5", "3,5,5", "3,3,5,5", "2,3,3,5,5"] as $st)
+    $s[] = new ScoreInfo($st);
+xassert($s[0]->compare_by($s[0], "C") == 0);
+xassert($s[0]->compare_by($s[1], "C") < 0);
+xassert($s[0]->compare_by($s[2], "C") < 0);
+xassert($s[0]->compare_by($s[3], "C") < 0);
+xassert($s[1]->compare_by($s[1], "C") == 0);
+xassert($s[1]->compare_by($s[2], "C") < 0);
+xassert($s[1]->compare_by($s[3], "C") < 0);
+xassert($s[2]->compare_by($s[2], "C") == 0);
+xassert($s[2]->compare_by($s[3], "C") < 0);
+xassert($s[3]->compare_by($s[0], "C") > 0);
+xassert($s[3]->compare_by($s[1], "C") > 0);
+xassert($s[3]->compare_by($s[2], "C") > 0);
+xassert($s[3]->compare_by($s[3], "C") == 0);
+xassert($s[3]->compare_by($s[4], "C") > 0);
 
 xassert_exit();

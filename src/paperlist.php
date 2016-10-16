@@ -184,7 +184,7 @@ class PaperList {
             || $this->contact->is_reviewer()
             || $this->conf->timeAuthorViewReviews();
 
-        $this->qopts = array("scores" => [], "options" => true);
+        $this->qopts = ["scores" => [], "options" => true];
         if ($this->search->complexSearch($this->qopts))
             $this->qopts["paperId"] = $this->search->paperList();
         // NB that actually processed the search, setting PaperSearch::viewmap
@@ -1051,9 +1051,10 @@ class PaperList {
             }
         foreach ($viewmap_add as $k => $v)
             $this->viewmap[$k] = $v;
-        foreach ($field_list as $fi => $f)
+        foreach ($field_list as $fi => &$f)
             if ($this->viewmap[$f->name] === "edit")
-                $field_list[$fi] = $f->make_editable();
+                $f = $f->make_editable();
+        unset($f);
 
         // remove deselected columns;
         // in compactcolumns view, remove non-minimal columns
