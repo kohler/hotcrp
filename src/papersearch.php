@@ -833,6 +833,7 @@ class PaperSearch {
         "revprefexp" => "prefexp", "prefexp" => "prefexp", "prefexpertise" => "prefexp",
         "ss" => "ss", "search" => "ss",
         "formula" => "formula", "f" => "formula",
+        "graph" => "graph", "g" => "graph",
         "HEADING" => "HEADING", "heading" => "HEADING",
         "show" => "show", "VIEW" => "show", "view" => "show",
         "hide" => "hide", "edit" => "edit",
@@ -1466,13 +1467,14 @@ class PaperSearch {
         $qt = array_merge($qt, $qz);
     }
 
-    private function _search_formula($word, &$qt, $quoted) {
+    private function _search_formula($word, &$qt, $quoted, $is_graph) {
         $result = $formula = null;
         if (preg_match('/\A[^(){}\[\]]+\z/', $word) && !$quoted
             && ($result = $this->conf->qe("select * from Formula where name=?", $word)))
             $formula = Formula::fetch($this->user, $result);
         Dbl::free($result);
-        $formula = $formula ? : new Formula($this->user, $word);
+        if (!$formula)
+            $formula = new Formula($this->user, $word, $is_graph);
         if ($formula->check())
             $qt[] = new SearchTerm("formula", self::F_XVIEW, $formula);
         else {
@@ -1988,7 +1990,13 @@ class PaperSearch {
         if ($keyword === "has")
             $this->_search_has($word, $qt, $quoted);
         if ($keyword === "formula")
-            $this->_search_formula($word, $qt, $quoted);
+            $this->_search_formula($word, $qt, $quoted, false);
+        if ($keyword === "graph") {
+            $this->_search_formula($word, $qt, $quoted, true);
+            $t = array_pop($qt);
+            if ($t->type === "formula")
+                $qt[] = SearchTerm::make_float(["view" => ["graph($word)" => true]]);
+        }
         if ($keyword === "ss" && $this->amPC) {
             if (($nextq = $this->_expand_saved_search($word, $this->_ssRecursion))) {
                 $this->_ssRecursion[$word] = true;
@@ -2082,10 +2090,11 @@ class PaperSearch {
 
         // "show:" may be followed by a parenthesized expression
         if ($keyword
-            && (substr($str, 0, 1) === "(" || substr($str, 0, 2) === "-(")
-            && substr($word, $colon + 1, 1) !== "\""
             && ($keyword === "show" || $keyword === "showsort"
-                || $keyword === "sort" || $keyword === "formula")) {
+                || $keyword === "sort" || $keyword === "formula"
+                || $keyword === "graph")
+            && substr($word, $colon + 1, 1) !== "\""
+            && preg_match('/\A-?[a-z]*\(/', $str)) {
             $pos = self::find_end_balanced_parens($str);
             $word .= substr($str, 0, $pos);
             $str = substr($str, $pos);
