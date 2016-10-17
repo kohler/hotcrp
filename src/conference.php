@@ -843,12 +843,11 @@ class Conf {
         return $this->_defined_rounds;
     }
 
-    function round_name($roundno, $expand = false) {
+    function round_name($roundno) {
         if ($roundno > 0) {
             if (($rname = get($this->rounds, $roundno)) && $rname !== ";")
                 return $rname;
-            else if ($expand)
-                return "?$roundno?"; /* should not happen */
+            error_log($this->dbname . ": round #$roundno undefined");
         }
         return "";
     }
@@ -874,7 +873,7 @@ class Conf {
 
     function sanitize_round_name($rname) {
         if ($rname === null)
-            return $this->current_round_name();
+            return $this->assignment_round_name(false);
         else if ($rname === "" || preg_match('/\A(?:\(none\)|none|default|unnamed)\z/i', $rname))
             return "";
         else if (self::round_name_error($rname))
@@ -883,12 +882,15 @@ class Conf {
             return $rname;
     }
 
-    function current_round_name() {
-        return (string) get($this->settingTexts, "rev_roundtag");
+    function assignment_round_name($external) {
+        if ($external && ($x = get($this->settingTexts, "extrev_roundtag")) !== null)
+            return $x;
+        else
+            return (string) get($this->settingTexts, "rev_roundtag");
     }
 
-    function current_round($add = false) {
-        return $this->round_number($this->current_round_name(), $add);
+    function assignment_round($external) {
+        return $this->round_number($this->assignment_round_name($external), false);
     }
 
     function round_number($name, $add) {
@@ -910,20 +912,10 @@ class Conf {
         $opt = array();
         foreach ($this->defined_round_list() as $rname)
             $opt[$rname] = $rname;
-        $crname = $this->current_round_name() ? : "unnamed";
+        $crname = $this->assignment_round_name(false) ? : "unnamed";
         if ($crname && !get($opt, $crname))
             $opt[$crname] = $crname;
         return $opt;
-    }
-
-    function round_selector_name($roundno) {
-        if ($roundno === null)
-            return $this->current_round_name() ? : "unnamed";
-        else if ($roundno > 0 && ($rname = get($this->rounds, $roundno))
-                 && $rname !== ";")
-            return $rname;
-        else
-            return "unnamed";
     }
 
 
@@ -1552,7 +1544,7 @@ class Conf {
     function review_deadline($round, $isPC, $hard) {
         $dn = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
         if ($round === null)
-            $round = $this->current_round(false);
+            $round = $this->assignment_round(!$isPC);
         else if (is_object($round))
             $round = $round->reviewRound ? : 0;
         if ($round && isset($this->settings["{$dn}_$round"]))

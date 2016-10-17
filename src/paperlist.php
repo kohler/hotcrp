@@ -31,7 +31,7 @@ class PaperListReviewAnalysis {
             $this->row = $row;
             $this->needsSubmit = !get($row, "reviewSubmitted");
             if ($row->reviewRound)
-                $this->round = htmlspecialchars($conf->round_name($row->reviewRound, true));
+                $this->round = htmlspecialchars($conf->round_name($row->reviewRound));
         }
     }
     public function icon_html($includeLink) {

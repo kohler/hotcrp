@@ -379,7 +379,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         $missing_rounds = explode(",", $myrow->unsubmitted_rounds);
         sort($missing_rounds, SORT_NUMERIC);
         foreach ($missing_rounds as $round) {
-            if (($rname = $Conf->round_name($round, false)))
+            if (($rname = $Conf->round_name($round)))
                 $rname .= " ";
             if ($Conf->time_review($round, $Me->isPC, false)) {
                 $dn = $Conf->review_deadline($round, $Me->isPC, false);

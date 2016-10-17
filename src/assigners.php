@@ -560,7 +560,7 @@ class ReviewAssigner extends Assigner {
     static function load_review_state(AssignmentState $state) {
         $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
         while (($row = edb_row($result))) {
-            $round = $state->conf->round_name($row[3], false);
+            $round = $state->conf->round_name($row[3]);
             $state->load(array("type" => "review", "pid" => +$row[0], "cid" => +$row[1],
                                "_rtype" => +$row[2], "_round" => $round,
                                "_rsubmitted" => $row[4] > 0 ? 1 : 0));

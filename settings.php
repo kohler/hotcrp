@@ -244,7 +244,7 @@ class SettingValues {
     public $savedv = array();
     public $explicit_oldv = array();
     private $hint_status = array();
-    private $req_has = array();
+    private $has_req = array();
 
     public function __construct($user) {
         $this->conf = $user->conf;

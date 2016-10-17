@@ -3209,10 +3209,13 @@ class Contact {
             else
                 return $reviewId;
         }
+        // PC members always get PC reviews
+        if ($type == REVIEW_EXTERNAL && get($this->conf->pc_members(), $reviewer_cid))
+            $type = REVIEW_PC;
 
         // change database
         if ($type > 0 && ($round = get($extra, "round_number")) === null)
-            $round = $this->conf->current_round();
+            $round = $this->conf->assignment_round($type == REVIEW_EXTERNAL);
         if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
             $qa = "";
             if (get($extra, "mark_notify"))

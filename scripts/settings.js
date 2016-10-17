@@ -43,7 +43,8 @@ var added = 0;
 
 function namechange() {
     var roundnum = this.id.substr(10), name = jQuery.trim(jQuery(this).val());
-    jQuery("#rev_roundtag_" + roundnum).text(name === "" ? "(no name)" : name);
+    jQuery("#rev_roundtag_" + roundnum + ", #extrev_roundtag_" + roundnum)
+        .text(name === "" ? "(no name)" : name);
 }
 
 function init() {
@@ -59,6 +60,7 @@ function add() {
     if (++added == 1 && i == 1)
         jQuery("div[data-round-number=" + i + "] > :first-child").append('<div class="hint">Example name: “R1”</div>');
     jQuery("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
+    jQuery("#extrev_roundtag").append('<option value="#' + i + '" id="extrev_roundtag_' + i + '">(new round)</option>');
     jQuery("div[data-round-number=" + i + "] input.temptext").each(mktemptext);
     jQuery("#roundname_" + i).focus().on("input change", namechange);
 }

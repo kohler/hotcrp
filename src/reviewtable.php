@@ -19,13 +19,13 @@ function _review_table_round_selector(PaperInfo $prow, $rr) {
             return "";
         reset($sel);
         return '&nbsp;<span class="revround" title="Review round">'
-            . htmlspecialchars($prow->conf->round_name($rr->reviewRound, true))
+            . htmlspecialchars($prow->conf->round_name($rr->reviewRound))
             . "</span>";
     }
     return '&nbsp;'
         . Ht::form(hoturl_post("assign", "p={$prow->paperId}&amp;r={$rr->reviewId}&amp;setround=1"))
         . '<div class="inline">'
-        . Ht::select("round", $sel, $prow->conf->round_selector_name($rr->reviewRound),
+        . Ht::select("round", $sel, $prow->conf->round_name($rr->reviewRound) ? : "unnamed",
                      array("onchange" => "save_review_round(this)", "title" => "Set review round"))
         . '</div></form>';
 }
@@ -122,7 +122,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 $rtype .= _review_table_round_selector($prow, $rr);
             else if ($rr->reviewRound > 0 && $Me->can_view_review_round($prow, $rr))
                 $rtype .= '&nbsp;<span class="revround" title="Review round">'
-                    . htmlspecialchars($conf->round_name($rr->reviewRound, true))
+                    . htmlspecialchars($conf->round_name($rr->reviewRound))
                     . "</span>";
         } else
             $rtype = "";

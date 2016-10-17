@@ -525,7 +525,7 @@ if (count($rev_rounds) > 1) {
         Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed"),
         '</span></div>';
 } else if (!get($rev_rounds, "unnamed"))
-    echo divClass("rev_round"), Ht::hidden("rev_round", $Conf->current_round_name()),
+    echo divClass("rev_round"), Ht::hidden("rev_round", $Conf->assignment_round_name(false)),
         '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_round" disabled="disabled" />&nbsp;',
         '<span style="font-size:smaller">Review round: ',
         ($Qreq->rev_round ? : "unnamed"), '</span></div>';

@@ -739,8 +739,8 @@ The automatic and bulk assignment pages also let you set a review round.</p>");
     // get current tag settings
     if ($Me->isPC) {
         $texts = array();
-        if (($rr = $Conf->current_round_name())) {
-            $texts[] = "The current review round is “<a href=\""
+        if (($rr = $Conf->assignment_round_name(false))) {
+            $texts[] = "The review round for new assignments is “<a href=\""
                 . hoturl("search", "q=round%3A" . urlencode($rr))
                 . "\">" . htmlspecialchars($rr) . "</a>”";
             if ($Me->privChair)
@@ -750,9 +750,9 @@ The automatic and bulk assignment pages also let you set a review round.</p>");
         }
         $rounds = array();
         if ($Conf->has_rounds()) {
-            $result = $Conf->qe_raw("select distinct reviewRound from PaperReview");
+            $result = $Conf->qe("select distinct reviewRound from PaperReview");
             while (($row = edb_row($result)))
-                if ($row[0] && ($rname = $Conf->round_name($row[0], false)))
+                if ($row[0] && ($rname = $Conf->round_name($row[0])))
                     $rounds[] = "“<a href=\""
                         . hoturl("search", "q=round%3A" . urlencode($rname))
                         . "\">" . htmlspecialchars($rname) . "</a>”";

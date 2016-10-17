@@ -146,7 +146,8 @@ class ReviewField {
     }
 
     public function is_round_visible($rrow) {
-        $round = $rrow ? $rrow->reviewRound : $this->conf->current_round();
+        // NB missing $rrow is only possible for PC reviews
+        $round = $rrow ? $rrow->reviewRound : $this->conf->assignment_round(false);
         return !$this->round_mask
             || $round === null
             || ($this->round_mask & (1 << $round))
@@ -860,7 +861,7 @@ class ReviewForm {
             $contactId = $rrow->contactId;
         } else {
             array_unshift($qf, "paperId=?", "contactId=?", "reviewType=?", "requestedBy=?", "reviewRound=?");
-            array_unshift($qv, $prow->paperId, $contact->contactId, REVIEW_PC, $contact->contactId, $this->conf->current_round());
+            array_unshift($qv, $prow->paperId, $contact->contactId, REVIEW_PC, $contact->contactId, $this->conf->assignment_round(false));
             $result = $this->conf->qe_apply("insert into PaperReview set " . join(", ", $qf), $qv);
             $reviewId = $result ? $result->insert_id : null;
             $contactId = $contact->contactId;
@@ -1698,7 +1699,7 @@ $blind\n";
             $type = review_type_icon($rrow->reviewType);
             if ($rrow->reviewRound > 0 && $Me->can_view_review_round($prow, $rrow, null))
                 $type .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
-                    . htmlspecialchars($this->conf->round_name($rrow->reviewRound, true))
+                    . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
                     . "</span>";
         }
         if ($rrow && $Me->can_view_review_identity($prow, $rrow, null)

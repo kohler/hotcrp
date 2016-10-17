@@ -257,7 +257,7 @@ function requestReview($email) {
 
     $reason = trim(defval($_REQUEST, "reason", ""));
 
-    $round = $Conf->current_round();
+    $round = null;
     if (isset($_REQUEST["round"]) && $_REQUEST["round"] != ""
         && ($rname = $Conf->sanitize_round_name($_REQUEST["round"])) !== false)
         $round = $Conf->round_number($rname, false);

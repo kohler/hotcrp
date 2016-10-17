@@ -189,7 +189,7 @@ echo '<div class="f-contain"><div class="f-i"><div class="f-e">',
 echo '<div class="g"><strong>OR</strong> &nbsp;',
     '<input type="file" name="bulk" accept="text/plain,text/csv" size="30" /></div>';
 
-echo '<div id="foldoptions" class="lg foldc fold2o">',
+echo '<div id="foldoptions" class="lg foldc fold2o fold3c">',
     'By default, assign&nbsp; ',
     Ht::select("default_action", array("primary" => "primary reviews",
                                        "secondary" => "secondary reviews",
@@ -209,7 +209,7 @@ if (count($rev_rounds) > 1)
         Ht::select("rev_round", $rev_rounds, $_REQUEST["rev_round"] ? : "unnamed"),
         '</span>';
 else if (!get($rev_rounds, "unnamed"))
-    echo '<span class="fx2">&nbsp; in round ', $Conf->current_round_name(), '</span>';
+    echo '<span class="fx2">&nbsp; in round ', $Conf->assignment_round_name(false), '</span>';
 echo '<div class="g"></div>', "\n";
 
 $requestreview_template = $null_mailer->expand_template("requestreview");

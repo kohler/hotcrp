@@ -18,7 +18,7 @@ class SettingRenderer_Reviews extends SettingRenderer {
             $sv->render_entry($rname);
         echo '<div class="inb" style="min-width:7em;margin-left:2em">';
         if ($rnum !== '$' && $review_count)
-            echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $sv->conf->round_name($rnum, false) : "none"))), '">(', plural($review_count, "review"), ')</a>';
+            echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $sv->conf->round_name($rnum) : "none"))), '">(', plural($review_count, "review"), ')</a>';
         echo '</div>';
         if ($deletable)
             echo '<div class="inb" style="padding-left:2em">',
@@ -83,14 +83,23 @@ function render(SettingValues $sv) {
     }
 
     // prepare round selector
-    $sv->set_oldv("rev_roundtag", "#" . $sv->conf->current_round());
-    $round_value = $sv->conf->current_round();
+    $sv->set_oldv("rev_roundtag", "#" . $sv->conf->assignment_round(false));
+    $round_value = $sv->oldv("rev_roundtag");
     if (preg_match('/\A\#(\d+)\z/', $sv->curv("rev_roundtag"), $m)
         && get($rounds, intval($m[1]), ";") != ";")
-        $round_value = intval($m[1]);
+        $round_value = $m[0];
+
+    $sv->set_oldv("extrev_roundtag", "#same");
+    if ($sv->conf->setting_data("extrev_roundtag", null) !== null)
+        $sv->set_oldv("extrev_roundtag", "#" . $sv->conf->assignment_round(true));
+    $extround_value = $sv->oldv("extrev_roundtag");
+    if (preg_match('/\A\#(\d+)\z/', $sv->curv("extrev_roundtag"), $m)
+        && get($rounds, intval($m[1]), ";") != ";")
+        $extround_value = $m[0];
 
     $print_round0 = true;
-    if ($round_value && (!$sv->use_req() || isset($sv->req["roundname_0"]))
+    if ($round_value != "#0" && $extround_value != "#0"
+        && (!$sv->use_req() || isset($sv->req["roundname_0"]))
         && !$sv->conf->round0_defined())
         $print_round0 = false;
 
@@ -115,16 +124,20 @@ function render(SettingValues $sv) {
     echo Ht::js_button("Add round", "review_round_settings.add();hiliter(this)"),
         ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
         Ht::hidden("oldroundcount", count($sv->conf->round_list())),
-        Ht::hidden("has_rev_roundtag", 1);
+        Ht::hidden("has_rev_roundtag", 1), Ht::hidden("has_extrev_roundtag", 1);
     for ($i = 1; $i < count($rounds); ++$i)
         if ($rounds[$i] === ";")
             echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
                 Ht::hidden("deleteround_$i", 1);
     Ht::stash_script("review_round_settings.init()");
 
+    $extselector = array_merge(["#same" => "(same as PC)"], $selector);
     echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',
-        $sv->label("rev_roundtag", "New review assignments use round&nbsp; "),
-        Ht::select("rev_roundtag", $selector, "#" . $round_value, $sv->sjs("rev_roundtag")),
+        $sv->label("rev_roundtag", "New PC reviews use round&nbsp; "),
+        Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
+        ' <span class="barsep">·</span> ',
+        $sv->label("extrev_roundtag", "New external reviews use round&nbsp; "),
+        Ht::select("extrev_roundtag", $extselector, $extround_value, $sv->sjs("extrev_roundtag")),
         '</div>';
 
 
@@ -211,8 +224,10 @@ class Round_SettingParser extends SettingParser {
     function parse(SettingValues $sv, Si $si) {
         if (!isset($sv->req["rev_roundtag"])) {
             $sv->save("rev_roundtag", null);
+            $sv->save("extrev_roundtag", null);
             return false;
-        }
+        } else if ($si->name != "rev_roundtag")
+            return false;
         // round names
         $roundnames = $roundnames_set = array();
         $roundname0 = $round_deleted = null;
@@ -300,22 +315,19 @@ class Round_SettingParser extends SettingParser {
             array_pop($roundnames);
         $sv->save("tag_rounds", join(" ", $roundnames));
 
-        // default round
-        $t = trim($sv->req["rev_roundtag"]);
+        // default rounds
+        array_unshift($roundnames, $roundname0);
         $sv->save("rev_roundtag", null);
-        if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed)\z/i', $t))
-            /* do nothing */;
-        else if ($t === "#0") {
-            if ($roundname0)
-                $sv->save("rev_roundtag", $roundname0);
-        } else if (preg_match('/^#[1-9][0-9]*$/', $t)) {
-            $rname = get($roundnames, substr($t, 1) - 1);
-            if ($rname && $rname !== ";")
-                $sv->save("rev_roundtag", $rname);
-        } else if (!($rerror = Conf::round_name_error($t)))
-            $sv->save("rev_roundtag", $t);
-        else
-            $sv->set_error("rev_roundtag", $rerror);
+        if (preg_match('/\A\#(\d+)\z/', trim($sv->req["rev_roundtag"]), $m)
+            && ($rname = get($roundnames, intval($m[1]))) && $rname !== ";")
+            $sv->save("rev_roundtag", $rname);
+        if (isset($sv->req["extrev_roundtag"])) {
+            $sv->save("extrev_roundtag", null);
+            if (preg_match('/\A\#(\d+)\z/', trim($sv->req["extrev_roundtag"]), $m)
+                && ($rname = get($roundnames, intval($m[1]))) !== ";")
+                $sv->save("extrev_roundtag", $rname ? : "unnamed");
+        }
+
         if (count($this->rev_round_changes)) {
             $sv->need_lock["PaperReview"] = true;
             return true;

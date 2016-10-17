@@ -60,14 +60,14 @@ function admin_home_messages() {
     }
     // Review round expired?
     if (count($Conf->round_list()) > 1 && $Conf->time_review_open()
-        && $Conf->missed_review_deadline($Conf->current_round(), true, false)) {
+        && $Conf->missed_review_deadline($Conf->assignment_round(false), true, false)) {
         $any_rounds_open = false;
         foreach ($Conf->defined_round_list() as $i => $rname)
-            if (!$any_rounds_open && !$Conf->missed_review_deadline($i, true, false)
-                && $Conf->setting($Conf->review_deadline($i, true, false)))
-                $any_rounds_open = $rname;
-        if ($any_rounds_open)
-            $m[] = "The deadline for the current review round, " . htmlspecialchars($Conf->current_round_name()) . ", has passed. You may want to <a href=\"" . hoturl("settings", "group=reviews") . "\">change the current round</a> to " . htmlspecialchars($any_rounds_open) . ".";
+            if (!$Conf->missed_review_deadline($i, true, false)
+                && $Conf->setting($Conf->review_deadline($i, true, false))) {
+                $m[] = "The deadline for review round " . htmlspecialchars($Conf->assignment_round_name(false) ? : "unnamed") . " has passed. You may want to <a href=\"" . hoturl("settings", "group=reviews") . "\">change the round for new assignments</a> to " . htmlspecialchars($rname) . ".";
+                break;
+            }
     }
 
     if (count($m))

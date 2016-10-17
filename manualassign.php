@@ -326,7 +326,7 @@ if ($reviewer > 0) {
                 Ht::select("rev_round", $rev_rounds, $qreq->rev_round ? : "unnamed", array("id" => "assrevround")),
                 '</span>';
         else if (!get($rev_rounds, "unnamed"))
-            echo '<span style="padding-left:2em">Review round: ', $Conf->current_round_name(), '</span>';
+            echo '<span style="padding-left:2em">Review round: ', $Conf->assignment_round_name(false), '</span>';
     }
     echo "<span style='padding-left:2em'>",
         Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
