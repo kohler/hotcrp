@@ -83,22 +83,14 @@ function render(SettingValues $sv) {
     }
 
     // prepare round selector
-    $round_value = trim($sv->curv("rev_roundtag"));
-    $current_round_value = $sv->conf->setting_data("rev_roundtag", "");
-    if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed|#0)\z/i', $round_value))
-        $round_value = "#0";
-    else if (($round_number = $sv->conf->round_number($round_value, false))
-             || ($round_number = $sv->conf->round_number($current_round_value, false)))
-        $round_value = "#" . $round_number;
-    else
-        $round_value = $selector[$current_round_value] = $current_round_value;
-
-    $round_map = edb_map($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
+    $sv->set_oldv("rev_roundtag", "#" . $sv->conf->current_round());
+    $round_value = $sv->conf->current_round();
+    if (preg_match('/\A\#(\d+)\z/', $sv->curv("rev_roundtag"), $m)
+        && get($rounds, intval($m[1]), ";") != ";")
+        $round_value = intval($m[1]);
 
     $print_round0 = true;
-    if ($round_value !== "#0" && $round_value !== ""
-        && $current_round_value !== ""
-        && (!$sv->use_req() || isset($sv->req["roundname_0"]))
+    if ($round_value && (!$sv->use_req() || isset($sv->req["roundname_0"]))
         && !$sv->conf->round0_defined())
         $print_round0 = false;
 
@@ -110,6 +102,7 @@ function render(SettingValues $sv) {
             $selector["#$i"] = (object) array("label" => $rounds[$i], "id" => "rev_roundtag_$i");
 
     echo '<div id="roundtable">';
+    $round_map = edb_map($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
     $num_printed = 0;
     for ($i = 0; $i < count($rounds); ++$i)
         if ($i ? $rounds[$i] !== ";" : $print_round0) {
@@ -131,7 +124,7 @@ function render(SettingValues $sv) {
 
     echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',
         $sv->label("rev_roundtag", "New review assignments use round&nbsp; "),
-        Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
+        Ht::select("rev_roundtag", $selector, "#" . $round_value, $sv->sjs("rev_roundtag")),
         '</div>';
 
 
