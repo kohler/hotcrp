@@ -1,6 +1,7 @@
 application/javascript				js
 application/json				json
 application/msword				doc
+application/octet-stream			bin
 application/pdf					pdf
 application/rtf					rtf
 application/smil				smil smi sml
