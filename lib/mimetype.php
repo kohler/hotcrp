@@ -45,7 +45,6 @@ class Mimetype {
         self::PNG_TYPE => [self::PNG, 1, "PNG", ".png"]
     ];
 
-    private static $invalid_types = " application/application application/binary application/download application/download-dummy application/downloads application/force application/force-download application/name application/octect-stream application/octet-binary application/save application/save-as application/\$type application/unknown application/x-file-download application/x-forcedownload application/x-force-download application/x-msdownload application/x-octetstream application/x-octet-stream application/x-unknown attachment/download binary/octet-stream invalid/octet-stream mimetype octet/stream unknown/doc_type unknown/unknown x-unknown/stream ";
     private static $mime_types = null;
     private static $finfo = null;
 
@@ -92,16 +91,26 @@ class Mimetype {
         return $m;
     }
 
-    static function mime_types_extension($type) {
+    static private function load_mime_types() {
         global $ConfSitePATH;
         if (self::$mime_types === null) {
             self::$mime_types = [];
-            $x = @file_get_contents("$ConfSitePATH/lib/mime.types");
-            preg_match_all('{^([-a-z0-9]+/\S+)[ \t]+(\S+)[ \t]*(.*?)[ \t]*$}m', (string) $x, $m, PREG_SET_ORDER);
-            foreach ($m as $info)
-                self::$mime_types[$info[1]] = "." . $info[2];
+            $t = (string) @file_get_contents("$ConfSitePATH/lib/mime.types");
+            preg_match_all('{^(|#!!\s+)([-a-z0-9]+/\S+)[ \t]*(\S*)}m', $t, $m, PREG_SET_ORDER);
+            foreach ($m as $x)
+                if ($x[1] === "" && $x[3])
+                    self::$mime_types[$x[2]] = "." . $x[3];
+                else if ($x[1])
+                    self::$mime_types[$x[2]] = $x[3] ? : "application/octet-stream";
         }
-        return get(self::$mime_types, $type);
+        return self::$mime_types;
+    }
+
+    static function mime_types_extension($type) {
+        $mt = self::load_mime_types();
+        while (($x = get($mt, $type)) && $x[0] !== ".")
+            $type = $x;
+        return $x;
     }
 
 
@@ -160,8 +169,9 @@ class Mimetype {
     }
 
     static function content_type($content, $type = null) {
+        $content_exists = (string) $content !== "";
         // reliable sniffs
-        if ($content) {
+        if ($content_exists) {
             if (strncmp("%PDF-", $content, 5) == 0)
                 return self::PDF_TYPE;
             if (substr($content, 512, 4) === "\x00\x6E\x1E\xF0")
@@ -180,11 +190,14 @@ class Mimetype {
                 || strncmp($content, "Rar!\x1A\x07\x01\x00", 8) == 0)
                 return self::RAR_TYPE;
         }
-        // eliminate invalid types
-        if ($type && strpos(self::$invalid_types, " $type ") !== false)
-            $type = null;
+        // eliminate invalid types, canonicalize
+        if ($type && !isset(self::$tinfo[$type])
+            && ($tx = get(self::load_mime_types(), $type))
+            && $tx[0] !== ".")
+            $type = $tx;
         // unreliable sniffs
-        if (!$type || $type === "application/octet-stream") {
+        if ($content_exists
+            && (!$type || $type === "application/octet-stream")) {
             if (strncmp("%!PS-", $content, 5) == 0)
                 return self::PS_TYPE;
             if (strncmp($content, "ustar\x0000", 8) == 0
@@ -193,6 +206,11 @@ class Mimetype {
             if (!self::$finfo)
                 self::$finfo = new finfo(FILEINFO_MIME_TYPE);
             $type = self::$finfo->buffer($content);
+            // canonicalize
+            if ($type && !isset(self::$tinfo[$type])
+                && ($tx = get(self::load_mime_types(), $type))
+                && $tx[0] !== ".")
+                $type = $tx;
         }
         // type obtained, or octet-stream if nothing else works
         return self::type($type ? : "application/octet-stream");
