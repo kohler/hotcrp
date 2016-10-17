@@ -63,9 +63,6 @@ function render(SettingValues $sv) {
     $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
 
     echo "<div class='g'></div>\n";
-    $sv->echo_checkbox('pcrev_any', "PC members can review <strong>any</strong> submitted paper");
-
-    echo "<div class='g'></div>\n";
     echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
     $sv->echo_radio_table("rev_blind", array(Conf::BLIND_ALWAYS => "Yes—reviews are anonymous",
                                Conf::BLIND_NEVER => "No—reviewer names are visible to authors",
@@ -112,14 +109,6 @@ function render(SettingValues $sv) {
         if ($rounds[$i] !== ";")
             $selector["#$i"] = (object) array("label" => $rounds[$i], "id" => "rev_roundtag_$i");
 
-    echo '<div id="round_container"', (count($selector) == 1 ? ' style="display:none"' : ''), '>',
-        '<table id="rev_roundtag_table"><tr><td class="lxcaption">',
-        $sv->label("rev_roundtag", "Current round"),
-        '</td><td>',
-        Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
-        '</td></tr></table>',
-        '<div class="hint">This round is used for new assignments.</div><div class="g"></div></div>';
-
     echo '<div id="roundtable">';
     $num_printed = 0;
     for ($i = 0; $i < count($rounds); ++$i)
@@ -140,6 +129,28 @@ function render(SettingValues $sv) {
                 Ht::hidden("deleteround_$i", 1);
     Ht::stash_script("review_round_settings.init()");
 
+    echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',
+        $sv->label("rev_roundtag", "New review assignments use round&nbsp; "),
+        Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
+        '</div>';
+
+
+    // PC reviews
+    echo "<h3 class=\"settings g\">PC reviews</h3>\n";
+    $sv->echo_checkbox('pcrev_any', "PC members can review any submitted paper");
+
+    echo "<div class=\"g\">Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
+    $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
+                                  Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
+                                  Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
+                                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper"));
+    echo "</div>\n";
+
+    echo "<div class=\"g\">Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
+    $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
+                                    1 => "Only after completing a review for the same paper<br /><span class='hint'>This also hides reviewer-only comments from PC members who have not completed a review for the same paper.</span>"));
+    echo "</div>\n";
+
 
     // External reviews
     echo "<h3 class=\"settings g\">External reviews</h3>\n";
@@ -149,7 +160,7 @@ function render(SettingValues $sv) {
     $sv->echo_checkbox_row("pcrev_editdelegate", "PC members can edit external reviews they requested", "pcrev_editdelegate_change()");
     Ht::stash_script('function pcrev_editdelegate_change() { fold("pcrev_editdelegate",!$$("cbpcrev_editdelegate").checked,2); } $(pcrev_editdelegate_change)');
     echo '<tr class="fx2"><td></td><td>';
-    $sv->echo_checkbox("extrev_approve", "External reviews must be approved by their requesters");
+    $sv->echo_checkbox("extrev_approve", "Requesters must approve external reviews after they are submitted");
     echo '</tr></tbody></table>';
 
     echo "<div class='g'></div>\n";
@@ -157,25 +168,10 @@ function render(SettingValues $sv) {
     echo "<table id='foldmailbody_requestreview' class='",
         ($t == expandMailTemplate("requestreview", true) ? "foldc" : "foldo"),
         "'><tr><td>", foldbutton("mailbody_requestreview"), "</td>",
-        "<td><a href='#' onclick='return fold(\"mailbody_requestreview\")' class='q'><strong>Mail template for external review requests</strong></a>",
+        "<td><a href='#' onclick='return fold(\"mailbody_requestreview\")' class='q'>Mail template for external review requests</a>",
         " <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed; set to empty for default)<br /></span>
 <textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea>",
         "</td></tr></table>\n";
-
-
-    // Review visibility
-    echo "<h3 class=\"settings g\">Visibility</h3>\n";
-
-    echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
-    $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
-                                  Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
-                                  Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper"));
-
-    echo "<div class='g'></div>\n";
-    echo "Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
-    $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
-                                    1 => "Only after completing a review for the same paper<br /><span class='hint'>This setting also hides reviewer-only comments from PC members who have not completed a review for the same paper.</span>"));
 
     echo "<div class='g'></div>";
     echo "Can external reviewers see the other reviews for their assigned papers, once they’ve submitted their own?<br />\n";
