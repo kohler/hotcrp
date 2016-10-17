@@ -355,8 +355,7 @@ class Filer {
     function load(DocumentInfo $doc) {
         // Return true iff `$doc` can be loaded.
         if (!($has_content = self::has_content($doc))
-            && ($fsinfo = $this->_filestore($doc))
-            && is_readable($fsinfo[1])) {
+            && ($fsinfo = $this->_filestore($doc, true))) {
             $doc->filestore = $fsinfo[1];
             $has_content = true;
         }
@@ -374,7 +373,7 @@ class Filer {
             $sha1 = self::text_sha1($doc);
             if ($sha1 === false)
                 $sha1 = $doc->sha1 = sha1($doc->content);
-            $path = self::$tempdir . "/" . $sha1 . Mimetype::extension(self::_mimetype($doc));
+            $path = self::$tempdir . "/" . $sha1 . Mimetype::extension($doc->mimetype);
             if (file_put_contents($path, $doc->content) != strlen($doc->content)) {
                 set_error_html($doc, "Failed to save document to temporary file.");
                 return false;
@@ -472,8 +471,7 @@ class Filer {
 
     // filestore functions
     function filestore_check(DocumentInfo $doc) {
-        $fsinfo = $this->_filestore($doc);
-        return $fsinfo && is_readable($fsinfo[1]);
+        return !!$this->_filestore($doc, true);
     }
     static function prepare_filestore($parent, $path) {
         if (!self::_make_fpath_parents($parent, $path))
@@ -489,7 +487,7 @@ class Filer {
         return true;
     }
     function store_filestore(DocumentInfo $doc, $no_error = false) {
-        if (!($fsinfo = $this->_filestore($doc)))
+        if (!($fsinfo = $this->_filestore($doc, false)))
             return false;
         list($fsdir, $fspath) = $fsinfo;
         if (!self::prepare_filestore($fsdir, $fspath)) {
@@ -566,15 +564,14 @@ class Filer {
         }
 
         // Print paper
-        $doc_mimetype = self::_mimetype($doc);
-        header("Content-Type: " . Mimetype::type($doc_mimetype));
+        header("Content-Type: " . Mimetype::type($doc->mimetype));
         $attachment = null;
         if (is_bool($opts))
             $attachment = $opts;
         else if (is_array($opts) && isset($opts["attachment"]))
             $attachment = $opts["attachment"];
         if ($attachment === null)
-            $attachment = !Mimetype::disposition_inline($doc_mimetype);
+            $attachment = !Mimetype::disposition_inline($doc->mimetype);
         if (!$downloadname) {
             $downloadname = $doc->filename;
             if (($slash = strrpos($downloadname, "/")) !== false)
@@ -656,12 +653,7 @@ class Filer {
     }
 
     // private functions
-    private static function _mimetype($doc) {
-        if (!isset($doc->mimetype) && !isset($doc->mimetypeid))
-            error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
-    }
-    private function _filestore(DocumentInfo $doc) {
+    private function _filestore(DocumentInfo $doc, $for_reading) {
         if (!($fsinfo = $this->filestore_pattern($doc)))
             return $fsinfo;
         if (get($doc, "error"))
@@ -670,17 +662,19 @@ class Filer {
         list($fdir, $fpath) = $fsinfo;
         $sha1 = false;
 
-        $xfpath = $fdir;
-        $fpath = substr($fpath, strlen($fdir));
-        while (preg_match("/\\A(.*?)%(\d*)([%hx])(.*)\\z/", $fpath, $m)) {
-            $fpath = $m[4];
+        $fn = $fdir;
+        $fsuffix = substr($fpath, strlen($fdir));
+        $extension = null;
+        while (preg_match("/\\A(.*?)%(\d*)([%hx])(.*)\\z/", $fsuffix, $m)) {
+            $fsuffix = $m[4];
 
-            $xfpath .= $m[1];
+            $fn .= $m[1];
             if ($m[3] === "%")
-                $xfpath .= "%";
-            else if ($m[3] === "x")
-                $xfpath .= Mimetype::extension(self::_mimetype($doc));
-            else {
+                $fn .= "%";
+            else if ($m[3] === "x") {
+                $extension = Mimetype::extension($doc->mimetype);
+                $fn .= $extension;
+            } else {
                 if ($sha1 === false)
                     $sha1 = self::text_sha1($doc);
                 if ($sha1 === false
@@ -689,15 +683,23 @@ class Filer {
                 if ($sha1 === false)
                     return array(null, null);
                 if ($m[2] !== "")
-                    $xfpath .= substr($sha1, 0, +$m[2]);
+                    $fn .= substr($sha1, 0, +$m[2]);
                 else
-                    $xfpath .= $sha1;
+                    $fn .= $sha1;
             }
         }
+        $fn .= $fsuffix;
 
         if ($fdir && $fdir[strlen($fdir) - 1] === "/")
             $fdir = substr($fdir, 0, strlen($fdir) - 1);
-        return array($fdir, $xfpath . $fpath);
+        if ($for_reading && !is_readable($fn)) {
+            if (!$extension || $extension === ".pdf"
+                || !str_ends_with($fn, $extension)
+                || !is_readable(substr($fn, 0, -strlen($extension))))
+                return null;
+            $fn = substr($fn, 0, -strlen($extension));
+        }
+        return [$fdir, $fn];
     }
     private static function _make_fpath_parents($fdir, $fpath) {
         $lastslash = strrpos($fpath, "/");
