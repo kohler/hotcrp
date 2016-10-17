@@ -144,18 +144,26 @@ class S3Document {
     private function http_headers($filename, $method, $args) {
         list($content, $content_type, $user_data) =
             array(get($args, "content"), get($args, "content_type"), get($args, "user_data"));
-        $content_empty = (string) $content === "";
         $url = "https://$this->s3_bucket.s3.amazonaws.com/$filename";
         $hdr = array("method" => $method,
-                     "Date" => gmdate("D, d M Y H:i:s GMT", $this->fixed_time ? : time()));
-        if ($user_data)
-            foreach ($user_data as $key => $value) {
-                if (!get(self::$known_headers, strtolower($key)))
-                    $key = "x-amz-meta-$key";
+                     "Date" => gmdate("D, d M Y H:i:s", $this->fixed_time ? : time()) . " GMT");
+        $content = $content_type = null;
+        foreach ($args as $key => $value)
+            if ($key === "user_data") {
+                foreach ($value as $xkey => $xvalue) {
+                    if (!get(self::$known_headers, strtolower($xkey)))
+                        $xkey = "x-amz-meta-$xkey";
+                    $hdr[$xkey] = $xvalue;
+                }
+            } else if ($key === "content")
+                $content = $value;
+            else if ($key === "content_type")
+                $content_type = $value;
+            else
                 $hdr[$key] = $value;
-            }
         $sig = $this->signature($url, $hdr, $content);
         $hdr["header"] = $sig["header"] . "Connection: close\r\n";
+        $content_empty = (string) $content === "";
         if (!$content_empty && $content_type)
             $hdr["header"] .= "Content-Type: $content_type\r\n";
         $hdr["content"] = $content_empty ? "" : $content;
@@ -241,7 +249,7 @@ class S3Document {
     }
 
     function copy($src_filename, $dst_filename) {
-        $this->run($dst_filename, "PUT", ["x-amz-copy-source" => $src_filename]);
+        $this->run($dst_filename, "PUT", ["x-amz-copy-source" => "/" . $this->s3_bucket . "/" . $src_filename]);
         return $this->status == 200;
     }
 
