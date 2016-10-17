@@ -1825,7 +1825,7 @@ class AssignmentSet {
             if (($text = $assigner->unparse_display($this))) {
                 $c = $assigner->contact;
                 if ($c && !isset($c->sorter))
-                    Contact::set_sorter($c);
+                    Contact::set_sorter($c, $this->conf);
                 arrayappend($bypaper[$assigner->pid], (object)
                             array("text" => $text,
                                   "sorter" => $c ? $c->sorter : $text));

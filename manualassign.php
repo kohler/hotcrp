@@ -164,7 +164,7 @@ while (($row = edb_row($result)))
 $rev_opt = array();
 if ($reviewer <= 0)
     $rev_opt[0] = "(Select a PC member)";
-$textarg = array("lastFirst" => opt("sortByLastName"));
+$textarg = array("lastFirst" => $Conf->sort_by_last);
 foreach ($pcm as $pc)
     $rev_opt[$pc->contactId] = Text::name_html($pc, $textarg) . " ("
         . plural(defval($rev_count, $pc->contactId, 0), "assignment") . ")";

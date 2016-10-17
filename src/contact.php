@@ -148,7 +148,7 @@ class Contact {
                 if (($c = simplify_whitespace($c)) !== "")
                     $this->collaborators .= "$c\n";
         }
-        self::set_sorter($this);
+        self::set_sorter($this, $this->conf);
         if (isset($user->password))
             $this->password = (string) $user->password;
         if (isset($user->disabled))
@@ -195,7 +195,7 @@ class Contact {
         $this->contactDbId = (int) $this->contactDbId;
         if ($this->unaccentedName === "")
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
-        self::set_sorter($this);
+        self::set_sorter($this, $this->conf);
         $this->password = (string) $this->password;
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
@@ -232,13 +232,12 @@ class Contact {
         }
     }
 
-    static public function set_sorter($c) {
-        $sort_by_last = opt("sortByLastName");
-        if (!$sort_by_last && isset($c->unaccentedName)) {
+    static public function set_sorter($c, Conf $conf) {
+        if (!$conf->sort_by_last && isset($c->unaccentedName)) {
             $c->sorter = trim("$c->unaccentedName $c->email");
             return;
         }
-        if ($sort_by_last) {
+        if ($conf->sort_by_last) {
             if (($m = Text::analyze_von($c->lastName)))
                 $c->sorter = trim("$m[1] $c->firstName $m[0] $c->email");
             else
@@ -831,7 +830,7 @@ class Contact {
         if (isset($cj->phone))
             $this->_save_assign_field("voicePhoneNumber", $cj->phone, $cu);
         $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $cu);
-        self::set_sorter($this);
+        self::set_sorter($this, $this->conf);
 
         // Disabled
         $disabled = $this->disabled ? 1 : 0;

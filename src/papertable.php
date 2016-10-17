@@ -745,7 +745,7 @@ class PaperTable {
                     $aulist[$match]->email = $row->email;
                 $aulist[$match]->contactId = (int) $row->contactId;
             } else {
-                Contact::set_sorter($row);
+                Contact::set_sorter($row, $this->conf);
                 $contacts[] = $row;
             }
         }

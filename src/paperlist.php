@@ -617,7 +617,7 @@ class PaperList {
                 join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
                 where paperId?a", array_keys($pids));
             while (($row = edb_orow($result))) {
-                Contact::set_sorter($row);
+                Contact::set_sorter($row, $this->conf);
                 $this->review_list[$row->paperId][] = $row;
             }
             foreach ($this->review_list as &$revlist)

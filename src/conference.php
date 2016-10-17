@@ -38,6 +38,7 @@ class Conf {
     public $au_seerev;
     public $tag_au_seerev;
     public $tag_seeall;
+    public $sort_by_last;
     public $opt;
     public $opt_override = null;
     public $paper_opts;
@@ -57,7 +58,6 @@ class Conf {
     private $_decisions = null;
     private $_topic_separator_cache = null;
     private $_pc_members_cache = null;
-    private $_pc_members_cache_by_last = null;
     private $_pc_tags_cache = null;
     private $_review_form_cache = null;
     private $_date_format_initialized = false;
@@ -428,6 +428,10 @@ class Conf {
         $this->_format_info = null;
 
         // other caches
+        $sort_by_last = !!get($this->opt, "sortByLastName");
+        if (!$this->sort_by_last != !$sort_by_last)
+            $this->_pc_members_cache = null;
+        $this->sort_by_last = $sort_by_last;
         $this->_api_map = null;
     }
 
@@ -1053,9 +1057,7 @@ class Conf {
     }
 
     function pc_members() {
-        $by_last = opt("sortByLastName");
-        if ($this->_pc_members_cache === null
-            || $this->_pc_members_cache_by_last != opt("sortByLastName")) {
+        if ($this->_pc_members_cache === null) {
             $pc = array();
             $result = $this->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0");
             $by_name_text = array();
@@ -1075,6 +1077,7 @@ class Conf {
                             $this->_pc_tags_cache[strtolower($tag)] = $tag;
                     }
             }
+            Dbl::free($result);
             uasort($pc, "Contact::compare");
             $order = 0;
             foreach ($pc as $row) {
@@ -1082,7 +1085,6 @@ class Conf {
                 ++$order;
             }
             $this->_pc_members_cache = $pc;
-            $this->_pc_members_cache_by_last = $by_last;
             ksort($this->_pc_tags_cache);
         }
         return $this->_pc_members_cache;
@@ -2807,13 +2809,12 @@ class Conf {
     public function stash_hotcrp_pc(Contact $user) {
         if (!Ht::mark_stash("hotcrp_pc"))
             return;
-        $sortbylast = $this->opt("sortByLastName");
         $hpcj = $list = [];
         foreach ($this->pc_members() as $pcm) {
             $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_html_for($pcm), "email" => $pcm->email];
             if (($color_classes = $user->reviewer_color_classes_for($pcm)))
                 $j->color_classes = $color_classes;
-            if ($sortbylast && $pcm->lastName) {
+            if ($this->sort_by_last && $pcm->lastName) {
                 $r = Text::analyze_name($pcm);
                 if (strlen($r->lastName) !== strlen($r->name))
                     $j->lastpos = strlen(htmlspecialchars($r->firstName)) + 1;
@@ -2823,7 +2824,7 @@ class Conf {
             $list[] = $pcm->contactId;
         }
         $hpcj["__order__"] = $list;
-        if ($sortbylast)
+        if ($this->sort_by_last)
             $hpcj["__sort__"] = "last";
         Ht::stash_script("hotcrp_pc=" . json_encode($hpcj) . ";");
     }
