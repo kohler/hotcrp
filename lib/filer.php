@@ -653,27 +653,16 @@ class Filer {
     }
 
     // private functions
-    private function _filestore(DocumentInfo $doc, $for_reading) {
-        if (!($fsinfo = $this->filestore_pattern($doc)))
-            return $fsinfo;
-        if (get($doc, "error"))
-            return null;
-
-        list($fdir, $fpath) = $fsinfo;
+    private function _expand_filestore($pattern, DocumentInfo $doc, $extension) {
+        $x = "";
         $sha1 = false;
-
-        $fn = $fdir;
-        $fsuffix = substr($fpath, strlen($fdir));
-        $extension = null;
-        while (preg_match("/\\A(.*?)%(\d*)([%hx])(.*)\\z/", $fsuffix, $m)) {
-            $fsuffix = $m[4];
-
-            $fn .= $m[1];
+        while (preg_match('/\A(.*?)%(\d*)([%hx])(.*)\z/', $pattern, $m)) {
+            $x .= $m[1];
             if ($m[3] === "%")
-                $fn .= "%";
+                $x .= "%";
             else if ($m[3] === "x") {
-                $extension = Mimetype::extension($doc->mimetype);
-                $fn .= $extension;
+                if ($extension)
+                    $x .= Mimetype::extension($doc->mimetype);
             } else {
                 if ($sha1 === false)
                     $sha1 = self::text_sha1($doc);
@@ -681,25 +670,37 @@ class Filer {
                     && ($content = self::content($doc)) !== false)
                     $sha1 = $doc->sha1 = sha1($content);
                 if ($sha1 === false)
-                    return array(null, null);
+                    return false;
                 if ($m[2] !== "")
-                    $fn .= substr($sha1, 0, +$m[2]);
+                    $x .= substr($sha1, 0, intval($m[2]));
                 else
-                    $fn .= $sha1;
+                    $x .= $sha1;
             }
+            $pattern = $m[4];
         }
-        $fn .= $fsuffix;
-
+        return $x . $pattern;
+    }
+    private function _filestore(DocumentInfo $doc, $for_reading) {
+        if (!($fsinfo = $this->filestore_pattern($doc)))
+            return $fsinfo;
+        else if ($doc->error)
+            return null;
+        list($fdir, $fpath) = $fsinfo;
         if ($fdir && $fdir[strlen($fdir) - 1] === "/")
             $fdir = substr($fdir, 0, strlen($fdir) - 1);
-        if ($for_reading && !is_readable($fn)) {
-            if (!$extension || $extension === ".pdf"
-                || !str_ends_with($fn, $extension)
-                || !is_readable(substr($fn, 0, -strlen($extension))))
+        $pattern = substr($fpath, strlen($fdir));
+        if (!($f = $this->_expand_filestore))
+            return null;
+        if ($for_reading && !is_readable($fdir . $f)) {
+            // clean up presence of old files saved w/o extension
+            $g = $this->_expand_filestore($pattern, $doc, false);
+            if ($f && $g !== $f && is_readable($fdir . $g)) {
+                if (!@rename($fdir . $g, $fdir . $f))
+                    $f = $g;
+            } else
                 return null;
-            $fn = substr($fn, 0, -strlen($extension));
         }
-        return [$fdir, $fn];
+        return [$fdir, $fdir . $f];
     }
     private static function _make_fpath_parents($fdir, $fpath) {
         $lastslash = strrpos($fpath, "/");

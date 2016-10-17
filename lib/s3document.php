@@ -248,5 +248,4 @@ class S3Document {
         $this->run($suffix, "GET", array());
         return get($this->response_headers, "content");
     }
-
 }
