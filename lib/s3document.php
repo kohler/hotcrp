@@ -52,7 +52,7 @@ class S3Document {
             && $t + 432000 >= $time;
     }
 
-    public function scope_and_signing_key($time) {
+    function scope_and_signing_key($time) {
         if (!$this->check_scope($time)) {
             $s3_scope_date = gmdate("Ymd", $time);
             $this->s3_scope = $s3_scope_date . "/" . $this->s3_region
@@ -65,7 +65,7 @@ class S3Document {
         return array($this->s3_scope, $this->s3_signing_key);
     }
 
-    public function signature($url, $hdr, $content = null) {
+    function signature($url, $hdr, $content = null) {
         $verb = get($hdr, "method", "GET");
         $current_time = $this->fixed_time ? : time();
 
@@ -211,7 +211,7 @@ class S3Document {
         }
     }
 
-    public function save($filename, $content, $content_type, $user_data = null) {
+    function save($filename, $content, $content_type, $user_data = null) {
         $this->run($filename, "HEAD", array());
         if ($this->status != 200
             || get($this->response_headers, "content-length") != strlen($content))
@@ -221,7 +221,7 @@ class S3Document {
         return $this->status == 200;
     }
 
-    public function load($filename) {
+    function load($filename) {
         $this->run($filename, "GET", array());
         if ($this->status == 404 || $this->status == 500)
             return null;
@@ -230,17 +230,22 @@ class S3Document {
         return get($this->response_headers, "content");
     }
 
-    public function check($filename) {
+    function check($filename) {
         $this->run($filename, "HEAD", array());
         return $this->status == 200;
     }
 
-    public function delete($filename) {
+    function delete($filename) {
         $this->run($filename, "DELETE", array());
         return $this->status == 204;
     }
 
-    public function ls($prefix, $args = array()) {
+    function copy($src_filename, $dst_filename) {
+        $this->run($dst_filename, "PUT", ["x-amz-copy-source" => $src_filename]);
+        return $this->status == 200;
+    }
+
+    function ls($prefix, $args = array()) {
         $suffix = "?prefix=" . urlencode($prefix);
         foreach (array("marker", "max-keys") as $k)
             if (isset($args[$k]))

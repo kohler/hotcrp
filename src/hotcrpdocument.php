@@ -202,6 +202,18 @@ class HotCRPDocument extends Filer {
         return $ok;
     }
 
+    private function s3_upgrade_extension(S3Document $s3, DocumentInfo $doc) {
+        $extension = Mimetype::extension($doc->mimetype);
+        if ($extension === ".pdf" || $extension === "")
+            return null;
+        $filename = self::s3_filename($doc);
+        $src_filename = substr($filename, 0, -strlen($extension));
+        if ($s3->copy($src_filename, $filename))
+            return $s3->load($filename);
+        else
+            return null;
+    }
+
     function load_content(DocumentInfo $doc) {
         $ok = false;
         $doc->content = "";
@@ -212,8 +224,10 @@ class HotCRPDocument extends Filer {
 
         if (!$ok && ($s3 = $this->conf->s3_docstore())
             && ($filename = self::s3_filename($doc))) {
-            $filename = self::s3_filename($doc);
             $content = $s3->load($filename);
+            if ($s3->status == 404)
+                // maybe it’s in S3 under a different extension
+                $content = $this->s3_upgrade_extension($s3, $doc);
             if ($content !== "" && $content !== null) {
                 $doc->content = $content;
                 $ok = true;
