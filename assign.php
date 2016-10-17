@@ -36,7 +36,7 @@ function loadRows() {
         errorMsgExit(whyNotText($whyNot, "view", true));
     if (($whyNot = $Me->perm_request_review($prow, false))) {
         $wnt = whyNotText($whyNot, "request reviews for");
-        error_go(hoturl("paper", array("p" => $prow->paperId, "ls" => @$_REQUEST["ls"])), $wnt);
+        error_go(hoturl("paper", array("p" => $prow->paperId, "ls" => req("ls"))), $wnt);
     }
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
 }
@@ -127,7 +127,7 @@ function handle_set_round() {
     global $Conf, $Me, $prow, $rrows;
 
     // check permissions
-    if (!@$_REQUEST["r"] || !($rr = rrow_by_reviewid($_REQUEST["r"])))
+    if (!req("r") || !($rr = rrow_by_reviewid($_REQUEST["r"])))
         $Conf->ajaxExit(array("ok" => false, "error" => "No such review."));
     if (!$Me->can_administer($prow))
         $Conf->ajaxExit(array("ok" => false, "error" => "Permission denied."));
@@ -156,7 +156,7 @@ function pcAssignments() {
 
     $qv = [$prow->paperId, $prow->paperId];
     $where = array("ContactInfo.roles!=0", "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0");
-    if (@$_REQUEST["reviewer"] && isset($pcm[$_REQUEST["reviewer"]])) {
+    if (req("reviewer") && isset($pcm[$_REQUEST["reviewer"]])) {
         $where[] = "ContactInfo.contactId=?";
         $qv[] = $_REQUEST["reviewer"];
     }
@@ -245,7 +245,7 @@ function requestReviewChecks($themHtml, $reqId) {
 function requestReview($email) {
     global $Conf, $Me, $Error, $prow;
 
-    $Them = Contact::create($Conf, ["name" => @$_REQUEST["name"], "email" => $email]);
+    $Them = Contact::create($Conf, ["name" => req("name"), "email" => $email]);
     if (!$Them) {
         if (trim($email) === "" || !validate_email($email)) {
             Conf::msg_error("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
@@ -449,9 +449,9 @@ if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
 
 // add primary or secondary reviewer
 if (isset($_REQUEST["addpc"]) && $Me->allow_administer($prow) && check_post()) {
-    if (($pcid = cvtint(@$_REQUEST["pcid"])) <= 0)
+    if (($pcid = cvtint(req("pcid"))) <= 0)
         Conf::msg_error("Enter a PC member.");
-    else if (($pctype = cvtint(@$_REQUEST["pctype"])) == REVIEW_PRIMARY
+    else if (($pctype = cvtint(req("pctype"))) == REVIEW_PRIMARY
              || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
         $Me->assign_review($prow->paperId, $pcid, $pctype);
         $Conf->update_rev_tokens_setting(false);
@@ -637,7 +637,7 @@ if (strpos($reqbody["body"], "%REASON%") !== false) {
     echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
   <div class='f-e'>",
-        Ht::textarea("reason", @$_REQUEST["reason"],
+        Ht::textarea("reason", req("reason"),
                 array("class" => "papertext", "rows" => 2, "cols" => 60, "tabindex" => 1, "spellcheck" => "true")),
         "</div><hr class=\"c\" /></div>\n\n";
 }
