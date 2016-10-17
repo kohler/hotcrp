@@ -77,7 +77,7 @@ class Mimetype {
         while (1) {
             $result = Dbl::qe("select * from Mimetype where mimetype=?", $type);
             $m = $result ? $result->fetch_object("Mimetype") : null;
-            Dbl::free($m);
+            Dbl::free($result);
             if ($m || $nocreate)
                 break;
             if ($extension === false)
