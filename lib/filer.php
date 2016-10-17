@@ -689,7 +689,7 @@ class Filer {
         if ($fdir && $fdir[strlen($fdir) - 1] === "/")
             $fdir = substr($fdir, 0, strlen($fdir) - 1);
         $pattern = substr($fpath, strlen($fdir));
-        if (!($f = $this->_expand_filestore))
+        if (!($f = $this->_expand_filestore($pattern, $doc, true)))
             return null;
         if ($for_reading && !is_readable($fdir . $f)) {
             // clean up presence of old files saved w/o extension
