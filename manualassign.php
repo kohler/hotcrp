@@ -48,7 +48,7 @@ if (is_array($qreq->p) && $qreq->kind == "c") {
             $qreq->assrev[$p] = -1;
 }
 
-$qreq->rev_roundtag = (string) $Conf->sanitize_round_name($qreq->rev_roundtag);
+$qreq->rev_round = (string) $Conf->sanitize_round_name($qreq->rev_round);
 
 
 $pcm = pcMembers();
@@ -86,7 +86,7 @@ function saveAssignments($qreq, $reviewer) {
         if ($qreq->kind == "a" && $type != $row->reviewerReviewType
             && ($type <= 0 || $reviewer_contact->can_accept_review_assignment_ignore_conflict($row))) {
             if ($type > 0 && $round_number === null)
-                $round_number = $Conf->round_number($qreq->rev_roundtag, true);
+                $round_number = $Conf->round_number($qreq->rev_round, true);
             $Me->assign_review($row->paperId, $reviewer, $type,
                                array("round_number" => $round_number));
         }
@@ -293,7 +293,7 @@ if ($reviewer > 0) {
         Ht::hidden("p", ""),
         Ht::hidden("pcs$reviewer", ""),
         Ht::hidden("reviewer", $reviewer),
-        Ht::hidden("rev_roundtag", $qreq->rev_roundtag),
+        Ht::hidden("rev_round", $qreq->rev_round),
         "</div></form>\n\n";
 
     // main assignment form
@@ -323,9 +323,9 @@ if ($reviewer > 0) {
         $rev_rounds = $Conf->round_selector_options();
         if (count($rev_rounds) > 1)
             echo '<span style="padding-left:2em">Review round: &nbsp;',
-                Ht::select("rev_roundtag", $rev_rounds, $qreq->rev_roundtag ? : "unnamed", array("id" => "assrevroundtag")),
+                Ht::select("rev_round", $rev_rounds, $qreq->rev_round ? : "unnamed", array("id" => "assrevround")),
                 '</span>';
-        else if (!@$rev_rounds["unnamed"])
+        else if (!get($rev_rounds, "unnamed"))
             echo '<span style="padding-left:2em">Review round: ', $Conf->current_round_name(), '</span>';
     }
     echo "<span style='padding-left:2em'>",

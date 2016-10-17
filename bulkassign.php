@@ -16,13 +16,13 @@ $null_mailer = new HotCRPMailer(null, null, array("requester_contact" => $Me,
                                                   "width" => false));
 $Error = array();
 
-$_GET["rev_roundtag"] = $_POST["rev_roundtag"] = $_REQUEST["rev_roundtag"] =
-    (string) $Conf->sanitize_round_name(req("rev_roundtag"));
+$_GET["rev_round"] = $_POST["rev_round"] = $_REQUEST["rev_round"] =
+    (string) $Conf->sanitize_round_name(req("rev_round"));
 
 
 function assignment_defaults() {
     $defaults = array("action" => req("default_action"),
-                      "round" => $_REQUEST["rev_roundtag"]);
+                      "round" => $_REQUEST["rev_round"]);
     if (req("requestreview_notify") && req("requestreview_body"))
         $defaults["extrev_notify"] = ["subject" => req("requestreview_subject"),
                                       "body" => req("requestreview_body")];
@@ -155,7 +155,7 @@ if (isset($_GET["upload"]) && check_post()
                 Ht::submit("Apply changes"),
                 ' &nbsp;', Ht::submit("cancel", "Cancel"),
                 Ht::hidden("default_action", $defaults["action"]),
-                Ht::hidden("rev_roundtag", $defaults["round"]),
+                Ht::hidden("rev_round", $defaults["round"]),
                 Ht::hidden("file", $text),
                 Ht::hidden("assignment_size_estimate", $csv_lineno),
                 Ht::hidden("filename", $filename),
@@ -206,7 +206,7 @@ echo '<div id="foldoptions" class="lg foldc fold2o">',
 $rev_rounds = $Conf->round_selector_options();
 if (count($rev_rounds) > 1)
     echo '<span class="fx2">&nbsp; in round &nbsp;',
-        Ht::select("rev_roundtag", $rev_rounds, $_REQUEST["rev_roundtag"] ? : "unnamed"),
+        Ht::select("rev_round", $rev_rounds, $_REQUEST["rev_round"] ? : "unnamed"),
         '</span>';
 else if (!get($rev_rounds, "unnamed"))
     echo '<span class="fx2">&nbsp; in round ', $Conf->current_round_name(), '</span>';

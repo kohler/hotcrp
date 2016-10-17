@@ -739,7 +739,7 @@ The automatic and bulk assignment pages also let you set a review round.</p>");
     // get current tag settings
     if ($Me->isPC) {
         $texts = array();
-        if (($rr = $Conf->setting_data("rev_roundtag"))) {
+        if (($rr = $Conf->current_round_name())) {
             $texts[] = "The current review round is “<a href=\""
                 . hoturl("search", "q=round%3A" . urlencode($rr))
                 . "\">" . htmlspecialchars($rr) . "</a>”";

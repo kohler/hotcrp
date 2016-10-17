@@ -151,7 +151,7 @@ function pcAssignments() {
     global $Conf, $Me, $prow;
     $pcm = pcMembers();
 
-    $rname = (string) $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"]);
+    $rname = (string) $Conf->sanitize_round_name(req("rev_round"));
     $round_number = null;
 
     $qv = [$prow->paperId, $prow->paperId];
@@ -519,15 +519,15 @@ if ($Me->can_administer($prow)) {
         "<h3 style=\"margin-top:0\">PC review assignments</h3>",
         '<p>';
 
-    $rev_roundtag = (string) $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"]);
+    $rev_round = (string) $Conf->sanitize_round_name(req("rev_round"));
     $rev_rounds = $Conf->round_selector_options();
     $x = array();
     if (count($rev_rounds) > 1)
         $x[] = 'Review round:&nbsp; '
-            . Ht::select("rev_roundtag", $rev_rounds, $rev_roundtag ? : "unnamed");
-    else if (!@$rev_rounds["unnamed"])
-        $x[] = 'Review round: ' . $rev_roundtag
-            . Ht::hidden("rev_roundtag", $rev_roundtag);
+            . Ht::select("rev_round", $rev_rounds, $rev_round ? : "unnamed");
+    else if (!get($rev_rounds, "unnamed"))
+        $x[] = 'Review round: ' . $rev_round
+            . Ht::hidden("rev_round", $rev_round);
     if ($Conf->has_topics())
         $x[] = "Review preferences display as “P#”, topic scores as “T#”.";
     else

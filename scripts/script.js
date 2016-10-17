@@ -3732,7 +3732,7 @@ function add_assrev_ajax(selector) {
         if (form && $("#assrevimmediate")[0].checked) {
             var reviewer = form.reviewer.value;
             form.p.value = this.name.substr(6);
-            form.rev_roundtag.value = $("#assrevroundtag").val() || "";
+            form.rev_round.value = $("#assrevround").val() || "";
             form["pcs" + reviewer].value = this.value;
             Miniajax.submit("assrevform", function (rv) {
                 setajaxcheck(that, rv);
