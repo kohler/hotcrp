@@ -55,12 +55,12 @@ class Mimetype {
         if (is_object($type))
             return $type;
         if (empty(self::$tmap))
-            foreach (self::$tinfo as $type => $data) {
+            foreach (self::$tinfo as $xtype => $data) {
                 $m = new Mimetype;
                 $m->mimetypeid = $data[0];
-                $m->mimetype = $type;
+                $m->mimetype = $xtype;
                 $m->inline = ($data[1] & self::F_INLINE) != 0;
-                self::$tmap[$type] = self::$tmap[$data[0]] = $m;
+                self::$tmap[$xtype] = self::$tmap[$data[0]] = $m;
                 for ($i = 2; $i < count($data); ++$i)
                     if ($data[$i][0] == ".") {
                         if (!$m->extension)
@@ -120,10 +120,8 @@ class Mimetype {
     }
 
     static function extension($type) {
-        if (($x = self::lookup($type)) && $x->extension)
-            return $x->extension;
-        else
-            return "";
+        $x = self::lookup($type);
+        return $x && $x->extension ? $x->extension : "";
     }
 
     static function description($type) {
