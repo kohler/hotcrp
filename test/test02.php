@@ -320,11 +320,9 @@ xassert_eqq($ms->x("%xOOB%x friend", 10, 11), "aOOBb friend");
 
 // MIME types
 xassert_eqq(Mimetype::content_type("%PDF-3.0\nwhatever\n"), Mimetype::PDF_TYPE);
-if (file_exists("/etc/mime.types") || file_exists("/etc/apache2/mime.types")) {
-    // test that we can parse /etc/mime.types for file extensions
-    xassert_eqq(Mimetype::mime_types_extension("application/pdf"), ".pdf");
-    xassert_eqq(Mimetype::mime_types_extension("image/gif"), ".gif");
-}
+// test that we can parse lib/mime.types for file extensions
+xassert_eqq(Mimetype::mime_types_extension("application/pdf"), ".pdf");
+xassert_eqq(Mimetype::mime_types_extension("image/gif"), ".gif");
 // `fileinfo` test
 xassert_eqq(Mimetype::content_type("<html><head></head><body></body></html>"), "text/html");
 

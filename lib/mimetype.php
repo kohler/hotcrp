@@ -93,13 +93,10 @@ class Mimetype {
     }
 
     static function mime_types_extension($type) {
+        global $ConfSitePATH;
         if (self::$mime_types === null) {
             self::$mime_types = [];
-            $x = false;
-            if (is_readable("/etc/mime.types"))
-                $x = @file_get_contents("/etc/mime.types");
-            else if (is_readable("/etc/apache2/mime.types"))
-                $x = @file_get_contents("/etc/apache2/mime.types");
+            $x = @file_get_contents("$ConfSitePATH/lib/mime.types");
             preg_match_all('{^([-a-z0-9]+/\S+)[ \t]+(\S+)[ \t]*(.*?)[ \t]*$}m', (string) $x, $m, PREG_SET_ORDER);
             foreach ($m as $info)
                 self::$mime_types[$info[1]] = "." . $info[2];
