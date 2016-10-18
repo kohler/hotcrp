@@ -207,32 +207,37 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     $notes = array();
     if ($action == "final") {
         if ($prow->$submitkey === null || $prow->$submitkey <= 0)
-            $notes[] = "The final version has not yet been submitted.";
+            $notes[] = $Conf->_("The final version has not yet been submitted.");
         $deadline = $Conf->printableTimeSetting("final_soft", "span");
-        if ($deadline != "N/A" && $Conf->deadlinesAfter("final_soft"))
-            $notes[] = "<strong>The deadline for submitting final versions was $deadline.</strong>";
-        else if ($deadline != "N/A")
-            $notes[] = "You have until $deadline to make further changes.";
+        if ($deadline != "N/A" && $Conf->deadlinesAfter("final_soft")) {
+            $x = $Conf->_("The deadline for submitting final versions was %s.", $deadline);
+            if ($x != "")
+                $notes[] = "<strong>$x</strong>";
+        } else if ($deadline != "N/A")
+            $notes[] = $Conf->_("You have until %s to make further changes.", $deadline);
     } else {
         if (get($pj, "submitted"))
-            $notes[] = "You will receive email when reviews are available.";
+            $notes[] = $Conf->_("You will receive email when reviews are available.");
         else if ($prow->size == 0 && !opt("noPapers"))
-            $notes[] = "The submission has not yet been uploaded.";
+            $notes[] = $Conf->_("The submission has not yet been uploaded.");
         else if ($Conf->setting("sub_freeze") > 0)
-            $notes[] = "The submission has not yet been completed.";
+            $notes[] = $Conf->_("The submission has not yet been completed.");
         else
-            $notes[] = "The submission is marked as not ready for review.";
+            $notes[] = $Conf->_("The submission is marked as not ready for review.");
         $deadline = $Conf->printableTimeSetting("sub_update", "span");
         if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
-            $notes[] = "Further updates are allowed until $deadline.";
+            $notes[] = $Conf->_("Further updates are allowed until %s.", $deadline);
         $deadline = $Conf->printableTimeSetting("sub_sub", "span");
-        if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
-            $notes[] = "<strong>If the submission "
-                . ($Conf->setting("sub_freeze") > 0 ? "is not completed"
-                   : "is not ready for review")
-                . " by $deadline, it will not be considered.</strong>";
+        if ($deadline != "N/A" && $prow->timeSubmitted <= 0) {
+            if ($Conf->setting("sub_freeze") > 0)
+                $x = $Conf->_("If the submission is not completed by %s, it will not be considered.", $deadline);
+            else
+                $x = $Conf->_("If the submission is not ready for review by %s, it will not be considered.", $deadline);
+            if ($x != "")
+                $notes[] = "<strong>$x</strong>";
+        }
     }
-    $notes = join(" ", $notes);
+    $notes = join(" ", array_filter($notes, function ($n) { return $n !== ""; }));
 
     $webnotes = "";
     if (count($ps->messages()))

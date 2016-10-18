@@ -16,13 +16,13 @@ $null_mailer = new HotCRPMailer(null, null, array("requester_contact" => $Me,
                                                   "width" => false));
 $Error = array();
 
-$_GET["rev_roundtag"] = $_POST["rev_roundtag"] = $_REQUEST["rev_roundtag"] =
-    (string) $Conf->sanitize_round_name(req("rev_roundtag"));
+$_GET["rev_round"] = $_POST["rev_round"] = $_REQUEST["rev_round"] =
+    (string) $Conf->sanitize_round_name(req("rev_round"));
 
 
 function assignment_defaults() {
     $defaults = array("action" => req("default_action"),
-                      "round" => $_REQUEST["rev_roundtag"]);
+                      "round" => $_REQUEST["rev_round"]);
     if (req("requestreview_notify") && req("requestreview_body"))
         $defaults["extrev_notify"] = ["subject" => req("requestreview_subject"),
                                       "body" => req("requestreview_body")];
@@ -133,7 +133,7 @@ if (isset($_GET["upload"]) && check_post()
         $text = convert_to_utf8($text);
         $assignset->parse($text, $filename, $defaults, "keep_browser_alive");
         finish_browser_alive();
-        if ($assignset->has_errors())
+        if ($assignset->has_error())
             $assignset->report_errors();
         else if ($assignset->is_empty())
             $Conf->warnMsg("That assignment file makes no changes.");
@@ -155,7 +155,7 @@ if (isset($_GET["upload"]) && check_post()
                 Ht::submit("Apply changes"),
                 ' &nbsp;', Ht::submit("cancel", "Cancel"),
                 Ht::hidden("default_action", $defaults["action"]),
-                Ht::hidden("rev_roundtag", $defaults["round"]),
+                Ht::hidden("rev_round", $defaults["round"]),
                 Ht::hidden("file", $text),
                 Ht::hidden("assignment_size_estimate", $csv_lineno),
                 Ht::hidden("filename", $filename),
@@ -189,7 +189,7 @@ echo '<div class="f-contain"><div class="f-i"><div class="f-e">',
 echo '<div class="g"><strong>OR</strong> &nbsp;',
     '<input type="file" name="bulk" accept="text/plain,text/csv" size="30" /></div>';
 
-echo '<div id="foldoptions" class="lg foldc fold2o">',
+echo '<div id="foldoptions" class="lg foldc fold2o fold3c">',
     'By default, assign&nbsp; ',
     Ht::select("default_action", array("primary" => "primary reviews",
                                        "secondary" => "secondary reviews",
@@ -206,10 +206,10 @@ echo '<div id="foldoptions" class="lg foldc fold2o">',
 $rev_rounds = $Conf->round_selector_options();
 if (count($rev_rounds) > 1)
     echo '<span class="fx2">&nbsp; in round &nbsp;',
-        Ht::select("rev_roundtag", $rev_rounds, $_REQUEST["rev_roundtag"] ? : "unnamed"),
+        Ht::select("rev_round", $rev_rounds, $_REQUEST["rev_round"] ? : "unnamed"),
         '</span>';
 else if (!get($rev_rounds, "unnamed"))
-    echo '<span class="fx2">&nbsp; in round ', $Conf->current_round_name(), '</span>';
+    echo '<span class="fx2">&nbsp; in round ', $Conf->assignment_round_name(false), '</span>';
 echo '<div class="g"></div>', "\n";
 
 $requestreview_template = $null_mailer->expand_template("requestreview");
@@ -225,7 +225,7 @@ echo "<table class='fx'><tr><td>",
     Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true", "class" => "need-autogrow")),
     "</td></tr></table>\n";
 
-echo '<div class="g"></div><div class="aa">', Ht::submit("Prepare assignments"),
+echo '<div class="lg"></div>', Ht::submit("Prepare assignments", ["class" => "btn btn-default"]),
     " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
 
 echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "t=manager&q=&get=pcassignments&p=all"), '">Download current PC assignments</a></div>';

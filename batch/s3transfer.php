@@ -28,19 +28,18 @@ foreach ($sids as $sid) {
     if ($active !== false && !isset($active[$sid]))
         continue;
     $result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
-        compression, sha1, documentType, filename, infoJson,
-        paper is null as paper_null
+        compression, sha1, documentType, filename, infoJson, paper
         from PaperStorage where paperStorageId=$sid");
     $doc = DocumentInfo::fetch($result, $Conf);
     Dbl::free($result);
-    if ($doc->paper_null && !$doc->docclass->filestore_check($doc))
+    if ($doc->content === null && !$doc->docclass->filestore_check($doc))
         continue;
     $saved = $checked = $doc->docclass->s3_check($doc);
     if (!$saved)
-        $saved = $doc->docclass->s3_store($doc, $doc);
+        $saved = $doc->docclass->s3_store($doc);
     if (!$saved) {
         sleep(0.5);
-        $saved = $doc->docclass->s3_store($doc, $doc);
+        $saved = $doc->docclass->s3_store($doc);
     }
     $front = "[" . $Conf->unparse_time_log($doc->timestamp) . "] "
         . HotCRPDocument::filename($doc) . " ($sid)";

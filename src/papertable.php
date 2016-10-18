@@ -403,11 +403,11 @@ class PaperTable {
                 if (($stamps = self::pdf_stamps_html($doc)))
                     $stamps = "<span class='sep'></span>" . $stamps;
                 if ($dtype == DTYPE_FINAL)
-                    $dname = "Final version";
+                    $dname = $this->conf->_c("paper_pdf_name", "Final version");
                 else if ($prow->timeSubmitted > 0)
-                    $dname = "Submission";
+                    $dname = $this->conf->_c("paper_pdf_name", "Submission");
                 else
-                    $dname = "Current version";
+                    $dname = $this->conf->_c("paper_pdf_name", "Draft submission");
                 $pdfs[] = $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps;
             }
 
@@ -718,9 +718,7 @@ class PaperTable {
         $aulist = $this->prow->author_list();
 
         // find contact author information, combine with author table
-        $result = $this->conf->qe_raw("select firstName, lastName, email, '' as affiliation, contactId
-                from ContactInfo join PaperConflict using (contactId)
-                where paperId=" . $this->prow->paperId . " and conflictType>=" . CONFLICT_AUTHOR);
+        $result = $this->conf->qe("select firstName, lastName, '' affiliation, email, contactId from ContactInfo where contactId?a", array_keys($this->prow->contacts()));
         $contacts = array();
         while (($row = edb_orow($result))) {
             $match = -1;
@@ -747,7 +745,7 @@ class PaperTable {
                     $aulist[$match]->email = $row->email;
                 $aulist[$match]->contactId = (int) $row->contactId;
             } else {
-                Contact::set_sorter($row);
+                Contact::set_sorter($row, $this->conf);
                 $contacts[] = $row;
             }
         }
@@ -1593,11 +1591,13 @@ class PaperTable {
     }
 
     private function _edit_message_new_paper() {
+        global $Now;
         $startDeadline = $this->deadlineSettingIs("sub_reg");
         $msg = "";
         if (!$this->conf->timeStartPaper()) {
-            if ($this->conf->setting("sub_open") <= 0)
-                $msg = "The conference site has not been opened for submissions." . $this->_override_message();
+            $sub_open = $this->conf->setting("sub_open");
+            if ($sub_open <= 0 || $sub_open > $Now)
+                $msg = "The conference site is not open for submissions." . $this->_override_message();
             else
                 $msg = 'The <a href="' . hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $startDeadline . $this->_override_message();
             if (!$this->admin) {
@@ -2403,8 +2403,10 @@ class PaperTable {
         if (!($prow = $Conf->paperRow($sel, $Me, $whyNot)))
             return null;
         $rrow = null;
-        if (isset($sel["reviewId"]))
+        if (isset($sel["reviewId"])) {
+            $sel["paperId"] = $prow->paperId;
             $rrow = $Conf->reviewRow($sel);
+        }
         if (($whyNot = $Me->perm_view_paper($prow))
             || (!isset($_REQUEST["paperId"])
                 && !$Me->can_view_review($prow, $rrow, null)

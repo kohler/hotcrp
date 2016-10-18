@@ -72,7 +72,7 @@ class PaperContactInfo {
                 join ContactInfo
                 left join PaperReview on (PaperReview.paperId=$pid and PaperReview.contactId=ContactInfo.contactId)
                 left join PaperConflict on (PaperConflict.paperId=$pid and PaperConflict.contactId=ContactInfo.contactId)
-                where (roles&" . Contact::ROLE_PC . ")!=0");
+                where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0");
         } else {
             $cids = [$cid];
             if ($cid) {
@@ -687,10 +687,21 @@ class PaperInfo {
     private function _add_documents($dids) {
         if ($this->_document_array === null)
             $this->_document_array = [];
-        $result = $this->conf->qe("select paperStorageId, $this->paperId paperId, timestamp, mimetype, mimetypeid, sha1, documentType, filename, infoJson, size, filterType, originalStorageId from PaperStorage where paperStorageId ?a", $dids);
-        while (($di = DocumentInfo::fetch($result, $this->conf, $this)))
+        $result = $this->conf->qe("select paperStorageId, paperId, timestamp, mimetype, mimetypeid, sha1, documentType, filename, infoJson, size, filterType, originalStorageId from PaperStorage where paperId=? and paperStorageId?a", $this->paperId, $dids);
+        $loaded_dids = [];
+        while (($di = DocumentInfo::fetch($result, $this->conf, $this))) {
             $this->_document_array[$di->paperStorageId] = $di;
+            $loaded_dids[] = $di->paperStorageId;
+        }
         Dbl::free($result);
+        // rarely might refer to a doc owned by a different paper
+        if (count($loaded_dids) != count($dids)
+            && ($dids = array_diff($dids, $loaded_dids))) {
+            $result = $this->conf->qe("select paperStorageId, paperId, timestamp, mimetype, mimetypeid, sha1, documentType, filename, infoJson, size, filterType, originalStorageId from PaperStorage where paperStorageId?a", $dids);
+            while (($di = DocumentInfo::fetch($result, $this->conf, $this)))
+                $this->_document_array[$di->paperStorageId] = $di;
+            Dbl::free($result);
+        }
     }
 
     public function document($dtype, $did = 0, $full = false) {

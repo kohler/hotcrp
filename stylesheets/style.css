@@ -2605,8 +2605,8 @@ body#offline .revcard {
 	color: #eadeb7;
 }
 .cmtadminvis, .cmtcolor {
-	margin: 0 -5px;
-	padding: 2px 5px;
+	margin: -2px -5px;
+	padding: 4px 5px;
 }
 .cmtauvis .cmtnumhead {
 	background: #e6e1cf;

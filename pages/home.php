@@ -339,7 +339,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
 	group_concat(overAllMerit) scores
 	from ContactInfo
 	left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
-        where (roles&" . Contact::ROLE_PC . ")!=0
+        where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0
 	group by ContactInfo.contactId");
         while (($row = edb_row($result))) {
             ++$npc;
@@ -379,7 +379,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         $missing_rounds = explode(",", $myrow->unsubmitted_rounds);
         sort($missing_rounds, SORT_NUMERIC);
         foreach ($missing_rounds as $round) {
-            if (($rname = $Conf->round_name($round, false)))
+            if (($rname = $Conf->round_name($round)))
                 $rname .= " ";
             if ($Conf->time_review($round, $Me->isPC, false)) {
                 $dn = $Conf->review_deadline($round, $Me->isPC, false);
@@ -431,7 +431,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         $sep = $xsep;
     }
     if ($Me->is_requester()) {
-        echo $sep, '<a href="', hoturl("mail", "monreq=1"), '">Monitor external reviews</a>';
+        echo $sep, '<a href="', hoturl("mail", "monreq=1"), '">Monitor requested reviews</a>';
         $sep = $xsep;
     }
     if ($Conf->setting("rev_tokens")) {

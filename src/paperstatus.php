@@ -112,7 +112,7 @@ class PaperStatus {
         $this->no_msgs = !get($args, "msgs");
 
         $this->prow = $prow;
-        $this->paperid = $prow->paperId;
+        $this->paperId = $prow->paperId;
 
         $pj = (object) array();
         $pj->pid = (int) $prow->paperId;
@@ -291,7 +291,7 @@ class PaperStatus {
     public function set_document_prow($prow) {
         // XXX this is butt ugly
         $this->prow = $prow;
-        $this->paperid = $prow->paperId ? : -1;
+        $this->paperId = $prow->paperId ? : -1;
     }
 
     public function upload_document($docj, PaperOption $o) {
@@ -308,8 +308,8 @@ class PaperStatus {
             $oldj = $this->document_to_json($o->id, $docid);
             if (get($docj, "sha1") && get($oldj, "sha1") !== Filer::text_sha1($docj->sha1))
                 $docid = null;
-        } else if ($this->paperid != -1 && get($docj, "sha1")) {
-            $oldj = Dbl::fetch_first_object($this->conf->dblink, "select paperStorageId, sha1, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperid, $o->id, Filer::binary_sha1($docj->sha1));
+        } else if ($this->paperId != -1 && get($docj, "sha1")) {
+            $oldj = Dbl::fetch_first_object($this->conf->dblink, "select paperStorageId, sha1, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $o->id, Filer::binary_sha1($docj->sha1));
             if ($oldj)
                 $docid = $oldj->paperStorageId;
         }
@@ -325,11 +325,11 @@ class PaperStatus {
         // check filter
         if (get($docj, "filter") && is_int($docj->filter)) {
             if (is_int(get($docj, "original_id")))
-                $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperStorageId=?", $docj->original_id);
+                $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $docj->original_id);
             else if (is_string(get($docj, "original_sha1")))
-                $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $this->paperid, Filer::binary_sha1($docj->original_sha1));
+                $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $this->paperId, Filer::binary_sha1($docj->original_sha1));
             else if ($o->id == DTYPE_SUBMISSION || $o->id == DTYPE_FINAL)
-                $result = $this->conf->qe("select PaperStorage.paperStorageId, PaperStorage.timestamp, PaperStorage.sha1 from PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper." . ($o->id == DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId") . "=PaperStorage.paperStorageId) where Paper.paperId=?", $this->paperid);
+                $result = $this->conf->qe("select PaperStorage.paperStorageId, PaperStorage.timestamp, PaperStorage.sha1 from PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper." . ($o->id == DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId") . "=PaperStorage.paperStorageId) where Paper.paperId=?", $this->paperId);
             else
                 $result = null;
             if (($row = edb_orow($result))) {
@@ -345,9 +345,9 @@ class PaperStatus {
 
         // if no sha1 match, upload
         $docclass = $this->conf->docclass($o->id);
+        $docj->paperId = $this->paperId;
         $newdoc = new DocumentInfo($docj);
-        if ($docclass->upload($newdoc, (object) ["paperId" => $this->paperid])
-            && $newdoc->paperStorageId > 1) {
+        if ($docclass->upload($newdoc) && $newdoc->paperStorageId > 1) {
             foreach (array("size", "sha1", "mimetype", "timestamp") as $k)
                 $docj->$k = $newdoc->$k;
             $this->uploaded_documents[] = $docj->docid = $newdoc->paperStorageId;
@@ -833,7 +833,7 @@ class PaperStatus {
         }
 
         $this->prow = $old_pj = null;
-        $this->paperid = $paperid ? : -1;
+        $this->paperId = $paperid ? : -1;
         if ($paperid)
             $this->prow = $this->conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true], $this->contact);
         if ($this->prow)

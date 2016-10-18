@@ -332,9 +332,10 @@ class Ht {
     }
 
     static function pre_text_wrap($text) {
-        if (is_array($text))
+        if (is_array($text) && !is_associative_array($text)
+            && array_reduce($text, function ($x, $s) { return $x && is_string($s); }, true))
             $text = join("\n", $text);
-        else if (is_object($text))
+        else if (is_array($text) || is_object($text))
             $text = var_export($text, true);
         return "<pre style=\"white-space:pre-wrap\">" . htmlspecialchars($text) . "</pre>";
     }

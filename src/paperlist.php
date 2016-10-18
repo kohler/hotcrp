@@ -31,7 +31,7 @@ class PaperListReviewAnalysis {
             $this->row = $row;
             $this->needsSubmit = !get($row, "reviewSubmitted");
             if ($row->reviewRound)
-                $this->round = htmlspecialchars($conf->round_name($row->reviewRound, true));
+                $this->round = htmlspecialchars($conf->round_name($row->reviewRound));
         }
     }
     public function icon_html($includeLink) {
@@ -113,6 +113,7 @@ class PaperList {
     private $listNumber;
     private $_paper_link_page;
     private $_paper_link_mode;
+    private $_allow_duplicates;
     private $viewmap;
     private $atab;
     private $_row_id_pattern = null;
@@ -157,6 +158,7 @@ class PaperList {
             $this->_paper_link_page = "paper";
             $this->_paper_link_mode = "edit";
         }
+        $this->_allow_duplicates = false;
         $this->listNumber = 0;
         if (get($args, "list"))
             $this->listNumber = SessionList::allocate($search->listId($this->sortdef()));
@@ -182,7 +184,7 @@ class PaperList {
             || $this->contact->is_reviewer()
             || $this->conf->timeAuthorViewReviews();
 
-        $this->qopts = array("scores" => [], "options" => true);
+        $this->qopts = ["scores" => [], "options" => true];
         if ($this->search->complexSearch($this->qopts))
             $this->qopts["paperId"] = $this->search->paperList();
         // NB that actually processed the search, setting PaperSearch::viewmap
@@ -310,22 +312,21 @@ class PaperList {
 
     function _paperLink($row) {
         $pt = $this->_paper_link_page ? : "paper";
-        $pl = "p=" . $row->paperId;
-        $doreview = isset($row->reviewId) && isset($row->reviewFirstName);
-        if (!$doreview && $pt === "review")
+        if ($pt === "finishreview")
+            $pt = $row->reviewNeedsSubmit ? "review" : "paper";
+        if ($pt === "review" && !isset($row->reviewId))
             $pt = "paper";
+        $pl = "p=" . $row->paperId;
         if ($pt === "paper" && $this->_paper_link_mode)
             $pl .= "&amp;m=" . $this->_paper_link_mode;
-        else if ($doreview) {
-            $rord = unparseReviewOrdinal($row);
-            if ($pt == "paper" && $row->reviewSubmitted > 0)
-                $pl .= "#r" . $rord;
-            else {
-                $pl .= "&amp;r=" . $rord;
-                if ($row->reviewSubmitted > 0)
-                    $pl .= "&amp;m=r";
-            }
-        }
+        else if ($pt === "review" && isset($row->reviewId)) {
+            $pl .= "&amp;r=" . unparseReviewOrdinal($row);
+            if ($row->reviewSubmitted > 0)
+                $pl .= "&amp;m=r";
+        } else if ($pt === "paper" && isset($row->reviewId)
+                   && $row->reviewSubmitted > 0
+                   && $row->reviewContactId != $this->contact->contactId)
+            $pl .= "#r" . unparseReviewOrdinal($row);
         return hoturl($pt, $pl);
     }
 
@@ -480,6 +481,8 @@ class PaperList {
     private function _default_linkto($page) {
         if (!$this->_paper_link_page)
             $this->_paper_link_page = $page;
+        if ($page === "review" || $page === "finishreview")
+            $this->_allow_duplicates = true;
     }
 
     private function _list_columns($listname) {
@@ -495,12 +498,13 @@ class PaperList {
         case "act":
             return "sel id title statusfull revtype authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "reviewerHome":
-            $this->_default_linkto("review");
+            $this->_default_linkto("finishreview");
             return "id title revtype status";
         case "r":
         case "lead":
         case "manager":
-            $this->_default_linkto("review");
+            if ($listname == "r")
+                $this->_default_linkto("finishreview");
             return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "rout":
             $this->_default_linkto("review");
@@ -545,7 +549,7 @@ class PaperList {
                 }
             } else if ($fid == "formulas") {
                 if ($this->scoresOk) {
-                    foreach (FormulaPaperColumn::all_column_names($this->contact) as $name)
+                    foreach (Formula_PaperColumn::all_column_names($this->contact) as $name)
                         $nf[] = $this->find_column($name);
                 }
             } else if ($fid == "tagreports") {
@@ -590,14 +594,15 @@ class PaperList {
         $this->qopts["scores"] = array_keys($this->qopts["scores"]);
         if (empty($this->qopts["scores"]))
             unset($this->qopts["scores"]);
-        $result = $this->conf->paper_result($this->contact, $this->qopts);
+        $result = $this->contact->paper_result($this->qopts);
         if (!$result)
             return null;
         $rows = $pids = array();
-        while (($row = PaperInfo::fetch($result, $this->contact))) {
-            $rows[] = $row;
-            $pids[$row->paperId] = true;
-        }
+        while (($row = PaperInfo::fetch($result, $this->contact)))
+            if ($this->_allow_duplicates || !isset($pids[$row->paperId])) {
+                $rows[] = $row;
+                $pids[$row->paperId] = true;
+            }
         Dbl::free($result);
 
         // prepare review query (see also search > getfn == "reviewers")
@@ -612,7 +617,7 @@ class PaperList {
                 join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
                 where paperId?a", array_keys($pids));
             while (($row = edb_orow($result))) {
-                Contact::set_sorter($row);
+                Contact::set_sorter($row, $this->conf);
                 $this->review_list[$row->paperId][] = $row;
             }
             foreach ($this->review_list as &$revlist)
@@ -1046,9 +1051,10 @@ class PaperList {
             }
         foreach ($viewmap_add as $k => $v)
             $this->viewmap[$k] = $v;
-        foreach ($field_list as $fi => $f)
+        foreach ($field_list as $fi => &$f)
             if ($this->viewmap[$f->name] === "edit")
-                $field_list[$fi] = $f->make_editable();
+                $f = $f->make_editable();
+        unset($f);
 
         // remove deselected columns;
         // in compactcolumns view, remove non-minimal columns

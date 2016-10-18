@@ -20,15 +20,18 @@ function render(SettingValues $sv) {
         $sv->set_oldv("sub_reg", $sub_reg);
     $sv->echo_entry_row("sub_reg", "Registration deadline");
     $sv->echo_entry_row("sub_sub", "Submission deadline");
-    $sv->echo_entry_row("sub_grace", 'Grace period');
+    $sv->echo_entry_row("sub_grace", "Grace period");
     echo "</table>\n";
 
     $sv->echo_radio_table("sub_freeze", array(0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"));
 
 
-    echo "<div class='g'></div><table>\n";
-    $sv->echo_checkbox_row('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>");
-    echo "</table>";
+    echo "<div class=\"g\"></div><table id=\"foldpc_seeall\" class=\"foldo\"><tbody>\n";
+    $sv->echo_checkbox_row("pc_seeall", "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>", "fold('pc_seeall',!this.checked)");
+    echo "</tbody><tbody class=\"fx\">\n";
+    $sv->echo_checkbox_row("pc_seeallpdf", "PC can see submitted PDFs before submission deadline");
+    echo "</tbody></table>\n";
+    Ht::stash_script("fold('pc_seeall',!$('#cbpc_seeall').is(':checked'))");
 }
     function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("sub_open")

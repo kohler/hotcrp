@@ -53,8 +53,8 @@ class Dbl {
     static public $nerrors = 0;
     static public $default_dblink;
     static private $error_handler = "Dbl::default_error_handler";
-    static private $log_queries = false;
-    static private $log_queries_limit = 0;
+    static private $query_log = false;
+    static private $query_log_key = false;
     static public $check_warnings = true;
     static public $landmark_sanitizer = "/^Dbl::/";
 
@@ -163,15 +163,16 @@ class Dbl {
         else if (($flags & self::F_APPLY) && isset($args[$argpos + 1])
                  && !is_array($args[$argpos + 1]))
             trigger_error(self::landmark() . ": argument is not array");
-        if ($log_location && self::$log_queries !== false) {
-            $location = self::landmark();
-            if (!isset(self::$log_queries[$location]))
-                self::$log_queries[$location] = array(substr(simplify_whitespace($args[$argpos]), 0, 80), 0);
-            ++self::$log_queries[$location][1];
-        }
         $q = $args[$argpos];
         if (($flags & self::F_MULTI) && is_array($q))
             $q = join(";", $q);
+        if ($log_location && self::$query_log !== false) {
+            self::$query_log_key = $qx = simplify_whitespace($q);
+            if (isset(self::$query_log[$qx]))
+                ++self::$query_log[$qx][1];
+            else
+                self::$query_log[$qx] = [0, 1, self::landmark()];
+        }
         if (count($args) === $argpos + 1)
             return array($dblink, $q, array());
         else if ($flags & self::F_APPLY)
@@ -230,7 +231,7 @@ class Dbl {
                         unset($y);
                         break;
                     }
-                if (count($arg) === 0) {
+                if (empty($arg)) {
                     // We want `foo IN ()` and `foo NOT IN ()`.
                     // That is, we want `false` and `true`. We compromise. The
                     // statement `foo=NULL` is always NULL -- which is falsy
@@ -246,6 +247,41 @@ class Dbl {
             } else if ($nextch === "s") {
                 $arg = $dblink->real_escape_string($arg);
                 ++$nextpos;
+            } else if ($nextch === "l") {
+                $arg = sqlq_for_like($arg);
+                ++$nextpos;
+                if (substr($qstr, $nextpos + 1, 1) === "s")
+                    ++$nextpos;
+                else
+                    $arg = "'" . $arg . "'";
+            } else if ($nextch === "v") {
+                ++$nextpos;
+                if (!is_array($arg) || empty($arg)) {
+                    trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " should be nonempty array");
+                    $arg = "NULL";
+                } else {
+                    $alln = -1;
+                    $vs = [];
+                    foreach ($arg as $x) {
+                        if (!is_array($x))
+                            $x = [$x];
+                        $n = count($x);
+                        if ($alln === -1)
+                            $alln = $n;
+                        if ($alln !== $n && $alln !== -2) {
+                            trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " has components of different lengths");
+                            $alln = -2;
+                        }
+                        foreach ($x as &$y)
+                            if ($y === null)
+                                $y = "NULL";
+                            else if (!is_int($y) && !is_float($y))
+                                $y = "'" . $dblink->real_escape_string($y) . "'";
+                        unset($y);
+                        $vs[] = "(" . join(",", $x) . ")";
+                    }
+                    $arg = join(", ", $vs);
+                }
             } else {
                 if ($arg === null)
                     $arg = "NULL";
@@ -270,15 +306,25 @@ class Dbl {
         return self::format_query_args($dblink, $qstr, $argv);
     }
 
+    static private function call_query($dblink, $qfunc, $qstr) {
+        if (self::$query_log_key) {
+            $time = microtime(true);
+            $result = $dblink->$qfunc($qstr);
+            self::$query_log[self::$query_log_key][0] += microtime(true) - $time;
+            self::$query_log_key = false;
+        } else
+            $result = $dblink->$qfunc($qstr);
+        return $result;
+    }
+
     static private function do_query_with($dblink, $qstr, $argv, $flags) {
         if (!($flags & self::F_RAW))
             $qstr = self::format_query_args($dblink, $qstr, $argv);
-        if ($qstr)
-            return self::do_result($dblink, $flags, $qstr, $dblink->query($qstr));
-        else {
+        if (!$qstr) {
             error_log(self::landmark() . ": empty query");
             return false;
         }
+        return self::do_result($dblink, $flags, $qstr, self::call_query($dblink, "query", $qstr));
     }
 
     static private function do_query($args, $flags) {
@@ -315,7 +361,7 @@ class Dbl {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         if (!($flags & self::F_RAW))
             $qstr = self::format_query_args($dblink, $qstr, $argv);
-        return new Dbl_MultiResult($dblink, $flags, $qstr, $dblink->multi_query($qstr));
+        return new Dbl_MultiResult($dblink, $flags, $qstr, self::call_query($dblink, "multi_query", $qstr));
     }
 
     static function query(/* [$dblink,] $qstr, ... */) {
@@ -507,32 +553,31 @@ class Dbl {
     }
 
     static function log_queries($limit) {
+        if (is_float($limit))
+            $limit = $limit >= 1 || ($limit > 0 && mt_rand() < $limit * mt_getrandmax());
         if (!$limit)
-            self::$log_queries = false;
-        else if (self::$log_queries === false) {
+            self::$query_log = false;
+        else if (self::$query_log === false) {
             register_shutdown_function("Dbl::shutdown");
-            self::$log_queries = array();
-            self::$log_queries_limit = $limit;
+            self::$query_log = array();
         }
     }
 
     static function shutdown() {
-        if (self::$log_queries) {
-            uasort(self::$log_queries, function ($a, $b) {
-                return $a[1] - $b[1];
+        if (self::$query_log) {
+            uasort(self::$query_log, function ($a, $b) {
+                return $b[0] < $a[0] ? -1 : $b[0] > $a[0];
             });
-            $msg = true;
-            foreach (self::$log_queries as $where => $what) {
-                if (self::$log_queries_limit > $what[1])
-                    break;
-                if ($msg) {
-                    error_log("Query log for " . Navigation::self());
-                    $msg = false;
-                }
-                error_log("  $where: #$what[1]: $what[0]");
+            $self = Navigation::self();
+            $i = 1;
+            $n = count(self::$query_log);
+            foreach (self::$query_log as $where => $what) {
+                $a = [$what[0], $what[1], $what[2], $where];
+                error_log("query_log: $self #$i/$n: " . json_encode($a));
+                ++$i;
             }
         }
-        self::$log_queries = false;
+        self::$query_log = false;
     }
 
     static function utf8(/* [$dblink,] $qstr */) {

@@ -1216,9 +1216,7 @@ class ScorePaperColumn extends PaperColumn {
     public function __construct(ReviewField $form_field = null) {
         $score = $form_field ? $form_field->id : null;
         parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
-                            array("comparator" => "score_compare"));
-        $this->minimal = true;
-        $this->className = "pl_score";
+                            ["minimal" => true, "className" => "pl_score", "comparator" => "score_compare"]);
         $this->score = $score;
         $this->form_field = $form_field;
     }
@@ -1250,8 +1248,8 @@ class ScorePaperColumn extends PaperColumn {
         $this->xreviewer = $pl->prepare_xreviewer($rows);
     }
     public function sort_prepare($pl, &$rows, $sorter) {
-        $this->_sortinfo = $sortinfo = "_score_sort_info." . $this->score . $sorter->score;
-        $this->_avginfo = $avginfo = "_score_sort_avg." . $this->score;
+        $this->_sortinfo = $sortinfo = "_score_sortinfo." . $this->score . $sorter->score;
+        $this->_avginfo = $avginfo = "_score_avginfo." . $this->score;
         $reviewer = $pl->reviewer_cid();
         $field = $this->form_field;
         foreach ($rows as $row)
@@ -1259,23 +1257,16 @@ class ScorePaperColumn extends PaperColumn {
                 $scoreinfo = new ScoreInfo($scores);
                 $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
                 $row->$avginfo = $scoreinfo->mean();
-            } else {
-                $row->$sortinfo = ScoreInfo::empty_sort_data($sorter->score);
-                $row->$avginfo = -1;
-            }
-        $this->_textual_sort = ScoreInfo::sort_by_strcmp($sorter->score);
+            } else
+                $row->$sortinfo = $row->$avginfo = null;
     }
     public function score_compare($a, $b) {
         $sortinfo = $this->_sortinfo;
-        if ($this->_textual_sort)
-            $x = strcmp($b->$sortinfo, $a->$sortinfo);
-        else
-            $x = $b->$sortinfo - $a->$sortinfo;
-        if (!$x) {
+        if (!($x = ScoreInfo::compare($b->$sortinfo, $a->$sortinfo))) {
             $avginfo = $this->_avginfo;
-            $x = $b->$avginfo - $a->$avginfo;
+            $x = ScoreInfo::compare($b->$avginfo, $a->$avginfo);
         }
-        return $x < 0 ? -1 : ($x == 0 ? 0 : 1);
+        return $x;
     }
     public function header($pl, $ordinal) {
         return $this->form_field->web_abbreviation();
@@ -1299,18 +1290,132 @@ class ScorePaperColumn extends PaperColumn {
             $wrap_conflict = true;
             $scores = $row->viewable_scores($this->form_field, $pl->contact, true);
         }
-        if ($scores) {
-            $my_score = null;
-            if (!$this->xreviewer)
-                $my_score = get($scores, $pl->reviewer_cid());
-            else if (isset($row->_xreviewer))
-                $my_score = get($scores, $row->_xreviewer->reviewContactId);
-            $t = $this->form_field->unparse_graph($scores, 1, $my_score);
-            if ($pl->table_type && $rowidx % 16 == 15)
-                $t .= "<script>scorechart()</script>";
-            return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
+        if (!$scores)
+            return "";
+        $my_score = null;
+        if (!$this->xreviewer)
+            $my_score = get($scores, $pl->reviewer_cid());
+        else if (isset($row->_xreviewer))
+            $my_score = get($scores, $row->_xreviewer->reviewContactId);
+        $t = $this->form_field->unparse_graph($scores, 1, $my_score);
+        if ($pl->table_type && $rowidx % 16 == 15)
+            $t .= "<script>scorechart()</script>";
+        return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
+    }
+}
+
+class FormulaGraph_PaperColumn extends PaperColumn {
+    public $formula;
+    private $indexes_function;
+    private $formula_function;
+    private $results;
+    private $any_real;
+    private $_sortinfo;
+    private $_avginfo;
+    private $xreviewer;
+    static private $nregistered;
+    function __construct($name, Formula $formula = null) {
+        parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
+                            ["minimal" => true, "className" => "pl_score", "comparator" => "score_compare"]);
+        $this->formula = $formula;
+    }
+    function make_column(Contact $user, $name, $errors) {
+        if (str_starts_with($name, "g("))
+            $name = substr($name, 1);
+        else if (str_starts_with($name, "graph("))
+            $name = substr($name, 5);
+        else
+            return null;
+        $formula = new Formula($user, $name, true);
+        if (!$formula->check()) {
+            self::make_column_error($errors, $formula->error_html(), 1);
+            return null;
+        } else if (!($formula->result_format() instanceof ReviewField)) {
+            self::make_column_error($errors, "Graphed formulas must return review fields.", 1);
+            return null;
         }
-        return "";
+        ++self::$nregistered;
+        return new FormulaGraph_PaperColumn("scorex" . self::$nregistered, $formula);
+    }
+    function completion_name() {
+        return "graph(<formula>)";
+    }
+    function prepare(PaperList $pl, $visible) {
+        if (!$this->formula && $visible === PaperColumn::PREP_COMPLETION)
+            return true;
+        if (!$pl->scoresOk
+            || !$this->formula->check($pl->contact)
+            || !($pl->search->limitName == "a"
+                 ? $pl->contact->can_view_formula_as_author($this->formula)
+                 : $pl->contact->can_view_formula($this->formula)))
+            return false;
+        $this->formula_function = $this->formula->compile_sortable_function();
+        $this->indexes_function = null;
+        if ($this->formula->is_indexed())
+            $this->indexes_function = Formula::compile_indexes_function($pl->contact, $this->formula->datatypes());
+        if ($visible)
+            $this->formula->add_query_options($pl->qopts);
+        return true;
+    }
+    function analyze($pl, &$rows) {
+        $this->xreviewer = $pl->prepare_xreviewer($rows);
+    }
+    private function scores($pl, PaperInfo $row, $forceShow) {
+        $indexesf = $this->indexes_function;
+        $indexes = $indexesf ? $indexesf($row, $pl->contact, $forceShow) : [null];
+        $formulaf = $this->formula_function;
+        $vs = [];
+        foreach ($indexes as $i)
+            if (($v = $formulaf($row, $i, $pl->contact, $forceShow)) !== null)
+                $vs[$i] = $v;
+        return $vs;
+    }
+    function sort_prepare($pl, &$rows, $sorter) {
+        $this->_sortinfo = $sortinfo = "_formulagraph_sortinfo." . $this->name;
+        $this->_avginfo = $avginfo = "_formulagraph_avginfo." . $this->name;
+        $reviewer = $pl->reviewer_cid();
+        foreach ($rows as $row)
+            if (($scores = $this->scores($pl, $row, false))) {
+                $scoreinfo = new ScoreInfo($scores);
+                $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
+                $row->$avginfo = $scoreinfo->mean();
+            } else
+                $row->$sortinfo = $row->$avginfo = null;
+    }
+    function score_compare($a, $b) {
+        $sortinfo = $this->_sortinfo;
+        if (!($x = ScoreInfo::compare($b->$sortinfo, $a->$sortinfo))) {
+            $avginfo = $this->_avginfo;
+            $x = ScoreInfo::compare($b->$avginfo, $a->$avginfo);
+        }
+        return $x;
+    }
+    function header($pl, $ordinal) {
+        $x = $this->formula->column_header();
+        if ($this->formula->headingTitle
+            && $this->formula->headingTitle != $x)
+            return "<span class=\"need-tooltip\" data-tooltip=\"" . htmlspecialchars($this->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
+        else
+            return htmlspecialchars($x);
+    }
+    function content($pl, $row, $rowidx) {
+        $values = $this->scores($pl, $row, false);
+        $wrap_conflict = false;
+        if (empty($values) && $row->conflictType > 0 && $pl->contact->allow_administer($row)) {
+            $values = $this->scores($pl, $row, true);
+            $wrap_conflict = true;
+        }
+        if (empty($values))
+            return "";
+        $my_score = null;
+        if (!$this->xreviewer)
+            $my_score = get($values, $pl->reviewer_cid());
+        else if (isset($row->_xreviewer))
+            $my_score = get($values, $row->_xreviewer->reviewContactId);
+        $t = $this->formula->result_format()->unparse_graph($values, 1, $my_score);
+        if ($pl->table_type && $rowidx % 16 == 15)
+            $t .= "<script>scorechart()</script>";
+        return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
     }
 }
 
@@ -1400,14 +1505,14 @@ class Option_PaperColumn extends PaperColumn {
     }
 }
 
-class FormulaPaperColumn extends PaperColumn {
+class Formula_PaperColumn extends PaperColumn {
     public $formula;
     private $formula_function;
     public $statistics;
     private $results;
     private $any_real;
     static private $nregistered;
-    public function __construct($name, $formula) {
+    public function __construct($name, Formula $formula = null) {
         parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("minimal" => true, "comparator" => "formula_compare"));
         $this->className = "pl_formula";
@@ -1421,7 +1526,7 @@ class FormulaPaperColumn extends PaperColumn {
         $starts_with_formula = str_starts_with($name, "formula");
         foreach ($dfm as $f)
             if (strcasecmp($f->name, $name) == 0 || ($starts_with_formula && $name === "formula{$f->formulaId}"))
-                return new FormulaPaperColumn("formula{$f->formulaId}", $f);
+                return new Formula_PaperColumn("formula{$f->formulaId}", $f);
         if (substr($name, 0, 4) === "edit")
             return null;
         $formula = new Formula($user, $name);
@@ -1431,7 +1536,7 @@ class FormulaPaperColumn extends PaperColumn {
             return null;
         }
         ++self::$nregistered;
-        return new FormulaPaperColumn("formulax" . self::$nregistered, $formula);
+        return new Formula_PaperColumn("formulax" . self::$nregistered, $formula);
     }
     public function completion_name() {
         if ($this->formula && $this->formula->name) {
@@ -1462,10 +1567,10 @@ class FormulaPaperColumn extends PaperColumn {
         return $f;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
-        $formulaf = $this->formula_function;
+        $formulaf = $this->formula->compile_sortable_function();
         $this->formula_sorter = $sorter = "_formula_sort_info." . $this->formula->name;
         foreach ($rows as $row)
-            $row->$sorter = $formulaf($row, null, $pl->contact, Formula::SORTABLE);
+            $row->$sorter = $formulaf($row, null, $pl->contact);
     }
     public function formula_compare($a, $b) {
         $sorter = $this->formula_sorter;
@@ -1492,7 +1597,7 @@ class FormulaPaperColumn extends PaperColumn {
         foreach ($rows as $row) {
             $s = $this->results[$row->paperId] = $formulaf($row, null, $pl->contact);
             if ($row->conflictType > 0 && $pl->contact->allow_administer($row))
-                $s = $formulaf($row, null, $pl->contact, null, true);
+                $s = $formulaf($row, null, $pl->contact, true);
             if ($isreal && !$this->any_real && is_float($s)
                 && round($s * 100) % 100 != 0)
                 $this->any_real = true;
@@ -1509,7 +1614,7 @@ class FormulaPaperColumn extends PaperColumn {
         $formulaf = $this->formula_function;
         $t = $this->unparse($this->results[$row->paperId]);
         if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
-            $ss = $formulaf($row, null, $pl->contact, null, true);
+            $ss = $formulaf($row, null, $pl->contact, true);
             $tt = $this->unparse($ss);
             if ($tt !== $t) {
                 $this->statistics->add($ss);
@@ -1771,7 +1876,8 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, null));
     PaperColumn::register_factory("pref:", new PreferencePaperColumn(null, false));
     PaperColumn::register_factory("tagrep:", new TagReportPaperColumn(null));
-    PaperColumn::register_factory("", new FormulaPaperColumn("", null));
+    PaperColumn::register_factory("", new Formula_PaperColumn("", null));
+    PaperColumn::register_factory("g", new FormulaGraph_PaperColumn("", null));
     PaperColumn::register_factory("", new Option_PaperColumn(null));
     PaperColumn::register_factory("", new ScorePaperColumn(null));
 }

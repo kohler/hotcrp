@@ -62,16 +62,19 @@ class DocumentInfo implements JsonSerializable {
         if ($this->error_html)
             $this->error = true;
 
-        // set sha1 if content is available
-        if ($this->content && $this->sha1 == "")
-            $this->sha1 = sha1($this->content, true);
-        // set sha1 in database if needed (backwards compat)
-        if ($this->paperStorageId > 1
-            && $this->sha1 == ""
+        // set sha1
+        if ($this->sha1 == "" && $this->paperStorageId > 1
             && $this->docclass->load_content($this)) {
+            // store sha1 in database if needed (backwards compat)
             $this->sha1 = sha1($this->content, true);
-            $this->conf->q("update PaperStorage set sha1=? where paperStorageId=?", $this->sha1, $this->paperStorageId);
-        }
+            $this->conf->q("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", $this->sha1, $this->paperId, $this->paperStorageId);
+            // we might also need to update the joindoc
+            if ($this->documentType == DTYPE_SUBMISSION)
+                $this->conf->q("update Paper set sha1=? where paperId=? and paperStorageId=? and finalPaperStorageId<=0", $this->sha1, $this->paperId, $this->paperStorageId);
+            else if ($this->documentType == DTYPE_FINAL)
+                $this->conf->q("update Paper set sha1=? where paperId=? and finalPaperStorageId=?", $this->sha1, $this->paperStorageId);
+        } else if ($this->sha1 == "" && $this->content)
+            $this->sha1 = sha1($this->content, true);
     }
 
     static public function fetch($result, Conf $conf = null, PaperInfo $prow = null) {
@@ -102,10 +105,7 @@ class DocumentInfo implements JsonSerializable {
             $args["content"] = $content;
         if (get($upload, "type"))
             $args["mimetype"] = Mimetype::type(get($upload, "type"));
-        if (!isset($args["mimetype"])
-            || Mimetype::is_sniffable($args["mimetype"])
-            || Mimetype::is_sniff_type_reliable($content))
-            $args["mimetype"] = Mimetype::sniff_type($content) ? : "application/octet-stream";
+        $args["mimetype"] = Mimetype::content_type($content, get($args, "mimetype"));
         return new DocumentInfo($args);
     }
 
@@ -146,7 +146,7 @@ class DocumentInfo implements JsonSerializable {
         }
         if (!$this->docclass)
             $this->docclass = $this->conf->docclass($this->documentType);
-        return $this->docclass->upload($this, (object) ["paperId" => $this->paperId]);
+        return $this->docclass->upload($this);
     }
 
     public function url($filters = null, $rest = null) {
@@ -217,7 +217,7 @@ class DocumentInfo implements JsonSerializable {
 
     function metadata() {
         if ($this->is_partial && !isset($this->infoJson) && !isset($this->infoJson_str)) {
-            $this->infoJson_str = Dbl::fetch_value($this->conf->dblink, "select infoJson from PaperStorage where paperStorageId=?", $this->paperStorageId) ? : "";
+            $this->infoJson_str = Dbl::fetch_value($this->conf->dblink, "select infoJson from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId) ? : "";
             $this->infoJson = json_decode($this->infoJson_str);
         }
         return $this->infoJson;
@@ -228,14 +228,14 @@ class DocumentInfo implements JsonSerializable {
             return false;
         $length_ok = true;
         $this->infoJson_str = Dbl::compare_and_swap($this->conf->dblink,
-            "select infoJson from PaperStorage where paperStorageId=?", [$this->paperStorageId],
+            "select infoJson from PaperStorage where paperId=? and paperStorageId=?", [$this->paperId, $this->paperStorageId],
             function ($old) use ($delta, &$length_ok) {
                 $j = json_object_replace($old ? json_decode($old) : null, $delta, true);
                 $new = $j ? json_encode($j) : null;
                 $length_ok = $new === null || strlen($new) <= 32768;
                 return $length_ok ? $new : $old;
             },
-            "update PaperStorage set infoJson=?{desired} where paperStorageId=? and infoJson?{expected}e", [$this->paperStorageId]);
+            "update PaperStorage set infoJson=?{desired} where paperId=? and paperStorageId=? and infoJson?{expected}e", [$this->paperId, $this->paperStorageId]);
         $this->infoJson = is_string($this->infoJson_str) ? json_decode($this->infoJson_str) : null;
         if (!$length_ok && !$quiet)
             error_log(caller_landmark() . ": {$this->conf->dbname}: update_metadata(paper $this->paperId, dt $this->documentType): delta too long, delta " . json_encode($delta));

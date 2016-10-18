@@ -103,9 +103,9 @@ else {
 }
 $SSel->sort_selection();
 
-// rev_roundtag
-if (($x = $Conf->sanitize_round_name($Qreq->rev_roundtag)) !== false)
-    $Qreq->rev_roundtag = $x;
+// rev_round
+if (($x = $Conf->sanitize_round_name($Qreq->rev_round)) !== false)
+    $Qreq->rev_round = $x;
 
 // score selector
 $scoreselector = array("+overAllMerit" => "", "-overAllMerit" => "");
@@ -194,9 +194,9 @@ class AutoassignerInterface {
         }
         $this->reviewtype = $r;
 
-        if ($this->atype_review && $Qreq->rev_roundtag !== ""
-            && ($err = Conf::round_name_error($Qreq->rev_roundtag))) {
-            $Error["rev_roundtag"] = true;
+        if ($this->atype_review && $Qreq->rev_round !== ""
+            && ($err = Conf::round_name_error($Qreq->rev_round))) {
+            $Error["rev_round"] = true;
             return Conf::msg_error($err);
         }
 
@@ -293,7 +293,7 @@ class AutoassignerInterface {
             Ht::submit("submit", "Apply changes"), "\n&nbsp;",
             Ht::submit("download", "Download assignment file"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
-        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_roundtag", "method", "haspap") as $t)
+        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_round", "method", "haspap") as $t)
             if (isset($Qreq[$t]))
                 echo Ht::hidden($t, $Qreq[$t]);
         echo Ht::hidden("pcs", join(" ", array_keys($pcsel))),
@@ -372,13 +372,13 @@ class AutoassignerInterface {
         else if ($this->atype === "lead" || $this->atype === "shepherd")
             $autoassigner->run_paperpc($this->atype, $Qreq["{$this->atype}score"]);
         else if ($this->atype === "revpc")
-            $autoassigner->run_reviews_per_pc($this->reviewtype, $Qreq->rev_roundtag,
+            $autoassigner->run_reviews_per_pc($this->reviewtype, $Qreq->rev_round,
                                               cvtint($Qreq->revpcct));
         else if ($this->atype === "revadd")
-            $autoassigner->run_more_reviews($this->reviewtype, $Qreq->rev_roundtag,
+            $autoassigner->run_more_reviews($this->reviewtype, $Qreq->rev_round,
                                             cvtint($Qreq->revaddct));
         else if ($this->atype === "rev")
-            $autoassigner->run_ensure_reviews($this->reviewtype, $Qreq->rev_roundtag,
+            $autoassigner->run_ensure_reviews($this->reviewtype, $Qreq->rev_round,
                                               cvtint($Qreq->revct));
         else if ($this->atype === "discorder")
             $autoassigner->run_discussion_order($this->discordertag);
@@ -519,16 +519,16 @@ echo "&nbsp; review(s) from this paper selection</div>\n";
 // Review round
 $rev_rounds = $Conf->round_selector_options();
 if (count($rev_rounds) > 1) {
-    echo divClass("rev_roundtag"),
-        '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_roundtag" disabled="disabled" />&nbsp;',
+    echo divClass("rev_round"),
+        '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_round" disabled="disabled" />&nbsp;',
         '<span style="font-size:smaller">Review round:&nbsp; ',
-        Ht::select("rev_roundtag", $rev_rounds, $Qreq->rev_roundtag ? : "unnamed"),
+        Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed"),
         '</span></div>';
 } else if (!get($rev_rounds, "unnamed"))
-    echo divClass("rev_roundtag"), Ht::hidden("rev_roundtag", $Conf->current_round_name()),
-        '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_roundtag" disabled="disabled" />&nbsp;',
+    echo divClass("rev_round"), Ht::hidden("rev_round", $Conf->assignment_round_name(false)),
+        '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_round" disabled="disabled" />&nbsp;',
         '<span style="font-size:smaller">Review round: ',
-        ($Qreq->rev_roundtag ? : "unnamed"), '</span></div>';
+        ($Qreq->rev_round ? : "unnamed"), '</span></div>';
 echo "<div class='g'></div>\n";
 
 echo divClass("prefconflict", "hotradiorelation");

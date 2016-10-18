@@ -157,7 +157,7 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
         return;
     var f = options.success;
     function onerror(jqxhr, status, errormsg) {
-        f({ok: false, error: jqxhr_error_message(jqxhr, status, errormsg)}, jqxhr, status);
+        f && f({ok: false, error: jqxhr_error_message(jqxhr, status, errormsg)}, jqxhr, status);
     }
     if (!options.error)
         options.error = onerror;
@@ -1700,12 +1700,14 @@ function load(dlx, is_initial) {
             /* skip */;
         else if (had_tracker_at && dl.load - had_tracker_at < 10800)
             t = 10000;
-        else if (dlname && (!dltime || dltime - dl.load <= 120))
-            t = 45000;
-        else if (dlname)
-            t = 300000;
-        else
+        else if (!dlname)
             t = 1800000;
+        else if (Math.abs(dltime - dl.load) >= 900)
+            t = 300000;
+        else if (Math.abs(dltime - dl.load) >= 120)
+            t = 90000;
+        else
+            t = 45000;
         if (t)
             reload_timeout = setTimeout(reload, t);
     }
@@ -2920,6 +2922,7 @@ function save_editor(elt, action, really) {
                 $f[0].submit();
             }
             $c.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + data.error + '</div><div class="xmsg1"</div></div>' : data.msg);
+            $c.find("button").prop("disabled", false);
             return;
         }
         var cid = cj_cid($c.c), editing_response = $c.c.response && edit_allowed($c.c);
@@ -3733,7 +3736,7 @@ function add_assrev_ajax(selector) {
         if (form && $("#assrevimmediate")[0].checked) {
             var reviewer = form.reviewer.value;
             form.p.value = this.name.substr(6);
-            form.rev_roundtag.value = $("#assrevroundtag").val() || "";
+            form.rev_round.value = $("#assrevround").val() || "";
             form["pcs" + reviewer].value = this.value;
             Miniajax.submit("assrevform", function (rv) {
                 setajaxcheck(that, rv);
@@ -5330,7 +5333,8 @@ function unload_list() {
 }
 function row_click(e) {
     var j = $(e.target);
-    if (j.hasClass("pl_id") || j.hasClass("pl_title"))
+    if (j.hasClass("pl_id") || j.hasClass("pl_title")
+        || j.closest("td").hasClass("pl_rowclick"))
         $(this).find("a.pnum")[0].click();
 }
 function override_conflict(e) {
@@ -5339,7 +5343,7 @@ function override_conflict(e) {
 function prepare() {
     $(document.body).on("click", "a", add_list);
     $(document.body).on("submit", "form", add_list);
-    $(document.body).on("click", "tbody.pltable tr.pl", row_click);
+    $(document.body).on("click", "tbody.pltable > tr.pl", row_click);
     $(document.body).on("click", "span.fn5 > a", override_conflict);
     hotcrp_list && $(window).on("beforeunload", unload_list);
 }
@@ -5745,7 +5749,7 @@ function load_more_events() {
 function render_events(e, rows) {
     var j = $(e).find("tbody");
     if (!j.length) {
-        $(e).append("<table class=\"hotcrp_events_table\"><tbody></tbody></table><div class=\"g\"><button type=\"button\">More</button></div>");
+        $(e).append("<table class=\"hotcrp_events_table\"><tbody class=\"pltable\"></tbody></table><div class=\"g\"><button type=\"button\">More</button></div>");
         $(e).find("button").on("click", load_more_events);
         j = $(e).find("tbody");
     }

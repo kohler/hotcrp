@@ -146,7 +146,8 @@ class ReviewField {
     }
 
     public function is_round_visible($rrow) {
-        $round = $rrow ? $rrow->reviewRound : $this->conf->current_round();
+        // NB missing $rrow is only possible for PC reviews
+        $round = $rrow ? $rrow->reviewRound : $this->conf->assignment_round(false);
         return !$this->round_mask
             || $round === null
             || ($this->round_mask & (1 << $round))
@@ -713,7 +714,7 @@ class ReviewForm {
             && (!isset($req['override']) || !$admin))
             return Conf::msg_error("The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($admin ? "  Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""));
 
-        $q = array();
+        $qf = $qv = [];
         $diff_view_score = VIEWSCORE_FALSE;
         $wc = 0;
         foreach ($this->forder as $field => $f)
@@ -737,7 +738,8 @@ class ReviewForm {
                 if ($rrow && strcmp($rrow->$field, $fval) != 0
                     && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0)
                     $diff_view_score = max($diff_view_score, $f->view_score);
-                $q[] = "$field='" . sqlq($fval) . "'";
+                $qf[] = "$field=?";
+                $qv[] = $fval;
             }
 
         // get the current time
@@ -750,7 +752,8 @@ class ReviewForm {
         $locked = false;
         if ($newsubmit) {
             $diff_view_score = max($diff_view_score, VIEWSCORE_AUTHOR);
-            $q[] = "reviewSubmitted=$now, reviewNeedsSubmit=0";
+            array_push($qf, "reviewSubmitted=?", "reviewNeedsSubmit=?");
+            array_push($qv, $now, 0);
             if (!$rrow || !$rrow->reviewOrdinal) {
                 $table_suffix = "";
                 if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
@@ -759,17 +762,21 @@ class ReviewForm {
                 if (!$result)
                     return $result;
                 $locked = true;
-                $result = $this->conf->qe_raw("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId");
+                $result = $this->conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
                 if ($result) {
                     $crow = edb_row($result);
-                    $q[] = "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . ")";
+                    $qf[] = "reviewOrdinal=coalesce(reviewOrdinal,?)";
+                    $qv[] = $crow[0] + 1;
                 }
                 Dbl::free($result);
-                $q[] = "timeDisplayed=$now";
+                $qf[] = "timeDisplayed=?";
+                $qv[] = $now;
             }
         }
-        if ($approval_requested)
-            $q[] = "timeApprovalRequested=$now";
+        if ($approval_requested) {
+            $qf[] = "timeApprovalRequested=?";
+            $qv[] = $now;
+        }
 
         // check whether used a review token
         $usedReviewToken = $contact->review_token_cid($prow, $rrow);
@@ -778,17 +785,24 @@ class ReviewForm {
         $reviewBlind = $this->conf->is_review_blind(!!get($req, "blind"));
         if ($rrow && $reviewBlind != $rrow->reviewBlind)
             $diff_view_score = max($diff_view_score, VIEWSCORE_ADMINONLY);
-        $q[] = "reviewBlind=" . ($reviewBlind ? 1 : 0);
+        $qf[] = "reviewBlind=?";
+        $qv[] = $reviewBlind ? 1 : 0;
         if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL
             && $contact->contactId == $rrow->contactId
-            && $contact->isPC && !$usedReviewToken)
-            $q[] = "reviewType=" . REVIEW_PC;
+            && $contact->isPC && !$usedReviewToken) {
+            $qf[] = "reviewType=?";
+            $qv[] = REVIEW_PC;
+        }
         if ($rrow && $diff_view_score > VIEWSCORE_FALSE
             && isset($req["version"]) && ctype_digit($req["version"])
-            && $req["version"] > defval($rrow, "reviewEditVersion"))
-            $q[] = "reviewEditVersion=" . ($req["version"] + 0);
-        if ($diff_view_score > VIEWSCORE_FALSE && $this->conf->sversion >= 98)
-            $q[] = "reviewWordCount=" . $wc;
+            && $req["version"] > get($rrow, "reviewEditVersion")) {
+            $qf[] = "reviewEditVersion=?";
+            $qv[] = $req["version"] + 0;
+        }
+        if ($diff_view_score > VIEWSCORE_FALSE && $this->conf->sversion >= 98) {
+            $qf[] = "reviewWordCount=?";
+            $qv[] = $wc;
+        }
         if (isset($req["reviewFormat"]) && $this->conf->sversion >= 104
             && $this->conf->opt("formatInfo")) {
             $fmt = null;
@@ -798,7 +812,8 @@ class ReviewForm {
             if (!$fmt && $req["reviewFormat"]
                 && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $f["reviewFormat"]))
                 $fmt = 0;
-            $q[] = "reviewFormat=" . ($fmt === null ? "null" : $fmt);
+            $qf[] = "reviewFormat=?";
+            $qv[] = $fmt;
         }
 
         // notification
@@ -806,33 +821,48 @@ class ReviewForm {
         $notify = $notify_author = false;
         if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome && $this->conf->timeAuthorViewDecision())
             $diff_view_score = VIEWSCORE_AUTHOR;
-        if (!$rrow || !$rrow->reviewModified || $diff_view_score > VIEWSCORE_FALSE)
-            $q[] = "reviewModified=" . $now;
+        if (!$rrow || !$rrow->reviewModified || $diff_view_score > VIEWSCORE_FALSE) {
+            $qf[] = "reviewModified=?";
+            $qv[] = $now;
+        }
         if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
-            if ($diff_view_score >= VIEWSCORE_AUTHOR)
-                $q[] = "reviewAuthorModified=" . $now;
-            else if ($rrow && !$rrow->reviewAuthorModified && $rrow->reviewModified !== null)
-                $q[] = "reviewAuthorModified=" . $rrow->reviewModified;
+            if ($diff_view_score >= VIEWSCORE_AUTHOR) {
+                $qf[] = "reviewAuthorModified=?";
+                $qv[] = $now;
+            } else if ($rrow && !$rrow->reviewAuthorModified
+                       && $rrow->reviewModified !== null) {
+                $qf[] = "reviewAuthorModified=?";
+                $qv[] = $rrow->reviewModified;
+            }
             // do not notify on updates within 3 hours
             if ($submit && $diff_view_score > VIEWSCORE_ADMINONLY) {
                 if (!$rrow || !$rrow->reviewNotified
-                    || $rrow->reviewNotified < $notification_bound)
-                    $q[] = $notify = "reviewNotified=" . $now;
+                    || $rrow->reviewNotified < $notification_bound) {
+                    $qf[] = "reviewNotified=?";
+                    $qv[] = $now;
+                    $notify = true;
+                }
                 if ((!$rrow || !$rrow->reviewAuthorNotified
                      || $rrow->reviewAuthorNotified < $notification_bound)
                     && $diff_view_score >= VIEWSCORE_AUTHOR
-                    && Contact::can_some_author_view_submitted_review($prow))
-                    $q[] = $notify_author = "reviewAuthorNotified=" . $now;
+                    && Contact::can_some_author_view_submitted_review($prow)) {
+                    $qf[] = "reviewAuthorNotified=?";
+                    $qv[] = $now;
+                    $notify_author = true;
+                }
             }
         }
 
         // actually affect database
         if ($rrow) {
-            $result = $this->conf->qe_raw("update PaperReview set " . join(", ", $q) . " where reviewId=$rrow->reviewId");
+            array_push($qv, $prow->paperId, $rrow->reviewId);
+            $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf) . " where paperId=? and reviewId=?", $qv);
             $reviewId = $rrow->reviewId;
             $contactId = $rrow->contactId;
         } else {
-            $result = $this->conf->qe_raw("insert into PaperReview set paperId=$prow->paperId, contactId=$contact->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contact->contactId, reviewRound=" . $this->conf->current_round() . ", " . join(", ", $q));
+            array_unshift($qf, "paperId=?", "contactId=?", "reviewType=?", "requestedBy=?", "reviewRound=?");
+            array_unshift($qv, $prow->paperId, $contact->contactId, REVIEW_PC, $contact->contactId, $this->conf->assignment_round(false));
+            $result = $this->conf->qe_apply("insert into PaperReview set " . join(", ", $qf), $qv);
             $reviewId = $result ? $result->insert_id : null;
             $contactId = $contact->contactId;
         }
@@ -866,7 +896,7 @@ class ReviewForm {
         if ($contactId != $submitter->contactId)
             $submitter = $this->contact_by_id($contactId);
         if ($submit || $approval_requested || ($rrow && $rrow->timeApprovalRequested))
-            $rrow = $this->conf->reviewRow(["reviewId" => $reviewId]);
+            $rrow = $this->conf->reviewRow(["paperId" => $prow->paperId, "reviewId" => $reviewId]);
         $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
                                "check_function" => "HotCRPMailer::check_can_view_review"];
         if ($submit)
@@ -1669,7 +1699,7 @@ $blind\n";
             $type = review_type_icon($rrow->reviewType);
             if ($rrow->reviewRound > 0 && $Me->can_view_review_round($prow, $rrow, null))
                 $type .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
-                    . htmlspecialchars($this->conf->round_name($rrow->reviewRound, true))
+                    . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
                     . "</span>";
         }
         if ($rrow && $Me->can_view_review_identity($prow, $rrow, null)
@@ -1836,18 +1866,18 @@ $blind\n";
     }
 
 
-    function reviewFlowEntry($contact, $rrow, $trclass) {
+    function reviewFlowEntry(Contact $contact, $rrow) {
         // See also CommentInfo::unparse_flow_entry
-        $barsep = " <span class='barsep'>·</span> ";
-        $a = "<a href='" . hoturl("paper", "p=$rrow->paperId#r" . unparseReviewOrdinal($rrow)) . "'";
-        $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
+        $barsep = ' <span class="barsep">·</span> ';
+        $a = '<a href="' . hoturl("paper", "p=$rrow->paperId#r" . unparseReviewOrdinal($rrow)) . '"';
+        $t = '<tr class="pl"><td class="pl_activityicon">' . $a . '>'
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
-            . "</a></td><td class='pl_activityid pnum'>"
-            . $a . ">#$rrow->paperId</a></td><td class='pl_activitymain'><small>"
-            . $a . " class=\"ptitle\">" . htmlspecialchars($rrow->shortTitle);
-        if (strlen($rrow->shortTitle) != strlen($rrow->title))
-            $t .= "...";
-        $t .= "</a>";
+            . '</a></td><td class="pl_activityid pl_rowclick">'
+            . $a . ' class="pnum">#' . $rrow->paperId . '</a></td>'
+            . '<td class="pl_activitymain pl_rowclick"><small>'
+            . $a . ' class="ptitle">'
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($rrow->title, 80))
+            . "</a>";
         if ($rrow->reviewModified > 1) {
             if ($contact->can_view_review_time($rrow, $rrow))
                 $time = $this->conf->parseableTime($rrow->reviewModified, false);
@@ -1857,7 +1887,7 @@ $blind\n";
         }
         if ($contact->can_view_review_identity($rrow, $rrow, false))
             $t .= $barsep . "<span class='hint'>review by</span> " . Text::user_html($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
-        $t .= "</small><br /><a class='q'" . substr($a, 3) . ">";
+        $t .= "</small><br />";
 
         $revViewScore = $contact->view_score_bound($rrow, $rrow);
         if ($rrow->reviewSubmitted) {
@@ -1873,6 +1903,6 @@ $blind\n";
                 $xbarsep = $barsep;
             }
 
-        return $t . "</a></td></tr>";
+        return $t . "</td></tr>";
     }
 }

@@ -180,15 +180,15 @@ class ZipDocument {
         return true;
     }
 
-    public function add($doc, $filename = null) {
+    function add($doc, $filename = null) {
         return $this->_add($doc, $filename, true);
     }
 
-    public function add_as($doc, $filename) {
+    function add_as($doc, $filename) {
         return $this->_add($doc, $filename, false);
     }
 
-    public function download_headers() {
+    function download_headers() {
         if (!$this->headers) {
             header("Content-Disposition: attachment; filename=" . mime_quote_string($this->filename));
             header("Content-Type: " . $this->mimetype);
@@ -196,7 +196,7 @@ class ZipDocument {
         }
     }
 
-    public function create() {
+    function create() {
         global $Now;
         if (!($tmpdir = $this->tmpdir()))
             return set_error_html("Could not create temporary directory.");
@@ -256,7 +256,7 @@ class ZipDocument {
             return set_error_html("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
     }
 
-    public function download() {
+    function download() {
         $result = $this->create();
         if (is_string($result)) {
             set_time_limit(180); // large zip files might download slowly
@@ -275,7 +275,7 @@ class Filer_UploadJson implements JsonSerializable {
     public $filename;
     public $mimetype;
     public $timestamp;
-    public function __construct($upload) {
+    function __construct($upload) {
         $this->content = file_get_contents($upload["tmp_name"]);
         if (isset($upload["name"])
             && strlen($upload["name"]) <= 255
@@ -284,7 +284,7 @@ class Filer_UploadJson implements JsonSerializable {
         $this->mimetype = Mimetype::type(get($upload, "type", "application/octet-stream"));
         $this->timestamp = time();
     }
-    public function jsonSerialize() {
+    function jsonSerialize() {
         $x = array();
         foreach (get_object_vars($this) as $k => $v)
             if ($k === "content" && $v !== null) {
@@ -299,31 +299,31 @@ class Filer_UploadJson implements JsonSerializable {
 class Filer {
     static public $tempdir;
 
-    function validate_content($doc) {
+    function validate_content(DocumentInfo $doc) {
         // load() callback. Return `true` if content of $doc is up to date and
         // need not be checked by load_content.
         return true;
     }
-    function load_content($doc) {
+    function load_content(DocumentInfo $doc) {
         // load() callback. Return `true` if content was successfully loaded.
         // On return true, at least one of `$doc->content` and
         // `$doc->filestore` must be set.
         return false;
     }
-    function filestore_pattern($doc) {
+    function filestore_pattern(DocumentInfo $doc) {
         // load()/store() callback. Return the filestore pattern suitable for
         // `$doc`.
         return null;
     }
-    function dbstore($doc, $docinfo) {
+    function dbstore(DocumentInfo $doc) {
         // store() callback. Return a `Filer_Dbstore` object to tell how to
         // store the document in the database.
         return null;
     }
-    function store_other($doc, $docinfo) {
+    function store_other(DocumentInfo $doc) {
         // store() callback. Store `$doc` elsewhere (e.g. S3) if appropriate.
     }
-    function validate_upload($doc, $docinfo) {
+    function validate_upload(DocumentInfo $doc) {
         // upload() callback. Return false if $doc should not be stored.
         return true;
     }
@@ -352,18 +352,17 @@ class Filer {
             return $doc->content = @file_get_contents($filename);
         return false;
     }
-    public function load($doc) {
+    function load(DocumentInfo $doc) {
         // Return true iff `$doc` can be loaded.
         if (!($has_content = self::has_content($doc))
-            && ($fsinfo = $this->_filestore($doc))
-            && is_readable($fsinfo[1])) {
+            && ($fsinfo = $this->_filestore($doc, true))) {
             $doc->filestore = $fsinfo[1];
             $has_content = true;
         }
         return ($has_content && $this->validate_content($doc))
             || $this->load_content($doc);
     }
-    public function load_to_filestore($doc) {
+    function load_to_filestore(DocumentInfo $doc) {
         if (!$this->load($doc))
             return false;
         if (!isset($doc->filestore)) {
@@ -374,7 +373,7 @@ class Filer {
             $sha1 = self::text_sha1($doc);
             if ($sha1 === false)
                 $sha1 = $doc->sha1 = sha1($doc->content);
-            $path = self::$tempdir . "/" . $sha1 . Mimetype::extension(self::_mimetype($doc));
+            $path = self::$tempdir . "/" . $sha1 . Mimetype::extension($doc->mimetype);
             if (file_put_contents($path, $doc->content) != strlen($doc->content)) {
                 set_error_html($doc, "Failed to save document to temporary file.");
                 return false;
@@ -383,10 +382,10 @@ class Filer {
         }
         return true;
     }
-    public function store($doc, $docinfo) {
+    function store(DocumentInfo $doc) {
         // load content (if unloaded)
         // XXX loading enormous documents into memory...?
-        if (!$this->load($doc, $docinfo)
+        if (!$this->load($doc)
             || ($content = self::content($doc)) === null
             || $content === false
             || get($doc, "error"))
@@ -404,33 +403,33 @@ class Filer {
         $doc->size = strlen($content);
         $content = null;
         // actually store
-        if (($dbinfo = $this->dbstore($doc, $docinfo)))
+        if (($dbinfo = $this->dbstore($doc)))
             $this->store_database($dbinfo, $doc);
         $this->store_filestore($doc);
-        $this->store_other($doc, $docinfo);
+        $this->store_other($doc);
         return !get($doc, "error");
     }
 
     // dbstore functions
-    function store_database($dbinfo, $doc) {
+    function store_database($dbinfo, DocumentInfo $doc) {
         global $Conf;
         $N = 400000;
         $idcol = $dbinfo->id_column;
         $while = "while storing document in database";
 
-        $a = $ks = $vs = array();
+        $qk = $qv = [];
         foreach ($dbinfo->columns as $k => $v)
             if ($k !== $idcol) {
-                $ks[] = "`$k`=?";
-                $vs[] = substr($v, 0, $N);
+                $qk[] = "`$k`=?";
+                $qv[] = substr($v, 0, $N);
             }
 
         if (isset($dbinfo->columns[$idcol])) {
-            $q = "update $dbinfo->table set " . join(",", $ks) . " where $idcol=?";
-            $vs[] = $dbinfo->columns[$idcol];
+            $q = "update $dbinfo->table set " . join(", ", $qk) . " where $idcol=?";
+            $qv[] = $dbinfo->columns[$idcol];
         } else
-            $q = "insert into $dbinfo->table set " . join(",", $ks);
-        if (!($result = Dbl::query_apply($dbinfo->dblink, $q, $vs))) {
+            $q = "insert into $dbinfo->table set " . join(", ", $qk);
+        if (!($result = Dbl::qe_apply($dbinfo->dblink, $q, $qv))) {
             set_error_html($doc, $Conf->db_error_html(true, $while));
             return;
         }
@@ -446,32 +445,33 @@ class Filer {
         }
 
         for ($pos = $N; true; $pos += $N) {
-            $a = array();
+            $qk = $qv = [];
             foreach ($dbinfo->columns as $k => $v)
-                if (strlen($v) > $pos)
-                    $a[] = "`" . $k . "`=concat(`" . $k . "`,'" . sqlq(substr($v, $pos, $N)) . "')";
-            if (!count($a))
+                if (strlen($v) > $pos) {
+                    $qk[] = "`{$k}`=concat(`{$k}`,?)";
+                    $qv[] = substr($v, $pos, $N);
+                }
+            if (empty($qk))
                 break;
-            if (!$Conf->q_raw("update $dbinfo->table set " . join(",", $a) . " where $idcol=" . $doc->$idcol)) {
+            $q = "update $dbinfo->table set " . join(", ", $qk) . " where $idcol=?";
+            $qv[] = $doc->$idcol;
+            if (!Dbl::qe_apply($dbinfo->dblink, $q, $qv)) {
                 set_error_html($doc, $Conf->db_error_html(true, $while));
                 return;
             }
         }
 
         // check that paper storage succeeded
-        if ($dbinfo->check_contents
-            && (!($result = $Conf->qe_raw("select length($dbinfo->check_contents) from $dbinfo->table where $idcol=" . $doc->$idcol))
-                || !($row = edb_row($result))
-                || $row[0] != strlen(self::content($doc)))) {
-            set_error_html($doc, "Failed to store your document. Usually this is because the file you tried to upload was too big for our system. Please try again.");
-            return;
+        if ($dbinfo->check_contents) {
+            $len = Dbl::fetch_ivalue($dbinfo->dblink, "select length($dbinfo->check_contents) from $dbinfo->table where $idcol=?", $doc->$idcol);
+            if ($len != strlen(self::content($doc)))
+                set_error_html($doc, "Failed to store your document. Usually this is because the file you tried to upload was too big for our system. Please try again.");
         }
     }
 
     // filestore functions
-    function filestore_check($doc) {
-        $fsinfo = $this->_filestore($doc);
-        return $fsinfo && is_readable($fsinfo[1]);
+    function filestore_check(DocumentInfo $doc) {
+        return !!$this->_filestore($doc, true);
     }
     static function prepare_filestore($parent, $path) {
         if (!self::_make_fpath_parents($parent, $path))
@@ -486,8 +486,8 @@ class Filer {
         }
         return true;
     }
-    function store_filestore($doc, $no_error = false) {
-        if (!($fsinfo = $this->_filestore($doc)))
+    function store_filestore(DocumentInfo $doc, $no_error = false) {
+        if (!($fsinfo = $this->_filestore($doc, false)))
             return false;
         list($fsdir, $fspath) = $fsinfo;
         if (!self::prepare_filestore($fsdir, $fspath)) {
@@ -564,15 +564,14 @@ class Filer {
         }
 
         // Print paper
-        $doc_mimetype = self::_mimetype($doc);
-        header("Content-Type: " . Mimetype::type($doc_mimetype));
+        header("Content-Type: " . Mimetype::type($doc->mimetype));
         $attachment = null;
         if (is_bool($opts))
             $attachment = $opts;
         else if (is_array($opts) && isset($opts["attachment"]))
             $attachment = $opts["attachment"];
         if ($attachment === null)
-            $attachment = !Mimetype::disposition_inline($doc_mimetype);
+            $attachment = !Mimetype::disposition_inline($doc->mimetype);
         if (!$downloadname) {
             $downloadname = $doc->filename;
             if (($slash = strrpos($downloadname, "/")) !== false)
@@ -599,7 +598,7 @@ class Filer {
     }
 
     // upload
-    function upload($doc, $docinfo) {
+    function upload(DocumentInfo $doc) {
         global $Conf;
         if (!is_object($doc)) {
             error_log(caller_landmark() . ": Filer::upload called with non-object");
@@ -613,20 +612,14 @@ class Filer {
         // Clean up mimetype and timestamp.
         if (!isset($doc->mimetype) && isset($doc->type) && is_string($doc->type))
             $doc->mimetype = $doc->type;
-        if (isset($doc->content)
-            && (!get($doc, "mimetype")
-                || Mimetype::is_sniffable($doc->mimetype)
-                || Mimetype::is_sniff_type_reliable($doc->content)))
-            $doc->mimetype = Mimetype::sniff_type($doc->content);
-        if (!get($doc, "mimetype"))
-            $doc->mimetype = "application/octet-stream";
+        $doc->mimetype = Mimetype::content_type(get($doc, "content"), get($doc, "mimetype"));
         if (($m = Mimetype::lookup($doc->mimetype)))
             $doc->mimetypeid = $m->mimetypeid;
         if (!get($doc, "timestamp"))
             $doc->timestamp = time();
 
-        if ($this->validate_upload($doc, $docinfo))
-            return $this->store($doc, $docinfo);
+        if ($this->validate_upload($doc))
+            return $this->store($doc);
         else
             return false;
     }
@@ -660,48 +653,54 @@ class Filer {
     }
 
     // private functions
-    private static function _mimetype($doc) {
-        if (!isset($doc->mimetype) && !isset($doc->mimetypeid))
-            error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
-    }
-    private function _filestore($doc) {
-        if (!($fsinfo = $this->filestore_pattern($doc)))
-            return $fsinfo;
-        if (get($doc, "error"))
-            return null;
-
-        list($fdir, $fpath) = $fsinfo;
+    private function _expand_filestore($pattern, DocumentInfo $doc, $extension) {
+        $x = "";
         $sha1 = false;
-
-        $xfpath = $fdir;
-        $fpath = substr($fpath, strlen($fdir));
-        while (preg_match("/\\A(.*?)%(\d*)([%hx])(.*)\\z/", $fpath, $m)) {
-            $fpath = $m[4];
-
-            $xfpath .= $m[1];
+        while (preg_match('/\A(.*?)%(\d*)([%hx])(.*)\z/', $pattern, $m)) {
+            $x .= $m[1];
             if ($m[3] === "%")
-                $xfpath .= "%";
-            else if ($m[3] === "x")
-                $xfpath .= Mimetype::extension(self::_mimetype($doc));
-            else {
+                $x .= "%";
+            else if ($m[3] === "x") {
+                if ($extension)
+                    $x .= Mimetype::extension($doc->mimetype);
+            } else {
                 if ($sha1 === false)
                     $sha1 = self::text_sha1($doc);
                 if ($sha1 === false
                     && ($content = self::content($doc)) !== false)
                     $sha1 = $doc->sha1 = sha1($content);
                 if ($sha1 === false)
-                    return array(null, null);
+                    return false;
                 if ($m[2] !== "")
-                    $xfpath .= substr($sha1, 0, +$m[2]);
+                    $x .= substr($sha1, 0, intval($m[2]));
                 else
-                    $xfpath .= $sha1;
+                    $x .= $sha1;
             }
+            $pattern = $m[4];
         }
-
+        return $x . $pattern;
+    }
+    private function _filestore(DocumentInfo $doc, $for_reading) {
+        if (!($fsinfo = $this->filestore_pattern($doc)))
+            return $fsinfo;
+        else if ($doc->error)
+            return null;
+        list($fdir, $fpath) = $fsinfo;
         if ($fdir && $fdir[strlen($fdir) - 1] === "/")
             $fdir = substr($fdir, 0, strlen($fdir) - 1);
-        return array($fdir, $xfpath . $fpath);
+        $pattern = substr($fpath, strlen($fdir));
+        if (!($f = $this->_expand_filestore($pattern, $doc, true)))
+            return null;
+        if ($for_reading && !is_readable($fdir . $f)) {
+            // clean up presence of old files saved w/o extension
+            $g = $this->_expand_filestore($pattern, $doc, false);
+            if ($f && $g !== $f && is_readable($fdir . $g)) {
+                if (!@rename($fdir . $g, $fdir . $f))
+                    $f = $g;
+            } else
+                return null;
+        }
+        return [$fdir, $fdir . $f];
     }
     private static function _make_fpath_parents($fdir, $fpath) {
         $lastslash = strrpos($fpath, "/");
@@ -722,12 +721,12 @@ class Filer {
     }
 
 
-    public function is_archive($doc) {
+    function is_archive(DocumentInfo $doc) {
         return $doc->filename
             && preg_match('/\.(?:zip|tar|tgz|tar\.[gx]?z|tar\.bz2)\z/i', $doc->filename);
     }
 
-    public function archive_listing($doc) {
+    function archive_listing(DocumentInfo $doc) {
         if (!$this->load_to_filestore($doc))
             return false;
         $type = null;
@@ -772,7 +771,7 @@ class Filer {
         return explode("\n", rtrim($out));
     }
 
-    public function clean_archive_listing($listing) {
+    function clean_archive_listing($listing) {
         $etcetera = false;
         $listing = array_filter($listing, function ($x) use (&$etcetera) {
             if (str_ends_with($x, "/"))
@@ -790,7 +789,7 @@ class Filer {
         return $listing;
     }
 
-    public function consolidate_archive_listing($listing) {
+    function consolidate_archive_listing($listing) {
         $new_listing = [];
         $etcetera = empty($listing) || $listing[count($listing) - 1] !== "…" ? 0 : 1;
         for ($i = 0; $i < count($listing) - $etcetera; ) {
@@ -827,7 +826,7 @@ class Filer_Dbstore {
     public $columns;
     public $check_contents;
 
-    public function __construct($dblink, $table, $id_column, $columns, $check_contents = null) {
+    function __construct($dblink, $table, $id_column, $columns, $check_contents = null) {
         $this->dblink = $dblink;
         $this->table = $table;
         $this->id_column = $id_column;

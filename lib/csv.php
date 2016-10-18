@@ -5,7 +5,7 @@
 
 class CsvParser {
     private $lines;
-    private $pos = 0;
+    private $lpos = 0;
     private $type;
     private $header = false;
     private $comment_chars = false;
@@ -55,7 +55,7 @@ class CsvParser {
     }
 
     function lineno() {
-        return $this->pos;
+        return $this->lpos;
     }
 
     function next() {
@@ -67,18 +67,18 @@ class CsvParser {
     function unshift($line) {
         if ($line === null || $line === false)
             /* do nothing */;
-        else if ($this->pos > 0) {
-            $this->lines[$this->pos - 1] = $line;
-            --$this->pos;
+        else if ($this->lpos > 0) {
+            $this->lines[$this->lpos - 1] = $line;
+            --$this->lpos;
         } else
             array_unshift($this->lines, $line);
     }
 
     function shift() {
-        if ($this->pos >= count($this->lines))
+        if ($this->lpos >= count($this->lines))
             return false;
-        $line = $this->lines[$this->pos];
-        ++$this->pos;
+        $line = $this->lines[$this->lpos];
+        ++$this->lpos;
         if (is_array($line))
             return self::reparse($line, $this->header);
         // blank lines, comments
@@ -122,11 +122,11 @@ class CsvParser {
                 while (1) {
                     $pos = strpos($line, "\"", $pos + 1);
                     if ($pos === false) {
-                        if ($this->pos == count($this->lines))
-                            break;
                         $pos = $linelen;
-                        $line .= $this->lines[$this->pos];
-                        ++$this->pos;
+                        if ($this->lpos == count($this->lines))
+                            break;
+                        $line .= $this->lines[$this->lpos];
+                        ++$this->lpos;
                         $linelen = self::linelen($line);
                     } else if ($pos + 1 < $linelen && $line[$pos + 1] === "\"")
                         ++$pos;

@@ -135,9 +135,11 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
     else if (!isset(ReviewForm::$rating_types[$_REQUEST["rating"]]))
         Conf::msg_error("Invalid rating.");
     else if ($_REQUEST["rating"] == "n")
-        Dbl::qe_raw("delete from ReviewRating where reviewId=" . $paperTable->rrow->reviewId . " and contactId=$Me->contactId");
+        $Conf->qe("delete from ReviewRating where paperId=? and reviewId=? and contactId=?",
+                  $paperTable->prow->paperId, $paperTable->rrow->reviewId, $Me->contactId);
     else
-        Dbl::qe_raw("insert into ReviewRating (reviewId, contactId, rating) values (" . $paperTable->rrow->reviewId . ", $Me->contactId, " . $_REQUEST["rating"] . ") on duplicate key update rating=" . $_REQUEST["rating"]);
+        $Conf->qe("insert into ReviewRating set paperId=?, reviewId=?, contactId=?, rating=? on duplicate key update rating=?",
+                  $paperTable->prow->paperId, $paperTable->rrow->reviewId, $Me->contactId, $_REQUEST["rating"], $_REQUEST["rating"]);
     if (defval($_REQUEST, "ajax", 0))
         $Conf->ajaxExit(["ok" => !Dbl::has_error(), "result" => "Thanks! Your feedback has been recorded."]);
     if (isset($_REQUEST["allr"])) {
@@ -171,7 +173,7 @@ if (isset($_REQUEST["deletereview"]) && check_post()
     if (!$paperTable->editrrow)
         Conf::msg_error("No review to delete.");
     else {
-        $result = Dbl::qe_raw("delete from PaperReview where reviewId=" . $paperTable->editrrow->reviewId);
+        $result = Dbl::qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
         if ($result) {
             $Me->log_activity("$editRrowLogname deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
@@ -258,13 +260,13 @@ function refuseReview() {
     $rrow = $paperTable->editrrow;
     $hadToken = defval($rrow, "reviewToken", 0) != 0;
 
-    $result = Dbl::qe("delete from PaperReview where reviewId=$rrow->reviewId");
+    $result = Dbl::qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $rrow->reviewId);
     if (!$result)
         return;
     $reason = defval($_REQUEST, "reason", "");
     if ($reason == "Optional explanation")
         $reason = "";
-    $result = Dbl::qe("insert into PaperReviewRefused set paperId={$rrow->paperId}, contactId={$rrow->contactId}, requestedBy={$rrow->requestedBy}, reason=?", trim($reason));
+    $result = Dbl::qe("insert into PaperReviewRefused set paperId=?, contactId=?, requestedBy=?, reason=?", $rrow->paperId, $rrow->contactId, $rrow->requestedBy, trim($reason));
     if (!$result)
         return;
 
@@ -321,7 +323,7 @@ if (isset($_REQUEST["accept"])) {
         Conf::msg_error("This review was not assigned to you, so you cannot confirm your intention to write it.");
     else {
         if ($paperTable->editrrow->reviewModified <= 0)
-            Dbl::qe_raw("update PaperReview set reviewModified=1 where reviewId=" . $paperTable->editrrow->reviewId . " and coalesce(reviewModified,0)<=0");
+            Dbl::qe("update PaperReview set reviewModified=1 where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0", $prow->paperId, $paperTable->editrrow->reviewId);
         $Conf->confirmMsg("Thank you for confirming your intention to finish this review.  You can download the paper and review form below.");
         loadRows();
     }

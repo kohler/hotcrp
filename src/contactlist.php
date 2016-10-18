@@ -310,20 +310,20 @@ class ContactList {
             return "<input type='checkbox' class='cb' name='pap[]' value='$row->contactId' tabindex='1' id='psel$this->count' onclick='rangeclick(event,this)' $c/>";
         case self::FIELD_HIGHTOPICS:
         case self::FIELD_LOWTOPICS:
-            if (!defval($row, "topicIds"))
+            if (!($topics = get($row, "topicInterest")))
                 return "";
             $wanthigh = ($fieldId == self::FIELD_HIGHTOPICS);
-            $topics = array_combine(explode(",", $row->topicIds), explode(",", $row->topicInterest));
-            $nt = $nti = array();
-            foreach ($topics as $k => $v)
-                if ($wanthigh ? $v > 0 : $v < 0) {
-                    $nt[] = $k;
+            $nt = $nti = [];
+            foreach (explode(",", $row->topicInterest) as $tandi)
+                if (($pos = strpos($tandi, " "))
+                    && ($v = (int) substr($tandi, $pos + 1))
+                    && ($wanthigh ? $v > 0 : $v < 0)) {
+                    $nt[] = (int) substr($tandi, 0, $pos);
                     $nti[] = $v;
                 }
-            if (count($nt))
-                return PaperInfo::unparse_topic_list_html($Conf, $nt, $nti, true);
-            else
+            if (empty($nt))
                 return "";
+            return PaperInfo::unparse_topic_list_html($Conf, $nt, $nti, true);
         case self::FIELD_REVIEWS:
             if (!$row->numReviews && !$row->numReviewsSubmitted)
                 return "";
@@ -516,123 +516,109 @@ class ContactList {
     function _rows($queryOptions) {
         global $Conf;
 
+        // XXX This section is a bit of a mess. We don't always obey the
+        // visibility restrictions in Contact. Most of the time (but probably
+        // not always) we are more restricted: for instance, conflicted PC
+        // members never see reviewers for their papers, even if reviewing is
+        // not anonymous. Hard to see this as worth fixing.
+
+        // load conflicted papers
+        $cfltpids = [];
+        if (!$this->contact->privChair)
+            $cfltpids = Dbl::fetch_first_columns($Conf->dblink, "select paperId from PaperConflict where contactId=?", $this->contact->contactId);
+        $pid_restriction = "";
+        if (!empty($pid_restriction))
+            $pid_restriction = " and paperId not in (" . join(",", $cfltpids) . ")";
+
         $aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
+        $rf = ["contactId"];
         $pq = "select u.contactId,
         firstName, lastName, email, affiliation, roles, contactTags,
-        voicePhoneNumber,
-        u.collaborators, lastLogin, disabled";
+        voicePhoneNumber, u.collaborators, lastLogin, disabled";
         if (isset($queryOptions['topics']))
-            $pq .= ",\n topicIds, topicInterest";
+            $pq .= ",\n    (select group_concat(topicId, ' ', interest) from TopicInterest where contactId=u.contactId) topicInterest";
         if (isset($queryOptions["reviews"])) {
-            $pq .= ",
-        count(if(r.reviewNeedsSubmit<=0,r.reviewSubmitted,r.reviewId)) as numReviews,
-        count(r.reviewSubmitted) as numReviewsSubmitted";
-            if (isset($queryOptions["revratings"]))
-                $pq .= ",\n     sum(r.numRatings) as numRatings,
-        sum(r.sumRatings) as sumRatings";
+            $rf[] = "count(if(reviewNeedsSubmit<=0,reviewSubmitted,reviewId)) numReviews";
+            $rf[] = "count(reviewSubmitted) numReviewsSubmitted";
+            $pq .= ", numReviews, numReviewsSubmitted";
         }
+        if (isset($queryOptions["revratings"]))
+            $pq .= ", numRatings, sumRatings";
         if (isset($queryOptions["leads"]))
-            $pq .= ",\n leadPaperIds, numLeads";
+            $pq .= ",\n    (select count(paperId) from Paper where leadContactId=u.contactId$pid_restriction) numLeads";
         if (isset($queryOptions["shepherds"]))
-            $pq .= ",\n shepherdPaperIds, numShepherds";
+            $pq .= ",\n    (select count(paperId) from Paper where shepherdContactId=u.contactId$pid_restriction) numShepherds";
         if (isset($queryOptions['scores']))
-            foreach ($queryOptions['scores'] as $score)
-                $pq .= ",\n\tgroup_concat(if(r.reviewSubmitted>0,r.$score,null)) as $score";
-        if (isset($queryOptions["repapers"]))
-            $pq .= ",\n\tgroup_concat(r.paperId) as paperIds,
-        group_concat(r.reviewId) as reviewIds,
-        group_concat(coalesce(r.reviewOrdinal,0)) as reviewOrdinals";
-        else if (isset($queryOptions['papers']))
-            $pq .= ",\n\tgroup_concat(PaperConflict.paperId) as paperIds";
+            foreach ($queryOptions['scores'] as $score) {
+                $rf[] = "group_concat(if(reviewSubmitted>0,$score,null)) $score";
+                $pq .= ", $score";
+            }
+        if (isset($queryOptions["repapers"])) {
+            $rf[] = "group_concat(r.paperId) paperIds";
+            $rf[] = "group_concat(reviewId) reviewIds";
+            $rf[] = "group_concat(coalesce(reviewOrdinal,0)) reviewOrdinals";
+            $pq .= ", paperIds, reviewIds, reviewOrdinals";
+        } else if (isset($queryOptions["papers"]))
+            $pq .= ",\n\t(select group_concat(paperId) from PaperConflict where contactId=u.contactId and conflictType>=" . CONFLICT_AUTHOR . ") paperIds";
 
         $pq .= "\n      from ContactInfo u\n";
-        if (isset($queryOptions['topics']))
-            $pq .= "    left join (select contactId, group_concat(topicId) as topicIds, group_concat(interest) as topicInterest
-                from TopicInterest
-                group by contactId) as ti on (ti.contactId=u.contactId)\n";
         if (isset($queryOptions["reviews"])) {
             $j = "left join";
             if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext" || $this->limit == "resub" || $this->limit == "extsub")
                 $j = "join";
-            $pq .= "    $j (select r.*";
-            if (isset($queryOptions["revratings"]))
-                $pq .= ", count(rating) as numRatings, sum(if(rating>0,1,0)) as sumRatings";
-            $pq .= "\n\t\tfrom PaperReview r
-                join Paper p on (p.paperId=r.paperId)";
-            if (!$this->contact->privChair)
-                $pq .= "\n\t\tleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=" . $this->contact->contactId . ")";
-            if (isset($queryOptions["revratings"])) {
-                $badratings = PaperSearch::unusableRatings($this->contact);
-                $pq .= "\n\t\tleft join ReviewRating rr on (rr.reviewId=r.reviewId";
-                if (count($badratings) > 0)
-                    $pq .= " and not (rr.reviewId in (" . join(",", $badratings) . "))";
-                $pq .= ")";
-            }
+            $pq .= "    $j (select " . join(", ", $rf)
+                . "\n\t\tfrom PaperReview r join Paper p on (p.paperId=r.paperId)";
             $jwhere = array();
             if ($this->limit == "req" || $this->limit == "ext" || $this->limit == "extsub")
                 $jwhere[] = "r.reviewType=" . REVIEW_EXTERNAL;
             if ($this->limit == "req")
                 $jwhere[] = "r.requestedBy=" . $this->contact->contactId;
-            if (!$this->contact->privChair)
-                $jwhere[] = "(pc.conflictType is null or pc.conflictType=0 or r.contactId=" . $this->contact->contactId . ")";
+            if ($pid_restriction)
+                $jwhere[] = "(r.paperId not in (" . join(",", $cfltpids) . ") or r.contactId=" . $this->contact->contactId . ")";
             $jwhere[] = "(p.timeSubmitted>0 or r.reviewSubmitted>0)";
             if (count($jwhere))
                 $pq .= "\n\t\twhere " . join(" and ", $jwhere);
-            if (isset($queryOptions["revratings"]))
-                $pq .= "\n\t\tgroup by r.reviewId";
-            $pq .= ") as r on (r.contactId=u.contactId)\n";
+            $pq .= " group by r.contactId) as r on (r.contactId=u.contactId)\n";
         }
-        if (isset($queryOptions["leads"])) {
-            $pq .= "    left join (select p.leadContactId, group_concat(p.paperId) as leadPaperIds, count(p.paperId) as numLeads\n\t\tfrom Paper p";
-            $jwhere = array("leadContactId is not null");
-            if (!$this->contact->privChair) {
-                $pq .= "\n\t\tleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=" . $this->contact->contactId . ")";
-                $jwhere[] = "(conflictType is null or conflictType=0)";
-            }
-            $pq .= "\n\t\twhere " . join(" and ", $jwhere)
-                . "\n\t\tgroup by p.leadContactId) as lead on (lead.leadContactId=u.contactId)\n";
+        if (isset($queryOptions["revratings"])) {
+            $pq .= "    left join (select PaperReview.contactId, count(rating) numRatings, sum(if(rating>0,1,0)) sumRatings
+                from ReviewRating
+                join PaperReview on (PaperReview.paperId=ReviewRating.paperId and PaperReview.reviewId=ReviewRating.reviewId)";
+            $jwhere = [];
+            if (($badratings = PaperSearch::unusableRatings($this->contact)))
+                $jwhere[] = "ReviewRating.reviewId not in (" . join(",", $badratings) . ")";
+            if ($pid_restriction)
+                $jwhere[] = "ReviewRating.paperId not in (" . join(",", $cfltpids) . ")";
+            if (!empty($jwhere))
+                $pq .= "\n\t\twhere " . join(" and ", $jwhere);
+            $pq .= "\n\t\tgroup by PaperReview.contactId) as rr on (rr.contactId=u.contactId)\n";
         }
-        if (isset($queryOptions["shepherds"])) {
-            $pq .= "    left join (select p.shepherdContactId, group_concat(p.paperId) as shepherdPaperIds, count(p.paperId) as numShepherds\n\t\tfrom Paper p";
-            $jwhere = array("shepherdContactId is not null");
-            if (!$this->contact->privChair
-                && !$Conf->timePCViewDecision(true)) {
-                $pq .= "\n\t\tleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=" . $this->contact->contactId . ")";
-                $mywhere = "conflictType is null or conflictType=0";
-                if ($Conf->timeAuthorViewDecision())
-                    $mywhere .= " or conflictType>=" . CONFLICT_AUTHOR;
-                $jwhere[] = "($mywhere)";
-            }
-            $pq .= "\n\t\twhere " . join(" and ", $jwhere)
-                . "\n\t\tgroup by p.shepherdContactId) as shep on (shep.shepherdContactId=u.contactId)\n";
+        if ($aulimit) {
+            $limitselect = "select contactId from PaperConflict join Paper on (Paper.paperId=PaperConflict.paperId) where conflictType>=" . CONFLICT_AUTHOR;
+            if ($this->limit == "au")
+                $limitselect .= " and timeSubmitted>0";
+            else if ($this->limit == "aurej")
+                $limitselect .= " and outcome<0";
+            else if ($this->limit == "auacc")
+                $limitselect .= " and outcome>0";
+            else if ($this->limit == "auuns")
+                $limitselect .= " and timeSubmitted<=0";
+            $pq .= "join ($limitselect group by contactId) as au on (au.contactId=u.contactId)\n";
         }
-        if ($aulimit)
-            $pq .= "\tjoin PaperConflict on (PaperConflict.contactId=u.contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")\n";
-        if ($this->limit == "au")
-            $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.timeSubmitted>0)\n";
-        if ($this->limit == "aurej")
-            $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.outcome<0)\n";
-        if ($this->limit == "auacc")
-            $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.outcome>0)\n";
-        if ($this->limit == "auuns")
-            $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.timeSubmitted<=0)\n";
-        if ($this->limit == "all")
-            $pq .= "\tleft join PaperConflict on (PaperConflict.contactId=u.contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")\n";
 
         $mainwhere = array();
         if (isset($queryOptions["where"]))
             $mainwhere[] = $queryOptions["where"];
         if ($this->limit == "pc")
-            $mainwhere[] = "(u.roles&" . Contact::ROLE_PC . ")!=0";
+            $mainwhere[] = "u.roles!=0 and (u.roles&" . Contact::ROLE_PC . ")!=0";
         if ($this->limit == "admin")
-            $mainwhere[] = "(u.roles&" . (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR) . ")!=0";
+            $mainwhere[] = "u.roles!=0 and (u.roles&" . (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR) . ")!=0";
         if ($this->limit == "pcadmin" || $this->limit == "pcadminx")
-            $mainwhere[] = "(u.roles&" . Contact::ROLE_PCLIKE . ")!=0";
+            $mainwhere[] = "u.roles!=0 and (u.roles&" . Contact::ROLE_PCLIKE . ")!=0";
         if (count($mainwhere))
             $pq .= "\twhere " . join(" and ", $mainwhere) . "\n";
 
-        $pq .= "        group by u.contactId
-        order by lastName, firstName, email";
+        $pq .= " order by lastName, firstName, email";
 
         // make query
         $result = $Conf->qe_raw($pq);

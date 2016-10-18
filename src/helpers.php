@@ -446,7 +446,7 @@ class SessionList {
             $searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
             $q = "select contactId from ContactInfo";
             if ($searchtype == "pc")
-                $q .= " where (roles&" . Contact::ROLE_PC . ")!=0";
+                $q .= " where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
             $result = Dbl::ql("$q order by lastName, firstName, email");
             $a = array();
             while (($row = edb_row($result)))
@@ -774,9 +774,8 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
     $conf = get($whyNot, "conf") ? : $Conf;
     if (!is_array($whyNot))
         $whyNot = array($whyNot => 1);
-    $paperId = (isset($whyNot['paperId']) ? $whyNot['paperId'] : -1);
-    $reviewId = (isset($whyNot['reviewId']) ? $whyNot['reviewId'] : -1);
-    $thisPaper = ($paperId < 0 ? "this paper" : "paper #$paperId");
+    $paperId = (isset($whyNot["paperId"]) ? $whyNot["paperId"] : -1);
+    $reviewId = (isset($whyNot["reviewId"]) ? $whyNot["reviewId"] : -1);
     $ms = [];
     if (isset($whyNot["invalidId"])) {
         $x = $whyNot["invalidId"] . "Id";
@@ -825,8 +824,8 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
         $ms[] = $conf->_("You will get access to the reviews once you complete <a href=\"%s\">your assigned reviews</a>. If you can’t complete your reviews, please let the organizers know via the “Refuse review” links.", hoturl("search", "q=&amp;t=r"));
     if (isset($whyNot["reviewNotAssigned"]))
         $ms[] = $conf->_("You are not assigned to review submission #%d.", $paperId);
-    if (isset($whyNot['deadline'])) {
-        $dname = $whyNot['deadline'];
+    if (isset($whyNot["deadline"])) {
+        $dname = $whyNot["deadline"];
         if ($dname[0] == "s")
             $start = $conf->setting("sub_open", -1);
         else if ($dname[0] == "p" || $dname[0] == "e")
@@ -834,9 +833,12 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
         else
             $start = 1;
         $end = $conf->setting($dname, -1);
-        if ($start <= 0 || $start == $end)
-            $ms[] = $conf->_("You can’t $action submission #%d yet.", $paperId);
-        else if ($start > 0 && $Now < $start)
+        if ($start <= 0 || $start == $end) {
+            if ($dname[0] == "p" || $dname[0] == "e")
+                $ms[] = $conf->_("You can’t $action submission #%d because the site is not open for reviewing.", $paperId);
+            else
+                $ms[] = $conf->_("You can’t $action submission #%d yet.", $paperId);
+        } else if ($start > 0 && $Now < $start)
             $ms[] = $conf->_("You can’t $action submission #%d until %s.", $paperId, $conf->printableTime($start, "span"));
         else if ($end > 0 && $Now > $end) {
             if ($dname == "sub_reg")
@@ -864,17 +866,17 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
     }
     if (isset($whyNot["override"]))
         $ms[] = $conf->_("“Override deadlines” can override this restriction.");
-    if (isset($whyNot['blindSubmission']))
+    if (isset($whyNot["blindSubmission"]))
         $ms[] = $conf->_("Submission to this conference is blind.");
-    if (isset($whyNot['author']))
+    if (isset($whyNot["author"]))
         $ms[] = $conf->_("You aren’t a contact for submission #%d.", $paperId);
-    if (isset($whyNot['conflict']))
+    if (isset($whyNot["conflict"]))
         $ms[] = $conf->_("You have a conflict with submission #%d.", $paperId);
-    if (isset($whyNot['externalReviewer']))
+    if (isset($whyNot["externalReviewer"]))
         $ms[] = $conf->_("External reviewers cannot view other reviews.");
-    if (isset($whyNot['differentReviewer']))
+    if (isset($whyNot["differentReviewer"]))
         $ms[] = $conf->_("You didn’t write this review, so you can’t change it.");
-    if (isset($whyNot['reviewToken']))
+    if (isset($whyNot["reviewToken"]))
         $ms[] = $conf->_("If you know a valid review token, enter it above to edit that review.");
     if (isset($whyNot["clickthrough"]))
         $ms[] = $conf->_("You can’t do that until you agree to the terms.");

@@ -12,7 +12,7 @@ function change_email_by_capability() {
     $capdata = $capmgr->check($_REQUEST["changeemail"]);
     if (!$capdata || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
         || !($capdata->data = json_decode($capdata->data))
-        || !@$capdata->data->uemail)
+        || !get($capdata->data, "uemail"))
         error_go(false, "That email change code has expired, or you didn’t enter it correctly.");
     $Acct = $Conf->user_by_id($capdata->contactId);
     if (!$Acct)
@@ -187,7 +187,7 @@ function web_request_as_json($cj) {
 }
 
 function save_user($cj, $user_status, $Acct, $allow_modification) {
-    global $Conf, $Me, $newProfile;
+    global $Conf, $Me, $Now, $newProfile;
     if ($newProfile)
         $Acct = null;
 
@@ -224,7 +224,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
             $old_preferredEmail = $Acct->preferredEmail;
             $Acct->preferredEmail = $cj->email;
             $capmgr = $Conf->capability_manager();
-            $rest = array("capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
+            $rest = array("capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => $Now + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
             $mailer = new HotCRPMailer($Acct, null, $rest);
             $prep = $mailer->make_preparation("@changeemail", $rest);
             if ($prep->sendable) {
@@ -717,13 +717,13 @@ echo "</div>\n"; // f-contain
 
 echo '<h3 class="profile">Email notification</h3>';
 $follow = isset($formcj->follow) ? $formcj->follow : (object) [];
-if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
+if ($newProfile ? $Me->privChair : $Acct->isPC) {
     echo "<table><tr><td>Send mail for: &nbsp;</td>",
         "<td>", Ht::checkbox_h("watchcomment", 1, !!get($follow, "reviews")), "&nbsp;",
         Ht::label($Conf->_("Reviews and comments on authored or reviewed papers")), "</td></tr>",
         "<tr><td></td><td>", Ht::checkbox_h("watchcommentall", 1, !!get($follow, "allreviews")), "&nbsp;",
         Ht::label($Conf->_("Reviews and comments on <i>any</i> paper")), "</td></tr>";
-    if ($Me->privChair)
+    if (!$newProfile && $Acct->privChair)
         echo "<tr><td></td><td>", Ht::checkbox_h("watchfinalall", 1, !!get($follow, "allfinal")), "&nbsp;",
             Ht::label($Conf->_("Updates to final versions")), "</td></tr>";
     echo "</table>";

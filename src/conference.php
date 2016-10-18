@@ -26,7 +26,7 @@ class Conf {
     private $settingTexts;
     public $sversion;
     private $_pc_seeall_cache = null;
-    private $_pc_see_pdf = null;
+    private $_pc_see_pdf = false;
 
     public $dbname;
     public $dsn = null;
@@ -38,6 +38,7 @@ class Conf {
     public $au_seerev;
     public $tag_au_seerev;
     public $tag_seeall;
+    public $sort_by_last;
     public $opt;
     public $opt_override = null;
     public $paper_opts;
@@ -57,7 +58,6 @@ class Conf {
     private $_decisions = null;
     private $_topic_separator_cache = null;
     private $_pc_members_cache = null;
-    private $_pc_members_cache_by_last = null;
     private $_pc_tags_cache = null;
     private $_review_form_cache = null;
     private $_date_format_initialized = false;
@@ -110,7 +110,7 @@ class Conf {
             Dbl::set_error_handler(array($this, "query_error_handler"));
         }
         if ($this->dblink) {
-            Dbl::$landmark_sanitizer = "/^(?:Dbl::|Conf::q|call_user_func)/";
+            Dbl::$landmark_sanitizer = "/^(?:Dbl::|Conf::q|Conf::fetch|call_user_func)/";
             $this->load_settings();
         } else
             $this->crosscheck_options();
@@ -150,7 +150,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 147) {
+        if ($this->sversion < 154) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -279,7 +279,9 @@ class Conf {
             && ($so = get($this->settings, "sub_open", 0)) > 0
             && $so < $Now
             && ($ss = get($this->settings, "sub_sub", 0)) > 0
-            && $ss > $Now)
+            && $ss > $Now
+            && (get($this->settings, "pc_seeallpdf", 0) <= 0
+                || !$this->can_pc_see_all_submissions()))
             $this->_pc_see_pdf = false;
 
         $this->au_seerev = get($this->settings, "au_seerev", 0);
@@ -426,6 +428,10 @@ class Conf {
         $this->_format_info = null;
 
         // other caches
+        $sort_by_last = !!get($this->opt, "sortByLastName");
+        if (!$this->sort_by_last != !$sort_by_last)
+            $this->_pc_members_cache = null;
+        $this->sort_by_last = $sort_by_last;
         $this->_api_map = null;
     }
 
@@ -837,12 +843,11 @@ class Conf {
         return $this->_defined_rounds;
     }
 
-    function round_name($roundno, $expand = false) {
+    function round_name($roundno) {
         if ($roundno > 0) {
             if (($rname = get($this->rounds, $roundno)) && $rname !== ";")
                 return $rname;
-            else if ($expand)
-                return "?$roundno?"; /* should not happen */
+            error_log($this->dbname . ": round #$roundno undefined");
         }
         return "";
     }
@@ -868,7 +873,7 @@ class Conf {
 
     function sanitize_round_name($rname) {
         if ($rname === null)
-            return $this->current_round_name();
+            return $this->assignment_round_name(false);
         else if ($rname === "" || preg_match('/\A(?:\(none\)|none|default|unnamed)\z/i', $rname))
             return "";
         else if (self::round_name_error($rname))
@@ -877,12 +882,15 @@ class Conf {
             return $rname;
     }
 
-    function current_round_name() {
-        return (string) get($this->settingTexts, "rev_roundtag");
+    function assignment_round_name($external) {
+        if ($external && ($x = get($this->settingTexts, "extrev_roundtag")) !== null)
+            return $x;
+        else
+            return (string) get($this->settingTexts, "rev_roundtag");
     }
 
-    function current_round($add = false) {
-        return $this->round_number($this->current_round_name(), $add);
+    function assignment_round($external) {
+        return $this->round_number($this->assignment_round_name($external), false);
     }
 
     function round_number($name, $add) {
@@ -904,20 +912,10 @@ class Conf {
         $opt = array();
         foreach ($this->defined_round_list() as $rname)
             $opt[$rname] = $rname;
-        $crname = $this->current_round_name() ? : "unnamed";
+        $crname = $this->assignment_round_name(false) ? : "unnamed";
         if ($crname && !get($opt, $crname))
             $opt[$crname] = $crname;
         return $opt;
-    }
-
-    function round_selector_name($roundno) {
-        if ($roundno === null)
-            return $this->current_round_name() ? : "unnamed";
-        else if ($roundno > 0 && ($rname = get($this->rounds, $roundno))
-                 && $rname !== ";")
-            return $rname;
-        else
-            return "unnamed";
     }
 
 
@@ -1010,7 +1008,7 @@ class Conf {
     function site_contact() {
         $contactEmail = $this->opt("contactEmail");
         if (!$contactEmail || $contactEmail == "you@example.com") {
-            $result = $this->ql("select firstName, lastName, email from ContactInfo where (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
+            $result = $this->ql("select firstName, lastName, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
             if ($result && ($row = $result->fetch_object())) {
                 $this->set_opt("defaultSiteContact", true);
                 $this->set_opt("contactName", Text::name_text($row));
@@ -1051,14 +1049,12 @@ class Conf {
     }
 
     function pc_members() {
-        $by_last = opt("sortByLastName");
-        if ($this->_pc_members_cache === null
-            || $this->_pc_members_cache_by_last != opt("sortByLastName")) {
+        if ($this->_pc_members_cache === null) {
             $pc = array();
-            $result = $this->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
+            $result = $this->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0");
             $by_name_text = array();
             $this->_pc_tags_cache = ["pc" => "pc"];
-            while ($result && ($row = Contact::fetch($result))) {
+            while ($result && ($row = Contact::fetch($result, $this))) {
                 $pc[$row->contactId] = $row;
                 if ($row->firstName || $row->lastName) {
                     $name_text = Text::name_text($row);
@@ -1073,6 +1069,7 @@ class Conf {
                             $this->_pc_tags_cache[strtolower($tag)] = $tag;
                     }
             }
+            Dbl::free($result);
             uasort($pc, "Contact::compare");
             $order = 0;
             foreach ($pc as $row) {
@@ -1080,7 +1077,6 @@ class Conf {
                 ++$order;
             }
             $this->_pc_members_cache = $pc;
-            $this->_pc_members_cache_by_last = $by_last;
             ksort($this->_pc_tags_cache);
         }
         return $this->_pc_members_cache;
@@ -1548,7 +1544,7 @@ class Conf {
     function review_deadline($round, $isPC, $hard) {
         $dn = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
         if ($round === null)
-            $round = $this->current_round(false);
+            $round = $this->assignment_round(!$isPC);
         else if (is_object($round))
             $round = $round->reviewRound ? : 0;
         if ($round && isset($this->settings["{$dn}_$round"]))
@@ -1758,7 +1754,7 @@ class Conf {
         return $table . "interest";
     }
 
-    function paperQuery($contact, $options = array()) {
+    private function paperQuery(Contact $contact = null, $options = array()) {
         // Options:
         //   "paperId" => $pid  Only paperId $pid (if array, any of those)
         //   "reviewId" => $rid Only paper reviewed by $rid
@@ -1790,19 +1786,14 @@ class Conf {
         $reviewerQuery = isset($options["myReviews"]) || isset($options["allReviews"]) || isset($options["myReviewRequests"]) || isset($options["myReviewsOpt"]) || isset($options["myOutstandingReviews"]);
         $allReviewerQuery = isset($options["allReviews"]) || isset($options["allReviewScores"]);
         $scoresQuery = !$reviewerQuery && isset($options["allReviewScores"]);
-        if (is_object($contact))
-            $contactId = $contact->contactId;
-        else {
-            $contactId = (int) $contact;
-            $contact = null;
-        }
+        $contactId = $contact ? $contact->contactId : 0;
         if (isset($options["reviewer"]) && is_object($options["reviewer"]))
             $reviewerContactId = $options["reviewer"]->contactId;
         else if (isset($options["reviewer"]))
             $reviewerContactId = $options["reviewer"];
         else
             $reviewerContactId = $contactId;
-        if (get($options, "author"))
+        if (get($options, "author") || !$contactId)
             $myPaperReview = null;
         else if ($allReviewerQuery)
             $myPaperReview = "MyPaperReview";
@@ -1815,16 +1806,16 @@ class Conf {
             $paperset[] = self::_cvt_numeric_set($options["paperId"]);
         if (isset($options["reviewId"])) {
             if (is_numeric($options["reviewId"])) {
-                $result = $this->qe("select paperId from PaperReview where reviewId=" . $options["reviewId"]);
+                $result = $this->qe("select paperId from PaperReview where reviewId=?", $options["reviewId"]);
                 $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
             } else if (preg_match('/^(\d+)([A-Z][A-Z]?)$/i', $options["reviewId"], $m)) {
-                $result = $this->qe("select paperId from PaperReview where paperId=$m[1] and reviewOrdinal=" . parseReviewOrdinal($m[2]));
+                $result = $this->qe("select paperId from PaperReview where paperId=? and reviewOrdinal=?", $m[1], parseReviewOrdinal($m[2]));
                 $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
             } else
                 $paperset[] = array();
         }
         if (isset($options["commentId"])) {
-            $result = $this->qe("select paperId from PaperComment where commentId" . sql_in_numeric_set(self::_cvt_numeric_set($options["commentId"])));
+            $result = $this->qe("select paperId from PaperComment where commentId?a", self::_cvt_numeric_set($options["commentId"]));
             $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
         }
         if (count($paperset) > 1)
@@ -1850,22 +1841,24 @@ class Conf {
             $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)";
 
         // my review
-        $qr = "";
-        if ($contact && ($tokens = $contact->review_tokens()))
-            $qr = " or PaperReview.reviewToken in (" . join(", ", $tokens) . ")";
+        $reviewjoin = "PaperReview.contactId=$contactId";
+        $tokens = false;
+        if ($contact && ($reviewerQuery || $myPaperReview)
+            && ($tokens = $contact->review_tokens()))
+            $reviewjoin = "($reviewjoin or reviewToken in (" . join(",", $tokens) . "))";
         if (get($options, "myReviewRequests"))
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_EXTERNAL . ")";
         else if (get($options, "myReviews"))
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))";
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
         else if (get($options, "myOutstandingReviews"))
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr) and PaperReview.reviewNeedsSubmit!=0)";
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin and PaperReview.reviewNeedsSubmit!=0)";
         else if (get($options, "myReviewsOpt"))
-            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))";
+            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
         else if (get($options, "allReviews") || get($options, "allReviewScores")) {
             $x = (get($options, "reviewLimitSql") ? " and (" . $options["reviewLimitSql"] . ")" : "");
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId$x)";
-        } else if (!get($options, "author"))
-            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))";
+        } else if ($myPaperReview)
+            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
 
         // started reviews
         if (get($options, "startedReviewCount"))
@@ -1928,9 +1921,7 @@ class Conf {
         }
 
         // fields
-        if (get($options, "author"))
-            $cols[] = "null reviewType, null reviewId, null myReviewType";
-        else {
+        if ($myPaperReview) {
             // see also papercolumn.php
             array_push($cols, "PaperReview.reviewType, PaperReview.reviewId",
                        "PaperReview.reviewModified, PaperReview.reviewSubmitted, PaperReview.timeApprovalRequested",
@@ -1942,7 +1933,8 @@ class Conf {
                        "min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit",
                        "$myPaperReview.contactId as myReviewContactId",
                        "PaperReview.reviewRound");
-        }
+        } else
+            $cols[] = "null reviewType, null reviewId, null myReviewType";
 
         if ($reviewerQuery || $scoresQuery) {
             $cols[] = "PaperReview.reviewEditVersion as reviewEditVersion";
@@ -2056,7 +2048,7 @@ class Conf {
         // grouping and ordering
         if (get($options, "allComments"))
             $pq .= "\ngroup by Paper.paperId, PaperComment.commentId";
-        else if ($reviewerQuery || $scoresQuery)
+        else if ($reviewerQuery || $scoresQuery || $tokens)
             $pq .= "\ngroup by Paper.paperId, PaperReview.reviewId";
         else
             $pq .= "\ngroup by Paper.paperId";
@@ -2064,7 +2056,7 @@ class Conf {
             $pq .= "\n" . $options["order"];
         else {
             $pq .= "\norder by Paper.paperId";
-            if ($reviewerQuery || $scoresQuery)
+            if ($reviewerQuery || $scoresQuery || $tokens)
                 $pq .= ", PaperReview.reviewOrdinal";
             if (isset($options["allComments"]))
                 $pq .= ", PaperComment.commentId";
@@ -2074,7 +2066,7 @@ class Conf {
         return $pq . "\n";
     }
 
-    function paperRow($sel, $contact, &$whyNot = null) {
+    function paperRow($sel, Contact $contact = null, &$whyNot = null) {
         $ret = null;
         $whyNot = array();
 
@@ -2107,8 +2099,8 @@ class Conf {
         return $ret;
     }
 
-    function paper_result($contact, $options = []) {
-        return $this->qe_raw($this->paperQuery($contact, $options));
+    function paper_result(Contact $user = null, $options = []) {
+        return $this->qe_raw($this->paperQuery($user, $options));
     }
 
     function review_rows($q, $contact) {
@@ -2153,18 +2145,18 @@ class Conf {
         $whyNot = array();
 
         if (!is_array($selector))
-            $selector = array('reviewId' => $selector);
-        if (isset($selector['reviewId'])) {
-            $whyNot['reviewId'] = $selector['reviewId'];
-            if (($reviewId = cvtint($selector['reviewId'])) <= 0) {
-                $whyNot['invalidId'] = 'review';
+            $selector = array("reviewId" => $selector);
+        if (isset($selector["reviewId"])) {
+            $whyNot["reviewId"] = $selector["reviewId"];
+            if (($reviewId = cvtint($selector["reviewId"])) <= 0) {
+                $whyNot["invalidId"] = "review";
                 return null;
             }
         }
-        if (isset($selector['paperId'])) {
-            $whyNot['paperId'] = $selector['paperId'];
-            if (($paperId = cvtint($selector['paperId'])) <= 0) {
-                $whyNot['invalidId'] = 'paper';
+        if (isset($selector["paperId"])) {
+            $whyNot["paperId"] = $selector["paperId"];
+            if (($paperId = cvtint($selector["paperId"])) <= 0) {
+                $whyNot["invalidId"] = "paper";
                 return null;
             }
         }
@@ -2173,51 +2165,62 @@ class Conf {
                 ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.roles as contactRoles,
                 ContactInfo.contactTags,
                 ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail";
+        $qv = [];
         if (isset($selector["ratings"]))
             $q .= ",
-                group_concat(ReviewRating.rating) as allRatings";
-        if (isset($selector["myRating"]))
+                (select group_concat(rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId) allRatings";
+        if (isset($selector["myRating"])) {
             $q .= ",
-                MyRating.rating as myRating";
+                (select rating from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId and contactId=?) myRating";
+            $qv[] = $selector["myRating"];
+        }
         $q .= "\n               from PaperReview
                 join ContactInfo using (contactId)
                 left join ContactInfo as ReqCI on (ReqCI.contactId=PaperReview.requestedBy)\n";
-        if (isset($selector["ratings"]))
-            $q .= "             left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId)\n";
-        if (isset($selector["myRating"]))
-            $q .= "             left join ReviewRating as MyRating on (MyRating.reviewId=PaperReview.reviewId and MyRating.contactId=" . $selector["myRating"] . ")\n";
 
         $where = array();
-        $order = array("paperId");
-        if (isset($reviewId))
-            $where[] = "PaperReview.reviewId=$reviewId";
-        if (isset($paperId))
-            $where[] = "PaperReview.paperId=$paperId";
+        if (isset($paperId)) {
+            $where[] = "PaperReview.paperId=?";
+            $qv[] = $paperId;
+        }
+        if (isset($reviewId)) {
+            $where[] = "PaperReview.reviewId=?";
+            $qv[] = $reviewId;
+        }
         $cwhere = array();
-        if (isset($selector["contactId"]))
-            $cwhere[] = "PaperReview.contactId=" . cvtint($selector["contactId"]);
-        if (get($selector, "rev_tokens"))
-            $cwhere[] = "PaperReview.reviewToken in (" . join(",", $selector["rev_tokens"]) . ")";
+        if (isset($selector["contactId"])) {
+            $cwhere[] = "PaperReview.contactId=?";
+            $qv[] = $selector["contactId"];
+        }
+        if (get($selector, "rev_tokens")) {
+            $cwhere[] = "PaperReview.reviewToken?a";
+            $qv[] = $selector["rev_tokens"];
+        }
         if (count($cwhere))
             $where[] = "(" . join(" or ", $cwhere) . ")";
-        if (count($cwhere) > 1)
-            $order[] = "(PaperReview.contactId=" . cvtint($selector["contactId"]) . ") desc";
-        if (isset($selector['reviewOrdinal']))
-            $where[] = "PaperReview.reviewSubmitted>0 and reviewOrdinal=" . cvtint($selector['reviewOrdinal']);
-        else if (isset($selector['submitted']))
+        if (isset($selector["reviewOrdinal"])) {
+            $where[] = "PaperReview.reviewSubmitted>0 and reviewOrdinal=?";
+            $qv[] = $selector["reviewOrdinal"];
+        } else if (isset($selector["submitted"]))
             $where[] = "PaperReview.reviewSubmitted>0";
-        if (!count($where)) {
-            $whyNot['internal'] = 1;
+        if (empty($where)) {
+            $whyNot["internal"] = 1;
             return null;
+        }
+
+        $order = array("PaperReview.paperId");
+        if (count($cwhere) > 1) {
+            $order[] = "(PaperReview.contactId=?) desc";
+            $qv[] = $selector["contactId"];
         }
 
         // this review order is also implemented by PaperList::review_row_compare
         $q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId
                 order by " . join(", ", $order) . ", reviewOrdinal, timeRequested, reviewType desc, reviewId";
 
-        $result = $this->q_raw($q);
+        $result = $this->qe_apply($q, $qv);
         if (!$result) {
-            $whyNot['dbError'] = "Database error while fetching review (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
+            $whyNot["dbError"] = "Database error while fetching review (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
             return null;
         }
 
@@ -2241,7 +2244,7 @@ class Conf {
     function preferenceConflictQuery($type, $extra) {
         $q = "select PRP.paperId, PRP.contactId, PRP.preference
                 from PaperReviewPreference PRP
-                join ContactInfo c on (c.contactId=PRP.contactId and (c.roles&" . Contact::ROLE_PC . ")!=0)
+                join ContactInfo c on (c.contactId=PRP.contactId and c.roles!=0 and (c.roles&" . Contact::ROLE_PC . ")!=0)
                 join Paper P on (P.paperId=PRP.paperId)
                 left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
                 where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0
@@ -2265,14 +2268,8 @@ class Conf {
     }
 
     private function _flowQueryRest() {
-        return "          Paper.title,
-                substring(Paper.title from 1 for 80) as shortTitle,
-                Paper.timeSubmitted,
-                Paper.timeWithdrawn,
-                Paper.blind as paperBlind,
-                Paper.outcome,
-                Paper.managerContactId,
-                Paper.leadContactId,
+        return "title, timeSubmitted, timeWithdrawn, Paper.blind paperBlind,
+                outcome, managerContactId, leadContactId,
                 ContactInfo.firstName as reviewFirstName,
                 ContactInfo.lastName as reviewLastName,
                 ContactInfo.email as reviewEmail,
@@ -2285,14 +2282,13 @@ class Conf {
 
     private function _commentFlowQuery($contact, $t0, $limit) {
         // XXX review tokens
-        $q = "select PaperComment.*,
-                substring(PaperComment.comment from 1 for 300) as shortComment,\n"
+        $q = "select straight_join PaperComment.*,\n"
             . $this->_flowQueryRest()
             . "\t\tfrom PaperComment
                 join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
-                join Paper on (Paper.paperId=PaperComment.paperId)
                 left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=$contact->contactId)
-                left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperComment.paperId and MyPaperReview.contactId=$contact->contactId)\n";
+                left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperComment.paperId and MyPaperReview.contactId=$contact->contactId)
+                join Paper on (Paper.paperId=PaperComment.paperId)\n";
         $where = $contact->canViewCommentReviewWheres();
         self::_flowQueryWheres($where, "PaperComment", $t0);
         if (count($where))
@@ -2305,13 +2301,13 @@ class Conf {
 
     private function _reviewFlowQuery($contact, $t0, $limit) {
         // XXX review tokens
-        $q = "select PaperReview.*,\n"
+        $q = "select straight_join PaperReview.*,\n"
             . $this->_flowQueryRest()
             . "\t\tfrom PaperReview
                 join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
-                join Paper on (Paper.paperId=PaperReview.paperId)
                 left join PaperConflict on (PaperConflict.paperId=PaperReview.paperId and PaperConflict.contactId=$contact->contactId)
-                left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperReview.paperId and MyPaperReview.contactId=$contact->contactId)\n";
+                left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperReview.paperId and MyPaperReview.contactId=$contact->contactId)
+                join Paper on (Paper.paperId=PaperReview.paperId)\n";
         $where = $contact->canViewCommentReviewWheres();
         self::_flowQueryWheres($where, "PaperReview", $t0);
         $where[] = "PaperReview.reviewSubmitted>0";
@@ -2805,13 +2801,12 @@ class Conf {
     public function stash_hotcrp_pc(Contact $user) {
         if (!Ht::mark_stash("hotcrp_pc"))
             return;
-        $sortbylast = $this->opt("sortByLastName");
         $hpcj = $list = [];
         foreach ($this->pc_members() as $pcm) {
             $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_html_for($pcm), "email" => $pcm->email];
             if (($color_classes = $user->reviewer_color_classes_for($pcm)))
                 $j->color_classes = $color_classes;
-            if ($sortbylast && $pcm->lastName) {
+            if ($this->sort_by_last && $pcm->lastName) {
                 $r = Text::analyze_name($pcm);
                 if (strlen($r->lastName) !== strlen($r->name))
                     $j->lastpos = strlen(htmlspecialchars($r->firstName)) + 1;
@@ -2821,7 +2816,7 @@ class Conf {
             $list[] = $pcm->contactId;
         }
         $hpcj["__order__"] = $list;
-        if ($sortbylast)
+        if ($this->sort_by_last)
             $hpcj["__sort__"] = "last";
         Ht::stash_script("hotcrp_pc=" . json_encode($hpcj) . ";");
     }
@@ -2869,18 +2864,19 @@ class Conf {
     // Action recording
     //
 
+    const action_log_query = "insert into ActionLog (ipaddr, contactId, paperId, action) values ?v";
+
     function save_logs($on) {
         if ($on && $this->_save_logs === false)
             $this->_save_logs = array();
         else if (!$on && $this->_save_logs !== false) {
-            $qs = [];
+            $qv = [];
             foreach ($this->_save_logs as $cid_text => $pids) {
                 $pos = strpos($cid_text, "|");
-                $qs[] = self::format_log_query(substr($cid_text, $pos + 1), substr($cid_text, 0, $pos), array_keys($pids));
+                $qv[] = self::format_log_values(substr($cid_text, $pos + 1), substr($cid_text, 0, $pos), array_keys($pids));
             }
-            $mresult = Dbl::multi_q_raw($this->dblink, join(";", $qs));
-            while (($result = $mresult->next()))
-                Dbl::free($result);
+            if (!empty($qv))
+                $this->qe(self::action_log_query, $qv);
             $this->_save_logs = false;
         }
     }
@@ -2903,7 +2899,7 @@ class Conf {
             $ps[] = is_object($p) ? $p->paperId : $p;
 
         if ($this->_save_logs === false)
-            $this->q_raw(self::format_log_query($text, $who, $ps));
+            $this->qe(self::action_log_query, [self::format_log_values($text, $who, $ps)]);
         else {
             $key = "$who|$text";
             if (!isset($this->_save_logs[$key]))
@@ -2913,13 +2909,13 @@ class Conf {
         }
     }
 
-    private static function format_log_query($text, $who, $pids) {
+    private static function format_log_values($text, $who, $pids) {
         $pid = null;
         if (count($pids) == 1)
             $pid = $pids[0];
         else if (count($pids) > 1)
             $text .= " (papers " . join(", ", $pids) . ")";
-        return Dbl::format_query("insert into ActionLog set ipaddr=?, contactId=?, paperId=?, action=?", get($_SERVER, "REMOTE_ADDR"), (int) $who, $pid, substr($text, 0, 4096));
+        return [get($_SERVER, "REMOTE_ADDR"), (int) $who, $pid, substr($text, 0, 4096)];
     }
 
 

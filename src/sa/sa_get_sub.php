@@ -129,7 +129,7 @@ class GetAbstract_SearchAction extends SearchAction {
             $actions[] = [1000, $this->subname, "Paper information", "Abstracts"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->paper_result(array("paperId" => $ssel->selection(), "topics" => 1));
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => 1]);
         $texts = array();
         while ($prow = PaperInfo::fetch($result, $user)) {
             if (($whyNot = $user->perm_view_paper($prow)))

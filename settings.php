@@ -31,6 +31,8 @@ class Si {
     public $message_default;
     public $date_backup;
 
+    static public $option_is_value = [];
+
     const SI_VALUE = 1;
     const SI_DATA = 2;
     const SI_SLICE = 4;
@@ -96,6 +98,14 @@ class Si {
             $this->storage_type = self::$type_storage[$this->type];
         else
             $this->storage_type = self::SI_VALUE;
+        if ($this->storage_type & self::SI_OPT) {
+            $is_value = !!($this->storage_type & self::SI_VALUE);
+            $oname = substr($this->storage ? : $this->name, 4);
+            if (!isset(self::$option_is_value[$oname]))
+                self::$option_is_value[$oname] = $is_value;
+            if (self::$option_is_value[$oname] != $is_value)
+                error_log("$oname: conflicting option_is_value");
+        }
 
         // defaults for size, placeholder
         if (str_ends_with($this->type, "date")) {
@@ -234,7 +244,7 @@ class SettingValues {
     public $savedv = array();
     public $explicit_oldv = array();
     private $hint_status = array();
-    private $req_has = array();
+    private $has_req = array();
 
     public function __construct($user) {
         $this->conf = $user->conf;
@@ -397,7 +407,6 @@ class SettingValues {
         $this->explicit_oldv[$name] = $value;
     }
     public function save($name, $value) {
-        global $Conf;
         $si = $this->si($name);
         if (!$si)
             return;
@@ -409,7 +418,7 @@ class SettingValues {
         $s = $si->storage();
         if ($si->storage_type & Si::SI_SLICE) {
             if (!isset($this->savedv[$s]))
-                $this->savedv[$s] = [$Conf->setting($s, 0), $Conf->setting_data($s, null)];
+                $this->savedv[$s] = [$this->conf->setting($s, 0), $this->conf->setting_data($s, null)];
             $idx = $si->storage_type & Si::SI_DATA ? 1 : 0;
             $this->savedv[$s][$idx] = $value;
             if ($this->savedv[$s][0] === 0 && $this->savedv[$s][1] === null)
@@ -441,17 +450,16 @@ class SettingValues {
             return $this->si_oldv($si, $default_value);
     }
     private function si_oldv($si, $default_value) {
-        global $Conf;
         if ($default_value === null)
             $default_value = $si->default_value;
         if (isset($this->explicit_oldv[$si->name]))
             $val = $this->explicit_oldv[$si->name];
         else if ($si->storage_type & Si::SI_OPT)
-            $val = $Conf->opt(substr($si->storage(), 4), $default_value);
+            $val = $this->conf->opt(substr($si->storage(), 4), $default_value);
         else if ($si->storage_type & Si::SI_DATA)
-            $val = $Conf->setting_data($si->storage(), $default_value);
+            $val = $this->conf->setting_data($si->storage(), $default_value);
         else
-            $val = $Conf->setting($si->storage(), $default_value);
+            $val = $this->conf->setting($si->storage(), $default_value);
         if ($val === $si->invalid_value)
             $val = "";
         return $val;
@@ -465,22 +473,19 @@ class SettingValues {
             return $this->savedv[$s][0];
     }
 
-    public function echo_checkbox($name, $text, $onchange = null) {
+    public function echo_checkbox_only($name, $onchange = null) {
         $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
-            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name"))),
-            "&nbsp;",
-            $this->label($name, $text, true),
-            "<br />\n";
+            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name")));
+    }
+    public function echo_checkbox($name, $text, $onchange = null) {
+        $this->echo_checkbox_only($name, $onchange);
+        echo "&nbsp;", $this->label($name, $text, true), "<br />\n";
     }
     public function echo_checkbox_row($name, $text, $onchange = null) {
-        $x = $this->curv($name);
-        echo '<tr><td class="nb">',
-            Ht::hidden("has_$name", 1),
-            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name"))),
-            "&nbsp;</td><td>",
-            $this->label($name, $text, true),
-            "</td></tr>\n";
+        echo '<tr><td class="nb">';
+        $this->echo_checkbox_only($name, $onchange);
+        echo '&nbsp;</td><td>', $this->label($name, $text, true), "</td></tr>\n";
     }
     public function echo_radio_table($name, $varr) {
         $x = $this->curv($name);
@@ -581,9 +586,8 @@ class SettingValues {
         return Ht::textarea($name, $v, $this->sjs($name, $js)) . $t;
     }
     private function echo_message_base($name, $description, $hint, $class) {
-        global $Conf;
         $si = $this->si($name);
-        $si->default_value = $Conf->message_default_html($name);
+        $si->default_value = $this->conf->message_default_html($name);
         $current = $this->curv($name);
         $description = '<a class="q" href="#" onclick="return foldup(this,event)">'
             . expander(null, 0) . $description . '</a>';
@@ -603,7 +607,6 @@ class SettingValues {
     }
 
     private function si_render_date_value($v, $si) {
-        global $Conf;
         if ($v !== null && $this->use_req())
             return $v;
         else if ($si->date_backup && $this->curv($si->date_backup) == $v)
@@ -615,7 +618,7 @@ class SettingValues {
         else if ($v == 1)
             return "now";
         else
-            return $Conf->parseableTime($v, true);
+            return $this->conf->parseableTime($v, true);
     }
     private function si_render_grace_value($v, $si) {
         if ($v === null || $v <= 0 || !is_numeric($v))
@@ -639,10 +642,9 @@ class SettingValues {
     }
 
     static public function make_request($user) {
-        global $Conf;
         $sv = new SettingValues($user);
-        $sv->errf = $Conf->session("settings_highlight", array());
-        $Conf->save_session("settings_highlight", null);
+        $sv->errf = $user->conf->session("settings_highlight", array());
+        $user->conf->save_session("settings_highlight", null);
         $got = [];
         foreach ($_POST as $k => $v) {
             $sv->req[$k] = $v;
@@ -808,8 +810,8 @@ function expandMailTemplate($name, $default) {
     return $null_mailer->expand_template($name, $default);
 }
 
-function parse_value($sv, $si) {
-    global $Conf, $Now;
+function parse_value(SettingValues $sv, Si $si) {
+    global $Now;
 
     if (!isset($sv->req[$si->name])) {
         $xname = str_replace(".", "_", $si->name);
@@ -837,7 +839,7 @@ function parse_value($sv, $si) {
             return -1;
         else if (!strcasecmp($v, "none"))
             return 0;
-        else if (($v = $Conf->parse_time($v)) !== false)
+        else if (($v = $sv->conf->parse_time($v)) !== false)
             return $v;
         $err = "Invalid date.";
     } else if ($si->type === "grace") {
@@ -891,7 +893,7 @@ function parse_value($sv, $si) {
     } else if ($si->type === "htmlstring") {
         if (($v = CleanHTML::basic_clean($v, $err)) !== false) {
             if ($si->message_default
-                && $v === $Conf->message_default_html($si->message_default))
+                && $v === $sv->conf->message_default_html($si->message_default))
                 return "";
             return $v;
         }
@@ -922,7 +924,7 @@ function opt_yes_no_optional($name) {
     return 0;
 }
 
-function account_value($sv, $si1) {
+function account_value(SettingValues $sv, Si $si1) {
     if ($si1->internal)
         return;
     foreach ($sv->req_si($si1) as $si) {
@@ -945,8 +947,8 @@ function account_value($sv, $si1) {
     }
 }
 
-function do_setting_update($sv) {
-    global $Conf, $Group, $Now;
+function do_setting_update(SettingValues $sv) {
+    global $Group, $Now;
     // parse settings
     foreach (Si::$all as $si)
         account_value($sv, $si);
@@ -989,8 +991,8 @@ function do_setting_update($sv) {
             $x = "timeSubmitted>0";
         else
             $x = "timeWithdrawn<=0";
-        $num = Dbl::fetch_ivalue("select paperId from Paper where $x limit 1") ? 1 : 0;
-        if ($num != $Conf->setting("papersub"))
+        $num = $sv->conf->fetch_ivalue("select paperId from Paper where $x limit 1") ? 1 : 0;
+        if ($num != $sv->conf->setting("papersub"))
             $sv->save("papersub", $num);
     }
 
@@ -1006,16 +1008,16 @@ function do_setting_update($sv) {
     // make settings
     $sv->changes = [];
     if (!$sv->has_errors()
-        && (count($sv->savedv) || count($sv->save_callbacks))) {
+        && (!empty($sv->savedv) || !empty($sv->save_callbacks))) {
         $tables = "Settings write";
         foreach ($sv->need_lock as $t => $need)
             if ($need)
                 $tables .= ", $t write";
-        $Conf->qe_raw("lock tables $tables");
+        $sv->conf->qe_raw("lock tables $tables");
 
         // load db settings, pre-crosscheck
         $dbsettings = array();
-        $result = Dbl::qe("select name, value, data from Settings");
+        $result = $sv->conf->qe("select name, value, data from Settings");
         while (($row = edb_row($result)))
             $dbsettings[$row[0]] = $row;
         Dbl::free($result);
@@ -1026,54 +1028,57 @@ function do_setting_update($sv) {
             $p->save($sv, $si);
         }
 
-        $dv = $aq = $av = array();
+        $dv = $av = array();
         foreach ($sv->savedv as $n => $v) {
-            if (substr($n, 0, 4) === "opt." && $v !== null) {
+            if (substr($n, 0, 4) === "opt.") {
                 $okey = substr($n, 4);
-                if (array_key_exists($okey, $Conf->opt_override))
-                    $oldv = $Conf->opt_override[$okey];
+                if (array_key_exists($okey, $sv->conf->opt_override))
+                    $oldv = $sv->conf->opt_override[$okey];
                 else
-                    $oldv = $Conf->opt($okey);
-                $newv = ($v[1] === null ? $v[0] : $v[1]);
+                    $oldv = $sv->conf->opt($okey);
+                $vi = Si::$option_is_value[$okey] ? 0 : 1;
+                $basev = $vi ? "" : 0;
+                $newv = $v === null ? $basev : $v[$vi];
                 if ($oldv === $newv)
                     $v = null; // delete override value in database
+                else if ($v === null && $oldv !== $basev && $oldv !== null)
+                    $v = $vi ? [0, ""] : [0, null];
             }
             if ($v === null
                 ? !isset($dbsettings[$n])
                 : isset($dbsettings[$n]) && (int) $dbsettings[$n][1] === $v[0] && $dbsettings[$n][2] === $v[1])
                 continue;
             $sv->changes[] = $n;
-            if ($v !== null) {
-                $aq[] = "(?, ?, ?)";
-                array_push($av, $n, $v[0], $v[1]);
-            } else
+            if ($v !== null)
+                $av[] = [$n, $v[0], $v[1]];
+            else
                 $dv[] = $n;
         }
-        if (count($dv)) {
-            Dbl::qe_apply("delete from Settings where name?a", array($dv));
-            //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query_apply("delete from Settings where name?a", array($dv))));
+        if (!empty($dv)) {
+            $sv->conf->qe("delete from Settings where name?a", $dv);
+            //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query("delete from Settings where name?a", $dv)));
         }
-        if (count($aq)) {
-            Dbl::qe_apply("insert into Settings (name, value, data) values\n\t" . join(",\n\t", $aq) . "\n\ton duplicate key update value=values(value), data=values(data)", $av);
-            //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query_apply("insert into Settings (name, value, data) values\n\t" . join(",\n\t", $aq) . "\n\ton duplicate key update value=values(value), data=values(data)", $av)));
+        if (!empty($av)) {
+            $sv->conf->qe("insert into Settings (name, value, data) values ?v on duplicate key update value=values(value), data=values(data)", $av);
+            //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query("insert into Settings (name, value, data) values ?v on duplicate key update value=values(value), data=values(data)", $av)));
         }
 
-        $Conf->qe_raw("unlock tables");
+        $sv->conf->qe_raw("unlock tables");
         if (!empty($sv->changes))
             $sv->user->log_activity("Updated settings " . join(", ", $sv->changes));
-        $Conf->load_settings();
+        $sv->conf->load_settings();
 
         // contactdb may need to hear about changes to shortName
         if ($sv->has_savedv("opt.shortName") && ($cdb = Contact::contactdb()))
-            Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $Conf->short_name, $Conf->dbname);
+            Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $sv->conf->short_name, $sv->conf->dbname);
     }
 
     if (!$sv->has_errors()) {
-        $Conf->save_session("settings_highlight", $sv->error_fields());
+        $sv->conf->save_session("settings_highlight", $sv->error_fields());
         if (!empty($sv->changes))
-            $Conf->confirmMsg("Changes saved.");
+            $sv->conf->confirmMsg("Changes saved.");
         else
-            $Conf->warnMsg("No changes.");
+            $sv->conf->warnMsg("No changes.");
         $sv->report();
         redirectSelf();
     } else {

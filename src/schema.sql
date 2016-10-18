@@ -24,15 +24,13 @@ CREATE TABLE `ActionLog` (
 
 DROP TABLE IF EXISTS `Capability`;
 CREATE TABLE `Capability` (
-  `capabilityId` int(11) NOT NULL AUTO_INCREMENT,
   `capabilityType` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
   `timeExpires` int(11) NOT NULL,
   `salt` varbinary(255) NOT NULL,
   `data` varbinary(4096) DEFAULT NULL,
-  PRIMARY KEY (`capabilityId`),
-  UNIQUE KEY `capabilityId` (`capabilityId`),
+  PRIMARY KEY (`salt`),
   UNIQUE KEY `salt` (`salt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -67,7 +65,7 @@ CREATE TABLE `ContactInfo` (
   `data` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`contactId`),
   UNIQUE KEY `contactId` (`contactId`),
-  UNIQUE KEY `contactIdRoles` (`contactId`,`roles`),
+  UNIQUE KEY `rolesContactId` (`roles`,`contactId`),
   UNIQUE KEY `email` (`email`),
   KEY `fullName` (`lastName`,`firstName`,`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -195,9 +193,9 @@ CREATE TABLE `Paper` (
 
 DROP TABLE IF EXISTS `PaperComment`;
 CREATE TABLE `PaperComment` (
+  `paperId` int(11) NOT NULL,
   `commentId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int(11) NOT NULL,
-  `paperId` int(11) NOT NULL,
   `timeModified` int(11) NOT NULL,
   `timeNotified` int(11) NOT NULL DEFAULT '0',
   `timeDisplayed` int(11) NOT NULL DEFAULT '0',
@@ -211,12 +209,10 @@ CREATE TABLE `PaperComment` (
   `commentRound` int(11) NOT NULL DEFAULT '0',
   `commentFormat` tinyint(1) DEFAULT NULL,
   `commentOverflow` longblob DEFAULT NULL,
-  PRIMARY KEY (`commentId`),
+  PRIMARY KEY (`paperId`,`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
-  KEY `paperId` (`paperId`),
-  KEY `contactPaper` (`contactId`,`paperId`),
-  KEY `timeModified` (`timeModified`)
+  KEY `timeModifiedContact` (`timeModified`,`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -244,7 +240,7 @@ CREATE TABLE `PaperOption` (
   `paperId` int(11) NOT NULL,
   `optionId` int(11) NOT NULL,
   `value` int(11) NOT NULL DEFAULT '0',
-  `data` varbinary(32768),
+  `data` varbinary(32768) DEFAULT NULL,
   KEY `paperOption` (`paperId`,`optionId`,`value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -256,8 +252,8 @@ CREATE TABLE `PaperOption` (
 
 DROP TABLE IF EXISTS `PaperReview`;
 CREATE TABLE `PaperReview` (
-  `reviewId` int(11) NOT NULL AUTO_INCREMENT,
   `paperId` int(11) NOT NULL,
+  `reviewId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int(11) NOT NULL,
   `reviewToken` int(11) NOT NULL DEFAULT '0',
   `reviewType` tinyint(1) NOT NULL DEFAULT '0',
@@ -298,11 +294,11 @@ CREATE TABLE `PaperReview` (
   `textField8` mediumblob,
   `reviewWordCount` int(11) DEFAULT NULL,
   `reviewFormat` tinyint(1) DEFAULT NULL,
-  PRIMARY KEY (`reviewId`),
+  PRIMARY KEY (`paperId`,`reviewId`),
   UNIQUE KEY `reviewId` (`reviewId`),
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   KEY `paperId` (`paperId`,`reviewOrdinal`),
-  KEY `reviewSubmitted` (`reviewSubmitted`),
+  KEY `reviewSubmittedContact` (`reviewSubmitted`,`contactId`),
   KEY `reviewNeedsSubmit` (`reviewNeedsSubmit`),
   KEY `reviewType` (`reviewType`),
   KEY `reviewRound` (`reviewRound`),
@@ -350,8 +346,8 @@ CREATE TABLE `PaperReviewRefused` (
 
 DROP TABLE IF EXISTS `PaperStorage`;
 CREATE TABLE `PaperStorage` (
-  `paperStorageId` int(11) NOT NULL AUTO_INCREMENT,
   `paperId` int(11) NOT NULL,
+  `paperStorageId` int(11) NOT NULL AUTO_INCREMENT,
   `timestamp` int(11) NOT NULL,
   `mimetype` varbinary(80) NOT NULL DEFAULT '',
   `mimetypeid` int(11) NOT NULL DEFAULT '0',
@@ -364,7 +360,7 @@ CREATE TABLE `PaperStorage` (
   `size` bigint(11) DEFAULT NULL,
   `filterType` int(3) DEFAULT NULL,
   `originalStorageId` int(11) DEFAULT NULL,
-  PRIMARY KEY (`paperStorageId`),
+  PRIMARY KEY (`paperId`,`paperStorageId`),
   UNIQUE KEY `paperStorageId` (`paperStorageId`),
   KEY `byPaper` (`paperId`,`documentType`,`timestamp`,`paperStorageId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -435,11 +431,11 @@ CREATE TABLE `PaperWatch` (
 
 DROP TABLE IF EXISTS `ReviewRating`;
 CREATE TABLE `ReviewRating` (
+  `paperId` int(11) NOT NULL,
   `reviewId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `rating` tinyint(1) NOT NULL DEFAULT '0',
-  UNIQUE KEY `reviewContact` (`reviewId`,`contactId`),
-  UNIQUE KEY `reviewContactRating` (`reviewId`,`contactId`,`rating`)
+  PRIMARY KEY (`paperId`,`reviewId`,`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -507,7 +503,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 147);
+insert into Settings (name, value) values ('allowPaperOption', 154);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

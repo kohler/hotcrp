@@ -50,6 +50,10 @@ xassert_eqq(Dbl::format_query("select a?e, b?e, c?e, d?e", null, 1, 2.1, "e"),
             "select a IS NULL, b=1, c=2.1, d='e'");
 xassert_eqq(Dbl::format_query("select a?E, b?E, c?E, d?E", null, 1, 2.1, "e"),
             "select a IS NOT NULL, b!=1, c!=2.1, d!='e'");
+xassert_eqq(Dbl::format_query("insert ?v", [1, 2, 3]),
+            "insert (1), (2), (3)");
+xassert_eqq(Dbl::format_query("insert ?v", [[1, null], [2, "A"], ["b", 0.1]]),
+            "insert (1,NULL), (2,'A'), ('b',0.1)");
 
 // Dbl::compare_and_swap test
 Dbl::qe("insert into Settings set name='cmpxchg', value=1");
@@ -313,5 +317,36 @@ xassert_eqq($ms->x("ax"), "b");
 xassert_eqq($ms->x("bx"), "a");
 xassert_eqq($ms->x("%FOO% friend"), "100 friend");
 xassert_eqq($ms->x("%xOOB%x friend", 10, 11), "aOOBb friend");
+
+// MIME types
+xassert_eqq(Mimetype::content_type("%PDF-3.0\nwhatever\n"), Mimetype::PDF_TYPE);
+// test that we can parse lib/mime.types for file extensions
+xassert_eqq(Mimetype::mime_types_extension("application/pdf"), ".pdf");
+xassert_eqq(Mimetype::mime_types_extension("image/gif"), ".gif");
+xassert_eqq(Mimetype::content_type(null, "application/force"), "application/octet-stream");
+xassert_eqq(Mimetype::content_type(null, "application/x-zip-compressed"), "application/zip");
+xassert_eqq(Mimetype::content_type(null, "application/gz"), "application/gzip");
+xassert_eqq(Mimetype::mime_types_extension("application/g-zip"), ".gz");
+// `fileinfo` test
+xassert_eqq(Mimetype::content_type("<html><head></head><body></body></html>"), "text/html");
+
+// score sorting
+$s = [];
+foreach (["1,2,3,4,5", "1,2,3,5,5", "3,5,5", "3,3,5,5", "2,3,3,5,5"] as $st)
+    $s[] = new ScoreInfo($st);
+xassert($s[0]->compare_by($s[0], "C") == 0);
+xassert($s[0]->compare_by($s[1], "C") < 0);
+xassert($s[0]->compare_by($s[2], "C") < 0);
+xassert($s[0]->compare_by($s[3], "C") < 0);
+xassert($s[1]->compare_by($s[1], "C") == 0);
+xassert($s[1]->compare_by($s[2], "C") < 0);
+xassert($s[1]->compare_by($s[3], "C") < 0);
+xassert($s[2]->compare_by($s[2], "C") == 0);
+xassert($s[2]->compare_by($s[3], "C") < 0);
+xassert($s[3]->compare_by($s[0], "C") > 0);
+xassert($s[3]->compare_by($s[1], "C") > 0);
+xassert($s[3]->compare_by($s[2], "C") > 0);
+xassert($s[3]->compare_by($s[3], "C") == 0);
+xassert($s[3]->compare_by($s[4], "C") > 0);
 
 xassert_exit();

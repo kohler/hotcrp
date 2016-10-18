@@ -37,14 +37,10 @@ $docclass = $Conf->docclass((int) $arg["d"]);
 $docclass->set_no_database_storage();
 if (isset($arg["no-file-storage"]))
     $docclass->set_no_file_storage();
-$docinfo = (object) array("paperId" => (int) $arg["p"]);
-$doc = (object) array("content" => $content, "documentType" => (int) $arg["d"]);
+$docarg = ["paperId" => (int) $arg["p"], "documentType" => (int) $arg["d"],
+           "content" => $content];
 if (get($arg, "f"))
-    $doc->filename = $arg["f"];
-if (get($arg, "m"))
-    $doc->mimetype = $arg["m"];
-else if (($mt = Mimetype::sniff_type($doc->content)))
-    $doc->mimetype = $mt;
-else
-    $doc->mimetype = "application/octet-stream";
-$docclass->store($doc, $docinfo);
+    $docarg["filename"] = $arg["f"];
+$docarg["mimetype"] = Mimetype::content_type($content, get($arg, "m"));
+$doc = new DocumentInfo($docarg);
+$docclass->store($doc);

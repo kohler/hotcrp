@@ -40,7 +40,7 @@ if (isset($_REQUEST["uploadForm"])
 function saveTagIndexes($tag, $filename, &$settings, &$titles, &$linenos, &$errors) {
     global $Conf, $Me, $Error;
 
-    $result = $Conf->paper_result($Me, array("paperId" => array_keys($settings)));
+    $result = $Me->paper_result(["paperId" => array_keys($settings)]);
     while (($row = PaperInfo::fetch($result, $Me)))
         if ($settings[$row->paperId] !== null
             && !$Me->can_change_tag($row, $tag, null, 1)) {

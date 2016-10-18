@@ -231,6 +231,17 @@ function update_schema_drop_keys_if_exist($conf, $table, $key) {
         return true;
 }
 
+function update_schema_mimetype_extensions($conf) {
+    if (!($result = $conf->ql("select * from Mimetype where extension is null")))
+        return false;
+    $qv = [];
+    while (($row = $result->fetch_object()))
+        if (($extension = Mimetype::mime_types_extension($row->mimetype)))
+            $qv[] = [$row->mimetypeid, $row->mimetype, $extension];
+    Dbl::free($result);
+    return empty($qv) || $conf->ql("insert into Mimetype (mimetypeid, mimetype, extension) values ?v on duplicate key update extension=values(extension)", $qv);
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1031,6 +1042,42 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 146
         && $conf->ql("alter table Paper add `timeModified` int(11) NOT NULL DEFAULT '0'"))
         $conf->update_schema_version(147);
+    if ($conf->sversion == 147
+        && $conf->ql("alter table Capability change `capabilityId` `capabilityId` int(11) NOT NULL")
+        && update_schema_drop_keys_if_exist($conf, "Capability", ["capabilityId", "PRIMARY"])
+        && $conf->ql("alter table Capability add primary key (`salt`)")
+        && $conf->ql("alter table Capability drop column `capabilityId`"))
+        $conf->update_schema_version(148);
+    if ($conf->sversion == 148
+        && $conf->ql("alter table ReviewRating add `paperId` int(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("update ReviewRating join PaperReview using (reviewId) set ReviewRating.paperId=PaperReview.paperId")
+        && $conf->ql("alter table ReviewRating change `paperId` `paperId` int(11) NOT NULL")
+        && update_schema_drop_keys_if_exist($conf, "ReviewRating", ["reviewContact", "reviewContactRating"])
+        && $conf->ql("alter table ReviewRating add primary key (`paperId`,`reviewId`,`contactId`)"))
+        $conf->update_schema_version(149);
+    if ($conf->sversion == 149
+        && update_schema_drop_keys_if_exist($conf, "PaperReview", ["PRIMARY"])
+        && $conf->ql("alter table PaperReview add primary key (`paperId`,`reviewId`)"))
+        $conf->update_schema_version(150);
+    if ($conf->sversion == 150
+        && update_schema_drop_keys_if_exist($conf, "PaperComment", ["PRIMARY"])
+        && $conf->ql("alter table PaperComment add primary key (`paperId`,`commentId`)")
+        && update_schema_drop_keys_if_exist($conf, "PaperStorage", ["PRIMARY"])
+        && $conf->ql("alter table PaperStorage add primary key (`paperId`,`paperStorageId`)"))
+        $conf->update_schema_version(151);
+    if ($conf->sversion == 151
+        && update_schema_drop_keys_if_exist($conf, "ContactInfo", ["rolesCid", "rolesContactId", "contactIdRoles"])
+        && $conf->ql("alter table ContactInfo add key `rolesContactId` (`roles`,`contactId`)"))
+        $conf->update_schema_version(152);
+    if ($conf->sversion == 152
+        && update_schema_drop_keys_if_exist($conf, "PaperReview", ["reviewSubmitted"])
+        && update_schema_drop_keys_if_exist($conf, "PaperComment", ["timeModified", "paperId", "contactPaper"])
+        && $conf->ql("alter table PaperComment add key `timeModifiedContact` (`timeModified`,`contactId`)")
+        && $conf->ql("alter table PaperReview add key `reviewSubmittedContact` (`reviewSubmitted`,`contactId`)"))
+        $conf->update_schema_version(153);
+    if ($conf->sversion == 153
+        && update_schema_mimetype_extensions($conf))
+        $conf->update_schema_version(154);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }

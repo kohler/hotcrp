@@ -148,7 +148,7 @@ class Contact {
                 if (($c = simplify_whitespace($c)) !== "")
                     $this->collaborators .= "$c\n";
         }
-        self::set_sorter($this);
+        self::set_sorter($this, $this->conf);
         if (isset($user->password))
             $this->password = (string) $user->password;
         if (isset($user->disabled))
@@ -195,7 +195,7 @@ class Contact {
         $this->contactDbId = (int) $this->contactDbId;
         if ($this->unaccentedName === "")
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
-        self::set_sorter($this);
+        self::set_sorter($this, $this->conf);
         $this->password = (string) $this->password;
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
@@ -232,13 +232,12 @@ class Contact {
         }
     }
 
-    static public function set_sorter($c) {
-        $sort_by_last = opt("sortByLastName");
-        if (!$sort_by_last && isset($c->unaccentedName)) {
+    static public function set_sorter($c, Conf $conf) {
+        if (!$conf->sort_by_last && isset($c->unaccentedName)) {
             $c->sorter = trim("$c->unaccentedName $c->email");
             return;
         }
-        if ($sort_by_last) {
+        if ($conf->sort_by_last) {
             if (($m = Text::analyze_von($c->lastName)))
                 $c->sorter = trim("$m[1] $c->firstName $m[0] $c->email");
             else
@@ -831,7 +830,7 @@ class Contact {
         if (isset($cj->phone))
             $this->_save_assign_field("voicePhoneNumber", $cj->phone, $cu);
         $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $cu);
-        self::set_sorter($this);
+        self::set_sorter($this, $this->conf);
 
         // Disabled
         $disabled = $this->disabled ? 1 : 0;
@@ -1022,7 +1021,7 @@ class Contact {
         $old_roles = $this->roles;
         // ensure there's at least one system administrator
         if (!($new_roles & self::ROLE_ADMIN) && ($old_roles & self::ROLE_ADMIN)
-            && !(($result = $this->conf->qe("select contactId from ContactInfo where (roles&" . self::ROLE_ADMIN . ")!=0 and contactId!=" . $this->contactId . " limit 1"))
+            && !(($result = $this->conf->qe("select contactId from ContactInfo where roles!=0 and (roles&" . self::ROLE_ADMIN . ")!=0 and contactId!=" . $this->contactId . " limit 1"))
                  && edb_nrows($result) > 0))
             $new_roles |= self::ROLE_ADMIN;
         // log role change
@@ -1043,7 +1042,7 @@ class Contact {
     }
 
     private function load_by_id($cid) {
-        $result = $this->conf->q("select ContactInfo.* from ContactInfo where contactId=?", $cid);
+        $result = $this->conf->q("select * from ContactInfo where contactId=?", $cid);
         if (($row = $result ? $result->fetch_object() : null))
             $this->merge($row);
         Dbl::free($result);
@@ -1446,15 +1445,8 @@ class Contact {
         // Load from database
         $result = null;
         if ($this->contactId > 0) {
-            $qr = "";
-            if ($this->review_tokens_)
-                $qr = " or r.reviewToken in (" . join(",", $this->review_tokens_) . ")";
-            $result = $this->conf->qe("select max(conf.conflictType),
-                r.contactId as reviewer
-                from ContactInfo c
-                left join PaperConflict conf on (conf.contactId=c.contactId)
-                left join PaperReview r on (r.contactId=c.contactId$qr)
-                where c.contactId=$this->contactId group by c.contactId");
+            $qr = $this->review_tokens_ ? " or reviewToken?a" : "";
+            $result = $this->conf->qe("select (select max(conflictType) from PaperConflict where contactId=?), (select paperId from PaperReview where contactId=?$qr limit 1)", $this->contactId, $this->contactId, $this->review_tokens_);
         }
         $row = edb_row($result);
         $this->is_author_ = $row && $row[0] >= CONFLICT_AUTHOR;
@@ -1509,13 +1501,12 @@ class Contact {
             // Load from database
             $result = null;
             if ($this->contactId > 0) {
-                $qr = "";
-                if ($this->review_tokens_)
-                    $qr = " or r.reviewToken in (" . join(",", $this->review_tokens_) . ")";
+                $qr = $this->review_tokens_ ? " or r.reviewToken?a" : "";
                 $result = $this->conf->qe("select r.reviewId from PaperReview r
                     join Paper p on (p.paperId=r.paperId and p.timeSubmitted>0)
-                    where (r.contactId=$this->contactId$qr)
-                    and r.reviewNeedsSubmit!=0 limit 1");
+                    where (r.contactId=?$qr)
+                    and r.reviewNeedsSubmit!=0 limit 1",
+                    $this->contactId, $this->review_tokens_);
             }
             $row = edb_row($result);
             Dbl::free($result);
@@ -1531,7 +1522,7 @@ class Contact {
             if ($this->contactId > 0)
                 $result = $this->conf->qe("select requestedBy from PaperReview where requestedBy=? and contactId!=? limit 1", $this->contactId, $this->contactId);
             $row = edb_row($result);
-            $this->is_requester_ = $row && $row[0] > 1;
+            $this->is_requester_ = $row && $row[0] > 0;
         }
         return $this->is_requester_;
     }
@@ -1541,7 +1532,7 @@ class Contact {
         if (!isset($this->is_lead_)) {
             $result = null;
             if ($this->contactId > 0)
-                $result = $this->conf->qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
+                $result = $this->conf->qe("select paperId from Paper where leadContactId=? limit 1", $this->contactId);
             $this->is_lead_ = edb_nrows($result) > 0;
         }
         return $this->is_lead_;
@@ -1553,7 +1544,7 @@ class Contact {
             $result = null;
             if ($this->contactId > 0 && $this->isPC
                 && $this->conf->has_any_manager())
-                $result = $this->conf->qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
+                $result = $this->conf->qe("select paperId from Paper where managerContactId=? limit 1", $this->contactId);
             $this->is_explicit_manager_ = edb_nrows($result) > 0;
             Dbl::free($result);
         }
@@ -2353,7 +2344,7 @@ class Contact {
             return null;
         $rights = $this->rights($prow);
         $whyNot = $prow->initial_whynot();
-        if ($rights->review_type < REVIEW_PC)
+        if ($rights->review_type < REVIEW_PC && !$rights->allow_administer)
             $whyNot["permission"] = 1;
         else {
             $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
@@ -3218,10 +3209,13 @@ class Contact {
             else
                 return $reviewId;
         }
+        // PC members always get PC reviews
+        if ($type == REVIEW_EXTERNAL && get($this->conf->pc_members(), $reviewer_cid))
+            $type = REVIEW_PC;
 
         // change database
         if ($type > 0 && ($round = get($extra, "round_number")) === null)
-            $round = $this->conf->current_round();
+            $round = $this->conf->assignment_round($type == REVIEW_EXTERNAL);
         if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
             $qa = "";
             if (get($extra, "mark_notify"))
