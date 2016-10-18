@@ -116,12 +116,12 @@ function try_random_match($fparts) {
             $ndi = count($di);
             $start = mt_rand(0, $ndi - 1);
             $build = false;
-            for ($tries = 0;
-                 !$build && $tries < $ndi;
-                 $start = ($start + 1) % $ndi, ++$tries)
-                $build = try_part_match($di[$start], $fparts[$i], $hash, $extension);
-            if (!$build)
-                return false;
+            for ($tries = 0; $tries < $ndi; $start = ($start + 1) % $ndi, ++$tries)
+                if (($build = try_part_match($di[$start], $fparts[$i], $hash, $extension)))
+                    break;
+            // remove last part from list
+            if ($i == count($fparts) - 1)
+                array_splice($dirinfo[$bdir], $start, 1);
             $bdir .= $build;
         }
     if (strlen($hash) != 40)
@@ -131,24 +131,36 @@ function try_random_match($fparts) {
 
 
 $hotcrpdoc = new HotCRPDocument($Conf, DTYPE_SUBMISSION);
+$ndone = $nsuccess = 0;
 
 while ($count > 0) {
     $x = null;
     for ($i = 0; $i < 10000 && !$x; ++$i)
         $x = try_random_match($fparts);
     if (!$x) {
-        fwrite(STDERR, "Can't find anything to delete.");
-        exit(1);
+        fwrite(STDERR, "Can't find anything to delete.\n");
+        break;
     }
     $doc = new DocumentInfo(["sha1" => $x[0],
                              "mimetype" => Mimetype::type($x[1])]);
-    if ($hotcrpdoc->s3_check($doc)) {
+    $content = @file_get_contents($x[2]);
+    $ok = false;
+    if ($content === false)
+        fwrite(STDERR, "$x[2]: is unreadable\n");
+    else if (sha1($content) !== $x[0])
+        fwrite(STDERR, "$x[2]: incorrect SHA-1 sum\n");
+    else if ($hotcrpdoc->s3_check($doc)) {
         if (unlink($x[2])) {
             if ($verbose)
                 fwrite(STDOUT, "$x[2]: removed\n");
+            $ok = true;
         } else
             fwrite(STDERR, "$x[2]: cannot remove\n");
     } else
         fwrite(STDERR, "$x[2]: not on S3\n");
     --$count;
+    ++$ndone;
+    $nsuccess += $ok ? 1 : 0;
 }
+
+exit($nsuccess && $nsuccess == $ndone ? 0 : 1);
