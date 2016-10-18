@@ -1054,7 +1054,7 @@ class Conf {
             $result = $this->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0");
             $by_name_text = array();
             $this->_pc_tags_cache = ["pc" => "pc"];
-            while ($result && ($row = Contact::fetch($result))) {
+            while ($result && ($row = Contact::fetch($result, $this))) {
                 $pc[$row->contactId] = $row;
                 if ($row->firstName || $row->lastName) {
                     $name_text = Text::name_text($row);
