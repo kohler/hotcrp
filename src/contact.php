@@ -2981,7 +2981,7 @@ class Contact {
     function my_deadlines($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
         global $Now;
-        $dl = (object) ["now" => $Now, "email" => $this->email];
+        $dl = (object) ["now" => $Now, "email" => $this->email ? : null];
         if ($this->privChair)
             $dl->is_admin = true;
         if ($this->is_author())
