@@ -897,16 +897,17 @@ class NumericPaperOption extends PaperOption {
         $ps->set_option_error_html($this, "Option should be an integer.");
     }
 
+    private function unparse_value(PaperOptionValue $ov = null) {
+        return $ov && $ov->value !== null ? $ov->value : "";
+    }
     function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
-        return $this->unparse_page_html($row);
+        return $this->unparse_value($row->option($this->id));
     }
     function unparse_column_text(PaperList $pl, PaperInfo $row) {
-        return $this->unparse_page_text($row);
+        return $this->unparse_value($row->option($this->id));
     }
-
     function unparse_page_html($row, PaperOptionValue $ov) {
-        $v = $row->option($this->id);
-        return $v && $v->value !== null ? $v->value : "";
+        return $this->unparse_value($ov);
     }
 }
 
