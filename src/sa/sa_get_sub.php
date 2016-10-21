@@ -287,8 +287,7 @@ class GetTopics_SearchAction extends SearchAction {
 
 class GetCSV_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        if ($user->conf->has_topics())
-            $actions[] = [1089, $this->subname, "Paper information", "CSV"];
+        $actions[] = [1089, $this->subname, "Paper information", "CSV"];
     }
     function run(Contact $user, $qreq, $ssel) {
         $search = new PaperSearch($user, $qreq);
