@@ -1466,6 +1466,14 @@ class Option_PaperColumn extends PaperColumn {
         $this->opt = $opt;
     }
     function make_column(Contact $user, $name, $errors) {
+        if ($name === "options") {
+            $errors && ($errors->empty_ok = true);
+            $opts = [];
+            foreach ($user->user_option_list() as $opt)
+                if ($opt->display() >= 0)
+                    $opts[] = new Option_PaperColumn($opt, false);
+            return $opts;
+        }
         $has_colon = false;
         if (str_starts_with($name, "opt:")) {
             $name = substr($name, 4);

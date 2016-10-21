@@ -230,15 +230,23 @@ class PaperList {
     }
 
 
+    private function find_columns($name, $errors = null) {
+        $col = PaperColumn::lookup($this->contact, $name, $errors);
+        if (!is_array($col))
+            $col = $col ? [$col] : [];
+        $ocol = [];
+        foreach ($col as $colx)
+            if (isset($this->_columns_by_name[$colx->name]))
+                $ocol[] = $this->_columns_by_name[$colx->name];
+            else
+                $ocol[] = $this->_columns_by_name[$colx->name] = $colx;
+        return $ocol;
+    }
     private function find_column($name, $errors = null) {
         if (array_key_exists($name, $this->_columns_by_name))
             return $this->_columns_by_name[$name];
-        $column = PaperColumn::lookup($this->contact, $name, $errors);
-        if ($column && isset($this->_columns_by_name[$column->name]))
-            $column = $this->_columns_by_name[$column->name];
         else
-            $this->_columns_by_name[$column ? $column->name : $name] = $column;
-        return $column;
+            return get($this->find_columns($name, $errors), 0);
     }
 
     private function _sort($rows, $duplicates) {
@@ -1059,24 +1067,29 @@ class PaperList {
                                      "column", "col", "columns", "sort", "rownum", "rownumbers",
                                      "stat", "stats", "statistics", "totals",
                                      "au", "anonau"));
-        $viewmap_add = array();
-        foreach ($this->viewmap as $k => $v)
-            if (!isset($specials[$k])) {
-                $err = new ColumnErrors;
-                $f = $this->find_column($k, $err);
-                if (!$f && !empty($err->error_html)) {
+        $viewmap_add = [];
+        foreach ($this->viewmap as $k => $v) {
+            if (isset($specials[$k]))
+                continue;
+            $err = new ColumnErrors;
+            $f = $this->find_columns($k, $err);
+            if (!$f) {
+                if ($v && !empty($err->error_html)) {
                     $err->error_html[0] = "Can’t show “" . htmlspecialchars($k) . "”: " . $err->error_html[0];
                     $this->error_html = array_merge($this->error_html, $err->error_html);
-                } else if (!$f)
+                } else if ($v && !$err->empty_ok)
                     $this->error_html[] = "No such column “" . htmlspecialchars($k) . "”.";
-                if ($f && $f->name != $k)
-                    $viewmap_add[$f->name] = $v;
-                foreach ($field_list as $ff)
-                    if ($f && $f->name == $ff->name)
-                        $f = null;
-                if ($f && $v)
-                    $field_list[] = $f;
+                continue;
             }
+            foreach ($f as $fx) {
+                $viewmap_add[$fx->name] = $v;
+                foreach ($field_list as $ff)
+                    if ($fx && $fx->name == $ff->name)
+                        $fx = null;
+                if ($fx)
+                    $field_list[] = $fx;
+            }
+        }
         foreach ($viewmap_add as $k => $v)
             $this->viewmap[$k] = $v;
         foreach ($field_list as $fi => &$f)
