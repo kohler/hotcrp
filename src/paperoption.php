@@ -14,13 +14,13 @@ class PaperOptionValue {
     public $anno = null;
     private $_documents = null;
 
-    public function __construct($prow, PaperOption $o, $values = [], $data_array = []) {
+    function __construct($prow, PaperOption $o, $values = [], $data_array = []) {
         $this->prow = $prow;
         $this->id = $o->id;
         $this->option = $o;
         $this->assign($values, $data_array);
     }
-    public function assign($values, $data_array) {
+    function assign($values, $data_array) {
         $old_values = $this->_values;
         $this->_values = $values;
         $this->_data_array = $data_array;
@@ -35,7 +35,7 @@ class PaperOptionValue {
             $this->_documents = null;
         $this->anno = null;
     }
-    public function documents() {
+    function documents() {
         assert($this->prow || empty($this->_values));
         assert($this->option->has_document_storage());
         if ($this->_documents === null) {
@@ -59,34 +59,34 @@ class PaperOptionValue {
         }
         return $this->_documents;
     }
-    public function document($index) {
+    function document($index) {
         return get($this->documents(), $index);
     }
-    public function document_content($index) {
+    function document_content($index) {
         if (($doc = $this->document($index))
             && $doc->docclass->load($doc)
             && ($content = Filer::content($doc)))
             return $content;
         return false;
     }
-    public function document_by_id($docid) {
+    function document_by_id($docid) {
         foreach ($this->documents() as $doc)
             if ($doc->paperStorageId == $docid)
                 return $doc;
         return null;
     }
-    public function value_count() {
+    function value_count() {
         return count($this->_values);
     }
-    public function unsorted_values() {
+    function unsorted_values() {
         return $this->_values;
     }
-    public function sorted_values() {
+    function sorted_values() {
         if ($this->_data_array === null && count($this->_values) > 1)
             $this->_load_data();
         return $this->_values;
     }
-    public function data() {
+    function data() {
         if ($this->_data_array === null)
             $this->_load_data();
         return $this->_data;
@@ -104,7 +104,7 @@ class PaperOptionValue {
                 $this->assign($odata["v"][$this->id], $odata["d"][$this->id]);
         }
     }
-    public function invalidate() {
+    function invalidate() {
         $result = $this->prow->conf->qe("select value, `data` from PaperOption where paperId=? and optionId=?", $this->prow->paperId, $this->id);
         $values = $data_array = [];
         while ($result && ($row = $result->fetch_row())) {
@@ -135,7 +135,7 @@ class PaperOptionList {
             : !!$this->conf->setting($require_setting);
     }
 
-    public function _add_json($oj, $fixed) {
+    function _add_json($oj, $fixed) {
         if (is_string($oj->id) && is_numeric($oj->id))
             $oj->id = intval($oj->id);
         if (is_int($oj->id) && !isset($this->jlist[$oj->id])
@@ -523,7 +523,7 @@ class PaperOption {
         array_push($res, "has:{$this->abbr}", "opt:{$this->abbr}");
     }
 
-    public static function load_optdata(PaperInfo $prow) {
+    static function load_optdata(PaperInfo $prow) {
         $result = $prow->conf->qe("select optionId, value, data from PaperOption where paperId=?", $prow->paperId);
         $optdata = ["v" => [], "d" => []];
         while (($row = edb_row($result))) {
@@ -597,7 +597,10 @@ class PaperOption {
         return null;
     }
 
-    function unparse_column_html(PaperList $pl, $row, $isrow) {
+    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
+        return "";
+    }
+    function unparse_column_text(PaperList $pl, PaperInfo $row) {
         return "";
     }
 
@@ -644,9 +647,13 @@ class CheckboxPaperOption extends PaperOption {
         $ps->set_option_error_html($this, "Option should be “true” or “false”.");
     }
 
-    function unparse_column_html(PaperList $pl, $row, $isrow) {
+    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         $v = $row->option($this->id);
         return $v && $v->value ? "✓" : "";
+    }
+    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+        $v = $row->option($this->id);
+        return $v && $v->value ? "Y" : "N";
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {
@@ -716,9 +723,15 @@ class SelectorPaperOption extends PaperOption {
         $ps->set_option_error_html($this, "Option doesn’t match any of the selectors.");
     }
 
-    function unparse_column_html(PaperList $pl, $row, $isrow) {
+    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         $ov = $row->option($this->id);
         return $ov ? $this->unparse_page_html($row, $ov) : "";
+    }
+    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+        $ov = $row->option($this->id);
+        if ($ov && isset($this->selector[$ov->value]))
+            return $this->selector[$ov->value];
+        return "";
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {
@@ -807,10 +820,16 @@ class DocumentPaperOption extends PaperOption {
         $ps->set_option_error_html($this, "Option should be a document.");
     }
 
-    function unparse_column_html(PaperList $pl, $row, $isrow) {
-        if (($v = $row->option($this->id)))
-            foreach ($v->documents() as $d)
+    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
+        if (($ov = $row->option($this->id)))
+            foreach ($ov->documents() as $d)
                 return $d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE);
+        return "";
+    }
+    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+        if (($ov = $row->option($this->id)))
+            foreach ($ov->documents() as $d)
+                return $d->filename;
         return "";
     }
 
@@ -878,8 +897,11 @@ class NumericPaperOption extends PaperOption {
         $ps->set_option_error_html($this, "Option should be an integer.");
     }
 
-    function unparse_column_html(PaperList $pl, $row, $isrow) {
+    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         return $this->unparse_page_html($row);
+    }
+    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+        return $this->unparse_page_text($row);
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {
@@ -949,9 +971,13 @@ class TextPaperOption extends PaperOption {
             return '<div class="format0">' . Ht::link_urls(htmlspecialchars($d)) . '</div>';
     }
 
-    function unparse_column_html(PaperList $pl, $row, $isrow) {
+    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         $ov = $row->option($this->id);
         return $ov ? $this->unparse_html($row, $ov, $pl) : "";
+    }
+    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+        $ov = $row->option($this->id);
+        return (string) ($ov ? $ov->data() : "");
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {
@@ -1066,9 +1092,16 @@ class AttachmentsPaperOption extends PaperOption {
         return $docs;
     }
 
-    function unparse_column_html(PaperList $pl, $row, $isrow) {
+    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         $ov = $row->option($this->id);
         return $ov ? $this->unparse_html($row, $ov, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE, $isrow ? "span" : "div") : "";
+    }
+    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+        $x = [];
+        if (($ov = $row->option($this->id)))
+            foreach ($ov->documents() as $d)
+                $x[] = $d->unique_filename;
+        return join("; ", $x);
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {

@@ -1861,7 +1861,8 @@ class AssignmentSet {
         $query_order .= " show:autoassignment";
         $search = new PaperSearch($this->contact, ["t" => get($_REQUEST, "t", "s"), "q" => $query_order]);
         $plist = new PaperList($search);
-        echo $plist->table_html("reviewers", ["nofooter" => 1, "class" => "pltable_full", "table_id" => "foldpl"]);
+        $plist->set_table_id_class("foldpl", "pltable_full");
+        echo $plist->table_html("reviewers", ["nofooter" => 1]);
 
         $deltarev = new AssignmentCountSet($this->conf);
         foreach ($this->assigners as $assigner)
@@ -2022,13 +2023,13 @@ class AutoassignmentPaperColumn extends PaperColumn {
         parent::__construct("autoassignment", Column::VIEW_ROW,
                             array("className" => "pl_autoassignment"));
     }
-    function header($pl, $ordinal) {
+    function header(PaperList $pl, $is_text) {
         return self::$header;
     }
-    function content_empty($pl, $row) {
+    function content_empty(PaperList $pl, PaperInfo $row) {
         return !isset(self::$info[$row->paperId]);
     }
-    function content($pl, $row, $rowidx) {
+    function content(PaperList $pl, PaperInfo $row, $rowidx) {
         return self::$info[$row->paperId];
     }
 }

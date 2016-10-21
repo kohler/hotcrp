@@ -240,11 +240,10 @@ $Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 // search
 $search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q], $reviewer_contact);
-$pl = new PaperList($search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "foldtype" => "pf", "reviewer" => $reviewer_contact], $Qreq);
+$pl = new PaperList($search, ["sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer_contact], $Qreq);
+$pl->set_table_id_class("foldpl", "pltable_full", "p#");
 $pl_text = $pl->table_html("editReviewPreference",
-                array("class" => "pltable_full",
-                      "table_id" => "foldpl",
-                      "attributes" => array("data-fold-session" => "pfdisplay.$"),
+                array("attributes" => array("data-fold-session" => "pfdisplay.$"),
                       "footer_extra" => "<div id='plactr'>" . Ht::submit("fn", "Save changes", ["class" => "btn", "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => "always", "value" => "saveprefs"]) . "</div>",
                       "list_properties" => ["revprefs" => true]));
 

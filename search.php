@@ -293,12 +293,10 @@ $Conf->header("Search", "search", actionBar());
 echo Ht::unstash(); // need the JS right away
 $Search = new PaperSearch($Me, $Qreq);
 if (isset($Qreq->q)) {
-    $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => $Qreq->display], $Qreq);
-    $pl->papersel = $SSel->selection_map();
-    $pl_text = $pl->table_html($Search->limitName, [
-            "class" => "pltable_full", "table_id" => "foldpl",
-            "attributes" => ["data-fold-session" => 'pldisplay.$']
-        ]);
+    $pl = new PaperList($Search, ["sort" => true, "display" => $Qreq->display], $Qreq);
+    $pl->set_table_id_class("foldpl", "pltable_full", "p#");
+    $pl->set_selection($SSel);
+    $pl_text = $pl->table_html($Search->limitName, ["attributes" => ["data-fold-session" => 'pldisplay.$'], "list" => true]);
     $pldisplay = $pl->display;
     unset($_REQUEST["atab"], $_GET["atab"], $_POST["atab"]);
 } else

@@ -656,7 +656,8 @@ class PaperInfo {
     }
 
     public function reviewer_preference($contact) {
-        $pref = get($this->reviewer_preferences(), $contact->contactId);
+        $cid = is_int($contact) ? $contact : $contact->contactId;
+        $pref = get($this->reviewer_preferences(), $cid);
         return $pref ? : [0, null];
     }
 
