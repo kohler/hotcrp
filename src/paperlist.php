@@ -196,13 +196,12 @@ class PaperList {
             $this->viewmap->columns = true;
         if ($this->viewmap->stat || $this->viewmap->stats || $this->viewmap->totals)
             $this->viewmap->statistics = true;
-        if ($this->viewmap->authors && $this->viewmap->au === null)
+        if (($this->viewmap->authors || $this->viewmap->aufull || $this->viewmap->anonau)
+            && $this->viewmap->au === null)
             $this->viewmap->au = true;
         if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL
             && $this->viewmap->au && $this->viewmap->anonau === null)
             $this->viewmap->anonau = true;
-        if ($this->viewmap->anonau && $this->viewmap->au === null)
-            $this->viewmap->au = true;
         if ($this->viewmap->rownumbers)
             $this->viewmap->rownum = true;
     }
@@ -1066,7 +1065,7 @@ class PaperList {
         $specials = array_flip(array("cc", "compact", "compactcolumn", "compactcolumns",
                                      "column", "col", "columns", "sort", "rownum", "rownumbers",
                                      "stat", "stats", "statistics", "totals",
-                                     "au", "anonau"));
+                                     "au", "anonau", "aufull"));
         $viewmap_add = [];
         foreach ($this->viewmap as $k => $v) {
             if (isset($specials[$k]))
