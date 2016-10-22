@@ -1508,10 +1508,7 @@ class Option_PaperColumn extends PaperColumn {
                                          $b->option($this->opt->id));
     }
     function header(PaperList $pl, $is_text) {
-        if ($is_text)
-            return $this->opt->name;
-        else
-            return htmlspecialchars($this->opt->name);
+        return $is_text ? $this->opt->name : htmlspecialchars($this->opt->name);
     }
     function completion_name() {
         return $this->opt ? $this->opt->abbr : "options";
