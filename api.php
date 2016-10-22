@@ -95,7 +95,7 @@ if ($qreq->fn === "jserror") {
 }
 
 if ($qreq->fn === "setsession") {
-    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display)(|\.[a-zA-Z0-9_]+)\z/', (string) $qreq->var, $m)) {
+    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display)(|\.[a-zA-Z0-9_:]+)\z/', (string) $qreq->var, $m)) {
         $val = $qreq->val;
         if ($m[2]) {
             $on = !($val !== null && intval($val) > 0);

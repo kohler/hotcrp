@@ -1723,7 +1723,7 @@ class TagReportPaperColumn extends PaperColumn {
         return true;
     }
     function header(PaperList $pl, $is_text) {
-        return "#~" . $this->tag . " tags";
+        return "#~" . $this->tag . " reports";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->contact->can_view_peruser_tags($row, $this->tag, true);

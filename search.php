@@ -414,7 +414,7 @@ if ($pl) {
             $opt["indent"] = true;
             foreach ($Conf->tags() as $t)
                 if ($t->vote || $t->approval || $t->rank)
-                    displayOptionCheckbox("tagrep:{$t->tag}", 1, "#~" . $t->tag . " tags", $opt);
+                    displayOptionCheckbox("tagrep:{$t->tag}", 1, "#~{$t->tag} report", $opt);
         }
     }
 
