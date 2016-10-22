@@ -1234,7 +1234,7 @@ class EditTagPaperColumn extends TagPaperColumn {
     }
 }
 
-class ScorePaperColumn extends PaperColumn {
+class Score_PaperColumn extends PaperColumn {
     public $score;
     public $max_score;
     private $form_field;
@@ -1246,23 +1246,21 @@ class ScorePaperColumn extends PaperColumn {
         $this->score = $score;
         $this->form_field = $form_field;
     }
-    static function all_column_names(Conf $conf) {
-        $reg = [];
-        foreach ($conf->all_review_fields() as $f)
-            if ($f->has_options && $f->display_order !== false)
-                $reg[$f->display_order] = $f->id;
-        ksort($reg);
-        return array_values($reg);
-    }
     function make_column(Contact $user, $name, $errors) {
-        if (($f = $user->conf->review_field_search($name))
-            && $f->has_options && $f->display_order !== false)
-            return new ScorePaperColumn($f);
-        return null;
+        if ($name === "scores") {
+            $fs = $user->conf->all_review_fields();
+            $errors && ($errors->allow_empty = true);
+        } else
+            $fs = [$user->conf->review_field_search($name)];
+        $fs = array_filter($fs, function ($f) { return $f && $f->has_options && $f->displayed; });
+        return array_map(function ($f) { return new Score_PaperColumn($f); }, $fs);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->scoresOk
-            || $this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
+        if (!$pl->scoresOk)
+            return false;
+        else if (!$this->form_field)
+            return $visible == self::PREP_COMPLETION;
+        else if ($this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
             return false;
         if ($visible) {
             $pl->qopts["scores"][$this->score] = true;
@@ -1298,10 +1296,10 @@ class ScorePaperColumn extends PaperColumn {
         return $is_text ? $this->form_field->abbreviation : $this->form_field->web_abbreviation();
     }
     function completion_name() {
-        return $this->form_field ? $this->form_field->abbreviation : null;
+        return $this->form_field ? $this->form_field->abbreviation : "scores";
     }
     function completion_instances(Contact $user) {
-        return array_map(function ($name) use ($user) { return $this->make_column($user, $name, null); }, self::all_column_names($user->conf));
+        return array_merge([$this], $this->make_column($user, "scores", null));
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         // Do not use viewable_scores to determine content emptiness, since
@@ -1467,7 +1465,7 @@ class Option_PaperColumn extends PaperColumn {
     }
     function make_column(Contact $user, $name, $errors) {
         if ($name === "options") {
-            $errors && ($errors->empty_ok = true);
+            $errors && ($errors->allow_empty = true);
             $opts = [];
             foreach ($user->user_option_list() as $opt)
                 if ($opt->display() >= 0)
@@ -1498,7 +1496,9 @@ class Option_PaperColumn extends PaperColumn {
         return null;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->can_view_some_paper_option($this->opt))
+        if (!$this->opt)
+            return $visible == self::PREP_COMPLETION;
+        else if (!$pl->contact->can_view_some_paper_option($this->opt))
             return false;
         $pl->qopts["options"] = true;
         return true;
@@ -1514,10 +1514,10 @@ class Option_PaperColumn extends PaperColumn {
             return htmlspecialchars($this->opt->name);
     }
     function completion_name() {
-        return $this->opt ? $this->opt->abbr : null;
+        return $this->opt ? $this->opt->abbr : "options";
     }
     function completion_instances(Contact $user) {
-        $reg = array();
+        $reg = [$this];
         foreach ($user->user_option_list() as $opt)
             if ($opt->display() >= 0)
                 $reg[] = new Option_PaperColumn($opt, false);
@@ -1561,11 +1561,12 @@ class Formula_PaperColumn extends PaperColumn {
         $this->className = "pl_formula";
         $this->formula = $formula;
     }
-    static function all_column_names(Contact $user) {
-        return array_map(function ($id) { return "formula$id"; }, array_keys($user->conf->defined_formula_map($user)));
-    }
     function make_column(Contact $user, $name, $errors) {
         $dfm = $user->conf->defined_formula_map($user);
+        if ($name === "formulas")
+            return array_map(function ($f) {
+                return new Formula_PaperColumn("formula{$f->formulaId}", $f);
+            }, $dfm);
         $starts_with_formula = str_starts_with($name, "formula");
         foreach ($dfm as $f)
             if (strcasecmp($f->name, $name) == 0 || ($starts_with_formula && $name === "formula{$f->formulaId}"))
@@ -1693,22 +1694,23 @@ class TagReportPaperColumn extends PaperColumn {
         $this->tag = $tag;
     }
     function make_column(Contact $user, $name, $errors) {
-        if ($user->can_view_most_tags()) {
+        if (!$user->can_view_most_tags())
+            return null;
+        $tagset = $user->conf->tags();
+        if (str_starts_with($name, "tagrep:"))
             $tag = substr($name, 7);
-            $t = $user->conf->tags()->check($tag);
-            if ($t && ($t->vote || $t->approval || $t->rank))
-                return new TagReportPaperColumn($tag);
-        }
-        return null;
-    }
-    static function all_column_names(Contact $user) {
-        if ($user->can_view_most_tags()
-            && ($tagset = $user->conf->tags())
-            && ($tagset->has_vote || $tagset->has_approval || $tagset->has_rank))
-            return array_map(function ($t) { return "tagrep:{$t->tag}"; },
+        else if (str_starts_with($name, "tagreport:"))
+            $tag = substr($name, 10);
+        else if ($name === "tagreports") {
+            $errors && ($errors->allow_empty = true);
+            return array_map(function ($t) { return new TagReportPaperColumn($t->tag); },
                              $tagset->filter_by(function ($t) { return $t->vote || $t->approval || $t->rank; }));
-        else
-            return [];
+        } else
+            return null;
+        $t = $tagset->check($tag);
+        if ($t && ($t->vote || $t->approval || $t->rank))
+            return new TagReportPaperColumn($tag);
+        return null;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_any_peruser_tags($this->tag))
@@ -1928,10 +1930,12 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, null));
     PaperColumn::register_factory("pref:", new PreferencePaperColumn(null, false));
     PaperColumn::register_factory("tagrep:", new TagReportPaperColumn(null));
+    PaperColumn::register_factory("tagreport:", new TagReportPaperColumn(null));
+    PaperColumn::register_factory("tagreports", new TagReportPaperColumn(null));
     PaperColumn::register_factory("", new Formula_PaperColumn("", null));
     PaperColumn::register_factory("g", new FormulaGraph_PaperColumn("", null));
     PaperColumn::register_factory("", new Option_PaperColumn(null));
-    PaperColumn::register_factory("", new ScorePaperColumn(null));
+    PaperColumn::register_factory("", new Score_PaperColumn(null));
 }
 
 initialize_paper_columns();

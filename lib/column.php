@@ -36,7 +36,7 @@ class Column {
 class ColumnErrors {
     public $error_html = array();
     public $priority = null;
-    public $empty_ok = false;
+    public $allow_empty = false;
     function add($error_html, $priority) {
         if ($this->priority === null || $this->priority < $priority) {
             $this->error_html = array();

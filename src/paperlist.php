@@ -574,24 +574,11 @@ class PaperList {
             $fields = explode(" ", $fields);
         $field_list = array();
         foreach ($fields as $fid) {
-            $nf = array();
-            if ($fid == "scores") {
-                if ($this->scoresOk) {
-                    foreach (ScorePaperColumn::all_column_names($this->conf) as $name)
-                        $nf[] = $this->find_column($name);
-                    $this->scoresOk = "present";
-                }
-            } else if ($fid == "formulas") {
-                if ($this->scoresOk) {
-                    foreach (Formula_PaperColumn::all_column_names($this->contact) as $name)
-                        $nf[] = $this->find_column($name);
-                }
-            } else if ($fid == "tagreports") {
-                foreach (TagReportPaperColumn::all_column_names($this->contact) as $name)
-                    $nf[] = $this->find_column($name);
-            } else if (($f = $this->find_column($fid)))
-                $nf[] = $f;
-            foreach ($nf as $f)
+            if (($fid == "scores" || $fid == "formulas") && !$this->scoresOk)
+                continue;
+            if ($fid == "scores")
+                $this->scoresOk = "present";
+            foreach ($this->find_columns($fid) as $f)
                 $field_list[] = $f;
         }
         if ($this->qreq->selectall > 0 && $field_list[0]->name == "sel")
@@ -1076,7 +1063,7 @@ class PaperList {
                 if ($v && !empty($err->error_html)) {
                     $err->error_html[0] = "Can’t show “" . htmlspecialchars($k) . "”: " . $err->error_html[0];
                     $this->error_html = array_merge($this->error_html, $err->error_html);
-                } else if ($v && !$err->empty_ok)
+                } else if ($v && !$err->allow_empty)
                     $this->error_html[] = "No such column “" . htmlspecialchars($k) . "”.";
                 continue;
             }
