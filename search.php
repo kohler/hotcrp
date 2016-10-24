@@ -14,33 +14,6 @@ if (!$Qreq)
 
 if (isset($Qreq->default) && $Qreq->defaultact)
     $Qreq->fn = $Qreq->defaultact;
-// backwards compat
-if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "load", "tag", "assign", "decide", "sendmail"])) {
-    if (isset($Qreq->get) && $Qreq->ajax && ($fdef = PaperColumn::lookup($Me, $Qreq->get)) && $fdef->foldable) {
-        $Qreq->fn = "load";
-        $Qreq->field = $Qreq->get;
-    } else if (isset($Qreq->get)) {
-        $Qreq->fn = "get";
-        $Qreq->getfn = $Qreq->get;
-    } else if (isset($Qreq->getgo) && isset($Qreq->getaction)) {
-        $Qreq->fn = "get";
-        $Qreq->getfn = $Qreq->getaction;
-    } else if (isset($Qreq->tagact) || $Qreq->fn === "tagact") {
-        $Qreq->fn = "tag";
-        $Qreq->tagfn = $Qreq->tagtype;
-    } else if (isset($Qreq->setassign) || $Qreq->fn === "setassign") {
-        $Qreq->fn = "assign";
-        $Qreq->assignfn = $Qreq->marktype;
-    } else if (isset($Qreq->setdecision) || $Qreq->fn === "setdecision")
-        $Qreq->fn = "decide";
-    else if (isset($Qreq->sendmail))
-        $Qreq->fn = "sendmail";
-    else if (isset($Qreq->fn)) {
-        SearchAction::load();
-        if (!SearchAction::has_function($Qreq->fn, $Qreq[$Qreq->fn . "fn"]))
-            unset($Qreq->fn);
-    }
-}
 
 
 // paper group
@@ -75,12 +48,6 @@ global $SSel;
 if (!$SSel) { /* we might be included by reviewprefs.php */
     $SSel = SearchSelection::make($Qreq, $Me);
     SearchSelection::clear_request();
-}
-
-// Ajax field loading: abstract, tags, collaborators, ...
-if ($Qreq->fn == "load") { // obsolete
-    $Qreq->f = $Qreq->field;
-    PaperApi::fieldhtml_api($Me, $Qreq, null);
 }
 
 // look for search action
