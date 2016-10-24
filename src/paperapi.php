@@ -335,27 +335,27 @@ class PaperApi {
 
     static function fieldhtml_api(Contact $user, $qreq, $prow) {
         $fdef = $qreq->f ? PaperColumn::lookup($user, $qreq->f) : null;
-        if ($fdef && $fdef->foldable) {
-            if ($qreq->f == "authors") {
-                $full = (int) $qreq->aufull;
-                displayOptionsSet("pldisplay", "aufull", $full);
-            }
-            $reviewer = null;
-            if ($qreq->reviewer && $user->privChair && $user->email !== $qreq->reviewer) {
-                $reviewer = $user->conf->user_by_email($qreq->reviewer);
-                unset($qreq->reviewer);
-            }
-            if (!isset($qreq->q) && $prow) {
-                $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
-                $qreq->q = $prow->paperId;
-            } else if (!isset($qreq->q))
-                $qreq->q = "";
-            $search = new PaperSearch($user, $qreq, $reviewer);
-            $pl = new PaperList($search, ["reviewer" => $reviewer]);
-            $response = $pl->ajaxColumn($qreq->f);
-            $response["ok"] = !empty($response);
-            json_exit($response);
-        } else
+        if (!$fdef || count($fdef) != 1 || !$fdef[0]->foldable)
             json_exit(["ok" => false, "error" => "No such field."]);
+        $fdef = $fdef[0];
+        if ($qreq->f == "authors") {
+            $full = (int) $qreq->aufull;
+            displayOptionsSet("pldisplay", "aufull", $full);
+        }
+        $reviewer = null;
+        if ($qreq->reviewer && $user->privChair && $user->email !== $qreq->reviewer) {
+            $reviewer = $user->conf->user_by_email($qreq->reviewer);
+            unset($qreq->reviewer);
+        }
+        if (!isset($qreq->q) && $prow) {
+            $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
+            $qreq->q = $prow->paperId;
+        } else if (!isset($qreq->q))
+            $qreq->q = "";
+        $search = new PaperSearch($user, $qreq, $reviewer);
+        $pl = new PaperList($search, ["reviewer" => $reviewer]);
+        $response = $pl->ajaxColumn($qreq->f);
+        $response["ok"] = !empty($response);
+        json_exit($response);
     }
 }
