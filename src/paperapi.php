@@ -335,9 +335,10 @@ class PaperApi {
 
     static function fieldhtml_api(Contact $user, $qreq, $prow) {
         $fdef = $qreq->f ? PaperColumn::lookup($user, $qreq->f) : null;
-        if (!$fdef || count($fdef) != 1 || !$fdef[0]->foldable)
+        if ($fdef && is_array($fdef))
+            $fdef = count($fdef) == 1 ? $fdef[0] : null;
+        if (!$fdef || !$fdef->foldable)
             json_exit(["ok" => false, "error" => "No such field."]);
-        $fdef = $fdef[0];
         if ($qreq->f == "authors") {
             $full = (int) $qreq->aufull;
             displayOptionsSet("pldisplay", "aufull", $full);
