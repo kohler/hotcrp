@@ -754,8 +754,8 @@ class PaperInfo {
     }
 
     public function npages() {
-        $dtype = $this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
-        return $this->document($dtype)->npages();
+        $doc = $this->document($this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL);
+        return $doc ? $doc->npages() : 0;
     }
 
     public function num_reviews_submitted() {
