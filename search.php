@@ -311,16 +311,13 @@ function displayOptionCheckbox($type, $column, $title, $opt = array()) {
     $checked = display_option_checked($type);
     $loadresult = "";
 
-    if (!isset($opt["onchange"])) {
+    if (!isset($opt["onchange"]))
         $opt["onchange"] = "plinfo('$type',this)";
-        $loadresult = "<div id='${type}loadformresult'></div>";
-    } else
-        $loadresult = "<div></div>";
     $indent = get($opt, "indent");
     unset($opt["indent"]);
 
     $text = Ht::checkbox("show$type", 1, $checked, $opt)
-        . "&nbsp;" . Ht::label($title) . $loadresult;
+        . "&nbsp;" . Ht::label($title);
     $displayOptions[] = (object) array("type" => $type, "text" => $text,
                 "checked" => $checked, "column" => $column, "indent" => $indent);
 }
