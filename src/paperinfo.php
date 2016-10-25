@@ -303,6 +303,10 @@ class PaperInfo {
         return $this->format_of($this->title, true);
     }
 
+    public function abstract_format() {
+        return $this->format_of($this->abstract, true);
+    }
+
     public function author_list() {
         if (!isset($this->_author_array)) {
             $this->_author_array = array();
