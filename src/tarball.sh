@@ -108,6 +108,7 @@ lib/ldaplogin.php
 lib/login.php
 lib/mailer.php
 lib/message.php
+lib/messageset.php
 lib/mimetype.php
 lib/mincostmaxflow.php
 lib/navigation.php

@@ -243,14 +243,14 @@ class PaperTable {
         echo "</div>";
     }
 
-    public function has_problem($f) {
+    public function has_problem_at($f) {
         if ($f === "authorInformation")
             $f = "authors";
-        return $this->edit_status && $this->edit_status->has_problem($f);
+        return $this->edit_status && $this->edit_status->has_problem_at($f);
     }
 
     public function error_class($f) {
-        return $this->has_problem($f) ? " error" : "";
+        return $this->has_problem_at($f) ? " error" : "";
     }
 
     private function editable_papt($what, $name, $extra = array()) {
@@ -262,7 +262,7 @@ class PaperTable {
     }
 
     public function messages_for($field) {
-        if ($this->edit_status && ($ms = $this->edit_status->messages_for($field, true))) {
+        if ($this->edit_status && ($ms = $this->edit_status->messages_at($field, true))) {
             $status = array_reduce($ms, function ($c, $m) { return max($c, $m[2]); }, 0);
             $statusmap = ["xinfo", "warning", "error"];
             return Ht::xmsg($statusmap[$status], '<div class="multimessage"><div class="mmm">' . join("</div>\n<div class=\"mmm\">", array_map(function ($m) { return $m[1]; }, $ms)) . '</div></div>');
@@ -945,7 +945,7 @@ class PaperTable {
         $paperId = $this->prow->paperId;
         list($aulist, $contacts) = $this->_analyze_authors();
 
-        $cerror = $this->has_problem("contactAuthor") || $this->has_problem("contacts");
+        $cerror = $this->has_problem_at("contactAuthor") || $this->has_problem_at("contacts");
         $open = $cerror || $always_unfold
             || ($this->useRequest && $this->qreq->setcontacts == 2);
         echo Ht::hidden("setcontacts", $open ? 2 : 1, array("id" => "setcontacts")),
@@ -1337,7 +1337,7 @@ class PaperTable {
         $viewable = $this->prow->viewable_tags($Me);
 
         $tx = $tagger->unparse_and_link($viewable, $tags, false);
-        $unfolded = $is_editable && ($this->has_problem("tags") || $this->qreq->atab === "tags");
+        $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.load_report()"]);
         $color = $this->prow->conf->tags()->color_classes($viewable);
@@ -1678,8 +1678,8 @@ class PaperTable {
             $m .= Ht::xmsg("info", "You aren’t a contact for this submission, but as an administrator you can still make changes.");
         if ($Me->can_update_paper($prow, true) && ($v = $this->conf->message_html("submit")))
             $m .= Ht::xmsg("info", $v);
-        if ($this->edit_status && $this->edit_status->has_problems()
-            && ($this->edit_status->has_problem("contacts") || $this->editable))
+        if ($this->edit_status && $this->edit_status->has_problem()
+            && ($this->edit_status->has_problem_at("contacts") || $this->editable))
             $m .= Ht::xmsg("warning", "There are problems with the submission. Please scroll through the form and fix them as appropriate.");
         return $m;
     }

@@ -152,7 +152,7 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     $saved = $ps->save_paper_json($pj);
 
     if (!$saved && !$prow && count($qreq->_FILES))
-        $ps->set_error_html("paper", "<strong>Your uploaded files were ignored.</strong>");
+        $ps->error_at("paper", "<strong>Your uploaded files were ignored.</strong>");
 
     if (!$saved) {
         $emsg = $ps->messages();
