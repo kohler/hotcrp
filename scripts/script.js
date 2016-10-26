@@ -28,11 +28,6 @@ function serialize_object(x) {
         return "";
 }
 
-//alerts success of sharing with Open Academics
-function share_success() {
-    alert("You have successfully shared your results with search engines.");
-}
-
 // callback combination
 function add_callback(cb1, cb2) {
     if (cb1 && cb2)

@@ -150,15 +150,14 @@ function render(SettingValues $sv) {
 
 	//Share with Open Academic
     echo "<h3 class=\"settings g\">Share with search engines</h3>\n";
+    echo "<p>This sharing service is hosted by <a href = 'http://openacademic.ai'>Open Academic Society</a> to to create a shared, open and expanding knowledge graph of research and education-focused entities and relationships.</p>";
+    echo "<p>It only shares <b>papers' metadata</b> but not the papers' actual content. For more information on the API, please click on link: <a href = 'https://api.openacademic.ai/Help'>Open Academic API</a></p>";
+    echo "<p>Please select the corresponding <b>acceptance</b> type you want to share: ".decisionSelector(1)."</p>";
+    echo "<p>Please insert the <b>authentication token</b> acquired from <a href = 'https://api.openacademic.ai/authentication'>Open Academic Authentication</a>: ".Ht::entry("token", "");
     echo "<p><b>Click the button to share accepted paper meta data with search engines</b></p>";
-    echo Ht::submit("share", "Share with search engines");
-
-    //wakes up API
-    $api = 'https://openacademicapi.azurewebsites.net/api/papers';
-    $opts = array('http'=> array('method' => 'GET'));
-    $context = stream_context_create($opts);
-    $post_result = file_get_contents($api, false, $context);
+    echo Ht::submit("share", "Share");
    
+    $api = "https://api.openacademic.ai/api/papers";
     if (isset($_REQUEST["share"])) {
         $this->share($sv, $api);
     }
@@ -166,42 +165,38 @@ function render(SettingValues $sv) {
 }
     //sends https post request to the api
     function share(SettingValues $sv, $api) {
+        $decision = $_REQUEST["decision"];
 
         $share = array();
+        $share["token"] = $_REQUEST["token"];
         $share["provider"] = "HotCRP";
         $share["setId"] = "";
         $share["venue"] = $sv->conf-> long_name;
         $share["shortVenue"] = $sv->conf-> short_name;
-        $share["confSite"] = $sv->conf-> opt["conferenceSite"];
-        $share["version"] = "1.0";
+        $share["siteUrl"] = $sv->conf-> opt("conferenceSite");
     
         $papers = array();
-        $result = $sv->conf-> q_raw("SELECT paperID, title, authorInformation, abstract FROM Paper WHERE outcome > 0");
-        while (($row = edb_row($result))) {
+        $result = $sv->conf-> q_raw("SELECT * FROM Paper WHERE outcome = $decision");
+        while (($row = PaperInfo::fetch($result, $sv->user)) {
             $curr_p = [];
-            $curr_p['paperId'] = $row[0];
-            $curr_p['title'] = $row[1];
-            $curr_p['abstract'] = $row[3];
+            $curr_p['paperId'] = $row->paperId;
+            $curr_p['title'] = $row->title;
+            $curr_p['titleFormat'] = $sv->conf-> format_info($row-> title_format());
+            $curr_p['abstract'] = $row->abstract;
             
             //parse the authorInformation into an array
             $authors = [];
-            $mul_authorRow = explode("\n", $row[2]);
-            
-            //the last element in the array is null, do not want the null
-            $mul_authorRow = array_slice($mul_authorRow, 0, count($mul_authorRow) - 1);
-            
-            foreach ($mul_authorRow as $sing_authorRow) {
-                $authorInfo = explode("\t", $sing_authorRow);
+            $order = 0;          
+            foreach ($row->author_list() as $sing_author) {
                 $curr_author = [];
-                //combine first name and last name to full name
-                $curr_author['name'] = $authorInfo[0]." ". $authorInfo[1];
-                if (strlen($authorInfo[2]) == 0) {
-                   $curr_author['srcId'] = $authorInfo[2];
+                $curr_author['name'] = $sing_author-> name();
+                if (strlen($sing_author->email == 0) {
+                   $curr_author['authorId'] = null;
                 } else {
-                   $curr_author['srcId'] = sha1($authorInfo[2]);
+                   $curr_author['authorId'] = strtolower($sing_author->email);
                 }
-                $curr_author['affiliation'] = $authorInfo[3];
-                $curr_author['order'] = 0;
+                $curr_author['affiliation'] = $sing_author-> affiliation;
+                $curr_author['order'] = ++$order;
                 array_push($authors, $curr_author);
             }
             $curr_p['authors'] = $authors;
@@ -218,7 +213,7 @@ function render(SettingValues $sv) {
         if ($post_result === false) {
             Conf::msg_error("Sharing with search engine fails.");
         } else {
-            Ht::stash_script("share_success()");
+            Conf::msg_info("Share success!")
         }
     }
 
