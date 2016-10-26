@@ -28,19 +28,28 @@ class BanalSettings {
         echo "</tbody></table></td></tr></table>";
         Ht::stash_script('$(function(){foldup($$("cbsub_banal' . $suffix . '"),null,{f:"c"})})');
     }
+    static private function cf_status(CheckFormat $cf) {
+        if ($cf->failed)
+            return "failed";
+        else if ($cf->has_error())
+            return "error";
+        else
+            return $cf->has_problem() ? "warning" : "ok";
+    }
     static private function check_banal($sv) {
         global $ConfSitePATH;
         $cf = new CheckFormat;
         $interesting_keys = ["papersize", "pagelimit", "textblock", "bodyfontsize", "bodylineheight"];
-        $s1 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14");
-        $e1 = join(",", array_intersect(array_keys($cf->error_fields()), $interesting_keys)) ? : "none";
+        $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14");
+        $s1 = self::cf_status($cf);
+        $e1 = join(",", array_intersect(array_keys($cf->message_fields()), $interesting_keys)) ? : "none";
         $e1_papersize = $cf->has_problem("papersize");
-        $s2 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15");
-        $e2 = join(",", array_intersect(array_keys($cf->error_fields()), $interesting_keys)) ? : "none";
+        $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15");
+        $s2 = self::cf_status($cf);
+        $e2 = join(",", array_intersect(array_keys($cf->message_fields()), $interesting_keys)) ? : "none";
         $want_e2 = join(",", $interesting_keys);
-        if ($s1 != CheckFormat::STATUS_OK || $e1 != "none"
-            || $s2 != CheckFormat::STATUS_ERROR || $e2 != $want_e2) {
-            $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected 0 none 2 $want_e2)</td></tr>"
+        if ($s1 != "ok" || $e1 != "none" || $s2 != "error" || $e2 != $want_e2) {
+            $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected ok none error $want_e2)</td></tr>"
                 . "<tr><td class=\"nw\">Exit status:&nbsp;</td><td>" . htmlspecialchars($cf->banal_status) . "</td></tr>";
             if (trim($cf->banal_stdout))
                 $errors .= "<tr><td>Stdout:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stdout) . "</pre></td></tr>";
@@ -48,8 +57,7 @@ class BanalSettings {
                 $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
             $errors .= "<tr><td>Check:&nbsp;</td><td>" . join("<br />\n", $cf->messages()) . "</td></tr>";
             $sv->warning_at(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldbutton("banal_warning", 0, "Checker output") . $errors . "</table></div></div>");
-            if (($s1 == CheckFormat::STATUS_PROBLEM || $s1 == CheckFormat::STATUS_ERROR)
-                && $e1_papersize)
+            if (($s1 == "warning" || $s1 == "error") && $e1_papersize)
                 $sv->warning_at(null, "(Try setting <code>\$Opt[\"banalZoom\"]</code> to 1.)");
         }
     }
