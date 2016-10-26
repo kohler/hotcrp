@@ -84,7 +84,7 @@ class ReviewForm_SettingParser extends SettingParser {
             if ($sn != "")
                 $fj->name = $sn;
             else if ($pos > 0)
-                $sv->set_error("shortName_$fid", "Missing review field name.");
+                $sv->error_at("shortName_$fid", "Missing review field name.");
 
             $fj->visibility = get($sv->req, "authorView_$fid");
 
@@ -93,7 +93,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 if (get($f, "description"))
                     $fj->description = $f->description;
                 if ($pos > 0)
-                    $sv->set_error("description_$fid", htmlspecialchars($sn) . " description: " . $err);
+                    $sv->error_at("description_$fid", htmlspecialchars($sn) . " description: " . $err);
             } else if (($x = trim($x)) != "")
                 $fj->description = $x;
 
@@ -103,9 +103,9 @@ class ReviewForm_SettingParser extends SettingParser {
             if ($f->has_options) {
                 $fj->options = array_values($f->options); // default
                 if (!$this->check_options($sv, $fid, $fj) && $pos > 0) {
-                    $sv->set_error("options_$fid", "Invalid options.");
+                    $sv->error_at("options_$fid", "Invalid options.");
                     if ($option_error)
-                        $sv->set_error(null, $option_error);
+                        $sv->error_at(null, $option_error);
                     $option_error = false;
                 }
                 $prefixes = array("sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr");
@@ -146,7 +146,7 @@ class ReviewForm_SettingParser extends SettingParser {
                     unset($sv->req["$fx$fid"]);
             }
             if (count($scoreModified))
-                $sv->set_warning(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
+                $sv->warning_at(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
             $sv->conf->invalidate_caches(["rf" => true]);
             // reset all word counts in case author visibility changed
             $sv->conf->qe("update PaperReview set reviewWordCount=null");
@@ -192,7 +192,7 @@ submitted. Add a line “<code>No entry</code>” to make the score optional.</p
                         . json_encode($fmap) . ","
                         . json_encode($rf->unparse_full_json()) . ","
                         . json_encode($samples) . ","
-                        . json_encode($sv->error_fields()) . ","
+                        . json_encode($sv->message_fields()) . ","
                         . json_encode($req) . ")");
 
     echo Ht::hidden("has_review_form", 1),

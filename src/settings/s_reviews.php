@@ -201,7 +201,7 @@ function render(SettingValues $sv) {
                     && $sv->newv($deadline . $suffix) > $Now
                     && $sv->newv("rev_open") <= 0
                     && !$errored) {
-                    $sv->set_warning("rev_open", "A review deadline is set in the future, but the site is not open for reviewing. This is sometimes unintentional.");
+                    $sv->warning_at("rev_open", "A review deadline is set in the future, but the site is not open for reviewing. This is sometimes unintentional.");
                     $errored = true;
                     break;
                 }
@@ -212,8 +212,8 @@ function render(SettingValues $sv) {
             && $sv->newv("au_seerev") != Conf::AUSEEREV_TAGS
             && $sv->newv("pcrev_soft") > 0
             && $Now < $sv->newv("pcrev_soft")
-            && !$sv->has_errors())
-            $sv->set_warning(null, "Authors can see reviews and comments although it is before the review deadline. This is sometimes unintentional.");
+            && !$sv->has_error())
+            $sv->warning_at(null, "Authors can see reviews and comments although it is before the review deadline. This is sometimes unintentional.");
     }
 }
 
@@ -247,7 +247,7 @@ class Round_SettingParser extends SettingParser {
             } else if ($rname === "")
                 /* ignore */;
             else if (($rerror = Conf::round_name_error($rname)))
-                $sv->set_error("roundname_$i", $rerror);
+                $sv->error_at("roundname_$i", $rerror);
             else if ($i == 0)
                 $roundname0 = $rname;
             else if (get($roundnames_set, strtolower($rname))) {
@@ -304,8 +304,8 @@ class Round_SettingParser extends SettingParser {
                         $sv->save($soft, $hardv);
                     else if ($hardv && $softv > $hardv) {
                         $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
-                        $sv->set_error($soft, Si::get("{$k}soft", "short_description") . $desc . ": Must come before " . Si::get("{$k}hard", "short_description") . ".");
-                        $sv->set_error($hard);
+                        $sv->error_at($soft, Si::get("{$k}soft", "short_description") . $desc . ": Must come before " . Si::get("{$k}hard", "short_description") . ".");
+                        $sv->error_at($hard);
                     }
                 }
             }

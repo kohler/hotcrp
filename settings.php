@@ -225,12 +225,9 @@ class SettingRenderer {
     }
 }
 
-class SettingValues {
+class SettingValues extends MessageSet {
     public $conf;
     public $user;
-    private $errf = array();
-    private $errmsg = array();
-    private $warnmsg = array();
     public $interesting_groups = array();
     public $warnings_reported = false;
 
@@ -246,25 +243,14 @@ class SettingValues {
     private $hint_status = array();
     private $has_req = array();
 
-    public function __construct($user) {
+    function __construct($user) {
+        parent::__construct();
         $this->conf = $user->conf;
         $this->user = $user;
     }
 
-    public function use_req() {
-        return count($this->errmsg) > 0;
-    }
-    public function has_errors() {
-        return count($this->errmsg) > 0;
-    }
-    public function error_count() {
-        return count($this->errmsg);
-    }
-    public function has_error($field) {
-        return get($this->errf, $field, 0) > 1;
-    }
-    public function has_problem($field) {
-        return get($this->errf, $field, 0) > 0;
+    function use_req() {
+        return $this->has_error();
     }
     static private function check_error_field($field, &$html) {
         if ($field instanceof Si) {
@@ -274,42 +260,26 @@ class SettingValues {
         } else
             return $field;
     }
-    public function set_error($field, $html = false) {
+    function error_at($field, $html = false) {
         $fname = self::check_error_field($field, $html);
-        if ($fname)
-            $this->errf[$fname] = 2;
-        if ($html !== false)
-            $this->errmsg[] = $html;
-        return false;
+        parent::error_at($fname, $html);
     }
-    public function set_warning($field, $html = false) {
+    function warning_at($field, $html = false) {
         $fname = self::check_error_field($field, $html);
-        if ($fname)
-            $this->errf[$fname] = max(get($this->errf, $fname, 0), 1);
-        if ($html !== false)
-            $this->warnmsg[] = $html;
-        return false;
+        parent::warning_at($fname, $html);
     }
-    public function error_fields() {
-        return $this->errf;
-    }
-    public function report() {
+    function report() {
         $msgs = array();
-        $any_errors = false;
-        foreach ($this->errmsg as $m)
-            if ($m && $m !== true && $m !== 1)
-                $msgs[] = $any_errors = $m;
-        foreach ($this->warnmsg as $m)
-            if ($m && $m !== true && $m !== 1)
-                $msgs[] = "Warning: " . $m;
+        foreach ($this->messages(true) as $mx)
+            $msgs[] = ($mx[2] == MessageSet::WARNING ? "Warning: " : "") . $mx[1];
         $mt = '<div class="multimessage"><div class="mmm">' . join('</div><div class="mmm">', $msgs) . '</div></div>';
-        if (count($msgs) && $any_errors)
+        if (!empty($msgs) && $this->has_error())
             Conf::msg_error($mt);
-        else if (count($msgs))
+        else if (!empty($msgs))
             Conf::msg_warning($mt);
         $this->warnings_reported = true;
     }
-    public function parser($si) {
+    function parser($si) {
         if ($si->parser) {
             if (!isset($this->parsers[$si->parser]))
                 $this->parsers[$si->parser] = new $si->parser;
@@ -317,14 +287,14 @@ class SettingValues {
         } else
             return null;
     }
-    public function group_is_interesting($g) {
+    function group_is_interesting($g) {
         return isset($this->interesting_groups[$g]);
     }
 
-    public function label($name, $html, $label_id = null) {
+    function label($name, $html, $label_id = null) {
         $name1 = is_array($name) ? $name[0] : $name;
         foreach (is_array($name) ? $name : array($name) as $n)
-            if ($this->has_problem($n)) {
+            if ($this->has_problem_at($n)) {
                 $html = '<span class="setting_error">' . $html . '</span>';
                 break;
             }
@@ -337,24 +307,24 @@ class SettingValues {
         }
         return $html;
     }
-    public function sjs($name, $extra = array()) {
+    function sjs($name, $extra = array()) {
         $x = ["id" => $name];
         if (Si::get($name, "disabled"))
             $x["disabled"] = true;
         foreach ($extra as $k => $v)
             $x[$k] = $v;
-        if ($this->has_problem($name))
+        if ($this->has_problem_at($name))
             $x["class"] = trim("setting_error " . (get($x, "class") ? : ""));
         return $x;
     }
 
-    public function si($name) {
+    function si($name) {
         $si = Si::get($name);
         if (!$si)
             error_log(caller_landmark(2) . ": setting $name: missing information");
         return $si;
     }
-    public function req_si($si) {
+    function req_si($si) {
         $xname = str_replace(".", "_", $si->name);
         $xsis = [];
         foreach (get($this->has_req, $xname, []) as $suffix) {
@@ -371,30 +341,30 @@ class SettingValues {
         return $xsis;
     }
 
-    public function curv($name, $default_value = null) {
+    function curv($name, $default_value = null) {
         return $this->si_curv($name, $this->si($name), $default_value);
     }
-    public function oldv($name, $default_value = null) {
+    function oldv($name, $default_value = null) {
         return $this->si_oldv($this->si($name), $default_value);
     }
-    public function reqv($name, $default_value = null) {
+    function reqv($name, $default_value = null) {
         $name = str_replace(".", "_", $name);
         return get($this->req, $name, $default_value);
     }
-    public function has_savedv($name) {
+    function has_savedv($name) {
         $si = $this->si($name);
         return array_key_exists($si->storage(), $this->savedv);
     }
-    public function has_interest($name) {
+    function has_interest($name) {
         $si = $this->si($name);
         return array_key_exists($si->storage(), $this->savedv)
             || $si->is_interesting($this);
     }
-    public function savedv($name, $default_value = null) {
+    function savedv($name, $default_value = null) {
         $si = $this->si($name);
         return $this->si_savedv($si->storage(), $si, $default_value);
     }
-    public function newv($name, $default_value = null) {
+    function newv($name, $default_value = null) {
         $si = $this->si($name);
         $s = $si->storage();
         if (array_key_exists($s, $this->savedv))
@@ -403,10 +373,10 @@ class SettingValues {
             return $this->si_oldv($si, $default_value);
     }
 
-    public function set_oldv($name, $value) {
+    function set_oldv($name, $value) {
         $this->explicit_oldv[$name] = $value;
     }
-    public function save($name, $value) {
+    function save($name, $value) {
         $si = $this->si($name);
         if (!$si)
             return;
@@ -433,7 +403,7 @@ class SettingValues {
         else
             $this->savedv[$s] = [$value, null];
     }
-    public function update($name, $value) {
+    function update($name, $value) {
         if ($value !== $this->oldv($name)) {
             $this->save($name, $value);
             return true;
@@ -473,21 +443,21 @@ class SettingValues {
             return $this->savedv[$s][0];
     }
 
-    public function echo_checkbox_only($name, $onchange = null) {
+    function echo_checkbox_only($name, $onchange = null) {
         $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
             Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name")));
     }
-    public function echo_checkbox($name, $text, $onchange = null) {
+    function echo_checkbox($name, $text, $onchange = null) {
         $this->echo_checkbox_only($name, $onchange);
         echo "&nbsp;", $this->label($name, $text, true), "<br />\n";
     }
-    public function echo_checkbox_row($name, $text, $onchange = null) {
+    function echo_checkbox_row($name, $text, $onchange = null) {
         echo '<tr><td class="nb">';
         $this->echo_checkbox_only($name, $onchange);
         echo '&nbsp;</td><td>', $this->label($name, $text, true), "</td></tr>\n";
     }
-    public function echo_radio_table($name, $varr) {
+    function echo_radio_table($name, $varr) {
         $x = $this->curv($name);
         if ($x === null || !isset($varr[$x]))
             $x = 0;
@@ -504,7 +474,7 @@ class SettingValues {
         }
         echo "</table>\n";
     }
-    public function render_entry($name, $js = []) {
+    function render_entry($name, $js = []) {
         $v = $this->curv($name);
         $t = "";
         if (($si = $this->si($name))) {
@@ -523,10 +493,10 @@ class SettingValues {
         }
         return Ht::entry($name, $v, $this->sjs($name, $js)) . $t;
     }
-    public function echo_entry($name) {
+    function echo_entry($name) {
         echo $this->render_entry($name);
     }
-    public function echo_entry_row($name, $description, $hint = null, $js = []) {
+    function echo_entry_row($name, $description, $hint = null, $js = []) {
         $after_entry = null;
         if (isset($js["after_entry"])) {
             $after_entry = $js["after_entry"];
@@ -542,7 +512,7 @@ class SettingValues {
             echo '<br /><span class="hint">', $hint, "</span>";
         echo "</td></tr>\n";
     }
-    public function echo_entry_pair($name, $description, $hint = null, $js = []) {
+    function echo_entry_pair($name, $description, $hint = null, $js = []) {
         $after_entry = null;
         if (isset($js["after_entry"])) {
             $after_entry = $js["after_entry"];
@@ -558,14 +528,14 @@ class SettingValues {
             echo '<br /><span class="hint">', $hint, "</span>";
         echo "</div></div>\n";
     }
-    public function render_select($name, $values, $js = []) {
+    function render_select($name, $values, $js = []) {
         $v = $this->curv($name);
         $t = "";
         if (($si = $this->si($name)) && $si->parser)
             $t = Ht::hidden("has_$name", 1);
         return Ht::select($name, $values, $v, $this->sjs($name, $js)) . $t;
     }
-    public function render_textarea($name, $js = []) {
+    function render_textarea($name, $js = []) {
         $v = $this->curv($name);
         $t = "";
         $rows = 10;
@@ -599,10 +569,10 @@ class SettingValues {
             $this->render_textarea($name, ["class" => "fx"]),
             '</div><div class="g"></div>', "\n";
     }
-    public function echo_message($name, $description, $hint = "") {
+    function echo_message($name, $description, $hint = "") {
         $this->echo_message_base($name, $description, $hint, "f-cl");
     }
-    public function echo_message_minor($name, $description, $hint = "") {
+    function echo_message_minor($name, $description, $hint = "") {
         $this->echo_message_base($name, $description, $hint, "f-cn");
     }
 
@@ -630,7 +600,7 @@ class SettingValues {
         return sprintf("%d:%02d", intval($v / 60), $v % 60);
     }
 
-    public function type_hint($type) {
+    function type_hint($type) {
         if (str_ends_with($type, "date") && !isset($this->hint_status["date"])) {
             $this->hint_status["date"] = true;
             return "Date examples: “now”, “10 Dec 2006 11:59:59pm PST”, “2014-10-31 00:00 UTC-1100” <a href='http://php.net/manual/en/datetime.formats.php'>(more examples)</a>";
@@ -641,9 +611,10 @@ class SettingValues {
             return false;
     }
 
-    static public function make_request($user) {
+    static function make_request($user) {
         $sv = new SettingValues($user);
-        $sv->errf = $user->conf->session("settings_highlight", array());
+        foreach ($user->conf->session("settings_highlight", []) as $f => $v)
+            $sv->msg($f, null, $v);
         $user->conf->save_session("settings_highlight", null);
         $got = [];
         foreach ($_POST as $k => $v) {
@@ -906,7 +877,7 @@ function parse_value(SettingValues $sv, Si $si) {
     } else
         return $v;
 
-    $sv->set_error($si, $err);
+    $sv->error_at($si, $err);
     return null;
 }
 
@@ -961,8 +932,8 @@ function do_setting_update(SettingValues $sv) {
             $sv->save($dn1, $dv2);
         else if ($dv2 && $dv1 > $dv2) {
             $si = Si::get($dn1);
-            $sv->set_error($si, "Must come before " . Si::get($dn2, "short_description") . ".");
-            $sv->set_error($dn2);
+            $sv->error_at($si, "Must come before " . Si::get($dn2, "short_description") . ".");
+            $sv->error_at($dn2);
         }
     if ($sv->has_savedv("sub_sub"))
         $sv->save("sub_update", $sv->savedv("sub_sub"));
@@ -979,8 +950,8 @@ function do_setting_update(SettingValues $sv) {
             $isuf = $i ? "_$i" : "";
             if ($sv->newv("resp_open$isuf") > $sv->newv("resp_done$isuf")) {
                 $si = Si::get("resp_open$isuf");
-                $sv->set_error($si, "Must come before " . Si::get("resp_done", "short_description") . ".");
-                $sv->set_error("resp_done$isuf");
+                $sv->error_at($si, "Must come before " . Si::get("resp_done", "short_description") . ".");
+                $sv->error_at("resp_done$isuf");
             }
         }
 
@@ -1007,7 +978,7 @@ function do_setting_update(SettingValues $sv) {
 
     // make settings
     $sv->changes = [];
-    if (!$sv->has_errors()
+    if (!$sv->has_error()
         && (!empty($sv->savedv) || !empty($sv->save_callbacks))) {
         $tables = "Settings write";
         foreach ($sv->need_lock as $t => $need)
@@ -1073,8 +1044,8 @@ function do_setting_update(SettingValues $sv) {
             Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $sv->conf->short_name, $sv->conf->dbname);
     }
 
-    if (!$sv->has_errors()) {
-        $sv->conf->save_session("settings_highlight", $sv->error_fields());
+    if (!$sv->has_error()) {
+        $sv->conf->save_session("settings_highlight", $sv->message_fields());
         if (!empty($sv->changes))
             $sv->conf->confirmMsg("Changes saved.");
         else
