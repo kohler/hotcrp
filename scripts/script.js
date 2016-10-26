@@ -1137,7 +1137,7 @@ function tooltip(info) {
                 return content;
             else {
                 content = new_content;
-                bub_show();
+                show_bub();
             }
             return tt;
         }

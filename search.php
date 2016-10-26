@@ -14,33 +14,6 @@ if (!$Qreq)
 
 if (isset($Qreq->default) && $Qreq->defaultact)
     $Qreq->fn = $Qreq->defaultact;
-// backwards compat
-if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "load", "tag", "assign", "decide", "sendmail"])) {
-    if (isset($Qreq->get) && $Qreq->ajax && ($fdef = PaperColumn::lookup($Me, $Qreq->get)) && $fdef->foldable) {
-        $Qreq->fn = "load";
-        $Qreq->field = $Qreq->get;
-    } else if (isset($Qreq->get)) {
-        $Qreq->fn = "get";
-        $Qreq->getfn = $Qreq->get;
-    } else if (isset($Qreq->getgo) && isset($Qreq->getaction)) {
-        $Qreq->fn = "get";
-        $Qreq->getfn = $Qreq->getaction;
-    } else if (isset($Qreq->tagact) || $Qreq->fn === "tagact") {
-        $Qreq->fn = "tag";
-        $Qreq->tagfn = $Qreq->tagtype;
-    } else if (isset($Qreq->setassign) || $Qreq->fn === "setassign") {
-        $Qreq->fn = "assign";
-        $Qreq->assignfn = $Qreq->marktype;
-    } else if (isset($Qreq->setdecision) || $Qreq->fn === "setdecision")
-        $Qreq->fn = "decide";
-    else if (isset($Qreq->sendmail))
-        $Qreq->fn = "sendmail";
-    else if (isset($Qreq->fn)) {
-        SearchAction::load();
-        if (!SearchAction::has_function($Qreq->fn, $Qreq[$Qreq->fn . "fn"]))
-            unset($Qreq->fn);
-    }
-}
 
 
 // paper group
@@ -75,12 +48,6 @@ global $SSel;
 if (!$SSel) { /* we might be included by reviewprefs.php */
     $SSel = SearchSelection::make($Qreq, $Me);
     SearchSelection::clear_request();
-}
-
-// Ajax field loading: abstract, tags, collaborators, ...
-if ($Qreq->fn == "load") { // obsolete
-    $Qreq->f = $Qreq->field;
-    PaperApi::fieldhtml_api($Me, $Qreq, null);
 }
 
 // look for search action
@@ -293,12 +260,10 @@ $Conf->header("Search", "search", actionBar());
 echo Ht::unstash(); // need the JS right away
 $Search = new PaperSearch($Me, $Qreq);
 if (isset($Qreq->q)) {
-    $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => $Qreq->display], $Qreq);
-    $pl->papersel = $SSel->selection_map();
-    $pl_text = $pl->table_html($Search->limitName, [
-            "class" => "pltable_full", "table_id" => "foldpl",
-            "attributes" => ["data-fold-session" => 'pldisplay.$']
-        ]);
+    $pl = new PaperList($Search, ["sort" => true, "display" => $Qreq->display], $Qreq);
+    $pl->set_table_id_class("foldpl", "pltable_full", "p#");
+    $pl->set_selection($SSel);
+    $pl_text = $pl->table_html($Search->limitName, ["attributes" => ["data-fold-session" => 'pldisplay.$'], "list" => true]);
     $pldisplay = $pl->display;
     unset($_REQUEST["atab"], $_GET["atab"], $_POST["atab"]);
 } else
@@ -346,16 +311,13 @@ function displayOptionCheckbox($type, $column, $title, $opt = array()) {
     $checked = display_option_checked($type);
     $loadresult = "";
 
-    if (!isset($opt["onchange"])) {
+    if (!isset($opt["onchange"]))
         $opt["onchange"] = "plinfo('$type',this)";
-        $loadresult = "<div id='${type}loadformresult'></div>";
-    } else
-        $loadresult = "<div></div>";
     $indent = get($opt, "indent");
     unset($opt["indent"]);
 
     $text = Ht::checkbox("show$type", 1, $checked, $opt)
-        . "&nbsp;" . Ht::label($title) . $loadresult;
+        . "&nbsp;" . Ht::label($title);
     $displayOptions[] = (object) array("type" => $type, "text" => $text,
                 "checked" => $checked, "column" => $column, "indent" => $indent);
 }
@@ -416,7 +378,7 @@ if ($pl) {
             $opt["indent"] = true;
             foreach ($Conf->tags() as $t)
                 if ($t->vote || $t->approval || $t->rank)
-                    displayOptionCheckbox("tagrep:{$t->tag}", 1, "#~" . $t->tag . " tags", $opt);
+                    displayOptionCheckbox("tagrep:{$t->tag}", 1, "#~{$t->tag} report", $opt);
         }
     }
 

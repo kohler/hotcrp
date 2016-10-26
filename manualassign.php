@@ -299,7 +299,7 @@ if ($reviewer > 0) {
     // main assignment form
     $search = new PaperSearch($Me, array("t" => $qreq->t, "q" => $qreq->q,
                                          "urlbase" => hoturl_site_relative_raw("manualassign", "reviewer=$reviewer")));
-    $paperList = new PaperList($search, ["sort" => true, "list" => true, "reviewer" => $pcm[$reviewer]], make_qreq());
+    $paperList = new PaperList($search, ["sort" => true, "reviewer" => $pcm[$reviewer]], make_qreq());
     $paperList->display .= " topics ";
     if ($qreq->kind != "c")
         $paperList->display .= "reviewers ";
@@ -328,15 +328,14 @@ if ($reviewer > 0) {
         else if (!get($rev_rounds, "unnamed"))
             echo '<span style="padding-left:2em">Review round: ', $Conf->assignment_round_name(false), '</span>';
     }
+    $paperList->set_table_id_class("foldpl", "pltable_full");
+    $paperList->set_fold("allrevtopicpref", true);
     echo "<span style='padding-left:2em'>",
         Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
         "&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
         "</span></div>\n",
         $paperList->table_html(($qreq->kind == "c" ? "conflict" : "reviewAssignment"),
-                               array("class" => "pltable_full", "table_id" => "foldpl",
-                                     "header_links" => true,
-                                     "nofooter" => true,
-                                     "fold" => array("allrevtopicpref" => true))),
+                               ["header_links" => true, "nofooter" => true, "list" => true]),
         "<div class='aa'>",
         Ht::submit("update", "Save assignments", array("class" => "bb")),
         "</div></div></form></div>\n";

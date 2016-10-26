@@ -7,7 +7,7 @@ class SearchSelection {
     private $sel = array();
     private $selmap = null;
 
-    public function __construct($papers = null) {
+    function __construct($papers = null) {
         if ($papers) {
             $selmap = [];
             foreach ($papers as $pid)
@@ -16,7 +16,7 @@ class SearchSelection {
         }
     }
 
-    static public function make($qreq, Contact $user = null, $key = null) {
+    static function make($qreq, Contact $user = null, $key = null) {
         $ps = null;
         if ($key !== null && isset($qreq[$key]))
             $ps = $qreq[$key];
@@ -38,28 +38,28 @@ class SearchSelection {
         return new SearchSelection($ps);
     }
 
-    static public function clear_request() {
+    static function clear_request() {
         unset($_REQUEST["p"], $_REQUEST["pap"], $_GET["p"], $_GET["pap"],
               $_POST["p"], $_POST["pap"]);
     }
 
-    public function is_empty() {
+    function is_empty() {
         return empty($this->sel);
     }
 
-    public function count() {
+    function count() {
         return count($this->sel);
     }
 
-    public function selection() {
+    function selection() {
         return $this->sel;
     }
 
-    public function selection_at($i) {
+    function selection_at($i) {
         return get($this->sel, $i);
     }
 
-    public function selection_map() {
+    function selection_map() {
         if ($this->selmap === null) {
             $this->selmap = array();
             foreach ($this->sel as $i => $pid)
@@ -68,16 +68,22 @@ class SearchSelection {
         return $this->selmap;
     }
 
-    public function selection_index($pid) {
-        return get_i($this->selection_map(), $pid) - 1;
+    function is_selected($pid) {
+        if ($this->selmap === null)
+            $this->selection_map();
+        return isset($this->selmap[$pid]);
     }
 
-    public function sort_selection() {
+    function selection_index($pid) {
+        return get($this->selection_map(), $pid, 0) - 1;
+    }
+
+    function sort_selection() {
         sort($this->sel);
         $this->selmap = null;
     }
 
-    public function equals_search($search) {
+    function equals_search($search) {
         if ($search instanceof PaperSearch)
             $search = $search->paperList();
         if (count($search) !== count($this->sel))
@@ -88,15 +94,15 @@ class SearchSelection {
         return join(" ", $search) === join(" ", $sel);
     }
 
-    public function sql_predicate() {
+    function sql_predicate() {
         return sql_in_numeric_set($this->sel);
     }
 
-    public function request_value() {
+    function request_value() {
         return join(" ", $this->sel);
     }
 
-    public function reorder($a) {
+    function reorder($a) {
         $ax = array();
         foreach ($this->sel as $pid)
             if (array_key_exists($pid, $a))

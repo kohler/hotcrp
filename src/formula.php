@@ -1430,6 +1430,8 @@ class Formula {
     function unparse_text($x) {
         if (is_int($x) && $x && $this->_format === Fexpr::FREVIEWER)
             return $contact->name_text_for($x);
+        else if (is_bool($x))
+            return $x ? "Y" : "N";
         else
             return $this->unparse_html($x);
     }

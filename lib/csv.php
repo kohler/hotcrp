@@ -245,7 +245,7 @@ class CsvGenerator {
     static function quote($text, $quote_empty = false) {
         if ($text === "")
             return $quote_empty ? '""' : $text;
-        else if (preg_match('/\A[-_@\$#+A-Za-z0-9.](?:[-_@\$#+A-Za-z0-9. \t]*[-_\$#+A-Za-z0-9.]|)\z/', $text))
+        else if (preg_match('/\A[-_@\$+A-Za-z0-9.](?:[-_@\$+A-Za-z0-9. \t]*[-_\$+A-Za-z0-9.]|)\z/', $text))
             return $text;
         else
             return self::always_quote($text);
@@ -286,6 +286,15 @@ class CsvGenerator {
         $this->lines_length += strlen($text);
     }
 
+    function add_comment($text) {
+        preg_match_all('/([^\r\n]*)(?:\r\n?|\n|\z)/', $text, $m);
+        if ($m[1][count($m[1]) - 1] === "")
+            array_pop($m[1]);
+        foreach ($m[1] as $x)
+            $this->add_string($this->comment . $x . $this->lf);
+        $this->add_string($this->lf);
+    }
+
     function add($row) {
         if (is_string($row)) {
             error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
@@ -298,6 +307,9 @@ class CsvGenerator {
             foreach ($row as $x)
                 $this->add($x);
         } else {
+            if ($this->comment && $this->selection
+                && ($cmt = get($row, "__precomment__")))
+                $this->add_comment($cmt);
             $srow = $this->selection ? $this->select($row) : $row;
             if ($this->type == self::TYPE_COMMA) {
                 if ($this->flags & self::FLAG_ALWAYS_QUOTE) {
@@ -312,14 +324,9 @@ class CsvGenerator {
                 $this->add_string(join("\t", $srow) . $this->lf);
             else
                 $this->add_string(join("|", $srow) . $this->lf);
-            if ($this->comment && $this->selection && ($cmt = get($row, "__postcomment__"))) {
-                preg_match_all('/([^\r\n]*)(?:\r\n?|\n|\z)/', $cmt, $m);
-                if ($m[1][count($m[1]) - 1] === "")
-                    array_pop($m[1]);
-                foreach ($m[1] as $x)
-                    $this->add_string($this->comment . $x . $this->lf);
-                $this->add_string($this->lf);
-            }
+            if ($this->comment && $this->selection
+                && ($cmt = get($row, "__postcomment__")))
+                $this->add_comment($cmt);
         }
     }
 

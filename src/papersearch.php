@@ -2837,7 +2837,7 @@ class PaperSearch {
 
     private function _clauseTermCheckWordCount($t, $row, $rrow) {
         if ($this->_reviewWordCounts === false)
-            $this->_reviewWordCounts = $this->conf->fetch_iimap("select reviewId, reviewWordCount from PaperReview");
+            $this->_reviewWordCounts = Dbl::fetch_iimap($this->conf->qe("select reviewId, reviewWordCount from PaperReview"));
         if (!isset($this->_reviewWordCounts[$rrow->reviewId])) {
             $cid2rid = $row->all_review_ids();
             foreach ($row->all_review_word_counts($row) as $cid => $rwc)

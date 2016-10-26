@@ -285,6 +285,20 @@ class GetTopics_SearchAction extends SearchAction {
     }
 }
 
+class GetCSV_SearchAction extends SearchAction {
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        $actions[] = [1089, $this->subname, "Paper information", "CSV"];
+    }
+    function run(Contact $user, $qreq, $ssel) {
+        $search = new PaperSearch($user, $qreq);
+        $pl = new PaperList($search, ["sort" => true, "display" => $qreq->display], $qreq);
+        $pl->set_selection($ssel, true);
+        $pl->set_fold("sel", true);
+        list($header, $data) = $pl->text_csv($search->limitName);
+        return new Csv_SearchResult("data", $header, $data);
+    }
+}
+
 SearchAction::register("get", null, SiteLoader::API_GET | SiteLoader::API_PAPER, new Get_SearchAction);
 SearchAction::register("get", "paper", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction(DTYPE_SUBMISSION));
 SearchAction::register("get", "final", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction(DTYPE_FINAL));
@@ -293,4 +307,4 @@ SearchAction::register("get", "abstract", SiteLoader::API_GET | SiteLoader::API_
 SearchAction::register("get", "authors", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAuthors_SearchAction);
 SearchAction::register("get", "contact", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetContacts_SearchAction);
 SearchAction::register("get", "pcconf", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetPcconflicts_SearchAction);
-SearchAction::register("get", "topics", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetTopics_SearchAction);
+SearchAction::register("get", "csv", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetCSV_SearchAction);

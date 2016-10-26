@@ -142,15 +142,18 @@ $pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
                     ["reviewer" => $user_mgbaker]);
 $j = $pl->text_json("id selconf");
 xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
-xassert(!@$j[1]->selconf && !@$j[2]->selconf && @$j[3]->selconf && !@$j[4]->selconf && !@$j[5]->selconf
-       && !@$j[15]->selconf && !@$j[16]->selconf && !@$j[17]->selconf && @$j[18]->selconf);
+xassert_eqq($j[3]->selconf, "Y");
+xassert_eqq($j[18]->selconf, "Y");
+foreach ([1, 2, 4, 5, 15, 16, 17] as $i)
+    xassert_eqq($j[$i]->selconf, "N");
 
 $pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
                     ["reviewer" => $user_jon]);
 $j = $pl->text_json("id selconf");
 xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
-xassert(!@$j[1]->selconf && !@$j[2]->selconf && !@$j[3]->selconf && !@$j[4]->selconf && !@$j[5]->selconf
-       && !@$j[15]->selconf && !@$j[16]->selconf && @$j[17]->selconf && !@$j[18]->selconf);
+xassert_eqq($j[17]->selconf, "Y");
+foreach ([1, 2, 3, 4, 5, 15, 16, 18] as $i)
+    xassert_eqq($j[$i]->selconf, "N");
 
 assert_search_papers($user_shenker, "re:estrin", "4 8 18");
 

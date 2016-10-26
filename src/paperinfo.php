@@ -303,6 +303,10 @@ class PaperInfo {
         return $this->format_of($this->title, true);
     }
 
+    public function abstract_format() {
+        return $this->format_of($this->abstract, true);
+    }
+
     public function author_list() {
         if (!isset($this->_author_array)) {
             $this->_author_array = array();
@@ -656,7 +660,8 @@ class PaperInfo {
     }
 
     public function reviewer_preference($contact) {
-        $pref = get($this->reviewer_preferences(), $contact->contactId);
+        $cid = is_int($contact) ? $contact : $contact->contactId;
+        $pref = get($this->reviewer_preferences(), $cid);
         return $pref ? : [0, null];
     }
 
@@ -753,8 +758,8 @@ class PaperInfo {
     }
 
     public function npages() {
-        $dtype = $this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
-        return $this->document($dtype)->npages();
+        $doc = $this->document($this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL);
+        return $doc ? $doc->npages() : 0;
     }
 
     public function num_reviews_submitted() {

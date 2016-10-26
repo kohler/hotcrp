@@ -478,7 +478,7 @@ if (isset($Qreq->requery) || isset($Qreq->haspap)) {
                                          "urlbase" => hoturl_site_relative_raw("autoassign")));
     $plist = new PaperList($search);
     $plist->display .= " reviewers ";
-    $plist->papersel = $SSel->selection_map();
+    $plist->set_selection($SSel);
     echo $plist->table_html("reviewersSel", ["nofooter" => true]),
         Ht::hidden("prevt", $Qreq->t), Ht::hidden("prevq", $Qreq->q),
         Ht::hidden("haspap", 1);
