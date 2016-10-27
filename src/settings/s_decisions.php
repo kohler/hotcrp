@@ -153,7 +153,7 @@ function render(SettingValues $sv) {
     echo "<p>This sharing service is hosted by <a href = 'http://openacademic.ai'>Open Academic Society</a> to to create a shared, open and expanding knowledge graph of research and education-focused entities and relationships.</p>";
     echo "<p>It only shares <b>papers' metadata</b> but not the papers' actual content. For more information on the API, please click on link: <a href = 'https://api.openacademic.ai/Help'>Open Academic API</a></p>";
     echo "<p>Please select the corresponding <b>acceptance</b> type you want to share: ".decisionSelector(1)."</p>";
-    echo "<p>Please insert the <b>authentication token</b> acquired from <a href = 'https://api.openacademic.ai/authentication'>Open Academic Authentication</a>: ".Ht::entry("token", "");
+    echo "<p>Please insert the <b>authentication token</b> acquired from <a href = 'https://api.openacademic.ai/tokenrequest'>Open Academic Authentication</a>: ".Ht::entry("token", "");
     echo "<p><b>Click the button to share accepted paper meta data with search engines</b></p>";
     echo Ht::submit("share", "Share");
    
@@ -168,7 +168,6 @@ function render(SettingValues $sv) {
         $decision = $_REQUEST["decision"];
 
         $share = array();
-        $share["token"] = $_REQUEST["token"];
         $share["provider"] = "HotCRP";
         $share["setId"] = "";
         $share["venue"] = $sv->conf-> long_name;
@@ -205,7 +204,7 @@ function render(SettingValues $sv) {
         $share["papers"] = $papers;
 
         //sends HTTP POST REQUEST
-        $opts = array('http'=> array('method'=> 'POST', 'header'=> 'Content-type: application/json', 'content'=> json_encode($share)));
+        $opts = array('http'=> array('method'=> 'POST', 'header'=> "Authorization: Open-Academic-Auth " . $_REQUEST["token"] . "\r\n" . 'Content-type: application/json', 'content'=> json_encode($share)));
         $context = stream_context_create($opts);
         $post_result = file_get_contents($api, false, $context);
     
