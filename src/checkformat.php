@@ -247,7 +247,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         if (($m = $doc->metadata()) && isset($m->banal))
             $bj = $m->banal;
         $bj_ok = $bj && $bj->at >= @filemtime("src/banal") && get($bj, "args") == self::$banal_args;
-        if (!$bj_ok || $bj->at >= $Now - 86400) {
+        if (!$bj_ok || $bj->at < $Now - 86400) {
             $cf->possible_run = true;
             if ($cf->allow_run == CheckFormat::RUN_YES
                 || (!$bj_ok && $cf->allow_run == CheckFormat::RUN_PREFER_NO))
