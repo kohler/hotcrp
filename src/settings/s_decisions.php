@@ -124,7 +124,7 @@ function render(SettingValues $sv) {
         Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"), $vclass),
         "<br /><small>Examples: “Accepted as short paper”, “Early reject”</small>",
         "</td></tr>";
-    if ($sv->has_error("decn"))
+    if ($sv->has_error_at("decn"))
         echo '<tr><td></td><td class="lentry nw">',
             Ht::checkbox("decn_confirm", 1, false),
             '&nbsp;<span class="error">', Ht::label("Confirm"), "</span></td></tr>";
@@ -224,27 +224,27 @@ function render(SettingValues $sv) {
             && ($sv->newv("final_soft") || $sv->newv("final_done"))
             && (!$sv->newv("final_done") || $sv->newv("final_done") > $Now)
             && $sv->newv("seedec") != Conf::SEEDEC_ALL)
-            $sv->set_warning(null, "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted. You may want to update the the “Who can see paper decisions” setting.");
+            $sv->warning_at(null, "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted. You may want to update the the “Who can see paper decisions” setting.");
 
         if ($sv->has_interest("seedec")
             && $sv->newv("seedec") == Conf::SEEDEC_ALL
             && $sv->newv("au_seerev") == Conf::AUSEEREV_NO)
-            $sv->set_warning(null, "Authors can see decisions, but not reviews. This is sometimes unintentional.");
+            $sv->warning_at(null, "Authors can see decisions, but not reviews. This is sometimes unintentional.");
 
         if ($sv->has_interest("au_seerev")
             && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
             && !$sv->newv("tag_au_seerev")
-            && !$sv->has_error("tag_au_seerev"))
-            $sv->set_warning("tag_au_seerev", "You haven’t set any review visibility tags.");
+            && !$sv->has_error_at("tag_au_seerev"))
+            $sv->warning_at("tag_au_seerev", "You haven’t set any review visibility tags.");
 
         if (($sv->has_interest("au_seerev") || $sv->has_interest("tag_chair"))
             && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
             && $sv->newv("tag_au_seerev")
-            && !$sv->has_error("tag_au_seerev")) {
+            && !$sv->has_error_at("tag_au_seerev")) {
             foreach (explode(" ", $sv->newv("tag_au_seerev")) as $t)
                 if ($t !== "" && !TagInfo::in_list($t, $sv->newv("tag_chair"))) {
-                    $sv->set_warning("tag_au_seerev", "PC members can change the tag “" . htmlspecialchars($t) . "”, which affects whether authors can see reviews. Such tags should usually be <a href=\"" . hoturl("settings", "group=tags") . "\">chair-only</a>.");
-                    $sv->set_warning("tag_chair");
+                    $sv->warning_at("tag_au_seerev", "PC members can change the tag “" . htmlspecialchars($t) . "”, which affects whether authors can see reviews. Such tags should usually be <a href=\"" . hoturl("settings", "group=tags") . "\">chair-only</a>.");
+                    $sv->warning_at("tag_chair");
                 }
         }
     }
@@ -262,9 +262,9 @@ class Decision_SettingParser extends SettingParser {
                 if ($dname === "")
                     /* remove decision */;
                 else if (($derror = Conf::decision_name_error($dname)))
-                    $sv->set_error($k, htmlspecialchars($derror));
+                    $sv->error_at($k, htmlspecialchars($derror));
                 else if (isset($dec_revmap[strtolower($dname)]))
-                    $sv->set_error($k, "Decision name “{$dname}” was already used.");
+                    $sv->error_at($k, "Decision name “{$dname}” was already used.");
                 else
                     $dec_revmap[strtolower($dname)] = true;
             }
@@ -275,9 +275,9 @@ class Decision_SettingParser extends SettingParser {
             $match_accept = (stripos($sv->req["decn"], "accept") !== false);
             $match_reject = (stripos($sv->req["decn"], "reject") !== false);
             if ($delta > 0 && $match_reject)
-                $sv->set_error("decn", "You are trying to add an Accept-class decision that has “reject” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.");
+                $sv->error_at("decn", "You are trying to add an Accept-class decision that has “reject” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.");
             else if ($delta < 0 && $match_accept)
-                $sv->set_error("decn", "You are trying to add a Reject-class decision that has “accept” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.");
+                $sv->error_at("decn", "You are trying to add a Reject-class decision that has “accept” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.");
         }
 
         $sv->need_lock["Paper"] = true;
@@ -326,7 +326,7 @@ class RespRound_SettingParser extends SettingParser {
             if ($rname === "" || $rname === "none" || $rname === "1")
                 /* do nothing */;
             else if (($rerror = Conf::resp_round_name_error($rname)))
-                $sv->set_error("resp_roundname", $rerror);
+                $sv->error_at("resp_roundname", $rerror);
             else {
                 $roundnames[0] = $rname;
                 $roundnames_set[strtolower($rname)] = 0;
@@ -340,9 +340,9 @@ class RespRound_SettingParser extends SettingParser {
             if ($rname === "")
                 continue;
             else if (($rerror = Conf::resp_round_name_error($rname)))
-                $sv->set_error("resp_roundname_$i", $rerror);
+                $sv->error_at("resp_roundname_$i", $rerror);
             else if (get($roundnames_set, strtolower($rname)) !== null)
-                $sv->set_error("resp_roundname_$i", "Response round name “" . htmlspecialchars($rname) . "” has already been used.");
+                $sv->error_at("resp_roundname_$i", "Response round name “" . htmlspecialchars($rname) . "” has already been used.");
             else {
                 $roundnames[] = $rname;
                 $roundnames_set[strtolower($rname)] = $i;

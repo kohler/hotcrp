@@ -3,17 +3,11 @@
 // HotCRP is Copyright (c) 2008-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class PaperStatus {
+class PaperStatus extends MessageSet {
     private $conf;
     private $contact;
     private $uploaded_documents;
-    private $errf;
-    private $msgs;
-    private $has_warnings;
-    private $has_errors;
-    private $no_msgs = false;
     private $no_email = false;
-    private $allow_error = array();
     private $forceShow = null;
     private $export_ids = false;
     private $hide_docids = false;
@@ -37,10 +31,8 @@ class PaperStatus {
     }
 
     function clear() {
+        parent::clear();
         $this->uploaded_documents = [];
-        $this->errf = [];
-        $this->msgs = [];
-        $this->has_warnings = $this->has_errors = false;
         $this->prow = null;
     }
 
@@ -108,8 +100,8 @@ class PaperStatus {
 
         if (!$prow || ($contact && !$contact->can_view_paper($prow)))
             return null;
-        $was_no_msgs = $this->no_msgs;
-        $this->no_msgs = !get($args, "msgs");
+        $was_no_msgs = $this->ignore_msgs;
+        $this->ignore_msgs = !get($args, "msgs");
 
         $this->prow = $prow;
         $this->paperId = $prow->paperId;
@@ -232,10 +224,10 @@ class PaperStatus {
         if (!$prow->collaborators && $can_view_authors && $this->conf->setting("sub_collab")
             && ($prow->outcome <= 0 || ($contact && !$contact->can_view_decision($prow)))) {
             $field = $this->_($this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
-            $this->set_warning_html("collaborators", $this->_("Enter the authors’ potential conflicts of interest in the %s field. If none of the authors have conflicts, enter “None”.", $field));
+            $this->warning_at("collaborators", $this->_("Enter the authors’ potential conflicts of interest in the %s field. If none of the authors have conflicts, enter “None”.", $field));
         }
 
-        $this->no_msgs = $was_no_msgs;
+        $this->ignore_msgs = $was_no_msgs;
         return $pj;
     }
 
@@ -251,40 +243,14 @@ class PaperStatus {
     }
 
 
-    public function set_error_html($field, $html) {
-        $this->msg($field, $html, 2);
+    function error_at_option(PaperOption $o, $html) {
+        $this->error_at($o->id <= 0 ? $o->abbr : "opt$o->id",
+                        htmlspecialchars($o->name) . ": " . $html);
     }
 
-    public function set_warning_html($field, $html) {
-        $this->msg($field, $html, 1);
-    }
-
-    public function set_info_html($field, $html) {
-        $this->msg($field, $html, 0);
-    }
-
-    public function msg($field, $html, $status) {
-        if (!$this->no_msgs) {
-            if ($field)
-                $this->errf[$field] = max(get($this->errf, $field, 0), $status);
-            if ($html)
-                $this->msgs[] = [$field, $html, $status];
-            if ($status == 1)
-                $this->has_warnings = true;
-            if ($status == 2 && (!$field || !$this->allow_error
-                                 || array_search($field, $this->allow_error) === false))
-                $this->has_errors = true;
-        }
-    }
-
-    public function set_option_error_html($o, $html) {
-        $this->set_error_html($o->id <= 0 ? $o->abbr : "opt$o->id",
-                              htmlspecialchars($o->name) . ": " . $html);
-    }
-
-    public function set_option_warning_html($o, $html) {
-        $this->set_warning_html($o->id <= 0 ? $o->abbr : "opt$o->id",
-                                htmlspecialchars($o->name) . ": " . $html);
+    function warning_at_option(PaperOption $o, $html) {
+        $this->warning_at($o->id <= 0 ? $o->abbr : "opt$o->id",
+                          htmlspecialchars($o->name) . ": " . $html);
     }
 
 
@@ -296,7 +262,7 @@ class PaperStatus {
 
     public function upload_document($docj, PaperOption $o) {
         if (get($docj, "error") || get($docj, "error_html")) {
-            $this->set_option_error_html($o, get($docj, "error_html", "Upload error."));
+            $this->error_at_option($o, get($docj, "error_html", "Upload error."));
             $docj->docid = 1;
             return;
         }
@@ -353,7 +319,7 @@ class PaperStatus {
             $this->uploaded_documents[] = $docj->docid = $newdoc->paperStorageId;
         } else {
             $docj->docid = 1;
-            $this->set_option_error_html($o, $newdoc ? $newdoc->error_html : "Empty document.");
+            $this->error_at_option($o, $newdoc ? $newdoc->error_html : "Empty document.");
         }
     }
 
@@ -364,7 +330,7 @@ class PaperStatus {
             else if (!$preserve)
                 $pj->$k = trim($pj->$k);
         } else if (isset($pj->$k)) {
-            $this->set_error_html($k, "Format error [$k]");
+            $this->error_at($k, "Format error [$k]");
             unset($pj, $k);
         }
     }
@@ -415,7 +381,7 @@ class PaperStatus {
                 if ($v && (is_int($v) || is_string($v)))
                     $new_topics->$v = true;
                 else if ($v)
-                    $this->set_error_html("topics", "Format error [topics]");
+                    $this->error_at("topics", "Format error [topics]");
             $topics = $new_topics;
         }
         if (is_object($topics)) {
@@ -431,7 +397,7 @@ class PaperStatus {
                 else
                     $pj->bad_topics[] = $k;
         } else if ($topics)
-            $this->set_error_html("topics", "Format error [topics]");
+            $this->error_at("topics", "Format error [topics]");
     }
 
     private function normalize_options($pj, $options) {
@@ -467,7 +433,7 @@ class PaperStatus {
             if (!($pccid = $this->conf->pc_member_by_email($email)))
                 $pj->bad_pc_conflicts->$email = true;
             else if (!is_int($ct) && !is_string($ct) && $ct !== true)
-                $this->set_error_html("pc_conflicts", "Format error [PC conflicts]");
+                $this->error_at("pc_conflicts", "Format error [PC conflicts]");
             else {
                 if (is_int($ct) && isset(Conflict::$type_names[$ct]))
                     $ctn = $ct;
@@ -514,7 +480,7 @@ class PaperStatus {
         $pj->bad_authors = $pj->bad_email_authors = array();
         if (isset($pj->authors)) {
             if (!is_array($pj->authors))
-                $this->set_error_html("authors", "Format error [authors]");
+                $this->error_at("authors", "Format error [authors]");
             // old author information
             $old_au_by_email = [];
             if ($old_pj && isset($old_pj->authors)) {
@@ -529,7 +495,7 @@ class PaperStatus {
                 if (is_string($au) || is_object($au))
                     $this->normalize_author($pj, $au, $au_by_email, $old_au_by_email, $preserve);
                 else
-                    $this->set_error_html("authors", "Format error [authors]");
+                    $this->error_at("authors", "Format error [authors]");
         }
 
         // Status
@@ -550,7 +516,7 @@ class PaperStatus {
             if (($x = friendly_boolean($pj->nonblind)) !== null)
                 $pj->nonblind = $x;
             else {
-                $this->set_error_html("nonblind", "Format error [nonblind]");
+                $this->error_at("nonblind", "Format error [nonblind]");
                 unset($pj->nonblind);
             }
         }
@@ -570,7 +536,7 @@ class PaperStatus {
             else if ($pj->options === false)
                 $pj->options = (object) array();
             else {
-                $this->set_error_html("options", "Format error [options]");
+                $this->error_at("options", "Format error [options]");
                 unset($pj->options);
             }
         }
@@ -583,7 +549,7 @@ class PaperStatus {
         else if (get($pj, "pc_conflicts") === false)
             $pj->pc_conflicts = (object) array();
         else if (isset($pj->pc_conflicts)) {
-            $this->set_error_html("pc_conflicts", "Format error [PC conflicts]");
+            $this->error_at("pc_conflicts", "Format error [PC conflicts]");
             unset($pj->pc_conflicts);
         }
 
@@ -611,7 +577,7 @@ class PaperStatus {
             if (is_object($contacts) || is_array($contacts))
                 $contacts = (array) $contacts;
             else {
-                $this->set_error_html("contacts", "Format error [contacts]");
+                $this->error_at("contacts", "Format error [contacts]");
                 $contacts = array();
             }
             $pj->contacts = array();
@@ -637,7 +603,7 @@ class PaperStatus {
                     else
                         $pj->bad_contacts[] = $v;
                 } else
-                    $this->set_error_html("contacts", "Format error [contacts]");
+                    $this->error_at("contacts", "Format error [contacts]");
             }
         }
 
@@ -679,41 +645,41 @@ class PaperStatus {
         // Errors don't prevent saving
         if (get($pj, "title") === ""
             || (get($pj, "title") === null && (!$old_pj || !$old_pj->title)))
-            $this->set_error_html("title", $this->_("Each submission must have a title."));
+            $this->error_at("title", $this->_("Each submission must have a title."));
         if (get($pj, "abstract") === ""
             || (get($pj, "abstract") === null && (!$old_pj || !get($old_pj, "abstract")))) {
             if (!$this->conf->opt("noAbstract"))
-                $this->set_error_html("abstract", $this->_("Each submission must have an abstract."));
+                $this->error_at("abstract", $this->_("Each submission must have an abstract."));
         }
         if ((is_array(get($pj, "authors")) && empty($pj->authors))
             || (get($pj, "authors") === null && (!$old_pj || empty($old_pj->authors))))
-            $this->set_error_html("authors", $this->_("Each submission must have at least one author."));
+            $this->error_at("authors", $this->_("Each submission must have at least one author."));
         $max_authors = $this->conf->opt("maxAuthors");
         if ($max_authors > 0 && is_array(get($pj, "authors")) && count($pj->authors) > $max_authors)
-            $this->set_error_html("authors", $this->_("Each submission can have at most %d authors.", $max_authors));
+            $this->error_at("authors", $this->_("Each submission can have at most %d authors.", $max_authors));
         if (!empty($pj->bad_authors))
-            $this->set_error_html("authors", $this->_("Some authors ignored."));
+            $this->error_at("authors", $this->_("Some authors ignored."));
         foreach ($pj->bad_email_authors as $k => $aux) {
-            $this->set_error_html("authors", null);
-            $this->set_error_html("auemail" . ($k + 1), $this->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
+            $this->error_at("authors", null);
+            $this->error_at("auemail" . ($k + 1), $this->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
         }
         $ncontacts = 0;
         foreach ($this->conflicts_array($pj, $old_pj) as $c)
             if ($c >= CONFLICT_CONTACTAUTHOR)
                 ++$ncontacts;
         if (!$ncontacts && $old_pj && self::contacts_array($old_pj))
-            $this->set_error_html("contacts", $this->_("Each submission must have at least one contact."));
+            $this->error_at("contacts", $this->_("Each submission must have at least one contact."));
         foreach ($pj->bad_contacts as $reg)
             if (!isset($reg->email))
-                $this->set_error_html("contacts", $this->_("Contact %s has no associated email.", Text::user_html($reg)));
+                $this->error_at("contacts", $this->_("Contact %s has no associated email.", Text::user_html($reg)));
             else
-                $this->set_error_html("contacts", $this->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
+                $this->error_at("contacts", $this->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
         if (get($pj, "options"))
             $this->check_options($pj);
         if (!empty($pj->bad_topics))
-            $this->set_warning_html("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($pj->bad_topics)) . ").");
+            $this->warning_at("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($pj->bad_topics)) . ").");
         if (!empty($pj->bad_options))
-            $this->set_warning_html("options", "Unknown options ignored (" . htmlspecialchars(commajoin(array_keys($pj->bad_options))) . ").");
+            $this->warning_at("options", "Unknown options ignored (" . htmlspecialchars(commajoin(array_keys($pj->bad_options))) . ").");
     }
 
     static private function author_information($pj) {
@@ -823,12 +789,12 @@ class PaperStatus {
             $paperid = null;
         if ($paperid !== null && !is_int($paperid)) {
             $key = isset($pj->pid) ? "pid" : "id";
-            $this->set_error_html($key, "Format error [$key]");
+            $this->error_at($key, "Format error [$key]");
             return false;
         }
 
         if (get($pj, "error") || get($pj, "error_html")) {
-            $this->set_error_html("error", $this->_("Refusing to save submission with error"));
+            $this->error_at("error", $this->_("Refusing to save submission with error"));
             return false;
         }
 
@@ -839,14 +805,14 @@ class PaperStatus {
         if ($this->prow)
             $old_pj = $this->paper_json($this->prow, ["forceShow" => true]);
         if ($pj && $old_pj && $paperid != $old_pj->pid) {
-            $this->set_error_html("pid", $this->_("Saving submission with different ID"));
+            $this->error_at("pid", $this->_("Saving submission with different ID"));
             return false;
         }
 
         $this->normalize($pj, $old_pj, false);
         if ($old_pj)
             $this->normalize($old_pj, null, true);
-        if ($this->has_errors)
+        if ($this->has_error())
             return false;
         $this->check_invariants($pj, $old_pj);
 
@@ -862,11 +828,11 @@ class PaperStatus {
             $c->disabled = !!$this->disable_users;
             if (!Contact::create($this->conf, $c, !$this->no_email)
                 && get($c, "contact"))
-                $this->set_error_html("contacts", $this->_("Could not create an account for contact %s.", Text::user_html($c)));
+                $this->error_at("contacts", $this->_("Could not create an account for contact %s.", Text::user_html($c)));
         }
 
         // catch errors
-        if ($this->has_errors)
+        if ($this->has_error())
             return false;
 
         // update Paper table
@@ -1008,7 +974,7 @@ class PaperStatus {
                 $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $this->qf), $this->qv);
                 if (!$result
                     || !($paperid = $pj->pid = $result->insert_id))
-                    return $this->set_error_html(false, $this->_("Could not create paper."));
+                    return $this->error_at(false, $this->_("Could not create paper."));
                 if (!empty($this->uploaded_documents))
                     $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $paperid, $this->uploaded_documents);
             }
@@ -1063,26 +1029,5 @@ class PaperStatus {
         }
 
         return $paperid;
-    }
-
-    function messages($include_fields = false) {
-        return $include_fields ? $this->msgs : array_map(function ($m) { return $m[1]; }, $this->msgs);
-    }
-
-    function messages_for($field, $include_fields = false) {
-        $m = empty($this->msgs) ? [] : array_filter($this->msgs, function ($m) use ($field) { return $m[0] === $field; });
-        return $include_fields || empty($m) ? $m : array_map(function ($m) { return $m[1]; }, $m);
-    }
-
-    function has_error() {
-        return $this->has_errors;
-    }
-
-    function has_problem($field) {
-        return get($this->errf, $field, 0) > 0;
-    }
-
-    function has_problems() {
-        return $this->has_warnings || $this->has_errors;
     }
 }

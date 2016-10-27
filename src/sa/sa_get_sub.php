@@ -106,9 +106,10 @@ class GetCheckFormat_SearchAction extends SearchAction {
             $pages = "?";
             if ($prow->mimetype == "application/pdf") {
                 $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
-                if (($doc = $cf->fetch_document($prow, $dtype))
-                    && $cf->check_document($prow, $doc)) {
-                    $errf = $cf->error_fields();
+                if (($doc = $cf->fetch_document($prow, $dtype)))
+                    $cf->check_document($prow, $doc);
+                if ($doc && !$cf->failed) {
+                    $errf = $cf->message_fields();
                     $format = empty($errf) ? "ok" : join(",", array_keys($errf));
                     $pages = $cf->pages;
                 } else

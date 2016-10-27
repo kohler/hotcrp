@@ -182,7 +182,8 @@ class DocumentInfo implements JsonSerializable {
                 $suffix .= "x";
             else if ($specstatus != $specwhen) {
                 $cf = new CheckFormat($flags & self::L_REQUIREFORMAT ? CheckFormat::RUN_PREFER_NO : CheckFormat::RUN_NO);
-                if ($cf->check_document($this->prow, $this) == CheckFormat::STATUS_ERROR) {
+                $cf->check_document($this->prow, $this);
+                if ($cf->has_error()) {
                     $suffix .= "x";
                     if (!$small)
                         $info = '<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->messages())) . '">ⓘ</span>';

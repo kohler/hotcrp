@@ -325,8 +325,8 @@ class PaperApi {
             json_exit(["ok" => false, "error" => "Permission error."]);
         $cf = new CheckFormat;
         $doc = $cf->fetch_document($prow, $dtype, $qreq->docid);
-        $status = $cf->check_document($prow, $doc);
-        json_exit(["ok" => $status != CheckFormat::STATUS_FAIL, "status" => $status, "response" => $cf->document_report($prow, $doc)]);
+        $cf->check_document($prow, $doc);
+        json_exit(["ok" => !$cf->failed, "response" => $cf->document_report($prow, $doc)]);
     }
 
     static function whoami_api(Contact $user, $qreq, $prow) {

@@ -644,7 +644,7 @@ class CheckboxPaperOption extends PaperOption {
     function parse_json($pj, PaperStatus $ps) {
         if (is_bool($pj))
             return $pj ? 1 : null;
-        $ps->set_option_error_html($this, "Option should be “true” or “false”.");
+        $ps->error_at_option($this, "Option should be “true” or “false”.");
     }
 
     function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
@@ -720,7 +720,7 @@ class SelectorPaperOption extends PaperOption {
             $pj = $v;
         if (is_int($pj) && isset($this->selector[$pj]))
             return $pj;
-        $ps->set_option_error_html($this, "Option doesn’t match any of the selectors.");
+        $ps->error_at_option($this, "Option doesn’t match any of the selectors.");
     }
 
     function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
@@ -817,7 +817,7 @@ class DocumentPaperOption extends PaperOption {
             $ps->upload_document($pj, $this);
             return $pj->docid;
         }
-        $ps->set_option_error_html($this, "Option should be a document.");
+        $ps->error_at_option($this, "Option should be a document.");
     }
 
     function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
@@ -894,7 +894,7 @@ class NumericPaperOption extends PaperOption {
             return $pj;
         else if ($pj === "" || $pj === null)
             return null;
-        $ps->set_option_error_html($this, "Option should be an integer.");
+        $ps->error_at_option($this, "Option should be an integer.");
     }
 
     private function unparse_value(PaperOptionValue $ov = null) {
@@ -955,7 +955,7 @@ class TextPaperOption extends PaperOption {
     function parse_json($pj, PaperStatus $ps) {
         if (is_string($pj))
             return trim($pj) === "" ? null : [1, $pj];
-        $ps->set_option_error_html($this, "Option should be a string.");
+        $ps->error_at_option($this, "Option should be a string.");
     }
 
     private function unparse_html($row, PaperOptionValue $ov, PaperList $pl = null) {
@@ -1073,7 +1073,7 @@ class AttachmentsPaperOption extends PaperOption {
                 $ps->upload_document($docj, $this);
                 $result[] = [$docj->docid, "" . (count($result) + 1)];
             } else
-                $ps->set_option_error_html($this, "Option should be a document.");
+                $ps->error_at_option($this, "Option should be a document.");
         return $result;
     }
 

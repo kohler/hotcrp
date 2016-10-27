@@ -183,7 +183,7 @@ function render(SettingValues $sv) {
                     && $unassrev !== "+none" && $t["viewpdf"] !== get($t, "view")) {
                     $tnum = ($trackname === "_" ? 1 : $tnum);
                     $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
-                    $sv->set_warning("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see PDFs should restrict who can self-assign papers in the same way.");
+                    $sv->warning_at("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see PDFs should restrict who can self-assign papers in the same way.");
                 }
                 $tracknum += ($trackname === "_" ? 0 : 1);
             }
@@ -206,7 +206,7 @@ class Tag_SettingParser extends SettingParser {
                     $tx = $tag . "#" . max($min_idx, (float) $idx);
                 $ts[$tag] = $tx;
             } else if ($t !== "")
-                $sv->set_error($si->name, $si->short_description . ": " . $this->tagger->error_html);
+                $sv->error_at($si->name, $si->short_description . ": " . $this->tagger->error_html);
         return array_values($ts);
     }
     public function parse(SettingValues $sv, Si $si) {
@@ -235,7 +235,7 @@ class Tag_SettingParser extends SettingParser {
         if ($si->name == "tag_rank" && isset($sv->req["tag_rank"])) {
             $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             if (count($ts) > 1)
-                $sv->set_error("tag_rank", "At most one rank tag is currently supported.");
+                $sv->error_at("tag_rank", "At most one rank tag is currently supported.");
             else
                 $sv->update("tag_rank", join(" ", $ts));
         }
@@ -294,7 +294,7 @@ class Tag_SettingParser extends SettingParser {
                 while (($row = edb_row($result))) {
                     $who = substr($row[1], 0, strpos($row[1], "~"));
                     if ($row[2] < 0) {
-                        $sv->set_error(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for paper #$row[0].");
+                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for paper #$row[0].");
                         $negative = true;
                     } else {
                         $pvals[$row[0]] = defval($pvals, $row[0], 0) + $row[2];
@@ -304,7 +304,7 @@ class Tag_SettingParser extends SettingParser {
 
                 foreach ($cvals as $who => $what)
                     if ($what > $allotment)
-                        $sv->set_error("tag_vote", Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag “{$base}”.");
+                        $sv->error_at("tag_vote", Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag “{$base}”.");
 
                 $q = ($negative ? " or (tag like '%~{$sqlbase}' and tagIndex<0)" : "");
                 $sv->conf->qe_raw("delete from PaperTag where tag='" . sqlq($base) . "'$q");
@@ -328,7 +328,7 @@ class Tag_SettingParser extends SettingParser {
                 while (($row = edb_row($result))) {
                     $who = substr($row[1], 0, strpos($row[1], "~"));
                     if ($row[2] < 0) {
-                        $sv->set_error(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for paper #$row[0].");
+                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for paper #$row[0].");
                         $negative = true;
                     } else
                         $pvals[$row[0]] = defval($pvals, $row[0], 0) + 1;
@@ -362,10 +362,10 @@ class Track_SettingParser extends SettingParser {
             else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
                      || ($trackname === "_" && $i != 1)) {
                 if ($trackname !== "_")
-                    $sv->set_error("name_track$i", "Track name: " . $tagger->error_html);
+                    $sv->error_at("name_track$i", "Track name: " . $tagger->error_html);
                 else
-                    $sv->set_error("name_track$i", "Track name “_” is reserved.");
-                $sv->set_error("tracks");
+                    $sv->error_at("name_track$i", "Track name “_” is reserved.");
+                $sv->error_at("tracks");
                 continue;
             }
             $t = (object) array();
@@ -374,14 +374,14 @@ class Track_SettingParser extends SettingParser {
                     || $ttype == "-") {
                     $ttag = trim(defval($sv->req, "${type}tag_track$i", ""));
                     if ($ttag === "" || $ttag === "(tag)") {
-                        $sv->set_error("{$type}_track$i", "Tag missing for track setting.");
-                        $sv->set_error("tracks");
+                        $sv->error_at("{$type}_track$i", "Tag missing for track setting.");
+                        $sv->error_at("tracks");
                     } else if (($ttype == "+" && strcasecmp($ttag, "none") == 0)
                                || $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                         $t->$type = $ttype . $ttag;
                     else {
-                        $sv->set_error("{$type}_track$i", $tagger->error_html);
-                        $sv->set_error("tracks");
+                        $sv->error_at("{$type}_track$i", $tagger->error_html);
+                        $sv->error_at("tracks");
                     }
                 } else if ($ttype == "none")
                     $t->$type = "+none";
