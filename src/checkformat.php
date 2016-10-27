@@ -365,7 +365,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $msgs = array_filter($this->messages(true), function ($mx) { return $mx[0] != "fail" && $mx[2] > MessageSet::INFO; });
         if ($msgs) {
             $msgs = array_map(function ($m) {
-                return $m[2] > self::STATUS_PROBLEM ? "<strong>$m[1]</strong>" : $m[1];
+                return $m[2] > MessageSet::WARNING ? "<strong>$m[1]</strong>" : $m[1];
             }, $msgs);
             if ($this->has_error()) {
                 $status = "error";
