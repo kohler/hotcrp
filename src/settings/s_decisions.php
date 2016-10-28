@@ -158,7 +158,7 @@ function render(SettingValues $sv) {
     echo Ht::submit("share", "Share");
    
     $api = "https://api.openacademic.ai/api/papers";
-    if (isset($_REQUEST["share"])) {
+    if (isset($_REQUEST["share"]) && check_post()) {
         $this->share($sv, $api);
     }
 
