@@ -153,7 +153,7 @@ function render(SettingValues $sv) {
     echo "<p>This sharing service is hosted by <a href = 'http://openacademic.ai'>Open Academic Society</a> to to create a shared, open and expanding knowledge graph of research and education-focused entities and relationships.</p>";
     echo "<p>It only shares <b>papers' metadata</b> but not the papers' actual content. For more information on the API, please click on link: <a href = 'https://api.openacademic.ai/Help'>Open Academic API</a></p>";
     echo "<p>Please select the corresponding <b>acceptance</b> type you want to share: ".decisionSelector(1)."</p>";
-    echo "<p>Please insert the <b>authentication token</b> acquired from <a href = 'https://api.openacademic.ai/tokenrequest'>Open Academic Authentication</a>: ".Ht::entry("token", "");
+    echo "<p>Please insert the <b>authentication token</b> acquired from <a href = 'https://api.openacademic.ai/tokenrequest'>Open Academic Token Request</a>: ".Ht::entry("token", "");
     echo "<p><b>Click the button to share accepted paper meta data with search engines</b></p>";
     echo Ht::submit("share", "Share");
    
@@ -169,18 +169,18 @@ function render(SettingValues $sv) {
 
         $share = array();
         $share["provider"] = "HotCRP";
-        $share["setId"] = "";
+        $share["setId"] = $sv->conf-> decision_map()[$decision];
         $share["venue"] = $sv->conf-> long_name;
         $share["shortVenue"] = $sv->conf-> short_name;
         $share["siteUrl"] = $sv->conf-> opt("conferenceSite");
     
         $papers = array();
-        $result = $sv->conf-> q_raw("SELECT * FROM Paper WHERE outcome = $decision");
-        while (($row = PaperInfo::fetch($result, $sv->user)) {
+        $result = $sv->conf-> q("SELECT * FROM Paper WHERE outcome=?",$decision);
+        while (($row = PaperInfo::fetch($result, $sv->user))) {
             $curr_p = [];
             $curr_p['paperId'] = $row->paperId;
             $curr_p['title'] = $row->title;
-            $curr_p['titleFormat'] = $sv->conf-> format_info($row-> title_format());
+            $curr_p['titleFormat'] = $row-> title_format();
             $curr_p['abstract'] = $row->abstract;
             
             //parse the authorInformation into an array
@@ -189,7 +189,7 @@ function render(SettingValues $sv) {
             foreach ($row->author_list() as $sing_author) {
                 $curr_author = [];
                 $curr_author['name'] = $sing_author-> name();
-                if (strlen($sing_author->email == 0) {
+                if (strlen($sing_author->email) == 0) {
                    $curr_author['authorId'] = null;
                 } else {
                    $curr_author['authorId'] = strtolower($sing_author->email);
@@ -212,7 +212,7 @@ function render(SettingValues $sv) {
         if ($post_result === false) {
             Conf::msg_error("Sharing with search engine fails.");
         } else {
-            Conf::msg_info("Share success!")
+            Conf::msg_info("Share success!");
         }
     }
 
