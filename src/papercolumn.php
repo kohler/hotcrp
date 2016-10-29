@@ -254,9 +254,9 @@ class TitlePaperColumn extends PaperColumn {
             . $pl->_contentDownload($row);
 
         if ($this->has_badges && (string) $row->paperTags !== ""
-            && ($t = $row->viewable_tags($pl->contact)) !== ""
-            && ($t = $pl->tagger->unparse_badges_html($t)) !== "")
-            $t .= $pl->maybe_conflict_nooverride($row, $t, $pl->contact->can_view_tags($row, false));
+            && ($tags = $row->viewable_tags($pl->contact)) !== ""
+            && ($tags = $pl->tagger->unparse_badges_html($tags)) !== "")
+            $t .= $pl->maybe_conflict_nooverride($row, $tags, $pl->contact->can_view_tags($row, false));
 
         return $t;
     }
