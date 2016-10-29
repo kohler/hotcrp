@@ -352,7 +352,8 @@
     },
     "tag_badge": {
         "name": "Tag badges",
-        "type": "taglist", "parser": "Tag_SettingParser"
+        "type": "taglist", "parser": "Tag_SettingParser", "size": 40, "autogrow": true,
+        "extensible": "word"
     },
     "tag_chair": {
         "name": "Chair-only tags", "group": "tags",
@@ -360,7 +361,8 @@
     },
     "tag_color": {
         "name": "Tag colors",
-        "type": "taglist", "parser": "Tag_SettingParser"
+        "type": "taglist", "parser": "Tag_SettingParser", "size": 40, "autogrow": true,
+        "extensible": "word"
     },
     "tag_rank": {
         "name": "Ranking tags",

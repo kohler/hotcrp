@@ -189,11 +189,11 @@ are better). For example:</p>
 submitted. Add a line “<code>No entry</code>” to make the score optional.</p></div>');
 
     Ht::stash_script("review_form_settings("
-                        . json_encode($fmap) . ","
-                        . json_encode($rf->unparse_full_json()) . ","
-                        . json_encode($samples) . ","
-                        . json_encode($sv->message_fields()) . ","
-                        . json_encode($req) . ")");
+                     . json_encode($fmap) . ","
+                     . json_encode($rf->unparse_full_json()) . ","
+                     . json_encode($samples) . ","
+                     . json_encode($sv->message_fields()) . ","
+                     . json_encode($req) . ")");
 
     echo Ht::hidden("has_review_form", 1),
         "<div id=\"reviewform_removedcontainer\"></div>",

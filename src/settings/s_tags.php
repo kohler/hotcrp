@@ -104,40 +104,28 @@ function render(SettingValues $sv) {
     echo "<div class='g'></div>\n";
     $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
 
-    preg_match_all('_(\S+)=(\S+)_', $sv->conf->setting_data("tag_color", ""), $m,
-                   PREG_SET_ORDER);
-    $tag_colors = array();
-    foreach ($m as $x)
-        $tag_colors[TagInfo::canonical_color($x[2])][] = $x[1];
+    $tag_color_data = $sv->conf->setting_data("tag_color", "");
     $tag_colors_rows = array();
     foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
-        if ($sv->use_req())
-            $v = defval($sv->req, "tag_color_$k", "");
-        else if (isset($tag_colors[$k]))
-            $v = join(" ", $tag_colors[$k]);
-        else
-            $v = "";
-        $tag_colors_rows[] = "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption taghl'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' name='tag_color_$k' value=\"" . htmlspecialchars($v) . "\" size='40' class=\"need-autogrow\"/></td></tr>"; /* MAINSIZE */
+        preg_match_all("{\\b(\\S+)=$k\\b}", $tag_color_data, $m);
+        $sv->set_oldv("tag_color_$k", join(" ", get($m, 1, [])));
+        $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"lxcaption\"></td>"
+            . "<td class=\"lxcaption taghl\">$k</td>"
+            . "<td class=\"lentry\" style=\"font-size:10.5pt\">" . $sv->render_entry("tag_color_$k") . "</td></tr>"; /* MAINSIZE */
     }
 
-    preg_match_all('_(\S+)=(\S+)_', $sv->conf->setting_data("tag_badge", ""), $m,
-                   PREG_SET_ORDER);
-    $tag_badges = array();
-    foreach ($m as $x)
-        $tag_badges[$x[2]][] = $x[1];
-    foreach (["black" => "black label", "red" => "red label", "green" => "green label",
+    $tag_badge_data = $sv->conf->setting_data("tag_badge", "");
+    foreach (["normal" => "black label", "red" => "red label", "green" => "green label",
               "blue" => "blue label", "white" => "white label"]
              as $k => $desc) {
-        if ($sv->use_req())
-            $v = defval($sv->req, "tag_badge_$k", "");
-        else if (isset($tag_badges[$k]))
-            $v = join(" ", $tag_badges[$k]);
-        else
-            $v = "";
-        $tag_colors_rows[] = "<tr class='k0'><td class='lxcaption'></td><td class='lxcaption'><span class='badge {$k}badge' style='margin:0'>$desc</span><td class='lentry' style='font-size:10.5pt'><input type='text' name='tag_badge_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
+        preg_match_all("{\\b(\\S+)=$k\\b}", $tag_badge_data, $m);
+        $sv->set_oldv("tag_badge_$k", join(" ", get($m, 1, [])));
+        $tag_colors_rows[] = "<tr><td class=\"lxcaption\"></td>"
+            . "<td class=\"lxcaption\"><span class=\"badge {$k}badge\" style=\"margin:0\">$desc</span></td>"
+            . "<td class=\"lentry\" style=\"font-size:10.5pt\">" . $sv->render_entry("tag_badge_$k") . "</td></tr>"; /* MAINSIZE */
     }
 
-    echo Ht::hidden("has_tag_color", 1),
+    echo Ht::hidden("has_tag_color", 1), Ht::hidden("has_tag_badge", 1),
         '<h3 class="settings g">Styles and colors</h3>',
         "<div class='hint'>Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</div>",
         "<div class='smg'></div>",
@@ -197,7 +185,7 @@ class Tag_SettingParser extends SettingParser {
     public function __construct() {
         $this->tagger = new Tagger;
     }
-    private function parse_list($sv, $si, $checkf, $min_idx) {
+    private function parse_list(SettingValues $sv, Si $si, $checkf, $min_idx) {
         $ts = array();
         foreach (preg_split('/\s+/', $sv->req[$si->name]) as $t)
             if ($t !== "" && ($tx = $this->tagger->check($t, $checkf))) {
@@ -242,30 +230,22 @@ class Tag_SettingParser extends SettingParser {
 
         if ($si->name == "tag_color") {
             $ts = array();
-            $any_set = false;
             foreach (explode("|", TagInfo::BASIC_COLORS) as $k)
                 if (isset($sv->req["tag_color_$k"])) {
-                    $xsi = new Si("tag_color_$k", ["name" => ucfirst($k) . " style tag"]);
-                    $any_set = true;
-                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t)
+                    foreach ($this->parse_list($sv, $sv->si("tag_color_$k"), Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t)
                         $ts[] = $t . "=" . $k;
                 }
-            if ($any_set)
-                $sv->update("tag_color", join(" ", $ts));
+            $sv->update("tag_color", join(" ", $ts));
         }
 
         if ($si->name == "tag_badge") {
             $ts = array();
-            $any_set = false;
             foreach (explode("|", TagInfo::BASIC_BADGES) as $k)
                 if (isset($sv->req["tag_badge_$k"])) {
-                    $xsi = new Si("tag_badge_$k", ["name" => ucfirst($k) . " badge style tag"]);
-                    $any_set = true;
-                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t)
+                    foreach ($this->parse_list($sv, $sv->si("tag_badge_$k"), Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t)
                         $ts[] = $t . "=" . $k;
                 }
-            if ($any_set)
-                $sv->update("tag_badge", join(" ", $ts));
+            $sv->update("tag_badge", join(" ", $ts));
         }
 
         if ($si->name == "tag_au_seerev" && isset($sv->req["tag_au_seerev"])) {

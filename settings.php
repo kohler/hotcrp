@@ -14,7 +14,7 @@ class Si {
     public $group;
     public $type;
     public $internal;
-    public $extensible;
+    public $extensible = 0;
     public $storage_type;
     public $storage = null;
     public $optional = false;
@@ -38,6 +38,9 @@ class Si {
     const SI_SLICE = 4;
     const SI_OPT = 8;
 
+    const X_YES = 1;
+    const X_WORD = 2;
+
     static public $all = [];
     static private $type_storage = [
         "emailheader" => self::SI_DATA, "emailstring" => self::SI_DATA,
@@ -54,18 +57,24 @@ class Si {
             trigger_error("setting $name.$jkey format error");
     }
 
-    public function __construct($name, $j) {
+    function __construct($name, $j) {
         assert(!preg_match('/_(?:\$|n|m?\d+)\z/', $name));
         $this->name = $name;
         $this->store($name, "short_description", $j, "name", "is_string");
         foreach (["short_description", "type", "storage", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
             $this->store($name, $k, $j, $k, "is_string");
-        foreach (["internal", "optional", "novalue", "disabled", "extensible", "autogrow"] as $k)
+        foreach (["internal", "optional", "novalue", "disabled", "autogrow"] as $k)
             $this->store($name, $k, $j, $k, "is_bool");
         $this->store($name, "size", $j, "size", "is_int");
         $this->store($name, "values", $j, "values", "is_array");
         if (isset($j->default_value) && (is_int($j->default_value) || is_string($j->default_value)))
             $this->default_value = $j->default_value;
+        if (isset($j->extensible) && $j->extensible === true)
+            $this->extensible = self::X_YES;
+        else if (isset($j->extensible) && $j->extensible === "word")
+            $this->extensible = self::X_WORD;
+        else if (isset($j->extensible) && $j->extensible !== false)
+            trigger_error("setting $name.extensible format error");
         if (isset($j->group)) {
             if (is_string($j->group))
                 $this->group = $j->group;
@@ -121,15 +130,15 @@ class Si {
         }
     }
 
-    public function is_date() {
+    function is_date() {
         return str_ends_with($this->type, "date");
     }
 
-    public function storage() {
+    function storage() {
         return $this->storage ? : $this->name;
     }
 
-    public function is_interesting(SettingValues $sv) {
+    function is_interesting(SettingValues $sv) {
         if (!$this->group) {
             error_log("$this->name: missing group");
             return false;
@@ -148,16 +157,20 @@ class Si {
         return false;
     }
 
-    static public function get($name, $k = null) {
+    static function get($name, $k = null) {
         if (!isset(self::$all[$name])
-            && preg_match('/\A(.*)(_(?:\$|n|m?\d+))\z/', $name, $m)
+            && preg_match('/\A(.*)(_(?:[^_\s]+))\z/', $name, $m)
             && isset(self::$all[$m[1]])) {
             $si = clone self::$all[$m[1]];
-            if (!$si->extensible)
+            if (!$si->extensible
+                || ($si->extensible === self::X_YES
+                    && preg_match('/\A_(?:\$|n|m?\d+)\z/', $m[2])))
                 error_log("$name: cloning non-extensible setting $si->name");
             $si->name = $name;
             if ($si->storage)
                 $si->storage .= $m[2];
+            if ($si->extensible === self::X_WORD)
+                $si->short_description .= " (" . htmlspecialchars($m[2]) . ")";
             self::$all[$name] = $si;
         }
         if (!isset(self::$all[$name]))
@@ -180,7 +193,7 @@ class Si {
         return $info;
     }
 
-    static public function initialize() {
+    static function initialize() {
         global $ConfSitePATH;
         $fname = "$ConfSitePATH/src/settinginfo.json";
         $info = self::read([], file_get_contents($fname), $fname);
@@ -211,17 +224,17 @@ class Si {
 }
 
 class SettingParser {
-    public function parse(SettingValues $sv, Si $si) {
+    function parse(SettingValues $sv, Si $si) {
         return false;
     }
-    public function save(SettingValues $sv, Si $si) {
+    function save(SettingValues $sv, Si $si) {
     }
 }
 
 class SettingRenderer {
-    public function render(SettingValues $sv) {
+    function render(SettingValues $sv) {
     }
-    public function crosscheck(SettingValues $sv) {
+    function crosscheck(SettingValues $sv) {
     }
 }
 
@@ -279,7 +292,7 @@ class SettingValues extends MessageSet {
             Conf::msg_warning($mt);
         $this->warnings_reported = true;
     }
-    function parser($si) {
+    function parser(Si $si) {
         if ($si->parser) {
             if (!isset($this->parsers[$si->parser]))
                 $this->parsers[$si->parser] = new $si->parser;
@@ -324,7 +337,7 @@ class SettingValues extends MessageSet {
             error_log(caller_landmark(2) . ": setting $name: missing information");
         return $si;
     }
-    function req_si($si) {
+    function req_si(Si $si) {
         $xname = str_replace(".", "_", $si->name);
         $xsis = [];
         foreach (get($this->has_req, $xname, []) as $suffix) {
@@ -411,15 +424,15 @@ class SettingValues extends MessageSet {
             return false;
     }
 
-    private function si_curv($name, $si, $default_value) {
-        if ($si && $si->group && !$si->is_interesting($this))
+    private function si_curv($name, Si $si, $default_value) {
+        if ($si->group && !$si->is_interesting($this))
             error_log("$name: bad group $si->group, not interesting here");
         if ($this->use_req())
             return get($this->req, str_replace(".", "_", $name), $default_value);
         else
             return $this->si_oldv($si, $default_value);
     }
-    private function si_oldv($si, $default_value) {
+    private function si_oldv(Si $si, $default_value) {
         if ($default_value === null)
             $default_value = $si->default_value;
         if (isset($this->explicit_oldv[$si->name]))
@@ -434,7 +447,7 @@ class SettingValues extends MessageSet {
             $val = "";
         return $val;
     }
-    private function si_savedv($s, $si, $default_value) {
+    private function si_savedv($s, Si $si, $default_value) {
         if (!isset($this->savedv[$s]))
             return $default_value;
         else if ($si->storage_type & Si::SI_DATA)
@@ -576,7 +589,7 @@ class SettingValues extends MessageSet {
         $this->echo_message_base($name, $description, $hint, "f-cn");
     }
 
-    private function si_render_date_value($v, $si) {
+    private function si_render_date_value($v, Si $si) {
         if ($v !== null && $this->use_req())
             return $v;
         else if ($si->date_backup && $this->curv($si->date_backup) == $v)
@@ -590,7 +603,7 @@ class SettingValues extends MessageSet {
         else
             return $this->conf->parseableTime($v, true);
     }
-    private function si_render_grace_value($v, $si) {
+    private function si_render_grace_value($v, Si $si) {
         if ($v === null || $v <= 0 || !is_numeric($v))
             return "none";
         if ($v % 3600 == 0)
@@ -647,22 +660,22 @@ class SettingGroup {
     static public $map;
     static private $sorted = false;
 
-    public function __construct($name, $description, $priority) {
+    function __construct($name, $description, $priority) {
         $this->name = $name;
         $this->description = $description;
         $this->priority = $priority;
     }
-    public function add_renderer($priority, SettingRenderer $renderer) {
+    function add_renderer($priority, SettingRenderer $renderer) {
         $x = [$priority, count($this->render), $renderer];
         $this->render[] = $x;
         self::$sorted = false;
     }
-    public function render($sv) {
+    function render(SettingValues $sv) {
         self::sort();
         foreach ($this->render as $r)
             $r[2]->render($sv);
     }
-    static public function crosscheck($sv, $groupname) {
+    static function crosscheck(SettingValues $sv, $groupname) {
         $sv->interesting_groups[$groupname] = true;
         self::sort();
         foreach (self::$all as $name => $group) {
@@ -671,7 +684,7 @@ class SettingGroup {
         }
     }
 
-    static public function register($name, $description, $priority, SettingRenderer $renderer) {
+    static function register($name, $description, $priority, SettingRenderer $renderer) {
         if (isset(self::$map[$name]))
             $name = self::$map[$name];
         if (!isset(self::$all[$name]))
@@ -680,12 +693,12 @@ class SettingGroup {
             self::$all[$name]->description = $description;
         self::$all[$name]->add_renderer($priority, $renderer);
     }
-    static public function register_synonym($new_name, $old_name) {
+    static function register_synonym($new_name, $old_name) {
         assert(isset(self::$all[$old_name]) && !isset(self::$map[$old_name]));
         assert(!isset(self::$all[$new_name]) && !isset(self::$map[$new_name]));
         self::$map[$new_name] = $old_name;
     }
-    static public function all() {
+    static function all() {
         self::sort();
         return self::$all;
     }
