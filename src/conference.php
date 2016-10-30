@@ -150,7 +150,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 155) {
+        if ($this->sversion < 156) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -1288,7 +1288,7 @@ class Conf {
             trigger_error("$this->dbname invariant error: bad PaperStorage filterType, id #" . self::$invariant_row[0]);
 
         // has_colontag is defined
-        $any = $this->invariantq("select tag from PaperTag where tag like ':%:' limit 1");
+        $any = $this->invariantq("select tag from PaperTag where tag like '%:' limit 1");
         if ($any && !$this->setting("has_colontag"))
             trigger_error("$this->dbname invariant error: has tag " . self::$invariant_row[0] . " but no has_colontag");
     }

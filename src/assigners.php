@@ -1193,20 +1193,18 @@ class TagAssigner extends Assigner {
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperTag"] = "write";
-        if ($this->index !== null
-            && $this->tag[0] === ':' && str_ends_with($this->tag, ':')
+        if ($this->index !== null && str_ends_with($this->tag, ":")
             && !$aset->conf->setting("has_colontag"))
             $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
         if ($this->index === null)
             $aset->conf->qe("delete from PaperTag where paperId=? and tag=?", $this->pid, $this->tag);
-        else {
+        else
             $aset->conf->qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=values(tagIndex)", $this->pid, $this->tag, $this->index);
-            if ($this->tag[0] === ':' && str_ends_with($this->tag, ':')
-                && !$aset->conf->setting("has_colontag"))
-                $aset->conf->save_setting("has_colontag", 1);
-        }
+        if ($this->index !== null && str_ends_with($this->tag, ':')
+            && !$aset->conf->setting("has_colontag"))
+            $aset->conf->save_setting("has_colontag", 1);
         $aset->contact->log_activity("Tag " . ($this->index === null ? "remove" : "set") . ": $this->tag", $this->pid);
     }
     function notify_tracker() {
