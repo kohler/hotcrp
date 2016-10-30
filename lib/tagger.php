@@ -636,11 +636,11 @@ class Tagger {
                 if ($count == 0 || $count == 1)
                     $b .= $e;
                 else {
-                    $f = floor($count);
-                    $d = round(($count - $f) * 10);
+                    $f = floor($count + 0.0625);
+                    $d = round(max($count - $f, 0) * 8);
                     $b .= str_repeat($e, $f);
                     if ($d)
-                        $b .= '<span style="display:inline-block;overflow-x:hidden;vertical-align:bottom;position:relative;bottom:0;width:0.' . $d . 'em">' . $e . '</span>';
+                        $b .= '<span style="display:inline-block;overflow-x:hidden;vertical-align:bottom;position:relative;bottom:0;width:' . ($d / 8) . 'em">' . $e . '</span>';
                 }
                 $b .= '</span>';
                 if (!empty($links))
@@ -658,7 +658,7 @@ class Tagger {
                         $b = '<a class="qq" href="' . $link . '">' . $b . '</a>';
                     $x .= ' ' . $b;
                 }
-        return $x;
+        return $x === "" ? "" : '<span class="tagdecoration">' . $x . '</span>';
     }
 
     private function trim_for_sort($x) {

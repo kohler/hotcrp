@@ -3814,7 +3814,7 @@ function make_tag_save_callback(elt) {
                 pids[rv.pid] = rv;
             highlight_entries = true;
             for (var p in pids)
-                plinfo.set_tags(+p, pids[p].tags, pids[p].color_classes);
+                plinfo.set_tags(+p, pids[p]);
             highlight_entries = false;
             focus && focus.focus();
         }
@@ -4863,7 +4863,6 @@ function edittags_callback(rv) {
                 + ' &nbsp;<button name="tagcancel ' + rv.pid + '" type="button">Cancel</button>');
     $(div).find("textarea").val(rv.tags_edit_text).on("keydown", make_onkeypress_enter(edittags_click)).autogrow();
     $(div).find("button").click(edittags_click);
-    $(div).find("button").click(edittags_click);
 }
 
 function edittags_click() {
@@ -4873,7 +4872,7 @@ function edittags_click() {
         $.ajax(hoturl_post("api", {fn: "settags", p: pid, tags: $(div).find("textarea").val(), forceShow: 1}), {
             success: function (rv) {
                 if (rv.ok)
-                    plinfo.set_tags(pid, rv.tags, rv.color_classes);
+                    plinfo.set_tags(pid, rv);
                 else
                     setajaxcheck($(div).find("textarea"), rv);
             }
@@ -5066,18 +5065,23 @@ plinfo.set_fields = function (fo) {
 };
 
 plinfo.render_needed = render_needed;
-plinfo.set_tags = function (pid, tags, color_classes) {
+plinfo.set_tags = function (pid, rv) {
     if (pidrow(pid).length) {
+        var tags = rv.tags, cclasses = rv.color_classes;
         pidattr(pid, "data-tags", $.isArray(tags) ? tags.join(" ") : tags);
-        if (color_classes)
-            make_pattern_fill(color_classes);
-        $("tr.pl, tr.plx").filter("[data-pid='" + pid + "']").removeClass(function (i, klass) {
+        if (cclasses)
+            make_pattern_fill(cclasses);
+        var $ptr = $("tr.pl, tr.plx").filter("[data-pid='" + pid + "']");
+        $ptr.removeClass(function (i, klass) {
             return (klass.match(/(?:^| )(?:\S+tag|k[01])(?= |$)/g) || []).join(" ");
-        }).addClass(color_classes);
+        }).addClass(cclasses);
+        $ptr.find(".tagdecoration").remove();
+        if (rv.tag_decoration_html)
+            $ptr.find(".pl_title").append(rv.tag_decoration_html);
         if (fields.tags && !fields.tags.missing)
             render_row_tags(pidfield(pid, fields.tags)[0]);
         for (var i in set_tags_callbacks)
-            set_tags_callbacks[i](pid, tags, color_classes);
+            set_tags_callbacks[i](pid, rv);
     }
 };
 plinfo.on_set_tags = function (f) {
@@ -5288,6 +5292,9 @@ save_tags.success = function (data) {
             j.closest(".hotcrp_tag_hideempty").toggle(res !== "");
         }
     });
+    $("h1.paptitle .tagdecoration").remove();
+    if (data.tag_decoration_html)
+        $("h1.paptitle").append(data.tag_decoration_html);
     votereport.clear();
 };
 $(function () {

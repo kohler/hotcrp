@@ -479,6 +479,8 @@ class PaperInfo {
         $pj->tags = TagInfo::split($viewable);
         $pj->tags_edit_text = $tagger->unparse($editable);
         $pj->tags_view_html = $tags_view_html;
+        if (($td = $tagger->unparse_decoration_html($viewable)))
+            $pj->tag_decoration_html = $td;
         $pj->color_classes = $this->conf->tags()->color_classes($viewable);
     }
 
