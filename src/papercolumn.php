@@ -219,16 +219,16 @@ class SelectorPaperColumn extends PaperColumn {
 }
 
 class TitlePaperColumn extends PaperColumn {
-    private $has_badges = false;
+    private $has_decoration = false;
     private $highlight = false;
     function __construct() {
         parent::__construct("title", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("minimal" => true, "comparator" => "title_compare"));
     }
     function prepare(PaperList $pl, $visible) {
-        $this->has_badges = $pl->contact->can_view_tags(null)
-            && $pl->conf->tags()->has_badges;
-        if ($this->has_badges)
+        $this->has_decoration = $pl->contact->can_view_tags(null)
+            && $pl->conf->tags()->has_decoration;
+        if ($this->has_decoration)
             $pl->qopts["tags"] = 1;
         $this->highlight = get($pl->search->matchPreg, "title");
         return true;
@@ -253,9 +253,9 @@ class TitlePaperColumn extends PaperColumn {
         $t .= '" tabindex="5">' . $highlight_text . '</a>'
             . $pl->_contentDownload($row);
 
-        if ($this->has_badges && (string) $row->paperTags !== ""
+        if ($this->has_decoration && (string) $row->paperTags !== ""
             && ($tags = $row->viewable_tags($pl->contact)) !== ""
-            && ($tags = $pl->tagger->unparse_badges_html($tags)) !== "")
+            && ($tags = $pl->tagger->unparse_decoration_html($tags)) !== "")
             $t .= $pl->maybe_conflict_nooverride($row, $tags, $pl->contact->can_view_tags($row, false));
 
         return $t;

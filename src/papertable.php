@@ -183,9 +183,9 @@ class PaperTable {
                 $t .= htmlspecialchars($prow->title);
 
             $t .= '</span></span></a>';
-            if ($viewable_tags && $Conf->tags()->has_badges) {
+            if ($viewable_tags && $Conf->tags()->has_decoration) {
                 $tagger = new Tagger;
-                $t .= $tagger->unparse_badges_html($viewable_tags);
+                $t .= $tagger->unparse_decoration_html($viewable_tags);
             }
         }
 
