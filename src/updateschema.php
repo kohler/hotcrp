@@ -1078,6 +1078,11 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 153
         && update_schema_mimetype_extensions($conf))
         $conf->update_schema_version(154);
+    if ($conf->sversion == 154) {
+        if ($conf->fetch_value("select tag from PaperTag where tag like ':%:' limit 1"))
+            $conf->save_setting("has_colontag", 1);
+        $conf->update_schema_version(155);
+    }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }

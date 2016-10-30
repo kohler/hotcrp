@@ -409,7 +409,7 @@ class Assigner {
     }
     function account(AssignmentCountSet $delta) {
     }
-    function add_locks(&$locks) {
+    function add_locks(AssignmentSet $aset, &$locks) {
     }
     function execute(AssignmentSet $aset) {
     }
@@ -680,7 +680,7 @@ class ReviewAssigner extends Assigner {
             $ct->sec += ($this->rtype == REVIEW_SECONDARY) - ($this->oldtype == REVIEW_SECONDARY);
         }
     }
-    function add_locks(&$locks) {
+    function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperReview"] = $locks["PaperReviewRefused"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
@@ -816,7 +816,7 @@ class LeadAssigner extends Assigner {
             $ct->$k += $this->isadd ? 1 : -1;
         }
     }
-    function add_locks(&$locks) {
+    function add_locks(AssignmentSet $aset, &$locks) {
         $locks["Paper"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
@@ -885,7 +885,7 @@ class ConflictAssigner extends Assigner {
             "email" => $this->contact->email, "name" => $this->contact->name_text()
         ];
     }
-    function add_locks(&$locks) {
+    function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperConflict"] = "write";
     }
     function execute(AssignmentSet $aset) {
@@ -1191,14 +1191,22 @@ class TagAssigner extends Assigner {
             return ["pid" => $this->pid, "action" => "tag", "tag" => $t];
         }
     }
-    function add_locks(&$locks) {
+    function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperTag"] = "write";
+        if ($this->index !== null
+            && $this->tag[0] === ':' && str_ends_with($this->tag, ':')
+            && !$aset->conf->setting("has_colontag"))
+            $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
         if ($this->index === null)
             $aset->conf->qe("delete from PaperTag where paperId=? and tag=?", $this->pid, $this->tag);
-        else
+        else {
             $aset->conf->qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=values(tagIndex)", $this->pid, $this->tag, $this->index);
+            if ($this->tag[0] === ':' && str_ends_with($this->tag, ':')
+                && !$aset->conf->setting("has_colontag"))
+                $aset->conf->save_setting("has_colontag", 1);
+        }
         $aset->contact->log_activity("Tag " . ($this->index === null ? "remove" : "set") . ": $this->tag", $this->pid);
     }
     function notify_tracker() {
@@ -1273,7 +1281,7 @@ class PreferenceAssigner extends Assigner {
                 "email" => $this->contact->email, "name" => $this->contact->name_text(),
                 "preference" => $pref];
     }
-    function add_locks(&$locks) {
+    function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperReviewPreference"] = "write";
     }
     function execute(AssignmentSet $aset) {
@@ -1936,7 +1944,7 @@ class AssignmentSet {
                 $assigner->contact = $this->cmap->register_contact($assigner->contact);
                 $assigner->cid = $assigner->contact->contactId;
             }
-            $assigner->add_locks($locks);
+            $assigner->add_locks($this, $locks);
         }
 
         // execute assignments

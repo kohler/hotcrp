@@ -140,6 +140,7 @@ src/contact.php
 src/contactlist.php
 src/distoptions.php
 src/documentinfo.php
+src/emojicodes.json
 src/filefilter.php
 src/formatspec.php
 src/formula.php

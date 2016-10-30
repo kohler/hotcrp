@@ -85,14 +85,26 @@ class TagMap implements IteratorAggregate {
     private $emoji_re = null;
     private $sitewide_re_part = null;
 
+    private static $emoji_code_map = null;
     private static $multicolor_map = [];
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
     }
+    private function check_emoji_code($ltag) {
+        global $ConfSitePATH;
+        $len = strlen($ltag);
+        if ($len < 3 || $ltag[0] !== ":" || $ltag[$len - 1] !== ":")
+            return false;
+        if (self::$emoji_code_map === null)
+            self::$emoji_code_map = json_decode(file_get_contents("$ConfSitePATH/src/emojicodes.json"), true);
+        return get(self::$emoji_code_map, substr($ltag, 1, $len - 2), false);
+    }
     function check($tag) {
         $ltag = strtolower($tag);
         $t = get($this->storage, $ltag);
+        if (!$t && $ltag && $ltag[0] === ":" && self::check_emoji_code($ltag))
+            $t = $this->add($tag);
         if (!$t && $this->has_pattern) {
             if (!$this->pattern_re) {
                 $a = [];
@@ -131,6 +143,10 @@ class TagMap implements IteratorAggregate {
                     $this->has_pattern = true;
                     $this->pattern_storage[] = $t;
                     $this->pattern_re = null;
+                }
+                if ($ltag[0] === ":" && ($e = self::check_emoji_code($ltag))) {
+                    $t->emoji[] = $e;
+                    $this->has_emoji = $this->has_decoration = true;
                 }
                 $this->sorted = false;
             }
@@ -275,15 +291,15 @@ class TagMap implements IteratorAggregate {
         if (!$this->badge_re) {
             $re = "{(?:\\A| )(?:\\d*~|~~|)(";
             foreach ($this->filter("badges") as $t)
-                $re .= "|" . $t->tag_regex();
-            $this->badge_re = $re . ")(?:#[\\d.]+)?(?=\\z| )}i";
+                $re .= $t->tag_regex() . "|";
+            $this->badge_re = substr($re, 0, -1) . ")(?:#[\\d.]+)?(?=\\z| )}i";
         }
         return $this->badge_re;
     }
 
     function emoji_regex() {
         if (!$this->badge_re) {
-            $re = "{(?:\\A| )(?:\\d*~|~~|)(";
+            $re = "{(?:\\A| )(?:\\d*~|~~|)(:\\S+:";
             foreach ($this->filter("emoji") as $t)
                 $re .= "|" . $t->tag_regex();
             $this->emoji_re = $re . ")(?:#[\\d.]+)?(?=\\z| )}i";
@@ -368,7 +384,7 @@ class TagMap implements IteratorAggregate {
                             $map->has_emoji = true;
                         }
                 }
-        if ($map->has_badges || $map->has_emoji)
+        if ($map->has_badges || $map->has_emoji || $conf->setting("has_colontag"))
             $map->has_decoration = true;
         return $map;
     }
@@ -591,7 +607,7 @@ class Tagger {
             return "";
         $dt = $this->conf->tags();
         $x = "";
-        if ($dt->has_emoji
+        if ($dt->has_decoration
             && preg_match_all($dt->emoji_regex(), $tags, $m, PREG_SET_ORDER)) {
             $emoji = [];
             foreach ($m as $mx)
