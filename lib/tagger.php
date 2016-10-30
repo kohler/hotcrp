@@ -403,6 +403,14 @@ class TagInfo {
             return $tag;
     }
 
+    static function index($tag) {
+        if ($tag && (($pos = strpos($tag, "#")) > 0
+                     || ($pos = strpos($tag, "=")) > 0))
+            return (float) substr($tag, $pos + 1);
+        else
+            return false;
+    }
+
     static function split_index($tag) {
         if (!$tag)
             return array(false, false);
@@ -613,13 +621,28 @@ class Tagger {
             foreach ($m as $mx)
                 if (($t = $dt->check($mx[1])) && $t->emoji)
                     foreach ($t->emoji as $e)
-                        $emoji[$e][] = $mx[1];
+                        $emoji[$e][] = $mx[0];
             foreach ($emoji as $e => $ts) {
-                $b = '<span class="tagemoji">' . $e . '</span>';
                 $links = [];
-                foreach ($ts as $t)
+                $count = 0;
+                foreach ($ts as $t) {
                     if (($link = $this->link_base($t)))
                         $links[] = "#" . $link;
+                    $count = max($count, (float) TagInfo::index($t));
+                }
+                if ($count == 0)
+                    $count = 1;
+                $b = '<span class="tagemoji">';
+                if ($count == 0 || $count == 1)
+                    $b .= $e;
+                else {
+                    $f = floor($count);
+                    $d = round(($count - $f) * 10);
+                    $b .= str_repeat($e, $f);
+                    if ($d)
+                        $b .= '<span style="display:inline-block;overflow-x:hidden;vertical-align:bottom;position:relative;bottom:0;width:0.' . $d . 'em">' . $e . '</span>';
+                }
+                $b .= '</span>';
                 if (!empty($links))
                     $b = '<a class="qq" href="' . hoturl("search", ["q" => join(" OR ", $links)]) . '">' . $b . '</a>';
                 $x .= ' ' . $b;
