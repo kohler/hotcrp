@@ -164,7 +164,7 @@ class Si {
             $si = clone self::$all[$m[1]];
             if (!$si->extensible
                 || ($si->extensible === self::X_YES
-                    && preg_match('/\A_(?:\$|n|m?\d+)\z/', $m[2])))
+                    && !preg_match('/\A_(?:\$|n|m?\d+)\z/', $m[2])))
                 error_log("$name: cloning non-extensible setting $si->name");
             $si->name = $name;
             if ($si->storage)
