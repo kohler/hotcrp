@@ -621,7 +621,7 @@ class Tagger {
             foreach ($m as $mx)
                 if (($t = $dt->check($mx[1])) && $t->emoji)
                     foreach ($t->emoji as $e)
-                        $emoji[$e][] = $mx[0];
+                        $emoji[$e][] = ltrim($mx[0]);
             foreach ($emoji as $e => $ts) {
                 $links = [];
                 $count = 0;
