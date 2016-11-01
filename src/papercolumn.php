@@ -1141,8 +1141,6 @@ class TagPaperColumn extends PaperColumn {
         if ($visible)
             $pl->qopts["tags"] = 1;
         $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
-        if ($this->editable)
-            $pl->has_editable_tags = true;
         return true;
     }
     function completion_name() {
@@ -1196,13 +1194,13 @@ class EditTagPaperColumn extends TagPaperColumn {
         if ($is_value === null)
             $is_value = true;
         parent::__construct($name, $tag, $is_value);
-        $this->className = $this->is_value ? "pl_edittagval" : "pl_edittag";
         $this->editable = true;
     }
     function prepare(PaperList $pl, $visible) {
         $this->editsort = false;
-        if (($p = parent::prepare($pl, $visible)) && $visible > 0
-            && ($tid = $pl->table_id())) {
+        if (!parent::prepare($pl, $visible))
+            return false;
+        if ($visible > 0 && ($tid = $pl->table_id())) {
             $sorter = get($pl->sorters, 0);
             if ($this->sorts_my_tag($sorter)
                 && !$sorter->reverse
@@ -1211,9 +1209,11 @@ class EditTagPaperColumn extends TagPaperColumn {
                 $this->editsort = true;
                 $pl->tbody_attr["data-drag-tag"] = $this->dtag;
             }
+            $pl->has_editable_tags = true;
             $pl->add_header_script("plinfo_tags(" . json_encode("#$tid") . ")", "plinfo_tags");
         }
-        return $p;
+        $this->className = $this->is_value ? "pl_edittagval" : "pl_edittag";
+        return true;
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
         $v = $row->tag_value($this->xtag);
@@ -1223,14 +1223,14 @@ class EditTagPaperColumn extends TagPaperColumn {
             return $this->is_value ? (string) $v : ($v === null ? "" : "&#x2713;");
         if (!$this->is_value)
             return '<input type="checkbox" class="cb edittag" name="tag:' . "$this->dtag $row->paperId" . '" value="x" tabindex="6"'
-                . ($v !== null ? ' checked="checked"' : '') . " />";
+                . ($v !== false ? ' checked="checked"' : '') . " />";
         $t = '<input type="text" class="edittagval';
         if ($this->editsort) {
             $t .= " need-draghandle";
             $pl->need_render = true;
         }
         return $t . '" size="4" name="tag:' . "$this->dtag $row->paperId" . '" value="'
-            . ($v !== null ? htmlspecialchars($v) : "") . '" tabindex="6" />';
+            . ($v !== false ? htmlspecialchars($v) : "") . '" tabindex="6" />';
     }
 }
 

@@ -4885,8 +4885,8 @@ function make_tag_column_callback(f) {
     var tag = /^(?:#|tag:|tagval:)(\S+)/.exec(f.name)[1];
     if (/^~[^~]/.test(tag))
         tag = hotcrp_user.cid + tag;
-    return function (pid, tags, color_classes) {
-        var e = pidfield(pid, f), tagval = null;
+    return function (pid, rv) {
+        var e = pidfield(pid, f), tags = rv.tags, tagval = null;
         if (!e.length || f.missing)
             return;
         for (var i = 0; i != tags.length; ++i)
