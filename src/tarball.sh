@@ -211,6 +211,8 @@ images/cross.png
 images/edit48.png
 images/exassignone.png
 images/exsearchaction.png
+images/extagcolors.png
+images/extagseditkw.png
 images/extagssearch.png
 images/extagsset.png
 images/extagvotehover.png

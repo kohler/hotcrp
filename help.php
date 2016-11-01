@@ -492,9 +492,9 @@ function tags() {
         if ($Conf->tag_seeall) {
             $conflictmsg3 = "Currently PC members can see tags for any paper, including conflicts.";
         } else {
-            $conflictmsg1 = " or conflicted PC members";
-            $conflictmsg2 = "  However, since PC members currently can’t see tags for conflicted papers, each PC member might see a different list." . $setting;
-            $conflictmsg3 = "They are currently hidden from conflicted PC members&mdash;for instance, if a PC member searches for a tag, the results will never include conflicts.";
+            $conflictmsg1 = " and conflicted PC members";
+            $conflictmsg2 = "  However, since PC members can’t see tags for conflicted papers, each PC member might see a different list." . $setting;
+            $conflictmsg3 = "They are hidden from conflicted PC members—for instance, if a PC member searches for a tag, the results will never include conflicts.";
         }
     }
 
@@ -504,8 +504,7 @@ It’s easy to add and remove tags and to list all papers with a given tag,
 and <em>ordered</em> tags preserve a particular paper order.
 Tags also affect color highlighting in paper lists.</p>
 
-<p>Tags are generally visible to the PC.
-They are never shown to authors$conflictmsg1.
+<p>Tags are visible to the PC and hidden from authors$conflictmsg1.
 <em>Twiddle tags</em>, with names like “#~tag”, are visible only
 to their creators.  Tags with two twiddles, such as “#~~tag”, are
 visible only to PC chairs.</p>");
@@ -535,34 +534,38 @@ visible only to their creators; each PC member has an independent set.
 Tags are not case sensitive.</p>");
 
     _subhead("<a name='changing'>Changing tags</a>", "
-<p>To change a paper’s tags, go to the paper page and select the Tags box’s " . Ht::img("edit48.png", "[Edit]", ["width" => 16, "height" => 16]) . "&nbsp;Edit
-link. Then enter one or more alphanumeric tags separated by spaces.</p>
+<ul>
+<li><p><strong>For one paper:</strong> Go to a paper page, select the Tags box’s
+“Edit” link, and enter tags separated by spaces.</p>
 
-<p>" . Ht::img("extagsset.png", "[Tag entry on review screen]") . "</p>
+<p>" . Ht::img("extagsset.png", "[Tag entry on review screen]", ["width" => 142, "height" => 87]) . "</p></li>
 
-<p>To set tags from
-<a href='" . hoturl("search") . "'>search</a>, you can select papers and
-use the action area:</p>
-
-<p>" . Ht::img("extagssearch.png", "[Setting tags on the search page]") . "</p>
-
-<p><b>Add</b> adds tags to the selected papers, <b>Remove</b> removes tags
-from the selected papers, and <b>Define</b> adds the tag to the selected
+<li><p><strong>For many papers:</strong> <a href=\"" . hoturl("search")
+. "\">Search</a> for papers, select them, and use the action area underneath the
+search list. <b>Add</b> adds tags to the selected papers, <b>Remove</b> removes
+tags from the selected papers, and <b>Define</b> adds the tag to the selected
 papers and removes it from all others.  The chair-only <b>Clear twiddle</b>
-action removes a tag and all users’ matching twiddle tags.</p></li>
+action removes a tag and all users’ matching twiddle tags.</p>
 
-<p>You can also edit tags directly on the search page. Search for “"
-. _searchLink("edit:tag:tagname") . "” to
-get a column of checkboxes; checked papers are given the “#tagname” tag.
-Search for “" . _searchLink("edit:tagval:tagname") . "” to set <a
-href='#values'>tag values</a>. Or search for “" . _searchLink("edit:tags") .
-"” to edit papers’ full tag lists.</p>
+<p>" . Ht::img("extagssearch.png", "[Setting tags on the search page]", ["width" => 510, "height" => 94]) . "</p></li>
 
-<p>Finally, the chair may upload tag assignments using the <a href='" .
-hoturl("bulkassign") . "'>bulk assignment page</a>.</p>
+<li><p><strong>With search keywords:</strong> Search for “"
+. _searchLink("edit:tag:tagname") . "” to add tags with checkboxes;
+search for “" . _searchLink("edit:tagval:tagname") . "” to type in <a
+href='#values'>tag values</a>; or search for “" . _searchLink("edit:tags") . "”
+to edit papers’ full tag lists.</p>
+
+<p>" . Ht::img("extagseditkw.png", "[Tag editing search keywords]", ["width" => 543, "height" => 133]) . "</p></li>
+
+<li><p><strong>In bulk:</strong> Administrators can also upload tag
+assignments using <a href='" .
+hoturl("bulkassign") . "'>bulk assignment</a>.</p></li>
+
+</ul>
 
 <p>Although any PC member can view or search
-most tags, certain tags may be changed only by PC chairs$chairtags.  $setting</p>");
+most tags, certain tags may be changed only by administrators$chairtags.
+$setting</p>");
 
     _subhead("<a id='values'>Tag values and discussion orders</a>", "
 <p>Tags have optional numeric values, which are displayed as
@@ -599,17 +602,29 @@ strictly sequential values, like “#tag#1”,
 has special support for creating discussion orders. It tries to group papers
 with similar PC conflicts, which can make the meeting run smoother.</p>");
 
-    _subhead("Tag colors", "
-<p>The tag names “red”, “orange”, “yellow”,
-“green”, “blue”, “purple”, and
-“gray” act as highlight colors. For example, papers tagged with
-“#red” will appear red in paper lists (for people who can see that
-tag).  Tag a paper “#~red” to make it red on your displays, but not
-others’. Other styles are available; try
-“#bold”, “#italic”, “#big”, “#small”, and “#dim”. System administrators can <a
-href='" . hoturl("settings", "group=tags") . "'>associate other tags with colors</a>
-so that, for example, “" . _searchLink("#reject") . "” papers show up as
-gray.</p>");
+    _subhead("Tag colors, badges, and emoji", "
+
+<p>Tags “red”, “orange”, “yellow”, “green”, “blue”, “purple”, “gray”, and
+“white” act as highlight colors. For example, papers tagged with “#red” will
+appear <span class=\"tagcolorspan redtag\">red</span> in paper lists (for people
+who can see that tag).  Tag a paper “#~red” to make it red only on your display.
+Other styles are available; try “#bold”, “#italic”, “#big”, “#small”, and
+“#dim”. The <a href='" .
+hoturl("settings", "group=tags") . "'>settings page</a> can associate other tags
+with colors so that, for example, “" . _searchLink("#reject") . "” papers appear
+gray.</p>
+
+<p>The " . Ht::link("settings page", hoturl("settings", "group=tags")) . " can
+also mark some tags as <span class=\"badge normalbadge\">badges</span> to
+display near titles.</p>
+
+<p><a href=\"http://www.emoji-cheat-sheet.com/\">Emoji codes</a> like “:fire:”
+and “:confused:” can be used as tags. Use <a href=\"#values\">tag values</a>
+to show multiple emoji.</p>
+
+<p>" . Ht::img("extagcolors.png", "[Tag colors, badges, and emoji]", ["width" => 498, "height" => 151]) . "</p></li>
+
+");
 
     _subhead("Using tags", "
 <p>Here are some example ways to use tags.</p>
