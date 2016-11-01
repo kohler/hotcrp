@@ -615,7 +615,7 @@ with colors so that, for example, “" . _searchLink("#reject") . "” papers ap
 gray.</p>
 
 <p>The " . Ht::link("settings page", hoturl("settings", "group=tags")) . " can
-also mark some tags as <span class=\"badge normalbadge\">badges</span> to
+declare certain tags as <span class=\"badge normalbadge\">badges</span>, which
 display near titles.</p>
 
 <p><a href=\"http://www.emoji-cheat-sheet.com/\">Emoji codes</a> like “:fire:”
