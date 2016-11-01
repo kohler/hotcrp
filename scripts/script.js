@@ -5263,7 +5263,7 @@ save_tags.load_report = function () {
 };
 save_tags.success = function (data) {
     data.color_classes && make_pattern_fill(data.color_classes, "", true);
-    $(".has_hotcrp_tag_classes").each(function () {
+    $(".has-tag-classes").each(function () {
         var t = $.trim(this.className.replace(/\b\w*tag\b/g, ""));
         this.className = t + " " + (data.color_classes || "");
     });
@@ -5289,7 +5289,7 @@ save_tags.success = function (data) {
             j.filter(":not(:focus)").val(res);
         else {
             j.text(res);
-            j.closest(".hotcrp_tag_hideempty").toggle(res !== "");
+            j.closest(".is-nonempty-tags").toggle(res !== "");
         }
     });
     $("h1.paptitle .tagdecoration").remove();

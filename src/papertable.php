@@ -159,7 +159,7 @@ class PaperTable {
             $title = "#" . $prow->paperId;
             $viewable_tags = $prow->viewable_tags($Me);
             if ($viewable_tags || $Me->can_view_tags($prow)) {
-                $t .= ' has_hotcrp_tag_classes';
+                $t .= ' has-tag-classes';
                 if (($color = $prow->conf->tags()->color_classes($viewable_tags)))
                     $t .= ' ' . $color;
             }
@@ -1076,7 +1076,7 @@ class PaperTable {
             if ($this->prow && ($viewable = $this->prow->viewable_tags($Me))) {
                 $tagger = new Tagger;
                 $color = $this->prow->conf->tags()->color_classes($viewable);
-                echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">',
+                echo '<div class="', trim("has-tag-classes pscopen $color"), '">',
                     '<span class="psfn">Tags:</span> ',
                     $tagger->unparse_and_link($viewable, $this->prow->all_tags_text(), false),
                     '</div>';
@@ -1341,7 +1341,7 @@ class PaperTable {
 
         $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.load_report()"]);
         $color = $this->prow->conf->tags()->color_classes($viewable);
-        echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">';
+        echo '<div class="', trim("has-tag-classes pscopen $color"), '">';
 
         if ($is_editable)
             echo Ht::form_div(hoturl("paper", "p=" . $this->prow->paperId), array("id" => "tagform", "onsubmit" => "return save_tags()"));
@@ -1431,7 +1431,7 @@ class PaperTable {
         if (($totval = $this->prow->tag_value($tag)) === false)
             $totval = "";
         $reverse = $type !== "rank";
-        $class = "hotcrp_tag_hideempty floatright";
+        $class = "is-nonempty-tags floatright";
         $extradiv = "";
         if ($type === "vote" || $type === "approval") {
             $class .= " need-tooltip";
@@ -1444,7 +1444,7 @@ class PaperTable {
     }
 
     private function papstrip_tag_entry_title($start, $tag, $value) {
-        $title = $start . '<span class="fn hotcrp_tag_hideempty"';
+        $title = $start . '<span class="fn is-nonempty-tags"';
         if ($value === "")
             $title .= ' style="display:none"';
         return $title . '>: <span class="is-tag-index" data-tag-base="' . $tag . '">' . $value . '</span></span>';
