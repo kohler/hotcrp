@@ -5072,8 +5072,12 @@ plinfo.set_tags = function (pid, rv) {
         if (cclasses)
             make_pattern_fill(cclasses);
         var $ptr = $("tr.pl, tr.plx").filter("[data-pid='" + pid + "']");
+        if (/\b(?:red|orange|yellow|green|blue|purple|gray|white)tag\b/.test(cclasses)) {
+            $ptr.closest("tbody").addClass("pltable_colored");
+            $ptr.removeClass("k0 k1");
+        }
         $ptr.removeClass(function (i, klass) {
-            return (klass.match(/(?:^| )(?:\S+tag|k[01])(?= |$)/g) || []).join(" ");
+            return (klass.match(/(?:^| )(?:\S+tag)(?= |$)/g) || []).join(" ");
         }).addClass(cclasses);
         $ptr.find(".tagdecoration").remove();
         if (rv.tag_decoration_html)
