@@ -525,6 +525,9 @@ class TopicListPaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
         return $row->unparse_topics_html(true, $pl->reviewer_contact());
     }
+    function text(PaperList $pl, PaperInfo $row) {
+        return $row->unparse_topics_text();
+    }
 }
 
 class ReviewerTypePaperColumn extends PaperColumn {
