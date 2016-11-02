@@ -295,7 +295,6 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $Qreq->t, 1);
 // SEARCH FORMS
 
 // Prepare more display options
-$displayOptions = array();
 $display_options_extra = "";
 
 function display_option_checked($type) {
@@ -306,27 +305,30 @@ function display_option_checked($type) {
         return $Qreq["show$type"] || strpos($pldisplay, " $type ") !== false;
 }
 
-function displayOptionCheckbox($type, $column, $title, $opt = array()) {
-    global $displayOptions;
-    $checked = display_option_checked($type);
-    $loadresult = "";
+class Search_DisplayOptions {
+    public $headers = [];
+    public $items = [];
 
-    if (!isset($opt["onchange"]))
-        $opt["onchange"] = "plinfo('$type',this)";
-    $indent = get($opt, "indent");
-    unset($opt["indent"]);
-
-    $text = Ht::checkbox("show$type", 1, $checked, $opt)
-        . "&nbsp;" . Ht::label($title);
-    $displayOptions[] = (object) array("type" => $type, "text" => $text,
-                "checked" => $checked, "column" => $column, "indent" => $indent);
+    function set_header($column, $header) {
+        $this->headers[$column] = $header;
+    }
+    function item($column, $item, $options = []) {
+        if (!isset($this->headers[$column]))
+            $this->headers[$column] = "";
+        $this->items[$column][] = (object) ["item" => $item, "indent" => get($options, "indent")];
+    }
+    function checkbox_item($column, $type, $title, $options = []) {
+        $checked = display_option_checked($type);
+        if (!isset($options["onchange"]))
+            $options["onchange"] = "plinfo('$type',this)";
+        $indent = get($options, "indent");
+        unset($options["indent"]);
+        $this->item($column, Ht::checkbox("show$type", 1, $checked, $options)
+                             . "&nbsp;" . Ht::label($title), ["indent" => $indent]);
+    }
 }
 
-function displayOptionText($text, $column, $opt = array()) {
-    global $displayOptions;
-    $displayOptions[] = (object) array("text" => $text,
-                "column" => $column, "indent" => defval($opt, "indent"));
-}
+$display_options = new Search_DisplayOptions;
 
 // Create checkboxes
 
@@ -337,11 +339,11 @@ if ($pl) {
                        || ($Qreq->t == "acc" && $viewAcceptedAuthors)
                        || $Conf->subBlindNever());
 
-    displayOptionText("<strong>Show:</strong>", 1);
+    $display_options->set_header(1, "<strong>Show:</strong>");
 
     // Authors group
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors) {
-        displayOptionCheckbox("au", 1, "Authors", array("id" => "showau"));
+        $display_options->checkbox_item(1, "au", "Authors", ["id" => "showau"]);
         if ($Me->privChair && $viewAllAuthors)
             $display_options_extra .=
                 Ht::checkbox("showanonau", 1, display_option_checked("au"),
@@ -349,7 +351,7 @@ if ($pl) {
                                    "onchange" => "plinfo('anonau',this)",
                                    "style" => "display:none"));
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
-        displayOptionCheckbox("anonau", 1, "Authors (deblinded)", array("id" => "showau", "disabled" => (!$pl || !$pl->any->anonau)));
+        $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl || !$pl->any->anonau]);
         $display_options_extra .=
             Ht::checkbox("showau", 1, display_option_checked("anonau"),
                          array("id" => "showau_hidden",
@@ -357,46 +359,46 @@ if ($pl) {
                                "style" => "display:none"));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
-        displayOptionCheckbox("aufull", 1, "Full author info", array("id" => "showaufull", "indent" => true));
+        $display_options->checkbox_item(1, "aufull", "Full author info", ["id" => "showaufull", "indent" => true]);
     if ($Me->privChair && !$Conf->subBlindNever()
         && (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors))
-        displayOptionCheckbox("anonau", 1, "Deblinded authors", array("disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
+        $display_options->checkbox_item(1, "anonau", "Deblinded authors", ["disabled" => !$pl || !$pl->any->anonau, "indent" => true]);
     if ($pl->any->collab)
-        displayOptionCheckbox("collab", 1, "Collaborators", array("indent" => true));
+        $display_options->checkbox_item(1, "collab", "Collaborators", ["indent" => true]);
 
     // Abstract group
     if ($pl->any->abstract)
-        displayOptionCheckbox("abstract", 1, "Abstracts");
+        $display_options->checkbox_item(1, "abstract", "Abstracts");
     if ($pl->any->topics)
-        displayOptionCheckbox("topics", 1, "Topics");
+        $display_options->checkbox_item(1, "topics", "Topics");
 
     // Tags group
     if ($Me->isPC && $pl->any->tags) {
         $opt = array("disabled" => ($Qreq->t == "a" && !$Me->privChair));
-        displayOptionCheckbox("tags", 1, "Tags", $opt);
+        $display_options->checkbox_item(1, "tags", "Tags", $opt);
         if ($Me->privChair) {
             $opt["indent"] = true;
             foreach ($Conf->tags() as $t)
                 if ($t->vote || $t->approval || $t->rank)
-                    displayOptionCheckbox("tagrep:{$t->tag}", 1, "#~{$t->tag} report", $opt);
+                    $display_options->checkbox_item(1, "tagrep:{$t->tag}", "#~{$t->tag} report", $opt);
         }
     }
 
     // Row numbers
     if (isset($pl->any->sel))
-        displayOptionCheckbox("rownum", 1, "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')"));
+        $display_options->checkbox_item(1, "rownum", "Row numbers", ["onchange" => "fold('pl',!this.checked,'rownum')"]);
 
     // Reviewers group
     if ($Me->can_view_some_review_identity(true))
-        displayOptionCheckbox("reviewers", 2, "Reviewers");
+        $display_options->checkbox_item(2, "reviewers", "Reviewers");
     if ($Me->privChair) {
-        displayOptionCheckbox("allpref", 2, "Review preferences");
-        displayOptionCheckbox("pcconf", 2, "PC conflicts");
+        $display_options->checkbox_item(2, "allpref", "Review preferences");
+        $display_options->checkbox_item(2, "pcconf", "PC conflicts");
     }
     if ($Me->isPC && $pl->any->lead)
-        displayOptionCheckbox("lead", 2, "Discussion leads");
+        $display_options->checkbox_item(2, "lead", "Discussion leads");
     if ($Me->isPC && $pl->any->shepherd)
-        displayOptionCheckbox("shepherd", 2, "Shepherds");
+        $display_options->checkbox_item(2, "shepherd", "Shepherds");
 
     // Scores group
     if ($pl->scoresOk == "present") {
@@ -405,33 +407,26 @@ if ($pl) {
             $revViewScore = $Me->permissive_view_score_bound();
         else
             $revViewScore = VIEWSCORE_AUTHOR - 1;
-        $n = count($displayOptions);
-        $nchecked = 0;
+        $display_options->set_header(3, "<strong>Scores:</strong>");
         foreach ($rf->forder as $f)
-            if ($f->view_score > $revViewScore && $f->has_options) {
-                if (count($displayOptions) == $n)
-                    displayOptionText("<strong>Scores:</strong>", 3);
-                displayOptionCheckbox($f->id, 3, $f->name_html);
-                if ($displayOptions[count($displayOptions) - 1]->checked)
-                    ++$nchecked;
-            }
-        if (count($displayOptions) > $n) {
+            if ($f->view_score > $revViewScore && $f->has_options)
+                $display_options->checkbox_item(3, $f->id, $f->name_html);
+        if (!empty($display_options->items[3])) {
             $onchange = "hiliter(\"redisplay\")";
             if ($Me->privChair)
                 $onchange .= ";plinfo.extra()";
-            displayOptionText("<div style='padding-top:1ex'>Sort by: &nbsp;"
-                              . Ht::select("scoresort", ListSorter::$score_sorts, $Conf->session("scoresort"), array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
-                . "<a class='help' href='" . hoturl("help", "t=scoresort") . "' target='_blank' title='Learn more'>?</a></div>", 3);
+            $sortitem = '<div style="padding-top:1ex">Sort by: &nbsp;'
+                . Ht::select("scoresort", ListSorter::$score_sorts, $Conf->session("scoresort"),
+                             ["id" => "scoresort", "onchange" => $onchange, "style" => "font-size:100%"])
+                . '<a class="help" href="' . hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
+            $display_options->item(3, $sortitem);
         }
     }
 
     // Formulas group
-    $formulas = visible_formulas();
-    if (count($formulas)) {
-        displayOptionText("<strong>Formulas:</strong>", 4);
-        foreach ($formulas as $formula)
-            displayOptionCheckbox("formula" . $formula->formulaId, 4, htmlspecialchars($formula->name));
-    }
+    $display_options->set_header(4, "<strong>Formulas:</strong>");
+    foreach (visible_formulas() as $formula)
+        $display_options->checkbox_item(4, "formula{$formula->formulaId}", htmlspecialchars($formula->name));
 }
 
 
@@ -454,6 +449,7 @@ echo Ht::form_div(hoturl("search"), array("method" => "get")),
     "<table><tr>
   <td class='lxcaption'>Search these papers</td>
   <td class='lentry'>$tselect</td>
+  <td></td>
 </tr>
 <tr>
   <td class='lxcaption'>Using these fields</td>
@@ -481,8 +477,9 @@ if (!isset($qtOpt[(string) $Qreq->qt]))
     $_REQUEST["qt"] = $_GET["qt"] = $Qreq->qt = "n";
 echo Ht::select("qt", $qtOpt, $Qreq->qt, array("tabindex" => 1)),
     "</td>
+  <td></td>
 </tr>
-<tr><td><div class='g'></div></td></tr>
+<tr><td colspan=\"3\"><div class='g'></div></td></tr>
 <tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
   <td class='lentry'><input id='searchform2_d' type='text' size='40' style='width:30em' name='qa' value=\"", htmlspecialchars(defval($Qreq, "qa", defval($Qreq, "q", ""))), "\" tabindex='1' /><span class='sep'></span></td>
@@ -567,37 +564,30 @@ if ($pl && $pl->count > 0) {
     echo Ht::form_div(hoturl_post("search", "redisplay=1"), array("id" => "foldredisplay", "class" => "fn3 fold5c"));
     echo_request_as_hidden_inputs();
 
-    echo "<table>";
-
-    $column = 0;
-    $cheaders = array();
-    $cbodies = array();
-    foreach ($displayOptions as $do) {
-        if (preg_match('/\A<strong>/', $do->text)
-            && !isset($cheaders[$do->column]))
-            $cheaders[$do->column] = $do->text;
-        else {
-            $t = "<tr><td";
-            if ($do->indent)
-                $t .= " style='padding-left:2em'";
-            $t .= ">" . $do->text . "</td></tr>\n";
-            defappend($cbodies[$do->column], $t);
-        }
-    }
-
     $header = $body = "";
     $ncolumns = 0;
-    for ($i = 1; $i < 10; ++$i)
-        if (isset($cbodies[$i]) && $cbodies[$i]) {
-            $klass = $ncolumns ? "padlb " : "";
-            if (isset($cheaders[$i]))
-                $header .= "  <td class='${klass}nw'>" . $cheaders[$i] . "</td>\n";
+    ksort($display_options->items);
+    foreach ($display_options->items as $column => $items) {
+        if (empty($items))
+            continue;
+        $klass = $ncolumns ? "padlb " : "";
+        $h = get($display_options->headers, $column);
+        if ((string) $h !== "")
+            $header .= '  <td class="' . $klass . 'nw">' . $h . "</td>\n";
+        else
+            $header .= "  <td></td>\n";
+        $body .= '  <td class="' . $klass . 'top">';
+        foreach ($items as $item) {
+            if ($item->indent)
+                $body .= '<div style="padding-left:2em">';
             else
-                $header .= "  <td></td>\n";
-            $body .= "  <td class='${klass}top'><table>" . $cbodies[$i] . "</table></td>\n";
-            ++$ncolumns;
+                $body .= '<div>';
+            $body .= $item->item . '</div>';
         }
-    echo "<tr>\n", $header, "</tr><tr>\n", $body, "</tr>";
+        $body .= "</td>\n";
+        ++$ncolumns;
+    }
+    echo "<table><tr>\n", $header, "</tr><tr>\n", $body, "</tr>";
 
     // "Redisplay" row
     echo "<tr><td colspan='$ncolumns' style='padding-top:2ex'><table style='margin:0 0 0 auto'><tr>";
