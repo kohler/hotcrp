@@ -47,6 +47,14 @@ class PaperListReviewAnalysis {
             $t .= '<span class="revround" title="Review round">&nbsp;' . $this->round . "</span>";
         return $t;
     }
+    function icon_text() {
+        $x = "";
+        if ($this->row->reviewType)
+            $x = get_s(ReviewForm::$revtype_names, $this->row->reviewType);
+        if ($x !== "" && $this->round)
+            $x .= ":" . $this->round;
+        return $x;
+    }
     function description_html() {
         if (!$this->row)
             return "";

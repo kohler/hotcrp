@@ -569,27 +569,39 @@ class ReviewerTypePaperColumn extends PaperColumn {
         else
             return "Review";
     }
-    function content(PaperList $pl, PaperInfo $row, $rowidx) {
-        if ($this->xreviewer && !isset($row->_xreviewer))
-            $xrow = (object) array("reviewType" => 0, "conflictType" => 0);
-        else if ($this->xreviewer)
-            $xrow = $row->_xreviewer;
-        else
-            $xrow = $row;
+    const F_CONFLICT = 1;
+    const F_LEAD = 2;
+    const F_SHEPHERD = 4;
+    private function analysis(PaperList $pl, PaperInfo $row) {
         $ranal = null;
-        if ($xrow->reviewType) {
+        $xrow = $this->xreviewer ? get($row, "_xreviewer") : $row;
+        if ($xrow && $xrow->reviewType) {
             $ranal = $pl->make_review_analysis($xrow, $row);
             if ($ranal->needsSubmit)
                 $pl->any->need_review = true;
+        }
+        $flags = 0;
+        if ($xrow && $xrow->conflictType > 0)
+            $flags |= self::F_CONFLICT;
+        if (!$this->xreviewer && ($me = $pl->contact->contactId)) {
+            if ($row->leadContactId == $me)
+                $flags |= self::F_LEAD;
+            if ($row->shepherdContactId == $me)
+                $flags |= self::F_SHEPHERD;
+        }
+        return [$ranal, $flags];
+    }
+    function content(PaperList $pl, PaperInfo $row, $rowidx) {
+        list($ranal, $flags) = $this->analysis($pl, $row);
+        $t = "";
+        if ($ranal)
             $t = $ranal->icon_html(true);
-        } else if ($xrow->conflictType > 0)
+        else if ($flags & self::F_CONFLICT)
             $t = review_type_icon(-1);
-        else
-            $t = "";
         $x = null;
-        if (!$this->xreviewer && $row->leadContactId && $row->leadContactId == $pl->contact->contactId)
+        if ($flags & self::F_LEAD)
             $x[] = review_lead_icon();
-        if (!$this->xreviewer && $row->shepherdContactId && $row->shepherdContactId == $pl->contact->contactId)
+        if ($flags & self::F_SHEPHERD)
             $x[] = review_shepherd_icon();
         if ($x || ($ranal && $ranal->round)) {
             $c = ["pl_revtype"];
@@ -600,6 +612,19 @@ class ReviewerTypePaperColumn extends PaperColumn {
             return '<div class="' . join(" ", $c) . '">' . join('&nbsp;', $x) . '</div>';
         } else
             return $t;
+    }
+    function text(PaperList $pl, PaperInfo $row) {
+        list($ranal, $flags) = $this->analysis($pl, $row);
+        $t = null;
+        if ($flags & self::F_LEAD)
+            $t[] = "Lead";
+        if ($flags & self::F_SHEPHERD)
+            $t[] = "Shepherd";
+        if ($ranal)
+            $t[] = $ranal->icon_text();
+        if ($flags & self::F_CONFLICT)
+            $t[] = "Conflict";
+        return $t ? join("; ", $t) : "";
     }
 }
 
