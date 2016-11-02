@@ -524,7 +524,7 @@ class PaperInfo {
         $tmap = $this->conf->topic_map();
         foreach ($tarr as $t)
             $out[] = $tmap[$t];
-        return join($this->conf->topic_separator(), $out);
+        return join("; ", $out);
     }
 
     private static function render_topic($t, $i, $tmap, &$long) {
