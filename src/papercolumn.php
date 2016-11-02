@@ -742,7 +742,7 @@ class TopicScorePaperColumn extends PaperColumn {
         return $b->topic_interest_score($this->contact) - $a->topic_interest_score($this->contact);
     }
     function header(PaperList $pl, $is_text) {
-        return $is_text ? "Topic store" : "Topic<br />score";
+        return $is_text ? "Topic score" : "Topic<br />score";
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
         return htmlspecialchars($row->topic_interest_score($this->contact));
