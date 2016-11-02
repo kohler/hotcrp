@@ -273,7 +273,7 @@ class CsvGenerator {
             }
             ++$i;
         }
-        if (!count($selected) && is_array($row) && count($row))
+        if (empty($selected) && is_array($row) && !empty($row))
             for ($i = 0;
                  array_key_exists($i, $row) && $i != count($this->selection);
                  ++$i)
@@ -300,10 +300,10 @@ class CsvGenerator {
             error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
             $this->add_string($row);
             return;
-        }
+        } else if ($row === null)
+            return;
         reset($row);
-        if (count($row)
-            && (is_array(current($row)) || is_object(current($row)))) {
+        if (!empty($row) && (is_array(current($row)) || is_object(current($row)))) {
             foreach ($row as $x)
                 $this->add($x);
         } else {
@@ -331,7 +331,7 @@ class CsvGenerator {
     }
 
     function set_header($header, $comment = false) {
-        assert(!count($this->lines) && $this->headerline === "");
+        assert(empty($this->lines) && $this->headerline === "");
         $this->add($header);
         if ($this->type == self::TYPE_TAB && $comment)
             $this->lines[0] = "#" . $this->lines[0];
