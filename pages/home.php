@@ -414,8 +414,10 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
     if ($Me->is_requester() && $Conf->setting("extrev_approve") && $Conf->setting("pcrev_editdelegate")) {
         $search = new PaperSearch($Me, "ext:approvable");
-        if ($search->paperList())
+        if ($search->paperList()) {
             echo $sep, '<a href="', hoturl("paper", ["m" => "rea", "p" => "ext:approvable"]), '"><strong>Approve external reviews</strong></a>';
+            $sep = $xsep;
+        }
     }
     if ($Me->isPC && $Conf->has_any_lead_or_shepherd()
         && $Me->is_discussion_lead()) {
