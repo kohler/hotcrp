@@ -242,7 +242,6 @@ class SettingValues extends MessageSet {
     public $conf;
     public $user;
     public $interesting_groups = array();
-    public $warnings_reported = false;
 
     private $parsers = array();
     public $save_callbacks = array();
@@ -255,11 +254,13 @@ class SettingValues extends MessageSet {
     public $explicit_oldv = array();
     private $hint_status = array();
     private $has_req = array();
+    private $near_msgs = null;
 
     function __construct($user) {
         parent::__construct();
         $this->conf = $user->conf;
         $this->user = $user;
+        $this->near_msgs = new MessageSet;
     }
 
     function use_req() {
@@ -281,16 +282,24 @@ class SettingValues extends MessageSet {
         $fname = self::check_error_field($field, $html);
         parent::warning_at($fname, $html);
     }
+    function error_near($field, $html)  {
+        $this->near_msgs->error_at($field, $html);
+    }
+    function warning_near($field, $html)  {
+        $this->near_msgs->warning_at($field, $html);
+    }
+    function info_near($field, $html)  {
+        $this->near_msgs->info_at($field, $html);
+    }
     function report() {
         $msgs = array();
         foreach ($this->messages(true) as $mx)
             $msgs[] = ($mx[2] == MessageSet::WARNING ? "Warning: " : "") . $mx[1];
         $mt = '<div class="multimessage"><div class="mmm">' . join('</div><div class="mmm">', $msgs) . '</div></div>';
         if (!empty($msgs) && $this->has_error())
-            Conf::msg_error($mt);
+            Conf::msg_error($mt, true);
         else if (!empty($msgs))
-            Conf::msg_warning($mt);
-        $this->warnings_reported = true;
+            Conf::msg_warning($mt, true);
     }
     function parser(Si $si) {
         if ($si->parser) {
@@ -456,6 +465,19 @@ class SettingValues extends MessageSet {
             return $this->savedv[$s][0];
     }
 
+    function echo_messages_near($name) {
+        $msgs = [];
+        $status = MessageSet::INFO;
+        foreach ($this->near_msgs->messages_at($name, true) as $mx) {
+            $msgs[] = ($mx[2] == MessageSet::WARNING ? "Warning: " : "") . $mx[1];
+            $status = max($status, $mx[2]);
+        }
+        if (!empty($msgs)) {
+            $mt = '<div class="multimessage"><div class="mmm">' . join('</div><div class="mmm">', $msgs) . '</div></div>';
+            $xtype = ["xinfo", "xwarning", "xmerror"];
+            $this->conf->msg($xtype[$status], $mt);
+        }
+    }
     function echo_checkbox_only($name, $onchange = null) {
         $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
@@ -1065,9 +1087,6 @@ function do_setting_update(SettingValues $sv) {
             $sv->conf->warnMsg("No changes.");
         $sv->report();
         redirectSelf();
-    } else {
-        SettingGroup::crosscheck($sv, $Group);
-        $sv->report();
     }
 }
 if (isset($_REQUEST["update"]) && check_post())
@@ -1075,10 +1094,7 @@ if (isset($_REQUEST["update"]) && check_post())
 if (isset($_REQUEST["cancel"]) && check_post())
     redirectSelf();
 
-if (!$Sv->warnings_reported) {
-    SettingGroup::crosscheck($Sv, $Group);
-    $Sv->report();
-}
+SettingGroup::crosscheck($Sv, $Group);
 
 $Conf->header("Settings &nbsp;&#x2215;&nbsp; <strong>" . SettingGroup::$all[$Group]->description . "</strong>", "settings", actionBar());
 echo Ht::unstash(); // clear out other script references
@@ -1110,6 +1126,7 @@ echo '<div class="aahc">';
 doActionArea(true);
 
 echo "<div>";
+$Sv->report();
 $Sv->interesting_groups[$Group] = true;
 SettingGroup::$all[$Group]->render($Sv);
 echo "</div>";

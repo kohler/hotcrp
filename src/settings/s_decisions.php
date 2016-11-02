@@ -132,6 +132,7 @@ function render(SettingValues $sv) {
 
     // Final versions
     echo "<h3 id=\"finalversions\" class=\"settings g\">Final versions</h3>\n";
+    $sv->echo_messages_near("final_open");
     echo '<div class="fold2o" data-fold="true">';
     echo '<table>';
     $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx2">:</span></b>', "void foldup(this,event,{f:'c'})");

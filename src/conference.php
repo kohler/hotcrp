@@ -2444,7 +2444,7 @@ class Conf {
         $this->msg($minimal ? "xinfo" : "info", $text);
     }
 
-    static public function msg_info($text, $minimal = false) {
+    static function msg_info($text, $minimal = false) {
         self::$g->msg($minimal ? "xinfo" : "info", $text);
     }
 
@@ -2452,7 +2452,7 @@ class Conf {
         $this->msg($minimal ? "xwarning" : "warning", $text);
     }
 
-    static public function msg_warning($text, $minimal = false) {
+    static function msg_warning($text, $minimal = false) {
         self::$g->msg($minimal ? "xwarning" : "warning", $text);
     }
 
@@ -2460,7 +2460,7 @@ class Conf {
         $this->msg($minimal ? "xconfirm" : "confirm", $text);
     }
 
-    static public function msg_confirm($text, $minimal = false) {
+    static function msg_confirm($text, $minimal = false) {
         self::$g->msg($minimal ? "xconfirm" : "confirm", $text);
     }
 
@@ -2469,12 +2469,12 @@ class Conf {
         return false;
     }
 
-    static public function msg_error($text, $minimal = false) {
+    static function msg_error($text, $minimal = false) {
         self::$g->msg($minimal ? "xmerror" : "merror", $text);
         return false;
     }
 
-    static public function msg_debugt($text) {
+    static function msg_debugt($text) {
         if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true)
             $text = json_encode($text);
         self::$g->msg("merror", Ht::pre_text_wrap($text));
