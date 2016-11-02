@@ -287,8 +287,11 @@ function make_qreq() {
         } else if (($err = uploaded_file_error($finfo)))
             $errors[] = $err;
     }
-    if (count($errors) && Conf::$g)
+    if (!empty($errors) && Conf::$g)
         Conf::msg_error("<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>");
+
+    // _INTERNAL is for internal data only
+    $qreq->_INTERNAL = new Qobject;
     return $qreq;
 }
 

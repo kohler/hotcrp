@@ -32,6 +32,7 @@ if ($Qreq->reviewer && $Me->privChair
     }
 }
 $reviewer = $reviewer_contact->contactId;
+$Qreq->_INTERNAL->reviewer_contact = $reviewer_contact;
 if ($incorrect_reviewer)
     Conf::msg_error("Reviewer " . htmlspecialchars($Qreq->reviewer) . " is not on the PC.");
 
