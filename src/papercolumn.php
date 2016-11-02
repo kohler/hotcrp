@@ -361,6 +361,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
 
 class AuthorsPaperColumn extends PaperColumn {
     private $aufull;
+    private $anonau;
     function __construct() {
         parent::__construct("authors", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
@@ -369,6 +370,7 @@ class AuthorsPaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->aufull = !$pl->is_folded("aufull");
+        $this->anonau = !$pl->is_folded("anonau");
         return $pl->contact->can_view_some_authors();
     }
     private function affiliation_map($row) {
@@ -425,7 +427,7 @@ class AuthorsPaperColumn extends PaperColumn {
         }
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (!$pl->contact->can_view_authors($row))
+        if (!$pl->contact->can_view_authors($row) && !$this->anonau)
             return "";
         $out = [];
         if (!$this->aufull) {
