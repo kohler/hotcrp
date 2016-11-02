@@ -449,7 +449,7 @@ class PaperList {
         if ($this->count == 0)
             return "";
 
-        $revpref = $this->table_type == "editReviewPreference";
+        $revpref = $this->table_type == "editpref";
         $lllgroups = SearchAction::list_all_actions($this->contact, $this->qreq, $this);
 
         // Upload preferences (review preferences only)
@@ -510,7 +510,7 @@ class PaperList {
             return "Review assignments";
           case "conflict":
             return "Potential conflicts";
-          case "editReviewPreference":
+          case "editpref":
             return "Review preferences";
           case "reviewers":
           case "reviewersSel":
@@ -563,7 +563,7 @@ class PaperList {
         case "conflict":
             $this->_default_linkto("assign");
             return "selconf id title authors abstract tags authorsmatch collabmatch foldall";
-        case "editReviewPreference":
+        case "editpref":
             $this->_default_linkto("paper");
             return "sel id title topicscore revtype editpref authors abstract topics";
         case "reviewers":

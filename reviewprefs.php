@@ -161,6 +161,12 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
     $csv->set_comment_chars("#");
     $line = $csv->next();
+    // “CSV” downloads use “ID” and “Preference” columns; adjust header
+    if ($line && array_search("paper", $line) === false)
+        $line = array_map(function ($x) { return $x === "ID" ? "paper" : $x; }, $line);
+    if ($line && array_search("preference", $line) === false)
+        $line = array_map(function ($x) { return $x === "Preference" ? "preference" : $x; }, $line);
+    // Parse header
     if ($line && array_search("paper", $line) !== false)
         $csv->set_header($line);
     else {
@@ -209,9 +215,10 @@ else if ($Qreq->fn === "uploadpref")
 
 
 // Prepare search
-$Qreq->t = "rable";
+$Qreq->t = "editpref";
 $Qreq->urlbase = hoturl_site_relative_raw("reviewprefs", "reviewer=$reviewer");
 $Qreq->q = get($Qreq, "q", "");
+$Qreq->display = displayOptionsSet("pfdisplay");
 
 // Search actions
 if ($Qreq->fn === "get" && $SSel && !$SSel->is_empty()) {
@@ -231,7 +238,6 @@ if (isset($Qreq->redisplay)) {
     $Conf->save_session("pfdisplay", $pfd);
     redirectSelf();
 }
-$pldisplay = displayOptionsSet("pfdisplay");
 
 
 // Header and body
@@ -243,7 +249,7 @@ $Conf->infoMsg($Conf->message_html("revprefdescription"));
 $search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q], $reviewer_contact);
 $pl = new PaperList($search, ["sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer_contact], $Qreq);
 $pl->set_table_id_class("foldpl", "pltable_full", "p#");
-$pl_text = $pl->table_html("editReviewPreference",
+$pl_text = $pl->table_html("editpref",
                 array("attributes" => array("data-fold-session" => "pfdisplay.$"),
                       "footer_extra" => "<div id='plactr'>" . Ht::submit("fn", "Save changes", ["class" => "btn", "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => "always", "value" => "saveprefs"]) . "</div>",
                       "list_properties" => ["revprefs" => true]));
@@ -253,8 +259,8 @@ $pl_text = $pl->table_html("editReviewPreference",
 echo "<table id='searchform' class='tablinks1'>
 <tr><td>"; // <div class='tlx'><div class='tld1'>";
 
-$showing_au = (!$Conf->subBlindAlways() && strpos($pldisplay, " au ") !== false);
-$showing_anonau = ((!$Conf->subBlindNever() || $Me->privChair) && strpos($pldisplay, " anonau ") !== false);
+$showing_au = (!$Conf->subBlindAlways() && strpos($Qreq->display, " au ") !== false);
+$showing_anonau = ((!$Conf->subBlindNever() || $Me->privChair) && strpos($Qreq->display, " anonau ") !== false);
 
 echo Ht::form_div(hoturl("reviewprefs"), array("method" => "get", "id" => "redisplayform",
                                                "class" => ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c"))),
@@ -270,7 +276,7 @@ if ($Me->privChair) {
 
     $revopt = pc_members_selector_options(false);
     foreach (pcMembers() as $pcm)
-        if (!@$prefcount[$pcm->contactId])
+        if (!get($prefcount, $pcm->contactId))
             $revopt[htmlspecialchars($pcm->email)] .= " (no preferences)";
     if (!isset($revopt[htmlspecialchars($reviewer_contact->email)]))
         $revopt[htmlspecialchars($reviewer_contact->email)] = Text::name_html($Me) . " (not on PC)";
@@ -288,34 +294,34 @@ $show_data = array();
 if (!$Conf->subBlindAlways()
     && ($Conf->subBlindNever() || $pl->any->openau))
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
+        . Ht::checkbox("showau", 1, strpos($Qreq->display, " au ") !== false,
                 array("disabled" => (!$Conf->subBlindNever() && !$pl->any->openau),
                       "onchange" => "plinfo('au',this)",
                       "id" => "showau"))
         . "&nbsp;" . Ht::label("Authors") . '</span>';
 if (!$Conf->subBlindNever() && $Me->privChair)
     $show_data[] = '<span class="sep' . (!$Conf->subBlindAlways() ? " fx10" : "") . '">'
-        . Ht::checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
+        . Ht::checkbox("showanonau", 1, strpos($Qreq->display, " anonau ") !== false,
                        array("disabled" => !$pl->any->anonau,
                              "onchange" => (!$Conf->subBlindAlways() ? "" : "plinfo('au',this);") . "plinfo('anonau',this)",
                              "id" => (!$Conf->subBlindAlways() ? "showanonau" : "showau")))
         . "&nbsp;" . Ht::label(!$Conf->subBlindAlways() ? "Anonymous authors" : "Authors") . '</span>';
 if (!$Conf->subBlindAlways() || $Me->privChair) {
     $show_data[] = '<span class="sep fx10">'
-        . Ht::checkbox("showaufull", 1, strpos($pldisplay, " aufull ") !== false,
+        . Ht::checkbox("showaufull", 1, strpos($Qreq->display, " aufull ") !== false,
                        array("onchange" => "plinfo('aufull',this)", "id" => "showaufull"))
         . "&nbsp;" . Ht::label("Full author info") . "</span>";
     Ht::stash_script("plinfo.extra=function(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)};");
 }
 if ($pl->any->abstract)
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showabstract", 1, strpos($pldisplay, " abstract ") !== false, array("onchange" => "plinfo('abstract',this)"))
+        . Ht::checkbox("showabstract", 1, strpos($Qreq->display, " abstract ") !== false, array("onchange" => "plinfo('abstract',this)"))
         . "&nbsp;" . Ht::label("Abstracts") . '</span>';
 if ($pl->any->topics)
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showtopics", 1, strpos($pldisplay, " topics ") !== false, array("onchange" => "plinfo('topics',this)"))
+        . Ht::checkbox("showtopics", 1, strpos($Qreq->display, " topics ") !== false, array("onchange" => "plinfo('topics',this)"))
         . "&nbsp;" . Ht::label("Topics") . '</span>';
-if (count($show_data) && $pl->count)
+if (!empty($show_data) && $pl->count)
     echo '<tr><td class="lxcaption"><strong>Show:</strong> &nbsp;',
         '</td><td colspan="2" class="lentry">',
         join('', $show_data), '</td></tr>';

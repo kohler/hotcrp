@@ -886,7 +886,7 @@ class PaperSearch {
         else if ($user->isPC && ($ptype === "acc" || $ptype === "revs"
                                  || $ptype === "reqrevs" || $ptype === "req"
                                  || $ptype === "lead" || $ptype === "rable"
-                                 || $ptype === "manager"))
+                                 || $ptype === "manager" || $ptype === "editpref"))
             $this->limitName = $ptype;
         else if ($this->privChair && ($ptype === "all" || $ptype === "unsub"))
             $this->limitName = $ptype;
@@ -3164,6 +3164,8 @@ class PaperSearch {
         //Conf::msg_info(Ht::pre_text(var_export($filters, true)));
 
         // status limitation parts
+        if ($limit === "editpref")
+            $limit = "rable";
         if ($limit === "rable") {
             $limitcontact = $this->reviewer_user();
             if ($limitcontact->can_accept_review_assignment_ignore_conflict(null))
@@ -3400,8 +3402,9 @@ class PaperSearch {
 
     function complexSearch(&$queryOptions) {
         $limit = $this->limitName;
-        if (($limit === "s" || $limit === "act")
-            && $this->q === "re:me")
+        if ($limit === "editpref")
+            $limit = "rable";
+        if (($limit === "s" || $limit === "act") && $this->q === "re:me")
             $limit = "r";
         else if ($this->q !== "")
             return true;
@@ -3517,7 +3520,8 @@ class PaperSearch {
                        "rout" => "Your incomplete reviews",
                        "req" => "Your review requests",
                        "reqrevs" => "Your review requests",
-                       "rable" => "Reviewable papers");
+                       "rable" => "Reviewable papers",
+                       "editpref" => "Reviewable papers");
             if (isset($a[$this->limitName]))
                 $listname = $a[$this->limitName];
             else
