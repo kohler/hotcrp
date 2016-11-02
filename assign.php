@@ -270,7 +270,7 @@ function requestReview($email) {
             $Requester = $recorded_requester;
     }
 
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read, ActionLog write");
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read, ActionLog write, Settings write");
     // NB caller unlocks tables on error
 
     // check for outstanding review request
