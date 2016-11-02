@@ -312,19 +312,22 @@ class Search_DisplayOptions {
     function set_header($column, $header) {
         $this->headers[$column] = $header;
     }
-    function item($column, $item, $options = []) {
+    function item($column, $item) {
         if (!isset($this->headers[$column]))
             $this->headers[$column] = "";
-        $this->items[$column][] = (object) ["item" => $item, "indent" => get($options, "indent")];
+        $this->items[$column][] = $item;
     }
     function checkbox_item($column, $type, $title, $options = []) {
         $checked = display_option_checked($type);
         if (!isset($options["onchange"]))
             $options["onchange"] = "plinfo('$type',this)";
-        $indent = get($options, "indent");
+        $x = '<table><tr><td class="nw"';
+        if (get($options, "indent"))
+            $x .= ' style="padding-left:2em"';
         unset($options["indent"]);
-        $this->item($column, Ht::checkbox("show$type", 1, $checked, $options)
-                             . "&nbsp;" . Ht::label($title), ["indent" => $indent]);
+        $x .= '>' . Ht::checkbox("show$type", 1, $checked, $options)
+            . '&nbsp;</td><td>' . Ht::label($title) . '</td></tr></table>';
+        $this->item($column, $x);
     }
 }
 
@@ -338,8 +341,6 @@ if ($pl) {
     $viewAllAuthors = ($Qreq->t == "a"
                        || ($Qreq->t == "acc" && $viewAcceptedAuthors)
                        || $Conf->subBlindNever());
-
-    $display_options->set_header(1, "<strong>Show:</strong>");
 
     // Authors group
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors) {
@@ -564,33 +565,23 @@ if ($pl && $pl->count > 0) {
     echo Ht::form_div(hoturl_post("search", "redisplay=1"), array("id" => "foldredisplay", "class" => "fn3 fold5c"));
     echo_request_as_hidden_inputs();
 
-    $header = $body = "";
-    $ncolumns = 0;
+    echo '<div class="searchctable">';
     ksort($display_options->items);
     foreach ($display_options->items as $column => $items) {
         if (empty($items))
             continue;
-        $klass = $ncolumns ? "padlb " : "";
         $h = get($display_options->headers, $column);
+        echo '<div class="ctelt">';
         if ((string) $h !== "")
-            $header .= '  <td class="' . $klass . 'nw">' . $h . "</td>\n";
-        else
-            $header .= "  <td></td>\n";
-        $body .= '  <td class="' . $klass . 'top">';
-        foreach ($items as $item) {
-            if ($item->indent)
-                $body .= '<div style="padding-left:2em">';
-            else
-                $body .= '<div>';
-            $body .= $item->item . '</div>';
-        }
-        $body .= "</td>\n";
-        ++$ncolumns;
+            echo '<div>', $h, '</div>';
+        foreach ($items as $item)
+            echo '<div>', $item, '</div>';
+        echo '</div>';
     }
-    echo "<table><tr>\n", $header, "</tr><tr>\n", $body, "</tr>";
+    echo "</div>\n";
 
     // "Redisplay" row
-    echo "<tr><td colspan='$ncolumns' style='padding-top:2ex'><table style='margin:0 0 0 auto'><tr>";
+    echo "<div style='padding-top:2ex'><table style='margin:0 0 0 auto'><tr>";
 
     // Conflict display
     if ($Me->privChair)
@@ -623,10 +614,10 @@ if ($pl && $pl->count > 0) {
 
     echo Ht::submit("Redisplay", array("id" => "redisplay")), "</td>";
 
-    echo "</tr></table>", $display_options_extra, "</td>";
+    echo "</tr></table>", $display_options_extra, "</div>";
 
     // Done
-    echo "</tr></table></div></form>";
+    echo "</div></form>";
 
     // Formulas
     if ($Me->isPC) {

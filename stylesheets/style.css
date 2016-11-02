@@ -1253,7 +1253,7 @@ tr.pt_conflict_ass > td.entry, tr.propass > td.entry {
 	float: right;
 	white-space: nowrap;
 }
-.ctable, .pc_ctable {
+.ctable, .pc_ctable, .searchctable {
 	-webkit-columns: 300px 4;
 	-moz-columns: 300px 4;
 	columns: 300px 4;
@@ -1261,6 +1261,13 @@ tr.pt_conflict_ass > td.entry, tr.propass > td.entry {
 	-moz-column-gap: 18px;
 	column-gap: 18px;
 	margin: 0 -12px -4px;
+}
+.searchctable {
+	-webkit-columns: 150px 4;
+	-moz-columns: 150px 4;
+	columns: 150px 4;
+	max-width: 800px;
+	margin: 0 -6px -4px;
 }
 .ctelt {
 	-webkit-column-break-inside: avoid;
