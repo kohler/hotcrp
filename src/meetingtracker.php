@@ -15,9 +15,8 @@ class MeetingTracker {
         }
     }
 
-    static private function next_position_at() {
-        global $Conf;
-        $tracker = $Conf->setting_json("tracker");
+    static private function next_position_at(Conf $conf) {
+        $tracker = $conf->setting_json("tracker");
         return max(microtime(true), $tracker ? $tracker->update_at + 0.2 : 0);
     }
 
@@ -27,15 +26,13 @@ class MeetingTracker {
             && array_search($prow->paperId, $tracker->ids) !== false;
     }
 
-    static function clear() {
-        global $Conf;
-        if ($Conf->setting("tracker")) {
-            $when = self::next_position_at();
+    static function clear(Conf $conf) {
+        if ($conf->setting("tracker")) {
+            $when = self::next_position_at($conf);
             $t = ["trackerid" => false, "position_at" => $when, "update_at" => $when];
-            $Conf->save_setting("tracker", 0, (object) $t);
-            self::contact_tracker_comet($Conf);
+            $conf->save_setting("tracker", 0, (object) $t);
+            self::contact_tracker_comet($conf);
         }
-        return null;
     }
 
     static function update(Contact $user, $list, $trackerid, $position) {
@@ -63,7 +60,7 @@ class MeetingTracker {
                 $tracker->position_at = $old_tracker->position_at;
         }
         if (!$tracker->position_at)
-            $tracker->position_at = $tracker->update_at = self::next_position_at();
+            $tracker->position_at = $tracker->update_at = self::next_position_at($user->conf);
         $user->conf->save_setting("tracker", 1, $tracker);
         self::contact_tracker_comet($user->conf);
         return $tracker;
@@ -231,9 +228,8 @@ class MeetingTracker {
             return "off";
     }
 
-    static function trackerstatus_api($user = null, $qreq = null, $prow = null) {
-        global $Conf;
-        $tracker = self::lookup($Conf);
+    static function trackerstatus_api(Contact $user, $qreq = null, $prow = null) {
+        $tracker = self::lookup($user->conf);
         json_exit(["ok" => true,
                    "tracker_status" => self::tracker_status($tracker),
                    "tracker_status_at" => $tracker->position_at]);
@@ -244,7 +240,7 @@ class MeetingTracker {
             json_exit(array("ok" => false));
         // argument: IDENTIFIER LISTNUM [POSITION] -OR- stop
         if ($qreq->track === "stop") {
-            self::clear();
+            self::clear($user->conf);
             return;
         }
         // check tracker_start_at to ignore concurrent updates

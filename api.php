@@ -25,7 +25,7 @@ global $Me;
 if ($_GET["fn"] === "trackerstatus") {
     $Me = false;
     require_once("src/initweb.php");
-    MeetingTracker::trackerstatus_api();
+    MeetingTracker::trackerstatus_api(new Contact(null, $Conf));
     exit;
 }
 
