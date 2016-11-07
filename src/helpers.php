@@ -233,9 +233,9 @@ function selfHref($extra = array(), $options = null) {
     foreach ($extra as $key => $value)
         if ($key != "anchor" && $value !== null)
             $param .= "&$key=" . urlencode($value);
-    if (!isset($_REQUEST["ls"]) && !array_key_exists("ls", $extra)
+    /*if (!isset($_REQUEST["ls"]) && !array_key_exists("ls", $extra)
         && ($list = SessionList::active()))
-        $param .= "&ls=" . $list->listno;
+        $param .= "&ls=" . $list->listno;*/
 
     $param = $param ? substr($param, 1) : "";
     if (!$options || !@$options["site_relative"])
@@ -361,10 +361,16 @@ function decorateNumber($n) {
 
 
 class SessionList {
+    public $listid;
+    public $ids;
+    public $cid;
+    public $description;
+    public $url;
+    public $timestamp;
     static private $active_listid = null;
     static private $active_list = null;
     static private $requested_list = false;
-    static public function decode_ids($ids) {
+    static function decode_ids($ids) {
         if (strpos($ids, "-") === false && ($a = json_decode($ids)) !== null)
             return $a;
         $a = [];
@@ -378,7 +384,7 @@ class SessionList {
                 $a[] = (int) $p;
         return $a;
     }
-    static public function encode_ids($ids) {
+    static function encode_ids($ids) {
         if (count($ids) < 30)
             return json_encode($ids);
         $a = array();
@@ -395,16 +401,36 @@ class SessionList {
             $a[] = ($p0 == $p1 ? $p0 : "$p0-$p1");
         return "[" . join(",", $a) . "]";
     }
+    static function decode_info_string($info) {
+        if (($j = json_decode($info)) && isset($j->ids)) {
+            $list = new SessionList;
+            foreach ($j as $key => $value)
+                $list->$key = $value;
+            if (is_string($list->ids))
+                $list->ids = self::decode_ids($list->ids);
+            return $list;
+        } else
+            return null;
+    }
+    function info_string() {
+        $j = ["ids" => self::encode_ids($this->ids)];
+        foreach (get_object_vars($this) as $k => $v)
+            if ($k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "listno" && $k !== "id_position")
+                $j[$k] = $v;
+        return json_encode($j);
+    }
     static function lookup($idx) {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
         $l = get($lists, $idx);
         if ($l && $l->cid == ($Me ? $Me->contactId : 0)) {
-            $l = clone $l;
-            if (is_string($l->ids))
-                $l->ids = self::decode_ids($l->ids);
-            $l->listno = (int) $idx;
-            return $l;
+            $lx = new SessionList;
+            foreach ($l as $k => $v)
+                $lx->$k = $v;
+            if (is_string($lx->ids))
+                $lx->ids = self::decode_ids($lx->ids);
+            $lx->listno = (int) $idx;
+            return $lx;
         } else
             return null;
     }
@@ -435,10 +461,14 @@ class SessionList {
     }
     static function create($listid, $ids, $description, $url) {
         global $Me, $Now;
-        return (object) array("listid" => $listid, "ids" => $ids,
-                              "description" => $description,
-                              "url" => $url, "timestamp" => $Now,
-                              "cid" => $Me ? $Me->contactId : 0);
+        $lx = new SessionList;
+        $lx->listid = $listid;
+        $lx->ids = $ids;
+        $lx->cid = $Me ? $Me->contactId : 0;
+        $lx->description = $description;
+        $lx->url = $url;
+        $lx->timestamp = $Now;
+        return $lx;
     }
     static private function try_list($opt, $listtype, $sort = null) {
         global $Conf, $Me;
@@ -465,48 +495,58 @@ class SessionList {
             return $x;
         }
     }
-    static public function set_requested($listno) {
+    function set_cookie() {
         global $Now;
-        if ($listno)
-            setcookie("hotcrp_ls", $listno, $Now + 2, Navigation::site_path());
-        else if (isset($_COOKIE["hotcrp_ls"]))
+        if ($this->listno)
+            setcookie("hotcrp_ls", $this->listno, $Now + 2, Navigation::site_path());
+        setcookie("hotlist-info", $this->info_string(), $Now + 2, Navigation::site_path());
+    }
+    static function clear_cookie() {
+        global $Now;
+        if (isset($_COOKIE["hotcrp_ls"]))
             setcookie("hotcrp_ls", "", $Now - 86400, Navigation::site_path());
+        if (isset($_COOKIE["hotlist-info"]))
+            setcookie("hotlist-info", "", $Now - 86400, Navigation::site_path());
     }
-    static public function requested() {
+    static function requested() {
         global $Me;
-        if (self::$requested_list === false) {
-            // look up list ID
-            $listdesc = req("ls");
-            if (isset($_COOKIE["hotcrp_ls"]))
-                $listdesc = $listdesc ? : $_COOKIE["hotcrp_ls"];
+        if (self::$requested_list !== false)
+            return self::$requested_list;
 
-            $list = null;
-            if (($listno = cvtint($listdesc, null))
-                && ($xlist = self::lookup($listno))
-                && (!get($xlist, "cid") || $xlist->cid == ($Me ? $Me->contactId : 0)))
-                $list = $xlist;
+        if (isset($_COOKIE["hotlist-info"])
+            && ($list = self::decode_info_string($_COOKIE["hotlist-info"])))
+            return (self::$requested_list = $list);
 
-            // look up list description
-            if (!$list && $listdesc) {
-                $listtype = "p";
-                if (Navigation::page() === "profile" || Navigation::page() === "users")
-                    $listtype = "u";
-                if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $listdesc, $m))
-                    $list = self::try_list(["t" => $m[1], "q" => urldecode($m[2])],
-                                           "p", $m[3]);
-                if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m))
-                    $list = self::try_list(["t" => $m[1], "q" => $m[2]], "p");
-                if (!$list && preg_match('/\A[a-z]+\z/', $listdesc))
-                    $list = self::try_list(["t" => $listdesc], $listtype);
-                if (!$list)
-                    $list = self::try_list(["q" => $listdesc], $listtype);
-            }
+        // look up list ID
+        $listdesc = req("ls");
+        if (isset($_COOKIE["hotcrp_ls"]))
+            $listdesc = $listdesc ? : $_COOKIE["hotcrp_ls"];
 
-            self::$requested_list = $list;
+        $list = null;
+        if (($listno = cvtint($listdesc, null))
+            && ($xlist = self::lookup($listno))
+            && (!get($xlist, "cid") || $xlist->cid == ($Me ? $Me->contactId : 0)))
+            $list = $xlist;
+
+        // look up list description
+        if (!$list && $listdesc) {
+            $listtype = "p";
+            if (Navigation::page() === "profile" || Navigation::page() === "users")
+                $listtype = "u";
+            if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $listdesc, $m))
+                $list = self::try_list(["t" => $m[1], "q" => urldecode($m[2])],
+                                       "p", $m[3]);
+            if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m))
+                $list = self::try_list(["t" => $m[1], "q" => $m[2]], "p");
+            if (!$list && preg_match('/\A[a-z]+\z/', $listdesc))
+                $list = self::try_list(["t" => $listdesc], $listtype);
+            if (!$list)
+                $list = self::try_list(["q" => $listdesc], $listtype);
         }
-        return self::$requested_list;
+
+        return (self::$requested_list = $list);
     }
-    static public function active($listtype = null, $id = null) {
+    static function active($listtype = null, $id = null) {
         global $Conf, $Me, $Now;
 
         // check current-list cache
@@ -577,38 +617,12 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         . "</a>";
 }
 
-function quicklinks($id, $baseUrl, $args, $listtype) {
-    global $Me, $Conf;
-
-    $list = SessionList::active($listtype, $id);
-    if (!$list)
-        return "";
-
-    $args["ls"] = null;
-    $x = '<td class="quicklinks nw has-hotlist" data-hotlist="' . $list->listno . '">';
-    if ($list->id_position > 0)
-        $x .= _one_quicklink($list->ids[$list->id_position - 1], $baseUrl, $args, $listtype, true);
-    if (@$list->description) {
-        $x .= ($list->id_position > 0 ? "&nbsp;&nbsp;" : "");
-        if (@$list->url)
-            $x .= '<a id="quicklink_list" class="x" href="' . htmlspecialchars(Navigation::siteurl() . $list->url) . "\">" . $list->description . "</a>";
-        else
-            $x .= '<span id="quicklink_list">' . $list->description . '</span>';
-    }
-    if (isset($list->ids[$list->id_position + 1])) {
-        $x .= ($list->id_position > 0 || @$list->description ? "&nbsp;&nbsp;" : "");
-        $x .= _one_quicklink($list->ids[$list->id_position + 1], $baseUrl, $args, $listtype, false);
-    }
-    return $x . '</td>';
-}
-
 function goPaperForm($baseUrl = null, $args = array()) {
     global $Conf, $Me;
     if ($Me->is_empty())
         return "";
     $list = SessionList::active();
-    $x = Ht::form_div(hoturl($baseUrl ? : "paper", array("ls" => null)),
-                      array("method" => "get", "class" => "gopaper" . ($list ? " has-hotlist" : ""), "data-hotlist" => $list ? $list->listno : null));
+    $x = Ht::form_div(hoturl($baseUrl ? : "paper", ["ls" => null]), ["method" => "get", "class" => "gopaper"]);
     if ($baseUrl == "profile")
         $x .= Ht::entry("u", "", array("id" => "quicksearchq", "size" => 10, "placeholder" => "(User)", "class" => "need-autogrow"));
     else
@@ -927,23 +941,32 @@ function actionBar($mode = null, $prow = null) {
     } else if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
         $xmode["m"] = $wantmode;
 
-    $quicklinks_txt = "";
-    if ($prow) {
-        $id = ($listtype === "u" ? $prow->contactId : $prow->paperId);
-        $quicklinks_txt = quicklinks($id, $goBase, $xmode, $listtype);
-    }
-
-    // collect actions
     $x = '<table class="vbar"><tr>';
 
-    if ($quicklinks_txt)
-        $x .= $quicklinks_txt;
-    if ($quicklinks_txt && $Me->privChair && $listtype == "p")
-        $x .= "  <td id=\"trackerconnect\" class=\"nb\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"tbtn need-tooltip\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
+    // quicklinks
+    if ($prow
+        && ($list = SessionList::active($listtype, $listtype === "u" ? $prow->contactId : $prow->paperId))) {
+        $x .= '<td class="quicklinks nw">';
+        if ($list->id_position > 0)
+            $x .= _one_quicklink($list->ids[$list->id_position - 1], $goBase, $xmode, $listtype, true);
+        if ($list->description) {
+            $x .= ($list->id_position > 0 ? "&nbsp;&nbsp;" : "");
+            if ($list->url)
+                $x .= '<a id="quicklink_list" class="x" href="' . htmlspecialchars(Navigation::siteurl() . $list->url) . "\">" . $list->description . "</a>";
+            else
+                $x .= '<span id="quicklink_list">' . $list->description . '</span>';
+        }
+        if (isset($list->ids[$list->id_position + 1])) {
+            $x .= ($list->id_position > 0 || $list->description ? "&nbsp;&nbsp;" : "");
+            $x .= _one_quicklink($list->ids[$list->id_position + 1], $goBase, $xmode, $listtype, false);
+        }
+        $x .= '</td>';
 
-    $x .= "  <td class='gopaper nb'>" . goPaperForm($goBase, $xmode) . "</td>\n";
+        if ($Me->privChair && $listtype == "p")
+            $x .= "  <td id=\"trackerconnect\" class=\"nb\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"tbtn need-tooltip\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
+    }
 
-    return $x . "</tr></table>";
+    return $x . '<td class="gopaper nb">' . goPaperForm($goBase, $xmode) . "</td></tr></table>";
 }
 
 function parseReviewOrdinal($text) {

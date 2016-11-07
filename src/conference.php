@@ -2525,7 +2525,7 @@ class Conf {
         global $Me, $ConfSitePATH;
         // load session list and clear its cookie
         $list = SessionList::active();
-        SessionList::set_requested(0);
+        SessionList::clear_cookie();
 
         echo "<!DOCTYPE html>
 <html lang=\"en\">
@@ -2588,7 +2588,7 @@ class Conf {
         if (session_id() !== "")
             Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
         if ($list)
-            Ht::stash_script("hotcrp_list=" . json_encode(["num" => $list->listno, "id" => $list->listid]) . ";");
+            Ht::stash_script("hotcrp_list=" . json_encode(["num" => $list->listno, "id" => $list->listid, "info" => $list->info_string()]) . ";");
         if (($urldefaults = hoturl_defaults()))
             Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults) . ";");
         Ht::stash_script("assetsurl=" . json_encode($this->opt["assetsUrl"]) . ";");
@@ -2649,8 +2649,12 @@ class Conf {
         echo "<body";
         if ($id)
             echo ' id="', $id, '"';
-        if ($body_class)
-            echo ' class="', $body_class, '"';
+        if ($id === "paper_view" || $id === "paper_edit" || $id === "review" || $id === "assign") {
+            echo ' class="paper';
+            if (($list = SessionList::active()))
+                echo ' has-hotlist" data-hotlist="', $list->listno, '" data-hotlist-info="', htmlspecialchars($list->info_string());
+            echo '"';
+        }
         echo ">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)

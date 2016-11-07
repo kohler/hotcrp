@@ -13,9 +13,8 @@ if ($Me->is_empty())
 // header
 function exit_to_paper() {
     global $prow;
-    go(hoturl("paper", array("p" => $prow ? $prow->paperId : req("p"),
-                             "c" => req("c"), "response" => req("response"),
-                             "ls" => req("ls"))));
+    go(hoturl("paper", ["p" => $prow ? $prow->paperId : req("p"),
+                        "c" => req("c"), "response" => req("response")]));
 }
 
 

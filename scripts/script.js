@@ -1376,7 +1376,7 @@ var tracker_map = [["is_manager", "Administrator"],
                    ["is_conflict", "Conflict"]];
 
 function tracker_paper_columns(idx, paper) {
-    var url = hoturl("paper", {p: paper.pid, ls: dl.tracker.listid}), x = [];
+    var url = hoturl("paper", {p: paper.pid}), x = [];
     var t = '<td class="trackerdesc">';
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     t += '</td><td class="trackerpid">';
@@ -1442,7 +1442,7 @@ function tracker_html(mytracker) {
 function display_tracker() {
     var mne = $$("tracker"), mnspace = $$("trackerspace"),
         mytracker = is_my_tracker(),
-        body, t, i, e, now = now_msec();
+        body, t, tt, i, e, now = now_msec();
 
     // tracker button
     if ((e = $$("trackerconnectbtn"))) {
@@ -1492,7 +1492,10 @@ function display_tracker() {
             mne.className = "nomatch";
         else
             mne.className = "match";
-        mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
+        tt = '<div class="trackerholder';
+        if (dl.tracker && dl.tracker.listid)
+            tt += ' has-hotlist" data-hotlist="' + dl.tracker.listid;
+        mne.innerHTML = tt + '">' + t + '</div>';
         $(mne).find(".need-tooltip").each(add_tooltip);
         if (tracker_has_format)
             render_text.on_page();
@@ -1512,8 +1515,9 @@ function tracker(start) {
             clearInterval(tracker_refresher);
             tracker_refresher = null;
         }
+        return false;
     }
-    if (!wstorage() || start < 0)
+    if (!wstorage())
         return false;
     trackerstate = tracker_window_state();
     if (start && (!trackerstate || trackerstate[0] != siteurl))
@@ -1521,14 +1525,13 @@ function tracker(start) {
     else if (trackerstate && trackerstate[0] != siteurl)
         trackerstate = null;
     if (trackerstate) {
-        var list = "";
-        if (hotcrp_list && /^p\//.test(hotcrp_list.id))
-            list = hotcrp_list.num || hotcrp_list.id;
-        var req = trackerstate[1] + "%20" + encodeURIComponent(list);
+        var req = trackerstate[1] + "%20x";
         if (hotcrp_paperid)
             req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
         if (trackerstate[2])
             req += "&tracker_start_at=" + trackerstate[2];
+        if (hotcrp_list && hotcrp_list.info)
+            req += "&hotlist-info=" + encodeURIComponent(hotcrp_list.info);
         $.ajax(hoturl_post("api", "fn=track&track=" + req), {success: load_success});
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker, 25000);
@@ -5312,15 +5315,15 @@ $(function () {
 
 // list management, conflict management
 (function ($) {
-var cookie_set;
-function set_cookie(ls) {
-    if (ls && ls !== "0" && !cookie_set) {
-        var p = "", m;
-        if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
-            p = "; path=" + m[1];
+function set_cookie(ls, info) {
+    var p = "", m;
+    if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
+        p = "; path=" + m[1];
+    if (info)
+        document.cookie = "hotlist-info=" + encodeURIComponent(info) + "; max-age=2" + p;
+    else if (ls && ls !== "0")
         document.cookie = "hotcrp_ls=" + ls + "; max-age=2" + p;
-        cookie_set = true;
-    }
+    set_cookie = function () {};
 }
 function is_paper_site(href) {
     return /^(?:paper|review)(?:|\.php)\//.test(href.substring(siteurl.length));
@@ -5330,13 +5333,12 @@ function add_list() {
         href = this.getAttribute(this.tagName === "FORM" ? "action" : "href");
     if (href && href.substring(0, siteurl.length) === siteurl
         && is_paper_site(href)
-        && ($hl = $self.closest(".has-hotlist")).length
-        && (ls = $hl.attr("data-hotlist")))
-        set_cookie(ls);
+        && ($hl = $self.closest(".has-hotlist")).length)
+        set_cookie($hl.attr("data-hotlist"), $hl.attr("data-hotlist-info"));
     return true;
 }
 function unload_list() {
-    hotcrp_list && hotcrp_list.num && set_cookie(hotcrp_list.num);
+    hotcrp_list && set_cookie(hotcrp_list.num, hotcrp_list.info);
 }
 function row_click(e) {
     var j = $(e.target);

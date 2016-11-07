@@ -367,15 +367,6 @@ class PaperList {
     }
 
     // content downloaders
-    function sessionMatchPreg($name) {
-        if (isset($this->qreq->ls)
-            && ($l = SessionList::lookup($this->qreq->ls))
-            && ($x = get($l->matchPreg, $name)))
-            return $x;
-        else
-            return "";
-    }
-
     static function wrapChairConflict($text) {
         return '<span class="fn5"><em>Hidden for conflict</em> <span class="barsep">·</span> <a href="#">Override conflicts</a></span><span class="fx5">' . $text . "</span>";
     }
@@ -1412,8 +1403,16 @@ class PaperList {
             $enter .= "\" data-order-tag=\"{$this->search->is_order_anno}";
         foreach ($this->tbody_attr as $k => $v)
             $enter .= "\" $k=\"" . htmlspecialchars($v);
-        if ($listNumber)
-            $enter .= '" data-hotlist="' . $listNumber;
+        if ($listNumber) {
+            $listobject = $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
+            if (isset($this->qreq->sort))
+                $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);
+            $listobject->url = $url;
+            foreach (get($options, "list_properties", []) as $k => $v)
+                $listobject->$k = $v;
+            SessionList::change($listNumber, $listobject);
+            $enter .= '" data-hotlist="' . $listNumber . '" data-hotlist-info="' . htmlspecialchars($listobject->info_string());
+        }
         $enter .= "\" data-fold=\"true\">\n";
         $exit = "</table>";
 
@@ -1447,18 +1446,6 @@ class PaperList {
         // header scripts to set up delegations
         if ($this->_header_script)
             $enter .= '  <script>' . $this->_header_script . "</script>\n";
-
-        // session variable to remember the list
-        if ($listNumber) {
-            $sl = $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
-            if (isset($this->qreq->sort))
-                $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);
-            $sl->url = $url;
-            if (get($options, "list_properties"))
-                foreach ($options["list_properties"] as $k => $v)
-                    $sl->$k = $v;
-            SessionList::change($listNumber, $sl);
-        }
 
         foreach ($fieldDef as $fdef)
             if ($fdef->has_content && !isset($this->any[$fdef->name]))

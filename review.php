@@ -187,7 +187,6 @@ if (isset($_REQUEST["deletereview"]) && check_post()
             unset($_REQUEST["reviewId"], $_GET["reviewId"], $_POST["reviewId"]);
             unset($_REQUEST["r"], $_GET["r"], $_POST["r"]);
             $_REQUEST["paperId"] = $_GET["paperId"] = $paperTable->editrrow->paperId;
-            SessionList::set_requested(req("ls"));
             go(hoturl("paper", ["p" => $_GET["paperId"]]));
         }
         redirectSelf();         // normally does not return
@@ -348,7 +347,7 @@ $editAny = $Me->can_review($prow, null);
 if (!$viewAny && !$editAny) {
     if (($whyNotPaper = $Me->perm_view_paper($prow)))
         errorMsgExit(whyNotText($whyNotPaper, "view", true));
-    if (req("reviewId") === null && req("ls") === null) {
+    if (req("reviewId") === null) {
         Conf::msg_error("You can’t see the reviews for this paper. "
                         . whyNotText($Me->perm_view_review($prow, null, null), "review"));
         go(hoturl("paper", "p=$prow->paperId"));
@@ -358,10 +357,8 @@ if (!$viewAny && !$editAny) {
 
 // mode
 $paperTable->fixReviewMode();
-if ($paperTable->mode == "edit") {
-    SessionList::set_requested(req("ls"));
+if ($paperTable->mode == "edit")
     go(hoturl("paper", ["p" => $prow->paperId]));
-}
 
 
 // paper table

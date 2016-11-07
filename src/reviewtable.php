@@ -277,8 +277,6 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         $t = "<div class=\"reviewersdiv\"><table class=\"reviewers";
         if ($score_header_text)
             $t .= " reviewers_scores";
-        if (($list = SessionList::active()))
-            $t .= " has-hotlist\" data-hotlist=\"" . $list->listno;
         $t .= "\">\n";
         if ($score_header_text) {
             $t .= '<tr><td class="empty" colspan="2"></td>';
@@ -471,10 +469,5 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
         $t = '<p class="xd">' . $conf->_('You are an <span class="author">author</span> of this submission.') . '</p>' . $t;
     else if ($prow->has_conflict($Me))
         $t = '<p class="xd">' . $conf->_('You have a <span class="conflict">conflict</span> with this submission.') . '</p>' . $t;
-
-    if (($list = SessionList::active()) && ($pret || $t))
-        return '<div class="has-hotlist" data-hotlist="' . $list->listno . '">'
-            . $pret . $t . '</div>';
-    else
-        return $pret . $t;
+    return $pret . $t;
 }

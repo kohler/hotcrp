@@ -141,10 +141,7 @@ class PaperTable {
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
 
-        $t = '<div id="header_page" class="header_page_submission';
-        if ($prow && $paperTable && ($list = SessionList::active()))
-            $t .= ' has-hotlist" data-hotlist="' . $list->listno;
-        $t .= '"><div id="header_page_submission_inner"><h1 class="paptitle';
+        $t = '<div id="header_page" class="header_page_submission"><div id="header_page_submission_inner"><h1 class="paptitle';
 
         if (!$paperTable && !$prow) {
             if (($pid = req("paperId")) && ctype_digit($pid))
@@ -2299,8 +2296,7 @@ class PaperTable {
         // if a complex request, or a form upload, don't search
         foreach ($_REQUEST as $k => $v)
             if ($k !== "p" && $k !== "paperId" && $k !== "m" && $k !== "mode"
-                && $k !== "forceShow" && $k !== "go" && $k !== "actas"
-                && $k !== "ls" && $k !== "t"
+                && $k !== "forceShow" && $k !== "go" && $k !== "actas" && $k !== "t"
                 && !isset($_COOKIE[$k]))
                 return false;
 
@@ -2348,7 +2344,7 @@ class PaperTable {
                 SessionList::change($pl->listno, $pl);
             }
             unset($_REQUEST["ls"], $_GET["ls"], $_POST["ls"]);
-            SessionList::set_requested($pl->listno);
+            $pl->set_cookie();
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
             return true;

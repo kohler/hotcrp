@@ -36,7 +36,7 @@ function loadRows() {
         errorMsgExit(whyNotText($whyNot, "view", true));
     if (($whyNot = $Me->perm_request_review($prow, false))) {
         $wnt = whyNotText($whyNot, "request reviews for");
-        error_go(hoturl("paper", array("p" => $prow->paperId, "ls" => req("ls"))), $wnt);
+        error_go(hoturl("paper", ["p" => $prow->paperId]), $wnt);
     }
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
 }

@@ -38,8 +38,8 @@ class MeetingTracker {
         return null;
     }
 
-    static function update($list, $trackerid, $position) {
-        global $Conf, $Me, $Now;
+    static function update(Contact $user, $list, $trackerid, $position) {
+        global $Now;
         assert($list && str_starts_with($list->listid, "p/"));
         ensure_session();
         if (preg_match('/\A[1-9][0-9]*\z/', $trackerid))
@@ -52,10 +52,10 @@ class MeetingTracker {
                                   "start_at" => $Now,
                                   "position_at" => 0,
                                   "update_at" => $Now,
-                                  "owner" => $Me->contactId,
+                                  "owner" => $user->contactId,
                                   "sessionid" => session_id(),
                                   "position" => $position);
-        $old_tracker = self::lookup($Conf);
+        $old_tracker = self::lookup($user->conf);
         if ($old_tracker->trackerid == $tracker->trackerid) {
             $tracker->start_at = $old_tracker->start_at;
             if ($old_tracker->listid == $tracker->listid
@@ -64,8 +64,8 @@ class MeetingTracker {
         }
         if (!$tracker->position_at)
             $tracker->position_at = $tracker->update_at = self::next_position_at();
-        $Conf->save_setting("tracker", 1, $tracker);
-        self::contact_tracker_comet($Conf);
+        $user->conf->save_setting("tracker", 1, $tracker);
+        self::contact_tracker_comet($user->conf);
         return $tracker;
     }
 
@@ -248,23 +248,26 @@ class MeetingTracker {
             return;
         }
         // check tracker_start_at to ignore concurrent updates
-        if (($start_at = $qreq->tracker_start_at)
-            && ($tracker = self::lookup($user->conf))) {
+        $tracker = self::lookup($user->conf);
+        if ($tracker && $qreq->tracker_start_at) {
             $time = $tracker->position_at;
             if (isset($tracker->start_at))
                 $time = $tracker->start_at;
-            if ($time > $start_at)
+            if ($time > $qreq->tracker_start_at)
                 return;
         }
         // actually track
         $args = preg_split('/\s+/', $qreq->track);
-        if (count($args) >= 2
-            && ($xlist = SessionList::lookup($args[1]))
-            && str_starts_with($xlist->listid, "p/")) {
+        $xlist = null;
+        if ($qreq["hotlist-info"])
+            $xlist = SessionList::decode_info_string($qreq["hotlist-info"]);
+        else if (count($args) >= 2) // XXX backwards compatibility
+            $xlist = SessionList::lookup($args[1]);
+        if ($xlist && str_starts_with($xlist->listid, "p/")) {
             $position = null;
             if (count($args) >= 3 && ctype_digit($args[2]))
                 $position = array_search((int) $args[2], $xlist->ids);
-            self::update($xlist, $args[0], $position);
+            self::update($user, $xlist, $args[0], $position);
         }
     }
 }
