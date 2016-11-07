@@ -181,15 +181,10 @@ class PaperInfo {
 
     private function merge($p, $contact, $conf) {
         global $Conf;
-        if ($contact && !($contact instanceof Contact))
-            error_log("Bad PaperInfo::fetch: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        if ($contact && $contact instanceof Contact)
+        assert($contact === null ? $conf !== null : $contact instanceof Contact);
+        if ($contact)
             $conf = $contact->conf;
-        else if (!$conf) {
-            error_log("Bad PaperInfo::fetch: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            $conf = $Conf;
-        }
-        $this->conf = $conf;
+        $this->conf = $conf ? : $Conf;
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
@@ -396,7 +391,7 @@ class PaperInfo {
     }
 
     public function load_tags() {
-        $result = $this->conf->qe_raw("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=$this->paperId group by paperId");
+        $result = $this->conf->qe("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=? group by paperId", $this->paperId);
         $this->paperTags = "";
         if (($row = edb_row($result)) && $row[0] !== null)
             $this->paperTags = $row[0];
