@@ -1366,8 +1366,7 @@ function tracker_window_state() {
 
 function is_my_tracker() {
     var ts;
-    return dl.tracker && (ts = tracker_window_state())
-        && dl.tracker.trackerid == ts[1];
+    return dl.tracker && (ts = tracker_window_state()) && dl.tracker.trackerid == ts[1];
 }
 
 var tracker_map = [["is_manager", "Administrator"],
@@ -1495,6 +1494,8 @@ function display_tracker() {
         tt = '<div class="trackerholder';
         if (dl.tracker && dl.tracker.listid)
             tt += ' has-hotlist" data-hotlist="' + dl.tracker.listid;
+        if (dl.tracker && dl.tracker.listinfo)
+            tt += '" data-hotlist-info="' + escape_entities(dl.tracker.listinfo);
         mne.innerHTML = tt + '">' + t + '</div>';
         $(mne).find(".need-tooltip").each(add_tooltip);
         if (tracker_has_format)
@@ -1520,10 +1521,10 @@ function tracker(start) {
     if (!wstorage())
         return false;
     trackerstate = tracker_window_state();
-    if (start && (!trackerstate || trackerstate[0] != siteurl))
-        trackerstate = [siteurl, Math.floor(Math.random() * 100000)];
-    else if (trackerstate && trackerstate[0] != siteurl)
+    if (trackerstate && trackerstate[0] != siteurl_absolute_base)
         trackerstate = null;
+    if (start && (!trackerstate || !is_my_tracker()))
+        trackerstate = [siteurl_absolute_base, Math.floor(Math.random() * 100000)];
     if (trackerstate) {
         var req = trackerstate[1] + "%20x";
         if (hotcrp_paperid)

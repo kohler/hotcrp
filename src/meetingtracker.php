@@ -212,6 +212,8 @@ class MeetingTracker {
                                  "position_at" => $tracker->position_at,
                                  "url" => $tracker->url,
                                  "calculated_at" => $Now);
+        if ($acct->privChair)
+            $status->listinfo = json_encode(["listid" => $tracker->listid, "ids" => SessionList::encode_ids($tracker->ids), "description" => $tracker->description, "url" => $tracker->url]);
         if ($acct->conf->opt("trackerHideConflicts"))
             $status->hide_conflicts = true;
         if ($status->position !== false)

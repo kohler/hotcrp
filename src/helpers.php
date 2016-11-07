@@ -399,7 +399,7 @@ class SessionList {
         }
         if ($p0 > 0)
             $a[] = ($p0 == $p1 ? $p0 : "$p0-$p1");
-        return "[" . join(",", $a) . "]";
+        return join(" ", $a);
     }
     static function decode_info_string($info) {
         if (($j = json_decode($info)) && isset($j->ids)) {
