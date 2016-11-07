@@ -1309,6 +1309,7 @@ Assigner::register("externalreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL
 Assigner::register("review", new ReviewAssigner(0, null, -1, ""));
 Assigner::register("clearreview", new ReviewAssigner(0, null, 0, ""));
 Assigner::register("noreview", new ReviewAssigner(0, null, 0, ""));
+Assigner::register("unassignreview", new ReviewAssigner(0, null, 0, ""));
 Assigner::register("unsubmitreview", new UnsubmitReviewAssigner(0, null));
 Assigner::register("lead", new LeadAssigner("lead", 0, null, true));
 Assigner::register("nolead", new LeadAssigner("lead", 0, null, false));
