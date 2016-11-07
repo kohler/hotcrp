@@ -321,12 +321,13 @@ class Search_DisplayOptions {
         $checked = display_option_checked($type);
         if (!isset($options["onchange"]))
             $options["onchange"] = "plinfo('$type',this)";
-        $x = '<table><tr><td class="nw"';
+        $x = '<div class="hangcheck"';
         if (get($options, "indent"))
             $x .= ' style="padding-left:2em"';
         unset($options["indent"]);
-        $x .= '>' . Ht::checkbox("show$type", 1, $checked, $options)
-            . '&nbsp;</td><td>' . Ht::label($title) . '</td></tr></table>';
+        $options["class"] = "hangcheck-ctrl";
+        $x .= '><span class="hangcheck-item">' . Ht::checkbox("show$type", 1, $checked, $options)
+            . '&nbsp;</span>' . Ht::label($title) . '</div>';
         $this->item($column, $x);
     }
 }

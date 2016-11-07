@@ -450,6 +450,21 @@ span.hastitle {
  	display: none;
 }
 
+/* checkboxes */
+.hangcheck {
+	margin: 2px 0 2px 1.5em;
+}
+.hangcheck-item {
+	display: inline-block;
+	margin-left: -1.3em;
+	width: 1.3em;
+	text-align: left;
+	white-space: nowrap;
+}
+.hangcheck-ctrl {
+	margin: 0;
+}
+
 /* topics */
 .topic-2, .topic-1 {
 	color: gray;
