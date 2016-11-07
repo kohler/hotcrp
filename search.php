@@ -432,8 +432,8 @@ if ($pl) {
 }
 
 
-echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas'>
-<tr><td><div class='tlx'><div class='tld1'>";
+echo '<div id="searchform" class="tablinks', $activetab, ' fold3', $searchform_formulas, ' clearfix">',
+    '<div class="tlx"><div class="tld1">';
 
 // Basic search
 echo Ht::form_div(hoturl("search"), array("method" => "get")),
@@ -444,7 +444,7 @@ echo Ht::form_div(hoturl("search"), array("method" => "get")),
     Ht::submit("Search"),
     "</div></form>";
 
-echo "</div><div class='tld2'>";
+echo '</div><div class="tld2">';
 
 // Advanced search
 echo Ht::form_div(hoturl("search"), array("method" => "get")),
@@ -475,9 +475,7 @@ if ($Me->isPC) {
     $qtOpt["re"] = "Reviewers";
     $qtOpt["tag"] = "Tags";
 }
-if (!isset($qtOpt[(string) $Qreq->qt]))
-    $_REQUEST["qt"] = $_GET["qt"] = $Qreq->qt = "n";
-echo Ht::select("qt", $qtOpt, $Qreq->qt, array("tabindex" => 1)),
+echo Ht::select("qt", $qtOpt, $Qreq->get("qt", "n"), array("tabindex" => 1)),
     "</td>
   <td></td>
 </tr>
@@ -666,15 +664,14 @@ would display the sum of a paper&rsquo;s Overall merit scores.
 echo "</div>";
 
 // Tab selectors
-echo "</td></tr>
-<tr><td class='tllx'><table><tr>
-  <td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => "basic")), "\">Search</a></div></td>
+echo '<div class="tllx"><table><tr>',
+  "<td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => null)), "\">Search</a></div></td>
   <td><div class='tll2'><a class='tla nw' onclick='return crpfocus(\"searchform\", 2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
 if ($ss)
     echo "  <td><div class='tll4'><a class='tla nw' onclick='fold(\"searchform\",1,4);return crpfocus(\"searchform\",4)' href=\"", selfHref(array("tab" => "ss")), "\">Saved searches</a></div></td>\n";
 if ($pl && $pl->count > 0)
     echo "  <td><div class='tll3'><a class='tla nw' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
-echo "</tr></table></td></tr>\n</table>\n\n";
+echo "</tr></table></div></div>\n\n";
 if ($pl && $pl->count > 0)
     echo Ht::unstash_script("crpfocus(\"searchform\",$activetab,1)");
 else

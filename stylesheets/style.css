@@ -422,6 +422,10 @@ span.hastitle {
 #contactsform .tld2 {
 	font-size: smaller;
 }
+#searchform {
+	display: table;
+	min-width: 50%;
+}
 
 
 /* Line links, as in bottom of search table */
