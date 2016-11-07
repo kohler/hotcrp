@@ -585,7 +585,7 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
         return "";
 
     $args["ls"] = null;
-    $x = '<td class="quicklinks nw has_hotcrp_list" data-hotcrp-list="' . $list->listno . '">';
+    $x = '<td class="quicklinks nw has-hotlist" data-hotlist="' . $list->listno . '">';
     if ($list->id_position > 0)
         $x .= _one_quicklink($list->ids[$list->id_position - 1], $baseUrl, $args, $listtype, true);
     if (@$list->description) {
@@ -608,7 +608,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
         return "";
     $list = SessionList::active();
     $x = Ht::form_div(hoturl($baseUrl ? : "paper", array("ls" => null)),
-                      array("method" => "get", "class" => "gopaper" . ($list ? " has_hotcrp_list" : ""), "data-hotcrp-list" => $list ? $list->listno : null));
+                      array("method" => "get", "class" => "gopaper" . ($list ? " has-hotlist" : ""), "data-hotlist" => $list ? $list->listno : null));
     if ($baseUrl == "profile")
         $x .= Ht::entry("u", "", array("id" => "quicksearchq", "size" => 10, "placeholder" => "(User)", "class" => "need-autogrow"));
     else

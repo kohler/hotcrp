@@ -1400,7 +1400,7 @@ class PaperList {
         if (get($options, "list"))
             $listNumber = SessionList::allocate($this->search->listId($this->sortdef()));
         if ($listNumber)
-            $enter .= " has_hotcrp_list";
+            $enter .= " has-hotlist";
         if (!empty($foldclasses))
             $enter .= " " . join(" ", $foldclasses);
         if ($this->_table_id)
@@ -1413,7 +1413,7 @@ class PaperList {
         foreach ($this->tbody_attr as $k => $v)
             $enter .= "\" $k=\"" . htmlspecialchars($v);
         if ($listNumber)
-            $enter .= '" data-hotcrp-list="' . $listNumber;
+            $enter .= '" data-hotlist="' . $listNumber;
         $enter .= "\" data-fold=\"true\">\n";
         $exit = "</table>";
 

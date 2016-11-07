@@ -143,7 +143,7 @@ class PaperTable {
 
         $t = '<div id="header_page" class="header_page_submission';
         if ($prow && $paperTable && ($list = SessionList::active()))
-            $t .= ' has_hotcrp_list" data-hotcrp-list="' . $list->listno;
+            $t .= ' has-hotlist" data-hotlist="' . $list->listno;
         $t .= '"><div id="header_page_submission_inner"><h1 class="paptitle';
 
         if (!$paperTable && !$prow) {

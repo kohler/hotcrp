@@ -5330,8 +5330,8 @@ function add_list() {
         href = this.getAttribute(this.tagName === "FORM" ? "action" : "href");
     if (href && href.substring(0, siteurl.length) === siteurl
         && is_paper_site(href)
-        && ($hl = $self.closest(".has_hotcrp_list")).length
-        && (ls = $hl.attr("data-hotcrp-list")))
+        && ($hl = $self.closest(".has-hotlist")).length
+        && (ls = $hl.attr("data-hotlist")))
         set_cookie(ls);
     return true;
 }

@@ -366,7 +366,7 @@ class ContactList {
             if ($this->limit == "auuns" || $this->limit == "all")
                 $ls = "p/all/";
             $ls = htmlspecialchars($ls . urlencode("au:" . $row->email));
-            return '<div class="has_hotcrp_list" data-hotcrp-list="' . $ls . '">'
+            return '<div class="has-hotlist" data-hotlist="' . $ls . '">'
                 . join(", ", $x) . '</div>';
         case self::FIELD_REVIEW_PAPERS:
             if (!$row->paperIds)
@@ -386,7 +386,7 @@ class ContactList {
             }
             ksort($m, SORT_NUMERIC);
             $ls = htmlspecialchars("p/s/" . urlencode("re:" . $row->email));
-            return '<div class="has_hotcrp_list" data-hotcrp-list="' . $ls . '">'
+            return '<div class="has-hotlist" data-hotlist="' . $ls . '">'
                 . join(", ", $m) . '</div>';
         case self::FIELD_TAGS:
             if ($this->contact->isPC

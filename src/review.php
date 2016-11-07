@@ -1463,7 +1463,7 @@ $blind\n";
             }
         $t = str_replace("|", "", $pl) . commajoin($a);
         if (count($pids) > 1)
-            $t = '<span class="has_hotcrp_list" data-hotcrp-list="p/s/' . join("+", $pids) . '">' . $t . '</span>';
+            $t = '<span class="has-hotlist" data-hotlist="p/s/' . join("+", $pids) . '">' . $t . '</span>';
         return $t;
     }
 
