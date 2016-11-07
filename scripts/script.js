@@ -5590,13 +5590,14 @@ function setup_canvas(canvas, w, h) {
             || ctx.msBackingStorePixelRatio
             || ctx.oBackingStorePixelRatio
             || ctx.backingStorePixelRatio || 1,
-        r = dpr / bspr;
-    canvas.width = w * r;
-    canvas.height = h * r;
+        r = dpr / bspr,
+        nw = Math.ceil(w * r), nh = Math.ceil(h * r);
+    canvas.width = nw;
+    canvas.height = nh;
     if (dpr !== bspr) {
         canvas.style.width = w + "px";
         canvas.style.height = h + "px";
-        ctx.scale(r, r);
+        ctx.scale(nw / w, nh / h);
     }
     return ctx;
 }
