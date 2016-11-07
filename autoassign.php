@@ -412,15 +412,20 @@ if (isset($Qreq->assign) && isset($Qreq->a)
 }
 
 
-function doRadio($name, $value, $text, $extra = null) {
-    global $Qreq;
+function echo_radio_row($name, $value, $text, $extra = null) {
+    global $Error, $Qreq;
     if (($checked = (!isset($Qreq[$name]) || $Qreq[$name] === $value)))
         $Qreq[$name] = $value;
     $extra = ($extra ? $extra : array());
     $extra["id"] = "${name}_$value";
-    echo Ht::radio($name, $value, $checked, $extra), "&nbsp;";
+    echo '<tr class="has-radio-focus',
+        isset($Error[$value]) ? " error" : "",
+        '"><td class="nw">',
+        Ht::radio($name, $value, $checked, $extra), "&nbsp;</td><td>";
     if ($text !== "")
         echo Ht::label($text, "${name}_$value");
+    if (!get($extra, "open"))
+        echo "</td></tr>\n";
 }
 
 function doSelect($name, $opts, $extra = null) {
@@ -488,85 +493,87 @@ echo "</div>\n";
 
 
 // action
-echo '<div class="aahc">';
+echo '<div>';
 echo divClass("ass"), "<h3>Action</h3>", "</div>";
-echo divClass("rev", "hotradiorelation");
-doRadio("a", "rev", "Ensure each selected paper has <i>at least</i>");
+echo '<table>';
+echo_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revct", get($Qreq, "revct", 1),
               array("size" => 3, "onfocus" => 'autosub(false,this)')), "&nbsp; ";
 doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
-echo "&nbsp; review(s)</div>\n";
+echo "&nbsp; review(s)</td></tr>\n";
 
-echo divClass("revadd", "hotradiorelation");
-doRadio("a", "revadd", "Assign");
+echo_radio_row("a", "revadd", "Assign", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revaddct", get($Qreq, "revaddct", 1),
               array("size" => 3, "onfocus" => 'autosub(false,this)')),
     "&nbsp; <i>additional</i>&nbsp; ";
 doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
-echo "&nbsp; review(s) per selected paper</div>\n";
+echo "&nbsp; review(s) per selected paper</td></tr>\n";
 
-echo divClass("revpc", "hotradiorelation");
-doRadio("a", "revpc", "Assign each PC member");
+echo_radio_row("a", "revpc", "Assign each PC member", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revpcct", get($Qreq, "revpcct", 1),
               array("size" => 3, "onfocus" => 'autosub(false,this)')),
     "&nbsp; additional&nbsp; ";
 doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
-echo "&nbsp; review(s) from this paper selection</div>\n";
+echo "&nbsp; review(s) from this paper selection</td></tr>\n";
 
 // Review round
 $rev_rounds = $Conf->round_selector_options();
-if (count($rev_rounds) > 1) {
-    echo divClass("rev_round"),
-        '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_round" disabled="disabled" />&nbsp;',
-        '<span style="font-size:smaller">Review round:&nbsp; ',
-        Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed"),
-        '</span></div>';
-} else if (!get($rev_rounds, "unnamed"))
-    echo divClass("rev_round"), Ht::hidden("rev_round", $Conf->assignment_round_name(false)),
-        '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_round" disabled="disabled" />&nbsp;',
-        '<span style="font-size:smaller">Review round: ',
-        ($Qreq->rev_round ? : "unnamed"), '</span></div>';
-echo "<div class='g'></div>\n";
+if (count($rev_rounds) > 1 || !get($rev_rounds, "unnamed")) {
+    echo '<tr><td></td><td';
+    if (isset($Error["rev_round"]))
+        echo ' class="error"';
+    echo ' style="font-size:smaller">Review round: ';
+    if (count($rev_rounds) > 1)
+        echo '&nbsp;', Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed");
+    else
+        echo $Qreq->rev_round ? : "unnamed";
+    echo "</td></tr>\n";
+}
 
-echo divClass("prefconflict", "hotradiorelation");
-doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
-echo "</div>\n";
+// gap
+echo '<tr><td colspan="2" class="mg"></td></tr>';
 
-echo divClass("lead", "hotradiorelation");
-doRadio('a', 'lead', 'Assign discussion lead from reviewers, preferring&nbsp; ');
+// conflicts, leads, shepherds
+echo_radio_row("a", "prefconflict", "Assign conflicts when PC members have review preferences of &minus;100 or less");
+
+echo_radio_row("a", "lead", "Assign discussion lead from reviewers, preferring&nbsp; ", ["open" => true]);
 doSelect('leadscore', $scoreselector);
-echo "</div>\n";
+echo "</td></tr>\n";
 
-echo divClass("shepherd", "hotradiorelation");
-doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring&nbsp; ');
+echo_radio_row("a", "shepherd", "Assign shepherd from reviewers, preferring&nbsp; ", ["open" => true]);
 doSelect('shepherdscore', $scoreselector);
-echo "</div>\n";
+echo "</td></tr>\n";
 
-echo "<div class='g'></div>", divClass("clear", "hotradiorelation");
-doRadio('a', 'clear', 'Clear all &nbsp;');
+// gap
+echo '<tr><td colspan="2" class="mg"></td></tr>';
+
+// clear assignments
+echo_radio_row("a", "clear", "Clear all &nbsp;", ["open" => true]);
 doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"));
-echo " &nbsp;assignments for selected papers and PC members";
+echo " &nbsp;assignments for selected papers and PC members</td></tr>\n";
 
-echo "<div class='g'></div>", divClass("discorder", "hotradiorelation");
-doRadio("a", "discorder", "Create discussion order in tag #");
+// gap
+echo '<tr><td colspan="2" class="mg"></td></tr>';
+
+// discussion order
+echo_radio_row("a", "discorder", "Create discussion order in tag #", ["open" => true]);
 echo Ht::entry("discordertag", get($Qreq, "discordertag", "discuss"),
                array("size" => 12, "onfocus" => 'autosub(false,this)')),
-    ", grouping papers with similar PC conflicts</div>";
+    ", grouping papers with similar PC conflicts</td></tr>";
 
-echo "</div>\n";
+echo "</table>\n";
 
 
 // PC
-echo "<h3>PC members</h3><table><tr><td class=\"nw\">";
-doRadio("pctyp", "all", "");
-echo "</td><td>", Ht::label("Use entire PC", "pctyp_all"), "</td></tr>\n";
+echo "<h3>PC members</h3>\n<table>\n";
 
-echo "<tr><td class=\"nw\">";
-doRadio('pctyp', 'sel', '');
-echo "</td><td>", Ht::label("Use selected PC members:", "pctyp_sel"), " &nbsp; (select ";
+echo_radio_row("pctyp", "all", "Use entire PC");
+
+echo_radio_row("pctyp", "sel", "Use selected PC members:", ["open" => true]);
+echo " &nbsp; (select ";
 $pctyp_sel = array(array("all", 1, "all"), array("none", 0, "none"));
 $pctags = $Conf->pc_tags();
 if (count($pctags)) {
@@ -638,17 +645,18 @@ echo "</tbody></table></div>\n";
 
 
 // Load balancing
-echo "<h3>Load balancing</h3>";
-doRadio('balance', 'new', "New assignments—spread new assignments equally among selected PC members");
-echo "<br />";
-doRadio('balance', 'all', "All assignments—spread assignments so that selected PC members have roughly equal overall load");
+echo "<h3>Load balancing</h3>\n<table>\n";
+echo_radio_row("balance", "new", "New assignments—spread new assignments equally among selected PC members");
+echo_radio_row("balance", "all", "All assignments—spread assignments so that selected PC members have roughly equal overall load");
+echo "</table>\n";
 
 
 // Method
-echo "<h3>Assignment method</h3>";
-doRadio('method', 'mcmf', "Globally optimal assignment");
-echo "<br />";
-doRadio('method', 'random', "Random good assignment");
+echo "<h3>Assignment method</h3>\n<table>\n";
+echo_radio_row("method", "mcmf", "Globally optimal assignment");
+echo_radio_row("method", "random", "Random good assignment");
+echo "</table>\n";
+
 if (opt("autoassignReviewGadget") === "expertise") {
     echo "<div><strong>Costs:</strong> ";
     $costs = AutoassignerInterface::current_costs($Qreq);
@@ -662,9 +670,9 @@ if (opt("autoassignReviewGadget") === "expertise") {
 
 
 // Create assignment
-echo "<div class='g'></div>\n";
-echo "<div class='aa'>", Ht::submit("assign", "Prepare assignments"),
-    " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
+echo '<div style="margin-top:2em">', Ht::submit("assign", "Prepare assignments", ["class" => "btn btn-default"]),
+    ' &nbsp; <span class="hint">You’ll be able to check the assignment before it is saved.</span>',
+    '</div>';
 
 echo "</div></form>";
 

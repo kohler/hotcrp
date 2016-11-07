@@ -5360,8 +5360,8 @@ document.body ? prepare() : $(prepare);
 
 // focusing
 $(function () {
-$(".hotradiorelation input, .hotradiorelation select").on("click keypress", function (event) {
-    var x = $(this).closest(".hotradiorelation").find("input[type='radio']").first();
+$(".has-radio-focus input, .has-radio-focus select").on("click keypress", function (event) {
+    var x = $(this).closest(".has-radio-focus").find("input[type='radio']").first();
     if (x.length && x[0] !== this)
         x[0].click();
     return true;

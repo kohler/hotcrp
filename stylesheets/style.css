@@ -170,8 +170,14 @@ span.nb {
 .mg { /* medium gap */
 	margin: 1em 0;
 }
+td.mg {
+	padding-top: 1em;
+}
 .g { /* small gap */
 	margin: 0.65em 0;
+}
+td.g {
+	padding-top: 0.65em;
 }
 .ug { /* microgap */
 	margin: 0.35em 0;
