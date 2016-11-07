@@ -1410,7 +1410,7 @@ class PaperTable {
             echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
         $rp = unparse_preference($this->prow);
         $rp = ($rp == "0" ? "" : $rp);
-        echo "<input id='revprefform_d' type='text' size='4' name='revpref' value=\"$rp\" onchange='Miniajax.submit(\"revprefform\")' tabindex='1' />",
+        echo "<input id=\"revprefform_d\" type=\"text\" size=\"4\" name=\"revpref\" value=\"$rp\" onchange=\"Miniajax.submit('revprefform')\" tabindex=\"1\" />",
             " ", Ht::submit("Save", array("class" => "fx7")),
             " <span id='revprefformresult'></span>",
             "</div></form></div></div>\n";

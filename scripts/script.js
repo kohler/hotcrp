@@ -1882,7 +1882,7 @@ function crpfocus(id, subfocus, seltype) {
 
     var felt = $$(id + (subfocus ? subfocus : "") + "_d");
     if (!felt && subfocus) {
-        var $j = $(selt).find(".lld" + subfocus + " .wantcrpfocus, .tld" + subfocus + " .wantcrpfocus");
+        var $j = $(selt).find(".lld" + subfocus + " .want-focus, .tld" + subfocus + " .want-focus");
         if ($j.length == 1)
             felt = $j[0];
     }

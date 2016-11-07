@@ -9,7 +9,7 @@ class Decide_SearchAction extends SearchAction {
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         $actions[] = [900, "decide", "Decide", "<b>:</b> Set to &nbsp;"
-                . decisionSelector($qreq->decision, null, " class=\"wantcrpfocus\"")
+                . decisionSelector($qreq->decision, null, " class=\"want-focus\"")
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide", "onclick" => "return plist_submit.call(this)"])];
     }
     function run(Contact $user, $qreq, $ssel) {

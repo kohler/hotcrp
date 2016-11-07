@@ -455,14 +455,14 @@ class PaperList {
         // Upload preferences (review preferences only)
         if ($revpref) {
             $lllgroups[] = [100, "uploadpref", "Upload", "<b>&nbsp;preference file:</b> &nbsp;"
-                . "<input class=\"wantcrpfocus\" type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"uploadpref\",this)' />&nbsp; "
+                . "<input class=\"want-focus\" type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"uploadpref\",this)' />&nbsp; "
                 . Ht::submit("fn", "Go", ["value" => "uploadpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
         }
 
         // Set preferences (review preferences only)
         if ($revpref) {
             $lllgroups[] = [200, "setpref", "Set preferences", "<b>:</b> &nbsp;"
-                . Ht::entry("pref", "", array("class" => "wantcrpfocus", "size" => 4, "tabindex" => 6, "onfocus" => 'autosub("setpref",this)'))
+                . Ht::entry("pref", "", array("class" => "want-focus", "size" => 4, "tabindex" => 6, "onfocus" => 'autosub("setpref",this)'))
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "setpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)"])];
         }
 

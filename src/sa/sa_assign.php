@@ -25,7 +25,7 @@ class Assign_SearchAction extends SearchAction {
                                 "lead" => "Discussion lead",
                                 "shepherd" => "Shepherd"),
                           $qreq->assignfn,
-                          ["class" => "wantcrpfocus", "onchange" => "plactions_dofold()"])
+                          ["class" => "want-focus", "onchange" => "plactions_dofold()"])
             . '<span class="fx"> &nbsp;<span id="atab_assign_for">for</span> &nbsp;'
             . Ht::select("markpc", [], 0, ["id" => "markpc", "class" => "need-pcselector", "data-pcselector-selected" => $qreq->markpc])
             . "</span> &nbsp;" . Ht::submit("fn", "Go", ["value" => "assign", "onclick" => "return plist_submit.call(this)"])];

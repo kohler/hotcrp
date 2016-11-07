@@ -30,7 +30,7 @@ class Tag_SearchAction extends SearchAction {
         }
         $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
             . Ht::entry("tag", $qreq->tag,
-                        ["size" => 15, "onfocus" => "autosub('tag',this)", "class" => "wantcrpfocus"])
+                        ["size" => 15, "onfocus" => "autosub('tag',this)", "class" => "want-focus"])
             . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "onclick" => "return plist_submit.call(this)"]);
         if ($user->privChair) {
             $t .= "<div class='fx'><div style='margin:2px 0'>"

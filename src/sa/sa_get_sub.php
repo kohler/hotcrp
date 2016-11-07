@@ -22,7 +22,7 @@ class Get_SearchAction extends SearchAction {
         if (!empty($sel_opt)) {
             $actions[] = [0, "get", "Download", "<b>:</b> &nbsp;"
                 . Ht::select("getfn", $sel_opt, $qreq->getfn,
-                             ["tabindex" => 6, "class" => "wantcrpfocus", "style" => "max-width:10em"])
+                             ["tabindex" => 6, "class" => "want-focus", "style" => "max-width:10em"])
                 . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
         }
     }

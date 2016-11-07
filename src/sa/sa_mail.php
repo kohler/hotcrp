@@ -9,7 +9,7 @@ class Mail_SearchAction extends SearchAction {
     }
     function list_actions(Contact $user, $qreq, PaperList $plist, &$actions) {
         $actions[] = [1000, "mail", "Mail", "<b>:</b> &nbsp;"
-            . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $qreq->recipients, ["class" => "wantcrpfocus"])
+            . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $qreq->recipients, ["class" => "want-focus"])
             . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "mail", "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
     }
     function run(Contact $user, $qreq, $ssel) {
