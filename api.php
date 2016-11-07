@@ -136,7 +136,7 @@ if ($qreq->fn === "searchcompletion") {
 
 // from here on: `status` and `track` requests
 if ($qreq->fn === "track")
-    MeetingTracker::track_api($qreq, $Me); // may fall through to act like `status`
+    MeetingTracker::track_api($Me, $qreq); // may fall through to act like `status`
 
 $j = $Me->my_deadlines($Conf->paper);
 

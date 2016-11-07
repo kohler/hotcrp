@@ -1523,16 +1523,19 @@ function tracker(start) {
     trackerstate = tracker_window_state();
     if (trackerstate && trackerstate[0] != siteurl_absolute_base)
         trackerstate = null;
-    if (start && (!trackerstate || !is_my_tracker()))
-        trackerstate = [siteurl_absolute_base, Math.floor(Math.random() * 100000)];
+    if (start && (!trackerstate || !is_my_tracker())) {
+        trackerstate = [siteurl_absolute_base, Math.floor(Math.random() * 100000), null, null];
+        if (hotcrp_list && hotcrp_list.info)
+            trackerstate[3] = hotcrp_list.info;
+    }
     if (trackerstate) {
         var req = trackerstate[1] + "%20x";
         if (hotcrp_paperid)
             req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
         if (trackerstate[2])
             req += "&tracker_start_at=" + trackerstate[2];
-        if (hotcrp_list && hotcrp_list.info)
-            req += "&hotlist-info=" + encodeURIComponent(hotcrp_list.info);
+        if (trackerstate[3])
+            req += "&hotlist-info=" + encodeURIComponent(trackerstate[3]);
         $.ajax(hoturl_post("api", "fn=track&track=" + req), {success: load_success});
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker, 25000);
