@@ -3527,12 +3527,13 @@ class PaperSearch {
             else
                 $listname = "Papers";
         }
+        $listname = $this->conf->_($listname);
         if ($this->q === "")
             return $listname;
         if (($td = $this->_tag_description())) {
             if ($listname === "Submitted papers") {
                 if ($this->q === "re:me")
-                    return "Your reviews";
+                    return $this->conf->_("Your reviews");
                 else
                     return $td;
             } else
