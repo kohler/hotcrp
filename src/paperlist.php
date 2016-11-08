@@ -1387,10 +1387,7 @@ class PaperList {
         $enter .= "<table class=\"pltable plt_" . htmlspecialchars($listname);
         if ($this->_table_class)
             $enter .= " " . $this->_table_class;
-        $listNumber = 0;
         if (get($options, "list"))
-            $listNumber = SessionList::allocate($this->search->listId($this->sortdef()));
-        if ($listNumber)
             $enter .= " has-hotlist";
         if (!empty($foldclasses))
             $enter .= " " . join(" ", $foldclasses);
@@ -1403,14 +1400,13 @@ class PaperList {
             $enter .= "\" data-order-tag=\"{$this->search->is_order_anno}";
         foreach ($this->tbody_attr as $k => $v)
             $enter .= "\" $k=\"" . htmlspecialchars($v);
-        if ($listNumber) {
+        if (get($options, "list")) {
             $listobject = $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
             if (isset($this->qreq->sort))
                 $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);
             $listobject->url = $url;
             foreach (get($options, "list_properties", []) as $k => $v)
                 $listobject->$k = $v;
-            SessionList::change($listNumber, $listobject);
             $enter .= '" data-hotlist-info="' . htmlspecialchars($listobject->info_string());
         }
         $enter .= "\" data-fold=\"true\">\n";

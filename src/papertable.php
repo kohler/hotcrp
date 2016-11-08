@@ -105,14 +105,16 @@ class PaperTable {
                 $this->matchPreg[$k] = $v;
             } else if (is_object($v))
                 $this->matchPreg[$k] = $v;
-        if (count($this->matchPreg) == 0)
+        if (empty($this->matchPreg))
             $this->matchPreg = null;
     }
 
     private static function _combine_match_preg($m1, $m) {
+        if (is_object($m))
+            $m = get_object_vars($m);
         if (!is_array($m))
-            $m = array("abstract" => $m, "title" => $m,
-                       "authorInformation" => $m, "collaborators" => $m);
+            $m = ["abstract" => $m, "title" => $m,
+                  "authorInformation" => $m, "collaborators" => $m];
         foreach ($m as $k => $v)
             if (!isset($m1[$k]) || !$m1[$k])
                 $m1[$k] = $v;
@@ -2279,7 +2281,7 @@ class PaperTable {
 
     // Functions for loading papers
 
-    static function _maybeSearchPaperId() {
+    static private function _maybeSearchPaperId() {
         global $Conf, $Me, $Now;
 
         // if a number, don't search
@@ -2328,21 +2330,17 @@ class PaperTable {
             $pl = $search->session_list_object();
             $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] =
                 $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = $pl->ids[0];
-            // check if the paper is in the current list
-            if (false && ($curpl = SessionList::requested())
-                && isset($curpl->listno) && $curpl->listno
-                && str_starts_with($curpl->listid, "p")
-                && !preg_match(',\Ap/[^/]*//,', $curpl->listid)
-                && array_search($pl->ids[0], $curpl->ids) !== false) {
-                // preserve current list
-                if (isset($pl->matchPreg) && $pl->matchPreg)
-                    $Conf->save_session("temp_matchPreg", $pl->matchPreg);
-                $pl = $curpl;
-            } else {
-                // make new list
-                $pl->listno = SessionList::allocate($pl->listid);
-                SessionList::change($pl->listno, $pl);
-            }
+            // DISABLED: check if the paper is in the current list
+            // if (($curpl = SessionList::requested())
+            //     && isset($curpl->listno) && $curpl->listno
+            //     && str_starts_with($curpl->listid, "p")
+            //     && !preg_match(',\Ap/[^/]*//,', $curpl->listid)
+            //     && array_search($pl->ids[0], $curpl->ids) !== false) {
+            //    // preserve current list
+            //    if (isset($pl->matchPreg) && $pl->matchPreg)
+            //        $Conf->save_session("temp_matchPreg", $pl->matchPreg);
+            //    $pl = $curpl;
+            // }
             unset($_REQUEST["ls"], $_GET["ls"], $_POST["ls"]);
             $pl->set_cookie();
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
@@ -2362,12 +2360,11 @@ class PaperTable {
             $_REQUEST["reviewId"] = $_GET["reviewId"] = $_POST["reviewId"] = $_REQUEST["r"];
         if (!isset($_REQUEST["commentId"]) && isset($_REQUEST["c"]))
             $_REQUEST["commentId"] = $_GET["commentId"] = $_POST["commentId"] = $_REQUEST["c"];
-        if (!isset($_REQUEST["paperId"])
-            && preg_match(',\A/(?:new|\d+)\z,i', Navigation::path()))
-            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = substr(Navigation::path(), 1);
-        else if (!isset($_REQUEST["reviewId"])
-                 && preg_match(',\A/\d+[A-Z]+\z,i', Navigation::path()))
+        if (!isset($_REQUEST["reviewId"])
+            && preg_match(',\A/\d+[A-Z]+\z,i', Navigation::path()))
             $_REQUEST["reviewId"] = $_GET["reviewId"] = $_POST["reviewId"] = substr(Navigation::path(), 1);
+        else if (!isset($_REQUEST["paperId"]) && ($pc = Navigation::path_component(0)))
+            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $pc;
         if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["reviewId"])
             && preg_match('/^(\d+)[A-Z]+$/', $_REQUEST["reviewId"], $m))
             $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $m[1];

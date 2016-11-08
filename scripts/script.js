@@ -628,10 +628,6 @@ function hoturl(page, options) {
         want_forceShow = true;
     } else if (page === "doc")
         hoturl_clean(x, "file=([^&]+)");
-    if (x.o && hotcrp_list
-        && (m = x.o.match(/^(.*(?:^|&)ls=)([^&]*)((?:&|$).*)$/))
-        && hotcrp_list.id == decodeURIComponent(m[2]))
-        x.o = m[1] + hotcrp_list.num + m[3];
     if (hotcrp_want_override_conflict && want_forceShow
         && (!x.o || !/(?:^|&)forceShow=/.test(x.o)))
         x.o = (x.o ? x.o + "&" : "") + "forceShow=1";

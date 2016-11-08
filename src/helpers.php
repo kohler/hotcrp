@@ -233,19 +233,16 @@ function selfHref($extra = array(), $options = null) {
     foreach ($extra as $key => $value)
         if ($key != "anchor" && $value !== null)
             $param .= "&$key=" . urlencode($value);
-    /*if (!isset($_REQUEST["ls"]) && !array_key_exists("ls", $extra)
-        && ($list = SessionList::active()))
-        $param .= "&ls=" . $list->listno;*/
 
     $param = $param ? substr($param, 1) : "";
-    if (!$options || !@$options["site_relative"])
+    if (!$options || !get($options, "site_relative"))
         $uri = hoturl(Navigation::page(), $param);
     else
         $uri = hoturl_site_relative(Navigation::page(), $param);
     if (isset($extra["anchor"]))
         $uri .= "#" . $extra["anchor"];
     $uri = str_replace("&amp;", "&", $uri);
-    if (!$options || @$options["raw"])
+    if (!$options || get($options, "raw"))
         return $uri;
     else
         return htmlspecialchars($uri);
