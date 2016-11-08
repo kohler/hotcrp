@@ -1411,7 +1411,7 @@ class PaperList {
             foreach (get($options, "list_properties", []) as $k => $v)
                 $listobject->$k = $v;
             SessionList::change($listNumber, $listobject);
-            $enter .= '" data-hotlist="' . $listNumber . '" data-hotlist-info="' . htmlspecialchars($listobject->info_string());
+            $enter .= '" data-hotlist-info="' . htmlspecialchars($listobject->info_string());
         }
         $enter .= "\" data-fold=\"true\">\n";
         $exit = "</table>";

@@ -1489,10 +1489,10 @@ function display_tracker() {
         else
             mne.className = mytracker ? "active" : "match";
         tt = '<div class="trackerholder';
-        if (dl.tracker && dl.tracker.listid)
-            tt += ' has-hotlist" data-hotlist="' + dl.tracker.listid;
         if (dl.tracker && dl.tracker.listinfo)
-            tt += '" data-hotlist-info="' + escape_entities(dl.tracker.listinfo);
+            tt += ' has-hotlist" data-hotlist-info="' + escape_entities(dl.tracker.listinfo);
+        else if (dl.tracker && dl.tracker.listid)
+            tt += ' has-hotlist" data-hotlist="' + dl.tracker.listid;
         mne.innerHTML = tt + '">' + t + '</div>';
         $(mne).find(".need-tooltip").each(add_tooltip);
         if (tracker_has_format)

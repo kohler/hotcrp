@@ -2652,7 +2652,7 @@ class Conf {
         if ($id === "paper_view" || $id === "paper_edit" || $id === "review" || $id === "assign") {
             echo ' class="paper';
             if (($list = SessionList::active()))
-                echo ' has-hotlist" data-hotlist="', $list->listno, '" data-hotlist-info="', htmlspecialchars($list->info_string());
+                echo ' has-hotlist" data-hotlist-info="', htmlspecialchars($list->info_string());
             echo '"';
         }
         echo ">\n";
