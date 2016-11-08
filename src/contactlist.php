@@ -38,7 +38,6 @@ class ContactList {
     var $scoreMax;
     var $limit;
     public $have_folds = array();
-    var $listNumber;
     var $contactLinkArgs;
 
     function __construct($contact, $sortable = true) {
@@ -56,7 +55,6 @@ class ContactList {
         $this->contact = $contact;
         $this->tagger = new Tagger($this->contact);
         $this->contactLinkArgs = "";
-        $this->listNumber = $contact->privChair;
     }
 
     function selector($fieldId, &$queryOptions) {
@@ -672,14 +670,8 @@ class ContactList {
         if (!$rows || count($rows) == 0)
             return "No matching people";
 
-        // list number
-        if ($this->listNumber === true) {
-            $this->listNumber = SessionList::allocate("u/" . $this->limit);
-            $this->contactLinkArgs .= "&amp;ls=" . $this->listNumber;
-        }
-
         // sort rows
-        if (!@$acceptable_fields[$this->sortField])
+        if (!get($acceptable_fields, $this->sortField))
             $this->sortField = null;
         $srows = $this->_sort($rows);
 
@@ -820,17 +812,13 @@ class ContactList {
         if (key($fieldDef) == self::FIELD_SELECTOR)
             $x .= $this->footer($ncol, $hascolors);
 
-        $x .= "<tbody class=\"pltable" . ($hascolors ? " pltable_colored" : "")
-            . "\">" . $body . "</tbody></table>";
-
-        if ($this->listNumber) {
-            $l = SessionList::create("u/" . $listname, $ids,
-                                     ($listtitle ? $listtitle : "Users"),
+        $x .= "<tbody class=\"pltable" . ($hascolors ? " pltable_colored" : "");
+        if ($this->contact->privChair) {
+            $l = SessionList::create("u/" . $listname, $ids, $listtitle ? : "Users",
                                      hoturl_site_relative_raw("users", ["t" => $listname]));
-            SessionList::change($this->listNumber, $l);
+            $x .= " has-hotlist\" data-hotlist-info=\"" . htmlspecialchars($l->info_string());
         }
-
-        return $x;
+        return $x . "\">" . $body . "</tbody></table>";
     }
 
     function rows($listname) {

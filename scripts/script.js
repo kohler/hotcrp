@@ -5322,14 +5322,14 @@ function set_cookie(ls, info) {
         document.cookie = "hotcrp_ls=" + ls + "; max-age=2" + p;
     set_cookie = function () {};
 }
-function is_paper_site(href) {
-    return /^(?:paper|review)(?:|\.php)\//.test(href.substring(siteurl.length));
+function is_listable(href) {
+    return /^(?:paper|review|profile)(?:|\.php)\//.test(href.substring(siteurl.length));
 }
 function add_list() {
     var $self = $(this), $hl, ls,
         href = this.getAttribute(this.tagName === "FORM" ? "action" : "href");
     if (href && href.substring(0, siteurl.length) === siteurl
-        && is_paper_site(href)
+        && is_listable(href)
         && ($hl = $self.closest(".has-hotlist")).length)
         set_cookie($hl.attr("data-hotlist"), $hl.attr("data-hotlist-info"));
     return true;

@@ -364,6 +364,7 @@ class SessionList {
     public $description;
     public $url;
     public $timestamp;
+    public $listno = 0;
     static private $active_listid = null;
     static private $active_list = null;
     static private $requested_list = false;
@@ -430,31 +431,6 @@ class SessionList {
             return $lx;
         } else
             return null;
-    }
-    static function change($idx, $l) {
-        global $Conf;
-        $l = is_object($l) ? get_object_vars($l) : $l;
-        if (isset($l["ids"]) && !is_string($l["ids"]))
-            $l["ids"] = self::encode_ids($l["ids"]);
-        $Conf->save_session_array("l", $idx, (object) $l);
-        return true;
-    }
-    static function allocate($listid) {
-        global $Conf, $Me;
-        $lists = $Conf->session("l", array());
-        $cid = $Me ? $Me->contactId : 0;
-        $oldest = $empty = 0;
-        for ($i = 1; $i <= 8; ++$i)
-            if (($l = get($lists, $i))) {
-                if (!isset($l->timestamp))
-                    error_log("missing timestamp " . json_encode($l));
-                if ($listid && $l->listid == $listid && $l->cid == $cid)
-                    return $i;
-                else if (!$oldest || $l->timestamp < $lists[$oldest]->timestamp)
-                    $oldest = $i;
-            } else if (!$empty)
-                $empty = $i;
-        return $empty ? : $oldest;
     }
     static function create($listid, $ids, $description, $url) {
         global $Me, $Now;
@@ -579,12 +555,9 @@ class SessionList {
         if ($k === false)
             $list = null;
 
-        // save list changes
-        if ($list && !get($list, "listno"))
-            $list->listno = self::allocate($list->listid);
+        // completion
         if ($list) {
             $list->timestamp = $Now;
-            self::change($list->listno, $list);
             $list->id_position = $k;
         }
         self::$active_listid = $listid;

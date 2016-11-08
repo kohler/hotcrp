@@ -2588,7 +2588,7 @@ class Conf {
         if (session_id() !== "")
             Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
         if ($list)
-            Ht::stash_script("hotcrp_list=" . json_encode(["num" => $list->listno, "id" => $list->listid, "info" => $list->info_string()]) . ";");
+            Ht::stash_script("hotcrp_list=" . json_encode(["id" => $list->listid, "info" => $list->info_string()]) . ";");
         if (($urldefaults = hoturl_defaults()))
             Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults) . ";");
         Ht::stash_script("assetsurl=" . json_encode($this->opt["assetsUrl"]) . ";");
@@ -2641,20 +2641,18 @@ class Conf {
         $this->header_head($title);
 
         // <body>
-        $body_class = "";
-        if ($id === "paper_view" || $id === "paper_edit"
-            || $id === "review" || $id === "assign")
-            $body_class = "paper";
-
         echo "<body";
         if ($id)
             echo ' id="', $id, '"';
-        if ($id === "paper_view" || $id === "paper_edit" || $id === "review" || $id === "assign") {
-            echo ' class="paper';
-            if (($list = SessionList::active()))
-                echo ' has-hotlist" data-hotlist-info="', htmlspecialchars($list->info_string());
-            echo '"';
-        }
+        $list = null;
+        $ispaper = ($id === "paper_view" || $id === "paper_edit" || $id === "review" || $id === "assign");
+        if ($ispaper || $id === "account")
+            $list = SessionList::active();
+        if ($list)
+            echo ' class="', ($ispaper ? "paper " : ""), 'has-hotlist" data-hotlist-info="',
+                htmlspecialchars($list->info_string()), '"';
+        else if ($ispaper)
+            echo ' class="paper"';
         echo ">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
