@@ -541,6 +541,10 @@ class Contact {
         return $this->name_for($this->isPC ? "r" : "", $x);
     }
 
+    function reviewer_text_for($x) {
+        return $this->name_for("t", $x);
+    }
+
     function reviewer_color_classes_for($x) {
         if ($this->isPC && isset($x->contactTags) && $x->contactTags) {
             if (($colors = $x->viewable_color_classes($this))) {
