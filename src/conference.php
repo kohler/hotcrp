@@ -2622,12 +2622,27 @@ class Conf {
             Ht::stash_html($stash);
     }
 
-    static function echo_header($conf, $is_home, $site_div, $title_div,
-                                $profile_html, $actions_html) {
-        echo $site_div,
-            '<div id="header_right">', $profile_html,
-            '<div id="maindeadline" style="display:none"></div></div>',
-            $title_div, $actions_html;
+    function has_interesting_deadline($my_deadlines) {
+        global $Now;
+        if (get($my_deadlines->sub, "open"))
+            foreach (["reg", "update", "sub"] as $k)
+                if ($Now <= get($my_deadlines->sub, $k, 0) || get($my_deadlines->sub, "{$k}_ingrace"))
+                    return true;
+        if (get($my_deadlines, "is_author") && get($my_deadlines, "resps"))
+            foreach (get($my_deadlines, "resps") as $r)
+                if ($r->open && ($Now <= $r->done || get($r, "ingrace")))
+                    return true;
+        return false;
+    }
+
+    static function echo_header(Conf $conf, $is_home, $site_div, $title_div,
+                                $profile_html, $actions_html, $my_deadlines) {
+        echo $site_div, '<div id="header_right">', $profile_html;
+        if ($my_deadlines && $conf->has_interesting_deadline($my_deadlines))
+            echo '<div id="maindeadline">&nbsp;</div>';
+        else
+            echo '<div id="maindeadline" style="display:none"></div>';
+        echo '</div>', $title_div, $actions_html;
     }
 
     function header($title, $id, $actionBar, $title_div = null) {
@@ -2659,8 +2674,11 @@ class Conf {
         Ht::stash_script("hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
 
         // deadlines settings
-        if ($Me)
-            Ht::stash_script("hotcrp_deadlines.init(" . json_encode($Me->my_deadlines($this->paper)) . ")");
+        $my_deadlines = null;
+        if ($Me) {
+            $my_deadlines = $Me->my_deadlines($this->paper);
+            Ht::stash_script("hotcrp_deadlines.init(" . json_encode($my_deadlines) . ")");
+        }
         if ($this->default_format)
             Ht::stash_script("render_text.set_default_format(" . $this->default_format . ")");
 
@@ -2713,9 +2731,9 @@ class Conf {
             if (!$Me->disabled)
                 $profile_parts[] = '<a href="' . hoturl("help", $x) . '">Help</a>';
             if (!$Me->has_email() && !isset($this->opt["httpAuthLogin"]))
-                $profile_parts[] = '<a href="' . hoturl("index", "signin=1") . '">Sign&nbsp;in</a>';
+                $profile_parts[] = '<a href="' . hoturl("index", "signin=1") . '" class="nw">Sign in</a>';
             if (!$Me->is_empty() || isset($this->opt["httpAuthLogin"]))
-                $profile_parts[] = '<a href="' . hoturl_post("index", "signout=1") . '">Sign&nbsp;out</a>';
+                $profile_parts[] = '<a href="' . hoturl_post("index", "signout=1") . '" class="nw">Sign out</a>';
 
             if (!empty($profile_parts))
                 $profile_html .= join(' <span class="barsep">·</span> ', $profile_parts);
@@ -2733,7 +2751,7 @@ class Conf {
             require_once($renderf[0]);
             $renderf = $renderf[1];
         }
-        call_user_func($renderf, $this, $is_home, $site_div, $title_div, $profile_html, $actionBar);
+        call_user_func($renderf, $this, $is_home, $site_div, $title_div, $profile_html, $actionBar, $my_deadlines);
 
         echo "  <hr class=\"c\" /></div>\n";
 

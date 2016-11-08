@@ -1281,6 +1281,13 @@ window.hotcrp_deadlines = (function ($) {
 var dl, dlname, dltime, reload_timeout, reload_nerrors = 0, redisplay_timeout;
 
 // deadline display
+function checkdl(now, endtime, ingrace) {
+    if (+dl.now <= endtime ? now - 120 <= endtime : ingrace) {
+        dltime = endtime;
+        return true;
+    }
+}
+
 function display_main(is_initial) {
     // this logic is repeated in the back end
     var s = "", i, x, subtype, browser_now = now_sec(),
@@ -1295,32 +1302,30 @@ function display_main(is_initial) {
         && (x = $$("clock_drift_container")))
         x.innerHTML = "<div class='warning'>The HotCRP server’s clock is more than 5 minutes off from your computer’s clock. If your computer’s clock is correct, you should update the server’s clock.</div>";
 
+    // See also the version in `Conf`
     dlname = "";
     dltime = 0;
     if (!dl.sub)
         log_jserror("bad dl " + JSON.stringify(dl));
     if (dl.sub.open) {
-        x = {reg: "Registration", update: "Update", sub: "Submission"};
-        for (subtype in x)
-            if (+dl.now <= +dl.sub[subtype] ? now - 120 <= +dl.sub[subtype]
-                : dl.sub[subtype + "_ingrace"]) {
-                dlname = x[subtype] + " deadline";
-                dltime = +dl.sub[subtype];
-                break;
-            }
+        if (checkdl(now, +dl.sub.reg, dl.sub.reg_ingrace))
+            dlname = "Registration";
+        else if (checkdl(now, +dl.sub.update, dl.sub.update_ingrace))
+            dlname = "Update";
+        else if (checkdl(now, +dl.sub.sub, dl.sub.sub_ingrace))
+            dlname = "Submission";
     }
     if (!dlname && dl.is_author && dl.resps)
         for (i in dl.resps) {
             x = dl.resps[i];
-            if (x.open && (+dl.now <= +x.done ? now - 120 <= +x.done : x.ingrace)) {
-                dlname = (i == "1" ? "Response" : i + " response") + " deadline";
-                dltime = +x.done;
+            if (x.open && checkdl(now, +x.done, x.ingrace)) {
+                dlname = (i == "1" ? "Response" : i + " response");
                 break;
             }
         }
 
     if (dlname) {
-        s = "<a href=\"" + hoturl_html("deadlines") + "\">" + dlname + "</a> ";
+        s = "<a href=\"" + hoturl_html("deadlines") + "\">" + dlname + " deadline</a> ";
         if (!dltime || dltime < now)
             s += "is NOW";
         else
