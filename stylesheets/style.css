@@ -2839,6 +2839,9 @@ body#offline .revcard {
 #tracker.nomatch {
 	background: rgba(252, 177, 185, 0.9);
 }
+#tracker.active.nomatch {
+	background: rgba(255, 255, 100, 0.9);
+}
 #tracker .trackerholder {
 	padding: 0.5em 1em 0.5em 0.8em;
 	border-bottom: 1px solid #6a936a;

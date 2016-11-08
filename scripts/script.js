@@ -1356,9 +1356,8 @@ var has_tracker, had_tracker_at, last_tracker_html,
 
 function tracker_window_state() {
     var ts = wstorage.json(true, "hotcrp-tracking");
-    if (ts && !ts[2] && dl.tracker && dl.tracker.trackerid == ts[1]
-        && dl.tracker.start_at) {
-        ts = [ts[0], ts[1], dl.tracker.start_at];
+    if (ts && !ts[2] && dl.tracker && dl.tracker.trackerid == ts[1] && dl.tracker.start_at) {
+        ts = [ts[0], ts[1], dl.tracker.start_at, ts[3]];
         wstorage.json(true, "hotcrp-tracking", ts);
     }
     return ts;
@@ -1427,7 +1426,7 @@ function tracker_html(mytracker) {
     if (dl.tracker && dl.tracker.position_at)
         t += '<div style="float:right" id="trackerelapsed"></div>';
     if (!dl.tracker.papers || !dl.tracker.papers[0]) {
-        t += "<a href=\"" + siteurl + dl.tracker.url + "\">Discussion list</a>";
+        t += "<table class=\"trackerinfo\"><tbody><tr><td><a href=\"" + siteurl + dl.tracker.url + "\">Discussion list</a></td></tr></tbody></table>";
     } else {
         t += "<table class=\"trackerinfo\"><tbody><tr class=\"tracker0\"><td rowspan=\"" + dl.tracker.papers.length + "\">";
         t += "</td>" + tracker_paper_columns(0, dl.tracker.papers[0]);
@@ -1485,12 +1484,10 @@ function display_tracker() {
     t = tracker_html(mytracker);
     if (t !== last_tracker_html) {
         last_tracker_html = t;
-        if (mytracker)
-            mne.className = "active";
-        else if (dl.tracker.papers && dl.tracker.papers[0].pid != hotcrp_paperid)
-            mne.className = "nomatch";
+        if (dl.tracker.papers && dl.tracker.papers[0].pid != hotcrp_paperid)
+            mne.className = mytracker ? "active nomatch" : "nomatch";
         else
-            mne.className = "match";
+            mne.className = mytracker ? "active" : "match";
         tt = '<div class="trackerholder';
         if (dl.tracker && dl.tracker.listid)
             tt += ' has-hotlist" data-hotlist="' + dl.tracker.listid;

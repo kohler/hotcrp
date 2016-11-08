@@ -35,32 +35,45 @@ class MeetingTracker {
         }
     }
 
-    static function update(Contact $user, $list, $trackerid, $position) {
+    static private function update(Contact $user, SessionList $list, $trackerid, $position) {
         global $Now;
-        assert($list && str_starts_with($list->listid, "p/"));
-        ensure_session();
         if (preg_match('/\A[1-9][0-9]*\z/', $trackerid))
             $trackerid = (int) $trackerid;
+
+        // Default: start now, position now.
+        $start_at = $Now;
+        $position_at = 0;
+
+        // If update is to same list as old tracker, keep `start_at`.
+        // If update is off-list, keep old position.
+        // If update is to same position as old tracker, keep `position_at`.
+        $old_tracker = self::lookup($user->conf);
+        if ($old_tracker->trackerid == $trackerid) {
+            $start_at = $old_tracker->start_at;
+            if ($old_tracker->listid == $list->listid) {
+                if ($position === false)
+                    $position = $old_tracker->position;
+                if ($old_tracker->position == $position)
+                    $position_at = $old_tracker->position_at;
+            }
+        }
+
+        // Otherwise, choose a `position_at` definitely in the future.
+        if (!$position_at)
+            $position_at = self::next_position_at($user->conf);
+
+        ensure_session();
         $tracker = (object) array("trackerid" => $trackerid,
                                   "listid" => $list->listid,
                                   "ids" => $list->ids,
                                   "url" => $list->url,
                                   "description" => $list->description,
-                                  "start_at" => $Now,
-                                  "position_at" => 0,
-                                  "update_at" => $Now,
+                                  "start_at" => $start_at,
+                                  "position_at" => $position_at,
+                                  "update_at" => max($Now, $position_at),
                                   "owner" => $user->contactId,
                                   "sessionid" => session_id(),
                                   "position" => $position);
-        $old_tracker = self::lookup($user->conf);
-        if ($old_tracker->trackerid == $tracker->trackerid) {
-            $tracker->start_at = $old_tracker->start_at;
-            if ($old_tracker->listid == $tracker->listid
-                && $old_tracker->position == $tracker->position)
-                $tracker->position_at = $old_tracker->position_at;
-        }
-        if (!$tracker->position_at)
-            $tracker->position_at = $tracker->update_at = self::next_position_at($user->conf);
         $user->conf->save_setting("tracker", 1, $tracker);
         self::contact_tracker_comet($user->conf);
         return $tracker;
@@ -262,7 +275,7 @@ class MeetingTracker {
         else if (count($args) >= 2) // XXX backwards compatibility
             $xlist = SessionList::lookup($args[1]);
         if ($xlist && str_starts_with($xlist->listid, "p/")) {
-            $position = null;
+            $position = false;
             if (count($args) >= 3 && ctype_digit($args[2]))
                 $position = array_search((int) $args[2], $xlist->ids);
             self::update($user, $xlist, $args[0], $position);
