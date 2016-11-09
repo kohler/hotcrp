@@ -153,7 +153,7 @@ class PaperApi {
                 }
                 Dbl::free($result);
             }
-            json_exit(["ok" => true, "p" => $p]);
+            json_exit(["ok" => true, "p" => (object) $p]);
         } else
             json_exit(["ok" => false, "error" => $error], true);
     }
