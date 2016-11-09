@@ -107,6 +107,7 @@ class PaperApi {
             json_exit(["ok" => false, "error" => "No such paper."]);
 
         // save tags using assigner
+        $pids = [];
         $x = array("paper,action,tag");
         if ($prow) {
             if (isset($qreq->tags)) {
@@ -119,7 +120,6 @@ class PaperApi {
             foreach (TagInfo::split((string) $qreq->deltags) as $t)
                 $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t . "#clear");
         } else if (isset($qreq->tagassignment)) {
-            $pids = [];
             $pid = -1;
             foreach (preg_split('/[\s,]+/', $qreq->tagassignment) as $w)
                 if ($w !== "" && ctype_digit($w))
@@ -143,7 +143,7 @@ class PaperApi {
             $taginfo = (object) ["ok" => true, "pid" => $prow->paperId];
             $prow->add_tag_info_json($taginfo, $user);
             json_exit($taginfo, true);
-        } else if ($ok) {
+        } else if ($ok && $pids) {
             $p = [];
             $result = $user->paper_result(["paperId" => array_keys($pids), "tags" => true]);
             while (($prow = PaperInfo::fetch($result, $user))) {
@@ -151,7 +151,9 @@ class PaperApi {
                 $prow->add_tag_info_json($p[$prow->paperId], $user);
             }
             json_exit(["ok" => true, "p" => $p]);
-        } else
+        } else if ($ok)
+            json_exit(["ok" => true, "p" => []]);
+        else
             json_exit(["ok" => false, "error" => $error], true);
     }
 
