@@ -143,17 +143,18 @@ class PaperApi {
             $taginfo = (object) ["ok" => true, "pid" => $prow->paperId];
             $prow->add_tag_info_json($taginfo, $user);
             json_exit($taginfo, true);
-        } else if ($ok && $pids) {
+        } else if ($ok) {
             $p = [];
-            $result = $user->paper_result(["paperId" => array_keys($pids), "tags" => true]);
-            while (($prow = PaperInfo::fetch($result, $user))) {
-                $p[$prow->paperId] = (object) [];
-                $prow->add_tag_info_json($p[$prow->paperId], $user);
+            if ($pids) {
+                $result = $user->paper_result(["paperId" => array_keys($pids), "tags" => true]);
+                while (($prow = PaperInfo::fetch($result, $user))) {
+                    $p[$prow->paperId] = (object) [];
+                    $prow->add_tag_info_json($p[$prow->paperId], $user);
+                }
+                Dbl::free($result);
             }
             json_exit(["ok" => true, "p" => $p]);
-        } else if ($ok)
-            json_exit(["ok" => true, "p" => []]);
-        else
+        } else
             json_exit(["ok" => false, "error" => $error], true);
     }
 
