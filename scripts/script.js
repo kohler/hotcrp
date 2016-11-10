@@ -1876,7 +1876,7 @@ function divclick(event) {
 }
 
 function crpfocus(id, subfocus, seltype) {
-    var selt = $$(id), m;
+    var selt = $$(id), m, $j;
     while (subfocus && typeof subfocus === "object")
         if ((m = subfocus.className.match(/\b(?:lll|lld|tll|tld)(\d+)/)))
             subfocus = +m[1];
@@ -1885,16 +1885,24 @@ function crpfocus(id, subfocus, seltype) {
     if (selt && subfocus)
         selt.className = selt.className.replace(/links[0-9]*/, 'links' + subfocus);
 
-    var felt = $$(id + (subfocus ? subfocus : "") + "_d");
-    if (!felt && subfocus) {
-        var $j = $(selt).find(".lld" + subfocus + " .want-focus, .tld" + subfocus + " .want-focus");
+    var felt = $$(id + (subfocus || "") + "_d");
+    if (!felt) {
+        $j = $(selt).find(".want-focus");
+        if (subfocus)
+            $j = $j.filter(".lld" + subfocus + " *, .tld" + subfocus + " *");
         if ($j.length == 1)
             felt = $j[0];
     }
-    if (felt && !(felt.type == "text" && felt.value && seltype == 1))
+    if (felt && !(felt.type == "text" && felt.value && seltype == 1)) {
         felt.focus();
-    if (felt && felt.type == "text" && seltype == 3 && felt.select)
-        felt.select();
+        if (!$(felt).data("focused")) {
+            if (felt.select && $(felt).hasClass("want-select"))
+                felt.select();
+            else if (felt.setSelectionRange)
+                felt.setSelectionRange(felt.value.length, felt.value.length);
+            $(felt).data("focused", 1);
+        }
+    }
 
     if ((selt || felt) && window.event)
         window.event.returnValue = false;

@@ -642,30 +642,44 @@ else if ($Me->privChair)
 
 echo '<div class="f-contain">', "\n\n";
 if (!$Conf->external_login())
-    echofield(0, "uemail", "Email", textinput("uemail", contact_value("uemail", "email"), 52, "account_d"));
+    echofield(0, "uemail", "Email",
+              Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus", "size" => 52]));
 else if (!$newProfile) {
     echofield(0, "uemail", "Username", contact_value("uemail", "email"));
-    echofield(0, "preferredEmail", "Email", textinput("preferredEmail", contact_value("preferredEmail"), 52, "account_d"));
+    echofield(0, "preferredEmail", "Email",
+              Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "want-focus", "size" => 52]));
 } else {
-    echofield(0, "uemail", "Username", textinput("newUsername", contact_value("newUsername", false), 52, "account_d"));
-    echofield(0, "preferredEmail", "Email", textinput("preferredEmail", contact_value("preferredEmail"), 52));
+    echofield(0, "uemail", "Username",
+              Ht::entry("newUsername", contact_value("newUsername", false), ["class" => "want-focus", "size" => 52]));
+    echofield(0, "preferredEmail", "Email",
+              Ht::entry("preferredEmail", contact_value("preferredEmail"), ["size" => 52]));
 }
 
-echofield(1, "firstName", "First&nbsp;name", textinput("firstName", contact_value("firstName"), 24));
-echofield(3, "lastName", "Last&nbsp;name", textinput("lastName", contact_value("lastName"), 24));
-echofield(0, "affiliation", "Affiliation", textinput("affiliation", contact_value("affiliation"), 52));
+echofield(1, "firstName", "First&nbsp;name",
+          Ht::entry("firstName", contact_value("firstName"), ["size" => 24]));
+echofield(3, "lastName", "Last&nbsp;name",
+          Ht::entry("lastName", contact_value("lastName"), ["size" => 24]));
+echofield(0, "affiliation", "Affiliation",
+          Ht::entry("affiliation", contact_value("affiliation"), ["size" => 52]));
 echofield(0, false, "Country", Countries::selector("country", contact_value("country")));
 
 $data = $Acct->data();
 $any_address = $data && @($data->address || $data->city || $data->state || $data->zip);
 if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
     echo "<div style='margin-top:20px'></div>\n";
-    echofield(0, false, "Address line 1", textinput("addressLine1", value("addressLine1", @$data->address ? @$data->address[0] : null), 52));
-    echofield(0, false, "Address line 2", textinput("addressLine2", value("addressLine2", @$data->address ? @$data->address[1] : null), 52));
-    echofield(0, false, "City", textinput("city", value("city", @$data->city), 52));
-    echofield(1, false, "State/Province/Region", textinput("state", value("state", @$data->state), 24));
-    echofield(3, false, "ZIP/Postal code", textinput("zipCode", value("zipCode", @$data->zip), 12));
-    echofield(0, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", contact_value("voicePhoneNumber"), 24));
+    $address = get($data, "address");
+    echofield(0, false, "Address line 1",
+              Ht::entry("addressLine1", value("addressLine1", $address ? $address[0] : null), ["size" => 52]));
+    echofield(0, false, "Address line 2",
+              Ht::entry("addressLine2", value("addressLine2", $address ? $address[1] : null), ["size" => 52]));
+    echofield(0, false, "City",
+              Ht::entry("city", value("city", get($data, "city")), ["size" => 52]));
+    echofield(1, false, "State/Province/Region",
+              Ht::entry("state", value("state", get($data, "state")), ["size" => 24]));
+    echofield(3, false, "ZIP/Postal code",
+              Ht::entry("zipCode", value("zipCode", get($data, "zip")), ["size" => 12]));
+    echofield(0, false, "Phone <span class='f-cx'>(optional)</span>",
+              Ht::entry("voicePhoneNumber", contact_value("voicePhoneNumber"), ["size" => 24]));
 }
 
 
@@ -793,7 +807,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
         echo "<h3 class=\"profile\">Tags</h3>\n";
         if ($Me->privChair) {
             echo "<div class='", feclass("contactTags"), "'>",
-                textinput("contactTags", join(" ", $tags), 60),
+                Ht::entry("contactTags", join(" ", $tags), ["size" => 60]),
                 "</div>
   <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=tags"), "'>tag colors</a> to highlight subgroups in review lists.</div>\n";
         } else {

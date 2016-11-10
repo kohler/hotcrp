@@ -83,7 +83,7 @@ echo '<table style="margin-bottom:2em">',
 //Our suggested replacement password password for <b>", htmlspecialchars($Acct->email), "</b>. Use our suggested replacement password, or choose your own.</p>",
 echo '<div class="f-i">
   <div class="f-c', $password_class, '">New password</div>
-  <div class="f-e">', Ht::password("password", "", array("id" => "login_d", "tabindex" => 1, "size" => 36)), '</div>
+  <div class="f-e">', Ht::password("password", "", array("class" => "want-focus", "tabindex" => 1, "size" => 36)), '</div>
 </div>
 <div class="f-i">
   <div class="f-c', $password_class, '">New password (again)</div>

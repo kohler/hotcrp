@@ -438,8 +438,8 @@ echo '<div id="searchform" class="tablinks', $activetab, ' fold3', $searchform_f
 // Basic search
 echo Ht::form_div(hoturl("search"), array("method" => "get")),
     Ht::entry("q", (string) $Qreq->q,
-              array("id" => "searchform1_d", "size" => 40, "tabindex" => 1,
-                    "style" => "width:30em", "class" => "hotcrp_searchbox")),
+              array("size" => 40, "tabindex" => 1, "style" => "width:30em",
+                    "class" => "hotcrp_searchbox want-focus")),
     " &nbsp;in &nbsp;$tselect &nbsp;\n",
     Ht::submit("Search"),
     "</div></form>";
@@ -482,14 +482,20 @@ echo Ht::select("qt", $qtOpt, $Qreq->get("qt", "n"), array("tabindex" => 1)),
 <tr><td colspan=\"3\"><div class='g'></div></td></tr>
 <tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
-  <td class='lentry'><input id='searchform2_d' type='text' size='40' style='width:30em' name='qa' value=\"", htmlspecialchars(defval($Qreq, "qa", defval($Qreq, "q", ""))), "\" tabindex='1' /><span class='sep'></span></td>
+  <td class='lentry'>",
+    Ht::entry("qa", htmlspecialchars($Qreq->get("qa", $Qreq->get("q", ""))), ["size" => 40, "style" => "width:30em", "tabindex" => 1, "class" => "want-focus"]),
+    "<span class='sep'></span></td>
   <td rowspan='3'>", Ht::submit("Search", array("tabindex" => 2)), "</td>
 </tr><tr>
   <td class='lxcaption'>With <b>any</b> of the words</td>
-  <td class='lentry'><input type='text' size='40' name='qo' style='width:30em' value=\"", htmlspecialchars(defval($Qreq, "qo", "")), "\" tabindex='1' /></td>
+  <td class='lentry'>",
+    Ht::entry("qo", htmlspecialchars($Qreq->get("qo", "")), ["size" => 40, "style" => "width:30em", "tabindex" => 1]),
+    "</td>
 </tr><tr>
   <td class='lxcaption'><b>Without</b> the words</td>
-  <td class='lentry'><input type='text' size='40' name='qx' style='width:30em' value=\"", htmlspecialchars(defval($Qreq, "qx", "")), "\" tabindex='1' /></td>
+  <td class='lentry'>",
+    Ht::entry("qx", htmlspecialchars($Qreq->get("qx", "")), ["size" => 40, "style" => "width:30em", "tabindex" => 1]),
+    "</td>
 </tr>
 <tr>
   <td class='lxcaption'></td>
@@ -665,8 +671,8 @@ echo "</div>";
 
 // Tab selectors
 echo '<div class="tllx"><table><tr>',
-  "<td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => null)), "\">Search</a></div></td>
-  <td><div class='tll2'><a class='tla nw' onclick='return crpfocus(\"searchform\", 2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
+  "<td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\",1)' href=\"", selfHref(array("tab" => null)), "\">Search</a></div></td>
+  <td><div class='tll2'><a class='tla nw' onclick='return crpfocus(\"searchform\",2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
 if ($ss)
     echo "  <td><div class='tll4'><a class='tla nw' onclick='fold(\"searchform\",1,4);return crpfocus(\"searchform\",4)' href=\"", selfHref(array("tab" => "ss")), "\">Saved searches</a></div></td>\n";
 if ($pl && $pl->count > 0)
