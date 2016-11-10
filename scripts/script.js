@@ -1877,6 +1877,8 @@ function divclick(event) {
 
 function crpfocus(id, subfocus, seltype) {
     var selt = $$(id), m, $j;
+    if (!selt)
+        return;
     while (subfocus && typeof subfocus === "object")
         if ((m = subfocus.className.match(/\b(?:lll|lld|tll|tld)(\d+)/)))
             subfocus = +m[1];
@@ -3376,7 +3378,7 @@ function shortcut(top_elt) {
             top_elt.addEventListener("keypress", keypress, false);
         else
             top_elt.onkeypress = keypress;
-        top_elt.hotcrp_shortcut = self;
+        top_elt.hotcrp_shortcut = true;
     }
     return self;
 }

@@ -1414,7 +1414,7 @@ class PaperTable {
             " <span id='revprefformresult'></span>",
             "</div></form></div></div>\n";
         Ht::stash_script("Miniajax.onload(\"revprefform\");shortcut(\"revprefform_d\").add()");
-        if (($l = SessionList::active()) && str_starts_with($l->url, "reviewprefs") && $this->mode === "p")
+        if (($l = SessionList::active()) && str_starts_with($l->url, "reviewprefs"))
             Ht::stash_script("crpfocus('revprefform')");
     }
 
