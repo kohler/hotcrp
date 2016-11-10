@@ -11,7 +11,7 @@ class PaperApi {
         $decs = $user->conf->decision_map();
         if (!isset($decs[$dnum]))
             json_exit(["ok" => false, "error" => "Bad decision value."]);
-        $result = $user->conf->qe_raw("update Paper set outcome=$dnum where paperId=$prow->paperId");
+        $result = $user->conf->qe("update Paper set outcome=? where paperId=?", $dnum, $prow->paperId);
         if ($result && ($dnum > 0 || $prow->outcome > 0))
             $user->conf->update_paperacc_setting($dnum > 0);
         Dbl::free($result);
