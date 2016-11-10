@@ -678,9 +678,7 @@ if ($ss)
 if ($pl && $pl->count > 0)
     echo "  <td><div class='tll3'><a class='tla nw' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
 echo "</tr></table></div></div>\n\n";
-if ($pl && $pl->count > 0)
-    echo Ht::unstash_script("crpfocus(\"searchform\",$activetab,1)");
-else
+if (!$pl || $pl->count == 0)
     Ht::stash_script("crpfocus(\"searchform\",$activetab)");
 
 
