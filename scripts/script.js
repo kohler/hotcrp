@@ -1795,7 +1795,7 @@ function focus_within(elt, subfocus_selector, seltype) {
 
 var foldmap = {};
 function fold(elt, dofold, foldtype) {
-    var i, foldname, selt, opentxt, closetxt, foldnum, foldnumid;
+    var i, foldname, selt, opentxt, closetxt, isopen, foldnum, foldnumid;
 
     // find element
     if (elt instanceof Array) {
@@ -1815,21 +1815,22 @@ function fold(elt, dofold, foldtype) {
     foldnumid = foldnum ? foldnum : "";
     opentxt = "fold" + foldnumid + "o";
     closetxt = "fold" + foldnumid + "c";
-    if (dofold == null && elt.className.indexOf(opentxt) >= 0)
-        dofold = true;
 
-    // perform fold
-    if (dofold)
-        elt.className = elt.className.replace(opentxt, closetxt);
-    else
-        elt.className = elt.className.replace(closetxt, opentxt);
+    // check current fold state
+    isopen = elt.className.indexOf(opentxt) >= 0;
+    if (dofold == null || !dofold != isopen) {
+        // perform fold
+        if (isopen)
+            elt.className = elt.className.replace(opentxt, closetxt);
+        else {
+            elt.className = elt.className.replace(closetxt, opentxt);
+            focus_within(elt);
+        }
 
-    // check for focus
-    focus_within(elt);
-
-    // check for session
-    if ((opentxt = elt.getAttribute("data-fold-session")))
-        jQuery.get(hoturl("api", "fn=setsession&var=" + opentxt.replace("$", foldtype) + "&val=" + (dofold ? 1 : 0)));
+        // check for session
+        if ((opentxt = elt.getAttribute("data-fold-session")))
+            jQuery.get(hoturl("api", "fn=setsession&var=" + opentxt.replace("$", foldtype) + "&val=" + (isopen ? 1 : 0)));
+    }
 
     return false;
 }
