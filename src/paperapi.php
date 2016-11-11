@@ -362,4 +362,21 @@ class PaperApi {
         $response["ok"] = !empty($response);
         json_exit($response);
     }
+
+    static function follow_api(Contact $user, $qreq, $prow) {
+        $reviewer = $user;
+        if ($qreq->reviewer) {
+            $reviewer = $user->conf->user_by_email($qreq->reviewer);
+            if (!$reviewer)
+                json_exit(["ok" => false, "error" => "No such reviewer."]);
+            else if ($reviewer->contactId != $user->contactId
+                     && !$user->can_administer($prow))
+                json_exit(["ok" => false, "error" => "Reviewer permission error."]);
+        }
+        $following = friendly_boolean($qreq->following);
+        if ($following === null)
+            json_exit(["ok" => false, "error" => "Bad 'following'."]);
+        saveWatchPreference($prow->paperId, $reviewer->contactId, WATCHTYPE_COMMENT, $following);
+        json_exit(["ok" => true, "following" => $following]);
+    }
 }

@@ -3703,6 +3703,20 @@ $(function () { $(".hotcrp_searchbox").each(make_taghelp_q); });
 
 
 // review preferences
+function setfollow() {
+    var self = this;
+    $.ajax(hoturl_post("api", {
+            fn: "follow", p: $(this).data("paper") || hotcrp_paperid,
+            following: this.checked, reviewer: $(this).data("reviewer") || hotcrp_user.email
+        }), {
+        success: function (rv) {
+            setajaxcheck(self, rv);
+            if (rv.ok)
+                self.checked = rv.following;
+        }
+    });
+}
+
 function add_revpref_ajax(selector, reviewer) {
     function rp_focus() {
         autosub("update", this);

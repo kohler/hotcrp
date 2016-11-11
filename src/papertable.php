@@ -1545,7 +1545,6 @@ class PaperTable {
         $row = edb_row($result);
 
         $this->_papstripBegin();
-        echo Ht::form_div(hoturl_post("paper", "p=$prow->paperId&amp;setfollow=1"), array("id" => "watchform", "class" => "fold7c", "onsubmit" => "Miniajax.submit('watchform')"));
 
         if ($row[4] && ($row[4] & ($this->watchCheckbox >> 1)))
             $watchValue = $row[4];
@@ -1555,18 +1554,16 @@ class PaperTable {
         else
             $watchValue = 0;
 
-        echo $this->papt("watch",
-                         Ht::checkbox("follow", $this->watchCheckbox,
-                                       $watchValue & $this->watchCheckbox,
-                                       array("onchange" => "Miniajax.submit('watchform')",
-                                             "style" => "padding-left:0;margin-left:0"))
-                         . "&nbsp;" . Ht::label("Email notification"),
-                         array("type" => "ps")),
-            "<div class='pshint'>Select to receive email on updates to reviews and comments. <span id='watchformresult'></span>",
-            Ht::submit("Save", array("class" => "fx7")),
-            "</div></div></form></div>\n\n";
-
-        Ht::stash_script("Miniajax.onload(\"watchform\")");
+        echo "<form><div>",
+            $this->papt("watch",
+                        Ht::checkbox("follow", $this->watchCheckbox,
+                                     $watchValue & $this->watchCheckbox,
+                                     ["onchange" => "setfollow.call(this)",
+                                      "style" => "padding-left:0;margin-left:0"])
+                        . "&nbsp;" . Ht::label("Email notification"),
+                        array("type" => "ps")),
+            "<div class='pshint'>Select to receive email on updates to reviews and comments.</div>",
+            "</div></form></div>\n\n";
     }
 
 
