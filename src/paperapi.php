@@ -305,13 +305,26 @@ class PaperApi {
         json_exit(["ok" => true, "tags" => $tags]);
     }
 
+    static function get_reviewer(Contact $user, $qreq, $prow) {
+        $reviewer = $user;
+        if ($qreq->reviewer) {
+            if (ctype_digit($qreq->reviewer))
+                $reviewer = $user->conf->user_by_id($qreq->reviewer);
+            else
+                $reviewer = $user->conf->user_by_email($qreq->reviewer);
+            if (!$reviewer)
+                json_exit(["ok" => false, "error" => "No such user."]);
+            else if ($reviewer->contactId !== $user->contactId
+                     && ($prow ? !$user->can_administer($prow, $qreq->forceShow) : !$user->privChair))
+                json_exit(["ok" => false, "error" => "Permission error."]);
+        }
+        return $reviewer;
+    }
+
     static function setpref_api(Contact $user, $qreq, $prow) {
-        $cid = $user->contactId;
-        if ($user->allow_administer($prow) && $qreq->reviewer
-            && ($x = cvtint($qreq->reviewer)) > 0)
-            $cid = $x;
+        $reviewer = self::get_reviewer($user, $qreq, $prow);
         if (($v = parse_preference($qreq->pref))) {
-            if (PaperActions::save_review_preferences([[$prow->paperId, $cid, $v[0], $v[1]]]))
+            if (PaperActions::save_review_preferences([[$prow->paperId, $reviewer->contactId, $v[0], $v[1]]]))
                 $j = ["ok" => true, "response" => "Saved"];
             else
                 $j = ["ok" => false];
@@ -364,15 +377,7 @@ class PaperApi {
     }
 
     static function follow_api(Contact $user, $qreq, $prow) {
-        $reviewer = $user;
-        if ($qreq->reviewer) {
-            $reviewer = $user->conf->user_by_email($qreq->reviewer);
-            if (!$reviewer)
-                json_exit(["ok" => false, "error" => "No such reviewer."]);
-            else if ($reviewer->contactId != $user->contactId
-                     && !$user->can_administer($prow))
-                json_exit(["ok" => false, "error" => "Reviewer permission error."]);
-        }
+        $reviewer = self::get_reviewer($user, $qreq, $prow);
         $following = friendly_boolean($qreq->following);
         if ($following === null)
             json_exit(["ok" => false, "error" => "Bad 'following'."]);

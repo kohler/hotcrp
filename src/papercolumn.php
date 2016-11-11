@@ -833,7 +833,7 @@ class PreferencePaperColumn extends PaperColumn {
             $reviewer_cid = 0;
             if ($pl->contact->privChair)
                 $reviewer_cid = $pl->reviewer_cid() ? : 0;
-            $pl->add_header_script("add_revpref_ajax(" . json_encode("#$tid") . ",$reviewer_cid)", "revpref_ajax");
+            $pl->add_header_script("add_revpref_ajax(" . json_encode("#$tid") . ")", "revpref_ajax_$tid");
         }
         return true;
     }

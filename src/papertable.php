@@ -1402,18 +1402,13 @@ class PaperTable {
     function papstripReviewPreference() {
         $this->_papstripBegin();
         echo $this->papt("revpref", "Review preference", array("type" => "ps")),
-            "<div class='psv'>",
-            Ht::form_div(hoturl_post("review", "p=" . $this->prow->paperId), array("id" => "revprefform", "class" => "fold7c", "onsubmit" => "return Miniajax.submit('revprefform')", "divclass" => "aahc")),
-            Ht::hidden("setrevpref", 1);
-        if (isset($this->qreq->forceShow))
-            echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
+            "<div class=\"psv\"><form onsubmit=\"return false\"><div>";
         $rp = unparse_preference($this->prow);
         $rp = ($rp == "0" ? "" : $rp);
-        echo "<input id=\"revprefform_d\" type=\"text\" size=\"4\" name=\"revpref\" value=\"$rp\" onchange=\"Miniajax.submit('revprefform')\" tabindex=\"1\" class=\"want-focus want-select\" />",
-            " ", Ht::submit("Save", array("class" => "fx7")),
-            " <span id='revprefformresult'></span>",
+        echo "<input id=\"revprefform_d\" type=\"text\" class=\"revpref\" name=\"revpref", $this->prow->paperId,
+            "\" size=\"4\" value=\"$rp\" tabindex=\"1\" class=\"want-focus want-select\" />",
             "</div></form></div></div>\n";
-        Ht::stash_script("Miniajax.onload(\"revprefform\");shortcut(\"revprefform_d\").add()");
+        Ht::stash_script("add_revpref_ajax(\"#revprefform_d\");shortcut(\"revprefform_d\").add()");
         if (($l = SessionList::active()) && str_starts_with($l->url, "reviewprefs"))
             Ht::stash_script("crpfocus('revprefform')");
     }

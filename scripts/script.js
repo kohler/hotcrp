@@ -2075,7 +2075,6 @@ return function (name, elt) {
     if (elt && !elt.onkeypress && elt.tagName == "INPUT")
         elt.onkeypress = autosub_kp;
 };
-
 })();
 
 
@@ -3139,9 +3138,7 @@ function quicklink_shortcut(evt, key) {
     if (a && a.focus) {
         // focus (for visual feedback), call callback
         a.focus();
-        f = make_link_callback(a);
-        if (!Miniajax.isoutstanding("revprefform", f))
-            f();
+        add_revpref_ajax.then(make_link_callback(a));
         return true;
     } else if ($$("quicklink_list")) {
         // at end of list
@@ -3717,17 +3714,33 @@ function setfollow() {
     });
 }
 
-function add_revpref_ajax(selector, reviewer) {
+var add_revpref_ajax = (function () {
+    var p = null;
+
+    function rp(selector) {
+        var $e = $(selector);
+        $e.is("input") && ($e = $e.parent());
+        $e.off(".revpref_ajax")
+            .on("focus.revpref_ajax", "input.revpref", rp_focus)
+            .on("change.revpref_ajax", "input.revpref", rp_change)
+            .on("keypress.revpref_ajax", "input.revpref", make_onkeypress_enter(rp_change));
+    }
+
+    rp.then = function (f) {
+        p ? p.then(f) : f();
+    };
+
     function rp_focus() {
         autosub("update", this);
     }
 
     function rp_change() {
-        var self = this, pid = this.name.substr(7), cid = reviewer, pos;
+        var self = this, pid = this.name.substr(7), cid = null, pos;
         if ((pos = pid.indexOf("u")) > 0) {
             cid = pid.substr(pos + 1);
             pid = pid.substr(0, pos);
         }
+        p = new HPromise();
         $.ajax(hoturl_post("api", "fn=setpref&p=" + pid), {
             data: {pref: self.value, reviewer: cid},
             success: function (rv) {
@@ -3737,15 +3750,13 @@ function add_revpref_ajax(selector, reviewer) {
             },
             complete: function (xhr, status) {
                 hiliter(self);
+                p.fulfill(null);
             }
         });
     }
 
-    $(selector).off(".revpref_ajax")
-        .on("focus.revpref_ajax", "input.revpref", rp_focus)
-        .on("change.revpref_ajax", "input.revpref", rp_change)
-        .on("keypress.revpref_ajax", "input.revpref", make_onkeypress_enter(rp_change));
-}
+    return rp;
+})();
 
 
 function add_assrev_ajax(selector) {
