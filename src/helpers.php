@@ -580,7 +580,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
     }
     return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
         . "\" class=\"x\" href=\"" . hoturl($baseUrl, $urlrest)
-        . "\" onclick=\"return !Miniajax.isoutstanding('revprevform', make_link_callback(this))\">"
+        . "\" onclick=\"add_revpref_ajax.then(make_link_callback(this));return false\">"
         . ($isprev ? Ht::img("_.gif", "<-", "prev") : "")
         . $paperText
         . ($isprev ? "" : Ht::img("_.gif", "->", "next"))
