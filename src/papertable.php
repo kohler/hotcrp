@@ -1299,7 +1299,7 @@ class PaperTable {
                     $selopt[] = $p->contactId;
             $this->conf->stash_hotcrp_pc($Me);
             echo '<form class="fx"><div>',
-                Ht::select($type, [], 0, ["id" => "fold{$type}_d", "class" => "need-pcselector", "data-pcselector-options" => join(" ", $selopt), "data-pcselector-selected" => $value]),
+                Ht::select($type, [], 0, ["class" => "psc-select need-pcselector want-focus", "style" => "width:99%", "data-pcselector-options" => join(" ", $selopt), "data-pcselector-selected" => $value]),
                 '</div></form>';
             Ht::stash_script('make_pseditor("' . $type . '",{p:' . $this->prow->paperId . ',fn:"set' . $type . '"})');
         }
@@ -1367,7 +1367,7 @@ class PaperTable {
             if ($this->prow)
                 $editable = $this->prow->editable_tags($Me);
             echo '<div style="position:relative">',
-                '<textarea id="foldtags_d" cols="20" rows="4" name="tags" onkeypress="return crpSubmitKeyFilter(this, event)" style="width:99%" tabindex="1000">',
+                '<textarea cols="20" rows="4" name="tags" onkeypress="return crpSubmitKeyFilter(this, event)" style="width:97%;margin:0" class="want-focus" tabindex="1000">',
                 $tagger->unparse($editable),
                 "</textarea></div>",
                 '<div style="padding:1ex 0;text-align:right">',
@@ -1392,7 +1392,7 @@ class PaperTable {
             '<div class="psv"><form class="fx"><div>';
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
-        echo decisionSelector($this->prow->outcome, null, " id='folddecision_d'"),
+        echo decisionSelector($this->prow->outcome, null, " class=\"want-focus\" style=\"width:99%\""),
             '</div></form><p class="fn odname">',
             htmlspecialchars($this->conf->decision_name($this->prow->outcome)),
             "</p></div></div>\n";
@@ -1464,9 +1464,9 @@ class PaperTable {
                          array("type" => "ps", "fold" => $id, "float" => $totmark)),
             '<div class="psv"><div class="fx">',
             Ht::entry("tagindex", $myval,
-                      array("id" => "fold{$id}_d", "size" => 4, "tabindex" => 1,
+                      array("size" => 4, "tabindex" => 1,
                             "onchange" => "save_tag_index(this)",
-                            "class" => "is-tag-index",
+                            "class" => "is-tag-index want-focus",
                             "data-tag-base" => "~$tag")),
             ' <span class="barsep">·</span> ',
             '<a href="', hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Edit all</a>',
@@ -1489,9 +1489,9 @@ class PaperTable {
                          array("type" => "ps", "fold" => $id, "float" => $totmark)),
             '<div class="psv"><div class="fx">',
             Ht::entry("tagindex", $myval,
-                      array("id" => "fold{$id}_d", "size" => 4, "tabindex" => 1,
+                      array("size" => 4, "tabindex" => 1,
                             "onchange" => "save_tag_index(this)",
-                            "class" => "is-tag-index",
+                            "class" => "is-tag-index want-focus",
                             "data-tag-base" => "~$tag")),
             " &nbsp;of $allotment",
             ' <span class="barsep">·</span> ',
@@ -1512,9 +1512,9 @@ class PaperTable {
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id,
                          Ht::checkbox("tagindex", "0", $myval !== "",
-                                      array("id" => "fold" . $id . "_d", "tabindex" => 1,
+                                      array("tabindex" => 1,
                                             "onchange" => "save_tag_index(this)",
-                                            "class" => "is-tag-index",
+                                            "class" => "is-tag-index want-focus",
                                             "data-tag-base" => "~$tag",
                                             "style" => "padding-left:0;margin-left:0;margin-top:0"))
                          . "&nbsp;" . Ht::label("#$tag vote"),

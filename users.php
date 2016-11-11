@@ -300,7 +300,7 @@ if (count($tOpt) > 1) {
     echo Ht::form_div(hoturl("users"), array("method" => "get"));
     if (isset($_REQUEST["sort"]))
         echo Ht::hidden("sort", $_REQUEST["sort"]);
-    echo Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
+    echo Ht::select("t", $tOpt, $_REQUEST["t"], ["class" => "want-focus"]),
         " &nbsp;", Ht::submit("Go"), "</div></form>";
 
     echo "</div><div class='tld2'>";

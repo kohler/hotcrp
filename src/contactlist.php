@@ -481,7 +481,7 @@ class ContactList {
             $types["pcinfo"] = "PC info";
         $nlll = 1;
         $t .= "<span class=\"lll{$nlll}\"><a class=\"lla{$nlll}\" href=\"#\" onclick=\"return crpfocus('plact',{$nlll})\">Download</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;"
-            . Ht::select("getaction", $types, null, array("id" => "plact{$nlll}_d"))
+            . Ht::select("getaction", $types, null, ["class" => "want-focus"])
             . "&nbsp; " . Ht::submit("getgo", "Go", array("class" => "bsm"))
             . "</span>";
 
@@ -492,9 +492,7 @@ class ContactList {
             $t .= "<span class=\"lll{$nlll}\"><a class=\"lla{$nlll}\" href=\"#\" onclick=\"return crpfocus('plact',{$nlll})\">Tag</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;";
             $t .= Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), @$_REQUEST["tagtype"])
                 . ' &nbsp;tag(s) &nbsp;'
-                . Ht::entry("tag", @$_REQUEST["tag"],
-                            array("id" => "plact{$nlll}_d", "size" => 15,
-                                  "onfocus" => "autosub('tagact',this)"))
+                . Ht::entry("tag", @$_REQUEST["tag"], ["size" => 15, "class" => "want-focus", "onfocus" => "autosub('tagact',this)"])
                 . ' &nbsp;' . Ht::submit("tagact", "Go") . '</span>';
 
             ++$nlll;
@@ -504,7 +502,7 @@ class ContactList {
                                                  "enableaccount" => "Enable",
                                                  "resetpassword" => "Reset password",
                                                  "sendaccount" => "Send account information"),
-                             null, array("id" => "plact{$nlll}_d"))
+                             null, ["class" => "want-focus"])
                 . "&nbsp; " . Ht::submit("modifygo", "Go", array("class" => "bsm")) . "</span>";
         }
 

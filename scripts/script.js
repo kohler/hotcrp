@@ -1775,6 +1775,24 @@ function hiliter_children(form) {
     jQuery(form).on("change input", "input, select, textarea", hiliter);
 }
 
+function focus_within(elt, subfocus_selector, seltype) {
+    var $wf = $(elt).find(".want-focus");
+    if (subfocus_selector)
+        $wf = $wf.filter(subfocus_selector);
+    if ($wf.length == 1) {
+        var felt = $wf[0];
+        felt.focus();
+        if (!felt.hotcrp_ever_focused) {
+            if (felt.select && $(felt).hasClass("want-select"))
+                felt.select();
+            else if (felt.setSelectionRange)
+                felt.setSelectionRange(felt.value.length, felt.value.length);
+            felt.hotcrp_ever_focused = true;
+        }
+    }
+    return $wf.length == 1;
+}
+
 var foldmap = {};
 function fold(elt, dofold, foldtype) {
     var i, foldname, selt, opentxt, closetxt, foldnum, foldnumid;
@@ -1807,14 +1825,7 @@ function fold(elt, dofold, foldtype) {
         elt.className = elt.className.replace(closetxt, opentxt);
 
     // check for focus
-    if (!dofold && foldname
-        && (selt = $$("fold" + foldname + foldnumid + "_d"))) {
-        if (selt.setSelectionRange && selt.hotcrp_ever_focused == null) {
-            selt.setSelectionRange(selt.value.length, selt.value.length);
-            selt.hotcrp_ever_focused = true;
-        }
-        selt.focus();
-    }
+    focus_within(elt);
 
     // check for session
     if ((opentxt = elt.getAttribute("data-fold-session")))
@@ -1878,7 +1889,7 @@ function divclick(event) {
 function crpfocus(id, subfocus, seltype) {
     var selt = $$(id), m, $j;
     if (!selt)
-        return;
+        return true;
     while (subfocus && typeof subfocus === "object")
         if ((m = subfocus.className.match(/\b(?:lll|lld|tll|tld)(\d+)/)))
             subfocus = +m[1];
@@ -1887,30 +1898,13 @@ function crpfocus(id, subfocus, seltype) {
     if (selt && subfocus)
         selt.className = selt.className.replace(/links[0-9]*/, 'links' + subfocus);
 
-    var felt = $$(id + (subfocus || "") + "_d");
-    if (!felt) {
-        $j = $(selt).find(".want-focus");
-        if (subfocus)
-            $j = $j.filter(".lld" + subfocus + " *, .tld" + subfocus + " *");
-        if ($j.length == 1)
-            felt = $j[0];
-    }
-    if (felt && !(felt.type == "text" && felt.value && seltype == 1)) {
-        felt.focus();
-        if (!$(felt).data("focused")) {
-            if (felt.select && $(felt).hasClass("want-select"))
-                felt.select();
-            else if (felt.setSelectionRange)
-                felt.setSelectionRange(felt.value.length, felt.value.length);
-            $(felt).data("focused", 1);
-        }
-    }
+    focus_within(selt, subfocus ? ".lld" + subfocus + " *, .tld" + subfocus + " *" : false, seltype);
 
-    if ((selt || felt) && window.event)
+    if (window.event)
         window.event.returnValue = false;
     if (seltype && seltype >= 1)
         window.scroll(0, 0);
-    return !(selt || felt);
+    return false;
 }
 
 function crpSubmitKeyFilter(elt, e) {
@@ -5216,20 +5210,6 @@ function document_upload() {
     $(this).remove();
     file[0].click();
     return false;
-}
-
-function dosubmitstripselector(type) {
-    return Miniajax.submit(type + "form", function (rv) {
-        var sel, p;
-        $$(type + "formresult").innerHTML = rv.response;
-        if (rv.ok) {
-            sel = $$("fold" + type + "_d");
-            p = $$("fold" + type).getElementsByTagName("p")[0];
-            p.innerHTML = sel.options[sel.selectedIndex].innerHTML;
-            if (type == "decision")
-                fold("shepherd", sel.value <= 0 && $$("foldshepherd_d").value, 2);
-        }
-    });
 }
 
 function docheckpaperstillready() {
