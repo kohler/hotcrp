@@ -35,17 +35,4 @@ class PaperActions {
             $Conf->ajaxExit(array("ok" => !Dbl::has_error() && !@$Error["revpref"],
                                   "value" => $v));
     }
-
-    static function set_follow($prow) {
-        global $Conf, $Me;
-        $ajax = defval($_REQUEST, "ajax", 0);
-        $cid = $Me->contactId;
-        if ($Me->privChair && ($x = cvtint(@$_REQUEST["contactId"])) > 0)
-            $cid = $x;
-        saveWatchPreference($prow->paperId, $cid, WATCHTYPE_COMMENT, defval($_REQUEST, "follow"));
-        if (!Dbl::has_error())
-            $Conf->confirmMsg("Saved");
-        if ($ajax)
-            $Conf->ajaxExit(array("ok" => !Dbl::has_error()));
-    }
 }

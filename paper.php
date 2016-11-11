@@ -79,10 +79,6 @@ if (isset($_REQUEST["setrevpref"]) && $prow && check_post()) {
     PaperActions::setReviewPreference($prow);
     loadRows();
 }
-if (isset($_REQUEST["setfollow"]) && $prow && check_post()) {
-    PaperActions::set_follow($prow);
-    loadRows();
-}
 if ($prow && isset($_GET["m"]) && $_GET["m"] === "api"
     && isset($_GET["fn"]) && $conf->has_api($_GET["fn"])) {
     $Qreq = make_qreq();
