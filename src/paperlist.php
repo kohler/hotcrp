@@ -144,11 +144,12 @@ class PaperList {
 
     static public $include_stash = true;
 
-    function __construct($search, $args = array(), Qobject $qreq = null) {
+    function __construct($search, $args = array(), $qreq = null) {
         $this->search = $search;
         $this->conf = $this->search->conf;
         $this->contact = $this->search->contact;
-        $qreq = $qreq ? : new Qobject;
+        if (!$qreq || !($qreq instanceof Qrequest))
+            $qreq = new Qrequest("GET", $qreq);
         $this->qreq = $qreq;
 
         $this->sortable = isset($args["sort"]) && $args["sort"];

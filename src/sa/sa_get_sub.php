@@ -291,7 +291,7 @@ class GetCSV_SearchAction extends SearchAction {
         $actions[] = [1089, $this->subname, "Paper information", "CSV"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        $search = new PaperSearch($user, $qreq, $qreq->_INTERNAL->reviewer_contact);
+        $search = new PaperSearch($user, $qreq, $qreq->attachment("reviewer_contact"));
         $pl = new PaperList($search, ["sort" => true, "display" => $qreq->display], $qreq);
         $pl->set_selection($ssel, true);
         $pl->set_fold("sel", true);

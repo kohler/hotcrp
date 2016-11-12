@@ -242,8 +242,8 @@ function xassert_assign_fail($who, $override, $what) {
 }
 
 function call_api($fn, $user, $qreq, $prow) {
-    if (!($qreq instanceof Qobject))
-        $qreq = new Qobject($qreq);
+    if (!($qreq instanceof Qrequest))
+        $qreq = new Qrequest("POST", $qreq);
     $uf = $user->conf->api($fn);
     xassert($uf);
     JsonResultException::$capturing = true;

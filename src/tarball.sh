@@ -113,6 +113,7 @@ lib/mimetype.php
 lib/mincostmaxflow.php
 lib/navigation.php
 lib/qobject.php
+lib/qrequest.php
 lib/redirect.php
 lib/restoredb.sh
 lib/runsql.sh

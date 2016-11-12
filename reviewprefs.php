@@ -32,7 +32,7 @@ if ($Qreq->reviewer && $Me->privChair
     }
 }
 $reviewer = $reviewer_contact->contactId;
-$Qreq->_INTERNAL->reviewer_contact = $reviewer_contact;
+$Qreq->set_attachment("reviewer_contact", $reviewer_contact);
 if ($incorrect_reviewer)
     Conf::msg_error("Reviewer " . htmlspecialchars($Qreq->reviewer) . " is not on the PC.");
 
@@ -138,7 +138,7 @@ if ($Qreq->fn === "setpref" && $SSel && !$SSel->is_empty() && check_post()) {
     if (!parse_preference($Qreq->pref))
         Conf::msg_error("Preferences must be small positive or negative integers.");
     else {
-        $new_qreq = new Qobject;
+        $new_qreq = new Qrequest($Qreq->method());
         foreach ($SSel->selection() as $p)
             $new_qreq["revpref$p"] = $Qreq->pref;
         savePreferences($new_qreq, false);
@@ -182,7 +182,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
 
     $successes = 0;
     $errors = array();
-    $new_qreq = new Qobject;
+    $new_qreq = new Qrequest("POST");
     while (($line = $csv->next())) {
         if (isset($line["paper"]) && isset($line["preference"])) {
             $paper = trim($line["paper"]);

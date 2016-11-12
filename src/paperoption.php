@@ -782,8 +782,8 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
-        if ($qreq->_FILES["opt$this->id"])
-            return DocumentInfo::make_file_upload($pj->pid, $this->id, $qreq->_FILES["opt$this->id"]);
+        if ($qreq->has_file("opt$this->id"))
+            return DocumentInfo::make_file_upload($pj->pid, $this->id, $qreq->file("opt$this->id"));
         else if ($qreq["remove_opt$this->id"])
             return null;
         else
@@ -1044,7 +1044,7 @@ class AttachmentsPaperOption extends PaperOption {
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         $attachments = $opt_pj ? : [];
         $opfx = "opt{$this->id}_";
-        foreach ($qreq->_FILES ? : [] as $k => $v)
+        foreach ($qreq->files() as $k => $v)
             if (str_starts_with($k, $opfx))
                 $attachments[] = DocumentInfo::make_file_upload($pj->pid, $this->id, $v);
         for ($i = 0; $i < count($attachments); ++$i)

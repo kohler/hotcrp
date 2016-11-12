@@ -21,7 +21,7 @@ class PaperApi {
             json_exit(["ok" => false]);
     }
 
-    private static function set_paper_pc_api($user, $qreq, $prow, $type) {
+    private static function set_paper_pc_api(Contact $user, $qreq, $prow, $type) {
         // canonicalize $value
         $value = $qreq->$type;
         $pc = null;

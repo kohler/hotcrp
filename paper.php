@@ -147,7 +147,7 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
 
     $saved = $ps->save_paper_json($pj);
 
-    if (!$saved && !$prow && count($qreq->_FILES))
+    if (!$saved && !$prow && $qreq->has_files())
         $ps->error_at("paper", "<strong>Your uploaded files were ignored.</strong>");
 
     if (!$saved) {
@@ -278,7 +278,7 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
         $action = "final";
     else if ($Qreq->submitpaper
              && (($prow && $prow->size > 0)
-                 || $Qreq->_FILES->paperUpload
+                 || $Qreq->has_file("paperUpload")
                  || opt("noPapers")))
         $action = "submit";
 

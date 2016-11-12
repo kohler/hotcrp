@@ -271,27 +271,24 @@ function uploaded_file_error($finfo) {
 }
 
 function make_qreq() {
-    $qreq = new Qobject;
+    $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
     foreach ($_GET as $k => $v)
         $qreq[$k] = $v;
     foreach ($_POST as $k => $v)
         $qreq[$k] = $v;
 
     // $_FILES requires special processing since we want error messages.
-    $qreq->_FILES = new Qobject;
     $errors = [];
     foreach ($_FILES as $f => $finfo) {
-        if (($e = $finfo["error"]) == UPLOAD_ERR_OK) {
+        if ($finfo["error"] == UPLOAD_ERR_OK) {
             if (is_uploaded_file($finfo["tmp_name"]))
-                $qreq->_FILES[$f] = $finfo;
+                $qreq->set_file($f, $finfo);
         } else if (($err = uploaded_file_error($finfo)))
             $errors[] = $err;
     }
     if (!empty($errors) && Conf::$g)
         Conf::msg_error("<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>");
 
-    // _INTERNAL is for internal data only
-    $qreq->_INTERNAL = new Qobject;
     return $qreq;
 }
 
