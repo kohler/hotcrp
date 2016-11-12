@@ -23,10 +23,9 @@ function _review_table_round_selector(PaperInfo $prow, $rr) {
             . "</span>";
     }
     return '&nbsp;'
-        . Ht::form(hoturl_post("assign", "p={$prow->paperId}&amp;r={$rr->reviewId}&amp;setround=1"))
-        . '<div class="inline">'
+        . '<form onsubmit="return false"><div class="inline">'
         . Ht::select("round", $sel, $prow->conf->round_name($rr->reviewRound) ? : "unnamed",
-                     array("onchange" => "save_review_round(this)", "title" => "Set review round"))
+                     array("onchange" => "save_review_round(this)", "title" => "Set review round", "data-reviewid" => $rr->reviewId))
         . '</div></form>';
 }
 

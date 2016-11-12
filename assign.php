@@ -123,29 +123,6 @@ if (isset($_REQUEST["retract"]) && check_post()) {
 }
 
 
-function handle_set_round() {
-    global $Conf, $Me, $prow, $rrows;
-
-    // check permissions
-    if (!req("r") || !($rr = rrow_by_reviewid($_REQUEST["r"])))
-        $Conf->ajaxExit(array("ok" => false, "error" => "No such review."));
-    if (!$Me->can_administer($prow))
-        $Conf->ajaxExit(array("ok" => false, "error" => "Permission denied."));
-    $rname = trim((string) $_POST["round"]);
-    $round = $Conf->sanitize_round_name($rname);
-    if ($round === false)
-        $Conf->ajaxExit(array("ok" => false, "error" => Conf::round_name_error($rname)));
-
-    // assign round
-    $rnum = $Conf->round_number($rname, true);
-    Dbl::qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rr->reviewId);
-    $Conf->ajaxExit(array("ok" => true));
-}
-
-if (isset($_GET["setround"]) && check_post())
-    handle_set_round();
-
-
 // change PC assignments
 function pcAssignments() {
     global $Conf, $Me, $prow;

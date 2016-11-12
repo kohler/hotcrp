@@ -2153,8 +2153,12 @@ return {
 })();
 
 function save_review_round(elt) {
-    var form = jQuery(elt).closest("form");
-    jQuery.post(form[0].action, form.serialize() + "&ajax=1");
+    $.ajax(hoturl_post("api", {
+            fn: "reviewround", p: hotcrp_paperid, r: $(elt).data("reviewid"),
+            round: $(elt).val()
+        }), {
+        method: "POST", success: function (rv) { setajaxcheck(elt, rv); }
+    });
 }
 
 

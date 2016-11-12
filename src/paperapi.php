@@ -384,4 +384,20 @@ class PaperApi {
         saveWatchPreference($prow->paperId, $reviewer->contactId, WATCHTYPE_COMMENT, $following);
         json_exit(["ok" => true, "following" => $following]);
     }
+
+    static function reviewround_api(Contact $user, $qreq, $prow) {
+        if (!$qreq->r
+            || !($rr = $user->conf->reviewRow($qreq->r))
+            || $rr->paperId != $prow->paperId)
+            json_exit(["ok" => false, "error" => "No such review."]);
+        if (!$user->can_administer($prow))
+            json_exit(["ok" => false, "error" => "Permission error."]);
+        $rname = trim((string) $qreq->round);
+        $round = $user->conf->sanitize_round_name($rname);
+        if ($round === false)
+            json_exit(["ok" => false, "error" => Conf::round_name_error($rname)]);
+        $rnum = $user->conf->round_number($round, true);
+        $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rr->reviewId);
+        json_exit(["ok" => true]);
+    }
 }
