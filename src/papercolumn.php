@@ -183,7 +183,7 @@ class SelectorPaperColumn extends PaperColumn {
     function header(PaperList $pl, $is_text) {
         return $is_text ? "Selected" : "";
     }
-    private function checked(PaperList $pl, PaperInfo $row) {
+    protected function checked(PaperList $pl, PaperInfo $row) {
         return $pl->is_selected($row->paperId, $this->name == "selon");
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
@@ -218,7 +218,7 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
     function header(PaperList $pl, $is_text) {
         return "Conflict?";
     }
-    private function checked(PaperList $pl, PaperInfo $row) {
+    protected function checked(PaperList $pl, PaperInfo $row) {
         return $pl->is_selected($row->paperId, $row->reviewerConflictType > 0);
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
