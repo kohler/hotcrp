@@ -176,26 +176,15 @@ class SelectorPaperColumn extends PaperColumn {
         parent::__construct($name, Column::VIEW_COLUMN, $extra);
     }
     function prepare(PaperList $pl, $visible) {
-        if ($this->name == "selconf" && !$pl->contact->privChair)
-            return false;
-        if ($this->name == "selconf" || $this->name == "selunlessconf")
+        if ($this->name == "selunlessconf")
             $pl->qopts["reviewer"] = $pl->reviewer_cid();
-        if ($this->name == "selconf" && ($tid = $pl->table_id()))
-            $pl->add_header_script("add_conflict_ajax(" . json_encode("#$tid") . ")");
         return true;
     }
     function header(PaperList $pl, $is_text) {
-        if ($this->name == "selconf")
-            return "Conflict?";
-        else if ($is_text)
-            return "Selected";
-        else
-            return "";
+        return $is_text ? "Selected" : "";
     }
     private function checked(PaperList $pl, PaperInfo $row) {
-        $def = ($this->name == "selon"
-                || ($this->name == "selconf" && $row->reviewerConflictType > 0));
-        return $pl->is_selected($row->paperId, $def);
+        return $pl->is_selected($row->paperId, $this->name == "selon");
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
         if ($this->name == "selunlessconf" && $row->reviewerConflictType)
@@ -206,15 +195,45 @@ class SelectorPaperColumn extends PaperColumn {
             $c .= ' checked="checked"';
             unset($row->folded);
         }
-        if ($this->name == "selconf" && $row->reviewerConflictType >= CONFLICT_AUTHOR)
-            $c .= ' disabled="disabled"';
-        if ($this->name != "selconf")
-            $c .= ' onclick="rangeclick(event,this)"';
         return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
-            . '<input type="checkbox" class="cb" name="pap[]" value="' . $row->paperId . '" tabindex="3" id="psel' . $pl->count . '"' . $c . ' />';
+            . '<input type="checkbox" class="cb" name="pap[]" value="' . $row->paperId . '" tabindex="3" onclick="rangeclick(event,this)"' . $c . ' />';
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $this->checked($pl, $row) ? "Y" : "N";
+    }
+}
+
+class ConflictSelector_PaperColumn extends SelectorPaperColumn {
+    function __construct($name, $extra) {
+        parent::__construct($name, $extra);
+    }
+    function prepare(PaperList $pl, $visible) {
+        if (!$pl->contact->privChair)
+            return false;
+        $pl->qopts["reviewer"] = $pl->reviewer_cid();
+        if (($tid = $pl->table_id()))
+            $pl->add_header_script("add_assrev_ajax(" . json_encode("#$tid") . ")");
+        return true;
+    }
+    function header(PaperList $pl, $is_text) {
+        return "Conflict?";
+    }
+    private function checked(PaperList $pl, PaperInfo $row) {
+        return $pl->is_selected($row->paperId, $row->reviewerConflictType > 0);
+    }
+    function content(PaperList $pl, PaperInfo $row, $rowidx) {
+        $pl->any->sel = true;
+        $c = "";
+        if ($row->reviewerConflictType >= CONFLICT_AUTHOR)
+            $c .= ' disabled="disabled"';
+        if ($this->checked($pl, $row)) {
+            $c .= ' checked="checked"';
+            unset($row->folded);
+        }
+        return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
+            . '<input type="checkbox" class="cb" '
+            . 'name="assrev' . $row->paperId . 'u' . $pl->reviewer_cid()
+            . '" value="-1" tabindex="3"' . $c . ' />';
     }
 }
 
@@ -695,9 +714,9 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->is_manager())
             return false;
+        $pl->qopts["reviewer"] = $pl->reviewer_cid();
         if ($visible > 0 && ($tid = $pl->table_id()))
             $pl->add_header_script("add_assrev_ajax(" . json_encode("#$tid") . ")");
-        $pl->qopts["reviewer"] = $pl->reviewer_cid();
         return true;
     }
     function analyze($pl, &$rows) {
@@ -722,7 +741,8 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
                              -1 => "Conflict");
         else
             $options = array(0 => "None", -1 => "Conflict");
-        return Ht::select("assrev$row->paperId", $options, $rt, ["tabindex" => 3]);
+        return Ht::select("assrev{$row->paperId}u" . $pl->reviewer_cid(),
+                          $options, $rt, ["tabindex" => 3]);
     }
 }
 
@@ -1916,7 +1936,7 @@ class PageCount_PaperColumn extends PaperColumn {
 function initialize_paper_columns() {
     PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)));
     PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "className" => "pl_sel")));
-    PaperColumn::register(new SelectorPaperColumn("selconf", array("className" => "pl_confselector")));
+    PaperColumn::register(new ConflictSelector_PaperColumn("selconf", array("minimal" => "true", "className" => "pl_confsel")));
     PaperColumn::register(new SelectorPaperColumn("selunlessconf", array("minimal" => true, "className" => "pl_sel")));
     PaperColumn::register(new IdPaperColumn);
     PaperColumn::register(new TitlePaperColumn);

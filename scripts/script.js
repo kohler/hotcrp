@@ -3761,37 +3761,30 @@ var add_revpref_ajax = (function () {
 
 
 function add_assrev_ajax(selector) {
+    function assrev_ajax() {
+        var that = this, m, data = {};
+        if ($("#assrevimmediate")[0].checked
+            && (m = /^assrev(\d+)u(\d+)$/.exec(that.name))) {
+            if ($(that).is("select")) {
+                data.kind = "a";
+                data["pcs" + m[2]] = that.value;
+                data.rev_round = $("#assrevround").val() || "";
+            } else {
+                data.kind = "c";
+                data["pcs" + m[2]] = that.checked ? -1 : 0;
+            }
+            $.ajax(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}), {
+                data: data, success: function (rv) {
+                    setajaxcheck(that, rv);
+                }
+            });
+        } else
+            hiliter(that);
+    }
+
     $(selector).off(".assrev_ajax")
-        .on("change.assrev_ajax", "select[name^='assrev']", function () {
-        var form = $$("assrevform"), that = this;
-        if (form && $("#assrevimmediate")[0].checked) {
-            var reviewer = form.reviewer.value;
-            form.p.value = this.name.substr(6);
-            form.rev_round.value = $("#assrevround").val() || "";
-            form["pcs" + reviewer].value = this.value;
-            Miniajax.submit("assrevform", function (rv) {
-                setajaxcheck(that, rv);
-            });
-        } else
-            hiliter(this);
-    });
-}
-
-
-function add_conflict_ajax(selector) {
-    $(selector).off(".conflict_ajax")
-        .on("click.conflict_ajax", "input[name='pap[]']", function (event) {
-        var form = $$("assrevform"), that = this;
-        if (form && $("#assrevimmediate")[0].checked) {
-            var reviewer = form.reviewer.value;
-            form.p.value = this.value;
-            form["pcs" + reviewer].value = this.checked ? -1 : 0;
-            Miniajax.submit("assrevform", function (rv) {
-                setajaxcheck(that, rv);
-            });
-        } else
-            hiliter(this);
-    });
+        .on("change.assrev_ajax", "select[name^='assrev']", assrev_ajax)
+        .on("click.assrev_ajax", "input[name^='assrev']", assrev_ajax);
 }
 
 

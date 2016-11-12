@@ -31,11 +31,23 @@ if (is_string($qreq->p))
 if (is_string($qreq->papx))
     $qreq->papx = preg_split('/\s+/', $qreq->papx);
 
+$pcm = pcMembers();
+$reviewer = cvtint($qreq->reviewer);
+if ($reviewer <= 0)
+    $reviewer = $Me->contactId;
+if ($reviewer <= 0 || !isset($pcm[$reviewer]))
+    $reviewer = 0;
+
 $qreq->assrev = array();
 foreach ($qreq as $k => $v)
-    if (str_starts_with($k, "assrev")
-        && ($p = cvtint(substr($k, 6))) > 0)
-        $qreq->assrev[$p] = $v;
+    if (str_starts_with($k, "assrev")) {
+        $suf = substr($k, 6);
+        if (($upos = strpos($suf, "u")) !== false
+            && substr($suf, $upos + 1) == $reviewer)
+            $suf = substr($suf, 0, $upos);
+        if (($p = cvtint($suf)) > 0)
+            $qreq->assrev[$p] = $v;
+    }
 if (is_array($qreq->papx)) {
     foreach ($qreq->papx as $p)
         if (($p = cvtint($p)) > 0 && !isset($qreq->assrev[$p]))
@@ -49,14 +61,6 @@ if (is_array($qreq->p) && $qreq->kind == "c") {
 }
 
 $qreq->rev_round = (string) $Conf->sanitize_round_name($qreq->rev_round);
-
-
-$pcm = pcMembers();
-$reviewer = cvtint($qreq->reviewer);
-if ($reviewer <= 0)
-    $reviewer = $Me->contactId;
-if ($reviewer <= 0 || !isset($pcm[$reviewer]))
-    $reviewer = 0;
 
 
 function saveAssignments($qreq, $reviewer) {
@@ -286,15 +290,6 @@ if ($reviewer > 0) {
             }
         echo "</tr></table>\n";
     }
-
-    // ajax assignment form
-    echo Ht::form(hoturl_post("assign", "update=1"), array("id" => "assrevform")), "<div class='clear'>",
-        Ht::hidden("kind", $qreq->kind),
-        Ht::hidden("p", ""),
-        Ht::hidden("pcs$reviewer", ""),
-        Ht::hidden("reviewer", $reviewer),
-        Ht::hidden("rev_round", $qreq->rev_round),
-        "</div></form>\n\n";
 
     // main assignment form
     $search = new PaperSearch($Me, array("t" => $qreq->t, "q" => $qreq->q,
