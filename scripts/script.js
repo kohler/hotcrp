@@ -5189,12 +5189,15 @@ return function (classes, class_prefix) {
 
 function savedisplayoptions() {
     $$("scoresortsave").value = $$("scoresort").value;
-    Miniajax.submit("savedisplayoptionsform", function (rv) {
+    $.ajax(hoturl_post("search", "savedisplayoptions=1&ajax=1"), {
+        data: $(this).closest("form").serialize(),
+        success: function (rv) {
             if (rv.ok)
                 $$("savedisplayoptionsbutton").disabled = true;
             else
                 alert("Unable to save current display options as default.");
-        });
+        }
+    });
 }
 
 function docheckformat(dt) {    // NB must return void
