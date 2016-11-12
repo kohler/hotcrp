@@ -353,7 +353,7 @@ if ($pl) {
                                    "onchange" => "plinfo('anonau',this)",
                                    "style" => "display:none"));
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
-        $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl || !$pl->any->anonau]);
+        $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl || !$pl->has("anonau")]);
         $display_options_extra .=
             Ht::checkbox("showau", 1, display_option_checked("anonau"),
                          array("id" => "showau_hidden",
@@ -364,18 +364,18 @@ if ($pl) {
         $display_options->checkbox_item(1, "aufull", "Full author info", ["id" => "showaufull", "indent" => true]);
     if ($Me->privChair && !$Conf->subBlindNever()
         && (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors))
-        $display_options->checkbox_item(1, "anonau", "Deblinded authors", ["disabled" => !$pl || !$pl->any->anonau, "indent" => true]);
-    if ($pl->any->collab)
+        $display_options->checkbox_item(1, "anonau", "Deblinded authors", ["disabled" => !$pl || !$pl->has("anonau"), "indent" => true]);
+    if ($pl->has("collab"))
         $display_options->checkbox_item(1, "collab", "Collaborators", ["indent" => true]);
 
     // Abstract group
-    if ($pl->any->abstract)
+    if ($pl->has("abstract"))
         $display_options->checkbox_item(1, "abstract", "Abstracts");
-    if ($pl->any->topics)
+    if ($pl->has("topics"))
         $display_options->checkbox_item(1, "topics", "Topics");
 
     // Tags group
-    if ($Me->isPC && $pl->any->tags) {
+    if ($Me->isPC && $pl->has("tags")) {
         $opt = array("disabled" => ($Qreq->t == "a" && !$Me->privChair));
         $display_options->checkbox_item(1, "tags", "Tags", $opt);
         if ($Me->privChair) {
@@ -387,7 +387,7 @@ if ($pl) {
     }
 
     // Row numbers
-    if (isset($pl->any->sel))
+    if ($pl->has("sel"))
         $display_options->checkbox_item(1, "rownum", "Row numbers", ["onchange" => "fold('pl',!this.checked,'rownum')"]);
 
     // Reviewers group
@@ -397,9 +397,9 @@ if ($pl) {
         $display_options->checkbox_item(2, "allpref", "Review preferences");
         $display_options->checkbox_item(2, "pcconf", "PC conflicts");
     }
-    if ($Me->isPC && $pl->any->lead)
+    if ($Me->isPC && $pl->has("lead"))
         $display_options->checkbox_item(2, "lead", "Discussion leads");
-    if ($Me->isPC && $pl->any->shepherd)
+    if ($Me->isPC && $pl->has("shepherd"))
         $display_options->checkbox_item(2, "shepherd", "Shepherds");
 
     // Scores group
@@ -690,7 +690,7 @@ if ($pl) {
 
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
-    if (isset($pl->any->sel))
+    if ($pl->has("sel"))
         echo Ht::form_div(selfHref(array("post" => post_value(), "forceShow" => null)), array("id" => "sel", "onsubmit" => "return plist_onsubmit.call(this)")),
             Ht::hidden("defaultact", "", array("id" => "defaultact")),
             Ht::hidden("forceShow", req_s("forceShow"), array("id" => "forceShow")),
@@ -709,7 +709,7 @@ if ($pl) {
             echo " (<a href=\"", hoturl("search", join("&amp;", $a)), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
     }
 
-    if (isset($pl->any->sel))
+    if ($pl->has("sel"))
         echo "</div></form>";
     echo "</div>\n";
 } else

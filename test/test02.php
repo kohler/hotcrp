@@ -218,7 +218,7 @@ xassert_eqq(Text::highlight("Is foo bar føo bar fóó bar highlit right? foö",
 xassert_eqq(UnicodeHelper::remove_f_ligatures("Héllo ﬀ,ﬁ:fi;ﬂ,ﬃ:ﬄ-ﬅ"), "Héllo ff,fi:fi;fl,ffi:ffl-ﬅ");
 
 // Qobject tests
-$q = new Qobject(["a" => 1, "b" => 2]);
+$q = new Qrequest("GET", ["a" => 1, "b" => 2]);
 xassert_eqq($q->a, 1);
 xassert_eqq($q->b, 2);
 xassert_eqq(count($q), 2);

@@ -120,7 +120,11 @@ class PaperList {
     private $_paper_link_page;
     private $_paper_link_mode;
     private $_allow_duplicates = false;
-    private $viewmap;
+    private $_view_columns = false;
+    private $_view_compact_columns = false;
+    private $_view_statistics = false;
+    private $_view_row_numbers = false;
+    private $_view_fields = [];
     private $atab;
     private $qreq;
 
@@ -139,6 +143,7 @@ class PaperList {
     public $count;
     public $ids;
     public $any;
+    private $_has;
     private $_any_option_checks;
     public $error_html = array();
 
@@ -196,23 +201,12 @@ class PaperList {
             $this->qopts["paperId"] = $this->search->paperList();
         // NB that actually processed the search, setting PaperSearch::viewmap
 
-        $this->viewmap = new Qobject($this->search->viewmap);
-        if ($this->viewmap->compact
-            || $this->viewmap->cc || $this->viewmap->compactcolumn
-            || $this->viewmap->ccol || $this->viewmap->compactcolumns)
-            $this->viewmap->compactcolumns = $this->viewmap->columns = true;
-        if ($this->viewmap->column || $this->viewmap->col)
-            $this->viewmap->columns = true;
-        if ($this->viewmap->stat || $this->viewmap->stats || $this->viewmap->totals)
-            $this->viewmap->statistics = true;
-        if (($this->viewmap->authors || $this->viewmap->aufull || $this->viewmap->anonau)
-            && $this->viewmap->au === null)
-            $this->viewmap->au = true;
+        foreach ($this->search->viewmap ? : [] as $k => $v)
+            $this->set_view($k, $v);
         if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL
-            && $this->viewmap->au && $this->viewmap->anonau === null)
-            $this->viewmap->anonau = true;
-        if ($this->viewmap->rownumbers)
-            $this->viewmap->rownum = true;
+            && get($this->_view_fields, "au")
+            && get($this->_view_fields, "anonau") === null)
+            $this->_view_fields["anonau"] = true;
     }
 
     function set_table_id_class($table_id, $table_class, $row_id_pattern = null) {
@@ -221,11 +215,24 @@ class PaperList {
         $this->_row_id_pattern = $row_id_pattern;
     }
 
-    function set_fold($what, $how = null) {
-        if (is_bool($what))
-            $this->_unfold_all = !$what;
+    function set_view($k, $v) {
+        if (in_array($k, ["compact", "cc", "compactcolumn", "ccol", "compactcolumns"]))
+            $this->_view_compact_columns = $this->_view_columns = $v;
+        else if (in_array($k, ["columns", "column", "col"]))
+            $this->_view_columns = $v;
+        else if (in_array($k, ["statistics", "stat", "stats", "totals"]))
+            $this->_view_statistics = $v;
+        else if (in_array($k, ["rownum", "rownumbers"]))
+            $this->_view_row_numbers = $v;
+        else if (in_array($k, ["authors", "aufull", "anonau"]) && $v
+                 && !isset($this->_view_fields["au"]))
+            $this->_view_fields[$k] = $this->_view_fields["au"] = $v;
         else
-            $this->viewmap->$what = !$how;
+            $this->_view_fields[$k] = $v;
+    }
+
+    function unfold_all() {
+        $this->_unfold_all = true;
     }
 
     function set_selection(SearchSelection $ssel, $only_selected = false) {
@@ -235,6 +242,14 @@ class PaperList {
 
     function is_selected($paperId, $default = false) {
         return $this->_selection ? $this->_selection->is_selected($paperId) : $default;
+    }
+
+    function has($key) {
+        return isset($this->_has[$key]);
+    }
+
+    function mark_has($key) {
+        $this->_has[$key] = true;
     }
 
 
@@ -342,8 +357,8 @@ class PaperList {
             return "";
         $dtype = $row->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
         if ($dtype == DTYPE_FINAL)
-            $this->any->final = true;
-        $this->any->paper = true;
+            $this->_has["final"] = true;
+        $this->_has["paper"] = true;
         return "&nbsp;" . $row->document($dtype)->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
     }
 
@@ -466,7 +481,7 @@ class PaperList {
 
         // Linelinks container
         $foot = "  <tr class=\"pl_footrow\">";
-        if (!$this->viewmap->columns) {
+        if (!$this->_view_columns) {
             $foot .= '<td class="pl_footselector">'
                 . Ht::img("_.gif", "^^", "placthook") . "</td>";
             --$ncol;
@@ -678,9 +693,9 @@ class PaperList {
         if (($nopts = $this->conf->paper_opts->count_option_list())) {
             foreach ($rows as $prow) {
                 foreach ($prow->options() as $o)
-                    if (!$this->any["opt$o->id"]
+                    if (!$this->has("opt$o->id")
                         && $this->contact->can_view_paper_option($prow, $o->option)) {
-                        $this->any["opt$o->id"] = true;
+                        $this->_has["opt$o->id"] = true;
                         --$nopts;
                     }
                 if (!$nopts)
@@ -701,9 +716,8 @@ class PaperList {
         return $fname
             && !$this->_unfold_all
             && !$this->qreq["show$fname"]
-            && ($this->viewmap->$fname === false
-                || ($this->viewmap->$fname === null
-                    && strpos($this->display, " $fname ") === false));
+            && (($x = get($this->_view_fields, $fname)) === false
+                || ($x === null && strpos($this->display, " $fname ") === false));
     }
 
     private function _check_option_presence($row) {
@@ -716,7 +730,7 @@ class PaperList {
             else
                 $got = ($ov = $row->option($opt->id)) && $ov->value > 1;
             if ($got && $this->contact->can_view_paper_option($row, $opt)) {
-                $this->any[$opt->id <= 0 ? $opt->abbr : "opt" . $opt->id] = true;
+                $this->_has[$opt->id <= 0 ? $opt->abbr : "opt" . $opt->id] = true;
                 array_splice($this->_any_option_checks, $i, 1);
             } else
                 ++$i;
@@ -725,7 +739,7 @@ class PaperList {
 
     private function _row_text($rstate, $row, $fieldDef) {
         if ((string) $row->abstract !== "")
-            $this->any->abstract = true;
+            $this->_has["abstract"] = true;
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
         $this->ids[] = (int) $row->paperId;
@@ -1040,7 +1054,7 @@ class PaperList {
     }
 
     private function _prepare() {
-        $this->any = new Qobject;
+        $this->_has = [];
         $this->count = 0;
         $this->table_type = false;
         $this->need_render = false;
@@ -1054,8 +1068,8 @@ class PaperList {
                                      "stat", "stats", "statistics", "totals",
                                      "au", "anonau", "aufull"));
         $viewmap_add = [];
-        foreach ($this->viewmap as $k => $v) {
-            if (isset($specials[$k]))
+        foreach ($this->_view_fields as $k => $v) {
+            if (in_array($k, ["au", "anonau", "aufull"]))
                 continue;
             $err = new ColumnErrors;
             $f = $this->find_columns($k, $err);
@@ -1077,19 +1091,19 @@ class PaperList {
             }
         }
         foreach ($viewmap_add as $k => $v)
-            $this->viewmap[$k] = $v;
+            $this->_view_fields[$k] = $v;
         foreach ($field_list as $fi => &$f)
-            if ($this->viewmap[$f->name] === "edit")
+            if (get($this->_view_fields, $f->name) === "edit")
                 $f = $f->make_editable();
         unset($f);
 
         // remove deselected columns;
         // in compactcolumns view, remove non-minimal columns
-        $minimal = $this->viewmap->compactcolumns;
+        $minimal = $this->_view_compact_columns;
         $field_list2 = array();
         foreach ($field_list as $fdef)
-            if ($this->viewmap[$fdef->name] !== false
-                && (!$minimal || $fdef->minimal || $this->viewmap[$fdef->name]))
+            if (($v = get($this->_view_fields, $fdef->name)) !== false
+                && (!$minimal || $fdef->minimal || $v))
                 $field_list2[] = $fdef;
         return $field_list2;
     }
@@ -1413,7 +1427,7 @@ class PaperList {
 
         // maybe make columns, maybe not
         $tbody_class = "pltable";
-        if ($this->viewmap->columns && !empty($this->ids)
+        if ($this->_view_columns && !empty($this->ids)
             && $this->_column_split($rstate, $colhead, $body)) {
             $enter = '<div class="plsplit_col_ctr_ctr"><div class="plsplit_col_ctr">' . $enter;
             $exit = $exit . "</div></div>";
@@ -1426,7 +1440,7 @@ class PaperList {
 
         // footer
         $foot = "";
-        if ($this->viewmap->statistics && !$this->viewmap->columns)
+        if ($this->_view_statistics && !$this->_view_columns)
             $foot .= $this->_statistics_rows($rstate, $fieldDef);
         if ($fieldDef[0] instanceof SelectorPaperColumn
             && !defval($options, "nofooter"))
@@ -1443,12 +1457,12 @@ class PaperList {
             $enter .= '  <script>' . $this->_header_script . "</script>\n";
 
         foreach ($fieldDef as $fdef)
-            if ($fdef->has_content && !isset($this->any[$fdef->name]))
-                $this->any[$fdef->name] = true;
+            if ($fdef->has_content && !isset($this->_has[$fdef->name]))
+                $this->_has[$fdef->name] = true;
         if ($rstate->has_openau)
-            $this->any->openau = true;
+            $this->_has["openau"] = true;
         if ($rstate->has_anonau)
-            $this->any->anonau = true;
+            $this->_has["anonau"] = true;
 
         $this->_cleanup();
         return $enter . join("", $body) . " </tbody>\n" . $exit;
@@ -1461,9 +1475,7 @@ class PaperList {
 
         // field is never folded, no sorting
         $fname = $fdef->name;
-        $this->viewmap->$fname = true;
-        if ($fname === "authors")
-            $this->viewmap->au = true;
+        $this->set_view($fname, true);
         assert(!$this->is_folded($fdef));
         $this->sorters = array();
 
@@ -1494,7 +1506,7 @@ class PaperList {
         $data["$fname.html"] = $m;
 
         if ($fdef->has_content)
-            $this->any->$fname = true;
+            $this->_has[$fname] = true;
         $this->_cleanup();
         return $data;
     }
@@ -1526,7 +1538,7 @@ class PaperList {
 
     private function _row_text_csv_data(PaperInfo $row, $fieldDef) {
         if ((string) $row->abstract !== "")
-            $this->any->abstract = true;
+            $this->_has["abstract"] = true;
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
         $this->ids[] = (int) $row->paperId;

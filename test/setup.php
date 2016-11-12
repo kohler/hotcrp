@@ -251,7 +251,7 @@ function call_api($fn, $user, $qreq, $prow) {
     try {
         call_user_func($uf->callback, $user, $qreq, $prow, $uf);
     } catch (JsonResultException $jre) {
-        $result = new Qobject($jre->result);
+        $result = (object) $jre->result;
     }
     JsonResultException::$capturing = false;
     return $result;

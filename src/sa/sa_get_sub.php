@@ -7,7 +7,7 @@ class Get_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         $xactions = SearchAction::list_subactions("get", $user, $qreq, $pl);
         foreach ($user->user_option_list() as $o)
-            if ($pl->any["opt{$o->id}"] && $o->is_document())
+            if ($pl->has("opt{$o->id}") && $o->is_document())
                 $xactions[] = GetDocument_SearchAction::make_option_action($o);
         usort($xactions, function ($a, $b) { return $a[0] - $b[0]; });
         $sel_opt = array();
@@ -55,7 +55,7 @@ class GetDocument_SearchAction extends SearchAction {
             $any_name = $this->dt == DTYPE_FINAL ? "final" : "paper";
         else
             $any_name = "opt" . $opt->id;
-        if ($user->can_view_some_paper_option($opt) && $pl->any->$any_name)
+        if ($user->can_view_some_paper_option($opt) && $pl->has($any_name))
             $actions[] = self::make_option_action($opt);
     }
     static function error_document(PaperOption $opt, PaperInfo $row, $error_html = "") {
@@ -90,7 +90,7 @@ class GetDocument_SearchAction extends SearchAction {
 
 class GetCheckFormat_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        if ($user->is_manager() && ($pl->any->paper || $pl->any->final))
+        if ($user->is_manager() && $pl->has("paper"))
             $actions[] = [999, $this->subname, "Documents", "Format check"];
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -126,7 +126,7 @@ class GetCheckFormat_SearchAction extends SearchAction {
 
 class GetAbstract_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        if ($pl->any->abstract)
+        if ($pl->has("abstract"))
             $actions[] = [1000, $this->subname, "Paper information", "Abstracts"];
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -294,7 +294,7 @@ class GetCSV_SearchAction extends SearchAction {
         $search = new PaperSearch($user, $qreq, $qreq->attachment("reviewer_contact"));
         $pl = new PaperList($search, ["sort" => true, "display" => $qreq->display], $qreq);
         $pl->set_selection($ssel, true);
-        $pl->set_fold("sel", true);
+        $pl->set_view("sel", false);
         list($header, $data) = $pl->text_csv($search->limitName);
         return new Csv_SearchResult("data", $header, $data);
     }

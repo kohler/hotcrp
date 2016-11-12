@@ -324,7 +324,7 @@ if ($reviewer > 0) {
             echo '<span style="padding-left:2em">Review round: ', $Conf->assignment_round_name(false), '</span>';
     }
     $paperList->set_table_id_class("foldpl", "pltable_full");
-    $paperList->set_fold("allrevtopicpref", true);
+    $paperList->set_view("allrevtopicpref", false);
     echo "<span style='padding-left:2em'>",
         Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
         "&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),

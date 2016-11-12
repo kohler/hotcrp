@@ -292,17 +292,17 @@ echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'>
 
 $show_data = array();
 if (!$Conf->subBlindAlways()
-    && ($Conf->subBlindNever() || $pl->any->openau))
+    && ($Conf->subBlindNever() || $pl->has("openau")))
     $show_data[] = '<span class="sep">'
         . Ht::checkbox("showau", 1, strpos($Qreq->display, " au ") !== false,
-                array("disabled" => (!$Conf->subBlindNever() && !$pl->any->openau),
+                array("disabled" => (!$Conf->subBlindNever() && !$pl->has("openau")),
                       "onchange" => "plinfo('au',this)",
                       "id" => "showau"))
         . "&nbsp;" . Ht::label("Authors") . '</span>';
 if (!$Conf->subBlindNever() && $Me->privChair)
     $show_data[] = '<span class="sep' . (!$Conf->subBlindAlways() ? " fx10" : "") . '">'
         . Ht::checkbox("showanonau", 1, strpos($Qreq->display, " anonau ") !== false,
-                       array("disabled" => !$pl->any->anonau,
+                       array("disabled" => !$pl->has("anonau"),
                              "onchange" => (!$Conf->subBlindAlways() ? "" : "plinfo('au',this);") . "plinfo('anonau',this)",
                              "id" => (!$Conf->subBlindAlways() ? "showanonau" : "showau")))
         . "&nbsp;" . Ht::label(!$Conf->subBlindAlways() ? "Anonymous authors" : "Authors") . '</span>';
@@ -313,11 +313,11 @@ if (!$Conf->subBlindAlways() || $Me->privChair) {
         . "&nbsp;" . Ht::label("Full author info") . "</span>";
     Ht::stash_script("plinfo.extra=function(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)};");
 }
-if ($pl->any->abstract)
+if ($pl->has("abstract"))
     $show_data[] = '<span class="sep">'
         . Ht::checkbox("showabstract", 1, strpos($Qreq->display, " abstract ") !== false, array("onchange" => "plinfo('abstract',this)"))
         . "&nbsp;" . Ht::label("Abstracts") . '</span>';
-if ($pl->any->topics)
+if ($pl->has("topics"))
     $show_data[] = '<span class="sep">'
         . Ht::checkbox("showtopics", 1, strpos($Qreq->display, " topics ") !== false, array("onchange" => "plinfo('topics',this)"))
         . "&nbsp;" . Ht::label("Topics") . '</span>';

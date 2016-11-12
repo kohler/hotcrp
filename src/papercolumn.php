@@ -189,7 +189,7 @@ class SelectorPaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
         if ($this->name == "selunlessconf" && $row->reviewerConflictType)
             return "";
-        $pl->any->sel = true;
+        $pl->mark_has("sel");
         $c = "";
         if ($this->checked($pl, $row)) {
             $c .= ' checked="checked"';
@@ -222,7 +222,7 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
         return $pl->is_selected($row->paperId, $row->reviewerConflictType > 0);
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
-        $pl->any->sel = true;
+        $pl->mark_has("sel");
         $c = "";
         if ($row->reviewerConflictType >= CONFLICT_AUTHOR)
             $c .= ' disabled="disabled"';
@@ -310,12 +310,12 @@ class StatusPaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
         if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
-            $pl->any->need_submit = true;
+            $pl->mark_has("need_submit");
         if ($row->outcome > 0 && $pl->contact->can_view_decision($row))
-            $pl->any->accepted = true;
+            $pl->mark_has("accepted");
         if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
             && $pl->contact->can_view_decision($row))
-            $pl->any->need_final = true;
+            $pl->mark_has("need_final");
         $status_info = $pl->contact->paper_status_info($row, $pl->search->limitName != "a" && $pl->contact->allow_administer($row));
         if (!$this->is_long && $status_info[0] == "pstat_sub")
             return "";
@@ -597,7 +597,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
         if ($xrow && $xrow->reviewType) {
             $ranal = $pl->make_review_analysis($xrow, $row);
             if ($ranal->needsSubmit)
-                $pl->any->need_review = true;
+                $pl->mark_has("need_review");
         }
         $flags = 0;
         if ($xrow && $xrow->conflictType > 0)
@@ -665,7 +665,7 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
             return "";
         $ranal = $pl->make_review_analysis($row, $row);
         if ($ranal->needsSubmit)
-            $pl->any->need_review = true;
+            $pl->mark_has("need_review");
         return $ranal->status_html();
     }
 }
