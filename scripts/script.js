@@ -163,8 +163,6 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
         options.error = [options.error, onerror];
     if (options.timeout == null)
         options.timeout = 10000;
-    if (options.method == null)
-        options.method = "POST";
     if (options.dataType == null)
         options.dataType = "json";
 });
@@ -1509,7 +1507,7 @@ function tracker(start) {
     if (window.global_tooltip)
         window.global_tooltip.erase();
     if (start < 0) {
-        $.ajax(hoturl_post("api", "fn=track&track=stop"), {success: load_success});
+        $.post(hoturl_post("api", "fn=track&track=stop"), load_success);
         if (tracker_refresher) {
             clearInterval(tracker_refresher);
             tracker_refresher = null;
@@ -1534,7 +1532,7 @@ function tracker(start) {
             req += "&tracker_start_at=" + trackerstate[2];
         if (trackerstate[3])
             req += "&hotlist-info=" + encodeURIComponent(trackerstate[3]);
-        $.ajax(hoturl_post("api", "fn=track&track=" + req), {success: load_success});
+        $.post(hoturl_post("api", "fn=track&track=" + req), load_success);
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker, 25000);
         wstorage(true, "hotcrp-tracking", trackerstate);
@@ -2153,12 +2151,9 @@ return {
 })();
 
 function save_review_round(elt) {
-    $.ajax(hoturl_post("api", {
-            fn: "reviewround", p: hotcrp_paperid, r: $(elt).data("reviewid"),
-            round: $(elt).val()
-        }), {
-        method: "POST", success: function (rv) { setajaxcheck(elt, rv); }
-    });
+    $.post(hoturl_post("api", {fn: "reviewround", p: hotcrp_paperid, r: $(elt).data("reviewid")}),
+           $(elt).closest("form").serialize(),
+           function (rv) { setajaxcheck(elt, rv); });
 }
 
 
@@ -3222,23 +3217,21 @@ function make_pseditor(type, url) {
     }
     function change() {
         var saveval = jQuery(edite).val();
-        $.ajax(hoturl_post("api", url), {
-            data: jQuery(folde).find("form").serialize(),
-            success: function (data) {
-                if (data.ok) {
-                    done(true);
-                    foldup(folde, null, {f: true});
-                    val = saveval;
-                    var p = folde.getElementsByTagName("p")[0];
-                    p.innerHTML = data.result || edite.options[edite.selectedIndex].innerHTML;
-                    if (data.color_classes != null) {
-                        make_pattern_fill(data.color_classes);
-                        $(p).closest("div.taghl").removeClass().addClass("taghl pscopen " + data.color_classes);
-                    }
-                } else
-                    done(false, data.error);
-            }
-        });
+        $.post(hoturl_post("api", url), $(folde).find("form").serialize(),
+               function (data) {
+                   if (data.ok) {
+                       done(true);
+                       foldup(folde, null, {f: true});
+                       val = saveval;
+                       var p = folde.getElementsByTagName("p")[0];
+                       p.innerHTML = data.result || edite.options[edite.selectedIndex].innerHTML;
+                       if (data.color_classes != null) {
+                           make_pattern_fill(data.color_classes);
+                           $(p).closest("div.taghl").removeClass().addClass("taghl pscopen " + data.color_classes);
+                       }
+                   } else
+                       done(false, data.error);
+               });
         edite.disabled = true;
     }
     function keyup(evt) {
@@ -3707,16 +3700,12 @@ $(function () { $(".hotcrp_searchbox").each(make_taghelp_q); });
 // review preferences
 function setfollow() {
     var self = this;
-    $.ajax(hoturl_post("api", {
-            fn: "follow", p: $(this).data("paper") || hotcrp_paperid,
-            following: this.checked, reviewer: $(this).data("reviewer") || hotcrp_user.email
-        }), {
-        success: function (rv) {
-            setajaxcheck(self, rv);
-            if (rv.ok)
-                self.checked = rv.following;
-        }
-    });
+    $.post(hoturl_post("api", {fn: "follow", p: $(this).data("paper") || hotcrp_paperid}),
+           {following: this.checked, reviewer: $(this).data("reviewer") || hotcrp_user.email},
+           function (rv) {
+               setajaxcheck(self, rv);
+               rv.ok && (self.checked = rv.following);
+           });
 }
 
 var add_revpref_ajax = (function () {
@@ -3747,7 +3736,7 @@ var add_revpref_ajax = (function () {
         }
         p = new HPromise();
         $.ajax(hoturl_post("api", "fn=setpref&p=" + pid), {
-            data: {pref: self.value, reviewer: cid},
+            method: "POST", data: {pref: self.value, reviewer: cid},
             success: function (rv) {
                 setajaxcheck(self, rv);
                 if (rv.ok && rv.value != null)
@@ -3777,11 +3766,8 @@ function add_assrev_ajax(selector) {
                 data.kind = "c";
                 data["pcs" + m[2]] = that.checked ? -1 : 0;
             }
-            $.ajax(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}), {
-                data: data, success: function (rv) {
-                    setajaxcheck(that, rv);
-                }
-            });
+            $.post(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}),
+                   data, function (rv) { setajaxcheck(that, rv); });
         } else
             hiliter(that);
     }
@@ -3870,8 +3856,8 @@ function tag_save() {
         setajaxcheck(this, {ok: false, error: "Value must be a number (or empty to remove the tag)."});
         return;
     }
-    $.ajax(hoturl_post("api", {fn: "settags", p: m[2], addtags: ch, forceShow: 1}),
-           {success: make_tag_save_callback(this)});
+    $.post(hoturl_post("api", {fn: "settags", p: m[2], forceShow: 1}),
+           {addtags: ch}, make_tag_save_callback(this));
 }
 
 function PaperRow(l, r, index) {
@@ -4300,15 +4286,12 @@ function commit_drag(si, di) {
         } else if (rowanal[i].annoid)
             annosaves.push({annoid: rowanal[i].annoid, tagval: unparse_tagvalue(rowanal[i].newvalue)});
     if (saves.length)
-        $.ajax(hoturl_post("api", {fn: "settags", forceShow: 1}), {
-            data: {tagassignment: saves.join(",")},
-            success: make_tag_save_callback(rowanal[si].entry)
-        });
+        $.post(hoturl_post("api", {fn: "settags", forceShow: 1}),
+               {tagassignment: saves.join(",")},
+               make_tag_save_callback(rowanal[si].entry));
     if (annosaves.length)
-        $.ajax(hoturl_post("api", {fn: "settaganno", tag: dragtag, forceShow: 1}), {
-            data: {anno: JSON.stringify(annosaves)},
-            success: taganno_success
-        });
+        $.post(hoturl_post("api", {fn: "settaganno", tag: dragtag, forceShow: 1}),
+               {anno: JSON.stringify(annosaves)}, taganno_success);
 }
 
 function tag_mousedown(evt) {
@@ -4389,9 +4372,8 @@ function edit_anno(locator) {
                 if (heading != "" || tagval != 0)
                     anno.push({annoid: "new", heading: heading, tagval: tagval});
             }
-            $.ajax(hoturl_post("api", {fn: "settaganno", tag: mytag}), {
-                data: {anno: JSON.stringify(anno)}, success: make_onsave($d)
-            });
+            $.post(hoturl_post("api", {fn: "settaganno", tag: mytag}),
+                   {anno: JSON.stringify(anno)}, make_onsave($d));
         }
         return false;
     }
@@ -4452,7 +4434,7 @@ function edit_anno(locator) {
         $d.appendTo($(document.body));
         popup_near($d[0].childNodes[0], window);
     }
-    $.ajax(hoturl_post("api", {fn: "taganno", tag: mytag}), {success: show_dialog});
+    $.post(hoturl_post("api", {fn: "taganno", tag: mytag}), show_dialog);
 }
 
 function plinfo_tags(selector) {
@@ -4773,7 +4755,7 @@ function render_row_tags(div) {
 }
 
 function edittags_link_onclick() {
-    $.ajax(hoturl_post("api", {fn: "settags", p: pidnear(this), forceShow: 1}), {success: edittags_callback});
+    $.get(hoturl_post("api", {fn: "settags", p: pidnear(this), forceShow: 1}), edittags_callback);
     return false;
 }
 
@@ -4793,14 +4775,14 @@ function edittags_click() {
     var div = this.parentNode, pid = pidnear(div);
     $(div).find("textarea").trigger("hide");
     if (this.tagName !== "BUTTON" || this.name.charAt(3) == "s") {
-        $.ajax(hoturl_post("api", {fn: "settags", p: pid, tags: $(div).find("textarea").val(), forceShow: 1}), {
-            success: function (rv) {
-                if (rv.ok)
-                    plinfo.set_tags(pid, rv);
-                else
-                    setajaxcheck($(div).find("textarea"), rv);
-            }
-        });
+        $.post(hoturl_post("api", {fn: "settags", p: pid, forceShow: 1}),
+               {tags: $(div).find("textarea").val()},
+               function (rv) {
+                   if (rv.ok)
+                       plinfo.set_tags(pid, rv);
+                   else
+                       setajaxcheck($(div).find("textarea"), rv);
+               });
     } else
         render_row_tags(this.parentNode);
 }
@@ -4966,7 +4948,7 @@ function plinfo(type, dofold) {
                 loadargs.aufull = 1;
         } else
             loadargs.f = type;
-        $.ajax(hoturl_post("api", loadargs), {success: make_callback(dofold, type)});
+        $.get(hoturl_post("api", loadargs), make_callback(dofold, type));
     }
 
     return false;
@@ -5085,15 +5067,14 @@ return function (classes, class_prefix) {
 
 function savedisplayoptions() {
     $$("scoresortsave").value = $$("scoresort").value;
-    $.ajax(hoturl_post("search", "savedisplayoptions=1&ajax=1"), {
-        data: $(this).closest("form").serialize(),
-        success: function (rv) {
-            if (rv.ok)
-                $$("savedisplayoptionsbutton").disabled = true;
-            else
-                alert("Unable to save current display options as default.");
-        }
-    });
+    $.post(hoturl_post("search", "savedisplayoptions=1&ajax=1"),
+           $(this).closest("form").serialize(),
+           function (rv) {
+               if (rv.ok)
+                   $$("savedisplayoptionsbutton").disabled = true;
+               else
+                   alert("Unable to save current display options as default.");
+           });
 }
 
 function docheckformat(dt) {    // NB must return void
@@ -5159,7 +5140,7 @@ function save_tags() {
             $("#papstriptagsedit").prepend('<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + msg + '</div><div class="xmsg1"></div></div>');
     }
     $.ajax(hoturl_post("api", "fn=settags&p=" + hotcrp_paperid), {
-        timeout: 4000, data: $("#tagform").serialize(),
+        method: "POST", data: $("#tagform").serialize(), timeout: 4000,
         success: function (data) {
             if (data.ok) {
                 fold("tags", true);
@@ -5300,19 +5281,18 @@ function save_tag_index(e) {
             make_bubble(message, "errorbubble").dir("l").near(ji.length ? ji[0] : e).removeOn(j.find("input"), "input");
         }
     }
-    $.ajax(hoturl_post("api", "fn=settags&p=" + hotcrp_paperid), {
-        data: {"addtags": tag + "#" + (index == "" ? "clear" : index)},
-        success: function (data) {
-            if (data.ok) {
-                save_tags.success(data);
-                foldup(j[0]);
-                done(true);
-            } else {
-                e.focus();
-                done(false, data.error);
-            }
-        }
-    });
+    $.post(hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),
+           {"addtags": tag + "#" + (index == "" ? "clear" : index)},
+           function (data) {
+               if (data.ok) {
+                   save_tags.success(data);
+                   foldup(j[0]);
+                   done(true);
+               } else {
+                   e.focus();
+                   done(false, data.error);
+               }
+           });
     return false;
 }
 
