@@ -374,33 +374,38 @@ if ($pl) {
     if ($pl->has("topics"))
         $display_options->checkbox_item(1, "topics", "Topics");
 
-    // Tags group
-    if ($Me->isPC && $pl->has("tags")) {
-        $opt = array("disabled" => ($Qreq->t == "a" && !$Me->privChair));
-        $display_options->checkbox_item(1, "tags", "Tags", $opt);
-        if ($Me->privChair) {
-            $opt["indent"] = true;
-            foreach ($Conf->tags() as $t)
-                if ($t->vote || $t->approval || $t->rank)
-                    $display_options->checkbox_item(1, "tagrep:{$t->tag}", "#~{$t->tag} report", $opt);
-        }
-    }
-
     // Row numbers
     if ($pl->has("sel"))
         $display_options->checkbox_item(1, "rownum", "Row numbers", ["onchange" => "fold('pl',!this.checked,'rownum')"]);
 
+    // Options
+    /*foreach ($Conf->paper_opts->option_list() as $ox)
+        if ($pl->has("opt$ox->id") && $ox->column_display())
+            $display_options->checkbox_item(10, $ox->abbr, $ox->name);*/
+
+    // Tags group
+    if ($Me->isPC && $pl->has("tags")) {
+        $opt = array("disabled" => ($Qreq->t == "a" && !$Me->privChair));
+        $display_options->checkbox_item(20, "tags", "Tags", $opt);
+        if ($Me->privChair) {
+            $opt["indent"] = true;
+            foreach ($Conf->tags() as $t)
+                if ($t->vote || $t->approval || $t->rank)
+                    $display_options->checkbox_item(20, "tagrep:{$t->tag}", "#~{$t->tag} report", $opt);
+        }
+    }
+
     // Reviewers group
     if ($Me->can_view_some_review_identity(true))
-        $display_options->checkbox_item(2, "reviewers", "Reviewers");
+        $display_options->checkbox_item(20, "reviewers", "Reviewers");
     if ($Me->privChair) {
-        $display_options->checkbox_item(2, "allpref", "Review preferences");
-        $display_options->checkbox_item(2, "pcconf", "PC conflicts");
+        $display_options->checkbox_item(20, "allpref", "Review preferences");
+        $display_options->checkbox_item(20, "pcconf", "PC conflicts");
     }
     if ($Me->isPC && $pl->has("lead"))
-        $display_options->checkbox_item(2, "lead", "Discussion leads");
+        $display_options->checkbox_item(20, "lead", "Discussion leads");
     if ($Me->isPC && $pl->has("shepherd"))
-        $display_options->checkbox_item(2, "shepherd", "Shepherds");
+        $display_options->checkbox_item(20, "shepherd", "Shepherds");
 
     // Scores group
     if ($pl->scoresOk == "present") {
@@ -409,10 +414,10 @@ if ($pl) {
             $revViewScore = $Me->permissive_view_score_bound();
         else
             $revViewScore = VIEWSCORE_AUTHOR - 1;
-        $display_options->set_header(3, "<strong>Scores:</strong>");
+        $display_options->set_header(30, "<strong>Scores:</strong>");
         foreach ($rf->forder as $f)
             if ($f->view_score > $revViewScore && $f->has_options)
-                $display_options->checkbox_item(3, $f->id, $f->name_html);
+                $display_options->checkbox_item(30, $f->id, $f->name_html);
         if (!empty($display_options->items[3])) {
             $onchange = "hiliter(\"redisplay\")";
             if ($Me->privChair)
@@ -421,14 +426,14 @@ if ($pl) {
                 . Ht::select("scoresort", ListSorter::$score_sorts, $Conf->session("scoresort"),
                              ["id" => "scoresort", "onchange" => $onchange, "style" => "font-size:100%"])
                 . '<a class="help" href="' . hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
-            $display_options->item(3, $sortitem);
+            $display_options->item(30, $sortitem);
         }
     }
 
     // Formulas group
-    $display_options->set_header(4, "<strong>Formulas:</strong>");
+    $display_options->set_header(40, "<strong>Formulas:</strong>");
     foreach (visible_formulas() as $formula)
-        $display_options->checkbox_item(4, "formula{$formula->formulaId}", htmlspecialchars($formula->name));
+        $display_options->checkbox_item(40, "formula{$formula->formulaId}", htmlspecialchars($formula->name));
 }
 
 
