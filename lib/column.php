@@ -14,22 +14,49 @@ class Column {
 
     public $name;
     public $className;
-    public $foldable;
-    public $completable;
-    public $view;
-    public $comparator;
-    public $minimal;
+    public $foldable = false;
+    public $completable = false;
+    public $view = 0;
+    public $comparator = false;
+    public $minimal = false;
     public $is_folded = false;
     public $has_content = false;
 
-    public function __construct($name, $flags, $extra) {
-        $this->name = $name;
-        $this->className = get($extra, "className", "pl_$name");
-        $this->foldable = ($flags & self::FOLDABLE) != 0;
-        $this->completable = ($flags & self::COMPLETABLE) != 0;
-        $this->view = $flags & self::VIEWMASK;
-        $this->comparator = get($extra, "comparator", false);
-        $this->minimal = get($extra, "minimal", false);
+    public function __construct(/* $name, $flags, $extra */) {
+        foreach (func_get_args() as $arg) {
+            if (is_string($arg))
+                $this->name = $arg;
+            else if (is_int($arg)) {
+                if ($arg & self::FOLDABLE)
+                    $this->foldable = true;
+                if ($arg & self::COMPLETABLE)
+                    $this->completable = true;
+                $this->view = $arg & self::VIEWMASK;
+            } else
+                foreach ((array) $arg as $k => $v) {
+                    if ($k === "name" && is_string($v))
+                        $this->name = $v;
+                    else if ($k === "className" && is_string($v))
+                        $this->className = $v;
+                    else if ($k === "fold" && is_bool($v))
+                        $this->foldable = $v;
+                    else if ($k === "complete" && is_bool($v))
+                        $this->completable = $v;
+                    else if ($k === "view") {
+                        if ($v === "column")
+                            $this->view = self::VIEW_COLUMN;
+                        else if ($v === "row")
+                            $this->view = self::VIEW_ROW;
+                        else
+                            $this->view = self::VIEW_NONE;
+                    } else if ($k === "minimal" && is_bool($v))
+                        $this->minimal = $v;
+                    else if ($k === "comparator")
+                        $this->comparator = $v;
+                }
+        }
+        if ($this->className === null)
+            $this->className = "pl_" . $this->name;
     }
 }
 

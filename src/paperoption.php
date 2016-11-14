@@ -597,6 +597,9 @@ class PaperOption {
         return null;
     }
 
+    function column_display() {
+        return false;
+    }
     function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         return "";
     }
@@ -647,6 +650,9 @@ class CheckboxPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option should be “true” or “false”.");
     }
 
+    function column_display() {
+        return true;
+    }
     function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         $v = $row->option($this->id);
         return $v && $v->value ? "✓" : "";
@@ -723,6 +729,9 @@ class SelectorPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option doesn’t match any of the selectors.");
     }
 
+    function column_display() {
+        return true;
+    }
     function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         $ov = $row->option($this->id);
         return $ov ? $this->unparse_page_html($row, $ov) : "";
@@ -820,6 +829,9 @@ class DocumentPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option should be a document.");
     }
 
+    function column_display() {
+        return true;
+    }
     function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         if (($ov = $row->option($this->id)))
             foreach ($ov->documents() as $d)
@@ -897,6 +909,9 @@ class NumericPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option should be an integer.");
     }
 
+    function column_display() {
+        return true;
+    }
     private function unparse_value(PaperOptionValue $ov = null) {
         return $ov && $ov->value !== null ? $ov->value : "";
     }
@@ -972,6 +987,9 @@ class TextPaperOption extends PaperOption {
             return '<div class="format0">' . Ht::link_urls(htmlspecialchars($d)) . '</div>';
     }
 
+    function column_display() {
+        return true;
+    }
     function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         $ov = $row->option($this->id);
         return $ov ? $this->unparse_html($row, $ov, $pl) : "";
@@ -1093,6 +1111,9 @@ class AttachmentsPaperOption extends PaperOption {
         return $docs;
     }
 
+    function column_display() {
+        return true;
+    }
     function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
         $ov = $row->option($this->id);
         return $ov ? $this->unparse_html($row, $ov, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE, $isrow ? "span" : "div") : "";

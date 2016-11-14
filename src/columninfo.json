@@ -1,0 +1,111 @@
+[
+    {
+        "name": "sel",
+        "view": "column", "minimal": true, "factory_class": "SelectorPaperColumn"
+    },
+    {
+        "name": "selon",
+        "view": "column", "minimal": true, "className": "pl_sel", "factory_class": "SelectorPaperColumn"
+    },
+    {
+        "name": "selunlessconf",
+        "view": "column", "minimal": true, "className": "pl_sel", "factory_class": "SelectorPaperColumn"
+    },
+    {
+        "name": "selconf",
+        "view": "column", "minimal": true, "className": "pl_confsel", "factory_class": "ConflictSelector_PaperColumn"
+    },
+    {
+        "name": "id",
+        "view": "column", "minimal": true, "complete": true, "factory_class": "IdPaperColumn"
+    },
+    {
+        "name": "title",
+        "view": "column", "minimal": true, "complete": true, "factory_class": "TitlePaperColumn"
+    },
+    {
+        "name": "revstat",
+        "view": "column", "complete": true, "factory_class": "ReviewStatusPaperColumn"
+    },
+    {
+        "name": "revsubmitted",
+        "view": "column", "complete": true, "className": "pl_text", "factory_class": "ReviewSubmittedPaperColumn"
+    },
+    {
+        "name": "revdelegation",
+        "view": "column", "className": "pl_text", "factory_class": "ReviewDelegationPaperColumn"
+    },
+    {
+        "name": "revtype",
+        "view": "column", "complete": true, "factory_class": "ReviewerTypePaperColumn"
+    },
+    {
+        "name": "assrev",
+        "view": "column", "complete": true, "factory_class": "AssignReviewPaperColumn"
+    },
+    {
+        "name": "status",
+        "view": "column", "complete": true, "factory_class": "StatusPaperColumn"
+    },
+    {
+        "name": "statusfull",
+        "view": "column", "complete": true, "className": "pl_status", "factory_class": "StatusPaperColumn"
+    },
+    {
+        "name": "pagecount",
+        "view": "column", "fold": true, "complete": true, "minimal": true, "className": "plr", "factory_class": "PageCount_PaperColumn"
+    },
+    {
+        "name": "lead",
+        "view": "row", "fold": true, "complete": true, "factory_class": "Lead_PaperColumn"
+    },
+    {
+        "name": "shepherd",
+        "view": "row", "fold": true, "complete": true, "factory_class": "Shepherd_PaperColumn"
+    },
+    {
+        "name": "desirability",
+        "view": "column", "complete": true, "factory_class": "Desirability_PaperColumn"
+    },
+    {
+        "name": "topicscore",
+        "view": "column", "complete": true, "factory_class": "TopicScorePaperColumn"
+    },
+    {
+        "name": "topics",
+        "view": "row", "fold": true, "complete": true, "factory_class": "TopicListPaperColumn"
+    },
+    {
+        "name": "abstract",
+        "view": "row", "fold": true, "complete": true, "factory_class": "AbstractPaperColumn"
+    },
+    {
+        "name": "authors",
+        "view": "row", "fold": true, "complete": true, "factory_class": "AuthorsPaperColumn"
+    },
+    {
+        "name": "collab",
+        "view": "row", "fold": true, "complete": true, "factory_class": "CollabPaperColumn",
+        "synonym": ["collaborators", "co"]
+    },
+    {
+        "name": "reviewers",
+        "view": "row", "fold": true, "complete": true, "factory_class": "ReviewerListPaperColumn"
+    },
+    {
+        "name": "pcconf",
+        "view": "row", "fold": true, "complete": true, "factory_class": "PCConflictListPaperColumn"
+    },
+    {
+        "name": "timestamp",
+        "view": "column", "complete": true, "factory_class": "TimestampPaperColumn"
+    },
+    {
+        "name": "authorsmatch",
+        "view": "row", "factory_class": "ConflictMatchPaperColumn"
+    },
+    {
+        "name": "collabmatch",
+        "view": "row", "factory_class": "ConflictMatchPaperColumn"
+    }
+]

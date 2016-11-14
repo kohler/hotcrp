@@ -15,8 +15,8 @@ class PaperColumn extends Column {
     const PREP_VISIBLE = 1; // value matters
     const PREP_COMPLETION = 2;
 
-    function __construct($name, $flags, $extra = array()) {
-        parent::__construct($name, $flags, $extra);
+    function __construct(/* args */) {
+        call_user_func_array("parent::__construct", func_get_args());
     }
 
     static function lookup_local($name) {
@@ -29,6 +29,9 @@ class PaperColumn extends Column {
     static function _add_json($cj) {
         if (is_object($cj) && isset($cj->name) && is_string($cj->name)) {
             self::$j_by_name[strtolower($cj->name)] = $cj;
+            if (($syn = get($cj, "synonym")))
+                foreach (is_string($syn) ? [$syn] : $syn as $x)
+                    self::register_synonym($x, $cj->name);
             return true;
         } else if (is_object($cj) && isset($cj->prefix) && is_string($cj->prefix)) {
             self::$j_factories[] = $cj;
@@ -55,8 +58,20 @@ class PaperColumn extends Column {
         $lname = strtolower($name);
         if (isset(self::$synonyms[$lname]))
             $lname = self::$synonyms[$lname];
+
+        // columns by name
         if (isset(self::$by_name[$lname]))
             return self::$by_name[$lname];
+        if (self::$j_by_name === null) {
+            self::$j_by_name = self::$j_factories = [];
+            expand_json_includes_callback(["src/columninfo.json"], "PaperColumn::_add_json");
+            if (($jlist = opt("paperColumns")))
+                expand_json_includes_callback($jlist, "PaperColumn::_add_json");
+        }
+        if (isset(self::$j_by_name[$lname]))
+            return self::_expand_json(self::$j_by_name[$lname]);
+
+        // columns by factory
         foreach (self::$factories as $f)
             if (str_starts_with($lname, $f[0])
                 && ($x = $f[1]->make_column($user, $name, $errors)))
@@ -64,13 +79,6 @@ class PaperColumn extends Column {
         if (($colon = strpos($lname, ":")) > 0
             && ($syn = get(self::$synonyms, substr($lname, 0, $colon))))
             return self::lookup($user, $syn . substr($lname, $colon));
-        if (self::$j_by_name === null) {
-            self::$j_by_name = self::$j_factories = [];
-            if (($jlist = opt("paperColumns")))
-                expand_json_includes_callback($jlist, "PaperColumn::_add_json");
-        }
-        if (isset(self::$j_by_name[$name]))
-            return self::_expand_json(self::$j_by_name[$name]);
         foreach (self::$j_factories as $fj)
             if (str_starts_with($lname, strtolower($fj->prefix))
                 && ($fx = self::_expand_json($fj))
@@ -92,7 +100,8 @@ class PaperColumn extends Column {
     static function register_synonym($new_name, $old_name) {
         $lold = strtolower($old_name);
         $lname = strtolower($new_name);
-        assert(isset(self::$by_name[$lold]) && !isset(self::$by_name[$lname]) && !isset(self::$synonyms[$lname]));
+        assert((isset(self::$by_name[$lold]) || isset(self::$j_by_name[$lold]))
+               && !isset(self::$by_name[$lname]) && !isset(self::$synonyms[$lname]));
         self::$synonyms[$lname] = $lold;
     }
     static function make_column_error($errors, $ehtml, $eprio) {
@@ -154,9 +163,8 @@ class PaperColumn extends Column {
 }
 
 class IdPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("id", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("minimal" => true, "comparator" => "id_compare"));
+    function __construct($cj) {
+        parent::__construct($cj, ["comparator" => "id_compare"]);
     }
     function header(PaperList $pl, $is_text) {
         return "ID";
@@ -172,8 +180,8 @@ class IdPaperColumn extends PaperColumn {
 
 class SelectorPaperColumn extends PaperColumn {
     public $is_selector = true;
-    function __construct($name, $extra) {
-        parent::__construct($name, Column::VIEW_COLUMN, $extra);
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         if ($this->name == "selunlessconf")
@@ -204,8 +212,8 @@ class SelectorPaperColumn extends PaperColumn {
 }
 
 class ConflictSelector_PaperColumn extends SelectorPaperColumn {
-    function __construct($name, $extra) {
-        parent::__construct($name, $extra);
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->privChair)
@@ -240,9 +248,8 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
 class TitlePaperColumn extends PaperColumn {
     private $has_decoration = false;
     private $highlight = false;
-    function __construct() {
-        parent::__construct("title", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("minimal" => true, "comparator" => "title_compare"));
+    function __construct($cj) {
+        parent::__construct($cj, ["comparator" => "title_compare"]);
     }
     function prepare(PaperList $pl, $visible) {
         $this->has_decoration = $pl->contact->can_view_tags(null)
@@ -286,10 +293,9 @@ class TitlePaperColumn extends PaperColumn {
 
 class StatusPaperColumn extends PaperColumn {
     private $is_long;
-    function __construct($name, $is_long, $extra = 0) {
-        parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("className" => "pl_status", "comparator" => "status_compare"));
-        $this->is_long = $is_long;
+    function __construct($cj) {
+        parent::__construct($cj, ["comparator" => "status_compare"]);
+        $this->is_long = $cj->name === "statusfull";
     }
     function sort_prepare($pl, &$rows, $sorter) {
         $force = $pl->search->limitName != "a" && $pl->contact->privChair;
@@ -328,9 +334,8 @@ class StatusPaperColumn extends PaperColumn {
 }
 
 class ReviewStatusPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("revstat", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("comparator" => "review_status_compare"));
+    function __construct($cj) {
+        parent::__construct($cj, ["comparator" => "review_status_compare"]);
     }
     function prepare(PaperList $pl, $visible) {
         if ($pl->contact->privChair)
@@ -381,8 +386,8 @@ class ReviewStatusPaperColumn extends PaperColumn {
 class AuthorsPaperColumn extends PaperColumn {
     private $aufull;
     private $anonau;
-    function __construct() {
-        parent::__construct("authors", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function header(PaperList $pl, $is_text) {
         return "Authors";
@@ -470,8 +475,8 @@ class AuthorsPaperColumn extends PaperColumn {
 }
 
 class CollabPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("collab", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         return !!$pl->conf->setting("sub_collab") && $pl->contact->can_view_some_authors();
@@ -499,8 +504,8 @@ class CollabPaperColumn extends PaperColumn {
 }
 
 class AbstractPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("abstract", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function header(PaperList $pl, $is_text) {
         return "Abstract";
@@ -525,8 +530,8 @@ class AbstractPaperColumn extends PaperColumn {
 }
 
 class TopicListPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("topics", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->conf->has_topics())
@@ -551,9 +556,8 @@ class TopicListPaperColumn extends PaperColumn {
 
 class ReviewerTypePaperColumn extends PaperColumn {
     protected $xreviewer;
-    function __construct($name) {
-        parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("comparator" => "reviewer_type_compare"));
+    function __construct($cj) {
+        parent::__construct($cj, ["comparator" => "reviewer_type_compare"]);
     }
     function analyze($pl, &$rows) {
         $this->xreviewer = $pl->prepare_xreviewer($rows);
@@ -648,8 +652,8 @@ class ReviewerTypePaperColumn extends PaperColumn {
 }
 
 class ReviewSubmittedPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("revsubmitted", Column::VIEW_COLUMN | Column::COMPLETABLE, array("className" => "pl_text"));
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         return !!$pl->contact->isPC;
@@ -671,10 +675,8 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
 }
 
 class ReviewDelegationPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("revdelegation", Column::VIEW_COLUMN,
-                            array("className" => "pl_text",
-                                  "comparator" => "review_delegation_compare"));
+    function __construct($cj) {
+        parent::__construct($cj, ["comparator" => "review_delegation_compare"]);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->isPC)
@@ -708,8 +710,8 @@ class ReviewDelegationPaperColumn extends PaperColumn {
 }
 
 class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
-    function __construct() {
-        parent::__construct("assrev");
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->is_manager())
@@ -746,10 +748,9 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
     }
 }
 
-class DesirabilityPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("desirability", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("comparator" => "desirability_compare"));
+class Desirability_PaperColumn extends PaperColumn {
+    function __construct($cj) {
+        parent::__construct($cj, ["comparator" => "desirability_compare"]);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->privChair)
@@ -774,9 +775,8 @@ class DesirabilityPaperColumn extends PaperColumn {
 
 class TopicScorePaperColumn extends PaperColumn {
     private $contact;
-    function __construct() {
-        parent::__construct("topicscore", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("comparator" => "topic_score_compare"));
+    function __construct($cj) {
+        parent::__construct($cj, ["comparator" => "topic_score_compare"]);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->conf->has_topics() || !$pl->contact->isPC)
@@ -982,8 +982,8 @@ class PreferenceListPaperColumn extends PaperColumn {
 
 class ReviewerListPaperColumn extends PaperColumn {
     private $topics;
-    function __construct() {
-        parent::__construct("reviewers", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_some_review_identity(null))
@@ -1030,8 +1030,8 @@ class ReviewerListPaperColumn extends PaperColumn {
 }
 
 class PCConflictListPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("pcconf", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->privChair)
@@ -1065,9 +1065,12 @@ class PCConflictListPaperColumn extends PaperColumn {
 
 class ConflictMatchPaperColumn extends PaperColumn {
     private $field;
-    function __construct($name, $field) {
-        parent::__construct($name, Column::VIEW_ROW);
-        $this->field = $field;
+    function __construct($cj) {
+        parent::__construct($cj);
+        if ($name === "authorsmatch")
+            $this->field = "authorInformation";
+        else
+            $this->field = "collaborators";
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->contact->privChair;
@@ -1538,9 +1541,9 @@ class Option_PaperColumn extends PaperColumn {
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
-            if ($opt->display() >= 0)
+            if ($opt->column_display())
                 return new Option_PaperColumn($opt, $isrow);
-            self::make_column_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.");
+            self::make_column_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.", 1);
         } else if ($has_colon)
             self::make_column_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
         return null;
@@ -1797,9 +1800,8 @@ class TagReportPaperColumn extends PaperColumn {
 }
 
 class TimestampPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("timestamp", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("comparator" => "update_time_compare"));
+    function __construct($cj) {
+        parent::__construct($cj, ["comparator" => "update_time_compare"]);
     }
     function update_time_compare($a, $b) {
         $at = max($a->timeFinalSubmitted, $a->timeSubmitted, 0);
@@ -1831,9 +1833,9 @@ class NumericOrderPaperColumn extends PaperColumn {
     }
 }
 
-class LeadPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("lead", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+class Lead_PaperColumn extends PaperColumn {
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->contact->can_view_lead(null, true);
@@ -1855,9 +1857,9 @@ class LeadPaperColumn extends PaperColumn {
     }
 }
 
-class ShepherdPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("shepherd", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+class Shepherd_PaperColumn extends PaperColumn {
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->contact->isPC
@@ -1893,9 +1895,8 @@ class FoldAllPaperColumn extends PaperColumn {
 }
 
 class PageCount_PaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct("pagecount", Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
-                            ["className" => "plr", "minimal" => true, "comparator" => "page_count_compare"]);
+    function __construct($cj) {
+        parent::__construct($cj, ["comparator" => "page_count_compare"]);
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->contact->can_view_some_pdf();
@@ -1934,21 +1935,6 @@ class PageCount_PaperColumn extends PaperColumn {
 }
 
 function initialize_paper_columns() {
-    PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)));
-    PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "className" => "pl_sel")));
-    PaperColumn::register(new ConflictSelector_PaperColumn("selconf", array("minimal" => "true", "className" => "pl_confsel")));
-    PaperColumn::register(new SelectorPaperColumn("selunlessconf", array("minimal" => true, "className" => "pl_sel")));
-    PaperColumn::register(new IdPaperColumn);
-    PaperColumn::register(new TitlePaperColumn);
-    PaperColumn::register(new StatusPaperColumn("status", false));
-    PaperColumn::register(new StatusPaperColumn("statusfull", true));
-    PaperColumn::register(new ReviewerTypePaperColumn("revtype"));
-    PaperColumn::register(new ReviewStatusPaperColumn);
-    PaperColumn::register(new ReviewSubmittedPaperColumn);
-    PaperColumn::register(new ReviewDelegationPaperColumn);
-    PaperColumn::register(new AssignReviewPaperColumn);
-    PaperColumn::register(new TopicScorePaperColumn);
-    PaperColumn::register(new TopicListPaperColumn);
     PaperColumn::register(new PreferencePaperColumn("pref", false));
     PaperColumn::register_synonym("revpref", "pref");
     PaperColumn::register(new PreferencePaperColumn("editpref", true));
@@ -1956,21 +1942,8 @@ function initialize_paper_columns() {
     PaperColumn::register_synonym("allrevpref", "allpref");
     PaperColumn::register(new PreferenceListPaperColumn("alltopicpref", true));
     PaperColumn::register_synonym("allrevtopicpref", "alltopicpref");
-    PaperColumn::register(new DesirabilityPaperColumn);
-    PaperColumn::register(new ReviewerListPaperColumn);
-    PaperColumn::register(new AuthorsPaperColumn);
-    PaperColumn::register(new CollabPaperColumn);
-    PaperColumn::register_synonym("co", "collab");
     PaperColumn::register(new TagListPaperColumn(false));
-    PaperColumn::register(new AbstractPaperColumn);
-    PaperColumn::register(new LeadPaperColumn);
-    PaperColumn::register(new ShepherdPaperColumn);
-    PaperColumn::register(new PCConflictListPaperColumn);
-    PaperColumn::register(new ConflictMatchPaperColumn("authorsmatch", "authorInformation"));
-    PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"));
-    PaperColumn::register(new TimestampPaperColumn);
     PaperColumn::register(new FoldAllPaperColumn);
-    PaperColumn::register(new PageCount_PaperColumn);
     PaperColumn::register_factory("tag:", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
     PaperColumn::register_factory("opt:", new Option_PaperColumn(null));

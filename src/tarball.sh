@@ -134,6 +134,7 @@ src/autoassigner.php
 src/banal
 src/capability.php
 src/checkformat.php
+src/columninfo.json
 src/commentinfo.php
 src/conference.php
 src/conflict.php
