@@ -16,6 +16,7 @@ class Column {
     public $className;
     public $foldable = false;
     public $completable = false;
+    public $sortable = false;
     public $view = 0;
     public $comparator = false;
     public $minimal = false;
@@ -38,7 +39,10 @@ class Column {
                         $this->name = $v;
                     else if ($k === "className" && is_string($v))
                         $this->className = $v;
-                    else if ($k === "fold" && is_bool($v))
+                    else if ($k === "sort" && is_bool($v)) {
+                        $this->sortable = $v;
+                        $this->comparator = $this->comparator ? : "compare";
+                    } else if ($k === "fold" && is_bool($v))
                         $this->foldable = $v;
                     else if ($k === "complete" && is_bool($v))
                         $this->completable = $v;
@@ -51,8 +55,10 @@ class Column {
                             $this->view = self::VIEW_NONE;
                     } else if ($k === "minimal" && is_bool($v))
                         $this->minimal = $v;
-                    else if ($k === "comparator")
+                    else if ($k === "comparator") {
+                        $this->sortable = !!$v;
                         $this->comparator = $v;
+                    }
                 }
         }
         if ($this->className === null)

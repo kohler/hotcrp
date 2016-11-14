@@ -17,15 +17,15 @@
     },
     {
         "name": "id",
-        "view": "column", "minimal": true, "complete": true, "factory_class": "IdPaperColumn"
+        "view": "column", "sort": true, "minimal": true, "complete": true, "factory_class": "IdPaperColumn"
     },
     {
         "name": "title",
-        "view": "column", "minimal": true, "complete": true, "factory_class": "TitlePaperColumn"
+        "view": "column", "sort": true, "minimal": true, "complete": true, "factory_class": "TitlePaperColumn"
     },
     {
         "name": "revstat",
-        "view": "column", "complete": true, "factory_class": "ReviewStatusPaperColumn"
+        "view": "column", "sort": true, "complete": true, "factory_class": "ReviewStatusPaperColumn"
     },
     {
         "name": "revsubmitted",
@@ -33,27 +33,27 @@
     },
     {
         "name": "revdelegation",
-        "view": "column", "className": "pl_text", "factory_class": "ReviewDelegationPaperColumn"
+        "view": "column", "sort": true, "className": "pl_text", "factory_class": "ReviewDelegationPaperColumn"
     },
     {
         "name": "revtype",
-        "view": "column", "complete": true, "factory_class": "ReviewerTypePaperColumn"
+        "view": "column", "sort": true, "complete": true, "factory_class": "ReviewerTypePaperColumn"
     },
     {
         "name": "assrev",
-        "view": "column", "complete": true, "factory_class": "AssignReviewPaperColumn"
+        "view": "column", "sort": true, "complete": true, "factory_class": "AssignReviewPaperColumn"
     },
     {
         "name": "status",
-        "view": "column", "complete": true, "factory_class": "StatusPaperColumn"
+        "view": "column", "sort": true, "complete": true, "factory_class": "StatusPaperColumn"
     },
     {
         "name": "statusfull",
-        "view": "column", "complete": true, "className": "pl_status", "factory_class": "StatusPaperColumn"
+        "view": "column", "sort": true, "complete": true, "className": "pl_status", "factory_class": "StatusPaperColumn"
     },
     {
         "name": "pagecount",
-        "view": "column", "fold": true, "complete": true, "minimal": true, "className": "plr", "factory_class": "PageCount_PaperColumn"
+        "view": "column", "sort": true, "fold": true, "complete": true, "minimal": true, "className": "plr", "factory_class": "PageCount_PaperColumn"
     },
     {
         "name": "lead",
@@ -65,11 +65,11 @@
     },
     {
         "name": "desirability",
-        "view": "column", "complete": true, "factory_class": "Desirability_PaperColumn"
+        "view": "column", "sort": true, "complete": true, "factory_class": "Desirability_PaperColumn"
     },
     {
         "name": "topicscore",
-        "view": "column", "complete": true, "factory_class": "TopicScorePaperColumn"
+        "view": "column", "sort": true, "complete": true, "factory_class": "TopicScorePaperColumn"
     },
     {
         "name": "topics",
@@ -98,7 +98,7 @@
     },
     {
         "name": "timestamp",
-        "view": "column", "complete": true, "factory_class": "TimestampPaperColumn"
+        "view": "column", "sort": true, "complete": true, "factory_class": "TimestampPaperColumn"
     },
     {
         "name": "authorsmatch",

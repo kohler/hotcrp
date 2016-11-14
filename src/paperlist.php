@@ -926,7 +926,7 @@ class PaperList {
             $tooltip = $s0->reverse ? "Forward sort" : "Reverse sort";
             $sort_class = "pl_sort_def" . ($s0->reverse ? "_rev" : "");
             $sort_url .= urlencode($s0->type . ($s0->reverse ? "" : " reverse"));
-        } else if ($fdef->comparator && $sort_url)
+        } else if ($fdef->sortable && $sort_url)
             $sort_url .= urlencode($fdef->name);
         else if ($defsortname)
             $sort_url .= urlencode($defsortname);
@@ -1118,7 +1118,7 @@ class PaperList {
                 if ($sorter->type
                     && ($field = $this->find_column($sorter->type))
                     && $field->prepare($this, PaperColumn::PREP_SORT)
-                    && $field->comparator)
+                    && $field->sortable)
                     $sorter->field = $field->realize($this);
                 else if ($sorter->type) {
                     if ($this->contact->can_view_tags(null)
