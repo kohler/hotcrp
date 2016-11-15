@@ -111,13 +111,8 @@ class PaperColumn extends Column {
                && !isset(self::$by_name[$lname]) && !isset(self::$synonyms[$lname]));
         self::$synonyms[$lname] = $lold;
     }
-
-    static function register_factory($prefix, $f) {
+    static function register_factory($prefix, PaperColumnFactory $f) {
         self::$factories[] = array(strtolower($prefix), $f);
-    }
-    static function instantiate_error($errors, $ehtml, $eprio) {
-        if ($errors)
-            $errors->add($ehtml, $eprio);
     }
 
     static function lookup_all() {
@@ -182,10 +177,6 @@ class PaperColumn extends Column {
 
     function has_statistics() {
         return false;
-    }
-
-    function completion_instances(Contact $user) {
-        return [];
     }
 }
 
@@ -1455,38 +1446,14 @@ class FormulaGraph_PaperColumn extends PaperColumn {
     private $_sortinfo;
     private $_avginfo;
     private $xreviewer;
-    static private $nregistered;
-    function __construct($name, Formula $formula = null) {
+    function __construct($name, Formula $formula) {
         parent::__construct([
-            "name" => strtolower($name), "column" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true,
+            "name" => strtolower($name), "column" => true, "fold" => true, "sort" => true, "minimal" => true,
             "className" => "pl_score"
         ]);
         $this->formula = $formula;
     }
-    function instantiate(Contact $user, $name, $errors) {
-        if (str_starts_with($name, "g("))
-            $name = substr($name, 1);
-        else if (str_starts_with($name, "graph("))
-            $name = substr($name, 5);
-        else
-            return null;
-        $formula = new Formula($user, $name, true);
-        if (!$formula->check()) {
-            self::instantiate_error($errors, $formula->error_html(), 1);
-            return null;
-        } else if (!($formula->result_format() instanceof ReviewField)) {
-            self::instantiate_error($errors, "Graphed formulas must return review fields.", 1);
-            return null;
-        }
-        ++self::$nregistered;
-        return new FormulaGraph_PaperColumn("scorex" . self::$nregistered, $formula);
-    }
-    function completion_name() {
-        return "graph(<formula>)";
-    }
     function prepare(PaperList $pl, $visible) {
-        if (!$this->formula && $visible === PaperColumn::PREP_COMPLETION)
-            return true;
         if (!$pl->scoresOk
             || !$this->formula->check($pl->contact)
             || !($pl->search->limitName == "a"
@@ -1564,19 +1531,41 @@ class FormulaGraph_PaperColumn extends PaperColumn {
     }
 }
 
+class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
+    static private $nregistered;
+    function instantiate(Contact $user, $name, $errors) {
+        if (str_starts_with($name, "g("))
+            $name = substr($name, 1);
+        else if (str_starts_with($name, "graph("))
+            $name = substr($name, 5);
+        else
+            return null;
+        $formula = new Formula($user, $name, true);
+        if (!$formula->check()) {
+            self::instantiate_error($errors, $formula->error_html(), 1);
+            return null;
+        } else if (!($formula->result_format() instanceof ReviewField)) {
+            self::instantiate_error($errors, "Graphed formulas must return review fields.", 1);
+            return null;
+        }
+        ++self::$nregistered;
+        return new FormulaGraph_PaperColumn("scorex" . self::$nregistered, $formula);
+    }
+    function completion_name() {
+        return "graph(<formula>)";
+    }
+}
+
 class Option_PaperColumn extends PaperColumn {
     private $opt;
-    function __construct($opt, $isrow = false) {
-        if ($opt && $isrow)
-            $name = $opt->abbr . "-row";
-        else
-            $name = $opt ? $opt->abbr : null;
-        if ($opt && $opt instanceof TextPaperOption)
+    function __construct(PaperOption $opt, $isrow = false) {
+        $name = $opt->abbr . ($isrow ? "-row" : "");
+        if ($opt instanceof TextPaperOption)
             $isrow = true;
         $className = "pl_option";
-        if ($opt && $opt->type == "checkbox" && !$isrow)
+        if ($opt->type == "checkbox" && !$isrow)
             $className .= " plc";
-        else if ($opt && $opt->type == "numeric" && !$isrow)
+        else if ($opt->type == "numeric" && !$isrow)
             $className .= " plrd";
         parent::__construct([
             "name" => $name, ($isrow ? "row" : "column") => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true,
@@ -1584,42 +1573,8 @@ class Option_PaperColumn extends PaperColumn {
         ]);
         $this->opt = $opt;
     }
-    function instantiate(Contact $user, $name, $errors) {
-        if ($name === "options") {
-            $errors && ($errors->allow_empty = true);
-            $opts = [];
-            foreach ($user->user_option_list() as $opt)
-                if ($opt->display() >= 0)
-                    $opts[] = new Option_PaperColumn($opt, false);
-            return $opts;
-        }
-        $has_colon = false;
-        if (str_starts_with($name, "opt:")) {
-            $name = substr($name, 4);
-            $has_colon = true;
-        } else if (strpos($name, ":") !== false)
-            return null;
-        $isrow = false;
-        $opts = $user->conf->paper_opts->search($name);
-        if (empty($opts) && str_ends_with($name, "-row")) {
-            $isrow = true;
-            $name = substr($name, 0, strlen($name) - 4);
-            $opts = $user->conf->paper_opts->search($name);
-        }
-        if (count($opts) == 1) {
-            reset($opts);
-            $opt = current($opts);
-            if ($opt->column_display())
-                return new Option_PaperColumn($opt, $isrow);
-            self::instantiate_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.", 1);
-        } else if ($has_colon)
-            self::instantiate_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
-        return null;
-    }
     function prepare(PaperList $pl, $visible) {
-        if (!$this->opt)
-            return $visible == self::PREP_COMPLETION;
-        else if (!$pl->contact->can_view_some_paper_option($this->opt))
+        if (!$pl->contact->can_view_some_paper_option($this->opt))
             return false;
         $pl->qopts["options"] = true;
         return true;
@@ -1632,14 +1587,7 @@ class Option_PaperColumn extends PaperColumn {
         return $is_text ? $this->opt->name : htmlspecialchars($this->opt->name);
     }
     function completion_name() {
-        return $this->opt ? $this->opt->abbr : "options";
-    }
-    function completion_instances(Contact $user) {
-        $reg = [$this];
-        foreach ($user->user_option_list() as $opt)
-            if ($opt->display() >= 0)
-                $reg[] = new Option_PaperColumn($opt, false);
-        return $reg;
+        return $this->opt->abbr;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->contact->can_view_paper_option($row, $this->opt, true);
@@ -1667,49 +1615,68 @@ class Option_PaperColumn extends PaperColumn {
     }
 }
 
+class Option_PaperColumnFactory extends PaperColumnFactory {
+    private $opt;
+    private function all(Contact $user) {
+        $x = [];
+        foreach ($user->user_option_list() as $opt)
+            if ($opt->display() >= 0)
+                $x[] = new Option_PaperColumn($opt, false);
+        return $x;
+    }
+    function instantiate(Contact $user, $name, $errors) {
+        if ($name === "options") {
+            $errors && ($errors->allow_empty = true);
+            return $this->all($user);
+        }
+        $has_colon = false;
+        if (str_starts_with($name, "opt:")) {
+            $name = substr($name, 4);
+            $has_colon = true;
+        } else if (strpos($name, ":") !== false)
+            return null;
+        $isrow = false;
+        $opts = $user->conf->paper_opts->search($name);
+        if (empty($opts) && str_ends_with($name, "-row")) {
+            $isrow = true;
+            $name = substr($name, 0, strlen($name) - 4);
+            $opts = $user->conf->paper_opts->search($name);
+        }
+        if (count($opts) == 1) {
+            reset($opts);
+            $opt = current($opts);
+            if ($opt->column_display())
+                return new Option_PaperColumn($opt, $isrow);
+            self::instantiate_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.", 1);
+        } else if ($has_colon)
+            self::instantiate_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
+        return null;
+    }
+    function completion_instances(Contact $user) {
+        return array_merge([$this], $this->all($user));
+    }
+    function completion_name() {
+        return "options";
+    }
+}
+
 class Formula_PaperColumn extends PaperColumn {
     public $formula;
     private $formula_function;
     public $statistics;
     private $results;
     private $any_real;
-    static private $nregistered;
-    function __construct($name, Formula $formula = null) {
+    function __construct($name, Formula $formula) {
         parent::__construct([
-            "name" => strtolower($name), "column" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true
+            "name" => strtolower($name), "column" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true, "className" => "pl_formula"
         ]);
-        $this->className = "pl_formula";
         $this->formula = $formula;
     }
-    function instantiate(Contact $user, $name, $errors) {
-        $dfm = $user->conf->defined_formula_map($user);
-        if ($name === "formulas")
-            return array_map(function ($f) {
-                return new Formula_PaperColumn("formula{$f->formulaId}", $f);
-            }, $dfm);
-        $starts_with_formula = str_starts_with($name, "formula");
-        foreach ($dfm as $f)
-            if (strcasecmp($f->name, $name) == 0 || ($starts_with_formula && $name === "formula{$f->formulaId}"))
-                return new Formula_PaperColumn("formula{$f->formulaId}", $f);
-        if (substr($name, 0, 4) === "edit")
-            return null;
-        $formula = new Formula($user, $name);
-        if (!$formula->check()) {
-            if ($errors && strpos($name, "(") !== false)
-                self::instantiate_error($errors, $formula->error_html(), 1);
-            return null;
-        }
-        ++self::$nregistered;
-        return new Formula_PaperColumn("formulax" . self::$nregistered, $formula);
-    }
     function completion_name() {
-        if ($this->formula && $this->formula->name) {
-            if (strpos($this->formula->name, " ") !== false)
-                return "\"{$this->formula->name}\"";
-            else
-                return $this->formula->name;
-        } else
-            return "(<formula>)";
+        if (strpos($this->formula->name, " ") !== false)
+            return "\"{$this->formula->name}\"";
+        else
+            return $this->formula->name;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$this->formula && $visible === PaperColumn::PREP_COMPLETION)
@@ -1805,33 +1772,46 @@ class Formula_PaperColumn extends PaperColumn {
     }
 }
 
-class TagReportPaperColumn extends PaperColumn {
+class Formula_PaperColumnFactory extends PaperColumnFactory {
+    static private $nregistered;
+    private function all(Contact $user) {
+        return array_map(function ($f) {
+            return new Formula_PaperColumn("formula{$f->formulaId}", $f);
+        }, $user->conf->defined_formula_map($user));
+    }
+    function instantiate(Contact $user, $name, $errors) {
+        if ($name === "formulas")
+            return $this->all($user);
+        $dfm = $user->conf->defined_formula_map($user);
+        $starts_with_formula = str_starts_with($name, "formula");
+        foreach ($dfm as $f)
+            if (strcasecmp($f->name, $name) == 0 || ($starts_with_formula && $name === "formula{$f->formulaId}"))
+                return new Formula_PaperColumn("formula{$f->formulaId}", $f);
+        $formula = new Formula($user, $name);
+        if (!$formula->check()) {
+            if ($errors && strpos($name, "(") !== false)
+                self::instantiate_error($errors, $formula->error_html(), 1);
+            return null;
+        }
+        ++self::$nregistered;
+        return new Formula_PaperColumn("formulax" . self::$nregistered, $formula);
+    }
+    function completion_name() {
+        return "(<formula>)";
+    }
+    function completion_instances(Contact $user) {
+        return array_merge([$this], $this->all($user));
+    }
+}
+
+class TagReport_PaperColumn extends PaperColumn {
     private $tag;
     private $viewtype;
     function __construct($tag) {
         parent::__construct([
-            "name" => $tag ? "tagrep:$tag" : null, "row" => true, "fold" => true, "className" => "pl_tagrep"
+            "name" => "tagrep:$tag", "row" => true, "fold" => true, "className" => "pl_tagrep"
         ]);
         $this->tag = $tag;
-    }
-    function instantiate(Contact $user, $name, $errors) {
-        if (!$user->can_view_most_tags())
-            return null;
-        $tagset = $user->conf->tags();
-        if (str_starts_with($name, "tagrep:"))
-            $tag = substr($name, 7);
-        else if (str_starts_with($name, "tagreport:"))
-            $tag = substr($name, 10);
-        else if ($name === "tagreports") {
-            $errors && ($errors->allow_empty = true);
-            return array_map(function ($t) { return new TagReportPaperColumn($t->tag); },
-                             $tagset->filter_by(function ($t) { return $t->vote || $t->approval || $t->rank; }));
-        } else
-            return null;
-        $t = $tagset->check($tag);
-        if ($t && ($t->vote || $t->approval || $t->rank))
-            return new TagReportPaperColumn($tag);
-        return null;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_any_peruser_tags($this->tag))
@@ -1867,6 +1847,28 @@ class TagReportPaperColumn extends PaperColumn {
         $pl->contact->ksort_cid_array($a);
         $str = '<span class="nb">' . join(',</span> <span class="nb">', $a) . '</span>';
         return $pl->maybeConflict($row, $str, $row->conflictType <= 0 || $pl->contact->can_view_peruser_tags($row, $this->tag, false));
+    }
+}
+
+class TagReport_PaperColumnFactory extends PaperColumnFactory {
+    function instantiate(Contact $user, $name, $errors) {
+        if (!$user->can_view_most_tags())
+            return null;
+        $tagset = $user->conf->tags();
+        if (str_starts_with($name, "tagrep:"))
+            $tag = substr($name, 7);
+        else if (str_starts_with($name, "tagreport:"))
+            $tag = substr($name, 10);
+        else if ($name === "tagreports") {
+            $errors && ($errors->allow_empty = true);
+            return array_map(function ($t) { return new TagReport_PaperColumn($t->tag); },
+                             $tagset->filter_by(function ($t) { return $t->vote || $t->approval || $t->rank; }));
+        } else
+            return null;
+        $t = $tagset->check($tag);
+        if ($t && ($t->vote || $t->approval || $t->rank))
+            return new TagReport_PaperColumn($tag);
+        return null;
     }
 }
 
@@ -2016,14 +2018,13 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("tag:", new Tag_PaperColumnFactory(false));
     PaperColumn::register_factory("tagval:", new Tag_PaperColumnFactory(true));
     PaperColumn::register_factory("#", new Tag_PaperColumnFactory(null));
-    PaperColumn::register_factory("opt:", new Option_PaperColumn(null));
+    PaperColumn::register_factory("", new Option_PaperColumnFactory);
     PaperColumn::register_factory("pref:", new Preference_PaperColumnFactory);
-    PaperColumn::register_factory("tagrep:", new TagReportPaperColumn(null));
-    PaperColumn::register_factory("tagreport:", new TagReportPaperColumn(null));
-    PaperColumn::register_factory("tagreports", new TagReportPaperColumn(null));
-    PaperColumn::register_factory("", new Formula_PaperColumn("", null));
-    PaperColumn::register_factory("g", new FormulaGraph_PaperColumn("", null));
-    PaperColumn::register_factory("", new Option_PaperColumn(null));
+    PaperColumn::register_factory("tagrep:", new TagReport_PaperColumnFactory);
+    PaperColumn::register_factory("tagreport:", new TagReport_PaperColumnFactory);
+    PaperColumn::register_factory("tagreports", new TagReport_PaperColumnFactory);
+    PaperColumn::register_factory("", new Formula_PaperColumnFactory);
+    PaperColumn::register_factory("g", new FormulaGraph_PaperColumnFactory);
     PaperColumn::register_factory("", new Score_PaperColumnFactory);
 }
 
