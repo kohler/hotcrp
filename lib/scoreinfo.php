@@ -146,9 +146,9 @@ class ScoreInfo {
             return $this->stddev_p();
     }
 
-    static function compare($av, $bv) {
+    static function compare($av, $bv, $null_direction = 1) {
         if ($av === null || $bv === null)
-            return $av !== null ? -1 : ($bv !== null ? 1 : 0);
+            return $av !== null ? -$null_direction : ($bv !== null ? $null_direction : 0);
         if (is_array($av)) {
             $ap = count($av);
             $bp = count($bv);

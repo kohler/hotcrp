@@ -1342,7 +1342,7 @@ class Score_PaperColumn extends PaperColumn {
     }
     function compare(PaperInfo $a, PaperInfo $b) {
         $sortinfo = $this->_sortinfo;
-        if (!($x = ScoreInfo::compare($b->$sortinfo, $a->$sortinfo))) {
+        if (!($x = ScoreInfo::compare($b->$sortinfo, $a->$sortinfo, -1))) {
             $avginfo = $this->_avginfo;
             $x = ScoreInfo::compare($b->$avginfo, $a->$avginfo);
         }
