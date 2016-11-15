@@ -1,111 +1,121 @@
 [
     {
         "name": "sel",
-        "view": "column", "minimal": true, "factory_class": "SelectorPaperColumn"
+        "column": true, "minimal": true, "factory_class": "SelectorPaperColumn"
     },
     {
         "name": "selon",
-        "view": "column", "minimal": true, "className": "pl_sel", "factory_class": "SelectorPaperColumn"
+        "column": true, "minimal": true, "className": "pl_sel", "factory_class": "SelectorPaperColumn"
     },
     {
         "name": "selunlessconf",
-        "view": "column", "minimal": true, "className": "pl_sel", "factory_class": "SelectorPaperColumn"
+        "column": true, "minimal": true, "className": "pl_sel", "factory_class": "SelectorPaperColumn"
     },
     {
         "name": "selconf",
-        "view": "column", "minimal": true, "className": "pl_confsel", "factory_class": "ConflictSelector_PaperColumn"
+        "column": true, "minimal": true, "className": "pl_confsel", "factory_class": "ConflictSelector_PaperColumn"
     },
     {
         "name": "id",
-        "view": "column", "sort": true, "minimal": true, "complete": true, "factory_class": "IdPaperColumn"
+        "column": true, "sort": true, "minimal": true, "completion": true, "factory_class": "IdPaperColumn"
     },
     {
         "name": "title",
-        "view": "column", "sort": true, "minimal": true, "complete": true, "factory_class": "TitlePaperColumn"
+        "column": true, "sort": true, "minimal": true, "completion": true, "factory_class": "TitlePaperColumn"
     },
     {
         "name": "revstat",
-        "view": "column", "sort": true, "complete": true, "factory_class": "ReviewStatusPaperColumn"
+        "column": true, "sort": true, "completion": true, "factory_class": "ReviewStatusPaperColumn"
     },
     {
         "name": "revsubmitted",
-        "view": "column", "complete": true, "className": "pl_text", "factory_class": "ReviewSubmittedPaperColumn"
+        "column": true, "completion": true, "className": "pl_text", "factory_class": "ReviewSubmittedPaperColumn"
     },
     {
         "name": "revdelegation",
-        "view": "column", "sort": true, "className": "pl_text", "factory_class": "ReviewDelegationPaperColumn"
+        "column": true, "sort": true, "className": "pl_text", "factory_class": "ReviewDelegationPaperColumn"
     },
     {
         "name": "revtype",
-        "view": "column", "sort": true, "complete": true, "factory_class": "ReviewerTypePaperColumn"
+        "column": true, "sort": true, "completion": true, "factory_class": "ReviewerTypePaperColumn"
     },
     {
         "name": "assrev",
-        "view": "column", "sort": true, "complete": true, "factory_class": "AssignReviewPaperColumn"
+        "column": true, "sort": true, "completion": true, "factory_class": "AssignReviewPaperColumn"
     },
     {
         "name": "status",
-        "view": "column", "sort": true, "complete": true, "factory_class": "StatusPaperColumn"
+        "column": true, "sort": true, "completion": true, "factory_class": "StatusPaperColumn"
     },
     {
         "name": "statusfull",
-        "view": "column", "sort": true, "complete": true, "className": "pl_status", "factory_class": "StatusPaperColumn"
+        "column": true, "sort": true, "completion": true, "className": "pl_status", "factory_class": "StatusPaperColumn"
     },
     {
         "name": "pagecount",
-        "view": "column", "sort": true, "fold": true, "complete": true, "minimal": true, "className": "plr", "factory_class": "PageCount_PaperColumn"
+        "column": true, "sort": true, "fold": true, "completion": true, "minimal": true, "className": "plr", "factory_class": "PageCount_PaperColumn"
     },
     {
         "name": "lead",
-        "view": "row", "fold": true, "complete": true, "factory_class": "Lead_PaperColumn"
+        "row": true, "fold": true, "completion": true, "factory_class": "Lead_PaperColumn"
     },
     {
         "name": "shepherd",
-        "view": "row", "fold": true, "complete": true, "factory_class": "Shepherd_PaperColumn"
+        "row": true, "fold": true, "completion": true, "factory_class": "Shepherd_PaperColumn"
     },
     {
         "name": "desirability",
-        "view": "column", "sort": true, "complete": true, "factory_class": "Desirability_PaperColumn"
+        "column": true, "sort": true, "completion": true, "factory_class": "Desirability_PaperColumn"
     },
     {
         "name": "topicscore",
-        "view": "column", "sort": true, "complete": true, "factory_class": "TopicScorePaperColumn"
+        "column": true, "sort": true, "completion": true, "factory_class": "TopicScorePaperColumn"
     },
     {
         "name": "topics",
-        "view": "row", "fold": true, "complete": true, "factory_class": "TopicListPaperColumn"
+        "row": true, "fold": true, "completion": true, "factory_class": "TopicListPaperColumn"
     },
     {
         "name": "abstract",
-        "view": "row", "fold": true, "complete": true, "factory_class": "AbstractPaperColumn"
+        "row": true, "fold": true, "completion": true, "factory_class": "AbstractPaperColumn"
     },
     {
         "name": "authors",
-        "view": "row", "fold": true, "complete": true, "factory_class": "AuthorsPaperColumn"
+        "row": true, "fold": true, "completion": true, "factory_class": "AuthorsPaperColumn"
     },
     {
         "name": "collab",
-        "view": "row", "fold": true, "complete": true, "factory_class": "CollabPaperColumn",
+        "row": true, "fold": true, "completion": true, "factory_class": "CollabPaperColumn",
         "synonym": ["collaborators", "co"]
     },
     {
         "name": "reviewers",
-        "view": "row", "fold": true, "complete": true, "factory_class": "ReviewerListPaperColumn"
+        "row": true, "fold": true, "completion": true, "factory_class": "ReviewerListPaperColumn"
     },
     {
         "name": "pcconf",
-        "view": "row", "fold": true, "complete": true, "factory_class": "PCConflictListPaperColumn"
+        "row": true, "fold": true, "completion": true, "factory_class": "PCConflictListPaperColumn"
     },
     {
         "name": "timestamp",
-        "view": "column", "sort": true, "complete": true, "factory_class": "TimestampPaperColumn"
+        "column": true, "sort": true, "completion": true, "factory_class": "TimestampPaperColumn"
     },
     {
         "name": "authorsmatch",
-        "view": "row", "factory_class": "ConflictMatchPaperColumn"
+        "row": true, "factory_class": "ConflictMatchPaperColumn"
     },
     {
         "name": "collabmatch",
-        "view": "row", "factory_class": "ConflictMatchPaperColumn"
+        "row": true, "factory_class": "ConflictMatchPaperColumn"
+    },
+    {
+        "name": "pref",
+        "column": true, "sort": true, "completion": true, "className": "pl_revpref", "factory_class": "PreferencePaperColumn",
+        "synonym": ["revpref", "preference"]
+    },
+    {
+        "name": "editpref",
+        "column": true, "edit": true, "sort": true, "completion": true, "className": "pl_editrevpref", "factory_class": "PreferencePaperColumn",
+        "synonym": ["editrevpref"]
     }
 ]

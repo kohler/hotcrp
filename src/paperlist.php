@@ -291,8 +291,7 @@ class PaperList {
             else
                 $code .= "if (!\$x && \$a->_then_sort_info == {$s->thenmap})";
             $code .= " { \$s = \$magic_sort_info[$i]; "
-                . "\$x = $rev\$s->field->" . $s->field->comparator
-                . "(\$a, \$b, \$s); }\n";
+                . "\$x = $rev\$s->field->compare(\$a, \$b, \$s); }\n";
         }
 
         $code .= "if (!\$x) \$x = \$a->paperId - \$b->paperId;\n";
@@ -710,7 +709,7 @@ class PaperList {
     function is_folded($field) {
         $fname = $field;
         if (is_object($field) || ($field = $this->find_column($field)))
-            $fname = $field->foldable ? $field->name : null;
+            $fname = $field->fold ? $field->name : null;
         if ($fname === "authors")
             $fname = "au";
         return $fname
@@ -766,7 +765,7 @@ class PaperList {
         // main columns
         $tm = "";
         foreach ($fieldDef as $fdef) {
-            if ($fdef->view != Column::VIEW_COLUMN)
+            if (!$fdef->viewable_column())
                 continue;
             $empty = $fdef->content_empty($this, $row);
             if ($fdef->is_folded) {
@@ -777,8 +776,8 @@ class PaperList {
                 if ($c !== "")
                     $fdef->has_content = true;
                 $tm .= "<td class=\"pl " . $fdef->className;
-                if ($fdef->foldable)
-                    $tm .= " fx$fdef->foldable";
+                if ($fdef->fold)
+                    $tm .= " fx$fdef->fold";
                 $tm .= "\">" . $c . "</td>";
             }
         }
@@ -786,7 +785,7 @@ class PaperList {
         // extension columns
         $tt = "";
         foreach ($fieldDef as $fdef) {
-            if ($fdef->view != Column::VIEW_ROW)
+            if (!$fdef->viewable_row())
                 continue;
             $empty = $fdef->content_empty($this, $row);
             $is_authors = $fdef->name === "authors";
@@ -813,8 +812,8 @@ class PaperList {
                         $tt .= " fx2";
                         $rstate->has_anonau = true;
                     }
-                } else if ($fdef->foldable)
-                    $tt .= " fx" . $fdef->foldable;
+                } else if ($fdef->fold)
+                    $tt .= " fx" . $fdef->fold;
                 $tt .= "\">" . $c . "</div>";
             }
         }
@@ -896,7 +895,7 @@ class PaperList {
     }
 
     private function _field_title($fdef) {
-        if ($fdef->view != Column::VIEW_COLUMN)
+        if (!$fdef->viewable_column())
             return $fdef->header($this, false);
 
         $t = $fdef->header($this, false);
@@ -926,7 +925,7 @@ class PaperList {
             $tooltip = $s0->reverse ? "Forward sort" : "Reverse sort";
             $sort_class = "pl_sort_def" . ($s0->reverse ? "_rev" : "");
             $sort_url .= urlencode($s0->type . ($s0->reverse ? "" : " reverse"));
-        } else if ($fdef->sortable && $sort_url)
+        } else if ($fdef->sort && $sort_url)
             $sort_url .= urlencode($fdef->name);
         else if ($defsortname)
             $sort_url .= urlencode($defsortname);
@@ -947,19 +946,19 @@ class PaperList {
             $j = ["name" => $fdef->name, "title" => $this->_field_title($fdef)];
             if ($fdef->className != "pl_" . $fdef->name)
                 $j["className"] = $fdef->className;
-            if ($fdef->view == Column::VIEW_COLUMN)
+            if ($fdef->viewable_column())
                 $j["column"] = true;
             if ($fdef->is_folded && $fdef->has_content)
                 $j["loadable"] = true;
             if ($fdef->is_folded && $fdef->name !== "authors")
                 $j["missing"] = true;
-            if ($fdef->foldable)
-                $j["foldnum"] = $fdef->foldable;
+            if ($fdef->fold)
+                $j["foldnum"] = $fdef->fold;
             $fdef->annotate_field_js($this, $j);
             $jscol[] = $j;
-            if ($fdef->foldable && $fdef->name !== "authors") {
-                $classes[] = "fold$fdef->foldable" . ($fdef->is_folded ? "c" : "o");
-                $jsmap[] = "\"$fdef->name\":$fdef->foldable";
+            if ($fdef->fold && $fdef->name !== "authors") {
+                $classes[] = "fold$fdef->fold" . ($fdef->is_folded ? "c" : "o");
+                $jsmap[] = "\"$fdef->name\":$fdef->fold";
             }
             if (isset($fdef->is_selector))
                 $has_sel = true;
@@ -1013,9 +1012,9 @@ class PaperList {
         }
         if ($show_links)
             foreach ($fieldDef as $fdef)
-                if ($fdef->name == "tags" && $fdef->foldable && $fdef->has_content) {
+                if ($fdef->name == "tags" && $fdef->fold && $fdef->has_content) {
                     $titleextra .= "<span class='sep'></span>";
-                    $titleextra .= "<a class='fn$fdef->foldable' href='#' onclick='return plinfo(\"tags\",0)'>Show tags</a><a class='fx$fdef->foldable' href='#' onclick='return plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
+                    $titleextra .= "<a class='fn$fdef->fold' href='#' onclick='return plinfo(\"tags\",0)'>Show tags</a><a class='fx$fdef->fold' href='#' onclick='return plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
                 }
         return $titleextra ? "<span class='pl_titleextra'>$titleextra</span>" : "";
     }
@@ -1118,7 +1117,7 @@ class PaperList {
                 if ($sorter->type
                     && ($field = $this->find_column($sorter->type))
                     && $field->prepare($this, PaperColumn::PREP_SORT)
-                    && $field->sortable)
+                    && $field->sort)
                     $sorter->field = $field->realize($this);
                 else if ($sorter->type) {
                     if ($this->contact->can_view_tags(null)
@@ -1204,7 +1203,7 @@ class PaperList {
         $t = "";
         $any_empty = null;
         foreach ($fieldDef as $fdef)
-            if ($fdef->view == Column::VIEW_COLUMN && $fdef->has_statistics())
+            if ($fdef->viewable_column() && $fdef->has_statistics())
                 $any_empty = $any_empty || $fdef->statistic($this, ScoreInfo::COUNT) != $this->count;
         if ($any_empty === null) {
             $this->error_html[] = "No statistics to show. Try adding formulas to your display; for example, “show:statistics show:(count(rev))”.";
@@ -1215,9 +1214,9 @@ class PaperList {
             $t .= "<tr>";
             $titled = 0;
             foreach ($fieldDef as $fdef) {
-                if ($fdef->view != Column::VIEW_COLUMN)
+                if (!$fdef->viewable_column())
                     continue;
-                if (!$fdef->has_statistics() && is_int($titled) && !$fdef->foldable) {
+                if (!$fdef->has_statistics() && is_int($titled) && !$fdef->fold) {
                     ++$titled;
                     continue;
                 }
@@ -1229,8 +1228,8 @@ class PaperList {
                 }
                 $titled = false;
                 $t .= '<td class="pl ' . $fdef->className;
-                if ($fdef->foldable)
-                    $t .= ' fx' . $fdef->foldable;
+                if ($fdef->fold)
+                    $t .= ' fx' . $fdef->fold;
                 $t .= '">';
                 if ($fdef->has_statistics())
                     $t .= $fdef->statistic($this, $stat);
@@ -1300,17 +1299,17 @@ class PaperList {
         // folds: au:1, anonau:2, fullrow:3, aufull:4, force:5, rownum:6, [fields]
         $next_fold = 7;
         foreach ($field_list as $fdef) {
-            if ($fdef->view != Column::VIEW_NONE) {
+            if ($fdef->viewable()) {
                 $fieldDef[] = $fdef;
                 $this->columns[$fdef->name] = true;
-                if ($fdef->foldable) {
-                    $fdef->foldable = $next_fold;
+                if ($fdef->fold) {
+                    $fdef->fold = $next_fold;
                     ++$next_fold;
                 }
             }
             if ($fdef->name == "title")
                 $titlecol = $ncol;
-            if ($fdef->view == Column::VIEW_COLUMN && !$fdef->is_folded)
+            if ($fdef->viewable_column() && !$fdef->is_folded)
                 ++$ncol;
         }
 
@@ -1363,11 +1362,11 @@ class PaperList {
                                                           get($options, "header_links"));
 
             foreach ($fieldDef as $fdef) {
-                if ($fdef->view != Column::VIEW_COLUMN || $fdef->is_folded)
+                if (!$fdef->viewable_column() || $fdef->is_folded)
                     continue;
                 $colhead .= "<th class=\"pl " . $fdef->className;
-                if ($fdef->foldable)
-                    $colhead .= " fx" . $fdef->foldable;
+                if ($fdef->fold)
+                    $colhead .= " fx" . $fdef->fold;
                 $colhead .= "\">";
                 if ($fdef->has_content)
                     $colhead .= $this->_field_title($fdef);
@@ -1525,7 +1524,7 @@ class PaperList {
         foreach ($rows as $row) {
             $p = array("id" => $row->paperId);
             foreach ($field_list as $fdef)
-                if ($fdef->view != Column::VIEW_NONE
+                if ($fdef->viewable()
                     && !$fdef->content_empty($this, $row)
                     && ($text = $fdef->text($this, $row)) !== "")
                     $p[$fdef->name] = $text;
@@ -1587,7 +1586,7 @@ class PaperList {
         // get field array
         $fieldDef = array();
         foreach ($field_list as $fdef)
-            if ($fdef->view != Column::VIEW_NONE && !$fdef->is_folded
+            if ($fdef->viewable() && !$fdef->is_folded
                 && $fdef->header($this, true) != "") {
                 $fieldDef[] = $fdef;
                 $this->columns[$fdef->name] = true;

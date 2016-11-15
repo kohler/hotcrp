@@ -3740,7 +3740,8 @@ class PaperSearch {
             foreach (PaperColumn::$factories as $f) {
                 foreach ($f[1]->completion_instances($this->user) as $c)
                     if (($cat = $c->completion_name())
-                        && $c->prepare($pl, PaperColumn::PREP_COMPLETION))
+                        && (!($c instanceof PaperColumn)
+                            || $c->prepare($pl, PaperColumn::PREP_COMPLETION)))
                         $cats[$cat] = true;
             }
             foreach (array_keys($cats) as $cat)

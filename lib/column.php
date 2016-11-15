@@ -4,65 +4,36 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Column {
-    const VIEW_NONE = 0;
-    const VIEW_COLUMN = 1;
-    const VIEW_ROW = 2;
-    const VIEWMASK = 3;
-
-    const FOLDABLE = 16;
-    const COMPLETABLE = 32;
-
     public $name;
     public $className;
-    public $foldable = false;
-    public $completable = false;
-    public $sortable = false;
-    public $view = 0;
-    public $comparator = false;
+    public $column = false;
+    public $row = false;
+    public $fold = false;
+    public $sort = false;
+    public $completion = false;
     public $minimal = false;
     public $is_folded = false;
     public $has_content = false;
 
-    public function __construct(/* $name, $flags, $extra */) {
-        foreach (func_get_args() as $arg) {
-            if (is_string($arg))
-                $this->name = $arg;
-            else if (is_int($arg)) {
-                if ($arg & self::FOLDABLE)
-                    $this->foldable = true;
-                if ($arg & self::COMPLETABLE)
-                    $this->completable = true;
-                $this->view = $arg & self::VIEWMASK;
-            } else
-                foreach ((array) $arg as $k => $v) {
-                    if ($k === "name" && is_string($v))
-                        $this->name = $v;
-                    else if ($k === "className" && is_string($v))
-                        $this->className = $v;
-                    else if ($k === "sort" && is_bool($v)) {
-                        $this->sortable = $v;
-                        $this->comparator = $this->comparator ? : "compare";
-                    } else if ($k === "fold" && is_bool($v))
-                        $this->foldable = $v;
-                    else if ($k === "complete" && is_bool($v))
-                        $this->completable = $v;
-                    else if ($k === "view") {
-                        if ($v === "column")
-                            $this->view = self::VIEW_COLUMN;
-                        else if ($v === "row")
-                            $this->view = self::VIEW_ROW;
-                        else
-                            $this->view = self::VIEW_NONE;
-                    } else if ($k === "minimal" && is_bool($v))
-                        $this->minimal = $v;
-                    else if ($k === "comparator") {
-                        $this->sortable = !!$v;
-                        $this->comparator = $v;
-                    }
-                }
-        }
+    static private $keys = ["name" => true, "className" => true, "column" => true, "row" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true];
+
+    function __construct($arg) {
+        foreach ((array) $arg as $k => $v)
+            if (isset(self::$keys[$k]))
+                $this->$k = $v;
         if ($this->className === null)
             $this->className = "pl_" . $this->name;
+        assert(!$this->row || !$this->column);
+    }
+
+    function viewable() {
+        return $this->column || $this->row;
+    }
+    function viewable_column() {
+        return $this->column;
+    }
+    function viewable_row() {
+        return $this->row;
     }
 }
 

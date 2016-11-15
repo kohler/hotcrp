@@ -15,8 +15,8 @@ class PaperColumn extends Column {
     const PREP_VISIBLE = 1; // value matters
     const PREP_COMPLETION = 2;
 
-    function __construct(/* args */) {
-        call_user_func_array("parent::__construct", func_get_args());
+    function __construct($cj) {
+        parent::__construct($cj);
     }
 
     static function lookup_local($name) {
@@ -24,6 +24,12 @@ class PaperColumn extends Column {
         if (isset(self::$synonyms[$lname]))
             $lname = self::$synonyms[$lname];
         return get(self::$by_name, $lname, null);
+    }
+    static function lookup_json($name) {
+        $lname = strtolower($name);
+        if (isset(self::$synonyms[$lname]))
+            $lname = self::$synonyms[$lname];
+        return get(self::$j_by_name, $lname, null);
     }
 
     static function _add_json($cj) {
@@ -74,7 +80,7 @@ class PaperColumn extends Column {
         // columns by factory
         foreach (self::$factories as $f)
             if (str_starts_with($lname, $f[0])
-                && ($x = $f[1]->make_column($user, $name, $errors)))
+                && ($x = $f[1]->instantiate($user, $name, $errors)))
                 return $x;
         if (($colon = strpos($lname, ":")) > 0
             && ($syn = get(self::$synonyms, substr($lname, 0, $colon))))
@@ -82,7 +88,7 @@ class PaperColumn extends Column {
         foreach (self::$j_factories as $fj)
             if (str_starts_with($lname, strtolower($fj->prefix))
                 && ($fx = self::_expand_json($fj))
-                && ($x = $fx->make_column($user, $name, $errors)))
+                && ($x = $fx->instantiate($user, $name, $errors)))
                 return $x;
         return null;
     }
@@ -104,7 +110,7 @@ class PaperColumn extends Column {
                && !isset(self::$by_name[$lname]) && !isset(self::$synonyms[$lname]));
         self::$synonyms[$lname] = $lold;
     }
-    static function make_column_error($errors, $ehtml, $eprio) {
+    static function instantiate_error($errors, $ehtml, $eprio) {
         if ($errors)
             $errors->add($ehtml, $eprio);
     }
@@ -137,13 +143,7 @@ class PaperColumn extends Column {
             return "&lt;" . htmlspecialchars($this->name) . "&gt;";
     }
     function completion_name() {
-        if ($this->completable)
-            return $this->name;
-        else
-            return false;
-    }
-    function completion_instances(Contact $user) {
-        return array($this);
+        return $this->completion ? $this->name : false;
     }
 
     function content_empty(PaperList $pl, PaperInfo $row) {
@@ -159,6 +159,24 @@ class PaperColumn extends Column {
 
     function has_statistics() {
         return false;
+    }
+
+    function completion_instances(Contact $user) {
+        return [];
+    }
+}
+
+class PaperColumnFactory {
+    function instantiate(Contact $user, $name, $errors) {
+    }
+    function completion_instances(Contact $user) {
+        return [$this];
+    }
+    function completion_name() {
+        return false;
+    }
+    static function instantiate_error($errors, $ehtml, $eprio) {
+        $errors && $errors->add($ehtml, $eprio);
     }
 }
 
@@ -811,27 +829,13 @@ class PreferencePaperColumn extends PaperColumn {
     private $viewer_contact;
     private $is_direct;
     private $careful;
-    function __construct($name, $editable, $contact = null) {
-        parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("comparator" => "compare",
-                                  "className" => $editable ? "pl_editrevpref" : "pl_revpref"));
-        $this->editable = $editable;
+    function __construct($cj, $contact = null) {
+        parent::__construct($cj);
+        $this->editable = !!get($cj, "edit");
         $this->contact = $contact;
     }
-    function make_column(Contact $user, $name, $errors) {
-        $colon = strpos($name, ":");
-        $cids = ContactSearch::make_pc(substr($name, $colon + 1), $user)->ids;
-        if (empty($cids))
-            self::make_column_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $colon + 1)) . "”.", 2);
-        else if (count($cids) == 1) {
-            $pcm = $user->conf->pc_members();
-            return new PreferencePaperColumn(substr($name, 0, $colon + 1) . $pcm[$cids[0]]->email, $this->editable, $pcm[$cids[0]]);
-        } else
-            self::make_column_error($errors, "“" . htmlspecialchars(substr($name, $colon + 1)) . "” matches more than one PC member.", 2);
-        return null;
-    }
     function make_editable() {
-        return new PreferencePaperColumn($this->name, true, $this->contact);
+        return new PreferencePaperColumn(["name" => $this->name] + (array) self::lookup_json("editpref"), $this->contact);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->isPC)
@@ -933,11 +937,29 @@ class PreferencePaperColumn extends PaperColumn {
     }
 }
 
+class Preference_PaperColumnFactory extends PaperColumnFactory {
+    function instantiate(Contact $user, $name, $errors) {
+        $colon = strpos($name, ":");
+        $cids = ContactSearch::make_pc(substr($name, $colon + 1), $user)->ids;
+        if (empty($cids))
+            self::instantiate_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $colon + 1)) . "”.", 2);
+        else if (count($cids) == 1) {
+            $pcm = $user->conf->pc_members();
+            $fname = substr($name, 0, $colon + 1) . $pcm[$cids[0]]->email;
+            return new PreferencePaperColumn(["name" => $fname] + (array) PaperColumn::lookup_json("pref"), $pcm[$cids[0]]);
+        } else
+            self::instantiate_error($errors, "“" . htmlspecialchars(substr($name, $colon + 1)) . "” matches more than one PC member.", 2);
+        return null;
+    }
+}
+
 class PreferenceListPaperColumn extends PaperColumn {
     private $topics;
     function __construct($name, $topics) {
         $this->topics = $topics;
-        parent::__construct($name, Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+        parent::__construct([
+            "name" => $name, "row" => true, "fold" => true, "completion" => true
+        ]);
     }
     function prepare(PaperList $pl, $visible) {
         if ($this->topics && !$pl->conf->has_topics())
@@ -1070,7 +1092,7 @@ class ConflictMatchPaperColumn extends PaperColumn {
     private $field;
     function __construct($cj) {
         parent::__construct($cj);
-        if ($name === "authorsmatch")
+        if ($cj->name === "authorsmatch")
             $this->field = "authorInformation";
         else
             $this->field = "collaborators";
@@ -1109,7 +1131,9 @@ class ConflictMatchPaperColumn extends PaperColumn {
 class TagListPaperColumn extends PaperColumn {
     private $editable;
     function __construct($editable) {
-        parent::__construct("tags", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+        parent::__construct([
+            "name" => "tags", "row" => true, "fold" => true, "completion" => true
+        ]);
         $this->editable = $editable;
     }
     function make_editable() {
@@ -1169,13 +1193,11 @@ class TagPaperColumn extends PaperColumn {
     protected $editable = false;
     static private $sortf_ctr = 0;
     function __construct($name, $tag, $is_value) {
-        parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE, ["comparator" => "compare"]);
+        parent::__construct([
+            "name" => $name, "column" => true, "sort" => true, "completion" => true
+        ]);
         $this->dtag = $tag;
         $this->is_value = $is_value;
-    }
-    function make_column(Contact $user, $name, $errors) {
-        $p = str_starts_with($name, "#") ? 0 : strpos($name, ":");
-        return new TagPaperColumn($name, substr($name, $p + 1), $this->is_value);
     }
     function make_editable() {
         return new EditTagPaperColumn($this->name, $this->dtag, $this->is_value);
@@ -1187,8 +1209,6 @@ class TagPaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
             return false;
-        if (!$this->dtag && $visible === PaperColumn::PREP_COMPLETION)
-            return true;
         $tagger = new Tagger($pl->contact);
         if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID)))
             return false;
@@ -1200,7 +1220,7 @@ class TagPaperColumn extends PaperColumn {
         return true;
     }
     function completion_name() {
-        return $this->dtag ? "#$this->dtag" : "#<tag>";
+        return "#$this->dtag";
     }
     function sort_prepare($pl, &$rows, $sorter) {
         $sorter->sortf = $sortf = "_tag_sort_info." . self::$sortf_ctr;
@@ -1241,6 +1261,20 @@ class TagPaperColumn extends PaperColumn {
             return "Y";
         else
             return $v;
+    }
+}
+
+class Tag_PaperColumnFactory extends PaperColumnFactory {
+    private $is_value;
+    function __construct($is_value) {
+        $this->is_value = $is_value;
+    }
+    function instantiate(Contact $user, $name, $errors) {
+        $p = str_starts_with($name, "#") ? 0 : strpos($name, ":");
+        return new TagPaperColumn($name, substr($name, $p + 1), $this->is_value);
+    }
+    function completion_name() {
+        return "#<tag>";
     }
 }
 
@@ -1297,26 +1331,16 @@ class Score_PaperColumn extends PaperColumn {
     private $xreviewer;
     function __construct(ReviewField $form_field = null) {
         $score = $form_field ? $form_field->id : null;
-        parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
-                            ["minimal" => true, "className" => "pl_score", "comparator" => "compare"]);
+        parent::__construct([
+            "name" => $score, "column" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true,
+            "className" => "pl_score"
+        ]);
         $this->score = $score;
         $this->form_field = $form_field;
     }
-    function make_column(Contact $user, $name, $errors) {
-        if ($name === "scores") {
-            $fs = $user->conf->all_review_fields();
-            $errors && ($errors->allow_empty = true);
-        } else
-            $fs = [$user->conf->review_field_search($name)];
-        $fs = array_filter($fs, function ($f) { return $f && $f->has_options && $f->displayed; });
-        return array_map(function ($f) { return new Score_PaperColumn($f); }, $fs);
-    }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->scoresOk)
-            return false;
-        else if (!$this->form_field)
-            return $visible == self::PREP_COMPLETION;
-        else if ($this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
+        if (!$pl->scoresOk
+            || $this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
             return false;
         if ($visible) {
             $pl->qopts["scores"][$this->score] = true;
@@ -1352,10 +1376,7 @@ class Score_PaperColumn extends PaperColumn {
         return $is_text ? $this->form_field->abbreviation : $this->form_field->web_abbreviation();
     }
     function completion_name() {
-        return $this->form_field ? $this->form_field->abbreviation : "scores";
-    }
-    function completion_instances(Contact $user) {
-        return array_merge([$this], $this->make_column($user, "scores", null));
+        return $this->form_field->abbreviation;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         // Do not use viewable_scores to determine content emptiness, since
@@ -1384,6 +1405,24 @@ class Score_PaperColumn extends PaperColumn {
     }
 }
 
+class Score_PaperColumnFactory extends PaperColumnFactory {
+    function instantiate(Contact $user, $name, $errors) {
+        if ($name === "scores") {
+            $fs = $user->conf->all_review_fields();
+            $errors && ($errors->allow_empty = true);
+        } else
+            $fs = [$user->conf->review_field_search($name)];
+        $fs = array_filter($fs, function ($f) { return $f && $f->has_options && $f->displayed; });
+        return array_map(function ($f) { return new Score_PaperColumn($f); }, $fs);
+    }
+    function completion_instances(Contact $user) {
+        return array_merge([$this], $this->instantiate($user, "scores", null));
+    }
+    function completion_name() {
+        return "scores";
+    }
+}
+
 class FormulaGraph_PaperColumn extends PaperColumn {
     public $formula;
     private $indexes_function;
@@ -1395,11 +1434,13 @@ class FormulaGraph_PaperColumn extends PaperColumn {
     private $xreviewer;
     static private $nregistered;
     function __construct($name, Formula $formula = null) {
-        parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
-                            ["minimal" => true, "className" => "pl_score", "comparator" => "compare"]);
+        parent::__construct([
+            "name" => strtolower($name), "column" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true,
+            "className" => "pl_score"
+        ]);
         $this->formula = $formula;
     }
-    function make_column(Contact $user, $name, $errors) {
+    function instantiate(Contact $user, $name, $errors) {
         if (str_starts_with($name, "g("))
             $name = substr($name, 1);
         else if (str_starts_with($name, "graph("))
@@ -1408,10 +1449,10 @@ class FormulaGraph_PaperColumn extends PaperColumn {
             return null;
         $formula = new Formula($user, $name, true);
         if (!$formula->check()) {
-            self::make_column_error($errors, $formula->error_html(), 1);
+            self::instantiate_error($errors, $formula->error_html(), 1);
             return null;
         } else if (!($formula->result_format() instanceof ReviewField)) {
-            self::make_column_error($errors, "Graphed formulas must return review fields.", 1);
+            self::instantiate_error($errors, "Graphed formulas must return review fields.", 1);
             return null;
         }
         ++self::$nregistered;
@@ -1507,19 +1548,20 @@ class Option_PaperColumn extends PaperColumn {
             $name = $opt->abbr . "-row";
         else
             $name = $opt ? $opt->abbr : null;
-        parent::__construct($name, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
-                            array("comparator" => "compare"));
-        if (($opt && $opt instanceof TextPaperOption) || $isrow)
-            $this->view = Column::VIEW_ROW;
-        $this->minimal = true;
-        $this->className = "pl_option";
+        if ($opt && $opt instanceof TextPaperOption)
+            $isrow = true;
+        $className = "pl_option";
         if ($opt && $opt->type == "checkbox" && !$isrow)
-            $this->className .= " plc";
+            $className .= " plc";
         else if ($opt && $opt->type == "numeric" && !$isrow)
-            $this->className .= " plrd";
+            $className .= " plrd";
+        parent::__construct([
+            "name" => $name, ($isrow ? "row" : "column") => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true,
+            "className" => $className
+        ]);
         $this->opt = $opt;
     }
-    function make_column(Contact $user, $name, $errors) {
+    function instantiate(Contact $user, $name, $errors) {
         if ($name === "options") {
             $errors && ($errors->allow_empty = true);
             $opts = [];
@@ -1546,9 +1588,9 @@ class Option_PaperColumn extends PaperColumn {
             $opt = current($opts);
             if ($opt->column_display())
                 return new Option_PaperColumn($opt, $isrow);
-            self::make_column_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.", 1);
+            self::instantiate_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.", 1);
         } else if ($has_colon)
-            self::make_column_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
+            self::instantiate_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
         return null;
     }
     function prepare(PaperList $pl, $visible) {
@@ -1584,9 +1626,10 @@ class Option_PaperColumn extends PaperColumn {
         if (($ok = $pl->contact->can_view_paper_option($row, $this->opt, false))
             || ($pl->contact->allow_administer($row)
                 && $pl->contact->can_view_paper_option($row, $this->opt, true))) {
-            $t = $this->opt->unparse_column_html($pl, $row, $this->view == self::VIEW_ROW);
+            $isrow = $this->viewable_row();
+            $t = $this->opt->unparse_column_html($pl, $row, $isrow);
             if (!$ok && $t !== "") {
-                if ($this->view == Column::VIEW_ROW)
+                if ($isrow)
                     $t = '<div class="fx5">' . $t . '</div>';
                 else
                     $t = '<span class="fx5">' . $t . '</div>';
@@ -1609,12 +1652,13 @@ class Formula_PaperColumn extends PaperColumn {
     private $any_real;
     static private $nregistered;
     function __construct($name, Formula $formula = null) {
-        parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
-                            array("minimal" => true, "comparator" => "compare"));
+        parent::__construct([
+            "name" => strtolower($name), "column" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true
+        ]);
         $this->className = "pl_formula";
         $this->formula = $formula;
     }
-    function make_column(Contact $user, $name, $errors) {
+    function instantiate(Contact $user, $name, $errors) {
         $dfm = $user->conf->defined_formula_map($user);
         if ($name === "formulas")
             return array_map(function ($f) {
@@ -1629,7 +1673,7 @@ class Formula_PaperColumn extends PaperColumn {
         $formula = new Formula($user, $name);
         if (!$formula->check()) {
             if ($errors && strpos($name, "(") !== false)
-                self::make_column_error($errors, $formula->error_html(), 1);
+                self::instantiate_error($errors, $formula->error_html(), 1);
             return null;
         }
         ++self::$nregistered;
@@ -1742,11 +1786,12 @@ class TagReportPaperColumn extends PaperColumn {
     private $tag;
     private $viewtype;
     function __construct($tag) {
-        parent::__construct($tag ? "tagrep:$tag" : null, Column::VIEW_ROW | Column::FOLDABLE);
-        $this->className = "pl_tagrep";
+        parent::__construct([
+            "name" => $tag ? "tagrep:$tag" : null, "row" => true, "fold" => true, "className" => "pl_tagrep"
+        ]);
         $this->tag = $tag;
     }
-    function make_column(Contact $user, $name, $errors) {
+    function instantiate(Contact $user, $name, $errors) {
         if (!$user->can_view_most_tags())
             return null;
         $tagset = $user->conf->tags();
@@ -1827,8 +1872,9 @@ class TimestampPaperColumn extends PaperColumn {
 class NumericOrderPaperColumn extends PaperColumn {
     private $order;
     function __construct($order) {
-        parent::__construct("numericorder", Column::VIEW_NONE,
-                            array("comparator" => "compare"));
+        parent::__construct([
+            "name" => "numericorder", "sort" => true
+        ]);
         $this->order = $order;
     }
     function compare(PaperInfo $a, PaperInfo $b) {
@@ -1889,7 +1935,7 @@ class Shepherd_PaperColumn extends PaperColumn {
 
 class FoldAllPaperColumn extends PaperColumn {
     function __construct() {
-        parent::__construct("foldall", Column::VIEW_NONE);
+        parent::__construct(["name" => "foldall"]);
     }
     function prepare(PaperList $pl, $visible) {
         $pl->qopts["foldall"] = true;
@@ -1938,27 +1984,24 @@ class PageCount_PaperColumn extends PaperColumn {
 }
 
 function initialize_paper_columns() {
-    PaperColumn::register(new PreferencePaperColumn("pref", false));
-    PaperColumn::register_synonym("revpref", "pref");
-    PaperColumn::register(new PreferencePaperColumn("editpref", true));
     PaperColumn::register(new PreferenceListPaperColumn("allpref", false));
     PaperColumn::register_synonym("allrevpref", "allpref");
     PaperColumn::register(new PreferenceListPaperColumn("alltopicpref", true));
     PaperColumn::register_synonym("allrevtopicpref", "alltopicpref");
     PaperColumn::register(new TagListPaperColumn(false));
     PaperColumn::register(new FoldAllPaperColumn);
-    PaperColumn::register_factory("tag:", new TagPaperColumn(null, null, false));
-    PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
+    PaperColumn::register_factory("tag:", new Tag_PaperColumnFactory(false));
+    PaperColumn::register_factory("tagval:", new Tag_PaperColumnFactory(true));
+    PaperColumn::register_factory("#", new Tag_PaperColumnFactory(null));
     PaperColumn::register_factory("opt:", new Option_PaperColumn(null));
-    PaperColumn::register_factory("#", new TagPaperColumn(null, null, null));
-    PaperColumn::register_factory("pref:", new PreferencePaperColumn(null, false));
+    PaperColumn::register_factory("pref:", new Preference_PaperColumnFactory);
     PaperColumn::register_factory("tagrep:", new TagReportPaperColumn(null));
     PaperColumn::register_factory("tagreport:", new TagReportPaperColumn(null));
     PaperColumn::register_factory("tagreports", new TagReportPaperColumn(null));
     PaperColumn::register_factory("", new Formula_PaperColumn("", null));
     PaperColumn::register_factory("g", new FormulaGraph_PaperColumn("", null));
     PaperColumn::register_factory("", new Option_PaperColumn(null));
-    PaperColumn::register_factory("", new Score_PaperColumn(null));
+    PaperColumn::register_factory("", new Score_PaperColumnFactory);
 }
 
 initialize_paper_columns();

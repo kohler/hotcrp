@@ -74,8 +74,10 @@ if ($Qreq->scoresort && isset(ListSorter::$score_sorts[$Qreq->scoresort]))
     $Conf->save_session("scoresort", $Qreq->scoresort);
 if (!$Conf->session("scoresort"))
     $Conf->save_session("scoresort", ListSorter::default_score_sort());
-if ($Qreq->redisplay)
-    redirectSelf(array("tab" => "display"));
+if ($Qreq->redisplay) {
+    $forceShow = $Qreq->forceShow || $Qreq->showforce;
+    redirectSelf(array("tab" => "display", "forceShow" => $forceShow ? : null));
+}
 
 
 // save display options

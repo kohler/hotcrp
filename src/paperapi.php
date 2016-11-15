@@ -353,7 +353,7 @@ class PaperApi {
         $fdef = $qreq->f ? PaperColumn::lookup($user, $qreq->f) : null;
         if ($fdef && is_array($fdef))
             $fdef = count($fdef) == 1 ? $fdef[0] : null;
-        if (!$fdef || !$fdef->foldable)
+        if (!$fdef || !$fdef->fold)
             json_exit(["ok" => false, "error" => "No such field."]);
         if ($qreq->f == "authors") {
             $full = (int) $qreq->aufull;
