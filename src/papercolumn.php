@@ -4,8 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperColumn extends Column {
-    static public $by_name = [];
-    static public $factories = [];
+    static private $by_name = [];
+    static private $factories = [];
     static private $synonyms = [];
     static private $j_by_name = null;
     static private $j_factories = null;
@@ -60,6 +60,12 @@ class PaperColumn extends Column {
         return $f;
     }
 
+    static private function _populate_json() {
+        self::$j_by_name = self::$j_factories = [];
+        expand_json_includes_callback(["src/columninfo.json"], "PaperColumn::_add_json");
+        if (($jlist = opt("paperColumns")))
+            expand_json_includes_callback($jlist, "PaperColumn::_add_json");
+    }
     static function lookup(Contact $user, $name, $errors = null) {
         $lname = strtolower($name);
         if (isset(self::$synonyms[$lname]))
@@ -68,12 +74,8 @@ class PaperColumn extends Column {
         // columns by name
         if (isset(self::$by_name[$lname]))
             return self::$by_name[$lname];
-        if (self::$j_by_name === null) {
-            self::$j_by_name = self::$j_factories = [];
-            expand_json_includes_callback(["src/columninfo.json"], "PaperColumn::_add_json");
-            if (($jlist = opt("paperColumns")))
-                expand_json_includes_callback($jlist, "PaperColumn::_add_json");
-        }
+        if (self::$j_by_name === null)
+            self::_populate_json();
         if (isset(self::$j_by_name[$lname]))
             return self::_expand_json(self::$j_by_name[$lname]);
 
@@ -85,11 +87,13 @@ class PaperColumn extends Column {
         if (($colon = strpos($lname, ":")) > 0
             && ($syn = get(self::$synonyms, substr($lname, 0, $colon))))
             return self::lookup($user, $syn . substr($lname, $colon));
-        foreach (self::$j_factories as $fj)
-            if (str_starts_with($lname, strtolower($fj->prefix))
-                && ($fx = self::_expand_json($fj))
+        while (($fj = array_shift(self::$j_factories))) {
+            if (($fx = self::_expand_json($fj))
+                && str_starts_with($lname, strtolower($fj->prefix))
                 && ($x = $fx->instantiate($user, $name, $errors)))
                 return $x;
+        }
+
         return null;
     }
 
@@ -100,9 +104,6 @@ class PaperColumn extends Column {
         assert(func_num_args() == 1); // XXX backwards compat
         return $fdef;
     }
-    static function register_factory($prefix, $f) {
-        self::$factories[] = array(strtolower($prefix), $f);
-    }
     static function register_synonym($new_name, $old_name) {
         $lold = strtolower($old_name);
         $lname = strtolower($new_name);
@@ -110,10 +111,32 @@ class PaperColumn extends Column {
                && !isset(self::$by_name[$lname]) && !isset(self::$synonyms[$lname]));
         self::$synonyms[$lname] = $lold;
     }
+
+    static function register_factory($prefix, $f) {
+        self::$factories[] = array(strtolower($prefix), $f);
+    }
     static function instantiate_error($errors, $ehtml, $eprio) {
         if ($errors)
             $errors->add($ehtml, $eprio);
     }
+
+    static function lookup_all() {
+        if (self::$j_by_name === null)
+            self::_populate_json();
+        foreach (self::$j_by_name as $name => $j)
+            if (!isset(self::$by_name[$name]))
+                self::_expand_json($j);
+        return self::$by_name;
+    }
+    static function lookup_all_factories() {
+        if (self::$j_by_name === null)
+            self::_populate_json();
+        while (($fj = array_shift(self::$j_factories)))
+            self::_expand_json($fj);
+        return self::$factories;
+    }
+
+
     function make_editable() {
         return $this;
     }

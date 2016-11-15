@@ -3733,11 +3733,11 @@ class PaperSearch {
         if (!$category || $category === "show" || $category === "hide") {
             $cats = array();
             $pl = new PaperList($this);
-            foreach (PaperColumn::$by_name as $c)
+            foreach (PaperColumn::lookup_all() as $c)
                 if (($cat = $c->completion_name())
                     && $c->prepare($pl, PaperColumn::PREP_COMPLETION))
                     $cats[$cat] = true;
-            foreach (PaperColumn::$factories as $f) {
+            foreach (PaperColumn::lookup_all_factories() as $f) {
                 foreach ($f[1]->completion_instances($this->user) as $c)
                     if (($cat = $c->completion_name())
                         && (!($c instanceof PaperColumn)
