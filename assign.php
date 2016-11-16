@@ -6,7 +6,7 @@
 require_once("src/initweb.php");
 require_once("src/papertable.php");
 require_once("src/reviewtable.php");
-if ($Me->is_empty())
+if (!$Me->email)
     $Me->escape();
 $Me->set_forceShow(true);
 $Error = array();

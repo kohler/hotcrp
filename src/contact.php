@@ -1807,7 +1807,9 @@ class Contact {
     }
 
     function can_start_paper($override = null) {
-        return $this->conf->timeStartPaper() || $this->override_deadlines(null, $override);
+        return $this->email
+            && ($this->conf->timeStartPaper()
+                || $this->override_deadlines(null, $override));
     }
 
     function perm_start_paper($override = null) {

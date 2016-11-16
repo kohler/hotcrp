@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
-if ($Me->is_empty())
+if (!$Me->email)
     $Me->escape();
 $MergeError = "";
 

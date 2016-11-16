@@ -6,7 +6,7 @@
 $Error = array();
 require_once("src/initweb.php");
 require_once("src/papertable.php");
-if ($Me->is_empty())
+if (!$Me->email)
     $Me->escape();
 
 
