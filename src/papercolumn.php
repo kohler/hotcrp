@@ -1195,7 +1195,7 @@ class TagList_PaperColumn extends PaperColumn {
     }
 }
 
-class TagPaperColumn extends PaperColumn {
+class Tag_PaperColumn extends PaperColumn {
     protected $is_value;
     protected $dtag;
     protected $xtag;
@@ -1208,7 +1208,7 @@ class TagPaperColumn extends PaperColumn {
         $this->is_value = get($cj, "tagvalue");
     }
     function make_editable() {
-        return new EditTagPaperColumn($this->name, $this->dtag, $this->is_value);
+        return new EditTag_PaperColumn($this->name, $this->dtag, $this->is_value);
     }
     function sorts_my_tag($sorter) {
         return preg_match('/\A(?:edit)?(?:#|tag:|tagval:)\s*(\S+)\z/i', $sorter->type, $m)
@@ -1240,7 +1240,7 @@ class TagPaperColumn extends PaperColumn {
         foreach ($rows as $row)
             if ($careful && !$pl->contact->can_view_tag($row, $this->xtag, true))
                 $row->$sortf = $unviewable;
-            else if (($row->$sortf = $row->tag_value($this->xtag)) === null)
+            else if (($row->$sortf = $row->tag_value($this->xtag)) === false)
                 $row->$sortf = $empty;
     }
     function compare(PaperInfo $a, PaperInfo $b, $sorter) {
@@ -1255,7 +1255,7 @@ class TagPaperColumn extends PaperColumn {
         return !$pl->contact->can_view_tag($row, $this->xtag, true);
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
-        if (($v = $row->tag_value($this->xtag)) === null)
+        if (($v = $row->tag_value($this->xtag)) === false)
             return "";
         else if ($v === 0.0 && !$this->is_value)
             return "✓";
@@ -1263,7 +1263,7 @@ class TagPaperColumn extends PaperColumn {
             return $v;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (($v = $row->tag_value($this->xtag)) === null)
+        if (($v = $row->tag_value($this->xtag)) === false)
             return "N";
         else if ($v === 0.0 && !$this->is_value)
             return "Y";
@@ -1279,15 +1279,15 @@ class Tag_PaperColumnFactory extends PaperColumnFactory {
     }
     function instantiate(Contact $user, $name, $errors) {
         $p = str_starts_with($name, "#") ? 0 : strpos($name, ":");
-        return new TagPaperColumn(["name" => $name] + (array) $this->cj,
-                                  substr($name, $p + 1));
+        return new Tag_PaperColumn(["name" => $name] + (array) $this->cj,
+                                   substr($name, $p + 1));
     }
     function completion_name() {
         return "#<tag>";
     }
 }
 
-class EditTagPaperColumn extends TagPaperColumn {
+class EditTag_PaperColumn extends Tag_PaperColumn {
     private $editsort;
     function __construct($name, $tag, $is_value) {
         if ($is_value === null)
@@ -1319,7 +1319,7 @@ class EditTagPaperColumn extends TagPaperColumn {
         if ($this->editsort && !isset($pl->row_attr["data-tags"]))
             $pl->row_attr["data-tags"] = $this->dtag . "#" . $v;
         if (!$pl->contact->can_change_tag($row, $this->dtag, 0, 0, true))
-            return $this->is_value ? (string) $v : ($v === null ? "" : "&#x2713;");
+            return $this->is_value ? (string) $v : ($v === false ? "" : "&#x2713;");
         if (!$this->is_value)
             return '<input type="checkbox" class="cb edittag" name="tag:' . "$this->dtag $row->paperId" . '" value="x" tabindex="6"'
                 . ($v !== false ? ' checked="checked"' : '') . " />";
