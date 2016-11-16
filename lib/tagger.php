@@ -617,8 +617,8 @@ class Tagger {
         $b = '<span class="tagemoji">';
         if ($count == 0 || $count == 1)
             $b .= $e;
-        else if ($count >= 10.0625)
-            $b .= str_repeat($e, 10) . "…";
+        else if ($count >= 5.0625)
+            $b .= str_repeat($e, 5) . "<sup>+</sup>";
         else {
             $f = floor($count + 0.0625);
             $d = round(max($count - $f, 0) * 8);
