@@ -94,8 +94,10 @@ function retractRequest($email, $prow, $confirm = true) {
         return Conf::msg_error("You can’t retract that review request since you didn’t make the request in the first place.");
 
     // at this point, success; remove the review request
-    if ($row)
+    if ($row) {
         $Conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $row->reviewId);
+        $Me->update_review_delegation($prow->paperId, $row->requestedBy, -1);
+    }
     if ($row2)
         $Conf->qe("delete from ReviewRequest where paperId=? and email=?", $prow->paperId, $email);
 

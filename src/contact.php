@@ -3283,7 +3283,7 @@ class Contact {
     function update_review_delegation($pid, $cid, $direction) {
         if ($direction > 0) {
             $this->conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewSubmitted is null and reviewNeedsSubmit=1", $pid, $cid);
-        } else if ($direction <= 0) {
+        } else {
             $row = Dbl::fetch_first_row($this->conf->qe("select sum(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), sum(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted is not null), sum(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid"));
             if ($row && $row[0]) {
                 $rns = $row[1] ? 0 : ($row[2] ? -1 : 1);
