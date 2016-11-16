@@ -1209,7 +1209,8 @@ class Tag_PaperColumn extends PaperColumn {
         $this->is_value = get($cj, "tagvalue");
     }
     function make_editable() {
-        return new EditTag_PaperColumn($this->name, $this->dtag, $this->is_value);
+        $is_value = $this->is_value || $this->is_value === null;
+        return new EditTag_PaperColumn($this->column_json() + ["tagvalue" => $is_value], $this->dtag);
     }
     function sorts_my_tag($sorter) {
         return preg_match('/\A(?:edit)?(?:#|tag:|tagval:)\s*(\S+)\z/i', $sorter->type, $m)
@@ -1296,10 +1297,8 @@ class Tag_PaperColumnFactory extends PaperColumnFactory {
 
 class EditTag_PaperColumn extends Tag_PaperColumn {
     private $editsort;
-    function __construct($name, $tag, $is_value) {
-        if ($is_value === null)
-            $is_value = true;
-        parent::__construct($name, $tag, $is_value);
+    function __construct($cj, $tag) {
+        parent::__construct($cj, $tag);
         $this->editable = true;
     }
     function prepare(PaperList $pl, $visible) {
