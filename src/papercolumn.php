@@ -1201,6 +1201,7 @@ class Tag_PaperColumn extends PaperColumn {
     protected $xtag;
     protected $ctag;
     protected $editable = false;
+    protected $emoji = false;
     static private $sortf_ctr = 0;
     function __construct($cj, $tag) {
         parent::__construct($cj);
@@ -1225,6 +1226,10 @@ class Tag_PaperColumn extends PaperColumn {
         if ($visible)
             $pl->qopts["tags"] = 1;
         $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
+        if ($this->dtag[0] == ":" && !$this->is_value
+            && ($dt = $pl->contact->conf->tags()->check($this->dtag))
+            && count($dt->emoji) == 1)
+            $this->emoji = $dt->emoji[0];
         return true;
     }
     function completion_name() {
@@ -1257,6 +1262,8 @@ class Tag_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
         if (($v = $row->tag_value($this->xtag)) === false)
             return "";
+        else if ($v >= 0.0 && $this->emoji)
+            return Tagger::unparse_emoji_html($this->emoji, $v);
         else if ($v === 0.0 && !$this->is_value)
             return "✓";
         else

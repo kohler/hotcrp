@@ -210,6 +210,9 @@ class TagMap implements IteratorAggregate {
     function is_rank($tag) {
         return !!$this->check_property($tag, "rank");
     }
+    function is_emoji($tag) {
+        return !!$this->check_property($tag, "emoji");
+    }
 
     function sitewide_regex_part() {
         if ($this->sitewide_re_part === null) {
@@ -608,6 +611,24 @@ class Tagger {
         return $tags;
     }
 
+    static function unparse_emoji_html($e, $count) {
+        if ($count == 0)
+            $count = 1;
+        $b = '<span class="tagemoji">';
+        if ($count == 0 || $count == 1)
+            $b .= $e;
+        else if ($count >= 10.0625)
+            $b .= str_repeat($e, 10) . "…";
+        else {
+            $f = floor($count + 0.0625);
+            $d = round(max($count - $f, 0) * 8);
+            $b .= str_repeat($e, $f);
+            if ($d)
+                $b .= '<span style="display:inline-block;overflow-x:hidden;vertical-align:bottom;position:relative;bottom:0;width:' . ($d / 8) . 'em">' . $e . '</span>';
+        }
+        return $b . '</span>';
+    }
+
     function unparse_decoration_html($tags) {
         if (is_array($tags))
             $tags = join(" ", $tags);
@@ -630,21 +651,7 @@ class Tagger {
                         $links[] = "#" . $link;
                     $count = max($count, (float) TagInfo::index($t));
                 }
-                if ($count == 0)
-                    $count = 1;
-                $b = '<span class="tagemoji">';
-                if ($count == 0 || $count == 1)
-                    $b .= $e;
-                else if ($count >= 10.0625)
-                    $b .= str_repeat($e, 10) . "…";
-                else {
-                    $f = floor($count + 0.0625);
-                    $d = round(max($count - $f, 0) * 8);
-                    $b .= str_repeat($e, $f);
-                    if ($d)
-                        $b .= '<span style="display:inline-block;overflow-x:hidden;vertical-align:bottom;position:relative;bottom:0;width:' . ($d / 8) . 'em">' . $e . '</span>';
-                }
-                $b .= '</span>';
+                $b = self::unparse_emoji_html($e, $count);
                 if (!empty($links))
                     $b = '<a class="qq" href="' . hoturl("search", ["q" => join(" OR ", $links)]) . '">' . $b . '</a>';
                 $x .= ' ' . $b;
