@@ -115,7 +115,62 @@
     },
     {
         "name": "editpref",
-        "column": true, "edit": true, "sort": true, "completion": true, "className": "pl_editrevpref", "factory_class": "PreferencePaperColumn",
+        "column": true, "edit": true, "sort": true, "className": "pl_editrevpref", "factory_class": "PreferencePaperColumn",
         "synonym": ["editrevpref"]
+    },
+    {
+        "name": "allpref",
+        "row": true, "fold": true, "completion": true, "factory_class": "PreferenceList_PaperColumn",
+        "synonym": ["allrevpref"]
+    },
+    {
+        "name": "alltopicpref",
+        "row": true, "fold": true, "completion": true, "factory_class": "PreferenceList_PaperColumn",
+        "topics": true, "synonym": ["alltopicrevpref"]
+    },
+    {
+        "name": "tags",
+        "row": true, "fold": true, "completion": true, "factory_class": "TagList_PaperColumn"
+    },
+    {
+        "name": "foldall", "factory_class": "FoldAll_PaperColumn"
+    },
+    {
+        "prefix": "tag:", "tagvalue": false,
+        "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory"
+    },
+    {
+        "prefix": "tagval:", "tagvalue": true,
+        "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory"
+    },
+    {
+        "prefix": "#", "tagvalue": null,
+        "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory"
+    },
+    {
+        "prefix": "", "factory_class": "Option_PaperColumnFactory"
+    },
+    {
+        "prefix": "pref:", "factory_class": "Preference_PaperColumnFactory"
+    },
+    {
+        "prefix": "tagrep:", "factory_class": "TagReport_PaperColumnFactory"
+    },
+    {
+        "prefix": "tagreport:", "factory_class": "TagReport_PaperColumnFactory"
+    },
+    {
+        "prefix": "tagreports", "factory_class": "TagReport_PaperColumnFactory"
+    },
+    {
+        "prefix": "", "factory_class": "Formula_PaperColumnFactory"
+    },
+    {
+        "prefix": "g", "factory_class": "FormulaGraph_PaperColumnFactory"
+    },
+    {
+        "prefix": "",
+        "column": true, "fold": true, "sort": true, "completion": true, "minimal": true,
+        "className": "pl_score", "factory_class": "Score_PaperColumnFactory"
     }
 ]

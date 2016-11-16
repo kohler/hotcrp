@@ -967,13 +967,11 @@ class Preference_PaperColumnFactory extends PaperColumnFactory {
     }
 }
 
-class PreferenceListPaperColumn extends PaperColumn {
+class PreferenceList_PaperColumn extends PaperColumn {
     private $topics;
-    function __construct($name, $topics) {
-        $this->topics = $topics;
-        parent::__construct([
-            "name" => $name, "row" => true, "fold" => true, "completion" => true
-        ]);
+    function __construct($cj) {
+        parent::__construct($cj);
+        $this->topics = get($cj, "topics");
     }
     function prepare(PaperList $pl, $visible) {
         if ($this->topics && !$pl->conf->has_topics())
@@ -1142,16 +1140,14 @@ class ConflictMatchPaperColumn extends PaperColumn {
     }
 }
 
-class TagListPaperColumn extends PaperColumn {
+class TagList_PaperColumn extends PaperColumn {
     private $editable;
-    function __construct($editable) {
-        parent::__construct([
-            "name" => "tags", "row" => true, "fold" => true, "completion" => true
-        ]);
+    function __construct($cj, $editable = false) {
+        parent::__construct($cj);
         $this->editable = $editable;
     }
     function make_editable() {
-        return new TagListPaperColumn(true);
+        return new TagList_PaperColumn($this->column_json(), true);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
@@ -1206,12 +1202,10 @@ class TagPaperColumn extends PaperColumn {
     protected $ctag;
     protected $editable = false;
     static private $sortf_ctr = 0;
-    function __construct($name, $tag, $is_value) {
-        parent::__construct([
-            "name" => $name, "column" => true, "sort" => true, "completion" => true
-        ]);
+    function __construct($cj, $tag) {
+        parent::__construct($cj);
         $this->dtag = $tag;
-        $this->is_value = $is_value;
+        $this->is_value = get($cj, "tagvalue");
     }
     function make_editable() {
         return new EditTagPaperColumn($this->name, $this->dtag, $this->is_value);
@@ -1279,13 +1273,14 @@ class TagPaperColumn extends PaperColumn {
 }
 
 class Tag_PaperColumnFactory extends PaperColumnFactory {
-    private $is_value;
-    function __construct($is_value) {
-        $this->is_value = $is_value;
+    private $cj;
+    function __construct($cj) {
+        $this->cj = $cj;
     }
     function instantiate(Contact $user, $name, $errors) {
         $p = str_starts_with($name, "#") ? 0 : strpos($name, ":");
-        return new TagPaperColumn($name, substr($name, $p + 1), $this->is_value);
+        return new TagPaperColumn(["name" => $name] + (array) $this->cj,
+                                  substr($name, $p + 1));
     }
     function completion_name() {
         return "#<tag>";
@@ -1343,13 +1338,9 @@ class Score_PaperColumn extends PaperColumn {
     public $max_score;
     private $form_field;
     private $xreviewer;
-    function __construct(ReviewField $form_field = null) {
-        $score = $form_field ? $form_field->id : null;
-        parent::__construct([
-            "name" => $score, "column" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true,
-            "className" => "pl_score"
-        ]);
-        $this->score = $score;
+    function __construct($cj, ReviewField $form_field) {
+        parent::__construct(["name" => $form_field->id] + (array) $cj);
+        $this->score = $form_field->id;
         $this->form_field = $form_field;
     }
     function prepare(PaperList $pl, $visible) {
@@ -1420,6 +1411,10 @@ class Score_PaperColumn extends PaperColumn {
 }
 
 class Score_PaperColumnFactory extends PaperColumnFactory {
+    private $cj;
+    function __construct($cj) {
+        $this->cj = $cj;
+    }
     function instantiate(Contact $user, $name, $errors) {
         if ($name === "scores") {
             $fs = $user->conf->all_review_fields();
@@ -1427,7 +1422,7 @@ class Score_PaperColumnFactory extends PaperColumnFactory {
         } else
             $fs = [$user->conf->review_field_search($name)];
         $fs = array_filter($fs, function ($f) { return $f && $f->has_options && $f->displayed; });
-        return array_map(function ($f) { return new Score_PaperColumn($f); }, $fs);
+        return array_map(function ($f) { return new Score_PaperColumn($this->cj, $f); }, $fs);
     }
     function completion_instances(Contact $user) {
         return array_merge([$this], $this->instantiate($user, "scores", null));
@@ -1958,9 +1953,9 @@ class Shepherd_PaperColumn extends PaperColumn {
     }
 }
 
-class FoldAllPaperColumn extends PaperColumn {
-    function __construct() {
-        parent::__construct(["name" => "foldall"]);
+class FoldAll_PaperColumn extends PaperColumn {
+    function __construct($cj) {
+        parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         $pl->qopts["foldall"] = true;
@@ -2007,25 +2002,3 @@ class PageCount_PaperColumn extends PaperColumn {
         return (string) $this->page_count($pl->contact, $row);
     }
 }
-
-function initialize_paper_columns() {
-    PaperColumn::register(new PreferenceListPaperColumn("allpref", false));
-    PaperColumn::register_synonym("allrevpref", "allpref");
-    PaperColumn::register(new PreferenceListPaperColumn("alltopicpref", true));
-    PaperColumn::register_synonym("allrevtopicpref", "alltopicpref");
-    PaperColumn::register(new TagListPaperColumn(false));
-    PaperColumn::register(new FoldAllPaperColumn);
-    PaperColumn::register_factory("tag:", new Tag_PaperColumnFactory(false));
-    PaperColumn::register_factory("tagval:", new Tag_PaperColumnFactory(true));
-    PaperColumn::register_factory("#", new Tag_PaperColumnFactory(null));
-    PaperColumn::register_factory("", new Option_PaperColumnFactory);
-    PaperColumn::register_factory("pref:", new Preference_PaperColumnFactory);
-    PaperColumn::register_factory("tagrep:", new TagReport_PaperColumnFactory);
-    PaperColumn::register_factory("tagreport:", new TagReport_PaperColumnFactory);
-    PaperColumn::register_factory("tagreports", new TagReport_PaperColumnFactory);
-    PaperColumn::register_factory("", new Formula_PaperColumnFactory);
-    PaperColumn::register_factory("g", new FormulaGraph_PaperColumnFactory);
-    PaperColumn::register_factory("", new Score_PaperColumnFactory);
-}
-
-initialize_paper_columns();

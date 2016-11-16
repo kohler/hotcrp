@@ -35,6 +35,9 @@ class Column {
     function viewable_row() {
         return $this->row;
     }
+    function column_json() {
+        return array_intersect_key(get_object_vars($this), self::$keys);
+    }
 }
 
 class ColumnErrors {
