@@ -5557,9 +5557,9 @@ function scorechart1_s1(sc, parent) {
         if (!anal.v[vindex])
             continue;
         var color = anal.fx.rgb_array(vindex);
-        if (vindex == anal.h)
-            t += '<path style="fill:' + color_unparse(rgb_interp(blackcolor, color, 0.5)) + '" d="' + rectd(x, 1) + '" />';
         var y = vindex == anal.h ? 2 : 1;
+        if (y == 2)
+            t += '<path style="fill:' + color_unparse(rgb_interp(blackcolor, color, 0.5)) + '" d="' + rectd(x, 1) + '" />';
         if (y <= anal.v[vindex]) {
             t += '<path style="fill:' + color_unparse(color) + '" d="';
             for (; y <= anal.v[vindex]; ++y)
