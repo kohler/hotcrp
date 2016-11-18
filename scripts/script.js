@@ -5532,50 +5532,43 @@ function color_unparse(a) {
 }
 
 function scorechart1_s1(sc, parent) {
-    var canvas = document.createElement("canvas"),
-        ctx, anal = analyze_sc(sc),
-        blocksize = 3, blockpad = 2,
-        cwidth, cheight,
-        x, vindex, h, color;
-    anal.max = Math.max(anal.max, 3);
+    var anal = analyze_sc(sc), blocksize = 3, blockpad = 2, blockfull = blocksize + blockpad;
+    var cwidth = blockfull * (anal.v.length - 1) + blockpad + 1;
+    var cheight = blockfull * Math.max(anal.max, 1) + blockpad + 1;
 
-    cwidth = (blocksize + blockpad) * (anal.v.length - 1) + blockpad + 1;
-    cheight = (blocksize + blockpad) * anal.max + blockpad + 1;
-    ctx = setup_canvas(canvas, cwidth, cheight);
+    var t = '<svg width="' + cwidth + '" height="' + cheight + '" style="font:6.5px Menlo, Monaco, source-code-pro, Consolas, Terminal, monospace;user-select:none">';
+    var gray = color_unparse(graycolor);
+    t += '<path style="stroke:' + gray + ';fill:none" d="M0.5 ' + (cheight - blockfull - 1) + 'v' + (blockfull + 0.5) + 'h' + (cwidth - 1) + 'v' + -(blockfull + 0.5) + '" />';
 
-    ctx.fillStyle = color_unparse(graycolor);
-    ctx.fillRect(0, cheight - 1, cwidth, 1);
-    ctx.fillRect(0, cheight - 1 - blocksize - blockpad, 1, blocksize + blockpad);
-    ctx.fillRect(cwidth - 1, cheight - 1 - blocksize - blockpad, 1, blocksize + blockpad);
+    if (anal.c ? !anal.v[anal.v.length - 1] : !anal.v[1])
+        t += '<text x="' + blockpad + '" y="' + (cheight - 2) + '" fill="' + gray + '">' +
+            (anal.c ? String.fromCharCode(anal.c - anal.v.length + 2) : 1) + '</text>';
+    if (anal.c ? !anal.v[1] : !anal.v[anal.v.length - 1])
+        t += '<text x="' + (cwidth - 1.75) + '" y="' + (cheight - 2) + '" text-anchor="end" fill="' + gray + '">' +
+            (anal.c ? String.fromCharCode(anal.c) : anal.v.length - 1) + '</text>';
 
-    ctx.font = "7px Monaco, Consolas, monospace";
-    if (anal.c ? !anal.v[anal.v.length - 1] : !anal.v[1]) {
-        h = anal.c ? String.fromCharCode(anal.c - anal.v.length + 2) : 1;
-        ctx.fillText(h, blockpad, cheight - 2);
-    }
-    if (anal.c ? !anal.v[1] : !anal.v[anal.v.length - 1]) {
-        h = anal.c ? String.fromCharCode(anal.c) : anal.v.length - 1;
-        x = ctx.measureText(h);
-        ctx.fillText(h, cwidth - 1.75 - x.width, cheight - 2);
+    function rectd(x, y) {
+        return 'M' + (blockfull * x - blocksize) + ' ' + (cheight - 1 - blockfull * y)
+            + 'h' + (blocksize + 1) + 'v' + (blocksize + 1) + 'h' + -(blocksize + 1) + 'z';
     }
 
-    for (x = 1; x < anal.v.length; ++x) {
-        vindex = anal.c ? anal.v.length - x : x;
+    for (var x = 1; x < anal.v.length; ++x) {
+        var vindex = anal.c ? anal.v.length - x : x;
         if (!anal.v[vindex])
             continue;
-        color = anal.fx.rgb_array(vindex);
-        for (h = 1; h <= anal.v[vindex]; ++h) {
-            if (vindex == anal.h && h == 1)
-                ctx.fillStyle = color_unparse(rgb_interp(blackcolor, color, 0.5));
-            else if (vindex == anal.h ? h == 2 : h == 1)
-                ctx.fillStyle = color_unparse(color);
-            ctx.fillRect((blocksize + blockpad) * x - blocksize,
-                         cheight - 1 - (blocksize + blockpad) * h,
-                         blocksize + 1, blocksize + 1);
+        var color = anal.fx.rgb_array(vindex);
+        if (vindex == anal.h)
+            t += '<path style="fill:' + color_unparse(rgb_interp(blackcolor, color, 0.5)) + '" d="' + rectd(x, 1) + '" />';
+        var y = vindex == anal.h ? 2 : 1;
+        if (y <= anal.v[vindex]) {
+            t += '<path style="fill:' + color_unparse(color) + '" d="';
+            for (; y <= anal.v[vindex]; ++y)
+                t += rectd(x, y);
+            t += '" />';
         }
     }
 
-    return canvas;
+    return $(t + '</svg>')[0];
 }
 
 function scorechart1_s2(sc, parent) {
