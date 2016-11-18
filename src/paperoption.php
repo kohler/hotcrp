@@ -597,13 +597,13 @@ class PaperOption {
         return null;
     }
 
-    function column_display() {
+    function list_display() {
         return false;
     }
-    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
+    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
         return "";
     }
-    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+    function unparse_list_text(PaperList $pl, PaperInfo $row) {
         return "";
     }
 
@@ -650,14 +650,14 @@ class CheckboxPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option should be “true” or “false”.");
     }
 
-    function column_display() {
-        return true;
+    function list_display() {
+        return ["column" => true, "className" => "pl_option plc"];
     }
-    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
+    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
         $v = $row->option($this->id);
         return $v && $v->value ? "✓" : "";
     }
-    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+    function unparse_list_text(PaperList $pl, PaperInfo $row) {
         $v = $row->option($this->id);
         return $v && $v->value ? "Y" : "N";
     }
@@ -729,14 +729,14 @@ class SelectorPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option doesn’t match any of the selectors.");
     }
 
-    function column_display() {
+    function list_display() {
         return true;
     }
-    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
+    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
         $ov = $row->option($this->id);
         return $ov ? $this->unparse_page_html($row, $ov) : "";
     }
-    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+    function unparse_list_text(PaperList $pl, PaperInfo $row) {
         $ov = $row->option($this->id);
         if ($ov && isset($this->selector[$ov->value]))
             return $this->selector[$ov->value];
@@ -829,16 +829,16 @@ class DocumentPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option should be a document.");
     }
 
-    function column_display() {
+    function list_display() {
         return true;
     }
-    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
+    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
         if (($ov = $row->option($this->id)))
             foreach ($ov->documents() as $d)
                 return $d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE);
         return "";
     }
-    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+    function unparse_list_text(PaperList $pl, PaperInfo $row) {
         if (($ov = $row->option($this->id)))
             foreach ($ov->documents() as $d)
                 return $d->filename;
@@ -909,16 +909,16 @@ class NumericPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option should be an integer.");
     }
 
-    function column_display() {
-        return true;
+    function list_display() {
+        return ["column" => true, "className" => "pl_option plrd"];
     }
     private function unparse_value(PaperOptionValue $ov = null) {
         return $ov && $ov->value !== null ? $ov->value : "";
     }
-    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
+    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
         return $this->unparse_value($row->option($this->id));
     }
-    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+    function unparse_list_text(PaperList $pl, PaperInfo $row) {
         return $this->unparse_value($row->option($this->id));
     }
     function unparse_page_html($row, PaperOptionValue $ov) {
@@ -987,14 +987,14 @@ class TextPaperOption extends PaperOption {
             return '<div class="format0">' . Ht::link_urls(htmlspecialchars($d)) . '</div>';
     }
 
-    function column_display() {
-        return true;
+    function list_display() {
+        return ["row" => true];
     }
-    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
+    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
         $ov = $row->option($this->id);
         return $ov ? $this->unparse_html($row, $ov, $pl) : "";
     }
-    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+    function unparse_list_text(PaperList $pl, PaperInfo $row) {
         $ov = $row->option($this->id);
         return (string) ($ov ? $ov->data() : "");
     }
@@ -1111,14 +1111,14 @@ class AttachmentsPaperOption extends PaperOption {
         return $docs;
     }
 
-    function column_display() {
+    function list_display() {
         return true;
     }
-    function unparse_column_html(PaperList $pl, PaperInfo $row, $isrow) {
+    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
         $ov = $row->option($this->id);
         return $ov ? $this->unparse_html($row, $ov, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE, $isrow ? "span" : "div") : "";
     }
-    function unparse_column_text(PaperList $pl, PaperInfo $row) {
+    function unparse_list_text(PaperList $pl, PaperInfo $row) {
         $x = [];
         if (($ov = $row->option($this->id)))
             foreach ($ov->documents() as $d)

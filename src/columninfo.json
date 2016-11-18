@@ -163,7 +163,9 @@
         "prefix": "tagreports", "factory_class": "TagReport_PaperColumnFactory"
     },
     {
-        "prefix": "", "factory_class": "Formula_PaperColumnFactory"
+        "prefix": "",
+        "column": true, "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_formula",
+        "factory_class": "Formula_PaperColumnFactory"
     },
     {
         "prefix": "g",
