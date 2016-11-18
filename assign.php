@@ -580,10 +580,11 @@ if ($Me->can_administer($prow)) {
         echo "</div><hr class=\"c\" /></div></div>\n";
     }
     echo "</div>\n",
-        "<div class='aa' style='margin-bottom:0'>",
-        Ht::submit("update", "Save assignments", array("class" => "bb")),
-        " &nbsp;", Ht::submit("cancel", "Cancel"),
-        " <span id='assresult' style='padding-left:1em'></span></div>\n\n",
+        '<div class="aab aabr aabig">',
+        '<div class="aabut">', Ht::submit("update", "Save assignments", ["class" => "btn btn-default"]), '</div>',
+        '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
+        '<div id="assresult" class="aabut"></div>',
+        '</div>',
         '</div></form>';
 }
 

@@ -1371,8 +1371,8 @@ class PaperTable {
                 $tagger->unparse($editable),
                 "</textarea></div>",
                 '<div style="padding:1ex 0;text-align:right">',
-                Ht::submit("cancelsettags", "Cancel", array("class" => "bsm", "onclick" => "return fold('tags',1)", "tabindex" => 1001)),
-                " &nbsp;", Ht::submit("Save", array("class" => "bsm", "tabindex" => 1000)),
+                Ht::submit("cancelsettags", "Cancel", array("onclick" => "return fold('tags',1)", "tabindex" => 1001)),
+                " &nbsp;", Ht::submit("Save", array("tabindex" => 1000)),
                 "</div>",
                 "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> <span class='barsep'>·</span> <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
                 "</div>";
@@ -1728,9 +1728,9 @@ class PaperTable {
         if (!$prow || !$Me->can_withdraw_paper($prow, true))
             $b = null;
         else if ($prow->timeSubmitted <= 0)
-            $b = Ht::submit("withdraw", "Withdraw", ["class" => "btn"]);
+            $b = Ht::submit("withdraw", "Withdraw");
         else {
-            $b = Ht::button("Withdraw", ["class" => "btn", "onclick" => "popup(this,'w',0,true)"]);
+            $b = Ht::button("Withdraw", ["onclick" => "popup(this,'w',0,true)"]);
             $admins = "";
             if ((!$this->admin || $prow->has_author($Me))
                 && !$this->conf->timeFinalizePaper($prow))

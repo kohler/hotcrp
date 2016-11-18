@@ -156,9 +156,9 @@ class MailSender {
             ' &nbsp; ';
         $style = $this->groupable ? "" : "display:none";
         if (!@$_REQUEST["group"] && @$_REQUEST["ungroup"])
-            echo Ht::submit("group", "Gather recipients", array("style" => $style, "class" => "mail_groupable"));
+            echo Ht::submit("group", "Gather recipients", array("style" => $style, "class" => "btn mail_groupable"));
         else
-            echo Ht::submit("ungroup", "Separate recipients", array("style" => $style, "class" => "mail_groupable"));
+            echo Ht::submit("ungroup", "Separate recipients", array("style" => $style, "class" => "btn mail_groupable"));
         echo ' &nbsp; ', Ht::submit("cancel", "Cancel"), '</div>';
     }
 

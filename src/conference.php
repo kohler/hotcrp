@@ -381,6 +381,7 @@ class Conf {
         if (!isset($this->opt["scriptAssetsUrl"]))
             $this->opt["scriptAssetsUrl"] = $this->opt["assetsUrl"];
         Ht::$img_base = $this->opt["assetsUrl"] . "images/";
+        Ht::$default_button_class = "btn";
 
         // set docstore
         if (get($this->opt, "docstore") === true)

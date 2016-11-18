@@ -6,6 +6,7 @@
 class Ht {
 
     public static $img_base = "";
+    public static $default_button_class = "";
     private static $_controlid = 0;
     private static $_lastcontrolid = 0;
     private static $_stash = "";
@@ -204,8 +205,8 @@ class Ht {
             $html = null;
         } else if (!$js)
             $js = array();
-        if (!isset($js["class"]))
-            $js["class"] = "b";
+        if (!isset($js["class"]) && self::$default_button_class)
+            $js["class"] = self::$default_button_class;
         $type = isset($js["type"]) ? $js["type"] : "button";
         if ($name && !$html) {
             $html = $name;

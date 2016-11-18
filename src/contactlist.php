@@ -482,7 +482,7 @@ class ContactList {
         $nlll = 1;
         $t .= "<span class=\"lll{$nlll}\"><a class=\"lla{$nlll}\" href=\"#\" onclick=\"return crpfocus('plact',{$nlll})\">Download</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;"
             . Ht::select("getaction", $types, null, ["class" => "want-focus"])
-            . "&nbsp; " . Ht::submit("getgo", "Go", array("class" => "bsm"))
+            . "&nbsp; " . Ht::submit("getgo", "Go")
             . "</span>";
 
         $barsep = " <span class='barsep'>·</span> ";
@@ -503,7 +503,7 @@ class ContactList {
                                                  "resetpassword" => "Reset password",
                                                  "sendaccount" => "Send account information"),
                              null, ["class" => "want-focus"])
-                . "&nbsp; " . Ht::submit("modifygo", "Go", array("class" => "bsm")) . "</span>";
+                . "&nbsp; " . Ht::submit("modifygo", "Go") . "</span>";
         }
 
         return $t . "</div></td></tr></tfoot>\n";

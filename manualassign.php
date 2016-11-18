@@ -198,9 +198,9 @@ echo Ht::radio("kind", "a", $qreq->kind == "a",
                array("onchange" => "hiliter(this)")),
     "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
 
-echo "<tr><td colspan='2'><div class='aax' style='text-align:right'>",
-    Ht::submit("Go", array("class" => "bb")),
-    "</div></td></tr>\n",
+echo '<tr><td colspan="2"><div class="aab aabr">',
+    '<div class="aabut">', Ht::submit("Go", ["class" => "btn btn-default"]), '</div>',
+    '</div></td></tr>',
     "</table>\n</div></form></div></td></tr></table>\n";
 
 
@@ -313,7 +313,7 @@ if ($reviewer > 0) {
         Ht::hidden("q", $qreq->q),
         Ht::hidden("papx", join(" ", $search->paperList())),
         "<div class=\"aa\">",
-        Ht::submit("update", "Save assignments", array("class" => "bb"));
+        Ht::submit("update", "Save assignments");
     if ($qreq->kind != "c") {
         $rev_rounds = $Conf->round_selector_options();
         if (count($rev_rounds) > 1)
@@ -332,7 +332,7 @@ if ($reviewer > 0) {
         $paperList->table_html(($qreq->kind == "c" ? "conflict" : "reviewAssignment"),
                                ["header_links" => true, "nofooter" => true, "list" => true]),
         "<div class='aa'>",
-        Ht::submit("update", "Save assignments", array("class" => "bb")),
+        Ht::submit("update", "Save assignments"),
         "</div></div></form></div>\n";
 }
 

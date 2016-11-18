@@ -556,17 +556,8 @@ span.impending a {
 }
 
 /* buttons */
-input.bsm, button.bsm, select.bsm {
-	font-size: smaller;
-}
 #plact input, #plact button, #plact select {
 	font-size: 100%;
-}
-input.alert, button.alert {
-	font-weight: bold;
-}
-input.bb, button.bb {
-	font-weight: bold;
 }
 span.expander {
 	display: inline-block;
@@ -602,9 +593,9 @@ span.expander > span.in0 {
 	background: #cc4444;
 }
 .closebtn {
-        display: inline-block;
-        padding: 2px 4px;
-        text-decoration: none;
+	display: inline-block;
+	padding: 2px 4px;
+	text-decoration: none;
 	border: 1px solid black;
 	color: black;
 	line-height: .85;
@@ -619,7 +610,7 @@ span.expander > span.in0 {
 	background-image: linear-gradient(#fcfcfc, #f0f0f0);
 	padding: 2px 6px 3px;
 	font-family: inherit;
-	font-size: 10pt;
+	font-size: 100%;
 	white-space: nowrap;
 	text-indent: 0;
 }
@@ -1794,7 +1785,7 @@ hr.c {
 	font-size: smaller;
 	background: #fcf6e3;
 	border: 2px solid #ccc1a3;
-	padding: 1em 1em 0.25em;
+	padding: 1em 1em 0.75em;
 	margin: 0 0 1.5em;
 }
 

@@ -688,7 +688,7 @@ if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct))
         ($UserStatus->has_error("password") ? "fold3o" : "fold3c"),
         '" style="margin-top:20px">';
     // Hit a button to change your password
-    echo Ht::js_button("Change password", "fold('password',null,3)", array("class" => "fn3"));
+    echo Ht::js_button("Change password", "fold('password',null,3)", array("class" => "btn fn3"));
     // Display the following after the button is clicked
     echo '<div class="fx3">';
     if (!$Me->can_change_password(null)) {
@@ -819,8 +819,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 }
 
 
-echo "<div class='aa c'><table class='pt_buttons'>\n";
-$buttons = array(Ht::submit("register", $newProfile ? "Create account" : "Save changes", array("class" => "bb")));
+$buttons = array(Ht::submit("register", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-default"]));
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
     $buttons[] = array(Ht::js_button("Delete user", "popup(this,'d',0)"), "(admin only)");
@@ -864,19 +863,9 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     }
 }
 if (!$newProfile && $Acct->contactId == $Me->contactId)
-    $buttons[] = Ht::submit("merge", "Merge with another account",
-                            array("style" => "margin-left:2ex"));
-echo "    <tr>\n";
-foreach ($buttons as $b) {
-    $x = (is_array($b) ? $b[0] : $b);
-    echo "      <td class='ptb_button'>", $x, "</td>\n";
-}
-echo "    </tr>\n    <tr>\n";
-foreach ($buttons as $b) {
-    $x = (is_array($b) ? $b[1] : "");
-    echo "      <td class='ptb_explain'>", $x, "</td>\n";
-}
-echo "    </tr>\n    </table></div>\n";
+    array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
+
+echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);
 
 echo "</div>\n", // foldaccount
     "</div>\n", // aahc

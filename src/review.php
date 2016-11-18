@@ -1571,7 +1571,7 @@ $blind\n";
         if ($rrow && !$rrow->reviewModified && $rrow->reviewType < REVIEW_SECONDARY) {
             $buttons = [];
             $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn btn-highlight"]);
-            $buttons[] = Ht::button("Decline", ["class" => "btn", "onclick" => "popup(this,'ref',0)"]);
+            $buttons[] = Ht::button("Decline", ["onclick" => "popup(this,'ref',0)"]);
             // Also see $_REQUEST["refuse"] case in review.php.
             Ht::stash_html("<div id='popup_ref' class='popupc'>"
     . Ht::form_div($reviewPostLink)
