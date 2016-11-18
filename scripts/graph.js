@@ -488,7 +488,7 @@ function hotcrp_graphs_cdf(args) {
             klass += " " + series[i].className;
         if (d[d.length - 1][0] != xdomain[args.x.flip ? 0 : 1])
             d.push([xdomain[args.x.flip ? 0 : 1], d[d.length - 1][1]]);
-        svg.append("path").attr("dataindex", i)
+        svg.append("path").attr("data-index", i)
             .datum(d)
             .attr("class", klass)
             .attr("d", line);
@@ -514,16 +514,16 @@ function hotcrp_graphs_cdf(args) {
         m.clientY = d3.event.clientY;
         for (var i in data)
             if (series[i].label)
-                p = closestPoint(svg.select("[dataindex='" + i + "']").node(), m, p);
+                p = closestPoint(svg.select("[data-index='" + i + "']").node(), m, p);
         if (p.pathNode != hovered_path) {
             if (p.pathNode)
-                hovers.datum(data[p.pathNode.getAttribute("dataindex")])
+                hovers.datum(data[p.pathNode.getAttribute("data-index")])
                     .attr("d", line).style("display", null);
             else
                 hovers.style("display", "none");
             hovered_path = p.pathNode;
         }
-        var u = p.pathNode ? series[p.pathNode.getAttribute("dataindex")] : null;
+        var u = p.pathNode ? series[p.pathNode.getAttribute("data-index")] : null;
         if (u && u.label) {
             hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
