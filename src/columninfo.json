@@ -148,19 +148,18 @@
         "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory"
     },
     {
-        "prefix": "", "factory_class": "Option_PaperColumnFactory"
+        "prefix": "",
+        "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_option",
+        "factory_class": "Option_PaperColumnFactory"
     },
     {
-        "prefix": "pref:", "factory_class": "Preference_PaperColumnFactory"
+        "prefix": "pref:", "factory_class": "Preference_PaperColumnFactory",
+        "synonym": ["revpref:", "preference:"]
     },
     {
-        "prefix": "tagrep:", "factory_class": "TagReport_PaperColumnFactory"
-    },
-    {
-        "prefix": "tagreport:", "factory_class": "TagReport_PaperColumnFactory"
-    },
-    {
-        "prefix": "tagreports", "factory_class": "TagReport_PaperColumnFactory"
+        "prefix": "tagrep:",
+        "row": true, "fold": true, "className": "pl_tagrep", "factory_class": "TagReport_PaperColumnFactory",
+        "synonym": ["tagreport:", "tagreports"]
     },
     {
         "prefix": "",

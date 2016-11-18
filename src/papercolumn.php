@@ -55,8 +55,12 @@ class PaperColumn extends Column {
             return null;
         if (isset($cj->name))
             self::$by_name[strtolower($cj->name)] = $f;
-        else
+        else {
             self::$factories[] = [strtolower($cj->prefix), $f];
+            if (($syn = get($cj, "synonym")))
+                foreach (is_string($syn) ? [$syn] : $syn as $x)
+                    self::$factories[] = [strtolower($x), $f];
+        }
         return $f;
     }
 
@@ -80,21 +84,18 @@ class PaperColumn extends Column {
             return self::_expand_json(self::$j_by_name[$lname]);
 
         // columns by factory
-        foreach (self::$factories as $f)
-            if (str_starts_with($lname, $f[0])
-                && ($x = $f[1]->instantiate($user, $name, $errors)))
-                return $x;
-        if (($colon = strpos($lname, ":")) > 0
-            && ($syn = get(self::$synonyms, substr($lname, 0, $colon))))
-            return self::lookup($user, $syn . substr($lname, $colon));
-        while (($fj = array_shift(self::$j_factories))) {
-            if (($fx = self::_expand_json($fj))
-                && str_starts_with($lname, strtolower($fj->prefix))
-                && ($x = $fx->instantiate($user, $name, $errors)))
-                return $x;
+        $i = 0;
+        while (1) {
+            if (($fax = get(self::$factories, $i))) {
+                if (str_starts_with($lname, $fax[0])
+                    && ($f = $fax[1]->instantiate($user, $name, $errors)))
+                    return $f;
+                ++$i;
+            } else if (($fj = array_shift(self::$j_factories)))
+                self::_expand_json($fj);
+            else
+                return null;
         }
-
-        return null;
     }
 
     static function register($fdef) {
@@ -1559,15 +1560,11 @@ class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
 
 class Option_PaperColumn extends PaperColumn {
     private $opt;
-    function __construct(PaperOption $opt, $isrow = false) {
+    function __construct(PaperOption $opt, $cj, $isrow) {
         $name = $opt->abbr . ($isrow ? "-row" : "");
-        if ($isrow)
-            $optcj = ["row" => true];
-        else
-            $optcj = $opt->list_display();
-        if ($optcj === true)
-            $optcj = ["className" => "pl_option"];
-        parent::__construct(["name" => $name] + $optcj + ["fold" => true, "sort" => true, "completion" => true, "minimal" => true]);
+        if (($optcj = $opt->list_display($isrow)) === true)
+            $optcj = $isrow ? ["row" => true] : ["column" => true, "className" => "pl_option"];
+        parent::__construct(["name" => $name] + $optcj + $cj);
         $this->opt = $opt;
     }
     function prepare(PaperList $pl, $visible) {
@@ -1613,12 +1610,15 @@ class Option_PaperColumn extends PaperColumn {
 }
 
 class Option_PaperColumnFactory extends PaperColumnFactory {
-    private $opt;
+    private $cj;
+    function __construct($cj) {
+        $this->cj = (array) $cj;
+    }
     private function all(Contact $user) {
         $x = [];
         foreach ($user->user_option_list() as $opt)
             if ($opt->display() >= 0)
-                $x[] = new Option_PaperColumn($opt, false);
+                $x[] = new Option_PaperColumn($opt, $this->cj, false);
         return $x;
     }
     function instantiate(Contact $user, $name, $errors) {
@@ -1642,8 +1642,8 @@ class Option_PaperColumnFactory extends PaperColumnFactory {
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
-            if ($opt->list_display())
-                return new Option_PaperColumn($opt, $isrow);
+            if ($opt->list_display($isrow))
+                return new Option_PaperColumn($opt, $this->cj, $isrow);
             self::instantiate_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.", 1);
         } else if ($has_colon)
             self::instantiate_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
@@ -1674,8 +1674,6 @@ class Formula_PaperColumn extends PaperColumn {
             return $this->formula->name;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$this->formula && $visible === PaperColumn::PREP_COMPLETION)
-            return true;
         if (!$pl->scoresOk
             || !$this->formula->check($pl->contact)
             || !($pl->search->limitName == "a"
@@ -1816,10 +1814,8 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
 class TagReport_PaperColumn extends PaperColumn {
     private $tag;
     private $viewtype;
-    function __construct($tag) {
-        parent::__construct([
-            "name" => "tagrep:$tag", "row" => true, "fold" => true, "className" => "pl_tagrep"
-        ]);
+    function __construct($tag, $cj) {
+        parent::__construct(["name" => "tagrep:" . strtolower($tag)] + $cj);
         $this->tag = $tag;
     }
     function prepare(PaperList $pl, $visible) {
@@ -1860,6 +1856,10 @@ class TagReport_PaperColumn extends PaperColumn {
 }
 
 class TagReport_PaperColumnFactory extends PaperColumnFactory {
+    private $cj;
+    function __construct($cj) {
+        $this->cj = (array) $cj;
+    }
     function instantiate(Contact $user, $name, $errors) {
         if (!$user->can_view_most_tags())
             return null;
@@ -1870,13 +1870,13 @@ class TagReport_PaperColumnFactory extends PaperColumnFactory {
             $tag = substr($name, 10);
         else if ($name === "tagreports") {
             $errors && ($errors->allow_empty = true);
-            return array_map(function ($t) { return new TagReport_PaperColumn($t->tag); },
+            return array_map(function ($t) { return new TagReport_PaperColumn($t->tag, $this->cj); },
                              $tagset->filter_by(function ($t) { return $t->vote || $t->approval || $t->rank; }));
         } else
             return null;
         $t = $tagset->check($tag);
         if ($t && ($t->vote || $t->approval || $t->rank))
-            return new TagReport_PaperColumn($tag);
+            return new TagReport_PaperColumn($tag, $this->cj);
         return null;
     }
 }

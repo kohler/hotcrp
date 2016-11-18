@@ -597,7 +597,7 @@ class PaperOption {
         return null;
     }
 
-    function list_display() {
+    function list_display($isrow) {
         return false;
     }
     function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
@@ -650,8 +650,8 @@ class CheckboxPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option should be “true” or “false”.");
     }
 
-    function list_display() {
-        return ["column" => true, "className" => "pl_option plc"];
+    function list_display($isrow) {
+        return $isrow ? true : ["column" => true, "className" => "pl_option plc"];
     }
     function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
         $v = $row->option($this->id);
@@ -729,7 +729,7 @@ class SelectorPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option doesn’t match any of the selectors.");
     }
 
-    function list_display() {
+    function list_display($isrow) {
         return true;
     }
     function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
@@ -829,7 +829,7 @@ class DocumentPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option should be a document.");
     }
 
-    function list_display() {
+    function list_display($isrow) {
         return true;
     }
     function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
@@ -909,8 +909,8 @@ class NumericPaperOption extends PaperOption {
         $ps->error_at_option($this, "Option should be an integer.");
     }
 
-    function list_display() {
-        return ["column" => true, "className" => "pl_option plrd"];
+    function list_display($isrow) {
+        return $isrow ? true : ["column" => true, "className" => "pl_option plrd"];
     }
     private function unparse_value(PaperOptionValue $ov = null) {
         return $ov && $ov->value !== null ? $ov->value : "";
@@ -987,7 +987,7 @@ class TextPaperOption extends PaperOption {
             return '<div class="format0">' . Ht::link_urls(htmlspecialchars($d)) . '</div>';
     }
 
-    function list_display() {
+    function list_display($isrow) {
         return ["row" => true];
     }
     function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
@@ -1111,7 +1111,7 @@ class AttachmentsPaperOption extends PaperOption {
         return $docs;
     }
 
-    function list_display() {
+    function list_display($isrow) {
         return true;
     }
     function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
