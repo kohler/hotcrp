@@ -1447,11 +1447,8 @@ class FormulaGraph_PaperColumn extends PaperColumn {
     private $_sortinfo;
     private $_avginfo;
     private $xreviewer;
-    function __construct($name, Formula $formula) {
-        parent::__construct([
-            "name" => strtolower($name), "column" => true, "fold" => true, "sort" => true, "minimal" => true,
-            "className" => "pl_score"
-        ]);
+    function __construct($cj, Formula $formula) {
+        parent::__construct($cj);
         $this->formula = $formula;
     }
     function prepare(PaperList $pl, $visible) {
@@ -1533,7 +1530,11 @@ class FormulaGraph_PaperColumn extends PaperColumn {
 }
 
 class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
+    private $cj;
     static private $nregistered;
+    function __construct($cj) {
+        $this->cj = $cj;
+    }
     function instantiate(Contact $user, $name, $errors) {
         if (str_starts_with($name, "g("))
             $name = substr($name, 1);
@@ -1550,7 +1551,7 @@ class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
             return null;
         }
         ++self::$nregistered;
-        return new FormulaGraph_PaperColumn("scorex" . self::$nregistered, $formula);
+        return new FormulaGraph_PaperColumn(["name" => "scorex" . self::$nregistered] + (array) $this->cj, $formula);
     }
     function completion_name() {
         return "graph(<formula>)";

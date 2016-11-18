@@ -166,7 +166,9 @@
         "prefix": "", "factory_class": "Formula_PaperColumnFactory"
     },
     {
-        "prefix": "g", "factory_class": "FormulaGraph_PaperColumnFactory"
+        "prefix": "g",
+        "column": true, "fold": true, "sort": true, "minimal": true, "className": "pl_score",
+        "factory_class": "FormulaGraph_PaperColumnFactory"
     },
     {
         "prefix": "",
