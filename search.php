@@ -420,7 +420,7 @@ if ($pl) {
         foreach ($rf->forder as $f)
             if ($f->view_score > $revViewScore && $f->has_options)
                 $display_options->checkbox_item(30, $f->id, $f->name_html);
-        if (!empty($display_options->items[3])) {
+        if (!empty($display_options->items[30])) {
             $onchange = "hiliter(\"redisplay\")";
             if ($Me->privChair)
                 $onchange .= ";plinfo.extra()";
