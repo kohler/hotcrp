@@ -339,13 +339,16 @@ $display_options = new Search_DisplayOptions;
 // Create checkboxes
 
 if ($pl) {
+    // Abstract
+    if ($pl->has("abstract"))
+        $display_options->checkbox_item(1, "abstract", "Abstracts");
+
+    // Authors group
     $viewAcceptedAuthors =
         $Me->is_reviewer() && $Conf->timeReviewerViewAcceptedAuthors();
     $viewAllAuthors = ($Qreq->t == "a"
                        || ($Qreq->t == "acc" && $viewAcceptedAuthors)
                        || $Conf->subBlindNever());
-
-    // Authors group
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors) {
         $display_options->checkbox_item(1, "au", "Authors", ["id" => "showau"]);
         if ($Me->privChair && $viewAllAuthors)
@@ -371,8 +374,6 @@ if ($pl) {
         $display_options->checkbox_item(1, "collab", "Collaborators", ["indent" => true]);
 
     // Abstract group
-    if ($pl->has("abstract"))
-        $display_options->checkbox_item(1, "abstract", "Abstracts");
     if ($pl->has("topics"))
         $display_options->checkbox_item(1, "topics", "Topics");
 
@@ -384,6 +385,14 @@ if ($pl) {
     /*foreach ($Conf->paper_opts->option_list() as $ox)
         if ($pl->has("opt$ox->id") && $ox->list_display(null))
             $display_options->checkbox_item(10, $ox->abbr, $ox->name);*/
+
+    // Reviewers group
+    if ($Me->privChair) {
+        $display_options->checkbox_item(20, "pcconf", "PC conflicts");
+        $display_options->checkbox_item(20, "allpref", "Review preferences");
+    }
+    if ($Me->can_view_some_review_identity(true))
+        $display_options->checkbox_item(20, "reviewers", "Reviewers");
 
     // Tags group
     if ($Me->isPC && $pl->has("tags")) {
@@ -397,13 +406,6 @@ if ($pl) {
         }
     }
 
-    // Reviewers group
-    if ($Me->can_view_some_review_identity(true))
-        $display_options->checkbox_item(20, "reviewers", "Reviewers");
-    if ($Me->privChair) {
-        $display_options->checkbox_item(20, "allpref", "Review preferences");
-        $display_options->checkbox_item(20, "pcconf", "PC conflicts");
-    }
     if ($Me->isPC && $pl->has("lead"))
         $display_options->checkbox_item(20, "lead", "Discussion leads");
     if ($Me->isPC && $pl->has("shepherd"))

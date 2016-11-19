@@ -14,8 +14,9 @@ class Column {
     public $minimal = false;
     public $is_folded = false;
     public $has_content = false;
+    public $priority = null;
 
-    static private $keys = ["name" => true, "className" => true, "column" => true, "row" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true];
+    static private $keys = ["name" => true, "className" => true, "column" => true, "row" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true, "priority" => true];
 
     function __construct($arg) {
         foreach ((array) $arg as $k => $v)
