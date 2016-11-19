@@ -1783,7 +1783,7 @@ function focus_within(elt, subfocus_selector, seltype) {
         if (!felt.hotcrp_ever_focused) {
             if (felt.select && $(felt).hasClass("want-select"))
                 felt.select();
-            else if (felt.setSelectionRange)
+            else if (felt.getAttribute("type") != "file" && felt.setSelectionRange)
                 felt.setSelectionRange(felt.value.length, felt.value.length);
             felt.hotcrp_ever_focused = true;
         }
