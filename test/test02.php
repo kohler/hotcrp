@@ -198,6 +198,38 @@ xassert_eqq(UnicodeHelper::demojibake("Â£"), "£");
 xassert_eqq(UnicodeHelper::demojibake("LÃ¡szlÃ³ MolnÃ¡r"), "László Molnár");
 xassert_eqq(UnicodeHelper::demojibake("László Molnár"), "László Molnár");
 
+// utf8 cleanup
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid(""), "");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("abc"), "abc");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("\x80bc"), "\x80bc");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab\xc3\xa5"), "abå");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab\xc3"), "ab");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab\xa5"), "ab");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab"), "ab");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab\xe4\xba\x9c"), "ab亜");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab\xe4\xba"), "ab");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab\xe4"), "ab");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab\xf0\x9d\x84\x9e"), "ab𝄞");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab\xf0\x9d\x84"), "ab");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab\xf0\x9d"), "ab");
+xassert_eqq(UnicodeHelper::utf8_truncate_invalid("ab\xf0"), "ab");
+
+xassert_eqq(UnicodeHelper::utf8_replace_invalid(""), "");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("abc"), "abc");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("\x80bc"), "\x7fbc");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xc3\xa5"), "abå");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xc3"), "ab\x7f");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xa5"), "ab\x7f");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab"), "ab");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xe4\xba\x9c"), "ab亜");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xe4\xba"), "ab\x7f\x7f");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xe4"), "ab\x7f");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0\x9d\x84\x9e"), "ab𝄞");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0\x9d\x84"), "ab\x7f\x7f\x7f");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0\x9d"), "ab\x7f\x7f");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0"), "ab\x7f");
+xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0å"), "ab\x7få");
+
 xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 10),
             "+ This is\n- a thing\n- to be\n- wrapped.\n");
 xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 9),

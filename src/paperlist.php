@@ -943,7 +943,8 @@ class PaperList {
         $classes = $jsmap = $jscol = array();
         $has_sel = false;
         foreach ($fieldDef as $fdef) {
-            $j = ["name" => $fdef->name, "title" => $this->_field_title($fdef)];
+            $j = ["name" => $fdef->name, "title" => $this->_field_title($fdef),
+                  "priority" => $fdef->priority];
             if ($fdef->className != "pl_" . $fdef->name)
                 $j["className"] = $fdef->className;
             if ($fdef->viewable_column())

@@ -1,7 +1,7 @@
 <?php
 // unicodehelper.php -- helper data tables and functions for Unicode transformations
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// See LICENSE for open-source distribution terms
 
 define("UTF8_ALPHA_TRANS_2", "\xC2\xAD\xC3\x80\xC3\x81\xC3\x82\xC3\x83\xC3\x84\xC3\x85\xC3\x86\xC3\x87\xC3\x88\xC3\x89\xC3\x8A\xC3\x8B\xC3\x8C\xC3\x8D\xC3\x8E\xC3\x8F\xC3\x91\xC3\x92\xC3\x93\xC3\x94\xC3\x95\xC3\x96\xC3\x98\xC3\x99\xC3\x9A\xC3\x9B\xC3\x9C\xC3\x9D\xC3\x9F\xC3\xA0\xC3\xA1\xC3\xA2\xC3\xA3\xC3\xA4\xC3\xA5\xC3\xA6\xC3\xA7\xC3\xA8\xC3\xA9\xC3\xAA\xC3\xAB\xC3\xAC\xC3\xAD\xC3\xAE\xC3\xAF\xC3\xB1\xC3\xB2\xC3\xB3\xC3\xB4\xC3\xB5\xC3\xB6\xC3\xB8\xC3\xB9\xC3\xBA\xC3\xBB\xC3\xBC\xC3\xBD\xC3\xBF\xC4\x80\xC4\x81\xC4\x82\xC4\x83\xC4\x84\xC4\x85\xC4\x86\xC4\x87\xC4\x88\xC4\x89\xC4\x8A\xC4\x8B\xC4\x8C\xC4\x8D\xC4\x8E\xC4\x8F\xC4\x92\xC4\x93\xC4\x94\xC4\x95\xC4\x96\xC4\x97\xC4\x98\xC4\x99\xC4\x9A\xC4\x9B\xC4\x9C\xC4\x9D\xC4\x9E\xC4\x9F\xC4\xA0\xC4\xA1\xC4\xA2\xC4\xA3\xC4\xA4\xC4\xA5\xC4\xA8\xC4\xA9\xC4\xAA\xC4\xAB\xC4\xAC\xC4\xAD\xC4\xAE\xC4\xAF\xC4\xB0\xC4\xB1\xC4\xB2\xC4\xB3\xC4\xB4\xC4\xB5\xC4\xB6\xC4\xB7\xC4\xB9\xC4\xBA\xC4\xBB\xC4\xBC\xC4\xBD\xC4\xBE\xC5\x83\xC5\x84\xC5\x85\xC5\x86\xC5\x87\xC5\x88\xC5\x8C\xC5\x8D\xC5\x8E\xC5\x8F\xC5\x90\xC5\x91\xC5\x92\xC5\x93\xC5\x94\xC5\x95\xC5\x96\xC5\x97\xC5\x98\xC5\x99\xC5\x9A\xC5\x9B\xC5\x9C\xC5\x9D\xC5\x9E\xC5\x9F\xC5\xA0\xC5\xA1\xC5\xA2\xC5\xA3\xC5\xA4\xC5\xA5\xC5\xA8\xC5\xA9\xC5\xAA\xC5\xAB\xC5\xAC\xC5\xAD\xC5\xAE\xC5\xAF\xC5\xB0\xC5\xB1\xC5\xB2\xC5\xB3\xC5\xB4\xC5\xB5\xC5\xB6\xC5\xB7\xC5\xB8\xC5\xB9\xC5\xBA\xC5\xBB\xC5\xBC\xC5\xBD\xC5\xBE\xC6\xA0\xC6\xA1\xC6\xAF\xC6\xB0\xC7\x8D\xC7\x8E\xC7\x8F\xC7\x90\xC7\x91\xC7\x92\xC7\x93\xC7\x94\xC7\xA6\xC7\xA7\xC7\xA8\xC7\xA9\xC7\xAA\xC7\xAB\xC7\xB0\xC7\xB4\xC7\xB5\xC7\xB8\xC7\xB9\xC8\x80\xC8\x81\xC8\x82\xC8\x83\xC8\x84\xC8\x85\xC8\x86\xC8\x87\xC8\x88\xC8\x89\xC8\x8A\xC8\x8B\xC8\x8C\xC8\x8D\xC8\x8E\xC8\x8F\xC8\x90\xC8\x91\xC8\x92\xC8\x93\xC8\x94\xC8\x95\xC8\x96\xC8\x97\xC8\x98\xC8\x99\xC8\x9A\xC8\x9B\xC8\x9E\xC8\x9F\xC8\xA6\xC8\xA7\xC8\xA8\xC8\xA9\xC8\xAE\xC8\xAF\xC8\xB2\xC8\xB3");
 
@@ -36,7 +36,7 @@ class UnicodeHelper {
         return false;
     }
 
-    public static function deaccent($x) {
+    static function deaccent($x) {
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
             $len = strlen($x);
@@ -63,7 +63,7 @@ class UnicodeHelper {
         return $x;
     }
 
-    public static function deaccent_offsets($x) {
+    static function deaccent_offsets($x) {
         $offsetmap = [[0, 0]];
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
@@ -93,25 +93,25 @@ class UnicodeHelper {
         return array($x, $offsetmap);
     }
 
-    public static function deaccent_translate_offset($offsetmap, $offset) {
+    static function deaccent_translate_offset($offsetmap, $offset) {
         for ($i = 1; $i < count($offsetmap) && $offsetmap[$i][0] <= $offset; ++$i)
             /* do nothing */;
         return $offsetmap[$i - 1][1] + ($offset - $offsetmap[$i - 1][0]);
     }
 
-    public static function windows_1252_to_utf8($str) {
+    static function windows_1252_to_utf8($str) {
         return preg_replace_callback('/[\200-\377]/', function ($m) {
             return rtrim(substr(UTF8_FROM_WINDOWS_1252, 3 * (ord($m[0]) - 128), 3));
         }, $str);
     }
 
-    public static function mac_os_roman_to_utf8($str) {
+    static function mac_os_roman_to_utf8($str) {
         return preg_replace_callback('/[\200-\377]/', function ($m) {
             return rtrim(substr(UTF8_FROM_MAC_OS_ROMAN, 3 * (ord($m[0]) - 128), 3));
         }, $str);
     }
 
-    public static function utf8_ord($str) {
+    static function utf8_ord($str) {
         $n = ord($str[0]);
         if ($n < 0x80)
             return $n;
@@ -138,7 +138,7 @@ class UnicodeHelper {
         return $n;
     }
 
-    public static function utf8_chr($n) {
+    static function utf8_chr($n) {
         if ($n < 0x80)
             return chr($n);
         else if ($n < 0x800)
@@ -149,7 +149,7 @@ class UnicodeHelper {
             return chr(0xF0 | ($n >> 18)) . chr(0x80 | (($n >> 12) & 0x3F)) . chr(0x80 | (($n >> 6) & 0x3F)) . chr(0x80 | ($n & 0x3F));
     }
 
-    public static function utf8_to_html_entities($str, $flag = ENT_NOQUOTES) {
+    static function utf8_to_html_entities($str, $flag = ENT_NOQUOTES) {
         if ($flag & ENT_IGNORE)
             $start = "";
         else if (($flag & ENT_QUOTES) == ENT_QUOTES)
@@ -180,16 +180,16 @@ class UnicodeHelper {
         }, $str);
     }
 
-    public static function utf8_glyphlen($str) {
+    static function utf8_glyphlen($str) {
         return strlen(preg_replace('/\X/u', '.', $str));
     }
 
-    public static function utf8_prefix($str, $len) {
+    static function utf8_prefix($str, $len) {
         preg_match('/\A\X{0,' . $len . '}/u', $str, $m);
         return $m[0];
     }
 
-    public static function utf8_word_prefix($str, $len, &$rest = null) {
+    static function utf8_word_prefix($str, $len, &$rest = null) {
         if (strlen($str) <= $len) {
             $rest = "";
             return $str;
@@ -200,7 +200,7 @@ class UnicodeHelper {
         return $m[1];
     }
 
-    public static function utf8_line_break(&$str, $len) {
+    static function utf8_line_break(&$str, $len) {
         if ($str === "")
             return false;
         $line = self::utf8_word_prefix($str, $len, $str);
@@ -212,7 +212,7 @@ class UnicodeHelper {
         return $line;
     }
 
-    public static function utf8_abbreviate($str, $len) {
+    static function utf8_abbreviate($str, $len) {
         $pfx = self::utf8_word_prefix($str, $len);
         if (strlen($pfx) < strlen($str))
             return "$pfx...";
@@ -220,15 +220,52 @@ class UnicodeHelper {
             return $pfx;
     }
 
-    public static function demojibake($str) {
+    static function demojibake($str) {
         return preg_replace_callback('/\xC3[\x80-\x8F]\xC2[\x80-\xBF]/', function ($m) {
             return chr(ord(substr($m[0], 1, 1)) + 0x40) . substr($m[0], 3, 1);
         }, $str);
     }
 
-    public static function remove_f_ligatures($str) {
+    static function remove_f_ligatures($str) {
         return preg_replace_callback("/\xEF\xAC[\x80-\x84]/", function ($m) {
             return UnicodeHelper::$f_ligature_map[$m[0]];
         }, $str);
+    }
+
+    static function utf8_truncate_invalid($str) {
+        $len = strlen($str);
+        $c = $len ? ord($str[$len - 1]) : 0;
+        if ($c < 0x80)
+            return $str;
+        else if ($c >= 0xC0 || $len == 1
+                 || ($d = ord($str[$len - 2])) < 0x80)
+            return substr($str, 0, $len - 1);
+        else if ($d >= 0xC0 && $d < 0xE0)
+            return $str;
+        else if ($d >= 0xC0 || $len == 2
+                 || ($e = ord($str[$len - 3])) < 0x80)
+            return substr($str, 0, $len - 2);
+        else if ($e >= 0xE0 && $e < 0xF0)
+            return $str;
+        else if ($e >= 0xC0 || $len == 3
+                 || ($f = ord($str[$len - 4])) < 0xF0)
+            return substr($str, 0, $len - 3);
+        else
+            return $str;
+    }
+
+    static function utf8_replace_invalid($str) {
+        $t = "";
+        while ($str !== "") {
+            if (preg_match('/\A[\x00-\x7f]+/', $str, $m)
+                || preg_match('/\A(?:[\x00-\x7f]|[\xc0-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf][\x80-\xbf]|[\xf0-\xf7][\x80-\xbf][\x80-\xbf][\x80-\xbf])+/', $str, $m)) {
+                $t .= $m[0];
+                $str = substr($str, strlen($m[0]));
+            } else {
+                $t .= chr(0x7f);
+                $str = substr($str, 1);
+            }
+        }
+        return $t;
     }
 }
