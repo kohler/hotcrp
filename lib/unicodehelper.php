@@ -256,7 +256,7 @@ class UnicodeHelper {
 
     static function utf8_replace_invalid($str) {
         $t = "";
-        while ($str !== "") {
+        while ($str !== "" && $str !== false) {
             if (preg_match('/\A[\x00-\x7f]+/', $str, $m)
                 || preg_match('/\A(?:[\x00-\x7f]|[\xc0-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf][\x80-\xbf]|[\xf0-\xf7][\x80-\xbf][\x80-\xbf][\x80-\xbf])+/', $str, $m)) {
                 $t .= $m[0];
