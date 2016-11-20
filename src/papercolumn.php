@@ -63,8 +63,16 @@ class PaperColumn extends Column {
         }
         return $f;
     }
+    private static function _sort_factories() {
+        usort(self::$factories, function ($a, $b) {
+            $ldiff = strlen($b[0]) - strlen($a[0]);
+            if (!$ldiff)
+                $ldiff = $a[1]->factory_priority - $b[1]->factory_priority;
+            return $ldiff < 0 ? -1 : ($ldiff > 0 ? 1 : 0);
+        });
+    }
 
-    static private function _populate_json() {
+    private static function _populate_json() {
         self::$j_by_name = self::$j_factories = [];
         expand_json_includes_callback(["src/columninfo.json"], "PaperColumn::_add_json");
         if (($jlist = opt("paperColumns")))
@@ -84,18 +92,11 @@ class PaperColumn extends Column {
             return self::_expand_json(self::$j_by_name[$lname]);
 
         // columns by factory
-        $i = 0;
-        while (1) {
-            if (($fax = get(self::$factories, $i))) {
-                if (str_starts_with($lname, $fax[0])
-                    && ($f = $fax[1]->instantiate($user, $name, $errors)))
-                    return $f;
-                ++$i;
-            } else if (($fj = array_shift(self::$j_factories)))
-                self::_expand_json($fj);
-            else
-                return null;
-        }
+        foreach (self::lookup_all_factories() as $fax)
+            if (str_starts_with($lname, $fax[0])
+                && ($f = $fax[1]->instantiate($user, $name, $errors)))
+                return $f;
+        return null;
     }
 
     static function register($fdef) {
@@ -114,6 +115,7 @@ class PaperColumn extends Column {
     }
     static function register_factory($prefix, PaperColumnFactory $f) {
         self::$factories[] = array(strtolower($prefix), $f);
+        self::_sort_factories();
     }
 
     static function lookup_all() {
@@ -127,8 +129,11 @@ class PaperColumn extends Column {
     static function lookup_all_factories() {
         if (self::$j_by_name === null)
             self::_populate_json();
-        while (($fj = array_shift(self::$j_factories)))
-            self::_expand_json($fj);
+        if (self::$j_factories) {
+            while (($fj = array_shift(self::$j_factories)))
+                self::_expand_json($fj);
+            self::_sort_factories();
+        }
         return self::$factories;
     }
 
@@ -182,6 +187,10 @@ class PaperColumn extends Column {
 }
 
 class PaperColumnFactory {
+    public $factory_priority;
+    function __construct($cj = null) {
+        $this->factory_priority = get($cj, "factory_priority", 0);
+    }
     function instantiate(Contact $user, $name, $errors) {
     }
     function completion_instances(Contact $user) {
@@ -953,6 +962,9 @@ class PreferencePaperColumn extends PaperColumn {
 }
 
 class Preference_PaperColumnFactory extends PaperColumnFactory {
+    function __construct($cj) {
+        parent::__construct($cj);
+    }
     function instantiate(Contact $user, $name, $errors) {
         $colon = strpos($name, ":");
         $cids = ContactSearch::make_pc(substr($name, $colon + 1), $user)->ids;
@@ -1284,6 +1296,7 @@ class Tag_PaperColumn extends PaperColumn {
 class Tag_PaperColumnFactory extends PaperColumnFactory {
     private $cj;
     function __construct($cj) {
+        parent::__construct($cj);
         $this->cj = (array) $cj;
     }
     function instantiate(Contact $user, $name, $errors) {
@@ -1419,6 +1432,7 @@ class Score_PaperColumn extends PaperColumn {
 class Score_PaperColumnFactory extends PaperColumnFactory {
     private $cj;
     function __construct($cj) {
+        parent::__construct($cj);
         $this->cj = (array) $cj;
     }
     function instantiate(Contact $user, $name, $errors) {
@@ -1533,6 +1547,7 @@ class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
     private $cj;
     static private $nregistered;
     function __construct($cj) {
+        parent::__construct($cj);
         $this->cj = (array) $cj;
     }
     function instantiate(Contact $user, $name, $errors) {
@@ -1612,6 +1627,7 @@ class Option_PaperColumn extends PaperColumn {
 class Option_PaperColumnFactory extends PaperColumnFactory {
     private $cj;
     function __construct($cj) {
+        parent::__construct($cj);
         $this->cj = (array) $cj;
     }
     private function all(Contact $user) {
@@ -1769,6 +1785,7 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
     private $cj;
     static private $nregistered;
     function __construct($cj) {
+        parent::__construct($cj);
         $this->cj = (array) $cj;
     }
     private function make(Formula $f) {
@@ -1858,6 +1875,7 @@ class TagReport_PaperColumn extends PaperColumn {
 class TagReport_PaperColumnFactory extends PaperColumnFactory {
     private $cj;
     function __construct($cj) {
+        parent::__construct($cj);
         $this->cj = (array) $cj;
     }
     function instantiate(Contact $user, $name, $errors) {

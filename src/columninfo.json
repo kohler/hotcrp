@@ -32,7 +32,7 @@
     {
         "prefix": "",
         "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_option",
-        "factory_class": "Option_PaperColumnFactory",
+        "factory_class": "Option_PaperColumnFactory", "factory_priority": 1000,
         "priority": 200
     },
     {
@@ -107,7 +107,8 @@
     {
         "prefix": "",
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true,
-        "className": "pl_score", "factory_class": "Score_PaperColumnFactory",
+        "className": "pl_score",
+        "factory_class": "Score_PaperColumnFactory", "factory_priority": 500,
         "priority": 1100
     },
     {
@@ -119,7 +120,7 @@
     {
         "prefix": "",
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_formula",
-        "factory_class": "Formula_PaperColumnFactory",
+        "factory_class": "Formula_PaperColumnFactory", "factory_priority": 2000,
         "priority": 1300
     },
     {
