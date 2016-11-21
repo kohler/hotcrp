@@ -182,6 +182,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
 
     $successes = 0;
     $errors = array();
+    $detailed_preference_error = false;
     $new_qreq = new Qrequest("POST");
     while (($line = $csv->next())) {
         if (isset($line["paper"]) && isset($line["preference"])) {
@@ -190,15 +191,16 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
                 $new_qreq["revpref" . $line["paper"]] = $line["preference"];
             else if (!ctype_digit($line["paper"]))
                 $errors[] = upload_error($csv, $printFilename, "“" . htmlspecialchars($paper) . "” is not a valid paper");
-            else
+            else if (!$detailed_preference_error) {
                 $errors[] = upload_error($csv, $printFilename, "bad review preference “" . htmlspecialchars(trim($line["preference"])) . "”, should be an integer and an optional expertise marker (X, Y, Z)");
-        } else if (!empty($line)) {
-            if (count($errors) < 20)
-                $errors[] = upload_error($csv, $printFilename, "syntax error, expected <code>paper,title,preference</code>");
-            else {
-                $errors[] = upload_error($csv, $printFilename, "too many syntax errors, giving up");
-                break;
-            }
+                $detailed_preference_error = true;
+            } else
+                $errors[] = upload_error($csv, $printFilename, "bad review preference “" . htmlspecialchars(trim($line["preference"])) . "”");
+        } else if (!empty($line))
+            $errors[] = upload_error($csv, $printFilename, "paper and/or preference missing");
+        if (count($errors) == 20) {
+            $errors[] = upload_error($csv, $printFilename, "too many errors, giving up");
+            break;
         }
     }
 
