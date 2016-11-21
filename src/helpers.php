@@ -1021,13 +1021,13 @@ function parse_preference($n) {
         else
             $e = 9 - (ord($m[2]) & 15);
         return array($p, $e);
-    } else if (strpos($n, "\xE2") !== false)
-        // Translate UTF-8 for minus sign into a real minus sign ;)
-        return parse_preference(str_replace("\xE2\x88\x92", '-', $n));
-    else if (strcasecmp($n, "none") == 0 || strcasecmp($n, "n/a") == 0)
+    } else if (strcasecmp($n, "none") == 0 || strcasecmp($n, "n/a") == 0)
         return array(0, null);
     else if (strcasecmp($n, "conflict") == 0)
         return array(-100, null);
+    else if (($o = str_replace("\xE2\x88\x92", "-", $n)) !== $n)
+        // Translate UTF-8 for minus sign into a real minus sign ;)
+        return parse_preference($o);
     else
         return null;
 }
