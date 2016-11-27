@@ -2505,7 +2505,7 @@ class Conf {
         return $t . '" />';
     }
 
-    function make_script_file($url, $no_strict = false) {
+    function make_script_file($url, $no_strict = false, $integrity = null) {
         global $ConfSitePATH;
         if (str_starts_with($url, "scripts/")) {
             $post = "";
@@ -2519,7 +2519,7 @@ class Conf {
             if ($this->opt["scriptAssetsUrl"] === Navigation::siteurl())
                 return Ht::script_file($url);
         }
-        return Ht::script_file($url, array("crossorigin" => "anonymous"));
+        return Ht::script_file($url, ["crossorigin" => "anonymous", "integrity" => $integrity]);
     }
 
     private function header_head($title) {
@@ -2576,13 +2576,21 @@ class Conf {
 
         // jQuery
         $stash = Ht::unstash();
+        $jqueryVersion = get($this->opt, "jqueryVersion", "1.12.4");
+        $integrity = null;
         if (isset($this->opt["jqueryUrl"]))
             $jquery = $this->opt["jqueryUrl"];
-        else if ($this->opt("jqueryCdn"))
-            $jquery = "//code.jquery.com/jquery-1.12.4.min.js";
-        else
-            $jquery = "scripts/jquery-1.12.4.min.js";
-        Ht::stash_html($this->make_script_file($jquery, true) . "\n");
+        else if ($this->opt("jqueryCdn")) {
+            $jquery = "//code.jquery.com/jquery-{$jqueryVersion}.min.js";
+            if ($jqueryVersion === "1.12.4")
+                $integrity = "sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=";
+            else if ($jqueryVersion === "3.1.1")
+                $integrity = "sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=";
+        } else
+            $jquery = "scripts/jquery-{$jqueryVersion}.min.js";
+        Ht::stash_html($this->make_script_file($jquery, true, $integrity) . "\n");
+        if ($this->opt("jqueryMigrate"))
+            Ht::stash_html($this->make_script_file("//code.jquery.com/jquery-migrate-3.0.0.min.js", true));
 
         // Javascript settings to set before script.js
         Ht::stash_script("siteurl=" . json_encode(Navigation::siteurl()) . ";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
