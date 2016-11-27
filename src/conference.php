@@ -2579,9 +2579,9 @@ class Conf {
         if (isset($this->opt["jqueryUrl"]))
             $jquery = $this->opt["jqueryUrl"];
         else if ($this->opt("jqueryCdn"))
-            $jquery = "//code.jquery.com/jquery-1.12.3.min.js";
+            $jquery = "//code.jquery.com/jquery-1.12.4.min.js";
         else
-            $jquery = "scripts/jquery-1.12.3.min.js";
+            $jquery = "scripts/jquery-1.12.4.min.js";
         Ht::stash_html($this->make_script_file($jquery, true) . "\n");
 
         // Javascript settings to set before script.js
