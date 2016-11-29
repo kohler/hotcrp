@@ -1201,15 +1201,16 @@ class Conf {
     }
 
     function update_paperacc_setting($foraccept) {
+        global $Now;
         if (!isset($this->settings["paperacc"]) && $foraccept)
-            $this->q_raw("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update value=value");
-        else if (defval($this->settings, "paperacc") <= 0 || !$foraccept)
-            $this->q_raw("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
+            $this->q_raw("insert into Settings (name, value) values ('paperacc', $Now) on duplicate key update value=value");
+        else if (get($this->settings, "paperacc", 0) <= 0 || !$foraccept)
+            $this->q_raw("update Settings set value=coalesce((select timeSubmitted from Paper where timeSubmitted>0 and outcome>0 limit 1),0) where name='paperacc'");
         $this->settings["paperacc"] = $this->fetch_ivalue("select value from Settings where name='paperacc'");
     }
 
     function update_rev_tokens_setting($always) {
-        if ($always || defval($this->settings, "rev_tokens", 0) < 0) {
+        if ($always || get($this->settings, "rev_tokens", 0) < 0) {
             $this->qe_raw("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)");
             $this->settings["rev_tokens"] = $this->fetch_ivalue("select value from Settings where name='rev_tokens'");
         }
