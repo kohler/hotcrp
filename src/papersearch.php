@@ -3601,7 +3601,7 @@ class PaperSearch {
             if (($user->conf->has_any_lead_or_shepherd() && $user->is_discussion_lead())
                 || $reqtype === "lead")
                 $tOpt["lead"] = "Your discussion leads";
-            if (($user->conf->has_any_manager() && ($user->privChair || $user->is_manager()))
+            if (($user->privChair ? $user->conf->has_any_manager() : $user->is_manager())
                 || $reqtype === "manager")
                 $tOpt["manager"] = "Papers you administer";
         }
