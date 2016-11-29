@@ -18,6 +18,13 @@ class SettingRenderer_Tags extends SettingRenderer {
             }
         }
 
+        $perm = ["" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"];
+        if ($type === "admin") {
+            $perm[""] = (object) ["label" => "Whole PC", "disabled" => true];
+            if ($tclass === "")
+                $tclass = "none";
+        }
+
         $hint = "";
         if (is_array($question))
             list($question, $hint) = [$question[0], '<p class="hint" style="margin:0;max-width:480px">' . $question[1] . '</p>'];
@@ -30,9 +37,7 @@ class SettingRenderer_Tags extends SettingRenderer {
         echo $sv->label(["{$type}_track$tnum", "{$type}tag_track$tnum"],
                         $question, "{$type}_track$tnum"),
             "</td><td>",
-            Ht::select("{$type}_track$tnum",
-                       array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"),
-                       $tclass,
+            Ht::select("{$type}_track$tnum", $perm, $tclass,
                        $sv->sjs("{$type}_track$tnum", array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
             " &nbsp;</td><td style=\"min-width:120px\">",
             Ht::entry("${type}tag_track$tnum", $ttag,
@@ -65,6 +70,7 @@ class SettingRenderer_Tags extends SettingRenderer {
         $this->do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
         $this->do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
         $this->do_track_permission($sv, "unassrev", "Who can self-assign a review?", $tnum, $t);
+        $this->do_track_permission($sv, "admin", "Who can administer these papers?", $tnum, $t);
         if ($trackname === "_")
             $this->do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", $tnum, $t);
         echo "</table></div>\n\n";
@@ -350,9 +356,9 @@ class Track_SettingParser extends SettingParser {
             }
             $t = (object) array();
             foreach (Track::$map as $type => $value)
-                if (($ttype = defval($sv->req, "${type}_track$i", "")) == "+"
-                    || $ttype == "-") {
-                    $ttag = trim(defval($sv->req, "${type}tag_track$i", ""));
+                if (($ttype = get($sv->req, "${type}_track$i", "")) === "+"
+                    || $ttype === "-") {
+                    $ttag = trim(get($sv->req, "${type}tag_track$i", ""));
                     if ($ttag === "" || $ttag === "(tag)") {
                         $sv->error_at("{$type}_track$i", "Tag missing for track setting.");
                         $sv->error_at("tracks");
@@ -363,7 +369,7 @@ class Track_SettingParser extends SettingParser {
                         $sv->error_at("{$type}_track$i", $tagger->error_html);
                         $sv->error_at("tracks");
                     }
-                } else if ($ttype == "none")
+                } else if ($ttype == "none" && $type !== "admin")
                     $t->$type = "+none";
             if (count((array) $t) || get($tracks, "_"))
                 $tracks->$trackname = $t;

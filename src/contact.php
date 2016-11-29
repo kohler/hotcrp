@@ -72,7 +72,7 @@ class Contact {
     public $roles = 0;
     var $isPC = false;
     var $privChair = false;
-    var $contactTags = null;
+    public $contactTags = null;
     public $tracker_kiosk_state = false;
     const CAP_AUTHORVIEW = 1;
     private $capabilities = null;
@@ -1545,18 +1545,23 @@ class Contact {
     function is_explicit_manager() {
         $this->check_rights_version();
         if (!isset($this->is_explicit_manager_)) {
-            $result = null;
-            if ($this->contactId > 0 && $this->isPC
-                && $this->conf->has_any_manager())
-                $result = $this->conf->qe("select paperId from Paper where managerContactId=? limit 1", $this->contactId);
-            $this->is_explicit_manager_ = edb_nrows($result) > 0;
-            Dbl::free($result);
+            $this->is_explicit_manager_ = false;
+            if ($this->contactId > 0
+                && $this->isPC
+                && ($this->conf->check_any_admin_tracks($this)
+                    || ($this->conf->has_any_manager()
+                        && $this->conf->fetch_value("select paperId from Paper where managerContactId=? limit 1", $this->contactId) > 0)))
+                $this->is_explicit_manager_ = true;
         }
         return $this->is_explicit_manager_;
     }
 
     function is_manager() {
         return $this->privChair || $this->is_explicit_manager();
+    }
+
+    function is_track_manager() {
+        return $this->privChair || $this->conf->check_any_admin_tracks($this);
     }
 
 
@@ -1649,7 +1654,10 @@ class Contact {
                      || $prow->managerContactId == $this->contactId
                      || !$ci->conflict_type)
                  && ($this->privChair
-                     || $prow->managerContactId == $this->contactId))
+                     || $prow->managerContactId == $this->contactId
+                     || ($this->isPC
+                         && $this->is_track_manager()
+                         && $this->conf->check_admin_tracks($prow, $this))))
                 || $this->is_site_contact)
                 $ci->allow_administer = true;
         }
@@ -1777,7 +1785,7 @@ class Contact {
 
     public function can_view_tracker() {
         return $this->privChair
-            || ($this->isPC && $this->conf->check_tracks(null, $this, Track::VIEWTRACKER))
+            || ($this->isPC && $this->conf->check_default_track($this, Track::VIEWTRACKER))
             || $this->tracker_kiosk_state;
     }
 
@@ -2283,7 +2291,7 @@ class Contact {
         return $whyNot;
     }
 
-    function can_view_review_identity($prow, $rrow, $forceShow = null) {
+    function can_view_review_identity(PaperInfo $prow, $rrow, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.

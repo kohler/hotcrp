@@ -2447,7 +2447,7 @@ class PaperSearch {
         if ($flags & self::F_MANAGER) {
             if ($this->conf->has_any_manager() && $this->privChair)
                 $q[] = "(managerContactId=$this->cid or (managerContactId=0 and PaperConflict.conflictType is null))";
-            else if ($this->privChair)
+            else if ($this->user->is_track_manager())
                 $q[] = "true";
             else if ($this->user->is_manager())
                 $q[] = "managerContactId=$this->cid";
@@ -3185,7 +3185,7 @@ class PaperSearch {
         else if ($limit === "lead")
             $filters[] = "Paper.leadContactId=" . $this->cid;
         else if ($limit === "manager") {
-            if ($this->privChair)
+            if ($this->user->is_track_manager())
                 $filters[] = "(Paper.managerContactId=" . $this->cid . " or Paper.managerContactId=0)";
             else
                 $filters[] = "Paper.managerContactId=" . $this->cid;
@@ -3314,7 +3314,9 @@ class PaperSearch {
             while (($row = PaperInfo::fetch($result, $this->user))) {
                 if (!$this->user->can_view_paper($row)
                     || ($limit === "rable"
-                        && !$limitcontact->can_accept_review_assignment_ignore_conflict($row)))
+                        && !$limitcontact->can_accept_review_assignment_ignore_conflict($row))
+                    || ($limit === "manager"
+                        && !$this->user->can_administer($row, true)))
                     $x = false;
                 else if ($need_then) {
                     $x = false;

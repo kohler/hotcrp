@@ -12,11 +12,19 @@ class Track {
     const ASSREV = 4;
     const UNASSREV = 5;
     const VIEWTRACKER = 6;
+    const ADMIN = 7;
     static public $map = [
         "view" => 0, "viewpdf" => 1, "viewrev" => 2, "viewrevid" => 3,
-        "assrev" => 4, "unassrev" => 5, "viewtracker" => 6
+        "assrev" => 4, "unassrev" => 5, "viewtracker" => 6, "admin" => 7
     ];
-    static public $zero = [null, null, null, null, null, null, null];
+    static public $zero = [null, null, null, null, null, null, null, null];
+    static function match_perm(Contact $user, $perm) {
+        if ($perm) {
+            $has_tag = $user->has_tag(substr($perm, 1));
+            return $perm[0] === "-" ? !$has_tag : $has_tag;
+        } else
+            return true;
+    }
 }
 
 class Conf {
@@ -55,6 +63,7 @@ class Conf {
     private $_taginfo = null;
     private $_track_tags = null;
     private $_track_review_sensitivity = false;
+    private $_track_admin_sensitivity = false;
     private $_decisions = null;
     private $_topic_separator_cache = null;
     private $_pc_members_cache = null;
@@ -265,7 +274,7 @@ class Conf {
 
         // tracks settings
         $this->tracks = $this->_track_tags = null;
-        $this->_track_review_sensitivity = false;
+        $this->_track_review_sensitivity = $this->_track_admin_sensitivity = false;
         if (($j = get($this->settingTexts, "tracks")))
             $this->crosscheck_track_settings($j);
 
@@ -298,8 +307,9 @@ class Conf {
     private function crosscheck_track_settings($j) {
         if (is_string($j) && !($j = json_decode($j)))
             return;
-        $this->tracks = array("_" => Track::$zero);
-        $this->_track_tags = array();
+        $this->tracks = [];
+        $default_track = Track::$zero;
+        $this->_track_tags = [];
         foreach ((array) $j as $k => $v) {
             if ($k !== "_")
                 $this->_track_tags[] = $k;
@@ -309,10 +319,16 @@ class Conf {
             foreach (Track::$map as $tname => $idx)
                 if (isset($v->$tname))
                     $t[$idx] = $v->$tname;
-            $this->tracks[$k] = $t;
+            if ($k === "_")
+                $default_track = $t;
+            else
+                $this->tracks[$k] = $t;
             if ($t[Track::UNASSREV] || $t[Track::ASSREV])
                 $this->_track_review_sensitivity = true;
+            if ($t[Track::ADMIN])
+                $this->_track_admin_sensitivity = true;
         }
+        $this->tracks["_"] = $default_track;
     }
 
     private function crosscheck_options() {
@@ -740,56 +756,68 @@ class Conf {
         return $this->_track_tags ? $this->_track_tags : array();
     }
 
-    function check_tracks($prow, $contact, $type) {
+    function check_tracks(PaperInfo $prow, Contact $contact, $type) {
         if ($this->tracks) {
-            $checked = false;
-            if ($prow)
-                foreach ($this->_track_tags as $t)
-                    if (($perm = $this->tracks[$t][$type])
-                        && $prow->has_tag($t)) {
-                        $has_tag = $contact->has_tag(substr($perm, 1));
-                        if ($perm[0] == "-" ? $has_tag : !$has_tag)
-                            return false;
-                        $checked = true;
-                    }
-            if (!$checked
-                && ($perm = $this->tracks["_"][$type])) {
-                $has_tag = $contact->has_tag(substr($perm, 1));
-                if ($perm[0] == "-" ? $has_tag : !$has_tag)
-                    return false;
-            }
+            $matched = false;
+            foreach ($this->tracks as $t => $tr)
+                if ($t === "_" ? !$matched : $prow->has_tag($t)) {
+                    $matched = true;
+                    if (!Track::match_perm($contact, $tr[$type]))
+                        return false;
+                }
         }
         return true;
     }
 
-    function check_any_tracks($contact, $type) {
-        if ($this->tracks)
-            foreach ($this->tracks as $k => $v)
-                if (($perm = $v[$type]) === null)
-                    return true;
-                else {
-                    $has_tag = $contact->has_tag(substr($perm, 1));
-                    if ($perm[0] == "-" ? !$has_tag : $has_tag)
+    function check_admin_tracks(PaperInfo $prow, Contact $contact) {
+        if ($this->_track_admin_sensitivity) {
+            $matched = false;
+            foreach ($this->tracks as $t => $tr)
+                if ($t === "_" ? !$matched : $prow->has_tag($t)) {
+                    $matched = true;
+                    if ($tr[Track::ADMIN] && Track::match_perm($contact, $tr[Track::ADMIN]))
                         return true;
                 }
+        }
+        return false;
+    }
+
+    function check_default_track(Contact $contact, $type) {
+        return !$this->tracks || Track::match_perm($contact, $this->tracks["_"][$type]);
+    }
+
+    function check_any_tracks(Contact $contact, $type) {
+        if ($this->tracks)
+            foreach ($this->tracks as $t => $tr)
+                if (($type === Track::VIEW
+                     || Track::match_perm($contact, $tr[Track::VIEW]))
+                    && Track::match_perm($contact, $tr[$type]))
+                    return true;
         return !$this->tracks;
     }
 
-    function check_all_tracks($contact, $type) {
+    function check_any_admin_tracks(Contact $contact) {
+        if ($this->_track_admin_sensitivity)
+            foreach ($this->tracks as $t => $tr)
+                if ($tr[Track::ADMIN] && Track::match_perm($contact, $tr[Track::ADMIN]))
+                    return true;
+        return false;
+    }
+
+    function check_all_tracks(Contact $contact, $type) {
         if ($this->tracks)
-            foreach ($this->tracks as $k => $v)
-                if (($perm = $v[$type]) !== null) {
-                    $has_tag = $contact->has_tag(substr($perm, 1));
-                    if ($perm[0] == "-" ? $has_tag : !$has_tag)
-                        return false;
-                }
+            foreach ($this->tracks as $t => $tr)
+                if (($type === Track::VIEW
+                     && !Track::match_perm($contact, $tr[Track::VIEW]))
+                    || !Track::match_perm($contact, $tr[$type]))
+                    return false;
         return true;
     }
 
     function check_track_sensitivity($type) {
         if ($this->tracks)
-            foreach ($this->tracks as $k => $v)
-                if ($v[$type] !== null)
+            foreach ($this->tracks as $t => $tr)
+                if ($tr[$type] !== null)
                     return true;
         return false;
     }
@@ -1663,7 +1691,7 @@ class Conf {
     }
 
     function has_any_manager() {
-        return !!get($this->settings, "papermanager");
+        return $this->_track_admin_sensitivity || !!get($this->settings, "papermanager");
     }
 
     function can_pc_see_all_submissions() {
