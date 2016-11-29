@@ -13,6 +13,7 @@ class TagMapItem {
     public $pattern = false;
     public $pattern_instance = false;
     public $chair = false;
+    public $track = false;
     public $votish = false;
     public $vote = false;
     public $approval = false;
@@ -28,7 +29,7 @@ class TagMapItem {
         $this->conf = $conf;
     }
     function merge(TagMapItem $t) {
-        foreach (["chair", "votish", "vote", "approval", "sitewide", "rank"] as $property)
+        foreach (["chair", "track", "votish", "vote", "approval", "sitewide", "rank"] as $property)
             if ($t->$property)
                 $this->$property = $t->$property;
         foreach (["colors", "badges", "emoji"] as $property)
@@ -316,8 +317,10 @@ class TagMap implements IteratorAggregate {
         $ct = $conf->setting_data("tag_chair", "");
         foreach (TagInfo::split_tlist($ct) as $ti)
             $map->add($ti[0])->chair = true;
-        foreach ($conf->track_tags() as $t)
-            $map->add(TagInfo::base($t))->chair = true;
+        foreach ($conf->track_tags() as $tn) {
+            $t = $map->add(TagInfo::base($tn));
+            $t->chair = $t->track = true;
+        }
         $ct = $conf->setting_data("tag_sitewide", "");
         foreach (TagInfo::split_tlist($ct) as $ti)
             $map->add($ti[0])->sitewide = $map->has_sitewide = true;

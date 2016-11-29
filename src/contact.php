@@ -2911,11 +2911,16 @@ class Contact {
             return !($t && $t->vote && $index < 0);
         } else {
             $t = $this->conf->tags()->check($tag);
-            return !$t
-                || (($rights->can_administer
-                     || ($this->privChair && $t->sitewide)
-                     || (!$t->chair && !$t->rank))
-                    && !$t->vote && !$t->approval);
+            if (!$t)
+                return true;
+            else if ($t->vote
+                     || $t->approval
+                     || ($t->track && !$this->privChair))
+                return false;
+            else
+                return $rights->can_administer
+                    || ($this->privChair && $t->sitewide)
+                    || (!$t->chair && !$t->rank);
         }
     }
 
