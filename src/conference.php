@@ -1540,9 +1540,8 @@ class Conf {
     function collectFinalPapers() {
         return $this->setting("final_open") > 0;
     }
-    function timeSubmitFinalPaper() {
-        return $this->timeAuthorViewDecision()
-            && $this->deadlinesBetween("final_open", "final_done", "final_grace");
+    function time_submit_final_version() {
+        return $this->deadlinesBetween("final_open", "final_done", "final_grace");
     }
     function timeAuthorViewReviews($reviewsOutstanding = false) {
         // also used to determine when authors can see review counts
@@ -1567,7 +1566,10 @@ class Conf {
         $isuf = $round ? "_$round" : "";
         return $this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf");
     }
-    function timeAuthorViewDecision() {
+    function can_all_author_view_decision() {
+        return $this->setting("seedec") == self::SEEDEC_ALL;
+    }
+    function can_some_author_view_decision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
     function time_review_open() {

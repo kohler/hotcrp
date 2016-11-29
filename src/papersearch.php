@@ -3426,7 +3426,7 @@ class PaperSearch {
             $queryOptions["unsub"] = 1;
             $queryOptions["active"] = 1;
         } else if ($limit === "acc") {
-            if ($this->privChair || $this->conf->timeAuthorViewDecision()) {
+            if ($this->privChair || $this->conf->can_all_author_view_decision()) {
                 $queryOptions["accepted"] = 1;
                 $queryOptions["finalized"] = 1;
             } else

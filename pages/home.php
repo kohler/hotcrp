@@ -161,7 +161,7 @@ if ($Me->isPC || !opt("privatePC"))
     $links[] = '<li><a href="' . hoturl("users", "t=pc") . '">Program committee</a></li>';
 if (opt("conferenceSite") && opt("conferenceSite") != opt("paperSite"))
     $links[] = '<li><a href="' . opt("conferenceSite") . '">Conference site</a></li>';
-if ($Conf->timeAuthorViewDecision()) {
+if ($Conf->can_all_author_view_decision()) {
     list($n, $nyes) = $Conf->count_submitted_accepted();
     $links[] = '<li>' . $Conf->_("%d papers accepted out of %d submitted.", $nyes, $n) . '</li>';
 }

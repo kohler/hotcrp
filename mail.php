@@ -196,7 +196,7 @@ class MailSender {
             }
             if (isset($_REQUEST["emailBody"]) && $Me->privChair
                 && substr($recipients, 0, 4) == "dec:") {
-                if (!$Conf->timeAuthorViewDecision())
+                if (!$Conf->can_some_author_view_decision())
                     echo "<div class='warning'>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href='", hoturl("settings", "group=dec"), "' class='nw'>Change this setting</a>)</div>\n";
             }
             echo "<div id='foldmail' class='foldc fold2c'>",

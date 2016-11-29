@@ -537,7 +537,7 @@ class DecisionFexpr extends SubFexpr {
         $this->format_ = self::FDECISION;
     }
     function view_score(Contact $user) {
-        if ($user->conf->timeAuthorViewDecision())
+        if ($user->conf->can_some_author_view_decision())
             return VIEWSCORE_AUTHOR;
         else if ($user->conf->timePCViewDecision(false))
             return VIEWSCORE_PC;

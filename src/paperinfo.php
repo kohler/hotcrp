@@ -352,7 +352,7 @@ class PaperInfo {
     }
 
     function can_author_view_decision() {
-        return $this->conf->timeAuthorViewDecision();
+        return $this->conf->can_all_author_view_decision();
     }
 
     function review_type($contact = null) {

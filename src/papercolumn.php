@@ -1964,7 +1964,7 @@ class Shepherd_PaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->contact->isPC
-            || ($pl->conf->has_any_accepts() && $pl->conf->timeAuthorViewDecision());
+            || ($pl->conf->has_any_accepts() && $pl->conf->can_some_author_view_decision());
     }
     function header(PaperList $pl, $is_text) {
         return "Shepherd";

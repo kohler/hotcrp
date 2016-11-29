@@ -1946,7 +1946,7 @@ class Contact {
             && $prow->outcome > 0
             && $this->conf->collectFinalPapers()
             && $this->can_view_decision($prow, $override)
-            && ($this->conf->timeSubmitFinalPaper() || $this->override_deadlines($rights, $override));
+            && ($this->conf->time_submit_final_version() || $this->override_deadlines($rights, $override));
     }
 
     function perm_submit_final_paper(PaperInfo $prow, $override = null) {
@@ -1965,7 +1965,7 @@ class Contact {
             $whyNot["rejected"] = 1;
         else if (!$this->conf->collectFinalPapers())
             $whyNot["deadline"] = "final_open";
-        else if (!$this->conf->timeSubmitFinalPaper() && !$this->override_deadlines($rights, $override))
+        else if (!$this->conf->time_submit_final_version() && !$this->override_deadlines($rights, $override))
             $whyNot["deadline"] = "final_done";
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
@@ -2715,7 +2715,7 @@ class Contact {
 
     function can_view_some_decision() {
         return $this->is_manager()
-            || ($this->is_author() && $this->conf->timeAuthorViewDecision())
+            || ($this->is_author() && $this->conf->can_some_author_view_decision())
             || ($this->isPC && $this->conf->timePCViewDecision(false))
             || ($this->is_reviewer() && $this->conf->timeReviewerViewDecision());
     }
@@ -2770,7 +2770,7 @@ class Contact {
         else if ($this->is_reviewer())
             return VIEWSCORE_REVIEWERONLY - 1;
         else if ($this->is_author() && $this->conf->timeAuthorViewReviews()) {
-            if ($this->conf->timeAuthorViewDecision())
+            if ($this->conf->can_some_author_view_decision())
                 return VIEWSCORE_AUTHORDEC - 1;
             else
                 return VIEWSCORE_AUTHOR - 1;
@@ -2779,7 +2779,7 @@ class Contact {
     }
 
     function author_permissive_view_score_bound() {
-        if ($this->conf->timeAuthorViewDecision())
+        if ($this->conf->can_some_author_view_decision())
             return VIEWSCORE_AUTHORDEC - 1;
         else
             return VIEWSCORE_AUTHOR - 1;
