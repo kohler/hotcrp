@@ -1835,7 +1835,7 @@ class Contact {
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
-            && ((($prow->outcome >= 0 || !$this->conf->timeAuthorViewDecision())
+            && ((($prow->outcome >= 0 || !$this->can_view_decision($prow, $override))
                  && $this->conf->timeUpdatePaper($prow))
                 || $this->override_deadlines($rights, $override));
     }
@@ -1851,7 +1851,7 @@ class Contact {
             $whyNot["author"] = 1;
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
-        if ($this->conf->timeAuthorViewDecision() && $prow->outcome < 0)
+        if ($prow->outcome < 0 && $this->can_view_decision($prow, $override))
             $whyNot["rejected"] = 1;
         if ($prow->timeSubmitted > 0 && $this->conf->setting("sub_freeze") > 0)
             $whyNot["updateSubmitted"] = 1;
@@ -1942,10 +1942,10 @@ class Contact {
     function can_submit_final_paper(PaperInfo $prow, $override = null) {
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
-            && $this->conf->collectFinalPapers()
             && $prow->timeWithdrawn <= 0
             && $prow->outcome > 0
-            && $this->conf->timeAuthorViewDecision()
+            && $this->conf->collectFinalPapers()
+            && $this->can_view_decision($prow, $override)
             && ($this->conf->timeSubmitFinalPaper() || $this->override_deadlines($rights, $override));
     }
 
@@ -1961,8 +1961,7 @@ class Contact {
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         // NB logic order here is important elsewhere
-        if (!$this->conf->timeAuthorViewDecision()
-            || $prow->outcome <= 0)
+        if ($prow->outcome <= 0 || !$this->can_view_decision($prow, $override))
             $whyNot["rejected"] = 1;
         else if (!$this->conf->collectFinalPapers())
             $whyNot["deadline"] = "final_open";
@@ -2706,7 +2705,7 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         return $rights->can_administer
             || ($rights->act_author_view
-                && $this->conf->timeAuthorViewDecision())
+                && $prow->can_author_view_decision())
             || ($rights->allow_pc_broad
                 && $this->conf->timePCViewDecision($rights->view_conflict_type > 0))
             || ($rights->review_type > 0

@@ -386,8 +386,7 @@ if ($paperTable->can_view_reviews() || $paperTable->mode == "re") {
 if ($paperTable->mode == "edit") {
     $editable = $newPaper || $Me->can_update_paper($prow, true);
     if ($prow && $prow->outcome > 0 && $Conf->collectFinalPapers()
-        && (($Conf->timeAuthorViewDecision() && $Conf->timeSubmitFinalPaper())
-            || $Me->allow_administer($prow)))
+        && ($Me->allow_administer($prow) || $Me->can_submit_final_paper($prow)))
         $editable = "f";
 } else
     $editable = false;

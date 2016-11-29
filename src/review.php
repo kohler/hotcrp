@@ -819,7 +819,8 @@ class ReviewForm {
         // notification
         $notification_bound = $now - self::NOTIFICATION_DELAY;
         $notify = $notify_author = false;
-        if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome && $this->conf->timeAuthorViewDecision())
+        if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome != 0
+            && $prow->can_author_view_decision())
             $diff_view_score = VIEWSCORE_AUTHOR;
         if (!$rrow || !$rrow->reviewModified || $diff_view_score > VIEWSCORE_FALSE) {
             $qf[] = "reviewModified=?";

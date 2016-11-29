@@ -535,7 +535,8 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
         else
             $deadlines[] = "The site is not open for submissions at the moment.";
     }
-    if ($plist && $Conf->timeSubmitFinalPaper() && $plist->has("accepted")) {
+    // NB only has("accepted") if author can see an accepted paper
+    if ($plist && $plist->has("accepted")) {
         $time = $Conf->printableTimeSetting("final_soft");
         if ($Conf->deadlinesAfter("final_soft") && $plist->has("need_final"))
             $deadlines[] = "<strong class='overdue'>Final versions are overdue.</strong> They were requested by $time.";
