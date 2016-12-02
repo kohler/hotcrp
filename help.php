@@ -584,7 +584,7 @@ order</b>. To add new papers at the end of an existing discussion order, use
 <b>Add to order</b>. To insert papers into an existing order, use <b>Add to
 order</b> with a tag value; for example, to insert starting at value 5, use
 <b>Add to order</b> with “#tag#5”.  The rest of the order is renumbered to
-accomodate the insertion.</p>
+accommodate the insertion.</p>
 
 <p>Even easier, you can <em>drag</em> papers into order using a search like “"
 . _searchLink("editsort:#tag") . "”.</p>
