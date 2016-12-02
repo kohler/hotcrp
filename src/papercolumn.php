@@ -1579,7 +1579,7 @@ class Option_PaperColumn extends PaperColumn {
         $name = $opt->abbr . ($isrow ? "-row" : "");
         if (($optcj = $opt->list_display($isrow)) === true)
             $optcj = $isrow ? ["row" => true] : ["column" => true, "className" => "pl_option"];
-        parent::__construct(["name" => $name] + $optcj + $cj);
+        parent::__construct(["name" => $name] + ($optcj ? : []) + $cj);
         $this->opt = $opt;
     }
     function prepare(PaperList $pl, $visible) {
