@@ -61,7 +61,7 @@ if ($Graph == "formula") {
     // derive a sample graph
     if (!isset($_REQUEST["fx"]) || !isset($_REQUEST["fy"])) {
         $all_review_fields = $Conf->all_review_fields();
-        $field1 = @$all_review_fields["overAllMerit"];
+        $field1 = get($all_review_fields, "overAllMerit");
         $field2 = null;
         foreach ($all_review_fields as $f)
             if ($f->has_options && !$field1)
@@ -70,9 +70,9 @@ if ($Graph == "formula") {
                 $field2 = $f;
         unset($_REQUEST["fx"], $_REQUEST["fy"]);
         if ($field1)
-            $_REQUEST["fy"] = "avg(" . $field1->analyze()->abbreviation . ")";
+            $_REQUEST["fy"] = "avg(" . $field1->abbreviation . ")";
         if ($field1 && $field2)
-            $_REQUEST["fx"] = "avg(" . $field2->analyze()->abbreviation . ")";
+            $_REQUEST["fx"] = "avg(" . $field2->abbreviation . ")";
         else
             $_REQUEST["fx"] = "pid";
     }

@@ -30,7 +30,7 @@ class ReviewField {
     public $option_class_prefix = "sv";
     public $round_mask = 0;
     public $allow_empty = false;
-    private $analyzed = false;
+    private $_typical_score = false;
 
     static private $view_score_map = [
         "secret" => VIEWSCORE_ADMINONLY, "admin" => VIEWSCORE_REVIEWERONLY,
@@ -48,13 +48,13 @@ class ReviewField {
         VIEWSCORE_AUTHOR => "au"
     ];
 
-    public function __construct($id, $has_options, $conf) {
+    function __construct($id, $has_options, $conf) {
         $this->id = $id;
         $this->has_options = $has_options;
         $this->conf = $conf;
     }
 
-    public function assign($j) {
+    function assign($j) {
         $this->name = (get($j, "name") ? : "Field name");
         $this->name_html = htmlspecialchars($this->name);
         $this->description = (get($j, "description") ? : "");
@@ -98,10 +98,10 @@ class ReviewField {
             if (get($j, "allow_empty"))
                 $this->allow_empty = true;
         }
-        $this->analyzed = false;
+        $this->_typical_score = false;
     }
 
-    public function unparse_json($for_settings = false) {
+    function unparse_json($for_settings = false) {
         $j = (object) array("name" => $this->name);
         if ($this->description)
             $j->description = $this->description;
@@ -134,18 +134,18 @@ class ReviewField {
         return $j;
     }
 
-    static public function unparse_visibility_value($vs) {
+    static function unparse_visibility_value($vs) {
         if (isset(self::$view_score_rmap[$vs]))
             return self::$view_score_rmap[$vs];
         else
             return $vs;
     }
 
-    public function unparse_visibility() {
+    function unparse_visibility() {
         return self::unparse_visibility_value($this->view_score);
     }
 
-    public function is_round_visible($rrow) {
+    function is_round_visible($rrow) {
         // NB missing $rrow is only possible for PC reviews
         $round = $rrow ? $rrow->reviewRound : $this->conf->assignment_round(false);
         return !$this->round_mask
@@ -154,31 +154,34 @@ class ReviewField {
             || ($rrow && ($fid = $this->id) && $rrow->$fid);
     }
 
-    public function include_word_count() {
+    function include_word_count() {
         return !$this->has_options && $this->view_score >= VIEWSCORE_AUTHORDEC;
     }
 
-    public function analyze() {
-        if ($this->has_options && !$this->analyzed) {
-            $scores = array_keys($this->options);
-            if (count($scores) == 1) {
-                $this->typical_score = $scores[0];
-                unset($this->typical_score_range);
-            } else {
-                $off = count($scores) == 2 ? 0 : 1;
-                $this->typical_score0 = $scores[$off];
-                $this->typical_score = $scores[$off + 1];
-                if ($this->option_letter)
-                    $this->typical_score_range = $this->typical_score0 . $this->typical_score;
-                else
-                    $this->typical_score_range = $this->typical_score0 . "-" . $this->typical_score;
-            }
-            $this->analyzed = true;
+    function typical_score() {
+        if ($this->_typical_score === false && $this->has_options) {
+            $n = count($this->options);
+            if ($n == 1)
+                $this->_typical_scpre = $this->unparse_value(1);
+            else if ($this->option_letter)
+                $this->_typical_score = $this->unparse_value($n - 1);
+            else
+                $this->_typical_score = $this->unparse_value(2);
         }
-        return $this;
+        return $this->_typical_score;
     }
 
-    public function web_abbreviation() {
+    function typical_score_range() {
+        if (!$this->has_options || count($this->options) < 2)
+            return null;
+        $n = count($this->options);
+        if ($this->option_letter)
+            return [$this->unparse_value($n - ($n > 2)), $this->unparse_value($n - 1 - ($n > 2) - ($n > 3))];
+        else
+            return [$this->unparse_value(1 + ($n > 2)), $this->unparse_value(2 + ($n > 2) + ($n > 3))];
+    }
+
+    function web_abbreviation() {
         return '<span class="need-tooltip" data-tooltip="' . $this->name_html
             . '" data-tooltip-dir="b">' . htmlspecialchars($this->abbreviation) . "</span>";
     }
@@ -207,11 +210,11 @@ class ReviewField {
         }
     }
 
-    public function abbreviation1() {
+    function abbreviation1() {
         return self::make_abbreviation($this->name, 0, 1);
     }
 
-    public function value_class($value) {
+    function value_class($value) {
         if (count($this->options) > 1)
             $n = (int) (($value - 1) * 8.0 / (count($this->options) - 1) + 1.5);
         else
@@ -219,7 +222,7 @@ class ReviewField {
         return "sv " . $this->option_class_prefix . $n;
     }
 
-    public function unparse_value($value, $scclass = false) {
+    function unparse_value($value, $scclass = false) {
         if (is_object($value))
             $value = defval($value, $this->id);
         if (!$this->has_options)
@@ -245,7 +248,7 @@ class ReviewField {
         return "<span class=\"$klass\">$x</span>";
     }
 
-    public function value_description($value) {
+    function value_description($value) {
         if (is_object($value))
             $value = defval($value, $this->id);
         if (!$this->has_options)
@@ -257,7 +260,7 @@ class ReviewField {
         return $this->options[$value];
     }
 
-    static public function unparse_letter($option_letter, $value) {
+    static function unparse_letter($option_letter, $value) {
         $ivalue = (int) $value;
         $ch = $option_letter - $ivalue;
         if ($value < $ivalue + 0.25)
@@ -268,7 +271,7 @@ class ReviewField {
             return chr($ch - 1);
     }
 
-    public function unparse_average($value) {
+    function unparse_average($value) {
         assert($this->has_options);
         if ($value <= 0.8)
             return "";
@@ -278,7 +281,7 @@ class ReviewField {
             return self::unparse_letter($this->option_letter, $value);
     }
 
-    public function unparse_graph($v, $style, $myscore) {
+    function unparse_graph($v, $style, $myscore) {
         assert($this->has_options);
         $max = count($this->options);
 
@@ -321,12 +324,12 @@ class ReviewField {
         return $retstr;
     }
 
-    public function parse_is_empty($text) {
+    function parse_is_empty($text) {
         return $text === "" || $text === "0" || $text[0] === "("
             || strcasecmp($text, "No entry") == 0;
     }
 
-    public function parse_value($text, $strict) {
+    function parse_value($text, $strict) {
         if (!$strict && strlen($text) > 1
             && preg_match('/\A\s*([0-9]+|[A-Z])(\W|\z)/', $text, $m))
             $text = $m[1];
@@ -367,7 +370,7 @@ class ReviewForm {
                                         -3 => "not correct");
     static private $review_author_seen = null;
 
-    static public function fmap_compare($a, $b) {
+    static function fmap_compare($a, $b) {
         if ($a->displayed != $b->displayed)
             return $a->displayed ? -1 : 1;
         else if ($a->displayed)
@@ -376,7 +379,7 @@ class ReviewForm {
             return strcmp($a->id, $b->id);
     }
 
-    public function __construct($rfj, $conf) {
+    function __construct($rfj, $conf) {
         global $Conf;
         $this->conf = $conf ? : $Conf;
 
@@ -438,21 +441,16 @@ class ReviewForm {
             $f->uid = $detail < 5 ? $f->abbreviation : $f->id;
     }
 
-    static public function get() {
-        global $Conf;
-        return $Conf->review_form();
-    }
-
-    public function all_fields() {
+    function all_fields() {
         return $this->forder;
     }
 
-    public function field($fid) {
+    function field($fid) {
         $f = get($this->fmap, $fid);
         return $f && $f->displayed ? $f : null;
     }
 
-    public function field_search($name) {
+    function field_search($name) {
         $f = get($this->fmap, $name);
         if ($f && $f->displayed)
             return $f;
@@ -475,14 +473,14 @@ class ReviewForm {
         return $field;
     }
 
-    public function unparse_full_json() {
+    function unparse_full_json() {
         $fmap = array();
         foreach ($this->fmap as $f)
             $fmap[$f->id] = $f->unparse_json();
         return $fmap;
     }
 
-    public function unparse_json($round_mask, $view_score_bound) {
+    function unparse_json($round_mask, $view_score_bound) {
         $fmap = array();
         foreach ($this->fmap as $f)
             if ($f->displayed
@@ -494,7 +492,7 @@ class ReviewForm {
         return $fmap;
     }
 
-    public function unparse_ratings_json() {
+    function unparse_ratings_json() {
         $rt = self::$rating_types;
         $rt["order"] = array_keys(self::$rating_types);
         return $rt;
@@ -1541,7 +1539,7 @@ $blind\n";
         return $x;
     }
 
-    public function set_can_view_ratings($prow, $rrows, $contact) {
+    function set_can_view_ratings($prow, $rrows, $contact) {
         $my_rrow = null;
         foreach ($rrows as $rrow)
             if (!isset($rrow->allRatings) || $rrow->allRatings === "")
