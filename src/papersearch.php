@@ -775,13 +775,13 @@ class PaperSearch {
         "au" => "au", "author" => "au",
         "co" => "co", "collab" => "co", "collaborators" => "co",
         "r" => "re", "re" => "re", "rev" => "re", "review" => "re",
-        "cre" => "cre", "crev" => "cre", "creview" => "cre",
-        "ire" => "ire", "irev" => "ire", "ireview" => "ire",
-        "pre" => "pre", "prev" => "pre", "preview" => "pre",
+        "cre" => "cre", "crev" => "cre", "creview" => "cre", "complete-review" => "cre",
+        "ire" => "ire", "irev" => "ire", "ireview" => "ire", "incomplete-review" => "ire",
+        "pre" => "pre", "prev" => "pre", "preview" => "pre", "partial-review" => "pre", "in-progress-review" => "pre",
         "sre" => "cre", "srev" => "cre", "sreview" => "cre", // deprecated
         "subre" => "cre", "subrev" => "cre", "subreview" => "cre", // deprecated
         "pri" => "pri", "primary" => "pri",
-        "prire" => "pri", "prirev" => "pri", "prireview" => "pri",
+        "prire" => "pri", "prirev" => "pri", "prireview" => "pri", "primary-review" => "pri",
         "cpri" => "cpri", "cprimary" => "cpri",
         "cprire" => "cpri", "cprirev" => "cpri", "cprireview" => "cpri",
         "ipri" => "ipri", "iprimary" => "ipri",
@@ -789,7 +789,7 @@ class PaperSearch {
         "ppri" => "ppri", "pprimary" => "ppri",
         "pprire" => "ppri", "pprirev" => "ppri", "pprireview" => "ppri",
         "sec" => "sec", "secondary" => "sec",
-        "secre" => "sec", "secrev" => "sec", "secreview" => "sec",
+        "secre" => "sec", "secrev" => "sec", "secreview" => "sec", "secondary-review" => "sec",
         "csec" => "csec", "csecondary" => "csec",
         "csecre" => "csec", "csecrev" => "csec", "csecreview" => "csec",
         "isec" => "isec", "isecondary" => "isec",
@@ -797,7 +797,7 @@ class PaperSearch {
         "psec" => "psec", "psecondary" => "psec",
         "psecre" => "psec", "psecrev" => "psec", "psecreview" => "psec",
         "ext" => "ext", "external" => "ext",
-        "extre" => "ext", "extrev" => "ext", "extreview" => "ext",
+        "extre" => "ext", "extrev" => "ext", "extreview" => "ext", "external-review" => "ext",
         "cext" => "cext", "cexternal" => "cext",
         "cextre" => "cext", "cextrev" => "cext", "cextreview" => "cext",
         "iext" => "iext", "iexternal" => "iext",
@@ -1694,25 +1694,20 @@ class PaperSearch {
             $this->_search_reviewer(">0", $lword, $qt);
         else if ($lword === "lead")
             $qt[] = new SearchTerm("pf", self::F_XVIEW, array("leadContactId", "!=0"));
-        else if ($lword === "shep" || $lword === "shepherd")
+        else if ($lword === "shepherd")
             $qt[] = new SearchTerm("pf", self::F_XVIEW, array("shepherdContactId", "!=0"));
-        else if ($lword === "dec" || $lword === "decision")
+        else if ($lword === "decision")
             $this->_search_status("yes", $qt, false, false);
         else if ($lword === "approvable")
             $this->_search_reviewer("approvable>0", "ext", $qt);
         else if (preg_match('/\A[\w-]+\z/', $lword) && $this->_search_options("$lword:yes", $qt, false))
             /* OK */;
         else {
-            $x = array("“paper”", "“final”", "“abstract”", "“comment”", "“aucomment”", "“re”", "“extre”");
-            foreach ($this->conf->resp_round_list() as $i => $rname) {
-                if (!in_array("“response”", $x))
-                    array_push($x, "“response”", "“draftresponse”");
-                if ($i)
-                    $x[] = "“{$rname}response”";
-            }
-            foreach ($this->conf->paper_opts->option_json_list() as $o)
-                array_push($x, "“" . htmlspecialchars($o->abbr) . "”");
-            $this->warn("Unknown “has:” search. I understand " . commajoin($x) . ".");
+            $has = [];
+            foreach ($this->search_completion("has") as $h)
+                if (str_starts_with($h, "has:"))
+                    $has[] = "“" . htmlspecialchars($h) . "”";
+            $this->warn("Unknown “has:” search. I understand " . commajoin($has) . ".");
             $qt[] = new SearchTerm("f");
         }
     }
@@ -3692,7 +3687,7 @@ class PaperSearch {
         if ($this->amPC || $this->user->can_view_some_decision())
             $res[] = "has:shepherd";
         if ($this->user->can_view_some_review())
-            array_push($res, "has:re", "has:cre", "has:ire", "has:pre", "has:comment", "has:aucomment");
+            array_push($res, "has:review", "has:creview", "has:ireview", "has:preview", "has:external", "has:comment", "has:aucomment");
         if ($this->user->is_reviewer())
             array_push($res, "has:primary", "has:secondary", "has:external");
         if ($this->amPC && $this->conf->setting("extrev_approve") && $this->conf->setting("pcrev_editdelegate")

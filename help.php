@@ -290,7 +290,7 @@ function searchQuickref() {
                 $oabbr = array();
                 foreach ($Conf->paper_opts->option_list() as $ox)
                     if ($ox !== $oex[1])
-                        $oabbr[] = "“has:" . htmlspecialchars($ox->abbr) . "”";
+                        $oabbr[] = "“has:" . htmlspecialchars($ox->search_keyword()) . "”";
                 if (count($oabbr))
                     $desc .= '<div class="hint">Other option ' . pluralx(count($oabbr), "search") . ': ' . commajoin($oabbr) . '</div>';
             } else if ($extype === "yes")

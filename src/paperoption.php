@@ -451,6 +451,10 @@ class PaperOption {
             return 50000 + $this->position;
     }
 
+    function search_keyword() {
+        return $this->abbr;
+    }
+
     function has_selector() {
         return false;
     }
@@ -515,12 +519,13 @@ class PaperOption {
     }
 
     function example_searches() {
-        return ["has" => ["has:$this->abbr", $this],
-                "yes" => ["{$this->abbr}:yes", $this]];
+        return ["has" => ["has:{$this->search_keyword()}", $this],
+                "yes" => ["{$this->search_keyword()}:yes", $this]];
     }
 
     function add_search_completion(&$res) {
-        array_push($res, "has:{$this->abbr}", "opt:{$this->abbr}");
+        array_push($res, "has:{$this->search_keyword()}",
+                   "opt:{$this->search_keyword()}");
     }
 
     static function load_optdata(PaperInfo $prow) {
@@ -685,9 +690,9 @@ class SelectorPaperOption extends PaperOption {
         $x = parent::example_searches();
         if (count($this->selector) > 1) {
             if (preg_match('/\A\w+\z/', $this->selector[1]))
-                $x["selector"] = array("{$this->abbr}:" . strtolower($this->selector[1]), $this);
+                $x["selector"] = array("{$this->search_keyword()}:" . strtolower($this->selector[1]), $this);
             else if (!strpos($this->selector[1], "\""))
-                $x["selector"] = array("{$this->abbr}:\"{$this->selector[1]}\"", $this);
+                $x["selector"] = array("{$this->search_keyword()}:\"{$this->selector[1]}\"", $this);
         }
         return $x;
     }
@@ -876,7 +881,7 @@ class NumericPaperOption extends PaperOption {
 
     function example_searches() {
         $x = parent::example_searches();
-        $x["numeric"] = array("{$this->abbr}:>100", $this);
+        $x["numeric"] = array("{$this->search_keyword()}:>100", $this);
         return $x;
     }
 
@@ -1031,8 +1036,8 @@ class AttachmentsPaperOption extends PaperOption {
 
     function example_searches() {
         $x = parent::example_searches();
-        $x["attachment-count"] = array("{$this->abbr}:>2", $this);
-        $x["attachment-filename"] = array("{$this->abbr}:*.gif", $this);
+        $x["attachment-count"] = array("{$this->search_keyword()}:>2", $this);
+        $x["attachment-filename"] = array("{$this->search_keyword()}:*.gif", $this);
         return $x;
     }
 
