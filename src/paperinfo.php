@@ -4,8 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperContactInfo {
-    public $contactId;
     public $paperId; // not always set
+    public $contactId;
     public $conflict_type = 0;
     public $review_type = 0;
     public $review_submitted = 0;
@@ -19,6 +19,8 @@ class PaperContactInfo {
     }
 
     private function merge() {
+        if (isset($this->paperId))
+            $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
         $this->conflict_type = (int) $this->conflict_type;
         $this->review_type = (int) $this->review_type;
@@ -43,7 +45,7 @@ class PaperContactInfo {
                 reviewNeedsSubmit as review_needs_submit,
                 PaperReview.contactId as review_token_cid";
         if (self::$list_rows && !$rev_tokens) {
-            $result = $conf->qe_raw("$q, $cid contactId, Paper.paperId paperId
+            $result = $conf->qe_raw("$q, Paper.paperId paperId, $cid contactId
                 from Paper
                 left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$cid)
                 left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$cid)
@@ -67,7 +69,7 @@ class PaperContactInfo {
                          && ($Me->privChair || $Me->contactId == $prow->managerContactId)))
             && ($pcm = $conf->pc_members()) && isset($pcm[$cid])) {
             $cids = array_keys($pcm);
-            $result = $conf->qe_raw("$q, ContactInfo.contactId
+            $result = $conf->qe_raw("$q, $pid paperId, ContactInfo.contactId
                 from (select $pid paperId) P
                 join ContactInfo
                 left join PaperReview on (PaperReview.paperId=$pid and PaperReview.contactId=ContactInfo.contactId)
@@ -76,7 +78,7 @@ class PaperContactInfo {
         } else {
             $cids = [$cid];
             if ($cid) {
-                $q = "$q, $cid contactId
+                $q = "$q, $pid paperId, $cid contactId
                 from (select $pid paperId) P
                 left join PaperReview on (PaperReview.paperId=P.paperId and (PaperReview.contactId=$cid";
                 if ($rev_tokens)
@@ -95,8 +97,9 @@ class PaperContactInfo {
                 $cmap[$cid] = new PaperContactInfo($cid);
     }
 
-    static function load_my($object, $cid) {
-        $ci = new PaperContactInfo;
+    static function load_my(PaperInfo $prow, $object, $cid) {
+        $ci = new PaperContactInfo($cid);
+        $ci->paperId = $prow->paperId;
         if (property_exists($object, "conflictType"))
             $ci->conflict_type = (int) $object->conflictType;
         if (property_exists($object, "myReviewType"))
@@ -250,8 +253,7 @@ class PaperInfo {
         }
         if (!array_key_exists($cid, $this->_contact_info)) {
             if (!$rev_tokens && property_exists($this, "allReviewNeedsSubmit")) {
-                $ci = new PaperContactInfo;
-                $ci->contactId = $cid;
+                $ci = new PaperContactInfo($cid);
                 $ci->paperId = $this->paperId;
                 if (($c = get($this->conflicts(), $cid)))
                     $ci->conflict_type = $c->conflictType;
@@ -275,7 +277,7 @@ class PaperInfo {
     }
 
     function assign_contact_info($row, $cid) {
-        $this->_contact_info[$cid] = PaperContactInfo::load_my($row, $cid);
+        $this->_contact_info[$cid] = PaperContactInfo::load_my($this, $row, $cid);
     }
 
 
