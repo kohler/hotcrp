@@ -709,10 +709,13 @@ papers. To set this up:</p>
 <ul>
 <li>Give PC-paper review committee members the “pcrc” tag.</li>
 <li>Give PC papers the “pcrc” tag.</li>
-<li>On Settings &gt; Tracks, add a track for tag “pcrc”.
-  For all permissions, select “PC members with tag: pcrc”.</li>
-<li>For papers not on other tracks, for all permissions, select
-  “PC members without tag: pcrc”.</li>
+<li>On Settings &gt; Tracks, add a track for tag “pcrc” and
+  select “Who can see these papers? &gt; PC members with tag: pcrc”.
+  (Users who can’t see a paper also can’t review it,
+  so there’s no need to explicitly set the other permissions.)</li>
+<li>For papers not on other tracks, select “Who can see these papers? &gt; PC
+  members without tag: pcrc”.</li>
+
 </ul>");
 
     _subhead("Example: Track chair", "
@@ -733,7 +736,7 @@ generally administer all papers on their tracks. Track chairs cannot modify
 site settings or change track tags, however.</p>");
 
     _subhead("Understanding permissions", "
-<p>Tracks only restrict permissions.
+<p>Tracks restrict permissions.
 For example, when
 the “PC members can review <strong>any</strong> submitted paper”
 setting is off, <em>no</em> PC member can enter an unassigned review,

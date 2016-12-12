@@ -68,9 +68,9 @@ class SettingRenderer_Tags extends SettingRenderer {
         if ($sv->conf->setting("pc_seeblindrev"))
             $hint = "Regardless of this setting, PC members can’t see reviewer names until they’ve completed a review for the same paper (<a href=\"" . hoturl("settings", "group=reviews") . "\">Settings &gt; Reviews &gt; Visibility</a>).";
         $this->do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
+        $this->do_track_permission($sv, "admin", "Who can administer these papers?", $tnum, $t);
         $this->do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
         $this->do_track_permission($sv, "unassrev", "Who can self-assign a review?", $tnum, $t);
-        $this->do_track_permission($sv, "admin", "Who can administer these papers?", $tnum, $t);
         if ($trackname === "_")
             $this->do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", $tnum, $t);
         echo "</table></div>\n\n";
