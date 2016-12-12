@@ -620,12 +620,13 @@ declare certain tags as <span class=\"badge normalbadge\">badges</span>, which
 display near titles.</p>
 
 <p><a href=\"http://www.emoji-cheat-sheet.com/\">Emoji codes</a> like “:fire:”
-and “:confused:” can be used as tags. Use <a href=\"#values\">tag values</a>
-to show multiple emoji.</p>
+and “:confused:” can be used as tags. The corresponding emoji displays next to
+the paper title. <a href=\"#values\">Tag values</a> show multiple emoji,
+so “#:star:#5” shows five stars.</p>
 
 <p>" . Ht::img("extagcolors.png", "[Tag colors, badges, and emoji]", ["width" => 498, "height" => 151]) . "</p></li>
 
-");
+", "colors");
 
     _subhead("Using tags", "
 <p>Here are some example ways to use tags.</p>
