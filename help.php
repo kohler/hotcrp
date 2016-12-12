@@ -29,7 +29,7 @@ HelpTopic::register("tags", "Tags", "How to use tags to define paper sets and di
 HelpTopic::register("tracks", "Tracks", "How tags can control PC access to papers.");
 HelpTopic::register("scoresort", "Sorting scores", "How scores are sorted in paper lists.");
 HelpTopic::register("revround", "Review rounds", "Review rounds are sets of reviews with different deadlines.");
-HelpTopic::register("revrate", "Review ratings", "Rating the quality of reviews.");
+HelpTopic::register("reviewratings", "Review ratings", "Rating the quality of reviews.");
 HelpTopic::register("votetags", "Voting", "PC members can vote for papers using tags.");
 HelpTopic::register("ranking", "Ranking", "PC members can rank papers using tags.");
 HelpTopic::register("formulas", "Formulas", "Create and display formulas in search orders.");
@@ -40,6 +40,8 @@ if (!isset($_REQUEST["t"])
 $topic = defval($_REQUEST, "t", "topics");
 if ($topic == "syntax")
     $topic = "keywords";
+if ($topic == "revrate")
+    $topic = "reviewratings";
 if (!isset(HelpTopic::$list[$topic]))
     $topic = "topics";
 
@@ -1505,7 +1507,7 @@ else if ($topic == "tracks")
     tracks();
 else if ($topic == "revround")
     revround();
-else if ($topic == "revrate")
+else if ($topic == "reviewratings")
     revrate();
 else if ($topic == "votetags")
     showvotetags();
