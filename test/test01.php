@@ -565,6 +565,59 @@ assert_search_papers($user_chair, "re:opt:mgbaker", "1 2 13 17");
 xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any:external"));
 assert_search_papers($user_chair, "re:opt:mgbaker", "1 2 13 17");
 
+// tracks and view-paper permissions
+AssignmentSet::run($user_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
+$Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+red\"}}");
+$Conf->save_setting("pc_seeallrev", 1);
+$Conf->save_setting("pc_seeblindrev", 0);
+$Conf->invalidate_caches(["tracks" => true]);
+xassert($user_jon->has_tag("red"));
+xassert(!$user_marina->has_tag("red"));
+
+$paper13 = $Conf->paperRow(13, $user_jon);
+xassert($paper13->has_tag("green"));
+xassert(!$paper13->has_author($user_jon));
+xassert(!$paper13->has_reviewer($user_jon));
+xassert(!$paper13->has_author($user_marina));
+xassert(!$paper13->has_reviewer($user_marina));
+
+xassert(!$user_jon->can_view_paper($paper13));
+xassert(!$user_jon->can_view_pdf($paper13));
+xassert(!$user_jon->can_view_review($paper13, null, null));
+xassert(!$user_jon->can_view_review_identity($paper13, null));
+xassert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper13));
+xassert(!$user_jon->can_accept_review_assignment($paper13));
+xassert(!$user_jon->can_review($paper13, null));
+xassert($user_marina->can_view_paper($paper13));
+xassert($user_marina->can_view_pdf($paper13));
+xassert($user_marina->can_view_review($paper13, null, null));
+xassert($user_marina->can_view_review_identity($paper13, null));
+xassert($user_marina->can_accept_review_assignment_ignore_conflict($paper13));
+xassert($user_marina->can_accept_review_assignment($paper13));
+xassert($user_marina->can_review($paper13, null));
+
+$paper14 = $Conf->paperRow(14, $user_jon);
+xassert(!$paper14->has_tag("green"));
+xassert(!$paper14->has_author($user_jon));
+xassert(!$paper14->has_reviewer($user_jon));
+xassert(!$paper14->has_author($user_marina));
+xassert(!$paper14->has_reviewer($user_marina));
+
+xassert($user_jon->can_view_paper($paper14));
+xassert($user_jon->can_view_pdf($paper14));
+xassert($user_jon->can_view_review($paper14, null, null));
+xassert($user_jon->can_view_review_identity($paper14, null));
+xassert($user_jon->can_accept_review_assignment_ignore_conflict($paper14));
+xassert($user_jon->can_accept_review_assignment($paper14));
+xassert($user_jon->can_review($paper14, null));
+xassert(!$user_marina->can_view_paper($paper14));
+xassert(!$user_marina->can_view_pdf($paper14));
+xassert(!$user_marina->can_view_review($paper14, null, null));
+xassert(!$user_marina->can_view_review_identity($paper14, null));
+xassert(!$user_marina->can_accept_review_assignment_ignore_conflict($paper14));
+xassert(!$user_marina->can_accept_review_assignment($paper14));
+xassert(!$user_marina->can_review($paper14, null));
+
 $Conf->check_invariants();
 
 xassert_exit();
