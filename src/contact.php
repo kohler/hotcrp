@@ -1686,7 +1686,8 @@ class Contact {
             // check PC tracking
             $tracks = $this->conf->has_tracks();
             $isPC = $this->isPC
-                && (!$tracks || $ci->review_type >= REVIEW_PC
+                && (!$tracks
+                    || $ci->review_type >= REVIEW_PC
                     || $this->conf->check_tracks($prow, $this, Track::VIEW));
 
             // check whether PC privileges apply

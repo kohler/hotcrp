@@ -243,11 +243,14 @@ xassert($user_wilma->can_view_review($paper1, $review2, false));
 // set up some tags and tracks
 AssignmentSet::run($user_chair, "paper,tag\n3 9 13 17,green\n", true);
 $Conf->save_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
-$Conf->invalidate_caches(["taginfo" => true]);
-$paper17 = $Conf->paperRow(17, $user_jon);
-xassert(!$Conf->check_tracks($paper17, $user_jon, Track::ASSREV));
-xassert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper17));
-xassert(!$user_jon->can_accept_review_assignment($paper17));
+$Conf->invalidate_caches(["tracks" => true]);
+$paper13 = $Conf->paperRow(13, $user_jon);
+xassert(!$paper13->has_author($user_jon));
+xassert(!$paper13->has_reviewer($user_jon));
+xassert(!$Conf->check_tracks($paper13, $user_jon, Track::ASSREV));
+xassert($user_jon->can_view_paper($paper13));
+xassert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper13));
+xassert(!$user_jon->can_accept_review_assignment($paper13));
 
 // check shepherd search visibility
 $paper11 = $Conf->paperRow(11, $user_chair);

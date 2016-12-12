@@ -173,8 +173,7 @@ class Conf {
             && $this->invalidate_caches()) {
             $this->qe_raw("delete from Settings where name='frombackup' and value=" . $this->settings["frombackup"]);
             unset($this->settings["frombackup"]);
-        } else
-            $this->invalidate_caches(["rf" => true]);
+        }
 
         // update options
         if (isset($this->opt["ldapLogin"]) && !$this->opt["ldapLogin"])
@@ -1370,8 +1369,10 @@ class Conf {
             }
             if (!$caches || isset($caches["rf"]))
                 $this->_review_form_cache = $this->_defined_rounds = null;
-            if (!$caches || isset($caches["taginfo"]))
+            if (!$caches || isset($caches["taginfo"]) || isset($caches["tracks"]))
                 $this->_taginfo = null;
+            if (!$caches || isset($caches["tracks"]))
+                Contact::update_rights();
         }
     }
 
