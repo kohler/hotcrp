@@ -343,11 +343,11 @@ class PaperInfo {
         return $ci ? $ci->conflict_type : 0;
     }
 
-    function has_conflict($contact = null) {
+    function has_conflict($contact) {
         return $this->conflict_type($contact) > 0;
     }
 
-    function has_author($contact = null) {
+    function has_author($contact) {
         return $this->conflict_type($contact) >= CONFLICT_AUTHOR;
     }
 
@@ -355,7 +355,7 @@ class PaperInfo {
         return $this->conf->can_all_author_view_decision();
     }
 
-    function review_type($contact = null) {
+    function review_type($contact) {
         $cid = self::contact_to_cid($contact);
         if ($this->_contact_info_rights_version === Contact::$rights_version
             && array_key_exists($cid, $this->_contact_info)) {
@@ -368,7 +368,7 @@ class PaperInfo {
         return get($this->all_review_types(), $cid);
     }
 
-    function has_review($contact = null) {
+    function has_reviewer($contact) {
         return $this->review_type($contact) > 0;
     }
 

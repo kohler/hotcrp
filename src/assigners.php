@@ -553,7 +553,7 @@ class ReviewAssigner extends Assigner {
     }
     function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
         // Conflict allowed if we're not going to assign a new review
-        return $this->rtype == 0 || $prow->has_review($contact)
+        return $this->rtype == 0 || $prow->has_reviewer($contact)
             || (($rdata = ReviewAssigner_Data::make($req, $state, $this->rtype))
                 && !$rdata->creator());
     }
