@@ -996,6 +996,12 @@ class TagAssigner extends Assigner {
         }
 
         // tag parsing; see also PaperSearch::_check_tag
+        $isadd = $this->isadd;
+        if ($tag[0] === "-" && $isadd) {
+            $isadd = false;
+            $tag = substr($tag, 1);
+        } else if ($tag[0] === "+" && $isadd)
+            $tag = substr($tag, 1);
         if ($tag[0] === "#")
             $tag = substr($tag, 1);
         $m = array(null, "", "", "", "");
@@ -1017,7 +1023,7 @@ class TagAssigner extends Assigner {
             return false;
 
         // add and remove use different paths
-        $isadd = $this->isadd && $m[4] !== "none" && $m[4] !== "clear";
+        $isadd = $isadd && $m[4] !== "none" && $m[4] !== "clear";
         if ($isadd && strpos($tag, "*") !== false)
             return "Tag wildcards aren’t allowed when adding tags.";
         if (!$isadd)
