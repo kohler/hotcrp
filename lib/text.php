@@ -45,10 +45,13 @@ class Text {
     static private $boolkeys = array("withMiddle" => true,
                                      "lastFirst" => true,
                                      "nameAmbiguous" => true);
-    static private $boring_words = array("a" => true, "an" => true, "as" => true,
-                                         "by" => true, "in" => true, "on" => true,
-                                         "the" => true, "through" => true,
-                                         "with" => true, "is" => true);
+    static private $boring_words = [
+        "a" => true, "an" => true, "as" => true, "be" => true,
+        "by" => true, "did" => true, "do" => true, "for" => true,
+        "in" => true, "is" => true, "of" => true, "on" => true,
+        "the" => true, "this" => true, "through" => true, "to" => true,
+        "with" => true
+    ];
 
     static function analyze_von($lastName) {
         // see also split_name
@@ -290,12 +293,12 @@ class Text {
             return [$last, ""];
     }
 
-    public static function unaccented_name(/* ... */) {
+    static function unaccented_name(/* ... */) {
         $x = self::analyze_name_args(func_get_args());
         return $x->unaccentedName;
     }
 
-    public static function word_regex($word) {
+    static function word_regex($word) {
         if ($word === "")
             return "";
         list($aw, $zw) = array(ctype_alnum($word[0]),
@@ -307,7 +310,7 @@ class Text {
 
     const UTF8_INITIAL_NONLETTER = '(?:\A|(?!\pL|\pN)\X)';
 
-    public static function utf8_word_regex($word) {
+    static function utf8_word_regex($word) {
         if ($word === "")
             return "";
         list($aw, $zw) = array(preg_match('{\A(?:\pL|\pN)}u', $word),
@@ -317,7 +320,7 @@ class Text {
             . ($zw ? '(?:\z|(?!\pL|\pN)(?=\PM))' : '');
     }
 
-    public static function highlight($text, $match, &$n = null) {
+    static function highlight($text, $match, &$n = null) {
         $n = 0;
         if ($match === null || $match === false || $match === "" || $text == "")
             return htmlspecialchars($text);
@@ -376,7 +379,7 @@ class Text {
     const SEARCH_UNPRIVILEGE_EXACT = 2;
     const SEARCH_ONLY_EXACT = 4;
 
-    public static function simple_search($needle, $haystacks, $flags = 0) {
+    static function simple_search($needle, $haystacks, $flags = 0) {
         $reflags = $flags & self::SEARCH_CASE_SENSITIVE ? "" : "i";
         $rewords = array();
         foreach (preg_split('/[^A-Za-z_0-9*]+/', $needle) as $word)
@@ -397,11 +400,11 @@ class Text {
         return $matches;
     }
 
-    public static function is_boring_word($word) {
+    static function is_boring_word($word) {
         return isset(self::$boring_words[strtolower($word)]);
     }
 
-    public static function single_line_paragraphs($text) {
+    static function single_line_paragraphs($text) {
         preg_match_all('/.*?(?:\r\n?|\n|\z)/', $text, $m);
         $out = "";
         $last = false;
