@@ -1773,7 +1773,7 @@ function hiliter_children(form) {
     jQuery(form).on("change input", "input, select, textarea", hiliter);
 }
 
-function focus_within(elt, subfocus_selector, seltype) {
+function focus_within(elt, subfocus_selector) {
     var $wf = $(elt).find(".want-focus");
     if (subfocus_selector)
         $wf = $wf.filter(subfocus_selector);
@@ -1897,7 +1897,7 @@ function crpfocus(id, subfocus, seltype) {
     if (selt && subfocus)
         selt.className = selt.className.replace(/links[0-9]*/, 'links' + subfocus);
 
-    focus_within(selt, subfocus ? ".lld" + subfocus + " *, .tld" + subfocus + " *" : false, seltype);
+    focus_within(selt, subfocus ? ".lld" + subfocus + " *, .tld" + subfocus + " *" : false);
 
     if (window.event)
         window.event.returnValue = false;
