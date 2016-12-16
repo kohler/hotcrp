@@ -249,7 +249,7 @@ function parseBulkFile($text, $filename) {
     if (!is_valid_utf8($text))
         $text = windows_1252_to_utf8($text);
     $filename = $filename ? "$filename:" : "line ";
-    $success = array();
+    $success = $errors = array();
 
     if (!preg_match('/\A[^\r\n]*(?:,|\A)(?:user|email)(?:[,\r\n]|\z)/', $text)
         && !preg_match('/\A[^\r\n]*,[^\r\n]*,/', $text)) {
@@ -265,13 +265,33 @@ function parseBulkFile($text, $filename) {
 
     $csv = new CsvParser($text);
     $csv->set_comment_chars("#%");
-    $line = $csv->next();
-    if ($line && (array_search("email", $line) !== false
-                  || array_search("user", $line) !== false))
-        $csv->set_header($line);
-    else {
-        $csv->set_header(array("user"));
-        $csv->unshift($line);
+    if (($line = $csv->next())) {
+        $lcline = array_map(function ($a) { return strtolower(trim($a)); }, $line);
+        if (array_search("email", $lcline) !== false
+            || array_search("user", $lcline) !== false)
+            $csv->set_header($lcline);
+        else if (count($line) == 1) {
+            $csv->set_header(["user"]);
+            $csv->unshift($line);
+        } else {
+            // interpolate a likely header
+            $lcline = [];
+            for ($i = 0; $i < count($line); ++$i)
+                if (validate_email($line[$i]) && array_search("email", $lcline) === false)
+                    $lcline[] = "email";
+                else if (strpos($line[$i], " ") !== false && array_search("name", $lcline) === false)
+                    $lcline[] = "name";
+                else if (array_search($line[$i], ["pc", "chair"]) !== false && array_search("roles", $lcline) === false)
+                    $lcline[] = "roles";
+                else if (array_search("name", $lcline) !== false && array_search("affiliation", $lcline) === false)
+                    $lcline[] = "affiliation";
+                else
+                    $lcline[] = "unknown";
+            $csv->set_header($lcline);
+            $csv->unshift($line);
+            $errors[] = "<span class='lineno'>" . $filename . $csv->lineno() . ":</span> Header missing, assuming “<code>" . join(",", $lcline) . "</code>”";
+        }
+
     }
 
     $cj_template = (object) array();
@@ -279,7 +299,6 @@ function parseBulkFile($text, $filename) {
     foreach ($Conf->topic_map() as $id => $name)
         $topic_revmap[strtolower($name)] = $id;
     $unknown_topics = array();
-    $errors = array();
 
     $ignore_empty = array_flip(["firstname", "first", "firstName",
             "lastname", "last", "lastName", "fullname", "fullName", "name",
@@ -899,7 +918,7 @@ if ($newProfile) {
 
     echo '<div>', Ht::submit("bulkregister", "Save accounts"), '</div>';
 
-    echo "<p>Enter or upload CSV user data, including a header to explain your format. For example:</p>\n",
+    echo "<p>Enter or upload CSV user data with header. For example:</p>\n",
         '<pre class="entryexample">
 name,email,affiliation,roles
 John Adams,john@earbox.org,UC Berkeley,pc
