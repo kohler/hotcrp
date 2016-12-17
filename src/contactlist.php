@@ -814,7 +814,7 @@ class ContactList {
         if ($this->contact->privChair) {
             $l = SessionList::create("u/" . $listname, $ids, $listtitle ? : "Users",
                                      hoturl_site_relative_raw("users", ["t" => $listname]));
-            $x .= " has-hotlist\" data-hotlist-info=\"" . htmlspecialchars($l->info_string());
+            $x .= " has-hotlist\" data-hotlist=\"" . htmlspecialchars($l->info_string());
         }
         return $x . "\">" . $body . "</tbody></table>";
     }

@@ -1420,7 +1420,7 @@ class PaperList {
             if (isset($this->qreq->sort))
                 $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);
             $listobject->url = $url;
-            $enter .= '" data-hotlist-info="' . htmlspecialchars($listobject->info_string());
+            $enter .= '" data-hotlist="' . htmlspecialchars($listobject->info_string());
         }
         $enter .= "\" data-fold=\"true\">\n";
         $exit = "</table>";

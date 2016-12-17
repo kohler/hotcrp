@@ -458,8 +458,6 @@ class SessionList {
     }
     static function clear_cookie() {
         global $Now;
-        if (isset($_COOKIE["hotcrp_ls"]))
-            setcookie("hotcrp_ls", "", $Now - 86400, Navigation::site_path());
         if (isset($_COOKIE["hotlist-info"]))
             setcookie("hotlist-info", "", $Now - 86400, Navigation::site_path());
     }
@@ -472,14 +470,14 @@ class SessionList {
             && ($list = self::decode_info_string($_COOKIE["hotlist-info"])))
             return (self::$requested_list = $list);
 
-        // look up list ID
-        $listdesc = req("ls");
-        if (isset($_COOKIE["hotcrp_ls"]))
-            $listdesc = $listdesc ? : $_COOKIE["hotcrp_ls"];
-
         // look up list description
         $list = null;
-        if (!$list && $listdesc) {
+        $listdesc = req("ls");
+        if (!$listdesc && isset($_COOKIE["hotlist-info"]))
+            $listdesc = $_COOKIE["hotlist-info"];
+        else if (!$listdesc && isset($_COOKIE["hotcrp_ls"]))
+            $listdesc = $_COOKIE["hotcrp_ls"];
+        if ($listdesc) {
             $listtype = "p";
             if (Navigation::page() === "profile" || Navigation::page() === "users")
                 $listtype = "u";

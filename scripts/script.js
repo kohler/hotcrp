@@ -1488,10 +1488,8 @@ function display_tracker() {
         else
             mne.className = mytracker ? "active" : "match";
         tt = '<div class="trackerholder';
-        if (dl.tracker && dl.tracker.listinfo)
-            tt += ' has-hotlist" data-hotlist-info="' + escape_entities(dl.tracker.listinfo);
-        else if (dl.tracker && dl.tracker.listid)
-            tt += ' has-hotlist" data-hotlist="' + dl.tracker.listid;
+        if (dl.tracker && (dl.tracker.listinfo || dl.tracker.listid))
+            tt += ' has-hotlist" data-hotlist="' + escape_entities(dl.tracker.listinfo || dl.tracker.listid);
         mne.innerHTML = tt + '">' + t + '</div>';
         $(mne).find(".need-tooltip").each(add_tooltip);
         if (tracker_has_format)
@@ -5205,14 +5203,12 @@ $(function () {
 
 // list management, conflict management
 (function ($) {
-function set_cookie(ls, info) {
+function set_cookie(info) {
     var p = "", m;
     if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
         p = "; path=" + m[1];
     if (info)
         document.cookie = "hotlist-info=" + encodeURIComponent(info) + "; max-age=2" + p;
-    else if (ls && ls !== "0")
-        document.cookie = "hotcrp_ls=" + ls + "; max-age=2" + p;
     set_cookie = function () {};
 }
 function is_listable(href) {
@@ -5224,11 +5220,11 @@ function add_list() {
     if (href && href.substring(0, siteurl.length) === siteurl
         && is_listable(href)
         && ($hl = $self.closest(".has-hotlist")).length)
-        set_cookie($hl.attr("data-hotlist"), $hl.attr("data-hotlist-info"));
+        set_cookie($hl.attr("data-hotlist") || $hl.attr("data-hotlist-info"));
     return true;
 }
 function unload_list() {
-    hotcrp_list && set_cookie(hotcrp_list.num, hotcrp_list.info);
+    hotcrp_list && set_cookie(hotcrp_list.info);
 }
 function row_click(e) {
     var j = $(e.target);

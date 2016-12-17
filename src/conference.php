@@ -2695,7 +2695,7 @@ class Conf {
         if ($ispaper || $id === "account")
             $list = SessionList::active();
         if ($list)
-            echo ' class="', ($ispaper ? "paper " : ""), 'has-hotlist" data-hotlist-info="',
+            echo ' class="', ($ispaper ? "paper " : ""), 'has-hotlist" data-hotlist="',
                 htmlspecialchars($list->info_string()), '"';
         else if ($ispaper)
             echo ' class="paper"';
