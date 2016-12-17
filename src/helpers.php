@@ -81,9 +81,11 @@ function hoturl_site_relative($page, $options = null) {
     if ($options && is_array($options)) {
         $x = "";
         foreach ($options as $k => $v)
-            if ($v !== null && $k !== "anchor")
+            if ($v === null || $v === false)
+                /* skip */;
+            else if ($k !== "anchor")
                 $x .= ($x === "" ? "" : "&amp;") . $k . "=" . urlencode($v);
-            else if ($v !== null)
+            else
                 $anchor = "#" . urlencode($v);
         $options = $x;
     } else if (preg_match('/\A(.*?)(#.*)\z/', $options, $m))
@@ -147,13 +149,14 @@ function hoturl($page, $options = null) {
     $t = hoturl_site_relative($page, $options);
     if ($page !== "index")
         return $siteurl . $t;
-    $trail = substr($t, 5 + strlen(Navigation::php_suffix()));
-    if (@$trail[0] === "/")
+    $expectslash = 5 + strlen(Navigation::php_suffix());
+    if (strlen($t) < $expectslash
+        || substr($t, 0, $expectslash) !== "index" . Navigation::php_suffix()
+        || (strlen($t) > $expectslash && $t[$expectslash] === "/"))
         return $siteurl . $t;
-    else if ($siteurl !== "")
-        return $siteurl . $trail;
     else
-        return Navigation::site_path() . $trail;
+        return ($siteurl !== "" ? $siteurl : Navigation::site_path())
+            . substr($t, $expectslash);
 }
 
 function hoturl_post($page, $options = null) {
@@ -196,7 +199,7 @@ function hoturl_absolute_raw($page, $options = null) {
 }
 
 
-function fileUploaded(&$var) {
+function file_uploaded(&$var) {
     global $Conf;
     if (!isset($var) || ($var['error'] != UPLOAD_ERR_OK && !$Conf))
         return false;

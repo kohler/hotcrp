@@ -379,7 +379,7 @@ function parseBulkFile($text, $filename) {
 if (!check_post())
     /* do nothing */;
 else if (isset($_REQUEST["bulkregister"]) && $newProfile
-         && fileUploaded($_FILES["bulk"])) {
+         && file_uploaded($_FILES["bulk"])) {
     if (($text = file_get_contents($_FILES["bulk"]["tmp_name"])) === false)
         Conf::msg_error("Internal error: cannot read file.");
     else
@@ -652,7 +652,7 @@ if ($Me->privChair)
 
 echo '<div id="foldaccount" class="form foldc ',
     ($pcrole == "no" ? "fold1c " : "fold1o "),
-    (fileUploaded($_FILES["bulk"]) ? "fold2o" : "fold2c"), '">';
+    (file_uploaded($_FILES["bulk"]) ? "fold2o" : "fold2c"), '">';
 
 if ($newProfile)
     echo_modes(1);

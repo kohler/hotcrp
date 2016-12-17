@@ -23,7 +23,7 @@ if (isset($_REQUEST["downloadForm"])) {
 
 // upload review form action
 if (isset($_REQUEST["uploadForm"])
-    && fileUploaded($_FILES["uploadedFile"])
+    && file_uploaded($_FILES["uploadedFile"])
     && check_post()) {
     $tf = $rf->beginTextForm($_FILES["uploadedFile"]["tmp_name"],
                              $_FILES["uploadedFile"]["name"]);
@@ -69,7 +69,7 @@ function saveTagIndexes($tag, $filename, &$settings, &$titles, &$linenos, &$erro
 function setTagIndexes() {
     global $Conf, $Me, $Error;
     $filename = null;
-    if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["file"])) {
+    if (isset($_REQUEST["upload"]) && file_uploaded($_FILES["file"])) {
         if (($text = file_get_contents($_FILES["file"]["tmp_name"])) === false) {
             Conf::msg_error("Internal error: cannot read file.");
             return;

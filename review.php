@@ -69,7 +69,7 @@ loadRows();
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->post_missing_msg();
 else if (isset($_REQUEST["post"]) && isset($_REQUEST["default"])) {
-    if (fileUploaded($_FILES["uploadedFile"]))
+    if (file_uploaded($_FILES["uploadedFile"]))
         $_REQUEST["uploadForm"] = $_GET["uploadForm"] = $_POST["uploadForm"] = 1;
     else
         $_REQUEST["update"] = $_GET["update"] = $_POST["update"] = 1;
@@ -83,7 +83,7 @@ else if (isset($_REQUEST["savedraft"])) {
 
 // upload review form action
 if (isset($_REQUEST["uploadForm"])
-    && fileUploaded($_FILES['uploadedFile'])
+    && file_uploaded($_FILES['uploadedFile'])
     && check_post()) {
     // parse form, store reviews
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);

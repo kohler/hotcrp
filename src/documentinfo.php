@@ -87,7 +87,7 @@ class DocumentInfo implements JsonSerializable {
     static public function make_file_upload($paperId, $documentType, $upload) {
         if (is_string($upload) && $upload)
             $upload = $_FILES[$upload];
-        if (!$upload || !is_array($upload) || !fileUploaded($upload)
+        if (!$upload || !is_array($upload) || !file_uploaded($upload)
             || !isset($upload["tmp_name"]))
             return null;
         $args = ["paperId" => $paperId,

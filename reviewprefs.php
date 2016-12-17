@@ -209,7 +209,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     else if (count($new_qreq) > 0)
         savePreferences($new_qreq, true);
 }
-if ($Qreq->fn === "uploadpref" && fileUploaded($_FILES["uploadedFile"])
+if ($Qreq->fn === "uploadpref" && file_uploaded($_FILES["uploadedFile"])
     && check_post())
     parseUploadedPreferences($_FILES["uploadedFile"]["tmp_name"], $_FILES["uploadedFile"]["name"], $reviewer);
 else if ($Qreq->fn === "uploadpref")

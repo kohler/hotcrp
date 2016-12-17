@@ -114,11 +114,11 @@ if (isset($_POST["bulkentry"]) && trim($_POST["bulkentry"]) === "Enter assignmen
     unset($_POST["bulkentry"]);
 if (isset($_GET["upload"]) && check_post()
     && ((isset($_POST["bulkentry"]) && $_POST["bulkentry"])
-        || fileUploaded($_FILES["bulk"]))) {
+        || file_uploaded($_FILES["bulk"]))) {
     flush();
     while (@ob_end_flush())
         /* do nothing */;
-    if (fileUploaded($_FILES["bulk"])) {
+    if (file_uploaded($_FILES["bulk"])) {
         $text = file_get_contents($_FILES["bulk"]["tmp_name"]);
         $filename = $_FILES["bulk"]["name"];
     } else {
