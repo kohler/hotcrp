@@ -1146,16 +1146,6 @@ class Conf {
             unset($_SESSION[$this->dsn][$name]);
     }
 
-    function save_session_array($name, $index, $value) {
-        if (!isset($_SESSION[$this->dsn][$name])
-            || !is_array($_SESSION[$this->dsn][$name]))
-            $_SESSION[$this->dsn][$name] = array();
-        if ($index !== true)
-            $_SESSION[$this->dsn][$name][$index] = $value;
-        else
-            $_SESSION[$this->dsn][$name][] = $value;
-    }
-
     function capability_text($prow, $capType) {
         // A capability has the following representation (. is concatenation):
         //    capFormat . paperId . capType . hashPrefix
@@ -2466,7 +2456,7 @@ class Conf {
                 fwrite(STDOUT, "$text\n");
         } else if ($this->save_messages) {
             ensure_session();
-            $this->save_session_array("msgs", true, array($type, $text));
+            $_SESSION[$this->dsn]["msgs"][] = [$type, $text];
         } else if ($type[0] == "x")
             echo Ht::xmsg($type, $text);
         else
