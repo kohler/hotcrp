@@ -272,8 +272,6 @@ class MeetingTracker {
         $xlist = null;
         if ($qreq["hotlist-info"])
             $xlist = SessionList::decode_info_string($qreq["hotlist-info"]);
-        else if (count($args) >= 2) // XXX backwards compatibility
-            $xlist = SessionList::lookup($args[1]);
         if ($xlist && str_starts_with($xlist->listid, "p/")) {
             $position = false;
             if (count($args) >= 3 && ctype_digit($args[2]))

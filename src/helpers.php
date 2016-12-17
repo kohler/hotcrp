@@ -364,7 +364,6 @@ class SessionList {
     public $description;
     public $url;
     public $timestamp;
-    public $listno = 0;
     static private $active_listid = null;
     static private $active_list = null;
     static private $requested_list = false;
@@ -413,24 +412,9 @@ class SessionList {
     function info_string() {
         $j = ["ids" => self::encode_ids($this->ids)];
         foreach (get_object_vars($this) as $k => $v)
-            if ($k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "listno" && $k !== "id_position")
+            if ($k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "id_position")
                 $j[$k] = $v;
         return json_encode($j);
-    }
-    static function lookup($idx) {
-        global $Conf, $Me;
-        $lists = $Conf->session("l", array());
-        $l = get($lists, $idx);
-        if ($l && $l->cid == ($Me ? $Me->contactId : 0)) {
-            $lx = new SessionList;
-            foreach ($l as $k => $v)
-                $lx->$k = $v;
-            if (is_string($lx->ids))
-                $lx->ids = self::decode_ids($lx->ids);
-            $lx->listno = (int) $idx;
-            return $lx;
-        } else
-            return null;
     }
     static function create($listid, $ids, $description, $url) {
         global $Me, $Now;
@@ -470,8 +454,6 @@ class SessionList {
     }
     function set_cookie() {
         global $Now;
-        if ($this->listno)
-            setcookie("hotcrp_ls", $this->listno, $Now + 2, Navigation::site_path());
         setcookie("hotlist-info", $this->info_string(), $Now + 2, Navigation::site_path());
     }
     static function clear_cookie() {
@@ -495,13 +477,8 @@ class SessionList {
         if (isset($_COOKIE["hotcrp_ls"]))
             $listdesc = $listdesc ? : $_COOKIE["hotcrp_ls"];
 
-        $list = null;
-        if (($listno = cvtint($listdesc, null))
-            && ($xlist = self::lookup($listno))
-            && (!get($xlist, "cid") || $xlist->cid == ($Me ? $Me->contactId : 0)))
-            $list = $xlist;
-
         // look up list description
+        $list = null;
         if (!$list && $listdesc) {
             $listtype = "p";
             if (Navigation::page() === "profile" || Navigation::page() === "users")
