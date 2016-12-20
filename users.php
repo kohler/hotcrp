@@ -179,9 +179,9 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
 // modifications
 function modify_confirm($j, $ok_message, $ok_message_optional) {
     global $Conf;
-    if (@$j->ok && @$j->warnings)
+    if (get($j, "ok") && get($j, "warnings"))
         $Conf->warnMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $j->warnings) . "</div>");
-    if (@$j->ok && $ok_message && (!$ok_message_optional || !@$j->warnings))
+    if (get($j, "ok") && $ok_message && (!$ok_message_optional || !get($j, "warnings")))
         $Conf->confirmMsg($ok_message);
 }
 
