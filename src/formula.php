@@ -96,6 +96,15 @@ class Fexpr {
             return null;
     }
 
+    function typecheck_arguments(Conf $conf) {
+        foreach ($this->args as $a)
+            if ($a instanceof Fexpr && ($x = $a->typecheck($conf)))
+                return $x;
+        if ($this->format_ === false)
+            $this->format_ = $this->typecheck_format();
+        return false;
+    }
+
     function typecheck(Conf $conf) {
         // comparison operators help us resolve
         if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠)\z,', $this->op)
@@ -106,11 +115,13 @@ class Fexpr {
             if ($a1 instanceof ConstantFexpr)
                 $a1->typecheck_neighbor($conf, $a0);
         }
-        foreach ($this->args as $a)
-            if ($a instanceof Fexpr && ($x = $a->typecheck($conf)))
-                return $x;
-        if ($this->format_ === false)
-            $this->format_ = $this->typecheck_format();
+        if (($x = $this->typecheck_arguments($conf)))
+            return $x;
+        if (preg_match(',\A(?:[<>][<>=]?|≤|≥|\*\*|[-+*/%&^|]|greatest|least|log|sqrt|exp|round|floor|ceil)\z,', $this->op)) {
+            foreach ($this->args as $a)
+                if ($a->format_ === self::FREVIEWER)
+                    return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+        }
         return false;
     }
 
@@ -328,6 +339,20 @@ class AggregateFexpr extends Fexpr {
             return $this->args[0]->format();
         else
             return null;
+    }
+
+    function typecheck(Conf $conf) {
+        if (($x = $this->typecheck_arguments($conf)))
+            return $x;
+        if ($this->op !== "argmin" && $this->op !== "argmax"
+            && $this->args[0] instanceof Fexpr
+            && $this->args[0]->format() === self::FREVIEWER)
+            return new Fexpr_Error($this->args[0], "reviewers can’t be used in math expressions");
+        if (count($this->args) > 1
+            && $this->args[1] instanceof Fexpr
+            && $this->args[1]->format() === self::FREVIEWER)
+            return new Fexpr_Error($this->args[1], "reviewers can’t be used in math expressions");
+        return false;
     }
 
     static function quantile($a, $p) {
