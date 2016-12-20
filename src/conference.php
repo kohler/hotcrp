@@ -65,6 +65,8 @@ class Conf {
     private $_track_review_sensitivity = false;
     private $_track_admin_sensitivity = false;
     private $_decisions = null;
+    private $_topic_map = null;
+    private $_topic_order_map = null;
     private $_topic_separator_cache = null;
     private $_pc_members_cache = null;
     private $_pc_tags_cache = null;
@@ -648,40 +650,34 @@ class Conf {
 
 
     function topic_map() {
-        $x = get($this->settingTexts, "topic_map");
-        if (!$x) {
+        if ($this->_topic_map === null) {
+            $this->_topic_map = $tx = [];
             $result = $this->qe_raw("select topicId, topicName from TopicArea order by topicName");
-            $to = $tx = array();
             while (($row = edb_row($result))) {
                 if (strcasecmp(substr($row[1], 0, 7), "none of") == 0)
                     $tx[(int) $row[0]] = $row[1];
                 else
-                    $to[(int) $row[0]] = $row[1];
+                    $this->_topic_map[(int) $row[0]] = $row[1];
             }
+            Dbl::free($result);
             foreach ($tx as $tid => $tname)
-                $to[$tid] = $tname;
-            $x = $this->settingTexts["topic_map"] = $to;
+                $this->_topic_map[$tid] = $tname;
         }
-        if (is_string($x))
-            $x = $this->settingTexts["topic_map"] = json_decode($x, true);
-        return is_array($x) ? $x : array();
+        return $this->_topic_map;
     }
 
     function topic_order_map() {
-        $x = get($this->settingTexts, "topic_order_map");
-        if (!$x) {
-            $to = array();
+        if ($this->_topic_order_map === null) {
+            $this->_topic_order_map = [];
             foreach ($this->topic_map() as $tid => $tname)
-                $to[$tid] = count($to);
-            $x = $this->settingTexts["topic_order_map"] = $to;
+                $this->_topic_order_map[$tid] = count($this->_topic_order_map);
         }
-        if (is_string($x))
-            $x = $this->settingTexts["topic_order_map"] = json_decode($x, true);
-        return is_array($x) ? $x : array();
+        return $this->_topic_order_map;
     }
 
     function has_topics() {
-        return count($this->topic_map()) != 0;
+        $this->topic_map();
+        return !empty($this->_topic_map);
     }
 
     function topic_count() {
@@ -701,8 +697,7 @@ class Conf {
     }
 
     function invalidate_topics() {
-        unset($this->settingTexts["topic_map"]);
-        unset($this->settingTexts["topic_order_map"]);
+        $this->_topic_map = $this->_topic_order_map = null;
         $this->_topic_separator_cache = null;
     }
 
