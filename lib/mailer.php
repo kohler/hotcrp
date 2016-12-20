@@ -370,13 +370,14 @@ class Mailer {
             else if (preg_match('/^%(?:REVIEWS|COMMENTS)(?:[(].*[)])?%$/', $line)) {
                 if (($m = $this->expandvar($line, false)) != "")
                     $text .= $m . "\n";
-            } else if (preg_match('/^([ \t][ \t]*.*?: )(%OPT\([\w()]+\)%)$/', $line, $m)) {
-
+            } else if (preg_match('/^([ \t][ \t]*.*?: )(%OPT\([\w()]+\)%)$/', $line, $m)
+                       && tabLength($m[1], true) <= 20) {
                 if (($yes = $this->expandvar($m[2], true)))
                     $text .= prefix_word_wrap($m[1], $this->expandvar($m[2]), tabLength($m[1], true), $width);
                 else if ($yes === null)
                     $text .= $line . "\n";
-            } else if (preg_match('/^([ \t][ \t]*.*?: )(%\w+(?:|\([^\)]*\))%|\S+)\s*$/', $line, $m))
+            } else if (preg_match('/^([ \t][ \t]*.*?: )(%\w+(?:|\([^\)]*\))%|\S+)\s*$/', $line, $m)
+                       && tabLength($m[1], true) <= 20)
                 $text .= $this->_lineexpand($m[2], $m[1], tabLength($m[1], true), $width);
             else if (strpos($line, '%') !== false)
                 $text .= $this->_lineexpand($line, "", 0, $width);
