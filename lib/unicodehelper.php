@@ -190,14 +190,15 @@ class UnicodeHelper {
     }
 
     static function utf8_word_prefix($str, $len, &$rest = null) {
-        if (strlen($str) <= $len) {
+        if (strlen($str) > $len
+            && (preg_match('/\A(\X{0,' . ($len - 1) . '}(?!\pZ|\s)\X)((?:\pZ|\s)+[\s\S]*)\z/u', $str, $m)
+                || preg_match('/\A(\X{0,' . $len . '}(?:(?!\pZ|\s)\X)*)([\s\S]*)\z/u', $str, $m))) {
+            $rest = $m[2];
+            return $m[1];
+        } else {
             $rest = "";
             return $str;
         }
-        if (!preg_match('/\A(\X{0,' . ($len - 1) . '}(?!\pZ|\s)\X)((?:\pZ|\s)+[\s\S]*)\z/u', $str, $m))
-            preg_match('/\A(\X{0,' . $len . '}(?:(?!\pZ|\s)\X)*)([\s\S]*)\z/u', $str, $m);
-        $rest = $m[2];
-        return $m[1];
     }
 
     static function utf8_line_break(&$str, $len) {
