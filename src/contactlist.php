@@ -104,9 +104,7 @@ class ContactList {
     }
 
     function _sortBase($a, $b) {
-        $x = strcasecmp($a->lastName, $b->lastName);
-        $x = $x ? $x : strcasecmp($a->firstName, $b->firstName);
-        return $x ? $x : strcasecmp($a->email, $b->email);
+        return strcasecmp($a->sorter, $b->sorter);
     }
 
     function _sortEmail($a, $b) {
@@ -115,28 +113,30 @@ class ContactList {
 
     function _sortAffiliation($a, $b) {
         $x = strcasecmp($a->affiliation, $b->affiliation);
-        return $x ? $x : self::_sortBase($a, $b);
+        return $x ? $x : $this->_sortBase($a, $b);
     }
 
     function _sortLastVisit($a, $b) {
-        $x = $b->lastLogin - $a->lastLogin;
-        return $x ? $x : self::_sortBase($a, $b);
+        if ($a->activity_at != $b->activity_at)
+            return $a->activity_at < $b->activity_at ? 1 : -1;
+        else
+            return $this->_sortBase($a, $b);
     }
 
     function _sortReviews($a, $b) {
         $x = $b->numReviewsSubmitted - $a->numReviewsSubmitted;
         $x = $x ? $x : $b->numReviews - $a->numReviews;
-        return $x ? $x : self::_sortBase($a, $b);
+        return $x ? $x : $this->_sortBase($a, $b);
     }
 
     function _sortLeads($a, $b) {
         $x = $b->numLeads - $a->numLeads;
-        return $x ? $x : self::_sortBase($a, $b);
+        return $x ? $x : $this->_sortBase($a, $b);
     }
 
     function _sortShepherds($a, $b) {
         $x = $b->numShepherds - $a->numShepherds;
-        return $x ? $x : self::_sortBase($a, $b);
+        return $x ? $x : $this->_sortBase($a, $b);
     }
 
     function _sortReviewRatings($a, $b) {
@@ -145,24 +145,29 @@ class ContactList {
             return ($a->sumRatings > $b->sumRatings ? -1 : 1);
         if ((int) $a->numRatings != (int) $b->numRatings)
             return ($a->numRatings > $b->numRatings ? 1 : -1);
-        return self::_sortBase($a, $b);
+        return $this->_sortBase($a, $b);
     }
 
     function _sortPapers($a, $b) {
+        if (!$a->paperIds != !$b->paperIds)
+            return $a->paperIds ? -1 : 1;
         $x = (int) $a->paperIds - (int) $b->paperIds;
         $x = $x ? $x : strcmp($a->paperIds, $b->paperIds);
-        return $x ? $x : self::_sortBase($a, $b);
+        return $x ? $x : $this->_sortBase($a, $b);
     }
 
     function _sortScores($a, $b) {
         $x = $b->_sort_info - $a->_sort_info;
         $x = $x ? : $b->_sort_avg - $a->_sort_avg;
-        return $x ? ($x < 0 ? -1 : 1) : self::_sortBase($a, $b);
+        return $x ? ($x < 0 ? -1 : 1) : $this->_sortBase($a, $b);
     }
 
     function _sort($rows) {
         global $Conf;
         switch ($this->sortField) {
+        case self::FIELD_NAME:
+            usort($rows, [$this, "_sortBase"]);
+            break;
         case self::FIELD_EMAIL:
             usort($rows, array($this, "_sortEmail"));
             break;
@@ -198,7 +203,7 @@ class ContactList {
                     $scoresort = "A";
                 Contact::$allow_nonexistent_properties = true;
                 foreach ($rows as $row) {
-                    $scoreinfo = new ScoreInfo(@$row->$fieldId);
+                    $scoreinfo = new ScoreInfo(get($row, $fieldId));
                     $row->_sort_info = $scoreinfo->sort_data($scoresort);
                     $row->_sort_avg = $scoreinfo->mean();
                 }
@@ -259,7 +264,10 @@ class ContactList {
         global $Conf;
         switch ($fieldId) {
         case self::FIELD_NAME:
-            $t = Text::name_html($row);
+            if ($this->sortField == $fieldId && $Conf->sort_by_last)
+                $t = Text::name_html($row, NameInfo::make_last_first());
+            else
+                $t = Text::name_html($row);
             if (trim($t) == "")
                 $t = "[No name]";
             $t = '<span class="taghl">' . $t . '</span>';
@@ -490,9 +498,9 @@ class ContactList {
             ++$nlll;
             $t .= $barsep;
             $t .= "<span class=\"lll{$nlll}\"><a class=\"lla{$nlll}\" href=\"#\" onclick=\"return crpfocus('plact',{$nlll})\">Tag</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;";
-            $t .= Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), @$_REQUEST["tagtype"])
+            $t .= Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), req("tagtype"))
                 . ' &nbsp;tag(s) &nbsp;'
-                . Ht::entry("tag", @$_REQUEST["tag"], ["size" => 15, "class" => "want-focus", "onfocus" => "autosub('tagact',this)"])
+                . Ht::entry("tag", req("tag"), ["size" => 15, "class" => "want-focus", "onfocus" => "autosub('tagact',this)"])
                 . ' &nbsp;' . Ht::submit("tagact", "Go") . '</span>';
 
             ++$nlll;
@@ -614,8 +622,6 @@ class ContactList {
         if (count($mainwhere))
             $pq .= "\twhere " . join(" and ", $mainwhere) . "\n";
 
-        $pq .= " order by lastName, firstName, email";
-
         // make query
         $result = $Conf->qe_raw($pq);
         if (!$result)
@@ -656,7 +662,7 @@ class ContactList {
         foreach ($baseFieldId as $fid) {
             if ($this->selector($fid, $queryOptions) === false)
                 continue;
-            if (!($fieldDef[$fid] = @$contactListFields[$fid]))
+            if (!($fieldDef[$fid] = get($contactListFields, $fid)))
                 $fieldDef[$fid] = $contactListFields[self::FIELD_SCORE];
             $acceptable_fields[$fid] = true;
             if ($fieldDef[$fid][1] == 1)
@@ -669,8 +675,8 @@ class ContactList {
             return "No matching people";
 
         // sort rows
-        if (!get($acceptable_fields, $this->sortField))
-            $this->sortField = null;
+        if (!$this->sortField || !get($acceptable_fields, $this->sortField))
+            $this->sortField = self::FIELD_NAME;
         $srows = $this->_sort($rows);
 
         // count non-callout columns
@@ -755,7 +761,7 @@ class ContactList {
 
         $foldclasses = array();
         foreach (self::$folds as $k => $fold)
-            if (@$this->have_folds[$fold] !== null) {
+            if (get($this->have_folds, $fold) !== null) {
                 $this->have_folds[$fold] = strpos(displayOptionsSet("uldisplay"), " $fold ") !== false;
                 $foldclasses[] = "fold" . ($k + 1) . ($this->have_folds[$fold] ? "o" : "c");
             }
@@ -783,8 +789,6 @@ class ContactList {
                     }
                     $x .= "    <th class=\"pl pl_$fdef[0]\">";
                     $ftext = $this->header($fieldId, $ord++);
-                    if ($this->sortField == null && $fieldId == 1)
-                        $this->sortField = $fieldId;
                     if ($fieldId == $this->sortField)
                         $x .= '<a class="pl_sort_def' . ($this->reverseSort ? "_rev" : "") . '" rel="nofollow" href="' . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . '">' . $ftext . "</a>";
                     else if ($fdef[2])

@@ -118,6 +118,7 @@ class SiteLoader {
         "LoginHelper" => "lib/login.php",
         "MailPreparation" => "lib/mailer.php",
         "MimeText" => "lib/mailer.php",
+        "NameInfo" => "lib/text.php",
         "NumericOrderPaperColumn" => "src/papercolumn.php",
         "PaperOptionList" => "src/paperoption.php",
         "ReviewAssigner" => "src/assigners.php",

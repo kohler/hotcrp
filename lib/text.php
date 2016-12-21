@@ -14,6 +14,11 @@ class NameInfo {
     public $name = null;
     public $affiliation = null;
     public $unaccentedName = null;
+    static function make_last_first() {
+        $ni = new NameInfo;
+        $ni->lastFirst = true;
+        return $ni;
+    }
 }
 
 class Text {
