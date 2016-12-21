@@ -313,23 +313,35 @@ function expand_extent(e, is_y) {
 
 
 function make_axes(svg, xAxis, yAxis, args) {
-    var css = {"text-anchor": "end", "font-size": "smaller", "pointer-events": "none"};
+    function axisLabelStyles(x) {
+        x.style("text-anchor", "end")
+            .style("font-size", "smaller")
+            .style("pointer-events", "none");
+    }
 
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + args.height + ")")
-        .call(xAxis).call(args.x.axis_setup || function () {})
+        .call(xAxis)
+        .attr("font-size", null)
+        .attr("fill", null)
+        .call(args.x.axis_setup || function () {})
       .append("text")
         .attr("x", args.width).attr("y", 0).attr("dy", "-.5em")
-        .style(css).text(args.x.label || "");
+        .call(axisLabelStyles)
+        .text(args.x.label || "");
 
     svg.append("g")
         .attr("class", "y axis")
-        .call(yAxis).call(args.y.axis_setup || function () {})
+        .call(yAxis)
+        .attr("font-size", null)
+        .attr("fill", null)
+        .call(args.y.axis_setup || function () {})
       .append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", 6).attr("dy", ".71em")
-        .style(css).text(args.y.label || "");
+        .call(axisLabelStyles)
+        .text(args.y.label || "");
 
     args.x.ticks.rewrite.call(svg.select(".x.axis"), svg);
     args.y.ticks.rewrite.call(svg.select(".y.axis"), svg);
@@ -435,8 +447,8 @@ var hotcrp_graphs = {};
 function hotcrp_graphs_cdf(args) {
     args = make_args(args);
 
-    var x = d3.scale.linear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
-        y = d3.scale.linear().range([args.height, 0]);
+    var x = d3.scaleLinear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
+        y = d3.scaleLinear().range([args.height, 0]);
 
     var svg = d3.select(args.selector).append("svg")
         .attr("width", args.width + args.left + args.right)
@@ -474,11 +486,11 @@ function hotcrp_graphs_cdf(args) {
     }) * 10) / 10]);
 
     // axes
-    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    var xAxis = d3.axisBottom(x);
     args.x.ticks.ticks.call(xAxis, x.domain());
     args.x.tick_format && xAxis.tickFormat(args.x.tick_format);
-    var yAxis = d3.svg.axis().scale(y).orient("left");
-    var line = d3.svg.line().x(function (d) {return x(d[0]);})
+    var yAxis = d3.axisLeft(y);
+    var line = d3.line().x(function (d) {return x(d[0]);})
         .y(function (d) {return y(d[1]);});
 
     // CDF lines
@@ -503,7 +515,7 @@ function hotcrp_graphs_cdf(args) {
 
     svg.append("rect").attr("x", -args.left).attr("width", args.width + args.left)
         .attr("height", args.height + args.bottom)
-        .style({"fill": "none", "pointer-events": "all"})
+        .style("fill", "none").style("pointer-events", "all")
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
         .on("mouseout", mouseout);
 
@@ -593,12 +605,12 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
 /* grouped quadtree */
 // mark bounds of each node
 function grouped_quadtree_mark_bounds(q, rf, ordinalf) {
-    ordinalf = ordinalf || (function () { var m = 0; return function () { return ++m; }; })();
-    q.ordinal = ordinalf();
+    //ordinalf = ordinalf || (function () { var m = 0; return function () { return ++m; }; })();
+    //q.ordinal = ordinalf();
 
     var b, p, i, n, ps;
-    if (q.point) {
-        for (p = q.point, ps = []; p; p = p.next)
+    if (!q.length) {
+        for (p = q.data, ps = []; p; p = p.next)
             ps.push(p);
         ps.sort(function (a, b) { return d3.ascending(a.n, b.n); });
         for (i = n = 0; i < ps.length; ++i) {
@@ -606,21 +618,20 @@ function grouped_quadtree_mark_bounds(q, rf, ordinalf) {
             n += ps[i].n;
             ps[i].r = rf(n);
         }
-        p = q.point;
-        p.maxr = ps[ps.length - 1].r;
-        b = [p[1] - p.maxr, p[0] + p.maxr, p[1] + p.maxr, p[0] - p.maxr];
-    } else
+        q.maxr = ps[ps.length - 1].r;
+        p = q.data;
+        b = [p[1] - q.maxr, p[0] + q.maxr, p[1] + q.maxr, p[0] - q.maxr];
+    } else {
         b = [Infinity, -Infinity, -Infinity, Infinity];
-
-    for (i = 0; i < 4; ++i)
-        if ((p = q.nodes[i])) {
-            grouped_quadtree_mark_bounds(p, rf, ordinalf);
-            b[0] = Math.min(b[0], p.bounds[0]);
-            b[1] = Math.max(b[1], p.bounds[1]);
-            b[2] = Math.max(b[2], p.bounds[2]);
-            b[3] = Math.min(b[3], p.bounds[3]);
-        }
-
+        for (i = 0; i < 4; ++i)
+            if ((p = q[i])) {
+                grouped_quadtree_mark_bounds(p, rf, ordinalf);
+                b[0] = Math.min(b[0], p.bounds[0]);
+                b[1] = Math.max(b[1], p.bounds[1]);
+                b[2] = Math.max(b[2], p.bounds[2]);
+                b[3] = Math.min(b[3], p.bounds[3]);
+            }
+    }
     q.bounds = b;
 }
 
@@ -629,17 +640,17 @@ function grouped_quadtree_gfind(point, min_distance) {
     if (min_distance == null)
         min_distance = Infinity;
     function visitor(node) {
-        var p;
         if (node.bounds[0] > point[1] + min_distance
             || node.bounds[1] < point[0] - min_distance
             || node.bounds[2] < point[1] - min_distance
             || node.bounds[3] > point[0] + min_distance)
             return true;
-        if (!(p = node.point))
+        if (node.length)
             return;
+        var p = node.data;
         var dx = p[0] - point[0], dy = p[1] - point[1];
-        if (Math.abs(dx) - p.maxr < min_distance
-            || Math.abs(dy) - p.maxr < min_distance) {
+        if (Math.abs(dx) - node.maxr < min_distance
+            || Math.abs(dy) - node.maxr < min_distance) {
             var dd = Math.sqrt(dx * dx + dy * dy);
             for (; p; p = p.next) {
                 var d = Math.max(dd - p.r, 0);
@@ -658,14 +669,14 @@ function grouped_quadtree(data, xs, ys, rf) {
         return [[Math.min(xe[0], xe[1]), Math.min(ye[0], ye[1])],
                 [Math.max(xe[0], xe[1]), Math.max(ye[0], ye[1])]];
     }
-    var q = d3.geom.quadtree().extent(make_extent())([]);
+    var q = d3.quadtree().extent(make_extent());
 
     var d, nd = [], vp, vd, dx, dy;
     for (var i = 0; (d = data[i]); ++i) {
         if (d[0] == null || d[1] == null)
             continue;
         vd = [xs(d[0]), ys(d[1]), [d], d[3]];
-        if ((vp = q.find(vd))) {
+        if ((vp = q.find(vd[0], vd[1]))) {
             dx = Math.abs(vp[0] - vd[0]);
             dy = Math.abs(vp[1] - vd[1]);
             if (dx > 2 || dy > 2 || dx * dx + dy * dy > 4)
@@ -689,7 +700,7 @@ function grouped_quadtree(data, xs, ys, rf) {
         rf = (function (f) {
             return function (n) { return Math.sqrt(n) * f; };
         })(rf);
-    grouped_quadtree_mark_bounds(q, rf);
+    grouped_quadtree_mark_bounds(q.root(), rf);
 
     delete q.add;
     q.gfind = grouped_quadtree_gfind;
@@ -711,16 +722,16 @@ hotcrp_graphs.scatter = function (args) {
 
     var xe = d3.extent(data, proj0),
         ye = d3.extent(data, proj1),
-        x = d3.scale.linear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
-        y = d3.scale.linear().range(args.y.flip ? [0, args.height] : [args.height, 0]),
+        x = d3.scaleLinear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
+        y = d3.scaleLinear().range(args.y.flip ? [0, args.height] : [args.height, 0]),
         rf = function (d) { return d.r - 1; };
     axis_domain(x, args.x.extent, expand_extent(xe));
     axis_domain(y, args.y.extent, expand_extent(ye, true));
     data = grouped_quadtree(data, x, y, 4);
 
-    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    var xAxis = d3.axisBottom(x);
     args.x.ticks.ticks.call(xAxis, xe);
-    var yAxis = d3.svg.axis().scale(y).orient("left");
+    var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
@@ -729,7 +740,7 @@ hotcrp_graphs.scatter = function (args) {
       .append("g")
         .attr("transform", "translate(" + args.left + "," + args.top + ")");
 
-    var annulus = d3.svg.arc()
+    var annulus = d3.arc()
         .innerRadius(function (d) { return d.r0 ? d.r0 - 0.5 : 0; })
         .outerRadius(function (d) { return d.r - 0.5; })
         .startAngle(0)
@@ -755,7 +766,7 @@ hotcrp_graphs.scatter = function (args) {
 
     svg.append("rect").attr("x", -args.left).attr("width", args.width + args.left)
         .attr("height", args.height + args.bottom)
-        .style({"fill": "none", "pointer-events": "all"})
+        .style("fill", "none").style("pointer-events", "all")
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
         .on("mouseout", mouseout).on("click", mouseclick);
 
@@ -848,8 +859,8 @@ hotcrp_graphs.barchart = function (args) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
         }),
-        x = d3.scale.linear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
-        y = d3.scale.linear().range(args.y.flip ? [0, args.height] : [args.height, 0]);
+        x = d3.scaleLinear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
+        y = d3.scaleLinear().range(args.y.flip ? [0, args.height] : [args.height, 0]);
     axis_domain(x, args.x.extent, expand_extent(xe));
     axis_domain(y, args.y.extent, ye);
 
@@ -862,9 +873,9 @@ hotcrp_graphs.barchart = function (args) {
         barwidth = Math.floor((barwidth - 3) * dpr) / (dpr * (ge[1] + 1));
     var gdelta = -(ge[1] + 1) * barwidth / 2;
 
-    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    var xAxis = d3.axisBottom(x);
     args.x.ticks.ticks.call(xAxis, xe);
-    var yAxis = d3.svg.axis().scale(y).orient("left");
+    var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
@@ -981,8 +992,8 @@ hotcrp_graphs.boxplot = function (args) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
         }),
-        x = d3.scale.linear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
-        y = d3.scale.linear().range(args.y.flip ? [0, args.height] : [args.height, 0]);
+        x = d3.scaleLinear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
+        y = d3.scaleLinear().range(args.y.flip ? [0, args.height] : [args.height, 0]);
     axis_domain(x, args.x.extent, expand_extent(xe));
     axis_domain(y, args.y.extent, expand_extent(ye, true));
 
@@ -990,9 +1001,9 @@ hotcrp_graphs.boxplot = function (args) {
     if (deltae[0] != Infinity)
         barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])) * 0.5), 6);
 
-    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    var xAxis = d3.axisBottom(x);
     args.x.ticks.ticks.call(xAxis, xe);
-    var yAxis = d3.svg.axis().scale(y).orient("left");
+    var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
@@ -1186,19 +1197,19 @@ hotcrp_graphs.option_letter_ticks = function (n, c, sv) {
         if (c)
             this.ticks(count);
     }
-    function rewrite(axis) {
-        $(this[0]).find("g.tick text").each(function () {
-            var $self = $(this);
-            $self.css({fill: info.rgb($self.text())});
+    function rewrite() {
+        this.selectAll("g.tick text").each(function () {
+            var d = d3.select(this), value = d.text();
+            d.style("fill", info.rgb(value));
             if (c)
-                $self.text(info.unparse($self.text(), split));
+                d.text(info.unparse(value, split));
         });
     };
     return { ticks: format, rewrite: rewrite, unparse_html: info.unparse_html };
 };
 
 function get_max_tick_width(axis) {
-    return d3.max($(axis[0]).find("g.tick text").map(function () {
+    return d3.max($(axis.selectAll("g.tick text").nodes()).map(function () {
         if (this.getBoundingClientRect) {
             var r = this.getBoundingClientRect();
             return r.right - r.left;
@@ -1208,7 +1219,7 @@ function get_max_tick_width(axis) {
 }
 
 function get_sample_tick_height(axis) {
-    return d3.quantile($(axis[0]).find("g.tick text").map(function () {
+    return d3.quantile($(axis.selectAll("g.tick text").nodes()).map(function () {
         if (this.getBoundingClientRect) {
             var r = this.getBoundingClientRect();
             return r.bottom - r.top;
@@ -1245,7 +1256,7 @@ hotcrp_graphs.named_integer_ticks = function (map) {
 
         var max_width = get_max_tick_width(this);
         if (max_width > 100) { // shrink font
-            $(this[0]).find("g.tick text").css("font-size", "smaller");
+            this.selectAll("g.tick text").style("font-size", "smaller");
             max_width = get_max_tick_width(this);
         }
         var example_height = get_sample_tick_height(this);
@@ -1274,7 +1285,7 @@ hotcrp_graphs.named_integer_ticks = function (map) {
                 .attr("transform", "rotate(-65)");
             max_width = max_width * Math.sin(1.13446) + 20; // 65 degrees in radians
             if (max_width > BOTTOM_MARGIN && this.classed("x")) {
-                var container = $(this[0]).closest("svg");
+                var container = $(this.node()).closest("svg");
                 container.attr("height", +container.attr("height") + (max_width - BOTTOM_MARGIN));
             }
         }
