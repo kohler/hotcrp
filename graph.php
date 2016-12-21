@@ -30,7 +30,7 @@ if (!$Graph || !isset($Graphs[$Graph]))
 // Header and body
 $Conf->header("Graphs", "graphbody", actionBar());
 echo Ht::unstash();
-echo $Conf->make_script_file("scripts/d3.min.js", true);
+echo $Conf->make_script_file("scripts/d3-hotcrp.min.js", true);
 echo $Conf->make_script_file("scripts/graph.js");
 
 function echo_graph() {

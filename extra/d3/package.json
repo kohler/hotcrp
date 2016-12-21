@@ -1,0 +1,19 @@
+{
+  "name": "d3-hotcrp",
+  "version": "0.0.1",
+  "scripts": {
+    "prepublish": "rollup -c && uglifyjs d3.js -c -m -o d3-hotcrp.min.js"
+  },
+  "devDependencies": {
+    "d3-selection": "1",
+    "d3-axis": "1",
+    "d3-quadtree": "1",
+    "d3-array": "1",
+    "d3-scale": "1",
+    "d3-collection": "1",
+    "d3-shape": "1",
+    "rollup": "0.36",
+    "rollup-plugin-node-resolve": "2",
+    "uglify-js": "2"
+  }
+}
