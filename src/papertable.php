@@ -1716,7 +1716,7 @@ class PaperTable {
             }
             // pay attention only to the deadline
             if ($whyNot && (get($whyNot, "deadline") || get($whyNot, "rejected")))
-                $whyNot = array("deadline" => get($whyNot, "deadline"), "rejected" => get($whyNot, "rejected"));
+                $whyNot = array_merge($prow ? $prow->initial_whynot() : [], ["deadline" => get($whyNot, "deadline"), "rejected" => get($whyNot, "rejected")]);
             else
                 $whyNot = null;
             // produce button
