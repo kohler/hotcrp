@@ -120,7 +120,7 @@ class HotCRPDocument extends Filer {
     }
 
     function s3_store(DocumentInfo $doc, $trust_sha1 = false) {
-        if (!isset($doc->content) && !$this->load_content($doc))
+        if (!isset($doc->content) && !$this->load_to_memory($doc))
             return false;
         if (!$trust_sha1 && Filer::binary_sha1($doc) !== sha1($doc->content, true)) {
             error_log("S3 upload cancelled: data claims checksum " . Filer::text_sha1($doc)

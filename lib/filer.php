@@ -382,6 +382,14 @@ class Filer {
         }
         return true;
     }
+    function load_to_memory(DocumentInfo $doc) {
+        if (!$this->load($doc))
+            return false;
+        if (isset($doc->filestore) && !isset($doc->content)
+            && ($content = @file_get_contents($doc->filestore)) !== false)
+            $doc->content = $content;
+        return isset($doc->content);
+    }
     function store(DocumentInfo $doc) {
         // load content (if unloaded)
         // XXX loading enormous documents into memory...?
