@@ -700,7 +700,8 @@ function grouped_quadtree(data, xs, ys, rf) {
         rf = (function (f) {
             return function (n) { return Math.sqrt(n) * f; };
         })(rf);
-    grouped_quadtree_mark_bounds(q.root(), rf);
+    if (q.root())
+        grouped_quadtree_mark_bounds(q.root(), rf);
 
     delete q.add;
     q.gfind = grouped_quadtree_gfind;
