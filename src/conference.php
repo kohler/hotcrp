@@ -3055,7 +3055,7 @@ class Conf {
         }
         json_exit(["ok" => false, "error" => "Internal error."]);
     }
-    function _add_json($fj) {
+    function _add_api_json($fj) {
         if (is_string($fj->fn) && !isset($this->_api_map[$fj->fn])
             && isset($fj->callback)) {
             $this->_api_map[$fj->fn] = $fj;
@@ -3083,7 +3083,7 @@ class Conf {
             "whoami" => "1PaperApi::whoami_api"
         ];
         if (($olist = $this->opt("apiFunctions")))
-            expand_json_includes_callback($olist, [$this, "_add_json"]);
+            expand_json_includes_callback($olist, [$this, "_add_api_json"]);
     }
     function has_api($fn) {
         if ($this->_api_map === null)
