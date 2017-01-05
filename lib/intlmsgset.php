@@ -44,12 +44,12 @@ class IntlMsgSet {
 
     function add($m, $ctx = null) {
         if (is_string($m))
-            return $this->addj(func_get_args(), null);
+            return $this->addj(func_get_args(), null, null);
         else
-            return $this->addj($m, $ctx);
+            return $this->addj($m, null, $ctx);
     }
 
-    function addj($m, $ctx = null) {
+    function addj($m, $defaults = null, $ctx = null) {
         if (is_associative_array($m))
             $m = (object) $m;
         if (is_object($m) && isset($m->members) && is_array($m->members)) {
@@ -60,6 +60,8 @@ class IntlMsgSet {
             return true;
         }
         $im = new IntlMsg;
+        if ($defaults && isset($defaults["priority"]))
+            $im->priority = (float) $defaults["priority"];
         if (is_array($m)) {
             $i = 0;
             $n = count($m);
@@ -101,10 +103,6 @@ class IntlMsgSet {
         $im->next = get($this->ims, $itext);
         $this->ims[$itext] = $im;
         return true;
-    }
-
-    function _addj_callback($m) {
-        return $this->addj($m);
     }
 
     function set($name, $value) {
