@@ -110,9 +110,10 @@ function log_jserror(errormsg, error, noconsole) {
         errormsg.colno = error.columnNumber;
     if (error && error.stack)
         errormsg.stack = error.stack;
-    $.ajax(hoturl("api", "fn=jserror"), {
-        global: false, method: "POST", cache: false, data: errormsg
-    });
+    if (errormsg.lineno == null || errormsg.lineno > 1)
+        $.ajax(hoturl("api", "fn=jserror"), {
+            global: false, method: "POST", cache: false, data: errormsg
+        });
     if (error && !noconsole && typeof console === "object" && console.error)
         console.error(errormsg.error);
 }
