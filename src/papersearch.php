@@ -1493,7 +1493,7 @@ class PaperSearch {
             if (count($ret) == 0)
                 $this->warn("“" . htmlspecialchars($c) . "” doesn’t match a PC email.");
             $tagword = substr($tagword, $twiddle);
-        } else if ($twiddle === 0 && ($tagword === "" || $tagword[1] !== "~"))
+        } else if ($twiddle === 0 && ($tagword === "~" || $tagword[1] !== "~"))
             $ret[0] = $this->cid;
 
         $tagger = new Tagger($this->user);

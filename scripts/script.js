@@ -132,11 +132,11 @@ function log_jserror(errormsg, error, noconsole) {
 })();
 
 function jqxhr_error_message(jqxhr, status, errormsg) {
-    if (status == "parsererror")
+    if (status === "parsererror")
         return "Internal error: bad response from server.";
     else if (errormsg)
         return errormsg.toString();
-    else if (status == "timeout")
+    else if (status === "timeout")
         return "Connection timed out.";
     else if (status)
         return "Error [" + status + "].";
