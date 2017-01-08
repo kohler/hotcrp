@@ -394,15 +394,17 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     public $tokens = null;
     public $wordcountexpr = null;
 
-    function __construct($countexpr, $contacts = null) {
+    function __construct($countexpr = null, $contacts = null) {
         parent::__construct($countexpr, $contacts);
     }
-    function apply_review_type($word) {
+    function apply_review_type($word, $allow_pc = false) {
         if ($word === "pri" || $word === "primary")
             $this->review_type = REVIEW_PRIMARY;
         else if ($word === "sec" || $word === "secondary")
             $this->review_type = REVIEW_SECONDARY;
         else if ($word === "optional")
+            $this->review_type = REVIEW_PC;
+        else if ($allow_pc && ($word === "pc" || $word === "pcre" || $word === "pcrev"))
             $this->review_type = REVIEW_PC;
         else if ($word === "ext" || $word === "external")
             $this->review_type = REVIEW_EXTERNAL;
@@ -447,20 +449,6 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             return $name;
         } else
             return false;
-    }
-    static function parse_review_type($type) {
-        $type = strtolower($type);
-        if ($type === "pri" || $type === "primary")
-            return REVIEW_PRIMARY;
-        else if ($type === "sec" || $type === "secondary")
-            return REVIEW_SECONDARY;
-        else if ($type === "ext" || $type === "external")
-            return REVIEW_EXTERNAL;
-        else if ($type === "pc" || $type === "pcre" || $type === "pcrev"
-                 || $type === "optional")
-            return REVIEW_PC;
-        else
-            return 0;
     }
 }
 

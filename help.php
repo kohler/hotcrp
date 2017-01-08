@@ -1114,8 +1114,13 @@ scores A, B, and D is A. For instance:</p>
     _alternateRow("", "null", "The null value");
     _alternateRow("Tags", "#<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
     _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");
-    _alternateRow("Submitted reviews", "overall-merit", "This review’s Overall merit score");
-    _alternateRow("", "OveMer", "Abbreviations are also accepted");
+    _alternateRow("Scores", "overall-merit", "This review’s Overall merit score<div class=\"hint\">Only completed reviews are considered.</div>");
+    _alternateRow("", "OveMer", "Abbreviations also accepted");
+    _alternateRow("", "OveMer:external", "Overall merit for external reviews, null for other reviews");
+    _alternateRow("", "OveMer:R2", "Overall merit for round R2 reviews, null for other reviews");
+    _alternateRow("Submitted reviews", "re:type", "Review type");
+    _alternateRow("", "re:round", "Review round");
+    _alternateRow("", "re:auwords", "Review word count (author-visible fields only)");
     _alternateRow("", "re:primary", "True for primary reviews");
     _alternateRow("", "re:secondary", "True for secondary reviews");
     _alternateRow("", "re:external", "True for external reviews");
@@ -1123,9 +1128,6 @@ scores A, B, and D is A. For instance:</p>
     _alternateRow("", "re:sylvia", "True if reviewer matches “sylvia”");
     if (($retag = meaningful_pc_tag()))
         _alternateRow("", "re:#$retag", "True if reviewer has tag “#{$retag}”");
-    _alternateRow("", "re:round", "Review round");
-    _alternateRow("", "re:type", "Review type");
-    _alternateRow("", "re:auwords", "Review word count (author-visible fields only)");
     _alternateRow("Review preferences", "pref", "Review preference");
     _alternateRow("", "prefexp", "Predicted expertise");
     echo "</table>\n";

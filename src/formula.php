@@ -239,7 +239,18 @@ class ConstantFexpr extends Fexpr {
     function is_null() {
         return $this->x === "null";
     }
+    private function _check_revtype() {
+        $rsm = new ReviewSearchMatcher;
+        if ($rsm->apply_review_type($this->x, true)) {
+            $this->x = $rsm->review_type;
+            return true;
+        } else
+            return false;
+    }
     function typecheck(Conf $conf) {
+        if ($this->format_ === self::FREVTYPE && is_string($this->x)
+            && !$this->_check_revtype())
+            return new Fexpr_Error($this, "unknown review type “" . htmlspecialchars($this->x) . "”");
         if ($this->format_ !== false)
             return false;
         return new Fexpr_Error($this, "undefined name “" . htmlspecialchars($this->x) . "”");
@@ -261,9 +272,8 @@ class ConstantFexpr extends Fexpr {
                  && (($round = $conf->round_number($this->x, false))
                      || $this->x === "unnamed"))
             $this->x = $round;
-        else if ($format === self::FREVTYPE
-                 && ($rt = ReviewSearchMatcher::parse_review_type($this->x)))
-            $this->x = $rt;
+        else if ($format === self::FREVTYPE && $this->_check_revtype())
+            /* OK */;
         else
             return;
         $this->format_ = $format;
@@ -1135,7 +1145,7 @@ class Formula {
             return array($t, "", $t);
     }
 
-    const ARGUMENT_REGEX = '((?:"[^"]*"|[-#a-zA-Z0-9_.@+!*\/?~]|:(?=\S))+)';
+    const ARGUMENT_REGEX = '((?:"[^"]*"|[-#a-zA-Z0-9_.@!*?~]+|:(?="|[-#a-zA-Z0-9_.@+!*\/?~]+(?![()])))+)';
 
     static private function field_search_fexpr($fval) {
         $fn = null;
@@ -1165,37 +1175,35 @@ class Formula {
             return null;
     }
 
-    private function _reviewer_decoration($e0, $ex) {
+    private function _reviewer_decoration($e0, &$ex) {
         $e1 = null;
-        $tailre = '(?:\z|:)(.*)\z/s';
+        $rsm = new ReviewSearchMatcher;
         while ($ex !== "") {
-            if (preg_match('/\A(pri|primary|sec|secondary|ext|external|pc|pcre|pcrev)' . $tailre, $ex, $m)) {
-                $rt = ReviewSearchMatcher::parse_review_type($m[1]);
-                $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
-                $ee = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, Fexpr::FREVTYPE));
-                $ex = $m[2];
-            } else if (preg_match('/\A((?:|au)words|type|round|reviewer)' . $tailre, $ex, $m)) {
+            if (!preg_match('/\A:((?:"[^"]*(?:"|\z)|[-A-Za-z0-9_.#@]+(?!\s*\())+)(.*)/si', $ex, $m)
+                || preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1]))
+                break;
+            $ee = null;
+            if (preg_match('/\A(?:type|round|reviewer|words|auwords)\z/i', $m[1])) {
                 if ($e0)
-                    return null;
+                    break;
                 $e0 = $this->_reviewer_base($m[1]);
-                $ee = null;
-                $ex = $m[2];
-            } else if (preg_match('/\A([A-Za-z0-9]+)' . $tailre, $ex, $m)
-                       && (($round = $this->conf->round_number($m[1], false))
-                           || $m[1] === "unnamed")) {
-                $ee = new Fexpr("==", new ReviewRoundFexpr, new ConstantFexpr($round, Fexpr::FROUND));
-                $ex = $m[2];
-            } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $ex, $m)) {
-                if (($quoted = $m[1][0] === "\""))
-                    $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
+            } else if ($rsm->apply_review_type($m[1], true)) {
+                $op = strtolower($m[1][0]) === "p" ? ">=" : "==";
+                $ee = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rsm->review_type, Fexpr::FREVTYPE));
+            } else if ($rsm->apply_round($this->conf, $m[1]))
+                /* OK */;
+            else {
+                if (strpos($m[1], "\"") !== false)
+                    $m[1] = str_replace(["\"", "*"], ["", "\\*"], $m[1]);
                 $ee = new ReviewerMatchFexpr($this->conf, $m[1]);
-                $ex = $m[2];
-            } else {
-                $ee = ConstantFexpr::cfalse();
-                $ex = "";
             }
             if ($ee)
                 $e1 = $e1 ? new Fexpr("&&", $e1, $ee) : $ee;
+            $ex = $m[2];
+        }
+        if ($rsm->round) {
+            $ee = new InFexpr(new ReviewRoundFexpr, $rsm->round);
+            $e1 = $e1 ? new Fexpr("&&", $e1, $ee) : $ee;
         }
         if ($e0 && $e1)
             return new Fexpr("?:", $e1, $e0, ConstantFexpr::cnull());
@@ -1263,13 +1271,20 @@ class Formula {
         } else if (preg_match('/\A(?:pid|paperid)\b(.*)\z/si', $t, $m)) {
             $e = new PidFexpr;
             $t = $m[1];
-        } else if (preg_match('/\A(?:dec|decision):\s*' . self::ARGUMENT_REGEX . '(.*)\z/si', $t, $m)) {
+        } else if (preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(["outcome", PaperSearch::matching_decisions($this->conf, $m[1])]);
             $t = $m[2];
         } else if (preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {
             $e = new DecisionFexpr;
             $t = $m[1];
-        } else if (preg_match('/\A(?:is|status):\s*' . self::ARGUMENT_REGEX . '(.*)\z/si', $t, $m)) {
+        } else if (preg_match('/\A(?:is:?)?(rev?|pc(?:rev?)?)\b(.*)\z/is', $t,  $m)) {
+            $rt = strlower($m[1][0]) === "p" ? REVIEW_PC : 0;
+            $e = new Fexpr(">=", new RevtypeFexpr, new ConstantFexpr($rt, Fexpr::FREVTYPE));
+            $t = $m[2];
+        } else if (preg_match('/\A(?:is:?)?(pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?|optional)\b(.*)\z/is', $t, $m)) {
+            $e = new Fexpr("==", new RevtypeFexpr, new ConstantFexpr($m[1], Fexpr::FREVTYPE));
+            $t = $m[2];
+        } else if (preg_match('/\A(?:is|status):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($this->conf, $m[1]));
             $t = $m[2];
         } else if (preg_match('/\A(?:tag(?:\s*:\s*|\s+)|#)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
@@ -1280,10 +1295,10 @@ class Formula {
                    || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
             $e = new TagFexpr($m[1], true);
             $t = $m[2];
-        } else if (preg_match('/\A(r|re|rev|review|r(?:|e|ev|eview)type|(?:|r|re|rev|review)round|reviewer|r(?:|e|ev|eview)(?:|au)words)(?::|(?=#))\s*'. self::ARGUMENT_REGEX . '(.*)\z/is', $t, $m)) {
-            $e = $this->_reviewer_decoration($this->_reviewer_base($m[1]), $m[2]);
-            $t = $m[3];
-        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|(?:|au)words)|(?:round|reviewer))\b(.*)\z/is', $t, $m)) {
+        } else if (preg_match('/\A((?:r|re|rev|review)(?:|type|round|words|auwords)|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
+            $t = ":" . $m[2];
+            $e = $this->_reviewer_decoration($this->_reviewer_base($m[1]), $t);
+        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer)\b(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
         } else if (preg_match('/\A(my|all|any|avg|average|mean|median|quantile|count|min|max|atminof|atmaxof|argmin|argmax|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/is', $t, $m)) {
@@ -1297,11 +1312,6 @@ class Formula {
         } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
             $e = ConstantFexpr::cnull();
             $t = $m[1];
-        } else if (preg_match('/\A(?:is:?)?(rev?|pc(?:rev?)?|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?)\b(.*)\z/is', $t, $m)) {
-            $rt = ReviewSearchMatcher::parse_review_type($m[1]);
-            $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
-            $e = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, Fexpr::FREVTYPE));
-            $t = $m[2];
         } else if (preg_match('/\Atopicscore\b(.*)\z/is', $t, $m)) {
             $e = new TopicScoreFexpr;
             $t = $m[1];
@@ -1326,7 +1336,7 @@ class Formula {
                 $field = substr($field, 1, strlen($field) - 2);
             if (($f = $this->conf->review_field_search($field))
                 && $f->has_options)
-                $e = new ScoreFexpr($f);
+                $e = $this->_reviewer_decoration(new ScoreFexpr($f), $t);
             else if (!$quoted)
                 $e = new ConstantFexpr($field, false);
             else
