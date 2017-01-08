@@ -1327,20 +1327,30 @@ class Formula {
         } else if (preg_match('/\A(?:rev)?prefexp(?:ertise)?\b(.*)\z/is', $t, $m)) {
             $e = new PrefFexpr(true);
             $t = $m[1];
-        } else if (preg_match('/\A([A-Za-z0-9_]+|\".*?\")(.*)\z/s', $t, $m)
-                   && $m[1] !== "\"\""
-                   && !preg_match('/\A\s*\(/', $m[2])) {
+        } else if (preg_match('/\A([-A-Za-z0-9_.@]+|\".*?\")(?!\s*\()(.*)\z/s', $t, $m)
+                   && $m[1] !== "\"\"") {
             $field = $m[1];
-            $t = $m[2];
             if (($quoted = $field[0] === "\""))
                 $field = substr($field, 1, strlen($field) - 2);
-            if (($f = $this->conf->review_field_search($field))
-                && $f->has_options)
-                $e = $this->_reviewer_decoration(new ScoreFexpr($f), $t);
-            else if (!$quoted)
-                $e = new ConstantFexpr($field, false);
-            else
-                return null;
+            while (1) {
+                $f = $this->conf->review_field_search($field);
+                if ($f) {
+                    if (!$f->has_options)
+                        return null;
+                    $e = $this->_reviewer_decoration(new ScoreFexpr($f), $m[2]);
+                    break;
+                }
+                if ($quoted)
+                    return null;
+                $dash = strrpos($field, "-");
+                if ($dash === false || $dash === 0) {
+                    $e = new ConstantFexpr($field, false);
+                    break;
+                }
+                $m[2] = substr($field, $dash) . $m[2];
+                $field = substr($field, 0, $dash);
+            }
+            $t = $m[2];
         }
 
         if (!$e)
