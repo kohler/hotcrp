@@ -15,12 +15,17 @@ class CountMatcher {
     static public $oparray = array(false, "<", "=", "<=", ">", "!=", ">=", false);
 
     function __construct($countexpr) {
-        $this->_countexpr = $countexpr;
+        if ($countexpr && !$this->set_countexpr($countexpr))
+            error_log(caller_landmark() . ": bogus countexpr $countexpr");
+    }
+    function set_countexpr($countexpr) {
         if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*([-+]?(?:\.\d+|\d+\.?\d*))\z/', $countexpr, $m)) {
+            $this->_countexpr = $countexpr;
             $this->allowed = self::$opmap[$m[1]];
             $this->compar = (float) $m[2];
+            return true;
         } else
-            error_log(caller_landmark() . ": bogus countexpr $countexpr");
+            return false;
     }
     function test($n) {
         return self::compare($n, $this->allowed, $this->compar);

@@ -224,7 +224,7 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
         '</td><td class="helplist_dd">',
         $explanation,
         "</td></tr></tbody></table></div>\n";
-    $rowidx = @($rowidx + 1);
+    $rowidx = +$rowidx + 1;
 }
 
 function meaningful_pc_tag() {
@@ -325,10 +325,12 @@ function searchQuickref() {
             if ($cx === $c)
                 $cm[] = "“{$t->tag}”";
         }
-    if (count($cm)) {
+    if (!empty($cm)) {
         array_unshift($cm, "“{$cx}”");
         _searchQuickrefRow("", "style:$cx", "tagged to appear $cx (tagged " . commajoin($cm, "or") . ")");
     }
+
+    $roundname = meaningful_round_name();
 
     _searchQuickrefRow("Reviews", "re:me", "you are a reviewer");
     _searchQuickrefRow("", "re:fdabek", "“fdabek” in reviewer name/email");
@@ -344,8 +346,8 @@ function searchQuickref() {
     _searchQuickrefRow("", "re:secondary", "at least one secondary reviewer");
     _searchQuickrefRow("", "re:external", "at least one external reviewer");
     _searchQuickrefRow("", "re:primary:fdabek:complete", "“fdabek” has completed a primary review");
-    if (($r = meaningful_round_name()))
-        _searchQuickrefRow("", "re:$r", "review in round “" . htmlspecialchars($r) . "”");
+    if ($roundname)
+        _searchQuickrefRow("", "re:$roundname", "review in round “" . htmlspecialchars($roundname) . "”");
     _searchQuickrefRow("", "re:auwords<100", "has a review with less than 100 words in author-visible fields");
     if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
         _searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
@@ -417,7 +419,9 @@ function searchQuickref() {
         }
         _searchQuickrefRow("", "{$r->abbreviation}:>{$r->typical_score()}", "at least one completed review has $r->name_html score $greater than {$r->typical_score()}" . $hint);
         _searchQuickrefRow("", "{$r->abbreviation}:2<={$r->typical_score()}", "at least two completed reviews have $r->name_html score $less than or equal to {$r->typical_score()}");
-        _searchQuickrefRow("", "{$r->abbreviation}:pc>{$r->typical_score()}", "at least one completed PC review has $r->name_html score $greater than {$r->typical_score()}");
+        if ($roundname)
+            _searchQuickrefRow("", "{$r->abbreviation}:$roundname>{$r->typical_score()}", "at least one completed review in round " . htmlspecialchars($roundname) . " has $r->name_html score $greater than {$r->typical_score()}");
+        _searchQuickrefRow("", "{$r->abbreviation}:ext>{$r->typical_score()}", "at least one completed external review has $r->name_html score $greater than {$r->typical_score()}");
         _searchQuickrefRow("", "{$r->abbreviation}:pc:2>{$r->typical_score()}", "at least two completed PC reviews have $r->name_html score $greater than {$r->typical_score()}");
         _searchQuickrefRow("", "{$r->abbreviation}:sylvia={$r->typical_score()}", "“sylvia” (reviewer name/email) gave $r->name_html score {$r->typical_score()}");
         $t = "";
