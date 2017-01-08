@@ -5701,7 +5701,7 @@ function do_autogrow_textarea($self) {
         $self.height(Math.min(wh, Math.max(shadow.height(), minHeight)));
     }
 
-    $self.on("change keyup keydown", update).data("autogrowing", update);
+    $self.on("change input", update).data("autogrowing", update);
     $(window).resize(update);
     $self.val() && update();
 }
