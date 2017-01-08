@@ -345,9 +345,10 @@ class AggregateFexpr extends Fexpr {
                   || $this->op === "min" || $this->op === "max"
                   || $this->op === "median" || $this->op === "quantile"
                   || $this->op === "argmin" || $this->op === "argmax")
-                 && $this->args[0] instanceof Fexpr)
-            return $this->args[0]->format();
-        else
+                 && $this->args[0] instanceof Fexpr) {
+            $f = $this->args[0]->format();
+            return $f === self::FBOOL ? null : $f;
+        } else
             return null;
     }
 
