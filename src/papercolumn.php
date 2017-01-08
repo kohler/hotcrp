@@ -1457,7 +1457,6 @@ class FormulaGraph_PaperColumn extends PaperColumn {
     private $indexes_function;
     private $formula_function;
     private $results;
-    private $any_real;
     private $_sortinfo;
     private $_avginfo;
     private $xreviewer;
@@ -1676,9 +1675,11 @@ class Option_PaperColumnFactory extends PaperColumnFactory {
 class Formula_PaperColumn extends PaperColumn {
     public $formula;
     private $formula_function;
-    public $statistics;
+    private $statistics;
+    private $override_statistics;
     private $results;
-    private $any_real;
+    private $override_results;
+    private $real_format;
     function __construct($cj, Formula $formula) {
         parent::__construct($cj);
         $this->formula = $formula;
@@ -1732,52 +1733,63 @@ class Formula_PaperColumn extends PaperColumn {
     }
     function analyze($pl, &$rows) {
         $formulaf = $this->formula_function;
-        $this->results = [];
-        $this->any_real = false;
+        $this->results = $this->override_results = [];
+        $this->real_format = null;
         $isreal = $this->formula->result_format_is_real();
         foreach ($rows as $row) {
-            $s = $this->results[$row->paperId] = $formulaf($row, null, $pl->contact);
-            if ($row->conflictType > 0 && $pl->contact->allow_administer($row))
-                $s = $formulaf($row, null, $pl->contact, true);
-            if ($isreal && !$this->any_real && is_float($s)
-                && round($s * 100) % 100 != 0)
-                $this->any_real = true;
+            $v = $formulaf($row, null, $pl->contact);
+            $this->results[$row->paperId] = $v;
+            if ($isreal && !$this->real_format && is_float($v)
+                && round($v * 100) % 100 != 0)
+                $this->real_format = "%.2f";
+            if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
+                $vv = $formulaf($row, null, $pl->contact, true);
+                if ($vv !== $v) {
+                    $this->override_results[$row->paperId] = $vv;
+                    if ($isreal && !$this->real_format && is_float($vv)
+                        && round($vv * 100) % 100 != 0)
+                        $this->real_format = "%.2f";
+                }
+            }
         }
         assert(!!$this->statistics);
     }
     private function unparse($s) {
-        $t = $this->formula->unparse_html($s);
-        if ($this->any_real && is_float($t))
-            $t = sprintf("%.2f", $t);
-        return $t;
+        return $this->formula->unparse_html($s, $this->real_format);
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
-        $formulaf = $this->formula_function;
-        $t = $this->unparse($this->results[$row->paperId]);
-        if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
-            $ss = $formulaf($row, null, $pl->contact, true);
-            $tt = $this->unparse($ss);
-            if ($tt !== $t) {
-                $this->statistics->add($ss);
-                return '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
-            }
+        $v = $this->results[$row->paperId];
+        $t = $this->unparse($v);
+        if (isset($this->override_results[$row->paperId])) {
+            $vv = $this->override_results[$row->paperId];
+            $tt = $this->unparse($vv);
+            if (!$this->override_statistics)
+                $this->override_statistics = clone $this->statistics;
+            $this->override_statistics->add($vv);
+            if ($t !== $tt)
+                $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
         }
-        // XXX conflict override
-        $this->statistics->add($this->results[$row->paperId]);
+        $this->statistics->add($v);
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $formulaf = $this->formula_function;
-        $s = $formulaf($row, null, $pl->contact);
-        return $this->formula->unparse_text($s);
+        $v = $this->results[$row->paperId];
+        return $this->formula->unparse_text($s, $this->real_format);
     }
     function has_statistics() {
-        return $this->statistics && $this->statistics->count();
+        return ($this->statistics && $this->statistics->count())
+            || ($this->override_statistics && $this->override_statistics->count());
     }
     function statistic($pl, $what) {
         if ($what == ScoreInfo::SUM && !$this->formula->result_format_is_real())
             return "";
-        return $this->formula->unparse_html($this->statistics->statistic($what));
+        $t = $this->unparse($this->statistics->statistic($what));
+        if ($this->override_statistics) {
+            $tt = $this->unparse($this->override_statistics->statistic($what));
+            if ($t !== $tt)
+                $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
+        }
+        return $t;
     }
 }
 

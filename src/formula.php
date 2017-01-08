@@ -1437,7 +1437,7 @@ class Formula {
         return [$outf, $inf];
     }
 
-    function unparse_html($x) {
+    function unparse_html($x, $real_format = null) {
         if ($x === null || $x === false)
             return "";
         else if ($x === true)
@@ -1448,17 +1448,27 @@ class Formula {
             return $this->user->reviewer_html_for($x);
         else if ($this->_format instanceof ReviewField && $this->_format->option_letter)
             return ReviewField::unparse_letter($this->_format->option_letter, $x);
-        else
-            return round($x * 100) / 100;
+        else {
+            $x = round($x * 100) / 100;
+            return $real_format ? sprintf($real_format, $x) : $x;
+        }
     }
 
-    function unparse_text($x) {
-        if (is_int($x) && $x && $this->_format === Fexpr::FREVIEWER)
-            return $contact->name_text_for($x);
+    function unparse_text($x, $real_format) {
+        if ($x === null)
+            return "";
         else if (is_bool($x))
             return $x ? "Y" : "N";
-        else
-            return $this->unparse_html($x);
+        else if ($this->_format === Fexpr::FPREFEXPERTISE)
+            return ReviewField::unparse_letter(91, $x + 2);
+        else if ($this->_format === Fexpr::FREVIEWER)
+            return $this->user->name_text_for($x);
+        else if ($this->_format instanceof ReviewField && $this->_format->option_letter)
+            return ReviewField::unparse_letter($this->_format->option_letter, $x);
+        else {
+            $x = round($x * 100) / 100;
+            return $real_format ? sprintf($real_format, $x) : $x;
+        }
     }
 
     function add_query_options(&$queryOptions) {
