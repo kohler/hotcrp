@@ -1580,8 +1580,8 @@ $blind\n";
                    array("id" => "refusereviewreason", "rows" => 3, "cols" => 40,
                          "placeholder" => "Optional explanation", "spellcheck" => "true"))
     . '<div class="popup-actions">'
-    . Ht::submit("Decline review", ["class" => "popup-btn"])
-    . Ht::js_button("Cancel", "popup(null,'ref',1)", ["class" => "popup-btn"])
+    . Ht::submit("Decline review", ["class" => "btn"])
+    . Ht::js_button("Cancel", "popup(null,'ref',1)", ["class" => "btn"])
     . "</div></div></form></div>", "declinereviewform");
             if ($rrow->requestedBy && ($requester = $this->contact_by_id($rrow->requestedBy)))
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
@@ -1633,8 +1633,8 @@ $blind\n";
   review assignment from the database and <strong>cannot be
   undone</strong>.</p>
   " . Ht::form_div($reviewPostLink, array("divclass" => "popup-actions"))
-    . Ht::submit("deletereview", "Delete review", ["class" => "popup-btn dangerous"])
-    . Ht::js_button("Cancel", "popup(null,'d',1)", ["class" => "popup-btn"])
+    . Ht::submit("deletereview", "Delete review", ["class" => "btn dangerous"])
+    . Ht::js_button("Cancel", "popup(null,'d',1)", ["class" => "btn"])
     . "</div></form></div>");
         }
 

@@ -632,7 +632,7 @@ span.expander > span.in0 {
 	border: 1px solid #505799;
 	background-image: linear-gradient(#8089d1, #6b73b5);
 }
-.alert .btn.btn-default, .alert .btn.btn-alertable, .btn.btn-highlight {
+.alert .btn.btn-default, .alert .btn.btn-alertable, .btn.btn-highlight, .btn.dangerous {
 	border: 1px solid #cc0000;
 	background: #ff0000;
 	background-image: linear-gradient(#ff4040, #ff0000);
@@ -3056,13 +3056,15 @@ a.help {
 	display: none;
 }
 .popupc, .popupo {
-	border: 3px solid red;
-	padding: 0.5em;
-	background: #fff2f2;
+	border: 1px solid rgba(0, 0, 0, 0.6);
+	border-radius: 4px;
+	padding: 0.75em 1em;
+	background: #fbfbfa;
 	position: absolute;
 	min-width: 15em;
 	max-width: 32em;
 	z-index: 60;
+	box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
 }
 .popupo.popupcenter {
 	max-width: 64em;
@@ -3078,7 +3080,7 @@ a.help {
 .popup-actions {
 	margin-top: 8px;
 }
-.popup-actions .popup-btn {
+.popup-actions .btn {
 	float: right;
 	margin-left: 1em;
 }

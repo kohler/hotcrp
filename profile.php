@@ -849,7 +849,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   Delete these papers from the database or add alternate paper contacts and
   you will be able to delete this user.</p>
   <div class='popup-actions'>"
-    . Ht::js_button("Close", "popup(null,'d',1)", ["class" => "popup-btn"])
+    . Ht::js_button("Close", "popup(null,'d',1)", ["class" => "btn"])
     . "</div></div></div>");
     } else {
         if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
@@ -876,8 +876,8 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   $dialog
   <form method='post' action=\"" . hoturl_post("profile", "u=" . urlencode($Acct->email)) . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup-actions'>"
-      . Ht::submit("delete", "Delete user", ["class" => "popup-btn dangerous"])
-      . Ht::js_button("Cancel", "popup(null,'d',1)", ["class" => "popup-btn"])
+      . Ht::submit("delete", "Delete user", ["class" => "btn dangerous"])
+      . Ht::js_button("Cancel", "popup(null,'d',1)", ["class" => "btn"])
       . "</div></form></div></div>");
     }
 }

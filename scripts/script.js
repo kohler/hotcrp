@@ -4417,8 +4417,8 @@ function edit_anno(locator) {
         for (var i = 0; i < annos.length; ++i)
             add_anno(hc, annos[i]);
         hc.pop();
-        hc.push('<div class="g"><button name="add" type="button" tabindex="1000">Add group</button></div>');
-        hc.push('<div class="popup-actions"><button name="save" type="submit" tabindex="1000" class="popup-btn">Save changes</button><button name="cancel" type="button" tabindex="1001" class="popup-btn">Cancel</button></div>');
+        hc.push('<div class="g"><button name="add" type="button" tabindex="1000" class="btn">Add group</button></div>');
+        hc.push('<div class="popup-actions"><button name="save" type="submit" tabindex="1000" class="btn btn-default">Save changes</button><button name="cancel" type="button" tabindex="1001" class="btn">Cancel</button></div>');
         hc.push('<div class="popup_bottom"></div>');
         $d = $(hc.render());
         for (var i = 0; i < annos.length; ++i) {
@@ -4542,8 +4542,8 @@ function override_deadlines(elt, callback) {
                      + (ejq.attr("data-override-text") || "")
                      + " Are you sure you want to override the deadline?</p>"
                      + '<form><div class="popup-actions">'
-                     + '<button type="button" name="bsubmit" class="popup-btn">Save changes</button>'
-                     + '<button type="button" name="cancel" class="popup-btn">Cancel</button>'
+                     + '<button type="button" name="bsubmit" class="btn btn-default">Save changes</button>'
+                     + '<button type="button" name="cancel" class="btn">Cancel</button>'
                      + '</div></form></div></div>');
     djq.find("button[name=cancel]").on("click", function () {
         djq.remove();

@@ -1757,8 +1757,8 @@ class PaperTable {
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
     . "<div class='popup-actions'>"
-    . Ht::submit("withdraw", "Withdraw", ["class" => "popup-btn"])
-    . Ht::js_button("Cancel", "popup(null,'w',1)", ["class" => "popup-btn"])
+    . Ht::submit("withdraw", "Withdraw", ["class" => "btn"])
+    . Ht::js_button("Cancel", "popup(null,'w',1)", ["class" => "btn"])
     . "</div></div></form></div></div>", "popup_w");
         }
         if ($b) {
@@ -1789,8 +1789,8 @@ class PaperTable {
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
     . "<div class='popup-actions'>"
-    . Ht::submit("delete", "Delete", ["class" => "popup-btn dangerous"])
-    . Ht::js_button("Cancel", "popup(null,'delp',1)", ["class" => "popup-btn"])
+    . Ht::submit("delete", "Delete", ["class" => "btn dangerous"])
+    . Ht::js_button("Cancel", "popup(null,'delp',1)", ["class" => "btn"])
     . "</div></div></form></div></div>", "popup_delp");
         }
 

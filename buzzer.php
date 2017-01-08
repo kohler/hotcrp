@@ -201,8 +201,8 @@ mode without signing in:</p>
     . Ht::form_div(hoturl_post("buzzer"))
     . Ht::hidden("buzzer_showpapers", 1, array("class" => "popup_populate"))
     . '<div class="popup-actions">'
-    . Ht::submit("signout_to_kiosk", "Enter kiosk mode", ["class" => "popup-btn"])
-    . Ht::js_button("Cancel", "popup(null,'kiosk',1)", ["class" => "popup-btn"])
+    . Ht::submit("signout_to_kiosk", "Enter kiosk mode", ["class" => "btn"])
+    . Ht::js_button("Cancel", "popup(null,'kiosk',1)", ["class" => "btn"])
     . '</div></div></form></div></div>');
 }
 
