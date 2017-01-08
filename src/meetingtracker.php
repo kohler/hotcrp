@@ -252,7 +252,7 @@ class MeetingTracker {
 
     static function track_api(Contact $user, $qreq) {
         if (!$user->privChair || !check_post($qreq))
-            json_exit(array("ok" => false));
+            json_exit(["ok" => false]);
         // argument: IDENTIFIER LISTNUM [POSITION] -OR- stop
         if ($qreq->track === "stop") {
             self::clear($user->conf);

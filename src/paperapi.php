@@ -93,9 +93,9 @@ class PaperApi {
     static function tagreport_api(Contact $user, $qreq, $prow) {
         $treport = self::tagreport($user, $prow);
         $response = "";
-        if (count($treport->warnings))
+        if (!empty($treport->warnings))
             $response .= Ht::xmsg("warning", join("<br>", $treport->warnings));
-        if (count($treport->messages))
+        if (!empty($treport->messages))
             $response .= Ht::xmsg("info", join("<br>", $treport->messages));
         json_exit(["ok" => $treport->ok, "response" => $response], true);
     }
