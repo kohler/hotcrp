@@ -1278,7 +1278,7 @@ class Formula {
             $e = new DecisionFexpr;
             $t = $m[1];
         } else if (preg_match('/\A(?:is:?)?(rev?|pc(?:rev?)?)\b(.*)\z/is', $t,  $m)) {
-            $rt = strlower($m[1][0]) === "p" ? REVIEW_PC : 0;
+            $rt = strtolower($m[1][0]) === "p" ? REVIEW_PC : 0;
             $e = new Fexpr(">=", new RevtypeFexpr, new ConstantFexpr($rt, Fexpr::FREVTYPE));
             $t = $m[2];
         } else if (preg_match('/\A(?:is:?)?(pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?|optional)\b(.*)\z/is', $t, $m)) {
