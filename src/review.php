@@ -214,6 +214,17 @@ class ReviewField {
         return self::make_abbreviation($this->name, 0, 1);
     }
 
+    static function unparse_letter($option_letter, $value) {
+        $ivalue = (int) $value;
+        $ch = $option_letter - $ivalue;
+        if ($value < $ivalue + 0.25)
+            return chr($ch);
+        else if ($value < $ivalue + 0.75)
+            return chr($ch - 1) . chr($ch);
+        else
+            return chr($ch - 1);
+    }
+
     function value_class($value) {
         if (count($this->options) > 1)
             $n = (int) (($value - 1) * 8.0 / (count($this->options) - 1) + 1.5);
@@ -222,30 +233,35 @@ class ReviewField {
         return "sv " . $this->option_class_prefix . $n;
     }
 
-    function unparse_value($value, $scclass = false) {
+    function unparse_value($value, $flags = 0, $real_format = null) {
         if (is_object($value))
             $value = defval($value, $this->id);
         if (!$this->has_options)
             return $value;
-        else if (!$value)
+        if (!$value)
             return null;
-        else if (!$this->option_letter)
-            $x = (int) $value;
-        else if (is_int($value) || ctype_digit($value))
-            $x = chr($this->option_letter - (int) $value);
-        else {
+        if (!$this->option_letter || is_numeric($value))
+            $value = (float) $value;
+        else if (strlen($value) === 1)
             $value = $this->option_letter - ord($value);
-            $x = chr($this->option_letter - $value);
+        else if (ord($value[0]) + 1 === ord($value[1]))
+            $value = ($this->option_letter - ord($value[0])) - 0.5;
+        if (!is_float($value) || $value <= 0.8)
+            return null;
+        if ($this->option_letter)
+            $text = self::unparse_letter($this->option_letter, $value);
+        else if ($real_format)
+            $text = sprintf($real_format, $value);
+        else
+            $text = (string) $value;
+        if ($flags & (self::VALUE_SC | self::VALUE_REV_NUM)) {
+            $vc = $this->value_class($value);
+            if ($flags & self::VALUE_REV_NUM)
+                $text = '<span class="rev_num ' . $vc . '">' . $text . '.</span>';
+            else
+                $text = '<span class="' . $vc . '">' . $text . '</span>';
         }
-        if (!$scclass)
-            return $x;
-        $vc = $this->value_class($value);
-        $klass = $vc;
-        if ($scclass & self::VALUE_REV_NUM) {
-            $klass = "rev_num $klass";
-            $x .= ".";
-        }
-        return "<span class=\"$klass\">$x</span>";
+        return $text;
     }
 
     function value_description($value) {
@@ -260,25 +276,9 @@ class ReviewField {
         return $this->options[$value];
     }
 
-    static function unparse_letter($option_letter, $value) {
-        $ivalue = (int) $value;
-        $ch = $option_letter - $ivalue;
-        if ($value < $ivalue + 0.25)
-            return chr($ch);
-        else if ($value < $ivalue + 0.75)
-            return chr($ch - 1) . chr($ch);
-        else
-            return chr($ch - 1);
-    }
-
     function unparse_average($value) {
         assert($this->has_options);
-        if ($value <= 0.8)
-            return "";
-        else if (!$this->option_letter)
-            return sprintf("%0.2f", $value);
-        else
-            return self::unparse_letter($this->option_letter, $value);
+        return (string) $this->unparse_value($value, false, "%.2f");
     }
 
     function unparse_graph($v, $style, $myscore) {
@@ -290,7 +290,7 @@ class ReviewField {
 
         $avgtext = $this->unparse_average($v->avg);
         if ($v->n > 1 && $v->stddev)
-            $avgtext .= sprintf(" &plusmn; %0.2f", $v->stddev);
+            $avgtext .= sprintf(" &plusmn; %.2f", $v->stddev);
 
         $args = "v=";
         for ($key = 1; $key <= $max; $key++)

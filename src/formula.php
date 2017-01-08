@@ -1446,11 +1446,12 @@ class Formula {
             return ReviewField::unparse_letter(91, $x + 2);
         else if ($this->_format === Fexpr::FREVIEWER)
             return $this->user->reviewer_html_for($x);
-        else if ($this->_format instanceof ReviewField && $this->_format->option_letter)
-            return ReviewField::unparse_letter($this->_format->option_letter, $x);
         else {
             $x = round($x * 100) / 100;
-            return $real_format ? sprintf($real_format, $x) : $x;
+            if ($this->_format instanceof ReviewField)
+                return $this->_format->unparse_value($x, ReviewField::VALUE_SC, $real_format);
+            else
+                return $real_format ? sprintf($real_format, $x) : $x;
         }
     }
 
@@ -1463,11 +1464,12 @@ class Formula {
             return ReviewField::unparse_letter(91, $x + 2);
         else if ($this->_format === Fexpr::FREVIEWER)
             return $this->user->name_text_for($x);
-        else if ($this->_format instanceof ReviewField && $this->_format->option_letter)
-            return ReviewField::unparse_letter($this->_format->option_letter, $x);
         else {
             $x = round($x * 100) / 100;
-            return $real_format ? sprintf($real_format, $x) : $x;
+            if ($this->_format instanceof ReviewField)
+                return $this->_format->unparse_value($x, 0, $real_format);
+            else
+                return $real_format ? sprintf($real_format, $x) : $x;
         }
     }
 
