@@ -139,9 +139,9 @@ function jqxhr_error_message(jqxhr, status, errormsg) {
     else if (status === "timeout")
         return "Connection timed out.";
     else if (status)
-        return "Error [" + status + "].";
+        return "Failed [" + status + "].";
     else
-        return "Error.";
+        return "Failed.";
 }
 
 $(document).ajaxError(function (event, jqxhr, settings, httperror) {
@@ -318,7 +318,7 @@ function count_words_split(text, wlimit) {
 }
 
 function sprintf(fmt) {
-    var words = fmt.split(/(%(?:%|-?(?:\d*|\*?)(?:[.]\d*)?[sdefgoxX]))/), wordno, word,
+    var words = fmt.split(/(%(?:%|-?(?:\d*|\*?)(?:\.\d*)?[sdefgoxX]))/), wordno, word,
         arg, argno, conv, pad, t = "";
     for (wordno = 0, argno = 1; wordno != words.length; ++wordno) {
         word = words[wordno];
@@ -505,26 +505,32 @@ var key_map = {"Spacebar": " ", "Esc": "Escape"},
         "224": "OSLeft", "225": "AltRight"
     },
     nonprintable_map = {
-        "AltLeft": true,
-        "AltRight": true,
-        "CapsLock": true,
-        "ControlLeft": true,
-        "ControlRight": true,
-        "OSLeft": true,
-        "OSRight": true,
-        "ShiftLeft": true,
-        "ShiftRight": true,
-        "ArrowLeft": true,
-        "ArrowRight": true,
-        "ArrowUp": true,
-        "ArrowDown": true,
-        "PageUp": true,
-        "PageDown": true,
-        "Escape": true,
-        "Enter": true
+        "Alt": 2,
+        "AltLeft": 2,
+        "AltRight": 2,
+        "CapsLock": 2,
+        "Control": 2,
+        "ControlLeft": 2,
+        "ControlRight": 2,
+        "Meta": 2,
+        "OSLeft": 2,
+        "OSRight": 2,
+        "Shift": 2,
+        "ShiftLeft": 2,
+        "ShiftRight": 2,
+        "ArrowLeft": 1,
+        "ArrowRight": 1,
+        "ArrowUp": 1,
+        "ArrowDown": 1,
+        "PageUp": 1,
+        "PageDown": 1,
+        "Escape": 1,
+        "Enter": 1
     };
 function event_key(evt) {
     var x;
+    if (typeof evt === "string")
+        return evt;
     if ((x = evt.key) != null)
         return key_map[x] || x;
     if ((x = evt.charCode))
@@ -539,6 +545,9 @@ function event_key(evt) {
 }
 event_key.printable = function (evt) {
     return !nonprintable_map[event_key(evt)];
+};
+event_key.modifier = function (evt) {
+    return nonprintable_map[event_key(evt)] > 1;
 };
 return event_key;
 })();
@@ -1120,9 +1129,9 @@ function tooltip(info) {
             return tt;
         },
         exit: function () {
-            var delay = info.type == "focus" ? 0 : 200;
+            var delay = info.type === "focus" ? 0 : 200;
             to = clearTimeout(to);
-            if (--refcount == 0)
+            if (--refcount == 0 && info.type !== "sticky")
                 to = setTimeout(erase, delay);
             return tt;
         },
@@ -1136,6 +1145,9 @@ function tooltip(info) {
                 show_bub();
             }
             return tt;
+        },
+        text: function (new_text) {
+            return tt.html(escape_entities(new_text));
         }
     };
 
