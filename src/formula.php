@@ -341,10 +341,12 @@ class AggregateFexpr extends Fexpr {
     function typecheck_format() {
         if ($this->op === "all" || $this->op === "any")
             return self::FBOOL;
-        else if (($this->op === "avg" || $this->op === "wavg"
-                  || $this->op === "min" || $this->op === "max"
-                  || $this->op === "median" || $this->op === "quantile"
+        else if (($this->op === "min" || $this->op === "max"
                   || $this->op === "argmin" || $this->op === "argmax")
+                 && $this->args[0] instanceof Fexpr)
+            return $this->args[0]->format();
+        else if (($this->op === "avg" || $this->op === "wavg"
+                  || $this->op === "median" || $this->op === "quantile")
                  && $this->args[0] instanceof Fexpr) {
             $f = $this->args[0]->format();
             return $f === self::FBOOL ? null : $f;
