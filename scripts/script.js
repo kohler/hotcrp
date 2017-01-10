@@ -4791,27 +4791,37 @@ function edittags_callback(rv) {
     if (!rv.ok || !rv.pid || !(div = pidfield(rv.pid, fields.tags)))
         return;
     $(div).html('<em class="plx">Tags:</em> '
-                + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" data-tooltip-dir="v"></textarea>'
-                + ' &nbsp;<button name="tagsave ' + rv.pid + '" type="button">Save</button>'
-                + ' &nbsp;<button name="tagcancel ' + rv.pid + '" type="button">Cancel</button>');
-    $(div).find("textarea").val(rv.tags_edit_text).on("keydown", make_onkey("Enter", edittags_click)).autogrow();
-    $(div).find("button").click(edittags_click);
+                + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" class="want-focus" data-tooltip-dir="v"></textarea>'
+                + ' &nbsp;<button name="tagsave ' + rv.pid + '" type="button" class="btn">Save</button>'
+                + ' &nbsp;<button name="tagcancel ' + rv.pid + '" type="button" class="btn">Cancel</button>');
+    var $ta = $(div).find("textarea");
+    suggest($ta, taghelp_tset);
+    $ta.val(rv.tags_edit_text).autogrow()
+        .on("keydown", make_onkey("Enter", edittags_submit))
+        .on("keydown", make_onkey("Escape", edittags_cancel));
+    $(div).find("button[name^=tagsave]").click(edittags_submit);
+    $(div).find("button[name^=tagcancel]").click(edittags_cancel);
+    focus_within(div);
 }
 
-function edittags_click() {
-    var div = this.parentNode, pid = pidnear(div);
-    $(div).find("textarea").trigger("hide");
-    if (this.tagName !== "BUTTON" || this.name.charAt(3) == "s") {
-        $.post(hoturl_post("api", {fn: "settags", p: pid, forceShow: 1}),
-               {tags: $(div).find("textarea").val()},
-               function (rv) {
-                   if (rv.ok)
-                       plinfo.set_tags(pid, rv);
-                   else
-                       setajaxcheck($(div).find("textarea"), rv);
-               });
-    } else
-        render_row_tags(this.parentNode);
+function edittags_submit() {
+    var div = this.parentNode;
+    var pid = pidnear(div);
+    $(div).find("textarea").blur().trigger("hide");
+    $.post(hoturl_post("api", {fn: "settags", p: pid, forceShow: 1}),
+           {tags: $(div).find("textarea").val()},
+           function (rv) {
+               if (rv.ok)
+                   plinfo.set_tags(pid, rv);
+               else
+                   setajaxcheck($(div).find("textarea"), rv);
+           });
+}
+
+function edittags_cancel() {
+    var div = this.parentNode;
+    $(div).find("textarea").blur().trigger("hide");
+    render_row_tags(div);
 }
 
 function make_tag_column_callback(f) {
