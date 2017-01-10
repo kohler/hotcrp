@@ -231,15 +231,6 @@ window.escape_entities = (function () {
     };
 })();
 
-window.unescape_entities = (function () {
-    var re = /&.*?;/g, rep = {"&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&apos;": "'", "&#039;": "'"};
-    return function (s) {
-        if (s === null || typeof s === "number")
-            return s;
-        return s.replace(re, function (match) { return rep[match]; });
-    };
-})();
-
 function text_to_html(text) {
     var n = document.createElement("div");
     n.appendChild(document.createTextNode(text));
@@ -4675,15 +4666,20 @@ function pidfield(pid, f, index) {
 
 
 function render_allpref() {
+    var atomre = /(\d+)([PT]\S+)/g;
     $(".need-allpref").each(function () {
-        var t = [], pid = pidnear(this), allpref = pidattr(pid, "data-allpref") || "",
-            atomre = /(\d+)([PT]\S+)/g, m;
+        var t = [], m,
+            pid = pidnear(this),
+            allpref = pidattr(pid, "data-allpref") || "";
         while ((m = atomre.exec(allpref)) !== null) {
-            var pc = hotcrp_pc[m[1]], x = '';
+            var pc = hotcrp_pc[m[1]];
+            if (!pc.name_html)
+                pc.name_html = escape_entities(pc.name);
+            var x = '';
             if (pc.color_classes)
-                x += '<span class="' + pc.color_classes + '">' + pc.name + '</span>';
+                x += '<span class="' + pc.color_classes + '">' + pc.name_html + '</span>';
             else
-                x += pc.name;
+                x += pc.name_html;
             x += ' <span class="asspref' + (m[2].charAt(1) === "-" ? "-1" : "1") +
                 '">' + m[2].replace(/-/, "−") /* minus */ + '</span>';
             t.push(x);
@@ -5330,7 +5326,7 @@ function populate_pcselector() {
             continue;
         var opt = document.createElement("option");
         opt.setAttribute("value", email);
-        opt.text = unescape_entities(name);
+        opt.text = name;
         this.add(opt);
         if (email == selected || (i >= 0 && optids[i] == selected))
             selindex = this.options.length - 1;

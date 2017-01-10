@@ -2854,15 +2854,15 @@ class Conf {
             return;
         $hpcj = $list = [];
         foreach ($this->pc_members() as $pcm) {
-            $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_html_for($pcm), "email" => $pcm->email];
+            $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_text_for($pcm), "email" => $pcm->email];
             if (($color_classes = $user->reviewer_color_classes_for($pcm)))
                 $j->color_classes = $color_classes;
             if ($this->sort_by_last && $pcm->lastName) {
                 $r = Text::analyze_name($pcm);
                 if (strlen($r->lastName) !== strlen($r->name))
-                    $j->lastpos = strlen(htmlspecialchars($r->firstName)) + 1;
+                    $j->lastpos = strlen($r->firstName) + 1;
                 if ($r->nameAmbiguous && $r->name && $r->email)
-                    $j->emailpos = strlen(htmlspecialchars($r->name)) + 1;
+                    $j->emailpos = strlen($r->name) + 1;
             }
             $list[] = $pcm->contactId;
         }
