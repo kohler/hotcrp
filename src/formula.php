@@ -253,7 +253,7 @@ class ConstantFexpr extends Fexpr {
             return new Fexpr_Error($this, "unknown review type “" . htmlspecialchars($this->x) . "”");
         if ($this->format_ !== false)
             return false;
-        return new Fexpr_Error($this, "undefined name “" . htmlspecialchars($this->x) . "”");
+        return new Fexpr_Error($this, "“" . htmlspecialchars($this->x) . "” undefined");
     }
     function typecheck_neighbor(Conf $conf, $e) {
         if ($this->format_ !== false || !($e instanceof Fexpr)
