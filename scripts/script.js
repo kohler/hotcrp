@@ -2032,9 +2032,9 @@ function pc_tags_members(tag) {
     return answer;
 }
 
-function make_onkeypress_enter(f) {
+function make_onkey(key, f) {
     return function (evt) {
-        if (!event_modkey(evt) && event_key(evt) == "Enter") {
+        if (!event_modkey(evt) && event_key(evt) == key) {
             evt.preventDefault();
             evt.stopImmediatePropagation();
             f.call(this);
@@ -3752,7 +3752,7 @@ var add_revpref_ajax = (function () {
         $e.off(".revpref_ajax")
             .on("focus.revpref_ajax", "input.revpref", rp_focus)
             .on("change.revpref_ajax", "input.revpref", rp_change)
-            .on("keypress.revpref_ajax", "input.revpref", make_onkeypress_enter(rp_change));
+            .on("keydown.revpref_ajax", "input.revpref", make_onkey("Enter", rp_change));
     }
 
     rp.then = function (f) {
@@ -3834,7 +3834,7 @@ function set_plt_tbody(e) {
     table.off(".edittag_ajax")
         .on("click.edittag_ajax", "input.edittag", tag_save)
         .on("change.edittag_ajax", "input.edittagval", tag_save)
-        .on("keypress.edittag_ajax", "input.edittagval", make_onkeypress_enter(tag_save));
+        .on("keydown.edittag_ajax", "input.edittagval", make_onkey("Enter", tag_save));
     if (full_dragtag) {
         table.on("mousedown.edittag_ajax", "span.dragtaghandle", tag_mousedown);
         $(function () { $(plt_tbody).find("tr.plheading").filter("[data-anno-id]").find("td.plheading").each(add_draghandle); });
@@ -4807,7 +4807,7 @@ function edittags_callback(rv) {
                 + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" data-tooltip-dir="v"></textarea>'
                 + ' &nbsp;<button name="tagsave ' + rv.pid + '" type="button">Save</button>'
                 + ' &nbsp;<button name="tagcancel ' + rv.pid + '" type="button">Cancel</button>');
-    $(div).find("textarea").val(rv.tags_edit_text).on("keydown", make_onkeypress_enter(edittags_click)).autogrow();
+    $(div).find("textarea").val(rv.tags_edit_text).on("keydown", make_onkey("Enter", edittags_click)).autogrow();
     $(div).find("button").click(edittags_click);
 }
 
