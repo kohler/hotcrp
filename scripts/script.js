@@ -515,10 +515,11 @@ var key_map = {"Spacebar": " ", "Esc": "Escape"},
         "ArrowUp": 1,
         "ArrowDown": 1,
         "Backspace": 1,
+        "Enter": 1,
+        "Escape": 1,
         "PageUp": 1,
         "PageDown": 1,
-        "Escape": 1,
-        "Enter": 1
+        "Tab": 1
     };
 function event_key(evt) {
     var x;
@@ -537,7 +538,8 @@ function event_key(evt) {
     return "";
 }
 event_key.printable = function (evt) {
-    return !nonprintable_map[event_key(evt)];
+    return !nonprintable_map[event_key(evt)]
+        && (typeof evt === "string" || !(evt.ctrlKey || evt.metaKey));
 };
 event_key.modifier = function (evt) {
     return nonprintable_map[event_key(evt)] > 1;

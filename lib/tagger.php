@@ -22,11 +22,19 @@ class TagMapItem {
     public $order_anno = false;
     private $order_anno_list = false;
     public $colors = null;
+    public $basic_color = false;
     public $badges = null;
     public $emoji = null;
     function __construct($tag, Conf $conf) {
-        $this->tag = $tag;
         $this->conf = $conf;
+        $this->set_tag($tag);
+    }
+    function set_tag($tag) {
+        $this->tag = $tag;
+        if (preg_match('/\A(?:' . TagInfo::BASIC_COLORS_PLUS . ')\z/i', $tag)) {
+            $this->colors[] = TagInfo::canonical_color($tag);
+            $this->basic_color = true;
+        }
     }
     function merge(TagMapItem $t) {
         foreach (["chair", "track", "votish", "vote", "approval", "sitewide", "rank"] as $property)
@@ -118,7 +126,7 @@ class TagMap implements IteratorAggregate {
                     if (preg_match($p->pattern, $ltag)) {
                         if (!$t) {
                             $t = clone $p;
-                            $t->tag = $tag;
+                            $t->set_tag($tag);
                             $t->pattern = false;
                             $t->pattern_instance = true;
                             $this->storage[$ltag] = $t;
@@ -269,25 +277,15 @@ class TagMap implements IteratorAggregate {
         return $key;
     }
 
-    function filter_color($color = null) {
-        $a = array();
-        if ($color) {
-            $canonical = TagInfo::canonical_color($color);
-            $a[] = $canonical;
-            if ($canonical === "purple")
-                $a[] = "violet";
-            else if ($canonical === "gray")
-                $a[] = "grey";
-            foreach ($this as $v)
-                foreach ($v->colors ? : [] as $c)
-                    if ($c === $canonical)
-                        $a[] = $v->tag;
-        } else {
-            $a = explode("|", TagInfo::BASIC_COLORS);
-            foreach ($this as $v)
-                if ($v->colors)
-                    $a[] = $v->tag;
-        }
+    function tags_with_color($f) {
+        $a = [];
+        foreach ($this as $t)
+            if (call_user_func($f, $t->tag, $t->colors ? : []))
+                $a[] = $t->tag;
+        foreach (explode("|", TagInfo::BASIC_COLORS_PLUS) as $ltag)
+            if (!isset($this->storage[$ltag])
+                && call_user_func($f, $ltag, [TagInfo::canonical_color($ltag)]))
+                $a[] = $ltag;
         return $a;
     }
 
@@ -399,7 +397,8 @@ class TagMap implements IteratorAggregate {
 class TagInfo {
     const BASIC_COLORS = "red|orange|yellow|green|blue|purple|gray|white|bold|italic|underline|strikethrough|big|small|dim";
     const BASIC_COLORS_PLUS = "red|orange|yellow|green|blue|purple|violet|grey|gray|white|bold|italic|underline|strikethrough|big|small|dim";
-    const BASIC_BADGES = "normal|red|green|blue|white";
+    const BASIC_COLORS_NOSTYLES = "red|orange|yellow|green|blue|purple|gray|white";
+    const BASIC_BADGES = "normal|red|yellow|green|blue|white|pink|gray";
 
     static function base($tag) {
         if ($tag && (($pos = strpos($tag, "#")) > 0

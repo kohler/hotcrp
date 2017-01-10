@@ -287,7 +287,13 @@ class TagSearchMatcher {
     public $index2 = null;
     private $_re;
 
-    public function tagmatch_sql($user) {
+    function make_term() {
+        if (empty($this->tags))
+            return new SearchTerm("f");
+        else
+            return new SearchTerm("tag", PaperSearch::F_XVIEW, $this);
+    }
+    function tagmatch_sql($user) {
         $args = [];
         foreach ($this->tags as $value) {
             if (($starpos = strpos($value, "*")) !== false) {
@@ -303,7 +309,7 @@ class TagSearchMatcher {
         }
         return join(" or ", $args);
     }
-    public function index_wheresql() {
+    function index_wheresql() {
         $extra = "";
         if ($this->index1)
             $extra .= " and %.tagIndex" . $this->index1->countexpr();
@@ -311,7 +317,7 @@ class TagSearchMatcher {
             $extra .= " and %.tagIndex" . $this->index2->countexpr();
         return $extra;
     }
-    public function evaluate($user, $tags) {
+    function evaluate($user, $tags) {
         if (!$this->_re) {
             $res = [];
             foreach ($this->tags as $value)
@@ -1561,22 +1567,31 @@ class PaperSearch {
     }
 
     private function _search_color($word, &$qt) {
-        if (!$this->amPC)
-            return;
         $word = strtolower($word);
-        if (!preg_match(',\A(any|none|' . TagInfo::BASIC_COLORS_PLUS . ')\z,', $word))
-            return new SearchTerm("f");
-        $any = $word === "any" || $word === "none";
         $value = new TagSearchMatcher;
-        foreach ($this->conf->tags()->filter_color($any ? null : $word) as $tag) {
-            array_push($value->tags, $tag, "{$this->cid}~$tag");
-            if ($this->privChair)
-                $value->tags[] = "~~$tag";
+        if ($this->amPC
+            && preg_match(',\A(any|none|color|' . TagInfo::BASIC_COLORS_PLUS . ')\z,', $word)) {
+            if ($word === "any" || $word === "none")
+                $f = function ($t, $colors) { return !empty($colors); };
+            else if ($word === "color")
+                $f = function ($t, $colors) {
+                    return !empty($colors)
+                        && preg_match('/ (?:' . TagInfo::BASIC_COLORS_NOSTYLES . ') /',
+                                      " " . join(" ", $colors) . " ");
+                };
+            else {
+                $word = TagInfo::canonical_color($word);
+                $f = function ($t, $colors) use ($word) {
+                    return !empty($colors) && array_search($word, $colors) !== false;
+                };
+            }
+            foreach ($this->conf->tags()->tags_with_color($f) as $tag) {
+                array_push($value->tags, $tag, "{$this->cid}~$tag");
+                if ($this->privChair)
+                    $value->tags[] = "~~$tag";
+            }
         }
-        if (count($value->tags))
-            $qe = new SearchTerm("tag", self::F_XVIEW, $value);
-        else
-            $qe = new SearchTerm("f");
+        $qe = $value->make_term();
         if ($word === "none")
             $qe = SearchTerm::make_not($qe);
         $qt[] = $qe;
@@ -1683,7 +1698,7 @@ class PaperSearch {
     }
 
     private function _search_has($word, &$qt, $quoted) {
-        $lword = strtolower($word);
+        $original_lword = $lword = strtolower($word);
         $lword = get(self::$_keywords, $lword) ? : $lword;
         if ($lword === "paper" || $lword === "sub" || $lword === "submission")
             $qt[] = new SearchTerm("pf", 0, array("paperStorageId", ">1"));
@@ -1705,7 +1720,26 @@ class PaperSearch {
             $this->_search_status("yes", $qt, false, false);
         else if ($lword === "approvable")
             $this->_search_reviewer("approvable>0", "ext", $qt);
-        else if (preg_match('/\A[\w-]+\z/', $lword) && $this->_search_options("$lword:yes", $qt, false))
+        else if ($original_lword === "style")
+            $this->_search_color("any", $qt);
+        else if ($lword === "color")
+            $this->_search_color("color", $qt);
+        else if ($lword === "badge") {
+            $value = new TagSearchMatcher;
+            if ($this->amPC && $this->conf->tags()->has_badges) {
+                foreach ($this->conf->tags()->filter("badges") as $t)
+                    $value->tags[] = $t->tag;
+            }
+            $qt[] = $value->make_term();
+        } else if ($lword === "emoji") {
+            $value = new TagSearchMatcher;
+            if ($this->amPC && $this->conf->tags()->has_emoji) {
+                $value->tags = [":*:", "{$this->cid}~:*:"];
+                if ($this->privChair)
+                    $value->tags[] = "~~:*:";
+            }
+            $qt[] = $value->make_term();
+        } else if (preg_match('/\A[\w-]+\z/', $lword) && $this->_search_options("$lword:yes", $qt, false))
             /* OK */;
         else {
             $has = [];
