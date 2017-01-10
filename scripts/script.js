@@ -3456,51 +3456,73 @@ function completion_split(elt) {
         return null;
 }
 
-function taghelp_tset(elt, displayed) {
+function taghelp_tset(elt, options) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)/);
-        return alltags.then(make_suggestions(m[1], false, m[2], n[1], displayed));
+        return alltags.then(make_suggestions(m[1], m[2], n[1], options));
     } else
         return new HPromise(null);
 }
 
-function taghelp_q(elt, displayed) {
+function taghelp_q(elt, options) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*#)([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
-        return alltags.then(make_suggestions(m[1], false, m[2], n[1], displayed));
+        return alltags.then(make_suggestions(m[1], m[2], n[1], options));
     } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):\s*)([^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
-        return search_completion.then(make_suggestions(m[1], true, m[2], n[1], displayed));
+        return search_completion.then(make_suggestions(m[1], m[2], n[1], $.extend({require_prefix: true}, options)));
     } else
         return new HPromise(null);
 }
 
-function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
-    return function (tlist) {
-        var res = [], lprecaret = precaret.toLowerCase(),
-            lpostcaret = postcaret.toLowerCase(),
-            best_postcaret = "", best_postcaret_index = null;
-        for (var i = 0; i < tlist.length; ++i) {
-            var titem = completion_item(tlist[i]),
-                text = titem.s, ltext = titem.s.toLowerCase(),
-                pos = 0, h, className = "suggestion";
+function make_suggestions(pfx, precaret, postcaret, options) {
+    var pfx_length = pfx.length;
+    var lprecaret = precaret.toLowerCase();
+    var precaret_length = precaret.length;
+    var lpostcaret = postcaret.toLowerCase();
+    var postcaret_length = postcaret.length;
 
-            if (include_pfx) {
-                if (ltext.substr(0, pfx.length) !== pfx)
+    var require_prefix = options && options.require_prefix;
+    var drop_nonmatch = options && options.drop_nonmatch;
+    drop_nonmatch = Math.min(drop_nonmatch || 0, precaret_length);
+    var decorate = options && options.decorate;
+
+    return function (tlist) {
+        var res = [];
+        var best_postcaret = "";
+        var best_postcaret_index = null;
+
+        for (var i = 0; i < tlist.length; ++i) {
+            var titem = completion_item(tlist[i]);
+            var text = titem.s;
+            var ltext = titem.s.toLowerCase();
+
+            var h, pos = 0;
+            if (require_prefix) {
+                if (ltext.substr(0, pfx_length) !== pfx)
                     continue;
-                pos = pfx.length;
+                pos = pfx_length;
                 h = text;
             } else
                 h = pfx + text;
 
-            if (!lprecaret.length
-                || ltext.substr(pos, lprecaret.length) === lprecaret) {
-                pos += lprecaret.length;
+            if (titem.after_match
+                && (precaret_length < titem.after_match
+                    || ltext.substr(pos, titem.after_match) !== lprecaret.substr(0, titem.after_match)))
+                continue;
+            if (drop_nonmatch
+                && ltext.substr(pos, drop_nonmatch) !== lprecaret.substr(0, drop_nonmatch))
+                continue;
+
+            var className = "suggestion";
+            if (!precaret_length
+                || ltext.substr(pos, precaret_length) === lprecaret) {
+                pos += precaret_length;
                 if (best_postcaret_index === null)
                     best_postcaret_index = res.length;
-                if (lpostcaret.length) {
+                if (postcaret_length) {
                     var common_postcaret = common_prefix(ltext.substr(pos), lpostcaret);
                     if (common_postcaret.length > best_postcaret.length) {
                         best_postcaret = common_postcaret;
@@ -3512,18 +3534,27 @@ function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
             } else
                 className = "suggestion";
 
-            res.push('<div class="' + className + '">' + escape_entities(h) + '</div>');
+            var t = '<div class="' + className + '">';
+            if (decorate) {
+                t += '<span class="suggestion-text">' + escape_entities(h) + '</span>';
+                if (titem.description_html)
+                    t += ' <span class="suggestion-description">' + titem.description_html + '</span>';
+                else if (titem.description)
+                    t += ' <span class="suggestion-description">' + escape_entities(titem.description) + '</span>';
+            } else
+                t += escape_entities(h);
+            res.push(t + '</div>');
         }
         if (res.length) {
             if (best_postcaret_index !== null)
                 res[best_postcaret_index] = res[best_postcaret_index].replace(/^<div class="suggestion/, '<div class="suggestion active');
-            return {list: res, lengths: [pfx.length + precaret.length, postcaret.length]};
+            return {list: res, lengths: [pfx.length + precaret_length, postcaret_length]};
         } else
             return null;
     };
 }
 
-function suggest(elt, klass, cleanf) {
+function suggest(elt, suggestions_promise, options) {
     var tagdiv, blurring, hiding = false, interacted, tagfail;
 
     function kill() {
@@ -3561,13 +3592,16 @@ function suggest(elt, klass, cleanf) {
     }
 
     function display() {
-        cleanf(elt, !!tagdiv).then(finish_display);
+        suggestions_promise(elt, options).then(finish_display);
     }
 
     function maybe_complete($ac, ignore_empty_completion) {
-        var common = null, text, i, smatch = true;
-        for (i = 0; i != $ac.length; ++i) {
-            text = $($ac[i]).text();
+        var common = null, text, smatch = true;
+        for (var i = 0; i != $ac.length; ++i) {
+            if ($ac[i].firstChild.nodeType === Node.TEXT_NODE)
+                text = $ac[i].textContent;
+            else
+                text = $ac[i].firstChild.textContent;
             common = common === null ? text : common_prefix(common, text);
             if (smatch && !/smatch/.test($ac[i].className))
                 smatch = false;
@@ -3694,7 +3728,7 @@ function suggest(elt, klass, cleanf) {
 }
 
 function make_taghelp_q() {
-    suggest(this, "taghelp_q", taghelp_q);
+    suggest(this, taghelp_q);
 }
 
 $(function () { $(".hotcrp_searchbox").each(make_taghelp_q); });

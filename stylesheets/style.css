@@ -2215,6 +2215,13 @@ div.pst span.hint {
 	background-color: #6088d0;
 	color: white;
 }
+.suggestion-text {
+	font-weight: bold;
+}
+.suggestion-description {
+	padding-left: 0.5em;
+	opacity: 0.5;
+}
 
 /* bubbles */
 .bubble {
