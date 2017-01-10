@@ -11,8 +11,8 @@ $password_class = "";
 // signin links
 // auto-signin when email & password set
 if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
-    $_REQUEST["action"] = defval($_REQUEST, "action", "login");
-    $_REQUEST["signin"] = defval($_REQUEST, "signin", "go");
+    $_REQUEST["action"] = get($_REQUEST, "action", "login");
+    $_REQUEST["signin"] = get($_REQUEST, "signin", "go");
 }
 // CSRF protection: ignore unvalidated signin/signout for known users
 if (!$Me->is_empty() && !check_post())
