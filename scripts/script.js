@@ -223,7 +223,8 @@ function geometry_translate(g, dx, dy) {
 
 // text transformation
 window.escape_entities = (function () {
-    var re = /[&<>\"]/g, rep = {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"};
+    var re = /[&<>\"']/g;
+    var rep = {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "\'": "&#39;"};
     return function (s) {
         if (s === null || typeof s === "number")
             return s;
