@@ -1909,23 +1909,6 @@ function crpfocus(id, subfocus, seltype) {
     return false;
 }
 
-function crpSubmitKeyFilter(elt, e) {
-    e = e || window.event;
-    var form;
-    if (event_modkey(e) || event_key(e) != "Enter")
-        return true;
-    form = elt;
-    while (form && form.tagName && form.tagName != "FORM")
-        form = form.parentNode;
-    if (form && form.tagName) {
-        elt.blur();
-        if (!form.onsubmit || !(form.onsubmit instanceof Function) || form.onsubmit())
-            form.submit();
-        return false;
-    } else
-        return true;
-}
-
 function make_link_callback(elt) {
     return function () {
         window.location = elt.href;
@@ -3560,7 +3543,7 @@ function suggest(elt, suggestions_promise, options) {
     function kill() {
         tagdiv && tagdiv.remove();
         tagdiv = null;
-        blurring = hiding = interacted = false;
+        blurring = hiding = interacted = tagfail = false;
     }
 
     function finish_display(cinfo) {
@@ -3680,8 +3663,11 @@ function suggest(elt, suggestions_promise, options) {
         if (k != "Tab" || m)
             tagfail = false;
         if (k == "Escape" && !m) {
-            kill();
-            hiding = true;
+            if (tagdiv) {
+                kill();
+                hiding = true;
+                evt.stopImmediatePropagation();
+            }
             return true;
         }
         if ((k == "Tab" || k == "Enter") && !m && tagdiv)
@@ -5190,14 +5176,6 @@ function save_tags() {
     });
     return false;
 }
-save_tags.load_report = function () {
-    $.ajax(hoturl("api", "fn=tagreport&p=" + hotcrp_paperid), {
-        method: "GET", success: function (data) {
-            data.ok && $("#tagreportformresult").html(data.response || "");
-        }
-    });
-    return false;
-};
 save_tags.success = function (data) {
     data.color_classes && make_pattern_fill(data.color_classes, "", true);
     $(".has-tag-classes").each(function () {
@@ -5233,6 +5211,32 @@ save_tags.success = function (data) {
     if (data.tag_decoration_html)
         $("h1.paptitle").append(data.tag_decoration_html);
     votereport.clear();
+};
+save_tags.open = function (noload) {
+    var $ta = $("#foldtags textarea");
+    if (!$ta.hasClass("opened")) {
+        $ta.addClass("opened");
+        suggest($ta, taghelp_tset);
+        $ta.on("keydown", make_onkey("Enter", function () {
+            $("#foldtags input[name=save]").click();
+        })).on("keydown", make_onkey("Escape", function () {
+            $("#foldtags input[name=cancel]").click();
+        }));
+        $("#foldtags input[name=cancel]").on("click", function () {
+            $ta.val($ta.data("saved-text"));
+            return fold("tags", 1);
+        });
+    }
+    if (!noload)
+        $.ajax(hoturl("api", "fn=tagreport&p=" + hotcrp_paperid), {
+            method: "GET", success: function (data) {
+                data.ok && $("#tagreportformresult").html(data.response || "");
+            }
+        });
+    $ta.data("saved-text", $ta.val());
+    $ta.autogrow();
+    focus_within($("#foldtags"));
+    return false;
 };
 $(function () {
     if ($$("foldtags"))

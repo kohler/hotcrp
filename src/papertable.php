@@ -1096,7 +1096,7 @@ class PaperTable {
             echo " " . $extra;
         else if (is_array($extra))
             foreach ($extra as $k => $v)
-                echo "\" $k=\"$v";
+                echo "\" $k=\"", str_replace("\"", "&quot;", $v);
         echo '">';
         ++$this->npapstrip;
     }
@@ -1338,12 +1338,12 @@ class PaperTable {
         $tx = $tagger->unparse_and_link($viewable, $tags, false);
         $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
 
-        $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.load_report()"]);
+        $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.open()"]);
         $color = $this->prow->conf->tags()->color_classes($viewable);
         echo '<div class="', trim("has-tag-classes pscopen $color"), '">';
 
         if ($is_editable)
-            echo Ht::form_div(hoturl("paper", "p=" . $this->prow->paperId), array("id" => "tagform", "onsubmit" => "return save_tags()"));
+            echo Ht::form_div(hoturl("paper", "p=" . $this->prow->paperId), ["id" => "tagform", "onsubmit" => "return save_tags()"]);
 
         echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($is_editable ? "tags" : 0))),
             '<div class="psv">';
@@ -1367,22 +1367,25 @@ class PaperTable {
             if ($this->prow)
                 $editable = $this->prow->editable_tags($Me);
             echo '<div style="position:relative">',
-                '<textarea cols="20" rows="4" name="tags" onkeypress="return crpSubmitKeyFilter(this, event)" style="width:97%;margin:0" class="want-focus" tabindex="1000">',
+                '<textarea cols="20" rows="4" name="tags" style="width:97%;margin:0" class="want-focus" tabindex="1000">',
                 $tagger->unparse($editable),
                 "</textarea></div>",
                 '<div style="padding:1ex 0;text-align:right">',
-                Ht::submit("cancelsettags", "Cancel", array("onclick" => "return fold('tags',1)", "tabindex" => 1001)),
-                " &nbsp;", Ht::submit("Save", array("tabindex" => 1000)),
+                Ht::submit("cancel", "Cancel", ["tabindex" => 1001]),
+                " &nbsp;", Ht::submit("save", "Save", ["tabindex" => 1000]),
                 "</div>",
                 "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> <span class='barsep'>·</span> <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
                 "</div>";
-            Ht::stash_script("suggest(\"foldtags_d\",taghelp_tset)");
         } else
             echo '<div class="taghl">', ($tx === "" ? "None" : $tx), '</div>';
         echo "</div>";
 
         if ($is_editable)
             echo "</div></form>";
+        if ($unfolded) {
+            Ht::stash_script('save_tags.open(1)');
+            echo Ht::unstash();
+        }
         echo "</div></div>\n";
     }
 

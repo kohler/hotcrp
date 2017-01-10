@@ -101,7 +101,7 @@ class PaperApi {
     }
 
     static function settags_api(Contact $user, $qreq, $prow) {
-        if ($qreq->cancelsettags)
+        if ($qreq->cancel)
             json_exit(["ok" => true]);
         if ($prow && !$user->can_view_paper($prow))
             json_exit(["ok" => false, "error" => "No such paper."]);
