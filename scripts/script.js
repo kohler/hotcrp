@@ -2231,7 +2231,7 @@ function author_change(e, delta) {
             break;
         var $newtr = $($tbody.attr("data-row-template")).appendTo($tbody);
         $newtr.find("input[placeholder]").each(mktemptext);
-        $newtr.find(".hotcrp_searchbox").each(make_taghelp_q);
+        suggest($newtr.find(".hotcrp_searchbox"), taghelp_q);
         trs = $tbody.children();
         --delta;
     }
@@ -3720,18 +3720,16 @@ function suggest(elt, suggestions_promise, options) {
     }
 
     if (typeof elt === "string")
-        elt = $$(elt);
-    if (elt) {
+        elt = $(elt);
+    if (elt.jquery)
+        elt.each(function () { suggest(this, suggestions_promise, options); });
+    else if (elt) {
         $(elt).on("keydown", kp).on("blur", blur);
         elt.autocomplete = "off";
     }
 }
 
-function make_taghelp_q() {
-    suggest(this, taghelp_q);
-}
-
-$(function () { $(".hotcrp_searchbox").each(make_taghelp_q); });
+$(function () { suggest($(".hotcrp_searchbox"), taghelp_q); });
 
 
 // review preferences
