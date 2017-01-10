@@ -3745,6 +3745,11 @@ class PaperSearch {
                 if ($i)
                     $res[] = "has:draft{$rname}response";
             }
+        if ($this->user->can_view_tags()) {
+            array_push($res, "has:color", "has:style");
+            if ($this->conf->tags()->has_badges)
+                $res[] = "has:badge";
+        }
         foreach ($this->user->user_option_list() as $o)
             if ($this->user->can_view_some_paper_option($o))
                 $o->add_search_completion($res);
