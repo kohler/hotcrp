@@ -5267,7 +5267,7 @@ function set_cookie(info) {
     if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
         p = "; path=" + m[1];
     if (info)
-        document.cookie = "hotlist-info=" + encodeURIComponent(info) + "; max-age=2" + p;
+        document.cookie = "hotlist-info=" + encodeURIComponent(info) + "; max-age=20" + p;
     set_cookie = function () {};
 }
 function is_listable(href) {

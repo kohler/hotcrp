@@ -457,7 +457,7 @@ class SessionList {
     }
     function set_cookie() {
         global $Now;
-        setcookie("hotlist-info", $this->info_string(), $Now + 2, Navigation::site_path());
+        setcookie("hotlist-info", $this->info_string(), $Now + 20, Navigation::site_path());
     }
     static function clear_cookie() {
         global $Now;
