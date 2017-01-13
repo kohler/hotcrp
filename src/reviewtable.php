@@ -327,11 +327,11 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     // comments
     $pret = "";
     if ($crows && !empty($crows) && !$rrow && $mode !== "edit") {
-        $cids = $cnames = $known_cnames = [];
         $tagger = new Tagger($Me);
         $viewable_crows = array_filter($crows, function ($cr) use ($Me) { return $Me->can_view_comment($cr->prow, $cr, null); });
         $cxs = CommentInfo::group_by_identity($viewable_crows, $Me, true);
         if (!empty($cxs)) {
+            $count = array_reduce($cxs, function ($n, $cx) { return $n + $cx[1]; }, 0);
             $cnames = array_map(function ($cx) use ($Me) {
                 $cid = CommentInfo::unparse_html_id($cx[0]);
                 $tclass = "cmtlink";
@@ -349,7 +349,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
             }, $cxs);
             $first_cid = CommentInfo::unparse_html_id($cxs[0][0]);
             $pret = '<div class="revnotes"><a href="#' . $first_cid . '"><strong>'
-                . plural(count($cids), "Comment") . '</strong></a>: '
+                . plural($count, "Comment") . '</strong></a>: '
                 . join(" ", $cnames) . '</div>';
             $any_comments = true;
         }
