@@ -198,6 +198,7 @@ class PaperInfo {
     private $_document_array = null;
     private $_conflicts;
     private $_conflicts_email;
+    private $_comment_array = null;
     public $_row_set;
 
     function __construct($p = null, $contact = null, Conf $conf = null) {
@@ -1042,13 +1043,13 @@ class PaperInfo {
         }
         Dbl::free($result);
         foreach ($row_set->all() as $prow)
-            $prow->comment_array = get($comments, $prow->paperId, []);
+            $prow->_comment_array = get($comments, $prow->paperId, []);
     }
 
     function all_comments() {
-        if (!property_exists($this, "comment_array"))
+        if ($this->_comment_array === null)
             $this->load_comments();
-        return $this->comment_array;
+        return $this->_comment_array;
     }
 
     function viewable_comments(Contact $user, $forceShow) {
