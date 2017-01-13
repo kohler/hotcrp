@@ -74,7 +74,7 @@ class PaperContactInfo {
                 $map[$ci->paperId] = $ci;
             }
             Dbl::free($result);
-            foreach ($prow->_row_set->list() as $row)
+            foreach ($prow->_row_set->all() as $row)
                 $row->_add_contact_info($map[$row->paperId]);
             if ($prow->_get_contact_info($cid))
                 return;
@@ -158,7 +158,7 @@ class PaperInfoSet {
         $this->prows[] = $prow;
         $prow->_row_set = $this;
     }
-    function list() {
+    function all() {
         return $this->prows;
     }
     function by_pid() {
@@ -1041,7 +1041,7 @@ class PaperInfo {
             $comments[$c->paperId][$c->commentId] = $c;
         }
         Dbl::free($result);
-        foreach ($row_set->list() as $prow)
+        foreach ($row_set->all() as $prow)
             $prow->comment_array = get($comments, $prow->paperId, []);
     }
 
