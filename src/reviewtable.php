@@ -326,7 +326,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
 
     // comments
     $pret = "";
-    if ($crows && count($crows) > 0 && !$rrow && $mode !== "edit") {
+    if ($crows && !empty($crows) && !$rrow && $mode !== "edit") {
         $cids = $cnames = $known_cnames = [];
         $ellipsis = false;
         $tagger = new Tagger($Me);

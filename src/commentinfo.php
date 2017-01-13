@@ -44,7 +44,7 @@ class CommentInfo {
             $this->authorOrdinal = $this->ordinal;
     }
 
-    static public function fetch($result, PaperInfo $prow) {
+    static function fetch($result, PaperInfo $prow) {
         $cinfo = $result ? $result->fetch_object("CommentInfo", [null, $prow]) : null;
         if ($cinfo && !is_int($cinfo->commentId))
             $cinfo->merge(null, $prow);
@@ -52,7 +52,7 @@ class CommentInfo {
     }
 
 
-    public static function echo_script($prow) {
+    static function echo_script($prow) {
         global $Conf, $Me;
         if (Ht::mark_stash("papercomment")) {
             $t = array("papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
@@ -87,7 +87,7 @@ class CommentInfo {
             && !($ctype >= COMMENTTYPE_AUTHOR ? $this->authorOrdinal : $this->ordinal);
     }
 
-    public function unparse_ordinal() {
+    function unparse_ordinal() {
         $is_author = $this->commentType >= COMMENTTYPE_AUTHOR;
         $o = $is_author ? $this->authorOrdinal : $this->ordinal;
         if (self::commenttype_needs_ordinal($this->commentType) && $o)
@@ -96,7 +96,7 @@ class CommentInfo {
             return null;
     }
 
-    static public function unparse_html_id($cr) {
+    static function unparse_html_id($cr) {
         global $Conf;
         $is_author = $cr->commentType >= COMMENTTYPE_AUTHOR;
         $o = $is_author ? $cr->authorOrdinal : $cr->ordinal;
@@ -115,16 +115,16 @@ class CommentInfo {
             return $x;
     }
 
-    public function user() {
+    function user() {
         return self::_user($this);
     }
 
-    public function viewable_tags(Contact $user) {
+    function viewable_tags(Contact $user) {
         // NB caller must check can_view_comment_tags
         return Tagger::strip_nonviewable($this->commentTags, $user);
     }
 
-    public function unparse_json($contact, $include_displayed_at = false) {
+    function unparse_json($contact, $include_displayed_at = false) {
         if ($this->commentId && !$contact->can_view_comment($this->prow, $this, null))
             return false;
 
@@ -193,7 +193,7 @@ class CommentInfo {
         return $cj;
     }
 
-    public function unparse_text($contact, $no_title = false) {
+    function unparse_text($contact, $no_title = false) {
         $x = "===========================================================================\n";
         if (!($this->commentType & COMMENTTYPE_RESPONSE))
             $n = "Comment";
@@ -220,7 +220,7 @@ class CommentInfo {
         return $x . "\n";
     }
 
-    static public function unparse_flow_entry(Contact $contact, $crow) {
+    static function unparse_flow_entry(Contact $contact, $crow) {
         // See also ReviewForm::reviewFlowEntry
         global $Conf;
         $a = "<a href=\"" . hoturl("paper", "p=$crow->paperId#" . self::unparse_html_id($crow)) . "\"";
@@ -259,7 +259,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         Dbl::qe($q);
     }
 
-    public function save($req, $contact) {
+    function save($req, $contact) {
         global $Now;
         if (is_array($req))
             $req = (object) $req;
