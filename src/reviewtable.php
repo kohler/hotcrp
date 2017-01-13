@@ -333,10 +333,8 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
         foreach ($crows as $cr)
             if ($Me->can_view_comment($prow, $cr, null)) {
                 $n = $cr->unparse_user_html($Me, null);
-                if ($cr->commentType & COMMENTTYPE_RESPONSE) {
+                if ($cr->commentType & COMMENTTYPE_RESPONSE)
                     $known_cnames = [];
-                    $ellipsis = false;
-                }
                 $cids[] = $cid = CommentInfo::unparse_html_id($cr);
                 $tclass = "cmtlink";
                 if (($tags = $cr->viewable_tags($Me, null))
@@ -348,6 +346,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
                 if (!isset($known_cnames[$n]) || $tclass !== "cmtlink") {
                     $cnames[] = '<a class="' . $tclass . '" href="#' . $cid . '">' . $n . '</a>';
                     $known_cnames[$n] = true;
+                    $ellipsis = false;
                 } else if (!$ellipsis) {
                     $cnames[] = "…";
                     $ellipsis = true;
