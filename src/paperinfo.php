@@ -34,7 +34,7 @@ class PaperContactInfo {
             $this->review_token_cid = null;
     }
 
-    static function load_into(PaperInfo $prow, &$cmap, $cid, $rev_tokens = null) {
+    static function load_into(PaperInfo $prow, $cid, $rev_tokens = null) {
         global $Me;
         $conf = $prow->conf;
         $pid = $prow->paperId;
@@ -55,13 +55,11 @@ class PaperContactInfo {
             while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
                 $ci->merge();
                 $map[$ci->paperId] = $ci;
-                if ($ci->paperId == $pid)
-                    $cmap[$cid] = $found = $ci;
             }
             Dbl::free($result);
             foreach (self::$list_rows as $row)
-                $row->assign_contact_info($map[$row->paperId], $cid);
-            if ($found)
+                $row->_add_contact_info($map[$row->paperId]);
+            if ($prow->_get_contact_info($cid))
                 return;
         }
         if ($cid && !$rev_tokens
@@ -89,12 +87,12 @@ class PaperContactInfo {
         }
         while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
             $ci->merge();
-            $cmap[$ci->contactId] = $ci;
+            $prow->_add_contact_info($ci);
         }
         Dbl::free($result);
         foreach ($cids as $cid)
-            if (!isset($cmap[$cid]))
-                $cmap[$cid] = new PaperContactInfo($cid);
+            if (!$prow->_get_contact_info($cid))
+                $prow->_add_contact_info(PaperContactInfo::make($prow, $cid));
     }
 
     static function load_my(PaperInfo $prow, $object, $cid) {
@@ -239,6 +237,14 @@ class PaperInfo {
             return $contact ? : $Me->contactId;
     }
 
+    function _get_contact_info($cid) {
+        return get($this->_contact_info, $cid);
+    }
+
+    function _add_contact_info(PaperContactInfo $ci) {
+        $this->_contact_info[$ci->contactId] = $ci;
+    }
+
     function contact_info($contact = null) {
         global $Me;
         $rev_tokens = null;
@@ -264,7 +270,7 @@ class PaperInfo {
                 $ci->review_needs_submit = get($rs, $cid, 1);
                 $this->_contact_info[$cid] = $ci;
             } else
-                PaperContactInfo::load_into($this, $this->_contact_info, $cid, $rev_tokens);
+                PaperContactInfo::load_into($this, $cid, $rev_tokens);
         }
         return $this->_contact_info[$cid];
     }
