@@ -2064,15 +2064,17 @@ class Commenters_PaperColumn extends PaperColumn {
             $n = $cr->unparse_user_html($pl->contact, null);
             if ($cr->commentType & COMMENTTYPE_RESPONSE)
                 $known_cnames = [];
-            $tclass = "cmtlink";
+            $tclass = "";
             if (($tags = $cr->viewable_tags($pl->contact, null))
                 && ($color = $row->conf->tags()->color_classes($tags))) {
                 if (TagInfo::classes_have_colors($color))
                     $tclass .= " tagcolorspan";
                 $tclass .= " $color taghl";
             }
-            if (!isset($known_cnames[$n]) || $tclass !== "cmtlink") {
-                $cnames[] = '<span class="' . $tclass . '">' . $n . '</span>';
+            if (!isset($known_cnames[$n]) || $tclass !== "") {
+                if ($tclass !== "")
+                    $n = '<span class="cmtlink' . $tclass . '">' . $n . '</span>';
+                $cnames[] = $n;
                 $known_cnames[$n] = true;
                 $ellipsis = false;
             } else if (!$ellipsis) {
