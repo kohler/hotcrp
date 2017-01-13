@@ -148,7 +148,7 @@ class PaperInfo_Author {
 }
 
 class PaperInfoSet {
-    public $prows = [];
+    private $prows = [];
     function __construct(PaperInfo $prow = null) {
         if ($prow)
             $this->prows[] = $prow;

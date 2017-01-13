@@ -633,7 +633,7 @@ class PaperList {
         if (!$result)
             return null;
         $rowset = new PaperInfoSet;
-        $pids = array();
+        $pids = [];
         while (($row = PaperInfo::fetch($result, $this->contact)))
             if (($this->_allow_duplicates || !isset($pids[$row->paperId]))
                 && (!$this->_only_selected || $this->is_selected($row->paperId))) {
@@ -644,7 +644,7 @@ class PaperList {
 
         // prepare review query (see also search > getfn == "reviewers")
         $this->review_list = array();
-        if (isset($this->qopts["reviewList"]) && !empty($rowset->prows)) {
+        if (isset($this->qopts["reviewList"]) && $rowset->all()) {
             $result = $this->conf->qe("select Paper.paperId, reviewId, reviewType,
                 reviewSubmitted, reviewModified, timeApprovalRequested, reviewNeedsSubmit, reviewRound,
                 reviewOrdinal, timeRequested,
@@ -678,20 +678,21 @@ class PaperList {
         }
 
         // analyze rows (usually noop)
+        $rows = $rowset->all();
         foreach ($field_list as $fdef)
-            $fdef->analyze($this, $rowset->prows);
+            $fdef->analyze($this, $rowset);
 
         // sort rows
         if (!empty($this->sorters)) {
-            $review_rows = count($rowset->prows) !== count($pids);
-            $rowset->prows = $this->_sort($rowset->prows, $review_rows);
+            $review_rows = count($rows) !== count($pids);
+            $rows = $this->_sort($rows, $review_rows);
             if (isset($this->qopts["allReviewScores"]))
-                $this->_sortReviewOrdinal($rowset->prows);
+                $this->_sortReviewOrdinal($rows);
         }
 
         // set `any->optID`
         if (($nopts = $this->conf->paper_opts->count_option_list())) {
-            foreach ($rowset->prows as $prow) {
+            foreach ($rows as $prow) {
                 foreach ($prow->options() as $o)
                     if (!$this->has("opt$o->id")
                         && $this->contact->can_view_paper_option($prow, $o->option)) {
@@ -704,7 +705,7 @@ class PaperList {
         }
 
         $this->ids = [];
-        return $rowset->prows;
+        return $rows;
     }
 
     function is_folded($field) {
