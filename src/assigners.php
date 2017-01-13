@@ -1211,7 +1211,7 @@ class TagAssigner extends Assigner {
         if ($this->index !== null && str_ends_with($this->tag, ':')
             && !$aset->conf->setting("has_colontag"))
             $aset->conf->save_setting("has_colontag", 1);
-        $aset->contact->log_activity("Tag " . ($this->index === null ? "remove" : "set") . ": $this->tag", $this->pid);
+        $aset->contact->log_activity("Tag: " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);
     }
     function notify_tracker() {
         return true;

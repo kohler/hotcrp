@@ -2922,9 +2922,24 @@ class Conf {
             $this->_save_logs = array();
         else if (!$on && $this->_save_logs !== false) {
             $qv = [];
+            $last_pids = null;
             foreach ($this->_save_logs as $cid_text => $pids) {
                 $pos = strpos($cid_text, "|");
-                $qv[] = self::format_log_values(substr($cid_text, $pos + 1), substr($cid_text, 0, $pos), array_keys($pids));
+                $who = substr($cid_text, 0, $pos);
+                $what = substr($cid_text, $pos + 1);
+                $pids = array_keys($pids);
+
+                // Combine `Tag:` messages
+                if (substr($what, 0, 5) === "Tag: "
+                    && ($n = count($qv))
+                    && substr($qv[$n-1][3], 0, 5) === "Tag: "
+                    && $last_pids === $pids) {
+                    $qv[$n-1][3] = $what . substr($qv[$n-1][3], 4);
+                    continue;
+                }
+
+                $qv[] = self::format_log_values($what, $who, $pids);
+                $last_pids = $pids;
             }
             if (!empty($qv))
                 $this->qe(self::action_log_query, $qv);
