@@ -632,18 +632,19 @@ class PaperList {
         $result = $this->contact->paper_result($this->qopts);
         if (!$result)
             return null;
-        $rows = $pids = array();
+        $rowset = new PaperInfoSet;
+        $pids = array();
         while (($row = PaperInfo::fetch($result, $this->contact)))
             if (($this->_allow_duplicates || !isset($pids[$row->paperId]))
                 && (!$this->_only_selected || $this->is_selected($row->paperId))) {
-                $rows[] = $row;
+                $rowset->add($row);
                 $pids[$row->paperId] = true;
             }
         Dbl::free($result);
 
         // prepare review query (see also search > getfn == "reviewers")
         $this->review_list = array();
-        if (isset($this->qopts["reviewList"]) && !empty($rows)) {
+        if (isset($this->qopts["reviewList"]) && !empty($rowset->prows)) {
             $result = $this->conf->qe("select Paper.paperId, reviewId, reviewType,
                 reviewSubmitted, reviewModified, timeApprovalRequested, reviewNeedsSubmit, reviewRound,
                 reviewOrdinal, timeRequested,
@@ -677,20 +678,20 @@ class PaperList {
         }
 
         // analyze rows (usually noop)
-        PaperContactInfo::$list_rows = $rows;
         foreach ($field_list as $fdef)
-            $fdef->analyze($this, $rows);
+            $fdef->analyze($this, $rowset->prows);
 
         // sort rows
         if (!empty($this->sorters)) {
-            $rows = $this->_sort($rows, count($rows) != count($pids));
+            $review_rows = count($rowset->prows) !== count($pids);
+            $rowset->prows = $this->_sort($rowset->prows, $review_rows);
             if (isset($this->qopts["allReviewScores"]))
-                $this->_sortReviewOrdinal($rows);
+                $this->_sortReviewOrdinal($rowset->prows);
         }
 
         // set `any->optID`
         if (($nopts = $this->conf->paper_opts->count_option_list())) {
-            foreach ($rows as $prow) {
+            foreach ($rowset->prows as $prow) {
                 foreach ($prow->options() as $o)
                     if (!$this->has("opt$o->id")
                         && $this->contact->can_view_paper_option($prow, $o->option)) {
@@ -703,7 +704,7 @@ class PaperList {
         }
 
         $this->ids = [];
-        return $rows;
+        return $rowset->prows;
     }
 
     function is_folded($field) {
@@ -1243,10 +1244,6 @@ class PaperList {
         return $t;
     }
 
-    private function _cleanup() {
-        PaperContactInfo::$list_rows = null;
-    }
-
     function id_array() {
         if (!$this->_prepare())
             return null;
@@ -1257,7 +1254,6 @@ class PaperList {
         $idarray = array();
         foreach ($rows as $row)
             $idarray[] = (int) $row->paperId;
-        $this->_cleanup();
         return $idarray;
     }
 
@@ -1464,7 +1460,6 @@ class PaperList {
         if ($rstate->has_anonau)
             $this->_has["anonau"] = true;
 
-        $this->_cleanup();
         return $enter . join("", $body) . " </tbody>\n" . $exit;
     }
 
@@ -1507,7 +1502,6 @@ class PaperList {
 
         if ($fdef->has_content)
             $this->_has[$fname] = true;
-        $this->_cleanup();
         return $data;
     }
 
@@ -1532,7 +1526,6 @@ class PaperList {
             $x[$row->paperId] = (object) $p;
         }
 
-        $this->_cleanup();
         return $x;
     }
 
@@ -1610,7 +1603,6 @@ class PaperList {
             if ($fdef->has_content)
                 $header[$fdef->name] = $fdef->header($this, true);
 
-        $this->_cleanup();
         return [$header, $body];
     }
 }

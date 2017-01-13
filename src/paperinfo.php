@@ -11,7 +11,6 @@ class PaperContactInfo {
     public $review_submitted = 0;
     public $review_needs_submit = 1;
     public $review_token_cid = 0;
-    static public $list_rows = null;
 
     static function make(PaperInfo $prow, $cid) {
         $ci = new PaperContactInfo;
@@ -62,12 +61,12 @@ class PaperContactInfo {
                 reviewSubmitted as review_submitted,
                 reviewNeedsSubmit as review_needs_submit,
                 PaperReview.contactId as review_token_cid";
-        if (self::$list_rows && !$rev_tokens) {
+        if ($prow->_row_set && !$rev_tokens) {
             $result = $conf->qe_raw("$q, Paper.paperId paperId, $cid contactId
                 from Paper
                 left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$cid)
                 left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$cid)
-                where Paper.paperId in (" . join(", ", array_map(function ($row) { return $row->paperId; }, self::$list_rows)) . ")");
+                where Paper.paperId in (" . join(", ", array_map(function ($row) { return $row->paperId; }, $prow->_row_set->prows)) . ")");
             $found = false;
             $map = [];
             while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
@@ -75,7 +74,7 @@ class PaperContactInfo {
                 $map[$ci->paperId] = $ci;
             }
             Dbl::free($result);
-            foreach (self::$list_rows as $row)
+            foreach ($prow->_row_set->prows as $row)
                 $row->_add_contact_info($map[$row->paperId]);
             if ($prow->_get_contact_info($cid))
                 return;
@@ -148,6 +147,15 @@ class PaperInfo_Author {
     }
 }
 
+class PaperInfoSet {
+    public $prows = [];
+    function add(PaperInfo $prow) {
+        assert(!$prow->_row_set);
+        $this->prows[] = $prow;
+        $prow->_row_set = $this;
+    }
+}
+
 class PaperInfo {
     public $paperId;
     public $conf;
@@ -176,6 +184,7 @@ class PaperInfo {
     private $_document_array = null;
     private $_conflicts;
     private $_conflicts_email;
+    public $_row_set;
 
     function __construct($p = null, $contact = null, Conf $conf = null) {
         $this->merge($p, $contact, $conf);
