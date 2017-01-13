@@ -127,9 +127,45 @@ class CommentInfo {
         return self::_user($this);
     }
 
-    function viewable_tags(Contact $user) {
-        // NB caller must check can_view_comment_tags
-        return Tagger::strip_nonviewable($this->commentTags, $user);
+    function unparse_response_text() {
+        if ($this->commentType & COMMENTTYPE_RESPONSE) {
+            $rname = $this->conf->resp_round_name($this->commentRound);
+            $t = $rname == "1" ? "Response" : "$rname Response";
+            if ($this->commentType & COMMENTTYPE_DRAFT)
+                $t = "Draft $t";
+            return $t;
+        } else
+            return null;
+    }
+
+    function unparse_user_html(Contact $user, $forceShow = null) {
+        if ($user->can_view_comment_identity($this->prow, $this, $forceShow))
+            $n = Text::abbrevname_html($this->user());
+        else
+            $n = "anonymous";
+        if ($this->commentType & COMMENTTYPE_RESPONSE)
+            $n = "<i>" . $this->unparse_response_text() . "</i>"
+                . ($n === "anonymous" ? "" : " ($n)");
+        return $n;
+    }
+
+    function unparse_user_text(Contact $user, $forceShow = null) {
+        if ($user->can_view_comment_identity($this->prow, $this, $forceShow))
+            $n = Text::abbrevname_text($this->user());
+        else
+            $n = "anonymous";
+        if ($this->commentType & COMMENTTYPE_RESPONSE)
+            $n = $this->unparse_response_text()
+                . ($n === "anonymous" ? "" : " ($n)");
+        return $n;
+    }
+
+    function viewable_tags(Contact $user, $forceShow = null) {
+        if ($this->commentTags
+            && $user->can_view_comment_tags($this->prow, $this, null))
+            return Tagger::strip_nonviewable($this->commentTags, $user);
+        else
+            return null;
     }
 
     function unparse_json($contact, $include_displayed_at = false) {
@@ -160,10 +196,8 @@ class CommentInfo {
             $cj->editable = true;
 
         // tags
-        if ($this->commentTags
-            && $contact->can_view_comment_tags($this->prow, $this, null)) {
-            if (($tags = $this->viewable_tags($contact)))
-                $cj->tags = TagInfo::split($tags);
+        if (($tags = $this->viewable_tags($contact))) {
+            $cj->tags = TagInfo::split($tags);
             if ($tags && ($cc = $this->conf->tags()->color_classes($tags)))
                 $cj->color_classes = $cc;
         }
@@ -214,9 +248,7 @@ class CommentInfo {
         $x .= center_word_wrap($n);
         if (!$no_title)
             $x .= $this->prow->pretty_text_title();
-        if ($this->commentTags
-            && $contact->can_view_comment_tags($this->prow, $this, null)
-            && ($tags = $this->viewable_tags($contact))) {
+        if (($tags = $this->viewable_tags($contact))) {
             $tagger = new Tagger($contact);
             $x .= center_word_wrap($tagger->unparse_hashed($tags));
         }

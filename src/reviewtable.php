@@ -332,29 +332,14 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
         $tagger = new Tagger($Me);
         foreach ($crows as $cr)
             if ($Me->can_view_comment($prow, $cr, null)) {
-                if ($Me->can_view_comment_identity($prow, $cr, null))
-                    $n = Text::abbrevname_html($cr->user());
-                else
-                    $n = "anonymous";
+                $n = $cr->unparse_user_html($Me, null);
                 if ($cr->commentType & COMMENTTYPE_RESPONSE) {
-                    $rname = $conf->resp_round_name($cr->commentRound);
-                    $n = ($n === "anonymous" ? "" : " ($n)");
-                    if (($cr->commentType & COMMENTTYPE_DRAFT) && $rname != "1")
-                        $n = "<i>Draft $rname Response</i>$n";
-                    else if ($cr->commentType & COMMENTTYPE_DRAFT)
-                        $n = "<i>Draft Response</i>$n";
-                    else if ($rname != "1")
-                        $n = "<i>$rname Response</i>$n";
-                    else
-                        $n = "<i>Response</i>$n";
                     $known_cnames = [];
                     $ellipsis = false;
                 }
                 $cids[] = $cid = CommentInfo::unparse_html_id($cr);
                 $tclass = "cmtlink";
-                if ($cr->commentTags
-                    && ($tags = Tagger::strip_nonviewable($cr->commentTags, $Me))
-                    && $Me->can_view_comment_tags($prow, $cr, null)
+                if (($tags = $cr->viewable_tags($Me, null))
                     && ($color = $prow->conf->tags()->color_classes($tags))) {
                     if (TagInfo::classes_have_colors($color))
                         $tclass .= " tagcolorspan";
