@@ -1774,7 +1774,7 @@ class Formula_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         $v = $this->results[$row->paperId];
-        return $this->formula->unparse_text($s, $this->real_format);
+        return $this->formula->unparse_text($v, $this->real_format);
     }
     function has_statistics() {
         return ($this->statistics && $this->statistics->count())
