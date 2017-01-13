@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperContactInfo {
-    public $paperId; // not always set
+    public $paperId;
     public $contactId;
     public $conflict_type = 0;
     public $review_type = 0;
@@ -13,9 +13,27 @@ class PaperContactInfo {
     public $review_token_cid = 0;
     static public $list_rows = null;
 
-    function __construct($cid = null) {
-        if ($cid)
-            $this->contactId = $cid;
+    static function make(PaperInfo $prow, $cid) {
+        $ci = new PaperContactInfo;
+        $ci->paperId = $prow->paperId;
+        $ci->contactId = $cid;
+        return $ci;
+    }
+
+    static function make_my(PaperInfo $prow, $cid, $object) {
+        $ci = PaperContactInfo::make($prow, $cid);
+        if (property_exists($object, "conflictType"))
+            $ci->conflict_type = (int) $object->conflictType;
+        if (property_exists($object, "myReviewType"))
+            $ci->review_type = (int) $object->myReviewType;
+        if (property_exists($object, "myReviewSubmitted"))
+            $ci->review_submitted = (int) $object->myReviewSubmitted;
+        if (property_exists($object, "myReviewNeedsSubmit"))
+            $ci->review_needs_submit = (int) $object->myReviewNeedsSubmit;
+        if (property_exists($object, "myReviewContactId")
+            && $object->myReviewContactId != $cid)
+            $ci->review_token_cid = (int) $object->myReviewContactId;
+        return $ci;
     }
 
     private function merge() {
@@ -93,23 +111,6 @@ class PaperContactInfo {
         foreach ($cids as $cid)
             if (!$prow->_get_contact_info($cid))
                 $prow->_add_contact_info(PaperContactInfo::make($prow, $cid));
-    }
-
-    static function load_my(PaperInfo $prow, $object, $cid) {
-        $ci = new PaperContactInfo($cid);
-        $ci->paperId = $prow->paperId;
-        if (property_exists($object, "conflictType"))
-            $ci->conflict_type = (int) $object->conflictType;
-        if (property_exists($object, "myReviewType"))
-            $ci->review_type = (int) $object->myReviewType;
-        if (property_exists($object, "myReviewSubmitted"))
-            $ci->review_submitted = (int) $object->myReviewSubmitted;
-        if (property_exists($object, "myReviewNeedsSubmit"))
-            $ci->review_needs_submit = (int) $object->myReviewNeedsSubmit;
-        if (property_exists($object, "myReviewContactId")
-            && $object->myReviewContactId != $cid)
-            $ci->review_token_cid = (int) $object->myReviewContactId;
-        return $ci;
     }
 }
 
@@ -198,7 +199,7 @@ class PaperInfo {
             else
                 $cid = is_object($contact) ? $contact->contactId : $contact;
             $this->_contact_info_rights_version = Contact::$rights_version;
-            $this->assign_contact_info($this, $cid);
+            $this->load_my_contact_info($cid, $this);
         }
         foreach (["paperTags", "optionIds"] as $k)
             if (property_exists($this, $k) && $this->$k === null)
@@ -259,8 +260,7 @@ class PaperInfo {
         }
         if (!array_key_exists($cid, $this->_contact_info)) {
             if (!$rev_tokens && property_exists($this, "allReviewNeedsSubmit")) {
-                $ci = new PaperContactInfo($cid);
-                $ci->paperId = $this->paperId;
+                $ci = PaperContactInfo::make($this, $cid);
                 if (($c = get($this->conflicts(), $cid)))
                     $ci->conflict_type = $c->conflictType;
                 $ci->review_type = $this->review_type($cid);
@@ -282,8 +282,8 @@ class PaperInfo {
         return $old_cimap;
     }
 
-    function assign_contact_info($row, $cid) {
-        $this->_contact_info[$cid] = PaperContactInfo::load_my($this, $row, $cid);
+    function load_my_contact_info($cid, $object) {
+        $this->_add_contact_info(PaperContactInfo::make_my($this, $cid, $object));
     }
 
 
@@ -1058,7 +1058,7 @@ class PaperInfo {
         $cimap = $this->replace_contact_info_map(null);
 
         foreach ($watchers as $minic) {
-            $this->assign_contact_info($minic, $minic->contactId);
+            $this->load_my_contact_info($minic->contactId, $minic);
             call_user_func($callback, $this, $minic);
         }
 
