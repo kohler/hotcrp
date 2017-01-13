@@ -2046,3 +2046,58 @@ class PageCount_PaperColumn extends PaperColumn {
         return (string) $this->page_count($pl->contact, $row);
     }
 }
+
+class Commenters_PaperColumn extends PaperColumn {
+    function __construct($cj) {
+        parent::__construct($cj);
+    }
+    function header(PaperList $pl, $is_text) {
+        return "Commenters";
+    }
+    function content_empty(PaperList $pl, PaperInfo $row) {
+        return !$row->viewable_comments($pl->contact, null);
+    }
+    function content(PaperList $pl, PaperInfo $row, $rowidx) {
+        $cnames = $known_cnames = [];
+        $ellipsis = false;
+        foreach ($row->viewable_comments($pl->contact, null) as $cr) {
+            $n = $cr->unparse_user_html($pl->contact, null);
+            if ($cr->commentType & COMMENTTYPE_RESPONSE)
+                $known_cnames = [];
+            $tclass = "cmtlink";
+            if (($tags = $cr->viewable_tags($pl->contact, null))
+                && ($color = $row->conf->tags()->color_classes($tags))) {
+                if (TagInfo::classes_have_colors($color))
+                    $tclass .= " tagcolorspan";
+                $tclass .= " $color taghl";
+            }
+            if (!isset($known_cnames[$n]) || $tclass !== "cmtlink") {
+                $cnames[] = '<span class="' . $tclass . '">' . $n . '</span>';
+                $known_cnames[$n] = true;
+                $ellipsis = false;
+            } else if (!$ellipsis) {
+                $cnames[] = "…";
+                $ellipsis = true;
+            }
+        }
+        return join(", ", $cnames);
+    }
+    function text(PaperList $pl, PaperInfo $row) {
+        $cnames = $known_cnames = [];
+        $ellipsis = false;
+        foreach ($row->viewable_comments($pl->contact, null) as $cr) {
+            $n = $cr->unparse_user_text($pl->contact, null);
+            if ($cr->commentType & COMMENTTYPE_RESPONSE)
+                $known_cnames = [];
+            if (!isset($known_cnames[$n])) {
+                $cnames[] = $n;
+                $known_cnames[$n] = true;
+                $ellipsis = false;
+            } else if (!$ellipsis) {
+                $cnames[] = "…";
+                $ellipsis = true;
+            }
+        }
+        return join(", ", $cnames);
+    }
+}

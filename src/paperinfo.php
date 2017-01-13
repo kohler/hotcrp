@@ -1042,7 +1042,7 @@ class PaperInfo {
         }
         Dbl::free($result);
         foreach ($row_set->list() as $prow)
-            $prow->comment_array = $comments[$prow->paperId];
+            $prow->comment_array = get($comments, $prow->paperId, []);
     }
 
     function all_comments() {

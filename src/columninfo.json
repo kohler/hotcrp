@@ -213,6 +213,11 @@
         "priority": 1600
     },
     {
+        "name": "commenters",
+        "row": true, "fold": true, "completion": true, "factory_class": "Commenters_PaperColumn",
+        "priority": 1700
+    },
+    {
         "name": "foldall", "factory_class": "FoldAll_PaperColumn"
     }
 ]
