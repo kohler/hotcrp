@@ -62,11 +62,11 @@ class PaperContactInfo {
                 reviewNeedsSubmit as review_needs_submit,
                 PaperReview.contactId as review_token_cid";
         if ($prow->_row_set && !$rev_tokens) {
-            $result = $conf->qe_raw("$q, Paper.paperId paperId, $cid contactId
+            $result = $conf->qe("$q, Paper.paperId paperId, $cid contactId
                 from Paper
                 left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$cid)
                 left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$cid)
-                where Paper.paperId in (" . join(", ", array_map(function ($row) { return $row->paperId; }, $prow->_row_set->prows)) . ")");
+                where Paper.paperId?a", array_keys($prow->_row_set->by_pid()));
             $found = false;
             $map = [];
             while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
@@ -74,7 +74,7 @@ class PaperContactInfo {
                 $map[$ci->paperId] = $ci;
             }
             Dbl::free($result);
-            foreach ($prow->_row_set->prows as $row)
+            foreach ($prow->_row_set->list() as $row)
                 $row->_add_contact_info($map[$row->paperId]);
             if ($prow->_get_contact_info($cid))
                 return;
@@ -149,10 +149,24 @@ class PaperInfo_Author {
 
 class PaperInfoSet {
     public $prows = [];
+    function __construct(PaperInfo $prow = null) {
+        if ($prow)
+            $this->prows[] = $prow;
+    }
     function add(PaperInfo $prow) {
         assert(!$prow->_row_set);
         $this->prows[] = $prow;
         $prow->_row_set = $this;
+    }
+    function list() {
+        return $this->prows;
+    }
+    function by_pid() {
+        $by_pid = [];
+        foreach ($this->prows as $prow)
+            if (!isset($by_pid[$prow->paperId]))
+                $by_pid[$prow->paperId] = $prow;
+        return $by_pid;
     }
 }
 
@@ -998,19 +1012,37 @@ class PaperInfo {
             && $contact->can_view_review_identity($this, $rrow, $forceShow);
     }
 
-    function fetch_comments($where) {
-        $result = $this->conf->qe("select PaperComment.*, firstName reviewFirstName, lastName reviewLastName, email reviewEmail
-            from PaperComment join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
-            where $where order by commentId");
+    static function fetch_comment_query() {
+        return "select PaperComment.*,
+            firstName reviewFirstName, lastName reviewLastName, email reviewEmail
+            from PaperComment
+            join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)";
+    }
+
+    function fetch_comments($extra_where = null) {
+        $result = $this->conf->qe(self::fetch_comment_query()
+            . " where paperId={$this->paperId}" . ($extra_where ? " and $extra_where" : "")
+            . " order by commentId");
         $comments = array();
-        while (($c = CommentInfo::fetch($result, $this)))
+        while (($c = CommentInfo::fetch($result, $this, $this->conf)))
             $comments[$c->commentId] = $c;
         Dbl::free($result);
         return $comments;
     }
 
     function load_comments() {
-        $this->comment_array = $this->fetch_comments("PaperComment.paperId=$this->paperId");
+        $row_set = $this->_row_set ? : new PaperInfoSet($this);
+        $prows_by_id = $row_set->by_pid();
+        $result = $this->conf->qe(self::fetch_comment_query()
+            . " where paperId?a order by commentId", array_keys($prows_by_id));
+        $comments = [];
+        while (($c = CommentInfo::fetch($result, null, $this->conf))) {
+            $c->set_prow($prows_by_id[$c->paperId]);
+            $comments[$c->paperId][$c->commentId] = $c;
+        }
+        Dbl::free($result);
+        foreach ($row_set->list() as $prow)
+            $prow->comment_array = $comments[$prow->paperId];
     }
 
     function all_comments() {

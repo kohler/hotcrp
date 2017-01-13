@@ -26,12 +26,13 @@ class CommentInfo {
     static private $visibility_map = array(COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc", COMMENTTYPE_REVIEWER => "rev", COMMENTTYPE_AUTHOR => "au");
 
 
-    function __construct($x, PaperInfo $prow) {
-        $this->merge(is_object($x) ? $x : null, $prow);
+    function __construct($x, PaperInfo $prow = null, Conf $conf = null) {
+        $this->merge(is_object($x) ? $x : null, $prow, $conf);
     }
 
-    private function merge($x, PaperInfo $prow) {
-        $this->conf = $prow->conf;
+    private function merge($x, PaperInfo $prow = null, Conf $conf = null) {
+        assert(($prow || $conf) && (!$prow || !$conf || $prow->conf === $conf));
+        $this->conf = $prow ? $prow->conf : $conf;
         $this->prow = $prow;
         if ($x)
             foreach ($x as $k => $v)
@@ -40,15 +41,22 @@ class CommentInfo {
         $this->paperId = (int) $this->paperId;
         $this->commentType = (int) $this->commentType;
         $this->commentRound = (int) $this->commentRound;
-        if ($prow->conf->sversion < 107 && $this->commentType >= COMMENTTYPE_AUTHOR)
+        if ($this->conf->sversion < 107 && $this->commentType >= COMMENTTYPE_AUTHOR)
             $this->authorOrdinal = $this->ordinal;
     }
 
-    static function fetch($result, PaperInfo $prow) {
-        $cinfo = $result ? $result->fetch_object("CommentInfo", [null, $prow]) : null;
+    static function fetch($result, PaperInfo $prow = null, Conf $conf = null) {
+        $cinfo = null;
+        if ($result)
+            $cinfo = $result->fetch_object("CommentInfo", [null, $prow, $conf]);
         if ($cinfo && !is_int($cinfo->commentId))
-            $cinfo->merge(null, $prow);
+            $cinfo->merge(null, $prow, $conf);
         return $cinfo;
+    }
+
+    function set_prow(PaperInfo $prow) {
+        assert(!$this->prow && $this->paperId === $prow->paperId && $this->conf === $prow->conf);
+        $this->prow = $prow;
     }
 
 
