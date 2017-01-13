@@ -2058,48 +2058,30 @@ class Commenters_PaperColumn extends PaperColumn {
         return !$row->viewable_comments($pl->contact, null);
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
-        $cnames = $known_cnames = [];
-        $ellipsis = false;
-        foreach ($row->viewable_comments($pl->contact, null) as $cr) {
-            $n = $cr->unparse_user_html($pl->contact, null);
-            if ($cr->commentType & COMMENTTYPE_RESPONSE)
-                $known_cnames = [];
-            $tclass = "";
-            if (($tags = $cr->viewable_tags($pl->contact, null))
-                && ($color = $row->conf->tags()->color_classes($tags))) {
+        $crows = $row->viewable_comments($pl->contact, null);
+        $cnames = array_map(function ($cx) use ($pl) {
+            $n = $t = $cx[0]->unparse_user_html($pl->contact, null);
+            if (($tags = $cx[0]->viewable_tags($pl->contact, null))
+                && ($color = $cx[0]->conf->tags()->color_classes($tags))) {
+                $t = '<span class="cmtlink';
                 if (TagInfo::classes_have_colors($color))
-                    $tclass .= " tagcolorspan";
-                $tclass .= " $color taghl";
+                    $t .= " tagcolorspan";
+                $t .= " $color taghl\">" . $n . "</span>";
             }
-            if (!isset($known_cnames[$n]) || $tclass !== "") {
-                if ($tclass !== "")
-                    $n = '<span class="cmtlink' . $tclass . '">' . $n . '</span>';
-                $cnames[] = $n;
-                $known_cnames[$n] = true;
-                $ellipsis = false;
-            } else if (!$ellipsis) {
-                $cnames[] = "…";
-                $ellipsis = true;
-            }
-        }
-        return join(", ", $cnames);
+            if ($cx[1] > 1)
+                $t .= " ({$cx[1]})";
+            return $t . $cx[2];
+        }, CommentInfo::group_by_identity($crows, $pl->contact, true));
+        return join(" ", $cnames);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $cnames = $known_cnames = [];
-        $ellipsis = false;
-        foreach ($row->viewable_comments($pl->contact, null) as $cr) {
-            $n = $cr->unparse_user_text($pl->contact, null);
-            if ($cr->commentType & COMMENTTYPE_RESPONSE)
-                $known_cnames = [];
-            if (!isset($known_cnames[$n])) {
-                $cnames[] = $n;
-                $known_cnames[$n] = true;
-                $ellipsis = false;
-            } else if (!$ellipsis) {
-                $cnames[] = "…";
-                $ellipsis = true;
-            }
-        }
-        return join(", ", $cnames);
+        $crows = $row->viewable_comments($pl->contact, null);
+        $cnames = array_map(function ($cx) use ($pl) {
+            $t = $cx[0]->unparse_user_text($pl->contact, null);
+            if ($cx[1] > 1)
+                $t .= " ({$cx[1]})";
+            return $t . $cx[2];
+        }, CommentInfo::group_by_identity($crows, $pl->contact, false));
+        return join(" ", $cnames);
     }
 }

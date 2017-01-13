@@ -138,6 +138,42 @@ class CommentInfo {
             return null;
     }
 
+    static function group_by_identity($crows, Contact $user, $separateColors,
+                                      $forceShow = null) {
+        $known_cids = $result = [];
+        foreach ($crows as $cr) {
+            $open = $user->can_view_comment_identity($cr->prow, $cr, $forceShow);
+            $cid = $open ? $cr->contactId : 0;
+            if ($cr->commentType & COMMENTTYPE_RESPONSE) {
+                if (!empty($result))
+                    $result[count($result) - 1][2] = ";";
+                $connector = ";";
+                $known_cids = [];
+                $include = true;
+                $record = false;
+            } else {
+                $connector = ",";
+                $include = !isset($known_cids[$cid]);
+                $record = true;
+            }
+            if ($separateColors
+                && ($tags = $cr->viewable_tags($user, $forceShow))
+                && ($color = $cr->conf->tags()->color_classes($tags))) {
+                $include = true;
+                $record = false;
+            }
+            if ($include)
+                $result[] = [$cr, 1, $connector];
+            else
+                ++$result[$known_cids[$cid]][1];
+            if ($record)
+                $known_cids[$cid] = count($result) - 1;
+        }
+        if (!empty($result))
+            $result[count($result) - 1][2] = "";
+        return $result;
+    }
+
     function unparse_user_html(Contact $user, $forceShow = null) {
         if ($user->can_view_comment_identity($this->prow, $this, $forceShow))
             $n = Text::abbrevname_html($this->user());

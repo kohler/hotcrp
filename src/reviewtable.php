@@ -328,32 +328,29 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     $pret = "";
     if ($crows && !empty($crows) && !$rrow && $mode !== "edit") {
         $cids = $cnames = $known_cnames = [];
-        $ellipsis = false;
         $tagger = new Tagger($Me);
-        foreach ($crows as $cr)
-            if ($Me->can_view_comment($prow, $cr, null)) {
-                $n = $cr->unparse_user_html($Me, null);
-                if ($cr->commentType & COMMENTTYPE_RESPONSE)
-                    $known_cnames = [];
-                $cids[] = $cid = CommentInfo::unparse_html_id($cr);
+        $viewable_crows = array_filter($crows, function ($cr) use ($Me) { return $Me->can_view_comment($cr->prow, $cr, null); });
+        $cxs = CommentInfo::group_by_identity($viewable_crows, $Me, true);
+        if (!empty($cxs)) {
+            $cnames = array_map(function ($cx) use ($Me) {
+                $cid = CommentInfo::unparse_html_id($cx[0]);
                 $tclass = "cmtlink";
-                if (($tags = $cr->viewable_tags($Me, null))
-                    && ($color = $prow->conf->tags()->color_classes($tags))) {
+                if (($tags = $cx[0]->viewable_tags($Me, null))
+                    && ($color = $cx[0]->conf->tags()->color_classes($tags))) {
                     if (TagInfo::classes_have_colors($color))
                         $tclass .= " tagcolorspan";
                     $tclass .= " $color taghl";
                 }
-                if (!isset($known_cnames[$n]) || $tclass !== "cmtlink") {
-                    $cnames[] = '<a class="' . $tclass . '" href="#' . $cid . '">' . $n . '</a>';
-                    $known_cnames[$n] = true;
-                    $ellipsis = false;
-                } else if (!$ellipsis) {
-                    $cnames[] = "…";
-                    $ellipsis = true;
-                }
-            }
-        if (count($cids) > 0) {
-            $pret = '<div class="revnotes"><a href="#' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . '</strong></a>: <span class="nb">' . join(',</span> <span class="nb">', $cnames) . "</span></div>";
+                return "<span class=\"nb\"><a class=\"{$tclass}\" href=\"#{$cid}\">"
+                    . $cx[0]->unparse_user_html($Me, null)
+                    . "</a>"
+                    . ($cx[1] > 1 ? " ({$cx[1]})" : "")
+                    . $cx[2] . "</span>";
+            }, $cxs);
+            $first_cid = CommentInfo::unparse_html_id($cxs[0][0]);
+            $pret = '<div class="revnotes"><a href="#' . $first_cid . '"><strong>'
+                . plural(count($cids), "Comment") . '</strong></a>: '
+                . join(" ", $cnames) . '</div>';
             $any_comments = true;
         }
     }
