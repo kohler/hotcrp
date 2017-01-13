@@ -1051,6 +1051,14 @@ class PaperInfo {
         return $this->comment_array;
     }
 
+    function viewable_comments(Contact $user, $forceShow) {
+        $crows = [];
+        foreach ($this->all_comments() as $cid => $crow)
+            if ($user->can_view_comment($this, $crow, null))
+                $crows[$cid] = $crow;
+        return $crows;
+    }
+
 
     function notify($notifytype, $callback, $contact) {
         $q = "select ContactInfo.contactId, firstName, lastName, email,

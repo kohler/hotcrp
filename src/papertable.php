@@ -2477,9 +2477,7 @@ class PaperTable {
         $this->crows = $this->mycrows = array();
         if ($this->prow) {
             $this->crows = $this->prow->all_comments();
-            foreach ($this->crows as $cid => $crow)
-                if ($Me->can_view_comment($this->prow, $crow, null))
-                    $this->mycrows[$cid] = $crow;
+            $this->mycrows = $this->prow->viewable_comments($Me, null);
         }
     }
 
