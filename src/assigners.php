@@ -1442,7 +1442,7 @@ class AssignmentSet {
     function report_errors() {
         if (!empty($this->msgs) && $this->has_errors)
             Conf::msg_error('Assignment errors: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div> Please correct these errors and try again.');
-        else
+        else if (!empty($this->msgs))
             Conf::msg_warning('Assignment warnings: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div>');
     }
 
