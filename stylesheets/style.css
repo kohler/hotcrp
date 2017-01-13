@@ -1712,7 +1712,7 @@ span.pl_rownum {
 table.pltable_full > tbody > tr > td.pl_title {
 	width: 100%;
 }
-div.pl_autoassignment > h6 {
+div.pl_autoassignment > em.plx {
 	font-weight: bold;
 }
 tr.pl_headrow > td, tr.pl_headrow > th {
