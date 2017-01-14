@@ -680,7 +680,7 @@ class PaperList {
         // analyze rows (usually noop)
         $rows = $rowset->all();
         foreach ($field_list as $fdef)
-            $fdef->analyze($this, $rowset);
+            $fdef->analyze($this, $rows);
 
         // sort rows
         if (!empty($this->sorters)) {
