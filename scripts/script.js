@@ -1,5 +1,5 @@
 // script.js -- HotCRP JavaScript library
-// HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 var siteurl, siteurl_postvalue, siteurl_suffix, siteurl_defaults,
@@ -3409,6 +3409,8 @@ function completion_item(c) {
         return {s: c};
     else if ($.isArray(c))
         return {s: c[0], help: c[1]};
+    else if (!("s" in c) && "sm1" in c)
+        return $.extend({s: c.sm1, after_match: 1}, c);
     else
         return c;
 }
@@ -3541,20 +3543,20 @@ function make_suggestions(pfx, precaret, postcaret, options) {
 }
 
 function suggest(elt, suggestions_promise, options) {
-    var tagdiv, blurring, hiding = false, interacted, tagfail;
+    var hintdiv, blurring, hiding = false, interacted, tabfail, suggdata;
 
     function kill() {
-        tagdiv && tagdiv.remove();
-        tagdiv = null;
-        blurring = hiding = interacted = tagfail = false;
+        hintdiv && hintdiv.remove();
+        hintdiv = null;
+        blurring = hiding = interacted = tabfail = false;
     }
 
     function finish_display(cinfo) {
         if (!cinfo || !cinfo.list.length)
             return kill();
-        if (!tagdiv) {
-            tagdiv = make_bubble({dir: "nw", color: "suggest"});
-            tagdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
+        if (!hintdiv) {
+            hintdiv = make_bubble({dir: "nw", color: "suggest"});
+            hintdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
                 .on("click", "div.suggestion", click)
                 .on("mouseenter", "div.suggestion", hover);
         }
@@ -3565,20 +3567,28 @@ function suggest(elt, suggestions_promise, options) {
         var t = '<div class="suggesttable suggesttable' + (i + 1) +
             '">' + cinfo.list.join('') + '</div>';
 
-        var $elt = jQuery(elt), shadow = textarea_shadow($elt),
+        var $elt = jQuery(elt),
+            shadow = textarea_shadow($elt, elt.tagName == "INPUT" ? 2000 : 0),
             matchpos = elt.selectionStart - cinfo.lengths[0];
         shadow.text(elt.value.substring(0, matchpos))
             .append("<span>&#x2060;</span>")
             .append(document.createTextNode(elt.value.substring(matchpos)));
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
         $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
-        tagdiv.html(t).near($pos, elt);
-        tagdiv.self().attr("data-autocomplete-pos", matchpos + " " + (matchpos + cinfo.lengths[0]) + " " + (matchpos + cinfo.lengths[0] + cinfo.lengths[1]));
+        hintdiv.html(t).near($pos, elt);
+        hintdiv.self().attr("data-autocomplete-pos", matchpos + " " + (matchpos + cinfo.lengths[0]) + " " + (matchpos + cinfo.lengths[0] + cinfo.lengths[1]));
         shadow.remove();
     }
 
     function display() {
-        suggestions_promise(elt, options).then(finish_display);
+        var i = -1;
+        function next(cinfo) {
+            ++i;
+            if (cinfo || i == suggdata.promises.length)
+                finish_display(cinfo);
+            suggdata.promises[i](elt, suggdata.options).then(next);
+        }
+        next(null);
     }
 
     function maybe_complete($ac, ignore_empty_completion) {
@@ -3603,7 +3613,7 @@ function suggest(elt, suggestions_promise, options) {
     }
 
     function do_complete(text, smatch, done, ignore_empty_completion) {
-        var poss = tagdiv.self().attr("data-autocomplete-pos").split(" ");
+        var poss = hintdiv.self().attr("data-autocomplete-pos").split(" ");
         if ((!smatch || text == elt.value.substring(+poss[0], +poss[2]))
             && ignore_empty_completion) {
             done && kill();
@@ -3618,8 +3628,8 @@ function suggest(elt, suggestions_promise, options) {
     }
 
     function move_active(k) {
-        var $sug = tagdiv.self().find(".suggestion"), pos,
-            $active = tagdiv.self().find(".suggestion.active").removeClass("active");
+        var $sug = hintdiv.self().find(".suggestion"), pos,
+            $active = hintdiv.self().find(".suggestion.active").removeClass("active");
         if (!$active.length /* should not happen */) {
             pos = (k == "ArrowUp" || k == "ArrowLeft" ? $sug.length - 1 : 0);
             $active = $($sug[pos]);
@@ -3664,28 +3674,28 @@ function suggest(elt, suggestions_promise, options) {
     function kp(evt) {
         var k = event_key(evt), m = event_modkey(evt), completed = null;
         if (k != "Tab" || m)
-            tagfail = false;
+            tabfail = false;
         if (k == "Escape" && !m) {
-            if (tagdiv) {
+            if (hintdiv) {
                 kill();
                 hiding = true;
                 evt.stopImmediatePropagation();
             }
             return true;
         }
-        if ((k == "Tab" || k == "Enter") && !m && tagdiv)
-            completed = maybe_complete(tagdiv.self().find(".suggestion.active"), k == "Enter" && !interacted);
-        if (completed !== null && (completed || !tagfail)) {
-            tagfail = !completed;
+        if ((k == "Tab" || k == "Enter") && !m && hintdiv)
+            completed = maybe_complete(hintdiv.self().find(".suggestion.active"), k == "Enter" && !interacted);
+        if (completed || (!tabfail && completed !== null)) {
+            tabfail = !completed;
             evt.preventDefault();
             evt.stopPropagation();
             return false;
         }
-        if (k.substring(0, 5) == "Arrow" && !m && tagdiv && move_active(k)) {
+        if (k.substring(0, 5) == "Arrow" && !m && hintdiv && move_active(k)) {
             evt.preventDefault();
             return false;
         }
-        if (!hiding && !tagfail && (tagdiv || event_key.printable(evt)))
+        if (!hiding && !tabfail && (hintdiv || event_key.printable(evt)))
             setTimeout(display, 1);
         return true;
     }
@@ -3697,7 +3707,7 @@ function suggest(elt, suggestions_promise, options) {
     }
 
     function hover(evt) {
-        tagdiv.self().find(".active").removeClass("active");
+        hintdiv.self().find(".active").removeClass("active");
         $(this).addClass("active");
     }
 
@@ -3713,8 +3723,16 @@ function suggest(elt, suggestions_promise, options) {
     if (elt.jquery)
         elt.each(function () { suggest(this, suggestions_promise, options); });
     else if (elt) {
-        $(elt).on("keydown", kp).on("blur", blur);
-        elt.autocomplete = "off";
+        suggdata = $(elt).data("suggest");
+        if (!suggdata) {
+            $(elt).data("suggest", (suggdata = {promises: []}));
+            $(elt).on("keydown", kp).on("blur", blur);
+            elt.autocomplete = "off";
+        }
+        if ($.inArray(suggestions_promise, suggdata.promises) < 0)
+            suggdata.promises.push(suggestions_promise);
+        if (options)
+            suggdata.options = $.extend(suggdata.options || {}, options);
     }
 }
 
@@ -5715,12 +5733,12 @@ return function (e) {
 
 
 // autogrowing text areas; based on https://github.com/jaz303/jquery-grab-bag
-function textarea_shadow($self) {
+function textarea_shadow($self, width) {
     return jQuery("<div></div>").css({
         position:    'absolute',
         top:         -10000,
         left:        -10000,
-        width:       $self.width(),
+        width:       width || $self.width(),
         fontSize:    $self.css('fontSize'),
         fontFamily:  $self.css('fontFamily'),
         fontWeight:  $self.css('fontWeight'),
