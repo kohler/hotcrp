@@ -381,7 +381,8 @@ class PaperApi {
         $following = friendly_boolean($qreq->following);
         if ($following === null)
             json_exit(["ok" => false, "error" => "Bad 'following'."]);
-        saveWatchPreference($prow->paperId, $reviewer->contactId, WATCHTYPE_COMMENT, $following);
+        saveWatchPreference($prow->paperId, $reviewer->contactId,
+            WATCHTYPE_COMMENT, $following, true);
         json_exit(["ok" => true, "following" => $following]);
     }
 

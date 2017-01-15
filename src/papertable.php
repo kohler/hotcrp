@@ -30,7 +30,7 @@ class PaperTable {
     private $npapstrip_tag_entry;
     private $allFolded;
     private $matchPreg;
-    private $watchCheckbox = WATCH_COMMENT;
+    private $watchCheckbox = WATCHTYPE_COMMENT;
     private $entryMatches;
     private $canUploadFinal;
     private $admin;
@@ -1544,7 +1544,7 @@ class PaperTable {
 
         $this->_papstripBegin();
 
-        if ($row[4] && ($row[4] & ($this->watchCheckbox >> 1)))
+        if ($row[4] && ($row[4] & ($this->watchCheckbox << WATCHSHIFT_ISSET)))
             $watchValue = $row[4];
         else if ($row[1] || $row[2] || $row[3] >= CONFLICT_AUTHOR
                  || $prow->managerContactId == $Me->contactId)
@@ -1554,8 +1554,8 @@ class PaperTable {
 
         echo "<form><div>",
             $this->papt("watch",
-                        Ht::checkbox("follow", $this->watchCheckbox,
-                                     $watchValue & $this->watchCheckbox,
+                        Ht::checkbox("follow", 1,
+                                     $watchValue & ($this->watchCheckbox << WATCHSHIFT_ON),
                                      ["onchange" => "setfollow.call(this)",
                                       "style" => "padding-left:0;margin-left:0"])
                         . "&nbsp;" . Ht::label("Email notification"),

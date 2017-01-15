@@ -1062,6 +1062,9 @@ class PaperInfo {
 
 
     function notify($notifytype, $callback, $contact) {
+        $wonflag = ($notifytype << WATCHSHIFT_ON) | ($notifytype << WATCHSHIFT_ALLON);
+        $wsetflag = $wonflag | ($notifytype << WATCHSHIFT_ISSET);
+
         $q = "select ContactInfo.contactId, firstName, lastName, email,
                 password, contactTags, roles, defaultWatch,
                 PaperReview.reviewType myReviewType,
@@ -1072,14 +1075,14 @@ class PaperInfo {
         left join PaperConflict on (PaperConflict.paperId=$this->paperId and PaperConflict.contactId=ContactInfo.contactId)
         left join PaperWatch on (PaperWatch.paperId=$this->paperId and PaperWatch.contactId=ContactInfo.contactId)
         left join PaperReview on (PaperReview.paperId=$this->paperId and PaperReview.contactId=ContactInfo.contactId)
-        left join PaperComment on (PaperComment.paperId=$this->paperId and PaperComment.contactId=ContactInfo.contactId)
         where watch is not null
         or conflictType>=" . CONFLICT_AUTHOR . "
-        or reviewType is not null or commentId is not null
-        or (defaultWatch & " . ($notifytype << WATCHSHIFT_ALL) . ")!=0";
+        or reviewType is not null
+        or (select commentId from PaperComment where paperId=$this->paperId and contactId=ContactInfo.contactId limit 1) is not null
+        or (defaultWatch & " . ($notifytype << WATCHSHIFT_ALLON) . ")!=0";
         if ($this->managerContactId > 0)
             $q .= " or ContactInfo.contactId=" . $this->managerContactId;
-        $q .= " order by conflictType";
+        $q .= " order by conflictType"; // group authors together
 
         $result = $this->conf->qe_raw($q);
         $watchers = array();
@@ -1091,17 +1094,13 @@ class PaperInfo {
                 continue;
             $lastContactId = $row->contactId;
 
-            if ($row->watch
-                && ($row->watch & ($notifytype << WATCHSHIFT_EXPLICIT))) {
-                if (!($row->watch & ($notifytype << WATCHSHIFT_NORMAL)))
-                    continue;
-            } else {
-                if (!($row->defaultWatch & (($notifytype << WATCHSHIFT_NORMAL) | ($notifytype << WATCHSHIFT_ALL))))
-                    continue;
-            }
-
-            $watchers[$row->contactId] = $row;
+            $w = $row->defaultWatch;
+            if ($row->watch & $wsetflag)
+                $w = $row->watch;
+            if ($w & $wonflag)
+                $watchers[$row->contactId] = $row;
         }
+        Dbl::free($result);
 
         // save my current contact info map -- we are replacing it with another
         // map that lacks review token information and so forth

@@ -134,12 +134,12 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
                 }
         }
         $row->follow = array();
-        if ($row->defaultWatch & WATCH_COMMENT)
+        if ($row->defaultWatch & (WATCHTYPE_COMMENT << WATCHSHIFT_ON))
             $row->follow[] = "reviews";
-        if (($row->defaultWatch & WATCH_ALLCOMMENTS)
+        if (($row->defaultWatch & (WATCHTYPE_COMMENT << WATCHSHIFT_ALLON))
             && ($row->roles & Contact::ROLE_PCLIKE))
             $row->follow[] = "allreviews";
-        if (($row->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL))
+        if (($row->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALLON))
             && ($row->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)))
             $row->follow[] = "allfinal";
         $row->follow = join(",", $row->follow);

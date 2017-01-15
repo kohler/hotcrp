@@ -52,7 +52,7 @@ class Contact {
     private $topic_interest_map_ = null;
     private $name_for_map_ = [];
     private $contact_sorter_map_ = [];
-    public $defaultWatch = WATCH_COMMENT;
+    public $defaultWatch = WATCHTYPE_COMMENT;
 
     // Roles
     const ROLE_PC = 1;
@@ -865,11 +865,11 @@ class Contact {
         if (isset($cj->follow)) {
             $w = 0;
             if (get($cj->follow, "reviews"))
-                $w |= WATCH_COMMENT;
+                $w |= (WATCHTYPE_COMMENT << WATCHSHIFT_ON);
             if (get($cj->follow, "allreviews"))
-                $w |= WATCH_ALLCOMMENTS;
+                $w |= (WATCHTYPE_COMMENT << WATCHSHIFT_ALLON);
             if (get($cj->follow, "allfinal"))
-                $w |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
+                $w |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALLON);
             $this->_save_assign_field("defaultWatch", $w, $cu);
         }
 
