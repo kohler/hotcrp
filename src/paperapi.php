@@ -6,19 +6,19 @@
 class PaperApi {
     static function setdecision_api(Contact $user, $qreq, $prow) {
         if (!$user->can_set_decision($prow))
-            json_exit(["ok" => false, "error" => "You can’t set the decision for paper #$prow->paperId."]);
+            return ["ok" => false, "error" => "You can’t set the decision for paper #$prow->paperId."];
         $dnum = cvtint($qreq->decision);
         $decs = $user->conf->decision_map();
         if (!isset($decs[$dnum]))
-            json_exit(["ok" => false, "error" => "Bad decision value."]);
+            return ["ok" => false, "error" => "Bad decision value."];
         $result = $user->conf->qe("update Paper set outcome=? where paperId=?", $dnum, $prow->paperId);
         if ($result && ($dnum > 0 || $prow->outcome > 0))
             $user->conf->update_paperacc_setting($dnum > 0);
         Dbl::free($result);
         if ($result)
-            json_exit(["ok" => true, "result" => htmlspecialchars($decs[$dnum])]);
+            return ["ok" => true, "result" => htmlspecialchars($decs[$dnum])];
         else
-            json_exit(["ok" => false]);
+            return ["ok" => false];
     }
 
     private static function set_paper_pc_api(Contact $user, $qreq, $prow, $type) {
@@ -30,7 +30,7 @@ class PaperApi {
         else if (is_string($value))
             $pc = $user->conf->pc_member_by_email($value);
         if (!$pc && $pc !== 0)
-            json_exit(["ok" => false, "error" => "No such PC member “" . htmlspecialchars($value) . "”."]);
+            return ["ok" => false, "error" => "No such PC member “" . htmlspecialchars($value) . "”."];
 
         if ($type == "manager" ? $user->privChair : $user->can_administer($prow)) {
             if (!$pc || ($pc->isPC && $pc->can_accept_review_assignment($prow))) {
@@ -38,11 +38,11 @@ class PaperApi {
                 $j = ["ok" => true, "result" => $pc ? $user->name_html_for($pc) : "None"];
                 if ($user->can_view_reviewer_tags($prow))
                     $j["color_classes"] = $pc ? $pc->viewable_color_classes($user) : "";
-                json_exit($j);
+                return $j;
             } else
-                json_exit(["ok" => false, "error" => Text::user_html($pc) . " can’t be the $type for paper #{$prow->paperId}."]);
+                return ["ok" => false, "error" => Text::user_html($pc) . " can’t be the $type for paper #{$prow->paperId}."];
         } else
-            json_exit(["ok" => false, "error" => "You don’t have permission to set the $type for paper #{$prow->paperId}."]);
+            return ["ok" => false, "error" => "You don’t have permission to set the $type for paper #{$prow->paperId}."];
     }
 
     static function setlead_api(Contact $user, $qreq, $prow) {
@@ -102,9 +102,9 @@ class PaperApi {
 
     static function settags_api(Contact $user, $qreq, $prow) {
         if ($qreq->cancel)
-            json_exit(["ok" => true]);
+            return ["ok" => true];
         if ($prow && !$user->can_view_paper($prow))
-            json_exit(["ok" => false, "error" => "No such paper."]);
+            return ["ok" => false, "error" => "No such paper."];
 
         // save tags using assigner
         $pids = [];
@@ -161,14 +161,14 @@ class PaperApi {
     static function taganno_api(Contact $user, $qreq, $prow) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
-            json_exit(["ok" => false, "error" => $tagger->error_html]);
+            return ["ok" => false, "error" => $tagger->error_html];
         $j = ["ok" => true, "tag" => $tag, "editable" => $user->can_change_tag_anno($tag),
               "anno" => []];
         $dt = $user->conf->tags()->add(TagInfo::base($tag));
         foreach ($dt->order_anno_list() as $oa)
             if ($oa->annoId !== null)
                 $j["anno"][] = TagInfo::unparse_anno_json($oa);
-        json_exit($j);
+        return $j;
     }
 
     static function settaganno_api($user, $qreq, $prow) {
@@ -331,22 +331,22 @@ class PaperApi {
             $j["value"] = unparse_preference($v);
         } else
             $j = ["ok" => false, "error" => "Bad preference"];
-        json_exit($j);
+        return $j;
     }
 
     static function checkformat_api(Contact $user, $qreq, $prow) {
         $dtype = cvtint($qreq->dt, 0);
         $opt = $user->conf->paper_opts->find_document($dtype);
         if (!$opt || !$user->can_view_paper_option($prow, $opt))
-            json_exit(["ok" => false, "error" => "Permission error."]);
+            return ["ok" => false, "error" => "Permission error."];
         $cf = new CheckFormat;
         $doc = $cf->fetch_document($prow, $dtype, $qreq->docid);
         $cf->check_document($prow, $doc);
-        json_exit(["ok" => !$cf->failed, "response" => $cf->document_report($prow, $doc)]);
+        return ["ok" => !$cf->failed, "response" => $cf->document_report($prow, $doc)];
     }
 
     static function whoami_api(Contact $user, $qreq, $prow) {
-        json_exit(["ok" => true, "email" => $user->email]);
+        return ["ok" => true, "email" => $user->email];
     }
 
     static function fieldhtml_api(Contact $user, $qreq, $prow) {
@@ -354,7 +354,7 @@ class PaperApi {
         if ($fdef && is_array($fdef))
             $fdef = count($fdef) == 1 ? $fdef[0] : null;
         if (!$fdef || !$fdef->fold)
-            json_exit(["ok" => false, "error" => "No such field."]);
+            return ["ok" => false, "error" => "No such field."];
         if ($qreq->f == "authors") {
             $full = (int) $qreq->aufull;
             displayOptionsSet("pldisplay", "aufull", $full);
@@ -373,32 +373,32 @@ class PaperApi {
         $pl = new PaperList($search, ["reviewer" => $reviewer]);
         $response = $pl->ajaxColumn($qreq->f);
         $response["ok"] = !empty($response);
-        json_exit($response);
+        return $response;
     }
 
     static function follow_api(Contact $user, $qreq, $prow) {
         $reviewer = self::get_reviewer($user, $qreq, $prow);
         $following = friendly_boolean($qreq->following);
         if ($following === null)
-            json_exit(["ok" => false, "error" => "Bad 'following'."]);
+            return ["ok" => false, "error" => "Bad 'following'."];
         saveWatchPreference($prow->paperId, $reviewer->contactId,
             WATCHTYPE_COMMENT, $following, true);
-        json_exit(["ok" => true, "following" => $following]);
+        return ["ok" => true, "following" => $following];
     }
 
     static function reviewround_api(Contact $user, $qreq, $prow) {
         if (!$qreq->r
             || !($rr = $user->conf->reviewRow($qreq->r))
             || $rr->paperId != $prow->paperId)
-            json_exit(["ok" => false, "error" => "No such review."]);
+            return ["ok" => false, "error" => "No such review."];
         if (!$user->can_administer($prow))
-            json_exit(["ok" => false, "error" => "Permission error."]);
+            return ["ok" => false, "error" => "Permission error."];
         $rname = trim((string) $qreq->round);
         $round = $user->conf->sanitize_round_name($rname);
         if ($round === false)
-            json_exit(["ok" => false, "error" => Conf::round_name_error($rname)]);
+            return ["ok" => false, "error" => Conf::round_name_error($rname)];
         $rnum = $user->conf->round_number($round, true);
         $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rr->reviewId);
-        json_exit(["ok" => true]);
+        return ["ok" => true];
     }
 }

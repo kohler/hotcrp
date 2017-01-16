@@ -3061,15 +3061,14 @@ class Conf {
 
     // API
 
-    private function call_api($uf, $user, $qreq, $prow) {
-        if ($uf) {
-            if (!check_post($qreq) && !get($uf, "get"))
-                json_exit(["ok" => false, "error" => "Missing credentials."]);
-            if (!$prow && get($uf, "paper"))
-                json_exit(["ok" => false, "error" => "No such paper."]);
-            call_user_func($uf->callback, $user, $qreq, $prow, $uf);
-        }
-        json_exit(["ok" => false, "error" => "Internal error."]);
+    private function call_api($uf, Contact $user, Qrequest $qreq, $prow) {
+        if (!$uf)
+            return ["ok" => false, "error" => "API function not found."];
+        if (!get($uf, "get") && !check_post($qreq))
+            return ["ok" => false, "error" => "Missing credentials."];
+        if (!$prow && get($uf, "paper"))
+            return ["ok" => false, "error" => "Missing paper."];
+        return call_user_func($uf->callback, $user, $qreq, $prow, $uf);
     }
     function _add_api_json($fj) {
         if (is_string($fj->fn) && !isset($this->_api_map[$fj->fn])
@@ -3081,22 +3080,22 @@ class Conf {
     }
     private function fill_api_map() {
         $this->_api_map = [
-            "alltags" => "1PaperApi::alltags_api",
-            "checkformat" => "3PaperApi::checkformat_api",
-            "fieldhtml" => "1PaperApi::fieldhtml_api",
-            "follow" => "2PaperApi::follow_api",
-            "reviewround" => "2PaperApi::reviewround_api",
-            "setdecision" => "2PaperApi::setdecision_api",
-            "setlead" => "2PaperApi::setlead_api",
-            "setmanager" => "2PaperApi::setmanager_api",
-            "setpref" => "2PaperApi::setpref_api",
-            "setshepherd" => "2PaperApi::setshepherd_api",
-            "settaganno" => "0PaperApi::settaganno_api",
-            "settags" => "0PaperApi::settags_api",
-            "taganno" => "1PaperApi::taganno_api",
-            "trackerstatus" => "1MeetingTracker::trackerstatus_api", // hotcrp-comet entrypoint
-            "votereport" => "3PaperApi::votereport_api",
-            "whoami" => "1PaperApi::whoami_api"
+            "alltags" => "1 PaperApi::alltags_api",
+            "checkformat" => "3 PaperApi::checkformat_api",
+            "fieldhtml" => "1 PaperApi::fieldhtml_api",
+            "follow" => "2 PaperApi::follow_api",
+            "reviewround" => "2 PaperApi::reviewround_api",
+            "setdecision" => "2 PaperApi::setdecision_api",
+            "setlead" => "2 PaperApi::setlead_api",
+            "setmanager" => "2 PaperApi::setmanager_api",
+            "setpref" => "2 PaperApi::setpref_api",
+            "setshepherd" => "2 PaperApi::setshepherd_api",
+            "settaganno" => "0 PaperApi::settaganno_api",
+            "settags" => "0 PaperApi::settags_api",
+            "taganno" => "1 PaperApi::taganno_api",
+            "trackerstatus" => "1 MeetingTracker::trackerstatus_api", // hotcrp-comet entrypoint
+            "votereport" => "3 PaperApi::votereport_api",
+            "whoami" => "1 PaperApi::whoami_api"
         ];
         if (($olist = $this->opt("apiFunctions")))
             expand_json_includes_callback($olist, [$this, "_add_api_json"]);
@@ -3111,32 +3110,37 @@ class Conf {
             $this->fill_api_map();
         $uf = get($this->_api_map, $fn);
         if ($uf && is_string($uf)) {
-            $dig = (int) $uf[0];
-            $this->_api_map[$fn] = $uf = (object) [
-                "callback" => substr($uf, 1), "get" => !!($dig & 1), "paper" => !!($dig & 2)
-            ];
+            $space = strpos($uf, " ");
+            $flags = (int) substr($uf, 0, $space);
+            $uf = $this->_api_map[$fn] = (object) ["callback" => substr($uf, $space + 1)];
+            if ($flags & 1)
+                $uf->get = true;
+            if ($flags & 2)
+                $uf->paper = true;
         }
         return $uf;
     }
-    function call_api_exit($fn, $user, $qreq, $prow) {
+    function call_api_exit($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         // XXX precondition: $user->can_view_paper($prow) || !$prow
         $uf = $this->api($fn);
         if ($uf && get($uf, "redirect") && $qreq->redirect
             && preg_match('@\A(?![a-z]+:|/).+@', $qreq->redirect)) {
             try {
                 JsonResultException::$capturing = true;
-                $this->call_api($uf, $user, $qreq, $prow);
+                $j = $this->call_api($uf, $user, $qreq, $prow);
             } catch (JsonResultException $ex) {
                 $j = $ex->result;
-                if (!get($j, "ok") && !get($j, "error"))
-                    Conf::msg_error("Internal error.");
-                else if (($x = get($j, "error")))
-                    Conf::msg_error(htmlspecialchars($x));
-                else if (($x = get($j, "error_html")))
-                    Conf::msg_error($x);
-                Navigation::redirect_site($qreq->redirect);
             }
-        } else
-            $this->call_api($uf, $user, $qreq, $prow);
+            if (!get($j, "ok") && !get($j, "error"))
+                Conf::msg_error("Internal error.");
+            else if (($x = get($j, "error")))
+                Conf::msg_error(htmlspecialchars($x));
+            else if (($x = get($j, "error_html")))
+                Conf::msg_error($x);
+            Navigation::redirect_site($qreq->redirect);
+        } else {
+            $j = $this->call_api($uf, $user, $qreq, $prow);
+            json_exit($j);
+        }
     }
 }

@@ -249,7 +249,7 @@ function call_api($fn, $user, $qreq, $prow) {
     JsonResultException::$capturing = true;
     $result = null;
     try {
-        call_user_func($uf->callback, $user, $qreq, $prow, $uf);
+        $result = (object) call_user_func($uf->callback, $user, $qreq, $prow, $uf);
     } catch (JsonResultException $jre) {
         $result = (object) $jre->result;
     }
