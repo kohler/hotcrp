@@ -133,12 +133,14 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $user->set_forceShow(true);
-        $errors = $prows = [];
+        $errors = [];
+        $rowset = new PaperInfoSet;
         while (($row = PaperInfo::fetch($result, $user)))
             if (($whyNot = $user->perm_view_paper($row)))
-                $errors[whyNotText($whyNot, "view")] = true;
+                $errors["#$row->paperId: " . whyNotText($whyNot, "view")] = true;
             else
-                $prows[$row->paperId] = $row;
+                $rowset->add($row);
+        $prows = $rowset->by_pid();
 
         $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1]);
         $texts = [];
@@ -147,20 +149,17 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
             if (!isset($prows[$row->paperId]))
                 /* skip */;
             else if (($whyNot = $user->perm_view_review($row, null, null)))
-                $errors[whyNotText($whyNot, "view review")] = true;
+                $errors["#$row->paperId: " . whyNotText($whyNot, "view review")] = true;
             else if ($row->reviewSubmitted)
                 defappend($texts[$row->paperId], $rf->pretty_text($row, $row, $user) . "\n");
         }
 
-        $crows = $user->conf->comment_rows($user->conf->comment_query("paperId" . sql_in_numeric_set($ssel->selection())), $user);
-        foreach ($crows as $row) {
-            if (isset($prows[$row->paperId])
-                && $user->can_view_comment($prows[$row->paperId], $row, null)) {
-                $crow = new CommentInfo($row, $prows[$row->paperId]);
-                defappend($texts[$row->paperId], $crow->unparse_text($user) . "\n");
-            }
+        foreach ($prows as $prow) {
+            foreach ($prow->viewable_comments($user, null) as $crow)
+                defappend($texts[$prow->paperId], $crow->unparse_text($user) . "\n");
         }
 
+        uksort($errors, function ($a, $b) { return strnatcmp($a, $b); });
         $this->finish($user, $ssel, $texts, $errors);
     }
 }
