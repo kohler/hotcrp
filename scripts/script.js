@@ -111,7 +111,7 @@ function log_jserror(errormsg, error, noconsole) {
     if (error && error.stack)
         errormsg.stack = error.stack;
     if (errormsg.lineno == null || errormsg.lineno > 1)
-        $.ajax(hoturl("api", "fn=jserror"), {
+        $.ajax(hoturl("api/jserror"), {
             global: false, method: "POST", cache: false, data: errormsg
         });
     if (error && !noconsole && typeof console === "object" && console.error)
@@ -650,7 +650,11 @@ function hoturl(page, options) {
         hoturl_clean(x, /^[pr]=(\d+[A-Z]*)$/);
     else if (page === "help")
         hoturl_clean(x, /^t=(\w+)$/);
-    else if (page === "api") {
+    else if (page.substr(0, 3) === "api") {
+        if (page.length > 3) {
+            x.t = "api" + siteurl_suffix;
+            x.v.push("fn=" + page.substr(4));
+        }
         hoturl_clean(x, /^fn=(\w+)$/);
         want_forceShow = true;
     } else if (page === "doc")
@@ -1538,7 +1542,7 @@ function tracker(start) {
     if (window.global_tooltip)
         window.global_tooltip.erase();
     if (start < 0) {
-        $.post(hoturl_post("api", {fn: "track", track: "stop"}), load_success);
+        $.post(hoturl_post("api/track", {track: "stop"}), load_success);
         if (tracker_refresher) {
             clearInterval(tracker_refresher);
             tracker_refresher = null;
@@ -1563,7 +1567,7 @@ function tracker(start) {
             req += "&tracker_start_at=" + trackerstate[2];
         if (trackerstate[3])
             req += "&hotlist-info=" + encodeURIComponent(trackerstate[3]);
-        $.post(hoturl_post("api", {fn: "track", track: req}), load_success);
+        $.post(hoturl_post("api/track", {track: req}), load_success);
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker, 25000);
         wstorage(true, "hotcrp-tracking", trackerstate);
@@ -1858,7 +1862,7 @@ function fold(elt, dofold, foldtype) {
 
         // check for session
         if ((opentxt = elt.getAttribute("data-fold-session")))
-            jQuery.get(hoturl("api", "fn=setsession&var=" + opentxt.replace("$", foldtype) + "&val=" + (isopen ? 1 : 0)));
+            jQuery.get(hoturl("api/setsession", {var: opentxt.replace("$", foldtype), val: (isopen ? 1 : 0)}));
     }
 
     return false;
@@ -1884,7 +1888,7 @@ function foldup(e, event, opts) {
     if ("f" in opts && !!opts.f == !dofold)
         return false;
     if (opts.s)
-        jQuery.get(hoturl("api", "fn=setsession&var=" + opts.s + "&val=" + (dofold ? 1 : 0)));
+        jQuery.get(hoturl("api/setsession", {var: opts.s, val: (dofold ? 1 : 0)}));
     if (event)
         event_stop(event);
     m = fold(e, dofold, foldnum);
@@ -2165,7 +2169,7 @@ return {
 })();
 
 function save_review_round(elt) {
-    $.post(hoturl_post("api", {fn: "reviewround", p: hotcrp_paperid, r: $(elt).data("reviewid")}),
+    $.post(hoturl_post("api/reviewround", {p: hotcrp_paperid, r: $(elt).data("reviewid")}),
            $(elt).closest("form").serialize(),
            function (rv) { setajaxcheck(elt, rv); });
 }
@@ -3411,7 +3415,7 @@ function strnatcmp(a, b) {
 
 var alltags = new HPromise().onThen(function (p) {
     if (hotcrp_user.is_pclike)
-        jQuery.get(hoturl("api", "fn=alltags"), null, function (v) {
+        jQuery.get(hoturl("api/alltags"), null, function (v) {
             var tlist = (v && v.tags) || [];
             tlist.sort(strnatcmp);
             p.fulfill(tlist);
@@ -3425,7 +3429,7 @@ var vr = {};
 function votereport(tag) {
     if (!vr[tag])
         vr[tag] = new HPromise().onThen(function (p) {
-            $.get(hoturl("api", {fn: "votereport", p: hotcrp_paperid, tag: tag}), null, function (v) {
+            $.get(hoturl("api/votereport", {p: hotcrp_paperid, tag: tag}), null, function (v) {
                 p.fulfill(v.ok ? v.result || "" : v.error);
             });
         });
@@ -3449,7 +3453,7 @@ function completion_item(c) {
 }
 
 var search_completion = new HPromise().onThen(function (search_completion) {
-    jQuery.get(hoturl("api", "fn=searchcompletion"), null, function (v) {
+    jQuery.get(hoturl("api/searchcompletion"), null, function (v) {
         var sc = (v && v.searchcompletion) || [],
             scs = $.grep(sc, function (x) { return typeof x === "string"; }),
             sci = $.grep(sc, function (x) { return typeof x === "object"; }),
@@ -3775,7 +3779,7 @@ $(function () { suggest($(".hotcrp_searchbox"), taghelp_q); });
 // review preferences
 function setfollow() {
     var self = this;
-    $.post(hoturl_post("api", {fn: "follow", p: $(this).data("paper") || hotcrp_paperid}),
+    $.post(hoturl_post("api/follow", {p: $(this).data("paper") || hotcrp_paperid}),
            {following: this.checked, reviewer: $(this).data("reviewer") || hotcrp_user.email},
            function (rv) {
                setajaxcheck(self, rv);
@@ -3810,7 +3814,7 @@ var add_revpref_ajax = (function () {
             pid = pid.substr(0, pos);
         }
         p = new HPromise();
-        $.ajax(hoturl_post("api", {fn: "setpref", p: pid}), {
+        $.ajax(hoturl_post("api/setpref", {p: pid}), {
             method: "POST", data: {pref: self.value, reviewer: cid},
             success: function (rv) {
                 setajaxcheck(self, rv);
@@ -3931,7 +3935,7 @@ function tag_save() {
         setajaxcheck(this, {ok: false, error: "Value must be a number (or empty to remove the tag)."});
         return;
     }
-    $.post(hoturl_post("api", {fn: "settags", p: m[2], forceShow: 1}),
+    $.post(hoturl_post("api/settags", {p: m[2], forceShow: 1}),
            {addtags: ch}, make_tag_save_callback(this));
 }
 
@@ -4361,11 +4365,11 @@ function commit_drag(si, di) {
         } else if (rowanal[i].annoid)
             annosaves.push({annoid: rowanal[i].annoid, tagval: unparse_tagvalue(rowanal[i].newvalue)});
     if (saves.length)
-        $.post(hoturl_post("api", {fn: "settags", forceShow: 1}),
+        $.post(hoturl_post("api/settags", {forceShow: 1}),
                {tagassignment: saves.join(",")},
                make_tag_save_callback(rowanal[si].entry));
     if (annosaves.length)
-        $.post(hoturl_post("api", {fn: "settaganno", tag: dragtag, forceShow: 1}),
+        $.post(hoturl_post("api/settaganno", {tag: dragtag, forceShow: 1}),
                {anno: JSON.stringify(annosaves)}, taganno_success);
 }
 
@@ -4447,7 +4451,7 @@ function edit_anno(locator) {
                 if (heading != "" || tagval != 0)
                     anno.push({annoid: "new", heading: heading, tagval: tagval});
             }
-            $.post(hoturl_post("api", {fn: "settaganno", tag: mytag}),
+            $.post(hoturl_post("api/settaganno", {tag: mytag}),
                    {anno: JSON.stringify(anno)}, make_onsave($d));
         }
         return false;
@@ -4509,7 +4513,7 @@ function edit_anno(locator) {
         $d.appendTo($(document.body));
         popup_near($d[0].childNodes[0], window);
     }
-    $.post(hoturl_post("api", {fn: "taganno", tag: mytag}), show_dialog);
+    $.post(hoturl_post("api/taganno", {tag: mytag}), show_dialog);
 }
 
 function plinfo_tags(selector) {
@@ -4835,7 +4839,7 @@ function render_row_tags(div) {
 }
 
 function edittags_link_onclick() {
-    $.get(hoturl_post("api", {fn: "settags", p: pidnear(this), forceShow: 1}), edittags_callback);
+    $.get(hoturl_post("api/settags", {p: pidnear(this), forceShow: 1}), edittags_callback);
     return false;
 }
 
@@ -4861,7 +4865,7 @@ function edittags_submit() {
     var div = this.parentNode;
     var pid = pidnear(div);
     $(div).find("textarea").blur().trigger("hide");
-    $.post(hoturl_post("api", {fn: "settags", p: pid, forceShow: 1}),
+    $.post(hoturl_post("api/settags", {p: pid, forceShow: 1}),
            {tags: $(div).find("textarea").val()},
            function (rv) {
                if (rv.ok)
@@ -5173,7 +5177,7 @@ function docheckformat(dt) {    // NB must return void
     var running = setTimeout(function () {
         $j.html('<div class="xmsg xinfo"><div class="xmsg0"></div><div class="xmsgc">Checking format (this can take a while)...</div><div class="xmsg1"></div></div>');
     }, 1000);
-    $.ajax(hoturl_post("api", "fn=checkformat&p=" + hotcrp_paperid), {
+    $.ajax(hoturl_post("api/checkformat", {p: hotcrp_paperid}), {
         timeout: 20000, data: {dt: dt, docid: $j.attr("docid")},
         success: function (data) {
             clearTimeout(running);
@@ -5228,7 +5232,7 @@ function save_tags() {
         if (msg)
             $("#papstriptagsedit").prepend('<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + msg + '</div><div class="xmsg1"></div></div>');
     }
-    $.ajax(hoturl_post("api", "fn=settags&p=" + hotcrp_paperid), {
+    $.ajax(hoturl_post("api/settags", {p: hotcrp_paperid}), {
         method: "POST", data: $("#tagform").serialize(), timeout: 4000,
         success: function (data) {
             if (data.ok) {
@@ -5292,7 +5296,7 @@ save_tags.open = function (noload) {
         });
     }
     if (!noload)
-        $.ajax(hoturl("api", "fn=tagreport&p=" + hotcrp_paperid), {
+        $.ajax(hoturl("api/tagreport", {p: hotcrp_paperid}), {
             method: "GET", success: function (data) {
                 data.ok && $("#tagreportformresult").html(data.response || "");
             }
@@ -5386,7 +5390,7 @@ function save_tag_index(e) {
             make_bubble(message, "errorbubble").dir("l").near(ji.length ? ji[0] : e).removeOn(j.find("input"), "input");
         }
     }
-    $.post(hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),
+    $.post(hoturl_post("api/settags", {p: hotcrp_paperid}),
            {"addtags": tag + "#" + (index == "" ? "clear" : index)},
            function (data) {
                if (data.ok) {
@@ -5730,7 +5734,7 @@ var unfold_events = (function ($) {
 var events = null, events_at = 0;
 
 function load_more_events() {
-    $.ajax(hoturl("api", "fn=events" + (events_at ? "&from=" + events_at : "")), {
+    $.ajax(hoturl("api/events", (events_at ? {from: events_at} : null)), {
         method: "GET", cache: false,
         success: function (data) {
             if (data.ok) {
