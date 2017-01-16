@@ -385,8 +385,6 @@ class SessionList {
         return $a;
     }
     static function encode_ids($ids) {
-        if (count($ids) < 30)
-            return json_encode($ids);
         $a = array();
         $p0 = $p1 = -100;
         foreach ($ids as $p) {
@@ -399,7 +397,7 @@ class SessionList {
         }
         if ($p0 > 0)
             $a[] = ($p0 == $p1 ? $p0 : "$p0-$p1");
-        return join(" ", $a);
+        return join("'", $a);
     }
     static function decode_info_string($info) {
         if (($j = json_decode($info)) && isset($j->ids)) {
