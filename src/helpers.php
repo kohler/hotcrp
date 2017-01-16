@@ -795,7 +795,12 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
         else
             $start = 1;
         $end = $conf->setting($dname, -1);
-        if ($start <= 0 || $start == $end) {
+        if ($dname == "au_seerev") {
+            if ($conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE)
+                $ms[] = $conf->_("Authors who are also reviewers can’t see reviews for their papers while they still have <a href=\"%s\">incomplete reviews</a> of their own.", hoturl("search", "t=rout&amp;q="));
+            else
+                $ms[] = $conf->_("Authors can’t view reviews at the moment.");
+        } else if ($start <= 0 || $start == $end) {
             if ($dname[0] == "p" || $dname[0] == "e")
                 $ms[] = $conf->_("You can’t $action submission #%d because the site is not open for reviewing.", $paperId);
             else
@@ -818,11 +823,6 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
             else
                 $ms[] = $conf->_("The deadline to $action submission #%d has passed.", $paperId);
             $ms[] = $conf->_("It was %s.", $conf->printableTime($end, "span"));
-        } else if ($dname == "au_seerev") {
-            if ($conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE)
-                $ms[] = $conf->_("Authors who are also reviewers can’t see reviews for their papers while they still have <a href=\"%s\">incomplete reviews</a> of their own.", hoturl("search", "t=rout&amp;q="));
-            else
-                $ms[] = $conf->_("Authors can’t view reviews at the moment.");
         } else
             $ms[] = $conf->_("You can’t $action submission #%d at the moment.", $paperId);
     }
