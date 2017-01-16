@@ -401,4 +401,24 @@ class PaperApi {
         $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rr->reviewId);
         return ["ok" => true];
     }
+
+    static function mentioncompletion_api(Contact $user, $qreq, $prow) {
+        $result = [];
+        if ($user->isPC) {
+            $pcmap = $user->conf->pc_completion_map();
+            foreach ($user->conf->pc_members_and_admins() as $pc)
+                if (!$pc->disabled
+                    && (!$prow || $pc->can_view_new_comment_ignore_conflict($prow))) {
+                    $primary = true;
+                    foreach ($pc->completion_items() as $k => $level)
+                        if (get($pcmap, $k) === $pc) {
+                            $skey = $primary ? "s" : "sm1";
+                            $result[$k] = [$skey => $k, "d" => $pc->name_text()];
+                            $primary = false;
+                        }
+                }
+        }
+        ksort($result);
+        return ["ok" => true, "mentioncompletion" => array_values($result)];
+    }
 }

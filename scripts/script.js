@@ -2888,6 +2888,9 @@ function make_preview() {
 function activate_editing(j, cj) {
     var elt, tags = [], i;
     j.find("textarea[name=comment]").text(cj.text || "").autogrow();
+    /*suggest(j.find("textarea")[0], comment_completion_q, {
+        drop_nonmatch: 1, decorate: true
+    });*/
     for (i in cj.tags || [])
         tags.push(cj.tags[i].replace(detwiddle, "~"));
     j.find("textarea[name=commenttags]").text(tags.join(" ")).autogrow();
@@ -3441,15 +3444,28 @@ votereport.clear = function () {
 return votereport;
 })();
 
+var allmentions = new HPromise().onThen(function (p) {
+    if (hotcrp_user.is_pclike)
+        jQuery.get(hoturl("api/mentioncompletion", hotcrp_paperid ? {p: hotcrp_paperid} : null), null, function (v) {
+            var tlist = (v && v.mentioncompletion) || [];
+            tlist = tlist.map(completion_item);
+            tlist.sort(function (a, b) { return strnatcmp(a.s, b.s); });
+            p.fulfill(tlist);
+        });
+    else
+        p.fulfill([]);
+});
+
 function completion_item(c) {
     if (typeof c === "string")
         return {s: c};
     else if ($.isArray(c))
-        return {s: c[0], help: c[1]};
-    else if (!("s" in c) && "sm1" in c)
-        return $.extend({s: c.sm1, after_match: 1}, c);
-    else
+        return {s: c[0], description: c[1]};
+    else {
+        if (!("s" in c) && "sm1" in c)
+            c = $.extend({s: c.sm1, after_match: 1}, c);
         return c;
+    }
 }
 
 var search_completion = new HPromise().onThen(function (search_completion) {
@@ -3498,6 +3514,15 @@ function taghelp_q(elt, options) {
     } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):\s*)([^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
         return search_completion.then(make_suggestions(m[1], m[2], n[1], $.extend({require_prefix: true}, options)));
+    } else
+        return new HPromise(null);
+}
+
+function comment_completion_q(elt, options) {
+    var x = completion_split(elt), m, n;
+    if (x && (m = x[0].match(/.*?(?:^|[\s,;])@([-\w_.]*)$/))) {
+        n = x[1].match(/^([-\w_.]*)/);
+        return allmentions.then(make_suggestions("@", m[1], n[1], options));
     } else
         return new HPromise(null);
 }
@@ -3562,10 +3587,10 @@ function make_suggestions(pfx, precaret, postcaret, options) {
             var t = '<div class="' + className + '">';
             if (decorate) {
                 t += '<span class="suggestion-text">' + escape_entities(h) + '</span>';
-                if (titem.description_html)
-                    t += ' <span class="suggestion-description">' + titem.description_html + '</span>';
-                else if (titem.description)
-                    t += ' <span class="suggestion-description">' + escape_entities(titem.description) + '</span>';
+                if (titem.description_html || titem.dh)
+                    t += ' <span class="suggestion-description">' + (titem.description_html || titem.dh) + '</span>';
+                else if (titem.description || titem.d)
+                    t += ' <span class="suggestion-description">' + escape_entities(titem.description || titem.d) + '</span>';
             } else
                 t += escape_entities(h);
             res.push(t + '</div>');

@@ -503,6 +503,26 @@ class Contact {
             return $this->firstName . " " . $this->lastName;
     }
 
+    function completion_items() {
+        $items = [];
+
+        $x = strtolower(substr($this->email, 0, strpos($this->email, "@")));
+        if ($x !== "")
+            $items[$x] = 2;
+
+        $sp = strpos($this->firstName, " ") ? : strlen($this->firstName);
+        $x = strtolower(UnicodeHelper::deaccent(substr($this->firstName, 0, $sp)));
+        if ($x !== "" && ctype_alnum($x))
+            $items[$x] = 1;
+
+        $sp = strrpos($this->lastName, " ");
+        $x = strtolower(UnicodeHelper::deaccent(substr($this->lastName, $sp ? $sp + 1 : 0)));
+        if ($x !== "" && ctype_alnum($x))
+            $items[$x] = 1;
+
+        return $items;
+    }
+
     private function name_for($pfx, $x) {
         $cid = is_object($x) ? $x->contactId : $x;
         $key = $pfx . $cid;
@@ -2655,6 +2675,23 @@ class Contact {
             || (!$rights->view_conflict_type
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && $this->can_view_review($prow, null, $forceShow)
+                && (($rights->allow_pc && !$this->conf->setting("pc_seeblindrev"))
+                    || $prow->review_not_incomplete($this))
+                && ($rights->allow_pc
+                    ? $ctype >= COMMENTTYPE_PCONLY
+                    : $ctype >= COMMENTTYPE_REVIEWER));
+    }
+
+    function can_view_new_comment_ignore_conflict(PaperInfo $prow) {
+        // Goal: Return true if this user is part of the comment mention
+        // completion for a new comment on $prow.
+        // Problem: If authors are hidden, should we mention this user or not?
+        $rights = $this->rights($prow, null);
+        return $rights->can_administer
+            || $rights->allow_pc;
+        return $rights->can_administer
+            || (!$rights->view_conflict_type
+                && $this->can_view_review($prow, null, null)
                 && (($rights->allow_pc && !$this->conf->setting("pc_seeblindrev"))
                     || $prow->review_not_incomplete($this))
                 && ($rights->allow_pc

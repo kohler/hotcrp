@@ -70,6 +70,7 @@ class Conf {
     private $_topic_separator_cache = null;
     private $_pc_members_cache = null;
     private $_pc_tags_cache = null;
+    private $_pc_members_and_admins_cache = null;
     private $_review_form_cache = null;
     private $_date_format_initialized = false;
     private $_docclass_cache = [];
@@ -1074,7 +1075,7 @@ class Conf {
     function pc_members() {
         if ($this->_pc_members_cache === null) {
             $pc = array();
-            $result = $this->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0");
+            $result = $this->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
             $by_name_text = array();
             $this->_pc_tags_cache = ["pc" => "pc"];
             while ($result && ($row = Contact::fetch($result, $this))) {
@@ -1094,6 +1095,8 @@ class Conf {
             }
             Dbl::free($result);
             uasort($pc, "Contact::compare");
+            $this->_pc_members_and_admins_cache = $pc;
+            $pc = array_filter($pc, function ($p) { return ($p->roles & Contact::ROLE_PC) != 0; });
             $order = 0;
             foreach ($pc as $row) {
                 $row->sort_position = $order;
@@ -1103,6 +1106,12 @@ class Conf {
             ksort($this->_pc_tags_cache);
         }
         return $this->_pc_members_cache;
+    }
+
+    function pc_members_and_admins() {
+        if ($this->_pc_members_and_admins_cache === null)
+            $this->pc_members();
+        return $this->_pc_members_and_admins_cache;
     }
 
     function pc_member_by_email($email) {
@@ -1122,6 +1131,23 @@ class Conf {
         if ($this->_pc_tags_cache === null)
             $this->pc_members();
         return isset($this->_pc_tags_cache[strtolower($tag)]);
+    }
+
+    function pc_completion_map() {
+        $map = $bylevel = [];
+        foreach ($this->pc_members_and_admins() as $pc)
+            if (!$pc->disabled) {
+                foreach ($pc->completion_items() as $k => $level) {
+                    if (!isset($bylevel[$k])
+                        || $bylevel[$k] < $level
+                        || get($map, $k) === $pc) {
+                        $map[$k] = $pc;
+                        $bylevel[$k] = $level;
+                    } else
+                        unset($map[$k]);
+                }
+            }
+        return $map;
     }
 
 
@@ -1347,7 +1373,7 @@ class Conf {
     function invalidate_caches($caches = null) {
         if (!self::$no_invalidate_caches) {
             if (!$caches || isset($caches["pc"]))
-                $this->_pc_members_cache = $this->_pc_tags_cache = null;
+                $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_members_and_admins_cache = null;
             if (!$caches || isset($caches["paperOption"])) {
                 $this->paper_opts->invalidate_option_list();
                 $this->_docclass_cache = [];
@@ -3084,6 +3110,7 @@ class Conf {
             "checkformat" => "3 PaperApi::checkformat_api",
             "fieldhtml" => "1 PaperApi::fieldhtml_api",
             "follow" => "2 PaperApi::follow_api",
+            "mentioncompletion" => "1 PaperApi::mentioncompletion_api",
             "reviewround" => "2 PaperApi::reviewround_api",
             "setdecision" => "2 PaperApi::setdecision_api",
             "setlead" => "2 PaperApi::setlead_api",
