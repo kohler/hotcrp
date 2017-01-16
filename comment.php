@@ -81,9 +81,9 @@ function save_comment($text, $is_response, $roundnum) {
 
     $confirm = false;
     if (!$ok && $is_response) {
-        $crows = $Conf->comment_rows($Conf->comment_query("paperId=$prow->paperId and (commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=$roundnum"), $Me);
+        $crows = $prow->fetch_comments("(commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=$roundnum");
         reset($crows);
-        $cur_response = @current($crows);
+        $cur_response = empty($crows) ? null : current($crows);
         if ($cur_response && $cur_response->comment == $text) {
             $cinfo = new CommentInfo($cur_response, $prow);
             $ok = true;
