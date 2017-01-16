@@ -590,63 +590,88 @@ function hoturl_add(url, component) {
     return url + (url.indexOf("?") < 0 ? "?" : "&") + component;
 }
 
-function hoturl_clean(x, page_component) {
+function hoturl_find(x, page_component) {
     var m;
-    if (x.o && x.last !== false
-        && (m = x.o.match(new RegExp("^(.*)(?:^|&)" + page_component + "(?:&|$)(.*)$")))) {
-        x.t += "/" + m[2];
-        x.o = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
-        x.last = m[2];
-    } else
-        x.last = false;
+    for (var i = 0; i < x.v.length; ++i)
+        if ((m = page_component.exec(x.v[i])))
+            return [i, m[1]];
+    return null;
+}
+
+function hoturl_clean(x, page_component) {
+    if (x.last !== false && x.v.length) {
+        var im = hoturl_find(x, page_component);
+        if (im) {
+            x.last = im[1];
+            x.t += "/" + im[1];
+            x.v.splice(im[0], 1);
+        } else
+            x.last = false;
+    }
 }
 
 function hoturl(page, options) {
-    var k, t, a, m, x, anchor = "", want_forceShow;
+    var i, m, v, anchor = "", want_forceShow;
     if (siteurl == null || siteurl_suffix == null) {
         siteurl = siteurl_suffix = "";
         log_jserror("missing siteurl");
     }
-    x = {t: siteurl + page + siteurl_suffix, o: serialize_object(options)};
-    if ((m = x.o.match(/^(.*?)#(.*)()$/))
-        || (m = x.o.match(/^(.*?)(?:^|&)anchor=(.*?)(?:&|$)(.*)$/))) {
-        x.o = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
-        anchor = "#" + m[2];
+
+    var x = {t: page + siteurl_suffix};
+    if (typeof options === "string") {
+        if ((m = options.match(/^(.*?)(#.*)$/))) {
+            options = m[1];
+            anchor = m[2];
+        }
+        x.v = options.split(/&/);
+    } else {
+        x.v = [];
+        for (i in options) {
+            v = options[i];
+            if (v == null)
+                /* skip */;
+            else if (i === "anchor")
+                anchor = "#" + v;
+            else
+                x.v.push(encodeURIComponent(i) + "=" + encodeURIComponent(v));
+        }
     }
-    if (page === "api" && !/(?:^|&)base=/.test(x.o))
-        x.o = x.o + (x.o ? "&" : "") + "base=" + encodeURIComponent(siteurl);
+    if (page.substr(0, 3) === "api" && !hoturl_find(x, /^base=/))
+        x.v.push("base=" + encodeURIComponent(siteurl));
+
     if (page === "paper") {
-        hoturl_clean(x, "p=(\\d+)");
-        hoturl_clean(x, "m=(\\w+)");
+        hoturl_clean(x, /^p=(\d+)$/);
+        hoturl_clean(x, /^m=(\w+)$/);
         if (x.last === "api") {
-            hoturl_clean(x, "fn=(\\w+)");
+            hoturl_clean(x, /^fn=(\w+)$/);
             want_forceShow = true;
         }
     } else if (page === "review")
-        hoturl_clean(x, "p=(\\d+)");
+        hoturl_clean(x, /^[pr]=(\d+[A-Z]*)$/);
     else if (page === "help")
-        hoturl_clean(x, "t=(\\w+)");
+        hoturl_clean(x, /^t=(\w+)$/);
     else if (page === "api") {
-        hoturl_clean(x, "fn=(\\w+)");
+        hoturl_clean(x, /^fn=(\w+)$/);
         want_forceShow = true;
     } else if (page === "doc")
-        hoturl_clean(x, "file=([^&]+)");
+        hoturl_clean(x, /^file=([^&]+)$/);
+
     if (hotcrp_want_override_conflict && want_forceShow
-        && (!x.o || !/(?:^|&)forceShow=/.test(x.o)))
-        x.o = (x.o ? x.o + "&" : "") + "forceShow=1";
-    a = [];
+        && !hoturl_find(x, /^forceShow=/))
+        x.v.push("forceShow=1");
+
     if (siteurl_defaults)
-        a.push(serialize_object(siteurl_defaults));
-    if (x.o)
-        a.push(x.o);
-    if (a.length)
-        x.t += "?" + a.join("&");
-    return x.t + anchor;
+        x.v.push(serialize_object(siteurl_defaults));
+    if (x.v.length)
+        x.t += "?" + x.v.join("&");
+    return siteurl + x.t + anchor;
 }
 
 function hoturl_post(page, options) {
-    options = serialize_object(options);
-    options += (options ? "&" : "") + "post=" + siteurl_postvalue;
+    if (typeof options === "string")
+        options += (options ? "&" : "") + "post=" + siteurl_postvalue;
+    else
+        options = $.extend({post: siteurl_postvalue}, options);
     return hoturl(page, options);
 }
 
@@ -1513,7 +1538,7 @@ function tracker(start) {
     if (window.global_tooltip)
         window.global_tooltip.erase();
     if (start < 0) {
-        $.post(hoturl_post("api", "fn=track&track=stop"), load_success);
+        $.post(hoturl_post("api", {fn: "track", track: "stop"}), load_success);
         if (tracker_refresher) {
             clearInterval(tracker_refresher);
             tracker_refresher = null;
@@ -1538,7 +1563,7 @@ function tracker(start) {
             req += "&tracker_start_at=" + trackerstate[2];
         if (trackerstate[3])
             req += "&hotlist-info=" + encodeURIComponent(trackerstate[3]);
-        $.post(hoturl_post("api", "fn=track&track=" + req), load_success);
+        $.post(hoturl_post("api", {fn: "track", track: req}), load_success);
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker, 25000);
         wstorage(true, "hotcrp-tracking", trackerstate);
@@ -2900,18 +2925,26 @@ function save_editor(elt, action, really) {
     $f.find("input[name=draft]").remove();
     if (action === "savedraft")
         $f.children("div").append('<input type="hidden" name="draft" value="1" />');
-    var arg = "p=" + hotcrp_paperid + ($c.c.cid ? "&c=" + $c.c.cid : "");
-    var url = hoturl_post("comment", arg + "&ajax=1&"
-                          + (really ? "override=1&" : "")
-                          + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
-                          + (action === "delete" ? "deletecomment=1" : "submitcomment=1"));
+    var carg = {p: hotcrp_paperid};
+    if ($c.c.cid)
+        carg.c = $c.c.cid;
+    var arg = $.extend({ajax: 1}, carg);
+    if (really)
+        arg.override = 1;
+    if (hotcrp_want_override_conflict)
+        arg.forceShow = 1;
+    if (action === "delete")
+        arg.deletecomment = 1;
+    else
+        arg.submitcomment = 1;
+    var url = hoturl_post("comment", arg);
     $c.find("button").prop("disabled", true);
     function callback(data, textStatus, jqxhr) {
         if (!data.ok) {
             if (data.loggedout) {
                 has_unload = false;
                 $f[0].method = "POST";
-                $f[0].action = hoturl_post("paper", arg + "&editcomment=1");
+                $f[0].action = hoturl_post("paper", $.extend({editcomment: 1}, carg));
                 $f[0].submit();
             }
             $c.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + data.error + '</div><div class="xmsg1"</div></div>' : data.msg);
@@ -3777,7 +3810,7 @@ var add_revpref_ajax = (function () {
             pid = pid.substr(0, pos);
         }
         p = new HPromise();
-        $.ajax(hoturl_post("api", "fn=setpref&p=" + pid), {
+        $.ajax(hoturl_post("api", {fn: "setpref", p: pid}), {
             method: "POST", data: {pref: self.value, reviewer: cid},
             success: function (rv) {
                 setajaxcheck(self, rv);
