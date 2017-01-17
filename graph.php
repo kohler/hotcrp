@@ -79,7 +79,7 @@ if ($Graph == "formula") {
 
     $fg = null;
     if (@$_REQUEST["fx"] && @$_REQUEST["fy"]) {
-        $fg = new FormulaGraph($_REQUEST["fx"], $_REQUEST["fy"]);
+        $fg = new FormulaGraph($Me, $_REQUEST["fx"], $_REQUEST["fy"]);
         if (count($fg->error_html))
             Conf::msg_error(join("<br/>", $fg->error_html));
     }
@@ -107,7 +107,7 @@ if ($Graph == "formula") {
         if (count($fg->error_html) > $fgerr_begin)
             $Conf->warnMsg(join("<br/>", array_slice($fg->error_html, $fgerr_begin)));
 
-        if ($fg->fx_query)
+        if ($fg->fx_type == FormulaGraph::X_QUERY)
             /* no header */;
         else if ($fg->type == FormulaGraph::CDF)
             echo "<h2>", htmlspecialchars($fg->fx->expression), " CDF</h2>\n";

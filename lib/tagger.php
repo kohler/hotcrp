@@ -334,7 +334,7 @@ class TagMap implements IteratorAggregate {
             $t->approval = $t->votish = $map->has_approval = $map->has_votish = true;
         }
         $rt = $conf->setting_data("tag_rank", "");
-        foreach (TagInfo::split_tlist($rt) as $t)
+        foreach (TagInfo::split_tlist($rt) as $ti)
             $map->add($ti[0])->rank = $map->has_rank = true;
         $ct = $conf->setting_data("tag_color", "");
         if ($ct !== "")

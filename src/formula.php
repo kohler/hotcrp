@@ -35,6 +35,7 @@ class Fexpr {
     const FDECISION = 4;
     const FPREFEXPERTISE = 5;
     const FREVIEWER = 6;
+    const FTAG = 7; // used in formulagraph.php
 
     function __construct($op = null) {
         $this->op = $op;
