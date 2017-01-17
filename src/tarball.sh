@@ -140,6 +140,7 @@ src/conference.php
 src/conflict.php
 src/contact.php
 src/contactlist.php
+src/contactsearch.php
 src/distoptions.php
 src/documentinfo.php
 src/emojicodes.json

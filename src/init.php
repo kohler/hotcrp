@@ -104,7 +104,6 @@ class SiteLoader {
         "BanalSettings" => "src/settings/s_subform.php",
         "CapabilityManager" => "src/capability.php",
         "ColumnErrors" => "lib/column.php",
-        "ContactSearch" => "src/papersearch.php",
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
         "FormatChecker" => "src/formatspec.php",
