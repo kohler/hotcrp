@@ -313,6 +313,37 @@ class Text {
             . ($zw ? '\b' : '');
     }
 
+    static function star_text_pregexes($word) {
+        if (is_object($word))
+            $reg = $word;
+        else
+            $reg = (object) ["value" => $word];
+
+        $word = preg_quote(preg_replace('/\s+/', " ", $reg->value));
+        if (strpos($word, "*") !== false) {
+            $word = str_replace('\*', '\S*', $word);
+            $word = str_replace('\\\\\S*', '\*', $word);
+        }
+
+        if (preg_match("/[\x80-\xFF]/", $word))
+            $reg->preg_utf8 = Text::utf8_word_regex($word);
+        else {
+            $reg->preg_raw = Text::word_regex($word);
+            $reg->preg_utf8 = Text::utf8_word_regex($word);
+        }
+        return $reg;
+    }
+
+    static function match_pregexes($reg, $text, $deaccented_text) {
+        if (!isset($reg->preg_raw))
+            return !!preg_match('{' . $reg->preg_utf8 . '}ui', $text);
+        else if ($deaccented_text)
+            return !!preg_match('{' . $reg->preg_utf8 . '}ui', $deaccented_text);
+        else
+            return !!preg_match('{' . $reg->preg_raw . '}i', $text);
+    }
+
+
     const UTF8_INITIAL_NONLETTER = '(?:\A|(?!\pL|\pN)\X)';
 
     static function utf8_word_regex($word) {

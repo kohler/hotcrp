@@ -801,41 +801,9 @@ class PaperSearch {
     // including "and", "or", and "not" expressions (which point at other
     // expressions).
 
-    static public function analyze_field_preg($reg) {
-        if (is_object($reg))
-            $word = $reg->value;
-        else {
-            $word = $reg;
-            $reg = (object) array();
-        }
-
-        $word = preg_quote(preg_replace('/\s+/', " ", $word));
-        if (strpos($word, "*") !== false) {
-            $word = str_replace('\*', '\S*', $word);
-            $word = str_replace('\\\\\S*', '\*', $word);
-        }
-
-        if (preg_match("/[\x80-\xFF]/", $word))
-            $reg->preg_utf8 = Text::utf8_word_regex($word);
-        else {
-            $reg->preg_raw = Text::word_regex($word);
-            $reg->preg_utf8 = Text::utf8_word_regex($word);
-        }
-        return $reg;
-    }
-
-    static public function match_field_preg($reg, $raw, $deacc) {
-        if (!isset($reg->preg_raw))
-            return !!preg_match('{' . $reg->preg_utf8 . '}ui', $raw);
-        else if ($deacc)
-            return !!preg_match('{' . $reg->preg_utf8 . '}ui', $deacc);
-        else
-            return !!preg_match('{' . $reg->preg_raw . '}i', $raw);
-    }
-
     private function _searchField($word, $rtype, &$qt) {
         if (!is_array($word))
-            $extra = array("regex" => array($rtype, self::analyze_field_preg($word)));
+            $extra = array("regex" => array($rtype, Text::star_text_pregexes($word)));
         else
             $extra = null;
 
@@ -2801,8 +2769,8 @@ class PaperSearch {
         }
 
         if (!isset($t->preg_utf8))
-            self::analyze_field_preg($t);
-        return self::match_field_preg($t, $row->$field, $row->$field_deaccent);
+            Text::star_text_pregexes($t);
+        return Text::match_pregexes($t, $row->$field, $row->$field_deaccent);
     }
 
     function _clauseTermCheck($t, $row) {
@@ -2862,9 +2830,9 @@ class PaperSearch {
                 if ($om->kind === "attachment-count" && $ov)
                     return CountMatcher::compare($ov->value_count(), $om->compar, $om->value);
                 else if ($om->kind === "attachment-name" && $ov) {
-                    $reg = self::analyze_field_preg($om->value);
+                    $reg = Text::star_text_pregexes($om->value);
                     foreach ($ov->documents() as $doc)
-                        if (self::match_field_preg($reg, $doc->filename, false))
+                        if (Text::match_pregexes($reg, $doc->filename, false))
                             return true;
                 }
                 return false;

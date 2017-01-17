@@ -137,7 +137,7 @@ class ContactSearch {
         // filter results
         $nreg = $ereg = null;
         if ($n !== "")
-            $nreg = PaperSearch::analyze_field_preg($n);
+            $nreg = Text::star_text_pregexes($n);
         if ($e !== "" && $estar)
             $ereg = '{\A' . str_replace('\*', '.*', preg_quote($e)) . '\z}i';
         else if ($e !== "") {
@@ -158,7 +158,7 @@ class ContactSearch {
             } else if ($nreg) {
                 $n = $acct->firstName === "" || $acct->lastName === "" ? "" : " ";
                 $n = $acct->firstName . $n . $acct->lastName;
-                if (PaperSearch::match_field_preg($nreg, $n, $acct->unaccentedName))
+                if (Text::match_pregexes($nreg, $n, $acct->unaccentedName))
                     $ids[] = $id;
             }
 
