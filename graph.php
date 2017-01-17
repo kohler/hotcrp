@@ -107,17 +107,21 @@ if ($Graph == "formula") {
         if (count($fg->error_html) > $fgerr_begin)
             $Conf->warnMsg(join("<br/>", array_slice($fg->error_html, $fgerr_begin)));
 
+        $xhtml = htmlspecialchars($fg->fx->expression);
+        if ($fg->fx_type == FormulaGraph::X_TAG)
+            $xhtml = "tag";
+
         if ($fg->fx_type == FormulaGraph::X_QUERY)
             /* no header */;
         else if ($fg->type == FormulaGraph::CDF)
-            echo "<h2>", htmlspecialchars($fg->fx->expression), " CDF</h2>\n";
+            echo "<h2>$xhtml CDF</h2>\n";
         else if (($fg->type & FormulaGraph::BARCHART)
                  && $fg->fy->expression === "sum(1)")
-            echo "<h2>", htmlspecialchars($fg->fx->expression), "</h2>\n";
+            echo "<h2>$xhtml</h2>\n";
         else if ($fg->type & FormulaGraph::BARCHART)
-            echo "<h2>", htmlspecialchars($fg->fy->expression), " by ", htmlspecialchars($fg->fx->expression), "</h2>\n";
+            echo "<h2>", htmlspecialchars($fg->fy->expression), " by $xhtml</h2>\n";
         else
-            echo "<h2>", htmlspecialchars($fg->fy->expression), " vs. ", htmlspecialchars($fg->fx->expression), "</h2>\n";
+            echo "<h2>", htmlspecialchars($fg->fy->expression), " vs. $xhtml</h2>\n";
         echo_graph();
 
         echo Ht::unstash();
