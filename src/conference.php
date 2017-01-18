@@ -3057,9 +3057,9 @@ class Conf {
     function ims() {
         if (!$this->_ims) {
             $this->_ims = new IntlMsgSet;
-            $m = ["?src/msgs.json"];
+            $m = ["?etc/msgs.json"];
             if (($lang = $this->opt("lang")))
-                $m[] = "?src/msgs.$lang.json";
+                $m[] = "?etc/msgs.$lang.json";
             expand_json_includes_callback($m, [$this->_ims, "addj"],
                                           ["priority" => -1.0], true);
             if (($mlist = $this->opt("msgs_include")))

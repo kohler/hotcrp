@@ -88,6 +88,12 @@ batch/updatecontactdb.php
 
 conf/.htaccess
 
+etc/emojicodes.json
+etc/msgs.json
+etc/papercolumns.json
+etc/reviewformlibrary.json
+etc/settings.json
+
 lib/.htaccess
 lib/backupdb.sh
 lib/base.php
@@ -134,7 +140,6 @@ src/autoassigner.php
 src/banal
 src/capability.php
 src/checkformat.php
-src/columninfo.json
 src/commentinfo.php
 src/conference.php
 src/conflict.php
@@ -143,7 +148,6 @@ src/contactlist.php
 src/contactsearch.php
 src/distoptions.php
 src/documentinfo.php
-src/emojicodes.json
 src/filefilter.php
 src/formatspec.php
 src/formula.php
@@ -158,7 +162,6 @@ src/mailclasses.php
 src/mailtemplate.php
 src/meetingtracker.php
 src/messages.csv
-src/msgs.json
 src/multiconference.php
 src/paperactions.php
 src/paperapi.php
@@ -172,7 +175,6 @@ src/paperstatus.php
 src/papertable.php
 src/paperrank.php
 src/review.php
-src/reviewformlibrary.json
 src/reviewtable.php
 src/reviewtimes.php
 src/sa/sa_assign.php
@@ -187,7 +189,6 @@ src/sample.pdf
 src/schema.sql
 src/searchaction.php
 src/searchselection.php
-src/settinginfo.json
 src/settings/s_basics.php
 src/settings/s_decisions.php
 src/settings/s_msg.php

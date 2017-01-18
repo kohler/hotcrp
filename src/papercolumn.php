@@ -74,7 +74,7 @@ class PaperColumn extends Column {
 
     private static function _populate_json() {
         self::$j_by_name = self::$j_factories = [];
-        expand_json_includes_callback(["src/columninfo.json"], "PaperColumn::_add_json");
+        expand_json_includes_callback(["etc/papercolumns.json"], "PaperColumn::_add_json");
         if (($jlist = opt("paperColumns")))
             expand_json_includes_callback($jlist, "PaperColumn::_add_json");
     }

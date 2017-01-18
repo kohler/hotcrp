@@ -195,7 +195,7 @@ class Si {
 
     static function initialize() {
         global $ConfSitePATH;
-        $fname = "$ConfSitePATH/src/settinginfo.json";
+        $fname = "$ConfSitePATH/etc/settings.json";
         $info = self::read([], file_get_contents($fname), $fname);
         if (($settinginfo_include = opt("settinginfo_include"))) {
             if (!is_array($settinginfo_include))

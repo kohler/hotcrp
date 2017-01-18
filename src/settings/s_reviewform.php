@@ -163,7 +163,7 @@ function render(SettingValues $sv) {
     foreach ($rf->fmap as $fid => $f)
         $fmap[$fid] = $f->has_options;
 
-    $samples = json_decode(file_get_contents("$ConfSitePATH/src/reviewformlibrary.json"));
+    $samples = json_decode(file_get_contents("$ConfSitePATH/etc/reviewformlibrary.json"));
 
     $req = array();
     if ($sv->use_req())

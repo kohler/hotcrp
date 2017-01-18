@@ -106,7 +106,7 @@ class TagMap implements IteratorAggregate {
         if ($len < 3 || $ltag[0] !== ":" || $ltag[$len - 1] !== ":")
             return false;
         if (self::$emoji_code_map === null)
-            self::$emoji_code_map = json_decode(file_get_contents("$ConfSitePATH/src/emojicodes.json"), true);
+            self::$emoji_code_map = json_decode(file_get_contents("$ConfSitePATH/etc/emojicodes.json"), true);
         return get(self::$emoji_code_map, substr($ltag, 1, $len - 2), false);
     }
     function check($tag) {
