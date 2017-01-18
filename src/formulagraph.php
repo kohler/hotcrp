@@ -65,8 +65,11 @@ class FormulaGraph {
                 $fy = $m[1];
             }
             $this->fy = new Formula($this->user, $fy, true);
-            if (!$this->type)
-                $this->type = $this->fy->datatypes() ? self::SCATTER : self::BARCHART;
+            if (!$this->type) {
+                $this->type = self::SCATTER;
+                if (!$this->fy->datatypes() && $this->fy->can_combine())
+                    $this->type = self::BARCHART;
+            }
         }
 
         if ($this->fx->error_html()) {
