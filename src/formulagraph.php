@@ -92,14 +92,14 @@ class FormulaGraph {
         $psearch = new PaperSearch($this->user, array("q" => $q));
         foreach ($psearch->paperList() as $pid)
             $this->papermap[$pid][] = $qn;
-        if (count($psearch->warnings)) {
+        if (!empty($psearch->warnings)) {
             $this->error_html = array_merge($this->error_html, $psearch->warnings);
             if ($fieldname)
                 $this->errf[$fieldname] = true;
         }
     }
 
-    private function _cdf_data($result) {
+    private function _cdf_data(PaperInfoSet $rowset) {
         $data = [];
         $query_color_classes = [];
 
@@ -108,9 +108,7 @@ class FormulaGraph {
         if ($this->fx->is_indexed())
             $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes());
 
-        while (($prow = PaperInfo::fetch($result, $this->user))) {
-            if (!$this->user->can_view_paper($prow))
-                continue;
+        foreach ($rowset->all() as $prow) {
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             $queries = get($this->papermap, $prow->paperId);
             foreach ($queries as $q)
@@ -167,7 +165,7 @@ class FormulaGraph {
             return $s;
     }
 
-    private function _scatter_data($result) {
+    private function _scatter_data(PaperInfoSet $rowset) {
         $data = [];
         if ($this->fx->result_format() === Fexpr::FREVIEWER && ($this->type & self::BOXPLOT))
             $this->_prepare_reviewer_color($this->user);
@@ -178,9 +176,7 @@ class FormulaGraph {
         if ($this->fx->is_indexed() || $this->fy->is_indexed())
             $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes() | $this->fy->datatypes());
 
-        while (($prow = PaperInfo::fetch($result, $this->user))) {
-            if (!$this->user->can_view_paper($prow))
-                continue;
+        foreach ($rowset->all() as $prow) {
             $s = $ps = $this->_paper_style($prow);
             $d = [0, 0, 0];
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
@@ -224,7 +220,7 @@ class FormulaGraph {
         return strcmp($a[3], $b[3]);
     }
 
-    private function _combine_data($result) {
+    private function _combine_data(PaperInfoSet $rowset) {
         $data = [];
         if ($this->fx->result_format() === Fexpr::FREVIEWER)
             $this->_prepare_reviewer_color($this->user);
@@ -235,9 +231,7 @@ class FormulaGraph {
         if ($this->fx->is_indexed() || $this->fy->datatypes())
             $reviewf = Formula::compile_indexes_function($this->user, ($this->fx->is_indexed() ? $this->fx->datatypes() : 0) | $this->fy->datatypes());
 
-        while (($prow = PaperInfo::fetch($result, $this->user))) {
-            if (!$this->user->can_view_paper($prow))
-                continue;
+        foreach ($rowset->all() as $prow) {
             $queries = $this->papermap[$prow->paperId];
             $s = $ps = $this->_paper_style($prow);
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
@@ -393,19 +387,24 @@ class FormulaGraph {
         $this->fy->add_query_options($queryOptions);
         if ($this->fx->is_indexed() || $this->fy->is_indexed())
             $queryOptions["reviewOrdinals"] = true;
+
         $result = $this->user->paper_result($queryOptions);
+        $rowset = new PaperInfoSet;
+        while (($prow = PaperInfo::fetch($result, $this->user)))
+            if ($this->user->can_view_paper($prow))
+                $rowset->add($prow);
+        Dbl::free($result);
 
         if ($this->type == self::CDF)
-            $data = $this->_cdf_data($result);
+            $data = $this->_cdf_data($rowset);
         else if ($this->type & self::BARCHART)
-            $data = $this->_combine_data($result);
+            $data = $this->_combine_data($rowset);
         else
-            $data = $this->_scatter_data($result);
+            $data = $this->_scatter_data($rowset);
         $this->_reviewer_reformat($data);
         $this->_revround_reformat($data);
         $this->_tag_reformat($data);
 
-        Dbl::free($result);
         return $data;
     }
 
