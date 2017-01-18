@@ -122,7 +122,7 @@ class FormulaGraph {
                 }
             foreach ($revs as $rcid)
                 if (($x = $fxf($prow, $rcid, $this->user)) !== null) {
-                    if ($this->fx_type == self::X_QUERY) {
+                    if ($this->fx_type === self::X_QUERY) {
                         foreach ($queries as $q)
                             $data[0][] = $q;
                     } else {
@@ -165,6 +165,17 @@ class FormulaGraph {
             return $s;
     }
 
+    private function _add_tag_data(&$data, $d, PaperInfo $prow) {
+        assert($this->fx_type === self::X_TAG);
+        $tags = TagInfo::split_tlist($prow->viewable_tags($this->user));
+        foreach ($tags as $ti) {
+            if (!isset($this->tags[$ti[0]]))
+                $this->tags[$ti[0]] = count($this->tags);
+            $d[0] = $this->tags[$ti[0]];
+            $data[] = $d;
+        }
+    }
+
     private function _scatter_data(PaperInfoSet $rowset) {
         $data = [];
         if ($this->fx->result_format() === Fexpr::FREVIEWER && ($this->type & self::BOXPLOT))
@@ -190,20 +201,14 @@ class FormulaGraph {
                     $d[2] .= unparseReviewOrdinal($o);
                 if ($ps === self::REVIEWER_COLOR)
                     $s = get($this->reviewer_color, $d[0]) ? : "";
-                if ($this->fx_type == self::X_QUERY) {
+                if ($this->fx_type === self::X_QUERY) {
                     foreach ($this->papermap[$prow->paperId] as $q) {
                         $d[0] = $q;
                         $data[$s][] = $d;
                     }
-                } else if ($this->fx_type == self::X_TAG) {
-                    $tags = TagInfo::split_tlist($prow->viewable_tags($this->user));
-                    foreach ($tags as $ti) {
-                        if (!isset($this->tags[$ti[0]]))
-                            $this->tags[$ti[0]] = count($this->tags);
-                        $d[0] = $this->tags[$ti[0]];
-                        $data[$s][] = $d;
-                    }
-                } else
+                } else if ($this->fx_type === self::X_TAG)
+                    $this->_add_tag_data($data[$s], $d, $prow);
+                else
                     $data[$s][] = $d;
             }
         }
@@ -245,7 +250,10 @@ class FormulaGraph {
                     $d[2] .= unparseReviewOrdinal($o);
                 foreach ($queries as $q) {
                     $q && ($d[4] = $q);
-                    $data[] = $d;
+                    if ($this->fx_type === self::X_TAG)
+                        $this->_add_tag_data($data, $d, $prow);
+                    else
+                        $data[] = $d;
                 }
             }
         }
