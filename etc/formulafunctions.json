@@ -63,5 +63,7 @@
     {"name": "prefexp", "factory_class": "PrefFexpr", "is_expertise": true},
     {"name": "prefexpertise", "factory_class": "PrefFexpr", "is_expertise": true},
     {"name": "revprefexp", "factory_class": "PrefFexpr", "is_expertise": true},
-    {"name": "revprefexpertise", "factory_class": "PrefFexpr", "is_expertise": true}
+    {"name": "revprefexpertise", "factory_class": "PrefFexpr", "is_expertise": true},
+
+    {"name": "firsttag", "args": true, "factory": "FirstTagFexpr::make"}
 ]

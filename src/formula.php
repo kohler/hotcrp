@@ -550,6 +550,44 @@ class TagFexpr extends SubFexpr {
     }
 }
 
+class FirstTagFexpr extends SubFexpr {
+    private $tags;
+    function __construct($tags) {
+        $this->tags = $tags;
+        $this->format_ = Fexpr::FTAG;
+    }
+    static function make($ff, $args) {
+        $ts = [];
+        foreach ($args as $arg) {
+            if ($arg instanceof TagFexpr)
+                $ts[] = $arg->tag();
+            else if ($arg instanceof FirstTagFexpr)
+                $ts = array_merge($ts, $arg->tags);
+            else
+                return null; /* XXX error message */
+        }
+        return new FirstTagFexpr($ts);
+    }
+    function view_score(Contact $user) {
+        $tagger = new Tagger($user);
+        $vs = VIEWSCORE_MAX;
+        foreach ($this->tags as $t) {
+            $e_tag = $tagger->check($t);
+            $vs = min($vs, $tagger->view_score($e_tag, $user));
+        }
+        return $vs;
+    }
+    function compile(FormulaCompiler $state) {
+        $v = "null";
+        foreach (array_reverse($this->tags) as $t) {
+            $e_tag = $state->tagger->check($t);
+            $t_tagpos = $state->_add_tagpos($e_tag);
+            $v = "($t_tagpos !== false ? " . $state->known_tag_index($e_tag) . " : $v)";
+        }
+        return $v;
+    }
+}
+
 class OptionFexpr extends SubFexpr {
     private $option;
     function __construct(PaperOption $option) {
@@ -1494,7 +1532,10 @@ class Formula {
             return ReviewField::unparse_letter(91, $x + 2);
         else if ($this->_format === Fexpr::FREVIEWER)
             return $this->user->reviewer_html_for($x);
-        else {
+        else if ($this->_format === Fexpr::FTAG) {
+            $tagger = new Tagger($this->user);
+            return $tagger->unparse_and_link($this->_tagrefs[$x]);
+        } else {
             $x = round($x * 100) / 100;
             if ($this->_format instanceof ReviewField)
                 return $this->_format->unparse_value($x, ReviewField::VALUE_SC, $real_format);
@@ -1512,7 +1553,10 @@ class Formula {
             return ReviewField::unparse_letter(91, $x + 2);
         else if ($this->_format === Fexpr::FREVIEWER)
             return $this->user->name_text_for($x);
-        else {
+        else if ($this->_format === Fexpr::FTAG) {
+            $tagger = new Tagger($this->user);
+            return $tagger->unparse_hashed($this->_tagrefs[$x]);
+        } else {
             $x = round($x * 100) / 100;
             if ($this->_format instanceof ReviewField)
                 return $this->_format->unparse_value($x, 0, $real_format);
@@ -1555,8 +1599,10 @@ class Formula {
             return null;
         else if ($this->_format instanceof ReviewField)
             return !$this->_format->option_letter;
-        else if ($this->_format === Fexpr::FREVIEWER || $this->_format === Fexpr::FBOOL
-                 || $this->_format === Fexpr::FPREFEXPERTISE)
+        else if ($this->_format === Fexpr::FREVIEWER
+                 || $this->_format === Fexpr::FBOOL
+                 || $this->_format === Fexpr::FPREFEXPERTISE
+                 || $this->_format === Fexpr::FTAG)
             return false;
         else
             return true;
