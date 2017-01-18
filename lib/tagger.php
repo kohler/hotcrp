@@ -720,7 +720,7 @@ class Tagger {
         return hoturl("search", ["q" => $q]);
     }
 
-    function unparse_and_link($viewable, $alltags, $highlight = false) {
+    function unparse_and_link($viewable, $highlight = false) {
         $vtags = $this->unparse($viewable);
         if ($vtags === "")
             return "";

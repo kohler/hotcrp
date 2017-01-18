@@ -1077,7 +1077,7 @@ class PaperTable {
                 $color = $this->prow->conf->tags()->color_classes($viewable);
                 echo '<div class="', trim("has-tag-classes pscopen $color"), '">',
                     '<span class="psfn">Tags:</span> ',
-                    $tagger->unparse_and_link($viewable, $this->prow->all_tags_text(), false),
+                    $tagger->unparse_and_link($viewable, false),
                     '</div>';
             }
 
@@ -1335,7 +1335,7 @@ class PaperTable {
         $tagger = new Tagger;
         $viewable = $this->prow->viewable_tags($Me);
 
-        $tx = $tagger->unparse_and_link($viewable, $tags, false);
+        $tx = $tagger->unparse_and_link($viewable, false);
         $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.open()"]);
