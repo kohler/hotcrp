@@ -378,7 +378,7 @@ class FormulaGraph {
             return;
         $tagger = new Tagger($this->user);
         uksort($this->tags, [$tagger, "tag_compare"]);
-        $i = 0;
+        $i = -1;
         $m = [];
         foreach ($this->tags as $tag => $ri)
             $m[$ri] = ++$i;
