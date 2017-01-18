@@ -50,5 +50,18 @@
     {"name": "exp", "args": true, "factory": "Fexpr::make"},
 
     {"name": "pid", "factory_class": "PidFexpr"},
-    {"name": "paperid", "factory_class": "PidFexpr"}
+    {"name": "paperid", "factory_class": "PidFexpr"},
+
+    {"name": "topicscore", "factory_class": "TopicScoreFexpr"},
+    {"name": "conf", "factory_class": "ConflictFexpr", "is_pc": false},
+    {"name": "conflict", "factory_class": "ConflictFexpr", "is_pc": false},
+    {"name": "pcconf", "factory_class": "ConflictFexpr", "is_pc": true},
+    {"name": "pcconflict", "factory_class": "ConflictFexpr", "is_pc": true},
+
+    {"name": "pref", "factory_class": "PrefFexpr", "is_expertise": false},
+    {"name": "revpref", "factory_class": "PrefFexpr", "is_expertise": false},
+    {"name": "prefexp", "factory_class": "PrefFexpr", "is_expertise": true},
+    {"name": "prefexpertise", "factory_class": "PrefFexpr", "is_expertise": true},
+    {"name": "revprefexp", "factory_class": "PrefFexpr", "is_expertise": true},
+    {"name": "revprefexpertise", "factory_class": "PrefFexpr", "is_expertise": true}
 ]

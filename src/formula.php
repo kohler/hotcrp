@@ -508,7 +508,7 @@ class ScoreFexpr extends SubFexpr {
 class PrefFexpr extends SubFexpr {
     private $isexpertise;
     function __construct($isexpertise) {
-        $this->isexpertise = $isexpertise;
+        $this->isexpertise = is_object($isexpertise) ? $isexpertise->is_expertise : $isexpertise;
         $this->format_ = $this->isexpertise ? self::FPREFEXPERTISE : null;
     }
     function view_score(Contact $user) {
@@ -667,7 +667,7 @@ class ReviewRoundFexpr extends SubFexpr {
 class ConflictFexpr extends SubFexpr {
     private $ispc;
     function __construct($ispc) {
-        $this->ispc = $ispc;
+        $this->ispc = is_object($ispc) ? $ispc->is_pc : $ispc;
         $this->format_ = self::FBOOL;
     }
     function compile(FormulaCompiler $state) {
@@ -1308,21 +1308,6 @@ class Formula {
             $t = $m[2];
         } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
             $e = ConstantFexpr::cnull();
-            $t = $m[1];
-        } else if (preg_match('/\Atopicscore\b(.*)\z/is', $t, $m)) {
-            $e = new TopicScoreFexpr;
-            $t = $m[1];
-        } else if (preg_match('/\Aconf(?:lict)?\b(.*)\z/is', $t, $m)) {
-            $e = new ConflictFexpr(false);
-            $t = $m[1];
-        } else if (preg_match('/\Apcconf(?:lict)?\b(.*)\z/is', $t, $m)) {
-            $e = new ConflictFexpr(true);
-            $t = $m[1];
-        } else if (preg_match('/\A(?:rev)?pref\b(.*)\z/is', $t, $m)) {
-            $e = new PrefFexpr(false);
-            $t = $m[1];
-        } else if (preg_match('/\A(?:rev)?prefexp(?:ertise)?\b(.*)\z/is', $t, $m)) {
-            $e = new PrefFexpr(true);
             $t = $m[1];
         } else if (preg_match('/\A([A-Za-z][A-Za-z_.]*)(.*)\z/is', $t, $m)
                    && ($ff = get($this->conf->formula_functions(), $m[1]))) {
