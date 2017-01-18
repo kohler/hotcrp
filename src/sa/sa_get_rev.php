@@ -140,13 +140,12 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
                 $errors["#$row->paperId: " . whyNotText($whyNot, "view")] = true;
             else
                 $rowset->add($row);
-        $prows = $rowset->by_pid();
 
         $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1]);
         $texts = [];
         $rf = $user->conf->review_form();
         while (($row = PaperInfo::fetch($result, $user))) {
-            if (!isset($prows[$row->paperId]))
+            if (!$rowset->get($row->paperId))
                 /* skip */;
             else if (($whyNot = $user->perm_view_review($row, null, null)))
                 $errors["#$row->paperId: " . whyNotText($whyNot, "view review")] = true;
@@ -154,7 +153,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
                 defappend($texts[$row->paperId], $rf->pretty_text($row, $row, $user) . "\n");
         }
 
-        foreach ($prows as $prow) {
+        foreach ($rowset->all() as $prow) {
             foreach ($prow->viewable_comments($user, null) as $crow)
                 defappend($texts[$prow->paperId], $crow->unparse_text($user) . "\n");
         }

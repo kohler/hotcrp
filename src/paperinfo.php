@@ -66,7 +66,7 @@ class PaperContactInfo {
                 from Paper
                 left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$cid)
                 left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$cid)
-                where Paper.paperId?a", array_keys($prow->_row_set->by_pid()));
+                where Paper.paperId?a", $prow->_row_set->pids());
             $found = false;
             $map = [];
             while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
@@ -149,24 +149,26 @@ class PaperInfo_Author {
 
 class PaperInfoSet {
     private $prows = [];
+    private $by_pid = [];
     function __construct(PaperInfo $prow = null) {
         if ($prow)
-            $this->prows[] = $prow;
+            $this->add($prow);
     }
     function add(PaperInfo $prow) {
         assert(!$prow->_row_set);
         $this->prows[] = $prow;
+        if (!isset($this->by_pid[$prow->paperId]))
+            $this->by_pid[$prow->paperId] = $prow;
         $prow->_row_set = $this;
     }
     function all() {
         return $this->prows;
     }
-    function by_pid() {
-        $by_pid = [];
-        foreach ($this->prows as $prow)
-            if (!isset($by_pid[$prow->paperId]))
-                $by_pid[$prow->paperId] = $prow;
-        return $by_pid;
+    function pids() {
+        return array_keys($this->by_pid);
+    }
+    function get($pid) {
+        return get($this->by_pid, $pid);
     }
 }
 
@@ -1033,12 +1035,11 @@ class PaperInfo {
 
     function load_comments() {
         $row_set = $this->_row_set ? : new PaperInfoSet($this);
-        $prows_by_id = $row_set->by_pid();
         $result = $this->conf->qe(self::fetch_comment_query()
-            . " where paperId?a order by commentId", array_keys($prows_by_id));
+            . " where paperId?a order by commentId", $row_set->pids());
         $comments = [];
         while (($c = CommentInfo::fetch($result, null, $this->conf))) {
-            $c->set_prow($prows_by_id[$c->paperId]);
+            $c->set_prow($row_set->get($c->paperId));
             $comments[$c->paperId][$c->commentId] = $c;
         }
         Dbl::free($result);
