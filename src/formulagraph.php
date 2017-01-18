@@ -80,6 +80,9 @@ class FormulaGraph {
             $this->error_html[] = "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.";
             $this->errf["fy"] = true;
             $this->fy = new Formula($this->user, "sum(0)", true);
+        } else if ($this->type === self::CDF && $this->fx_type === self::X_TAG) {
+            $this->error_html[] = "CDFs by tag don’t make sense.";
+            $this->errf["fy"] = true;
         }
     }
 
