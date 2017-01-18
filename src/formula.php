@@ -537,13 +537,12 @@ class TagFexpr extends SubFexpr {
         $e_tag = $tagger->check($this->tag);
         return $tagger->view_score($e_tag, $user);
     }
+    function tag() {
+        return $this->tag;
+    }
     function compile(FormulaCompiler $state) {
-        $state->queryOptions["tags"] = true;
-        $tagger = new Tagger($state->contact);
-        $e_tag = $tagger->check($this->tag);
-        $t_tags = $state->define_gvar("tags", "\$contact->can_view_tags(\$prow, \$forceShow) ? \$prow->all_tags_text() : \"\"");
-        $t_tagpos = $state->define_gvar("tagpos_{$this->tag}", "stripos($t_tags, \" $e_tag#\")");
-        $t_tagval = $state->define_gvar("tagval_{$this->tag}", "($t_tagpos !== false ? (float) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : false)");
+        $e_tag = $state->tagger->check($this->tag);
+        $t_tagval = $state->_add_tagval($this->tag);
         if ($this->isvalue)
             return $t_tagval;
         else
@@ -789,6 +788,7 @@ class ReviewWordCountFexpr extends SubFexpr {
 class FormulaCompiler {
     public $conf;
     public $contact;
+    public $tagger;
     private $gvar;
     public $gstmt;
     public $lstmt;
@@ -801,11 +801,14 @@ class FormulaCompiler {
     private $maxlprefix;
     public $indent = 2;
     public $queryOptions = array();
+    public $known_tag_indexes = [];
+    public $tagrefs = null;
     private $_stack;
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->contact = $user;
+        $this->tagger = new Tagger($user);
         $this->clear();
     }
 
@@ -868,6 +871,29 @@ class FormulaCompiler {
         if ($this->check_gvar('$pc'))
             $this->gstmt[] = "\$pc = \$contact->conf->pc_members();";
         return '$pc';
+    }
+    function _add_tagpos($tag) {
+        if ($tag === false)
+            return "false";
+        if ($this->check_gvar('$tags')) {
+            $this->queryOptions["tags"] = true;
+            $this->gstmt[] = "\$tags = \$contact->can_view_tags(\$prow, \$forceShow) ? \$prow->all_tags_text() : \"\";";
+        }
+        if (!isset($this->known_tag_indexes[$tag])) {
+            $n = count($this->tagrefs);
+            $this->known_tag_indexes[$tag] = $n;
+            $this->tagrefs[] = $tag;
+        }
+        return $this->define_gvar("tagpos_$tag", "stripos(\$tags, \" $tag#\")");
+    }
+    function _add_tagval($tag) {
+        if ($tag === false)
+            return "false";
+        $t_tagpos = $this->_add_tagpos($tag);
+        return $this->define_gvar("tagval_$tag", "($t_tagpos !== false ? (float) substr(\$tags, $t_tagpos + " . (strlen($tag) + 2) . ") : false)");
+    }
+    function known_tag_index($tag) {
+        return $tag === false ? -1 : get($this->known_tag_indexes, $tag);
     }
 
     function _rrow_cid() {
@@ -990,6 +1016,7 @@ class Formula {
 
     private $_parse = null;
     private $_format;
+    private $_tagrefs;
     private $_error_html = array();
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
@@ -1088,6 +1115,7 @@ class Formula {
                 $e->text = $this->expression;
                 $this->needsReview = !!$state->datatype;
                 $this->_format = $e->format();
+                $this->_tagrefs = $state->tagrefs;
             }
         }
         $this->_parse = empty($this->_error_html) ? $e : false;
@@ -1395,9 +1423,10 @@ class Formula {
             . join("\n  ", $state->lstmt) . "\n";
         if ($expr !== null && !$sortable)
             $t .= "\n  return $expr;\n";
-        else if ($expr !== null)
+        else if ($expr !== null) {
             $t .= "\n  \$x = $expr;\n"
                 . "  return is_bool(\$x) ? (int) \$x : \$x;\n";
+        }
         return $t;
     }
 
