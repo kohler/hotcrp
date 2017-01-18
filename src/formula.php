@@ -54,6 +54,9 @@ class Fexpr {
         $this->left_landmark = $left;
         $this->right_landmark = $right;
     }
+    static function make($ff, $args) {
+        return new Fexpr($ff->name, $args);
+    }
 
     function format() {
         return $this->format_;
@@ -321,7 +324,8 @@ class InFexpr extends Fexpr {
 }
 
 class AggregateFexpr extends Fexpr {
-    static function make($op, $args) {
+    static function make($ff, $args) {
+        $op = $ff->name;
         if ($op === "average" || $op === "mean"
             || ($op === "wavg" && count($args) == 1))
             $op = "avg";
@@ -1116,9 +1120,9 @@ class Formula {
         return null;
     }
 
-    private function _parse_function($op, &$t, $agg) {
+    private function _parse_function_args(&$t) {
         $t = ltrim($t);
-        $es = array();
+        $es = [];
 
         // collect arguments
         if ($t !== "" && $t[0] === "(") {
@@ -1139,7 +1143,7 @@ class Formula {
         else
             return null;
 
-        return $agg ? AggregateFexpr::make($op, $es) : new Fexpr($op, $es);
+        return $es;
     }
 
     static private function _pop_argument($t) {
@@ -1272,9 +1276,6 @@ class Formula {
         } else if (preg_match('/\A(false|true)\b(.*)\z/si', $t, $m)) {
             $e = new ConstantFexpr($m[1], Fexpr::FBOOL);
             $t = $m[2];
-        } else if (preg_match('/\A(?:pid|paperid)\b(.*)\z/si', $t, $m)) {
-            $e = new PidFexpr;
-            $t = $m[1];
         } else if (preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(["outcome", PaperSearch::matching_decisions($this->conf, $m[1])]);
             $t = $m[2];
@@ -1305,14 +1306,6 @@ class Formula {
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer)\b(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
-        } else if (preg_match('/\A(my|all|any|avg|average|mean|median|quantile|count|min|max|atminof|atmaxof|argmin|argmax|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/is', $t, $m)) {
-            $t = $m[2];
-            if (!($e = $this->_parse_function($m[1], $t, true)))
-                return null;
-        } else if (preg_match('/\A(greatest|least|round|floor|trunc|ceil|log|sqrt|pow|exp)\b(.*)\z/is', $t, $m)) {
-            $t = $m[2];
-            if (!($e = $this->_parse_function($m[1], $t, false)))
-                return null;
         } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
             $e = ConstantFexpr::cnull();
             $t = $m[1];
@@ -1331,6 +1324,23 @@ class Formula {
         } else if (preg_match('/\A(?:rev)?prefexp(?:ertise)?\b(.*)\z/is', $t, $m)) {
             $e = new PrefFexpr(true);
             $t = $m[1];
+        } else if (preg_match('/\A([A-Za-z][A-Za-z_.]*)(.*)\z/is', $t, $m)
+                   && ($ff = get($this->conf->formula_functions(), $m[1]))) {
+            $t = $m[2];
+            $e = $es = null;
+            if (get($ff, "args")) {
+                $es = $this->_parse_function_args($t);
+                if ($es === null)
+                    return null;
+            }
+            if (isset($ff->factory))
+                $e = call_user_func($ff->factory, $ff, $es);
+            else if (isset($ff->factory_class)) {
+                $cname = $ff->factory_class;
+                $e = new $cname($ff, $es);
+            }
+            if (!$e)
+                return null;
         } else if (preg_match('/\A([-A-Za-z0-9_.@]+|\".*?\")(?!\s*\()(.*)\z/s', $t, $m)
                    && $m[1] !== "\"\"") {
             $field = $m[1];

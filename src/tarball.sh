@@ -89,6 +89,7 @@ batch/updatecontactdb.php
 conf/.htaccess
 
 etc/emojicodes.json
+etc/formulafunctions.json
 etc/msgs.json
 etc/papercolumns.json
 etc/reviewformlibrary.json

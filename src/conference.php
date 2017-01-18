@@ -75,6 +75,7 @@ class Conf {
     private $_date_format_initialized = false;
     private $_docclass_cache = [];
     private $_docstore = false;
+    private $_formula_functions = null;
     private $_defined_formulas = null;
     private $_s3_document = false;
     private $_ims = null;
@@ -598,6 +599,25 @@ class Conf {
         return $this->_s3_document;
     }
 
+
+    function _add_formula_json($fj) {
+        if (is_string($fj->name)) {
+            if (!isset($this->_formula_functions[$fj->name])
+                || get($this->_formula_functions[$fj->name], "priority", 0) <= get($fj, "priority", 0))
+                $this->_formula_functions[$fj->name] = $fj;
+            return true;
+        } else
+            return false;
+    }
+    function formula_functions() {
+        if ($this->_formula_functions === null) {
+            $this->_formula_functions = [];
+            expand_json_includes_callback(["etc/formulafunctions.json"], [$this, "_add_formula_json"]);
+            if (($olist = $this->opt("formulaFunctions")))
+                expand_json_includes_callback($olist, [$this, "_add_formula_json"]);
+        }
+        return $this->_formula_functions;
+    }
 
     function defined_formula_map(Contact $user) {
         if ($this->_defined_formulas !== null && !empty($this->_defined_formulas)) {
@@ -1382,6 +1402,8 @@ class Conf {
                 $this->_review_form_cache = $this->_defined_rounds = null;
             if (!$caches || isset($caches["taginfo"]) || isset($caches["tracks"]))
                 $this->_taginfo = null;
+            if (!$caches || isset($caches["formulas"]))
+                $this->_formula_functions = null;
             if (!$caches || isset($caches["tracks"]))
                 Contact::update_rights();
         }
