@@ -493,7 +493,7 @@ class ScoreFexpr extends SubFexpr {
         return $this->field->view_score;
     }
     function compile(FormulaCompiler $state) {
-        if ($this->field->view_score <= $state->contact->permissive_view_score_bound())
+        if ($this->field->view_score <= $state->user->permissive_view_score_bound())
             return "null";
         $fid = $this->field->id;
         if (!isset($state->queryOptions["scores"]))
@@ -515,7 +515,7 @@ class PrefFexpr extends SubFexpr {
         return VIEWSCORE_PC;
     }
     function compile(FormulaCompiler $state) {
-        if (!$state->contact->is_reviewer())
+        if (!$state->user->is_reviewer())
             return "null";
         $state->queryOptions["allReviewerPreference"] = true;
         $state->datatype |= self::APREF;
@@ -667,7 +667,7 @@ class RevtypeFexpr extends SubFexpr {
         if ($state->looptype == self::LMY)
             $rt = $state->define_gvar("myrevtype", "\$prow->review_type(\$contact)");
         else {
-            $view_score = $state->contact->permissive_view_score_bound();
+            $view_score = $state->user->permissive_view_score_bound();
             if (VIEWSCORE_PC <= $view_score)
                 return "null";
             $state->queryOptions["reviewTypes"] = true;
@@ -690,7 +690,7 @@ class ReviewRoundFexpr extends SubFexpr {
         if ($state->looptype == self::LMY)
             $rt = $state->define_gvar("myrevround", "\$prow->review_round(\$contact->contactId)");
         else {
-            $view_score = $state->contact->permissive_view_score_bound();
+            $view_score = $state->user->permissive_view_score_bound();
             if (VIEWSCORE_PC <= $view_score)
                 return "null";
             $state->queryOptions["reviewRounds"] = true;
@@ -711,7 +711,7 @@ class ConflictFexpr extends SubFexpr {
         // XXX the actual search is different
         $state->datatype |= self::ACONF;
         if ($state->looptype == self::LMY)
-            $rt = $state->contact->isPC ? "!!\$prow->conflictType" : "false";
+            $rt = $state->user->isPC ? "!!\$prow->conflictType" : "false";
         else {
             $idx = $state->_rrow_cid();
             $rt = "!!get(" . $state->_add_conflicts() . ", " . $idx . ")";
@@ -772,13 +772,13 @@ class ReviewerMatchFexpr extends ReviewFexpr {
         }
         if (!($flags & ContactSearch::F_QUOTED)
             && ($arg[0] === "#" || $state->conf->pc_tag_exists($arg))
-            && $state->contact->can_view_reviewer_tags()) {
+            && $state->user->can_view_reviewer_tags()) {
             $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
             $tag = ($arg[0] === "#" ? substr($arg, 1) : $arg);
             $e = "($cvt ? ReviewerMatchFexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
         } else {
             $flags |= ContactSearch::F_TAG | ContactSearch::F_NOUSER;
-            $cs = new ContactSearch($flags, $arg, $state->contact);
+            $cs = new ContactSearch($flags, $arg, $state->user);
             if ($cs->ids)
                 // XXX information leak?
                 $e = "(\$prow->can_view_review_identity_of(" . $state->_rrow_cid() . ", \$contact, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", [" . join(", ", $cs->ids) . "]) !== false : null)";
@@ -812,7 +812,7 @@ class ReviewWordCountFexpr extends SubFexpr {
         if ($state->looptype == self::LMY)
             $rt = $state->define_gvar("myrevwordcount", "\$prow->submitted_review_word_count(\$contact->contactId)");
         else {
-            $view_score = $state->contact->permissive_view_score_bound();
+            $view_score = $state->user->permissive_view_score_bound();
             if (VIEWSCORE_PC <= $view_score)
                 return "null";
             $state->queryOptions["reviewWordCounts"] = true;
@@ -825,7 +825,7 @@ class ReviewWordCountFexpr extends SubFexpr {
 
 class FormulaCompiler {
     public $conf;
-    public $contact;
+    public $user;
     public $tagger;
     private $gvar;
     public $gstmt;
@@ -845,7 +845,7 @@ class FormulaCompiler {
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
-        $this->contact = $user;
+        $this->user = $user;
         $this->tagger = new Tagger($user);
         $this->clear();
     }
@@ -938,7 +938,7 @@ class FormulaCompiler {
         if ($this->looptype == Fexpr::LNONE)
             return '$rrow_cid';
         else if ($this->looptype == Fexpr::LMY)
-            return (string) $this->contact->contactId;
+            return (string) $this->user->contactId;
         else
             return '~i~';
     }
