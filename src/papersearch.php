@@ -278,6 +278,211 @@ class SearchTerm {
         else
             return $defval;
     }
+
+
+    private function _clauseTermCheckFlags(PaperInfo $row, PaperSearch $srch) {
+        $flags = $this->flags;
+        if (($flags & PaperSearch::F_MANAGER)
+            && !$srch->user->can_administer($row, true))
+            return false;
+        if (($flags & PaperSearch::F_AUTHOR)
+            && !$srch->user->act_author_view($row))
+            return false;
+        if (($flags & PaperSearch::F_REVIEWER)
+            && $row->myReviewNeedsSubmit !== 0
+            && $row->myReviewNeedsSubmit !== "0")
+            return false;
+        if (($flags & PaperSearch::F_NONCONFLICT) && $row->conflictType)
+            return false;
+        if ($flags & PaperSearch::F_XVIEW) {
+            if (!$srch->user->can_view_paper($row))
+                return false;
+            if ($this->type === "tag" && !$srch->user->can_view_tags($row, true))
+                return false;
+            if ($this->type === "tag"
+                && $srch->user->privChair
+                && $row->managerContactId > 0) {
+                $fieldname = $this->link;
+                $row->$fieldname = $this->value->evaluate($srch->user, $row->viewable_tags($srch->user)) ? 1 : 0;
+            }
+            if (($this->type === "au" || $this->type === "au_cid" || $this->type === "co")
+                && !$srch->user->can_view_authors($row, true))
+                return false;
+            if ($this->type === "conflict"
+                && !$srch->user->can_view_conflicts($row, true))
+                return false;
+            if ($this->type === "pf" && $this->value[0] === "outcome"
+                && !$srch->user->can_view_decision($row, true))
+                return false;
+            if ($this->type === "option"
+                && !$srch->user->can_view_paper_option($row, $this->value->option, true))
+                return false;
+            if ($this->type === "re" && ($fieldname = $this->link)
+                && !isset($row->$fieldname)) {
+                $row->$fieldname = 0;
+                $rrow = (object) array("paperId" => $row->paperId);
+                $count_only = !$this->value->fieldsql;
+                foreach (explode(",", defval($row, $fieldname . "_info", "")) as $info)
+                    if ($info !== "") {
+                        list($rrow->reviewId, $rrow->contactId, $rrow->reviewType, $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->requestedBy, $rrow->reviewToken, $rrow->reviewBlind) = explode(" ", $info);
+                        if ($count_only
+                            ? !$srch->user->can_view_review_assignment($row, $rrow, true)
+                            : !$srch->user->can_view_review($row, $rrow, true))
+                            continue;
+                        if ($this->value->has_contacts()
+                            ? !$srch->user->can_view_review_identity($row, $rrow, true)
+                            : /* don't count delegated reviews unless contacts given */
+                              $rrow->reviewSubmitted <= 0 && $rrow->reviewNeedsSubmit <= 0)
+                            continue;
+                        if (isset($this->value->view_score)
+                            && $this->value->view_score <= $srch->user->view_score_bound($row, $rrow))
+                            continue;
+                        if ($this->value->wordcountexpr
+                            && !$this->value->wordcountexpr->test($srch->word_count_for($row, $rrow->reviewId)))
+                            continue;
+                        ++$row->$fieldname;
+                    }
+            }
+            if (($this->type === "cmt" || $this->type === "cmttag")
+                && ($fieldname = $this->link)
+                && !isset($row->$fieldname)) {
+                $row->$fieldname = 0;
+                $crow = (object) array("paperId" => $row->paperId);
+                foreach (explode(",", defval($row, $fieldname . "_info", "")) as $info)
+                    if ($info !== "") {
+                        list($crow->contactId, $crow->commentType) = explode(" ", $info);
+                        if ($srch->user->can_view_comment($row, $crow, true))
+                            ++$row->$fieldname;
+                    }
+            }
+            if ($this->type === "pf" && $this->value[0] === "leadContactId"
+                && !$srch->user->can_view_lead($row, true))
+                return false;
+            if ($this->type === "pf" && $this->value[0] === "shepherdContactId"
+                && !$srch->user->can_view_shepherd($row, true))
+                return false;
+            if ($this->type === "pf" && $this->value[0] === "managerContactId"
+                && !$srch->user->can_view_paper_manager($row))
+                return false;
+        }
+        if ($flags & PaperSearch::F_FALSE)
+            return false;
+        return true;
+    }
+
+    function _clauseTermCheckField(PaperInfo $row, PaperSearch $srch) {
+        $field = $this->link;
+        if (!$this->_clauseTermCheckFlags($row, $srch)
+            || $row->$field === "")
+            return false;
+
+        $field_deaccent = $field . "_deaccent";
+        if (!isset($row->$field_deaccent)) {
+            if (preg_match('/[\x80-\xFF]/', $row->$field))
+                $row->$field_deaccent = UnicodeHelper::deaccent($row->$field);
+            else
+                $row->$field_deaccent = false;
+        }
+
+        if (!isset($this->preg_utf8))
+            Text::star_text_pregexes($this);
+        return Text::match_pregexes($this, $row->$field, $row->$field_deaccent);
+    }
+
+    function _clauseTermCheck(PaperInfo $row, PaperSearch $srch) {
+        $tt = $this->type;
+
+        // collect columns
+        if ($tt === "ti" || $tt === "ab" || $tt === "au" || $tt === "co")
+            return $this->_clauseTermCheckField($row, $srch);
+        else if ($tt === "au_cid") {
+            assert(is_array($this->value));
+            return $this->_clauseTermCheckFlags($row, $srch)
+                && $row->{$this->link} != 0;
+        } else if ($tt === "re" || $tt === "conflict" || $tt === "revpref"
+                   || $tt === "cmt" || $tt === "cmttag") {
+            if (!$this->_clauseTermCheckFlags($row, $srch))
+                return false;
+            else {
+                $fieldname = $this->link;
+                return $this->value->test((int) $row->$fieldname);
+            }
+        } else if ($tt === "pn") {
+            if (count($this->value[0]) && array_search($row->paperId, $this->value[0]) === false)
+                return false;
+            else if (count($this->value[1]) && array_search($row->paperId, $this->value[1]) !== false)
+                return false;
+            else
+                return true;
+        } else if ($tt === "pf") {
+            if (!$this->_clauseTermCheckFlags($row, $srch))
+                return false;
+            else {
+                $ans = true;
+                for ($i = 0; $ans && $i < count($this->value); $i += 2) {
+                    $fieldname = $this->value[$i];
+                    $expr = $this->value[$i + 1];
+                    if (is_array($expr))
+                        $ans = in_array($row->$fieldname, $expr);
+                    else
+                        $ans = CountMatcher::compare_string($row->$fieldname, $expr);
+                }
+                return $ans;
+            }
+        } else if ($tt === "tag" || $tt === "topic") {
+            if (!$this->_clauseTermCheckFlags($row, $srch))
+                return false;
+            $fieldname = $this->link;
+            return $row->$fieldname != 0;
+        } else if ($tt === "option") {
+            if (!$this->_clauseTermCheckFlags($row, $srch))
+                return false;
+            $fieldname = $this->link;
+            if ($row->$fieldname == 0)
+                return false;
+            $om = $this->value;
+            if ($om->kind) {
+                $ov = $row->option($om->option->id);
+                if ($om->kind === "attachment-count" && $ov)
+                    return CountMatcher::compare($ov->value_count(), $om->compar, $om->value);
+                else if ($om->kind === "attachment-name" && $ov) {
+                    $reg = Text::star_text_pregexes($om->value);
+                    foreach ($ov->documents() as $doc)
+                        if (Text::match_pregexes($reg, $doc->filename, false))
+                            return true;
+                }
+                return false;
+            }
+            return true;
+        } else if ($tt === "formula") {
+            $formulaf = $this->link;
+            return !!$formulaf($row, null, $srch->user);
+        } else if ($tt === "not") {
+            return !$this->value[0]->_clauseTermCheck($row, $srch);
+        } else if ($tt === "and" || $tt === "and2") {
+            foreach ($this->value as $subt)
+                if (!$subt->_clauseTermCheck($row, $srch))
+                    return false;
+            return true;
+        } else if ($tt === "or") {
+            foreach ($this->value as $subt)
+                if ($subt->_clauseTermCheck($row, $srch))
+                    return true;
+            return false;
+        } else if ($tt === "then") {
+            for ($i = 0; $i < $this->nthen; ++$i)
+                if ($this->value[$i]->_clauseTermCheck($row, $srch))
+                    return true;
+            return false;
+        } else if ($tt === "f")
+            return false;
+        else if ($tt === "t" || $tt === "revadj")
+            return true;
+        else {
+            error_log("SearchTerm::_clauseTermCheck: $tt defaults, correctness unlikely");
+            return true;
+        }
+    }
 }
 
 
@@ -2653,219 +2858,15 @@ class PaperSearch {
     // Check the results of the query, reducing the possibly conservative
     // overestimate produced by the database to a precise result.
 
-    private function _clauseTermCheckWordCount($t, $row, $rrow) {
+    private function word_count_for(PaperInfo $row, $reviewId) {
         if ($this->_reviewWordCounts === false)
             $this->_reviewWordCounts = Dbl::fetch_iimap($this->conf->qe("select reviewId, reviewWordCount from PaperReview"));
-        if (!isset($this->_reviewWordCounts[$rrow->reviewId])) {
+        if (!isset($this->_reviewWordCounts[$reviewId])) {
             $cid2rid = $row->all_review_ids();
             foreach ($row->all_review_word_counts($row) as $cid => $rwc)
                 $this->_reviewWordCounts[$cid2rid[$cid]] = $rwc;
         }
-        return $t->value->wordcountexpr->test($this->_reviewWordCounts[$rrow->reviewId]);
-    }
-
-    private function _clauseTermCheckFlags($t, $row) {
-        $flags = $t->flags;
-        if (($flags & self::F_MANAGER)
-            && !$this->user->can_administer($row, true))
-            return false;
-        if (($flags & self::F_AUTHOR)
-            && !$this->user->act_author_view($row))
-            return false;
-        if (($flags & self::F_REVIEWER)
-            && $row->myReviewNeedsSubmit !== 0
-            && $row->myReviewNeedsSubmit !== "0")
-            return false;
-        if (($flags & self::F_NONCONFLICT) && $row->conflictType)
-            return false;
-        if ($flags & self::F_XVIEW) {
-            if (!$this->user->can_view_paper($row))
-                return false;
-            if ($t->type === "tag" && !$this->user->can_view_tags($row, true))
-                return false;
-            if ($t->type === "tag"
-                && $this->user->privChair
-                && $row->managerContactId > 0) {
-                $fieldname = $t->link;
-                $row->$fieldname = $t->value->evaluate($this->user, $row->viewable_tags($this->user)) ? 1 : 0;
-            }
-            if (($t->type === "au" || $t->type === "au_cid" || $t->type === "co")
-                && !$this->user->can_view_authors($row, true))
-                return false;
-            if ($t->type === "conflict"
-                && !$this->user->can_view_conflicts($row, true))
-                return false;
-            if ($t->type === "pf" && $t->value[0] === "outcome"
-                && !$this->user->can_view_decision($row, true))
-                return false;
-            if ($t->type === "option"
-                && !$this->user->can_view_paper_option($row, $t->value->option, true))
-                return false;
-            if ($t->type === "re" && ($fieldname = $t->link)
-                && !isset($row->$fieldname)) {
-                $row->$fieldname = 0;
-                $rrow = (object) array("paperId" => $row->paperId);
-                $count_only = !$t->value->fieldsql;
-                foreach (explode(",", defval($row, $fieldname . "_info", "")) as $info)
-                    if ($info !== "") {
-                        list($rrow->reviewId, $rrow->contactId, $rrow->reviewType, $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->requestedBy, $rrow->reviewToken, $rrow->reviewBlind) = explode(" ", $info);
-                        if ($count_only
-                            ? !$this->user->can_view_review_assignment($row, $rrow, true)
-                            : !$this->user->can_view_review($row, $rrow, true))
-                            continue;
-                        if ($t->value->has_contacts()
-                            ? !$this->user->can_view_review_identity($row, $rrow, true)
-                            : /* don't count delegated reviews unless contacts given */
-                              $rrow->reviewSubmitted <= 0 && $rrow->reviewNeedsSubmit <= 0)
-                            continue;
-                        if (isset($t->value->view_score)
-                            && $t->value->view_score <= $this->user->view_score_bound($row, $rrow))
-                            continue;
-                        if ($t->value->wordcountexpr
-                            && !$this->_clauseTermCheckWordCount($t, $row, $rrow))
-                            continue;
-                        ++$row->$fieldname;
-                    }
-            }
-            if (($t->type === "cmt" || $t->type === "cmttag")
-                && ($fieldname = $t->link)
-                && !isset($row->$fieldname)) {
-                $row->$fieldname = 0;
-                $crow = (object) array("paperId" => $row->paperId);
-                foreach (explode(",", defval($row, $fieldname . "_info", "")) as $info)
-                    if ($info !== "") {
-                        list($crow->contactId, $crow->commentType) = explode(" ", $info);
-                        if ($this->user->can_view_comment($row, $crow, true))
-                            ++$row->$fieldname;
-                    }
-            }
-            if ($t->type === "pf" && $t->value[0] === "leadContactId"
-                && !$this->user->can_view_lead($row, true))
-                return false;
-            if ($t->type === "pf" && $t->value[0] === "shepherdContactId"
-                && !$this->user->can_view_shepherd($row, true))
-                return false;
-            if ($t->type === "pf" && $t->value[0] === "managerContactId"
-                && !$this->user->can_view_paper_manager($row))
-                return false;
-        }
-        if ($flags & self::F_FALSE)
-            return false;
-        return true;
-    }
-
-    function _clauseTermCheckField($t, $row) {
-        $field = $t->link;
-        if (!$this->_clauseTermCheckFlags($t, $row)
-            || $row->$field === "")
-            return false;
-
-        $field_deaccent = $field . "_deaccent";
-        if (!isset($row->$field_deaccent)) {
-            if (preg_match('/[\x80-\xFF]/', $row->$field))
-                $row->$field_deaccent = UnicodeHelper::deaccent($row->$field);
-            else
-                $row->$field_deaccent = false;
-        }
-
-        if (!isset($t->preg_utf8))
-            Text::star_text_pregexes($t);
-        return Text::match_pregexes($t, $row->$field, $row->$field_deaccent);
-    }
-
-    function _clauseTermCheck($t, $row) {
-        $tt = $t->type;
-
-        // collect columns
-        if ($tt === "ti" || $tt === "ab" || $tt === "au" || $tt === "co")
-            return $this->_clauseTermCheckField($t, $row);
-        else if ($tt === "au_cid") {
-            assert(is_array($t->value));
-            return $this->_clauseTermCheckFlags($t, $row)
-                && $row->{$t->link} != 0;
-        } else if ($tt === "re" || $tt === "conflict" || $tt === "revpref"
-                   || $tt === "cmt" || $tt === "cmttag") {
-            if (!$this->_clauseTermCheckFlags($t, $row))
-                return false;
-            else {
-                $fieldname = $t->link;
-                return $t->value->test((int) $row->$fieldname);
-            }
-        } else if ($tt === "pn") {
-            if (count($t->value[0]) && array_search($row->paperId, $t->value[0]) === false)
-                return false;
-            else if (count($t->value[1]) && array_search($row->paperId, $t->value[1]) !== false)
-                return false;
-            else
-                return true;
-        } else if ($tt === "pf") {
-            if (!$this->_clauseTermCheckFlags($t, $row))
-                return false;
-            else {
-                $ans = true;
-                for ($i = 0; $ans && $i < count($t->value); $i += 2) {
-                    $fieldname = $t->value[$i];
-                    $expr = $t->value[$i + 1];
-                    if (is_array($expr))
-                        $ans = in_array($row->$fieldname, $expr);
-                    else
-                        $ans = CountMatcher::compare_string($row->$fieldname, $expr);
-                }
-                return $ans;
-            }
-        } else if ($tt === "tag" || $tt === "topic") {
-            if (!$this->_clauseTermCheckFlags($t, $row))
-                return false;
-            $fieldname = $t->link;
-            return $row->$fieldname != 0;
-        } else if ($tt === "option") {
-            if (!$this->_clauseTermCheckFlags($t, $row))
-                return false;
-            $fieldname = $t->link;
-            if ($row->$fieldname == 0)
-                return false;
-            $om = $t->value;
-            if ($om->kind) {
-                $ov = $row->option($om->option->id);
-                if ($om->kind === "attachment-count" && $ov)
-                    return CountMatcher::compare($ov->value_count(), $om->compar, $om->value);
-                else if ($om->kind === "attachment-name" && $ov) {
-                    $reg = Text::star_text_pregexes($om->value);
-                    foreach ($ov->documents() as $doc)
-                        if (Text::match_pregexes($reg, $doc->filename, false))
-                            return true;
-                }
-                return false;
-            }
-            return true;
-        } else if ($tt === "formula") {
-            $formulaf = $t->link;
-            return !!$formulaf($row, null, $this->user);
-        } else if ($tt === "not") {
-            return !$this->_clauseTermCheck($t->value[0], $row);
-        } else if ($tt === "and" || $tt === "and2") {
-            foreach ($t->value as $subt)
-                if (!$this->_clauseTermCheck($subt, $row))
-                    return false;
-            return true;
-        } else if ($tt === "or") {
-            foreach ($t->value as $subt)
-                if ($this->_clauseTermCheck($subt, $row))
-                    return true;
-            return false;
-        } else if ($tt === "then") {
-            for ($i = 0; $i < $t->nthen; ++$i)
-                if ($this->_clauseTermCheck($t->value[$i], $row))
-                    return true;
-            return false;
-        } else if ($tt === "f")
-            return false;
-        else if ($tt === "t" || $tt === "revadj")
-            return true;
-        else {
-            error_log("PaperSearch::_clauseTermCheck: $tt defaults, correctness unlikely");
-            return true;
-        }
+        return $this->_reviewWordCounts[$reviewId];
     }
 
     private function _add_deleted_papers($qe) {
@@ -3139,10 +3140,10 @@ class PaperSearch {
                 else if ($need_then) {
                     $x = false;
                     for ($i = 0; $i < $qe->nthen && $x === false; ++$i)
-                        if ($this->_clauseTermCheck($qe->value[$i], $row))
+                        if ($qe->value[$i]->_clauseTermCheck($row, $this))
                             $x = $i;
                 } else
-                    $x = !!$this->_clauseTermCheck($qe, $row);
+                    $x = !!$qe->_clauseTermCheck($row, $this);
                 if ($x === false)
                     continue;
                 $this->_matches[] = $row->paperId;
@@ -3150,7 +3151,7 @@ class PaperSearch {
                     $this->thenmap[$row->paperId] = $x;
                 if ($need_then) {
                     for ($j = $qe->nthen; $j < count($qe->value); ++$j)
-                        if ($this->_clauseTermCheck($qe->value[$j], $row)
+                        if ($qe->value[$j]->_clauseTermCheck($row, $this)
                             && ($qe->highlights[$j - $qe->nthen] & (1 << $x)))
                             $this->highlightmap[$row->paperId][] = $qe->highlight_types[$j - $qe->nthen];
                 }
