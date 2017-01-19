@@ -97,7 +97,7 @@ class SearchTerm {
             $this->type = "pn";
             $this->value = array($qv->value[1], $qv->value[0]);
         } else if ($qv->type === "revadj") {
-            $qr = clone $qv->value[0];
+            $qr = clone $qv;
             $qr->float = $this->float;
             $qr->value["revadjnegate"] = !get($qr->value, "revadjnegate");
             return $qr;
@@ -2396,7 +2396,7 @@ class PaperSearch {
     private function _query_adjust_reviews($qe, $revadj) {
         $applied = $first_applied = 0;
         if ($qe->type === "not")
-            $this->_query_adjust_reviews($qe->value, $revadj);
+            $this->_query_adjust_reviews($qe->value[0], $revadj);
         else if ($qe->type === "and" || $qe->type === "and2") {
             $myrevadj = ($qe->value[0]->type === "revadj" ? $qe->value[0] : null);
             if ($myrevadj) {
