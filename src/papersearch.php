@@ -280,6 +280,357 @@ class SearchTerm {
     }
 
 
+    private function _clauseTermSetFlags(&$q, SearchQueryInfo $sqi) {
+        $flags = $this->flags;
+        $sqi->needflags |= $flags;
+
+        if ($flags & PaperSearch::F_MANAGER) {
+            if ($sqi->conf->has_any_manager() && $sqi->srch->privChair)
+                $q[] = "(managerContactId={$sqi->user->contactId} or (managerContactId=0 and PaperConflict.conflictType is null))";
+            else if ($sqi->user->is_track_manager())
+                $q[] = "true";
+            else if ($sqi->user->is_manager())
+                $q[] = "managerContactId={$sqi->user->contactId}";
+            else
+                $q[] = "false";
+            $sqi->add_rights_columns();
+        }
+        if ($flags & PaperSearch::F_NONCONFLICT)
+            $q[] = "PaperConflict.conflictType is null";
+        if ($flags & PaperSearch::F_AUTHOR)
+            $q[] = $sqi->user->actAuthorSql("PaperConflict");
+        if ($flags & PaperSearch::F_REVIEWER)
+            $q[] = "MyReview.reviewNeedsSubmit=0";
+        if ($flags & PaperSearch::F_XVIEW) {
+            $sqi->needflags |= PaperSearch::F_NONCONFLICT | PaperSearch::F_REVIEWER;
+            $sqi->add_rights_columns();
+        }
+        if (($flags & PaperSearch::F_FALSE)
+            || ($sqi->negated && ($flags & PaperSearch::F_XVIEW)))
+            $q[] = "false";
+    }
+
+    private function _clauseTermSetField($field, SearchQueryInfo $sqi) {
+        $sqi->needflags |= $this->flags | PaperSearch::F_XVIEW;
+        $v = $this->value;
+        if ($v !== "" && $v[0] === "*")
+            $v = substr($v, 1);
+        if ($v !== "" && $v[strlen($v) - 1] === "*")
+            $v = substr($v, 0, strlen($v) - 1);
+        $this->link = $field;
+        if ($sqi->negated)
+            // The purpose of _clauseTermSetField is to match AT LEAST those
+            // papers that contain "$t->value" as a word in the $field field.
+            // A substring match contains at least those papers; but only if
+            // the current term is positive (= not negated).  If the current
+            // term is negated, we say NO paper matches this clause.  (NOT no
+            // paper is every paper.)  Later code will check for a substring.
+            return "false";
+        else {
+            $q = [];
+            $this->_clauseTermSetFlags($q, $sqi);
+            return empty($q) ? "true" : "(" . join(" and ", $q) . ")";
+        }
+    }
+
+    private function _clauseTermSetTable($value, $compar, $shorttab,
+                                         $table, $field, $where, SearchQueryInfo $sqi) {
+        // see also first "tag" case below
+        $q = array();
+        $this->_clauseTermSetFlags($q, $sqi);
+
+        if ($value === "none" && !$compar)
+            list($compar, $value) = array("=0", "");
+        else if (($value === "" || $value === "any") && !$compar)
+            list($compar, $value) = array(">0", "");
+        else if (!$compar || $compar === ">=1")
+            $compar = ">0";
+        else if ($compar === "<=0" || $compar === "<1")
+            $compar = "=0";
+
+        $thistab = $shorttab . "_" . count($sqi->tables);
+        if ($value === "") {
+            if ($compar === ">0" || $compar === "=0")
+                $thistab = "Any" . $shorttab;
+            $tdef = array("left join", $table);
+        } else if (is_array($value)) {
+            if (count($value))
+                $tdef = array("left join", $table, "$thistab.$field in (" . join(",", $value) . ")");
+            else
+                $tdef = array("left join", $table, "false");
+        } else if (strpos($value, "\3") !== false) {
+            $tdef = array("left join", $table, str_replace("\3", "$thistab.$field", $value));
+        } else {
+            $tdef = array("left join", $table, "$thistab.$field='" . sqlq($value) . "'");
+        }
+        if ($where)
+            $tdef[2] .= str_replace("%", $thistab, $where);
+
+        if ($compar !== ">0" && $compar !== "=0") {
+            $tdef[1] = "(select paperId, count(*) ct from " . $tdef[1] . " as " . $thistab;
+            if (count($tdef) > 2)
+                $tdef[1] .= " where " . array_pop($tdef);
+            $tdef[1] .= " group by paperId)";
+            $sqi->add_column($thistab . "_ct", "$thistab.ct");
+            $q[] = "coalesce($thistab.ct,0)$compar";
+        } else {
+            $sqi->add_column($thistab . "_ct", "count($thistab.$field)");
+            if ($compar === "=0")
+                $q[] = "$thistab.$field is null";
+            else
+                $q[] = "$thistab.$field is not null";
+        }
+
+        $sqi->add_table($thistab, $tdef);
+        $this->link = $thistab . "_ct";
+        return "(" . join(" and ", $q) . ")";
+    }
+
+    private function _clauseTermSetReviews(SearchQueryInfo $sqi) {
+        $rsm = $this->value;
+        if (($thistab = $rsm->simple_name()))
+            $thistab = "Reviews_" . $thistab;
+        else
+            $thistab = "Reviews_" . count($sqi->tables);
+
+        if (!isset($sqi->tables[$thistab])) {
+            $where = array();
+            $reviewtable = "PaperReview r";
+            if ($rsm->review_type)
+                $where[] = "reviewType=" . $rsm->review_type;
+            $cwhere = array();
+            if ($rsm->completeness & ReviewSearchMatcher::COMPLETE)
+                $cwhere[] = "reviewSubmitted>0";
+            if ($rsm->completeness & ReviewSearchMatcher::INCOMPLETE)
+                $cwhere[] = "reviewNeedsSubmit!=0";
+            if ($rsm->completeness & ReviewSearchMatcher::INPROGRESS)
+                $cwhere[] = "(reviewSubmitted is null and reviewModified>0)";
+            if ($rsm->completeness & ReviewSearchMatcher::APPROVABLE) {
+                if ($sqi->srch->privChair)
+                    $cwhere[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
+                else
+                    $cwhere[] = "(reviewSubmitted is null and timeApprovalRequested>0 and requestedBy={$sqi->user->cid})";
+            }
+            if (!empty($cwhere))
+                $where[] = "(" . join(" or ", $cwhere) . ")";
+            if ($rsm->round !== null) {
+                if (count($rsm->round) == 0)
+                    $where[] = "false";
+                else
+                    $where[] = "reviewRound" . sql_in_numeric_set($rsm->round);
+            }
+            if ($rsm->rate !== null)
+                $sqi->srch->_add_rating_sql($reviewtable, $where, $rsm->rate);
+            if ($rsm->has_contacts()) {
+                $cm = $rsm->contact_match_sql("r.contactId");
+                if ($rsm->tokens)
+                    $cm = "($cm or r.reviewToken in (" . join(",", $rsm->tokens) . "))";
+                $where[] = $cm;
+            }
+            if ($rsm->fieldsql)
+                $where[] = $rsm->fieldsql;
+            $wheretext = "";
+            if (!empty($where))
+                $wheretext = " where " . join(" and ", $where);
+            $sqi->add_table($thistab, array("left join", "(select r.paperId, count(r.reviewId) count, group_concat(r.reviewId, ' ', r.contactId, ' ', r.reviewType, ' ', coalesce(r.reviewSubmitted,0), ' ', r.reviewNeedsSubmit, ' ', r.requestedBy, ' ', r.reviewToken, ' ', r.reviewBlind) info from $reviewtable$wheretext group by paperId)"));
+            $sqi->add_column($thistab . "_info", $thistab . ".info");
+        }
+
+        $q = array();
+        $this->_clauseTermSetFlags($q, $sqi);
+        // Make the database query conservative (so change equality
+        // constraints to >= constraints, and ignore <=/</!= constraints).
+        // We'll do the precise query later.
+        $q[] = "coalesce($thistab.count,0)" . $rsm->conservative_countexpr();
+        $this->link = $thistab;
+        return "(" . join(" and ", $q) . ")";
+    }
+
+    private function _clauseTermSetRevpref(SearchQueryInfo $sqi) {
+        $thistab = "Revpref_" . count($sqi->tables);
+        $rsm = $this->value;
+
+        if ($rsm->preference_match
+            && $rsm->preference_match->test(0)
+            && !$rsm->expertise_match) {
+            $q = "select Paper.paperId, count(ContactInfo.contactId) as count"
+                . " from Paper join ContactInfo"
+                . " left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=ContactInfo.contactId)"
+                . " where coalesce(preference,0)" . $rsm->preference_match->countexpr()
+                . " and " . ($rsm->has_contacts() ? $rsm->contact_match_sql("ContactInfo.contactId") : "roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0")
+                . " group by Paper.paperId";
+        } else {
+            $where = array();
+            if ($rsm->has_contacts())
+                $where[] = $rsm->contact_match_sql("contactId");
+            if (($match = $rsm->preference_expertise_match()))
+                $where[] = $match;
+            $q = "select paperId, count(PaperReviewPreference.preference) as count"
+                . " from PaperReviewPreference";
+            if (count($where))
+                $q .= " where " . join(" and ", $where);
+            $q .= " group by paperId";
+        }
+        $sqi->add_table($thistab, array("left join", "($q)"));
+
+        $q = array();
+        $this->_clauseTermSetFlags($q, $sqi);
+        $q[] = "coalesce($thistab.count,0)" . $this->value->countexpr();
+        $sqi->add_column($thistab . "_matches", "$thistab.count");
+        $this->link = $thistab . "_matches";
+        return "(" . join(" and ", $q) . ")";
+    }
+
+    private function _clauseTermSetComments($thistab, $extrawhere, SearchQueryInfo $sqi) {
+        if (!isset($sqi->tables[$thistab])) {
+            $where = array();
+            if (!($this->flags & PaperSearch::F_ALLOWRESPONSE))
+                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")=0";
+            if (!($this->flags & PaperSearch::F_ALLOWCOMMENT))
+                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
+            if (!($this->flags & PaperSearch::F_ALLOWDRAFT))
+                $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")=0";
+            else if ($this->flags & PaperSearch::F_REQUIREDRAFT)
+                $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")!=0";
+            if ($this->flags & PaperSearch::F_AUTHORCOMMENT)
+                $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
+            if (isset($this->commentRound))
+                $where[] = "commentRound=" . $this->commentRound;
+            if ($extrawhere)
+                $where[] = $extrawhere;
+            $wheretext = "";
+            if (count($where))
+                $wheretext = " where " . join(" and ", $where);
+            $sqi->add_table($thistab, array("left join", "(select paperId, count(commentId) count, group_concat(contactId, ' ', commentType) info from PaperComment$wheretext group by paperId)"));
+            $sqi->add_column($thistab . "_info", $thistab . ".info");
+        }
+        $q = array();
+        $this->_clauseTermSetFlags($q, $sqi);
+        $q[] = "coalesce($thistab.count,0)" . $this->value->conservative_countexpr();
+        $this->link = $thistab;
+        return "(" . join(" and ", $q) . ")";
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $tt = $this->type;
+        $thistab = null;
+
+        // collect columns
+        if ($tt === "ti") {
+            $sqi->add_column("title", "Paper.title");
+            return $this->_clauseTermSetField("title", $sqi);
+        } else if ($tt === "ab") {
+            $sqi->add_column("abstract", "Paper.abstract");
+            return $this->_clauseTermSetField("abstract", $sqi);
+        } else if ($tt === "au") {
+            $sqi->add_column("authorInformation", "Paper.authorInformation");
+            return $this->_clauseTermSetField("authorInformation", $sqi);
+        } else if ($tt === "co") {
+            $sqi->add_column("collaborators", "Paper.collaborators");
+            return $this->_clauseTermSetField("collaborators", $sqi);
+        } else if ($tt === "au_cid") {
+            return $this->_clauseTermSetTable($this->value, null, "AuthorConflict",
+                                       "PaperConflict", "contactId",
+                                       " and " . $sqi->user->actAuthorSql("%"),
+                                       $sqi);
+        } else if ($tt === "re") {
+            return $this->_clauseTermSetReviews($sqi);
+        } else if ($tt === "revpref") {
+            return $this->_clauseTermSetRevpref($sqi);
+        } else if ($tt === "conflict") {
+            return $this->_clauseTermSetTable($this->value->contact_set(),
+                                       $this->value->countexpr(), "Conflict",
+                                       "PaperConflict", "contactId", "",
+                                       $sqi);
+        } else if ($tt === "cmt") {
+            if ($this->value->has_contacts())
+                $thistab = "Comments_" . count($sqi->tables);
+            else {
+                $rtype = $this->flags & (PaperSearch::F_ALLOWCOMMENT | PaperSearch::F_ALLOWRESPONSE | PaperSearch::F_AUTHORCOMMENT | PaperSearch::F_ALLOWDRAFT | PaperSearch::F_REQUIREDRAFT);
+                $thistab = "Numcomments_" . $rtype;
+                if (isset($this->commentRound))
+                    $thistab .= "_" . $t->commentRound;
+            }
+            return $this->_clauseTermSetComments($thistab, $this->value->contact_match_sql("contactId"), $sqi);
+        } else if ($tt === "cmttag") {
+            $thistab = "TaggedComments_" . count($sqi->tables);
+            if ($this->value->tag === "any")
+                $match = "is not null";
+            else
+                $match = "like " . Dbl::utf8ci("'% " . sqlq($this->value->tag) . " %'");
+            return $this->_clauseTermSetComments($thistab, "commentTags $match", $sqi);
+        } else if ($tt === "pn") {
+            $q = array();
+            if (count($this->value[0]))
+                $q[] = "Paper.paperId in (" . join(",", $this->value[0]) . ")";
+            if (count($this->value[1]))
+                $q[] = "Paper.paperId not in (" . join(",", $this->value[1]) . ")";
+            if (!count($q))
+                $q[] = "false";
+            return "(" . join(" and ", $q) . ")";
+        } else if ($tt === "pf") {
+            $q = array();
+            $this->_clauseTermSetFlags($q, $sqi);
+            for ($i = 0; $i < count($this->value); $i += 2) {
+                $sqi->add_column($this->value[$i], "Paper." . $this->value[$i]);
+                if (is_array($this->value[$i + 1]))
+                    $q[] = "Paper." . $this->value[$i] . " in (" . join(",", $this->value[$i + 1]) . ")";
+                else
+                    $q[] = "Paper." . $this->value[$i] . $this->value[$i + 1];
+            }
+            return "(" . join(" and ", $q) . ")";
+        } else if ($tt === "tag") {
+            return $this->_clauseTermSetTable($this->value->tagmatch_sql($sqi->user), null, "Tag",
+                                       "PaperTag", "tag", $this->value->index_wheresql(),
+                                       $sqi);
+        } else if ($tt === "topic") {
+            return $this->_clauseTermSetTable($this->value, null, "Topic",
+                                       "PaperTopic", "topicId", "",
+                                       $sqi);
+        } else if ($tt === "option") {
+            // expanded from _clauseTermSetTable
+            $q = array();
+            $this->_clauseTermSetFlags($q, $sqi);
+            $thistab = "Option_" . count($sqi->tables);
+            $sqi->add_table($thistab, array("left join", "(select paperId, max(value) v from PaperOption where optionId=" . $this->value->option->id . " group by paperId)"));
+            $sqi->add_column($thistab . "_x", "coalesce($thistab.v,0)" . $this->value->table_matcher());
+            $this->link = $thistab . "_x";
+            $q[] = $sqi->columns[$this->link];
+            return "(" . join(" and ", $q) . ")";
+        } else if ($tt === "formula") {
+            $q = array("true");
+            $this->_clauseTermSetFlags($q, $sqi);
+            $this->value->add_query_options($sqi->srch->_query_options);
+            if (!$this->link)
+                $this->link = $this->value->compile_function();
+            return "(" . join(" and ", $q) . ")";
+        } else if ($tt === "not") {
+            $sqi->negated = !$sqi->negated;
+            $ff = $this->value[0]->sqlexpr($sqi);
+            $sqi->negated = !$sqi->negated;
+            return "not ($ff)";
+        } else if ($tt === "and" || $tt === "and2") {
+            $ff = array();
+            foreach ($this->value as $subt)
+                $ff[] = $subt->sqlexpr($sqi);
+            if (empty($ff))
+                $ff[] = "false";
+            return "(" . join(" and ", $ff) . ")";
+        } else if ($tt === "or" || $tt === "then") {
+            $ff = array();
+            foreach ($this->value as $subt)
+                $ff[] = $subt->sqlexpr($sqi);
+            if (empty($ff))
+                $ff[] = "false";
+            return "(" . join(" or ", $ff) . ")";
+        } else if ($tt === "f")
+            return "false";
+        else if ($tt === "t")
+            return "true";
+        else
+            return "true";
+    }
+
+
     private function _check_flags(PaperInfo $row, PaperSearch $srch) {
         $flags = $this->flags;
         if (($flags & PaperSearch::F_MANAGER)
@@ -686,13 +1037,18 @@ class RevprefSearchMatcher extends ContactCountMatcher {
 }
 
 class SearchQueryInfo {
-    private $user;
+    public $conf;
+    public $srch;
+    public $user;
     public $tables = array();
     public $columns = array();
     public $negated = false;
+    public $needflags = 0;
 
-    public function __construct($user) {
-        $this->user = $user;
+    public function __construct(PaperSearch $srch) {
+        $this->conf = $srch->conf;
+        $this->srch = $srch;
+        $this->user = $srch->user;
     }
     public function add_table($table, $joiner = false) {
         assert($joiner || !count($this->tables));
@@ -778,7 +1134,7 @@ class PaperSearch {
     public $contact;
     public $cid;
     private $contactId;         // for backward compatibility
-    var $privChair;
+    public $privChair;
     private $amPC;
 
     var $limitName;
@@ -798,8 +1154,7 @@ class PaperSearch {
     private $contact_match = array();
     private $noratings = false;
     private $interestingRatings = array();
-    private $needflags = 0;
-    private $_query_options = array();
+    public $_query_options = array();
     private $reviewAdjust = false;
     private $_reviewAdjustError = false;
     private $_ssRecursion = array();
@@ -2373,7 +2728,7 @@ class PaperSearch {
     // apply rounds to reviewer searches
     static private $adjustments = array("round", "rate");
 
-    function _queryMakeAdjustedReviewSearch($roundterm) {
+    function _queryMakeAdjustedReviewSearch(SearchTerm $roundterm) {
         $value = new ReviewSearchMatcher(">0");
         if ($this->limitName === "r" || $this->limitName === "rout")
             $value->add_contact($this->cid);
@@ -2393,7 +2748,7 @@ class PaperSearch {
             return $term;
     }
 
-    private function _query_adjust_reviews($qe, $revadj) {
+    private function _query_adjust_reviews(SearchTerm $qe, $revadj) {
         $applied = $first_applied = 0;
         if ($qe->type === "not")
             $this->_query_adjust_reviews($qe->value[0], $revadj);
@@ -2465,113 +2820,6 @@ class PaperSearch {
     // The query may be liberal (returning more papers than actually match);
     // QUERY EVALUATION makes it precise.
 
-    private function _clauseTermSetFlags($t, $sqi, &$q) {
-        $flags = $t->flags;
-        $this->needflags |= $flags;
-
-        if ($flags & self::F_MANAGER) {
-            if ($this->conf->has_any_manager() && $this->privChair)
-                $q[] = "(managerContactId=$this->cid or (managerContactId=0 and PaperConflict.conflictType is null))";
-            else if ($this->user->is_track_manager())
-                $q[] = "true";
-            else if ($this->user->is_manager())
-                $q[] = "managerContactId=$this->cid";
-            else
-                $q[] = "false";
-            $sqi->add_rights_columns();
-        }
-        if ($flags & self::F_NONCONFLICT)
-            $q[] = "PaperConflict.conflictType is null";
-        if ($flags & self::F_AUTHOR)
-            $q[] = $this->user->actAuthorSql("PaperConflict");
-        if ($flags & self::F_REVIEWER)
-            $q[] = "MyReview.reviewNeedsSubmit=0";
-        if ($flags & self::F_XVIEW) {
-            $this->needflags |= self::F_NONCONFLICT | self::F_REVIEWER;
-            $sqi->add_rights_columns();
-        }
-        if (($flags & self::F_FALSE)
-            || ($sqi->negated && ($flags & self::F_XVIEW)))
-            $q[] = "false";
-    }
-
-    private function _clauseTermSetField($t, $field, $sqi) {
-        $this->needflags |= $t->flags;
-        $v = $t->value;
-        if ($v !== "" && $v[0] === "*")
-            $v = substr($v, 1);
-        if ($v !== "" && $v[strlen($v) - 1] === "*")
-            $v = substr($v, 0, strlen($v) - 1);
-        $t->link = $field;
-        $this->needflags |= self::F_XVIEW;
-        if ($sqi->negated)
-            // The purpose of _clauseTermSetField is to match AT LEAST those
-            // papers that contain "$t->value" as a word in the $field field.
-            // A substring match contains at least those papers; but only if
-            // the current term is positive (= not negated).  If the current
-            // term is negated, we say NO paper matches this clause.  (NOT no
-            // paper is every paper.)  Later code will check for a substring.
-            return "false";
-        else {
-            $q = [];
-            $this->_clauseTermSetFlags($t, $sqi, $q);
-            return empty($q) ? "true" : "(" . join(" and ", $q) . ")";
-        }
-    }
-
-    private function _clauseTermSetTable($t, $value, $compar, $shorttab,
-                                         $table, $field, $where, $sqi) {
-        // see also first "tag" case below
-        $q = array();
-        $this->_clauseTermSetFlags($t, $sqi, $q);
-
-        if ($value === "none" && !$compar)
-            list($compar, $value) = array("=0", "");
-        else if (($value === "" || $value === "any") && !$compar)
-            list($compar, $value) = array(">0", "");
-        else if (!$compar || $compar === ">=1")
-            $compar = ">0";
-        else if ($compar === "<=0" || $compar === "<1")
-            $compar = "=0";
-
-        $thistab = $shorttab . "_" . count($sqi->tables);
-        if ($value === "") {
-            if ($compar === ">0" || $compar === "=0")
-                $thistab = "Any" . $shorttab;
-            $tdef = array("left join", $table);
-        } else if (is_array($value)) {
-            if (count($value))
-                $tdef = array("left join", $table, "$thistab.$field in (" . join(",", $value) . ")");
-            else
-                $tdef = array("left join", $table, "false");
-        } else if (strpos($value, "\3") !== false) {
-            $tdef = array("left join", $table, str_replace("\3", "$thistab.$field", $value));
-        } else {
-            $tdef = array("left join", $table, "$thistab.$field='" . sqlq($value) . "'");
-        }
-        if ($where)
-            $tdef[2] .= str_replace("%", $thistab, $where);
-
-        if ($compar !== ">0" && $compar !== "=0") {
-            $tdef[1] = "(select paperId, count(*) ct from " . $tdef[1] . " as " . $thistab;
-            if (count($tdef) > 2)
-                $tdef[1] .= " where " . array_pop($tdef);
-            $tdef[1] .= " group by paperId)";
-            $sqi->add_column($thistab . "_ct", "$thistab.ct");
-            $q[] = "coalesce($thistab.ct,0)$compar";
-        } else {
-            $sqi->add_column($thistab . "_ct", "count($thistab.$field)");
-            if ($compar === "=0")
-                $q[] = "$thistab.$field is null";
-            else
-                $q[] = "$thistab.$field is not null";
-        }
-
-        $sqi->add_table($thistab, $tdef);
-        $t->link = $thistab . "_ct";
-        return "(" . join(" and ", $q) . ")";
-    }
-
     static function unusableRatings(Contact $user) {
         if ($user->privChair || $user->conf->timePCViewAllReviews())
             return array();
@@ -2593,7 +2841,7 @@ class PaperSearch {
         return Dbl::fetch_first_columns($result);
     }
 
-    private function _clauseTermSetRating(&$reviewtable, &$where, $rate) {
+    function _add_rating_sql(&$reviewtable, &$where, $rate) {
         $noratings = "";
         if ($this->noratings === false)
             $this->noratings = self::unusableRatings($this->user);
@@ -2605,252 +2853,6 @@ class PaperSearch {
         foreach ($this->interestingRatings as $k => $v)
             $reviewtable .= " left join (select reviewId, count(rating) as nrate_$k from ReviewRating where rating$v$noratings group by reviewId) as Ratings_$k on (Ratings_$k.reviewId=r.reviewId)";
         $where[] = $rate;
-    }
-
-    private function _clauseTermSetReviews($t, $sqi) {
-        $rsm = $t->value;
-        if (($thistab = $rsm->simple_name()))
-            $thistab = "Reviews_" . $thistab;
-        else
-            $thistab = "Reviews_" . count($sqi->tables);
-
-        if (!isset($sqi->tables[$thistab])) {
-            $where = array();
-            $reviewtable = "PaperReview r";
-            if ($rsm->review_type)
-                $where[] = "reviewType=" . $rsm->review_type;
-            $cwhere = array();
-            if ($rsm->completeness & ReviewSearchMatcher::COMPLETE)
-                $cwhere[] = "reviewSubmitted>0";
-            if ($rsm->completeness & ReviewSearchMatcher::INCOMPLETE)
-                $cwhere[] = "reviewNeedsSubmit!=0";
-            if ($rsm->completeness & ReviewSearchMatcher::INPROGRESS)
-                $cwhere[] = "(reviewSubmitted is null and reviewModified>0)";
-            if ($rsm->completeness & ReviewSearchMatcher::APPROVABLE) {
-                if ($this->privChair)
-                    $cwhere[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
-                else
-                    $cwhere[] = "(reviewSubmitted is null and timeApprovalRequested>0 and requestedBy={$this->cid})";
-            }
-            if (!empty($cwhere))
-                $where[] = "(" . join(" or ", $cwhere) . ")";
-            if ($rsm->round !== null) {
-                if (count($rsm->round) == 0)
-                    $where[] = "false";
-                else
-                    $where[] = "reviewRound" . sql_in_numeric_set($rsm->round);
-            }
-            if ($rsm->rate !== null)
-                $this->_clauseTermSetRating($reviewtable, $where, $rsm->rate);
-            if ($rsm->has_contacts()) {
-                $cm = $rsm->contact_match_sql("r.contactId");
-                if ($rsm->tokens)
-                    $cm = "($cm or r.reviewToken in (" . join(",", $rsm->tokens) . "))";
-                $where[] = $cm;
-            }
-            if ($rsm->fieldsql)
-                $where[] = $rsm->fieldsql;
-            $wheretext = "";
-            if (!empty($where))
-                $wheretext = " where " . join(" and ", $where);
-            $sqi->add_table($thistab, array("left join", "(select r.paperId, count(r.reviewId) count, group_concat(r.reviewId, ' ', r.contactId, ' ', r.reviewType, ' ', coalesce(r.reviewSubmitted,0), ' ', r.reviewNeedsSubmit, ' ', r.requestedBy, ' ', r.reviewToken, ' ', r.reviewBlind) info from $reviewtable$wheretext group by paperId)"));
-            $sqi->add_column($thistab . "_info", $thistab . ".info");
-        }
-
-        $q = array();
-        $this->_clauseTermSetFlags($t, $sqi, $q);
-        // Make the database query conservative (so change equality
-        // constraints to >= constraints, and ignore <=/</!= constraints).
-        // We'll do the precise query later.
-        $q[] = "coalesce($thistab.count,0)" . $rsm->conservative_countexpr();
-        $t->link = $thistab;
-        return "(" . join(" and ", $q) . ")";
-    }
-
-    private function _clauseTermSetRevpref($t, $sqi) {
-        $thistab = "Revpref_" . count($sqi->tables);
-        $rsm = $t->value;
-
-        if ($rsm->preference_match
-            && $rsm->preference_match->test(0)
-            && !$rsm->expertise_match) {
-            $q = "select Paper.paperId, count(ContactInfo.contactId) as count"
-                . " from Paper join ContactInfo"
-                . " left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=ContactInfo.contactId)"
-                . " where coalesce(preference,0)" . $rsm->preference_match->countexpr()
-                . " and " . ($rsm->has_contacts() ? $rsm->contact_match_sql("ContactInfo.contactId") : "roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0")
-                . " group by Paper.paperId";
-        } else {
-            $where = array();
-            if ($rsm->has_contacts())
-                $where[] = $rsm->contact_match_sql("contactId");
-            if (($match = $rsm->preference_expertise_match()))
-                $where[] = $match;
-            $q = "select paperId, count(PaperReviewPreference.preference) as count"
-                . " from PaperReviewPreference";
-            if (count($where))
-                $q .= " where " . join(" and ", $where);
-            $q .= " group by paperId";
-        }
-        $sqi->add_table($thistab, array("left join", "($q)"));
-
-        $q = array();
-        $this->_clauseTermSetFlags($t, $sqi, $q);
-        $q[] = "coalesce($thistab.count,0)" . $t->value->countexpr();
-        $sqi->add_column($thistab . "_matches", "$thistab.count");
-        $t->link = $thistab . "_matches";
-        return "(" . join(" and ", $q) . ")";
-    }
-
-    private function _clauseTermSetComments($thistab, $extrawhere, $t, $sqi) {
-        if (!isset($sqi->tables[$thistab])) {
-            $where = array();
-            if (!($t->flags & self::F_ALLOWRESPONSE))
-                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")=0";
-            if (!($t->flags & self::F_ALLOWCOMMENT))
-                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
-            if (!($t->flags & self::F_ALLOWDRAFT))
-                $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")=0";
-            else if ($t->flags & self::F_REQUIREDRAFT)
-                $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")!=0";
-            if ($t->flags & self::F_AUTHORCOMMENT)
-                $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
-            if (isset($t->commentRound))
-                $where[] = "commentRound=" . $t->commentRound;
-            if ($extrawhere)
-                $where[] = $extrawhere;
-            $wheretext = "";
-            if (count($where))
-                $wheretext = " where " . join(" and ", $where);
-            $sqi->add_table($thistab, array("left join", "(select paperId, count(commentId) count, group_concat(contactId, ' ', commentType) info from PaperComment$wheretext group by paperId)"));
-            $sqi->add_column($thistab . "_info", $thistab . ".info");
-        }
-        $q = array();
-        $this->_clauseTermSetFlags($t, $sqi, $q);
-        $q[] = "coalesce($thistab.count,0)" . $t->value->conservative_countexpr();
-        $t->link = $thistab;
-        return "(" . join(" and ", $q) . ")";
-    }
-
-    private function _clauseTermSet($t, $sqi) {
-        $tt = $t->type;
-        $thistab = null;
-
-        // collect columns
-        if ($tt === "ti") {
-            $sqi->add_column("title", "Paper.title");
-            return $this->_clauseTermSetField($t, "title", $sqi);
-        } else if ($tt === "ab") {
-            $sqi->add_column("abstract", "Paper.abstract");
-            return $this->_clauseTermSetField($t, "abstract", $sqi);
-        } else if ($tt === "au") {
-            $sqi->add_column("authorInformation", "Paper.authorInformation");
-            return $this->_clauseTermSetField($t, "authorInformation", $sqi);
-        } else if ($tt === "co") {
-            $sqi->add_column("collaborators", "Paper.collaborators");
-            return $this->_clauseTermSetField($t, "collaborators", $sqi);
-        } else if ($tt === "au_cid") {
-            return $this->_clauseTermSetTable($t, $t->value, null, "AuthorConflict",
-                                       "PaperConflict", "contactId",
-                                       " and " . $this->user->actAuthorSql("%"),
-                                       $sqi);
-        } else if ($tt === "re") {
-            return $this->_clauseTermSetReviews($t, $sqi);
-        } else if ($tt === "revpref") {
-            return $this->_clauseTermSetRevpref($t, $sqi);
-        } else if ($tt === "conflict") {
-            return $this->_clauseTermSetTable($t, $t->value->contact_set(),
-                                       $t->value->countexpr(), "Conflict",
-                                       "PaperConflict", "contactId", "",
-                                       $sqi);
-        } else if ($tt === "cmt") {
-            if ($t->value->has_contacts())
-                $thistab = "Comments_" . count($sqi->tables);
-            else {
-                $rtype = $t->flags & (self::F_ALLOWCOMMENT | self::F_ALLOWRESPONSE | self::F_AUTHORCOMMENT | self::F_ALLOWDRAFT | self::F_REQUIREDRAFT);
-                $thistab = "Numcomments_" . $rtype;
-                if (isset($t->commentRound))
-                    $thistab .= "_" . $t->commentRound;
-            }
-            return $this->_clauseTermSetComments($thistab, $t->value->contact_match_sql("contactId"), $t, $sqi);
-        } else if ($tt === "cmttag") {
-            $thistab = "TaggedComments_" . count($sqi->tables);
-            if ($t->value->tag === "any")
-                $match = "is not null";
-            else
-                $match = "like " . Dbl::utf8ci("'% " . sqlq($t->value->tag) . " %'");
-            return $this->_clauseTermSetComments($thistab, "commentTags $match", $t, $sqi);
-        } else if ($tt === "pn") {
-            $q = array();
-            if (count($t->value[0]))
-                $q[] = "Paper.paperId in (" . join(",", $t->value[0]) . ")";
-            if (count($t->value[1]))
-                $q[] = "Paper.paperId not in (" . join(",", $t->value[1]) . ")";
-            if (!count($q))
-                $q[] = "false";
-            return "(" . join(" and ", $q) . ")";
-        } else if ($tt === "pf") {
-            $q = array();
-            $this->_clauseTermSetFlags($t, $sqi, $q);
-            for ($i = 0; $i < count($t->value); $i += 2) {
-                if (is_array($t->value[$i + 1]))
-                    $q[] = "Paper." . $t->value[$i] . " in (" . join(",", $t->value[$i + 1]) . ")";
-                else
-                    $q[] = "Paper." . $t->value[$i] . $t->value[$i + 1];
-            }
-            for ($i = 0; $i < count($t->value); $i += 2)
-                $sqi->add_column($t->value[$i], "Paper." . $t->value[$i]);
-            return "(" . join(" and ", $q) . ")";
-        } else if ($tt === "tag") {
-            return $this->_clauseTermSetTable($t, $t->value->tagmatch_sql($this->user), null, "Tag",
-                                       "PaperTag", "tag", $t->value->index_wheresql(),
-                                       $sqi);
-        } else if ($tt === "topic") {
-            return $this->_clauseTermSetTable($t, $t->value, null, "Topic",
-                                       "PaperTopic", "topicId", "",
-                                       $sqi);
-        } else if ($tt === "option") {
-            // expanded from _clauseTermSetTable
-            $q = array();
-            $this->_clauseTermSetFlags($t, $sqi, $q);
-            $thistab = "Option_" . count($sqi->tables);
-            $sqi->add_table($thistab, array("left join", "(select paperId, max(value) v from PaperOption where optionId=" . $t->value->option->id . " group by paperId)"));
-            $sqi->add_column($thistab . "_x", "coalesce($thistab.v,0)" . $t->value->table_matcher());
-            $t->link = $thistab . "_x";
-            $q[] = $sqi->columns[$t->link];
-            return "(" . join(" and ", $q) . ")";
-        } else if ($tt === "formula") {
-            $q = array("true");
-            $this->_clauseTermSetFlags($t, $sqi, $q);
-            $t->value->add_query_options($this->_query_options);
-            if (!$t->link)
-                $t->link = $t->value->compile_function();
-            return "(" . join(" and ", $q) . ")";
-        } else if ($tt === "not") {
-            $sqi->negated = !$sqi->negated;
-            $ff = $this->_clauseTermSet($t->value[0], $sqi);
-            $sqi->negated = !$sqi->negated;
-            return "not ($ff)";
-        } else if ($tt === "and" || $tt === "and2") {
-            $ff = array();
-            foreach ($t->value as $subt)
-                $ff[] = $this->_clauseTermSet($subt, $sqi);
-            if (empty($ff))
-                $ff[] = "false";
-            return "(" . join(" and ", $ff) . ")";
-        } else if ($tt === "or" || $tt === "then") {
-            $ff = array();
-            foreach ($t->value as $subt)
-                $ff[] = $this->_clauseTermSet($subt, $sqi);
-            if (empty($ff))
-                $ff[] = "false";
-            return "(" . join(" or ", $ff) . ")";
-        } else if ($tt === "f")
-            return "false";
-        else if ($tt === "t")
-            return "true";
-        else
-            return "true";
     }
 
 
@@ -2971,7 +2973,7 @@ class PaperSearch {
         //Conf::msg_info(Ht::pre_text(var_export($qe, true)));
 
         // collect clauses into tables, columns, and filters
-        $sqi = new SearchQueryInfo($this->user);
+        $sqi = new SearchQueryInfo($this);
         $sqi->add_table("Paper");
         $sqi->add_column("paperId", "Paper.paperId");
         // always include columns needed by rights machinery
@@ -2979,7 +2981,7 @@ class PaperSearch {
         $sqi->add_column("timeWithdrawn", "Paper.timeWithdrawn");
         $sqi->add_column("outcome", "Paper.outcome");
         $filters = array();
-        $filters[] = $this->_clauseTermSet($qe, $sqi);
+        $filters[] = $qe->sqlexpr($sqi);
         //Conf::msg_info(Ht::pre_text(var_export($filters, true)));
 
         // status limitation parts
@@ -3009,7 +3011,7 @@ class PaperSearch {
             else
                 $filters[] = "Paper.managerContactId=" . $this->cid;
             $filters[] = "Paper.timeSubmitted>0";
-            $this->needflags |= self::F_MANAGER;
+            $sqi->needflags |= self::F_MANAGER;
         }
 
         // decision limitation parts
@@ -3021,16 +3023,16 @@ class PaperSearch {
         // other search limiters
         if ($limit === "a") {
             $filters[] = $this->user->actAuthorSql("PaperConflict");
-            $this->needflags |= self::F_AUTHOR;
+            $sqi->needflags |= self::F_AUTHOR;
         } else if ($limit === "r") {
             $filters[] = "MyReview.reviewType is not null";
-            $this->needflags |= self::F_REVIEWER;
+            $sqi->needflags |= self::F_REVIEWER;
         } else if ($limit === "ar") {
             $filters[] = "(" . $this->user->actAuthorSql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and MyReview.reviewType is not null))";
-            $this->needflags |= self::F_AUTHOR | self::F_REVIEWER;
+            $sqi->needflags |= self::F_AUTHOR | self::F_REVIEWER;
         } else if ($limit === "rout") {
             $filters[] = "MyReview.reviewNeedsSubmit!=0";
-            $this->needflags |= self::F_REVIEWER;
+            $sqi->needflags |= self::F_REVIEWER;
         } else if ($limit === "revs")
             $sqi->add_table("Limiter", array("join", "PaperReview"));
         else if ($limit === "req")
@@ -3039,9 +3041,9 @@ class PaperSearch {
             $filters[] = "Paper.managerContactId=0";
 
         // add common tables: conflicts, my own review, paper blindness
-        if ($this->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR))
+        if ($sqi->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR))
             $sqi->add_conflict_columns();
-        if ($this->needflags & self::F_REVIEWER)
+        if ($sqi->needflags & self::F_REVIEWER)
             $sqi->add_reviewer_columns();
 
         // check for annotated order
@@ -3059,7 +3061,7 @@ class PaperSearch {
         }
 
         // add permissions tables if we will filter the results
-        $need_filter = (($this->needflags & self::F_XVIEW)
+        $need_filter = (($sqi->needflags & self::F_XVIEW)
                         || $this->conf->has_tracks()
                         || $qe->type === "then"
                         || $qe->get_float("heading")
