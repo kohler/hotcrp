@@ -270,7 +270,6 @@ class PaperTable {
     }
 
     private function papt($what, $name, $extra = array()) {
-        $type = defval($extra, "type", "pav");
         $fold = defval($extra, "fold", false);
         $editfolder = defval($extra, "editfolder", false);
         if ($fold || $editfolder) {
