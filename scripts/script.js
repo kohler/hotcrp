@@ -5272,7 +5272,7 @@ function save_tags() {
 save_tags.success = function (data) {
     data.color_classes && make_pattern_fill(data.color_classes, "", true);
     $(".has-tag-classes").each(function () {
-        var t = $.trim(this.className.replace(/\b\w*tag\b/g, ""));
+        var t = $.trim(this.className.replace(/(?: |^)\w*tag(?: |$)/g, " "));
         this.className = t + " " + (data.color_classes || "");
     });
     var h = data.tags_view_html == "" ? "None" : data.tags_view_html,
