@@ -655,15 +655,6 @@ class SearchTerm {
                             ++$row->$fieldname;
                     }
             }
-            if ($this->type === "pf" && $this->value[0] === "leadContactId"
-                && !$srch->user->can_view_lead($row, true))
-                return false;
-            if ($this->type === "pf" && $this->value[0] === "shepherdContactId"
-                && !$srch->user->can_view_shepherd($row, true))
-                return false;
-            if ($this->type === "pf" && $this->value[0] === "managerContactId"
-                && !$srch->user->can_view_paper_manager($row))
-                return false;
         }
         if ($flags & PaperSearch::F_FALSE)
             return false;
@@ -815,6 +806,40 @@ class TextMatch_SearchTerm extends SearchTerm {
                 $row->$field_deaccent = false;
         }
         return Text::match_pregexes($this->regex, $row->$field, $row->$field_deaccent);
+    }
+}
+
+class PaperPC_SearchTerm extends SearchTerm {
+    private $kind;
+    private $fieldname;
+    private $match;
+
+    function __construct($kind, $match) {
+        parent::__construct("paperpc", PaperSearch::F_XVIEW);
+        $this->kind = $kind;
+        $this->fieldname = $kind . "ContactId";
+        $this->match = $match;
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $sqi->add_column($this->fieldname, "Paper.{$this->fieldname}");
+        if ($sqi->negated && !$sqi->fullPrivChair)
+            return "false";
+        $sql = $this->match;
+        if (is_array($sql))
+            $sql = " in (" . (empty($sql) ? "-1" : join(",", $sql)) . ")";
+        return "(Paper.{$this->fieldname} $sql)";
+    }
+
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        $can_view = "can_view_{$this->kind}";
+        if (!$srch->user->$can_view($row, true))
+            return false;
+        $v = $row->{$this->fieldname};
+        if (is_array($this->match))
+            return in_array($v, $this->match);
+        else
+            return CountMatcher::compare_string($v, $this->match);
     }
 }
 
@@ -1020,6 +1045,7 @@ class SearchQueryInfo {
     public $conf;
     public $srch;
     public $user;
+    public $fullPrivChair;
     public $tables = array();
     public $columns = array();
     public $negated = false;
@@ -1029,6 +1055,8 @@ class SearchQueryInfo {
         $this->conf = $srch->conf;
         $this->srch = $srch;
         $this->user = $srch->user;
+        $this->fullPrivChair = $this->user->privChair
+            && !$this->conf->has_any_manager();
     }
     public function add_table($table, $joiner = false) {
         assert($joiner || !count($this->tables));
@@ -2034,13 +2062,13 @@ class PaperSearch {
         else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword))
             $this->_search_comment(">0", $lword, $qt, $quoted);
         else if ($lword === "manager" || $lword === "admin" || $lword === "administrator")
-            $qt[] = new SearchTerm("pf", 0, array("managerContactId", "!=0"));
+            $qt[] = new PaperPC_SearchTerm("manager", "!=0");
         else if (preg_match('/\A[cip]?(?:re|pri|sec|ext)\z/', $lword))
             $this->_search_reviewer(">0", $lword, $qt);
         else if ($lword === "lead")
-            $qt[] = new SearchTerm("pf", self::F_XVIEW, array("leadContactId", "!=0"));
+            $qt[] = new PaperPC_SearchTerm("lead", "!=0");
         else if ($lword === "shepherd")
-            $qt[] = new SearchTerm("pf", self::F_XVIEW, array("shepherdContactId", "!=0"));
+            $qt[] = new PaperPC_SearchTerm("shepherd", "!=0");
         else if ($lword === "decision")
             $this->_search_status("yes", $qt, false, false);
         else if ($lword === "approvable")
@@ -2288,9 +2316,9 @@ class PaperSearch {
         foreach (array("lead", "shepherd", "manager") as $ctype)
             if ($keyword === $ctype) {
                 $x = $this->_one_pc_matcher($word, $quoted);
-                $qt[] = new SearchTerm("pf", self::F_XVIEW, array("${ctype}ContactId", $x));
+                $qt[] = new PaperPC_SearchTerm($ctype, $x);
                 if ($ctype === "manager" && $word === "me" && !$quoted && $this->privChair)
-                    $qt[] = new SearchTerm("pf", self::F_XVIEW, array("${ctype}ContactId", "=0"));
+                    $qt[] = new PaperPC_SearchTerm($ctype, "=0");
             }
         if (($keyword ? $keyword === "tag" : isset($this->fields["tag"]))
             || $keyword === "order" || $keyword === "rorder")

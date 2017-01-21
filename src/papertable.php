@@ -1806,7 +1806,7 @@ class PaperTable {
         global $Me;
         $prow = $this->prow;
         if (($prow->managerContactId || ($Me->privChair && $this->mode === "assign"))
-            && $Me->can_view_paper_manager($prow))
+            && $Me->can_view_manager($prow))
             $this->papstripManager($Me->privChair);
         $this->papstripTags();
         $this->npapstrip_tag_entry = 0;

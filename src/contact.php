@@ -2052,7 +2052,7 @@ class Contact {
         return $rights->act_author || $rights->can_administer;
     }
 
-    function can_view_paper_manager(PaperInfo $prow = null) {
+    function can_view_manager(PaperInfo $prow = null, $forceShow = null) {
         if ($this->privChair)
             return true;
         if (!$prow)
