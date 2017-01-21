@@ -91,7 +91,7 @@ class SearchTerm {
             array_unshift($newvalue, $revadj);
         $qr = null;
         if (!$newvalue)
-            $qr = new SearchTerm($any ? "t" : "f");
+            $qr = $any ? new True_SearchTerm : new False_SearchTerm;
         else if (count($newvalue) == 1)
             $qr = clone $newvalue[0];
         if ($qr) {
@@ -121,27 +121,21 @@ class SearchTerm {
         return $qr->append($term)->finish();
     }
     static function make_float($float) {
-        return new SearchTerm("t", 0, null, array("float" => $float));
+        $qe = new True_SearchTerm;
+        $qe->float = $float;
+        return $qe;
     }
     function is_false() {
-        return $this->type === "f";
+        return false;
     }
     function is_true() {
-        return $this->type === "t";
+        return false;
     }
     function is_then() {
         return false;
     }
     function is_uninteresting() {
-        return $this->type === "t"
-            && count($this->float) === 1
-            && isset($this->float["view"]);
-    }
-    function set($k, $v) {
-        $this->$k = $v;
-    }
-    function get($k, $defval = null) {
-        return isset($this->$k) ? $this->$k : $defval;
+        return false;
     }
     function set_float($k, $v) {
         $this->float[$k] = $v;
@@ -280,18 +274,7 @@ class SearchTerm {
             $this->link = $thistab . "_x";
             $q[] = $sqi->columns[$this->link];
             return "(" . join(" and ", $q) . ")";
-        } else if ($tt === "formula") {
-            $q = array("true");
-            $this->_set_flags($q, $sqi);
-            $this->value->add_query_options($sqi->srch->_query_options);
-            if (!$this->link)
-                $this->link = $this->value->compile_function();
-            return "(" . join(" and ", $q) . ")";
-        } else if ($tt === "f")
-            return "false";
-        else if ($tt === "t")
-            return "true";
-        else
+        } else
             return "true";
     }
 
@@ -399,17 +382,43 @@ class SearchTerm {
                 return false;
             }
             return true;
-        } else if ($tt === "formula") {
-            $formulaf = $this->link;
-            return !!$formulaf($row, null, $srch->user);
-        } else if ($tt === "f")
-            return false;
-        else if ($tt === "t")
-            return true;
-        else {
+        } else {
             error_log("SearchTerm::exec: $tt defaults, correctness unlikely");
             return true;
         }
+    }
+}
+
+class False_SearchTerm extends SearchTerm {
+    function __construct() {
+        parent::__construct("f");
+    }
+    function is_false() {
+        return true;
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        return "false";
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        return false;
+    }
+}
+
+class True_SearchTerm extends SearchTerm {
+    function __construct() {
+        parent::__construct("t");
+    }
+    function is_true() {
+        return true;
+    }
+    function is_uninteresting() {
+        return count($this->float) === 1 && isset($this->float["view"]);
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        return "true";
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        return true;
     }
 }
 
@@ -421,9 +430,9 @@ class Not_SearchTerm extends SearchTerm {
         $qv = $this->value ? $this->value[0] : null;
         $qr = null;
         if (!$qv || $qv->is_false())
-            $qr = new SearchTerm("t");
+            $qr = new True_SearchTerm;
         else if ($qv->is_true())
-            $qr = new SearchTerm("f");
+            $qr = new False_SearchTerm;
         else if ($qv->type === "not")
             $qr = clone $qv->value[0];
         else if ($qv->type === "revadj") {
@@ -460,7 +469,7 @@ class And_SearchTerm extends SearchTerm {
 
         foreach ($this->_flatten_values() as $qv) {
             if ($qv->is_false()) {
-                $qr = new SearchTerm("f");
+                $qr = new False_SearchTerm;
                 $qr->float = $this->float;
                 return $qr;
             } else if ($qv->is_true())
@@ -503,11 +512,9 @@ class Or_SearchTerm extends SearchTerm {
         $newvalue = array();
 
         foreach ($this->_flatten_values() as $qv) {
-            if ($qv->is_true()) {
-                $qr = new SearchTerm("t");
-                $qr->float = $this->float;
-                return $qr;
-            } else if ($qv->is_false())
+            if ($qv->is_true())
+                return self::make_float($this->float);
+            else if ($qv->is_false())
                 /* skip */;
             else if ($qv->type === "pn") {
                 if (!$pn)
@@ -670,7 +677,6 @@ class PaperPC_SearchTerm extends SearchTerm {
         $this->fieldname = $kind . "ContactId";
         $this->match = $match;
     }
-
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column($this->fieldname, "Paper.{$this->fieldname}");
         if ($sqi->negated && !$sqi->fullPrivChair)
@@ -680,7 +686,6 @@ class PaperPC_SearchTerm extends SearchTerm {
             $sql = " in (" . (empty($sql) ? "-1" : join(",", $sql)) . ")";
         return "(Paper.{$this->fieldname} $sql)";
     }
-
     function exec(PaperInfo $row, PaperSearch $srch) {
         $can_view = "can_view_{$this->kind}";
         if (!$srch->user->$can_view($row, true))
@@ -701,7 +706,6 @@ class Revpref_SearchTerm extends SearchTerm {
         parent::__construct("revpref", $flags);
         $this->rpsm = $rpsm;
     }
-
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Revpref_" . count($sqi->tables);
         $this->fieldname = $thistab . "_matches";
@@ -735,7 +739,6 @@ class Revpref_SearchTerm extends SearchTerm {
         $q[] = "coalesce($thistab.count,0)" . $this->rpsm->countexpr();
         return self::andjoin_sqlexpr($q);
     }
-
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $this->_check_flags($row, $srch)
             && $this->rpsm->test((int) $row->{$this->fieldname});
@@ -745,11 +748,6 @@ class Revpref_SearchTerm extends SearchTerm {
 class Review_SearchTerm extends SearchTerm {
     private $rsm;
     private $fieldname;
-    public $type;
-    public $link;
-    public $flags;
-    public $value;
-    public $float = [];
 
     function __construct(ReviewSearchMatcher $rsm, $flags = 0) {
         parent::__construct("re", $flags | PaperSearch::F_XVIEW);
@@ -1068,7 +1066,6 @@ class PaperID_SearchTerm extends SearchTerm {
         parent::__construct("pn");
         $this->pids = $pns;
     }
-
     function sqlexpr(SearchQueryInfo $sqi) {
         if (empty($this->pids))
             return "false";
@@ -1080,6 +1077,25 @@ class PaperID_SearchTerm extends SearchTerm {
     }
 }
 
+class Formula_SearchTerm extends SearchTerm {
+    private $formula;
+    private $function;
+    function __construct(Formula $formula) {
+        parent::__construct("formula", PaperSearch::F_XVIEW);
+        $this->formula = $formula;
+        $this->function = $formula->compile_function();
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $this->formula->add_query_options($sqi->srch->_query_options);
+        $q = [];
+        $this->_set_flags($q, $sqi);
+        return self::andjoin_sqlexpr($q, "true");
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        $formulaf = $this->function;
+        return !!$formulaf($row, null, $srch->user);
+    }
+}
 
 
 class TagSearchMatcher {
@@ -1090,7 +1106,7 @@ class TagSearchMatcher {
 
     function make_term() {
         if (empty($this->tags))
-            return new SearchTerm("f");
+            return new False_SearchTerm;
         else
             return new SearchTerm("tag", PaperSearch::F_XVIEW, $this);
     }
@@ -1653,9 +1669,9 @@ class PaperSearch {
 
     static private function _tautology($compar) {
         if ($compar === "<0")
-            return new SearchTerm("f");
+            return new False_SearchTerm;
         else if ($compar === ">=0")
-            return new SearchTerm("t");
+            return new True_SearchTerm;
         else
             return null;
     }
@@ -1841,7 +1857,7 @@ class PaperSearch {
         }
         if ($word !== "" || count($args) == 0) {
             $this->warn("The <code>reconflict</code> keyword expects a list of paper numbers.");
-            $qt[] = new SearchTerm("f");
+            $qt[] = new False_SearchTerm;
         } else {
             $result = $this->conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
             $contacts = Dbl::fetch_first_columns($result);
@@ -1890,7 +1906,7 @@ class PaperSearch {
             $round = $this->conf->resp_round_number($rname);
             if ($round === false) {
                 $this->warn("No such response round “" . htmlspecialchars($ctype) . "”.");
-                $qt[] = new SearchTerm("f");
+                $qt[] = new False_SearchTerm;
                 return;
             }
             $rt |= self::F_ALLOWRESPONSE;
@@ -1905,7 +1921,7 @@ class PaperSearch {
             foreach ($tags as $tag)
                 $this->_search_comment_tag($rt, $tag, $m[1], $round, $qt);
             if (!count($tags)) {
-                $qt[] = new SearchTerm("f");
+                $qt[] = new False_SearchTerm;
                 return;
             } else if (count($tags) !== 1 || $tags[0] === "none" || $tags[0] === "any"
                        || !$this->conf->pc_tag_exists($tags[0]))
@@ -1967,8 +1983,8 @@ class PaperSearch {
                             $warnings = array("<" => "worse than", ">" => "better than");
                         else
                             $warnings = array("<" => "less than", ">" => "greater than");
-                        $t = new SearchTerm("f");
-                        $t->set("contradiction_warning", "No $f->name_html scores are " . ($m[2] === "=" ? "" : $warnings[$m[2][0]] . (strlen($m[2]) == 1 ? " " : " or equal to ")) . $score . ".");
+                        $t = new False_SearchTerm;
+                        $t->set_float("contradiction_warning", "No $f->name_html scores are " . ($m[2] === "=" ? "" : $warnings[$m[2][0]] . (strlen($m[2]) == 1 ? " " : " or equal to ")) . $score . ".");
                         $t->set_float("used_revadj", true);
                         $qt[] = $t;
                         return false;
@@ -2028,7 +2044,7 @@ class PaperSearch {
             $m = [null, "1", "=", "any", strcasecmp($word, "any") == 0];
         else if (!preg_match(',\A(\d*)\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
                  || ($m[1] === "" && $m[3] === "" && $m[4] === "")) {
-            $qt[] = new SearchTerm("f");
+            $qt[] = new False_SearchTerm;
             return;
         }
 
@@ -2061,7 +2077,7 @@ class PaperSearch {
             }
         }
         if (!count($qz))
-            $qz[] = new SearchTerm("f");
+            $qz[] = new False_SearchTerm;
         if (strcasecmp($word, "none") == 0)
             $qz = array(SearchTerm::make_not(SearchTerm::make_op("or", $qz)));
         $qt = array_merge($qt, $qz);
@@ -2076,10 +2092,10 @@ class PaperSearch {
         if (!$formula)
             $formula = new Formula($this->user, $word, $is_graph);
         if ($formula->check())
-            $qt[] = new SearchTerm("formula", self::F_XVIEW, $formula);
+            $qt[] = new Formula_SearchTerm($formula);
         else {
             $this->warn($formula->error_html());
-            $qt[] = new SearchTerm("f");
+            $qt[] = new False_SearchTerm;
         }
     }
 
@@ -2141,7 +2157,7 @@ class PaperSearch {
 
         $value->tags = $this->_expand_tag($tagword, $keyword === "tag");
         if (empty($value->tags))
-            return new SearchTerm("f");
+            return new False_SearchTerm;
         if (count($value->tags) === 1 && $value->tags[0] === "none") {
             $value->tags[0] = "any";
             $negated = !$negated;
@@ -2290,7 +2306,7 @@ class PaperSearch {
             if ($report_error && !count($os->warn))
                 $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a submission option.");
             if ($report_error || count($os->warn))
-                $qt[] = new SearchTerm("f");
+                $qt[] = new False_SearchTerm;
             return false;
         }
 
@@ -2354,7 +2370,7 @@ class PaperSearch {
                 if (str_starts_with($h, "has:"))
                     $has[] = "“" . htmlspecialchars($h) . "”";
             $this->warn("Unknown “has:” search. I understand " . commajoin($has) . ".");
-            $qt[] = new SearchTerm("f");
+            $qt[] = new False_SearchTerm;
         }
     }
 
@@ -2390,7 +2406,7 @@ class PaperSearch {
                 unset($x["n"]); /* don't allow "average" */
                 if (count($x) == 0) {
                     $this->warn("Unknown rating type “" . htmlspecialchars($m[1]) . "”.");
-                    $qt[] = new SearchTerm("f");
+                    $qt[] = new False_SearchTerm;
                 } else {
                     $type = count($this->interestingRatings);
                     $this->interestingRatings[$type] = " in (" . join(",", array_keys($x)) . ")";
@@ -2410,7 +2426,7 @@ class PaperSearch {
                 $this->warn("Review ratings are disabled.");
             else
                 $this->warn("Bad review rating query “" . htmlspecialchars($word) . "”.");
-            $qt[] = new SearchTerm("f");
+            $qt[] = new False_SearchTerm;
         }
     }
 
@@ -2534,9 +2550,9 @@ class PaperSearch {
 
         // Treat unquoted "*", "ANY", and "ALL" as special; return true.
         if ($word === "*" || $word === "ANY" || $word === "ALL" || $word === "")
-            return new SearchTerm("t");
+            return new True_SearchTerm;
         else if ($word === "NONE")
-            return new SearchTerm("f");
+            return new False_SearchTerm;
 
         $qword = $word;
         $quoted = ($word[0] === '"');
@@ -2604,7 +2620,7 @@ class PaperSearch {
                 $rounds = Text::simple_search($x, $this->conf->round_list());
                 if (count($rounds) == 0) {
                     $this->warn("“" . htmlspecialchars($x) . "” doesn’t match a review round.");
-                    $qt[] = new SearchTerm("f");
+                    $qt[] = new False_SearchTerm;
                 } else
                     $qt[] = ReviewAdjustment_SearchTerm::make_round($this->conf, array_keys($rounds));
             }
@@ -2634,7 +2650,7 @@ class PaperSearch {
                 $this->warn("There is no “" . htmlspecialchars($word) . "” saved search.");
             else if (!$qe)
                 $this->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
-            $qt[] = ($qe ? : new SearchTerm("f"));
+            $qt[] = ($qe ? : new False_SearchTerm);
         }
         if ($keyword === "HEADING") {
             $heading = simplify_whitespace($word);
@@ -2771,7 +2787,7 @@ class PaperSearch {
                 $nextstr = $str;
             }
             if (!$curqe && $op && $op->op === "highlight") {
-                $curqe = new SearchTerm("t");
+                $curqe = new True_SearchTerm;
                 $curqe->set_float("strspan", [$oppos, $oppos]);
             }
 
@@ -2988,7 +3004,7 @@ class PaperSearch {
             else
                 $this->_reviewer = null;
         }
-        if ($top && ($x = $qe->get("contradiction_warning")))
+        if ($top && ($x = $qe->get_float("contradiction_warning")))
             $contradictions[$x] = true;
     }
 
@@ -3132,7 +3148,7 @@ class PaperSearch {
         $qe = $this->_searchQueryType($this->q);
         //Conf::msg_info(Ht::pre_text(var_export($qe, true)));
         if (!$qe)
-            $qe = new SearchTerm("t");
+            $qe = new True_SearchTerm;
 
         // apply complex limiters (only current example: "acc" for non-chairs)
         $limit = $this->limitName;
