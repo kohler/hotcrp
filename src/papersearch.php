@@ -262,7 +262,7 @@ class SearchTerm {
     }
 
 
-    private function _clauseTermSetFlags(&$q, SearchQueryInfo $sqi) {
+    protected function _set_flags(&$q, SearchQueryInfo $sqi) {
         $flags = $this->flags;
         $sqi->needflags |= $flags;
 
@@ -292,34 +292,11 @@ class SearchTerm {
             $q[] = "false";
     }
 
-    private function _clauseTermSetField($field, SearchQueryInfo $sqi) {
-        $sqi->needflags |= $this->flags | PaperSearch::F_XVIEW;
-        $v = $this->value;
-        if ($v !== "" && $v[0] === "*")
-            $v = substr($v, 1);
-        if ($v !== "" && $v[strlen($v) - 1] === "*")
-            $v = substr($v, 0, strlen($v) - 1);
-        $this->link = $field;
-        if ($sqi->negated)
-            // The purpose of _clauseTermSetField is to match AT LEAST those
-            // papers that contain "$t->value" as a word in the $field field.
-            // A substring match contains at least those papers; but only if
-            // the current term is positive (= not negated).  If the current
-            // term is negated, we say NO paper matches this clause.  (NOT no
-            // paper is every paper.)  Later code will check for a substring.
-            return "false";
-        else {
-            $q = [];
-            $this->_clauseTermSetFlags($q, $sqi);
-            return empty($q) ? "true" : "(" . join(" and ", $q) . ")";
-        }
-    }
-
     private function _clauseTermSetTable($value, $compar, $shorttab,
                                          $table, $field, $where, SearchQueryInfo $sqi) {
         // see also first "tag" case below
         $q = array();
-        $this->_clauseTermSetFlags($q, $sqi);
+        $this->_set_flags($q, $sqi);
 
         if ($value === "none" && !$compar)
             list($compar, $value) = array("=0", "");
@@ -419,7 +396,7 @@ class SearchTerm {
         }
 
         $q = array();
-        $this->_clauseTermSetFlags($q, $sqi);
+        $this->_set_flags($q, $sqi);
         // Make the database query conservative (so change equality
         // constraints to >= constraints, and ignore <=/</!= constraints).
         // We'll do the precise query later.
@@ -456,7 +433,7 @@ class SearchTerm {
         $sqi->add_table($thistab, array("left join", "($q)"));
 
         $q = array();
-        $this->_clauseTermSetFlags($q, $sqi);
+        $this->_set_flags($q, $sqi);
         $q[] = "coalesce($thistab.count,0)" . $this->value->countexpr();
         $sqi->add_column($thistab . "_matches", "$thistab.count");
         $this->link = $thistab . "_matches";
@@ -487,7 +464,7 @@ class SearchTerm {
             $sqi->add_column($thistab . "_info", $thistab . ".info");
         }
         $q = array();
-        $this->_clauseTermSetFlags($q, $sqi);
+        $this->_set_flags($q, $sqi);
         $q[] = "coalesce($thistab.count,0)" . $this->value->conservative_countexpr();
         $this->link = $thistab;
         return "(" . join(" and ", $q) . ")";
@@ -497,19 +474,7 @@ class SearchTerm {
         $thistab = null;
 
         // collect columns
-        if ($tt === "ti") {
-            $sqi->add_column("title", "Paper.title");
-            return $this->_clauseTermSetField("title", $sqi);
-        } else if ($tt === "ab") {
-            $sqi->add_column("abstract", "Paper.abstract");
-            return $this->_clauseTermSetField("abstract", $sqi);
-        } else if ($tt === "au") {
-            $sqi->add_column("authorInformation", "Paper.authorInformation");
-            return $this->_clauseTermSetField("authorInformation", $sqi);
-        } else if ($tt === "co") {
-            $sqi->add_column("collaborators", "Paper.collaborators");
-            return $this->_clauseTermSetField("collaborators", $sqi);
-        } else if ($tt === "au_cid") {
+        if ($tt === "au_cid") {
             return $this->_clauseTermSetTable($this->value, null, "AuthorConflict",
                                        "PaperConflict", "contactId",
                                        " and " . $sqi->user->actAuthorSql("%"),
@@ -551,7 +516,7 @@ class SearchTerm {
             return "(" . join(" and ", $q) . ")";
         } else if ($tt === "pf") {
             $q = array();
-            $this->_clauseTermSetFlags($q, $sqi);
+            $this->_set_flags($q, $sqi);
             for ($i = 0; $i < count($this->value); $i += 2) {
                 $sqi->add_column($this->value[$i], "Paper." . $this->value[$i]);
                 if (is_array($this->value[$i + 1]))
@@ -571,7 +536,7 @@ class SearchTerm {
         } else if ($tt === "option") {
             // expanded from _clauseTermSetTable
             $q = array();
-            $this->_clauseTermSetFlags($q, $sqi);
+            $this->_set_flags($q, $sqi);
             $thistab = "Option_" . count($sqi->tables);
             $sqi->add_table($thistab, array("left join", "(select paperId, max(value) v from PaperOption where optionId=" . $this->value->option->id . " group by paperId)"));
             $sqi->add_column($thistab . "_x", "coalesce($thistab.v,0)" . $this->value->table_matcher());
@@ -580,7 +545,7 @@ class SearchTerm {
             return "(" . join(" and ", $q) . ")";
         } else if ($tt === "formula") {
             $q = array("true");
-            $this->_clauseTermSetFlags($q, $sqi);
+            $this->_set_flags($q, $sqi);
             $this->value->add_query_options($sqi->srch->_query_options);
             if (!$this->link)
                 $this->link = $this->value->compile_function();
@@ -612,6 +577,10 @@ class SearchTerm {
             return "true";
     }
 
+    static public function andjoin_sqlexpr($q, $default = "false") {
+        return empty($q) ? $default : "(" . join(" and ", $q) . ")";
+    }
+
 
     private function _check_flags(PaperInfo $row, PaperSearch $srch) {
         $flags = $this->flags;
@@ -628,8 +597,6 @@ class SearchTerm {
         if (($flags & PaperSearch::F_NONCONFLICT) && $row->conflictType)
             return false;
         if ($flags & PaperSearch::F_XVIEW) {
-            if (!$srch->user->can_view_paper($row))
-                return false;
             if ($this->type === "tag" && !$srch->user->can_view_tags($row, true))
                 return false;
             if ($this->type === "tag"
@@ -638,7 +605,7 @@ class SearchTerm {
                 $fieldname = $this->link;
                 $row->$fieldname = $this->value->evaluate($srch->user, $row->viewable_tags($srch->user)) ? 1 : 0;
             }
-            if (($this->type === "au" || $this->type === "au_cid" || $this->type === "co")
+            if ($this->type === "au_cid"
                 && !$srch->user->can_view_authors($row, true))
                 return false;
             if ($this->type === "conflict"
@@ -703,32 +670,11 @@ class SearchTerm {
         return true;
     }
 
-    function _check_field(PaperInfo $row, PaperSearch $srch) {
-        $field = $this->link;
-        if (!$this->_check_flags($row, $srch)
-            || $row->$field === "")
-            return false;
-
-        $field_deaccent = $field . "_deaccent";
-        if (!isset($row->$field_deaccent)) {
-            if (preg_match('/[\x80-\xFF]/', $row->$field))
-                $row->$field_deaccent = UnicodeHelper::deaccent($row->$field);
-            else
-                $row->$field_deaccent = false;
-        }
-
-        if (!isset($this->preg_utf8))
-            Text::star_text_pregexes($this);
-        return Text::match_pregexes($this, $row->$field, $row->$field_deaccent);
-    }
-
     function exec(PaperInfo $row, PaperSearch $srch) {
         $tt = $this->type;
 
         // collect columns
-        if ($tt === "ti" || $tt === "ab" || $tt === "au" || $tt === "co")
-            return $this->_check_field($row, $srch);
-        else if ($tt === "au_cid") {
+        if ($tt === "au_cid") {
             assert(is_array($this->value));
             return $this->_check_flags($row, $srch)
                 && $row->{$this->link} != 0;
@@ -817,6 +763,58 @@ class SearchTerm {
             error_log("SearchTerm::exec: $tt defaults, correctness unlikely");
             return true;
         }
+    }
+}
+
+class TextMatch_SearchTerm extends SearchTerm {
+    private $field;
+    private $authorish;
+    private $nonempty = false;
+    public $regex;
+    static private $map = [
+        "ti" => "title", "ab" => "abstract", "au" => "authorInformation",
+        "co" => "collaborators"
+    ];
+
+    function __construct($t, $text) {
+        parent::__construct($t, PaperSearch::F_XVIEW);
+        $this->field = self::$map[$t];
+        $this->authorish = $t === "au" || $t === "co";
+        if ($text === true)
+            $this->nonempty = true;
+        else
+            $this->regex = Text::star_text_pregexes($text);
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $sqi->needflags |= $this->flags;
+        $sqi->add_column($this->field, "Paper.{$this->field}");
+        if ($this->nonempty && !$this->authorish)
+            return "Paper.{$this->field}!=''";
+        // The purpose is to match AT LEAST those
+        // papers that contain "$t->value" as a word in the $field field.
+        // A substring match contains at least those papers; but only if
+        // the current term is positive (= not negated).  If the current
+        // term is negated, we say NO paper matches this clause.  (NOT no
+        // paper is every paper.)  Later code will check for a substring.
+        return $sqi->negated ? "false" : "true";
+    }
+
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        $field = $this->field;
+        if ($row->$field === ""
+            || ($this->authorish && !$srch->user->can_view_authors($row, true)))
+            return false;
+        if ($this->nonempty)
+            return true;
+        $field_deaccent = $field . "_deaccent";
+        if (!isset($row->$field_deaccent)) {
+            if (preg_match('/[\x80-\xFF]/', $row->$field))
+                $row->$field_deaccent = UnicodeHelper::deaccent($row->$field);
+            else
+                $row->$field_deaccent = false;
+        }
+        return Text::match_pregexes($this->regex, $row->$field, $row->$field_deaccent);
     }
 }
 
@@ -1345,17 +1343,16 @@ class PaperSearch {
     // including "and", "or", and "not" expressions (which point at other
     // expressions).
 
-    private function _searchField($word, $rtype, &$qt) {
-        if (!is_array($word))
-            $extra = array("regex" => array($rtype, Text::star_text_pregexes($word)));
-        else
-            $extra = null;
+    private function _text_match_field(&$qt, $type, $word) {
+        $qt[] = new TextMatch_SearchTerm($type, $word);
+    }
 
+    private function _searchField($word, $rtype, &$qt) {
         if ($this->privChair || $this->amPC)
-            $qt[] = new SearchTerm($rtype, self::F_XVIEW, $word, $extra);
+            $qt[] = new SearchTerm($rtype, self::F_XVIEW, $word);
         else {
-            $qt[] = new SearchTerm($rtype, self::F_XVIEW | self::F_REVIEWER, $word, $extra);
-            $qt[] = new SearchTerm($rtype, self::F_XVIEW | self::F_AUTHOR, $word, $extra);
+            $qt[] = new SearchTerm($rtype, self::F_XVIEW | self::F_REVIEWER, $word);
+            $qt[] = new SearchTerm($rtype, self::F_XVIEW | self::F_AUTHOR, $word);
         }
     }
 
@@ -1368,7 +1365,7 @@ class PaperSearch {
             $cids = $this->_pcContactIdsWithTag($lword);
             $this->_searchField($cids, "au_cid", $qt);
         } else
-            $this->_searchField($word, "au", $qt);
+            $this->_text_match_field($qt, "au", $word);
     }
 
     static function _matchCompar($text, $quoted) {
@@ -2033,7 +2030,7 @@ class PaperSearch {
         else if ($lword === "final" || $lword === "finalcopy")
             $qt[] = new SearchTerm("pf", 0, array("finalPaperStorageId", ">1"));
         else if ($lword === "ab")
-            $qt[] = new SearchTerm("pf", 0, array("abstract", "!=''"));
+            $qt[] = new TextMatch_SearchTerm("ab", true);
         else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword))
             $this->_search_comment(">0", $lword, $qt, $quoted);
         else if ($lword === "manager" || $lword === "admin" || $lword === "administrator")
@@ -2271,13 +2268,13 @@ class PaperSearch {
 
         $qt = array();
         if ($keyword ? $keyword === "ti" : isset($this->fields["ti"]))
-            $this->_searchField($word, "ti", $qt);
+            $this->_text_match_field($qt, "ti", $word);
         if ($keyword ? $keyword === "ab" : isset($this->fields["ab"]))
-            $this->_searchField($word, "ab", $qt);
+            $this->_text_match_field($qt, "ab", $word);
         if ($keyword ? $keyword === "au" : isset($this->fields["au"]))
             $this->_searchAuthors($word, $qt, $keyword, $quoted);
         if ($keyword ? $keyword === "co" : isset($this->fields["co"]))
-            $this->_searchField($word, "co", $qt);
+            $this->_text_match_field($qt, "co", $word);
         if ($keyword ? $keyword === "re" : isset($this->fields["re"]))
             $this->_search_reviewer($qword, "re", $qt);
         else if ($keyword && get(self::$_canonical_review_keywords, $keyword))
@@ -2782,10 +2779,8 @@ class PaperSearch {
             foreach ($qe->value as $qvidx => $qv)
                 $this->_queryExtractInfo($qv, $top && $isand, $qvidx >= $nthen, $contradictions);
         }
-        if (($x = $qe->get("regex"))) {
-            $this->regex[$x[0]] = defval($this->regex, $x[0], array());
-            $this->regex[$x[0]][] = $x[1];
-        }
+        if ($qe instanceof TextMatch_SearchTerm && $qe->regex)
+            $this->regex[$qe->type][] = $qe->regex;
         if ($top && $qe->type === "re" && !$this->_reviewer_fixed && !$highlight) {
             if ($this->_reviewer === false
                 && ($v = $qe->value->contact_set())
