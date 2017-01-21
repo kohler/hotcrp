@@ -156,7 +156,7 @@ class SearchTerm {
         $sqi->needflags |= $flags;
 
         if ($flags & PaperSearch::F_MANAGER) {
-            if ($sqi->conf->has_any_manager() && $sqi->srch->privChair)
+            if ($sqi->user->privChair && $sqi->conf->has_any_manager())
                 $q[] = "(managerContactId={$sqi->user->contactId} or (managerContactId=0 and PaperConflict.conflictType is null))";
             else if ($sqi->user->is_track_manager())
                 $q[] = "true";
@@ -244,11 +244,6 @@ class SearchTerm {
                                        "PaperConflict", "contactId",
                                        " and " . $sqi->user->actAuthorSql("%"),
                                        $sqi);
-        } else if ($tt === "conflict") {
-            return $this->_clauseTermSetTable($this->value->contact_set(),
-                                       $this->value->countexpr(), "Conflict",
-                                       "PaperConflict", "contactId", "",
-                                       $sqi);
         } else if ($tt === "pf") {
             $q = array();
             $this->_set_flags($q, $sqi);
@@ -312,9 +307,6 @@ class SearchTerm {
             if ($this->type === "au_cid"
                 && !$srch->user->can_view_authors($row, true))
                 return false;
-            if ($this->type === "conflict"
-                && !$srch->user->can_view_conflicts($row, true))
-                return false;
             if ($this->type === "pf" && $this->value[0] === "outcome"
                 && !$srch->user->can_view_decision($row, true))
                 return false;
@@ -335,13 +327,6 @@ class SearchTerm {
             assert(is_array($this->value));
             return $this->_check_flags($row, $srch)
                 && $row->{$this->link} != 0;
-        } else if ($tt === "conflict") {
-            if (!$this->_check_flags($row, $srch))
-                return false;
-            else {
-                $fieldname = $this->link;
-                return $this->value->test((int) $row->$fieldname);
-            }
         } else if ($tt === "pf") {
             if (!$this->_check_flags($row, $srch))
                 return false;
@@ -695,6 +680,47 @@ class PaperPC_SearchTerm extends SearchTerm {
             return in_array($v, $this->match);
         else
             return CountMatcher::compare_string($v, $this->match);
+    }
+}
+
+class Conflict_SearchTerm extends SearchTerm {
+    private $csm;
+    private $includes_self;
+
+    function __construct($countexpr, $contacts, Contact $user) {
+        $full = ($user->privChair && !$user->conf->has_any_manager())
+            || (count($contacts) == 1 && $contacts[0] == $user->contactId);
+        parent::__construct("conflict", $full ? 0 : PaperSearch::F_XVIEW);
+        $this->csm = new ContactCountMatcher($countexpr, $contacts);
+        $this->includes_self = in_array($user->contactId, $contacts);
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $thistab = "Conflict_" . count($sqi->tables);
+        $this->fieldname = "{$thistab}_ct";
+        $where = "$thistab.contactId in (" . join(",", $this->csm->contact_set()) . ")";
+
+        $q = array();
+        $this->_set_flags($q, $sqi);
+        $compar = $this->csm->simplified_nonnegative_countexpr();
+        if ($compar !== ">0" && $compar !== "=0") {
+            $sqi->add_table($thistab, ["left join", "(select paperId, count(*) ct from PaperConflict $thistab where $where group by paperId)"]);
+            $sqi->add_column($this->fieldname, "$thistab.ct");
+            $q[] = "coalesce($thistab.ct,0)$compar";
+        } else {
+            $sqi->add_table($thistab, ["left join", "PaperConflict", $where]);
+            $sqi->add_column($this->fieldname, "count($thistab.contactId)");
+            if ($compar === "=0")
+                $q[] = "$thistab.contactId is null";
+            else
+                $q[] = "$thistab.contactId is not null";
+        }
+        return self::andjoin_sqlexpr($q);
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        return ($this->includes_self && $row->conflictType > 0
+                && $this->csm->test(1))
+            || ($srch->user->can_view_conflicts($row, true)
+                && $this->csm->test((int) $row->{$this->fieldname}));
     }
 }
 
@@ -1836,15 +1862,7 @@ class PaperSearch {
         }
 
         $contacts = $this->_reviewerMatcher($m[0], $quoted, $pc_only);
-        $value = new ContactCountMatcher($m[1], $contacts);
-        if ($this->privChair
-            || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->cid))
-            $qt[] = new SearchTerm("conflict", 0, $value);
-        else {
-            $qt[] = new SearchTerm("conflict", self::F_XVIEW, $value);
-            if ($value->test_contact($this->cid))
-                $qt[] = new SearchTerm("conflict", 0, new ContactCountMatcher($m[1], $this->cid));
-        }
+        $qt[] = new Conflict_SearchTerm($m[1], $contacts, $this->user);
     }
 
     private function _searchReviewerConflict($word, &$qt, $quoted) {
@@ -1860,8 +1878,8 @@ class PaperSearch {
             $qt[] = new False_SearchTerm;
         } else {
             $result = $this->conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
-            $contacts = Dbl::fetch_first_columns($result);
-            $qt[] = new SearchTerm("conflict", 0, new ContactCountMatcher(">0", $contacts));
+            $contacts = array_map("intval", Dbl::fetch_first_columns($result));
+            $qt[] = new Conflict_SearchTerm(">0", $contacts, $this->user);
         }
     }
 

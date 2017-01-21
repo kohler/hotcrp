@@ -62,6 +62,7 @@ class Conf {
     private $tracks = null;
     private $_taginfo = null;
     private $_track_tags = null;
+    private $_track_view_sensitivity = false;
     private $_track_review_sensitivity = false;
     private $_track_admin_sensitivity = false;
     private $_decisions = null;
@@ -277,7 +278,8 @@ class Conf {
 
         // tracks settings
         $this->tracks = $this->_track_tags = null;
-        $this->_track_review_sensitivity = $this->_track_admin_sensitivity = false;
+        $this->_track_view_sensitivity = $this->_track_review_sensitivity =
+            $this->_track_admin_sensitivity = false;
         if (($j = get($this->settingTexts, "tracks")))
             $this->crosscheck_track_settings($j);
 
@@ -326,6 +328,8 @@ class Conf {
                 $default_track = $t;
             else
                 $this->tracks[$k] = $t;
+            if ($t[Track::VIEW])
+                $this->_track_view_sensitivity = true;
             if ($t[Track::UNASSREV] || $t[Track::ASSREV])
                 $this->_track_review_sensitivity = true;
             if ($t[Track::ADMIN])
@@ -822,9 +826,9 @@ class Conf {
     function check_all_tracks(Contact $contact, $type) {
         if ($this->tracks)
             foreach ($this->tracks as $t => $tr)
-                if (($type === Track::VIEW
-                     && !Track::match_perm($contact, $tr[Track::VIEW]))
-                    || !Track::match_perm($contact, $tr[$type]))
+                if (!(($type === Track::VIEW
+                       || Track::match_perm($contact, $tr[Track::VIEW]))
+                      && Track::match_perm($contact, $tr[$type])))
                     return false;
         return true;
     }
@@ -835,6 +839,10 @@ class Conf {
                 if ($tr[$type] !== null)
                     return true;
         return false;
+    }
+
+    function check_track_view_sensitivity() {
+        return $this->_track_view_sensitivity;
     }
 
     function check_track_review_sensitivity() {

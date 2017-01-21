@@ -5,8 +5,8 @@
 
 class CountMatcher {
     private $_countexpr;
-    private $compar = 0;
     private $allowed = 0;
+    private $value = 0;
 
     static public $opmap = array("" => 2, "#" => 2, "=" => 2, "==" => 2,
                                  "!" => 5, "!=" => 5, "≠" => 5,
@@ -22,23 +22,23 @@ class CountMatcher {
         if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*([-+]?(?:\.\d+|\d+\.?\d*))\z/', $countexpr, $m)) {
             $this->_countexpr = $countexpr;
             $this->allowed = self::$opmap[$m[1]];
-            $this->compar = (float) $m[2];
+            $this->value = (float) $m[2];
             return true;
         } else
             return false;
     }
     function test($n) {
-        return self::compare($n, $this->allowed, $this->compar);
+        return self::compare($n, $this->allowed, $this->value);
     }
     static function compare($x, $compar, $y) {
         if (!is_int($compar))
             $compar = self::$opmap[$compar];
         if ($x > $y)
-            return ($compar & 4) != 0;
+            return ($compar & 4) !== 0;
         else if ($x == $y)
-            return ($compar & 2) != 0;
+            return ($compar & 2) !== 0;
         else
-            return ($compar & 1) != 0;
+            return ($compar & 1) !== 0;
     }
     static function compare_string($x, $compar_y) {
         if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?(?:\.\d+|\d+\.?\d*))\z/', $compar_y, $m))
@@ -46,22 +46,33 @@ class CountMatcher {
         else
             return false;
     }
-    public function countexpr() {
+    function countexpr() {
+        assert(!!$this->allowed);
         if ($this->allowed)
-            return self::$oparray[$this->allowed] . $this->compar;
+            return self::$oparray[$this->allowed] . $this->value;
         else
             return $this->_countexpr;
     }
-    public function conservative_countexpr() {
+    function simplified_nonnegative_countexpr() {
+        if ($this->value == 1 && $this->allowed === 6)
+            return ">0";
+        else if (($this->value == 1 && $this->allowed === 1)
+                 || ($this->value == 0 && $this->allowed === 3))
+            return "=0";
+        else
+            return $this->countexpr();
+
+    }
+    function conservative_countexpr() {
         if ($this->allowed & 1)
             return ">=0";
         else
-            return ($this->allowed & 2 ? ">=" : ">") . $this->compar;
+            return ($this->allowed & 2 ? ">=" : ">") . $this->value;
     }
     static function negate_countexpr_string($str) {
         $t = new CountMatcher($str);
         if ($t->allowed)
-            return self::$oparray[$t->allowed ^ 7] . $t->compar;
+            return self::$oparray[$t->allowed ^ 7] . $t->value;
         else
             return $str;
     }

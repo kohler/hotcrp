@@ -619,6 +619,10 @@ class Contact {
         return $this->contactId > 0;
     }
 
+    function is_total_admin() {
+        return $this->privChair && !$this->conf->has_any_manager();
+    }
+
     function is_admin() {
         return $this->privChair;
     }
@@ -1708,6 +1712,7 @@ class Contact {
             $isPC = $this->isPC
                 && (!$tracks
                     || $ci->review_type >= REVIEW_PC
+                    || !$this->conf->check_track_view_sensitivity()
                     || $this->conf->check_tracks($prow, $this, Track::VIEW));
 
             // check whether PC privileges apply
@@ -2885,7 +2890,7 @@ class Contact {
         $pids = array();
         if (!$this->isPC)
             return $pids;
-        else if (!$this->privChair && $this->conf->check_track_sensitivity(Track::VIEW)) {
+        else if (!$this->privChair && $this->conf->check_track_view_sensitivity()) {
             $q = "select p.paperId, pt.paperTags, r.reviewType from Paper p
                 left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag where tag ?a group by paperId) as pt on (pt.paperId=p.paperId)
                 left join PaperReview r on (r.paperId=p.paperId and r.contactId=$this->contactId)";
