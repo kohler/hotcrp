@@ -55,7 +55,7 @@ class SearchTerm {
                 $this->$k = $v;
         }
     }
-    private function append($term) {
+    protected function append($term) {
         if ($term) {
             foreach ($term->float as $k => $v) {
                 $v1 = get($this->float, $k);
@@ -72,40 +72,10 @@ class SearchTerm {
         }
         return $this;
     }
-    private function finish() {
-        if ($this->type === "not")
-            return $this->_finish_not();
-        else if ($this->type === "and" || $this->type === "and2")
-            return $this->_finish_and();
-        else if ($this->type === "or")
-            return $this->_finish_or();
-        else if ($this->type === "then" || $this->type === "highlight")
-            return $this->_finish_then();
-        else
-            return $this;
+    protected function finish() {
+        assert(false);
     }
-    private function _finish_not() {
-        $qv = $this->value ? $this->value[0] : null;
-        if (!$qv || $qv->is_false())
-            $this->type = "t";
-        else if ($qv->is_true())
-            $this->type = "f";
-        else if ($qv->type === "not") {
-            $qr = clone $qv->value[0];
-            $qr->float = $this->float;
-            return $qr;
-        } else if ($qv->type === "pn") {
-            $this->type = "pn";
-            $this->value = array($qv->value[1], $qv->value[0]);
-        } else if ($qv->type === "revadj") {
-            $qr = clone $qv;
-            $qr->float = $this->float;
-            $qr->negated = !$qr->negated;
-            return $qr;
-        }
-        return $this;
-    }
-    private function _flatten_values() {
+    protected function _flatten_values() {
         $qvs = array();
         foreach ($this->value ? : array() as $qv)
             if ($qv->type === $this->type)
@@ -114,115 +84,40 @@ class SearchTerm {
                 $qvs[] = $qv;
         return $qvs;
     }
-    private function _finish_and() {
-        $pn = array(array(), array());
-        $revadj = null;
-        $newvalue = array();
-        $any = false;
-
-        foreach ($this->_flatten_values() as $qv)
-            if ($qv->is_false()) {
-                $this->type = "f";
-                return $this;
-            } else if ($qv->is_true())
-                $any = true;
-            else if ($qv->type === "pn" && $this->type === "and2") {
-                $pn[0] = array_merge($pn[0], $qv->value[0]);
-                $pn[1] = array_merge($pn[1], $qv->value[1]);
-            } else if ($qv->type === "revadj")
-                $revadj = $qv->apply($revadj, false);
-            else
-                $newvalue[] = $qv;
-
-        return $this->_finish_combine($newvalue, $pn, $revadj, $any);
-    }
-    private function _finish_or() {
-        $pn = array(array(), array());
-        $revadj = null;
-        $newvalue = array();
-
-        foreach ($this->_flatten_values() as $qv) {
-            if ($qv->is_true()) {
-                $this->type = "t";
-                return $this;
-            } else if ($qv->is_false())
-                /* skip */;
-            else if ($qv->type === "pn" && count($qv->value[0]))
-                $pn[0] = array_merge($pn[0], array_values(array_diff($qv->value[0], $qv->value[1])));
-            else if ($qv->type === "revadj")
-                $revadj = $qv->apply($revadj, true);
-            else
-                $newvalue[] = $qv;
-        }
-
-        return $this->_finish_combine($newvalue, $pn, $revadj, false);
-    }
-    private function _finish_combine($newvalue, $pn, $revadj, $any) {
+    protected function _finish_combine($newvalue, $pn, $revadj, $any) {
         if (count($pn[0]) || count($pn[1]))
             $newvalue[] = new SearchTerm("pn", 0, $pn);
         if ($revadj)            // must be first
             array_unshift($newvalue, $revadj);
-        if (!$newvalue && $any)
-            $this->type = "t";
-        else if (!$newvalue)
-            $this->type = "f";
-        else if (count($newvalue) == 1) {
+        $qr = null;
+        if (!$newvalue)
+            $qr = new SearchTerm($any ? "t" : "f");
+        else if (count($newvalue) == 1)
             $qr = clone $newvalue[0];
+        if ($qr) {
             $qr->float = $this->float;
             return $qr;
-        } else
+        } else {
             $this->value = $newvalue;
-        return $this;
-    }
-    private function _finish_then() {
-        $ishighlight = $this->type !== "then";
-        $opinfo = strtolower($this->get_float("opinfo", ""));
-        $newvalues = $newhvalues = $newhmasks = $newhtypes = array();
-        $this->type = "then";
-
-        foreach ($this->value as $qvidx => $qv) {
-            if ($qv && $qvidx && $ishighlight) {
-                if ($qv->type === "then") {
-                    for ($i = 0; $i < $qv->nthen; ++$i) {
-                        $newhvalues[] = $qv->value[$i];
-                        $newhmasks[] = (1 << count($newvalues)) - 1;
-                        $newhtypes[] = $opinfo;
-                    }
-                } else {
-                    $newhvalues[] = $qv;
-                    $newhmasks[] = (1 << count($newvalues)) - 1;
-                    $newhtypes[] = $opinfo;
-                }
-            } else if ($qv && $qv->type === "then") {
-                $pos = count($newvalues);
-                for ($i = 0; $i < $qv->nthen; ++$i)
-                    $newvalues[] = $qv->value[$i];
-                for ($i = $qv->nthen; $i < count($qv->value); ++$i)
-                    $newhvalues[] = $qv->value[$i];
-                foreach ($qv->highlights ? : array() as $hlmask)
-                    $newhmasks[] = $hlmask << $pos;
-                foreach ($qv->highlight_types ? : array() as $hltype)
-                    $newhtypes[] = $hltype;
-            } else if ($qv)
-                $newvalues[] = $qv;
+            return $this;
         }
-
-        $this->set("nthen", count($newvalues));
-        $this->set("highlights", $newhmasks);
-        $this->set("highlight_types", $newhtypes);
-        array_splice($newvalues, $this->nthen, 0, $newhvalues);
-        $this->value = $newvalues;
-        $this->set_float("sort", array());
-        return $this;
     }
     static function make_op($op, $terms) {
-        $qr = new SearchTerm($op);
+        $opstr = is_object($op) ? $op->op : $op;
+        if ($opstr === "not")
+            $qr = new Not_SearchTerm;
+        else if ($opstr === "and" || $opstr === "and2")
+            $qr = new And_SearchTerm($opstr);
+        else if ($opstr === "or")
+            $qr = new Or_SearchTerm;
+        else
+            $qr = new Then_SearchTerm($op);
         foreach (is_array($terms) ? $terms : [$terms] as $qt)
             $qr->append($qt);
         return $qr->finish();
     }
     static function make_not($term) {
-        $qr = new SearchTerm("not");
+        $qr = new Not_SearchTerm;
         return $qr->append($term)->finish();
     }
     static function make_float($float) {
@@ -235,7 +130,7 @@ class SearchTerm {
         return $this->type === "t";
     }
     function is_then() {
-        return $this->type === "then" || $this->type === "highlight";
+        return false;
     }
     function is_uninteresting() {
         return $this->type === "t"
@@ -451,25 +346,6 @@ class SearchTerm {
             if (!$this->link)
                 $this->link = $this->value->compile_function();
             return "(" . join(" and ", $q) . ")";
-        } else if ($tt === "not") {
-            $sqi->negated = !$sqi->negated;
-            $ff = $this->value[0]->sqlexpr($sqi);
-            $sqi->negated = !$sqi->negated;
-            return "not ($ff)";
-        } else if ($tt === "and" || $tt === "and2") {
-            $ff = array();
-            foreach ($this->value as $subt)
-                $ff[] = $subt->sqlexpr($sqi);
-            if (empty($ff))
-                $ff[] = "false";
-            return "(" . join(" and ", $ff) . ")";
-        } else if ($tt === "or" || $tt === "then") {
-            $ff = array();
-            foreach ($this->value as $subt)
-                $ff[] = $subt->sqlexpr($sqi);
-            if (empty($ff))
-                $ff[] = "false";
-            return "(" . join(" or ", $ff) . ")";
         } else if ($tt === "f")
             return "false";
         else if ($tt === "t")
@@ -480,6 +356,9 @@ class SearchTerm {
 
     static function andjoin_sqlexpr($q, $default = "false") {
         return empty($q) ? $default : "(" . join(" and ", $q) . ")";
+    }
+    static function orjoin_sqlexpr($q, $default = "false") {
+        return empty($q) ? $default : "(" . join(" or ", $q) . ")";
     }
 
 
@@ -603,23 +482,6 @@ class SearchTerm {
         } else if ($tt === "formula") {
             $formulaf = $this->link;
             return !!$formulaf($row, null, $srch->user);
-        } else if ($tt === "not") {
-            return !$this->value[0]->exec($row, $srch);
-        } else if ($tt === "and" || $tt === "and2") {
-            foreach ($this->value as $subt)
-                if (!$subt->exec($row, $srch))
-                    return false;
-            return true;
-        } else if ($tt === "or") {
-            foreach ($this->value as $subt)
-                if ($subt->exec($row, $srch))
-                    return true;
-            return false;
-        } else if ($tt === "then") {
-            for ($i = 0; $i < $this->nthen; ++$i)
-                if ($this->value[$i]->exec($row, $srch))
-                    return true;
-            return false;
         } else if ($tt === "f")
             return false;
         else if ($tt === "t")
@@ -628,6 +490,197 @@ class SearchTerm {
             error_log("SearchTerm::exec: $tt defaults, correctness unlikely");
             return true;
         }
+    }
+}
+
+class Not_SearchTerm extends SearchTerm {
+    function __construct() {
+        parent::__construct("not");
+    }
+    protected function finish() {
+        $qv = $this->value ? $this->value[0] : null;
+        $qr = null;
+        if (!$qv || $qv->is_false())
+            $qr = new SearchTerm("t");
+        else if ($qv->is_true())
+            $qr = new SearchTerm("f");
+        else if ($qv->type === "not")
+            $qr = clone $qv->value[0];
+        else if ($qv->type === "pn")
+            $qr = new SearchTerm("pn", 0, [$qv->value[1], $qv->value[0]]);
+        else if ($qv->type === "revadj") {
+            $qr = clone $qv;
+            $qr->negated = !$qr->negated;
+        }
+        if ($qr) {
+            $qr->float = $this->float;
+            return $qr;
+        } else
+            return $this;
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $sqi->negated = !$sqi->negated;
+        $ff = $this->value[0]->sqlexpr($sqi);
+        $sqi->negated = !$sqi->negated;
+        return "not ($ff)";
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        return !$this->value[0]->exec($row, $srch);
+    }
+}
+
+class And_SearchTerm extends SearchTerm {
+    function __construct($type) {
+        parent::__construct($type);
+    }
+    protected function finish() {
+        $pn = array(array(), array());
+        $revadj = null;
+        $newvalue = array();
+        $any = false;
+
+        foreach ($this->_flatten_values() as $qv) {
+            if ($qv->is_false()) {
+                $qr = new SearchTerm("f");
+                $qr->float = $this->float;
+                return $qr;
+            } else if ($qv->is_true())
+                $any = true;
+            else if ($qv->type === "pn" && $this->type === "and2") {
+                $pn[0] = array_merge($pn[0], $qv->value[0]);
+                $pn[1] = array_merge($pn[1], $qv->value[1]);
+            } else if ($qv->type === "revadj")
+                $revadj = $qv->apply($revadj, false);
+            else
+                $newvalue[] = $qv;
+        }
+
+        return $this->_finish_combine($newvalue, $pn, $revadj, $any);
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $ff = array();
+        foreach ($this->value as $subt)
+            $ff[] = $subt->sqlexpr($sqi);
+        return self::andjoin_sqlexpr($ff);
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        foreach ($this->value as $subt)
+            if (!$subt->exec($row, $srch))
+                return false;
+        return true;
+    }
+}
+
+class Or_SearchTerm extends SearchTerm {
+    function __construct() {
+        parent::__construct("or");
+    }
+    protected function finish() {
+        $pn = array(array(), array());
+        $revadj = null;
+        $newvalue = array();
+
+        foreach ($this->_flatten_values() as $qv) {
+            if ($qv->is_true()) {
+                $qr = new SearchTerm("t");
+                $qr->float = $this->float;
+                return $qr;
+            } else if ($qv->is_false())
+                /* skip */;
+            else if ($qv->type === "pn" && count($qv->value[0]))
+                $pn[0] = array_merge($pn[0], array_values(array_diff($qv->value[0], $qv->value[1])));
+            else if ($qv->type === "revadj")
+                $revadj = $qv->apply($revadj, true);
+            else
+                $newvalue[] = $qv;
+        }
+
+        return $this->_finish_combine($newvalue, $pn, $revadj, false);
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $ff = array();
+        foreach ($this->value as $subt)
+            $ff[] = $subt->sqlexpr($sqi);
+        return self::orjoin_sqlexpr($ff);
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        foreach ($this->value as $subt)
+            if ($subt->exec($row, $srch))
+                return true;
+        return false;
+    }
+}
+
+class Then_SearchTerm extends SearchTerm {
+    private $is_highlight;
+    public $nthen;
+    public $highlights;
+    public $highlight_types;
+
+    function __construct(SearchOperator $op) {
+        assert($op->op === "then" || $op->op === "highlight");
+        parent::__construct("then");
+        $this->is_highlight = $op->op === "highlight";
+        if (isset($op->opinfo))
+            $this->set_float("opinfo", $op->opinfo);
+    }
+    protected function finish() {
+        $opinfo = strtolower($this->get_float("opinfo", ""));
+        $newvalues = $newhvalues = $newhmasks = $newhtypes = [];
+
+        foreach ($this->value as $qvidx => $qv) {
+            if ($qv && $qvidx && $this->is_highlight) {
+                if ($qv->type === "then") {
+                    for ($i = 0; $i < $qv->nthen; ++$i) {
+                        $newhvalues[] = $qv->value[$i];
+                        $newhmasks[] = (1 << count($newvalues)) - 1;
+                        $newhtypes[] = $opinfo;
+                    }
+                } else {
+                    $newhvalues[] = $qv;
+                    $newhmasks[] = (1 << count($newvalues)) - 1;
+                    $newhtypes[] = $opinfo;
+                }
+            } else if ($qv && $qv->type === "then") {
+                $pos = count($newvalues);
+                for ($i = 0; $i < $qv->nthen; ++$i)
+                    $newvalues[] = $qv->value[$i];
+                for ($i = $qv->nthen; $i < count($qv->value); ++$i)
+                    $newhvalues[] = $qv->value[$i];
+                foreach ($qv->highlights ? : array() as $hlmask)
+                    $newhmasks[] = $hlmask << $pos;
+                foreach ($qv->highlight_types ? : array() as $hltype)
+                    $newhtypes[] = $hltype;
+            } else if ($qv)
+                $newvalues[] = $qv;
+        }
+
+        $this->nthen = count($newvalues);
+        $this->highlights = $newhmasks;
+        $this->highlight_types = $newhtypes;
+        array_splice($newvalues, $this->nthen, 0, $newhvalues);
+        $this->value = $newvalues;
+        $this->set_float("sort", []);
+        return $this;
+    }
+    function is_then() {
+        return true;
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $ff = array();
+        foreach ($this->value as $subt)
+            $ff[] = $subt->sqlexpr($sqi);
+        return self::orjoin_sqlexpr(array_slice($ff, 0, $this->nthen), "true");
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        for ($i = 0; $i < $this->nthen; ++$i)
+            if ($this->value[$i]->exec($row, $srch))
+                return true;
+        return false;
     }
 }
 
@@ -903,6 +956,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         $qe->rate = $rate;
         return $qe;
     }
+
     function merge(ReviewAdjustment_SearchTerm $x = null) {
         $changed = null;
         if ($x && $this->round === null && $x->round !== null)
@@ -927,23 +981,22 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         $term = new Review_SearchTerm($rsm, $rt);
         return $this->negated ? SearchTerm::make_not($term) : $term;
     }
-    function negate_adjustment() {
-        if ($this->round !== null)
-            $this->round = array_diff(array_keys($this->conf->round_list()), $this->round);
-        if ($this->rate !== null)
-            $this->rate = "not ($this->rate)";
-        $this->negated = false;
+    function apply_negation() {
+        if ($this->negated) {
+            if ($this->round !== null)
+                $this->round = array_diff(array_keys($this->conf->round_list()), $this->round);
+            if ($this->rate !== null)
+                $this->rate = "not ($this->rate)";
+            $this->negated = false;
+        }
     }
     function apply(ReviewAdjustment_SearchTerm $revadj = null, $is_or = false) {
         // XXX this is probably not right in fully general cases
         if (!$revadj)
             return $this;
-        if ($revadj->negated !== $this->negated
-            || ($revadj->negated && $is_or)) {
-            if ($revadj->negated)
-                $revadj->negate_adjustment();
-            if ($this->negated)
-                $this->negate_adjustment();
+        if ($revadj->negated !== $this->negated || ($revadj->negated && $is_or)) {
+            $revadj->apply_negation();
+            $this->apply_negation();
         }
         if ($is_or || $revadj->negated) {
             if ($this->round !== null)
@@ -959,6 +1012,13 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
                 $revadj->rate = "(" . ($revadj->rate ? : "true") . ") and (" . $this->rate . ")";
         }
         return $revadj;
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        return $sqi->negated ? "false" : "true";
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        return true;
     }
 }
 
