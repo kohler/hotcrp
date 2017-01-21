@@ -100,7 +100,7 @@ class SearchTerm {
         } else if ($qv->type === "revadj") {
             $qr = clone $qv;
             $qr->float = $this->float;
-            $qr->value["revadjnegate"] = !get($qr->value, "revadjnegate");
+            $qr->negated = !$qr->negated;
             return $qr;
         }
         return $this;
@@ -130,7 +130,7 @@ class SearchTerm {
                 $pn[0] = array_merge($pn[0], $qv->value[0]);
                 $pn[1] = array_merge($pn[1], $qv->value[1]);
             } else if ($qv->type === "revadj")
-                $revadj = PaperSearch::_reviewAdjustmentMerge($revadj, $qv, "and");
+                $revadj = $qv->apply($revadj, false);
             else
                 $newvalue[] = $qv;
 
@@ -150,7 +150,7 @@ class SearchTerm {
             else if ($qv->type === "pn" && count($qv->value[0]))
                 $pn[0] = array_merge($pn[0], array_values(array_diff($qv->value[0], $qv->value[1])));
             else if ($qv->type === "revadj")
-                $revadj = PaperSearch::_reviewAdjustmentMerge($revadj, $qv, "or");
+                $revadj = $qv->apply($revadj, true);
             else
                 $newvalue[] = $qv;
         }
@@ -622,7 +622,7 @@ class SearchTerm {
             return false;
         } else if ($tt === "f")
             return false;
-        else if ($tt === "t" || $tt === "revadj")
+        else if ($tt === "t")
             return true;
         else {
             error_log("SearchTerm::exec: $tt defaults, correctness unlikely");
@@ -782,6 +782,13 @@ class Review_SearchTerm extends SearchTerm {
     function reviewer_contact_set() {
         return $this->rsm->contact_set();
     }
+    function adjust(ReviewAdjustment_SearchTerm $adj) {
+        if ($adj->round !== null && $this->rsm->round === null)
+            $this->rsm->round = $adj->round;
+        if ($adj->rate !== null && $this->rsm->rate === null)
+            $this->rsm->rate = $adj->rate;
+        $adj->used_revadj = true;
+    }
 
     function sqlexpr(SearchQueryInfo $sqi) {
         if (($thistab = $this->rsm->simple_name()))
@@ -872,6 +879,86 @@ class Review_SearchTerm extends SearchTerm {
                 }
         }
         return $this->rsm->test((int) $row->$fieldname);
+    }
+}
+
+class ReviewAdjustment_SearchTerm extends SearchTerm {
+    public $conf;
+    public $round;
+    public $rate;
+    public $negated = false;
+    public $used_revadj = false;
+
+    function __construct(Conf $conf) {
+        parent::__construct("revadj", 0);
+        $this->conf = $conf;
+    }
+    static function make_round(Conf $conf, $round) {
+        $qe = new ReviewAdjustment_SearchTerm($conf);
+        $qe->round = $round;
+        return $qe;
+    }
+    static function make_rate(Conf $conf, $rate) {
+        $qe = new ReviewAdjustment_SearchTerm($conf);
+        $qe->rate = $rate;
+        return $qe;
+    }
+    function merge(ReviewAdjustment_SearchTerm $x = null) {
+        $changed = null;
+        if ($x && $this->round === null && $x->round !== null)
+            $changed = $this->round = $x->round;
+        if ($x && $this->rate === null && $x->rate !== null)
+            $changed = $this->rate = $x->rate;
+        return $changed !== null;
+    }
+    function promote(PaperSearch $srch) {
+        $rsm = new ReviewSearchMatcher(">0");
+        if ($srch->limitName === "r" || $srch->limitName === "rout")
+            $rsm->add_contact($srch->user->contactId);
+        else if ($srch->limitName === "req" || $srch->limitName === "reqrevs")
+            $rsm->fieldsql = "requestedBy=" . $srch->user->contactId . " and reviewType=" . REVIEW_EXTERNAL;
+        if ($this->round !== null)
+            $rsm->round = $this->round;
+        if ($this->rate !== null)
+            $rsm->rate = $this->rate;
+        $rt = $srch->user->privChair ? 0 : PaperSearch::F_NONCONFLICT;
+        if (!$srch->user->isPC)
+            $rt |= PaperSearch::F_REVIEWER;
+        $term = new Review_SearchTerm($rsm, $rt);
+        return $this->negated ? SearchTerm::make_not($term) : $term;
+    }
+    function negate_adjustment() {
+        if ($this->round !== null)
+            $this->round = array_diff(array_keys($this->conf->round_list()), $this->round);
+        if ($this->rate !== null)
+            $this->rate = "not ($this->rate)";
+        $this->negated = false;
+    }
+    function apply(ReviewAdjustment_SearchTerm $revadj = null, $is_or = false) {
+        // XXX this is probably not right in fully general cases
+        if (!$revadj)
+            return $this;
+        if ($revadj->negated !== $this->negated
+            || ($revadj->negated && $is_or)) {
+            if ($revadj->negated)
+                $revadj->negate_adjustment();
+            if ($this->negated)
+                $this->negate_adjustment();
+        }
+        if ($is_or || $revadj->negated) {
+            if ($this->round !== null)
+                $revadj->round = array_unique(array_merge($revadj->round, $this->round));
+            if ($this->rate !== null)
+                $revadj->rate = "(" . ($revadj->rate ? : "false") . ") or (" . $this->rate . ")";
+        } else {
+            if ($revadj->round !== null && $this->round !== null)
+                $revadj->round = array_intersect($revadj->round, $this->round);
+            else if ($this->round !== null)
+                $revadj->round = $this->round;
+            if ($this->rate !== null)
+                $revadj->rate = "(" . ($revadj->rate ? : "true") . ") and (" . $this->rate . ")";
+        }
+        return $revadj;
     }
 }
 
@@ -2183,7 +2270,7 @@ class PaperSearch {
                     || ($m[2] === "=" && $m[3] == 0)
                     || ($m[2] === ">=" && $m[3] == 0))
                     $term = "coalesce($term,0)";
-                $qt[] = new SearchTerm("revadj", 0, array("rate" => $term . $m[2] . $m[3]));
+                $qt[] = ReviewAdjustment_SearchTerm::make_rate($this->conf, $term . $m[2] . $m[3]);
             }
         } else {
             if ($this->conf->setting("rev_ratings") == REV_RATINGS_NONE)
@@ -2393,9 +2480,9 @@ class PaperSearch {
         if ($keyword === "round" && $this->amPC) {
             $this->reviewAdjust = true;
             if ($word === "none")
-                $qt[] = new SearchTerm("revadj", 0, array("round" => array(0)));
+                $qt[] = ReviewAdjustment_SearchTerm::make_round($this->conf, [0]);
             else if ($word === "any")
-                $qt[] = new SearchTerm("revadj", 0, array("round" => range(1, count($this->conf->round_list()) - 1)));
+                $qt[] = ReviewAdjustment_SearchTerm::make_round($this->conf, range(1, count($this->conf->round_list()) - 1));
             else {
                 $x = simplify_whitespace($word);
                 $rounds = Text::simple_search($x, $this->conf->round_list());
@@ -2403,7 +2490,7 @@ class PaperSearch {
                     $this->warn("“" . htmlspecialchars($x) . "” doesn’t match a review round.");
                     $qt[] = new SearchTerm("f");
                 } else
-                    $qt[] = new SearchTerm("revadj", 0, array("round" => array_keys($rounds)));
+                    $qt[] = ReviewAdjustment_SearchTerm::make_round($this->conf, array_keys($rounds));
             }
         }
         if ($keyword === "rate")
@@ -2732,89 +2819,24 @@ class PaperSearch {
     // this step is to combine all paper numbers into a single group, and to
     // assign review adjustments (rates & rounds).
 
-    static function _reviewAdjustmentNegate($ra) {
-        if (isset($ra->value["round"]))
-            $ra->value["round"] = array_diff(array_keys(self::$current_search->conf->round_list()), $ra->value["round"]);
-        if (isset($ra->value["rate"]))
-            $ra->value["rate"] = "not (" . $ra->value["rate"] . ")";
-        $ra->value["revadjnegate"] = false;
-    }
-
-    static function _reviewAdjustmentMerge($revadj, $qv, $op) {
-        // XXX this is probably not right in fully general cases
-        if (!$revadj)
-            return $qv;
-        list($neg1, $neg2) = array(defval($revadj->value, "revadjnegate"), defval($qv->value, "revadjnegate"));
-        if ($neg1 !== $neg2 || ($neg1 && $op === "or")) {
-            if ($neg1)
-                $this->_reviewAdjustmentNegate($revadj);
-            if ($neg2)
-                $this->_reviewAdjustmentNegate($qv);
-            $neg1 = $neg2 = false;
-        }
-        if ($op === "or" || $neg1) {
-            if (isset($qv->value["round"]))
-                $revadj->value["round"] = array_unique(array_merge(defval($revadj->value, "round", array()), $qv->value["round"]));
-            if (isset($qv->value["rate"]))
-                $revadj->value["rate"] = "(" . defval($revadj->value, "rate", "false") . ") or (" . $qv->value["rate"] . ")";
-        } else {
-            if (isset($revadj->value["round"]) && isset($qv->value["round"]))
-                $revadj->value["round"] = array_intersect($revadj->value["round"], $qv->value["round"]);
-            else if (isset($qv->value["round"]))
-                $revadj->value["round"] = $qv->value["round"];
-            if (isset($qv->value["rate"]))
-                $revadj->value["rate"] = "(" . defval($revadj->value, "rate", "true") . ") and (" . $qv->value["rate"] . ")";
-        }
-        return $revadj;
-    }
-
     // apply rounds to reviewer searches
-    static private $adjustments = array("round", "rate");
-
-    function _queryMakeAdjustedReviewSearch(SearchTerm $roundterm) {
-        $value = new ReviewSearchMatcher(">0");
-        if ($this->limitName === "r" || $this->limitName === "rout")
-            $value->add_contact($this->cid);
-        else if ($this->limitName === "req" || $this->limitName === "reqrevs")
-            $value->fieldsql = "requestedBy=" . $this->cid . " and reviewType=" . REVIEW_EXTERNAL;
-        foreach (self::$adjustments as $adj)
-            if (isset($roundterm->value[$adj]))
-                $value->$adj = $roundterm->value[$adj];
-        $rt = $this->privChair ? 0 : self::F_NONCONFLICT;
-        if (!$this->amPC)
-            $rt |= self::F_REVIEWER;
-        $term = new Review_SearchTerm($value, $rt);
-        foreach ($roundterm->value as $k => $v)
-            $term->$k = $v;
-        if (get($roundterm->value, "revadjnegate")) {
-            $term->set("revadjnegate", false);
-            return SearchTerm::make_not($term);
-        } else
-            return $term;
-    }
-
-    private function _query_adjust_reviews(SearchTerm $qe, $revadj) {
-        $applied = $first_applied = 0;
+    private function _query_adjust_reviews(SearchTerm $qe, ReviewAdjustment_SearchTerm $revadj = null) {
         if ($qe->type === "not")
             $this->_query_adjust_reviews($qe->value[0], $revadj);
         else if ($qe->type === "and" || $qe->type === "and2") {
-            $myrevadj = ($qe->value[0]->type === "revadj" ? $qe->value[0] : null);
-            if ($myrevadj) {
-                $used_revadj = false;
-                foreach (self::$adjustments as $adj)
-                    if (!isset($myrevadj->value[$adj]) && isset($revadj->value[$adj])) {
-                        $myrevadj->value[$adj] = $revadj->value[$adj];
-                        $used_revadj = true;
-                    }
-            }
+            $myrevadj = null;
+            if ($qe->value[0] instanceof ReviewAdjustment_SearchTerm)
+                $myrevadj = $qe->value[0];
+            if ($myrevadj)
+                $used_revadj = $myrevadj->merge($revadj);
 
             $rdown = $myrevadj ? : $revadj;
             for ($i = 0; $i < count($qe->value); ++$i)
-                if ($qe->value[$i]->type !== "revadj")
+                if (!($qe->value[$i] instanceof ReviewAdjustment_SearchTerm))
                     $this->_query_adjust_reviews($qe->value[$i], $rdown);
 
-            if ($myrevadj && !isset($myrevadj->used_revadj)) {
-                $qe->value[0] = $this->_queryMakeAdjustedReviewSearch($myrevadj);
+            if ($myrevadj && !$myrevadj->used_revadj) {
+                $qe->value[0] = $myrevadj->promote($this);
                 if ($used_revadj)
                     $revadj->used_revadj = true;
             }
@@ -2822,15 +2844,12 @@ class PaperSearch {
             for ($i = 0; $i < count($qe->value); ++$i)
                 $this->_query_adjust_reviews($qe->value[$i], $revadj);
         } else if ($qe->type === "re" && $revadj) {
-            foreach (self::$adjustments as $adj)
-                if (isset($revadj->value[$adj]) && !isset($qe->value->$adj))
-                    $qe->value->$adj = $revadj->value[$adj];
-            $revadj->used_revadj = true;
+            $qe->adjust($revadj);
         } else if ($qe->get_float("used_revadj")) {
-            $revadj && $revadj->used_revadj = true;
-        } else if ($qe->type === "revadj") {
+            $revadj && ($revadj->used_revadj = true);
+        } else if ($qe instanceof ReviewAdjustment_SearchTerm) {
             assert(!$revadj);
-            return $this->_queryMakeAdjustedReviewSearch($qe);
+            return $qe->promote($this);
         }
         return $qe;
     }
