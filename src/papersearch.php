@@ -279,10 +279,6 @@ class SearchTerm {
             return $this->_clauseTermSetTable($this->value->tagmatch_sql($sqi->user), null, "Tag",
                                        "PaperTag", "tag", $this->value->index_wheresql(),
                                        $sqi);
-        } else if ($tt === "topic") {
-            return $this->_clauseTermSetTable($this->value, null, "Topic",
-                                       "PaperTopic", "topicId", "",
-                                       $sqi);
         } else if ($tt === "option") {
             // expanded from _clauseTermSetTable
             $q = array();
@@ -396,7 +392,7 @@ class SearchTerm {
                 }
                 return $ans;
             }
-        } else if ($tt === "tag" || $tt === "topic") {
+        } else if ($tt === "tag") {
             if (!$this->_check_flags($row, $srch))
                 return false;
             $fieldname = $this->link;
@@ -1039,6 +1035,44 @@ class Comment_SearchTerm extends SearchTerm {
                 }
         }
         return $this->csm->test((int) $row->$fieldname);
+    }
+}
+
+class Topic_SearchTerm extends SearchTerm {
+    private $topics;
+    private $fieldname;
+
+    public function __construct($topics) {
+        parent::__construct("topic", PaperSearch::F_XVIEW);
+        $this->topics = $topics;
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $thistab = "Topic_" . count($sqi->tables);
+        $joiner = "";
+        if (!is_array($this->topics))
+            $thistab = "AnyTopic";
+        else if (empty($this->topics))
+            $joiner = "false";
+        else
+            $joiner = "topicId in (" . join(",", $this->topics) . ")";
+        $sqi->add_table($thistab, ["left join", "PaperTopic", $joiner]);
+        $this->fieldname = $thistab . "_id";
+        $sqi->add_column($this->fieldname, "min($thistab.topicId)");
+
+        $q = array();
+        $this->_set_flags($q, $sqi);
+        if ($this->topics === false)
+            $q[] = "$thistab.topicId is null";
+        else
+            $q[] = "$thistab.topicId is not null";
+        return self::andjoin_sqlexpr($q);
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        return $this->_check_flags($row, $srch)
+            && ($this->topics !== false
+                ? $row->{$this->fieldname} != 0
+                : !$row->{$this->fieldname});
     }
 }
 
@@ -2147,6 +2181,24 @@ class PaperSearch {
         $qt[] = $qe;
     }
 
+    private function _search_topic($word, &$qt) {
+        $value = null;
+        $lword = strtolower($word);
+        if ($lword === "none" || $lword === "any")
+            $value = ($lword === "any");
+        else {
+            $x = simplify_whitespace($lword);
+            $tids = array();
+            foreach ($this->conf->topic_map() as $tid => $tname)
+                if (strstr(strtolower($tname), $x) !== false)
+                    $tids[] = $tid;
+            if (empty($tids))
+                $this->warn("“" . htmlspecialchars($x) . "” does not match any defined paper topic.");
+            $value = $tids;
+        }
+        $qt[] = new Topic_SearchTerm($value);
+    }
+
     static public function analyze_option_search(Conf $conf, $word) {
         if (preg_match('/\A(.*?)([:#](?:[=!<>]=?|≠|≤|≥|)|[=!<>]=?|≠|≤|≥)(.*)\z/', $word, $m)) {
             $oname = $m[1];
@@ -2522,25 +2574,8 @@ class PaperSearch {
             $this->_search_tags($word, $keyword, $qt);
         if ($keyword === "color")
             $this->_search_color($word, $qt);
-        if ($keyword === "topic") {
-            $type = "topic";
-            $value = null;
-            if ($word === "none" || $word === "any")
-                $value = $word;
-            else {
-                $x = strtolower(simplify_whitespace($word));
-                $tids = array();
-                foreach ($this->conf->topic_map() as $tid => $tname)
-                    if (strstr(strtolower($tname), $x) !== false)
-                        $tids[] = $tid;
-                if (count($tids) == 0 && $word !== "none" && $word !== "any") {
-                    $this->warn("“" . htmlspecialchars($x) . "” does not match any defined paper topic.");
-                    $type = "f";
-                } else
-                    $value = $tids;
-            }
-            $qt[] = new SearchTerm($type, self::F_XVIEW, $value);
-        }
+        if ($keyword === "topic")
+            $this->_search_topic($word, $qt);
         if ($keyword === "option")
             $this->_search_options($word, $qt, true);
         if ($keyword === "status" || $keyword === "is")
@@ -3246,7 +3281,8 @@ class PaperSearch {
             else {
                 $joiners = array("$tabname.paperId=Paper.paperId");
                 for ($i = 2; $i < count($value); ++$i)
-                    $joiners[] = "(" . $value[$i] . ")";
+                    if ($value[$i])
+                        $joiners[] = "(" . $value[$i] . ")";
                 $q .= "\n    " . $value[0] . " " . $value[1] . " as " . $tabname
                     . " on (" . join("\n        and ", $joiners) . ")";
             }
