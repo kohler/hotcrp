@@ -1359,6 +1359,9 @@ img.next {
 .ti_topic {
 	padding-right: 0.5em;
 }
+table.topicinterest tr:nth-child(even) {
+    background-color: #e6e6e6;
+}
 table.reviewers, div.revnotes {
 	margin-bottom: 0.5em;
 }
