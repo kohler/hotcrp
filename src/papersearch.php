@@ -240,35 +240,6 @@ class SearchTerm {
         return "(" . join(" and ", $q) . ")";
     }
 
-    private function _clauseTermSetComments($thistab, $extrawhere, SearchQueryInfo $sqi) {
-        if (!isset($sqi->tables[$thistab])) {
-            $where = array();
-            if (!($this->flags & PaperSearch::F_ALLOWRESPONSE))
-                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")=0";
-            if (!($this->flags & PaperSearch::F_ALLOWCOMMENT))
-                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
-            if (!($this->flags & PaperSearch::F_ALLOWDRAFT))
-                $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")=0";
-            else if ($this->flags & PaperSearch::F_REQUIREDRAFT)
-                $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")!=0";
-            if ($this->flags & PaperSearch::F_AUTHORCOMMENT)
-                $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
-            if (isset($this->commentRound))
-                $where[] = "commentRound=" . $this->commentRound;
-            if ($extrawhere)
-                $where[] = $extrawhere;
-            $wheretext = "";
-            if (count($where))
-                $wheretext = " where " . join(" and ", $where);
-            $sqi->add_table($thistab, array("left join", "(select paperId, count(commentId) count, group_concat(contactId, ' ', commentType) info from PaperComment$wheretext group by paperId)"));
-            $sqi->add_column($thistab . "_info", $thistab . ".info");
-        }
-        $q = array();
-        $this->_set_flags($q, $sqi);
-        $q[] = "coalesce($thistab.count,0)" . $this->value->conservative_countexpr();
-        $this->link = $thistab;
-        return "(" . join(" and ", $q) . ")";
-    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $tt = $this->type;
         $thistab = null;
@@ -284,23 +255,6 @@ class SearchTerm {
                                        $this->value->countexpr(), "Conflict",
                                        "PaperConflict", "contactId", "",
                                        $sqi);
-        } else if ($tt === "cmt") {
-            if ($this->value->has_contacts())
-                $thistab = "Comments_" . count($sqi->tables);
-            else {
-                $rtype = $this->flags & (PaperSearch::F_ALLOWCOMMENT | PaperSearch::F_ALLOWRESPONSE | PaperSearch::F_AUTHORCOMMENT | PaperSearch::F_ALLOWDRAFT | PaperSearch::F_REQUIREDRAFT);
-                $thistab = "Numcomments_" . $rtype;
-                if (isset($this->commentRound))
-                    $thistab .= "_" . $t->commentRound;
-            }
-            return $this->_clauseTermSetComments($thistab, $this->value->contact_match_sql("contactId"), $sqi);
-        } else if ($tt === "cmttag") {
-            $thistab = "TaggedComments_" . count($sqi->tables);
-            if ($this->value->tag === "any")
-                $match = "is not null";
-            else
-                $match = "like " . Dbl::utf8ci("'% " . sqlq($this->value->tag) . " %'");
-            return $this->_clauseTermSetComments($thistab, "commentTags $match", $sqi);
         } else if ($tt === "pn") {
             $q = array();
             if (count($this->value[0]))
@@ -397,18 +351,6 @@ class SearchTerm {
             if ($this->type === "option"
                 && !$srch->user->can_view_paper_option($row, $this->value->option, true))
                 return false;
-            if (($this->type === "cmt" || $this->type === "cmttag")
-                && ($fieldname = $this->link)
-                && !isset($row->$fieldname)) {
-                $row->$fieldname = 0;
-                $crow = (object) array("paperId" => $row->paperId);
-                foreach (explode(",", defval($row, $fieldname . "_info", "")) as $info)
-                    if ($info !== "") {
-                        list($crow->contactId, $crow->commentType) = explode(" ", $info);
-                        if ($srch->user->can_view_comment($row, $crow, true))
-                            ++$row->$fieldname;
-                    }
-            }
         }
         if ($flags & PaperSearch::F_FALSE)
             return false;
@@ -423,7 +365,7 @@ class SearchTerm {
             assert(is_array($this->value));
             return $this->_check_flags($row, $srch)
                 && $row->{$this->link} != 0;
-        } else if ($tt === "conflict" || $tt === "cmt" || $tt === "cmttag") {
+        } else if ($tt === "conflict") {
             if (!$this->_check_flags($row, $srch))
                 return false;
             else {
@@ -1019,6 +961,84 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return true;
+    }
+}
+
+class Comment_SearchTerm extends SearchTerm {
+    private $csm;
+    private $ctm;
+    private $commentRound;
+    private $fieldname;
+
+    public function __construct(ContactCountMatcher $csm = null,
+                                CommentTagMatcher $ctm = null,
+                                $round, $flags) {
+        parent::__construct("cmt", $flags | PaperSearch::F_XVIEW);
+        $this->csm = $csm ? : new ContactCountMatcher(">0", null);
+        $this->ctm = $ctm;
+        $this->commentRound = $round;
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        if ($this->csm->has_contacts() || $this->ctm)
+            $thistab = "Comments_" . count($sqi->tables);
+        else {
+            $rtype = $this->flags & (PaperSearch::F_ALLOWCOMMENT | PaperSearch::F_ALLOWRESPONSE | PaperSearch::F_AUTHORCOMMENT | PaperSearch::F_ALLOWDRAFT | PaperSearch::F_REQUIREDRAFT);
+            $thistab = "Numcomments_" . $rtype;
+            if (isset($this->commentRound))
+                $thistab .= "_" . $t->commentRound;
+        }
+
+        $this->fieldname = $thistab;
+        if (!isset($sqi->tables[$thistab])) {
+            $where = array();
+            if (!($this->flags & PaperSearch::F_ALLOWRESPONSE))
+                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")=0";
+            if (!($this->flags & PaperSearch::F_ALLOWCOMMENT))
+                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
+            if (!($this->flags & PaperSearch::F_ALLOWDRAFT))
+                $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")=0";
+            else if ($this->flags & PaperSearch::F_REQUIREDRAFT)
+                $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")!=0";
+            if ($this->flags & PaperSearch::F_AUTHORCOMMENT)
+                $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
+            if (isset($this->commentRound))
+                $where[] = "commentRound=" . $this->commentRound;
+            if ($this->csm->has_contacts())
+                $where[] = $this->csm->contact_match_sql("contactId");
+            if ($this->ctm) {
+                if ($this->ctm->tag === "any")
+                    $where[] = "commentTags is not null";
+                else
+                    $where[] = "commentTags like " . Dbl::utf8ci("'% " . sqlq_for_like($this->ctm->tag) . " %'");
+            }
+            $wheretext = "";
+            if (!empty($where))
+                $wheretext = " where " . join(" and ", $where);
+            $sqi->add_table($thistab, array("left join", "(select paperId, count(commentId) count, group_concat(contactId, ' ', commentType) info from PaperComment$wheretext group by paperId)"));
+            $sqi->add_column($thistab . "_info", $thistab . ".info");
+        }
+
+        $q = array();
+        $this->_set_flags($q, $sqi);
+        $q[] = "coalesce($thistab.count,0)" . $this->csm->conservative_countexpr();
+        return self::andjoin_sqlexpr($q);
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        if (!$this->_check_flags($row, $srch))
+            return false;
+        $fieldname = $this->fieldname;
+        if (!isset($row->{$fieldname})) {
+            $row->$fieldname = 0;
+            $crow = (object) array("paperId" => $row->paperId);
+            foreach (explode(",", $row->{$fieldname . "_info"}) as $info)
+                if ($info !== "") {
+                    list($crow->contactId, $crow->commentType) = explode(" ", $info);
+                    if ($srch->user->can_view_comment($row, $crow, true))
+                        ++$row->$fieldname;
+                }
+        }
+        return $this->csm->test((int) $row->$fieldname);
     }
 }
 
@@ -1794,9 +1814,7 @@ class PaperSearch {
         $xtag = $tag;
         if ($xtag === "none")
             $xtag = "any";
-        $term = new SearchTerm("cmttag", $rt, new CommentTagMatcher($rvalue, $xtag));
-        if ($round !== null)
-            $term->commentRound = $round;
+        $term = new Comment_SearchTerm(null, new CommentTagMatcher($rvalue, $xtag), $round, $rt);
         if ($tag === "none")
             $term = SearchTerm::make_not($term);
         $qt[] = $term;
@@ -1856,9 +1874,7 @@ class PaperSearch {
         }
         $contacts = ($m[0] === "" ? null : $this->_reviewerMatcher($m[0], $quoted, false));
         $value = new ContactCountMatcher($m[1], $contacts);
-        $term = new SearchTerm("cmt", $rt | self::F_XVIEW, $value);
-        if ($round !== null)
-            $term->commentRound = $round;
+        $term = new Comment_SearchTerm($value, null, $round, $rt);
         $qt[] = $term;
     }
 
