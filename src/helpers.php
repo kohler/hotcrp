@@ -372,7 +372,7 @@ class SessionList {
     static private $requested_list = false;
     static function decode_ids($ids) {
         if (strpos($ids, "-") === false && ($a = json_decode($ids)) !== null)
-            return $a;
+            return is_array($a) ? $a : [$a];
         $a = [];
         preg_match_all('/[-\d]+/', $ids, $m);
         foreach ($m[0] as $p)
