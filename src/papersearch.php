@@ -85,8 +85,8 @@ class SearchTerm {
         return $qvs;
     }
     protected function _finish_combine($newvalue, $pn, $revadj, $any) {
-        if (count($pn[0]) || count($pn[1]))
-            $newvalue[] = new SearchTerm("pn", 0, $pn);
+        if ($pn)
+            $newvalue[] = $pn;
         if ($revadj)            // must be first
             array_unshift($newvalue, $revadj);
         $qr = null;
@@ -255,15 +255,6 @@ class SearchTerm {
                                        $this->value->countexpr(), "Conflict",
                                        "PaperConflict", "contactId", "",
                                        $sqi);
-        } else if ($tt === "pn") {
-            $q = array();
-            if (count($this->value[0]))
-                $q[] = "Paper.paperId in (" . join(",", $this->value[0]) . ")";
-            if (count($this->value[1]))
-                $q[] = "Paper.paperId not in (" . join(",", $this->value[1]) . ")";
-            if (!count($q))
-                $q[] = "false";
-            return "(" . join(" and ", $q) . ")";
         } else if ($tt === "pf") {
             $q = array();
             $this->_set_flags($q, $sqi);
@@ -368,15 +359,6 @@ class SearchTerm {
                 $fieldname = $this->link;
                 return $this->value->test((int) $row->$fieldname);
             }
-        } else if ($tt === "pn") {
-            if (!empty($this->value[0])
-                && array_search($row->paperId, $this->value[0]) === false)
-                return false;
-            else if (!empty($this->value[1])
-                     && array_search($row->paperId, $this->value[1]) !== false)
-                return false;
-            else
-                return true;
         } else if ($tt === "pf") {
             if (!$this->_check_flags($row, $srch))
                 return false;
@@ -444,8 +426,6 @@ class Not_SearchTerm extends SearchTerm {
             $qr = new SearchTerm("f");
         else if ($qv->type === "not")
             $qr = clone $qv->value[0];
-        else if ($qv->type === "pn")
-            $qr = new SearchTerm("pn", 0, [$qv->value[1], $qv->value[0]]);
         else if ($qv->type === "revadj") {
             $qr = clone $qv;
             $qr->negated = !$qr->negated;
@@ -473,7 +453,7 @@ class And_SearchTerm extends SearchTerm {
         parent::__construct($type);
     }
     protected function finish() {
-        $pn = array(array(), array());
+        $pn = null;
         $revadj = null;
         $newvalue = array();
         $any = false;
@@ -486,8 +466,10 @@ class And_SearchTerm extends SearchTerm {
             } else if ($qv->is_true())
                 $any = true;
             else if ($qv->type === "pn" && $this->type === "and2") {
-                $pn[0] = array_merge($pn[0], $qv->value[0]);
-                $pn[1] = array_merge($pn[1], $qv->value[1]);
+                if (!$pn)
+                    $pn = $qv;
+                else
+                    $pn->pids = array_merge($pn->pids, $qv->pids);
             } else if ($qv->type === "revadj")
                 $revadj = $qv->apply($revadj, false);
             else
@@ -516,7 +498,7 @@ class Or_SearchTerm extends SearchTerm {
         parent::__construct("or");
     }
     protected function finish() {
-        $pn = array(array(), array());
+        $pn = null;
         $revadj = null;
         $newvalue = array();
 
@@ -527,9 +509,12 @@ class Or_SearchTerm extends SearchTerm {
                 return $qr;
             } else if ($qv->is_false())
                 /* skip */;
-            else if ($qv->type === "pn" && count($qv->value[0]))
-                $pn[0] = array_merge($pn[0], array_values(array_diff($qv->value[0], $qv->value[1])));
-            else if ($qv->type === "revadj")
+            else if ($qv->type === "pn") {
+                if (!$pn)
+                    $pn = $qv;
+                else
+                    $pn->pids = array_merge($pn->pids, $qv->pids);
+            } else if ($qv->type === "revadj")
                 $revadj = $qv->apply($revadj, true);
             else
                 $newvalue[] = $qv;
@@ -1075,6 +1060,26 @@ class Topic_SearchTerm extends SearchTerm {
                 : !$row->{$this->fieldname});
     }
 }
+
+class PaperID_SearchTerm extends SearchTerm {
+    public $pids;
+
+    function __construct($pns) {
+        parent::__construct("pn");
+        $this->pids = $pns;
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        if (empty($this->pids))
+            return "false";
+        else
+            return "Paper.paperId in (" . join(",", $this->pids) . ")";
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        return in_array($row->paperId, $this->pids);
+    }
+}
+
 
 
 class TagSearchMatcher {
@@ -2502,7 +2507,7 @@ class PaperSearch {
         // check for paper number or "#TAG"
         if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
             $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-            return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
+            return new PaperID_SearchTerm(range((int) $m[1], (int) $m[2]));
         } else if (substr($word, 0, 1) === "#") {
             $qe = $this->_searchQueryWord("tag:" . $word, false);
             if (!$qe->is_false())
@@ -3049,7 +3054,7 @@ class PaperSearch {
             foreach ($qe->value as $subt)
                 $this->_add_deleted_papers($subt);
         } else if ($qe->type === "pn") {
-            foreach ($qe->value[0] as $p)
+            foreach ($qe->pids as $p)
                 if (array_search($p, $this->_matches) === false)
                     $this->_matches[] = (int) $p;
         }
@@ -3065,8 +3070,7 @@ class PaperSearch {
                 $this->sorters[] = $s;
             }
         if (!$qe->get_float("sort") && $qe->type === "pn") {
-            $pn = array_diff($qe->value[0], $qe->value[1]);
-            $s = ListSorter::make_field(new NumericOrderPaperColumn(array_flip($pn)));
+            $s = ListSorter::make_field(new NumericOrderPaperColumn(array_flip($qe->pids)));
             $s->thenmap = $thenmap;
             $this->sorters[] = $s;
         }
