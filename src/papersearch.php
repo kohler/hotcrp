@@ -239,12 +239,7 @@ class SearchTerm {
         $thistab = null;
 
         // collect columns
-        if ($tt === "au_cid") {
-            return $this->_clauseTermSetTable($this->value, null, "AuthorConflict",
-                                       "PaperConflict", "contactId",
-                                       " and " . $sqi->user->actAuthorSql("%"),
-                                       $sqi);
-        } else if ($tt === "pf") {
+        if ($tt === "pf") {
             $q = array();
             $this->_set_flags($q, $sqi);
             for ($i = 0; $i < count($this->value); $i += 2) {
@@ -304,9 +299,6 @@ class SearchTerm {
                 $fieldname = $this->link;
                 $row->$fieldname = $this->value->evaluate($srch->user, $row->viewable_tags($srch->user)) ? 1 : 0;
             }
-            if ($this->type === "au_cid"
-                && !$srch->user->can_view_authors($row, true))
-                return false;
             if ($this->type === "pf" && $this->value[0] === "outcome"
                 && !$srch->user->can_view_decision($row, true))
                 return false;
@@ -323,11 +315,7 @@ class SearchTerm {
         $tt = $this->type;
 
         // collect columns
-        if ($tt === "au_cid") {
-            assert(is_array($this->value));
-            return $this->_check_flags($row, $srch)
-                && $row->{$this->link} != 0;
-        } else if ($tt === "pf") {
+        if ($tt === "pf") {
             if (!$this->_check_flags($row, $srch))
                 return false;
             else {
@@ -680,6 +668,47 @@ class PaperPC_SearchTerm extends SearchTerm {
             return in_array($v, $this->match);
         else
             return CountMatcher::compare_string($v, $this->match);
+    }
+}
+
+class ContactAuthor_SearchTerm extends SearchTerm {
+    private $csm;
+    private $includes_self;
+
+    function __construct($countexpr, $contacts, Contact $user) {
+        $full = ($user->privChair && !$user->conf->has_any_manager())
+            || (count($contacts) == 1 && $contacts[0] == $user->contactId);
+        parent::__construct("au_cid", $full ? 0 : PaperSearch::F_XVIEW);
+        $this->csm = new ContactCountMatcher($countexpr, $contacts);
+        $this->includes_self = in_array($user->contactId, $contacts);
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $thistab = "AuthorConflict_" . count($sqi->tables);
+        $this->fieldname = "{$thistab}_ct";
+        $where = "$thistab.contactId in (" . join(",", $this->csm->contact_set()) . ") and conflictType>=" . CONFLICT_AUTHOR;
+
+        $q = array();
+        $this->_set_flags($q, $sqi);
+        $compar = $this->csm->simplified_nonnegative_countexpr();
+        if ($compar !== ">0" && $compar !== "=0") {
+            $sqi->add_table($thistab, ["left join", "(select paperId, count(*) ct from PaperConflict $thistab where $where group by paperId)"]);
+            $sqi->add_column($this->fieldname, "$thistab.ct");
+            $q[] = "coalesce($thistab.ct,0)$compar";
+        } else {
+            $sqi->add_table($thistab, ["left join", "PaperConflict", $where]);
+            $sqi->add_column($this->fieldname, "count($thistab.contactId)");
+            if ($compar === "=0")
+                $q[] = "$thistab.contactId is null";
+            else
+                $q[] = "$thistab.contactId is not null";
+        }
+        return self::andjoin_sqlexpr($q);
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        return ($this->includes_self && $row->conflictType >= CONFLICT_AUTHOR
+                && $this->csm->test(1))
+            || ($srch->user->can_view_authors($row, true)
+                && $this->csm->test((int) $row->{$this->fieldname}));
     }
 }
 
@@ -1655,24 +1684,17 @@ class PaperSearch {
         $qt[] = new TextMatch_SearchTerm($type, $word);
     }
 
-    private function _searchField($word, $rtype, &$qt) {
-        if ($this->privChair || $this->amPC)
-            $qt[] = new SearchTerm($rtype, self::F_XVIEW, $word);
-        else {
-            $qt[] = new SearchTerm($rtype, self::F_XVIEW | self::F_REVIEWER, $word);
-            $qt[] = new SearchTerm($rtype, self::F_XVIEW | self::F_AUTHOR, $word);
-        }
-    }
-
     private function _searchAuthors($word, &$qt, $keyword, $quoted) {
+        $cids = null;
         $lword = strtolower($word);
         if ($keyword && !$quoted && $lword === "me")
-            $this->_searchField(array($this->cid), "au_cid", $qt);
+            $cids = [$this->cid];
         else if ($keyword && !$quoted && $this->amPC
-                 && ($lword === "pc" || $this->conf->pc_tag_exists($lword))) {
+                 && ($lword === "pc" || $this->conf->pc_tag_exists($lword)))
             $cids = $this->_pcContactIdsWithTag($lword);
-            $this->_searchField($cids, "au_cid", $qt);
-        } else
+        if ($cids !== null)
+            $qt[] = new ContactAuthor_SearchTerm(">0", $cids, $this->user);
+        else
             $this->_text_match_field($qt, "au", $word);
     }
 
