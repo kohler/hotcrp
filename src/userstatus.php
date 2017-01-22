@@ -322,17 +322,17 @@ class UserStatus {
             $old_tags = array();
             foreach ($cj->tags as $t)
                 if ($t !== "") {
-                    list($tag, $index) = TagInfo::split_index($t);
+                    list($tag, $index) = TagInfo::unpack($t);
                     $old_tags[$tag] = $index;
                 }
             // process removals, then additions
             foreach ($this->make_tags_array(get($cj, "remove_tags"), "remove_tags") as $t) {
-                list($tag, $index) = TagInfo::split_index($t);
+                list($tag, $index) = TagInfo::unpack($t);
                 if ($index === false || get($old_tags, $tag) == $index)
                     unset($old_tags[$tag]);
             }
             foreach ($this->make_tags_array(get($cj, "add_tags"), "add_tags") as $t) {
-                list($tag, $index) = TagInfo::split_index($t);
+                list($tag, $index) = TagInfo::unpack($t);
                 $old_tags[$tag] = $index;
             }
             // collect results

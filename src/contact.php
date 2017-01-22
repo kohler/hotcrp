@@ -901,7 +901,7 @@ class Contact {
         if (isset($cj->tags)) {
             $tags = array();
             foreach ($cj->tags as $t) {
-                list($tag, $value) = TagInfo::split_index($t);
+                list($tag, $value) = TagInfo::unpack($t);
                 if (strcasecmp($tag, "pc") != 0)
                     $tags[$tag] = $tag . "#" . ($value ? : 0);
             }

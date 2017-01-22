@@ -313,28 +313,28 @@ class TagMap implements IteratorAggregate {
     static function make(Conf $conf) {
         $map = new TagMap($conf);
         $ct = $conf->setting_data("tag_chair", "");
-        foreach (TagInfo::split_tlist($ct) as $ti)
+        foreach (TagInfo::split_unpack($ct) as $ti)
             $map->add($ti[0])->chair = true;
         foreach ($conf->track_tags() as $tn) {
             $t = $map->add(TagInfo::base($tn));
             $t->chair = $t->track = true;
         }
         $ct = $conf->setting_data("tag_sitewide", "");
-        foreach (TagInfo::split_tlist($ct) as $ti)
+        foreach (TagInfo::split_unpack($ct) as $ti)
             $map->add($ti[0])->sitewide = $map->has_sitewide = true;
         $vt = $conf->setting_data("tag_vote", "");
-        foreach (TagInfo::split_tlist($vt) as $ti) {
+        foreach (TagInfo::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
             $t->vote = ($ti[1] ? : 1);
             $t->votish = $map->has_vote = $map->has_votish = true;
         }
         $vt = $conf->setting_data("tag_approval", "");
-        foreach (TagInfo::split_tlist($vt) as $ti) {
+        foreach (TagInfo::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
             $t->approval = $t->votish = $map->has_approval = $map->has_votish = true;
         }
         $rt = $conf->setting_data("tag_rank", "");
-        foreach (TagInfo::split_tlist($rt) as $ti)
+        foreach (TagInfo::split_unpack($rt) as $ti)
             $map->add($ti[0])->rank = $map->has_rank = true;
         $ct = $conf->setting_data("tag_color", "");
         if ($ct !== "")
@@ -408,23 +408,15 @@ class TagInfo {
             return $tag;
     }
 
-    static function index($tag) {
-        if ($tag && (($pos = strpos($tag, "#")) > 0
-                     || ($pos = strpos($tag, "=")) > 0))
-            return (float) substr($tag, $pos + 1);
-        else
-            return false;
-    }
-
-    static function split_index($tag) {
+    static function unpack($tag) {
         if (!$tag)
-            return array(false, false);
+            return [false, false];
         else if (!($pos = strpos($tag, "#")) && !($pos = strpos($tag, "=")))
-            return array($tag, false);
+            return [$tag, false];
         else if ($pos == strlen($tag) - 1)
-            return array(substr($tag, 0, $pos), false);
+            return [substr($tag, 0, $pos), false];
         else
-            return array(substr($tag, 0, $pos), (float) substr($tag, $pos + 1));
+            return [substr($tag, 0, $pos), (float) substr($tag, $pos + 1)];
     }
 
     static function split($taglist) {
@@ -432,23 +424,13 @@ class TagInfo {
         return $m[0];
     }
 
+    static function split_unpack($taglist) {
+        return array_map("TagInfo::unpack", self::split($taglist));
+    }
+
     static function basic_check($tag) {
         return $tag !== "" && strlen($tag) <= TAG_MAXLEN
             && preg_match('{\A' . TAG_REGEX . '\z}', $tag);
-    }
-
-    static function in_list($tag, $taglist) {
-        if (is_string($taglist))
-            $taglist = explode(" ", $taglist);
-        list($base, $index) = self::split_index($tag);
-        if (is_associative_array($taglist))
-            return isset($taglist[$base]);
-        else
-            return in_array($base, $taglist);
-    }
-
-    static function split_tlist($tl) {
-        return array_map("TagInfo::split_index", self::split($tl));
     }
 
     static function unparse_anno_json($anno) {
@@ -651,7 +633,8 @@ class Tagger {
                 foreach ($ts as $t) {
                     if (($link = $this->link_base($t)))
                         $links[] = "#" . $link;
-                    $count = max($count, (float) TagInfo::index($t));
+                    list($base, $value) = TagInfo::unpack($t);
+                    $count = max($count, (float) $value);
                 }
                 $b = self::unparse_emoji_html($e, $count);
                 if (!empty($links))

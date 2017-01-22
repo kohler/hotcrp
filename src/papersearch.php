@@ -1203,11 +1203,10 @@ class TagSearchMatcher {
                     $res[] = preg_quote($value);
             $this->_re = '/\A(?:' . join("|", $res) . ')\z/i';
         }
-        foreach (TagInfo::split($tags) as $ti) {
-            list($tag, $index) = TagInfo::split_index($ti);
-            if (preg_match($this->_re, $tag)
-                && (!$this->index1 || $this->index1->test($index))
-                && (!$this->index2 || $this->index2->test($index)))
+        foreach (TagInfo::split_unpack($tags) as $ti) {
+            if (preg_match($this->_re, $ti[0])
+                && (!$this->index1 || $this->index1->test($ti[1]))
+                && (!$this->index2 || $this->index2->test($ti[1])))
                 return true;
         }
         return false;

@@ -199,7 +199,7 @@ class Tag_SettingParser extends SettingParser {
         $ts = array();
         foreach (preg_split('/\s+/', $sv->req[$si->name]) as $t)
             if ($t !== "" && ($tx = $this->tagger->check($t, $checkf))) {
-                list($tag, $idx) = TagInfo::split_index($tx);
+                list($tag, $idx) = TagInfo::unpack($tx);
                 if ($min_idx)
                     $tx = $tag . "#" . max($min_idx, (float) $idx);
                 $ts[$tag] = $tx;

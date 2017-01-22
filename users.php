@@ -226,7 +226,7 @@ function do_tags() {
         $likes = array();
         $removes = array();
         foreach ($t1 as $t) {
-            list($tag, $index) = TagInfo::split_index($t);
+            list($tag, $index) = TagInfo::unpack($t);
             $removes[] = $t;
             $likes[] = "contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like($tag) . "#%'");
         }

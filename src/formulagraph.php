@@ -173,7 +173,7 @@ class FormulaGraph {
 
     private function _add_tag_data(&$data, $d, PaperInfo $prow) {
         assert($this->fx_type === self::X_TAG);
-        $tags = TagInfo::split_tlist($prow->viewable_tags($this->user));
+        $tags = TagInfo::split_unpack($prow->viewable_tags($this->user));
         foreach ($tags as $ti) {
             if (!isset($this->tags[$ti[0]]))
                 $this->tags[$ti[0]] = count($this->tags);

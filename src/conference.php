@@ -1116,7 +1116,7 @@ class Conf {
                 }
                 if ($row->contactTags)
                     foreach (explode(" ", $row->contactTags) as $t) {
-                        list($tag, $value) = TagInfo::split_index($t);
+                        list($tag, $value) = TagInfo::unpack($t);
                         if ($tag)
                             $this->_pc_tags_cache[strtolower($tag)] = $tag;
                     }
