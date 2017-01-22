@@ -503,20 +503,13 @@ class PaperPC_SearchTerm extends SearchTerm {
         $sqi->add_column($this->fieldname, "Paper.{$this->fieldname}");
         if ($sqi->negated && !$sqi->fullPrivChair)
             return "false";
-        $sql = $this->match;
-        if (is_array($sql))
-            $sql = " in (" . (empty($sql) ? "-1" : join(",", $sql)) . ")";
-        return "(Paper.{$this->fieldname} $sql)";
+        else
+            return "(Paper.{$this->fieldname}" . CountMatcher::sqlexpr_using($this->match) . ")";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $can_view = "can_view_{$this->kind}";
-        if (!$srch->user->$can_view($row, true))
-            return false;
-        $v = $row->{$this->fieldname};
-        if (is_array($this->match))
-            return in_array($v, $this->match);
-        else
-            return CountMatcher::compare_string($v, $this->match);
+        return $srch->user->$can_view($row, true)
+            && CountMatcher::compare_using($row->{$this->fieldname}, $this->match);
     }
 }
 
@@ -531,18 +524,12 @@ class Decision_SearchTerm extends SearchTerm {
         $sqi->add_column("outcome", "Paper.outcome");
         if ($sqi->negated && !$sqi->fullPrivChair)
             return "false";
-        $sql = $this->match;
-        if (is_array($sql))
-            $sql = " in (" . (empty($sql) ? "-1" : join(",", $sql)) . ")";
-        return "(Paper.outcome $sql)";
+        else
+            return "(Paper.outcome" . CountMatcher::sqlexpr_using($this->match) . ")";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        if (!$srch->user->can_view_decision($row, true))
-            return false;
-        else if (is_array($this->match))
-            return in_array($row->outcome, $this->match);
-        else
-            return CountMatcher::compare_string($row->outcome, $this->match);
+        return $srch->user->can_view_decision($row, true)
+            && CountMatcher::compare_using($row->outcome, $this->match);
     }
 }
 
@@ -550,31 +537,24 @@ class PaperStatus_SearchTerm extends SearchTerm {
     private $match;
 
     function __construct($match) {
-        parent::__construct("pf", 0);
+        parent::__construct("pf");
         $this->match = $match;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $q = array();
         for ($i = 0; $i < count($this->match); $i += 2) {
             $sqi->add_column($this->match[$i], "Paper." . $this->match[$i]);
-            if (is_array($this->match[$i + 1]))
-                $q[] = "Paper." . $this->match[$i] . " in (" . join(",", $this->match[$i + 1]) . ")";
-            else
-                $q[] = "Paper." . $this->match[$i] . $this->match[$i + 1];
+            $q[] = "Paper." . $this->match[$i] . CountMatcher::sqlexpr_using($this->match[$i+1]);
         }
         return self::andjoin_sqlexpr($q);
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        $ans = true;
-        for ($i = 0; $ans && $i < count($this->value); $i += 2) {
-            $fieldname = $this->value[$i];
-            $expr = $this->value[$i + 1];
-            if (is_array($expr))
-                $ans = in_array($row->$fieldname, $expr);
-            else
-                $ans = CountMatcher::compare_string($row->$fieldname, $expr);
+        for ($i = 0; $ans && $i < count($this->match); $i += 2) {
+            $fieldname = $this->match[$i];
+            if (!CountMatcher::compare_using($row->$fieldname, $this->match[$i+1]))
+                return false;
         }
-        return $ans;
+        return true;
     }
 }
 

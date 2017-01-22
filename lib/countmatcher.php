@@ -40,8 +40,19 @@ class CountMatcher {
         else
             return ($compar & 1) !== 0;
     }
-    static function compare_string($x, $compar_y) {
-        if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?(?:\.\d+|\d+\.?\d*))\z/', $compar_y, $m))
+    static function sqlexpr_using($compar_y) {
+        if (is_array($compar_y)) {
+            if (empty($compar_y))
+                return "=NULL";
+            else
+                return " in (" . join(",", $compar_y) . ")";
+        } else
+            return $compar_y;
+    }
+    static function compare_using($x, $compar_y) {
+        if (is_array($compar_y))
+            return in_array($x, $compar_y);
+        else if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?(?:\.\d+|\d+\.?\d*))\z/', $compar_y, $m))
             return self::compare($x, $m[1], $m[2]);
         else
             return false;
