@@ -42,53 +42,6 @@ class SearchTerm {
         $this->type = $type;
         $this->flags = $flags;
     }
-    protected function append($term) {
-        if ($term) {
-            foreach ($term->float as $k => $v) {
-                $v1 = get($this->float, $k);
-                if ($k === "sort" && $v1)
-                    array_splice($this->float[$k], count($v1), 0, $v);
-                else if ($k === "strspan" && $v1)
-                    $this->apply_strspan($v);
-                else if (is_array($v1) && is_array($v))
-                    $this->float[$k] = array_replace_recursive($v1, $v);
-                else if ($k !== "opinfo" || $v1 === null)
-                    $this->float[$k] = $v;
-            }
-            $this->child[] = $term;
-        }
-        return $this;
-    }
-    protected function finish() {
-        assert(false);
-    }
-    protected function _flatten_children() {
-        $qvs = array();
-        foreach ($this->child ? : array() as $qv)
-            if ($qv->type === $this->type)
-                $qvs = array_merge($qvs, $qv->child);
-            else
-                $qvs[] = $qv;
-        return $qvs;
-    }
-    protected function _finish_combine($newchild, $pn, $revadj, $any) {
-        if ($pn)
-            $newchild[] = $pn;
-        if ($revadj)            // must be first
-            array_unshift($newchild, $revadj);
-        $qr = null;
-        if (!$newchild)
-            $qr = $any ? new True_SearchTerm : new False_SearchTerm;
-        else if (count($newchild) == 1)
-            $qr = clone $newchild[0];
-        if ($qr) {
-            $qr->float = $this->float;
-            return $qr;
-        } else {
-            $this->child = $newchild;
-            return $this;
-        }
-    }
     static function make_op($op, $terms) {
         $opstr = is_object($op) ? $op->op : $op;
         if ($opstr === "not")
@@ -112,13 +65,11 @@ class SearchTerm {
         $qe->float = $float;
         return $qe;
     }
+
     function is_false() {
         return false;
     }
     function is_true() {
-        return false;
-    }
-    function is_then() {
         return false;
     }
     function is_uninteresting() {
@@ -231,8 +182,62 @@ class True_SearchTerm extends SearchTerm {
     }
 }
 
-class Not_SearchTerm extends SearchTerm {
+class Op_SearchTerm extends SearchTerm {
     public $child = [];
+
+    function __construct($type) {
+        parent::__construct($type);
+    }
+    protected function append($term) {
+        if ($term) {
+            foreach ($term->float as $k => $v) {
+                $v1 = get($this->float, $k);
+                if ($k === "sort" && $v1)
+                    array_splice($this->float[$k], count($v1), 0, $v);
+                else if ($k === "strspan" && $v1)
+                    $this->apply_strspan($v);
+                else if (is_array($v1) && is_array($v))
+                    $this->float[$k] = array_replace_recursive($v1, $v);
+                else if ($k !== "opinfo" || $v1 === null)
+                    $this->float[$k] = $v;
+            }
+            $this->child[] = $term;
+        }
+        return $this;
+    }
+    protected function finish() {
+        assert(false);
+    }
+    protected function _flatten_children() {
+        $qvs = array();
+        foreach ($this->child ? : array() as $qv)
+            if ($qv->type === $this->type)
+                $qvs = array_merge($qvs, $qv->child);
+            else
+                $qvs[] = $qv;
+        return $qvs;
+    }
+    protected function _finish_combine($newchild, $pn, $revadj, $any) {
+        if ($pn)
+            $newchild[] = $pn;
+        if ($revadj)            // must be first
+            array_unshift($newchild, $revadj);
+        $qr = null;
+        if (!$newchild)
+            $qr = $any ? new True_SearchTerm : new False_SearchTerm;
+        else if (count($newchild) == 1)
+            $qr = clone $newchild[0];
+        if ($qr) {
+            $qr->float = $this->float;
+            return $qr;
+        } else {
+            $this->child = $newchild;
+            return $this;
+        }
+    }
+}
+
+class Not_SearchTerm extends Op_SearchTerm {
     function __construct() {
         parent::__construct("not");
     }
@@ -267,8 +272,7 @@ class Not_SearchTerm extends SearchTerm {
     }
 }
 
-class And_SearchTerm extends SearchTerm {
-    public $child = [];
+class And_SearchTerm extends Op_SearchTerm {
     function __construct($type) {
         parent::__construct($type);
     }
@@ -313,8 +317,7 @@ class And_SearchTerm extends SearchTerm {
     }
 }
 
-class Or_SearchTerm extends SearchTerm {
-    public $child = [];
+class Or_SearchTerm extends Op_SearchTerm {
     function __construct() {
         parent::__construct("or");
     }
@@ -356,8 +359,7 @@ class Or_SearchTerm extends SearchTerm {
     }
 }
 
-class Then_SearchTerm extends SearchTerm {
-    public $child = [];
+class Then_SearchTerm extends Op_SearchTerm {
     private $is_highlight;
     public $nthen;
     public $highlights;
@@ -408,9 +410,6 @@ class Then_SearchTerm extends SearchTerm {
         $this->child = $newvalues;
         $this->set_float("sort", []);
         return $this;
-    }
-    function is_then() {
-        return true;
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
