@@ -176,78 +176,6 @@ class SearchTerm {
             $q[] = "false";
     }
 
-    private function _clauseTermSetTable($value, $compar, $shorttab,
-                                         $table, $field, $where, SearchQueryInfo $sqi) {
-        $q = array();
-        $this->_set_flags($q, $sqi);
-
-        if ($value === "none" && !$compar)
-            list($compar, $value) = array("=0", "");
-        else if (($value === "" || $value === "any") && !$compar)
-            list($compar, $value) = array(">0", "");
-        else if (!$compar || $compar === ">=1")
-            $compar = ">0";
-        else if ($compar === "<=0" || $compar === "<1")
-            $compar = "=0";
-
-        $thistab = $shorttab . "_" . count($sqi->tables);
-        if ($value === "") {
-            if ($compar === ">0" || $compar === "=0")
-                $thistab = "Any" . $shorttab;
-            $tdef = array("left join", $table);
-        } else if (is_array($value)) {
-            if (count($value))
-                $tdef = array("left join", $table, "$thistab.$field in (" . join(",", $value) . ")");
-            else
-                $tdef = array("left join", $table, "false");
-        } else if (strpos($value, "\3") !== false) {
-            $tdef = array("left join", $table, str_replace("\3", "$thistab.$field", $value));
-        } else {
-            $tdef = array("left join", $table, "$thistab.$field='" . sqlq($value) . "'");
-        }
-        if ($where)
-            $tdef[2] .= str_replace("%", $thistab, $where);
-
-        if ($compar !== ">0" && $compar !== "=0") {
-            $tdef[1] = "(select paperId, count(*) ct from " . $tdef[1] . " as " . $thistab;
-            if (count($tdef) > 2)
-                $tdef[1] .= " where " . array_pop($tdef);
-            $tdef[1] .= " group by paperId)";
-            $sqi->add_column($thistab . "_ct", "$thistab.ct");
-            $q[] = "coalesce($thistab.ct,0)$compar";
-        } else {
-            $sqi->add_column($thistab . "_ct", "count($thistab.$field)");
-            if ($compar === "=0")
-                $q[] = "$thistab.$field is null";
-            else
-                $q[] = "$thistab.$field is not null";
-        }
-
-        $sqi->add_table($thistab, $tdef);
-        $this->link = $thistab . "_ct";
-        return "(" . join(" and ", $q) . ")";
-    }
-
-    function sqlexpr(SearchQueryInfo $sqi) {
-        $tt = $this->type;
-        $thistab = null;
-
-        // collect columns
-        if ($tt === "pf") {
-            $q = array();
-            $this->_set_flags($q, $sqi);
-            for ($i = 0; $i < count($this->value); $i += 2) {
-                $sqi->add_column($this->value[$i], "Paper." . $this->value[$i]);
-                if (is_array($this->value[$i + 1]))
-                    $q[] = "Paper." . $this->value[$i] . " in (" . join(",", $this->value[$i + 1]) . ")";
-                else
-                    $q[] = "Paper." . $this->value[$i] . $this->value[$i + 1];
-            }
-            return "(" . join(" and ", $q) . ")";
-        } else
-            return "true";
-    }
-
     static function andjoin_sqlexpr($q, $default = "false") {
         return empty($q) ? $default : "(" . join(" and ", $q) . ")";
     }
@@ -255,6 +183,10 @@ class SearchTerm {
         return empty($q) ? $default : "(" . join(" or ", $q) . ")";
     }
 
+    function sqlexpr(SearchQueryInfo $sqi) {
+        assert(false);
+        return "false";
+    }
 
     protected function _check_flags(PaperInfo $row, PaperSearch $srch) {
         $flags = $this->flags;
@@ -270,37 +202,12 @@ class SearchTerm {
             return false;
         if (($flags & PaperSearch::F_NONCONFLICT) && $row->conflictType)
             return false;
-        if ($flags & PaperSearch::F_XVIEW) {
-            if ($this->type === "pf" && $this->value[0] === "outcome"
-                && !$srch->user->can_view_decision($row, true))
-                return false;
-        }
         return true;
     }
 
     function exec(PaperInfo $row, PaperSearch $srch) {
-        $tt = $this->type;
-
-        // collect columns
-        if ($tt === "pf") {
-            if (!$this->_check_flags($row, $srch))
-                return false;
-            else {
-                $ans = true;
-                for ($i = 0; $ans && $i < count($this->value); $i += 2) {
-                    $fieldname = $this->value[$i];
-                    $expr = $this->value[$i + 1];
-                    if (is_array($expr))
-                        $ans = in_array($row->$fieldname, $expr);
-                    else
-                        $ans = CountMatcher::compare_string($row->$fieldname, $expr);
-                }
-                return $ans;
-            }
-        } else {
-            error_log("SearchTerm::exec: $tt defaults, correctness unlikely");
-            return true;
-        }
+        assert(false);
+        return false;
     }
 }
 
@@ -610,6 +517,64 @@ class PaperPC_SearchTerm extends SearchTerm {
             return in_array($v, $this->match);
         else
             return CountMatcher::compare_string($v, $this->match);
+    }
+}
+
+class Decision_SearchTerm extends SearchTerm {
+    private $match;
+
+    function __construct($match) {
+        parent::__construct("dec", PaperSearch::F_XVIEW);
+        $this->match = $match;
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $sqi->add_column("outcome", "Paper.outcome");
+        if ($sqi->negated && !$sqi->fullPrivChair)
+            return "false";
+        $sql = $this->match;
+        if (is_array($sql))
+            $sql = " in (" . (empty($sql) ? "-1" : join(",", $sql)) . ")";
+        return "(Paper.outcome $sql)";
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        if (!$srch->user->can_view_decision($row, true))
+            return false;
+        else if (is_array($this->match))
+            return in_array($row->outcome, $this->match);
+        else
+            return CountMatcher::compare_string($row->outcome, $this->match);
+    }
+}
+
+class PaperStatus_SearchTerm extends SearchTerm {
+    private $match;
+
+    function __construct($match) {
+        parent::__construct("pf", 0);
+        $this->match = $match;
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $q = array();
+        for ($i = 0; $i < count($this->match); $i += 2) {
+            $sqi->add_column($this->match[$i], "Paper." . $this->match[$i]);
+            if (is_array($this->match[$i + 1]))
+                $q[] = "Paper." . $this->match[$i] . " in (" . join(",", $this->match[$i + 1]) . ")";
+            else
+                $q[] = "Paper." . $this->match[$i] . $this->match[$i + 1];
+        }
+        return self::andjoin_sqlexpr($q);
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        $ans = true;
+        for ($i = 0; $ans && $i < count($this->value); $i += 2) {
+            $fieldname = $this->value[$i];
+            $expr = $this->value[$i + 1];
+            if (is_array($expr))
+                $ans = in_array($row->$fieldname, $expr);
+            else
+                $ans = CountMatcher::compare_string($row->$fieldname, $expr);
+        }
+        return $ans;
     }
 }
 
@@ -1839,7 +1804,7 @@ class PaperSearch {
             else if ($lword === "no")
                 return "<0";
             else if ($lword === "?" || $lword === "none" || $lword === "unknown")
-                return array(0);
+                return [0];
             else if ($lword === "any")
                 return "!=0";
         }
@@ -1870,10 +1835,10 @@ class PaperSearch {
             $fval[1][] = -10000000;
         }
 
-        $flags = 0;
-        if ($fval[0] === "outcome" && !($this->amPC && $this->conf->timePCViewDecision(true)))
-            $flags = self::F_XVIEW;
-        $qt[] = new SearchTerm("pf", $flags, $fval);
+        if ($fval[0] === "outcome")
+            $qt[] = new Decision_SearchTerm($fval[1]);
+        else
+            $qt[] = new PaperStatus_SearchTerm($fval);
     }
 
     private function _search_conflict($word, &$qt, $quoted, $pc_only) {
@@ -2364,9 +2329,9 @@ class PaperSearch {
         $original_lword = $lword = strtolower($word);
         $lword = get(self::$_keywords, $lword) ? : $lword;
         if ($lword === "paper" || $lword === "sub" || $lword === "submission")
-            $qt[] = new SearchTerm("pf", 0, array("paperStorageId", ">1"));
+            $qt[] = new PaperStatus_SearchTerm(["paperStorageId", ">1"]);
         else if ($lword === "final" || $lword === "finalcopy")
-            $qt[] = new SearchTerm("pf", 0, array("finalPaperStorageId", ">1"));
+            $qt[] = new PaperStatus_SearchTerm(["finalPaperStorageId", ">1"]);
         else if ($lword === "ab")
             $qt[] = new TextMatch_SearchTerm("ab", true);
         else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword))
