@@ -172,18 +172,12 @@ class SearchTerm {
             $q[] = $sqi->user->actAuthorSql("PaperConflict");
         if ($flags & PaperSearch::F_REVIEWER)
             $q[] = "MyReview.reviewNeedsSubmit=0";
-        if ($flags & PaperSearch::F_XVIEW) {
-            $sqi->needflags |= PaperSearch::F_NONCONFLICT | PaperSearch::F_REVIEWER;
-            $sqi->add_rights_columns();
-        }
-        if (($flags & PaperSearch::F_FALSE)
-            || ($sqi->negated && ($flags & PaperSearch::F_XVIEW)))
+        if ($sqi->negated && ($flags & PaperSearch::F_XVIEW))
             $q[] = "false";
     }
 
     private function _clauseTermSetTable($value, $compar, $shorttab,
                                          $table, $field, $where, SearchQueryInfo $sqi) {
-        // see also first "tag" case below
         $q = array();
         $this->_set_flags($q, $sqi);
 
@@ -250,20 +244,6 @@ class SearchTerm {
                     $q[] = "Paper." . $this->value[$i] . $this->value[$i + 1];
             }
             return "(" . join(" and ", $q) . ")";
-        } else if ($tt === "tag") {
-            return $this->_clauseTermSetTable($this->value->tagmatch_sql($sqi->user), null, "Tag",
-                                       "PaperTag", "tag", $this->value->index_wheresql(),
-                                       $sqi);
-        } else if ($tt === "option") {
-            // expanded from _clauseTermSetTable
-            $q = array();
-            $this->_set_flags($q, $sqi);
-            $thistab = "Option_" . count($sqi->tables);
-            $sqi->add_table($thistab, array("left join", "(select paperId, max(value) v from PaperOption where optionId=" . $this->value->option->id . " group by paperId)"));
-            $sqi->add_column($thistab . "_x", "coalesce($thistab.v,0)" . $this->value->table_matcher());
-            $this->link = $thistab . "_x";
-            $q[] = $sqi->columns[$this->link];
-            return "(" . join(" and ", $q) . ")";
         } else
             return "true";
     }
@@ -291,23 +271,10 @@ class SearchTerm {
         if (($flags & PaperSearch::F_NONCONFLICT) && $row->conflictType)
             return false;
         if ($flags & PaperSearch::F_XVIEW) {
-            if ($this->type === "tag" && !$srch->user->can_view_tags($row, true))
-                return false;
-            if ($this->type === "tag"
-                && $srch->user->privChair
-                && $row->managerContactId > 0) {
-                $fieldname = $this->link;
-                $row->$fieldname = $this->value->evaluate($srch->user, $row->viewable_tags($srch->user)) ? 1 : 0;
-            }
             if ($this->type === "pf" && $this->value[0] === "outcome"
                 && !$srch->user->can_view_decision($row, true))
                 return false;
-            if ($this->type === "option"
-                && !$srch->user->can_view_paper_option($row, $this->value->option, true))
-                return false;
         }
-        if ($flags & PaperSearch::F_FALSE)
-            return false;
         return true;
     }
 
@@ -330,31 +297,6 @@ class SearchTerm {
                 }
                 return $ans;
             }
-        } else if ($tt === "tag") {
-            if (!$this->_check_flags($row, $srch))
-                return false;
-            $fieldname = $this->link;
-            return $row->$fieldname != 0;
-        } else if ($tt === "option") {
-            if (!$this->_check_flags($row, $srch))
-                return false;
-            $fieldname = $this->link;
-            if ($row->$fieldname == 0)
-                return false;
-            $om = $this->value;
-            if ($om->kind) {
-                $ov = $row->option($om->option->id);
-                if ($om->kind === "attachment-count" && $ov)
-                    return CountMatcher::compare($ov->value_count(), $om->compar, $om->value);
-                else if ($om->kind === "attachment-name" && $ov) {
-                    $reg = Text::star_text_pregexes($om->value);
-                    foreach ($ov->documents() as $doc)
-                        if (Text::match_pregexes($reg, $doc->filename, false))
-                            return true;
-                }
-                return false;
-            }
-            return true;
         } else {
             error_log("SearchTerm::exec: $tt defaults, correctness unlikely");
             return true;
@@ -1152,6 +1094,75 @@ class Formula_SearchTerm extends SearchTerm {
     }
 }
 
+class Option_SearchTerm extends SearchTerm {
+    private $om;
+    private $fieldname;
+
+    function __construct(OptionMatcher $om) {
+        parent::__construct("option", PaperSearch::F_XVIEW);
+        $this->om = $om;
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $thistab = "Option_" . count($sqi->tables);
+        $this->fieldname = $thistab . "_x";
+        $sqi->add_table($thistab, array("left join", "(select paperId, max(value) v from PaperOption where optionId=" . $this->om->option->id . " group by paperId)"));
+        $sqi->add_column($thistab . "_x", "coalesce($thistab.v,0)" . $this->om->table_matcher());
+
+        $q = array();
+        $this->_set_flags($q, $sqi);
+        $q[] = $sqi->columns[$this->fieldname];
+        return self::andjoin_sqlexpr($q);
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        $om = $this->om;
+        if (!$this->_check_flags($row, $srch)
+            || !$srch->user->can_view_paper_option($row, $om->option, true)
+            || $row->{$this->fieldname})
+            return false;
+        if ($om->kind) {
+            $ov = $row->option($om->option->id);
+            if ($om->kind === "attachment-count" && $ov)
+                return CountMatcher::compare($ov->value_count(), $om->compar, $om->value);
+            else if ($om->kind === "attachment-name" && $ov) {
+                $reg = Text::star_text_pregexes($om->value);
+                foreach ($ov->documents() as $doc)
+                    if (Text::match_pregexes($reg, $doc->filename, false))
+                        return true;
+            }
+            return false;
+        }
+        return true;
+    }
+}
+
+class Tag_SearchTerm extends SearchTerm {
+    private $tsm;
+
+    function __construct(TagSearchMatcher $tsm) {
+        parent::__construct("tag", PaperSearch::F_XVIEW);
+        $this->tsm = $tsm;
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $thistab = "Tag_" . count($sqi->tables);
+        $tm_sql = $this->tsm->tagmatch_sql($thistab, $sqi->user);
+        if ($tm_sql === false) {
+            $thistab = "AnyTag";
+            $tdef = ["left join", "PaperTag"];
+        } else
+            $tdef = ["left join", "PaperTag", $tm_sql];
+        $sqi->add_table($thistab, $tdef);
+        $sqi->add_column($thistab . "_ct", "count($thistab.tag)");
+
+        $q = array();
+        $this->_set_flags($q, $sqi);
+        $q[] = "$thistab.tag is not null";
+        return self::andjoin_sqlexpr($q);
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        return $this->_check_flags($row, $srch)
+            && $this->tsm->evaluate($srch->user, $row->searchable_tags($srch->user));
+    }
+}
 
 class TagSearchMatcher {
     public $tags = [];
@@ -1163,47 +1174,38 @@ class TagSearchMatcher {
         if (empty($this->tags))
             return new False_SearchTerm;
         else
-            return new SearchTerm("tag", PaperSearch::F_XVIEW, $this);
+            return new Tag_SearchTerm($this);
     }
-    function tagmatch_sql($user) {
-        $args = [];
-        foreach ($this->tags as $value) {
-            if (($starpos = strpos($value, "*")) !== false) {
-                $arg = "(\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
-                if ($starpos == 0)
-                    $arg .= " and \3 not like '%~%'";
-                $arg .= ")";
-            } else if ($value === "any" || $value === "none")
-                $arg = "(\3 is not null and (\3 not like '%~%' or \3 like '{$user->contactId}~%'" . ($user->privChair ? " or \3 like '~~%'" : "") . "))";
+    function tagmatch_sql($table, Contact $user) {
+        $x = [];
+        foreach ($this->tags as $tm) {
+            if (($starpos = strpos($tm, "*")) !== false || $tm === "any")
+                return false;
             else
-                $arg = "\3='" . sqlq($value) . "'";
-            $args[] = $arg;
+                $x[] = "$table.tag='" . sqlq($tm) . "'";
         }
-        return join(" or ", $args);
-    }
-    function index_wheresql() {
-        $extra = "";
+        $q = "(" . join(" or ", $x) . ")";
         if ($this->index1)
-            $extra .= " and %.tagIndex" . $this->index1->countexpr();
+            $q .= " and $table.tagIndex" . $this->index1->countexpr();
         if ($this->index2)
-            $extra .= " and %.tagIndex" . $this->index2->countexpr();
-        return $extra;
+            $q .= " and $table.tagIndex" . $this->index2->countexpr();
+        return $q;
     }
-    function evaluate($user, $tags) {
+    function evaluate(Contact $user, $taglist) {
         if (!$this->_re) {
             $res = [];
-            foreach ($this->tags as $value)
-                if (($starpos = strpos($value, "*")) !== false)
-                    $res[] = '(?!.*~)' . str_replace('\\*', '.*', preg_quote($value));
-                else if ($value === "any" && $user->privChair)
+            foreach ($this->tags as $tm)
+                if (($starpos = strpos($tm, "*")) !== false)
+                    $res[] = '(?!.*~)' . str_replace('\\*', '.*', preg_quote($tm));
+                else if ($tm === "any" && $user->privChair)
                     $res[] = "(?:{$user->contactId}~.*|~~.*|(?!.*~).*)";
-                else if ($value === "any")
+                else if ($tm === "any")
                     $res[] = "(?:{$user->contactId}~.*|(?!.*~).*)";
                 else
-                    $res[] = preg_quote($value);
+                    $res[] = preg_quote($tm);
             $this->_re = '/\A(?:' . join("|", $res) . ')\z/i';
         }
-        foreach (TagInfo::split_unpack($tags) as $ti) {
+        foreach (TagInfo::split_unpack($taglist) as $ti) {
             if (preg_match($this->_re, $ti[0])
                 && (!$this->index1 || $this->index1->test($ti[1]))
                 && (!$this->index2 || $this->index2->test($ti[1])))
@@ -1442,7 +1444,6 @@ class PaperSearch {
     const F_ALLOWDRAFT = 0x01000;
     const F_REQUIREDRAFT = 0x02000;
 
-    const F_FALSE = 0x10000;
     const F_XVIEW = 0x20000;
 
     public $conf;
@@ -2202,7 +2203,7 @@ class PaperSearch {
             $negated = !$negated;
         }
 
-        $term = new SearchTerm("tag", self::F_XVIEW, $value);
+        $term = new Tag_SearchTerm($value);
         if ($negated)
             $term = SearchTerm::make_not($term);
         else if ($keyword === "order" || $keyword === "rorder" || !$keyword)
@@ -2352,7 +2353,7 @@ class PaperSearch {
         // add expressions
         $qz = array();
         foreach ($os->os as $oq)
-            $qz[] = new SearchTerm("option", self::F_XVIEW, $oq);
+            $qz[] = new Option_SearchTerm($oq);
         if ($os->negate)
             $qz = array(SearchTerm::make_not(SearchTerm::make_op("or", $qz)));
         $qt = array_merge($qt, $qz);
@@ -3273,9 +3274,9 @@ class PaperSearch {
             $filters[] = "Paper.managerContactId=0";
 
         // add common tables: conflicts, my own review, paper blindness
-        if ($sqi->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR))
+        if ($sqi->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR | self::F_XVIEW))
             $sqi->add_conflict_columns();
-        if ($sqi->needflags & self::F_REVIEWER)
+        if ($sqi->needflags & (self::F_REVIEWER | self::F_XVIEW))
             $sqi->add_reviewer_columns();
 
         // check for annotated order

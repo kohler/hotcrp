@@ -474,6 +474,13 @@ class PaperInfo {
         return $this->paperTags;
     }
 
+    function searchable_tags(Contact $user, $forceShow = null) {
+        if ($user->allow_administer($this))
+            return $this->all_tags_text();
+        else
+            return $this->viewable_tags($user, $forceShow);
+    }
+
     function viewable_tags(Contact $user, $forceShow = null) {
         // see also Contact::can_view_tag()
         if ($user->can_view_most_tags($this, $forceShow))
