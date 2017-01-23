@@ -801,8 +801,8 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
             '<div class="hint">
     Please indicate your interest in reviewing papers on these conference
     topics. We use this information to help match papers to reviewers.</div>
-    <table class="topicinterest">
-       <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest">High</th></tr>', "\n";
+    <table class="topicinterest"><thead>
+       <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest">High</th></tr></thead><tbody>', "\n";
 
         $interests = array(-2, -1.5,  -1, -0.5,  0, 1,  2, 3,  4);
         foreach ($topics as $id => $name) {
@@ -814,7 +814,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
                 echo "<td class='ti_interest'>", Ht::radio_h("ti$id", $interests[$j], $j == $xj), "</td>";
             echo "</td></tr>\n";
         }
-        echo "    </table></div>\n";
+        echo "    </tbody></table></div>\n";
     }
 
 

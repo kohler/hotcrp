@@ -1834,7 +1834,7 @@ hr.c {
 .pltable > tr:last-child > td {
 	padding-bottom: 2px;
 }
-.k1 {
+.k1, .topicinterest > tbody > tr:nth-child(even) {
 	background-color: #f1f8fc;
 }
 .pltable_colored > .k1, .pltable_colored > .k1 {
