@@ -23,10 +23,10 @@ SearchOperator::$list =
               "NOT" => new SearchOperator("not", true, 7),
               "-" => new SearchOperator("not", true, 7),
               "+" => new SearchOperator("+", true, 7),
-              "SPACE" => new SearchOperator("and2", false, 6),
+              "SPACE" => new SearchOperator("space", false, 6),
               "AND" => new SearchOperator("and", false, 5),
               "OR" => new SearchOperator("or", false, 4),
-              "XAND" => new SearchOperator("and2", false, 3),
+              "XAND" => new SearchOperator("space", false, 3),
               "XOR" => new SearchOperator("or", false, 3),
               "THEN" => new SearchOperator("then", false, 2),
               "HIGHLIGHT" => new SearchOperator("highlight", false, 1, ""),
@@ -46,7 +46,7 @@ class SearchTerm {
         $opstr = is_object($op) ? $op->op : $op;
         if ($opstr === "not")
             $qr = new Not_SearchTerm;
-        else if ($opstr === "and" || $opstr === "and2")
+        else if ($opstr === "and" || $opstr === "space")
             $qr = new And_SearchTerm($opstr);
         else if ($opstr === "or")
             $qr = new Or_SearchTerm;
@@ -86,6 +86,19 @@ class SearchTerm {
         if ($span && $span1)
             $span = [min($span[0], $span1[0]), max($span[1], $span1[1])];
         $this->set_float("strspan", $span ? : $span1);
+    }
+
+
+    function export_json() {
+        return $this->type;
+    }
+
+
+    // apply rounds to reviewer searches
+    function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
+        if ($this->get_float("used_revadj") && $revadj)
+            $revadj->used_revadj = true;
+        return $this;
     }
 
 
@@ -146,6 +159,12 @@ class SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         assert(false);
         return false;
+    }
+
+
+    function extract_metadata($top, PaperSearch $srch) {
+        if ($top && ($x = $this->get_float("contradiction_warning")))
+            $srch->contradictions[$x] = true;
     }
 }
 
@@ -235,6 +254,18 @@ class Op_SearchTerm extends SearchTerm {
             return $this;
         }
     }
+
+    function export_json() {
+        $a = [$this->type];
+        foreach ($this->child as $qv)
+            $a[] = $qv->export_json();
+        return $a;
+    }
+    function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
+        foreach ($this->child as &$qv)
+            $qv = $qv->adjust_reviews($revadj, $srch);
+        return $this;
+    }
 }
 
 class Not_SearchTerm extends Op_SearchTerm {
@@ -289,7 +320,7 @@ class And_SearchTerm extends Op_SearchTerm {
                 return $qr;
             } else if ($qv->is_true())
                 $any = true;
-            else if ($qv->type === "pn" && $this->type === "and2") {
+            else if ($qv->type === "pn" && $this->type === "space") {
                 if (!$pn)
                     $pn = $qv;
                 else
@@ -303,6 +334,22 @@ class And_SearchTerm extends Op_SearchTerm {
         return $this->_finish_combine($newchild, $pn, $revadj, $any);
     }
 
+    function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
+        $myrevadj = null;
+        if ($this->child[0] instanceof ReviewAdjustment_SearchTerm) {
+            $myrevadj = $this->child[0];
+            $used_revadj = $myrevadj->merge($revadj);
+        }
+        foreach ($this->child as &$qv)
+            if (!($qv instanceof ReviewAdjustment_SearchTerm))
+                $qv = $qv->adjust_reviews($myrevadj ? : $revadj, $srch);
+        if ($myrevadj && !$myrevadj->used_revadj) {
+            $this->child[0] = $myrevadj->promote($srch);
+            if ($used_revadj)
+                $revadj->used_revadj = true;
+        }
+        return $this;
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $ff = array();
         foreach ($this->child as $subt)
@@ -314,6 +361,11 @@ class And_SearchTerm extends Op_SearchTerm {
             if (!$subt->exec($row, $srch))
                 return false;
         return true;
+    }
+    function extract_metadata($top, PaperSearch $srch) {
+        parent::extract_metadata($top, $srch);
+        foreach ($this->child as $qv)
+            $qv->extract_metadata($top, $srch);
     }
 }
 
@@ -356,6 +408,11 @@ class Or_SearchTerm extends Op_SearchTerm {
             if ($subt->exec($row, $srch))
                 return true;
         return false;
+    }
+    function extract_metadata($top, PaperSearch $srch) {
+        parent::extract_metadata($top, $srch);
+        foreach ($this->child as $qv)
+            $qv->extract_metadata(false, $srch);
     }
 }
 
@@ -424,6 +481,11 @@ class Then_SearchTerm extends Op_SearchTerm {
                 return true;
         return false;
     }
+    function extract_metadata($top, PaperSearch $srch) {
+        parent::extract_metadata($top, $srch);
+        foreach ($this->child as $qv)
+            $qv->extract_metadata(false, $srch);
+    }
 }
 
 class TextMatch_SearchTerm extends SearchTerm {
@@ -475,6 +537,11 @@ class TextMatch_SearchTerm extends SearchTerm {
                 $row->$field_deaccent = false;
         }
         return Text::match_pregexes($this->regex, $row->$field, $row->$field_deaccent);
+    }
+    function extract_metadata($top, PaperSearch $srch) {
+        parent::extract_metadata($top, $srch);
+        if ($this->regex)
+            $srch->regex[$this->type][] = $this->regex;
     }
 }
 
@@ -688,14 +755,17 @@ class Review_SearchTerm extends SearchTerm {
     function reviewer_contact_set() {
         return $this->rsm->contact_set();
     }
-    function adjust(ReviewAdjustment_SearchTerm $adj) {
-        if ($adj->round !== null && $this->rsm->round === null)
-            $this->rsm->round = $adj->round;
-        if ($adj->rate !== null && $this->rsm->rate === null)
-            $this->rsm->rate = $adj->rate;
-        $adj->used_revadj = true;
-    }
 
+    function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
+        if ($revadj) {
+            if ($revadj->round !== null && $this->rsm->round === null)
+                $this->rsm->round = $revadj->round;
+            if ($revadj->rate !== null && $this->rsm->rate === null)
+                $this->rsm->rate = $revadj->rate;
+            $revadj->used_revadj = true;
+        }
+        return $this;
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         if (($thistab = $this->rsm->simple_name()))
             $thistab = "Reviews_" . $thistab;
@@ -754,7 +824,6 @@ class Review_SearchTerm extends SearchTerm {
         $q[] = "coalesce($thistab.count,0)" . $this->rsm->conservative_countexpr();
         return "(" . join(" and ", $q) . ")";
     }
-
     function exec(PaperInfo $row, PaperSearch $srch) {
         if (!$this->_check_flags($row, $srch))
             return false;
@@ -785,6 +854,13 @@ class Review_SearchTerm extends SearchTerm {
                 }
         }
         return $this->rsm->test((int) $row->$fieldname);
+    }
+    function extract_metadata($top, PaperSearch $srch) {
+        parent::extract_metadata($top, $srch);
+        if ($top) {
+            $v = $this->reviewer_contact_set();
+            $srch->mark_reviewer(count($v) == 1 ? $v[0] : null);
+        }
     }
 }
 
@@ -833,6 +909,12 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
             $rt |= PaperSearch::F_REVIEWER;
         $term = new Review_SearchTerm($rsm, $rt);
         return $this->negated ? SearchTerm::make_not($term) : $term;
+    }
+    function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
+        if ($revadj || $this->get_float("used_revadj"))
+            return $this;
+        else
+            return $this->promote($srch);
     }
     function apply_negation() {
         if ($this->negated) {
@@ -984,10 +1066,9 @@ class Topic_SearchTerm extends SearchTerm {
         return self::andjoin_sqlexpr($q);
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        return $this->_check_flags($row, $srch)
-            && ($this->topics !== false
-                ? $row->{$this->fieldname} != 0
-                : !$row->{$this->fieldname});
+        return $this->topics !== false
+            ? $row->{$this->fieldname} != 0
+            : !$row->{$this->fieldname};
     }
 }
 
@@ -1050,8 +1131,7 @@ class Option_SearchTerm extends SearchTerm {
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $om = $this->om;
-        if (!$this->_check_flags($row, $srch)
-            || !$srch->user->can_view_paper_option($row, $om->option, true)
+        if (!$srch->user->can_view_paper_option($row, $om->option, true)
             || $row->{$this->fieldname})
             return false;
         if ($om->kind) {
@@ -1094,8 +1174,7 @@ class Tag_SearchTerm extends SearchTerm {
         return self::andjoin_sqlexpr($q);
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        return $this->_check_flags($row, $srch)
-            && $this->tsm->evaluate($srch->user, $row->searchable_tags($srch->user));
+        return $this->tsm->evaluate($srch->user, $row->searchable_tags($srch->user));
     }
 }
 
@@ -1401,14 +1480,14 @@ class PaperSearch {
 
     var $q;
 
-    var $regex = array();
+    public $regex = [];
+    public $contradictions = [];
     public $overrideMatchPreg = false;
     private $contact_match = array();
     private $noratings = false;
     private $interestingRatings = array();
     public $_query_options = array();
     private $reviewAdjust = false;
-    private $_reviewAdjustError = false;
     private $_ssRecursion = array();
     private $_allow_deleted = false;
     private $_reviewWordCounts = false;
@@ -2847,7 +2926,7 @@ class PaperSearch {
             return $qe;
         } else if (count($x->qe) == 1)
             return $x->qe[0];
-        else if ($x->op->op === "and2" && $x->op->precedence == 2)
+        else if ($x->op->op === "space" && $x->op->precedence == 2)
             return "(" . join(" ", $x->qe) . ")";
         else
             return "(" . join(strtoupper(" " . $x->op->op . " "), $x->qe) . ")";
@@ -2925,63 +3004,6 @@ class PaperSearch {
     // Clean an input expression series into clauses.  The basic purpose of
     // this step is to combine all paper numbers into a single group, and to
     // assign review adjustments (rates & rounds).
-
-    // apply rounds to reviewer searches
-    private function _query_adjust_reviews(SearchTerm $qe, ReviewAdjustment_SearchTerm $revadj = null) {
-        if ($qe->type === "not")
-            $this->_query_adjust_reviews($qe->child[0], $revadj);
-        else if ($qe->type === "and" || $qe->type === "and2") {
-            $myrevadj = null;
-            if ($qe->child[0] instanceof ReviewAdjustment_SearchTerm)
-                $myrevadj = $qe->child[0];
-            if ($myrevadj)
-                $used_revadj = $myrevadj->merge($revadj);
-
-            $rdown = $myrevadj ? : $revadj;
-            for ($i = 0; $i < count($qe->child); ++$i)
-                if (!($qe->child[$i] instanceof ReviewAdjustment_SearchTerm))
-                    $this->_query_adjust_reviews($qe->child[$i], $rdown);
-
-            if ($myrevadj && !$myrevadj->used_revadj) {
-                $qe->child[0] = $myrevadj->promote($this);
-                if ($used_revadj)
-                    $revadj->used_revadj = true;
-            }
-        } else if ($qe->type === "or" || $qe->type === "then") {
-            for ($i = 0; $i < count($qe->child); ++$i)
-                $this->_query_adjust_reviews($qe->child[$i], $revadj);
-        } else if ($qe->type === "re" && $revadj) {
-            $qe->adjust($revadj);
-        } else if ($qe->get_float("used_revadj")) {
-            $revadj && ($revadj->used_revadj = true);
-        } else if ($qe instanceof ReviewAdjustment_SearchTerm) {
-            assert(!$revadj);
-            return $qe->promote($this);
-        }
-        return $qe;
-    }
-
-    private function _queryExtractInfo($qe, $top, $highlight, &$contradictions) {
-        if ($qe->type === "and" || $qe->type === "and2"
-            || $qe->type === "or" || $qe->type === "then") {
-            $isand = $qe->type === "and" || $qe->type === "and2";
-            $nthen = $qe->type === "then" ? $qe->nthen : count($qe->child);
-            foreach ($qe->child as $qvidx => $qv)
-                $this->_queryExtractInfo($qv, $top && $isand, $qvidx >= $nthen, $contradictions);
-        }
-        if ($qe instanceof TextMatch_SearchTerm && $qe->regex)
-            $this->regex[$qe->type][] = $qe->regex;
-        if ($top && $qe->type === "re" && !$this->_reviewer_fixed && !$highlight) {
-            if ($this->_reviewer === false
-                && ($v = $qe->reviewer_contact_set())
-                && count($v) == 1)
-                $this->_reviewer = $this->conf->user_by_id($v[0]);
-            else
-                $this->_reviewer = null;
-        }
-        if ($top && ($x = $qe->get_float("contradiction_warning")))
-            $contradictions[$x] = true;
-    }
 
 
     // QUERY CONSTRUCTION
@@ -3131,11 +3153,8 @@ class PaperSearch {
             $qe = SearchTerm::make_op("and", [$qe, $this->_searchQueryWord("dec:yes", false)]);
 
         // apply review rounds (top down, needs separate step)
-        if ($this->reviewAdjust) {
-            $qe = $this->_query_adjust_reviews($qe, null);
-            if ($this->_reviewAdjustError)
-                $this->warn("Unexpected use of “round:” or “rate:” ignored.  Stick to the basics, such as “re:reviewername round:roundname”.");
-        }
+        if ($this->reviewAdjust)
+            $qe = $qe->adjust_reviews(null, $this);
         self::$current_search = null;
 
         //Conf::msg_info(Ht::pre_text(var_export($qe, true)));
@@ -3368,9 +3387,8 @@ class PaperSearch {
 
         // extract regular expressions and set _reviewer if the query is
         // about exactly one reviewer, and warn about contradictions
-        $contradictions = array();
-        $this->_queryExtractInfo($qe, true, false, $contradictions);
-        foreach ($contradictions as $contradiction => $garbage)
+        $qe->extract_metadata(true, $this);
+        foreach ($this->contradictions as $contradiction => $garbage)
             $this->warn($contradiction);
 
         // set $this->matchPreg from $this->regex
@@ -3490,6 +3508,17 @@ class PaperSearch {
 
     function reviewer_user() {
         return $this->_reviewer_fixed ? $this->reviewer() : $this->user;
+    }
+
+    function mark_reviewer($cid) {
+        if (!$this->_reviewer_fixed) {
+            if ($cid && ($this->_reviewer
+                         ? $this->_reviewer->contactId == $cid
+                         : $this->_reviewer === false))
+                $this->_reviewer = $this->conf->user_by_id($cid);
+            else
+                $this->_reviewer = null;
+        }
     }
 
     private function _tag_description() {
