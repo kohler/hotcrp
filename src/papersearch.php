@@ -8,6 +8,9 @@ class SearchOperator {
     public $unary;
     public $precedence;
     public $opinfo;
+
+    static private $list = null;
+
     function __construct($what, $unary, $precedence, $opinfo = null) {
         $this->op = $what;
         $this->unary = $unary;
@@ -15,23 +18,23 @@ class SearchOperator {
         $this->opinfo = $opinfo;
     }
 
-    static public $list;
+    static function get($name) {
+        if (!self::$list) {
+            self::$list["("] = new SearchOperator("(", true, null);
+            self::$list["NOT"] = new SearchOperator("not", true, 7);
+            self::$list["-"] = new SearchOperator("not", true, 7);
+            self::$list["+"] = new SearchOperator("+", true, 7);
+            self::$list["SPACE"] = new SearchOperator("space", false, 6);
+            self::$list["AND"] = new SearchOperator("and", false, 5);
+            self::$list["OR"] = new SearchOperator("or", false, 4);
+            self::$list["XAND"] = new SearchOperator("space", false, 3);
+            self::$list["XOR"] = new SearchOperator("or", false, 3);
+            self::$list["THEN"] = new SearchOperator("then", false, 2);
+            self::$list["HIGHLIGHT"] = new SearchOperator("highlight", false, 1, "");
+        }
+        return get(self::$list, $name);
+    }
 }
-
-SearchOperator::$list =
-        array("(" => new SearchOperator("(", true, null),
-              "NOT" => new SearchOperator("not", true, 7),
-              "-" => new SearchOperator("not", true, 7),
-              "+" => new SearchOperator("+", true, 7),
-              "SPACE" => new SearchOperator("space", false, 6),
-              "AND" => new SearchOperator("and", false, 5),
-              "OR" => new SearchOperator("or", false, 4),
-              "XAND" => new SearchOperator("space", false, 3),
-              "XOR" => new SearchOperator("or", false, 3),
-              "THEN" => new SearchOperator("then", false, 2),
-              "HIGHLIGHT" => new SearchOperator("highlight", false, 1, ""),
-              ")" => null);
-
 
 class SearchTerm {
     public $type;
@@ -2822,15 +2825,15 @@ class PaperSearch {
         while ($str !== "") {
             $oppos = strlen($stri) - strlen($str);
             list($opstr, $nextstr) = self::_searchPopKeyword($str);
-            $op = $opstr ? get(SearchOperator::$list, $opstr) : null;
+            $op = $opstr ? SearchOperator::get($opstr) : null;
             if ($opstr && !$op && ($colon = strpos($opstr, ":"))
-                && ($op = SearchOperator::$list[substr($opstr, 0, $colon)])) {
+                && ($op = SearchOperator::get(substr($opstr, 0, $colon)))) {
                 $op = clone $op;
                 $op->opinfo = substr($opstr, $colon + 1);
             }
 
             if ($curqe && (!$op || $op->unary)) {
-                $op = SearchOperator::$list["SPACE"];
+                $op = SearchOperator::get("SPACE");
                 $opstr = "";
                 $nextstr = $str;
             }
@@ -2935,11 +2938,11 @@ class PaperSearch {
 
         while ($str !== "") {
             list($opstr, $nextstr) = self::_searchPopKeyword($str);
-            $op = $opstr ? SearchOperator::$list[$opstr] : null;
+            $op = $opstr ? SearchOperator::get($opstr) : null;
 
             if ($curqe && (!$op || $op->unary)) {
                 list($opstr, $op, $nextstr) =
-                    array("", SearchOperator::$list[$parens ? "XAND" : $defaultop], $str);
+                    array("", SearchOperator::get($parens ? "XAND" : $defaultop), $str);
             }
 
             if ($opstr === null) {
@@ -2973,7 +2976,7 @@ class PaperSearch {
         }
 
         if ($type === "none")
-            array_unshift($stack, (object) array("op" => SearchOperator::$list["NOT"], "qe" => array()));
+            array_unshift($stack, (object) array("op" => SearchOperator::get("NOT"), "qe" => array()));
         while (count($stack))
             $curqe = self::_canonicalizePopStack($curqe, $stack);
         return $curqe;
