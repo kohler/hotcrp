@@ -619,10 +619,6 @@ class Contact {
         return $this->contactId > 0;
     }
 
-    function is_total_admin() {
-        return $this->privChair && !$this->conf->has_any_manager();
-    }
-
     function is_admin() {
         return $this->privChair;
     }
