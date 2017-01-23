@@ -236,11 +236,7 @@ class Op_SearchTerm extends SearchTerm {
                 $qvs[] = $qv;
         return $qvs;
     }
-    protected function _finish_combine($newchild, $pn, $revadj, $any) {
-        if ($pn)
-            $newchild[] = $pn;
-        if ($revadj)            // must be first
-            array_unshift($newchild, $revadj);
+    protected function _finish_combine($newchild, $any) {
         $qr = null;
         if (!$newchild)
             $qr = $any ? new True_SearchTerm : new False_SearchTerm;
@@ -308,11 +304,9 @@ class And_SearchTerm extends Op_SearchTerm {
         parent::__construct($type);
     }
     protected function finish() {
-        $pn = null;
-        $revadj = null;
-        $newchild = array();
+        $pn = $revadj = null;
+        $newchild = [];
         $any = false;
-
         foreach ($this->_flatten_children() as $qv) {
             if ($qv->is_false()) {
                 $qr = new False_SearchTerm;
@@ -320,18 +314,19 @@ class And_SearchTerm extends Op_SearchTerm {
                 return $qr;
             } else if ($qv->is_true())
                 $any = true;
+            else if ($qv->type === "revadj")
+                $revadj = $qv->apply($revadj, false);
             else if ($qv->type === "pn" && $this->type === "space") {
                 if (!$pn)
-                    $pn = $qv;
+                    $newchild[] = $pn = $qv;
                 else
                     $pn->pids = array_merge($pn->pids, $qv->pids);
-            } else if ($qv->type === "revadj")
-                $revadj = $qv->apply($revadj, false);
-            else
+            } else
                 $newchild[] = $qv;
         }
-
-        return $this->_finish_combine($newchild, $pn, $revadj, $any);
+        if ($revadj) // must come first
+            array_unshift($newchild, $revadj);
+        return $this->_finish_combine($newchild, $any);
     }
 
     function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
@@ -374,27 +369,26 @@ class Or_SearchTerm extends Op_SearchTerm {
         parent::__construct("or");
     }
     protected function finish() {
-        $pn = null;
-        $revadj = null;
-        $newchild = array();
-
+        $pn = $revadj = null;
+        $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
             if ($qv->is_true())
                 return self::make_float($this->float);
             else if ($qv->is_false())
                 /* skip */;
+            else if ($qv->type === "revadj")
+                $revadj = $qv->apply($revadj, true);
             else if ($qv->type === "pn") {
                 if (!$pn)
-                    $pn = $qv;
+                    $newchild[] = $pn = $qv;
                 else
                     $pn->pids = array_merge($pn->pids, $qv->pids);
-            } else if ($qv->type === "revadj")
-                $revadj = $qv->apply($revadj, true);
-            else
+            } else
                 $newchild[] = $qv;
         }
-
-        return $this->_finish_combine($newchild, $pn, $revadj, false);
+        if ($revadj)
+            array_unshift($newchild, $revadj);
+        return $this->_finish_combine($newchild, false);
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
