@@ -519,8 +519,8 @@ class TextMatch_SearchTerm extends SearchTerm {
         else
             $this->regex = Text::star_text_pregexes($text);
     }
-    static function parse(&$qt, $word, SearchWord $sword) {
-        $qt[] = new TextMatch_SearchTerm($sword->kwdef->name, $word);
+    static function parse($word, SearchWord $sword) {
+        return new TextMatch_SearchTerm($sword->kwdef->name, $word);
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -571,7 +571,7 @@ class PaperPC_SearchTerm extends SearchTerm {
         $this->fieldname = $kind . "ContactId";
         $this->match = $match;
     }
-    static function parse(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if (($word === "any" || $word === "" || $word === "yes") && !$sword->quoted)
             $match = "!=0";
         else if (($word === "none" || $word === "no") && !$sword->quoted)
@@ -579,12 +579,13 @@ class PaperPC_SearchTerm extends SearchTerm {
         else
             $match = $srch->matching_reviewers($word, $sword->quoted, true);
         // XXX what about track admin privilege?
-        $qt[] = new PaperPC_SearchTerm($sword->kwdef->pcfield, $match);
+        $qt = [new PaperPC_SearchTerm($sword->kwdef->pcfield, $match)];
         if ($sword->kwdef->pcfield === "manager"
             && $word === "me"
             && !$quoted
             && $srch->user->privChair)
             $qt[] = new PaperPC_SearchTerm($ctype, "=0");
+        return $qt;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column($this->fieldname, "Paper.{$this->fieldname}");
@@ -607,13 +608,13 @@ class Decision_SearchTerm extends SearchTerm {
         parent::__construct("dec", PaperSearch::F_XVIEW);
         $this->match = $match;
     }
-    static function parse(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $dec = PaperSearch::matching_decisions($srch->conf, $word, $sword->quoted);
         if (is_array($dec) && empty($dec)) {
             $srch->warn("“" . htmlspecialchars($word) . "” doesn’t match a decision.");
             $dec[] = -10000000;
         }
-        $qt[] = new Decision_SearchTerm($dec);
+        return new Decision_SearchTerm($dec);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column("outcome", "Paper.outcome");
@@ -664,7 +665,7 @@ class ContactAuthor_SearchTerm extends SearchTerm {
         $this->csm = new ContactCountMatcher($countexpr, $contacts);
         $this->includes_self = in_array($user->contactId, $contacts);
     }
-    static function parse(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $cids = null;
         if ($sword->kwexplicit && !$sword->quoted) {
             if (strcasecmp($word, "me") === 0)
@@ -676,9 +677,9 @@ class ContactAuthor_SearchTerm extends SearchTerm {
                 $cids = $srch->matching_reviewers($word, false, true);
         }
         if ($cids !== null)
-            $qt[] = new ContactAuthor_SearchTerm(">0", $cids, $srch->user);
+            return new ContactAuthor_SearchTerm(">0", $cids, $srch->user);
         else
-            $qt[] = new TextMatch_SearchTerm("au", $word);
+            return new TextMatch_SearchTerm("au", $word);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "AuthorConflict_" . count($sqi->tables);
@@ -759,9 +760,9 @@ class Revpref_SearchTerm extends SearchTerm {
         parent::__construct("revpref", $flags);
         $this->rpsm = $rpsm;
     }
-    static function parse(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if (!$srch->user->isPC) // PC only
-            return;
+            return null;
 
         $contacts = null;
         if (preg_match('/\A(.*?[^:=<>!])([:=!<>]=?|≠|≤|≥|\z)(.*)\z/s', $word, $m)
@@ -775,10 +776,8 @@ class Revpref_SearchTerm extends SearchTerm {
         if (strcasecmp($word, "any") == 0 || strcasecmp($word, "none") == 0)
             $m = [null, "1", "=", "any", strcasecmp($word, "any") == 0];
         else if (!preg_match(',\A(\d*)\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
-                 || ($m[1] === "" && $m[3] === "" && $m[4] === "")) {
-            $qt[] = new False_SearchTerm;
-            return;
-        }
+                 || ($m[1] === "" && $m[3] === "" && $m[4] === ""))
+            return new False_SearchTerm;
 
         if ($m[1] !== "" && $m[2] === "")
             $m = array($m[0], "1", "=", $m[1], "");
@@ -812,7 +811,7 @@ class Revpref_SearchTerm extends SearchTerm {
             $qz[] = new False_SearchTerm;
         if (strcasecmp($word, "none") == 0)
             $qz = [SearchTerm::make_not(SearchTerm::make_op("or", $qz))];
-        $qt = array_merge($qt, $qz);
+        return $qz;
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -990,22 +989,22 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         $qe->round = $round;
         return $qe;
     }
-    static function parse_round(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse_round($word, SearchWord $sword, PaperSearch $srch) {
         $srch->_has_review_adjustment = true;
         if (!$srch->user->isPC)
-            $qt[] = new ReviewAdjustment_SearchTerm($srch->conf);
+            return new ReviewAdjustment_SearchTerm($srch->conf);
         else if ($word === "none" && !$sword->quoted)
-            $qt[] = self::make_round($srch->conf, [0]);
+            return self::make_round($srch->conf, [0]);
         else if ($word === "any" && !$sword->quoted)
-            $qt[] = self::make_round($srch->conf, range(1, count($srch->conf->round_list()) - 1));
+            return self::make_round($srch->conf, range(1, count($srch->conf->round_list()) - 1));
         else {
             $x = simplify_whitespace($word);
             $rounds = Text::simple_search($x, $srch->conf->round_list());
             if (empty($rounds)) {
                 $srch->warn("“" . htmlspecialchars($x) . "” doesn’t match a review round.");
-                $qt[] = new False_SearchTerm;
+                return new False_SearchTerm;
             } else
-                $qt[] = self::make_round($srch->conf, array_keys($rounds));
+                return self::make_round($srch->conf, array_keys($rounds));
         }
     }
     static function make_rate(Conf $conf, $rate) {
@@ -1013,7 +1012,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         $qe->rate = $rate;
         return $qe;
     }
-    static function parse_rate(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse_rate($word, SearchWord $sword, PaperSearch $srch) {
         $srch->_has_review_adjustment = true;
         if (preg_match('/\A(.+?)\s*(|[=!<>]=?|≠|≤|≥)\s*(\d*)\z/', $word, $m)
             && ($m[3] !== "" || $m[2] === "")
@@ -1027,7 +1026,6 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
                 $m[2] = ($m[3] == 0 ? "=" : ">=");
             else
                 $m[2] = CountMatcher::canonical_comparator($m[2]);
-            $nqt = count($qt);
 
             // resolve rating type
             if ($m[1] === "+" || $m[1] === "good") {
@@ -1045,27 +1043,24 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
                 unset($x["n"]); /* don't allow "average" */
                 if (empty($x)) {
                     $srch->warn("Unknown rating type “" . htmlspecialchars($m[1]) . "”.");
-                    $qt[] = new False_SearchTerm;
-                } else {
-                    $type = count($srch->_interesting_ratings);
-                    $srch->_interesting_ratings[$type] = " in (" . join(",", array_keys($x)) . ")";
-                    $term = "nrate_$type";
+                    return new False_SearchTerm;
                 }
+                $type = count($srch->_interesting_ratings);
+                $srch->_interesting_ratings[$type] = " in (" . join(",", array_keys($x)) . ")";
+                $term = "nrate_$type";
             }
 
-            if (count($qt) == $nqt) {
-                if ($m[2][0] === "<" || $m[2] === "!="
-                    || ($m[2] === "=" && $m[3] == 0)
-                    || ($m[2] === ">=" && $m[3] == 0))
-                    $term = "coalesce($term,0)";
-                $qt[] = self::make_rate($srch->conf, $term . $m[2] . $m[3]);
-            }
+            if ($m[2][0] === "<" || $m[2] === "!="
+                || ($m[2] === "=" && $m[3] == 0)
+                || ($m[2] === ">=" && $m[3] == 0))
+                $term = "coalesce($term,0)";
+            return self::make_rate($srch->conf, $term . $m[2] . $m[3]);
         } else {
             if ($srch->conf->setting("rev_ratings") == REV_RATINGS_NONE)
                 $srch->warn("Review ratings are disabled.");
             else
                 $srch->warn("Bad review rating query “" . htmlspecialchars($word) . "”.");
-            $qt[] = new False_SearchTerm;
+            return new False_SearchTerm;
         }
     }
 
@@ -1141,7 +1136,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
 }
 
 class Show_SearchTerm {
-    static function parse(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $word = simplify_whitespace($word);
         $action = $sword->kwdef->showtype;
         if (str_starts_with($word, "-") && !$sword->kwdef->sorting) {
@@ -1157,7 +1152,7 @@ class Show_SearchTerm {
         }
         if ($viewfield !== "" && $action !== null)
             $f["view"] = [$viewfield => $action];
-        $qt[] = SearchTerm::make_float($f);
+        return SearchTerm::make_float($f);
     }
 }
 
@@ -1247,7 +1242,7 @@ class Topic_SearchTerm extends SearchTerm {
         parent::__construct("topic", PaperSearch::F_XVIEW);
         $this->topics = $topics;
     }
-    static function parse(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $value = null;
         $lword = strtolower($word);
         if ($lword === "none" || $lword === "any")
@@ -1262,7 +1257,7 @@ class Topic_SearchTerm extends SearchTerm {
                 $srch->warn("“" . htmlspecialchars($x) . "” does not match any defined paper topic.");
             $value = $tids;
         }
-        $qt[] = new Topic_SearchTerm($value);
+        return new Topic_SearchTerm($value);
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -1332,15 +1327,15 @@ class Formula_SearchTerm extends SearchTerm {
         }
         return $formula;
     }
-    static function parse(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if (($formula = self::read_formula($word, $sword->quoted, false, $srch)))
-            $qt[] = new Formula_SearchTerm($formula);
-        else
-            $qt[] = new False_SearchTerm;
+            return new Formula_SearchTerm($formula);
+        return new False_SearchTerm;
     }
-    static function parse_graph(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse_graph($word, SearchWord $sword, PaperSearch $srch) {
         if (($formula = self::read_formula($word, $sword->quoted, true, $srch)))
-            $qt[] = SearchTerm::make_float(["view" => ["graph($word)" => true]]);
+            return SearchTerm::make_float(["view" => ["graph($word)" => true]]);
+        return null;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $this->formula->add_query_options($sqi->srch->_query_options);
@@ -1432,7 +1427,7 @@ class Tag_SearchTerm extends SearchTerm {
             $x .= $tagword;
         return $ret;
     }
-    static function parse(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $negated = $sword->kwdef->negated;
         $revsort = $sword->kwdef->sorting && $sword->kwdef->revsort;
         if (str_starts_with($word, "-")) {
@@ -1481,7 +1476,7 @@ class Tag_SearchTerm extends SearchTerm {
             $term = SearchTerm::make_not($term);
         else if ($sword->kwdef->sorting && !empty($value->tags))
             $term->set_float("sort", [($revsort ? "-#" : "#") . $value->tags[0]]);
-        $qt[] = $term;
+        return $term;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Tag_" . count($sqi->tables);
@@ -1505,7 +1500,7 @@ class Tag_SearchTerm extends SearchTerm {
 }
 
 class Color_SearchTerm {
-    static function parse(&$qt, $word, SearchWord $sword, PaperSearch $srch) {
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $word = strtolower($word);
         $value = new TagSearchMatcher;
         if ($srch->user->isPC
@@ -1533,7 +1528,7 @@ class Color_SearchTerm {
         $qe = $value->make_term();
         if ($word === "none")
             $qe = SearchTerm::make_not($qe);
-        $qt[] = $qe;
+        return $qe;
     }
 }
 
@@ -2500,9 +2495,9 @@ class PaperSearch {
         else if ($lword === "approvable")
             $this->_search_reviewer("approvable>0", "ext", $qt);
         else if ($original_lword === "style")
-            Color_SearchTerm::parse($qt, "any", $sword, $this);
+            $qt[] = Color_SearchTerm::parse("any", $sword, $this);
         else if ($lword === "color")
-            Color_SearchTerm::parse($qt, "color", $sword, $this);
+            $qt[] = Color_SearchTerm::parse("color", $sword, $this);
         else if ($lword === "badge") {
             $value = new TagSearchMatcher;
             if ($this->amPC && $this->conf->tags()->has_badges) {
@@ -2624,8 +2619,11 @@ class PaperSearch {
         $quoted = $sword->quoted;
         $sword->keyword = $keyword;
         if (($sword->kwdef = $this->conf->search_keyword($keyword))) {
-            $fn = $sword->kwdef->parser;
-            $fn($qt, $word, $sword, $this);
+            $qx = call_user_func($sword->kwdef->parser, $word, $sword, $this);
+            if ($qx && !is_array($qx))
+                $qt[] = $qx;
+            else if ($qx)
+                $qt = array_merge($qt, $qx);
             return;
         }
         if ($keyword === "re")
