@@ -3115,7 +3115,7 @@ class PaperSearch {
         // parse and clean the query
         self::$current_search = $this;
         $qe = $this->_searchQueryType($this->q);
-        //Conf::msg_info(Ht::pre_text(var_export($qe, true)));
+        //Conf::msg_debugt(json_export($qe->export_json()));
         if (!$qe)
             $qe = new True_SearchTerm;
 
@@ -3129,7 +3129,7 @@ class PaperSearch {
             $qe = $qe->adjust_reviews(null, $this);
         self::$current_search = null;
 
-        //Conf::msg_info(Ht::pre_text(var_export($qe, true)));
+        //Conf::msg_debugt(json_export($qe->export_json()));
 
         // collect clauses into tables, columns, and filters
         $sqi = new SearchQueryInfo($this);
@@ -3276,7 +3276,7 @@ class PaperSearch {
             $q .= "\n    where " . join("\n        and ", $filters);
         $q .= "\n    group by Paper.paperId";
 
-        //Conf::msg_info(Ht::pre_text_wrap($q));
+        //Conf::msg_debugt($q);
 
         // actually perform query
         $result = $this->conf->qe_raw($q);
