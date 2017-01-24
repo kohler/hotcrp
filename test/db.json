@@ -84,7 +84,8 @@
         {"name":"J. J. Garcia-Luna-Aceves", "email": "jj@cse.ucsc.edu", "affiliation": "Computer Engineering Department, University of California, Santa Cruz"}
     ],
     "submission": {"content": "%PDF-whatever5"},
-    "submitted": true
+    "submitted": true,
+    "options": {"calories": 0}
 },
 {
     "_id_": 6,
