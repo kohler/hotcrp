@@ -1927,7 +1927,6 @@ class PaperTable {
         }
 
         $this->echoActions(true);
-        echo '<div>';
 
         $this->edit_fields = [];
         $this->add_edit_field(0, [$this, "echo_editable_title"], "title");
@@ -1959,7 +1958,6 @@ class PaperTable {
             call_user_func($this->edit_fields[$this->edit_fields_position][2]);
 
         // Submit button
-        echo "</div>";
         $this->echo_editable_complete();
         $this->echoActions(false);
 
