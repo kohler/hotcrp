@@ -31,7 +31,8 @@
         {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"}
     ],
     "submission": {"content": "%PDF-whatever"},
-    "submitted": true
+    "submitted": true,
+    "options": {"calories": 1020}
 },
 {
     "_id_": 2,
@@ -44,7 +45,8 @@
         {"name": "Stephen Pink", "email": "steve@sics.se", "affiliation": "Luleå University of Technology"}
     ],
     "submission": {"content": "%PDF-whatever2"},
-    "submitted": true
+    "submitted": true,
+    "options": {"calories": 200}
 },
 {
     "_id_": 3,
@@ -56,7 +58,8 @@
     ],
     "pc_conflicts": ["mgbaker@cs.stanford.edu"],
     "submission": {"content": "%PDF-whatever3"},
-    "submitted": true
+    "submitted": true,
+    "options": {"calories": 1040}
 },
 {
     "_id_": 4,
@@ -69,7 +72,8 @@
         {"name":"Bernhard Plattner", "email": "plattner@tik.ee.ethz.ch", "affiliation": "Computer Engineering and Networks Laboratory, ETH Zürich"}
     ],
     "submission": {"content": "%PDF-whatever4"},
-    "submitted": true
+    "submitted": true,
+    "options": {"calories": 1040}
 },
 {
     "_id_": 5,

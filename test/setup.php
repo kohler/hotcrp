@@ -22,6 +22,7 @@ while ($Conf->dblink->more_results())
     Dbl::free($Conf->dblink->next_result());
 // No setup phase.
 $Conf->qe_raw("delete from Settings where name='setupPhase'");
+$Conf->qe_raw("insert into Settings set name='options', value=1, data='{\"1\":{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"position\":1,\"display\":\"default\"}}'");
 $Conf->load_settings();
 // Contactdb.
 if (($cdb = Contact::contactdb())) {
@@ -68,7 +69,7 @@ class Xassert {
 
 function xassert_error_handler($errno, $emsg, $file, $line) {
     if (error_reporting() || $errno != E_NOTICE) {
-        if (@Xassert::$emap[$errno])
+        if (get(Xassert::$emap, $errno))
             $emsg = Xassert::$emap[$errno] . ":  $emsg";
         else
             $emsg = "PHP Message $errno:  $emsg";
@@ -216,7 +217,7 @@ function paper_tag_normalize($prow) {
     $pcm = pcMembers();
     foreach (explode(" ", $prow->all_tags_text()) as $tag) {
         if (($twiddle = strpos($tag, "~")) > 0
-            && ($c = @$pcm[substr($tag, 0, $twiddle)])) {
+            && ($c = get($pcm, substr($tag, 0, $twiddle)))) {
             $at = strpos($c->email, "@");
             $tag = ($at ? substr($c->email, 0, $at) : $c->email) . substr($tag, $twiddle);
         }
