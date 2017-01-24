@@ -93,6 +93,7 @@ etc/formulafunctions.json
 etc/msgs.json
 etc/papercolumns.json
 etc/reviewformlibrary.json
+etc/searchkeywords.json
 etc/settings.json
 
 lib/.htaccess

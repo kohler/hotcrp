@@ -77,6 +77,7 @@ class Conf {
     private $_docclass_cache = [];
     private $_docstore = false;
     private $_formula_functions = null;
+    private $_search_keywords = null;
     private $_defined_formulas = null;
     private $_s3_document = false;
     private $_ims = null;
@@ -601,6 +602,35 @@ class Conf {
                 $this->_s3_document = null;
         }
         return $this->_s3_document;
+    }
+
+
+    private function _add_search_keyword_json_base($name, $kwj) {
+        if (!isset($this->_search_keywords[$name])
+            || get($this->_search_keywords[$name], "priority", 0) <= get($kwj, "priority", 0))
+            $this->_search_keywords[$name] = $kwj;
+    }
+    function _add_search_keyword_json($kwj) {
+        if (is_string($kwj->name)) {
+            $this->_add_search_keyword_json_base($kwj->name, $kwj);
+            if (($syn = get($kwj, "synonym")))
+                foreach (is_string($syn) ? [$syn] : $syn as $x)
+                    $this->_add_search_keyword_json_base($x, $kwj);
+            return true;
+        } else
+            return false;
+    }
+    function search_keyword_map() {
+        if ($this->_search_keywords === null) {
+            $this->_search_keywords = [];
+            expand_json_includes_callback(["etc/searchkeywords.json"], [$this, "_add_search_keyword_json"]);
+            if (($olist = $this->opt("searchKeywords")))
+                expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
+        }
+        return $this->_search_keywords;
+    }
+    function search_keyword($keyword) {
+        return get($this->search_keyword_map(), $keyword);
     }
 
 

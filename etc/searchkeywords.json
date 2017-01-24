@@ -1,0 +1,125 @@
+[
+    {
+        "name": "ti",
+        "parser": "TextMatch_SearchTerm::parse",
+        "synonym": "title"
+    },
+    {
+        "name": "ab",
+        "parser": "TextMatch_SearchTerm::parse",
+        "synonym": "abstract"
+    },
+    {
+        "name": "au",
+        "parser": "ContactAuthor_SearchTerm::parse",
+        "synonym": "author"
+    },
+    {
+        "name": "co",
+        "parser": "TextMatch_SearchTerm::parse",
+        "synonym": ["collab", "collaborators"]
+    },
+    {
+        "name": "pref",
+        "parser": "Revpref_SearchTerm::parse",
+        "synonym": ["revpref", "repref", "prefexp", "revprefexp", "reprevexp",
+                    "prefexpertise", "revprefexpertise", "reprefexpertise"]
+    },
+    {
+        "name": "round",
+        "parser": "ReviewAdjustment_SearchTerm::parse_round"
+    },
+    {
+        "name": "rate",
+        "parser": "ReviewAdjustment_SearchTerm::parse_rate",
+        "synonym": ["rating"]
+    },
+    {
+        "name": "topic",
+        "parser": "Topic_SearchTerm::parse"
+    },
+    {
+        "name": "lead",
+        "parser": "PaperPC_SearchTerm::parse", "pcfield": "lead"
+    },
+    {
+        "name": "shepherd",
+        "parser": "PaperPC_SearchTerm::parse", "pcfield": "shepherd",
+        "synonym": ["shep"]
+    },
+    {
+        "name": "admin",
+        "parser": "PaperPC_SearchTerm::parse", "pcfield": "manager",
+        "synonym": ["manager", "administrator"]
+    },
+    {
+        "name": "dec",
+        "parser": "Decision_SearchTerm::parse",
+        "synonym": "decision"
+    },
+    {
+        "name": "tag",
+        "parser": "Tag_SearchTerm::parse",
+        "negated": false, "sorting": false
+    },
+    {
+        "name": "notag",
+        "parser": "Tag_SearchTerm::parse",
+        "negated": true, "sorting": false
+    },
+    {
+        "name": "order",
+        "parser": "Tag_SearchTerm::parse",
+        "negated": false, "sorting": true, "revsort": false
+    },
+    {
+        "name": "rorder",
+        "parser": "Tag_SearchTerm::parse",
+        "negated": false, "sorting": true, "revsort": true, "synonym": "revorder"
+    },
+    {
+        "name": "color",
+        "parser": "Color_SearchTerm::parse",
+        "synonym": "style"
+    },
+    {
+        "name": "formula",
+        "parser": "Formula_SearchTerm::parse", "allow_parens": true,
+        "synonym": "f"
+    },
+    {
+        "name": "graph",
+        "parser": "Formula_SearchTerm::parse_graph", "allow_parens": true,
+        "synonym": "g"
+    },
+    {
+        "name": "show",
+        "parser": "Show_SearchTerm::parse", "allow_parens": true,
+        "showtype": true, "sorting": false
+    },
+    {
+        "name": "hide",
+        "parser": "Show_SearchTerm::parse", "allow_parens": true,
+        "showtype": false, "sorting": false
+    },
+    {
+        "name": "edit",
+        "parser": "Show_SearchTerm::parse",
+        "showtype": "edit", "sorting": false
+    },
+    {
+        "name": "showsort",
+        "parser": "Show_SearchTerm::parse", "allow_parens": true,
+        "showtype": true, "sorting": true, "synonym": "sortshow"
+    },
+    {
+        "name": "editsort",
+        "parser": "Show_SearchTerm::parse",
+        "showtype": "edit", "sorting": true, "synonym": "sortedit"
+    },
+    {
+        "name": "sort",
+        "parser": "Show_SearchTerm::parse", "allow_parens": true,
+        "showtype": null, "sorting": true
+    }
+]

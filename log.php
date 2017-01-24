@@ -60,7 +60,7 @@ if ($_REQUEST["pap"]) {
 if ($_REQUEST["acct"]) {
     $ids = array();
     $accts = $_REQUEST["acct"];
-    while (($word = PaperSearch::pop_word($accts))) {
+    while (($word = PaperSearch::pop_word($accts, $Conf))) {
         $flags = ContactSearch::F_TAG;
         if (substr($word, 0, 1) === "\"") {
             $flags |= ContactSearch::F_QUOTED;

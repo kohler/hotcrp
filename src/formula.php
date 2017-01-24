@@ -1264,7 +1264,7 @@ class Formula {
             } else if ($rsm->apply_review_type($m[1], true)) {
                 $op = strtolower($m[1][0]) === "p" ? ">=" : "==";
                 $ee = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rsm->review_type, Fexpr::FREVTYPE));
-            } else if ($rsm->apply_round($this->conf, $m[1]))
+            } else if ($rsm->apply_round($m[1], $this->conf))
                 /* OK */;
             else {
                 if (strpos($m[1], "\"") !== false)
