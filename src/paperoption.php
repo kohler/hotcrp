@@ -545,7 +545,7 @@ class PaperOption {
             return [];
 
         if ($optionIds !== null) {
-            preg_match_all('/(\d+)#(\d+)/', $optionIds, $m);
+            preg_match_all('/(\d+)#(-?\d+)/', $optionIds, $m);
             $optdata = ["v" => [], "d" => []];
             for ($i = 0; $i < count($m[1]); ++$i)
                 $optdata["v"][$m[1][$i]][] = (int) $m[2][$i];
@@ -899,7 +899,8 @@ class NumericPaperOption extends PaperOption {
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         $v = trim((string) $qreq["opt$this->id"]);
-        return $v !== "" && ctype_digit($v) ? (int) $v : $v;
+        $iv = intval($v);
+        return $v !== "" && $iv == $v ? $iv : $v;
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
