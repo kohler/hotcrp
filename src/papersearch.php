@@ -1349,6 +1349,7 @@ class Formula_SearchTerm extends SearchTerm {
     }
 }
 
+
 class Option_SearchTerm extends SearchTerm {
     private $om;
     private $fieldname;
@@ -1360,8 +1361,9 @@ class Option_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Option_" . count($sqi->tables);
         $this->fieldname = $thistab . "_x";
-        $sqi->add_table($thistab, array("left join", "(select paperId, max(value) v from PaperOption where optionId=" . $this->om->option->id . " group by paperId)"));
-        $sqi->add_column($thistab . "_x", "coalesce($thistab.v,0)" . $this->om->table_matcher());
+        $tm = $this->om->table_matcher();
+        $sqi->add_table($thistab, ["left join", $tm[0]]);
+        $sqi->add_column($thistab . "_x", "$thistab.paperId" . $tm[1]);
 
         $q = array();
         $this->_set_flags($q, $sqi);
@@ -1371,7 +1373,7 @@ class Option_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         $om = $this->om;
         if (!$srch->user->can_view_paper_option($row, $om->option, true)
-            || $row->{$this->fieldname})
+            || !$row->{$this->fieldname})
             return false;
         if ($om->kind) {
             $ov = $row->option($om->option->id);
@@ -1388,6 +1390,40 @@ class Option_SearchTerm extends SearchTerm {
         return true;
     }
 }
+
+class OptionMatcher {
+    public $option;
+    public $compar;
+    public $value;
+    public $kind;
+
+    function __construct($option, $compar, $value = null, $kind = 0) {
+        if ($option->type === "checkbox" && $value === null)
+            $value = 0;
+        assert(($value !== null && !is_array($value)) || $compar === "=" || $compar === "!=");
+        assert(!$kind || $value !== null);
+        $this->option = $option;
+        $this->compar = $compar;
+        $this->value = $value;
+        $this->kind = $kind;
+    }
+    function table_matcher() {
+        $q = "(select paperId from PaperOption where optionId=" . $this->option->id;
+        if (!$this->kind && $this->value !== null) {
+            $q .= " and value";
+            if (is_array($this->value))
+                $q .= " in (" . join(",", $this->value) . ")";
+            else
+                $q .= ($this->compar === "!=" ? "=" : $this->compar) . $this->value;
+        }
+        $q .= " group by paperId)";
+        if (!$this->kind && $this->compar === ($this->value === null ? "=" : "!="))
+            return [$q, " is null"];
+        else
+            return [$q, ""];
+    }
+}
+
 
 class Tag_SearchTerm extends SearchTerm {
     private $tsm;
@@ -1771,32 +1807,6 @@ class SearchQueryInfo {
             $this->add_conflict_columns();
             $this->add_reviewer_columns();
         }
-    }
-}
-
-class OptionMatcher {
-    public $option;
-    public $compar;
-    public $value;
-    public $kind;
-    public $value_word;
-
-    public function __construct($option, $compar, $value, $value_word, $kind = 0) {
-        assert(!is_array($value) || $compar === "=" || $compar === "!=");
-        $this->option = $option;
-        $this->compar = $compar;
-        $this->value = $value;
-        $this->value_word = $value_word;
-        $this->kind = $kind;
-    }
-    public function table_matcher() {
-        if ($this->kind)
-            return ">0";
-        else if (is_array($this->value))
-            return ($this->compar === "=" ? " in (" : " not in (")
-                . join(",", $this->value) . ")";
-        else
-            return $this->compar . $this->value;
     }
 }
 
@@ -2410,32 +2420,32 @@ class PaperSearch {
                         $warn[] = "“" . htmlspecialchars($oval) . "” doesn’t match any " . htmlspecialchars($oname) . " values.";
                     else if (count($xval) == 1) {
                         reset($xval);
-                        $qo[] = new OptionMatcher($o, $ocompar, key($xval), $oval);
+                        $qo[] = new OptionMatcher($o, $ocompar, key($xval));
                     } else if ($ocompar !== "=" && $ocompar !== "!=")
                         $warn[] = "Submission option “" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($ocompar) . ".";
                     else
-                        $qo[] = new OptionMatcher($o, $ocompar, array_keys($xval), $oval);
+                        $qo[] = new OptionMatcher($o, $ocompar, array_keys($xval));
                     continue;
                 }
 
                 if ($oval === "" || $oval === "yes")
-                    $qo[] = new OptionMatcher($o, "!=", 0, $oval);
+                    $qo[] = new OptionMatcher($o, "!=", null);
                 else if ($oval === "no")
-                    $qo[] = new OptionMatcher($o, "=", 0, $oval);
+                    $qo[] = new OptionMatcher($o, "=", null);
                 else if ($o->type === "numeric") {
                     if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
-                        $qo[] = new OptionMatcher($o, $ocompar, $m[1], $oval);
+                        $qo[] = new OptionMatcher($o, $ocompar, $m[1]);
                     else
                         $warn[] = "Submission option “" . htmlspecialchars($o->name) . "” takes integer values.";
                 } else if ($o->has_attachments()) {
                     if ($oval === "any")
-                        $qo[] = new OptionMatcher($o, "!=", 0, $oval);
+                        $qo[] = new OptionMatcher($o, "!=", null);
                     else if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m)) {
                         if (CountMatcher::compare(0, $ocompar, $m[1]))
-                            $qo[] = new OptionMatcher($o, "=", 0, $oval);
-                        $qo[] = new OptionMatcher($o, $ocompar, $m[1], $oval, "attachment-count");
+                            $qo[] = new OptionMatcher($o, "=", null);
+                        $qo[] = new OptionMatcher($o, $ocompar, $m[1], "attachment-count");
                     } else
-                        $qo[] = new OptionMatcher($o, "~=", $oval, $oval, "attachment-name", $oval);
+                        $qo[] = new OptionMatcher($o, "~=", $oval, "attachment-name");
                 } else
                     continue;
             }
@@ -2443,7 +2453,7 @@ class PaperSearch {
             foreach ($conf->paper_opts->option_list() as $oid => $o)
                 if ($o->has_selector()) {
                     foreach (Text::simple_search($oname, $o->selector) as $xval => $text)
-                        $qo[] = new OptionMatcher($o, $ocompar, $xval, "~val~");
+                        $qo[] = new OptionMatcher($o, $ocompar, $xval);
                 }
 
         return (object) array("os" => $qo, "warn" => $warn, "negate" => $oname === "none");
