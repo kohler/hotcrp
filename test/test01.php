@@ -262,6 +262,7 @@ xassert_eqq($j->ok, true);
 assert_search_papers($user_chair, "shep:any", "11 12");
 assert_search_papers($user_chair, "shep:estrin", "11 12");
 assert_search_papers($user_shenker, "shep:any", "11 12");
+assert_search_papers($user_shenker, "has:shepherd", "11 12");
 
 // tag searches
 assert_search_papers($user_chair, "#green", "3 9 13 17");
