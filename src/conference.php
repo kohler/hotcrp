@@ -79,6 +79,7 @@ class Conf {
     private $_formula_functions = null;
     private $_search_keywords = null;
     private $_defined_formulas = null;
+    private $_emoji_codes = null;
     private $_s3_document = false;
     private $_ims = null;
     private $_api_map = null;
@@ -602,6 +603,24 @@ class Conf {
                 $this->_s3_document = null;
         }
         return $this->_s3_document;
+    }
+
+
+    function _add_emoji_code($val, $key) {
+        if (is_string($val) && str_starts_with($key, ":") && str_ends_with($key, ":")) {
+            $this->_emoji_codes[$key] = $val;
+            return true;
+        } else
+            return false;
+    }
+    function emoji_code_map() {
+        global $ConfSitePATH;
+        if ($this->_emoji_codes === null) {
+            $this->_emoji_codes = json_decode(file_get_contents("$ConfSitePATH/etc/emojicodes.json"), true);
+            if (($olist = $this->opt("emojiCodes")))
+                expand_json_includes_callback($olist, [$this, "_add_emoji_code", null, true]);
+        }
+        return $this->_emoji_codes;
     }
 
 

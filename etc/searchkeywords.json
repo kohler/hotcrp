@@ -110,6 +110,16 @@
         "has": "any"
     },
     {
+        "name": "badge",
+        "parser": "Color_SearchTerm::parse_badge",
+        "has": "any"
+    },
+    {
+        "name": "emoji",
+        "parser": "Color_SearchTerm::parse_emoji",
+        "has": "any"
+    },
+    {
         "name": "formula",
         "parser": "Formula_SearchTerm::parse", "allow_parens": true,
         "synonym": "f"

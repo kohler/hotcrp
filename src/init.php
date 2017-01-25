@@ -256,9 +256,12 @@ function expand_json_includes_callback($includelist, $callback, $extra_arg = nul
         if (is_object($entry) && !$no_validate
             && !isset($entry->id) && !isset($entry->factory) && !isset($entry->factory_class) && !isset($entry->callback))
             $entry = get_object_vars($entry);
-        foreach (is_array($entry) ? $entry : [$entry] as $obj)
-            if ((!is_object($obj) && !$no_validate) || !call_user_func($callback, $obj, $extra_arg))
+        foreach (is_array($entry) ? $entry : [$entry] as $key => $obj) {
+            $arg = $extra_arg === null ? $key : $extra_arg;
+            if ((!is_object($obj) && !$no_validate)
+                || !call_user_func($callback, $obj, $arg))
                 error_log("$landmark: Invalid expansion " . json_encode($obj) . ".");
+        }
     }
 }
 

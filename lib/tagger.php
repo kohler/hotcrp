@@ -100,19 +100,16 @@ class TagMap implements IteratorAggregate {
     function __construct(Conf $conf) {
         $this->conf = $conf;
     }
-    private function check_emoji_code($ltag) {
-        global $ConfSitePATH;
+    function check_emoji_code($ltag) {
         $len = strlen($ltag);
         if ($len < 3 || $ltag[0] !== ":" || $ltag[$len - 1] !== ":")
             return false;
-        if (self::$emoji_code_map === null)
-            self::$emoji_code_map = json_decode(file_get_contents("$ConfSitePATH/etc/emojicodes.json"), true);
-        return get(self::$emoji_code_map, substr($ltag, 1, $len - 2), false);
+        return get($this->conf->emoji_code_map(), substr($ltag, 1, $len - 2), false);
     }
     function check($tag) {
         $ltag = strtolower($tag);
         $t = get($this->storage, $ltag);
-        if (!$t && $ltag && $ltag[0] === ":" && self::check_emoji_code($ltag))
+        if (!$t && $ltag && $ltag[0] === ":" && $this->check_emoji_code($ltag))
             $t = $this->add($tag);
         if (!$t && $this->has_pattern) {
             if (!$this->pattern_re) {
@@ -153,7 +150,7 @@ class TagMap implements IteratorAggregate {
                     $this->pattern_storage[] = $t;
                     $this->pattern_re = null;
                 }
-                if ($ltag[0] === ":" && ($e = self::check_emoji_code($ltag))) {
+                if ($ltag[0] === ":" && ($e = $this->check_emoji_code($ltag))) {
                     $t->emoji[] = $e;
                     $this->has_emoji = $this->has_decoration = true;
                 }
