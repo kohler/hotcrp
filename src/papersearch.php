@@ -520,6 +520,8 @@ class TextMatch_SearchTerm extends SearchTerm {
             $this->regex = Text::star_text_pregexes($text);
     }
     static function parse($word, SearchWord $sword) {
+        if ($word === "any" && $sword->kwexplicit && !$sword->quoted)
+            $word = true;
         return new TextMatch_SearchTerm($sword->kwdef->name, $word);
     }
 
@@ -636,6 +638,17 @@ class PaperStatus_SearchTerm extends SearchTerm {
         parent::__construct("pf");
         $this->match = $match;
     }
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
+        $fval = PaperSearch::status_field_matcher($srch->conf, $word, $sword->quoted);
+        if (is_array($fval[1]) && empty($fval[1])) {
+            $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a decision or status.");
+            $fval[1][] = -10000000;
+        }
+        if ($fval[0] === "outcome")
+            return new Decision_SearchTerm($fval[1]);
+        else
+            return new PaperStatus_SearchTerm($fval);
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $q = array();
         for ($i = 0; $i < count($this->match); $i += 2) {
@@ -721,6 +734,15 @@ class Conflict_SearchTerm extends SearchTerm {
         parent::__construct("conflict", $full ? 0 : PaperSearch::F_XVIEW);
         $this->csm = new ContactCountMatcher($countexpr, $contacts);
         $this->includes_self = in_array($user->contactId, $contacts);
+    }
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
+        $m = PaperSearch::unpack_comparison($word, $sword->quoted);
+        if (($qr = self::check_tautology($m[1])))
+            return $qr;
+        else {
+            $contacts = $srch->matching_reviewers($m[0], $sword->quoted, $sword->kwdef->pc_only);
+            return new Conflict_SearchTerm($m[1], $contacts, $srch->user);
+        }
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Conflict_" . count($sqi->tables);
@@ -1153,6 +1175,9 @@ class Show_SearchTerm {
         if ($viewfield !== "" && $action !== null)
             $f["view"] = [$viewfield => $action];
         return SearchTerm::make_float($f);
+    }
+    static function parse_heading($word) {
+        return SearchTerm::make_float(["heading" => simplify_whitespace($word)]);
     }
 }
 
@@ -1908,13 +1933,7 @@ class PaperSearch {
         "respdraft" => "draftresponse", "responsedraft" => "draftresponse",
         "resp-draft" => "draftresponse", "response-draft" => "draftresponse",
         "anycmt" => "anycmt", "anycomment" => "anycmt",
-        "option" => "option", "opt" => "option",
-        "conflict" => "conflict", "conf" => "conflict",
-        "reconflict" => "reconflict", "reconf" => "reconflict",
-        "pcconflict" => "pcconflict", "pcconf" => "pcconflict",
-        "status" => "status", "has" => "has", "is" => "is",
-        "ss" => "ss", "search" => "ss",
-        "HEADING" => "HEADING", "heading" => "HEADING");
+        "option" => "option", "opt" => "option");
     static private $_canonical_review_keywords = array(
         "re" => 1, "cre" => 1, "ire" => 1, "pre" => 1,
         "pri" => 1, "cpri" => 1, "ipri" => 1, "ppri" => 1,
@@ -2028,7 +2047,7 @@ class PaperSearch {
     // including "and", "or", and "not" expressions (which point at other
     // expressions).
 
-    static function _matchCompar($text, $quoted) {
+    static function unpack_comparison($text, $quoted) {
         $text = trim($text);
         $compar = null;
         if (preg_match('/\A(.*?)([=!<>]=?|≠|≤|≥)\s*(\d+)\z/s', $text, $m)) {
@@ -2045,7 +2064,7 @@ class PaperSearch {
             return array($text, $compar ? : ">0");
     }
 
-    static private function _tautology($compar) {
+    static function check_tautology($compar) {
         if ($compar === "<0")
             return new False_SearchTerm;
         else if ($compar === ">=0")
@@ -2105,7 +2124,7 @@ class PaperSearch {
                     || $rsm->apply_round($m[1], $this->conf))) {
                 $qword = $m[2];
             } else if (preg_match('/\A((?:[=!<>]=?|≠|≤|≥|)\d+|any|none|yes|no)' . $tailre, $qword, $m)) {
-                $count = self::_matchCompar($m[1], false);
+                $count = self::unpack_comparison($m[1], false);
                 $rsm->set_countexpr($count[1]);
                 $qword = $m[2];
             } else if (preg_match('/\A(?:au)?words((?:[=!<>]=?|≠|≤|≥)\d+)(?:\z|:)(.*)\z/', $qword, $m)) {
@@ -2122,7 +2141,7 @@ class PaperSearch {
             }
         }
 
-        if (($qr = self::_tautology($rsm->countexpr()))) {
+        if (($qr = self::check_tautology($rsm->countexpr()))) {
             $qr->set_float("used_revadj", true);
             $qt[] = $qr;
             return;
@@ -2140,7 +2159,7 @@ class PaperSearch {
         $qt[] = new Review_SearchTerm($rsm);
     }
 
-    static public function matching_decisions(Conf $conf, $word, $quoted = null) {
+    static function matching_decisions(Conf $conf, $word, $quoted = null) {
         if ($quoted === null && ($quoted = ($word && $word[0] === '"')))
             $word = str_replace('"', '', $word);
         $lword = strtolower($word);
@@ -2158,7 +2177,7 @@ class PaperSearch {
         return array_keys(Text::simple_search($word, $conf->decision_map(), $flags));
     }
 
-    static public function status_field_matcher(Conf $conf, $word, $quoted = null) {
+    static function status_field_matcher(Conf $conf, $word, $quoted = null) {
         if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
             return ["timeWithdrawn", ">0"];
         else if (strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
@@ -2171,34 +2190,7 @@ class PaperSearch {
             return ["outcome", self::matching_decisions($conf, $word, $quoted)];
     }
 
-    private function _search_status($word, &$qt, $quoted, $allow_status) {
-        if ($allow_status)
-            $fval = self::status_field_matcher($this->conf, $word, $quoted);
-        else
-            $fval = ["outcome", self::matching_decisions($this->conf, $word, $quoted)];
-        if (is_array($fval[1]) && count($fval[1]) == 0) {
-            $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
-            $fval[1][] = -10000000;
-        }
-
-        if ($fval[0] === "outcome")
-            $qt[] = new Decision_SearchTerm($fval[1]);
-        else
-            $qt[] = new PaperStatus_SearchTerm($fval);
-    }
-
-    private function _search_conflict($word, &$qt, $quoted, $pc_only) {
-        $m = self::_matchCompar($word, $quoted);
-        if (($qr = self::_tautology($m[1]))) {
-            $qt[] = $qr;
-            return;
-        }
-
-        $contacts = $this->matching_reviewers($m[0], $quoted, $pc_only);
-        $qt[] = new Conflict_SearchTerm($m[1], $contacts, $this->user);
-    }
-
-    private function _searchReviewerConflict($word, &$qt, $quoted) {
+    static function parse_reconflict($word, SearchWord $sword, PaperSearch $srch) {
         $args = array();
         while (preg_match('/\A\s*#?(\d+)(?:-#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
             $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
@@ -2206,13 +2198,15 @@ class PaperSearch {
                 $args[$p] = true;
             $word = $m[3];
         }
-        if ($word !== "" || count($args) == 0) {
-            $this->warn("The <code>reconflict</code> keyword expects a list of paper numbers.");
-            $qt[] = new False_SearchTerm;
-        } else {
-            $result = $this->conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
+        if ($word !== "" || empty($args)) {
+            $srch->warn("The <code>reconflict</code> keyword expects a list of paper numbers.");
+            return new False_SearchTerm;
+        } else if (!$srch->user->privChair)
+            return new False_SearchTerm;
+        else {
+            $result = $srch->conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
             $contacts = array_map("intval", Dbl::fetch_first_columns($result));
-            $qt[] = new Conflict_SearchTerm(">0", $contacts, $this->user);
+            return new Conflict_SearchTerm(">0", $contacts, $srch->user);
         }
     }
 
@@ -2227,8 +2221,8 @@ class PaperSearch {
     }
 
     private function _search_comment($word, $ctype, &$qt, $quoted) {
-        $m = self::_matchCompar($word, $quoted);
-        if (($qr = self::_tautology($m[1]))) {
+        $m = self::unpack_comparison($word, $quoted);
+        if (($qr = self::check_tautology($m[1]))) {
             $qt[] = $qr;
             return;
         }
@@ -2463,10 +2457,10 @@ class PaperSearch {
         $os = self::analyze_option_search($this->conf, $word);
         foreach ($os->warn as $w)
             $this->warn($w);
-        if (!count($os->os)) {
-            if ($report_error && !count($os->warn))
+        if (empty($os->os)) {
+            if ($report_error && empty($os->warn))
                 $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a submission option.");
-            if ($report_error || count($os->warn))
+            if ($report_error || !empty($os->warn))
                 $qt[] = new False_SearchTerm;
             return false;
         }
@@ -2481,40 +2475,45 @@ class PaperSearch {
         return true;
     }
 
-    private function _search_has($word, &$qt, $quoted, SearchWord $sword) {
+    static function parse_has($word, SearchWord $sword, PaperSearch $srch) {
+        $lword = strtolower($word);
+        if (($kwdef = $this->conf->search_keyword($lword))) {
+            if (get($kwdef, "has_parser"))
+                $qe = call_user_func($kwdef->has_parser, $word, $sword, $srch);
+            else if (get($kwdef, "has")) {
+                $sword2 = new SearchWord($kwdef->has);
+                $sword2->kwexplicit = true;
+                $sword2->keyword = $lword;
+                $sword2->kwdef = $kwdef;
+                $qe = call_user_func($kwdef->parser, $kwdef->has, $sword2, $srch);
+            }
+            if ($qe)
+                return $qe;
+        }
+
         $original_lword = $lword = strtolower($word);
         $lword = get(self::$_keywords, $lword) ? : $lword;
+        $qt = [];
         if ($lword === "paper" || $lword === "sub" || $lword === "submission")
-            $qt[] = new PaperStatus_SearchTerm(["paperStorageId", ">1"]);
+            return new PaperStatus_SearchTerm(["paperStorageId", ">1"]);
         else if ($lword === "final" || $lword === "finalcopy")
-            $qt[] = new PaperStatus_SearchTerm(["finalPaperStorageId", ">1"]);
-        else if ($lword === "ab")
-            $qt[] = new TextMatch_SearchTerm("ab", true);
-        else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword))
+            return new PaperStatus_SearchTerm(["finalPaperStorageId", ">1"]);
+        else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword)) {
             $this->_search_comment(">0", $lword, $qt, $quoted);
-        else if ($lword === "manager" || $lword === "admin" || $lword === "administrator")
-            $qt[] = new PaperPC_SearchTerm("manager", "!=0");
-        else if (preg_match('/\A[cip]?(?:re|pri|sec|ext)\z/', $lword))
+            return $qt;
+        } else if (preg_match('/\A[cip]?(?:re|pri|sec|ext)\z/', $lword)) {
             $this->_search_reviewer(">0", $lword, $qt);
-        else if ($lword === "lead")
-            $qt[] = new PaperPC_SearchTerm("lead", "!=0");
-        else if ($lword === "shepherd")
-            $qt[] = new PaperPC_SearchTerm("shepherd", "!=0");
-        else if ($lword === "decision")
-            $this->_search_status("yes", $qt, false, false);
-        else if ($lword === "approvable")
+            return $qt;
+        } else if ($lword === "approvable") {
             $this->_search_reviewer("approvable>0", "ext", $qt);
-        else if ($original_lword === "style")
-            $qt[] = Color_SearchTerm::parse("any", $sword, $this);
-        else if ($lword === "color")
-            $qt[] = Color_SearchTerm::parse("color", $sword, $this);
-        else if ($lword === "badge") {
+            return $qt;
+        } else if ($lword === "badge") {
             $value = new TagSearchMatcher;
             if ($this->amPC && $this->conf->tags()->has_badges) {
                 foreach ($this->conf->tags()->filter("badges") as $t)
                     $value->tags[] = $t->tag;
             }
-            $qt[] = $value->make_term();
+            return $value->make_term();
         } else if ($lword === "emoji") {
             $value = new TagSearchMatcher;
             if ($this->amPC && $this->conf->tags()->has_emoji) {
@@ -2522,16 +2521,16 @@ class PaperSearch {
                 if ($this->privChair)
                     $value->tags[] = "~~:*:";
             }
-            $qt[] = $value->make_term();
+            return $value->make_term();
         } else if (preg_match('/\A[\w-]+\z/', $lword) && $this->_search_options("$lword:yes", $qt, false))
-            /* OK */;
+            return $qt;
         else {
             $has = [];
             foreach ($this->search_completion("has") as $h)
                 if (str_starts_with($h, "has:"))
                     $has[] = "“" . htmlspecialchars($h) . "”";
             $this->warn("Unknown “has:” search. I understand " . commajoin($has) . ".");
-            $qt[] = new False_SearchTerm;
+            return new False_SearchTerm;
         }
     }
 
@@ -2558,7 +2557,7 @@ class PaperSearch {
         return $pos;
     }
 
-    static public function parse_sorter($text) {
+    static function parse_sorter($text) {
         if (!self::$_sort_keywords)
             self::$_sort_keywords =
                 array("by" => "by", "up" => "up", "down" => "down",
@@ -2624,11 +2623,30 @@ class PaperSearch {
             return null;
     }
 
+    static function parse_saved_search($word, SearchWord $sword, PaperSearch $srch) {
+        if (!$srch->user->isPC)
+            return null;
+        if (($nextq = $srch->_expand_saved_search($word, $srch->_ssRecursion))) {
+            $srch->_ssRecursion[$word] = true;
+            $qe = $srch->_searchQueryType($nextq);
+            unset($srch->_ssRecursion[$word]);
+        } else
+            $qe = null;
+        if (!$qe && $nextq === false)
+            $srch->warn("Saved search “" . htmlspecialchars($word) . "” is defined in terms of itself.");
+        else if (!$qe && !$srch->conf->setting_data("ss:$word"))
+            $srch->warn("There is no “" . htmlspecialchars($word) . "” saved search.");
+        else if (!$qe)
+            $srch->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
+        return $qe ? : new False_SearchTerm;
+    }
+
     function _search_keyword(&$qt, $keyword, SearchWord $sword) {
         $word = $sword->word;
         $quoted = $sword->quoted;
         $sword->keyword = $keyword;
-        if (($sword->kwdef = $this->conf->search_keyword($keyword))) {
+        if (($sword->kwdef = $this->conf->search_keyword($keyword))
+            && get($sword->kwdef, "parser")) {
             $qx = call_user_func($sword->kwdef->parser, $word, $sword, $this);
             if ($qx && !is_array($qx))
                 $qt[] = $qx;
@@ -2644,36 +2662,6 @@ class PaperSearch {
             $this->_search_comment($word, $keyword, $qt, $quoted);
         if ($keyword === "option")
             $this->_search_options($word, $qt, true);
-        if ($keyword === "status" || $keyword === "is")
-            $this->_search_status($word, $qt, $quoted, true);
-        if ($keyword === "conflict" && $this->amPC)
-            $this->_search_conflict($word, $qt, $quoted, false);
-        if ($keyword === "pcconflict" && $this->amPC)
-            $this->_search_conflict($word, $qt, $quoted, true);
-        if ($keyword === "reconflict" && $this->privChair)
-            $this->_searchReviewerConflict($word, $qt, $quoted);
-        if ($keyword === "has")
-            $this->_search_has($word, $qt, $quoted, $sword);
-        if ($keyword === "ss" && $this->amPC) {
-            if (($nextq = $this->_expand_saved_search($word, $this->_ssRecursion))) {
-                $this->_ssRecursion[$word] = true;
-                $qe = $this->_searchQueryType($nextq);
-                unset($this->_ssRecursion[$word]);
-            } else
-                $qe = null;
-            if (!$qe && $nextq === false)
-                $this->warn("Saved search “" . htmlspecialchars($word) . "” is incorrectly defined in terms of itself.");
-            else if (!$qe && !$this->conf->setting_data("ss:$word"))
-                $this->warn("There is no “" . htmlspecialchars($word) . "” saved search.");
-            else if (!$qe)
-                $this->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
-            $qt[] = ($qe ? : new False_SearchTerm);
-        }
-        if ($keyword === "HEADING") {
-            $heading = simplify_whitespace($word);
-            $qt[] = SearchTerm::make_float(["heading" => $heading]);
-        }
-
         // Finally, look for a review field.
         if ($keyword && !isset(self::$_keywords[$keyword]) && empty($qt)) {
             if (($field = $this->conf->review_field_search($keyword)))

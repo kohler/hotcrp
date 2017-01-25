@@ -2,12 +2,12 @@
     {
         "name": "ti",
         "parser": "TextMatch_SearchTerm::parse",
-        "synonym": "title"
+        "synonym": "title", "has": "any"
     },
     {
         "name": "ab",
         "parser": "TextMatch_SearchTerm::parse",
-        "synonym": "abstract"
+        "synonym": "abstract", "has": "any"
     },
     {
         "name": "au",
@@ -17,7 +17,27 @@
     {
         "name": "co",
         "parser": "TextMatch_SearchTerm::parse",
-        "synonym": ["collab", "collaborators"]
+        "synonym": ["collab", "collaborators"], "has": "any"
+    },
+    {
+        "name": "conf",
+        "parser": "Conflict_SearchTerm::parse",
+        "synonym": "conflict", "pc_only": false
+    },
+    {
+        "name": "pcconf",
+        "parser": "Conflict_SearchTerm::parse",
+        "synonym": "pcconflict", "pc_only": true
+    },
+    {
+        "name": "reconf",
+        "parser": "PaperSearch::parse_reconflict",
+        "synonym": "reconflict"
+    },
+    {
+        "name": "status",
+        "parser": "PaperStatus_SearchTerm::parse",
+        "synonym": "is"
     },
     {
         "name": "pref",
@@ -36,36 +56,38 @@
     },
     {
         "name": "topic",
-        "parser": "Topic_SearchTerm::parse"
+        "parser": "Topic_SearchTerm::parse",
+        "has": "any"
     },
     {
         "name": "lead",
-        "parser": "PaperPC_SearchTerm::parse", "pcfield": "lead"
+        "parser": "PaperPC_SearchTerm::parse", "pcfield": "lead",
+        "has": "any"
     },
     {
         "name": "shepherd",
         "parser": "PaperPC_SearchTerm::parse", "pcfield": "shepherd",
-        "synonym": ["shep"]
+        "synonym": ["shep"], "has": "any"
     },
     {
         "name": "admin",
         "parser": "PaperPC_SearchTerm::parse", "pcfield": "manager",
-        "synonym": ["manager", "administrator"]
+        "synonym": ["manager", "administrator"], "has": "any"
     },
     {
         "name": "dec",
         "parser": "Decision_SearchTerm::parse",
-        "synonym": "decision"
+        "synonym": "decision", "has": "any"
     },
     {
         "name": "tag",
         "parser": "Tag_SearchTerm::parse",
-        "negated": false, "sorting": false
+        "negated": false, "sorting": false, "has": "any"
     },
     {
         "name": "notag",
         "parser": "Tag_SearchTerm::parse",
-        "negated": true, "sorting": false
+        "negated": true, "sorting": false, "has": "any"
     },
     {
         "name": "order",
@@ -80,7 +102,12 @@
     {
         "name": "color",
         "parser": "Color_SearchTerm::parse",
-        "synonym": "style"
+        "has": "color"
+    },
+    {
+        "name": "style",
+        "parser": "Color_SearchTerm::parse",
+        "has": "any"
     },
     {
         "name": "formula",
@@ -121,5 +148,19 @@
         "name": "sort",
         "parser": "Show_SearchTerm::parse", "allow_parens": true,
         "showtype": null, "sorting": true
+    },
+    {
+        "name": "HEADING",
+        "parser": "Show_SearchTerm::parse_heading",
+        "synonym": "heading"
+    },
+    {
+        "name": "ss",
+        "parser": "PaperSearch::parse_saved_search",
+        "synonym": "search"
+    },
+    {
+        "name": "has",
+        "parser": "PaperSearch::parse_has"
     }
 ]
