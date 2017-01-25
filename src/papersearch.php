@@ -2541,7 +2541,7 @@ class PaperSearch {
 
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {
         $lword = strtolower($word);
-        if (($kwdef = $this->conf->search_keyword($lword))) {
+        if (($kwdef = $srch->conf->search_keyword($lword))) {
             if (get($kwdef, "has_parser"))
                 $qe = call_user_func($kwdef->has_parser, $word, $sword, $srch);
             else if (get($kwdef, "has")) {
@@ -2563,22 +2563,22 @@ class PaperSearch {
         else if ($lword === "final" || $lword === "finalcopy")
             return new PaperStatus_SearchTerm(["finalPaperStorageId", ">1"]);
         else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword)) {
-            $this->_search_comment(">0", $lword, $qt, $quoted);
+            $srch->_search_comment(">0", $lword, $qt, $quoted);
             return $qt;
         } else if (preg_match('/\A[cip]?(?:re|pri|sec|ext)\z/', $lword)) {
-            $this->_search_reviewer(">0", $lword, $qt);
+            $srch->_search_reviewer(">0", $lword, $qt);
             return $qt;
         } else if ($lword === "approvable") {
-            $this->_search_reviewer("approvable>0", "ext", $qt);
+            $srch->_search_reviewer("approvable>0", "ext", $qt);
             return $qt;
-        } else if (preg_match('/\A[\w-]+\z/', $lword) && $this->_search_options("$lword:yes", $qt, false))
+        } else if (preg_match('/\A[\w-]+\z/', $lword) && $srch->_search_options("$lword:yes", $qt, false))
             return $qt;
         else {
             $has = [];
-            foreach ($this->search_completion("has") as $h)
+            foreach ($srch->search_completion("has") as $h)
                 if (str_starts_with($h, "has:"))
                     $has[] = "“" . htmlspecialchars($h) . "”";
-            $this->warn("Unknown “has:” search. I understand " . commajoin($has) . ".");
+            $srch->warn("Unknown “has:” search. I understand " . commajoin($has) . ".");
             return new False_SearchTerm;
         }
     }
