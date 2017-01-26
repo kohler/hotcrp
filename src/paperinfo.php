@@ -201,6 +201,7 @@ class PaperInfo {
     private $_conflicts;
     private $_conflicts_email;
     private $_comment_array = null;
+    private $_comment_skeleton_array = null;
     public $_row_set;
 
     function __construct($p = null, $contact = null, Conf $conf = null) {
@@ -1063,7 +1064,34 @@ class PaperInfo {
     function viewable_comments(Contact $user, $forceShow) {
         $crows = [];
         foreach ($this->all_comments() as $cid => $crow)
-            if ($user->can_view_comment($this, $crow, null))
+            if ($user->can_view_comment($this, $crow, $forceShow))
+                $crows[$cid] = $crow;
+        return $crows;
+    }
+
+    function all_comment_skeletons() {
+        if ($this->_comment_skeleton_array !== null)
+            return $this->_comment_skeleton_array;
+        if ($this->_comment_array !== null
+            || !property_exists($this, "commentSkeletonInfo"))
+            return $this->all_comments();
+        $this->_comment_skeleton_array = [];
+        preg_match_all('/(\d+);(\d+);(\d+);(\d+);([^|]*)/', $this->commentSkeletonInfo, $ms, PREG_SET_ORDER);
+        foreach ($ms as $m) {
+            $c = new CommentInfo((object) [
+                    "commentId" => $m[1], "contactId" => $m[2],
+                    "commentType" => $m[3], "commentRound" => $m[4],
+                    "commentTags" => $m[5]
+                ], $this, $this->conf);
+            $this->_comment_skeleton_array[$c->commentId] = $c;
+        }
+        return $this->_comment_skeleton_array;
+    }
+
+    function viewable_comment_skeletons(Contact $user, $forceShow) {
+        $crows = [];
+        foreach ($this->all_comment_skeletons() as $cid => $crow)
+            if ($user->can_view_comment($this, $crow, $forceShow))
                 $crows[$cid] = $crow;
         return $crows;
     }

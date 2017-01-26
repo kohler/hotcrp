@@ -1250,79 +1250,102 @@ class Show_SearchTerm {
 
 class Comment_SearchTerm extends SearchTerm {
     private $csm;
-    private $ctm;
+    private $tags;
+    private $type_mask = 0;
+    private $type_value = 0;
+    private $only_author = false;
     private $commentRound;
-    private $fieldname;
 
-    public function __construct(ContactCountMatcher $csm = null,
-                                CommentTagMatcher $ctm = null,
-                                $round, $flags) {
-        parent::__construct("cmt", $flags);
-        $this->csm = $csm ? : new ContactCountMatcher(">0", null);
-        $this->ctm = $ctm;
-        $this->commentRound = $round;
+    function __construct(ContactCountMatcher $csm, $tags, $kwdef) {
+        parent::__construct("cmt", 0);
+        $this->csm = $csm;
+        $this->tags = $tags;
+        if (!get($kwdef, "response"))
+            $this->type_mask |= COMMENTTYPE_RESPONSE;
+        if (!get($kwdef, "comment")) {
+            $this->type_mask |= COMMENTTYPE_RESPONSE;
+            $this->type_value |= COMMENTTYPE_RESPONSE;
+        }
+        if (get($kwdef, "draft")) {
+            $this->type_mask |= COMMENTTYPE_DRAFT;
+            $this->type_value |= COMMENTTYPE_DRAFT;
+        }
+        $this->only_author = get($kwdef, "only_author");
+        $this->commentRound = get($kwdef, "round");
     }
-
+    static function comment_factory($keyword, Conf $conf, $kwfj, $m) {
+        $tword = str_replace("-", "", $m[1]);
+        return ["name" => $keyword, "parser" => "Comment_SearchTerm::parse",
+                "response" => $tword === "any", "comment" => true,
+                "round" => null, "draft" => false,
+                "only_author" => $tword === "au" || $tword === "author",
+                "has" => ">0"];
+    }
+    static function response_factory($keyword, Conf $conf, $kwfj, $m) {
+        $round = $conf->resp_round_number($m[2]);
+        if ($round === false || ($m[1] && $m[3]))
+            return null;
+        return ["name" => $keyword, "parser" => "Comment_SearchTerm::parse",
+                "response" => true, "comment" => false,
+                "round" => $round, "draft" => ($m[1] || $m[3]),
+                "only_author" => false, "has" => ">0"];
+    }
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
+        $m = PaperSearch::unpack_comparison($word, $sword->quoted);
+        if (($qr = PaperSearch::check_tautology($m[1])))
+            return $qr;
+        $tags = $contacts = null;
+        if (str_starts_with($m[0], "#")
+            && !$srch->conf->pc_tag_exists(substr($m[0], 1))) {
+            $tags = Tag_SearchTerm::expand(substr($m[0], 1), false, $srch);
+            if (empty($tags))
+                return new False_SearchTerm;
+        } else if ($m[0] !== "")
+            $contacts = $srch->matching_reviewers($m[0], $sword->quoted, false);
+        $csm = new ContactCountMatcher($m[1], $contacts);
+        return new Comment_SearchTerm($csm, $tags, $sword->kwdef);
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if ($this->csm->has_contacts() || $this->ctm)
-            $thistab = "Comments_" . count($sqi->tables);
+        if (!isset($sqi->column["commentSkeletonInfo"]))
+            $sqi->add_column("commentSkeletonInfo", "(select group_concat(commentId, ';', contactId, ';', commentType, ';', commentRound, ';', coalesce(commentTags,'') separator '|') from PaperComment where paperId=Paper.paperId)");
+
+        $where = [];
+        if ($this->type_mask)
+            $where[] = "(commentType&{$this->type_mask})={$this->type_value}";
+        if ($this->only_author)
+            $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
+        if ($this->commentRound)
+            $where[] = "commentRound=" . $this->commentRound;
+        if ($this->csm->has_contacts())
+            $where[] = $this->csm->contact_match_sql("contactId");
+        if ($this->tags && $this->tags[0] !== "none")
+            $where[] = "commentTags is not null"; // conservative
+        $thistab = "Comments_" . count($sqi->tables);
+        $sqi->add_table($thistab, ["left join", "(select paperId, count(commentId) count from PaperComment" . ($where ? " where " . join(" and ", $where) : "") . " group by paperId)"]);
+        return "coalesce($thistab.count,0)" . $this->csm->conservative_countexpr();
+    }
+    private function _check_tags(CommentInfo $crow, Contact $user) {
+        $tags = $crow->viewable_tags($user, true);
+        if ($this->tags[0] === "none")
+            return (string) $tags === "";
+        else if ($this->tags[0] === "any")
+            return (string) $tags !== "";
         else {
-            $rtype = $this->flags & (PaperSearch::F_ALLOWCOMMENT | PaperSearch::F_ALLOWRESPONSE | PaperSearch::F_AUTHORCOMMENT | PaperSearch::F_ALLOWDRAFT | PaperSearch::F_REQUIREDRAFT);
-            $thistab = "Numcomments_" . $rtype;
-            if (isset($this->commentRound))
-                $thistab .= "_" . $t->commentRound;
+            foreach (TagInfo::split_unpack($tags) as $ti)
+                if (in_array($ti[0], $this->tags))
+                    return true;
+            return false;
         }
-
-        $this->fieldname = $thistab;
-        if (!isset($sqi->tables[$thistab])) {
-            $where = array();
-            if (!($this->flags & PaperSearch::F_ALLOWRESPONSE))
-                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")=0";
-            if (!($this->flags & PaperSearch::F_ALLOWCOMMENT))
-                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
-            if (!($this->flags & PaperSearch::F_ALLOWDRAFT))
-                $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")=0";
-            else if ($this->flags & PaperSearch::F_REQUIREDRAFT)
-                $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")!=0";
-            if ($this->flags & PaperSearch::F_AUTHORCOMMENT)
-                $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
-            if (isset($this->commentRound))
-                $where[] = "commentRound=" . $this->commentRound;
-            if ($this->csm->has_contacts())
-                $where[] = $this->csm->contact_match_sql("contactId");
-            if ($this->ctm) {
-                if ($this->ctm->tag === "any")
-                    $where[] = "commentTags is not null";
-                else
-                    $where[] = "commentTags like " . Dbl::utf8ci("'% " . sqlq_for_like($this->ctm->tag) . " %'");
-            }
-            $wheretext = "";
-            if (!empty($where))
-                $wheretext = " where " . join(" and ", $where);
-            $sqi->add_table($thistab, array("left join", "(select paperId, count(commentId) count, group_concat(contactId, ' ', commentType) info from PaperComment$wheretext group by paperId)"));
-            $sqi->add_column($thistab . "_info", $thistab . ".info");
-        }
-
-        $q = array();
-        $this->_set_flags($q, $sqi);
-        $q[] = "coalesce($thistab.count,0)" . $this->csm->conservative_countexpr();
-        return self::andjoin_sqlexpr($q);
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        if (!$this->_check_flags($row, $srch))
-            return false;
-        $fieldname = $this->fieldname;
-        if (!isset($row->{$fieldname})) {
-            $row->$fieldname = 0;
-            $crow = (object) array("paperId" => $row->paperId);
-            foreach (explode(",", $row->{$fieldname . "_info"}) as $info)
-                if ($info !== "") {
-                    list($crow->contactId, $crow->commentType) = explode(" ", $info);
-                    if ($srch->user->can_view_comment($row, $crow, true))
-                        ++$row->$fieldname;
-                }
-        }
-        return $this->csm->test((int) $row->$fieldname);
+        $n = 0;
+        foreach ($row->viewable_comment_skeletons($srch->user, true) as $crow)
+            if ($this->csm->test_contact($crow->contactId)
+                && ($crow->commentType & $this->type_mask) == $this->type_value
+                && (!$this->only_author || $crow->commentType >= COMMENTTYPE_AUTHOR)
+                && (!$this->tags || $this->_check_tags($crow, $srch->user)))
+                ++$n;
+        return $this->csm->test($n);
     }
 }
 
@@ -2010,16 +2033,7 @@ class PaperSearch {
     static private $_sort_keywords = null;
     static private $current_search;
 
-    static private $_keywords = array(
-        "cmt" => "cmt", "comment" => "cmt",
-        "aucmt" => "aucmt", "aucomment" => "aucmt",
-        "resp" => "response", "response" => "response",
-        "draftresp" => "draftresponse", "draftresponse" => "draftresponse",
-        "draft-resp" => "draftresponse", "draft-response" => "draftresponse",
-        "respdraft" => "draftresponse", "responsedraft" => "draftresponse",
-        "resp-draft" => "draftresponse", "response-draft" => "draftresponse",
-        "anycmt" => "anycmt", "anycomment" => "anycmt",
-        "option" => "option", "opt" => "option");
+    static private $_keywords = array("option" => "option", "opt" => "option");
 
 
     function __construct(Contact $user, $options, Contact $reviewer = null) {
@@ -2227,72 +2241,6 @@ class PaperSearch {
             $contacts = array_map("intval", Dbl::fetch_first_columns($result));
             return new Conflict_SearchTerm(">0", $contacts, $srch->user);
         }
-    }
-
-    private function _search_comment_tag($rt, $tag, $rvalue, $round, &$qt) {
-        $xtag = $tag;
-        if ($xtag === "none")
-            $xtag = "any";
-        $term = new Comment_SearchTerm(null, new CommentTagMatcher($rvalue, $xtag), $round, $rt);
-        $qt[] = $term->negate_if($tag === "none");
-    }
-
-    private function _search_comment($word, $ctype, &$qt, $quoted) {
-        $m = self::unpack_comparison($word, $quoted);
-        if (($qr = self::check_tautology($m[1]))) {
-            $qt[] = $qr;
-            return;
-        }
-
-        // canonicalize comment type
-        $ctype = strtolower($ctype);
-        if (str_ends_with($ctype, "resp"))
-            $ctype .= "onse";
-        if (str_ends_with($ctype, "-draft"))
-            $ctype = "draft" . substr($ctype, 0, strlen($ctype) - 6);
-        else if (str_ends_with($ctype, "draft"))
-            $ctype = "draft" . substr($ctype, 0, strlen($ctype) - 5);
-        if (str_starts_with($ctype, "draft-"))
-            $ctype = "draft" . substr($ctype, 6);
-
-        $rt = 0;
-        $round = null;
-        if (str_starts_with($ctype, "draft") && str_ends_with($ctype, "response")) {
-            $rt |= self::F_REQUIREDRAFT | self::F_ALLOWDRAFT;
-            $ctype = substr($ctype, 5);
-        }
-        if ($ctype === "response" || $ctype === "anycmt")
-            $rt |= self::F_ALLOWRESPONSE;
-        else if (str_ends_with($ctype, "response")) {
-            $rname = substr($ctype, 0, strlen($ctype) - 8);
-            $round = $this->conf->resp_round_number($rname);
-            if ($round === false) {
-                $this->warn("No such response round “" . htmlspecialchars($ctype) . "”.");
-                $qt[] = new False_SearchTerm;
-                return;
-            }
-            $rt |= self::F_ALLOWRESPONSE;
-        }
-        if ($ctype === "cmt" || $ctype === "aucmt" || $ctype === "anycmt")
-            $rt |= self::F_ALLOWCOMMENT;
-        if ($ctype === "aucmt")
-            $rt |= self::F_AUTHORCOMMENT;
-        if (substr($m[0], 0, 1) === "#") {
-            $rt |= $this->privChair ? 0 : self::F_NONCONFLICT;
-            $tags = Tag_SearchTerm::expand(substr($m[0], 1), false, $this);
-            foreach ($tags as $tag)
-                $this->_search_comment_tag($rt, $tag, $m[1], $round, $qt);
-            if (empty($tags)) {
-                $qt[] = new False_SearchTerm;
-                return;
-            } else if (count($tags) !== 1 || $tags[0] === "none" || $tags[0] === "any"
-                       || !$this->conf->pc_tag_exists($tags[0]))
-                return;
-        }
-        $contacts = ($m[0] === "" ? null : $this->matching_reviewers($m[0], $quoted, false));
-        $value = new ContactCountMatcher($m[1], $contacts);
-        $term = new Comment_SearchTerm($value, null, $round, $rt);
-        $qt[] = $term;
     }
 
     private function _search_review_field($word, $f, &$qt, $quoted, $noswitch = false) {
@@ -2515,11 +2463,8 @@ class PaperSearch {
             return new PaperStatus_SearchTerm(["paperStorageId", ">1"]);
         else if ($lword === "final" || $lword === "finalcopy")
             return new PaperStatus_SearchTerm(["finalPaperStorageId", ">1"]);
-        else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword)) {
-            $srch->_search_comment(">0", $lword, $qt, $quoted);
-            return $qt;
-        } else if (preg_match('/\A[\w-]+\z/', $lword)
-                   && $srch->_search_options("$lword:yes", $qt, false))
+        else if (preg_match('/\A[\w-]+\z/', $lword)
+                 && $srch->_search_options("$lword:yes", $qt, false))
             return $qt;
         else {
             $has = [];
@@ -2651,8 +2596,6 @@ class PaperSearch {
                 $qt = array_merge($qt, $qx);
             return;
         }
-        if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)|\w*resp(?:onse)?(-?draft)?|cmt|aucmt|anycmt)\z/', $keyword))
-            $this->_search_comment($word, $keyword, $qt, $quoted);
         if ($keyword === "option")
             $this->_search_options($word, $qt, true);
         // Finally, look for a review field.
@@ -3268,6 +3211,7 @@ class PaperSearch {
         $q .= "\n    group by Paper.paperId";
 
         //Conf::msg_debugt($q);
+        //error_log($q);
 
         // actually perform query
         $result = $this->conf->qe_raw($q);

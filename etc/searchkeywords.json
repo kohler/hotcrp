@@ -148,6 +148,14 @@
         "factory": "Review_SearchTerm::keyword_factory"
     },
     {
+        "match": "(|au-?|author-?|any-?)(?:cmt|comment)",
+        "factory": "Comment_SearchTerm::comment_factory"
+    },
+    {
+        "match": "(|draft-?)(\\w*)resp(?:onse)(|-?draft)",
+        "factory": "Comment_SearchTerm::response_factory"
+    },
+    {
         "name": "show",
         "parser": "Show_SearchTerm::parse", "allow_parens": true,
         "showtype": true, "sorting": false
