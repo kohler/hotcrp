@@ -1801,7 +1801,7 @@ $blind\n";
         self::check_review_author_seen($prow, $rrow, $contact);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
 
-        $rj = array("pid" => $prow->paperId, "rid" => $rrow->reviewId);
+        $rj = array("pid" => $prow->paperId, "rid" => (int) $rrow->reviewId);
         if ($rrow->reviewOrdinal)
             $rj["ordinal"] = unparseReviewOrdinal($rrow->reviewOrdinal);
         if ($contact->can_view_review_round($prow, $rrow, null)) {

@@ -647,7 +647,7 @@ function hoturl(page, options) {
             want_forceShow = true;
         }
     } else if (page === "review")
-        hoturl_clean(x, /^[pr]=(\d+[A-Z]*)$/);
+        hoturl_clean(x, /^r=(\d+[A-Z]+)$/);
     else if (page === "help")
         hoturl_clean(x, /^t=(\w+)$/);
     else if (page.substr(0, 3) === "api") {
