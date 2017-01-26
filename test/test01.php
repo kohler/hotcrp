@@ -562,9 +562,11 @@ assert_search_papers($user_chair, "re:R3", "12");
 assert_search_papers($user_chair, "round:none", "6 7 8 9 10 11 12 13 14 15 16 17 18");
 
 assert_search_papers($user_chair, "sec:any", "2");
+assert_search_papers($user_chair, "has:sec", "2");
 assert_search_papers($user_chair, "2 AND pri:mgbaker", "");
 xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,any,secondary:primary"));
 assert_search_papers($user_chair, "sec:any", "");
+assert_search_papers($user_chair, "has:sec", "");
 assert_search_papers($user_chair, "2 AND pri:mgbaker", "2");
 
 assert_search_papers($user_chair, "pri:mgbaker", "1 2 13 17");

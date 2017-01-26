@@ -130,6 +130,24 @@
         "synonym": "g"
     },
     {
+        "name": "r",
+        "parser": "Review_SearchTerm::parse",
+        "retype": null, "recompleteness": null, "has": ">0"
+    },
+    {
+        "name": "approvable",
+        "parser": "Review_SearchTerm::parse",
+        "retype": null, "recompleteness": "approvable", "has": ">0"
+    },
+    {
+        "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?)(|pri-?|sec-?|ext-?|primary-?|secondary-?|external-?)(?:re|rev|review)",
+        "factory": "Review_SearchTerm::keyword_factory"
+    },
+    {
+        "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?)(pri|sec|ext|primary|secondary|external)",
+        "factory": "Review_SearchTerm::keyword_factory"
+    },
+    {
         "name": "show",
         "parser": "Show_SearchTerm::parse", "allow_parens": true,
         "showtype": true, "sorting": false

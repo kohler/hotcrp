@@ -881,6 +881,9 @@ class Revpref_SearchTerm extends SearchTerm {
 class Review_SearchTerm extends SearchTerm {
     private $rsm;
     private $fieldname;
+    private static $recompleteness_map = [
+        "c" => "complete", "i" => "incomplete", "p" => "partial"
+    ];
 
     function __construct(ReviewSearchMatcher $rsm, $flags = 0) {
         parent::__construct("re", $flags | PaperSearch::F_XVIEW);
@@ -889,6 +892,68 @@ class Review_SearchTerm extends SearchTerm {
     function reviewer_contact_set() {
         return $this->rsm->contact_set();
     }
+    static function keyword_factory($keyword, Conf $conf, $kwfj, $m) {
+        $c = str_replace("-", "", $m[1]);
+        return (object) [
+            "name" => $keyword, "parser" => "Review_SearchTerm::parse",
+            "retype" => str_replace("-", "", $m[2]),
+            "recompleteness" => get(self::$recompleteness_map, $c, $c),
+            "has" => ">0"
+        ];
+    }
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
+        $rsm = new ReviewSearchMatcher(">0");
+        if ($sword->kwdef->retype)
+            $rsm->apply_review_type($sword->kwdef->retype);
+        if ($sword->kwdef->recompleteness)
+            $rsm->apply_completeness($sword->kwdef->recompleteness);
+
+        $qword = $sword->qword;
+        $quoted = false;
+        $contacts = null;
+        $wordcount = null;
+        $tailre = '(?:\z|:|(?=[=!<>]=?|≠|≤|≥))(.*)\z/s';
+        while ($qword !== "") {
+            if (preg_match('/\A(.+?)' . $tailre, $qword, $m)
+                && ($rsm->apply_review_type($m[1])
+                    || $rsm->apply_completeness($m[1])
+                    || $rsm->apply_round($m[1], $srch->conf))) {
+                $qword = $m[2];
+            } else if (preg_match('/\A((?:[=!<>]=?|≠|≤|≥|)\d+|any|none|yes|no)' . $tailre, $qword, $m)) {
+                $count = PaperSearch::unpack_comparison($m[1], false);
+                $rsm->set_countexpr($count[1]);
+                $qword = $m[2];
+            } else if (preg_match('/\A(?:au)?words((?:[=!<>]=?|≠|≤|≥)\d+)(?:\z|:)(.*)\z/', $qword, $m)) {
+                $wordcount = new CountMatcher($m[1]);
+                $qword = $m[2];
+            } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $qword, $m)) {
+                if (($quoted = $m[1][0] === "\""))
+                    $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
+                $contacts = $m[1];
+                $qword = $m[2];
+            } else {
+                $rsm->set_countexpr("<0");
+                break;
+            }
+        }
+
+        if (($qr = PaperSearch::check_tautology($rsm->countexpr()))) {
+            $qr->set_float("used_revadj", true);
+            return $qr;
+        }
+
+        $rsm->wordcountexpr = $wordcount;
+        if ($wordcount && $rsm->completeness === 0)
+            $rsm->apply_completeness("complete");
+        if ($contacts) {
+            $rsm->set_contacts($srch->matching_reviewers($contacts, $quoted,
+                                            $rsm->review_type >= REVIEW_PC));
+            if (strcasecmp($contacts, "me") == 0)
+                $rsm->tokens = $srch->reviewer_user()->review_tokens();
+        }
+        return new Review_SearchTerm($rsm);
+    }
+
 
     function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
         if ($revadj) {
@@ -1793,7 +1858,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             $this->completeness |= self::INCOMPLETE;
         else if ($word === "approvable")
             $this->completeness |= self::APPROVABLE;
-        else if ($word === "draft" || $word === "inprogress" || $word === "in-progress")
+        else if ($word === "draft" || $word === "inprogress" || $word === "in-progress" || $word === "partial")
             $this->completeness |= self::INPROGRESS;
         else
             return false;
@@ -1817,7 +1882,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             if ($this->completeness & self::INCOMPLETE)
                 $name .= "Incomplete";
             if ($this->completeness & self::INPROGRESS)
-                $name .= "Inprogress";
+                $name .= "Draft";
             if ($this->completeness & self::APPROVABLE)
                 $name .= "Approvable";
             return $name;
@@ -1961,36 +2026,6 @@ class PaperSearch {
     static private $current_search;
 
     static private $_keywords = array(
-        "r" => "re", "re" => "re", "rev" => "re", "review" => "re",
-        "cre" => "cre", "crev" => "cre", "creview" => "cre", "complete-review" => "cre",
-        "ire" => "ire", "irev" => "ire", "ireview" => "ire", "incomplete-review" => "ire",
-        "pre" => "pre", "prev" => "pre", "preview" => "pre", "partial-review" => "pre", "in-progress-review" => "pre",
-        "sre" => "cre", "srev" => "cre", "sreview" => "cre", // deprecated
-        "subre" => "cre", "subrev" => "cre", "subreview" => "cre", // deprecated
-        "pri" => "pri", "primary" => "pri",
-        "prire" => "pri", "prirev" => "pri", "prireview" => "pri", "primary-review" => "pri",
-        "cpri" => "cpri", "cprimary" => "cpri",
-        "cprire" => "cpri", "cprirev" => "cpri", "cprireview" => "cpri",
-        "ipri" => "ipri", "iprimary" => "ipri",
-        "iprire" => "ipri", "iprirev" => "ipri", "iprireview" => "ipri",
-        "ppri" => "ppri", "pprimary" => "ppri",
-        "pprire" => "ppri", "pprirev" => "ppri", "pprireview" => "ppri",
-        "sec" => "sec", "secondary" => "sec",
-        "secre" => "sec", "secrev" => "sec", "secreview" => "sec", "secondary-review" => "sec",
-        "csec" => "csec", "csecondary" => "csec",
-        "csecre" => "csec", "csecrev" => "csec", "csecreview" => "csec",
-        "isec" => "isec", "isecondary" => "isec",
-        "isecre" => "isec", "isecrev" => "isec", "isecreview" => "isec",
-        "psec" => "psec", "psecondary" => "psec",
-        "psecre" => "psec", "psecrev" => "psec", "psecreview" => "psec",
-        "ext" => "ext", "external" => "ext",
-        "extre" => "ext", "extrev" => "ext", "extreview" => "ext", "external-review" => "ext",
-        "cext" => "cext", "cexternal" => "cext",
-        "cextre" => "cext", "cextrev" => "cext", "cextreview" => "cext",
-        "iext" => "iext", "iexternal" => "iext",
-        "iextre" => "iext", "iextrev" => "iext", "iextreview" => "iext",
-        "pext" => "pext", "pexternal" => "pext",
-        "pextre" => "pext", "pextrev" => "pext", "pextreview" => "pext",
         "cmt" => "cmt", "comment" => "cmt",
         "aucmt" => "aucmt", "aucomment" => "aucmt",
         "resp" => "response", "response" => "response",
@@ -2000,11 +2035,6 @@ class PaperSearch {
         "resp-draft" => "draftresponse", "response-draft" => "draftresponse",
         "anycmt" => "anycmt", "anycomment" => "anycmt",
         "option" => "option", "opt" => "option");
-    static private $_canonical_review_keywords = array(
-        "re" => 1, "cre" => 1, "ire" => 1, "pre" => 1,
-        "pri" => 1, "cpri" => 1, "ipri" => 1, "ppri" => 1,
-        "sec" => 1, "csec" => 1, "isec" => 1, "psec" => 1,
-        "ext" => 1, "cext" => 1, "iext" => 1, "pext" => 1);
 
 
     function __construct(Contact $user, $options, Contact $reviewer = null) {
@@ -2161,68 +2191,6 @@ class PaperSearch {
             return $scm->ids;
         else
             return array(-1);
-    }
-
-    private function _search_reviewer($qword, $keyword, &$qt) {
-        if (preg_match('/\A(.*)(pri|sec|ext)\z/', $keyword, $m)) {
-            $qword = $m[2] . ":" . $qword;
-            $keyword = $m[1];
-        }
-
-        if (str_starts_with($keyword, "c"))
-            $qword = "complete:" . $qword;
-        else if (str_starts_with($keyword, "i"))
-            $qword = "incomplete:" . $qword;
-        else if (str_starts_with($keyword, "p"))
-            $qword = "inprogress:" . $qword;
-
-        $quoted = false;
-        $contacts = null;
-        $wordcount = null;
-        $rsm = new ReviewSearchMatcher(">0");
-
-        $tailre = '(?:\z|:|(?=[=!<>]=?|≠|≤|≥))(.*)\z/s';
-
-        while ($qword !== "") {
-            if (preg_match('/\A(.+?)' . $tailre, $qword, $m)
-                && ($rsm->apply_review_type($m[1])
-                    || $rsm->apply_completeness($m[1])
-                    || $rsm->apply_round($m[1], $this->conf))) {
-                $qword = $m[2];
-            } else if (preg_match('/\A((?:[=!<>]=?|≠|≤|≥|)\d+|any|none|yes|no)' . $tailre, $qword, $m)) {
-                $count = self::unpack_comparison($m[1], false);
-                $rsm->set_countexpr($count[1]);
-                $qword = $m[2];
-            } else if (preg_match('/\A(?:au)?words((?:[=!<>]=?|≠|≤|≥)\d+)(?:\z|:)(.*)\z/', $qword, $m)) {
-                $wordcount = new CountMatcher($m[1]);
-                $qword = $m[2];
-            } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $qword, $m)) {
-                if (($quoted = $m[1][0] === "\""))
-                    $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
-                $contacts = $m[1];
-                $qword = $m[2];
-            } else {
-                $rsm->set_countexpr("<0");
-                break;
-            }
-        }
-
-        if (($qr = self::check_tautology($rsm->countexpr()))) {
-            $qr->set_float("used_revadj", true);
-            $qt[] = $qr;
-            return;
-        }
-
-        $rsm->wordcountexpr = $wordcount;
-        if ($wordcount && $rsm->completeness === 0)
-            $rsm->apply_completeness("complete");
-        if ($contacts) {
-            $rsm->set_contacts($this->matching_reviewers($contacts, $quoted,
-                                            $rsm->review_type >= REVIEW_PC));
-            if (strcasecmp($contacts, "me") == 0)
-                $rsm->tokens = $this->reviewer_user()->review_tokens();
-        }
-        $qt[] = new Review_SearchTerm($rsm);
     }
 
     static function matching_decisions(Conf $conf, $word, $quoted = null) {
@@ -2565,13 +2533,8 @@ class PaperSearch {
         else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword)) {
             $srch->_search_comment(">0", $lword, $qt, $quoted);
             return $qt;
-        } else if (preg_match('/\A[cip]?(?:re|pri|sec|ext)\z/', $lword)) {
-            $srch->_search_reviewer(">0", $lword, $qt);
-            return $qt;
-        } else if ($lword === "approvable") {
-            $srch->_search_reviewer("approvable>0", "ext", $qt);
-            return $qt;
-        } else if (preg_match('/\A[\w-]+\z/', $lword) && $srch->_search_options("$lword:yes", $qt, false))
+        } else if (preg_match('/\A[\w-]+\z/', $lword)
+                   && $srch->_search_options("$lword:yes", $qt, false))
             return $qt;
         else {
             $has = [];
@@ -2694,8 +2657,8 @@ class PaperSearch {
         $word = $sword->word;
         $quoted = $sword->quoted;
         $sword->keyword = $keyword;
-        if (($sword->kwdef = $this->conf->search_keyword($keyword))
-            && get($sword->kwdef, "parser")) {
+        $sword->kwdef = $this->conf->search_keyword($keyword);
+        if ($sword->kwdef && get($sword->kwdef, "parser")) {
             $qx = call_user_func($sword->kwdef->parser, $word, $sword, $this);
             if ($qx && !is_array($qx))
                 $qt[] = $qx;
@@ -2703,10 +2666,6 @@ class PaperSearch {
                 $qt = array_merge($qt, $qx);
             return;
         }
-        if ($keyword === "re")
-            $this->_search_reviewer($sword->qword, "re", $qt);
-        else if ($keyword && get(self::$_canonical_review_keywords, $keyword))
-            $this->_search_reviewer($sword->qword, $keyword, $qt);
         if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)|\w*resp(?:onse)?(-?draft)?|cmt|aucmt|anycmt)\z/', $keyword))
             $this->_search_comment($word, $keyword, $qt, $quoted);
         if ($keyword === "option")

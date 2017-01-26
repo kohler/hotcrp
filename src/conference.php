@@ -77,6 +77,8 @@ class Conf {
     private $_docclass_cache = [];
     private $_docstore = false;
     private $_formula_functions = null;
+    private $_search_keyword_base = null;
+    private $_search_keyword_factories = null;
     private $_search_keywords = null;
     private $_defined_formulas = null;
     private $_emoji_codes = null;
@@ -625,31 +627,51 @@ class Conf {
 
 
     private function _add_search_keyword_json_base($name, $kwj) {
-        if (!isset($this->_search_keywords[$name])
-            || get($this->_search_keywords[$name], "priority", 0) <= get($kwj, "priority", 0))
-            $this->_search_keywords[$name] = $kwj;
+        $b = get($this->_search_keyword_base, $name);
+        if (!$b || get($b, "priority", 0) <= get($kwj, "priority", 0))
+            $this->_search_keyword_base[$name] = $kwj;
     }
     function _add_search_keyword_json($kwj) {
-        if (is_string($kwj->name)) {
+        if (isset($kwj->name) && is_string($kwj->name)) {
             $this->_add_search_keyword_json_base($kwj->name, $kwj);
             if (($syn = get($kwj, "synonym")))
                 foreach (is_string($syn) ? [$syn] : $syn as $x)
                     $this->_add_search_keyword_json_base($x, $kwj);
             return true;
+        } else if (is_string($kwj->match) && is_string($kwj->factory)) {
+            $this->_search_keyword_factories[] = $kwj;
+            return true;
         } else
             return false;
     }
-    function search_keyword_map() {
-        if ($this->_search_keywords === null) {
+    private function make_search_keyword_map() {
+        $this->_search_keyword_base = $this->_search_keyword_factories =
             $this->_search_keywords = [];
-            expand_json_includes_callback(["etc/searchkeywords.json"], [$this, "_add_search_keyword_json"]);
-            if (($olist = $this->opt("searchKeywords")))
-                expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
-        }
-        return $this->_search_keywords;
+        expand_json_includes_callback(["etc/searchkeywords.json"], [$this, "_add_search_keyword_json"]);
+        if (($olist = $this->opt("searchKeywords")))
+            expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
+    }
+    function add_search_keyword($kwj) {
+        assert(is_object($kwj) && is_string($kwj->name));
+        assert(array_key_exists($kwj->name, $this->_search_keywords));
+        $b = $this->_search_keywords[$kwj->name];
+        if (!$b || get($b, "priority", 0) <= get($kwj, "priority", 0))
+            $this->_search_keywords[$kwj->name] = $kwj;
     }
     function search_keyword($keyword) {
-        return get($this->search_keyword_map(), $keyword);
+        if ($this->_search_keywords === null)
+            $this->make_search_keyword_map();
+        if (!array_key_exists($keyword, $this->_search_keywords)) {
+            $this->_search_keywords[$keyword] = get($this->_search_keyword_base, $keyword);
+            foreach ($this->_search_keyword_factories as $kwfj) {
+                if (preg_match("\1\\A(?:" . $kwfj->match . ")\1", $keyword, $m)) {
+                    $kwj = call_user_func($kwfj->factory, $keyword, $this, $kwfj, $m);
+                    if ($kwj && (is_object($kwj) || is_array($kwj)))
+                        $this->add_search_keyword((object) $kwj);
+                }
+            }
+        }
+        return $this->_search_keywords[$keyword];
     }
 
 
