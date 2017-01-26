@@ -447,6 +447,9 @@ assert_search_papers($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18 19 20 21 
 
 // comment searches
 assert_search_papers($user_chair, "cmt:any", "1");
+assert_search_papers($user_chair, "has:comment", "1");
+assert_search_papers($user_chair, "has:response", "");
+assert_search_papers($user_chair, "has:author-comment", "1");
 $comment2 = new CommentInfo(null, $paper18);
 $c2ok = $comment2->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
 xassert($c2ok);
@@ -460,6 +463,13 @@ assert_search_papers($user_chair, "cmt:jon", "");
 assert_search_papers($user_chair, "cmt:mgbaker", "1 18");
 assert_search_papers($user_chair, "cmt:mgbaker>1", "18");
 assert_search_papers($user_chair, "cmt:#redcmt", "18");
+$paper2 = $Conf->paperRow(2, $user_chair);
+$comment4 = new CommentInfo(null, $paper2);
+$c2ok = $comment4->save(array("text" => "test", "visibility" => "p", "blind" => false), $user_mgbaker);
+assert_search_papers($user_chair, "has:comment", "1 2 18");
+assert_search_papers($user_chair, "has:response", "");
+assert_search_papers($user_chair, "has:author-comment", "1 18");
+
 
 /*$result = Dbl::qe("select paperId, tag, tagIndex from PaperTag order by paperId, tag");
 $tags = array();
@@ -470,7 +480,6 @@ echo join("", $tags);*/
 // check review visibility for “not unless completed on same paper”
 $Conf->save_setting("pc_seeallrev", Conf::PCSEEREV_IFCOMPLETE);
 Contact::update_rights();
-$paper2 = $Conf->paperRow(2, $user_chair);
 $review2a = fetch_review(2, $user_jon);
 xassert(!$review2a->reviewSubmitted);
 xassert($user_jon->can_view_review($paper2, $review2a, false));
