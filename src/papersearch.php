@@ -123,6 +123,11 @@ class SearchTerm {
     }
 
 
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        return false;
+    }
+
+
     protected function _set_flags(&$q, SearchQueryInfo $sqi) {
         $flags = $this->flags;
         $sqi->needflags |= $flags;
@@ -144,8 +149,6 @@ class SearchTerm {
             $q[] = $sqi->user->actAuthorSql("PaperConflict");
         if ($flags & PaperSearch::F_REVIEWER)
             $q[] = "MyReview.reviewNeedsSubmit=0";
-        if ($sqi->negated && ($flags & PaperSearch::F_XVIEW))
-            $q[] = "false";
     }
 
     static function andjoin_sqlexpr($q, $default = "false") {
@@ -196,6 +199,9 @@ class False_SearchTerm extends SearchTerm {
     function is_false() {
         return true;
     }
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        return true;
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         return "false";
     }
@@ -213,6 +219,9 @@ class True_SearchTerm extends SearchTerm {
     }
     function is_uninteresting() {
         return count($this->float) === 1 && isset($this->float["view"]);
+    }
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         return "true";
@@ -283,6 +292,12 @@ class Op_SearchTerm extends SearchTerm {
             $qv = $qv->adjust_reviews($revadj, $srch);
         return $this;
     }
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        foreach ($this->child as $ch)
+            if (!$ch->trivial_rights($user, $srch))
+                return false;
+        return true;
+    }
 }
 
 class Not_SearchTerm extends Op_SearchTerm {
@@ -312,6 +327,8 @@ class Not_SearchTerm extends Op_SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->negated = !$sqi->negated;
         $ff = $this->child[0]->sqlexpr($sqi);
+        if ($sqi->negated && !$this->child[0]->trivial_rights($sqi->user, $sqi->srch))
+            $ff = "false";
         $sqi->negated = !$sqi->negated;
         return "not ($ff)";
     }
@@ -514,7 +531,7 @@ class TextMatch_SearchTerm extends SearchTerm {
     ];
 
     function __construct($t, $text) {
-        parent::__construct($t, PaperSearch::F_XVIEW);
+        parent::__construct($t);
         $this->field = self::$map[$t];
         $this->authorish = $t === "au" || $t === "co";
         if ($text === true)
@@ -528,20 +545,16 @@ class TextMatch_SearchTerm extends SearchTerm {
         return new TextMatch_SearchTerm($sword->kwdef->name, $word);
     }
 
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        return $this->nonempty && !$this->authorish;
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->needflags |= $this->flags;
         $sqi->add_column($this->field, "Paper.{$this->field}");
         if ($this->nonempty && !$this->authorish)
             return "Paper.{$this->field}!=''";
-        // The purpose is to match AT LEAST those
-        // papers that contain "$t->value" as a word in the $field field.
-        // A substring match contains at least those papers; but only if
-        // the current term is positive (= not negated).  If the current
-        // term is negated, we say NO paper matches this clause.  (NOT no
-        // paper is every paper.)  Later code will check for a substring.
-        return $sqi->negated ? "false" : "true";
+        return "true";
     }
-
     function exec(PaperInfo $row, PaperSearch $srch) {
         $field = $this->field;
         if ($row->$field === ""
@@ -571,7 +584,7 @@ class PaperPC_SearchTerm extends SearchTerm {
     private $match;
 
     function __construct($kind, $match) {
-        parent::__construct("paperpc", PaperSearch::F_XVIEW);
+        parent::__construct("paperpc");
         $this->kind = $kind;
         $this->fieldname = $kind . "ContactId";
         $this->match = $match;
@@ -594,10 +607,7 @@ class PaperPC_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column($this->fieldname, "Paper.{$this->fieldname}");
-        if ($sqi->negated && !$sqi->fullPrivChair)
-            return "false";
-        else
-            return "(Paper.{$this->fieldname}" . CountMatcher::sqlexpr_using($this->match) . ")";
+        return "(Paper.{$this->fieldname}" . CountMatcher::sqlexpr_using($this->match) . ")";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $can_view = "can_view_{$this->kind}";
@@ -610,7 +620,7 @@ class Decision_SearchTerm extends SearchTerm {
     private $match;
 
     function __construct($match) {
-        parent::__construct("dec", PaperSearch::F_XVIEW);
+        parent::__construct("dec");
         $this->match = $match;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
@@ -623,10 +633,7 @@ class Decision_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column("outcome", "Paper.outcome");
-        if ($sqi->negated && !$sqi->fullPrivChair)
-            return "false";
-        else
-            return "(Paper.outcome" . CountMatcher::sqlexpr_using($this->match) . ")";
+        return "(Paper.outcome" . CountMatcher::sqlexpr_using($this->match) . ")";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $srch->user->can_view_decision($row, true)
@@ -652,6 +659,9 @@ class PaperStatus_SearchTerm extends SearchTerm {
         else
             return new PaperStatus_SearchTerm($fval);
     }
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        return true;
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $q = array();
         for ($i = 0; $i < count($this->match); $i += 2) {
@@ -672,14 +682,11 @@ class PaperStatus_SearchTerm extends SearchTerm {
 
 class ContactAuthor_SearchTerm extends SearchTerm {
     private $csm;
-    private $includes_self;
 
-    function __construct($countexpr, $contacts, Contact $user) {
-        $full = ($user->privChair && !$user->conf->has_any_manager())
-            || (count($contacts) == 1 && $contacts[0] == $user->contactId);
-        parent::__construct("au_cid", $full ? 0 : PaperSearch::F_XVIEW);
-        $this->csm = new ContactCountMatcher($countexpr, $contacts);
-        $this->includes_self = in_array($user->contactId, $contacts);
+    function __construct($contacts) {
+        assert(!empty($contacts));
+        parent::__construct("au_cid");
+        $this->csm = new ContactCountMatcher(">0", $contacts);
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $cids = null;
@@ -693,37 +700,26 @@ class ContactAuthor_SearchTerm extends SearchTerm {
                 $cids = $srch->matching_reviewers($word, false, true);
         }
         if ($cids !== null)
-            return new ContactAuthor_SearchTerm(">0", $cids, $srch->user);
+            return new ContactAuthor_SearchTerm($cids);
         else
             return new TextMatch_SearchTerm("au", $word);
+    }
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        return $this->csm->has_sole_contact($user->contactId);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "AuthorConflict_" . count($sqi->tables);
         $this->fieldname = "{$thistab}_ct";
         $where = "$thistab.contactId in (" . join(",", $this->csm->contact_set()) . ") and conflictType>=" . CONFLICT_AUTHOR;
-
-        $q = array();
-        $this->_set_flags($q, $sqi);
-        $compar = $this->csm->simplified_nonnegative_countexpr();
-        if ($compar !== ">0" && $compar !== "=0") {
-            $sqi->add_table($thistab, ["left join", "(select paperId, count(*) ct from PaperConflict $thistab where $where group by paperId)"]);
-            $sqi->add_column($this->fieldname, "$thistab.ct");
-            $q[] = "coalesce($thistab.ct,0)$compar";
-        } else {
-            $sqi->add_table($thistab, ["left join", "PaperConflict", $where]);
-            $sqi->add_column($this->fieldname, "count($thistab.contactId)");
-            if ($compar === "=0")
-                $q[] = "$thistab.contactId is null";
-            else
-                $q[] = "$thistab.contactId is not null";
-        }
-        return self::andjoin_sqlexpr($q);
+        $sqi->add_table($thistab, ["left join", "PaperConflict", $where]);
+        $sqi->add_column($this->fieldname, "count($thistab.contactId)");
+        return "$thistab.contactId is not null";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        return ($this->includes_self && $row->conflictType >= CONFLICT_AUTHOR
-                && $this->csm->test(1))
+        return ($row->conflictType >= CONFLICT_AUTHOR
+                && $this->csm->test_contact($srch->user->contactId))
             || ($srch->user->can_view_authors($row, true)
-                && $this->csm->test((int) $row->{$this->fieldname}));
+                && (int) $row->{$this->fieldname});
     }
 }
 
@@ -732,9 +728,7 @@ class Conflict_SearchTerm extends SearchTerm {
     private $includes_self;
 
     function __construct($countexpr, $contacts, Contact $user) {
-        $full = ($user->privChair && !$user->conf->has_any_manager())
-            || (count($contacts) == 1 && $contacts[0] == $user->contactId);
-        parent::__construct("conflict", $full ? 0 : PaperSearch::F_XVIEW);
+        parent::__construct("conflict");
         $this->csm = new ContactCountMatcher($countexpr, $contacts);
         $this->includes_self = in_array($user->contactId, $contacts);
     }
@@ -747,30 +741,31 @@ class Conflict_SearchTerm extends SearchTerm {
             return new Conflict_SearchTerm($m[1], $contacts, $srch->user);
         }
     }
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        return $this->csm->has_sole_contact($user->contactId);
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Conflict_" . count($sqi->tables);
         $this->fieldname = "{$thistab}_ct";
         $where = "$thistab.contactId in (" . join(",", $this->csm->contact_set()) . ")";
 
-        $q = array();
-        $this->_set_flags($q, $sqi);
         $compar = $this->csm->simplified_nonnegative_countexpr();
         if ($compar !== ">0" && $compar !== "=0") {
             $sqi->add_table($thistab, ["left join", "(select paperId, count(*) ct from PaperConflict $thistab where $where group by paperId)"]);
             $sqi->add_column($this->fieldname, "$thistab.ct");
-            $q[] = "coalesce($thistab.ct,0)$compar";
+            return "coalesce($thistab.ct,0)$compar";
         } else {
             $sqi->add_table($thistab, ["left join", "PaperConflict", $where]);
             $sqi->add_column($this->fieldname, "count($thistab.contactId)");
             if ($compar === "=0")
-                $q[] = "$thistab.contactId is null";
+                return "$thistab.contactId is null";
             else
-                $q[] = "$thistab.contactId is not null";
+                return "$thistab.contactId is not null";
         }
-        return self::andjoin_sqlexpr($q);
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        return ($this->includes_self && $row->conflictType > 0
+        return ($row->conflictType > 0
+                && $this->csm->test_contact($srch->user->contactId)
                 && $this->csm->test(1))
             || ($srch->user->can_view_conflicts($row, true)
                 && $this->csm->test((int) $row->{$this->fieldname}));
@@ -886,7 +881,7 @@ class Review_SearchTerm extends SearchTerm {
     ];
 
     function __construct(ReviewSearchMatcher $rsm, $flags = 0) {
-        parent::__construct("re", $flags | PaperSearch::F_XVIEW);
+        parent::__construct("re", $flags);
         $this->rsm = $rsm;
     }
     function reviewer_contact_set() {
@@ -964,6 +959,10 @@ class Review_SearchTerm extends SearchTerm {
             $revadj->used_revadj = true;
         }
         return $this;
+    }
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        // tokens OK
+        return $this->rsm->rate === null && $this->rsm->has_sole_contact($user->contactId);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         if (($thistab = $this->rsm->simple_name()))
@@ -1258,7 +1257,7 @@ class Comment_SearchTerm extends SearchTerm {
     public function __construct(ContactCountMatcher $csm = null,
                                 CommentTagMatcher $ctm = null,
                                 $round, $flags) {
-        parent::__construct("cmt", $flags | PaperSearch::F_XVIEW);
+        parent::__construct("cmt", $flags);
         $this->csm = $csm ? : new ContactCountMatcher(">0", null);
         $this->ctm = $ctm;
         $this->commentRound = $round;
@@ -1332,7 +1331,7 @@ class Topic_SearchTerm extends SearchTerm {
     private $fieldname;
 
     function __construct($topics) {
-        parent::__construct("topic", PaperSearch::F_XVIEW);
+        parent::__construct("topic");
         $this->topics = $topics;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
@@ -1352,7 +1351,9 @@ class Topic_SearchTerm extends SearchTerm {
         }
         return new Topic_SearchTerm($value);
     }
-
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        return true;
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Topic_" . count($sqi->tables);
         $joiner = "";
@@ -1365,14 +1366,7 @@ class Topic_SearchTerm extends SearchTerm {
         $sqi->add_table($thistab, ["left join", "PaperTopic", $joiner]);
         $this->fieldname = $thistab . "_id";
         $sqi->add_column($this->fieldname, "min($thistab.topicId)");
-
-        $q = array();
-        $this->_set_flags($q, $sqi);
-        if ($this->topics === false)
-            $q[] = "$thistab.topicId is null";
-        else
-            $q[] = "$thistab.topicId is not null";
-        return self::andjoin_sqlexpr($q);
+        return "$thistab.topicId is " . ($this->topics === false ? "null" : "not null");
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $this->topics !== false
@@ -1387,6 +1381,9 @@ class PaperID_SearchTerm extends SearchTerm {
     function __construct($pns) {
         parent::__construct("pn");
         $this->pids = $pns;
+    }
+    function trivial_rights(Contact $user, PaperSearch $srch) {
+        return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         if (empty($this->pids))
@@ -1403,7 +1400,7 @@ class Formula_SearchTerm extends SearchTerm {
     private $formula;
     private $function;
     function __construct(Formula $formula) {
-        parent::__construct("formula", PaperSearch::F_XVIEW);
+        parent::__construct("formula");
         $this->formula = $formula;
         $this->function = $formula->compile_function();
     }
@@ -1432,9 +1429,7 @@ class Formula_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $this->formula->add_query_options($sqi->srch->_query_options);
-        $q = [];
-        $this->_set_flags($q, $sqi);
-        return self::andjoin_sqlexpr($q, "true");
+        return "true";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $formulaf = $this->function;
@@ -1448,7 +1443,7 @@ class Option_SearchTerm extends SearchTerm {
     private $fieldname;
 
     function __construct(OptionMatcher $om) {
-        parent::__construct("option", PaperSearch::F_XVIEW);
+        parent::__construct("option");
         $this->om = $om;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -1457,11 +1452,7 @@ class Option_SearchTerm extends SearchTerm {
         $tm = $this->om->table_matcher();
         $sqi->add_table($thistab, ["left join", $tm[0]]);
         $sqi->add_column($thistab . "_x", "$thistab.paperId" . $tm[1]);
-
-        $q = array();
-        $this->_set_flags($q, $sqi);
-        $q[] = $sqi->columns[$this->fieldname];
-        return self::andjoin_sqlexpr($q);
+        return $sqi->columns[$this->fieldname];
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $om = $this->om;
@@ -1522,7 +1513,7 @@ class Tag_SearchTerm extends SearchTerm {
     private $tsm;
 
     function __construct(TagSearchMatcher $tsm) {
-        parent::__construct("tag", PaperSearch::F_XVIEW);
+        parent::__construct("tag");
         $this->tsm = $tsm;
     }
     static function expand($tagword, $allow_star, PaperSearch $srch) {
@@ -1615,11 +1606,7 @@ class Tag_SearchTerm extends SearchTerm {
             $tdef = ["left join", "PaperTag", $tm_sql];
         $sqi->add_table($thistab, $tdef);
         $sqi->add_column($thistab . "_ct", "count($thistab.tag)");
-
-        $q = array();
-        $this->_set_flags($q, $sqi);
-        $q[] = "$thistab.tag is not null";
-        return self::andjoin_sqlexpr($q);
+        return "$thistab.tag is not null";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $this->tsm->evaluate($srch->user, $row->searchable_tags($srch->user));
@@ -1791,11 +1778,15 @@ class ContactCountMatcher extends CountMatcher {
         parent::__construct($countexpr);
         $this->set_contacts($contacts);
     }
+    function contact_set() {
+        return $this->_contacts;
+    }
     function has_contacts() {
         return $this->_contacts !== null;
     }
-    function contact_set() {
-        return $this->_contacts;
+    function has_sole_contact($cid) {
+        return $this->_contacts !== null && count($this->_contacts) == 1
+            && $this->_contacts[0] == $cid;
     }
     function contact_match_sql($fieldname) {
         if ($this->_contacts === null)
@@ -1915,7 +1906,6 @@ class SearchQueryInfo {
     public $conf;
     public $srch;
     public $user;
-    public $fullPrivChair;
     public $tables = array();
     public $columns = array();
     public $negated = false;
@@ -1925,8 +1915,6 @@ class SearchQueryInfo {
         $this->conf = $srch->conf;
         $this->srch = $srch;
         $this->user = $srch->user;
-        $this->fullPrivChair = $this->user->privChair
-            && !$this->conf->has_any_manager();
     }
     public function add_table($table, $joiner = false) {
         assert($joiner || !count($this->tables));
@@ -1959,10 +1947,9 @@ class SearchQueryInfo {
             $this->columns["managerContactId"] = "Paper.managerContactId";
         if (!isset($this->columns["leadContactId"]))
             $this->columns["leadContactId"] = "Paper.leadContactId";
-        if (!$this->user->privChair) {
-            $this->add_conflict_columns();
-            $this->add_reviewer_columns();
-        }
+        // XXX could avoid the following if user is privChair for everything:
+        $this->add_conflict_columns();
+        $this->add_reviewer_columns();
     }
 }
 
@@ -1977,8 +1964,6 @@ class PaperSearch {
     const F_ALLOWCOMMENT = 0x00800;
     const F_ALLOWDRAFT = 0x01000;
     const F_REQUIREDRAFT = 0x02000;
-
-    const F_XVIEW = 0x20000;
 
     public $conf;
     public $user;
@@ -2293,7 +2278,7 @@ class PaperSearch {
         if ($ctype === "aucmt")
             $rt |= self::F_AUTHORCOMMENT;
         if (substr($m[0], 0, 1) === "#") {
-            $rt |= ($this->privChair ? 0 : self::F_NONCONFLICT) | self::F_XVIEW;
+            $rt |= $this->privChair ? 0 : self::F_NONCONFLICT;
             $tags = Tag_SearchTerm::expand(substr($m[0], 1), false, $this);
             foreach ($tags as $tag)
                 $this->_search_comment_tag($rt, $tag, $m[1], $round, $qt);
@@ -3206,9 +3191,9 @@ class PaperSearch {
             $filters[] = "Paper.managerContactId=0";
 
         // add common tables: conflicts, my own review, paper blindness
-        if ($sqi->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR | self::F_XVIEW))
+        if ($sqi->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR))
             $sqi->add_conflict_columns();
-        if ($sqi->needflags & (self::F_REVIEWER | self::F_XVIEW))
+        if ($sqi->needflags & self::F_REVIEWER)
             $sqi->add_reviewer_columns();
 
         // check for annotated order
@@ -3226,12 +3211,12 @@ class PaperSearch {
         }
 
         // add permissions tables if we will filter the results
-        $need_filter = (($sqi->needflags & self::F_XVIEW)
-                        || $this->conf->has_tracks()
-                        || $qe->type === "then"
-                        || $qe->get_float("heading")
-                        || $limit === "rable"
-                        || $order_anno_tag);
+        $need_filter = !$qe->trivial_rights($this->user, $this)
+            || $this->conf->has_tracks() /* XXX probably only need check_track_view_sensitivity */
+            || $qe->type === "then"
+            || $qe->get_float("heading")
+            || $limit === "rable"
+            || $order_anno_tag;
         if ($need_filter) {
             $sqi->add_rights_columns();
             if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
@@ -3286,9 +3271,16 @@ class PaperSearch {
 
         // actually perform query
         $result = $this->conf->qe_raw($q);
-        if (!$result)
-            return ($this->_matches = false);
-        $this->_matches = array();
+        if (!$result) {
+            $this->_matches = false;
+            return false;
+        }
+
+        // collect papers
+        $rowset = new PaperInfoSet;
+        while (($row = PaperInfo::fetch($result, $this->user)))
+            $rowset->add($row);
+        Dbl::free($result);
 
         // correct query, create thenmap, groupmap, highlightmap
         $need_then = $qe->type === "then";
@@ -3296,9 +3288,10 @@ class PaperSearch {
         if ($need_then && $qe->nthen > 1)
             $this->thenmap = array();
         $this->highlightmap = array();
+        $this->_matches = array();
         if ($need_filter) {
             $tag_order = [];
-            while (($row = PaperInfo::fetch($result, $this->user))) {
+            foreach ($rowset->all() as $row) {
                 if (!$this->user->can_view_paper($row)
                     || ($limit === "rable"
                         && !$limitcontact->can_accept_review_assignment_ignore_conflict($row))
@@ -3331,9 +3324,7 @@ class PaperSearch {
                 }
             }
         } else
-            while (($row = $result->fetch_object()))
-                $this->_matches[] = (int) $row->paperId;
-        Dbl::free($result);
+            $this->_matches = $rowset->pids();
 
         // add deleted papers explicitly listed by number (e.g. action log)
         if ($this->_allow_deleted)
