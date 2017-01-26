@@ -2282,7 +2282,7 @@ class PaperSearch {
             $tags = Tag_SearchTerm::expand(substr($m[0], 1), false, $this);
             foreach ($tags as $tag)
                 $this->_search_comment_tag($rt, $tag, $m[1], $round, $qt);
-            if (!count($tags)) {
+            if (empty($tags)) {
                 $qt[] = new False_SearchTerm;
                 return;
             } else if (count($tags) !== 1 || $tags[0] === "none" || $tags[0] === "any"

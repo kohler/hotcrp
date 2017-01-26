@@ -1920,7 +1920,6 @@ class Conf {
         //   "myReviewsOpt"     myReviews, + include papers not yet reviewed
         //   "allReviews"       All reviews (multiple rows per paper)
         //   "allReviewScores"  All review scores (multiple rows per paper)
-        //   "allComments"      All comments (multiple rows per paper)
         //   "reviewerName"     Include reviewer names
         //   "commenterName"    Include commenter names
         //   "reviewer" => $cid Include reviewerConflictType/reviewerReviewType
@@ -2146,20 +2145,9 @@ class Conf {
             $cols[] = "RPC.conflictType reviewerConflictType, RPR.reviewType reviewerReviewType";
         }
 
-        if (get($options, "allComments")) {
-            $joins[] = "join PaperComment on (PaperComment.paperId=Paper.paperId)";
-            $joins[] = "left join PaperConflict as CommentConflict on (CommentConflict.paperId=PaperComment.paperId and CommentConflict.contactId=PaperComment.contactId)";
-            array_push($cols, "PaperComment.commentId, PaperComment.contactId as commentContactId",
-                       "CommentConflict.conflictType as commentConflictType",
-                       "PaperComment.timeModified, PaperComment.comment",
-                       "PaperComment.replyTo, PaperComment.commentType");
-        }
-
         if (get($options, "reviewerName")) {
             if ($options["reviewerName"] === "lead" || $options["reviewerName"] === "shepherd")
                 $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=Paper." . $options['reviewerName'] . "ContactId)";
-            else if (get($options, "allComments"))
-                $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperComment.contactId)";
             else if (get($options, "reviewerName"))
                 $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)";
             array_push($cols, "ReviewerContactInfo.firstName as reviewFirstName",
@@ -2196,9 +2184,7 @@ class Conf {
             $pq .= "\nwhere " . join("\n    and ", $where);
 
         // grouping and ordering
-        if (get($options, "allComments"))
-            $pq .= "\ngroup by Paper.paperId, PaperComment.commentId";
-        else if ($reviewerQuery || $scoresQuery || $tokens)
+        if ($reviewerQuery || $scoresQuery || $tokens)
             $pq .= "\ngroup by Paper.paperId, PaperReview.reviewId";
         else
             $pq .= "\ngroup by Paper.paperId";
@@ -2208,8 +2194,6 @@ class Conf {
             $pq .= "\norder by Paper.paperId";
             if ($reviewerQuery || $scoresQuery || $tokens)
                 $pq .= ", PaperReview.reviewOrdinal";
-            if (isset($options["allComments"]))
-                $pq .= ", PaperComment.commentId";
         }
 
         //Conf::msg_debugt($pq);
@@ -2273,15 +2257,11 @@ class Conf {
         $crows = array();
         while (($row = PaperInfo::fetch($result, $contact))) {
             $crows[$row->commentId] = $row;
-            if (isset($row->commentContactId))
-                $cid = $row->commentContactId;
-            else
-                $cid = $row->contactId;
-            $row->threadContacts = array($cid => 1);
+            $row->threadContacts = array($row->contactId => 1);
             for ($r = $row; defval($r, "replyTo", 0) && isset($crows[$r->replyTo]); $r = $crows[$r->replyTo])
                 /* do nothing */;
             $row->threadHead = $r->commentId;
-            $r->threadContacts[$cid] = 1;
+            $r->threadContacts[$row->contactId] = 1;
         }
         Dbl::free($result);
         foreach ($crows as $row)

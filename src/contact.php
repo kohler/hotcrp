@@ -2655,18 +2655,9 @@ class Contact {
 
     function can_view_comment(PaperInfo $prow, $crow, $forceShow) {
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
-        $crow_contactId = 0;
-        if ($crow && isset($crow->commentContactId))
-            $crow_contactId = $crow->commentContactId;
-        else if ($crow)
-            $crow_contactId = $crow->contactId;
-        if ($crow && isset($crow->threadContacts)
-            && isset($crow->threadContacts[$this->contactId]))
-            $thread_contactId = $this->contactId;
         $rights = $this->rights($prow, $forceShow);
-        return $crow_contactId == $this->contactId        // wrote this comment
-            || ($crow_contactId == $rights->review_token_cid
-                && $rights->review_token_cid)
+        return ($crow && $crow->contactId == $this->contactId) // wrote this comment
+            || ($crow && $crow->contactId == $rights->review_token_cid)
             || $rights->can_administer
             || ($rights->act_author_view
                 && $ctype >= COMMENTTYPE_AUTHOR
@@ -2712,14 +2703,9 @@ class Contact {
     function can_view_comment_identity(PaperInfo $prow, $crow, $forceShow) {
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
             return $this->can_view_authors($prow, $forceShow);
-        $crow_contactId = 0;
-        if ($crow && isset($crow->commentContactId))
-            $crow_contactId = $crow->commentContactId;
-        else if ($crow)
-            $crow_contactId = $crow->contactId;
         $rights = $this->rights($prow, $forceShow);
         return $rights->can_administer
-            || $crow_contactId == $this->contactId
+            || ($crow && $crow->contactId == $this->contactId)
             || $rights->allow_pc
             || ($rights->allow_review
                 && $this->conf->setting("extrev_view") >= 2)
