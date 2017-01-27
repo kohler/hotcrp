@@ -249,7 +249,7 @@ class DocumentInfo implements JsonSerializable {
 
     public function npages() {
         if ($this->mimetype && $this->mimetype != "application/pdf")
-            return false;
+            return null;
         else if (($m = $this->metadata()) && isset($m->npages))
             return $m->npages;
         else if ($this->docclass->load_to_filestore($this)) {
