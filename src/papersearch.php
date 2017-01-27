@@ -697,7 +697,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
         $this->format = $format;
         $this->format_errf = $format_errf;
         if ($this->format !== null)
-            $this->cf = new CheckFormat;
+            $this->cf = new CheckFormat(CheckFormat::RUN_PREFER_NO);
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $dtype = $sword->kwdef->final ? DTYPE_FINAL : DTYPE_SUBMISSION;
@@ -763,7 +763,7 @@ class Pages_SearchTerm extends SearchTerm {
 
     function __construct(CountMatcher $cm) {
         parent::__construct("pages");
-        $this->cf = new CheckFormat;
+        $this->cf = new CheckFormat(CheckFormat::RUN_PREFER_NO);
         $this->cm = $cm;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
