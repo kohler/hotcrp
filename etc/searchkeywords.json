@@ -40,6 +40,23 @@
         "synonym": "is"
     },
     {
+        "name": "paper",
+        "parser": "PaperPDF_SearchTerm::parse",
+        "final": false, "has": "any",
+        "synonym": ["sub", "submission"]
+    },
+    {
+        "name": "final",
+        "parser": "PaperPDF_SearchTerm::parse",
+        "final": true, "has": "any",
+        "synonym": ["finalversion", "final-version", "finalcopy", "final-copy"]
+    },
+    {
+        "name": "pagecount",
+        "parser": "Pages_SearchTerm::parse",
+        "synonym": "pages"
+    },
+    {
         "name": "pref",
         "parser": "Revpref_SearchTerm::parse",
         "synonym": ["revpref", "repref", "prefexp", "revprefexp", "reprevexp",
