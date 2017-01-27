@@ -1080,7 +1080,7 @@ function do_setting_update(SettingValues $sv) {
     }
 
     if (!$sv->has_error()) {
-        $sv->conf->save_session("settings_highlight", $sv->message_fields());
+        $sv->conf->save_session("settings_highlight", $sv->message_field_map());
         if (!empty($sv->changes))
             $sv->conf->confirmMsg("Changes saved.");
         else

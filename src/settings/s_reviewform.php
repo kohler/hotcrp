@@ -192,7 +192,7 @@ submitted. Add a line “<code>No entry</code>” to make the score optional.</p
                      . json_encode($fmap) . ","
                      . json_encode($rf->unparse_full_json()) . ","
                      . json_encode($samples) . ","
-                     . json_encode($sv->message_fields()) . ","
+                     . json_encode($sv->message_field_map()) . ","
                      . json_encode($req) . ")");
 
     echo Ht::hidden("has_review_form", 1),

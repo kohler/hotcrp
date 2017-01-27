@@ -42,11 +42,11 @@ class BanalSettings {
         $interesting_keys = ["papersize", "pagelimit", "textblock", "bodyfontsize", "bodylineheight"];
         $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14");
         $s1 = self::cf_status($cf);
-        $e1 = join(",", array_intersect(array_keys($cf->message_fields()), $interesting_keys)) ? : "none";
+        $e1 = join(",", array_intersect($cf->problem_fields(), $interesting_keys)) ? : "none";
         $e1_papersize = $cf->has_problem("papersize");
         $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15");
         $s2 = self::cf_status($cf);
-        $e2 = join(",", array_intersect(array_keys($cf->message_fields()), $interesting_keys)) ? : "none";
+        $e2 = join(",", array_intersect($cf->problem_fields(), $interesting_keys)) ? : "none";
         $want_e2 = join(",", $interesting_keys);
         if ($s1 != "ok" || $e1 != "none" || $s2 != "error" || $e2 != $want_e2) {
             $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected ok none error $want_e2)</td></tr>"

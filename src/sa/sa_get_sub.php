@@ -109,8 +109,8 @@ class GetCheckFormat_SearchAction extends SearchAction {
                 if (($doc = $cf->fetch_document($prow, $dtype)))
                     $cf->check_document($prow, $doc);
                 if ($doc && !$cf->failed) {
-                    $errf = $cf->message_fields();
-                    $format = empty($errf) ? "ok" : join(",", array_keys($errf));
+                    $errf = $cf->problem_fields();
+                    $format = empty($errf) ? "ok" : join(",", $errf);
                     $pages = $cf->pages;
                 } else
                     $format = "error";

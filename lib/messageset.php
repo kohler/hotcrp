@@ -64,14 +64,25 @@ class MessageSet {
         return get($this->errf, $field, 0) > 0;
     }
 
-    function message_fields() {
-        return $this->errf;
-    }
     static private function filter_msgs($ms, $include_fields) {
         if ($include_fields || empty($ms))
             return $ms;
         else
             return array_map(function ($mx) { return $mx[1]; }, $ms);
+    }
+    function message_field_map() {
+        return $this->errf;
+    }
+    function message_fields() {
+        return array_keys($this->errf);
+    }
+    function error_fields() {
+        if (!$this->has_error)
+            return [];
+        return array_keys(array_filter($this->errf, function ($v) { return $v >= self::ERROR; }));
+    }
+    function problem_fields() {
+        return array_keys(array_filter($this->errf, function ($v) { return $v >= self::WARNING; }));
     }
     function messages($include_fields = false) {
         return self::filter_msgs($this->msgs, $include_fields);
