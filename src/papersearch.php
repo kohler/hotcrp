@@ -1258,7 +1258,7 @@ class Comment_SearchTerm extends SearchTerm {
     private $commentRound;
 
     function __construct(ContactCountMatcher $csm, $tags, $kwdef) {
-        parent::__construct("cmt", 0);
+        parent::__construct("cmt");
         $this->csm = $csm;
         $this->tags = $tags;
         if (!get($kwdef, "response"))
@@ -1973,12 +1973,6 @@ class PaperSearch {
     const F_NONCONFLICT = 0x0002;
     const F_AUTHOR = 0x0004;
     const F_REVIEWER = 0x0008;
-
-    const F_AUTHORCOMMENT = 0x00200;
-    const F_ALLOWRESPONSE = 0x00400;
-    const F_ALLOWCOMMENT = 0x00800;
-    const F_ALLOWDRAFT = 0x01000;
-    const F_REQUIREDRAFT = 0x02000;
 
     public $conf;
     public $user;
