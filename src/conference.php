@@ -661,17 +661,20 @@ class Conf {
     function search_keyword($keyword) {
         if ($this->_search_keywords === null)
             $this->make_search_keyword_map();
-        if (!array_key_exists($keyword, $this->_search_keywords)) {
-            $this->_search_keywords[$keyword] = get($this->_search_keyword_base, $keyword);
-            foreach ($this->_search_keyword_factories as $kwfj) {
-                if (preg_match("\1\\A(?:" . $kwfj->match . ")\1", $keyword, $m)) {
-                    $kwj = call_user_func($kwfj->factory, $keyword, $this, $kwfj, $m);
-                    if ($kwj && (is_object($kwj) || is_array($kwj)))
-                        $this->add_search_keyword((object) $kwj);
-                }
+        if (array_key_exists($keyword, $this->_search_keywords))
+            return $this->_search_keywords[$keyword];
+        $kwj = get($this->_search_keyword_base, $keyword);
+        $this->_search_keywords[$keyword] = $kwj;
+        foreach ($this->_search_keyword_factories as $kwfj) {
+            if ((!$kwj || get($kwj, "priority", 0) <= get($kwfj, "priority", 0))
+                && preg_match("\1\\A(?:" . $kwfj->match . ")\\z\1", $keyword, $m)) {
+                $x = call_user_func($kwfj->factory, $keyword, $this, $kwfj, $m);
+                if ($x && (is_object($x) || is_array($x)))
+                    $this->add_search_keyword((object) $x);
+                $kwj = $this->_search_keywords[$keyword];
             }
         }
-        return $this->_search_keywords[$keyword];
+        return $kwj;
     }
 
 
