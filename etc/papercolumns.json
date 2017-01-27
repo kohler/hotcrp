@@ -102,7 +102,7 @@
     {
         "name": "pagecount",
         "column": true, "sort": true, "fold": true, "completion": true, "minimal": true, "className": "plr", "factory_class": "PageCount_PaperColumn",
-        "priority": 1000
+        "priority": 1000, "synonym": ["pages"]
     },
     {
         "prefix": "",
