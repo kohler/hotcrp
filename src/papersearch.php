@@ -601,7 +601,7 @@ class PaperPC_SearchTerm extends SearchTerm {
         $qt = [new PaperPC_SearchTerm($sword->kwdef->pcfield, $match)];
         if ($sword->kwdef->pcfield === "manager"
             && $word === "me"
-            && !$quoted
+            && !$sword->quoted
             && $srch->user->privChair)
             $qt[] = new PaperPC_SearchTerm($ctype, "=0");
         return $qt;
@@ -1990,6 +1990,7 @@ class PaperSearch {
     private $_reviewer_fixed = false;
     private $urlbase;
     public $warnings = array();
+    private $_quiet_count = 0;
 
     var $q;
 
@@ -2119,7 +2120,8 @@ class PaperSearch {
     }
 
     function warn($text) {
-        $this->warnings[] = $text;
+        if (!$this->_quiet_count)
+            $this->warnings[] = $text;
     }
 
 
@@ -2493,7 +2495,7 @@ class PaperSearch {
                  "count" => "C", "counts" => "C", "av" => "A", "ave" => "A",
                  "average" => "A", "avg" => "A", "med" => "E", "median" => "E",
                  "var" => "V", "variance" => "V", "max-min" => "D",
-                 "my" => "Y", "score" => "");
+                 "my" => "Y", "score" => ""];
 
         $text = simplify_whitespace($text);
         $sort = ListSorter::make_empty($text === "");
@@ -2569,10 +2571,10 @@ class PaperSearch {
         return $qe ? : new False_SearchTerm;
     }
 
-    function _search_keyword(&$qt, $keyword, SearchWord $sword) {
+    function _search_keyword(&$qt, SearchWord $sword, $keyword, $kwexplicit) {
         $word = $sword->word;
-        $quoted = $sword->quoted;
         $sword->keyword = $keyword;
+        $sword->kwexplicit = $kwexplicit;
         $sword->kwdef = $this->conf->search_keyword($keyword);
         if ($sword->kwdef && get($sword->kwdef, "parser")) {
             $qx = call_user_func($sword->kwdef->parser, $word, $sword, $this);
@@ -2587,27 +2589,30 @@ class PaperSearch {
         // Finally, look for a review field.
         if ($keyword && !isset(self::$_keywords[$keyword]) && empty($qt)) {
             if (($field = $this->conf->review_field_search($keyword)))
-                $this->_search_review_field($word, $field, $qt, $quoted);
-            else if (!$this->_search_options("$keyword:$word", $qt, false)
-                     && $report_error)
+                $this->_search_review_field($word, $field, $qt, $sword->quoted);
+            else if (!$this->_search_options("$keyword:$word", $qt, false))
                 $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
         }
     }
 
-    function _searchQueryWord($word, $report_error) {
+    function _searchQueryWord($word) {
         // check for paper number or "#TAG"
         if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
             $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
             return new PaperID_SearchTerm(range((int) $m[1], (int) $m[2]));
         } else if (substr($word, 0, 1) === "#") {
-            $qe = $this->_searchQueryWord("tag:" . $word, false);
+            ++$this->_quiet_count;
+            $qe = $this->_searchQueryWord("tag:" . substr($word, 1));
+            --$this->_quiet_count;
             if (!$qe->is_false())
                 return $qe;
         }
 
         // Allow searches like "ovemer>2"; parse as "ovemer:>2".
         if (preg_match('/\A([-_A-Za-z0-9]+)((?:[=!<>]=?|≠|≤|≥)[^:]+)\z/', $word, $m)) {
-            $qe = $this->_searchQueryWord($m[1] . ":" . $m[2], false);
+            ++$this->_quiet_count;
+            $qe = $this->_searchQueryWord($m[1] . ":" . $m[2]);
+            --$this->_quiet_count;
             if (!$qe->is_false())
                 return $qe;
         }
@@ -2631,13 +2636,11 @@ class PaperSearch {
 
         $qt = [];
         $sword = new SearchWord($word);
-        if ($keyword) {
-            $sword->kwexplicit = true;
-            $this->_search_keyword($qt, $keyword, $sword);
-        } else {
-            $sword->kwexplicit = false;
+        if ($keyword)
+            $this->_search_keyword($qt, $sword, $keyword, true);
+        else {
             foreach ($this->fields as $kw => $x)
-                $this->_search_keyword($qt, $kw, $sword);
+                $this->_search_keyword($qt, $sword, $kw, false);
         }
         return SearchTerm::make_op("or", $qt);
     }
@@ -2764,7 +2767,7 @@ class PaperSearch {
                             $word = $defkw . $word;
                     }
                     // The heart of the matter.
-                    $curqe = $this->_searchQueryWord($word, true);
+                    $curqe = $this->_searchQueryWord($word);
                     if (!$curqe->is_uninteresting())
                         $curqe->set_float("strspan", [$oppos, strlen($stri) - strlen($nextstr)]);
                 }
@@ -3042,7 +3045,7 @@ class PaperSearch {
         // apply complex limiters (only current example: "acc" for non-chairs)
         $limit = $this->limitName;
         if ($limit === "acc" && !$this->privChair)
-            $qe = SearchTerm::make_op("and", [$qe, $this->_searchQueryWord("dec:yes", false)]);
+            $qe = SearchTerm::make_op("and", [$qe, $this->_searchQueryWord("dec:yes")]);
 
         // apply review rounds (top down, needs separate step)
         if ($this->_has_review_adjustment)
