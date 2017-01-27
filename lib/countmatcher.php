@@ -19,13 +19,16 @@ class CountMatcher {
             error_log(caller_landmark() . ": bogus countexpr $countexpr");
     }
     function set_countexpr($countexpr) {
-        if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*([-+]?(?:\.\d+|\d+\.?\d*))\z/', $countexpr, $m)) {
+        if (preg_match('/\A(|[=!<>]=?|≠|≤|≥)\s*([-+]?(?:\.\d+|\d+\.?\d*))\z/', $countexpr, $m)) {
             $this->_countexpr = $countexpr;
             $this->allowed = self::$opmap[$m[1]];
             $this->value = (float) $m[2];
             return true;
         } else
             return false;
+    }
+    function ok() {
+        return $this->allowed != 0;
     }
     function test($n) {
         return self::compare($n, $this->allowed, $this->value);
