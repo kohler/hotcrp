@@ -1785,15 +1785,6 @@ class TagSearchMatcher {
     }
 }
 
-class CommentTagMatcher extends CountMatcher {
-    public $tag;
-
-    function __construct($countexpr, $tag) {
-        parent::__construct($countexpr);
-        $this->tag = $tag;
-    }
-}
-
 class ContactCountMatcher extends CountMatcher {
     private $_contacts = null;
 
