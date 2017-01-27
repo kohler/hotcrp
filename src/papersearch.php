@@ -23,6 +23,7 @@ class SearchOperator {
             self::$list["("] = new SearchOperator("(", true, null);
             self::$list["NOT"] = new SearchOperator("not", true, 7);
             self::$list["-"] = new SearchOperator("not", true, 7);
+            self::$list["!"] = new SearchOperator("not", true, 7);
             self::$list["+"] = new SearchOperator("+", true, 7);
             self::$list["SPACE"] = new SearchOperator("space", false, 6);
             self::$list["AND"] = new SearchOperator("and", false, 5);
@@ -2493,12 +2494,12 @@ class PaperSearch {
     static function parse_sorter($text) {
         if (!self::$_sort_keywords)
             self::$_sort_keywords =
-                array("by" => "by", "up" => "up", "down" => "down",
-                      "reverse" => "down", "reversed" => "down",
-                      "count" => "C", "counts" => "C", "av" => "A",
-                      "ave" => "A", "average" => "A", "med" => "E",
-                      "median" => "E", "var" => "V", "variance" => "V",
-                      "max-min" => "D", "my" => "Y", "score" => "");
+                ["by" => "by", "up" => "up", "down" => "down",
+                 "reverse" => "down", "reversed" => "down",
+                 "count" => "C", "counts" => "C", "av" => "A", "ave" => "A",
+                 "average" => "A", "avg" => "A", "med" => "E", "median" => "E",
+                 "var" => "V", "variance" => "V", "max-min" => "D",
+                 "my" => "Y", "score" => "");
 
         $text = simplify_whitespace($text);
         $sort = ListSorter::make_empty($text === "");
@@ -2698,7 +2699,7 @@ class PaperSearch {
     }
 
     static function _searchPopKeyword($str) {
-        if (preg_match('/\A([-+()]|(?:AND|and|OR|or|NOT|not|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $str, $m))
+        if (preg_match('/\A([-+!()]|(?:AND|and|OR|or|NOT|not|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $str, $m))
             return array(strtoupper($m[1]), ltrim(substr($str, strlen($m[0]))));
         else
             return array(null, $str);
