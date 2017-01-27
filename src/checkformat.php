@@ -32,6 +32,14 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
+    function error_kinds(FormatSpec $spec) {
+        $ks = [];
+        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $k)
+            if ($spec->unparse_key($k) !== "")
+                $ks[] = $k;
+        return $ks;
+    }
+
     function msg_fail($what) {
         $this->msg("error", $what, self::ERROR);
         $this->failed = true;
@@ -397,5 +405,14 @@ class CheckFormat extends MessageSet implements FormatChecker {
                     return $report;
         }
         return $this->report($this, $spec, $prow, $doc);
+    }
+
+    function spec_error_kinds($dtype, Conf $conf) {
+        $spec = $this->spec($dtype, $conf);
+        $ekinds = $this->error_kinds($spec);
+        foreach ($spec->checkers ? : [] as $chk)
+            if (($checker = $this->checker($chk)) && $checker !== $this)
+                $ekinds = $ekinds + $checker->error_kinds($spec);
+        return $ekinds;
     }
 }
