@@ -18,6 +18,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     public $allow_run = self::RUN_YES;
     public $need_run = false;
     public $possible_run = false;
+    private $conf = null;
     private $dt_specs = [];
     private $checkers = [];
     static private $banal_args;
@@ -32,7 +33,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function msg_fail($what) {
-        $this->msg("fail", $what, self::ERROR);
+        $this->msg("error", $what, self::ERROR);
         $this->failed = true;
     }
 
@@ -242,7 +243,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
-        global $Conf, $Now;
+        global $Now;
         $bj = null;
         if (($m = $doc->metadata()) && isset($m->banal))
             $bj = $m->banal;
@@ -287,10 +288,15 @@ class CheckFormat extends MessageSet implements FormatChecker {
         return ($spec = $this->spec($dtype)) && !$spec->is_empty();
     }
 
-    function spec($dtype) {
+    function spec($dtype, Conf $conf = null) {
         global $Conf;
+        $conf = $conf ? : $Conf;
+        if ($conf !== $this->conf) {
+            $this->conf = $conf;
+            $this->dt_specs = [];
+        }
         if (!array_key_exists($dtype, $this->dt_specs)) {
-            $o = $Conf->paper_opts->find_document($dtype);
+            $o = $conf->paper_opts->find_document($dtype);
             $spec = $o ? $o->format_spec() : null;
             $this->dt_specs[$dtype] = $spec ? : new FormatSpec;
         }
@@ -312,27 +318,30 @@ class CheckFormat extends MessageSet implements FormatChecker {
         return null;
     }
 
+    private function checker($chk) {
+        if ($chk === "banal" || $chk === "CheckFormat")
+            return $this;
+        else {
+            if (!isset($this->checkers[$chk]))
+                $this->checkers[$chk] = new $chk;
+            return $this->checkers[$chk];
+        }
+    }
+
     function check_document(PaperInfo $prow, $doc) {
-        global $Conf;
         $this->clear();
         if (!$doc) {
-            if (!isset($this->errf["fail"]))
+            if (!isset($this->errf["error"]))
                 $this->msg_fail("No such document.");
             return;
         } else if ($doc->mimetype != "application/pdf")
             return $this->msg_fail("The format checker only works for PDF files.");
 
         $done_me = false;
-        $spec = $this->spec($doc->documentType);
+        $spec = $this->spec($doc->documentType, $prow->conf);
         foreach ($spec->checkers ? : [] as $chk) {
-            if ($chk === "banal" || $chk === "CheckFormat") {
-                $checker = $this;
-                $done_me = true;
-            } else {
-                if (!isset($this->checkers[$chk]))
-                    $this->checkers[$chk] = new $chk;
-                $checker = $this->checkers[$chk];
-            }
+            $checker = $this->checker($chk);
+            $done_me = $done_me || $checker === $this;
             $checker->check($this, $spec, $prow, $doc);
         }
         if (!$done_me)
@@ -361,8 +370,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
         $t = "";
         if ($this->failed)
-            $t .= Ht::xmsg("error", '<div>' . join('</div><div>', $this->messages_at("fail")) . '</div>');
-        $msgs = array_filter($this->messages(true), function ($mx) { return $mx[0] != "fail" && $mx[2] > MessageSet::INFO; });
+            $t .= Ht::xmsg("error", '<div>' . join('</div><div>', $this->messages_at("error")) . '</div>');
+        $msgs = array_filter($this->messages(true), function ($mx) { return $mx[0] != "error" && $mx[2] > MessageSet::INFO; });
         if ($msgs) {
             $msgs = array_map(function ($m) {
                 return $m[2] > MessageSet::WARNING ? "<strong>$m[1]</strong>" : $m[1];
@@ -380,11 +389,11 @@ class CheckFormat extends MessageSet implements FormatChecker {
         return $t;
     }
     function document_report(PaperInfo $prow, $doc) {
-        $spec = $this->spec($doc ? $doc->documentType : DTYPE_SUBMISSION);
+        $spec = $this->spec($doc ? $doc->documentType : DTYPE_SUBMISSION, $prow->conf);
         if ($doc) {
             foreach ($spec->checkers ? : [] as $chk)
-                if ($chk !== "banal" && $chk !== "CheckFormat" && isset($this->checkers[$chk])
-                    && ($report = $this->checkers[$chk]->report($this, $spec, $prow, $doc)))
+                if (($checker = $this->checker($chk)) && $checker !== $this
+                    && ($report = $checker->report($this, $spec, $prow, $doc)))
                     return $report;
         }
         return $this->report($this, $spec, $prow, $doc);

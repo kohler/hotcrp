@@ -14,11 +14,11 @@ class FormatSpec {
     public $checkers;
     private $_is_banal_empty;
 
-    public function __construct($str) {
+    function __construct($str) {
         $this->merge($str);
     }
 
-    public function merge($x) {
+    function merge($x) {
         if (is_string($x) && substr($x, 0, 1) === "{")
             $x = json_decode($x);
         if ($x && is_string($x)) {
@@ -60,15 +60,15 @@ class FormatSpec {
             $this->$k = $v;
     }
 
-    public function is_empty() {
+    function is_empty() {
         return !$this->checkers && $this->is_banal_empty();
     }
 
-    public function is_banal_empty() {
+    function is_banal_empty() {
         return $this->_is_banal_empty;
     }
 
-    public function is_checkable($pageno, $k) {
+    function is_checkable($pageno, $k) {
         if (!$this->quietpages || !isset($this->quietpages->$k))
             return true;
         $pages = $this->quietpages->$k;
@@ -82,7 +82,7 @@ class FormatSpec {
             return is_bool($pages) ? !$pages : true;
     }
 
-    public function unparse_key($k) {
+    function unparse_key($k) {
         if (!$this->$k)
             return "";
         if ($k == "papersize")
@@ -100,7 +100,7 @@ class FormatSpec {
         return "";
     }
 
-    public function unparse() {
+    function unparse() {
         if ($this->checkers) {
             $a = [];
             foreach (get_object_vars($this) as $k => $v)
@@ -119,7 +119,7 @@ class FormatSpec {
     }
 
 
-    static public function parse_range($s) {
+    static function parse_range($s) {
         $x1 = $x2 = 0;
         if (preg_match(',\A([\d.]+)(?:\s*(?:-|–)\s*([\d.]+))?(?:\s*(?:[dD]|Δ|\+\/?-|±)\s*([\d.]+))?\z,', $s, $m)
             && ($x0 = cvtnum($m[1], null)) !== null
@@ -140,7 +140,7 @@ class FormatSpec {
             return $r[0];
     }
 
-    public static function parse_dimen($text, $ndimen = -1) {
+    static function parse_dimen($text, $ndimen = -1) {
         // replace \xC2\xA0 (utf-8 for U+00A0 NONBREAKING SPACE) with ' '
         $text = trim(str_replace("\xC2\xA0", " ", strtolower($text)));
         $n = $text;
@@ -195,7 +195,7 @@ class FormatSpec {
             return false;
     }
 
-    public static function unparse_dimen($n, $to = null) {
+    static function unparse_dimen($n, $to = null) {
         if (is_array($n) && count($n) == 2 && ($to == "basic" || $to == "paper")) {
             if (abs($n[0] - 612) <= 5 && abs($n[1] - 792) <= 5)
                 return $to == "basic" ? "letter" : "letter paper (8.5in x 11in)";
