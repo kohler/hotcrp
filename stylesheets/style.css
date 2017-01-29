@@ -2217,7 +2217,8 @@ div.pst span.hint {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
-	padding: 1px 4px;
+	padding: 1px 4px 1px 16px;
+	text-indent: -12px;
 	cursor: pointer;
 }
 .suggestion.active {
