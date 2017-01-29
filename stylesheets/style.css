@@ -2225,7 +2225,7 @@ div.pst span.hint {
 	color: white;
 }
 .suggestion-text {
-	font-weight: bold;
+	font-weight: 500;
 }
 .suggestion-description {
 	padding-left: 0.5em;
