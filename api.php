@@ -74,6 +74,7 @@ if ($qreq->fn === "jserror") {
         if (isset($_SERVER["REMOTE_ADDR"]))
             $suffix .= ", host " . $_SERVER["REMOTE_ADDR"];
         error_log("JS error: $url$errormsg$suffix");
+error_log(json_encode($qreq->make_array()));
         if (($stacktext = $qreq->stack)) {
             $stack = array();
             foreach (explode("\n", $stacktext) as $line) {

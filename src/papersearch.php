@@ -2934,7 +2934,7 @@ class PaperSearch {
             return "(" . join(strtoupper(" " . $x->op->op . " "), $x->qe) . ")";
     }
 
-    static private function _canonicalizeQueryType($str, $type) {
+    static private function _canonicalizeQueryType($str, $type, Conf $conf) {
         $stack = array();
         $parens = 0;
         $defaultop = ($type === "all" ? "XAND" : "XOR");
@@ -2951,7 +2951,7 @@ class PaperSearch {
             }
 
             if ($opstr === null) {
-                $curqe = self::pop_word($nextstr, $this->conf);
+                $curqe = self::pop_word($nextstr, $conf);
             } else if ($opstr === ")") {
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->op !== "(")
@@ -2987,13 +2987,13 @@ class PaperSearch {
         return $curqe;
     }
 
-    static function canonical_query($qa, $qo = null, $qx = null) {
+    static function canonical_query($qa, $qo = null, $qx = null, Conf $conf) {
         $x = array();
-        if ($qa && ($qa = self::_canonicalizeQueryType(trim($qa), "all")))
+        if ($qa && ($qa = self::_canonicalizeQueryType(trim($qa), "all", $conf)))
             $x[] = $qa;
-        if ($qo && ($qo = self::_canonicalizeQueryType(trim($qo), "any")))
+        if ($qo && ($qo = self::_canonicalizeQueryType(trim($qo), "any", $conf)))
             $x[] = $qo;
-        if ($qx && ($qx = self::_canonicalizeQueryType(trim($qx), "none")))
+        if ($qx && ($qx = self::_canonicalizeQueryType(trim($qx), "none", $conf)))
             $x[] = $qx;
         if (count($x) == 1)
             return preg_replace('/\A\((.*)\)\z/', '$1', join("", $x));
