@@ -844,7 +844,7 @@ class Conflict_SearchTerm extends SearchTerm {
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $m = PaperSearch::unpack_comparison($word, $sword->quoted);
-        if (($qr = self::check_tautology($m[1])))
+        if (($qr = PaperSearch::check_tautology($m[1])))
             return $qr;
         else {
             $contacts = $srch->matching_reviewers($m[0], $sword->quoted, $sword->kwdef->pc_only);
