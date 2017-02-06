@@ -1560,14 +1560,14 @@ function tracker(start) {
             trackerstate[3] = hotcrp_list.info;
     }
     if (trackerstate) {
-        var req = trackerstate[1] + "%20x";
+        var req = "track=" + trackerstate[1] + "%20x", reqdata = {};
         if (hotcrp_paperid)
             req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
         if (trackerstate[2])
             req += "&tracker_start_at=" + trackerstate[2];
         if (trackerstate[3])
-            req += "&hotlist-info=" + encodeURIComponent(trackerstate[3]);
-        $.post(hoturl_post("api/track", {track: req}), load_success);
+            reqdata["hotlist-info"] = trackerstate[3];
+        $.post(hoturl_post("api/track", req), reqdata, load_success);
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker, 25000);
         wstorage(true, "hotcrp-tracking", trackerstate);
