@@ -931,9 +931,9 @@ class Revpref_SearchTerm extends SearchTerm {
         else {
             if ($srch->user->is_manager())
                 $qz[] = new Revpref_SearchTerm($value, self::F_MANAGER);
-            if ($value->test_contact($this->cid)) {
+            if ($value->test_contact($srch->cid)) {
                 $xvalue = clone $value;
-                $xvalue->set_contacts($this->cid);
+                $xvalue->set_contacts($srch->cid);
                 $qz[] = new Revpref_SearchTerm($xvalue, 0);
             }
         }
