@@ -2040,7 +2040,6 @@ class PaperTable {
     function _paptabReviewLinks($rtable, $editrrow, $ifempty) {
         global $Me;
         require_once("reviewtable.php");
-        echo '<hr class="papcard_sep" />';
 
         $t = "";
         if ($rtable)
@@ -2050,6 +2049,8 @@ class PaperTable {
                           $editrrow, $this->mode, $this->allreviewslink);
         if (($empty = ($t === "")))
             $t = $ifempty;
+        if ($t)
+            echo '<hr class="papcard_sep" />';
         echo $t, "</div></div>\n";
         return $empty;
     }
