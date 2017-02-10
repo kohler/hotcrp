@@ -77,14 +77,14 @@ class DocumentInfo implements JsonSerializable {
             $this->sha1 = sha1($this->content, true);
     }
 
-    static public function fetch($result, Conf $conf = null, PaperInfo $prow = null) {
+    static function fetch($result, Conf $conf = null, PaperInfo $prow = null) {
         $di = $result ? $result->fetch_object("DocumentInfo", [null, $conf, $prow]) : null;
         if ($di && !is_int($di->paperStorageId))
             $di->merge(null, $conf, $prow);
         return $di;
     }
 
-    static public function make_file_upload($paperId, $documentType, $upload) {
+    static function make_file_upload($paperId, $documentType, $upload) {
         if (is_string($upload) && $upload)
             $upload = $_FILES[$upload];
         if (!$upload || !is_array($upload) || !file_uploaded($upload)
@@ -110,11 +110,11 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
-    public function filename($filters = null) {
+    function filename($filters = null) {
         return HotCRPDocument::filename($this, $filters);
     }
 
-    public function compute_sha1() {
+    function compute_sha1() {
         $sha1 = Filer::binary_sha1($this->sha1);
         if ($sha1 === false && is_string($this->content))
             $sha1 = sha1($this->content, true);
@@ -134,7 +134,7 @@ class DocumentInfo implements JsonSerializable {
         return $sha1;
     }
 
-    public function save() {
+    function save() {
         // look for an existing document with same sha1; otherwise upload
         if (($sha1 = $this->compute_sha1()) !== false) {
             $this->sha1 = $sha1;
@@ -149,7 +149,7 @@ class DocumentInfo implements JsonSerializable {
         return $this->docclass->upload($this);
     }
 
-    public function url($filters = null, $rest = null) {
+    function url($filters = null, $rest = null) {
         if ($filters === null)
             $filters = $this->filters_applied;
         return HotCRPDocument::url($this, $filters, $rest);
@@ -243,11 +243,11 @@ class DocumentInfo implements JsonSerializable {
         return $length_ok;
     }
 
-    public function load_to_filestore() {
+    function load_to_filestore() {
         return $this->docclass->load_to_filestore($this);
     }
 
-    public function npages() {
+    function npages() {
         if ($this->mimetype && $this->mimetype != "application/pdf")
             return null;
         else if (($m = $this->metadata()) && isset($m->npages))
@@ -264,7 +264,7 @@ class DocumentInfo implements JsonSerializable {
         return null;
     }
 
-    public function jsonSerialize() {
+    function jsonSerialize() {
         $x = [];
         foreach (get_object_vars($this) as $k => $v)
             if ($k === "content" && is_string($v) && strlen($v) > 50)
