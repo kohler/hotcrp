@@ -1847,7 +1847,7 @@ class Conf {
         foreach ($this->paper_opts->option_list() as $id => $o)
             if ($o->has_document())
                 $document_option_ids[] = $id;
-        if (count($document_option_ids))
+        if (!empty($document_option_ids))
             $q[] = "select value from PaperOption where optionId in ("
                 . join(",", $document_option_ids) . ") and value>1";
 
@@ -1855,6 +1855,7 @@ class Conf {
         $ids = array();
         while (($row = edb_row($result)))
             $ids[(int) $row[0]] = true;
+        Dbl::free($result);
         ksort($ids);
         return array_keys($ids);
     }
