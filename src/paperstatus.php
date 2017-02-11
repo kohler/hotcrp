@@ -204,7 +204,7 @@ class PaperStatus extends MessageSet {
             $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
             $oj = $o->unparse_json($ov, $this, $contact);
             if ($oj !== null)
-                $options[$this->export_ids ? $o->id : $o->abbr] = $oj;
+                $options[$this->export_ids ? $o->id : $o->abbreviation()] = $oj;
         }
         if (!empty($options))
             $pj->options = (object) $options;
@@ -244,13 +244,11 @@ class PaperStatus extends MessageSet {
 
 
     function error_at_option(PaperOption $o, $html) {
-        $this->error_at($o->id <= 0 ? $o->abbr : "opt$o->id",
-                        htmlspecialchars($o->name) . ": " . $html);
+        $this->error_at($o->field_key(), htmlspecialchars($o->name) . ": " . $html);
     }
 
     function warning_at_option(PaperOption $o, $html) {
-        $this->warning_at($o->id <= 0 ? $o->abbr : "opt$o->id",
-                          htmlspecialchars($o->name) . ": " . $html);
+        $this->warning_at($o->field_key(), htmlspecialchars($o->name) . ": " . $html);
     }
 
 

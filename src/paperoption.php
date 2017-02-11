@@ -122,11 +122,19 @@ class PaperOptionList {
     private $jmap = [];
     private $list = null;
     private $nonfixed_list = null;
-    private $docmap = [];
+    private $docmap;
 
     function __construct($conf) {
         global $Conf;
         $this->conf = $conf ? : $Conf;
+        $this->init_docmap();
+    }
+
+    private function init_docmap() {
+        $this->docmap = [
+            DTYPE_SUBMISSION => new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "message_name" => "submission", "abbr" => "paper", "type" => null, "position" => 0], $this->conf),
+            DTYPE_FINAL => new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "message_name" => "final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0], $this->conf)
+        ];
     }
 
     private function check_require_setting($require_setting) {
@@ -222,7 +230,8 @@ class PaperOptionList {
 
     function invalidate_option_list() {
         $this->jlist = $this->list = $this->nonfixed_list = null;
-        $this->jmap = $this->docmap = [];
+        $this->jmap = [];
+        $this->init_docmap();
     }
 
     function count_option_list() {
@@ -230,15 +239,8 @@ class PaperOptionList {
     }
 
     function find_document($id) {
-        if (!array_key_exists($id, $this->docmap)) {
-            if ($id == DTYPE_SUBMISSION)
-                $o = new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "message_name" => "submission", "abbr" => "paper", "type" => null, "position" => 0], $this->conf);
-            else if ($id == DTYPE_FINAL)
-                $o = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "message_name" => "final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
-            else
-                $o = $this->find($id);
-            $this->docmap[$id] = $o;
-        }
+        if (!array_key_exists($id, $this->docmap))
+            $this->docmap[$id] = $this->find($id);
         return $this->docmap[$id];
     }
 
@@ -433,6 +435,14 @@ class PaperOption {
 
     function fixed() {
         return $this->id >= self::MINFIXEDID;
+    }
+
+    function abbreviation() {
+        return $this->abbr;
+    }
+
+    function field_key() {
+        return $this->id <= 0 ? $this->abbr : "opt" . $this->id;
     }
 
     function display() {

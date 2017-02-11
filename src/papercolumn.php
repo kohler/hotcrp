@@ -1397,10 +1397,10 @@ class Score_PaperColumn extends PaperColumn {
         return $x;
     }
     function header(PaperList $pl, $is_text) {
-        return $is_text ? $this->form_field->abbreviation : $this->form_field->web_abbreviation();
+        return $is_text ? $this->form_field->abbreviation() : $this->form_field->web_abbreviation();
     }
     function completion_name() {
-        return $this->form_field->abbreviation;
+        return $this->form_field->abbreviation();
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         // Do not use viewable_scores to determine content emptiness, since
@@ -1575,7 +1575,7 @@ class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
 class Option_PaperColumn extends PaperColumn {
     private $opt;
     function __construct(PaperOption $opt, $cj, $isrow) {
-        $name = $opt->abbr . ($isrow ? "-row" : "");
+        $name = $opt->abbreviation() . ($isrow ? "-row" : "");
         if (($optcj = $opt->list_display($isrow)) === true)
             $optcj = $isrow ? ["row" => true] : ["column" => true, "className" => "pl_option"];
         parent::__construct(["name" => $name] + ($optcj ? : []) + $cj);
@@ -1595,7 +1595,7 @@ class Option_PaperColumn extends PaperColumn {
         return $is_text ? $this->opt->name : htmlspecialchars($this->opt->name);
     }
     function completion_name() {
-        return $this->opt->abbr;
+        return $this->opt->abbreviation();
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->contact->can_view_paper_option($row, $this->opt, true);

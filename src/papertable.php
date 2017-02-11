@@ -484,7 +484,7 @@ class PaperTable {
             return;
 
         $accepts = $docx->mimetypes();
-        $field = $docx->id <= 0 ? $docx->abbr : "opt$docx->id";
+        $field = $docx->field_key();
         $msgs = [];
         if (($accepts = $docx->mimetypes()))
             $msgs[] = htmlspecialchars(Mimetype::description($accepts));

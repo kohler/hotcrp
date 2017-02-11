@@ -63,10 +63,24 @@ class AbbreviationMatcher {
         if (!array_key_exists($text, $this->matches))
             $this->_find($text);
         $results = [];
+        $last = false;
         foreach ($this->matches[$text] as $k) {
-            if (!$tflags || ($this->data[$k][3] & $tflags) != 0)
-                $results[] = $this->data[$k][2];
+            if (!$tflags || ($this->data[$k][3] & $tflags) != 0) {
+                $cur = $this->data[$k][2];
+                if (empty($results) || $cur !== $last)
+                    $results[] = $last = $cur;
+            }
         }
         return $results;
+    }
+
+    function find1($text, $tflags = 0) {
+        $a = $this->find($text, $tflags);
+        if (empty($a))
+            return null;
+        else if (count($a) == 1)
+            return $a[0];
+        else
+            return false;
     }
 }

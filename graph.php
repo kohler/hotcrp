@@ -70,9 +70,9 @@ if ($Graph == "formula") {
                 $field2 = $f;
         unset($_REQUEST["fx"], $_REQUEST["fy"]);
         if ($field1)
-            $_REQUEST["fy"] = "avg(" . $field1->abbreviation . ")";
+            $_REQUEST["fy"] = "avg(" . $field1->abbreviation() . ")";
         if ($field1 && $field2)
-            $_REQUEST["fx"] = "avg(" . $field2->abbreviation . ")";
+            $_REQUEST["fx"] = "avg(" . $field2->abbreviation() . ")";
         else
             $_REQUEST["fx"] = "pid";
     }

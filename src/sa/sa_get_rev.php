@@ -194,8 +194,8 @@ class GetScores_SearchAction extends SearchAction {
                 foreach ($rf->forder as $field => $f)
                     if ($f->view_score > $view_bound && $f->has_options
                         && ($row->$field || $f->allow_empty)) {
-                        $a[$f->abbreviation] = $f->unparse_value($row->$field);
-                        $any_scores[$f->abbreviation] = $this_scores = true;
+                        $a[$f->abbreviation()] = $f->unparse_value($row->$field);
+                        $any_scores[$f->abbreviation()] = $this_scores = true;
                     }
                 if ($user->can_view_review_identity($row, $row, true)) {
                     $any_reviewer_identity = true;

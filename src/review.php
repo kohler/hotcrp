@@ -15,11 +15,10 @@ class ReviewField {
 
     public $id;
     public $conf;
-    public $uid;
     public $name;
     public $name_html;
     public $description;
-    public $abbreviation;
+    private $abbreviation;
     public $has_options;
     public $options = array();
     public $option_letter = false;
@@ -181,17 +180,43 @@ class ReviewField {
             return [$this->unparse_value(1 + ($n > 2)), $this->unparse_value(2 + ($n > 2) + ($n > 3))];
     }
 
-    function web_abbreviation() {
-        return '<span class="need-tooltip" data-tooltip="' . $this->name_html
-            . '" data-tooltip-dir="b">' . htmlspecialchars($this->abbreviation) . "</span>";
+    function abbreviation() {
+        if ($this->abbreviation === null) {
+            $last = $stopwords = null;
+            for ($detail = 0; $detail < 5 && !$this->abbreviation; ++$detail) {
+                if ($detail && !$stopwords)
+                    $stopwords = $this->conf->review_form()->stopwords();
+                $x = self::make_abbreviation($this->name, $detail, 0, $stopwords);
+                if ($last === $x)
+                    continue;
+                $last = $x;
+                $a = $this->conf->field_search($x);
+                if (count($a) === 1 && $a[0] === $this)
+                    $this->abbreviation = $x;
+            }
+            if (!$this->abbreviation)
+                $this->abbreviation = $this->name;
+        }
+        return $this->abbreviation;
     }
 
-    static function make_abbreviation($name, $abbrdetail, $abbrtype) {
+    function abbreviation1() {
+        return self::make_abbreviation($this->name, 0, 1);
+    }
+
+    function web_abbreviation() {
+        return '<span class="need-tooltip" data-tooltip="' . $this->name_html
+            . '" data-tooltip-dir="b">' . htmlspecialchars($this->abbreviation()) . "</span>";
+    }
+
+    static function make_abbreviation($name, $abbrdetail, $abbrtype, $stopwords = "") {
         $name = str_replace("'", "", $name);
 
         // try to filter out noninteresting words
         if ($abbrdetail < 2) {
-            $xname = preg_replace('/\b(?:a|an|be|did|do|for|in|of|question|the|this|to|with|you)\b/i', '', $name);
+            if ($stopwords !== "")
+                $stopwords .= "|";
+            $xname = preg_replace('/\b(?:' . $stopwords . 'a|an|be|did|do|for|in|of|or|the|their|they|this|to|with|you)\b/i', '', $name);
             $name = $xname ? : $name;
         }
 
@@ -210,8 +235,8 @@ class ReviewField {
         }
     }
 
-    function abbreviation1() {
-        return self::make_abbreviation($this->name, 0, 1);
+    function uid() {
+        return $this->abbreviation();
     }
 
     static function unparse_letter($option_letter, $value) {
@@ -426,51 +451,32 @@ class ReviewForm {
         foreach ($this->fmap as $f)
             if ($f->displayed)
                 $this->forder[$f->id] = $f;
-
-        // set field abbreviations; try to ensure uniqueness
-        for ($detail = 0; $detail < 5; ++$detail) {
-            $fmap = array();
-            foreach ($this->forder as $f) {
-                $f->abbreviation = ReviewField::make_abbreviation($f->name, $detail, 0);
-                $fmap[$f->abbreviation] = true;
-            }
-            if (count($fmap) == count($this->forder))
-                break;
-        }
-        foreach ($this->forder as $f)
-            $f->uid = $detail < 5 ? $f->abbreviation : $f->id;
     }
 
     function all_fields() {
         return $this->forder;
     }
 
+    function stopwords() {
+        $bits = [];
+        $bit = 1;
+        foreach ($this->fmap as $f) {
+            if (!$f->displayed)
+                continue;
+            foreach (preg_split('/[^A-Za-z0-9_.\']+/', strtolower(UnicodeHelper::deaccent($f->name))) as $w)
+                $bits[$w] = get($bits, $w, 0) | $bit;
+            $bit <<= 1;
+        }
+        $stops = [];
+        foreach ($bits as $w => $v)
+            if ($v & ($v - 1))
+                $stops[] = str_replace("'", "", $w);
+        return join("|", $stops);
+    }
+
     function field($fid) {
         $f = get($this->fmap, $fid);
         return $f && $f->displayed ? $f : null;
-    }
-
-    function field_search($name) {
-        $f = get($this->fmap, $name);
-        if ($f && $f->displayed)
-            return $f;
-        $a = preg_split("/([^a-zA-Z0-9])/", $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-        for ($i = 0; $i < count($a); ++$i)
-            $a[$i] = preg_quote($a[$i], "/");
-        $field = null;
-        foreach ($this->forder as $f) {
-            if (count($a) == 1
-                && (strcasecmp($a[0], $f->abbreviation) == 0
-                    || strcasecmp($a[0], $f->name) == 0))
-                return $f;
-            for ($i = 0; $i < count($a); ++$i)
-                if ($a[$i] != "-" && $a[$i] != "\\-" && $a[$i] != "_"
-                    && !preg_match("{\\b" . $a[$i] . "}i", $f->name))
-                    break;
-            if ($i == count($a))
-                $field = ($field === null ? $f : false);
-        }
-        return $field;
     }
 
     function unparse_full_json() {
@@ -487,7 +493,7 @@ class ReviewForm {
                 && (!$round_mask || !$f->round_mask
                     || ($f->round_mask & $round_mask))
                 && $f->view_score > $view_score_bound) {
-                $fmap[$f->uid] = $f->unparse_json();
+                $fmap[$f->uid()] = $f->unparse_json();
             }
         return $fmap;
     }
@@ -526,7 +532,7 @@ class ReviewForm {
             else if ($rrow)
                 $fval = $f->unparse_value($rrow->$field);
 
-            echo '<div class="rv rveg" data-rf="', $f->uid, '"><div class="revet';
+            echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="revet';
             if (isset($ReviewFormError[$field]))
                 echo " error";
             echo '"><div class="revfn">', $f->name_html;
@@ -1435,7 +1441,7 @@ $blind\n";
             } else if ($k === "version") {
                 if (is_int($v))
                     $req["version"] = $v;
-            } else if (($f = $this->field_search($k))) {
+            } else if (($f = $this->conf->review_field_search($k))) {
                 if ((is_string($v) || is_int($v) || $v === null)
                     && !isset($req[$f->id]))
                     $req[$f->id] = $v;
@@ -1852,9 +1858,9 @@ $blind\n";
             if ($f->view_score > $revViewScore
                 && (!$f->round_mask || $f->is_round_visible($rrow))) {
                 if ($f->has_options)
-                    $rj[$f->uid] = $f->unparse_value($rrow->$fid);
+                    $rj[$f->uid()] = $f->unparse_value($rrow->$fid);
                 else
-                    $rj[$f->uid] = $rrow->$fid;
+                    $rj[$f->uid()] = $rrow->$fid;
             }
         if (($fmt = $rrow->reviewFormat) === null)
             $fmt = $this->conf->default_format;

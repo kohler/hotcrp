@@ -133,7 +133,7 @@ class Default_PaperSaver extends PaperSaver {
         foreach ($Conf->paper_opts->option_list() as $o)
             if ($qreq["has_opt$o->id"]
                 && (!$o->final || $action === "final")) {
-                $okey = $o->abbr;
+                $okey = $o->abbreviation();
                 $pj->options->$okey = $o->parse_request(get($pj->options, $okey), $qreq, $user, $pj);
             }
         if (!count(get_object_vars($pj->options)))
@@ -174,7 +174,7 @@ class Default_PaperSaver extends PaperSaver {
         $pjopt = get($pj, "options", (object) []);
         $opjopt = get($opj, "options", (object) []);
         foreach ($Conf->paper_opts->option_list() as $o) {
-            $oabbr = $o->abbr;
+            $oabbr = $o->abbreviation();
             if (!get($pjopt, $oabbr) != !get($opjopt, $oabbr)
                 || (get($pjopt, $oabbr)
                     && json_encode($pjopt->$oabbr) !== json_encode($opjopt->$oabbr))) {

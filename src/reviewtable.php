@@ -185,7 +185,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 else if ($rr->$fid) {
                     if (!get($score_header, $fid))
                         $score_header[$fid] = "<th>" . $f->web_abbreviation() . "</th>";
-                    $scores[$fid] = '<td class="revscore" data-rf="' . $f->uid . '">'
+                    $scores[$fid] = '<td class="revscore" data-rf="' . $f->uid() . '">'
                         . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
                 } else if (get($score_header, $fid) === null)

@@ -27,8 +27,7 @@ class Get_SearchAction extends SearchAction {
         }
     }
     function run(Contact $user, $qreq, $ssel) {
-        if (substr($qreq->getfn, 0, 4) === "opt-"
-            && ($opts = $user->conf->paper_opts->search(substr($qreq->getfn, 4)))
+        if (($opts = $user->conf->paper_opts->search($qreq->getfn))
             && count($opts) == 1
             && ($o = current($opts))
             && $user->can_view_some_paper_option($o)) {
@@ -46,16 +45,12 @@ class GetDocument_SearchAction extends SearchAction {
     }
     static function make_option_action(PaperOption $opt) {
         return [$opt->position + ($opt->final ? 0 : 100),
-                $opt->id <= 0 ? $opt->abbr : "opt-" . $opt->abbr,
+                $opt->abbreviation(),
                 "Documents", $opt->id <= 0 ? pluralize($opt->name) : $opt->name];
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         $opt = $user->conf->paper_opts->find_document($this->dt);
-        if ($this->dt <= 0)
-            $any_name = $this->dt == DTYPE_FINAL ? "final" : "paper";
-        else
-            $any_name = "opt" . $opt->id;
-        if ($user->can_view_some_paper_option($opt) && $pl->has($any_name))
+        if ($user->can_view_some_paper_option($opt) && $pl->has($opt->field_key()))
             $actions[] = self::make_option_action($opt);
     }
     static function error_document(PaperOption $opt, PaperInfo $row, $error_html = "") {

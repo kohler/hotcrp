@@ -731,7 +731,7 @@ class PaperList {
             else
                 $got = ($ov = $row->option($opt->id)) && $ov->value > 1;
             if ($got && $this->contact->can_view_paper_option($row, $opt)) {
-                $this->_has[$opt->id <= 0 ? $opt->abbr : "opt" . $opt->id] = true;
+                $this->_has[$opt->field_key()] = true;
                 array_splice($this->_any_option_checks, $i, 1);
             } else
                 ++$i;

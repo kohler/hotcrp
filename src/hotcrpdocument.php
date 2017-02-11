@@ -29,14 +29,8 @@ class HotCRPDocument extends Filer {
 
     static function unparse_dtype($dtype) {
         global $Conf;
-        if ($dtype == DTYPE_SUBMISSION)
-            return "paper";
-        else if ($dtype == DTYPE_FINAL)
-            return "final";
-        else if (($o = $Conf->paper_opts->find($dtype)) && $o->is_document())
-            return $o->abbr;
-        else
-            return null;
+        $o = $Conf->paper_opts->find_document($dtype);
+        return $o && $o->is_document() ? $o->abbreviation() : null;
     }
 
     static function parse_dtype($dname) {
@@ -63,11 +57,11 @@ class HotCRPDocument extends Filer {
         else {
             $o = $doc->conf->paper_opts->find($doc->documentType);
             if ($o && $o->nonpaper && $doc->paperId < 0) {
-                $fn .= $o->abbr;
+                $fn .= $o->abbreviation();
                 $oabbr = "";
             } else {
                 $fn .= "paper" . $doc->paperId;
-                $oabbr = $o ? "-" . $o->abbr : "-unknown";
+                $oabbr = $o ? "-" . $o->abbreviation() : "-unknown";
             }
             if ($o && $o->has_attachments()
                 && ($afn = $doc->unique_filename ? : $doc->filename))

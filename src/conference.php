@@ -73,6 +73,7 @@ class Conf {
     private $_pc_tags_cache = null;
     private $_pc_members_and_admins_cache = null;
     private $_review_form_cache = null;
+    private $_abbrev_matcher = null;
     private $_date_format_initialized = false;
     private $_docclass_cache = [];
     private $_docstore = false;
@@ -801,6 +802,30 @@ class Conf {
     }
 
 
+    private function _abbrev_matcher() {
+        if (!$this->_abbrev_matcher) {
+            $this->_abbrev_matcher = new AbbreviationMatcher;
+            $this->_abbrev_matcher->add("paper", $this->paper_opts->find_document(DTYPE_SUBMISSION), 1);
+            $this->_abbrev_matcher->add("submission", $this->paper_opts->find_document(DTYPE_SUBMISSION), 1);
+            if ($this->has_any_accepts()) {
+                $ol = $this->paper_opts->option_list();
+                $this->_abbrev_matcher->add("final", $this->paper_opts->find_document(DTYPE_FINAL), 1);
+            } else
+                $ol = $this->paper_opts->nonfinal_option_list();
+            // XXX exposes invisible paper options, review fields
+            foreach ($ol as $o)
+                $this->_abbrev_matcher->add($o->name, $o, 1);
+            foreach ($this->all_review_fields() as $f)
+                if ($f->displayed)
+                    $this->_abbrev_matcher->add($f->name, $f, 2);
+        }
+        return $this->_abbrev_matcher;
+    }
+
+    function field_search($text, $tflags = 0) {
+        return $this->_abbrev_matcher()->find($text, $tflags);
+    }
+
 
     function review_form_json() {
         $x = get($this->settingTexts, "review_form");
@@ -824,7 +849,7 @@ class Conf {
     }
 
     function review_field_search($text) {
-        return $this->review_form()->field_search($text);
+        return $this->_abbrev_matcher()->find1($text, 2);
     }
 
 
@@ -1479,9 +1504,12 @@ class Conf {
             if (!$caches || isset($caches["paperOption"])) {
                 $this->paper_opts->invalidate_option_list();
                 $this->_docclass_cache = [];
+                $this->_abbrev_matcher = null;
             }
-            if (!$caches || isset($caches["rf"]))
+            if (!$caches || isset($caches["rf"])) {
                 $this->_review_form_cache = $this->_defined_rounds = null;
+                $this->_abbrev_matcher = null;
+            }
             if (!$caches || isset($caches["taginfo"]) || isset($caches["tracks"]))
                 $this->_taginfo = null;
             if (!$caches || isset($caches["formulas"]))
