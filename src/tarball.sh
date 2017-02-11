@@ -97,6 +97,7 @@ etc/searchkeywords.json
 etc/settings.json
 
 lib/.htaccess
+lib/abbreviationmatcher.php
 lib/backupdb.sh
 lib/base.php
 lib/cleanhtml.php

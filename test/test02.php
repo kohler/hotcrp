@@ -249,7 +249,7 @@ xassert_eqq(Text::highlight("Is foo bar føo bar fóó bar highlit right? foö",
             "Is <span class=\"match\">foo</span> bar <span class=\"match\">føo</span> bar <span class=\"match\">fóó</span> bar highlit right? <span class=\"match\">foö</span>");
 xassert_eqq(UnicodeHelper::remove_f_ligatures("Héllo ﬀ,ﬁ:fi;ﬂ,ﬃ:ﬄ-ﬅ"), "Héllo ff,fi:fi;fl,ffi:ffl-ﬅ");
 
-// Qobject tests
+// Qrequest tests
 $q = new Qrequest("GET", ["a" => 1, "b" => 2]);
 xassert_eqq($q->a, 1);
 xassert_eqq($q->b, 2);
@@ -380,5 +380,27 @@ xassert($s[3]->compare_by($s[1], "C") > 0);
 xassert($s[3]->compare_by($s[2], "C") > 0);
 xassert($s[3]->compare_by($s[3], "C") == 0);
 xassert($s[3]->compare_by($s[4], "C") > 0);
+
+// AbbreviationMatcher
+$am = new AbbreviationMatcher;
+$am->add("élan", 1, 1);
+$am->add("eclat", 2);
+$am->add("Should the PC Suck?", 3);
+$am->add("Should P. C. Rock?", 4);
+xassert_eqq($am->find("elan"), [1]);
+xassert_eqq($am->find("el"), [1]);
+xassert_eqq($am->find("él"), [1]);
+xassert_eqq($am->find("ÉL"), [1]);
+xassert_eqq($am->find("e"), [1, 2]);
+xassert_eqq($am->find("ecla"), [2]);
+xassert_eqq($am->find("should-the-pc-suck"), [3]);
+xassert_eqq($am->find("should-the pc-suck"), [3]);
+xassert_eqq($am->find("ShoPCSuc"), [3]);
+xassert_eqq($am->find("ShoPCRoc"), [4]);
+$am->add("élan", 5, 2);
+xassert_eqq($am->find("elan"), [1, 5]);
+xassert_eqq($am->find("elan", 1), [1]);
+xassert_eqq($am->find("elan", 2), [5]);
+xassert_eqq($am->find("elan", 3), [1, 5]);
 
 xassert_exit();
