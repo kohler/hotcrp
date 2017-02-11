@@ -3051,7 +3051,7 @@ class PaperSearch {
     // Check the results of the query, reducing the possibly conservative
     // overestimate produced by the database to a precise result.
 
-    private function word_count_for(PaperInfo $row, $reviewId) {
+    function word_count_for(PaperInfo $row, $reviewId) {
         if ($this->_reviewWordCounts === false)
             $this->_reviewWordCounts = Dbl::fetch_iimap($this->conf->qe("select reviewId, reviewWordCount from PaperReview"));
         if (!isset($this->_reviewWordCounts[$reviewId])) {
