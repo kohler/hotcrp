@@ -378,8 +378,7 @@ function render(SettingValues $sv) {
 
     // Topics
     // load topic interests
-    $qinterest = $sv->conf->query_topic_interest();
-    $result = $sv->conf->q_raw("select topicId, if($qinterest>0,1,0), count(*) from TopicInterest where $qinterest!=0 group by topicId, $qinterest>0");
+    $result = $sv->conf->q_raw("select topicId, if(interest>0,1,0), count(*) from TopicInterest where interest!=0 group by topicId, interest>0");
     $interests = array();
     $ninterests = 0;
     while (($row = edb_row($result))) {

@@ -59,16 +59,10 @@ function need_profile_redirect($user) {
         return false;
     if (!$user->affiliation)
         return true;
-    if ($user->is_pc_member() && !$user->has_review()) {
-        if (!$user->collaborators)
-            return true;
-        $tmap = $Conf->topic_map();
-        if (count($tmap)
-            && ($result = Dbl::qe("select count(topicId) from TopicInterest where contactId=$user->contactId"))
-            && ($row = edb_row($result))
-            && !$row[0])
-            return true;
-    }
+    if ($user->is_pc_member() && !$user->has_review()
+        && (!$user->collaborators
+            || ($Conf->topic_map() && !$user->topic_interest_map())))
+        return true;
     return false;
 }
 

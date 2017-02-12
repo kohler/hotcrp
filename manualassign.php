@@ -35,7 +35,10 @@ $pcm = pcMembers();
 $reviewer = cvtint($qreq->reviewer);
 if ($reviewer <= 0)
     $reviewer = $Me->contactId;
-if ($reviewer <= 0 || !isset($pcm[$reviewer]))
+$revuser = null;
+if ($reviewer > 0 && isset($pcm[$reviewer]))
+    $revuser = $pcm[$reviewer];
+else
     $reviewer = 0;
 
 $qreq->assrev = array();
@@ -63,15 +66,14 @@ if (is_array($qreq->p) && $qreq->kind == "c") {
 $qreq->rev_round = (string) $Conf->sanitize_round_name($qreq->rev_round);
 
 
-function saveAssignments($qreq, $reviewer) {
-    global $Conf, $Me, $Now, $pcm;
-    $reviewer_contact = $pcm[$reviewer];
+function saveAssignments($qreq, $revuser) {
+    global $Conf, $Me, $Now;
     $round_number = null;
 
     if (!count($qreq->assrev))
         return;
 
-    $result = $Me->paper_result(["paperId" => array_keys($qreq->assrev), "reviewer" => $reviewer]);
+    $result = $Me->paper_result(["paperId" => array_keys($qreq->assrev), "reviewer" => $revuser->contactId]);
 
     $lastPaperId = -1;
     $del = $ins = "";
@@ -86,12 +88,12 @@ function saveAssignments($qreq, $reviewer) {
         if ($type >= 0 && $row->reviewerConflictType > 0 && $row->reviewerConflictType < CONFLICT_AUTHOR)
             $del .= " or paperId=$row->paperId";
         if ($type < 0 && $row->reviewerConflictType < CONFLICT_CHAIRMARK)
-            $ins .= ", ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")";
+            $ins .= ", ($row->paperId, {$revuser->contactId}, " . CONFLICT_CHAIRMARK . ")";
         if ($qreq->kind == "a" && $type != $row->reviewerReviewType
-            && ($type <= 0 || $reviewer_contact->can_accept_review_assignment_ignore_conflict($row))) {
+            && ($type <= 0 || $revuser->can_accept_review_assignment_ignore_conflict($row))) {
             if ($type > 0 && $round_number === null)
                 $round_number = $Conf->round_number($qreq->rev_round, true);
-            $Me->assign_review($row->paperId, $reviewer, $type,
+            $Me->assign_review($row->paperId, $revuser->contactId, $type,
                                array("round_number" => $round_number));
         }
     }
@@ -99,7 +101,7 @@ function saveAssignments($qreq, $reviewer) {
     if ($ins)
         $Conf->qe_raw("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))");
     if ($del)
-        $Conf->qe_raw("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")");
+        $Conf->qe_raw("delete from PaperConflict where contactId={$revuser->contactId} and (" . substr($del, 4) . ")");
 
     $Conf->update_rev_tokens_setting(false);
 
@@ -109,8 +111,8 @@ function saveAssignments($qreq, $reviewer) {
 }
 
 
-if ($qreq->update && $reviewer > 0 && check_post())
-    saveAssignments($qreq, $reviewer);
+if ($qreq->update && $revuser && check_post())
+    saveAssignments($qreq, $revuser);
 else if ($qreq->update)
     Conf::msg_error("You need to select a reviewer.");
 
@@ -146,8 +148,8 @@ if ($qreq->kind == "a")
 echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 
-if ($reviewer > 0)
-    echo "<h2 style='margin-top:1em'>Assignments for ", $Me->name_html_for($pcm[$reviewer]), ($pcm[$reviewer]->affiliation ? " (" . htmlspecialchars($pcm[$reviewer]->affiliation) . ")" : ""), "</h2>\n";
+if ($revuser)
+    echo "<h2 style='margin-top:1em'>Assignments for ", $Me->name_html_for($revuser), ($revuser->affiliation ? " (" . htmlspecialchars($revuser->affiliation) . ")" : ""), "</h2>\n";
 else
     echo "<h2 style='margin-top:1em'>Assignments by PC member</h2>\n";
 
@@ -166,7 +168,7 @@ while (($row = edb_row($result)))
     $rev_count[$row[0]] = $row[1];
 
 $rev_opt = array();
-if ($reviewer <= 0)
+if (!$revuser)
     $rev_opt[0] = "(Select a PC member)";
 $textarg = array("lastFirst" => $Conf->sort_by_last);
 foreach ($pcm as $pc)
@@ -219,63 +221,58 @@ function make_match_preg($str) {
 }
 
 // Current PC member information
-if ($reviewer > 0) {
+if ($revuser) {
     $col = array(array(), array(), array());
 
     // Conflict information
-    $result = $Conf->qe_raw("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
-    if ($result && ($row = edb_orow($result))) {
-        if ($row->collaborators)
-            $col[1][] = "<div class='f-c'>Collaborators</div><div class='f-e'>"
-                . nl2br(htmlspecialchars($row->collaborators))
-                . "</div>";
+    if ($revuser->collaborators)
+        $col[1][] = "<div class='f-c'>Collaborators</div><div class='f-e'>"
+            . nl2br(htmlspecialchars($revuser->collaborators))
+            . "</div>";
 
-        $useless_words = array("university" => 1, "the" => 1, "and" => 1, "of" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "at" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
+    $useless_words = array("university" => 1, "the" => 1, "and" => 1, "of" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "at" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
 
-        // search outline from old CRP, done here in a very different way
-        preg_match_all('/[a-z&]{2,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
-        $useless = $useless_words;
-        $search = array();
-        $showco = "";
-        foreach ($match[0] as $s)
-            if (!isset($useless[$s])) {
-                $search[] = "co:" . (ctype_alnum($s) ? $s : "\"$s\"");
-                $showco .= $s . " ";
-                $useless[$s] = 1;
-            }
+    // search outline from old CRP, done here in a very different way
+    preg_match_all('/[a-z&]{2,}/', strtolower($revuser->firstName . " " . $revuser->lastName . " " . $revuser->affiliation), $match);
+    $useless = $useless_words;
+    $search = array();
+    $showco = "";
+    foreach ($match[0] as $s)
+        if (!isset($useless[$s])) {
+            $search[] = "co:" . (ctype_alnum($s) ? $s : "\"$s\"");
+            $showco .= $s . " ";
+            $useless[$s] = 1;
+        }
 
-        preg_match_all('/[a-z&]{2,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation . " " . $row->collaborators), $match);
-        $useless = $useless_words;
-        $showau = "";
-        foreach ($match[0] as $s)
-            if (!isset($useless[$s])) {
-                $search[] = "au:" . (ctype_alnum($s) ? $s : "\"$s\"");
-                $showau .= $s . " ";
-                $useless[$s] = 1;
-            }
+    preg_match_all('/[a-z&]{2,}/', strtolower($revuser->firstName . " " . $revuser->lastName . " " . $revuser->affiliation . " " . $revuser->collaborators), $match);
+    $useless = $useless_words;
+    $showau = "";
+    foreach ($match[0] as $s)
+        if (!isset($useless[$s])) {
+            $search[] = "au:" . (ctype_alnum($s) ? $s : "\"$s\"");
+            $showau .= $s . " ";
+            $useless[$s] = 1;
+        }
 
-        if ($showau !== "")
-            $col[2][] = "<div class='f-c'>Conflict search terms for paper authors</div><div class='f-e'>"
-                . htmlspecialchars(rtrim($showau)) . "</div>";
-        if ($showco !== "")
-            $col[2][] = "<div class='f-c'>Conflict search terms for paper collaborators</div><div class='f-e'>"
-                . htmlspecialchars(rtrim($showco)) . "</div>";
-        $col[2][] = "<a href=\"" . hoturl("search", "q=" . urlencode(join(" OR ", $search) . ($showco ? " show:co" : "") . ($showau ? " show:au" : "")) . "&amp;linkto=assign") . "\">Search for potential conflicts</a>";
-    }
+    if ($showau !== "")
+        $col[2][] = "<div class='f-c'>Conflict search terms for paper authors</div><div class='f-e'>"
+            . htmlspecialchars(rtrim($showau)) . "</div>";
+    if ($showco !== "")
+        $col[2][] = "<div class='f-c'>Conflict search terms for paper collaborators</div><div class='f-e'>"
+            . htmlspecialchars(rtrim($showco)) . "</div>";
+    $col[2][] = "<a href=\"" . hoturl("search", "q=" . urlencode(join(" OR ", $search) . ($showco ? " show:co" : "") . ($showau ? " show:au" : "")) . "&amp;linkto=assign") . "\">Search for potential conflicts</a>";
 
     // Topic links
-    $result = $Conf->qe_raw("select topicId, " . $Conf->query_topic_interest() . " from TopicArea join TopicInterest using (topicId) where contactId=$reviewer");
-    $interest = array(array(), array());
-    while (($row = edb_row($result)))
-        if ($row[1] != 0)
-            $interest[$row[1] > 0 ? 1 : 0][$row[0]] = $row[1];
-    if (count($interest[1]))
+    $interest = [[], []];
+    foreach ($revuser->topic_interest_map() as $topic => $ti)
+        $interest[$ti > 0 ? 1 : 0][$topic] = $ti;
+    if (!empty($interest[1]))
         $col[0][] = "<div class='f-c'>High interest topics</div><div class='f-e'>"
-            . PaperInfo::unparse_topic_list_html($Conf, array_keys($interest[1]), array_values($interest[1]), true)
+            . PaperInfo::unparse_topic_list_html($Conf, $interest[1], true)
             . "</div>";
-    if (count($interest[0]))
+    if (!empty($interest[0]))
         $col[0][] = "<div class='f-c'>Low interest topics</div><div class='f-e'>"
-            . PaperInfo::unparse_topic_list_html($Conf, array_keys($interest[0]), array_values($interest[0]), true)
+            . PaperInfo::unparse_topic_list_html($Conf, $interest[0], true)
             . "</div>";
 
     // Table
@@ -294,7 +291,7 @@ if ($reviewer > 0) {
     // main assignment form
     $search = new PaperSearch($Me, array("t" => $qreq->t, "q" => $qreq->q,
                                          "urlbase" => hoturl_site_relative_raw("manualassign", "reviewer=$reviewer")));
-    $paperList = new PaperList($search, ["sort" => true, "reviewer" => $pcm[$reviewer]], make_qreq());
+    $paperList = new PaperList($search, ["sort" => true, "reviewer" => $revuser], make_qreq());
     $paperList->display .= " topics ";
     if ($qreq->kind != "c")
         $paperList->display .= "reviewers ";

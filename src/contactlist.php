@@ -316,20 +316,13 @@ class ContactList {
             return "<input type='checkbox' class='cb' name='pap[]' value='$row->contactId' tabindex='1' id='psel$this->count' onclick='rangeclick(event,this)' $c/>";
         case self::FIELD_HIGHTOPICS:
         case self::FIELD_LOWTOPICS:
-            if (!($topics = get($row, "topicInterest")))
+            if (!($topics = $row->topic_interest_map()))
                 return "";
-            $wanthigh = ($fieldId == self::FIELD_HIGHTOPICS);
-            $nt = $nti = [];
-            foreach (explode(",", $row->topicInterest) as $tandi)
-                if (($pos = strpos($tandi, " "))
-                    && ($v = (int) substr($tandi, $pos + 1))
-                    && ($wanthigh ? $v > 0 : $v < 0)) {
-                    $nt[] = (int) substr($tandi, 0, $pos);
-                    $nti[] = $v;
-                }
-            if (empty($nt))
-                return "";
-            return PaperInfo::unparse_topic_list_html($Conf, $nt, $nti, true);
+            if ($fieldId == self::FIELD_HIGHTOPICS)
+                $nt = array_filter($topics, function ($i) { return $i > 0; });
+            else
+                $nt = array_filter($topics, function ($i) { return $i < 0; });
+            return PaperInfo::unparse_topic_list_html($Conf, $nt, true);
         case self::FIELD_REVIEWS:
             if (!$row->numReviews && !$row->numReviewsSubmitted)
                 return "";

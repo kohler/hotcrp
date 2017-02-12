@@ -101,77 +101,73 @@ function urlencode_matches($m) {
 
 if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     assert($Conf->sversion >= 73);
-    $result = $Conf->qe_raw("select firstName first, lastName last, email,
-        preferredEmail preferred_email, affiliation,
-        voicePhoneNumber phone,
-        collaborators, defaultWatch, roles, disabled, contactTags tags, data,
-        group_concat(concat(topicId,':'," . $Conf->query_topic_interest() . ")) topic_interest
+    $result = $Conf->qe_raw("select ContactInfo.*,
+        (select group_concat(topicId, ' ', interest) from TopicInterest where contactId=ContactInfo.contactId) topicInterest
         from ContactInfo
-        left join TopicInterest on (TopicInterest.contactId=ContactInfo.contactId and TopicInterest.interest is not null)
         where " . paperselPredicate($papersel) . "
-        group by ContactInfo.contactId order by lastName, firstName, email");
+        order by lastName, firstName, email");
 
     // NB This format is expected to be parsed by profile.php's bulk upload.
-    $topics = $Conf->topic_map();
-    $people = array();
-    $has = (object) array("topics" => array());
-    while (($row = edb_orow($result))) {
-        if ($row->phone)
-            $has->phone = true;
-        if ($row->preferred_email && $row->preferred_email != $row->email)
-            $has->preferred_email = true;
-        if ($row->disabled)
-            $has->disabled = true;
-        if ($row->tags && ($row->tags = trim($row->tags)))
-            $has->tags = true;
-        if ($row->topic_interest
-            && preg_match_all('|(\d+):(-?\d+)|', $row->topic_interest, $m, PREG_SET_ORDER)) {
-            foreach ($m as $x)
-                if (($tn = @$topics[$x[1]]) && $x[2]) {
-                    $k = "ti$x[1]";
-                    $row->$k = (int) $x[2];
-                    @($has->topics[$x[1]] = true);
-                }
+    $tagger = new Tagger($Me);
+    $people = [];
+    $has = (object) [];
+    while (($user = Contact::fetch($result, $Conf))) {
+        $row = (object) ["first" => $user->firstName, "last" => $user->lastName,
+            "email" => $user->email, "phone" => $user->voicePhoneNumber,
+            "disabled" => !!$user->disabled];
+        if ($user->preferredEmail && $user->preferredEmail !== $user->email)
+            $row->preferred_email = $user->preferredEmail;
+        if ($user->contactTags)
+            $row->tags = $tagger->unparse($user->contactTags);
+        foreach ($user->topic_interest_map() as $t => $i) {
+            $k = "topic$t";
+            $row->$k = $i;
         }
-        $row->follow = array();
-        if ($row->defaultWatch & (WATCHTYPE_COMMENT << WATCHSHIFT_ON))
-            $row->follow[] = "reviews";
-        if (($row->defaultWatch & (WATCHTYPE_COMMENT << WATCHSHIFT_ALLON))
-            && ($row->roles & Contact::ROLE_PCLIKE))
-            $row->follow[] = "allreviews";
-        if (($row->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALLON))
-            && ($row->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)))
-            $row->follow[] = "allfinal";
-        $row->follow = join(",", $row->follow);
-        if ($row->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
+        $f = array();
+        if ($user->defaultWatch & (WATCHTYPE_COMMENT << WATCHSHIFT_ON))
+            $f[] = "reviews";
+        if (($user->defaultWatch & (WATCHTYPE_COMMENT << WATCHSHIFT_ALLON))
+            && ($user->roles & Contact::ROLE_PCLIKE))
+            $f[] = "allreviews";
+        if (($user->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALLON))
+            && ($user->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)))
+            $f[] = "allfinal";
+        $row->follow = join(",", $f);
+        if ($user->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
             $r = array();
-            if ($row->roles & Contact::ROLE_CHAIR)
+            if ($user->roles & Contact::ROLE_CHAIR)
                 $r[] = "chair";
-            if ($row->roles & Contact::ROLE_PC)
+            if ($user->roles & Contact::ROLE_PC)
                 $r[] = "pc";
-            if ($row->roles & Contact::ROLE_ADMIN)
+            if ($user->roles & Contact::ROLE_ADMIN)
                 $r[] = "sysadmin";
             $row->roles = join(",", $r);
         } else
             $row->roles = "";
         $people[] = $row;
+
+        foreach ((array) $row as $k => $v)
+            if ($v !== null && $v !== false && $v !== "")
+                $has->$k = true;
     }
 
     $header = array("first", "last", "email");
-    if (@$has->preferred_email)
+    if (isset($has->preferred_email))
         $header[] = "preferred_email";
     $header[] = "roles";
-    if (@$has->tags)
+    if (isset($has->tags))
         $header[] = "tags";
     array_push($header, "affiliation", "collaborators", "follow");
-    if (@$has->phone)
+    if (isset($has->phone))
         $header[] = "phone";
     $selection = $header;
-    foreach ($topics as $id => $tn)
-        if (isset($has->topics[$id])) {
+    foreach ($Conf->topic_map() as $t => $tn) {
+        $k = "topic$t";
+        if (isset($has->$k)) {
             $header[] = "topic: " . $tn;
-            $selection[] = "ti$id";
+            $selection[] = $k;
         }
+    }
     downloadCSV($people, $header, "pcinfo", array("selection" => $selection));
 }
 

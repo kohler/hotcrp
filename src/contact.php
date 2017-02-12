@@ -85,8 +85,6 @@ class Contact {
     public $myReviewNeedsSubmit = null;
     public $conflictType = null;
     public $watch = null;
-    public $prefOrdinal = null;
-    public $topicInterest = null;
 
     static private $status_info_cache = array();
     static private $contactdb_dblink = false;
@@ -933,6 +931,7 @@ class Contact {
             $this->conf->qe_raw("delete from TopicInterest where contactId=$this->contactId");
             if (count($tf))
                 $this->conf->qe_raw("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $tf));
+            unset($this->topicInterest, $this->topic_interest_map_);
         }
 
         // Roles
@@ -1637,10 +1636,18 @@ class Contact {
             return $this->topic_interest_map_;
         if ($this->contactId <= 0)
             return array();
-        if (($this->roles & self::ROLE_PCLIKE)
-            && $this !== $Me
-            && ($pcm = $this->conf->pc_members())
-            && $this === get($pcm, $this->contactId)) {
+        if (property_exists($this, "topicInterest")) {
+            $this->topic_interest_map_ = [];
+            foreach (explode(",", $this->topicInterest) as $tandi)
+                if (($pos = strpos($tandi, " "))
+                    && ($i = (int) substr($tandi, $pos + 1))) {
+                    $t = (int) substr($tandi, 0, $pos);
+                    $this->topic_interest_map_[$t] = $i;
+                }
+        } else if (($this->roles & self::ROLE_PCLIKE)
+                   && $this !== $Me
+                   && ($pcm = $this->conf->pc_members())
+                   && $this === get($pcm, $this->contactId)) {
             $result = $this->conf->qe("select contactId, topicId, interest from TopicInterest where interest!=0 order by contactId");
             foreach ($pcm as $pc)
                 $pc->topic_interest_map_ = array();

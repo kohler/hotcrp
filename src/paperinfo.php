@@ -600,19 +600,15 @@ class PaperInfo {
         return self::render_topic_list($this->conf, $out, $comma, $long);
     }
 
-    static function unparse_topic_list_html(Conf $conf, $topicIds, $interests, $comma) {
-        if (!$topicIds)
+    static function unparse_topic_list_html(Conf $conf, $ti, $comma) {
+        if (!$ti)
             return "";
-        if (!is_array($topicIds))
-            $topicIds = explode(",", $topicIds);
-        if ($interests !== null && !is_array($interests))
-            $interests = explode(",", $interests);
         $out = array();
         $tmap = $conf->topic_map();
         $tomap = $conf->topic_order_map();
         $long = false;
-        for ($i = 0; $i < count($topicIds); $i++)
-            $out[$tomap[$topicIds[$i]]] = self::render_topic($topicIds[$i], $interests ? $interests[$i] : 0, $tmap, $long);
+        foreach ($ti as $t => $i)
+            $out[$tomap[$t]] = self::render_topic($t, $i, $tmap, $long);
         ksort($out);
         return self::render_topic_list($conf, $out, $comma, $long);
     }

@@ -89,9 +89,8 @@ class UserStatus {
 
         if (($user->roles & Contact::ROLE_PC)
             && $user->contactId
-            && ($tm = $Conf->topic_map())
-            && count($tm)) {
-            $result = $Conf->qe_raw("select topicId, " . $Conf->query_topic_interest() . " from TopicInterest where contactId=$user->contactId");
+            && ($tm = $Conf->topic_map())) {
+            $result = $Conf->qe_raw("select topicId, interest from TopicInterest where contactId=$user->contactId");
             $topics = (object) array();
             while (($row = edb_row($result))) {
                 $k = $row[0];

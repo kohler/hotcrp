@@ -1940,10 +1940,6 @@ class Conf {
         return "group_concat(concat(contactId,' ',preference,' ',coalesce(expertise,'.')) separator ',')";
     }
 
-    function query_topic_interest($table = "") {
-        return $table . "interest";
-    }
-
     private function paperQuery(Contact $contact = null, $options = array()) {
         // Options:
         //   "paperId" => $pid  Only paperId $pid (if array, any of those)

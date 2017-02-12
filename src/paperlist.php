@@ -663,20 +663,6 @@ class PaperList {
             Dbl::free($result);
         }
 
-        // prepare PC topic interests
-        if (isset($this->qopts["allReviewerPreference"])) {
-            $ord = 0;
-            $pcm = $this->conf->pc_members();
-            foreach ($pcm as $pc) {
-                $pc->prefOrdinal = sprintf("-0.%04d", $ord++);
-                $pc->topicInterest = array();
-            }
-            $result = $this->conf->qe("select contactId, topicId, " . $this->conf->query_topic_interest() . " from TopicInterest");
-            while (($row = edb_row($result)))
-                $pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
-            Dbl::free($result);
-        }
-
         // analyze rows (usually noop)
         $rows = $rowset->all();
         foreach ($field_list as $fdef)

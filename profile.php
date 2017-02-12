@@ -603,12 +603,9 @@ if (!$UserStatus->nerrors && $Conf->session("freshlogin") === "redirect") {
             $amsg .= " or “Unaffiliated”";
         $amsg .= " if you have none.";
     }
-    if ($ispc) {
-        $result = $Conf->q_raw("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
-        if (($row = edb_row($result)) && $row[0] && !$row[1]) {
-            $msgs[] = "tell us your topic interests";
-            $amsg .= "  We use your topic interests to assign you papers you might like.";
-        }
+    if ($ispc && $Conf->topic_map() && !$Acct->topic_interest_map()) {
+        $msgs[] = "tell us your topic interests";
+        $amsg .= "  We use your topic interests to assign you papers you might like.";
     }
     $Conf->infoMsg("Please take a moment to " . commajoin($msgs) . "." . $amsg);
 }
