@@ -1140,8 +1140,18 @@ class ConflictMatchPaperColumn extends PaperColumn {
         if ($preg == "")
             return "";
         $text = "";
-        $field = $this->field;
-        foreach (explode("\n", $row->$field) as $line)
+        if ($this->field === "collaborators")
+            $lines = explode("\n", $row->collaborators);
+        else
+            $lines = array_map(function ($a) {
+                $at = Text::name_text($a);
+                if ($a->email)
+                    $at .= " <{$a->email}>";
+                if ($a->affiliation)
+                    $at .= " ({$a->affiliation})";
+                return $at;
+            }, $row->author_list());
+        foreach ($lines as $line)
             if (($line = trim($line)) != "") {
                 $line = Text::highlight($line, $preg, $n);
                 if ($n)
