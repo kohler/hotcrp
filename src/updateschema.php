@@ -1088,6 +1088,13 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
             $conf->save_setting("has_colontag", 1);
         $conf->update_schema_version(156);
     }
+    if ($conf->sversion == 156
+        && $conf->ql("delete from TopicInterest where interest is null")
+        && $conf->ql("alter table TopicInterest change `interest` `interest` int(1) NOT NULL")
+        && $conf->ql("update TopicInterest set interest=1 where interest=2")
+        && $conf->ql("update TopicInterest set interest=2 where interest=4")
+        && $conf->ql("delete from TopicInterest where interest=0"))
+        $conf->update_schema_version(157);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }

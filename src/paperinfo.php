@@ -613,6 +613,8 @@ class PaperInfo {
         return self::render_topic_list($conf, $out, $comma, $long);
     }
 
+    private static $topic_interest_values = [-0.7071, -0.5, 0, 0.7071, 1];
+
     function topic_interest_score($contact) {
         $score = 0;
         if (is_int($contact))
@@ -624,8 +626,20 @@ class PaperInfo {
                 $score = $this->_topic_interest_score_array[$contact->contactId];
             else {
                 $interests = $contact->topic_interest_map();
-                foreach ($this->topics() as $t)
-                    $score += (int) get($interests, $t);
+                $topics = $this->topics();
+                foreach ($topics as $t)
+                    if (($j = get($interests, $t, 0))) {
+                        if ($j >= -2 && $j <= 2)
+                            $score += self::$topic_interest_values[$j + 2];
+                        else if ($j > 2)
+                            $score += sqrt($j / 2);
+                        else
+                            $score += -sqrt(-$j / 4);
+                    }
+                if ($score)
+                    // * Strong interest in the paper's single topic gets
+                    //   score 10.
+                    $score = (int) ($score / sqrt(count($topics)) * 10 + 0.5);
                 $this->_topic_interest_score_array[$contact->contactId] = $score;
             }
         }

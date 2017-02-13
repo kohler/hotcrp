@@ -329,7 +329,7 @@ function parseBulkFile($text, $filename) {
         // thou shalt not set passwords by bulk update
         unset($cj->password, $cj->password_plaintext, $cj->new_password);
         // topics
-        if (count($topic_revmap)) {
+        if (!empty($topic_revmap)) {
             foreach (array_keys($line) as $k)
                 if (preg_match('/^topic:\s*(.*?)\s*$/i', $k, $m)) {
                     if (($ti = get($topic_revmap, strtolower($m[1]))) !== null) {
@@ -337,7 +337,7 @@ function parseBulkFile($text, $filename) {
                         if (strtolower($x) === "low")
                             $x = -2;
                         else if (strtolower($x) === "high")
-                            $x = 4;
+                            $x = 2;
                         else if (!is_numeric($x))
                             $x = 0;
                         if (!isset($cj->topics))
@@ -801,14 +801,14 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     <table class="topicinterest"><thead>
        <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest">High</th></tr></thead><tbody>', "\n";
 
-        $interests = array(-2, -1.5,  -1, -0.5,  0, 1,  2, 3,  4);
+        $ibound = [-INF, -1.5, -0.5, 0.5, 1.5, INF];
         foreach ($topics as $id => $name) {
             echo "      <tr><td class=\"ti_topic\">", htmlspecialchars($name), "</td>";
-            $ival = @((int) $formcj->topics->$id);
-            for ($xj = 0; $xj + 1 < count($interests) && $ival > $interests[$xj + 1]; $xj += 2)
-                /* nothing */;
-            for ($j = 0; $j < count($interests); $j += 2)
-                echo "<td class='ti_interest'>", Ht::radio_h("ti$id", $interests[$j], $j == $xj), "</td>";
+            $ival = (float) get($formcj->topics, $id);
+            for ($j = -2; $j <= 2; ++$j) {
+                $checked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
+                echo '<td class="ti_interest">', Ht::radio_h("ti$id", $j, $checked), "</td>";
+            }
             echo "</td></tr>\n";
         }
         echo "    </tbody></table></div>\n";

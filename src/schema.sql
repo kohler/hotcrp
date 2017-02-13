@@ -496,14 +496,14 @@ DROP TABLE IF EXISTS `TopicInterest`;
 CREATE TABLE `TopicInterest` (
   `contactId` int(11) NOT NULL,
   `topicId` int(11) NOT NULL,
-  `interest` int(1) DEFAULT NULL,
+  `interest` int(1) NOT NULL,
   PRIMARY KEY (`contactId`,`topicId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 156);
+insert into Settings (name, value) values ('allowPaperOption', 157);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

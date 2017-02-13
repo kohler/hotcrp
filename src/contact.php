@@ -927,9 +927,10 @@ class Contact {
         if (isset($cj->topics)) {
             $tf = array();
             foreach ($cj->topics as $k => $v)
-                $tf[] = "($this->contactId,$k,$v)";
+                if ($v || empty($tf))
+                    $tf[] = "($this->contactId,$k,$v)";
             $this->conf->qe_raw("delete from TopicInterest where contactId=$this->contactId");
-            if (count($tf))
+            if (!empty($tf))
                 $this->conf->qe_raw("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $tf));
             unset($this->topicInterest, $this->topic_interest_map_);
         }
