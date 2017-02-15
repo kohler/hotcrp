@@ -11,7 +11,6 @@ CREATE TABLE `ActionLog` (
   `ipaddr` varbinary(32) DEFAULT NULL,
   `action` varbinary(4096) NOT NULL,
   PRIMARY KEY (`logId`),
-  UNIQUE KEY `logId` (`logId`),
   KEY `contactId` (`contactId`),
   KEY `paperId` (`paperId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -30,8 +29,7 @@ CREATE TABLE `Capability` (
   `timeExpires` int(11) NOT NULL,
   `salt` varbinary(255) NOT NULL,
   `data` varbinary(4096) DEFAULT NULL,
-  PRIMARY KEY (`salt`),
-  UNIQUE KEY `salt` (`salt`)
+  PRIMARY KEY (`salt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -64,7 +62,6 @@ CREATE TABLE `ContactInfo` (
   `contactTags` varbinary(4096) DEFAULT NULL,
   `data` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`contactId`),
-  UNIQUE KEY `contactId` (`contactId`),
   UNIQUE KEY `rolesContactId` (`roles`,`contactId`),
   UNIQUE KEY `email` (`email`),
   KEY `fullName` (`lastName`,`firstName`,`email`)
@@ -82,8 +79,7 @@ CREATE TABLE `FilteredDocument` (
   `filterType` int(11) NOT NULL,
   `outDocId` int(11) NOT NULL,
   `createdAt` int(11) NOT NULL,
-  PRIMARY KEY (`inDocId`,`filterType`),
-  UNIQUE KEY `inDocFilter` (`inDocId`,`filterType`)
+  PRIMARY KEY (`inDocId`,`filterType`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -101,8 +97,7 @@ CREATE TABLE `Formula` (
   `expression` varbinary(4096) NOT NULL,
   `createdBy` int(11) NOT NULL DEFAULT '0',
   `timeModified` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`formulaId`),
-  UNIQUE KEY `formulaId` (`formulaId`)
+  PRIMARY KEY (`formulaId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -140,7 +135,6 @@ CREATE TABLE `Mimetype` (
   `description` varbinary(200) DEFAULT NULL,
   `inline` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`mimetypeid`),
-  UNIQUE KEY `mimetypeid` (`mimetypeid`),
   UNIQUE KEY `mimetype` (`mimetype`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -179,7 +173,6 @@ CREATE TABLE `Paper` (
   `withdrawReason` varbinary(1024) DEFAULT NULL,
   `paperFormat` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`paperId`),
-  UNIQUE KEY `paperId` (`paperId`),
   KEY `timeSubmitted` (`timeSubmitted`),
   KEY `leadContactId` (`leadContactId`),
   KEY `shepherdContactId` (`shepherdContactId`)
@@ -483,7 +476,6 @@ CREATE TABLE `TopicArea` (
   `topicId` int(11) NOT NULL AUTO_INCREMENT,
   `topicName` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`topicId`),
-  UNIQUE KEY `topicId` (`topicId`),
   KEY `topicName` (`topicName`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -504,7 +496,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 159);
+insert into Settings (name, value) values ('allowPaperOption', 160);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

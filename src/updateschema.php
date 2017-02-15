@@ -1105,6 +1105,16 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table ContactInfo drop key `rolesContactId`")
         && $conf->ql("alter table ContactInfo add unique key `rolesContactId` (`roles`,`contactId`)"))
         $conf->update_schema_version(159);
+    if ($conf->sversion == 159
+        && $conf->ql("alter table ActionLog drop key `logId`")
+        && $conf->ql("alter table Capability drop key `salt`")
+        && $conf->ql("alter table ContactInfo drop key `contactId`")
+        && $conf->ql("alter table FilteredDocument drop key `inDocFilter`")
+        && $conf->ql("alter table Formula drop key `formulaId`")
+        && $conf->ql("alter table Mimetype drop key `mimetypeid`")
+        && $conf->ql("alter table Paper drop key `paperId`")
+        && $conf->ql("alter table TopicArea drop key `topicId`"))
+        $conf->update_schema_version(160);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }
