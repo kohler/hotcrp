@@ -2,16 +2,25 @@
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 
-$arg = getopt("hn:c:V", array("help", "name:", "count:", "verbose"));
+class Cleaner {
+    static public $hash_prefix = null;
+    static public $hash_preg = null;
+    static public $extension = null;
+    static public $dirinfo = [];
+}
+
+$arg = getopt("hn:c:Vm:", array("help", "name:", "count:", "verbose", "match:"));
 if (isset($arg["c"]) && !isset($arg["count"]))
     $arg["count"] = $arg["c"];
 if (isset($arg["V"]) && !isset($arg["verbose"]))
     $arg["verbose"] = $arg["V"];
+if (isset($arg["m"]) && !isset($arg["match"]))
+    $arg["match"] = $arg["m"];
 if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT]\n");
+    fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n");
     exit(0);
 } else if (isset($arg["count"]) && !ctype_digit($arg["count"])) {
-    fwrite(STDERR, "Usage: php batch/cleandocstore.php [-c COUNT]\n");
+    fwrite(STDERR, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n");
     exit(1);
 }
 
@@ -21,6 +30,17 @@ if (!($dp = $Conf->docstore())) {
 }
 $count = isset($arg["count"]) ? intval($arg["count"]) : 10;
 $verbose = isset($arg["verbose"]);
+if (isset($arg["match"])) {
+    $dot = strpos($arg["match"], ".");
+    if ($dot !== false)
+        Cleaner::$extension = substr($arg["match"], $dot);
+    $t = substr($arg["match"], 0, $dot === false ? strlen($arg["match"]) : $dot);
+    if (($star = strpos($t, "*")) === false)
+        Cleaner::$hash_prefix = $t;
+    else
+        Cleaner::$hash_prefix = substr($t, 0, $star);
+    Cleaner::$hash_preg = str_replace('\\*', '[0-9a-f]*', preg_quote($t));
+}
 
 assert($dp[1][0] === "/");
 $fparts = [];
@@ -37,15 +57,40 @@ foreach (preg_split("{/+}", $dp[1]) as $fdir)
     }
 
 
-$dirinfo = [];
-
 function populate_dirinfo($bdir, $entrypat) {
-    global $dirinfo;
-    $matcher = preg_replace('/%\d*[hx]/', '.*', preg_quote($entrypat));
-    $matcher = "{" . str_replace('%%', '%', $matcher) . "}";
+    $preg = "";
+    $entrypat = preg_quote($entrypat);
+    while ($entrypat !== ""
+           && preg_match('{\A(.*?)%(\d*[hx%])(.*)\z}', $entrypat, $m)) {
+        $preg .= $m[1];
+        if (str_ends_with($m[2], "x")) {
+            if (Cleaner::$extension)
+                $preg .= preg_quote(Cleaner::$extension);
+            else
+                $preg .= ".*";
+        } else if (str_ends_with($m[2], "h")) {
+            $prefix_len = intval($m[2]) ? : 40;
+            if (!Cleaner::$hash_preg)
+                $preg .= "[0-9a-f]{" . $prefix_len . "}";
+            else if ($prefix_len == 40)
+                $preg .= Cleaner::$hash_preg;
+            else {
+                $l = min(strlen(Cleaner::$hash_prefix), $prefix_len);
+                $preg .= substr(Cleaner::$hash_prefix, 0, $l);
+                if ($l < $prefix_len)
+                    $preg .= "[0-9a-f]{" . ($prefix_len - $l) . "}";
+            }
+        } else
+            $preg .= "%";
+        $entrypat = $m[3];
+    }
+    $preg = "{" . $preg . $entrypat . "}";
+    $di = [];
     foreach (scandir($bdir, SCANDIR_SORT_NONE) as $x)
-        if ($x !== "." && $x !== ".." && preg_match($matcher, "/$x"))
-            $dirinfo[$bdir][] = "/$x";
+        if ($x !== "." && $x !== ".." && preg_match($preg, "/$x"))
+            $di[] = "/$x";
+    Cleaner::$dirinfo[$bdir] = $di;
+    return $di;
 }
 
 function try_part_match($try, $match, &$hash, &$extension) {
@@ -100,7 +145,6 @@ function try_part_match($try, $match, &$hash, &$extension) {
 }
 
 function try_random_match($fparts) {
-    global $dirinfo;
     $hash = "";
     $extension = null;
     $bdir = "";
@@ -108,9 +152,9 @@ function try_random_match($fparts) {
         if ($i % 2 == 0)
             $bdir .= $fparts[$i];
         else {
-            if (!isset($dirinfo[$bdir]))
-                populate_dirinfo($bdir, $fparts[$i]);
-            $di = $dirinfo[$bdir];
+            $di = get(Cleaner::$dirinfo, $bdir);
+            if ($di === null)
+                $di = populate_dirinfo($bdir, $fparts[$i]);
             if (empty($di))
                 return false;
             $ndi = count($di);
@@ -121,7 +165,7 @@ function try_random_match($fparts) {
                     break;
             // remove last part from list
             if ($i == count($fparts) - 1)
-                array_splice($dirinfo[$bdir], $start, 1);
+                array_splice(Cleaner::$dirinfo[$bdir], $start, 1);
             $bdir .= $build;
         }
     if (strlen($hash) != 40)
