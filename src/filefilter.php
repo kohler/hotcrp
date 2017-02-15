@@ -1,6 +1,6 @@
 <?php
 // filefilter.php -- HotCRP helper class for filtering documents
-// HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class FileFilter {

@@ -1,6 +1,6 @@
 <?php
 // papersaver.php -- HotCRP helper for mapping requests to JSON
-// HotCRP is Copyright (c) 2008-2016 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2008-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperSaver {

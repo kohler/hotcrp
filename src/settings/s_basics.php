@@ -1,6 +1,6 @@
 <?php
 // src/settings/s_basics.php -- HotCRP settings > info page
-// HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class SettingRenderer_Basics extends SettingRenderer {

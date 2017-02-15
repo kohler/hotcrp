@@ -1,6 +1,6 @@
 <?php
 // formula.php -- HotCRP helper class for paper expressions
-// HotCRP is Copyright (c) 2009-2016 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2009-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class Fexpr_Error {
