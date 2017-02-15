@@ -1,6 +1,27 @@
 HotCRP NEWS
 ===========
 
+## Version 2.101
+
+* Support delegated reviews that must be “approved” by the delegating PC
+  members, for STOC-like workflow.
+
+* Support emoji tags like #:smile: or #:poop:.
+
+* Visually distinguish PDFs with serious formatting errors.
+
+* Internals: Make HotCRP much more extensible. Allow paper columns, paper
+  search keywords, formula functions, API functions, some UI messages to be
+  extended using JSON.
+
+* Allow tag patterns: you can make a set of tags chair-only using syntax like
+  “chair:*”.
+
+* Many bug fixes.
+
+* Thanks for feature requests and bug reports to many users.
+
+
 ## Version 2.100 - 15.Jun.2016
 
 * Sort reviews & comments by post time, rather than putting all the reviews
