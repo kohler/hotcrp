@@ -1095,6 +1095,16 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("update TopicInterest set interest=2 where interest=4")
         && $conf->ql("delete from TopicInterest where interest=0"))
         $conf->update_schema_version(157);
+    if ($conf->sversion == 157
+        && $conf->ql("alter table PaperOption drop key `paperOption`")
+        && $conf->ql("alter table PaperOption add primary key (`paperId`,`optionId`,`value`)")
+        && $conf->ql("alter table PaperOption change `data` `data` varbinary(32767) DEFAULT NULL")
+        && $conf->ql("alter table PaperOption add `dataOverflow` longblob DEFAULT NULL"))
+        $conf->update_schema_version(158);
+    if ($conf->sversion == 158
+        && $conf->ql("alter table ContactInfo drop key `rolesContactId`")
+        && $conf->ql("alter table ContactInfo add unique key `rolesContactId` (`roles`,`contactId`)"))
+        $conf->update_schema_version(159);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }

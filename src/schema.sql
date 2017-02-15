@@ -208,7 +208,7 @@ CREATE TABLE `PaperComment` (
   `commentTags` varbinary(1024) DEFAULT NULL,
   `commentRound` int(11) NOT NULL DEFAULT '0',
   `commentFormat` tinyint(1) DEFAULT NULL,
-  `commentOverflow` longblob DEFAULT NULL,
+  `commentOverflow` longblob,
   PRIMARY KEY (`paperId`,`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
@@ -240,8 +240,9 @@ CREATE TABLE `PaperOption` (
   `paperId` int(11) NOT NULL,
   `optionId` int(11) NOT NULL,
   `value` int(11) NOT NULL DEFAULT '0',
-  `data` varbinary(32768) DEFAULT NULL,
-  KEY `paperOption` (`paperId`,`optionId`,`value`)
+  `data` varbinary(32767) DEFAULT NULL,
+  `dataOverflow` longblob,
+  PRIMARY KEY (`paperId`,`optionId`,`value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -503,7 +504,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 157);
+insert into Settings (name, value) values ('allowPaperOption', 159);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
