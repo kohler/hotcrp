@@ -117,7 +117,7 @@ function try_part_match($try, $match, &$hash, &$extension) {
                     return false;
                 $build .= $xext;
                 $try = substr($try, strlen($xext));
-            } else if (preg_match('{\A(\.(?:txt|pdf|ps|ppt|pptx|mp4|avi|json|jpg|png|gz|doc|bin|gif|xls|xlsx|docx|bz2))(.*)}', $try, $m)) {
+            } else if (preg_match('{\A(\.(?:txt|pdf|ps|pptx?|mp4|avi|json|jpg|png|gz|docx?|bin|gif|xlsx?|bz2))(.*)}', $try, $m)) {
                 $xext = $m[1];
                 $build .= $m[1];
                 $try = $m[2];
