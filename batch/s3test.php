@@ -35,7 +35,7 @@ foreach ($arg["_"] as $fn) {
     } else {
         $doc = (object) array("sha1" => sha1($content, true));
         if ($extensions && preg_match('/(\.\w+)\z/', $fn, $m)
-            && ($mtx = Mimetype::lookup($m[1], true)))
+            && ($mtx = Mimetype::lookup($m[1])))
             $doc->mimetype = $mtx->mimetype;
         else
             $doc->mimetype = Mimetype::content_type($content);

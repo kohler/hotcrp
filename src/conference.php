@@ -1436,11 +1436,6 @@ class Conf {
         if ($any)
             trigger_error("$this->dbname invariant error: password '*'");
 
-        // mimetypes match
-        $any = $this->invariantq("select paperStorageId from PaperStorage s left join Mimetype m using (mimetypeid) where s.mimetype!=m.mimetype or m.mimetype is null limit 1");
-        if ($any)
-            trigger_error("$this->dbname invariant error: bad mimetypeid");
-
         // paper denormalizations match
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any)

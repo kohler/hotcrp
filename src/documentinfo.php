@@ -197,8 +197,8 @@ class DocumentInfo implements JsonSerializable {
             list($img, $alt) = ["postscript", "[PS]"];
         else {
             $img = "generic";
-            $m = Mimetype::lookup($this->mimetype, true);
-            $alt = "[" . ($m && $m->description ? : $this->mimetype) . "]";
+            $m = Mimetype::lookup($this->mimetype);
+            $alt = "[" . ($m && $m->description ? $m->description : $this->mimetype) . "]";
         }
 
         $x = '<a href="' . $p . '" class="q">'

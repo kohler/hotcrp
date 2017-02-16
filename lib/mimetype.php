@@ -4,15 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Mimetype {
-    const TXT = 1;
-    const PDF = 2;
-    const PS = 3;
-    const PPT = 4;
-    const JSON = 8;
-    const JPG = 9;
-    const PNG = 10;
-    const MAX_BUILTIN = 10;
-
+    const BIN_TYPE = "application/octet-stream";
     const PDF_TYPE = "application/pdf";
     const PS_TYPE = "application/postscript";
     const PPT_TYPE = "application/vnd.ms-powerpoint";
@@ -31,86 +23,72 @@ class Mimetype {
 
     private static $tmap = [];
 
-    const F_INLINE = 1;
     private static $tinfo = [
-        "text/plain" => [self::TXT, 1, "text", ".txt"],
-        self::PDF_TYPE => [self::PDF, 1, "PDF", ".pdf"],
-        self::PS_TYPE => [self::PS, 0, "PostScript", ".ps"],
-        self::PPT_TYPE => [self::PPT, 0, "PowerPoint", ".ppt", "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation" => [5, 0, "PowerPoint", ".pptx"],
-        "video/mp4" => [6, 0, ".mp4"],
-        "video/x-msvideo" => [7, 0, ".avi"],
-        "application/json" => [self::JSON, 0, "JSON", ".json"],
-        self::JPG_TYPE => [self::JPG, 1, "JPEG", ".jpg", ".jpeg"],
-        self::PNG_TYPE => [self::PNG, 1, "PNG", ".png"]
+        "text/plain" =>       [1, 1, ".txt", "text"],
+        self::PDF_TYPE =>     [2, 1, ".pdf", "PDF"],
+        self::PS_TYPE =>      [3, 0, ".ps", "PostScript"],
+        self::PPT_TYPE =>     [4, 0, ".ppt", "PowerPoint", "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation" =>
+                              [5, 0, ".pptx", "PowerPoint"],
+        "video/mp4" =>        [6, 0, ".mp4", null],
+        "video/x-msvideo" =>  [7, 0, ".avi", null],
+        "application/json" => [8, 0, ".json", "JSON"],
+        self::JPG_TYPE =>     [9, 1, ".jpg", "JPEG", ".jpeg"],
+        self::PNG_TYPE =>     [10, 1, ".png", "PNG"]
     ];
 
     private static $mime_types = null;
     private static $finfo = null;
 
+    function __construct($mimetype, $extension, $mimetypeid = 0,
+                         $description = null, $inline = false) {
+        $this->mimetype = $mimetype;
+        $this->extension = $extension;
+        $this->mimetypeid = $mimetypeid;
+        $this->description = $description;
+        $this->inline = !!$inline;
+    }
+
     static function lookup($type, $nocreate = false) {
+        global $ConfSitePATH;
         if (!$type)
             return null;
         if (is_object($type))
             return $type;
         if (empty(self::$tmap))
             foreach (self::$tinfo as $xtype => $data) {
-                $m = new Mimetype;
-                $m->mimetypeid = $data[0];
-                $m->mimetype = $xtype;
-                $m->inline = ($data[1] & self::F_INLINE) != 0;
-                self::$tmap[$xtype] = self::$tmap[$data[0]] = $m;
-                for ($i = 2; $i < count($data); ++$i)
-                    if ($data[$i][0] == ".") {
-                        if (!$m->extension)
-                            $m->extension = $data[$i];
-                        self::$tmap[$data[$i]] = $m;
-                    } else if (strpos($data[$i], "/") !== false)
-                        self::$tmap[$data[$i]] = $m;
-                    else
-                        $m->description = $data[$i];
+                $m = new Mimetype($xtype, $data[2], $data[0], $data[3], $data[1]);
+                self::$tmap[$xtype] = self::$tmap[$m->mimetypeid] =
+                    self::$tmap[$m->extension] = $m;
+                for ($i = 4; $i < count($data); ++$i)
+                    self::$tmap[$data[$i]] = $m;
             }
         if (array_key_exists($type, self::$tmap))
             return self::$tmap[$type];
-        $extension = false;
-        while (1) {
-            $result = Dbl::qe("select * from Mimetype where mimetype=?", $type);
-            $m = $result ? $result->fetch_object("Mimetype") : null;
-            Dbl::free($result);
-            if ($m || $nocreate)
-                break;
-            if ($extension === false)
-                $extension = self::mime_types_extension($type);
-            Dbl::qe("insert into Mimetype (mimetypeid, mimetype, extension) select max(greatest(1000,1+mimetypeid)), ?, ? from Mimetype", $type, $extension);
-        }
-        if ($m) {
-            self::$tmap[$m->mimetype] = self::$tmap[$m->mimetypeid] = $m;
-            if ($m->extension)
-                self::$tmap[$m->extension] = $m;
-        }
-        return $m;
-    }
-
-    static private function load_mime_types() {
-        global $ConfSitePATH;
         if (self::$mime_types === null) {
-            self::$mime_types = [];
+            self::$mime_types = true;
             $t = (string) @file_get_contents("$ConfSitePATH/lib/mime.types");
-            preg_match_all('{^(|#!!\s+)([-a-z0-9]+/\S+)[ \t]*(\S*)}m', $t, $m, PREG_SET_ORDER);
-            foreach ($m as $x)
-                if ($x[1] === "" && $x[3])
-                    self::$mime_types[$x[2]] = "." . $x[3];
-                else if ($x[1])
-                    self::$mime_types[$x[2]] = $x[3] ? : "application/octet-stream";
+            preg_match_all('{^(|#!!\s+)([-a-z0-9]+/\S+)[ \t]*(.*)}m', $t, $ms, PREG_SET_ORDER);
+            foreach ($ms as $mm) {
+                if (isset(self::$tmap[$mm[2]]))
+                    continue;
+                if ($mm[1] === "") {
+                    $exts = [null];
+                    if ($mm[3])
+                        $exts = array_map(function ($x) { return ".$x"; }, preg_split('/\s+/', $mm[3]));
+                    $m = new Mimetype($mm[2], $exts[0]);
+                    self::$tmap[$m->mimetype] = $m;
+                    foreach ($exts as $ext)
+                        if ($ext && !isset(self::$tmap[$ext]))
+                            self::$tmap[$ext] = $m;
+                } else {
+                    $m = get(self::$tmap, trim($mm[3]) ? : self::BIN_TYPE);
+                    if ($m)
+                        self::$tmap[$mm[2]] = $m;
+                }
+            }
         }
-        return self::$mime_types;
-    }
-
-    static function mime_types_extension($type) {
-        $mt = self::load_mime_types();
-        while (($x = get($mt, $type)) && $x[0] !== ".")
-            $type = $x;
-        return $x;
+        return get(self::$tmap, $type);
     }
 
 
@@ -156,11 +134,8 @@ class Mimetype {
     }
 
     static function builtins() {
-        self::lookup(self::PDF_TYPE);
-        $x = [];
-        for ($i = 1; $i <= self::MAX_BUILTIN; ++$i)
-            $x[] = self::$tmap[$i];
-        return $x;
+        return array_map(function ($t) { return Mimetype::lookup($t); },
+                         array_keys(self::$tinfo));
     }
 
 
@@ -192,12 +167,11 @@ class Mimetype {
         }
         // eliminate invalid types, canonicalize
         if ($type && !isset(self::$tinfo[$type])
-            && ($tx = get(self::load_mime_types(), $type))
-            && $tx[0] !== ".")
+            && ($tx = self::type($type)))
             $type = $tx;
         // unreliable sniffs
         if ($content_exists
-            && (!$type || $type === "application/octet-stream")) {
+            && (!$type || $type === self::BIN_TYPE)) {
             if (strncmp("%!PS-", $content, 5) == 0)
                 return self::PS_TYPE;
             if (strncmp($content, "ustar\x0000", 8) == 0
@@ -208,11 +182,10 @@ class Mimetype {
             $type = self::$finfo->buffer($content);
             // canonicalize
             if ($type && !isset(self::$tinfo[$type])
-                && ($tx = get(self::load_mime_types(), $type))
-                && $tx[0] !== ".")
+                && ($tx = self::type($type)))
                 $type = $tx;
         }
         // type obtained, or octet-stream if nothing else works
-        return self::type($type ? : "application/octet-stream");
+        return self::type($type ? : self::BIN_TYPE);
     }
 }

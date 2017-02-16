@@ -236,7 +236,7 @@ function update_schema_mimetype_extensions($conf) {
         return false;
     $qv = [];
     while (($row = $result->fetch_object()))
-        if (($extension = Mimetype::mime_types_extension($row->mimetype)))
+        if (($extension = Mimetype::extension($row->mimetype)))
             $qv[] = [$row->mimetypeid, $row->mimetype, $extension];
     Dbl::free($result);
     return empty($qv) || $conf->ql("insert into Mimetype (mimetypeid, mimetype, extension) values ?v on duplicate key update extension=values(extension)", $qv);
