@@ -618,7 +618,13 @@ if ($useRequest) {
     $Conf->save_session("profile_redirect", null);
 else
     $formcj = $UserStatus->user_to_json($Acct);
-$pcrole = @($formcj->roles->chair) ? "chair" : (@($formcj->roles->pc) ? "pc" : "no");
+$pcrole = "no";
+if (isset($formcj->roles)) {
+    if (get($formcj->roles, "chair"))
+        $pcrole = "chair";
+    else if (get($formcj->roles, "pc"))
+        $pcrole = "pc";
+}
 if (!$useRequest && $Me->privChair && $newProfile
     && (req("role") == "chair" || req("role") == "pc"))
     $pcrole = $_REQUEST["role"];
@@ -680,7 +686,7 @@ echofield(0, "affiliation", "Affiliation",
 echofield(0, false, "Country", Countries::selector("country", contact_value("country")));
 
 $data = $Acct->data();
-$any_address = $data && @($data->address || $data->city || $data->state || $data->zip);
+$any_address = $data && (get($data, "address") || get($data, "city") || get($data, "state") || get($data, "zip"));
 if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
     echo "<div style='margin-top:20px'></div>\n";
     $address = get($data, "address");
@@ -774,7 +780,8 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     }
 
     echo "</td><td><span class='sep'></span></td><td class='nw'>";
-    echo Ht::checkbox_h("ass", 1, !!@($formcj->roles->sysadmin)), "&nbsp;</td>",
+    $is_ass = isset($formcj->roles) && get($formcj->roles, "sysadmin");
+    echo Ht::checkbox_h("ass", 1, $is_ass), "&nbsp;</td>",
         "<td>", Ht::label("Sysadmin"), "<br/>",
         '<div class="hint">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</div></td></tr></table>', "\n";
 }
@@ -793,7 +800,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     <textarea name='collaborators' rows='5' cols='50'>", contact_value("collaborators"), "</textarea>\n";
 
     $topics = $Conf->topic_map();
-    if (count($topics)) {
+    if (!empty($topics)) {
         echo '<div id="topicinterest"><h3 class="profile">Topic interests</h3>', "\n",
             '<div class="hint">
     Please indicate your interest in reviewing papers on these conference
@@ -802,9 +809,10 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
        <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest">High</th></tr></thead><tbody>', "\n";
 
         $ibound = [-INF, -1.5, -0.5, 0.5, 1.5, INF];
+        $formcj_topics = get($formcj, "topics", []);
         foreach ($topics as $id => $name) {
             echo "      <tr><td class=\"ti_topic\">", htmlspecialchars($name), "</td>";
-            $ival = (float) get($formcj->topics, $id);
+            $ival = (float) get($formcj_topics, $id);
             for ($j = -2; $j <= 2; ++$j) {
                 $checked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
                 echo '<td class="ti_interest">', Ht::radio_h("ti$id", $j, $checked), "</td>";
@@ -815,8 +823,8 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     }
 
 
-    if ($Me->privChair || @$formcj->tags) {
-        if (is_array(@$formcj->tags))
+    if ($Me->privChair || isset($formcj->tags)) {
+        if (isset($formcj->tags) && is_array($formcj->tags))
             $tags = $formcj->tags;
         else
             $tags = array();
