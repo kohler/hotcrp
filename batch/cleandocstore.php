@@ -117,7 +117,7 @@ function try_part_match($try, $match, &$hash, &$extension) {
                     return false;
                 $build .= $xext;
                 $try = substr($try, strlen($xext));
-            } else if (preg_match('{\A(\.(?:txt|pdf|ps|pptx?|mp4|avi|json|jpg|png|gz|docx?|bin|gif|xlsx?|bz2))(.*)}', $try, $m)) {
+            } else if (preg_match('{\A(\.(?:txt|pdf|ps|pptx?|mp4|avi|json|jpg|png|gz|docx?|bin|gif|xlsx?|bz2|tar|zip))(.*)}', $try, $m)) {
                 $xext = $m[1];
                 $build .= $m[1];
                 $try = $m[2];
@@ -136,7 +136,7 @@ function try_part_match($try, $match, &$hash, &$extension) {
         }
     }
     if ((string) $try !== $match) {
-        error_log("fail $build " . json_encode([$try, $match]));
+        error_log("fail $build, have `$try`, expected `$match`");
         return false;
     }
     $hash = $xhash;
