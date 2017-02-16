@@ -37,6 +37,7 @@ text/csv					csv
 text/html					html htm
 # obsoleted by application/javascript
 text/javascript					js
+text/plain                                      txt
 text/rtf                                        rtf
 text/sgml					sgml sgm
 text/tab-separated-values			tsv
@@ -47,6 +48,7 @@ video/quicktime                                 mov qt
 
 # Non-IANA types
 
+application/vnd.ms-excel			xls
 application/vnd.ms-excel.addin.macroEnabled.12		xlam
 application/vnd.ms-excel.sheet.binary.macroEnabled.12	xlsb
 application/vnd.ms-excel.sheet.macroEnabled.12		xlsm
@@ -139,7 +141,11 @@ video/x-msvideo					avi
 #!! invalid/octet-stream
 #!! mimetype
 #!! octet/stream
+#!! pdf/application application/pdf
+#!! pdf/pdf application/pdf
+#!! text/pdf application/pdf
 #!! text/x-markdown text/markdown
+#!! undefined/pdf application/pdf
 #!! unknown/doc_type
 #!! unknown/unknown
 #!! x-unknown/stream
