@@ -8,6 +8,7 @@ class Mimetype {
     const PDF_TYPE = "application/pdf";
     const PS_TYPE = "application/postscript";
     const PPT_TYPE = "application/vnd.ms-powerpoint";
+    const JSON_TYPE = "application/json";
     const JPG_TYPE = "image/jpeg";
     const PNG_TYPE = "image/png";
     const GIF_TYPE = "image/gif";
@@ -32,7 +33,7 @@ class Mimetype {
                               [5, 0, ".pptx", "PowerPoint"],
         "video/mp4" =>        [6, 0, ".mp4", null],
         "video/x-msvideo" =>  [7, 0, ".avi", null],
-        "application/json" => [8, 0, ".json", "JSON"],
+        self::JSON_TYPE =>    [8, 0, ".json", "JSON"],
         self::JPG_TYPE =>     [9, 1, ".jpg", "JPEG", ".jpeg"],
         self::PNG_TYPE =>     [10, 1, ".png", "PNG"]
     ];
