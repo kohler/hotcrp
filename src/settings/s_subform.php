@@ -622,7 +622,7 @@ class Option_SettingParser extends SettingParser {
             $sv->conf->qe_raw("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
 
         // invalidate cached option list
-        $sv->conf->invalidate_caches(["paperOption" => true]);
+        $sv->conf->invalidate_caches(["options" => true]);
     }
 }
 

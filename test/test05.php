@@ -65,4 +65,46 @@ xassert_eqq($paper2->submission->sha1, "30240fac8417b80709c72156b7f7f7ad95b34a2b
 xassert_eqq($paper2->final->sha1, "e04c778a0af702582bb0e9345fab6540acb28e45");
 xassert_eqq(bin2hex($ps->paper_row()->sha1), "e04c778a0af702582bb0e9345fab6540acb28e45");
 
+// test new-style options storage
+$options = $Conf->setting_json("options");
+xassert(!isset($options->{"2"}));
+$options->{"2"} = ["id" => 2, "name" => "Attachments", "abbr" => "attachments", "type" => "attachments", "position" => 2];
+$Conf->save_setting("options", 1, json_encode($options));
+$Conf->invalidate_caches("options");
+
+$ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"type\":\"application/pdf\"}]}}"));
+xassert(!$ps->has_error());
+
+$paper2 = $Conf->paperRow(2, $user_estrin);
+$docs = $paper2->option(2)->documents();
+xassert_eqq(count($docs), 2);
+xassert_eqq(Filer::text_sha1($docs[0]->sha1), "4c18e2ec1d1e6d9e53f57499a66aeb691d687370");
+$d0psid = $docs[0]->paperStorageId;
+xassert_eqq(Filer::text_sha1($docs[1]->sha1), "2e866582768e8954f55b974a2ad8503ef90717ab");
+$d1psid = $docs[1]->paperStorageId;
+
+$ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"sha1\": \"4c18e2ec1d1e6d9e53f57499a66aeb691d687370\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"sha1\": \"2e866582768e8954f55b974a2ad8503ef90717ab\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"sha1\": \"2e866582768e8954f55b974a2ad8503ef90717ab\", \"type\":\"application/pdf\"}]}}"));
+xassert(!$ps->has_error());
+
+$paper2 = $Conf->paperRow(2, $user_estrin);
+$docs = $paper2->option(2)->documents();
+xassert_eqq(count($docs), 3);
+xassert_eqq(Filer::text_sha1($docs[0]->sha1), "4c18e2ec1d1e6d9e53f57499a66aeb691d687370");
+xassert_eqq($docs[0]->paperStorageId, $d0psid);
+xassert_eqq(Filer::text_sha1($docs[1]->sha1), "2e866582768e8954f55b974a2ad8503ef90717ab");
+xassert_eqq($docs[1]->paperStorageId, $d1psid);
+xassert_eqq(Filer::text_sha1($docs[2]->sha1), "2e866582768e8954f55b974a2ad8503ef90717ab");
+xassert_eqq($docs[2]->paperStorageId, $d1psid);
+
+// backwards compatibility
+$Conf->qe("delete from PaperOption where paperId=2 and optionId=2");
+$Conf->qe("insert into PaperOption (paperId,optionId,value,data) values (2,2,$d0psid,'0'),(2,2,$d1psid,'1')");
+$paper2 = $Conf->paperRow(2, $user_estrin);
+$docs = $paper2->option(2)->documents();
+xassert_eqq(count($docs), 2);
+xassert_eqq(Filer::text_sha1($docs[0]->sha1), "4c18e2ec1d1e6d9e53f57499a66aeb691d687370");
+xassert_eqq($docs[0]->paperStorageId, $d0psid);
+xassert_eqq(Filer::text_sha1($docs[1]->sha1), "2e866582768e8954f55b974a2ad8503ef90717ab");
+xassert_eqq($docs[1]->paperStorageId, $d1psid);
+
 xassert_exit();

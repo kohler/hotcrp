@@ -25,7 +25,7 @@ class PaperOptionValue {
         $this->_values = $values;
         $this->_data_array = $data_array;
         if (count($this->_values) > 1 && $this->_data_array !== null)
-            $this->option->sort_values($this->_values, $this->_data_array);
+            $this->option->expand_values($this->_values, $this->_data_array);
         if (count($this->_values) == 1 || !$this->option->takes_multiple()) {
             $this->value = get($this->_values, 0);
             if (!empty($this->_data_array))
@@ -499,7 +499,7 @@ class PaperOption {
     function refresh_documents(PaperOptionValue $ov) {
     }
 
-    function sort_values(&$values, &$data_array) {
+    function expand_values(&$values, &$data_array) {
     }
 
     function display_name() {
@@ -1041,8 +1041,16 @@ class AttachmentsPaperOption extends PaperOption {
         return true;
     }
 
-    function sort_values(&$values, &$data_array) {
-        array_multisort($data_array, SORT_NUMERIC, $values);
+    function expand_values(&$values, &$data_array) {
+        $j = null;
+        foreach ($data_array as $d)
+            if (str_starts_with($d, "{"))
+                $j = json_decode($d);
+        if ($j && isset($j->all_dids)) {
+            $values = $j->all_dids;
+            $data_array = array_fill(0, count($values), null);
+        } else
+            array_multisort($data_array, SORT_NUMERIC, $values);
     }
 
     function example_searches() {
@@ -1105,10 +1113,19 @@ class AttachmentsPaperOption extends PaperOption {
         foreach ($pj as $docj)
             if (is_object($docj)) {
                 $ps->upload_document($docj, $this);
-                $result[] = [$docj->docid, "" . (count($result) + 1)];
+                $result[] = (int) $docj->docid;
             } else
                 $ps->error_at_option($this, "Option should be a document.");
-        return $result;
+        if (count($result) >= 2) {
+            // Duplicate the document IDs in the first option’s sort data.
+            // This is so (1) the link from option -> PaperStorage is visible
+            // directly via PaperOption.value, (2) we can still support
+            // duplicate uploads.
+            $uids = array_unique($result, SORT_NUMERIC);
+            $uids[0] = [$uids[0], json_encode(["all_dids" => $result])];
+            return $uids;
+        } else
+            return $result;
     }
 
     private function unparse_html($row, PaperOptionValue $ov, $flags, $tag) {

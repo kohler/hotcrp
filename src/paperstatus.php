@@ -232,7 +232,7 @@ class PaperStatus extends MessageSet {
     }
 
 
-    static public function clone_json($pj) {
+    static function clone_json($pj) {
         $x = (object) [];
         foreach ($pj ? get_object_vars($pj) : [] as $k => $v)
             if (is_object($v))
@@ -252,13 +252,13 @@ class PaperStatus extends MessageSet {
     }
 
 
-    public function set_document_prow($prow) {
+    function set_document_prow($prow) {
         // XXX this is butt ugly
         $this->prow = $prow;
         $this->paperId = $prow->paperId ? : -1;
     }
 
-    public function upload_document($docj, PaperOption $o) {
+    function upload_document($docj, PaperOption $o) {
         if (get($docj, "error") || get($docj, "error_html")) {
             $this->error_at_option($o, get($docj, "error_html", "Upload error."));
             $docj->docid = 1;

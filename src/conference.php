@@ -1494,9 +1494,11 @@ class Conf {
 
     function invalidate_caches($caches = null) {
         if (!self::$no_invalidate_caches) {
+            if (is_string($caches))
+                $caches = [$caches => true];
             if (!$caches || isset($caches["pc"]))
                 $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_members_and_admins_cache = null;
-            if (!$caches || isset($caches["paperOption"])) {
+            if (!$caches || isset($caches["options"])) {
                 $this->paper_opts->invalidate_option_list();
                 $this->_docclass_cache = [];
                 $this->_abbrev_matcher = null;
