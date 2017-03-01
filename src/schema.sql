@@ -157,7 +157,7 @@ CREATE TABLE `Paper` (
   `timeModified` int(11) NOT NULL DEFAULT '0',
   `paperStorageId` int(11) NOT NULL DEFAULT '0',
   # `sha1` copied from PaperStorage to reduce joins
-  `sha1` varbinary(20) NOT NULL DEFAULT '',
+  `sha1` varbinary(64) NOT NULL DEFAULT '',
   `finalPaperStorageId` int(11) NOT NULL DEFAULT '0',
   `blind` tinyint(1) NOT NULL DEFAULT '1',
   `outcome` tinyint(1) NOT NULL DEFAULT '0',
@@ -347,7 +347,7 @@ CREATE TABLE `PaperStorage` (
   `mimetypeid` int(11) NOT NULL DEFAULT '0',
   `paper` longblob,
   `compression` tinyint(1) NOT NULL DEFAULT '0',
-  `sha1` varbinary(20) NOT NULL DEFAULT '',
+  `sha1` varbinary(64) NOT NULL DEFAULT '',
   `documentType` int(3) NOT NULL DEFAULT '0',
   `filename` varbinary(255) DEFAULT NULL,
   `infoJson` varbinary(32768) DEFAULT NULL,
@@ -496,14 +496,12 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 160);
+insert into Settings (name, value) values ('allowPaperOption', 161);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
 insert into Settings (name, value, data) values ('tag_chair', 1, 'accept reject pcpaper');
--- turn on SHA-1 calculation by default
-insert into Settings (name, value) values ('sub_sha1', 1);
 -- allow PC members to review any paper by default
 insert into Settings (name, value) values ('pcrev_any', 1);
 -- allow external reviewers to see the other reviews by default

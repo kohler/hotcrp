@@ -1115,6 +1115,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table Paper drop key `paperId`")
         && $conf->ql("alter table TopicArea drop key `topicId`"))
         $conf->update_schema_version(160);
+    if ($conf->sversion == 160
+        && $conf->ql("alter table Paper change `sha1` `sha1` varbinary(64) NOT NULL DEFAULT ''")
+        && $conf->ql("alter table PaperStorage change `sha1` `sha1` varbinary(64) NOT NULL DEFAULT ''"))
+        $conf->update_schema_version(161);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }
