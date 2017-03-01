@@ -66,7 +66,7 @@ class PaperStatus extends MessageSet {
             if ($drow->mimetype)
                 $d->mimetype = $drow->mimetype;
             if ($drow->sha1 !== null && $drow->sha1 !== "")
-                $d->sha1 = bin2hex($drow->sha1);
+                $d->sha1 = Filer::text_hash($drow->sha1);
             if ($drow->timestamp)
                 $d->timestamp = $drow->timestamp;
             if ($drow->size)
@@ -265,21 +265,22 @@ class PaperStatus extends MessageSet {
             return;
         }
 
-        // look for an existing document with same sha1;
-        // check existing docid's sha1
+        // look for an existing document with same hash;
+        // check existing docid's hash
         $docid = get($docj, "docid");
         if ($docid) {
             $oldj = $this->document_to_json($o->id, $docid);
-            if (get($docj, "sha1") && get($oldj, "sha1") !== Filer::text_sha1($docj->sha1))
+            if (get($docj, "sha1")
+                && get($oldj, "sha1") !== Filer::text_hash($docj->sha1))
                 $docid = null;
         } else if ($this->paperId != -1 && get($docj, "sha1")) {
-            $oldj = Dbl::fetch_first_object($this->conf->dblink, "select paperStorageId, sha1, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $o->id, Filer::binary_sha1($docj->sha1));
+            $oldj = Dbl::fetch_first_object($this->conf->dblink, "select paperStorageId, sha1, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $o->id, Filer::binary_hash($docj->sha1));
             if ($oldj)
                 $docid = $oldj->paperStorageId;
         }
         if ($docid) {
             $docj->docid = $docid;
-            $docj->sha1 = Filer::binary_sha1($oldj->sha1);
+            $docj->sha1 = Filer::binary_hash($oldj);
             $docj->timestamp = $oldj->timestamp;
             $docj->size = $oldj->size;
             $docj->mimetype = $oldj->mimetype;
@@ -291,7 +292,7 @@ class PaperStatus extends MessageSet {
             if (is_int(get($docj, "original_id")))
                 $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $docj->original_id);
             else if (is_string(get($docj, "original_sha1")))
-                $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $this->paperId, Filer::binary_sha1($docj->original_sha1));
+                $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $this->paperId, Filer::binary_hash($docj->original_sha1));
             else if ($o->id == DTYPE_SUBMISSION || $o->id == DTYPE_FINAL)
                 $result = $this->conf->qe("select PaperStorage.paperStorageId, PaperStorage.timestamp, PaperStorage.sha1 from PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper." . ($o->id == DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId") . "=PaperStorage.paperStorageId) where Paper.paperId=?", $this->paperId);
             else
@@ -946,7 +947,7 @@ class PaperStatus extends MessageSet {
                 && (!$old_joindoc || $old_joindoc->docid != $new_joindoc->docid)) {
                 $this->addf("size", $new_joindoc->size);
                 $this->addf("mimetype", $new_joindoc->mimetype);
-                $this->addf("sha1", Filer::binary_sha1($new_joindoc->sha1));
+                $this->addf("sha1", Filer::binary_hash($new_joindoc->sha1));
                 $this->addf("timestamp", $new_joindoc->timestamp);
                 if ($this->conf->sversion >= 145)
                     $this->addf("pdfFormatStatus", 0);

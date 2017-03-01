@@ -114,11 +114,11 @@ class DocumentInfo implements JsonSerializable {
         return HotCRPDocument::filename($this, $filters);
     }
 
-    function compute_sha1() {
-        $sha1 = Filer::binary_sha1($this->sha1);
-        if ($sha1 === false && is_string($this->content))
-            $sha1 = sha1($this->content, true);
-        else if ($sha1 === false && $this->filestore && is_readable($this->filestore)) {
+    function compute_hash() {
+        $hash = Filer::binary_hash($this->sha1);
+        if ($hash === false && is_string($this->content))
+            $hash = sha1($this->content, true);
+        else if ($hash === false && $this->filestore && is_readable($this->filestore)) {
             if (is_executable("/usr/bin/sha1sum"))
                 $cmd = "/usr/bin/sha1sum ";
             else if (is_executable("/usr/bin/shasum"))
@@ -126,19 +126,19 @@ class DocumentInfo implements JsonSerializable {
             if ($cmd
                 && ($result = exec($cmd . escapeshellarg($this->filestore), $cmd_out, $cmd_status))
                 && $cmd_status == 0
-                && ($sha1 = Filer::binary_sha1(trim($result))) !== false)
+                && ($hash = Filer::binary_hash(trim($result))) !== false)
                 /* skip */;
             else if (($this->content = file_get_contents($this->filestore)) !== false)
-                $sha1 = sha1($this->content, true);
+                $hash = sha1($this->content, true);
         }
-        return $sha1;
+        return $hash;
     }
 
     function save() {
         // look for an existing document with same sha1; otherwise upload
-        if (($sha1 = $this->compute_sha1()) !== false) {
-            $this->sha1 = $sha1;
-            $id = Dbl::fetch_ivalue($this->conf->dblink, "select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $sha1);
+        if (($hash = $this->compute_hash()) !== false) {
+            $this->sha1 = $hash;
+            $id = Dbl::fetch_ivalue($this->conf->dblink, "select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $hash);
             if ($id) {
                 $this->paperStorageId = $id;
                 return true;
@@ -270,7 +270,7 @@ class DocumentInfo implements JsonSerializable {
             if ($k === "content" && is_string($v) && strlen($v) > 50)
                 $x[$k] = substr($v, 0, 50) . "…";
             else if ($k === "sha1" && is_string($v))
-                $x[$k] = Filer::text_sha1($v);
+                $x[$k] = Filer::text_hash($v);
             else if ($k !== "conf" && $k !== "docclass" && $k !== "infoJson_str" && $v !== null)
                 $x[$k] = $v;
         return $x;

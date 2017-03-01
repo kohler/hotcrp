@@ -31,10 +31,10 @@ while (1) {
     if (preg_match(',/([0-9a-f]{40})(?:[.][^/]*|)\z,', $node->Key, $m)) {
         echo "$node->Key: ";
         $content = $s3doc->load($node->Key);
-        $sha1sum = sha1($content, false);
-        if ($sha1sum !== $m[1]) {
-            echo "bad checksum $sha1sum\n";
-            error_log("$node->Key: bad checksum $sha1sum");
+        $hash = sha1($content, false);
+        if ($hash !== $m[1]) {
+            echo "bad checksum $hash\n";
+            error_log("$node->Key: bad checksum $hash");
         } else
             echo "ok\n";
     }

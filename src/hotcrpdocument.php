@@ -101,8 +101,8 @@ class HotCRPDocument extends Filer {
 
     static function s3_filename($doc) {
         if ($doc->sha1 != ""
-            && ($sha1 = Filer::text_sha1($doc)) !== false)
-            return "doc/" . substr($sha1, 0, 2) . "/" . $sha1
+            && ($hash = Filer::text_hash($doc)) !== false)
+            return "doc/" . substr($hash, 0, 2) . "/" . $hash
                 . Mimetype::extension($doc->mimetype);
         else
             return null;
@@ -118,11 +118,11 @@ class HotCRPDocument extends Filer {
                 && $s3->check($filename));
     }
 
-    function s3_store(DocumentInfo $doc, $trust_sha1 = false) {
+    function s3_store(DocumentInfo $doc, $trust_hash = false) {
         if (!isset($doc->content) && !$this->load_to_memory($doc))
             return false;
-        if (!$trust_sha1 && Filer::binary_sha1($doc) !== sha1($doc->content, true)) {
-            error_log("S3 upload cancelled: data claims checksum " . Filer::text_sha1($doc)
+        if (!$trust_hash && Filer::binary_hash($doc) !== sha1($doc->content, true)) {
+            error_log("S3 upload cancelled: data claims checksum " . Filer::text_hash($doc)
                       . ", has checksum " . sha1($doc->content));
             return false;
         }

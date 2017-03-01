@@ -118,7 +118,7 @@ function document_download() {
 
         $pjs = $actives = [];
         foreach ($docs as $doc) {
-            $pj = ["sha1" => Filer::text_sha1($doc), "at" => (int) $doc->timestamp, "mimetype" => $doc->mimetype];
+            $pj = ["hash" => Filer::text_hash($doc), "at" => (int) $doc->timestamp, "mimetype" => $doc->mimetype];
             if ($doc->size !== null)
                 $pj["size"] = (int) $doc->size;
             if ($doc->filename)
@@ -133,7 +133,7 @@ function document_download() {
             while (($row = edb_orow($result))) {
                 if (get($actives, $row->paperStorageId))
                     continue;
-                $pj = ["sha1" => Filer::text_sha1($row), "at" => (int) $row->timestamp, "mimetype" => $row->mimetype];
+                $pj = ["hash" => Filer::text_hash($row), "at" => (int) $row->timestamp, "mimetype" => $row->mimetype];
                 if ($row->size !== null)
                     $pj["size"] = (int) $row->size;
                 if ($row->filename)
@@ -147,10 +147,10 @@ function document_download() {
 
     $want_docid = $request_docid = 0;
     if (isset($_GET["version"])) {
-        $version_sha1 = Filer::binary_sha1($_GET["version"]);
-        if (!$version_sha1)
+        $version_hash = Filer::binary_hash($_GET["version"]);
+        if (!$version_hash)
             document_error("404 Not Found", "No such version.");
-        $want_docid = $Conf->fetch_ivalue("select max(paperStorageId) from PaperStorage where paperId=? and documentType=? and sha1=? and filterType is null", $paperId, $documentType, $version_sha1);
+        $want_docid = $Conf->fetch_ivalue("select max(paperStorageId) from PaperStorage where paperId=? and documentType=? and sha1=? and filterType is null", $paperId, $documentType, $version_hash);
         if ($want_docid !== null && $Me->can_view_document_history($prow))
             $request_docid = $want_docid;
     }
@@ -195,7 +195,7 @@ function document_download() {
                     $ifnonematch = $v;
         } else
             $ifnonematch = get($_SERVER, "HTTP_IF_NONE_MATCH");
-        if ($ifnonematch && $ifnonematch === "\"" . Filer::text_sha1($doc) . "\"") {
+        if ($ifnonematch && $ifnonematch === "\"" . Filer::text_hash($doc) . "\"") {
             header("HTTP/1.1 304 Not Modified");
             exit;
         }
@@ -204,7 +204,7 @@ function document_download() {
     // Actually download paper.
     session_write_close();      // to allow concurrent clicks
     $opts = ["attachment" => cvtint(req("save")) > 0];
-    if ($doc->sha1 && ($x = req("sha1")) && $x === Filer::text_sha1($doc))
+    if ($doc->sha1 && ($x = req("hash")) && $x === Filer::text_hash($doc))
         $opts["cacheable"] = true;
     if ($Conf->download_documents([$doc], $opts))
         exit;

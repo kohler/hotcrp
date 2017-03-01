@@ -8,9 +8,9 @@ class ZipDocument_File {
     public $sha1;
     public $filestore;
     public $content;
-    function __construct($doc, $filename, $sha1) {
+    function __construct($doc, $filename, $hash) {
         $this->filename = $filename;
-        $this->sha1 = $sha1;
+        $this->sha1 = $hash;
         $this->filestore = get($doc, "filestore");
         if (!isset($this->filestore))
             $this->content = get($doc, "content");
@@ -95,11 +95,11 @@ class ZipDocument {
 
         // add document to filestore list
         if (is_array($this->_filestore)
-            && ($sha1 = Filer::binary_sha1($doc)) !== null
+            && ($hash = Filer::binary_hash($doc)) !== null
             && (isset($doc->filestore)
                 || (isset($doc->content) && $doc->content !== ""
                     && strlen($doc->content) + $this->_filestore_length <= 4000000))) {
-            $this->_filestore[] = new ZipDocument_File($doc, $filename, $sha1);
+            $this->_filestore[] = new ZipDocument_File($doc, $filename, $hash);
             if (!isset($doc->filestore))
                 $this->_filestore_length += strlen($doc->content);
             return self::_add_done($doc, true);
@@ -206,21 +206,21 @@ class ZipDocument {
         $this->sha1 = false;
         if (!empty($this->_filestore) && opt("docstore")
             && opt("docstoreAccelRedirect")) {
-            // calculate sha1 for zipfile contents
+            // calculate hash for zipfile contents
             $sorted_filestore = $this->_filestore;
             usort($sorted_filestore, function ($a, $b) {
                 return strcmp($a->filename, $b->filename);
             });
-            $sha1_input = count($sorted_filestore) . "\n";
+            $hash_input = count($sorted_filestore) . "\n";
             foreach ($sorted_filestore as $f)
-                $sha1_input .= $f->filename . "\n" . $f->sha1 . "\n";
+                $hash_input .= $f->filename . "\n" . $f->sha1 . "\n";
             if (count($this->warnings))
-                $sha1_input .= "README-warnings.txt\n" . join("\n", $this->warnings) . "\n";
-            $zipfile_sha1 = sha1($sha1_input, false);
+                $hash_input .= "README-warnings.txt\n" . join("\n", $this->warnings) . "\n";
+            $zipfile_hash = sha1($hash_input, false);
             // look for zipfile
-            $zfn = opt("docstore") . "/tmp/" . $zipfile_sha1 . ".zip";
+            $zfn = opt("docstore") . "/tmp/" . $zipfile_hash . ".zip";
             if (Filer::prepare_filestore(opt("docstore"), $zfn)) {
-                $this->sha1 = Filer::binary_sha1($zipfile_sha1);
+                $this->sha1 = Filer::binary_hash($zipfile_hash);
                 $this->filestore = $zfn;
                 if (file_exists($this->filestore)) {
                     if (($mtime = @filemtime($zfn)) < $Now - 21600)
@@ -240,7 +240,7 @@ class ZipDocument {
         set_time_limit(60);
         $out = system("cd $tmpdir; $zipcmd $opts " . escapeshellarg($this->filestore) . " " . join(" ", array_map("escapeshellarg", array_keys($this->files))) . " 2>&1", $status);
         if ($status == 0 && file_exists($this->filestore)) {
-            // XXX do we really need the sha1?
+            // XXX do we really need the hash?
             if ($this->sha1 === false) {
                 // avoid file_get_contents in case the file doesn't fit in memory
                 $hctx = hash_init("sha1");
@@ -370,10 +370,10 @@ class Filer {
                 set_error_html($doc, "Cannot create temporary directory.");
                 return false;
             }
-            $sha1 = self::text_sha1($doc);
-            if ($sha1 === false)
-                $sha1 = $doc->sha1 = sha1($doc->content);
-            $path = self::$tempdir . "/" . $sha1 . Mimetype::extension($doc->mimetype);
+            $hash = self::text_hash($doc);
+            if ($hash === false)
+                $hash = $doc->sha1 = sha1($doc->content);
+            $path = self::$tempdir . "/" . $hash . Mimetype::extension($doc->mimetype);
             if (file_put_contents($path, $doc->content) != strlen($doc->content)) {
                 set_error_html($doc, "Failed to save document to temporary file.");
                 return false;
@@ -398,14 +398,14 @@ class Filer {
             || $content === false
             || get($doc, "error"))
             return false;
-        // calculate SHA-1, complain on mismatch
-        $sha1 = sha1($content, true);
+        // calculate hash, complain on mismatch
+        $hash = sha1($content, true);
         if (isset($doc->sha1) && $doc->sha1 !== false && $doc->sha1 !== ""
-            && self::binary_sha1($doc) !== $sha1) {
-            set_error_html($doc, "Document claims checksum " . self::text_sha1($doc) . ", but has checksum " . bin2hex($sha1) . ".");
+            && self::binary_hash($doc) !== $hash) {
+            set_error_html($doc, "Document claims checksum " . self::text_hash($doc) . ", but has checksum " . bin2hex($hash) . ".");
             return false;
         }
-        $doc->sha1 = $sha1;
+        $doc->sha1 = $hash;
         if (isset($doc->size) && $doc->size && $doc->size != strlen($content))
             set_error_html($doc, "Document claims length " . $doc->size . ", but has length " . strlen($content) . ".");
         $doc->size = strlen($content);
@@ -593,7 +593,7 @@ class Filer {
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
         if ($doc->sha1)
-            header("ETag: \"" . self::text_sha1($doc) . "\"");
+            header("ETag: \"" . self::text_hash($doc) . "\"");
         if (($filename = self::content_filename($doc)))
             self::download_file($filename, get($doc, "no_cache") || get($doc, "no_accel"));
         else {
@@ -632,38 +632,52 @@ class Filer {
             return false;
     }
 
-    // SHA-1 helpers
-    static function text_sha1($doc) {
-        $sha1 = is_object($doc) ? get($doc, "sha1") : $doc;
-        if (is_string($sha1) && strlen($sha1) > 40)
-            $sha1 = trim($sha1);
-        if (is_string($sha1) && strlen($sha1) === 20)
-            return bin2hex($sha1);
-        else if (is_string($sha1) && strlen($sha1) === 40 && ctype_xdigit($sha1))
-            return strtolower($sha1);
-        else {
-            error_log("Filer::text_sha1: invalid input " . var_export($sha1, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            return false;
+    // hash helpers
+    static function text_hash($doc) {
+        $h = is_object($doc) ? get($doc, "sha1") : $doc;
+        if (is_string($h)) {
+            $len = strlen($h);
+            if ($len > 40) {
+                $h = trim($h);
+                $len = strlen($h);
+            }
+            if ($len === 20 || $len === 32)
+                return bin2hex($h);
+            else if (($len === 40 || $len === 64) && ctype_xdigit($h))
+                return strtolower($h);
         }
+        error_log("Filer::text_hash: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        return false;
+    }
+    static function binary_hash($doc) {
+        $h = is_object($doc) ? get($doc, "sha1") : $doc;
+        if (is_string($h)) {
+            $len = strlen($h);
+            if ($len > 40) {
+                $h = trim($h);
+                $len = strlen($h);
+            }
+            if ($len === 20 || $len === 32)
+                return $h;
+            else if (($len === 40 || $len === 64) && ctype_xdigit($h))
+                return hex2bin($h);
+        }
+        error_log("Filer::binary_hash: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        return false;
+    }
+    static function text_sha1($doc) {
+        $h = self::text_hash($doc);
+        return is_string($h) && strlen($h) === 40 ? $h : false;
     }
     static function binary_sha1($doc) {
-        $sha1 = is_object($doc) ? get($doc, "sha1") : $doc;
-        if (is_string($sha1) && strlen($sha1) > 40)
-            $sha1 = trim($sha1);
-        if (is_string($sha1) && strlen($sha1) === 20)
-            return $sha1;
-        else if (is_string($sha1) && strlen($sha1) === 40 && ctype_xdigit($sha1))
-            return hex2bin($sha1);
-        else {
-            error_log("Filer::binary_sha1: invalid input " . var_export($sha1, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            return false;
-        }
+        $h = self::binary_hash($doc);
+        return is_string($h) && strlen($h) === 20 ? $h : false;
     }
 
     // private functions
     private function _expand_filestore($pattern, DocumentInfo $doc, $extension) {
         $x = "";
-        $sha1 = false;
+        $hash = false;
         while (preg_match('/\A(.*?)%(\d*)([%hx])(.*)\z/', $pattern, $m)) {
             $x .= $m[1];
             if ($m[3] === "%")
@@ -672,17 +686,17 @@ class Filer {
                 if ($extension)
                     $x .= Mimetype::extension($doc->mimetype);
             } else {
-                if ($sha1 === false)
-                    $sha1 = self::text_sha1($doc);
-                if ($sha1 === false
+                if ($hash === false)
+                    $hash = self::text_hash($doc);
+                if ($hash === false
                     && ($content = self::content($doc)) !== false)
-                    $sha1 = $doc->sha1 = sha1($content);
-                if ($sha1 === false)
+                    $hash = $doc->sha1 = sha1($content);
+                if ($hash === false)
                     return false;
                 if ($m[2] !== "")
-                    $x .= substr($sha1, 0, intval($m[2]));
+                    $x .= substr($hash, 0, intval($m[2]));
                 else
-                    $x .= $sha1;
+                    $x .= $hash;
             }
             $pattern = $m[4];
         }
