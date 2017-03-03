@@ -608,23 +608,16 @@ class Filer {
     // upload
     function upload(DocumentInfo $doc) {
         global $Conf;
-        if (!is_object($doc)) {
-            error_log(caller_landmark() . ": Filer::upload called with non-object");
-            return false;
-        }
-        if (!$this->load($doc) && !get($doc, "error_html"))
+        if (!$this->load($doc) && !$doc->error_html)
             set_error_html($doc, "Empty document.");
-        if (get($doc, "error"))
+        if ($doc->error)
             return false;
 
         // Clean up mimetype and timestamp.
         if (!isset($doc->mimetype) && isset($doc->type) && is_string($doc->type))
             $doc->mimetype = $doc->type;
-        $doc->mimetype = Mimetype::content_type(get($doc, "content"), get($doc, "mimetype"));
-        if (($m = Mimetype::lookup($doc->mimetype)))
-            $doc->mimetypeid = $m->mimetypeid;
-        if (!get($doc, "timestamp"))
-            $doc->timestamp = time();
+        $doc->mimetype = Mimetype::content_type($doc->content, $doc->mimetype);
+        $doc->timestamp = $doc->timestamp ? : time();
 
         if ($this->validate_upload($doc))
             return $this->store($doc);
