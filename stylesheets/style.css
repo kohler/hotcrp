@@ -1141,6 +1141,12 @@ img.elimg {
 img.check {
 	padding-left: 0.4em;
 }
+.checksum > .checksum-overflow {
+	display: none;
+}
+.checksum:hover > .checksum-overflow {
+	display: inline;
+}
 
 span.textlite {
 	border: solid 1px #aaaadd;

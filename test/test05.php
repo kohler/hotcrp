@@ -107,4 +107,17 @@ xassert_eqq($docs[0]->paperStorageId, $d0psid);
 xassert($docs[1]->check_text_hash("2e866582768e8954f55b974a2ad8503ef90717ab"));
 xassert_eqq($docs[1]->paperStorageId, $d1psid);
 
+// test SHA-256
+$Conf->save_setting("opt.contentHashMethod", 1, "sha256");
+
+$ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content\":\"%PDF-whatever\\n\",\"type\":\"application/pdf\"}}"));
+xassert(!$ps->has_error());
+
+$paper3 = $Conf->paperRow(3, $user_estrin);
+xassert_eqq($paper3->sha1, "sha2-" . hex2bin("38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4"));
+xassert_eqq($paper3->document(DTYPE_SUBMISSION)->text_hash(), "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
+
+$paper3b = $ps->paper_json(3);
+xassert_eqq($paper3b->submission->hash, "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
+
 xassert_exit();

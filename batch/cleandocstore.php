@@ -69,14 +69,16 @@ function populate_dirinfo($bdir, $entrypat) {
             else
                 $preg .= ".*";
         } else if (str_ends_with($m[2], "h")) {
-            $prefix_len = intval($m[2]) ? : 40;
-            if (!Cleaner::$hash_preg)
-                $preg .= "[0-9a-f]{" . $prefix_len . "}";
-            else if ($prefix_len == 40)
+            $prefix_len = intval($m[2]) ? : 0;
+            if (!Cleaner::$hash_preg && !$prefix_len)
+                $preg .= "(?:[0-9a-f]{40}|sha[23]-[0-9a-f]{64})";
+            else if (!Cleaner::$hash_preg)
+                $preg .= "(?:sha[23]-)?[0-9a-f]{" . $prefix_len . "}";
+            else if (!$prefix_len)
                 $preg .= Cleaner::$hash_preg;
             else {
                 $l = min(strlen(Cleaner::$hash_prefix), $prefix_len);
-                $preg .= substr(Cleaner::$hash_prefix, 0, $l);
+                $preg .= "(?:sha[23]-)?" . substr(Cleaner::$hash_prefix, 0, $l);
                 if ($l < $prefix_len)
                     $preg .= "[0-9a-f]{" . ($prefix_len - $l) . "}";
             }
@@ -124,15 +126,19 @@ function try_part_match($try, $match, &$hash, &$extension) {
             } else
                 $xext = "";
         } else {
-            $n = $m[2] ? : 40;
-            if (strlen($try) < $n
-                || substr($try, 0, min(strlen($xhash), $n)) !== (string) substr($xhash, 0, $n)
-                || !preg_match('{\A[0-9a-f]+\z}', substr($try, 0, $n)))
+            if (substr($try, 0, strlen($xhash)) !== (string) substr($xhash, 0, strlen($xhash)))
                 return false;
-            if ($n > strlen($xhash))
-                $xhash = substr($try, 0, $n);
-            $build .= substr($try, 0, $n);
-            $try = substr($try, $n);
+            if ($m[2])
+                $regex = '{\A((?:sha[23]-)?[0-9a-f]{' . $m[2] . '})}';
+            else
+                $regex = '{\A([0-9a-f]{40}|sha[23]-[0-9a-f]{64})}';
+            if (preg_match($regex, $try, $mm)) {
+                if (strlen($mm[1]) > strlen($xhash))
+                    $xhash = $mm[1];
+                $build .= $mm[1];
+                $try = substr($try, strlen($mm[1]));
+            } else
+                return false;
         }
     }
     if ((string) $try !== $match) {
@@ -160,15 +166,16 @@ function try_random_match($fparts) {
             $ndi = count($di);
             $start = mt_rand(0, $ndi - 1);
             $build = false;
-            for ($tries = 0; $tries < $ndi; $start = ($start + 1) % $ndi, ++$tries)
+            for ($tries = 0; $tries < $ndi; $start = ($start + 1) % $ndi, ++$tries) {
                 if (($build = try_part_match($di[$start], $fparts[$i], $hash, $extension)))
                     break;
+            }
             // remove last part from list
             if ($i == count($fparts) - 1)
                 array_splice(Cleaner::$dirinfo[$bdir], $start, 1);
             $bdir .= $build;
         }
-    if (strlen($hash) != 40)
+    if (!preg_match('{\A(?:[0-9a-f]{40}|sha[23]-[0-9a-f]{64})\z}', $hash))
         return false;
     return [$hash, $extension, $bdir];
 }
@@ -187,12 +194,14 @@ while ($count > 0) {
     }
     $doc = new DocumentInfo(["sha1" => $x[0],
                              "mimetype" => Mimetype::type($x[1])]);
-    $content = @file_get_contents($x[2]);
+    $hashalg = $doc->hash_algorithm();
     $ok = false;
-    if ($content === false)
+    if ($hashalg === false)
+        fwrite(STDERR, "$x[2]: unknown hash\n");
+    else if (($chash = hash_file($hashalg, $x[2], true)) === false)
         fwrite(STDERR, "$x[2]: is unreadable\n");
-    else if (sha1($content) !== $x[0])
-        fwrite(STDERR, "$x[2]: incorrect SHA-1 sum\n");
+    else if ($chash !== $doc->binary_hash_data())
+        fwrite(STDERR, "$x[2]: incorrect hash\n");
     else if ($hotcrpdoc->s3_check($doc)) {
         if (unlink($x[2])) {
             if ($verbose)

@@ -280,7 +280,7 @@ class PaperStatus extends MessageSet {
         if ($docid) {
             $oldj = $this->document_to_json($o->id, $docid);
             if ($dochash != "" && get($oldj, "hash") != ""
-                && !Filer::check_text_hash($dochash, $oldj->hash))
+                && !Filer::check_text_hash($oldj->hash, $dochash))
                 $docid = null;
         } else if ($this->paperId != -1 && $dochash != "") {
             $oldj = Dbl::fetch_first_object($this->conf->dblink, "select paperStorageId, sha1 as hash, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and PaperStorage.sha1=?", $this->paperId, $o->id, Filer::hash_as_binary($dochash));

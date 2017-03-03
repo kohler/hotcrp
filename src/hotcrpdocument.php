@@ -100,11 +100,14 @@ class HotCRPDocument extends Filer {
     }
 
     static function s3_filename(DocumentInfo $doc) {
-        if (($hash = $doc->text_hash()) !== false)
-            return "doc/" . substr($hash, 0, 2) . "/" . $hash
-                . Mimetype::extension($doc->mimetype);
-        else
+        $hash = $doc->text_hash();
+        if ($hash === false)
             return null;
+        else if (strlen($hash) === 40)
+            $x = substr($hash, 0, 2);
+        else
+            $x = substr($hash, 0, strpos($hash, "-") + 4);
+        return "doc/$x/$hash" . Mimetype::extension($doc->mimetype);
     }
 
     function s3_check(DocumentInfo $doc) {
@@ -183,7 +186,7 @@ class HotCRPDocument extends Filer {
     }
 
     function filestore_pattern(DocumentInfo $doc) {
-        return $this->no_filestore ? false : $this->conf->docstore();
+        return $this->no_filestore ? null : $this->conf->docstore();
     }
 
     private function load_content_db($doc) {

@@ -626,41 +626,50 @@ class Filer {
     }
 
     // hash helpers
-    static function hash_as_text($doc) {
-        $h = is_object($doc) ? get($doc, "sha1") : $doc;
-        if (is_string($h)) {
-            $len = strlen($h);
-            if ($len > 40) {
-                $h = trim($h);
-                $len = strlen($h);
-            }
-            if ($len === 20 || $len === 32)
-                return bin2hex($h);
-            else if (($len === 40 || $len === 64) && ctype_xdigit($h))
-                return strtolower($h);
-        }
-        error_log("Filer::hash_as_text: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        return false;
+    static function analyze_hash($hash, $refhash = null) {
+        $len = strlen($hash);
+        if ($len === 20 || $len === 40)
+            return [$hash, "", "sha1"];
+        else if ($len === 32 || $len === 64) {
+            if (!$refhash || substr($refhash, 0, 5) !== "sha3-")
+                return [$hash, "sha2-", "sha256"];
+        } else if (($len == 25 || $len === 45)
+                   && strcasecmp(substr($hash, 0, 5), "sha1-") == 0)
+            return [substr($hash, 5), "", "sha1"];
+        else if (($len == 37 || $len === 69)
+                 && strcasecmp(substr($hash, 0, 5), "sha2-") == 0)
+            return [substr($hash, 5), "sha2-", "sha256"];
+        return [false, false, false];
     }
-    static function hash_as_binary($doc) {
-        $h = is_object($doc) ? get($doc, "sha1") : $doc;
-        if (is_string($h)) {
-            $len = strlen($h);
-            if ($len > 40) {
-                $h = trim($h);
-                $len = strlen($h);
-            }
-            if ($len === 20 || $len === 32)
-                return $h;
-            else if (($len === 40 || $len === 64) && ctype_xdigit($h))
-                return hex2bin($h);
+    static function hash_as_text($hash, $refhash = null) {
+        if (!is_string($hash)) {
+            error_log("Filer::hash_as_text: invalid input " . var_export($hash, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            return false;
         }
-        error_log("Filer::hash_as_binary: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        return false;
+        list($hash, $pfx, $alg) = self::analyze_hash($hash, $refhash);
+        if ($hash !== false && strlen($hash) < 40)
+            return $pfx . bin2hex($hash);
+        else if ($hash !== false && ctype_xdigit($hash))
+            return $pfx . strtolower($hash);
+        else
+            return false;
+    }
+    static function hash_as_binary($hash) {
+        if (!is_string($hash)) {
+            error_log("Filer::hash_as_binary: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            return false;
+        }
+        list($hash, $pfx, $alg) = self::analyze_hash($hash);
+        if ($hash !== false && strlen($hash) < 40)
+            return $pfx . $hash;
+        else if ($hash !== false && ctype_xdigit($hash))
+            return $pfx . hex2bin($hash);
+        else
+            return false;
     }
     static function check_text_hash($hash1, $hash2) {
-        $hash2 = self::hash_as_text($hash2);
-        return $hash1 !== false && $hash1 === $hash2;
+        $hash2 = self::hash_as_text($hash2, $hash1);
+        return $hash2 !== false && $hash1 === $hash2;
     }
     static function sha1_hash_as_text($str) {
         if (strlen($str) > 20 && strcasecmp(substr($str, 0, 5), "sha1-") == 0)
@@ -689,9 +698,12 @@ class Filer {
                 if ($hash === false
                     && ($hash = $doc->text_hash()) == false)
                     return false;
-                if ($m[2] !== "")
-                    $x .= substr($hash, 0, intval($m[2]));
-                else
+                if ($m[2] !== "") {
+                    $pos = intval($m[2]);
+                    if (strlen($hash) !== 40)
+                        $pos += strpos($hash, "-") + 1;
+                    $x .= substr($hash, 0, $pos);
+                } else
                     $x .= $hash;
             }
             $pattern = $m[4];

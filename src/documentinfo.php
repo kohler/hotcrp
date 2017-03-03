@@ -128,15 +128,36 @@ class DocumentInfo implements JsonSerializable {
             $this->sha1 = $this->content_binary_hash();
         return $this->sha1;
     }
+    function binary_hash_data() {
+        $hash = $this->binary_hash();
+        if ($hash === false || strlen($hash) === 20)
+            return $hash;
+        else
+            return substr($hash, strpos($hash, "-") + 1);
+    }
     function check_text_hash($hash) {
-        return Filer::check_text_hash($hash, $this->text_hash());
+        return Filer::check_text_hash($this->text_hash(), $hash);
+    }
+    function hash_algorithm() {
+        if (strlen($this->sha1) === 20)
+            return "sha1";
+        else if ($this->sha1 && substr($this->sha1, 0, 5) === "sha2-")
+            return "sha256";
+        else
+            return false;
     }
     function content_binary_hash($like_hash = false) {
         // never cached
+        if ($like_hash) {
+            list($x1, $x2, $algorithm) = Filer::analyze_hash($like_hash);
+        } else
+            $algorithm = $this->conf->opt("contentHashMethod");
+        if ($algorithm !== "sha1" && $algorithm !== "sha256")
+            $algorithm = "sha1";
         if (is_string($this->content))
-            return sha1($this->content, true);
+            return hash($algorithm, $this->content, true);
         else if ($this->filestore && is_readable($this->filestore)) {
-            $hctx = hash_init("sha1");
+            $hctx = hash_init($algorithm);
             if (hash_update_file($hctx, $this->filestore))
                 return hash_final($hctx, true);
         }

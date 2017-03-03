@@ -147,7 +147,7 @@ function document_download() {
 
     $want_docid = $request_docid = 0;
     if (isset($_GET["version"])) {
-        $version_hash = Filer::hash_as_binary($_GET["version"]);
+        $version_hash = Filer::hash_as_binary(trim($_GET["version"]));
         if (!$version_hash)
             document_error("404 Not Found", "No such version.");
         $want_docid = $Conf->fetch_ivalue("select max(paperStorageId) from PaperStorage where paperId=? and documentType=? and sha1=? and filterType is null", $paperId, $documentType, $version_hash);
