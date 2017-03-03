@@ -124,7 +124,7 @@ class HotCRPDocument extends Filer {
             $chash = $doc->content_binary_hash($doc->binary_hash());
             if ($chash !== $doc->binary_hash()) {
                 error_log("S3 upload cancelled: data claims checksum " . $doc->text_hash()
-                          . ", has checksum " . Filer::text_hash($chash));
+                          . ", has checksum " . Filer::hash_as_text($chash));
                 return false;
             }
         }
@@ -135,8 +135,8 @@ class HotCRPDocument extends Filer {
                       "dtype" => (int) $dtype);
         if ($doc->filterType) {
             $meta["filtertype"] = $doc->filterType;
-            if (get($doc, "original_sha1"))
-                $meta["original_sha1"] = $doc->original_sha1;
+            if ($doc->sourceHash != "")
+                $meta["sourcehash"] = Filer::hash_as_text($doc->sourceHash);
         }
         $filename = self::s3_filename($doc);
         $s3->save($filename, $doc->content, $doc->mimetype,

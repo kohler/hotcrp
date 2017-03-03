@@ -23,6 +23,7 @@ class DocumentInfo implements JsonSerializable {
     public $infoJson_str;
     public $filterType = 0;
     public $originalStorageId;
+    public $sourceHash;
     public $docclass;
     public $is_partial = false;
     public $filters_applied;
@@ -46,7 +47,7 @@ class DocumentInfo implements JsonSerializable {
         $this->timestamp = (int) $this->timestamp;
         assert($this->paperStorageId <= 1 || !!$this->mimetype);
         if ($this->sha1 != "")
-            $this->sha1 = Filer::binary_hash($this->sha1);
+            $this->sha1 = Filer::hash_as_binary($this->sha1);
         $this->size = (int) $this->size;
         if (is_string($this->infoJson)) {
             $this->infoJson_str = $this->infoJson;
@@ -57,6 +58,8 @@ class DocumentInfo implements JsonSerializable {
             $this->infoJson = null;
         $this->filterType = $this->filterType ? (int) $this->filterType : null;
         $this->originalStorageId = $this->originalStorageId ? (int) $this->originalStorageId : null;
+        if ($this->sourceHash != "")
+            $this->sourceHash = Filer::hash_as_binary($this->sourceHash);
         $this->docclass = $this->conf->docclass($this->documentType);
         if (isset($this->paper) && !isset($this->content))
             $this->content = $this->paper;
@@ -118,7 +121,7 @@ class DocumentInfo implements JsonSerializable {
         return !!$this->sha1;
     }
     function text_hash() {
-        return Filer::text_hash($this->binary_hash());
+        return Filer::hash_as_text($this->binary_hash());
     }
     function binary_hash() {
         if ($this->sha1 == "")
@@ -144,7 +147,7 @@ class DocumentInfo implements JsonSerializable {
         // look for an existing document with same sha1; otherwise upload
         $hash = false;
         if ($this->sha1 != "")
-            $hash = Filer::binary_hash($this->sha1);
+            $hash = Filer::hash_as_binary($this->sha1);
         if ($hash === false)
             $hash = $this->content_binary_hash();
         if ($hash !== false) {
@@ -281,7 +284,7 @@ class DocumentInfo implements JsonSerializable {
             if ($k === "content" && is_string($v) && strlen($v) > 50)
                 $x[$k] = substr($v, 0, 50) . "…";
             else if ($k === "sha1" && is_string($v))
-                $x[$k] = Filer::text_hash($v);
+                $x[$k] = Filer::hash_as_text($v);
             else if ($k !== "conf" && $k !== "docclass" && $k !== "infoJson_str" && $v !== null)
                 $x[$k] = $v;
         return $x;

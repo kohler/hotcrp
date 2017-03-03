@@ -602,7 +602,7 @@ class Filer {
     }
 
     // hash helpers
-    static function text_hash($doc) {
+    static function hash_as_text($doc) {
         $h = is_object($doc) ? get($doc, "sha1") : $doc;
         if (is_string($h)) {
             $len = strlen($h);
@@ -615,10 +615,10 @@ class Filer {
             else if (($len === 40 || $len === 64) && ctype_xdigit($h))
                 return strtolower($h);
         }
-        error_log("Filer::text_hash: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        error_log("Filer::hash_as_text: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return false;
     }
-    static function binary_hash($doc) {
+    static function hash_as_binary($doc) {
         $h = is_object($doc) ? get($doc, "sha1") : $doc;
         if (is_string($h)) {
             $len = strlen($h);
@@ -631,14 +631,14 @@ class Filer {
             else if (($len === 40 || $len === 64) && ctype_xdigit($h))
                 return hex2bin($h);
         }
-        error_log("Filer::binary_hash: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        error_log("Filer::hash_as_binary: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return false;
     }
     static function check_text_hash($hash1, $hash2) {
-        $hash2 = self::text_hash($hash2);
+        $hash2 = self::hash_as_text($hash2);
         return $hash1 !== false && $hash1 === $hash2;
     }
-    static function text_sha1($str) {
+    static function sha1_hash_as_text($str) {
         if (strlen($str) > 20 && strcasecmp(substr($str, 0, 5), "sha1-") == 0)
             $str = substr($str, 5);
         $len = strlen($str);
