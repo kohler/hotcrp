@@ -423,12 +423,17 @@ class Conf {
         if (get($this->opt, "docstore") && $this->opt["docstore"][0] !== "/")
             $this->opt["docstore"] = $ConfSitePATH . "/" . $this->opt["docstore"];
         $this->_docstore = false;
-        if (($fdir = get($this->opt, "docstore"))) {
-            $fpath = $fdir;
-            $use_subdir = get($this->opt, "docstoreSubdir");
-            if ($use_subdir && ($use_subdir === true || $use_subdir > 0))
-                $fpath .= "/%" . ($use_subdir === true ? 2 : $use_subdir) . "h";
-            $this->_docstore = [$fdir, $fpath . "/%h%x"];
+        if (($dpath = get($this->opt, "docstore"))) {
+            if (strpos($dpath, "%") !== false)
+                $this->_docstore = $dpath;
+            else {
+                if ($dpath[strlen($dpath) - 1] === "/")
+                    $dpath = substr($dpath, 0, strlen($dpath) - 1);
+                $use_subdir = get($this->opt, "docstoreSubdir");
+                if ($use_subdir && ($use_subdir === true || $use_subdir > 0))
+                    $dpath .= "/%" . ($use_subdir === true ? 2 : $use_subdir) . "h";
+                $this->_docstore = $dpath . "/%h%x";
+            }
         }
 
         // handle timezone

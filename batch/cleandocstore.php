@@ -42,9 +42,9 @@ if (isset($arg["match"])) {
     Cleaner::$hash_preg = str_replace('\\*', '[0-9a-f]*', preg_quote($t));
 }
 
-assert($dp[1][0] === "/");
+assert($dp[0] === "/");
 $fparts = [];
-foreach (preg_split("{/+}", $dp[1]) as $fdir)
+foreach (preg_split("{/+}", $dp) as $fdir)
     if ($fdir !== "") {
         if (preg_match('/%\d*[%hx]/', $fdir)) {
             if (count($fparts) % 2 == 0)

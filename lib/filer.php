@@ -201,8 +201,9 @@ class ZipDocument {
                 $hash_input .= "README-warnings.txt\n" . join("\n", $this->warnings) . "\n";
             $zipfile_hash = sha1($hash_input, false);
             // look for zipfile
-            $zfn = opt("docstore") . "/tmp/" . $zipfile_hash . ".zip";
-            if (Filer::prepare_filestore(opt("docstore"), $zfn)) {
+            $dstore_prefix = Filer::docstore_fixed_prefix(opt("docstore"));
+            $zfn = $dstore_prefix . "tmp/" . $zipfile_hash . ".zip";
+            if (Filer::prepare_filestore($dstore_prefix, $zfn)) {
                 $this->filestore = $zfn;
                 if (file_exists($this->filestore)) {
                     if (($mtime = @filemtime($zfn)) < $Now - 21600)
@@ -330,8 +331,8 @@ class Filer {
     function load(DocumentInfo $doc) {
         // Return true iff `$doc` can be loaded.
         if (!($has_content = self::has_content($doc))
-            && ($fsinfo = $this->_filestore($doc, true))) {
-            $doc->filestore = $fsinfo[1];
+            && ($fspath = $this->_filestore($doc, true))) {
+            $doc->filestore = $fspath;
             $has_content = true;
         }
         return ($has_content && $this->validate_content($doc))
@@ -494,9 +495,9 @@ class Filer {
         return true;
     }
     function store_filestore(DocumentInfo $doc, $no_error = false) {
-        if (!($fsinfo = $this->_filestore($doc, false)))
+        if (!($fspath = $this->_filestore($doc, false)))
             return false;
-        list($fsdir, $fspath) = $fsinfo;
+        $fsdir = Filer::docstore_fixed_prefix($this->filestore_pattern($doc));
         if (!self::prepare_filestore($fsdir, $fspath)) {
             $no_error || set_error_html($doc, "Internal error: docstore cannot be initialized.");
             return false;
@@ -698,26 +699,20 @@ class Filer {
         return $x . $pattern;
     }
     private function _filestore(DocumentInfo $doc, $for_reading) {
-        if (!($fsinfo = $this->filestore_pattern($doc)))
-            return $fsinfo;
-        else if ($doc->error)
+        if ($doc->error || !($pattern = $this->filestore_pattern($doc)))
             return null;
-        list($fdir, $fpath) = $fsinfo;
-        if ($fdir && $fdir[strlen($fdir) - 1] === "/")
-            $fdir = substr($fdir, 0, strlen($fdir) - 1);
-        $pattern = substr($fpath, strlen($fdir));
         if (!($f = $this->_expand_filestore($pattern, $doc, true)))
             return null;
-        if ($for_reading && !is_readable($fdir . $f)) {
+        if ($for_reading && !is_readable($f)) {
             // clean up presence of old files saved w/o extension
             $g = $this->_expand_filestore($pattern, $doc, false);
-            if ($f && $g !== $f && is_readable($fdir . $g)) {
-                if (!@rename($fdir . $g, $fdir . $f))
+            if ($f && $g !== $f && is_readable($g)) {
+                if (!@rename($g, $f))
                     $f = $g;
             } else
                 return null;
         }
-        return [$fdir, $fdir . $f];
+        return $f;
     }
     private static function _make_fpath_parents($fdir, $fpath) {
         $lastslash = strrpos($fpath, "/");
