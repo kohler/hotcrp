@@ -54,38 +54,40 @@ class PaperStatus extends MessageSet {
 
     function document_to_json($dtype, $docid) {
         if (!is_object($docid))
-            $drow = $this->prow ? $this->prow->document($dtype, $docid) : null;
+            $doc = $this->prow ? $this->prow->document($dtype, $docid) : null;
         else {
-            $drow = $docid;
-            $docid = $drow->paperStorageId;
+            $doc = $docid;
+            $docid = $doc->paperStorageId;
         }
+        assert(!$doc || $doc instanceof DocumentInfo);
+
         $d = (object) array();
         if ($docid && !$this->hide_docids)
             $d->docid = $docid;
-        if ($drow) {
-            if ($drow->mimetype)
-                $d->mimetype = $drow->mimetype;
-            if ($drow->sha1 !== null && $drow->sha1 !== "")
-                $d->sha1 = Filer::text_hash($drow->sha1);
-            if ($drow->timestamp)
-                $d->timestamp = $drow->timestamp;
-            if ($drow->size)
-                $d->size = $drow->size;
-            if ($drow->filename)
-                $d->filename = $drow->filename;
+        if ($doc) {
+            if ($doc->mimetype)
+                $d->mimetype = $doc->mimetype;
+            if ($doc->has_hash())
+                $d->hash = $doc->text_hash();
+            if ($doc->timestamp)
+                $d->timestamp = $doc->timestamp;
+            if ($doc->size)
+                $d->size = $doc->size;
+            if ($doc->filename)
+                $d->filename = $doc->filename;
             $meta = null;
-            if (isset($drow->infoJson) && is_object($drow->infoJson))
-                $meta = $drow->infoJson;
-            else if (isset($drow->infoJson) && is_string($drow->infoJson))
-                $meta = json_decode($drow->infoJson);
+            if (isset($doc->infoJson) && is_object($doc->infoJson))
+                $meta = $doc->infoJson;
+            else if (isset($doc->infoJson) && is_string($doc->infoJson))
+                $meta = json_decode($doc->infoJson);
             if ($meta)
                 $d->metadata = $meta;
             if ($this->export_content
-                && $drow->docclass->load($drow))
-                $d->content_base64 = base64_encode(Filer::content($drow));
+                && $doc->docclass->load($doc))
+                $d->content_base64 = base64_encode(Filer::content($doc));
         }
         foreach ($this->document_callbacks as $cb)
-            call_user_func($cb, $d, $this->prow, $dtype, $drow);
+            call_user_func($cb, $d, $this->prow, $dtype, $doc);
         if (!count(get_object_vars($d)))
             $d = null;
         return $d;
@@ -268,21 +270,28 @@ class PaperStatus extends MessageSet {
         // look for an existing document with same hash;
         // check existing docid's hash
         $docid = get($docj, "docid");
+        if (!isset($docj->hash) && isset($docj->sha1)) {
+            if (($hash = Filer::text_sha1($docj->sha1)) !== false)
+                $docj->hash = $hash;
+            unset($docj->sha1);
+        }
+        $dochash = get($docj, "hash");
+
         if ($docid) {
             $oldj = $this->document_to_json($o->id, $docid);
-            if (get($docj, "sha1")
-                && get($oldj, "sha1") !== Filer::text_hash($docj->sha1))
+            if ($dochash != "" && get($oldj, "hash") != ""
+                && !Filer::check_text_hash($dochash, $oldj->hash))
                 $docid = null;
-        } else if ($this->paperId != -1 && get($docj, "sha1")) {
-            $oldj = Dbl::fetch_first_object($this->conf->dblink, "select paperStorageId, sha1, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $o->id, Filer::binary_hash($docj->sha1));
+        } else if ($this->paperId != -1 && $dochash != "") {
+            $oldj = Dbl::fetch_first_object($this->conf->dblink, "select paperStorageId, sha1 as hash, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and PaperStorage.sha1=?", $this->paperId, $o->id, Filer::binary_hash($dochash));
             if ($oldj)
-                $docid = $oldj->paperStorageId;
+                $docid = (int) $oldj->paperStorageId;
         }
         if ($docid) {
             $docj->docid = $docid;
-            $docj->sha1 = Filer::binary_hash($oldj);
-            $docj->timestamp = $oldj->timestamp;
-            $docj->size = $oldj->size;
+            $docj->hash = Filer::binary_hash($oldj->hash);
+            $docj->timestamp = (int) $oldj->timestamp;
+            $docj->size = (int) $oldj->size;
             $docj->mimetype = $oldj->mimetype;
             return;
         }
@@ -308,13 +317,14 @@ class PaperStatus extends MessageSet {
             Dbl::free($result);
         }
 
-        // if no sha1 match, upload
+        // if no hash match, upload
         $docclass = $this->conf->docclass($o->id);
         $docj->paperId = $this->paperId;
         $newdoc = new DocumentInfo($docj);
         if ($docclass->upload($newdoc) && $newdoc->paperStorageId > 1) {
-            foreach (array("size", "sha1", "mimetype", "timestamp") as $k)
+            foreach (["size", "mimetype", "timestamp"] as $k)
                 $docj->$k = $newdoc->$k;
+            $docj->hash = $newdoc->text_hash();
             $this->uploaded_documents[] = $docj->docid = $newdoc->paperStorageId;
         } else {
             $docj->docid = 1;
@@ -947,7 +957,7 @@ class PaperStatus extends MessageSet {
                 && (!$old_joindoc || $old_joindoc->docid != $new_joindoc->docid)) {
                 $this->addf("size", $new_joindoc->size);
                 $this->addf("mimetype", $new_joindoc->mimetype);
-                $this->addf("sha1", Filer::binary_hash($new_joindoc->sha1));
+                $this->addf("sha1", Filer::binary_hash($new_joindoc->hash));
                 $this->addf("timestamp", $new_joindoc->timestamp);
                 if ($this->conf->sversion >= 145)
                     $this->addf("pdfFormatStatus", 0);

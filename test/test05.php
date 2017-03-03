@@ -39,7 +39,7 @@ $ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
 xassert(!$ps->has_error());
 
 $paper1c = $ps->paper_json(1);
-xassert_eqq($paper1c->submission->sha1, "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");
+xassert_eqq($paper1c->submission->hash, "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");
 
 $ps = new PaperStatus($Conf);
 
@@ -48,21 +48,21 @@ $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-h
 xassert(!$ps->has_error());
 
 $paper2b = $ps->paper_json(2);
-xassert_eqq($paper2b->submission->sha1, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
+xassert_eqq($paper2b->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"final\":{\"content\":\"%PDF-goodbye\\n\",\"type\":\"application/pdf\"}}"));
 xassert(!$ps->has_error());
 
 $paper2 = $ps->paper_json(2);
-xassert_eqq($paper2->submission->sha1, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
-xassert_eqq($paper2->final->sha1, "e04c778a0af702582bb0e9345fab6540acb28e45");
+xassert_eqq($paper2->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
+xassert_eqq($paper2->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-again hello\\n\",\"type\":\"application/pdf\"}}"));
 xassert(!$ps->has_error());
 
 $paper2 = $ps->paper_json(2);
-xassert_eqq($paper2->submission->sha1, "30240fac8417b80709c72156b7f7f7ad95b34a2b");
-xassert_eqq($paper2->final->sha1, "e04c778a0af702582bb0e9345fab6540acb28e45");
+xassert_eqq($paper2->submission->hash, "30240fac8417b80709c72156b7f7f7ad95b34a2b");
+xassert_eqq($paper2->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
 xassert_eqq(bin2hex($ps->paper_row()->sha1), "e04c778a0af702582bb0e9345fab6540acb28e45");
 
 // test new-style options storage

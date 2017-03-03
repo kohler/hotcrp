@@ -45,7 +45,8 @@ class DocumentInfo implements JsonSerializable {
         $this->documentType = (int) $this->documentType;
         $this->timestamp = (int) $this->timestamp;
         assert($this->paperStorageId <= 1 || !!$this->mimetype);
-        $this->mimetypeid = (int) $this->mimetypeid;
+        if ($this->sha1 != "")
+            $this->sha1 = Filer::binary_hash($this->sha1);
         $this->size = (int) $this->size;
         if (is_string($this->infoJson)) {
             $this->infoJson_str = $this->infoJson;
@@ -66,15 +67,13 @@ class DocumentInfo implements JsonSerializable {
         if ($this->sha1 == "" && $this->paperStorageId > 1
             && $this->docclass->load_content($this)) {
             // store sha1 in database if needed (backwards compat)
-            $this->sha1 = sha1($this->content, true);
-            $this->conf->q("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", $this->sha1, $this->paperId, $this->paperStorageId);
+            $this->conf->q("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", $this->binary_hash(), $this->paperId, $this->paperStorageId);
             // we might also need to update the joindoc
             if ($this->documentType == DTYPE_SUBMISSION)
-                $this->conf->q("update Paper set sha1=? where paperId=? and paperStorageId=? and finalPaperStorageId<=0", $this->sha1, $this->paperId, $this->paperStorageId);
+                $this->conf->q("update Paper set sha1=? where paperId=? and paperStorageId=? and finalPaperStorageId<=0", $this->binary_hash(), $this->paperId, $this->paperStorageId);
             else if ($this->documentType == DTYPE_FINAL)
-                $this->conf->q("update Paper set sha1=? where paperId=? and finalPaperStorageId=?", $this->sha1, $this->paperStorageId);
-        } else if ($this->sha1 == "" && $this->content)
-            $this->sha1 = sha1($this->content, true);
+                $this->conf->q("update Paper set sha1=? where paperId=? and finalPaperStorageId=?", $this->binary_hash(), $this->paperStorageId);
+        }
     }
 
     static function fetch($result, Conf $conf = null, PaperInfo $prow = null) {
@@ -118,32 +117,34 @@ class DocumentInfo implements JsonSerializable {
     function has_hash() {
         return !!$this->sha1;
     }
-
     function text_hash() {
-        return $this->sha1 ? Filer::text_hash($this->sha1) : false;
+        return Filer::text_hash($this->binary_hash());
     }
-
+    function binary_hash() {
+        if ($this->sha1 == "")
+            $this->sha1 = $this->content_binary_hash();
+        return $this->sha1;
+    }
     function check_text_hash($hash) {
-        return $this->sha1 && Filer::text_hash($this->sha1) === $hash;
+        return Filer::check_text_hash($hash, $this->text_hash());
     }
-
-    function compute_hash() {
-        $hash = Filer::binary_hash($this->sha1);
-        if ($hash === false && is_string($this->content))
-            $hash = sha1($this->content, true);
-        else if ($hash === false && $this->filestore && is_readable($this->filestore)) {
-            if (is_executable("/usr/bin/sha1sum"))
-                $cmd = "/usr/bin/sha1sum ";
-            else if (is_executable("/usr/bin/shasum"))
-                $cmd = "/usr/bin/shasum -a 1 ";
-            if ($cmd
-                && ($result = exec($cmd . escapeshellarg($this->filestore), $cmd_out, $cmd_status))
-                && $cmd_status == 0
-                && ($hash = Filer::binary_hash(trim($result))) !== false)
-                /* skip */;
-            else if (($this->content = file_get_contents($this->filestore)) !== false)
-                $hash = sha1($this->content, true);
+    function content_binary_hash($like_hash = false) {
+        // never cached
+        if (is_string($this->content))
+            return sha1($this->content, true);
+        else if ($this->filestore && is_readable($this->filestore)) {
+            $hctx = hash_init("sha1");
+            if (hash_update_file($hctx, $this->filestore))
+                return hash_final($hctx, true);
         }
+        return false;
+    }
+    function compute_hash() {
+        $hash = false;
+        if ($this->sha1 != "")
+            $hash = Filer::binary_hash($this->sha1);
+        if ($hash === false)
+            $hash = $this->content_binary_hash();
         return $hash;
     }
 

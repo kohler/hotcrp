@@ -99,9 +99,8 @@ class HotCRPDocument extends Filer {
             return true;
     }
 
-    static function s3_filename($doc) {
-        if ($doc->sha1 != ""
-            && ($hash = Filer::text_hash($doc)) !== false)
+    static function s3_filename(DocumentInfo $doc) {
+        if (($hash = $doc->text_hash()) !== false)
             return "doc/" . substr($hash, 0, 2) . "/" . $hash
                 . Mimetype::extension($doc->mimetype);
         else
@@ -121,10 +120,13 @@ class HotCRPDocument extends Filer {
     function s3_store(DocumentInfo $doc, $trust_hash = false) {
         if (!isset($doc->content) && !$this->load_to_memory($doc))
             return false;
-        if (!$trust_hash && Filer::binary_hash($doc) !== sha1($doc->content, true)) {
-            error_log("S3 upload cancelled: data claims checksum " . Filer::text_hash($doc)
-                      . ", has checksum " . sha1($doc->content));
-            return false;
+        if (!$trust_hash) {
+            $chash = $doc->content_binary_hash($doc->binary_hash());
+            if ($chash !== $doc->binary_hash()) {
+                error_log("S3 upload cancelled: data claims checksum " . $doc->text_hash()
+                          . ", has checksum " . Filer::text_hash($chash));
+                return false;
+            }
         }
         $s3 = $this->conf->s3_docstore();
         $dtype = isset($doc->documentType) ? $doc->documentType : $this->dtype;
@@ -156,7 +158,7 @@ class HotCRPDocument extends Filer {
         $columns = array("paperId" => $doc->paperId,
                          "timestamp" => $doc->timestamp,
                          "mimetype" => $doc->mimetype,
-                         "sha1" => $doc->sha1,
+                         "sha1" => $doc->binary_hash(),
                          "documentType" => $doc->documentType,
                          "mimetype" => $doc->mimetype);
         if (!$this->conf->opt("dbNoPapers"))

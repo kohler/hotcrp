@@ -3,24 +3,9 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class ZipDocument_File {
-    public $filename;
-    public $sha1;
-    public $filestore;
-    public $content;
-    function __construct($doc, $filename, $hash) {
-        $this->filename = $filename;
-        $this->sha1 = $hash;
-        $this->filestore = get($doc, "filestore");
-        if (!isset($this->filestore))
-            $this->content = get($doc, "content");
-    }
-}
-
 class ZipDocument {
     public $filename;
     public $filestore;
-    public $sha1; // NB: might be of _filestore, not of content!
 
     private $tmpdir_ = null;
     private $files;
@@ -29,8 +14,8 @@ class ZipDocument {
     private $mimetype;
     private $headers;
     private $start_time;
-    private $_filestore;
-    private $_filestore_length;
+    private $_pending;
+    private $_pending_memory;
 
     function __construct($filename, $mimetype = "application/zip") {
         $this->filename = $filename;
@@ -40,15 +25,14 @@ class ZipDocument {
 
     function clean() {
         $this->filestore = false;
-        $this->sha1 = false;
         $this->tmpdir_ = null;
         $this->files = array();
         $this->warnings = array();
         $this->recurse = false;
         $this->headers = false;
         $this->start_time = time();
-        $this->_filestore = array();
-        $this->_filestore_length = 0;
+        $this->_pending = [];
+        $this->_pending_memory = 0;
     }
 
     private function tmpdir() {
@@ -59,17 +43,21 @@ class ZipDocument {
     }
 
     private function _add($doc, $filename, $check_filename) {
+        if (is_string($doc))
+            $doc = new DocumentInfo(["content" => $doc]);
+        assert($doc instanceof DocumentInfo);
+
         // maybe this is a warning container
-        if (is_object($doc) && isset($doc->error) && $doc->error) {
-            $this->warnings[] = (isset($doc->filename) ? $doc->filename . ": " : "")
-                . (isset($doc->error_html) ? htmlspecialchars_decode($doc->error_html) : "Unknown error.");
+        if ($doc->error) {
+            $this->warnings[] = ($doc->filename != "" ? $doc->filename . ": " : "")
+                . ($doc->error_html ? htmlspecialchars_decode($doc->error_html) : "Unknown error.");
             return;
         }
 
         // check filename
-        if (!$filename && is_object($doc) && isset($doc->filename))
+        if ($filename == "" && $doc->filename != "")
             $filename = $doc->filename;
-        if (!$filename
+        if ($filename == ""
             || ($check_filename
                 && !preg_match(',\A[^.*/\s\000-\017\\\\\'"][^*/\000-\017\\\\\'"]*\z,', $filename))) {
             $this->warnings[] = "$filename: Bad filename.";
@@ -77,8 +65,6 @@ class ZipDocument {
         }
 
         // load document
-        if (is_string($doc))
-            $doc = (object) array("content" => $doc);
         if (!isset($doc->filestore) && !isset($doc->content)) {
             if ($doc->docclass && $doc->docclass->load($doc))
                 $doc->_content_reset = true;
@@ -90,18 +76,16 @@ class ZipDocument {
                 return false;
             }
         }
-        if (isset($doc->content) && !isset($doc->sha1))
-            $doc->sha1 = sha1($doc->content, true);
 
         // add document to filestore list
-        if (is_array($this->_filestore)
-            && ($hash = Filer::binary_hash($doc)) !== null
+        if (is_array($this->_pending)
             && (isset($doc->filestore)
                 || (isset($doc->content) && $doc->content !== ""
-                    && strlen($doc->content) + $this->_filestore_length <= 4000000))) {
-            $this->_filestore[] = new ZipDocument_File($doc, $filename, $hash);
+                    && strlen($doc->content) + $this->_pending_memory <= 4000000))
+            && $doc->binary_hash() !== false) {
+            $this->_pending[] = new DocumentInfo(["filename" => $filename, "filestore" => $doc->filestore, "sha1" => $doc->binary_hash(), "content" => $doc->content]);
             if (!isset($doc->filestore))
-                $this->_filestore_length += strlen($doc->content);
+                $this->_pending_memory += strlen($doc->content);
             return self::_add_done($doc, true);
         }
 
@@ -112,8 +96,8 @@ class ZipDocument {
             return self::_add_done($doc, false);
         $zip_filename = "$tmpdir/";
 
-        // populate with contents of filestore list, if any
-        if (!$this->_add_filestore())
+        // populate with pending contents, if any
+        if (!$this->_resolve_pending())
             return self::_add_done($doc, false);
 
         // construct subdirectories
@@ -170,10 +154,10 @@ class ZipDocument {
         return $result;
     }
 
-    private function _add_filestore() {
-        if (($filestore = $this->_filestore) !== null) {
-            $this->_filestore = null;
-            foreach ($filestore as $f)
+    private function _resolve_pending() {
+        if (($ps = $this->_pending) !== null) {
+            $this->_pending = null;
+            foreach ($ps as $f)
                 if (!$this->_add($f, $f->filename, false))
                     return false;
         }
@@ -203,24 +187,22 @@ class ZipDocument {
 
         // maybe cache zipfile in docstore
         $this->filestore = "$tmpdir/_hotcrp.zip";
-        $this->sha1 = false;
-        if (!empty($this->_filestore) && opt("docstore")
+        if (!empty($this->_pending) && opt("docstore")
             && opt("docstoreAccelRedirect")) {
             // calculate hash for zipfile contents
-            $sorted_filestore = $this->_filestore;
-            usort($sorted_filestore, function ($a, $b) {
+            $sorted_pending = $this->_pending;
+            usort($sorted_pending, function ($a, $b) {
                 return strcmp($a->filename, $b->filename);
             });
-            $hash_input = count($sorted_filestore) . "\n";
-            foreach ($sorted_filestore as $f)
-                $hash_input .= $f->filename . "\n" . $f->sha1 . "\n";
-            if (count($this->warnings))
+            $hash_input = count($sorted_pending) . "\n";
+            foreach ($sorted_pending as $f)
+                $hash_input .= $f->filename . "\n" . $f->text_hash() . "\n";
+            if (!empty($this->warnings))
                 $hash_input .= "README-warnings.txt\n" . join("\n", $this->warnings) . "\n";
             $zipfile_hash = sha1($hash_input, false);
             // look for zipfile
             $zfn = opt("docstore") . "/tmp/" . $zipfile_hash . ".zip";
             if (Filer::prepare_filestore(opt("docstore"), $zfn)) {
-                $this->sha1 = Filer::binary_hash($zipfile_hash);
                 $this->filestore = $zfn;
                 if (file_exists($this->filestore)) {
                     if (($mtime = @filemtime($zfn)) < $Now - 21600)
@@ -233,22 +215,15 @@ class ZipDocument {
         // actually run zip
         if (!($zipcmd = opt("zipCommand", "zip")))
             return set_error_html("<code>zip</code> is not supported on this installation.");
-        $this->_add_filestore();
+        $this->_resolve_pending();
         if (count($this->warnings))
             $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
         $opts = ($this->recurse ? "-rq" : "-q");
         set_time_limit(60);
-        $out = system("cd $tmpdir; $zipcmd $opts " . escapeshellarg($this->filestore) . " " . join(" ", array_map("escapeshellarg", array_keys($this->files))) . " 2>&1", $status);
-        if ($status == 0 && file_exists($this->filestore)) {
-            // XXX do we really need the hash?
-            if ($this->sha1 === false) {
-                // avoid file_get_contents in case the file doesn't fit in memory
-                $hctx = hash_init("sha1");
-                hash_update_file($hctx, $this->filestore);
-                $this->sha1 = hash_final($hctx, true);
-            }
+        $command = "cd $tmpdir; $zipcmd $opts " . escapeshellarg($this->filestore) . " " . join(" ", array_map("escapeshellarg", array_keys($this->files)));
+        $out = system("$command 2>&1", $status);
+        if ($status == 0 && file_exists($this->filestore))
             return $this->filestore;
-        }
         $this->filestore = false;
         if ($status != 0)
             return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
@@ -370,9 +345,10 @@ class Filer {
                 set_error_html($doc, "Cannot create temporary directory.");
                 return false;
             }
-            $hash = self::text_hash($doc);
-            if ($hash === false)
-                $hash = $doc->sha1 = sha1($doc->content);
+            if (($hash = $doc->text_hash()) === false) {
+                set_error_html($doc, "Failed to hash contents.");
+                return false;
+            }
             $path = self::$tempdir . "/" . $hash . Mimetype::extension($doc->mimetype);
             if (file_put_contents($path, $doc->content) != strlen($doc->content)) {
                 set_error_html($doc, "Failed to save document to temporary file.");
@@ -399,13 +375,13 @@ class Filer {
             || get($doc, "error"))
             return false;
         // calculate hash, complain on mismatch
-        $hash = sha1($content, true);
-        if (isset($doc->sha1) && $doc->sha1 !== false && $doc->sha1 !== ""
-            && self::binary_hash($doc) !== $hash) {
-            set_error_html($doc, "Document claims checksum " . self::text_hash($doc) . ", but has checksum " . bin2hex($hash) . ".");
-            return false;
+        if ($doc->has_hash()) {
+            $bhash = $doc->content_binary_hash($doc->binary_hash());
+            if ($bhash !== $doc->binary_hash()) {
+                set_error_html($doc, "Document claims checksum " . $doc->text_hash() . ", but has checksum " . bin2hex($bhash) . ".");
+                return false;
+            }
         }
-        $doc->sha1 = $hash;
         if (isset($doc->size) && $doc->size && $doc->size != strlen($content))
             set_error_html($doc, "Document claims length " . $doc->size . ", but has length " . strlen($content) . ".");
         $doc->size = strlen($content);
@@ -592,8 +568,8 @@ class Filer {
         }
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
-        if ($doc->sha1)
-            header("ETag: \"" . self::text_hash($doc) . "\"");
+        if ($doc->has_hash())
+            header("ETag: \"" . $doc->text_hash() . "\"");
         if (($filename = self::content_filename($doc)))
             self::download_file($filename, get($doc, "no_cache") || get($doc, "no_accel"));
         else {
@@ -658,13 +634,20 @@ class Filer {
         error_log("Filer::binary_hash: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return false;
     }
-    static function text_sha1($doc) {
-        $h = self::text_hash($doc);
-        return is_string($h) && strlen($h) === 40 ? $h : false;
+    static function check_text_hash($hash1, $hash2) {
+        $hash2 = self::text_hash($hash2);
+        return $hash1 !== false && $hash1 === $hash2;
     }
-    static function binary_sha1($doc) {
-        $h = self::binary_hash($doc);
-        return is_string($h) && strlen($h) === 20 ? $h : false;
+    static function text_sha1($str) {
+        if (strlen($str) > 20 && strcasecmp(substr($str, 0, 5), "sha1-") == 0)
+            $str = substr($str, 5);
+        $len = strlen($str);
+        if ($len === 20)
+            return bin2hex($str);
+        else if ($len === 40 && ctype_xdigit($str))
+            return strtolower($str);
+        else
+            return false;
     }
 
     // private functions
@@ -679,12 +662,8 @@ class Filer {
                 if ($extension)
                     $x .= Mimetype::extension($doc->mimetype);
             } else {
-                if ($hash === false)
-                    $hash = self::text_hash($doc);
                 if ($hash === false
-                    && ($content = self::content($doc)) !== false)
-                    $hash = $doc->sha1 = sha1($content);
-                if ($hash === false)
+                    && ($hash = $doc->text_hash()) == false)
                     return false;
                 if ($m[2] !== "")
                     $x .= substr($hash, 0, intval($m[2]));
