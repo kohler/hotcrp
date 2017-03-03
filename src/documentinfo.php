@@ -12,7 +12,7 @@ class DocumentInfo implements JsonSerializable {
     public $timestamp;
     public $mimetype;
     public $mimetypeid;
-    public $sha1;
+    public $sha1; // should be binary hash
     public $size;
     public $content;
     public $compression;
@@ -139,19 +139,15 @@ class DocumentInfo implements JsonSerializable {
         }
         return false;
     }
-    function compute_hash() {
+
+    function save() {
+        // look for an existing document with same sha1; otherwise upload
         $hash = false;
         if ($this->sha1 != "")
             $hash = Filer::binary_hash($this->sha1);
         if ($hash === false)
             $hash = $this->content_binary_hash();
-        return $hash;
-    }
-
-
-    function save() {
-        // look for an existing document with same sha1; otherwise upload
-        if (($hash = $this->compute_hash()) !== false) {
+        if ($hash !== false) {
             $this->sha1 = $hash;
             $id = Dbl::fetch_ivalue($this->conf->dblink, "select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $hash);
             if ($id) {
