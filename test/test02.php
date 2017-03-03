@@ -407,4 +407,17 @@ xassert_eqq($am->find("elan", 1), [1]);
 xassert_eqq($am->find("elan", 2), [5]);
 xassert_eqq($am->find("elan", 3), [1, 5]);
 
+// Filer::docstore_fixed_prefix
+xassert_eqq(Filer::docstore_fixed_prefix(null), null);
+xassert_eqq(Filer::docstore_fixed_prefix(false), false);
+xassert_eqq(Filer::docstore_fixed_prefix(""), "");
+xassert_eqq(Filer::docstore_fixed_prefix("/"), "/");
+xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e"), "/a/b/c/d/e/");
+xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e///"), "/a/b/c/d/e///");
+xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e/%%/a/b"), "/a/b/c/d/e/%/a/b/");
+xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e/%%/a/b%"), "/a/b/c/d/e/%/a/b%/");
+xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e/%%/a/b%h%x"), "/a/b/c/d/e/%/a/");
+xassert_eqq(Filer::docstore_fixed_prefix("/%02h%x"), "/");
+xassert_eqq(Filer::docstore_fixed_prefix("%02h%x"), "");
+
 xassert_exit();

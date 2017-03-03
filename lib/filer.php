@@ -457,6 +457,29 @@ class Filer {
     function filestore_check(DocumentInfo $doc) {
         return !!$this->_filestore($doc, true);
     }
+    static function docstore_fixed_prefix($pattern) {
+        if ($pattern == "")
+            return $pattern;
+        $prefix = "";
+        while (($pos = strpos($pattern, "%")) !== false) {
+            if ($pos == strlen($pattern) - 1)
+                break;
+            else if ($pattern[$pos + 1] === "%") {
+                $prefix .= substr($pattern, 0, $pos + 1);
+                $pattern = substr($pattern, $pos + 2);
+            } else {
+                $prefix .= substr($pattern, 0, $pos);
+                if (($rslash = strrpos($prefix, "/")) !== false)
+                    return substr($prefix, 0, $rslash + 1);
+                else
+                    return "";
+            }
+        }
+        $prefix .= $pattern;
+        if ($prefix[strlen($prefix) - 1] !== "/")
+            $prefix .= "/";
+        return $prefix;
+    }
     static function prepare_filestore($parent, $path) {
         if (!self::_make_fpath_parents($parent, $path))
             return false;
