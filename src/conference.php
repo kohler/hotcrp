@@ -1476,8 +1476,14 @@ class Conf {
         }
         if ($change) {
             $this->crosscheck_settings();
-            if (str_starts_with($name, "opt."))
+            if (str_starts_with($name, "opt.")) {
+                $oname = substr($name, 4);
+                if ($value === null && $data === null)
+                    $this->opt[$oname] = get($this->opt_override, $oname);
+                else
+                    $this->opt[$oname] = $data === null ? $value : $data;
                 $this->crosscheck_options();
+            }
         }
         return $change;
     }
