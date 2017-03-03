@@ -114,6 +114,19 @@ class DocumentInfo implements JsonSerializable {
         return HotCRPDocument::filename($this, $filters);
     }
 
+
+    function has_hash() {
+        return !!$this->sha1;
+    }
+
+    function text_hash() {
+        return $this->sha1 ? Filer::text_hash($this->sha1) : false;
+    }
+
+    function check_text_hash($hash) {
+        return $this->sha1 && Filer::text_hash($this->sha1) === $hash;
+    }
+
     function compute_hash() {
         $hash = Filer::binary_hash($this->sha1);
         if ($hash === false && is_string($this->content))
@@ -133,6 +146,7 @@ class DocumentInfo implements JsonSerializable {
         }
         return $hash;
     }
+
 
     function save() {
         // look for an existing document with same sha1; otherwise upload

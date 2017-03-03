@@ -118,9 +118,9 @@ function document_download() {
 
         $pjs = $actives = [];
         foreach ($docs as $doc) {
-            $pj = ["hash" => Filer::text_hash($doc), "at" => (int) $doc->timestamp, "mimetype" => $doc->mimetype];
-            if ($doc->size !== null)
-                $pj["size"] = (int) $doc->size;
+            $pj = ["hash" => $doc->text_hash(), "at" => $doc->timestamp, "mimetype" => $doc->mimetype];
+            if ($doc->size)
+                $pj["size"] = $doc->size;
             if ($doc->filename)
                 $pj["filename"] = $doc->filename;
             $pj["active"] = true;
@@ -130,12 +130,12 @@ function document_download() {
 
         if ($Me->can_view_document_history($prow)) {
             $result = $Conf->qe("select paperStorageId, paperId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $paperId, $documentType);
-            while (($row = edb_orow($result))) {
+            while (($doc = DocumentInfo::fetch($result, $Conf, $prow))) {
                 if (get($actives, $row->paperStorageId))
                     continue;
-                $pj = ["hash" => Filer::text_hash($row), "at" => (int) $row->timestamp, "mimetype" => $row->mimetype];
-                if ($row->size !== null)
-                    $pj["size"] = (int) $row->size;
+                $pj = ["hash" => $doc->text_hash(), "at" => $row->timestamp, "mimetype" => $row->mimetype];
+                if ($row->size)
+                    $pj["size"] = $row->size;
                 if ($row->filename)
                     $pj["filename"] = $row->filename;
                 $pjs[] = $pj;
@@ -187,7 +187,7 @@ function document_download() {
     }
 
     // check for If-Not-Modified
-    if ($doc->sha1) {
+    if ($doc->has_hash()) {
         $ifnonematch = null;
         if (function_exists("getallheaders")) {
             foreach (getallheaders() as $k => $v)
@@ -195,7 +195,7 @@ function document_download() {
                     $ifnonematch = $v;
         } else
             $ifnonematch = get($_SERVER, "HTTP_IF_NONE_MATCH");
-        if ($ifnonematch && $ifnonematch === "\"" . Filer::text_hash($doc) . "\"") {
+        if ($ifnonematch && $ifnonematch === "\"" . $doc->text_hash() . "\"") {
             header("HTTP/1.1 304 Not Modified");
             exit;
         }
@@ -204,7 +204,7 @@ function document_download() {
     // Actually download paper.
     session_write_close();      // to allow concurrent clicks
     $opts = ["attachment" => cvtint(req("save")) > 0];
-    if ($doc->sha1 && ($x = req("hash")) && $x === Filer::text_hash($doc))
+    if ($doc->has_hash() && ($x = req("hash")) && $doc->check_text_hash($x))
         $opts["cacheable"] = true;
     if ($Conf->download_documents([$doc], $opts))
         exit;

@@ -33,7 +33,7 @@ foreach ($arg["_"] as $fn) {
             echo "$fn: " . $error["message"] . "\n";
         $ok = 2;
     } else {
-        $doc = (object) array("sha1" => sha1($content, true));
+        $doc = new DocumentInfo(["content" => $content], $Conf);
         if ($extensions && preg_match('/(\.\w+)\z/', $fn, $m)
             && ($mtx = Mimetype::lookup($m[1])))
             $doc->mimetype = $mtx->mimetype;

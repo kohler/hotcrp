@@ -78,9 +78,9 @@ xassert(!$ps->has_error());
 $paper2 = $Conf->paperRow(2, $user_estrin);
 $docs = $paper2->option(2)->documents();
 xassert_eqq(count($docs), 2);
-xassert_eqq(Filer::text_sha1($docs[0]->sha1), "4c18e2ec1d1e6d9e53f57499a66aeb691d687370");
+xassert($docs[0]->check_text_hash("4c18e2ec1d1e6d9e53f57499a66aeb691d687370"));
 $d0psid = $docs[0]->paperStorageId;
-xassert_eqq(Filer::text_sha1($docs[1]->sha1), "2e866582768e8954f55b974a2ad8503ef90717ab");
+xassert($docs[1]->check_text_hash("2e866582768e8954f55b974a2ad8503ef90717ab"));
 $d1psid = $docs[1]->paperStorageId;
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"sha1\": \"4c18e2ec1d1e6d9e53f57499a66aeb691d687370\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"sha1\": \"2e866582768e8954f55b974a2ad8503ef90717ab\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"sha1\": \"2e866582768e8954f55b974a2ad8503ef90717ab\", \"type\":\"application/pdf\"}]}}"));
@@ -89,11 +89,11 @@ xassert(!$ps->has_error());
 $paper2 = $Conf->paperRow(2, $user_estrin);
 $docs = $paper2->option(2)->documents();
 xassert_eqq(count($docs), 3);
-xassert_eqq(Filer::text_sha1($docs[0]->sha1), "4c18e2ec1d1e6d9e53f57499a66aeb691d687370");
+xassert($docs[0]->check_text_hash("4c18e2ec1d1e6d9e53f57499a66aeb691d687370"));
 xassert_eqq($docs[0]->paperStorageId, $d0psid);
-xassert_eqq(Filer::text_sha1($docs[1]->sha1), "2e866582768e8954f55b974a2ad8503ef90717ab");
+xassert($docs[1]->check_text_hash("2e866582768e8954f55b974a2ad8503ef90717ab"));
 xassert_eqq($docs[1]->paperStorageId, $d1psid);
-xassert_eqq(Filer::text_sha1($docs[2]->sha1), "2e866582768e8954f55b974a2ad8503ef90717ab");
+xassert($docs[2]->check_text_hash("2e866582768e8954f55b974a2ad8503ef90717ab"));
 xassert_eqq($docs[2]->paperStorageId, $d1psid);
 
 // backwards compatibility
@@ -102,9 +102,9 @@ $Conf->qe("insert into PaperOption (paperId,optionId,value,data) values (2,2,$d0
 $paper2 = $Conf->paperRow(2, $user_estrin);
 $docs = $paper2->option(2)->documents();
 xassert_eqq(count($docs), 2);
-xassert_eqq(Filer::text_sha1($docs[0]->sha1), "4c18e2ec1d1e6d9e53f57499a66aeb691d687370");
+xassert($docs[0]->check_text_hash("4c18e2ec1d1e6d9e53f57499a66aeb691d687370"));
 xassert_eqq($docs[0]->paperStorageId, $d0psid);
-xassert_eqq(Filer::text_sha1($docs[1]->sha1), "2e866582768e8954f55b974a2ad8503ef90717ab");
+xassert($docs[1]->check_text_hash("2e866582768e8954f55b974a2ad8503ef90717ab"));
 xassert_eqq($docs[1]->paperStorageId, $d1psid);
 
 xassert_exit();
