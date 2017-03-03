@@ -131,8 +131,8 @@ class HotCRPDocument extends Filer {
         $meta = array("conf" => $this->conf->opt("dbName"),
                       "pid" => $doc->paperId,
                       "dtype" => (int) $dtype);
-        if (get($doc, "filter")) {
-            $meta["filtertype"] = (int) $doc->filter;
+        if ($doc->filterType) {
+            $meta["filtertype"] = $doc->filterType;
             if (get($doc, "original_sha1"))
                 $meta["original_sha1"] = $doc->original_sha1;
         }
@@ -170,16 +170,12 @@ class HotCRPDocument extends Filer {
             $columns["infoJson"] = json_encode($infoJson);
         else if (is_object(get($doc, "metadata")))
             $columns["infoJson"] = json_encode($doc->metadata);
-        if (get($doc, "size"))
+        if ($doc->size)
             $columns["size"] = $doc->size;
-        if (get($doc, "filterType"))
+        if ($doc->filterType)
             $columns["filterType"] = $doc->filterType;
-        else if (get($doc, "filter"))
-            $columns["filterType"] = $doc->filter;
-        if (get($doc, "originalStorageId"))
+        if ($doc->originalStorageId)
             $columns["originalStorageId"] = $doc->originalStorageId;
-        else if (get($doc, "original_id"))
-            $columns["originalStorageId"] = $doc->original_id;
         return new Filer_Dbstore($this->conf->dblink, "PaperStorage", "paperStorageId", $columns,
                                  $this->conf->opt("dbNoPapers") ? null : "paper");
     }
