@@ -160,7 +160,7 @@ class DocumentInfo implements JsonSerializable {
         } else
             $algorithm = $this->conf->opt("contentHashMethod");
         if ($algorithm !== "sha1" && $algorithm !== "sha256")
-            $algorithm = "sha1";
+            $algorithm = "sha256";
         $pfx = ($algorithm === "sha1" ? "" : "sha2-");
         if (is_string($this->content))
             return $pfx . hash($algorithm, $this->content, true);
