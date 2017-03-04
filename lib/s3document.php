@@ -254,8 +254,8 @@ class S3Document {
     }
 
     function ls($prefix, $args = array()) {
-        $suffix = "?prefix=" . urlencode($prefix);
-        foreach (array("marker", "max-keys") as $k)
+        $suffix = "?list-type=2&prefix=" . urlencode($prefix);
+        foreach (array("max-keys", "start-after", "continuation-token") as $k)
             if (isset($args[$k]))
                 $suffix .= "&" . $k . "=" . urlencode($args[$k]);
         $this->run($suffix, "GET", array());
