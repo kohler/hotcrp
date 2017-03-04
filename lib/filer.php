@@ -331,7 +331,7 @@ class Filer {
     function load(DocumentInfo $doc) {
         // Return true iff `$doc` can be loaded.
         if (!($has_content = self::has_content($doc))
-            && ($fspath = $this->_filestore($doc, true))) {
+            && ($fspath = $this->filestore_path($doc, true))) {
             $doc->filestore = $fspath;
             $has_content = true;
         }
@@ -456,7 +456,7 @@ class Filer {
 
     // filestore functions
     function filestore_check(DocumentInfo $doc) {
-        return !!$this->_filestore($doc, true);
+        return !!$this->filestore_path($doc, true);
     }
     static function docstore_fixed_prefix($pattern) {
         if ($pattern == "")
@@ -495,7 +495,7 @@ class Filer {
         return true;
     }
     function store_filestore(DocumentInfo $doc, $no_error = false) {
-        if (!($fspath = $this->_filestore($doc, false)))
+        if (!($fspath = $this->filestore_path($doc, false)))
             return false;
         $fsdir = Filer::docstore_fixed_prefix($this->filestore_pattern($doc));
         if (!self::prepare_filestore($fsdir, $fspath)) {
@@ -710,12 +710,12 @@ class Filer {
         }
         return $x . $pattern;
     }
-    private function _filestore(DocumentInfo $doc, $for_reading) {
+    function filestore_path(DocumentInfo $doc, $search = false) {
         if ($doc->error || !($pattern = $this->filestore_pattern($doc)))
             return null;
         if (!($f = $this->_expand_filestore($pattern, $doc, true)))
             return null;
-        if ($for_reading && !is_readable($f)) {
+        if ($search && !is_readable($f)) {
             // clean up presence of old files saved w/o extension
             $g = $this->_expand_filestore($pattern, $doc, false);
             if ($f && $g !== $f && is_readable($g)) {

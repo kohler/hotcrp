@@ -112,8 +112,9 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
-    function set_content($content) {
+    function set_content($content, $mimetype = null) {
         $this->content = $content;
+        $this->mimetype = $mimetype;
         $this->sha1 = "";
     }
 
