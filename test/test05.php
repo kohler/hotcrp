@@ -10,6 +10,7 @@ require_once("$ConfSitePATH/test/setup.php");
 $Conf->save_setting("sub_open", 1);
 $Conf->save_setting("sub_update", $Now + 100);
 $Conf->save_setting("sub_sub", $Now + 100);
+$Conf->save_setting("opt.contentHashMethod", 1, "sha1");
 
 // load users
 $user_estrin = $Conf->user_by_email("estrin@usc.edu"); // pc

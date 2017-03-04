@@ -112,6 +112,12 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
+    function set_content($content) {
+        $this->content = $content;
+        $this->sha1 = "";
+    }
+
+
     function filename($filters = null) {
         return HotCRPDocument::filename($this, $filters);
     }
