@@ -246,7 +246,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function load_to_filestore($doc) {
         if ($doc->docclass->load_to_filestore($doc))
             return true;
-        $cf->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
+        $this->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
         return false;
     }
 
