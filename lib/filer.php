@@ -6,6 +6,8 @@
 class ZipDocument {
     public $filename;
     public $filestore;
+    public $sha1; // `ZipDocument` can pun as a `DocumentInfo`;
+                  // this checksum might not be of the data
 
     private $tmpdir_ = null;
     private $files;
@@ -25,6 +27,7 @@ class ZipDocument {
 
     function clean() {
         $this->filestore = false;
+        $this->sha1 = "";
         $this->tmpdir_ = null;
         $this->files = array();
         $this->warnings = array();
@@ -199,10 +202,10 @@ class ZipDocument {
                 $hash_input .= $f->filename . "\n" . $f->text_hash() . "\n";
             if (!empty($this->warnings))
                 $hash_input .= "README-warnings.txt\n" . join("\n", $this->warnings) . "\n";
-            $zipfile_hash = sha1($hash_input, false);
+            $this->sha1 = sha1($hash_input, false);
             // look for zipfile
             $dstore_prefix = Filer::docstore_fixed_prefix(opt("docstore"));
-            $zfn = $dstore_prefix . "tmp/" . $zipfile_hash . ".zip";
+            $zfn = $dstore_prefix . "tmp/" . $this->sha1 . ".zip";
             if (Filer::prepare_filestore($dstore_prefix, $zfn)) {
                 $this->filestore = $zfn;
                 if (file_exists($this->filestore)) {
@@ -223,8 +226,10 @@ class ZipDocument {
         set_time_limit(60);
         $command = "cd $tmpdir; $zipcmd $opts " . escapeshellarg($this->filestore) . " " . join(" ", array_map("escapeshellarg", array_keys($this->files)));
         $out = system("$command 2>&1", $status);
-        if ($status == 0 && file_exists($this->filestore))
+        if ($status == 0 && file_exists($this->filestore)) {
+            $this->sha1 = "sha2-" . hash_file("sha256", $this->filestore);
             return $this->filestore;
+        }
         $this->filestore = false;
         if ($status != 0)
             return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
