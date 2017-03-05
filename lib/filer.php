@@ -687,26 +687,40 @@ class Filer {
     private function _expand_filestore($pattern, DocumentInfo $doc, $extension) {
         $x = "";
         $hash = false;
-        while (preg_match('/\A(.*?)%(\d*)([%hx])(.*)\z/', $pattern, $m)) {
+        while (preg_match('/\A(.*?)%(\d*)([%hxHjaA])(.*)\z/', $pattern, $m)) {
             $x .= $m[1];
-            if ($m[3] === "%")
+            list($fwidth, $fn, $pattern) = [$m[2], $m[3], $m[4]];
+            if ($fn === "%")
                 $x .= "%";
-            else if ($m[3] === "x") {
+            else if ($fn === "x") {
                 if ($extension)
                     $x .= Mimetype::extension($doc->mimetype);
             } else {
                 if ($hash === false
                     && ($hash = $doc->text_hash()) == false)
                     return false;
-                if ($m[2] !== "") {
-                    $pos = intval($m[2]);
-                    if (strlen($hash) !== 40)
-                        $pos += strpos($hash, "-") + 1;
-                    $x .= substr($hash, 0, $pos);
-                } else
+                if ($fn === "h" && $fwidth === "")
                     $x .= $hash;
+                else if ($fn === "a")
+                    $x .= $doc->hash_algorithm();
+                else if ($fn === "A")
+                    $x .= $doc->hash_algorithm_prefix();
+                else if ($fn === "j")
+                    $x .= substr($hash, 0, strlen($hash) === 40 ? 2 : 3);
+                else {
+                    $h = $hash;
+                    if (strlen($h) !== 40) {
+                        $pos = strpos($h, "-") + 1;
+                        if ($fn === "h")
+                            $x .= substr($h, 0, $pos);
+                        $h = substr($h, $pos);
+                    }
+                    if ($fwidth === "")
+                        $x .= $h;
+                    else
+                        $x .= substr($h, 0, intval($fwidth));
+                }
             }
-            $pattern = $m[4];
         }
         return $x . $pattern;
     }

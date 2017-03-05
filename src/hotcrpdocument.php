@@ -101,6 +101,8 @@ class HotCRPDocument extends Filer {
 
     static function s3_filename(DocumentInfo $doc) {
         $hash = $doc->text_hash();
+        // Format: `doc/%[2/3]H/%h%x`. Why not algorithm in subdirectory?
+        // Because S3 works better if filenames are partitionable.
         if ($hash === false)
             return null;
         else if (strlen($hash) === 40)

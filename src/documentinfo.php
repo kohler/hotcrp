@@ -153,6 +153,14 @@ class DocumentInfo implements JsonSerializable {
         else
             return false;
     }
+    function hash_algorithm_prefix() {
+        if (strlen($this->sha1) === 20)
+            return "";
+        else if ($this->sha1)
+            return substr($this->sha1, 0, strpos($this->sha1, "-") + 1);
+        else
+            return false;
+    }
     function content_binary_hash($like_hash = false) {
         // never cached
         if ($like_hash) {
