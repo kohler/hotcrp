@@ -39,7 +39,7 @@ if ($match != "") {
         $match = $m[2];
     }
     if (preg_match('{\A([0-9a-f]+)}', $match, $m))
-        $match_pfx = $m[1];
+        $match_pfx = substr($m[1], 0, 2);
     if ($match != "")
         $match_re = '{/(?:sha[123]-)?' . str_replace("*", "[0-9a-f]*", $match) . '[^/]*\z}';
 }
@@ -83,7 +83,7 @@ while (true) {
         if ($continuation_token !== null)
             $content = $s3doc->ls("doc/", ["max-keys" => 500, "continuation-token" => $continuation_token]);
         else
-            $content = $s3doc->ls("doc/" . $algo_pfx . $match_pfx, ["max-keys" => 500]);
+            $content = $s3doc->ls("doc/" . $match_pfx, ["max-keys" => 500]);
 
         $xml = new SimpleXMLElement($content);
         $xmlpos = 0;
@@ -107,8 +107,6 @@ while (true) {
         $doc->set_content($content);
         $chash = $doc->content_binary_hash($khash);
         if ($chash !== $khash) {
-            error_log(var_export($chash, true));
-            error_log(var_export($khash, true));
             if (!$verbose)
                 fwrite(STDOUT, "$last_key: ");
             fwrite(STDOUT, "bad checksum " . Filer::hash_as_text($chash) . " (" . Filer::hash_as_text($khash) . ")\n");

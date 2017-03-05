@@ -106,7 +106,7 @@ class HotCRPDocument extends Filer {
         else if (strlen($hash) === 40)
             $x = substr($hash, 0, 2);
         else
-            $x = substr($hash, 0, strpos($hash, "-") + 4);
+            $x = substr($hash, strpos($hash, "-") + 1, 3);
         return "doc/$x/$hash" . Mimetype::extension($doc->mimetype);
     }
 
