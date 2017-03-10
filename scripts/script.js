@@ -4297,38 +4297,76 @@ function row_move(srcindex) {
     for (dstindex = 0; dstindex < rowanal.length; ++dstindex)
         if (dstindex !== srcindex && rowcompar(srcindex, dstindex) < 0)
             break;
-    if (dstindex === srcindex + 1)
-        return;
-
-    // shift row groups
-    var range = [rowanal[srcindex].l, rowanal[srcindex].r],
-        sibling, e;
-    sibling = dstindex < rowanal.length ? rows[rowanal[dstindex].l] : null;
-    while (range[0] <= range[1]) {
-        e = plt_tbody.removeChild(rows[range[0]]);
-        plt_tbody.insertBefore(e, sibling);
-        srcindex > dstindex ? ++range[0] : --range[1];
+    if (dstindex !== srcindex + 1) {
+        // shift row groups
+        var range = [rowanal[srcindex].l, rowanal[srcindex].r],
+            sibling, e;
+        sibling = dstindex < rowanal.length ? rows[rowanal[dstindex].l] : null;
+        while (range[0] <= range[1]) {
+            e = plt_tbody.removeChild(rows[range[0]]);
+            plt_tbody.insertBefore(e, sibling);
+            srcindex > dstindex ? ++range[0] : --range[1];
+        }
+        fix_row_classes(plt_tbody);
     }
+}
 
-    // fix classes
-    e = 1;
-    for (var i = 0; i < rows.length; ++i)
-        if (rows[i].nodeName == "TR") {
-            var c = rows[i].className;
+function reorder(jq, new_order) {
+    var plt_tbody = $(jq)[0], pida = "data-pid";
+    if (plt_tbody.tagName === "TABLE")
+        plt_tbody = $(plt_tbody).children().filter("tbody")[0];
+    var cur = plt_tbody.childNodes[0], rowmap = null;
+    while (cur && (cur.nodeType != 1 || !cur.hasAttribute(pida)))
+        cur = cur.nextSibling;
+    var cpid = cur ? cur.getAttribute(pida) : 0;
+    for (var index = 0; cur && index < new_order.length; ++index) {
+        var npid = new_order[index];
+        if (cpid == npid) {
+            do {
+                cur = cur.nextSibling;
+                if (!cur || cur.nodeType == 1)
+                    cpid = cur ? cur.getAttribute(pida) : 0;
+            } while (cpid == npid);
+        } else {
+            if (!rowmap) {
+                var xpid;
+                rowmap = [];
+                for (var trav = cur; trav; trav = trav.nextSibling) {
+                    if (trav.nodeType == 1) {
+                        xpid = trav.getAttribute(pida);
+                        rowmap[xpid] = rowmap[xpid] || [];
+                    }
+                    rowmap[xpid].push(trav);
+                }
+            }
+            for (var j = 0; rowmap[npid] && j < rowmap[npid].length; ++j) {
+                var e = plt_tbody.removeChild(rowmap[npid][j]);
+                plt_tbody.insertBefore(e, cur);
+            }
+            delete rowmap[npid];
+        }
+    }
+    fix_row_classes(plt_tbody);
+}
+
+function fix_row_classes(tbody) {
+    for (var cur = tbody.firstChild, e = 1; tbody; cur = cur.nextSibling)
+        if (cur.nodeName == "TR") {
+            var c = cur.className;
             if (!/^plx/.test(c))
                 e = 1 - e;
             if (/\bk[01]\b/.test(c))
-                rows[i].className = c.replace(/\bk[01]\b/, "k" + e);
+                cur.className = c.replace(/\bk[01]\b/, "k" + e);
             else if (/\bplheading\b/.test(c)) {
                 e = 1;
                 var np = 0;
-                for (var j = i + 1; j < rows.length; ++j)
-                    if (rows[j].nodeName == "TR") {
-                        if (/\bplheading\b/.test(rows[j].className))
+                for (var sub = cur.nextSibling; sub; sub = sub.nextSibling)
+                    if (sub.nodeName == "TR") {
+                        if (/\bplheading\b/.test(sub.className))
                             break;
-                        np += /^plx/.test(rows[j].className) ? 0 : 1;
+                        np += /^plx/.test(sub.className) ? 0 : 1;
                     }
-                $(rows[i]).find(".plheading_count").html(plural(np, "paper"));
+                $(cur).find(".plheading_count").html(plural(np, "paper"));
             }
         }
 }
@@ -4561,6 +4599,7 @@ function add_draghandle() {
 
 plinfo_tags.edit_anno = edit_anno;
 plinfo_tags.add_draghandle = add_draghandle;
+plinfo_tags.reorder = reorder;
 return plinfo_tags;
 })();
 
