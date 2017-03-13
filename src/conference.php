@@ -1214,9 +1214,18 @@ class Conf {
                 $pc[$row->contactId] = $row;
                 if ($row->firstName || $row->lastName) {
                     $name_text = Text::name_text($row);
-                    if (isset($by_name_text[$name_text]))
-                        $row->nameAmbiguous = $by_name_text[$name_text]->nameAmbiguous = true;
-                    $by_name_text[$name_text] = $row;
+                    $row2 = get($by_name_text, $name_text);
+                    if ($row2) {
+                        $pc1 = ($row->roles & Contact::ROLE_PC) != 0;
+                        $pc2 = ($row2->roles & Contact::ROLE_PC) != 0;
+                        if (!$pc1 || $pc2)
+                            $row->nameAmbiguous = true;
+                        if (!$pc2 || $pc1)
+                            $row2->nameAmbiguous = true;
+                        if (!$pc2)
+                            $by_name_text[$name_text] = $row;
+                    } else
+                        $by_name_text[$name_text] = $row;
                 }
                 if ($row->contactTags)
                     foreach (explode(" ", $row->contactTags) as $t) {
