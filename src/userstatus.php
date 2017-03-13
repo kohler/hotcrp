@@ -87,8 +87,7 @@ class UserStatus {
             $cj->tags = explode(" ", $tagger->unparse($tags));
         }
 
-        if (($user->roles & Contact::ROLE_PC)
-            && $user->contactId
+        if ($user->contactId
             && ($tm = $Conf->topic_map())) {
             $result = $Conf->qe_raw("select topicId, interest from TopicInterest where contactId=$user->contactId");
             $topics = (object) array();
