@@ -2429,6 +2429,7 @@ function do_render(format, is_inline, a) {
                 content: f.apply(this, a)
             }
         } catch (e) {
+            log_jserror("do_render format " + r.format + ": " + e.toString(), e);
         }
     return {format: 0, content: render0(a[0])};
 }
