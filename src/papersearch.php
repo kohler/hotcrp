@@ -1353,7 +1353,9 @@ class Show_SearchTerm {
             $f["view"] = [$viewfield => $action];
         return SearchTerm::make_float($f);
     }
-    static function parse_heading($word) {
+    static function parse_heading($word, SearchWord $sword) {
+        if ($sword->quoted)
+            $word = str_replace('\\*', '*', $word);
         return SearchTerm::make_float(["heading" => simplify_whitespace($word)]);
     }
 }
@@ -3385,10 +3387,10 @@ class PaperSearch {
                     $span = $qe->child[$i]->get_float("strspan");
                     $h = substr($this->q, $span[0], $span[1] - $span[0]);
                 }
-                $this->groupmap[$i] = (object) ["heading" => $h, "annoFormat" => 0];
+                $this->groupmap[$i] = (object) ["heading" => $h, "annoFormat" => $this->conf->default_format];
             }
         } else if (($h = $sole_qe->get_float("heading")))
-            $this->groupmap[0] = (object) ["heading" => $h, "annoFormat" => 0];
+            $this->groupmap[0] = (object) ["heading" => $h, "annoFormat" => $this->conf->default_format];
         else if ($order_anno_tag) {
             $this->_assign_order_anno($order_anno_tag, $tag_order);
             $this->is_order_anno = $order_anno_tag->tag;
