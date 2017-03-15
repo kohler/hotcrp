@@ -222,37 +222,68 @@ function file_uploaded(&$var) {
     }
 }
 
-function selfHref($extra = array(), $options = null) {
-    // clean parameters from pathinfo URLs
-    foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
-        if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
-            $_REQUEST[$v] = $_REQUEST[$k];
+class SelfHref {
+    static private $argmap = null;
+    static private function set_argmap() {
+        self::$argmap = [
+            "p" => true, "paperId" => "p", "pap" => "p",
+            "r" => true, "reviewId" => "r",
+            "c" => true, "commentId" => "c",
+            "m" => true, "mode" => true,
+            "u" => true,
+            "g" => true,
+            "q" => true, "t" => true, "qa" => true, "qo" => true, "qx" => true, "qt" => true,
+            "fx" => true, "fy" => true,
+            "forceShow" => true, "validator" => true, "ls" => true,
+            "tab" => true, "atab" => true, "sort" => true,
+            "group" => true, "monreq" => true, "noedit" => true,
+            "contact" => true, "reviewer" => true,
+            "editcomment" => true
+        ];
+    }
+    static function make(Qrequest $qreq = null, $params = [], $options = null) {
+        if (self::$argmap === null)
+            self::set_argmap();
 
-    $param = "";
-    foreach (array("p", "r", "c", "m", "u", "g", "fx", "fy", "mode", "forceShow", "validator", "ls", "list", "q", "t", "qa", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq", "noedit", "contact", "reviewer", "editcomment") as $what)
-        if (isset($_REQUEST[$what]) && !array_key_exists($what, $extra)
-            && !is_array($_REQUEST[$what]))
-            $param .= "&$what=" . urlencode($_REQUEST[$what]);
-    foreach ($extra as $key => $value)
-        if ($key != "anchor" && $value !== null)
-            $param .= "&$key=" . urlencode($value);
+        $x = [];
+        $args = $qreq ? $qreq->make_array() : $_REQUEST;
+        foreach ($args as $k => $v) {
+            $ak = get(self::$argmap, $k);
+            if ($ak === true)
+                $ak = $k;
+            if ($ak
+                && ($ak === $k || !isset($args[$ak]))
+                && !array_key_exists($ak, $params)
+                && ($qreq || isset($_GET[$k]) || isset($_POST[$k]))
+                && !is_array($v))
+                $x[$ak] = $v;
+        }
+        foreach ($params as $k => $v)
+            if ($k !== "anchor" && $v !== null)
+                $x[$k] = $v;
 
-    $param = $param ? substr($param, 1) : "";
-    if (!$options || !get($options, "site_relative"))
-        $uri = hoturl(Navigation::page(), $param);
-    else
-        $uri = hoturl_site_relative(Navigation::page(), $param);
-    if (isset($extra["anchor"]))
-        $uri .= "#" . $extra["anchor"];
-    $uri = str_replace("&amp;", "&", $uri);
-    if (!$options || get($options, "raw"))
-        return $uri;
-    else
-        return htmlspecialchars($uri);
+        $page = Navigation::page();
+        if ($options && get($options, "site_relative")) {
+            if (get($options, "raw"))
+                return hoturl_site_relative_raw($page, $x);
+            else
+                return hoturl_site_relative($page, $x);
+        } else if ($options && get($options, "raw"))
+            return hoturl_raw($page, $x);
+        else
+            return hoturl($page, $x);
+    }
+    static function redirect(Qrequest $qreq = null, $params = []) {
+        Navigation::redirect(self::make($qreq, $params, ["raw" => true]));
+    }
 }
 
-function redirectSelf($extra = array()) {
-    go(selfHref($extra, array("raw" => true)));
+function selfHref($params = [], $options = null) {
+    return SelfHref::make(null, $params, $options);
+}
+
+function redirectSelf($params = []) {
+    SelfHref::redirect(null, $params);
 }
 
 class JsonResultException extends Exception {

@@ -488,12 +488,12 @@ class PaperList {
         $foot .= '<td id="plact" class="pl_footer linelinks' . $whichlll . '" colspan="' . $ncol . '">';
 
         $foot .= "<table><tbody><tr>\n"
-            . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a href="' . selfHref(["selectall" => 1]) . '#plact" onclick="return papersel(true)">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
+            . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a href="' . SelfHref::make($this->qreq, ["selectall" => 1]) . '#plact" onclick="return papersel(true)">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
             . "   </tr></tbody></table>";
         foreach ($lllgroups as $i => $lllg) {
             $x = $i + 1;
             $foot .= "<table><tbody><tr>\n"
-                . "    <td class=\"pl_footer_desc lll$x\"><a class=\"lla$x\" href=\"" . selfHref(["atab" => $lllg[1]]) . "#plact\" onclick=\"return crpfocus('plact',this)\">" . $lllg[2] . "</a></td>\n";
+                . "    <td class=\"pl_footer_desc lll$x\"><a class=\"lla$x\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[1]]) . "#plact\" onclick=\"return crpfocus('plact',this)\">" . $lllg[2] . "</a></td>\n";
             for ($j = 3; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
                 $class = isset($cell["class"]) ? "lld$x " . $cell["class"] : "lld$x";

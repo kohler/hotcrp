@@ -76,7 +76,7 @@ if (!$Conf->session("scoresort"))
     $Conf->save_session("scoresort", ListSorter::default_score_sort());
 if ($Qreq->redisplay) {
     $forceShow = $Qreq->forceShow || $Qreq->showforce;
-    redirectSelf(array("tab" => "display", "forceShow" => $forceShow ? : null));
+    SelfHref::redirect($Qreq, ["tab" => "display", "forceShow" => $forceShow ? : null]);
 }
 
 
@@ -165,18 +165,18 @@ function saveformulas() {
         }
     }
 
-    $_REQUEST["tab"] = $_GET["tab"] = "formulas";
+    $Qreq->tab = "formulas";
     if ($ok) {
         foreach ($changes as $change)
             Dbl::qe_raw($change);
         if (!Dbl::has_error()) {
             $Conf->confirmMsg("Formulas saved.");
-            redirectSelf();
+            SelfHref::redirect($Qreq);
         }
     }
 }
 
-if ($Qreq->saveformulas && $Me->isPC && check_post())
+if ($Qreq->saveformulas && $Me->isPC && check_post($Qreq))
     saveformulas();
 
 
@@ -233,16 +233,16 @@ function savesearch() {
 
     if ($Qreq->deletesearch) {
         Dbl::qe_raw("delete from Settings where name='ss:" . sqlq($name) . "'");
-        redirectSelf();
+        SelfHref::redirect($Qreq);
     } else {
         Dbl::qe_raw("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)");
-        redirectSelf(array("q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null));
+        SelfHref::redirect($Qreq, ["q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null]);
     }
 }
 
-if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && check_post()) {
+if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && check_post($Qreq)) {
     savesearch();
-    $_REQUEST["tab"] = $_GET["tab"] = "ss";
+    $Qreq->tab = "ss";
 }
 
 
@@ -267,7 +267,7 @@ if (isset($Qreq->q)) {
     $pl->set_selection($SSel);
     $pl_text = $pl->table_html($Search->limitName, ["attributes" => ["data-fold-session" => 'pldisplay.$'], "list" => true]);
     $pldisplay = $pl->display;
-    unset($_REQUEST["atab"], $_GET["atab"], $_POST["atab"]);
+    unset($Qreq->atab);
 } else
     $pl = null;
 
@@ -545,7 +545,7 @@ if ($Me->isPC || $Me->privChair) {
                     "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(defval($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
                 if ($Me->privChair || !defval($sv, "owner") || $sv->owner == $Me->contactId)
                     echo " <span class='barsep'>·</span> ",
-                        "<a href=\"", selfHref(array("deletesearch" => 1, "ssname" => $sn, "post" => post_value())), "\">Delete</a>";
+                        "<a href=\"", SelfHref::make($Qreq, ["deletesearch" => 1, "ssname" => $sn, "post" => post_value()]), "\">Delete</a>";
                 echo "</div></td></tr></table>";
                 ++$n;
             }
@@ -680,12 +680,12 @@ echo "</div>";
 
 // Tab selectors
 echo '<div class="tllx"><table><tr>',
-  "<td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\",1)' href=\"", selfHref(array("tab" => null)), "\">Search</a></div></td>
-  <td><div class='tll2'><a class='tla nw' onclick='return crpfocus(\"searchform\",2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
+  "<td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\",1)' href=\"", SelfHref::make($Qreq, ["tab" => null]), "\">Search</a></div></td>
+  <td><div class='tll2'><a class='tla nw' onclick='return crpfocus(\"searchform\",2)' href=\"", SelfHref::make($Qreq, ["tab" => "advanced"]), "\">Advanced search</a></div></td>\n";
 if ($ss)
-    echo "  <td><div class='tll4'><a class='tla nw' onclick='fold(\"searchform\",1,4);return crpfocus(\"searchform\",4)' href=\"", selfHref(array("tab" => "ss")), "\">Saved searches</a></div></td>\n";
+    echo "  <td><div class='tll4'><a class='tla nw' onclick='fold(\"searchform\",1,4);return crpfocus(\"searchform\",4)' href=\"", SelfHref::make($Qreq, ["tab" => "ss"]), "\">Saved searches</a></div></td>\n";
 if ($pl && $pl->count > 0)
-    echo "  <td><div class='tll3'><a class='tla nw' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
+    echo "  <td><div class='tll3'><a class='tla nw' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", SelfHref::make($Qreq, ["tab" => "display"]), "\">Display options</a></div></td>\n";
 echo "</tr></table></div></div>\n\n";
 if (!$pl || $pl->count == 0)
     Ht::stash_script("crpfocus(\"searchform\",$activetab)");
@@ -700,7 +700,7 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
     if ($pl->has("sel"))
-        echo Ht::form_div(selfHref(array("post" => post_value(), "forceShow" => null)), array("id" => "sel", "onsubmit" => "return plist_onsubmit.call(this)")),
+        echo Ht::form_div(SelfHref::make($Qreq, ["post" => post_value(), "forceShow" => null]), array("id" => "sel", "onsubmit" => "return plist_onsubmit.call(this)")),
             Ht::hidden("defaultact", "", array("id" => "defaultact")),
             Ht::hidden("forceShow", req_s("forceShow"), array("id" => "forceShow")),
             Ht::hidden_default_submit("default", 1);
