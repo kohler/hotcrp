@@ -3241,6 +3241,8 @@ class Conf {
             return false;
     }
     private function fill_api_map() {
+        // 0: POST, optional paper; 1: GET, optional paper;
+        // 2: POST, mandatory paper; 3: GET, mandatory paper
         $this->_api_map = [
             "alltags" => "1 PaperApi::alltags_api",
             "checkformat" => "3 PaperApi::checkformat_api",
@@ -3248,6 +3250,7 @@ class Conf {
             "follow" => "2 PaperApi::follow_api",
             "mentioncompletion" => "1 PaperApi::mentioncompletion_api",
             "reviewround" => "2 PaperApi::reviewround_api",
+            "search" => "1 PaperApi::search_api",
             "setdecision" => "2 PaperApi::setdecision_api",
             "setlead" => "2 PaperApi::setlead_api",
             "setmanager" => "2 PaperApi::setmanager_api",

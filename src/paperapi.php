@@ -421,4 +421,31 @@ class PaperApi {
         ksort($result);
         return ["ok" => true, "mentioncompletion" => array_values($result)];
     }
+
+    static function search_api(Contact $user, Qrequest $qreq, $prow) {
+        $topt = PaperSearch::search_types($user, $qreq->t);
+        if (empty($topt) || ($qreq->t && !isset($topt[$qreq->t])))
+            return ["ok" => false, "error" => "Permission error."];
+        $t = $qreq->t ? : key($topt);
+
+        $q = $qreq->q;
+        if (isset($q)) {
+            $q = trim($q);
+            if ($q === "(All)")
+                $q = "";
+        } else if (isset($qreq->qa) || isset($qreq->qo) || isset($qreq->qx))
+            $q = PaperSearch::canonical_query((string) $qreq->qa, (string) $qreq->qo, (string) $qreq->qx, $user->conf);
+        else
+            $q = "";
+
+        $sarg = ["t" => $t, "q" => $q];
+        if ($qreq->qt)
+            $sarg["qt"] = $qreq->qt;
+        if ($qreq->urlbase)
+            $sarg["urlbase"] = $qreq->urlbase;
+
+        $search = new PaperSearch($user, $sarg);
+        $pl = new PaperList($search, ["sort" => true], $qreq);
+        return ["ok" => true, "ids" => $pl->id_array()];
+    }
 }
