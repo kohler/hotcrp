@@ -292,7 +292,6 @@ class CsvGenerator {
             array_pop($m[1]);
         foreach ($m[1] as $x)
             $this->add_string($this->comment . $x . $this->lf);
-        $this->add_string($this->lf);
     }
 
     function add($row) {
@@ -308,7 +307,8 @@ class CsvGenerator {
                 $this->add($x);
         } else {
             if ($this->comment && $this->selection
-                && ($cmt = get($row, "__precomment__")))
+                && ($cmt = get($row, "__precomment__")) !== null
+                && (string) $cmt !== "")
                 $this->add_comment($cmt);
             $srow = $this->selection ? $this->select($row) : $row;
             if ($this->type == self::TYPE_COMMA) {
@@ -325,8 +325,11 @@ class CsvGenerator {
             else
                 $this->add_string(join("|", $srow) . $this->lf);
             if ($this->comment && $this->selection
-                && ($cmt = get($row, "__postcomment__")))
+                && ($cmt = get($row, "__postcomment__")) !== null
+                && (string) $cmt !== "") {
                 $this->add_comment($cmt);
+                $this->add_string($this->lf);
+            }
         }
     }
 
