@@ -120,6 +120,7 @@ class SiteLoader {
         "ReviewField" => "src/review.php",
         "ReviewForm" => "src/review.php",
         "ReviewSearchMatcher" => "src/papersearch.php",
+        "TagAnno" => "lib/tagger.php",
         "TagInfo" => "lib/tagger.php",
         "TagMap" => "lib/tagger.php",
         "TextPaperOption" => "src/paperoption.php",

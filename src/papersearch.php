@@ -3105,10 +3105,14 @@ class PaperSearch {
     }
 
     private function _assign_order_anno_group($g, $order_anno_tag, $anno_index) {
-        if (($e = $order_anno_tag->order_anno_entry($anno_index)))
-            $this->groupmap[$g] = $e;
-        else if (!isset($this->groupmap[$g]))
-            $this->groupmap[$g] = (object) ["tag" => $order_anno_tag->tag, "heading" => "", "annoFormat" => 0];
+        if (($ta = $order_anno_tag->order_anno_entry($anno_index)))
+            $this->groupmap[$g] = $ta;
+        else if (!isset($this->groupmap[$g])) {
+            $ta = new TagAnno;
+            $ta->tag = $order_anno_tag->tag;
+            $ta->heading = "";
+            $this->groupmap[$g] = $ta;
+        }
     }
 
     private function _assign_order_anno($order_anno_tag, $tag_order) {
@@ -3387,10 +3391,10 @@ class PaperSearch {
                     $span = $qe->child[$i]->get_float("strspan");
                     $h = substr($this->q, $span[0], $span[1] - $span[0]);
                 }
-                $this->groupmap[$i] = (object) ["heading" => $h, "annoFormat" => $this->conf->default_format];
+                $this->groupmap[$i] = TagAnno::make_heading($h, $this->conf->default_format);
             }
         } else if (($h = $sole_qe->get_float("heading")))
-            $this->groupmap[0] = (object) ["heading" => $h, "annoFormat" => $this->conf->default_format];
+            $this->groupmap[0] = TagAnno::make_heading($h, $this->conf->default_format);
         else if ($order_anno_tag) {
             $this->_assign_order_anno($order_anno_tag, $tag_order);
             $this->is_order_anno = $order_anno_tag->tag;

@@ -843,7 +843,7 @@ class PaperList {
         while ($lastheading != $thenval) {
             ++$lastheading;
             $ginfo = get($this->search->groupmap, $lastheading);
-            if ($ginfo === null || !isset($ginfo->heading)
+            if ($ginfo === null || $ginfo->heading === null
                 || strcasecmp($ginfo->heading, "none") == 0) {
                 if ($this->count != 1)
                     $body[] = "  <tr class=\"plheading_blank\"><td class=\"plheading_blank\" colspan=\"$rstate->ncol\"></td></tr>\n";
@@ -852,14 +852,14 @@ class PaperList {
                     /* do nothing */;
                 $count = $i - $this->count + 1;
                 // Leave off an empty "Untagged" section unless editing
-                if ($count == 0 && isset($ginfo->tag) && !isset($ginfo->annoId)
+                if ($count == 0 && $ginfo->tag && !$ginfo->annoId
                     && !$this->has_editable_tags)
                     continue;
 
                 $x = "  <tr class=\"plheading\"";
-                if (isset($ginfo->tag))
+                if ($ginfo->tag)
                     $x .= " data-anno-tag=\"{$ginfo->tag}\"";
-                if (isset($ginfo->annoId))
+                if ($ginfo->annoId)
                     $x .= " data-anno-id=\"{$ginfo->annoId}\" data-tags=\"{$ginfo->tag}#{$ginfo->tagIndex}\"";
                 $x .= ">";
                 if ($rstate->titlecol)
@@ -1539,7 +1539,7 @@ class PaperList {
     private function _check_heading_csv($thenval, $lastheading, &$csv) {
         if ($lastheading != $thenval) {
             $ginfo = get($this->search->groupmap, $thenval);
-            if ($ginfo === null || !isset($ginfo->heading)
+            if ($ginfo === null || $ginfo->heading === null
                 || strcasecmp($ginfo->heading, "none") == 0) {
                 if ($this->count != 1)
                     $csv["__precomment__"] = "none";

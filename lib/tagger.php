@@ -50,8 +50,12 @@ class TagMapItem {
     }
     function order_anno_list() {
         if ($this->order_anno_list == false) {
-            $this->order_anno_list = Dbl::fetch_objects($this->conf->dblink, "select * from PaperTagAnno where tag=?", $this->tag);
-            $this->order_anno_list[] = (object) ["tag" => $this->tag, "tagIndex" => TAG_INDEXBOUND, "heading" => "Untagged", "annoId" => null, "annoFormat" => 0];
+            $this->order_anno_list = [];
+            $result = $this->conf->qe("select * from PaperTagAnno where tag=?", $this->tag);
+            while (($ta = TagAnno::fetch($result, $this->conf)))
+                $this->order_anno_list[] = $ta;
+            Dbl::free($result);
+            $this->order_anno_list[] = TagAnno::make_tag_fencepost($this->tag);
             usort($this->order_anno_list, function ($a, $b) {
                 if ($a->tagIndex != $b->tagIndex)
                     return $a->tagIndex < $b->tagIndex ? -1 : 1;
@@ -68,6 +72,38 @@ class TagMapItem {
     }
     function has_order_anno() {
         return count($this->order_anno_list()) > 1;
+    }
+}
+
+class TagAnno {
+    public $tag = null;
+    public $annoId = null;
+    public $tagIndex = null;
+    public $heading = null;
+    public $annoFormat = 0;
+    public $infoJson = null;
+
+    static function fetch($result, Conf $conf) {
+        $ta = $result ? $result->fetch_object("TagAnno") : null;
+        if ($ta) {
+            $ta->annoId = (int) $ta->annoId;
+            $ta->tagIndex = (float) $ta->tagIndex;
+            $ta->annoFormat = (int) $ta->annoFormat;
+        }
+        return $ta;
+    }
+    static function make_heading($h, $format) {
+        $ta = new TagAnno;
+        $ta->heading = $h;
+        $ta->annoFormat = $format;
+        return $ta;
+    }
+    static function make_tag_fencepost($tag) {
+        $ta = new TagAnno;
+        $ta->tag = $tag;
+        $ta->tagIndex = (float) TAG_INDEXBOUND;
+        $ta->heading = "Untagged";
+        return $ta;
     }
 }
 
