@@ -354,13 +354,6 @@ class TagMap implements IteratorAggregate {
                     $map->add(substr($k, 0, $p))->emoji[] = substr($k, $p + 1);
                     $map->has_emoji = true;
                 }
-        $xt = $conf->setting_data("tag_order_anno", "");
-        if ($xt !== "" && ($xt = json_decode($xt)))
-            foreach (get_object_vars($xt) as $t => $v)
-                if (is_object($v)) {
-                    $map->add($t)->order_anno = $v;
-                    $map->has_order_anno = true;
-                }
         if (($od = $conf->opt("definedTags")))
             foreach (is_string($od) ? [$od] : $od as $ods)
                 foreach (json_decode($ods) as $tag => $data) {
