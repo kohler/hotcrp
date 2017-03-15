@@ -25,10 +25,10 @@ if (count($tOpt) == 0) {
 }
 if (isset($Qreq->t) && !isset($tOpt[$Qreq->t])) {
     Conf::msg_error("You aren’t allowed to search that paper collection.");
-    unset($Qreq->t, $_GET["t"], $_POST["t"], $_REQUEST["t"]);
+    unset($Qreq->t);
 }
 if (!isset($Qreq->t))
-    $Qreq->t = $_GET["t"] = $_POST["t"] = $_REQUEST["t"] = key($tOpt);
+    $Qreq->t = key($tOpt);
 
 // search canonicalization
 if (isset($Qreq->q))
@@ -38,9 +38,7 @@ if (isset($Qreq->q) && $Qreq->q == "(All)")
 if ((isset($Qreq->qa) || isset($Qreq->qo) || isset($Qreq->qx)) && !isset($Qreq->q))
     $Qreq->q = PaperSearch::canonical_query((string) $Qreq->qa, $Qreq->qo, $Qreq->qx, $Conf);
 else
-    unset($Qreq->qa, $Qreq->qo, $Qreq->qx, $_GET["qa"], $_GET["qo"], $_GET["qx"], $_POST["qa"], $_POST["qo"], $_POST["qx"], $_REQUEST["qa"], $_REQUEST["qo"], $_REQUEST["qx"]);
-if (isset($Qreq->q))
-    $_REQUEST["q"] = $_GET["q"] = $Qreq->q;
+    unset($Qreq->qa, $Qreq->qo, $Qreq->qx);
 
 
 // paper selection
