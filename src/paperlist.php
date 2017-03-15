@@ -850,7 +850,7 @@ class PaperList {
             } else {
                 for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
                     /* do nothing */;
-                $count = plural($i - $this->count + 1, "paper");
+                $count = $i - $this->count + 1;
                 // Leave off an empty "Untagged" section unless editing
                 if ($count == 0 && isset($ginfo->tag) && !isset($ginfo->annoId)
                     && !$this->has_editable_tags)
@@ -874,7 +874,8 @@ class PaperList {
                 $x .= "\" data-title=\"" . htmlspecialchars($ginfo->heading)
                     . "\">" . htmlspecialchars($ginfo->heading)
                     . ($ginfo->heading !== "" ? " " : "")
-                    . "</span><span class=\"plheading_count\">$count</span></td></tr>";
+                    . "</span><span class=\"plheading_count\">"
+                    . plural($count, "paper") . "</span></td></tr>";
                 $body[] = $x;
                 $rstate->colorindex = 0;
             }
@@ -1240,7 +1241,7 @@ class PaperList {
             return null;
         $idarray = array();
         foreach ($rows as $row)
-            $idarray[] = (int) $row->paperId;
+            $idarray[] = $row->paperId;
         return $idarray;
     }
 
@@ -1315,7 +1316,7 @@ class PaperList {
 
         // collect row data
         $body = array();
-        $lastheading = !empty($this->search->groupmap) ? -1 : -2;
+        $lastheading = empty($this->search->groupmap) ? -2 : -1;
         $need_render = false;
         foreach ($rows as $row) {
             ++$this->count;
@@ -1575,7 +1576,7 @@ class PaperList {
 
         // collect row data
         $body = array();
-        $lastheading = !empty($this->search->groupmap) ? -1 : -2;
+        $lastheading = empty($this->search->groupmap) ? -2 : -1;
         foreach ($rows as $row) {
             ++$this->count;
             $csv = $this->_row_text_csv_data($row, $fieldDef);

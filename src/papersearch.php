@@ -3234,16 +3234,18 @@ class PaperSearch {
             $sqi->add_reviewer_columns();
 
         // check for annotated order
-        $order_anno_tag = $sole_qe = null;
+        $sole_qe = null;
         if ($qe->type !== "then")
             $sole_qe = $qe;
         else if ($qe->nthen == 1)
             $sole_qe = $qe->child[0];
+        $order_anno_tag = null;
         if ($sole_qe
             && ($sort = $sole_qe->get_float("sort"))
             && ($tag = self::_check_sort_order_anno($sort))) {
             $dt = $this->conf->tags()->add(TagInfo::base($tag));
-            if (count($dt->order_anno_list()))
+            if ($dt->has_order_anno()
+                || get($sole_qe->get_float("view", []), "#" . $dt->tag) === "edit")
                 $order_anno_tag = $dt;
         }
 
