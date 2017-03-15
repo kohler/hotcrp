@@ -83,6 +83,9 @@ class TagAnno {
     public $annoFormat = 0;
     public $infoJson = null;
 
+    function is_empty() {
+        return $this->heading === null || strcasecmp($this->heading, "none") == 0;
+    }
     static function fetch($result, Conf $conf) {
         $ta = $result ? $result->fetch_object("TagAnno") : null;
         if ($ta) {
@@ -91,6 +94,9 @@ class TagAnno {
             $ta->annoFormat = (int) $ta->annoFormat;
         }
         return $ta;
+    }
+    static function make_empty() {
+        return new TagAnno;
     }
     static function make_heading($h, $format) {
         $ta = new TagAnno;
