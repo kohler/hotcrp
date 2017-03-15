@@ -38,9 +38,9 @@ class SearchSelection {
         return new SearchSelection($ps);
     }
 
-    static function clear_request() {
+    static function clear_request(Qrequest $qreq) {
         unset($_REQUEST["p"], $_REQUEST["pap"], $_GET["p"], $_GET["pap"],
-              $_POST["p"], $_POST["pap"]);
+              $_POST["p"], $_POST["pap"], $qreq->p, $qreq->pap);
     }
 
     function is_empty() {

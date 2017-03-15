@@ -130,7 +130,7 @@ if ($Qreq->fn === "setpref" || $Qreq->fn === "get") {
     if ($SSel->is_empty())
         Conf::msg_error("No papers selected.");
 }
-SearchSelection::clear_request();
+SearchSelection::clear_request($Qreq);
 
 
 // Set multiple paper preferences

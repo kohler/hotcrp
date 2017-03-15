@@ -18,7 +18,7 @@ if (isset($Qreq->default) && $Qreq->defaultact)
 
 // paper group
 $tOpt = PaperSearch::search_types($Me, $Qreq->t);
-if (count($tOpt) == 0) {
+if (empty($tOpt)) {
     $Conf->header("Search", "search", actionBar());
     Conf::msg_error("You are not allowed to search for papers.");
     exit;
@@ -33,7 +33,7 @@ if (!isset($Qreq->t))
 // search canonicalization
 if (isset($Qreq->q))
     $Qreq->q = trim($Qreq->q);
-if (isset($Qreq->q) && $Qreq->q == "(All)")
+if (isset($Qreq->q) && $Qreq->q === "(All)")
     $Qreq->q = "";
 if ((isset($Qreq->qa) || isset($Qreq->qo) || isset($Qreq->qx)) && !isset($Qreq->q))
     $Qreq->q = PaperSearch::canonical_query((string) $Qreq->qa, $Qreq->qo, $Qreq->qx, $Conf);
@@ -45,7 +45,7 @@ else
 global $SSel;
 if (!$SSel) { /* we might be included by reviewprefs.php */
     $SSel = SearchSelection::make($Qreq, $Me);
-    SearchSelection::clear_request();
+    SearchSelection::clear_request($Qreq);
 }
 
 // look for search action
