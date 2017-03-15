@@ -75,13 +75,15 @@ class TagMapItem {
     }
 }
 
-class TagAnno {
+class TagAnno implements JsonSerializable {
     public $tag = null;
     public $annoId = null;
     public $tagIndex = null;
     public $heading = null;
-    public $annoFormat = 0;
+    public $annoFormat = null;
     public $infoJson = null;
+    public $count = null;
+    public $pos = null;
 
     function is_empty() {
         return $this->heading === null || strcasecmp($this->heading, "none") == 0;
@@ -91,17 +93,17 @@ class TagAnno {
         if ($ta) {
             $ta->annoId = (int) $ta->annoId;
             $ta->tagIndex = (float) $ta->tagIndex;
-            $ta->annoFormat = (int) $ta->annoFormat;
+            if ($ta->annoFormat !== null)
+                $ta->annoFormat = (int) $ta->annoFormat;
         }
         return $ta;
     }
     static function make_empty() {
         return new TagAnno;
     }
-    static function make_heading($h, $format) {
+    static function make_heading($h) {
         $ta = new TagAnno;
         $ta->heading = $h;
-        $ta->annoFormat = $format;
         return $ta;
     }
     static function make_tag_fencepost($tag) {
@@ -110,6 +112,22 @@ class TagAnno {
         $ta->tagIndex = (float) TAG_INDEXBOUND;
         $ta->heading = "Untagged";
         return $ta;
+    }
+    function jsonSerialize() {
+        global $Conf;
+        $j = [];
+        if ($this->pos !== null)
+            $j["pos"] = $this->pos;
+        $j["annoid"] = $this->annoId;
+        if ($this->tag)
+            $j["tag"] = $this->tag;
+        if ($this->tagIndex !== null)
+            $j["tagval"] = $this->tagIndex;
+        $j["heading"] = $this->heading;
+        if ($this->heading !== null && $this->heading !== ""
+            && ($format = $Conf->check_format($this->annoFormat, $this->heading)))
+            $j["format"] = +$format;
+        return $j;
     }
 }
 
@@ -463,17 +481,6 @@ class TagInfo {
     static function basic_check($tag) {
         return $tag !== "" && strlen($tag) <= TAG_MAXLEN
             && preg_match('{\A' . TAG_REGEX . '\z}', $tag);
-    }
-
-    static function unparse_anno_json($anno) {
-        global $Conf;
-        $j = (object) ["annoid" => $anno->annoId === null ? null : +$anno->annoId];
-        if ($anno->tagIndex !== null)
-            $j->tagval = (float) $anno->tagIndex;
-        $j->heading = $anno->heading;
-        if (($format = $Conf->check_format($anno->annoFormat, (string) $anno->heading)))
-            $j->format = +$format;
-        return $j;
     }
 
     static function canonical_color($tag) {

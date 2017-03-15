@@ -3389,12 +3389,12 @@ class PaperSearch {
                 $h = $qe->child[$i]->get_float("heading");
                 if ($h === null) {
                     $span = $qe->child[$i]->get_float("strspan");
-                    $h = substr($this->q, $span[0], $span[1] - $span[0]);
+                    $h = rtrim(substr($this->q, $span[0], $span[1] - $span[0]));
                 }
-                $this->groupmap[$i] = TagAnno::make_heading($h, $this->conf->default_format);
+                $this->groupmap[$i] = TagAnno::make_heading($h);
             }
         } else if (($h = $sole_qe->get_float("heading")))
-            $this->groupmap[0] = TagAnno::make_heading($h, $this->conf->default_format);
+            $this->groupmap[0] = TagAnno::make_heading($h);
         else if ($order_anno_tag) {
             $this->_assign_order_anno($order_anno_tag, $tag_order);
             $this->is_order_anno = $order_anno_tag->tag;

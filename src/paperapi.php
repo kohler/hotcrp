@@ -167,7 +167,7 @@ class PaperApi {
         $dt = $user->conf->tags()->add(TagInfo::base($tag));
         foreach ($dt->order_anno_list() as $oa)
             if ($oa->annoId !== null)
-                $j["anno"][] = TagInfo::unparse_anno_json($oa);
+                $j["anno"][] = $oa;
         return $j;
     }
 
@@ -446,6 +446,7 @@ class PaperApi {
 
         $search = new PaperSearch($user, $sarg);
         $pl = new PaperList($search, ["sort" => true], $qreq);
-        return ["ok" => true, "ids" => $pl->id_array()];
+        $ih = $pl->ids_and_headings();
+        return ["ok" => true, "ids" => $ih[0], "headings" => $ih[1]];
     }
 }

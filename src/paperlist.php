@@ -844,14 +844,15 @@ class PaperList {
             $ginfo = get($this->search->groupmap, $lastheading);
             if (($ginfo === null || $ginfo->is_empty()) && $this->count == 1)
                 continue;
-            $ginfo = $ginfo ? : TagInfo::make_empty();
+            $ginfo = $ginfo ? clone $ginfo : TagInfo::make_empty();
             for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
                 /* do nothing */;
-            $count = $i - $this->count + 1;
+            $ginfo->count = $i - $this->count + 1;
             // leave off an empty “Untagged” section unless editing
-            if ($count == 0 && $ginfo->tag && !$ginfo->annoId && !$this->has_editable_tags)
+            if ($ginfo->count == 0 && $ginfo->tag && !$ginfo->annoId && !$this->has_editable_tags)
                 continue;
-            $headings[] = [$count, $ginfo];
+            $ginfo->pos = $this->count - 1;
+            $headings[] = $ginfo;
         }
         return $headings;
     }
@@ -860,8 +861,7 @@ class PaperList {
         $headings = $this->_heading_info($thenval, $srows, $lastheading);
         if (!empty($headings) && $this->count != 1 && $thenval != $lastheading)
             $rstate->headingstart[] = count($body);
-        foreach ($headings as $ch) {
-            list($count, $ginfo) = $ch;
+        foreach ($headings as $ginfo) {
             if ($ginfo->is_empty()) {
                 $body[] = "  <tr class=\"plheading_blank\"><td class=\"plheading_blank\" colspan=\"$rstate->ncol\"></td></tr>\n";
             } else {
@@ -884,7 +884,7 @@ class PaperList {
                     . "\">" . htmlspecialchars($ginfo->heading)
                     . ($ginfo->heading !== "" ? " " : "")
                     . "</span><span class=\"plheading_count\">"
-                    . plural($count, "paper") . "</span></td></tr>";
+                    . plural($ginfo->count, "paper") . "</span></td></tr>";
                 $body[] = $x;
                 $rstate->colorindex = 0;
             }
@@ -1241,17 +1241,32 @@ class PaperList {
         return $t;
     }
 
-    function id_array() {
+    function ids_and_headings() {
         if (!$this->_prepare())
             return null;
         $field_list = $this->_columns("id", false);
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
-        $idarray = array();
-        foreach ($rows as $row)
-            $idarray[] = $row->paperId;
-        return $idarray;
+        $lastheading = empty($this->search->groupmap) ? -2 : -1;
+        $ids = $headings = [];
+        foreach ($rows as $row) {
+            ++$this->count;
+            if ($lastheading > -2) {
+                $thenval = $this->_row_thenval($row);
+                if ($thenval != $lastheading
+                    && ($hs = $this->_heading_info($thenval, $rows, $lastheading)))
+                    $headings = array_merge($headings, $hs);
+                $lastheading = $thenval;
+            }
+            $ids[] = $row->paperId;
+        }
+        return [$ids, $headings];
+    }
+
+    function id_array() {
+        $idh = $this->ids_and_headings();
+        return $idh ? $idh[0] : null;
     }
 
     function table_html($listname, $options = array()) {
@@ -1550,7 +1565,7 @@ class PaperList {
     private function _check_heading_csv($thenval, $srows, $lastheading, &$csv) {
         $headings = $this->_heading_info($thenval, $srows, $lastheading);
         if (!empty($headings)) {
-            list($count, $ginfo) = $headings[0];
+            $ginfo = $headings[count($headings) - 1];
             $csv["__precomment__"] = $ginfo->is_empty() ? "none" : $ginfo->heading;
         }
         return $thenval;
