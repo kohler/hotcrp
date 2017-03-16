@@ -69,17 +69,16 @@ class UserActions {
         $Conf->confirmMsg("Account information sent.");
     }
 
-    static function save_clickthrough($user) {
-        global $Conf, $Now;
+    static function save_clickthrough(Contact $user, Qrequest $qreq) {
+        global $Now;
         $confirmed = false;
-        if (@$_REQUEST["clickthrough_accept"]
-            && @$_REQUEST["clickthrough_sha1"]) {
-            $user->merge_and_save_data(array("clickthrough" => array($_REQUEST["clickthrough_sha1"] => $Now)));
+        if ($qreq->clickthrough_accept && $qreq->clickthrough_sha1) {
+            $user->merge_and_save_data(["clickthrough" => [$qreq->clickthrough_sha1 => $Now]]);
             $confirmed = true;
-        } else if (@$_REQUEST["clickthrough_decline"])
+        } else if ($qreq->clickthrough_decline)
             Conf::msg_error("You can’t continue until you accept these terms.");
-        if (@$_REQUEST["ajax"])
-            $Conf->ajaxExit(array("ok" => $confirmed));
-        redirectSelf();
+        if ($qreq->ajax)
+            $user->conf->ajaxExit(["ok" => $confirmed]);
+        SelfHref::redirect($qreq);
     }
 }

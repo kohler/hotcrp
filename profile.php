@@ -4,12 +4,13 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
+$Qreq = make_qreq();
 
 // check for change-email capabilities
-function change_email_by_capability() {
+function change_email_by_capability($Qreq) {
     global $Conf, $Me;
     $capmgr = $Conf->capability_manager();
-    $capdata = $capmgr->check($_REQUEST["changeemail"]);
+    $capdata = $capmgr->check($Qreq->changeemail);
     if (!$capdata || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
         || !($capdata->data = json_decode($capdata->data))
         || !get($capdata->data, "uemail"))
@@ -29,8 +30,8 @@ function change_email_by_capability() {
     if (!$Me->has_database_account() || $Me->contactId == $Acct->contactId)
         $Me = $Acct->activate();
 }
-if (isset($_REQUEST["changeemail"]))
-    change_email_by_capability();
+if ($Qreq->changeemail)
+    change_email_by_capability($Qreq);
 
 if (!$Me->has_email())
     $Me->escape();
@@ -38,51 +39,51 @@ $newProfile = false;
 $useRequest = false;
 $UserStatus = new UserStatus;
 
-if (req("u") === null) {
-    if (req("user"))
-        set_req("u", req("user"));
-    else if (req("contact"))
-        set_req("u", req("contact"));
+if ($Qreq->u === null) {
+    if ($Qreq->user)
+        $Qreq->u = $Qreq->user;
+    else if ($Qreq->contact)
+        $Qreq->u = $Qreq->contact;
     else if (preg_match(',\A/(?:new|[^\s/]+)\z,i', Navigation::path()))
-        set_req("u", substr(Navigation::path(), 1));
+        $Qreq->u = substr(Navigation::path(), 1);
 }
-if ($Me->privChair && req("new"))
-    set_req("u", "new");
+if ($Me->privChair && $Qreq->new)
+    $Qreq->u = "new";
 
 
 // Load user.
 $Acct = $Me;
-if ($Me->privChair && req("u")) {
-    if (req("u") === "new") {
+if ($Me->privChair && $Qreq->u) {
+    if ($Qreq->u === "new") {
         $Acct = new Contact;
         $newProfile = true;
-    } else if (($id = cvtint(req("u"))) > 0)
+    } else if (($id = cvtint($Qreq->u)) > 0)
         $Acct = $Conf->user_by_id($id);
     else
-        $Acct = $Conf->user_by_email(req("u"));
+        $Acct = $Conf->user_by_email($Qreq->u);
 }
 
 // Redirect if requested user isn't loaded user.
 if (!$Acct
-    || (isset($_REQUEST["u"])
-        && $_REQUEST["u"] !== (string) $Acct->contactId
-        && strcasecmp($_REQUEST["u"], $Acct->email)
-        && ($Acct->contactId || $_REQUEST["u"] !== "new"))
-    || (isset($_REQUEST["profile_contactid"])
-        && $_REQUEST["profile_contactid"] !== (string) $Acct->contactId)) {
+    || ($Qreq->u !== null
+        && $Qreq->u !== (string) $Acct->contactId
+        && strcasecmp($Qreq->u, $Acct->email)
+        && ($Acct->contactId || $Qreq->u !== "new"))
+    || (isset($Qreq->profile_contactid)
+        && $Qreq->profile_contactid !== (string) $Acct->contactId)) {
     if (!$Acct)
         Conf::msg_error("Invalid user.");
-    else if (isset($_REQUEST["register"]) || isset($_REQUEST["bulkregister"]))
+    else if (isset($Qreq->register) || isset($Qreq->bulkregister))
         Conf::msg_error("You’re logged in as a different user now, so your changes were ignored.");
-    unset($_REQUEST["u"], $_REQUEST["register"], $_REQUEST["bulkregister"]);
-    redirectSelf();
+    unset($Qreq->u, $Qreq->register, $Qreq->bulkregister);
+    SelfHref::redirect($Qreq);
 }
 
 $need_highlight = false;
 if (($Acct->contactId != $Me->contactId || !$Me->has_database_account())
     && $Acct->has_email()
     && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation
-    && !isset($_REQUEST["post"])) {
+    && !$Qreq->post) {
     $result = $Conf->qe_raw("select Paper.paperId, authorInformation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Acct->contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")");
     while (($prow = PaperInfo::fetch($result, $Me)))
         foreach ($prow->author_list() as $au)
@@ -105,31 +106,31 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_database_account())
 
 
 function pc_request_as_json($cj) {
-    global $Conf, $Me, $Acct;
-    if ($Me->privChair && isset($_REQUEST["pctype"])) {
+    global $Conf, $Me, $Acct, $Qreq;
+    if ($Me->privChair && isset($Qreq->pctype)) {
         $cj->roles = (object) array();
-        $pctype = req("pctype");
+        $pctype = $Qreq->pctype;
         if ($pctype === "chair")
             $cj->roles->chair = $cj->roles->pc = true;
         if ($pctype === "pc")
             $cj->roles->pc = true;
-        if (req("ass"))
+        if ($Qreq->ass)
             $cj->roles->sysadmin = true;
     }
     $cj->follow = (object) array();
-    if (req("watchcomment"))
+    if ($Qreq->watchcomment)
         $cj->follow->reviews = true;
-    if (($Me->privChair || $Acct->isPC) && req("watchcommentall"))
+    if (($Me->privChair || $Acct->isPC) && $Qreq->watchcommentall)
         $cj->follow->allreviews = true;
-    if ($Me->privChair && req("watchfinalall"))
+    if ($Me->privChair && $Qreq->watchfinalall)
         $cj->follow->allfinal = true;
-    if ($Me->privChair && isset($_REQUEST["contactTags"]))
-        $cj->tags = explode(" ", simplify_whitespace($_REQUEST["contactTags"]));
+    if ($Me->privChair && isset($Qreq->contactTags))
+        $cj->tags = explode(" ", simplify_whitespace($Qreq->contactTags));
     if ($Me->privChair ? get($cj->roles, "pc") : $Me->isPC) {
         $topics = (object) array();
         foreach ($Conf->topic_map() as $id => $t)
-            if (isset($_REQUEST["ti$id"]) && is_numeric($_REQUEST["ti$id"]))
-                $topics->$id = (int) $_REQUEST["ti$id"];
+            if (isset($Qreq["ti$id"]) && is_numeric($Qreq["ti$id"]))
+                $topics->$id = (int) $Qreq["ti$id"];
         if (count(get_object_vars($topics)))
             $cj->topics = (object) $topics;
     }
@@ -137,7 +138,7 @@ function pc_request_as_json($cj) {
 }
 
 function web_request_as_json($cj) {
-    global $Conf, $Me, $Acct, $newProfile, $UserStatus;
+    global $Conf, $Me, $Acct, $Qreq, $newProfile, $UserStatus;
 
     if ($newProfile || !$Acct->has_database_account())
         $cj->id = "new";
@@ -145,27 +146,27 @@ function web_request_as_json($cj) {
         $cj->id = $Acct->contactId;
 
     if (!$Conf->external_login())
-        $cj->email = trim(req_s("uemail", ""));
+        $cj->email = trim((string) $Qreq->uemail);
     else if ($newProfile)
-        $cj->email = trim(defval($_REQUEST, "newUsername", ""));
+        $cj->email = trim((string) $Qreq->newUsername);
     else
         $cj->email = $Acct->email;
 
     foreach (array("firstName", "lastName", "preferredEmail", "affiliation",
                    "collaborators", "addressLine1", "addressLine2",
                    "city", "state", "zipCode", "country", "voicePhoneNumber") as $k) {
-        $v = req($k);
+        $v = $Qreq[$k];
         if ($v !== null && ($cj->id !== "new" || trim($v) !== ""))
             $cj->$k = $v;
     }
 
     if (!$Conf->external_login() && !$newProfile
         && $Me->can_change_password($Acct)) {
-        if (req("whichpassword") === "t" && req("upasswordt"))
-            $pw = $pw2 = @trim($_REQUEST["upasswordt"]);
+        if ($Qreq->whichpassword === "t" && $Qreq->upasswordt)
+            $pw = $pw2 = trim($Qreq->upasswordt);
         else {
-            $pw = @trim($_REQUEST["upassword"]);
-            $pw2 = @trim($_REQUEST["upassword2"]);
+            $pw = trim((string) $Qreq->upassword);
+            $pw2 = trim((string) $Qreq->upassword2);
         }
         if ($pw === "" && $pw2 === "")
             /* do nothing */;
@@ -177,7 +178,7 @@ function web_request_as_json($cj) {
             $cj->old_password = null;
             $cj->new_password = $pw;
         } else {
-            $cj->old_password = @trim($_REQUEST["oldpassword"]);
+            $cj->old_password = trim((string) $Qreq->oldpassword);
             if ($Acct->check_password($cj->old_password))
                 $cj->new_password = $pw;
             else
@@ -376,25 +377,23 @@ function parseBulkFile($text, $filename) {
     return count($errors) == 0;
 }
 
-if (!check_post())
+if (!check_post($Qreq))
     /* do nothing */;
-else if (isset($_REQUEST["bulkregister"]) && $newProfile
-         && file_uploaded($_FILES["bulk"])) {
-    if (($text = file_get_contents($_FILES["bulk"]["tmp_name"])) === false)
+else if (isset($Qreq->bulkregister) && $newProfile && $Qreq->has_file("bulk")) {
+    if (($text = $Qreq->file_contents("bulk")) === false)
         Conf::msg_error("Internal error: cannot read file.");
     else
-        parseBulkFile($text, $_FILES["bulk"]["name"]);
-    set_req("bulkentry", "");
-    redirectSelf(array("anchor" => "bulk"));
-} else if (isset($_REQUEST["bulkregister"]) && $newProfile) {
+        parseBulkFile($text, $Qreq->file_filename("bulk"));
+    $Qreq->bulkentry = "";
+    SelfHref::redirect($Qreq, ["anchor" => "bulk"]);
+} else if (isset($Qreq->bulkregister) && $newProfile) {
     $success = true;
-    if (req("bulkentry")
-        && req("bulkentry") !== "Enter users one per line")
-        $success = parseBulkFile($_REQUEST["bulkentry"], "");
+    if ($Qreq->bulkentry && $Qreq->bulkentry !== "Enter users one per line")
+        $success = parseBulkFile($Qreq->bulkentry, "");
     if (!$success)
-        $Conf->save_session("profile_bulkentry", array($Now, $_REQUEST["bulkentry"]));
-    redirectSelf(array("anchor" => "bulk"));
-} else if (isset($_REQUEST["register"])) {
+        $Conf->save_session("profile_bulkentry", array($Now, $Qreq->bulkentry));
+    SelfHref::redirect($Qreq, ["anchor" => "bulk"]);
+} else if (isset($Qreq->register)) {
     $cj = (object) array();
     web_request_as_json($cj);
     pc_request_as_json($cj);
@@ -414,21 +413,21 @@ else if (isset($_REQUEST["bulkregister"]) && $newProfile
             if ($Acct->contactId == $Me->contactId)
                 $Me->update_trueuser(true);
             else
-                $_REQUEST["u"] = $Acct->email;
+                $Qreq->u = $Acct->email;
         }
-        if (isset($_REQUEST["redirect"]))
+        if (isset($Qreq->redirect))
             go(hoturl("index"));
         else {
             if ($newProfile)
                 $Conf->save_session("profile_redirect", $cj);
-            redirectSelf();
+            SelfHref::redirect($Qreq);
         }
     }
-} else if (isset($_REQUEST["merge"]) && !$newProfile
+} else if (isset($Qreq->merge) && !$newProfile
            && $Acct->contactId == $Me->contactId)
     go(hoturl("mergeaccounts"));
-else if (isset($_REQUEST["clickthrough"]))
-    UserActions::save_clickthrough($Acct);
+else if (isset($Qreq->clickthrough))
+    UserActions::save_clickthrough($Acct, $Qreq);
 
 function databaseTracks($who) {
     global $Conf;
@@ -470,7 +469,7 @@ function textArrayPapers($pids) {
     return commajoin(preg_replace('/(\d+)/', "<a href='" . hoturl("paper", "p=\$1&amp;ls=" . join("+", $pids)) . "'>\$1</a>", $pids));
 }
 
-if (isset($_REQUEST["delete"]) && !Dbl::has_error() && check_post()) {
+if (isset($Qreq->delete) && !Dbl::has_error() && check_post($Qreq)) {
     if (!$Me->privChair)
         Conf::msg_error("Only administrators can delete accounts.");
     else if ($Acct->contactId == $Me->contactId)
@@ -504,17 +503,17 @@ if (isset($_REQUEST["delete"]) && !Dbl::has_error() && check_post()) {
 }
 
 function value($key, $value) {
-    global $useRequest;
-    if ($useRequest && isset($_REQUEST[$key]))
-        return htmlspecialchars($_REQUEST[$key]);
+    global $useRequest, $Qreq;
+    if ($useRequest && isset($Qreq[$key]))
+        return htmlspecialchars($Qreq[$key]);
     else
         return $value ? htmlspecialchars($value) : "";
 }
 
 function contact_value($key, $field = null) {
-    global $Acct, $useRequest;
-    if ($useRequest && isset($_REQUEST[$key]))
-        return htmlspecialchars($_REQUEST[$key]);
+    global $Acct, $useRequest, $Qreq;
+    if ($useRequest && isset($Qreq[$key]))
+        return htmlspecialchars($Qreq[$key]);
     else if ($field == "password") {
         $v = $Acct->plaintext_password();
         return htmlspecialchars($v ? : "");
@@ -575,7 +574,7 @@ if ($newProfile)
     $Conf->header("User update", "account", actionBar("account"));
 else
     $Conf->header($Me->email == $Acct->email ? "Profile" : "Account profile", "account", actionBar("account", $Acct));
-$useRequest = !$Acct->has_database_account() && isset($_REQUEST["watchcomment"]);
+$useRequest = !$Acct->has_database_account() && isset($Qreq->watchcomment);
 if ($UserStatus->nerrors)
     $need_highlight = $useRequest = true;
 
@@ -626,8 +625,8 @@ if (isset($formcj->roles)) {
         $pcrole = "pc";
 }
 if (!$useRequest && $Me->privChair && $newProfile
-    && (req("role") == "chair" || req("role") == "pc"))
-    $pcrole = $_REQUEST["role"];
+    && ($Qreq->role == "chair" || $Qreq->role == "pc"))
+    $pcrole = $Qreq->role;
 
 
 $form_params = array();
@@ -635,10 +634,10 @@ if ($newProfile)
     $form_params[] = "u=new";
 else if ($Me->contactId != $Acct->contactId)
     $form_params[] = "u=" . urlencode($Acct->email);
-if (isset($_REQUEST["ls"]))
-    $form_params[] = "ls=" . urlencode($_REQUEST["ls"]);
+if (isset($Qreq->ls))
+    $form_params[] = "ls=" . urlencode($Qreq->ls);
 if ($newProfile)
-    echo '<div id="foldbulk" class="fold9' . (req("bulkregister") ? "o" : "c") . '"><div class="fn9">';
+    echo '<div id="foldbulk" class="fold9' . ($Qreq->bulkregister ? "o" : "c") . '"><div class="fn9">';
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "accountform", "autocomplete" => "off")),
@@ -648,14 +647,14 @@ echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
     // unless we supply an earlier password input.
     Ht::password("chromefooler", "", array("style" => "display:none")),
     Ht::hidden("profile_contactid", $Acct->contactId);
-if (isset($_REQUEST["redirect"]))
-    echo Ht::hidden("redirect", $_REQUEST["redirect"]);
+if (isset($Qreq->redirect))
+    echo Ht::hidden("redirect", $Qreq->redirect);
 if ($Me->privChair)
     echo Ht::hidden("whichpassword", "");
 
 echo '<div id="foldaccount" class="form foldc ',
     ($pcrole == "no" ? "fold1c " : "fold1o "),
-    (file_uploaded($_FILES["bulk"]) ? "fold2o" : "fold2c"), '">';
+    ($Qreq->has_file("bulk") ? "fold2o" : "fold2c"), '">';
 
 if ($newProfile)
     echo_modes(1);
@@ -906,7 +905,7 @@ if ($newProfile) {
         Ht::password("chromefooler", "", array("style" => "display:none"));
     echo_modes(2);
 
-    $bulkentry = req("bulkentry");
+    $bulkentry = $Qreq->bulkentry;
     if ($bulkentry === null
         && ($session_bulkentry = $Conf->session("profile_bulkentry"))
         && is_array($session_bulkentry) && $session_bulkentry[0] > $Now - 5) {

@@ -88,11 +88,17 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             $f = $this->____files[$name];
         return $f;
     }
-    function file_contents($name) {
-        $f = false;
+    function file_filename($name) {
+        $fn = false;
         if (array_key_exists($name, $this->____files))
-            $f = @file_get_contents($this->____files[$name]["tmp_name"]);
-        return $f;
+            $fn = $this->____files[$name]["name"];
+        return $fn;
+    }
+    function file_contents($name) {
+        $data = false;
+        if (array_key_exists($name, $this->____files))
+            $data = @file_get_contents($this->____files[$name]["tmp_name"]);
+        return $data;
     }
     function files() {
         return $this->____files;
