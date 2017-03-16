@@ -6,16 +6,18 @@ HotCRP NEWS
 * Support delegated reviews that must be “approved” by the delegating PC
   members, for STOC-like workflow.
 
-* Support emoji tags like #:smile: or #:poop:.
+* Support emoji tags like #:smile: and #:poop:.
 
 * Visually distinguish PDFs with serious formatting errors.
 
-* Internals: Make HotCRP much more extensible. Allow paper columns, paper
-  search keywords, formula functions, API functions, some UI messages to be
-  extended using JSON.
+* Internals: Make HotCRP much more extensible. Paper columns, paper
+  search keywords, formula functions, API functions, and some UI
+  messages are extensible using JSON.
 
 * Allow tag patterns: you can make a set of tags chair-only using syntax like
   “chair:*”.
+
+* Default to SHA-256 checksums.
 
 * Many bug fixes.
 
