@@ -318,7 +318,7 @@ function parseBulkFile($text, $filename) {
                        "voice" => "voicePhoneNumber", "phone" => "voicePhoneNumber",
                        "address1" => "addressLine1", "province" => "state", "region" => "state",
                        "address2" => "addressLine2", "postalcode" => "zipCode",
-                       "zip" => "zipCode", "tags" => "contactTags") as $k => $xk)
+                       "zip" => "zipCode") as $k => $xk)
             if (isset($cj->$k)) {
                 if (!isset($cj->$xk))
                     $cj->$xk = $cj->$k;

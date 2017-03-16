@@ -121,7 +121,7 @@ class UserStatus {
 
     private function make_keyed_object($x, $field) {
         if (is_string($x))
-            $x = preg_split("/[\s,]+/", $x);
+            $x = preg_split('/[\s,]+/', $x);
         $res = (object) array();
         if (is_array($x)) {
             foreach ($x as $v)
@@ -149,7 +149,7 @@ class UserStatus {
     private function make_tags_array($x, $key) {
         $t0 = array();
         if (is_string($x))
-            $t0 = preg_split("/[\s,]+/", $x);
+            $t0 = preg_split('/[\s,]+/', $x);
         else if (is_array($x))
             $t0 = $x;
         else if ($x !== null)
@@ -314,7 +314,7 @@ class UserStatus {
         if (isset($cj->add_tags) || isset($cj->remove_tags)) {
             // collect old tags as map by base
             if (!isset($cj->tags) && $old_user)
-                $cj->tags = preg_split("/[\s,]+/", $old_user->contactTags);
+                $cj->tags = preg_split('/[\s,]+/', $old_user->contactTags);
             else if (!isset($cj->tags))
                 $cj->tags = array();
             $old_tags = array();
