@@ -78,7 +78,7 @@ function hoturl_site_relative($page, $options = null) {
     $t = $page . Navigation::php_suffix();
     // parse options, separate anchor; see also redirectSelf
     $anchor = "";
-    if ($options && is_array($options)) {
+    if (is_array($options)) {
         $x = "";
         foreach ($options as $k => $v)
             if ($v === null || $v === false)
