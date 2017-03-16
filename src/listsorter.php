@@ -11,18 +11,18 @@ class ListSorter {
     public $thenmap = null;
     public $field = null;
 
-    public function __construct($type) {
+    function __construct($type) {
         $this->type = $type;
     }
 
-    static public function make_empty($truly_empty) {
+    static function make_empty($truly_empty) {
         $l = new ListSorter(null);
         $l->reverse = null;
         $l->empty = $truly_empty;
         return $l;
     }
 
-    static public function make_field($field) {
+    static function make_field($field) {
         $l = new ListSorter(null);
         $l->field = $field;
         return $l;
@@ -36,7 +36,7 @@ class ListSorter {
                                        "D" => "Max &minus; min",
                                        "Y" => "My score");
 
-    public static function default_score_sort($nosession = false) {
+    static function default_score_sort($nosession = false) {
         global $Conf;
         if (!$nosession && $Conf && ($sv = $Conf->session("scoresort")))
             return $sv;
@@ -46,7 +46,7 @@ class ListSorter {
             return opt("defaultScoreSort", "C");
     }
 
-    public static function parse_sorter($text) {
+    static function parse_sorter($text) {
         // parse the sorter
         $text = simplify_whitespace($text);
         if (preg_match('/\A(\d+)([a-z]*)\z/i', $text, $m)
@@ -67,7 +67,7 @@ class ListSorter {
         return $sort;
     }
 
-    public static function push(&$array, $s) {
+    static function push(&$array, $s) {
         if (count($array)) {
             $x = $array[count($array) - 1];
             if (((!$s->type && !$s->field) || (!$x->type && !$x->field))
