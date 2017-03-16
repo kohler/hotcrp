@@ -123,7 +123,10 @@ class TagAnno implements JsonSerializable {
             $j["tag"] = $this->tag;
         if ($this->tagIndex !== null)
             $j["tagval"] = $this->tagIndex;
-        $j["heading"] = $this->heading;
+        if ($this->is_empty())
+            $j["empty"] = true;
+        if ($this->heading !== null)
+            $j["heading"] = $this->heading;
         if ($this->heading !== null && $this->heading !== ""
             && ($format = $Conf->check_format($this->annoFormat, $this->heading)))
             $j["format"] = +$format;

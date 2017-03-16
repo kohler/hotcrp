@@ -3972,7 +3972,7 @@ function PaperRow(l, r, index) {
     this.index = index;
     this.tagvalue = false;
     var tags = rows[l].getAttribute("data-tags"), m;
-    if (tags && (m = new RegExp("(?:^| )" + regexp_quote(full_ordertag) + "#(\\S+)").exec(tags)))
+    if (tags && (m = new RegExp("(?:^| )" + regexp_quote(full_ordertag) + "#(\\S+)", "i").exec(tags)))
         this.tagvalue = parse_tagvalue(m[1]);
     this.isgroup = false;
     this.id = 0;
@@ -4372,23 +4372,47 @@ function fix_row_classes(tbody) {
         }
 }
 
+function fill_anno_row(row, anno) {
+    if (!anno.empty) {
+        if (anno.tag)
+            row.setAttribute("data-tags", anno.annoid === null ? "" : anno.tag + "#" + anno.tagval);
+        var heading = anno.heading === null ? "" : anno.heading;
+        var $g = $(row).find(".plheading_group").attr({"data-format": anno.format || 0, "data-title": heading});
+        $g.text(heading === "" ? heading : heading + " ");
+        anno.format && render_text.on.call($g[0]);
+        // `plheading_count` is taken care of in `fix_row_classes`
+    }
+}
 
-function add_taganno_row(tag, annoid) {
+function add_anno_row(anno, before) {
     var $r = $("tr.pl_headrow:first-child > th");
     var titlecol = 0, ncol = $r.length;
     for (var i = 0; i != ncol; ++i)
         if ($($r[i]).hasClass("pl_title"))
             titlecol = i;
-    var h = '<tr class="plheading" data-anno-tag="' + tag + '" data-anno-id="' + annoid + '">';
-    if (titlecol)
-        h += '<td class="plheading_spacer" colspan="' + titlecol + '"></td>';
-    h += '<td class="plheading" colspan="' + (ncol - titlecol) + '">' +
-        '<span class="plheading_group"></span>' +
-        '<span class="plheading_count"></span></td></tr>';
+
+    var h;
+    if (anno.empty)
+        h = '<tr class="plheading_blank"><td class="plheading_blank" colspan="' + ncol + '"></td></tr>';
+    else {
+        h = '<tr class="plheading"';
+        if (anno.tag)
+            h += ' data-anno-tag="' + anno.tag + '"';
+        if (anno.annoid)
+            h += ' data-anno-id="' + anno.annoid + '"';
+        h += '>';
+        if (titlecol)
+            h += '<td class="plheading_spacer" colspan="' + titlecol + '"></td>';
+        h += '<td class="plheading" colspan="' + (ncol - titlecol) + '">' +
+            '<span class="plheading_group"></span>' +
+            '<span class="plheading_count"></span></td></tr>';
+    }
+
     var row = $(h)[0];
-    if (tag === full_dragtag)
+    if (anno.tag && anno.tag === full_dragtag)
         add_draghandle.call($(row).find("td.plheading")[0]);
-    plt_tbody.insertBefore(row, null);
+    plt_tbody.insertBefore(row, before);
+    fill_anno_row(row, anno)
     return row;
 }
 
@@ -4400,13 +4424,7 @@ function taganno_success(rv) {
     for (var i = 0; i < rv.anno.length; ++i) {
         var anno = rv.anno[i];
         var row = $headings.filter('[data-anno-id="' + anno.annoid + '"]')[0];
-        if (!row)
-            row = add_taganno_row(rv.tag, anno.annoid);
-        row.setAttribute("data-tags", anno.annoid === null ? "" : rv.tag + "#" + anno.tagval);
-        var heading = anno.heading === null ? "" : anno.heading;
-        var $g = $(row).find(".plheading_group").attr({"data-format": anno.format || 0, "data-title": heading});
-        $g.text(heading === "" ? heading : heading + " ");
-        anno.format && render_text.on.call($g[0]);
+        row ? fill_anno_row(row, anno) : (row = add_anno_row(anno, null));
         annoid_seen[anno.annoid] = true;
         rv.tag === full_ordertag && row_move(analyze_rows(row));
     }
