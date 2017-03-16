@@ -4858,9 +4858,8 @@ function make_tagmap() {
 
 var has_edittags_link, set_tags_callbacks = [];
 
-function render_row_tags(div) {
-    var f = fields.tags, tmap = make_tagmap(), pid = pidnear(div);
-    var t = [], tags = (pidattr(pid, "data-tags") || "").split(/ /);
+function compute_row_tagset(ptr, tagstr) {
+    var tmap = make_tagmap(), t = [], tags = (tagstr || "").split(/ /);
     for (var i = 0; i != tags.length; ++i) {
         var text = tags[i], twiddle = text.indexOf("~"), hash = text.indexOf("#");
         if (text !== "" && (twiddle <= 0 || text.substr(0, twiddle) == hotcrp_user.cid)) {
@@ -4888,19 +4887,30 @@ function render_row_tags(div) {
         else
             return strnatcmp(a[1], b[1]);
     });
-    if (pidattr(pid, "data-tags-editable") != null) {
-        if (!t.length)
-            t.push(["none"]);
-        t[t.length - 1][0] += ' <span class="hoveronly"><span class="barsep">·</span> <a class="edittags-link" href="#">Edit</a></span>';
+    if (!t.length && ptr.getAttribute("data-tags-editable") != null)
+        t.push(["none"]);
+    return $.map(t, function (x) { return x[0]; });
+}
+
+function render_row_tags(div) {
+    var f = fields.tags, pid = pidnear(div);
+    var ptr = pidrow(pid)[0];
+    var t = compute_row_tagset(ptr, ptr.getAttribute("data-tags"));
+    t = t.length ? '<em class="plx">' + f.title + ':</em> ' + t.join(" ") : "";
+    if (t != "" && ptr.hasAttribute("data-tags-conflicted")) {
+        t = '<span class="fx5">' + t + '</span>';
+        var ct = compute_row_tagset(ptr, ptr.getAttribute("data-tags-conflicted"));
+        if (ct.length)
+            t = '<span class="fn5"><em class="plx">' + f.title + ':</em> ' + ct.join(" ") + '</span>' + t;
+    }
+    if (t != "" && ptr.getAttribute("data-tags-editable") != null) {
+        t += ' <span class="hoveronly"><span class="barsep">·</span> <a class="edittags-link" href="#">Edit</a></span>';
         if (!has_edittags_link) {
-            $(div).closest("tbody").on("click", "a.edittags-link", edittags_link_onclick);
+            $(ptr).closest("tbody").on("click", "a.edittags-link", edittags_link_onclick);
             has_edittags_link = true;
         }
     }
-    if (t.length)
-        $(div).html('<em class="plx">' + f.title + ':</em> ' + $.map(t, function (x) { return x[0]; }).join(" "));
-    else
-        $(div).empty();
+    t == "" ? $(div).empty() : $(div).html(t);
 }
 
 function edittags_link_onclick() {

@@ -1195,21 +1195,17 @@ class TagList_PaperColumn extends PaperColumn {
         return !$pl->contact->can_view_tags($row, true);
     }
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
-        $wrap_conflict = false;
-        $viewable = $row->viewable_tags($pl->contact);
-        if ($viewable === "" && $row->paperTags && $pl->contact->allow_administer($row)) {
-            $wrap_conflict = true;
-            $viewable = $row->viewable_tags($pl->contact, true);
-        }
-        $pl->row_attr["data-tags"] = trim($viewable);
+        if ($row->paperTags && $row->conflictType > 0 && $pl->contact->allow_administer($row)) {
+            $viewable = trim($row->viewable_tags($pl->contact, true));
+            $pl->row_attr["data-tags-conflicted"] = trim($row->viewable_tags($pl->contact));
+        } else
+            $viewable = trim($row->viewable_tags($pl->contact));
+        $pl->row_attr["data-tags"] = $viewable;
         if ($this->editable)
             $pl->row_attr["data-tags-editable"] = 1;
         if ($viewable !== "" || $this->editable) {
             $pl->need_render = true;
-            if ($wrap_conflict)
-                return '<div class="fx5"><span class="need-tags"></span></div>';
-            else
-                return '<span class="need-tags"></span>';
+            return '<span class="need-tags"></span>';
         } else
             return "";
     }
@@ -1421,7 +1417,7 @@ class Score_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row, $rowidx) {
         $wrap_conflict = false;
         $scores = $row->viewable_scores($this->form_field, $pl->contact, false);
-        if ($scores === null && $pl->contact->allow_administer($row)) {
+        if (empty($scores) && $row->conflictType > 0 && $pl->contact->allow_administer($row)) {
             $wrap_conflict = true;
             $scores = $row->viewable_scores($this->form_field, $pl->contact, true);
         }
