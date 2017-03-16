@@ -203,7 +203,7 @@ class PaperApi {
                 array_push($qv, $tag, $annoid);
             }
             if (isset($anno->heading)) {
-                $q[] = "update PaperTagAnno set heading=? where tag=? and annoId=?";
+                $q[] = "update PaperTagAnno set heading=?, annoFormat=null where tag=? and annoId=?";
                 array_push($qv, $anno->heading, $tag, $annoid);
             }
             if (isset($anno->tagval)) {
@@ -229,7 +229,7 @@ class PaperApi {
                 Dbl::free($result);
         }
         // return results
-        self::taganno_api($user, $qreq, $prow);
+        return self::taganno_api($user, $qreq, $prow);
     }
 
     static function votereport_api(Contact $user, $qreq, $prow) {
