@@ -4351,7 +4351,7 @@ function reorder(jq, new_order) {
 }
 
 function fix_row_classes(tbody) {
-    for (var cur = tbody.firstChild, e = 1; tbody; cur = cur.nextSibling)
+    for (var cur = tbody.firstChild, e = 1; cur; cur = cur.nextSibling)
         if (cur.nodeName == "TR") {
             var c = cur.className;
             if (!/^plx/.test(c))
