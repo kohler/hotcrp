@@ -1237,7 +1237,7 @@ class Tag_PaperColumn extends PaperColumn {
     }
     function sorts_my_tag($sorter) {
         return preg_match('/\A(?:edit)?(?:#|tag:|tagval:)\s*(\S+)\z/i', $sorter->type, $m)
-            && strcasecmp($m[1], $this->dtag) == 0;
+            && strcasecmp($m[1], $this->xtag) == 0;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
