@@ -66,7 +66,9 @@ stored in `conf/options.php`, which HotCRP marks as world-unreadable. You must
 ensure that your PHP can read this file.
 
 2. Edit `conf/options.php`, which is annotated to guide you.
-(`lib/createdb.sh` creates this file based on `src/distoptions.php`.)
+(`lib/createdb.sh` creates this file based on `src/distoptions.php`.) Make
+sure that `conf/options.php` is readable by the user that your webserver runs
+as.
 
 3. Configure your web server to access HotCRP. The right way to do this
 depends on which server you’re running.
