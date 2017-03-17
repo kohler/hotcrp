@@ -83,8 +83,6 @@ class Multiconference {
         } else {
             if (!$Conf)
                 $Conf = Conf::$g = new Conf($Opt, false);
-            if ($Opt["shortName"] == "__invalid__")
-                $Opt["shortName"] = "HotCRP";
             $Me = null;
             header("HTTP/1.1 404 Not Found");
             $Conf->header("HotCRP Error", "", false);
