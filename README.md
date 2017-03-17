@@ -38,8 +38,12 @@ additional packages for PHP and MySQL, such as:
 * Debian Linux: php5-common, php5-gd, php5-mysql,
   libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x),
   zip, (poppler-utils)
-* Ubuntu Linux: php5-common, php5-gd, php5-mysql,
+* Ubuntu Linux (before 16.04): php5-common, php5-gd, php5-mysql,
   libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x),
+  zip, (poppler-utils), and a package for SMTP support, such
+  as sendmail or postfix
+* Ubuntu Linux (16.04 and later): php-common, php-gd, php-mysql,
+  libapache2-mod-php (or libapache-mod-php for Apache 1.x),
   zip, (poppler-utils), and a package for SMTP support, such
   as sendmail or postfix
 
