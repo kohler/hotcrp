@@ -183,7 +183,7 @@ function update_schema_unaccented_name($conf) {
 
 function update_schema_transfer_country($conf) {
     $result = $conf->ql("select * from ContactInfo where `data` is not null and `data`!='{}'");
-    while ($result && ($c = Contact::fetch($result))) {
+    while ($result && ($c = Contact::fetch($result, $conf))) {
         if (($country = $c->data("country")))
             $conf->ql("update ContactInfo set country=? where contactId=?", $country, $c->contactId);
     }
@@ -251,6 +251,8 @@ function updateSchema($conf) {
            && $result->affected_rows == 0)
         time_nanosleep(0, 200000000);
     $conf->update_schema_version(null);
+    $old_conf_g = Conf::$g;
+    Conf::$g = $conf;
 
     error_log($conf->dbname . ": updating schema from version " . $conf->sversion);
 
@@ -1121,4 +1123,5 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->update_schema_version(161);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
+    Conf::$g = $old_conf_g;
 }
