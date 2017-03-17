@@ -70,7 +70,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     static function banal_page_is_body($pg) {
-        return defval($pg, "pagetype", "body") == "body"
+        return get($pg, "pagetype", "body") == "body"
             && (!isset($pg->d) || $pg->d >= 16000 || !isset($pg->columns) || $pg->columns <= 2);
     }
 
@@ -107,6 +107,20 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $this->body_pages = count(array_filter($bj->pages, function ($pg) {
             return CheckFormat::banal_page_is_body($pg);
         }));
+
+        // body pages exist
+        if (($spec->columns || $spec->bodyfontsize || $spec->bodylineheight)
+            && $this->body_pages < 0.5 * count($bj->pages)) {
+            if ($this->body_pages == 0)
+                $this->msg(false, "Warning: No pages seemed to contain body text; results may be off.", self::WARNING);
+            else
+                $this->msg(false, "Warning: Only " . plural($this->body_pages, "page") . " seemed to contain body text; results may be off.", self::WARNING);
+            $nd0_pages = count(array_filter($bj->pages, function ($pg) {
+                return isset($pg->d) && $pg->d == 0;
+            }));
+            if ($nd0_pages == $this->pages)
+                $this->msg("notext", "This document appears to contain no text. Perhaps the PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", self::ERROR);
+        }
 
         // number of columns
         if ($spec->columns) {
@@ -187,10 +201,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
                         $maxval = max($maxval, $pp);
                     }
                 }
-            if ($this->body_pages == 0)
-                $this->msg(false, "Warning: No pages seemed to contain body text; results may be off.", self::WARNING);
-            else if ($this->body_pages < 0.5 * count($bj->pages))
-                $this->msg(false, "Warning: Only " . plural($this->body_pages, "page") . " seemed to contain body text; results may be off.", self::WARNING);
             if (!empty($lopx))
                 $this->msg("bodyfontsize", "Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt on " . pluralx($lopx, "page") . " " . numrangejoin($lopx) . ".", $this->body_error_status($nbadsize));
             if (!empty($hipx))
