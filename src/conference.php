@@ -49,6 +49,7 @@ class Conf {
     public $sort_by_last;
     public $opt;
     public $opt_override = null;
+    private $_opt_timestamp = null;
     public $paper_opts;
 
     private $save_messages = true;
@@ -498,6 +499,15 @@ class Conf {
     function unset_opt($name) {
         global $Opt;
         unset($Opt[$name], $this->opt[$name]);
+    }
+
+    function opt_timestamp() {
+        if ($this->_opt_timestamp === null) {
+            $this->_opt_timestamp = 1;
+            foreach (get($this->opt, "loaded", []) as $fn)
+                $this->_opt_timestamp = max($this->_opt_timestamp, +@filemtime($fn));
+        }
+        return $this->_opt_timestamp;
     }
 
 

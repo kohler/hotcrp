@@ -131,6 +131,19 @@ class SiteLoader {
     const API_GET = 1;
     const API_PAPER = 2;
     const API_GET_PAPER = 3 /* == API_GET | API_PAPER */;
+
+    static function read_main_options() {
+        global $ConfSitePATH, $Opt;
+        if (defined("HOTCRP_OPTIONS"))
+            $files = [HOTCRP_OPTIONS];
+        else
+            $files = ["$ConfSitePATH/conf/options.php", "$ConfSitePATH/conf/options.inc", "$ConfSitePATH/Code/options.inc"];
+        foreach ($files as $f)
+            if ((@include $f) !== false) {
+                $Opt["loaded"][] = $f;
+                break;
+            }
+    }
 }
 
 function __autoload($class_name) {
@@ -217,11 +230,13 @@ function read_included_options(&$files) {
     global $Opt;
     if (is_string($files))
         $files = [$files];
-    for ($i = 0; $i != count($files); ++$i) {
-        foreach (expand_includes($files[$i]) as $f)
-            if (!@include $f)
-                $Opt["missing"][] = $f;
-    }
+    for ($i = 0; $i != count($files); ++$i)
+        foreach (expand_includes($files[$i]) as $f) {
+            $key = "missing";
+            if ((@include $f) !== false)
+                $key = "loaded";
+            $Opt[$key][] = $f;
+        }
 }
 
 function expand_json_includes_callback($includelist, $callback, $extra_arg = null, $no_validate = false) {
@@ -270,13 +285,7 @@ global $Opt;
 if (!$Opt)
     $Opt = array();
 if (!get($Opt, "loaded")) {
-    if (defined("HOTCRP_OPTIONS")) {
-        if ((@include HOTCRP_OPTIONS) !== false)
-            $Opt["loaded"] = true;
-    } else if ((@include "$ConfSitePATH/conf/options.php") !== false
-               || (@include "$ConfSitePATH/conf/options.inc") !== false
-               || (@include "$ConfSitePATH/Code/options.inc") !== false)
-        $Opt["loaded"] = true;
+    SiteLoader::read_main_options();
     if (get($Opt, "multiconference"))
         Multiconference::init();
     if (get($Opt, "include"))
