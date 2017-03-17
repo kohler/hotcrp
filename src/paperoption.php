@@ -867,14 +867,14 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function format_spec() {
-        $suffix = "";
+        $speckey = "sub_banal";
         if ($this->id)
-            $suffix = $this->id < 0 ? "_m" . -$this->id : "_" . $this->id;
+            $speckey .= ($this->id < 0 ? "_m" : "_") . abs($this->id);
         $spec = "";
-        if ($this->conf->setting("sub_banal$suffix"))
-            $spec = $this->conf->setting_data("sub_banal$suffix", "");
+        if ($this->conf->setting($speckey))
+            $spec = $this->conf->setting_data($speckey, "");
         $fspec = new FormatSpec($spec);
-        if (($xspec = $this->conf->opt("sub_banal$suffix")))
+        if (($xspec = $this->conf->opt($speckey)))
             $fspec->merge($xspec);
         return $fspec;
     }

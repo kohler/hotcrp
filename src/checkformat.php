@@ -315,6 +315,16 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $this->dt_specs[$dtype] = $spec;
     }
 
+    static function spec_timestamp($dtype, Conf $conf) {
+        $speckey = "sub_banal";
+        if ($dtype)
+            $speckey .= ($dtype < 0 ? "_m" : "_") . abs($dtype);
+        $d1 = $d2 = $conf->setting($speckey);
+        if ($conf->opt($speckey))
+            $d2 = $conf->opt_timestamp();
+        return max((int) $d1, $d2, 0);
+    }
+
     function fetch_document(PaperInfo $prow, $dtype, $docid = 0) {
         $doc = $prow->document($dtype, $docid, true);
         if (!$doc || $doc->paperStorageId <= 1)
@@ -360,12 +370,12 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $doc->update_metadata($this->metadata_updates);
         // record check status in `Paper` table
         if ($prow->is_joindoc($doc)
-            && ($specdate = $doc->conf->setting($doc->documentType == DTYPE_SUBMISSION ? "sub_banal" : "sub_banal_m1")) > 0
-            && !$this->failed) {
+            && !$this->failed
+            && ($spects = self::spec_timestamp($doc->documentType, $doc->conf))) {
             if (!$this->has_problem())
-                $x = $specdate;
+                $x = $spects;
             else if ($this->has_error())
-                $x = -$specdate;
+                $x = -$spects;
             else
                 $x = 0;
             if ($x != $prow->pdfFormatStatus) {

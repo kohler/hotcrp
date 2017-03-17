@@ -224,23 +224,8 @@ class DocumentInfo implements JsonSerializable {
 
         assert(!($flags & self::L_REQUIREFORMAT) || !!$this->prow);
         if (($this->documentType == DTYPE_SUBMISSION || $this->documentType == DTYPE_FINAL)
-            && ($specwhen = $this->conf->setting("sub_banal" . ($this->documentType ? "_m1" : "")))
-            && $this->prow) {
-            $specstatus = 0;
-            if ($this->prow->is_joindoc($this))
-                $specstatus = $this->prow->pdfFormatStatus;
-            if ($specstatus == -$specwhen && $small)
-                $suffix .= "x";
-            else if ($specstatus != $specwhen) {
-                $cf = new CheckFormat($flags & self::L_REQUIREFORMAT ? CheckFormat::RUN_PREFER_NO : CheckFormat::RUN_NO);
-                $cf->check_document($this->prow, $this);
-                if ($cf->has_error()) {
-                    $suffix .= "x";
-                    if (!$small)
-                        $info = '<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->messages())) . '">ⓘ</span>';
-                }
-            }
-        }
+            && $this->prow)
+            list($info, $suffix) = $this->link_html_format_info($flags, $suffix);
 
         if ($this->mimetype == "application/pdf")
             list($img, $alt) = ["pdf", "[PDF]"];
@@ -265,6 +250,27 @@ class DocumentInfo implements JsonSerializable {
             $x .= "kB" . ($html ? ")" : "") . "</span>";
         }
         return $x . "</a>" . ($info ? "&nbsp;$info" : "");
+    }
+    private function link_html_format_info($flags, $suffix) {
+        $info = "";
+        $spects = CheckFormat::spec_timestamp($this->documentType, $this->conf);
+        if (!$spects)
+            return [$info, $suffix];
+        $specstatus = 0;
+        if ($this->prow->is_joindoc($this))
+            $specstatus = $this->prow->pdfFormatStatus;
+        if ($specstatus == -$spects && ($flags & self::F_SMALL))
+            $suffix .= "x";
+        else if ($specstatus != $spects) {
+            $cf = new CheckFormat($flags & self::L_REQUIREFORMAT ? CheckFormat::RUN_PREFER_NO : CheckFormat::RUN_NO);
+            $cf->check_document($this->prow, $this);
+            if ($cf->has_error()) {
+                $suffix .= "x";
+                if (!($flags & self::F_SMALL))
+                    $info = '<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->messages())) . '">ⓘ</span>';
+            }
+        }
+        return [$info, $suffix];
     }
 
     function metadata() {
