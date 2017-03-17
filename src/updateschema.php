@@ -299,6 +299,7 @@ function updateSchema($conf) {
         }
     }
     if ($conf->sversion == 11
+        && $conf->ql("DROP TABLE IF EXISTS `ReviewRating`")
         && $conf->ql("create table `ReviewRating` (
   `reviewId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
@@ -330,6 +331,7 @@ function updateSchema($conf) {
         $conf->update_schema_version(17);
     if ($conf->sversion == 17
         && $conf->ql("alter table PaperReviewPreference add key `paperId` (`paperId`)")
+        && $conf->ql("DROP TABLE IF EXISTS `PaperRank`")
         && $conf->ql("create table PaperRank (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
@@ -427,6 +429,7 @@ function updateSchema($conf) {
         && $conf->ql("update PaperComment set forReviewers=1 where forReviewers=-1"))
         $conf->update_schema_version(39);
     if ($conf->sversion == 39
+        && $conf->ql("DROP TABLE IF EXISTS `MailLog`")
         && $conf->ql("CREATE TABLE `MailLog` (
   `mailId` int(11) NOT NULL auto_increment,
   `recipients` varchar(200) NOT NULL,
