@@ -870,12 +870,11 @@ class DocumentPaperOption extends PaperOption {
         $speckey = "sub_banal";
         if ($this->id)
             $speckey .= ($this->id < 0 ? "_m" : "_") . abs($this->id);
-        $spec = "";
-        if ($this->conf->setting($speckey))
-            $spec = $this->conf->setting_data($speckey, "");
-        $fspec = new FormatSpec($spec);
+        $fspec = new FormatSpec;
+        if (($spects = $this->conf->setting($speckey)))
+            $fspec->merge($this->conf->setting_data($speckey, ""), $spects);
         if (($xspec = $this->conf->opt($speckey)))
-            $fspec->merge($xspec);
+            $fspec->merge($xspec, $this->conf->opt_timestamp());
         return $fspec;
     }
 }

@@ -77,6 +77,7 @@ class Conf {
     private $_abbrev_matcher = null;
     private $_date_format_initialized = false;
     private $_docclass_cache = [];
+    private $_formatspec_cache = [];
     private $_docstore = false;
     private $_formula_functions = null;
     private $_search_keyword_base = null;
@@ -596,6 +597,15 @@ class Conf {
         if (!isset($this->_docclass_cache[$dtype]))
             $this->_docclass_cache[$dtype] = new HotCRPDocument($this, $dtype);
         return $this->_docclass_cache[$dtype];
+    }
+
+    function format_spec($dtype) {
+        if (!isset($this->_formatspec_cache[$dtype])) {
+            $o = $this->paper_opts->find_document($dtype);
+            $spec = $o ? $o->format_spec() : null;
+            $this->_formatspec_cache[$dtype] = $spec ? : new FormatSpec;
+        }
+        return $this->_formatspec_cache[$dtype];
     }
 
     function docstore() {
@@ -1531,6 +1541,7 @@ class Conf {
             if (!$caches || isset($caches["options"])) {
                 $this->paper_opts->invalidate_option_list();
                 $this->_docclass_cache = [];
+                $this->_formatspec_cache = [];
                 $this->_abbrev_matcher = null;
             }
             if (!$caches || isset($caches["rf"])) {

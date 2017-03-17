@@ -12,13 +12,15 @@ class FormatSpec {
     public $bodylineheight; // [MIN, MAX, GRACE]
     public $quietpages;     // {ERRORTYPE => IGNOREARRAY}
     public $checkers;
-    private $_is_banal_empty;
+    public $timestamp = 0;
+    private $_is_banal_empty = true;
 
-    function __construct($str) {
-        $this->merge($str);
+    function __construct($str = null) {
+        if ((string) $str !== "")
+            $this->merge($str);
     }
 
-    function merge($x) {
+    function merge($x, $timestamp = 0) {
         if (is_string($x) && substr($x, 0, 1) === "{")
             $x = json_decode($x);
         if ($x && is_string($x)) {
@@ -38,6 +40,7 @@ class FormatSpec {
         $this->_is_banal_empty = empty($this->papersize) && !$this->pagelimit
             && !$this->columns && !$this->textblock && !$this->bodyfontsize
             && !$this->bodylineheight;
+        $this->timestamp = max($this->timestamp, $timestamp);
     }
     private function merge1($k, $v) {
         if ($k === "bodyleading")

@@ -253,7 +253,7 @@ class DocumentInfo implements JsonSerializable {
     }
     private function link_html_format_info($flags, $suffix) {
         $info = "";
-        $spects = CheckFormat::spec_timestamp($this->documentType, $this->conf);
+        $spects = $this->conf->format_spec($this->documentType)->timestamp;
         if (!$spects)
             return [$info, $suffix];
         $specstatus = 0;

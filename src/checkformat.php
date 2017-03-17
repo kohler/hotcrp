@@ -19,7 +19,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
     public $need_run = false;
     public $possible_run = false;
     private $conf = null;
-    private $dt_specs = [];
     private $checkers = [];
     static private $banal_args;
 
@@ -299,30 +298,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function spec($dtype, Conf $conf = null) {
         global $Conf;
         $conf = $conf ? : $Conf;
-        if ($conf !== $this->conf) {
+        if ($conf !== $this->conf)
             $this->conf = $conf;
-            $this->dt_specs = [];
-        }
-        if (!array_key_exists($dtype, $this->dt_specs)) {
-            $o = $conf->paper_opts->find_document($dtype);
-            $spec = $o ? $o->format_spec() : null;
-            $this->dt_specs[$dtype] = $spec ? : new FormatSpec;
-        }
-        return $this->dt_specs[$dtype];
-    }
-
-    function set_spec($dtype, FormatSpec $spec) {
-        $this->dt_specs[$dtype] = $spec;
-    }
-
-    static function spec_timestamp($dtype, Conf $conf) {
-        $speckey = "sub_banal";
-        if ($dtype)
-            $speckey .= ($dtype < 0 ? "_m" : "_") . abs($dtype);
-        $d1 = $d2 = $conf->setting($speckey);
-        if ($conf->opt($speckey))
-            $d2 = $conf->opt_timestamp();
-        return max((int) $d1, $d2, 0);
+        return $this->conf->format_spec($dtype);
     }
 
     function fetch_document(PaperInfo $prow, $dtype, $docid = 0) {
@@ -371,11 +349,11 @@ class CheckFormat extends MessageSet implements FormatChecker {
         // record check status in `Paper` table
         if ($prow->is_joindoc($doc)
             && !$this->failed
-            && ($spects = self::spec_timestamp($doc->documentType, $doc->conf))) {
+            && $spec->timestamp) {
             if (!$this->has_problem())
-                $x = $spects;
+                $x = $spec->timestamp;
             else if ($this->has_error())
-                $x = -$spects;
+                $x = -$spec->timestamp;
             else
                 $x = 0;
             if ($x != $prow->pdfFormatStatus) {
