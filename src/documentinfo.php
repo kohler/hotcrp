@@ -259,14 +259,14 @@ class DocumentInfo implements JsonSerializable {
         $specstatus = 0;
         if ($this->prow->is_joindoc($this))
             $specstatus = $this->prow->pdfFormatStatus;
-        if ($specstatus == -$spects && ($flags & self::F_SMALL))
+        if ($specstatus == -$spects && ($flags & self::L_SMALL))
             $suffix .= "x";
         else if ($specstatus != $spects) {
             $cf = new CheckFormat($flags & self::L_REQUIREFORMAT ? CheckFormat::RUN_PREFER_NO : CheckFormat::RUN_NO);
             $cf->check_document($this->prow, $this);
             if ($cf->has_error()) {
                 $suffix .= "x";
-                if (!($flags & self::F_SMALL))
+                if (!($flags & self::L_SMALL))
                     $info = '<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->messages())) . '">ⓘ</span>';
             }
         }
