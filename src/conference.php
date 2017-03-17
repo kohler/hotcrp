@@ -2623,20 +2623,24 @@ class Conf {
     // Message routines
     //
 
-    function msg($type, $text) {
+    static function msg_on(Conf $conf = null, $type, $text) {
         if (PHP_SAPI == "cli") {
             if ($type === "xmerror" || $type === "merror")
                 fwrite(STDERR, "$text\n");
             else if ($type === "xwarning" || $type === "warning"
                      || !defined("HOTCRP_TESTHARNESS"))
                 fwrite(STDOUT, "$text\n");
-        } else if ($this->save_messages) {
+        } else if ($conf && $conf->save_messages) {
             ensure_session();
-            $_SESSION[$this->dsn]["msgs"][] = [$type, $text];
+            $_SESSION[$conf->dsn]["msgs"][] = [$type, $text];
         } else if ($type[0] == "x")
             echo Ht::xmsg($type, $text);
         else
             echo "<div class=\"$type\">$text</div>";
+    }
+
+    function msg($type, $text) {
+        self::msg_on($this, $type, $text);
     }
 
     function infoMsg($text, $minimal = false) {
@@ -2644,7 +2648,7 @@ class Conf {
     }
 
     static function msg_info($text, $minimal = false) {
-        self::$g->msg($minimal ? "xinfo" : "info", $text);
+        self::msg_on(self::$g, $minimal ? "xinfo" : "info", $text);
     }
 
     function warnMsg($text, $minimal = false) {
@@ -2652,7 +2656,7 @@ class Conf {
     }
 
     static function msg_warning($text, $minimal = false) {
-        self::$g->msg($minimal ? "xwarning" : "warning", $text);
+        self::msg_on(self::$g, $minimal ? "xwarning" : "warning", $text);
     }
 
     function confirmMsg($text, $minimal = false) {
@@ -2660,7 +2664,7 @@ class Conf {
     }
 
     static function msg_confirm($text, $minimal = false) {
-        self::$g->msg($minimal ? "xconfirm" : "confirm", $text);
+        self::msg_on(self::$g, $minimal ? "xconfirm" : "confirm", $text);
     }
 
     function errorMsg($text, $minimal = false) {
@@ -2669,14 +2673,14 @@ class Conf {
     }
 
     static function msg_error($text, $minimal = false) {
-        self::$g->msg($minimal ? "xmerror" : "merror", $text);
+        self::msg_on(self::$g, $minimal ? "xmerror" : "merror", $text);
         return false;
     }
 
     static function msg_debugt($text) {
         if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true)
             $text = json_encode($text);
-        self::$g->msg("merror", Ht::pre_text_wrap($text));
+        self::msg_on(self::$g, "merror", Ht::pre_text_wrap($text));
         return false;
     }
 
