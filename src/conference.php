@@ -1363,12 +1363,12 @@ class Conf {
     // update the 'papersub' setting: are there any submitted papers?
     function update_papersub_setting($forsubmit) {
         $papersub = defval($this->settings, "papersub");
-        if ($papersub === null && $forsubmit)
-            $this->q_raw("insert into Settings (name, value) values ('papersub',1) on duplicate key update value=value");
-        else if ($papersub <= 0 || !$forsubmit)
-            // see also settings.php
-            $this->q_raw("update Settings set value=(select ifnull(min(paperId),0) from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . ") where name='papersub'");
-        $this->settings["papersub"] = $this->fetch_ivalue("select value from Settings where name='papersub'");
+        if ((int) $papersub <= 0 || !$forsubmit) {
+            $this->q_raw("insert into Settings (name, value) select 'papersub', ifnull((select paperId from Paper where "
+                         . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0")
+                         . "), 0) on duplicate key update value=values(value)");
+            $this->settings["papersub"] = $this->fetch_ivalue("select value from Settings where name='papersub'");
+        }
     }
 
     function update_paperacc_setting($foraccept) {
