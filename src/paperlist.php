@@ -140,7 +140,7 @@ class PaperList {
     private $default_sort_column;
 
     // collected during render and exported to caller
-    public $count;
+    public $count; // also exported to columns access: 1 more than row index
     public $ids;
     public $any;
     private $_has;
@@ -707,7 +707,7 @@ class PaperList {
                 || ($x === null && strpos($this->display, " $fname ") === false));
     }
 
-    private function _check_option_presence($row) {
+    private function _check_option_presence(PaperInfo $row) {
         for ($i = 0; $i < count($this->_any_option_checks); ) {
             $opt = $this->_any_option_checks[$i];
             if ($opt->id == DTYPE_SUBMISSION)
@@ -724,14 +724,13 @@ class PaperList {
         }
     }
 
-    private function _row_text($rstate, $row, $fieldDef) {
+    private function _row_text($rstate, PaperInfo $row, $fieldDef) {
         if ((string) $row->abstract !== "")
             $this->_has["abstract"] = true;
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
         $this->ids[] = (int) $row->paperId;
 
-        $rowidx = count($this->ids);
         $trclass = "k" . $rstate->colorindex;
         if (get($row, "paperTags")
             && ($viewable = $row->viewable_tags($this->contact, true))
@@ -760,7 +759,7 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
-                $c = $empty ? "" : $fdef->content($this, $row, $rowidx);
+                $c = $empty ? "" : $fdef->content($this, $row);
                 if ($c !== "")
                     $fdef->has_content = true;
                 $tm .= "<td class=\"pl " . $fdef->className;
@@ -781,7 +780,7 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
-                $c = $empty ? "" : $fdef->content($this, $row, $rowidx);
+                $c = $empty ? "" : $fdef->content($this, $row);
                 if ($c !== "") {
                     $fdef->has_content = true;
                     if (($ch = $fdef->header($this, false))) {
@@ -1345,8 +1344,7 @@ class PaperList {
         foreach ($rows as $row) {
             ++$this->count;
             if ($lastheading > -2)
-                $lastheading = $this->_check_heading($this->_row_thenval($row), $rstate, $rows,
-                                                     $lastheading, $body);
+                $lastheading = $this->_check_heading($this->_row_thenval($row), $rstate, $rows, $lastheading, $body);
             $body[] = $this->_row_text($rstate, $row, $fieldDef);
             if ($this->need_render && !$need_render) {
                 Ht::stash_script('$(plinfo.render_needed)', 'plist_render_needed');
@@ -1359,8 +1357,7 @@ class PaperList {
         }
         if ($lastheading > -2 && $this->search->is_order_anno)
             while ($lastheading + 1 < count($this->search->groupmap))
-                $lastheading = $this->_check_heading($lastheading + 1, $rstate, $rows,
-                                                     $lastheading, $body);
+                $lastheading = $this->_check_heading($lastheading + 1, $rstate, $rows, $lastheading, $body);
 
         // header cells
         $colhead = "";
@@ -1500,12 +1497,13 @@ class PaperList {
         if (($x = $fdef->header($this, false)))
             $data["$fname.headerhtml"] = $x;
         $m = array();
-        foreach ($rows as $rowidx => $row) {
+        foreach ($rows as $row) {
+            ++$this->count;
             $this->row_attr = [];
             if ($fdef->content_empty($this, $row))
                 $m[$row->paperId] = "";
             else
-                $m[$row->paperId] = $fdef->content($this, $row, $rowidx);
+                $m[$row->paperId] = $fdef->content($this, $row);
             foreach ($this->row_attr as $k => $v) {
                 if (!isset($data["attr.$k"]))
                     $data["attr.$k"] = [];

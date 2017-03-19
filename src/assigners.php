@@ -2041,7 +2041,7 @@ class AutoassignmentPaperColumn extends PaperColumn {
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !isset(self::$info[$row->paperId]);
     }
-    function content(PaperList $pl, PaperInfo $row, $rowidx) {
+    function content(PaperList $pl, PaperInfo $row) {
         return self::$info[$row->paperId];
     }
 }
