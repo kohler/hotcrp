@@ -1423,14 +1423,13 @@ class Score_PaperColumn extends PaperColumn {
         }
         if (!$scores)
             return "";
+        $pl->need_render = true;
         $my_score = null;
         if (!$this->xreviewer)
             $my_score = get($scores, $pl->reviewer_cid());
         else if (isset($row->_xreviewer))
             $my_score = get($scores, $row->_xreviewer->reviewContactId);
         $t = $this->form_field->unparse_graph($scores, 1, $my_score);
-        if ($pl->table_type && $rowidx % 16 == 15)
-            $t .= "<script>scorechart()</script>";
         return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
     }
 }
@@ -1536,14 +1535,13 @@ class FormulaGraph_PaperColumn extends PaperColumn {
         }
         if (empty($values))
             return "";
+        $pl->need_render = true;
         $my_score = null;
         if (!$this->xreviewer)
             $my_score = get($values, $pl->reviewer_cid());
         else if (isset($row->_xreviewer))
             $my_score = get($values, $row->_xreviewer->reviewContactId);
         $t = $this->formula->result_format()->unparse_graph($values, 1, $my_score);
-        if ($pl->table_type && $rowidx % 16 == 15)
-            $t .= "<script>scorechart()</script>";
         return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
     }
 }
