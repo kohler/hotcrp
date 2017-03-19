@@ -691,6 +691,8 @@ class PaperList {
         }
 
         $this->ids = [];
+        foreach ($rows as $prow)
+            $this->ids[] = $prow->paperId;
         return $rows;
     }
 
@@ -729,7 +731,6 @@ class PaperList {
             $this->_has["abstract"] = true;
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
-        $this->ids[] = (int) $row->paperId;
 
         $trclass = "k" . $rstate->colorindex;
         if (get($row, "paperTags")
@@ -1247,20 +1248,18 @@ class PaperList {
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
+        $headings = [];
         $lastheading = empty($this->search->groupmap) ? -2 : -1;
-        $ids = $headings = [];
-        foreach ($rows as $row) {
-            ++$this->count;
-            if ($lastheading > -2) {
+        if ($lastheading > -2)
+            foreach ($rows as $row) {
                 $thenval = $this->_row_thenval($row);
                 if ($thenval != $lastheading
                     && ($hs = $this->_heading_info($thenval, $rows, $lastheading)))
                     $headings = array_merge($headings, $hs);
                 $lastheading = $thenval;
             }
-            $ids[] = $row->paperId;
-        }
-        return [$ids, $headings];
+        $this->count = count($this->ids);
+        return [$this->ids, $headings];
     }
 
     function id_array() {
@@ -1546,9 +1545,6 @@ class PaperList {
             $this->_has["abstract"] = true;
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
-        $this->ids[] = (int) $row->paperId;
-
-        // main columns
         $csv = [];
         foreach ($fieldDef as $fdef) {
             $empty = $fdef->content_empty($this, $row);
