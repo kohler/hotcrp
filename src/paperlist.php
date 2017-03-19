@@ -1267,6 +1267,16 @@ class PaperList {
         return $idh ? $idh[0] : null;
     }
 
+    function session_list_object($listname = null) {
+        assert($this->ids !== null);
+        $listobject = $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
+        $url = $this->search->url_site_relative_raw();
+        if (isset($this->qreq->sort))
+            $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);
+        $listobject->url = $url;
+        return $listobject;
+    }
+
     function table_html($listname, $options = array()) {
         if (!$this->_prepare())
             return null;
@@ -1360,7 +1370,6 @@ class PaperList {
 
         // header cells
         $colhead = "";
-        $url = $this->search->url_site_relative_raw();
         if (!defval($options, "noheader")) {
             $colhead .= " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">";
             $titleextra = $this->_make_title_header_extra($rstate, $fieldDef,
@@ -1421,13 +1430,8 @@ class PaperList {
             $enter .= "\" data-order-tag=\"{$this->search->is_order_anno}";
         foreach ($this->tbody_attr as $k => $v)
             $enter .= "\" $k=\"" . htmlspecialchars($v);
-        if (get($options, "list")) {
-            $listobject = $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
-            if (isset($this->qreq->sort))
-                $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);
-            $listobject->url = $url;
-            $enter .= '" data-hotlist="' . htmlspecialchars($listobject->info_string());
-        }
+        if (get($options, "list"))
+            $enter .= "\" data-hotlist=\"" . htmlspecialchars($this->session_list_object()->info_string());
         $enter .= "\" data-fold=\"true\">\n";
         $exit = "</table>";
 
