@@ -1252,6 +1252,7 @@ class PaperList {
         $lastheading = empty($this->search->groupmap) ? -2 : -1;
         if ($lastheading > -2)
             foreach ($rows as $row) {
+                ++$this->count;
                 $thenval = $this->_row_thenval($row);
                 if ($thenval != $lastheading
                     && ($hs = $this->_heading_info($thenval, $rows, $lastheading)))
