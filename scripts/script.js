@@ -5427,7 +5427,6 @@ function set_cookie(info) {
         p = "; path=" + m[1];
     if (info)
         document.cookie = "hotlist-info=" + encodeURIComponent(info) + "; max-age=20" + p;
-    set_cookie = function () {};
 }
 function is_listable(href) {
     return /^(?:paper|review|profile)(?:|\.php)\//.test(href.substring(siteurl.length));
