@@ -1366,7 +1366,7 @@ class Conf {
         if ((int) $papersub <= 0 || !$forsubmit) {
             $this->q_raw("insert into Settings (name, value) select 'papersub', ifnull((select paperId from Paper where "
                          . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0")
-                         . "), 0) on duplicate key update value=values(value)");
+                         . " limit 1), 0) on duplicate key update value=values(value)");
             $this->settings["papersub"] = $this->fetch_ivalue("select value from Settings where name='papersub'");
         }
     }
