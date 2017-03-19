@@ -5431,13 +5431,35 @@ function set_cookie(info) {
 function is_listable(href) {
     return /^(?:paper|review|profile)(?:|\.php)\//.test(href.substring(siteurl.length));
 }
+function set_list_order(info, tbody) {
+    var p0 = -100, p1 = -100, pid, l = [];
+    for (var cur = tbody.firstChild; cur; cur = cur.nextSibling)
+        if (cur.nodeName === "TR" && /^pl(?:\s|\z)/.test(cur.className)
+            && (pid = +cur.getAttribute("data-pid"))) {
+            if (pid != p1 + 1) {
+                if (p0 > 0)
+                    l.push(p0 == p1 ? p0 : p0 + "-" + p1);
+                p0 = pid;
+            }
+            p1 = pid;
+        }
+    if (p0 > 0)
+        l.push(p0 == p1 ? p0 : p0 + "-" + p1);
+    return info.replace(/"ids":"[-0-9']+"/, '"ids":"' + l.join("'") + '"');
+}
 function add_list() {
-    var $self = $(this), $hl, ls,
-        href = this.getAttribute(this.tagName === "FORM" ? "action" : "href");
-    if (href && href.substring(0, siteurl.length) === siteurl
+    var $hl, href;
+    href = this.getAttribute(this.tagName === "FORM" ? "action" : "href");
+    if (href
+        && href.substring(0, siteurl.length) === siteurl
         && is_listable(href)
-        && ($hl = $self.closest(".has-hotlist")).length)
-        set_cookie($hl.attr("data-hotlist"));
+        && ($hl = $(this).closest(".has-hotlist")).length) {
+        var info = $hl.attr("data-hotlist");
+        if ($hl.is("table.pltable") && document.getElementById("footer"))
+            // Existence of `#footer` checks that the table is fully loaded
+            info = set_list_order(info, $hl.children("tbody.pltable")[0]);
+        set_cookie(info);
+    }
     return true;
 }
 function unload_list() {
