@@ -3884,34 +3884,12 @@ function add_assrev_ajax(selector) {
 
 
 window.plinfo_tags = (function () {
-var ready, plt_tbody, full_ordertag, dragtag, full_dragtag,
-    rowanal, rowanal_gaps, rowanal_gappos, highlight_entries,
-    dragging, srcindex, dragindex, dragger,
-    scroller, mousepos, scrolldelta;
 
-function canonicalize_tag(tag) {
+function tag_canonicalize(tag) {
     return tag && /^~[^~]/.test(tag) ? hotcrp_user.cid + tag : tag;
 }
 
-function set_plt_tbody(e) {
-    var table = $(e).closest("table.pltable");
-    full_ordertag = canonicalize_tag(table.attr("data-order-tag"));
-    full_ordertag && plinfo.on_set_tags(set_tags_callback);
-    dragtag = table.attr("data-drag-tag");
-    full_dragtag = canonicalize_tag(dragtag);
-    plt_tbody = $(table).children().filter("tbody")[0];
-
-    table.off(".edittag_ajax")
-        .on("click.edittag_ajax", "input.edittag", tag_save)
-        .on("change.edittag_ajax", "input.edittagval", tag_save)
-        .on("keydown.edittag_ajax", "input.edittagval", make_onkey("Enter", tag_save));
-    if (full_dragtag) {
-        table.on("mousedown.edittag_ajax", "span.dragtaghandle", tag_mousedown);
-        $(function () { $(plt_tbody).find("tr.plheading").filter("[data-anno-id]").find("td.plheading").each(add_draghandle); });
-    }
-}
-
-function parse_tagvalue(s) {
+function tagvalue_parse(s) {
     s = s.replace(/^\s+|\s+$/, "").toLowerCase();
     if (s == "y" || s == "yes" || s == "t" || s == "true" || s == "✓")
         return 0;
@@ -3923,8 +3901,119 @@ function parse_tagvalue(s) {
         return null;
 }
 
-function unparse_tagvalue(tv) {
-    return tv === false || tv === null ? "" : sprintf("%.2f", tv).replace(/\.0+$|0+$/, "");
+function tagvalue_unparse(tv) {
+    if (tv === false || tv === null)
+        return "";
+    else
+        return sprintf("%.2f", tv).replace(/\.0+$|0+$/, "");
+}
+
+
+function tagannorow_fill(row, anno) {
+    if (!anno.empty) {
+        if (anno.tag)
+            row.setAttribute("data-tags", anno.annoid === null ? "" : anno.tag + "#" + anno.tagval);
+        var heading = anno.heading === null ? "" : anno.heading;
+        var $g = $(row).find(".plheading_group").attr({"data-format": anno.format || 0, "data-title": heading});
+        $g.text(heading === "" ? heading : heading + " ");
+        anno.format && render_text.on.call($g[0]);
+        // `plheading_count` is taken care of in `searchbody_postreorder`
+    }
+}
+
+function tagannorow_add(tbody, before, anno) {
+    var $r = $(tbody).closest("table").find("thead > tr.pl_headrow:first-child > th");
+    var titlecol = 0, ncol = $r.length;
+    for (var i = 0; i != ncol; ++i)
+        if ($($r[i]).hasClass("pl_title"))
+            titlecol = i;
+
+    var h;
+    if (anno.empty)
+        h = '<tr class="plheading_blank"><td class="plheading_blank" colspan="' + ncol + '"></td></tr>';
+    else {
+        h = '<tr class="plheading"';
+        if (anno.tag)
+            h += ' data-anno-tag="' + anno.tag + '"';
+        if (anno.annoid)
+            h += ' data-anno-id="' + anno.annoid + '"';
+        h += '>';
+        if (titlecol)
+            h += '<td class="plheading_spacer" colspan="' + titlecol + '"></td>';
+        h += '<td class="plheading" colspan="' + (ncol - titlecol) + '">' +
+            '<span class="plheading_group"></span>' +
+            '<span class="plheading_count"></span></td></tr>';
+    }
+
+    var row = $(h)[0];
+    if (anno.tag && anno.tag === full_dragtag)
+        add_draghandle.call($(row).find("td.plheading")[0]);
+    tbody.insertBefore(row, before);
+    tagannorow_fill(row, anno)
+    return row;
+}
+
+
+function searchbody_postreorder(tbody) {
+    for (var cur = tbody.firstChild, e = 1; cur; cur = cur.nextSibling)
+        if (cur.nodeName == "TR") {
+            var c = cur.className;
+            if (!/^plx/.test(c))
+                e = 1 - e;
+            if (/\bk[01]\b/.test(c))
+                cur.className = c.replace(/\bk[01]\b/, "k" + e);
+            else if (/\bplheading\b/.test(c)) {
+                e = 1;
+                var np = 0;
+                for (var sub = cur.nextSibling; sub; sub = sub.nextSibling)
+                    if (sub.nodeName == "TR") {
+                        if (/\bplheading\b/.test(sub.className))
+                            break;
+                        np += /^plx/.test(sub.className) ? 0 : 1;
+                    }
+                $(cur).find(".plheading_count").html(plural(np, "paper"));
+            }
+        }
+}
+
+
+function add_draghandle() {
+    var x = document.createElement("span");
+    x.className = "dragtaghandle";
+    x.setAttribute("title", "Drag to change order");
+    if (this.tagName === "TD") {
+        x.style.float = "right";
+        x.style.position = "static";
+        x.style.paddingRight = "24px";
+        this.insertBefore(x, null);
+    } else
+        this.parentElement.insertBefore(x, this.nextSibling);
+    $(this).removeClass("need-draghandle");
+}
+
+
+
+var plt_tbody, full_ordertag, dragtag, full_dragtag,
+    rowanal, rowanal_gaps, rowanal_gappos, highlight_entries,
+    dragging, srcindex, dragindex, dragger,
+    scroller, mousepos, scrolldelta;
+
+function set_plt_tbody(e) {
+    var table = $(e).closest("table.pltable");
+    full_ordertag = tag_canonicalize(table.attr("data-order-tag"));
+    full_ordertag && plinfo.on_set_tags(set_tags_callback);
+    dragtag = table.attr("data-drag-tag");
+    full_dragtag = tag_canonicalize(dragtag);
+    plt_tbody = $(table).children().filter("tbody")[0];
+
+    table.off(".edittag_ajax")
+        .on("click.edittag_ajax", "input.edittag", tag_save)
+        .on("change.edittag_ajax", "input.edittagval", tag_save)
+        .on("keydown.edittag_ajax", "input.edittagval", make_onkey("Enter", tag_save));
+    if (full_dragtag) {
+        table.on("mousedown.edittag_ajax", "span.dragtaghandle", tag_mousedown);
+        $(function () { $(plt_tbody).find("tr.plheading").filter("[data-anno-id]").find("td.plheading").each(add_draghandle); });
+    }
 }
 
 function make_tag_save_callback(elt) {
@@ -3955,7 +4044,7 @@ function tag_save() {
     var m = this.name.match(/^tag:(\S+) (\d+)$/), ch = null, newval;
     if (this.type.toLowerCase() == "checkbox")
         ch = this.checked ? m[1] : m[1] + "#clear";
-    else if ((newval = parse_tagvalue(this.value)) !== null)
+    else if ((newval = tagvalue_parse(this.value)) !== null)
         ch = m[1] + "#" + (newval !== false ? newval : "clear");
     else {
         setajaxcheck(this, {ok: false, error: "Value must be a number (or empty to remove the tag)."});
@@ -3973,7 +4062,7 @@ function PaperRow(l, r, index) {
     this.tagvalue = false;
     var tags = rows[l].getAttribute("data-tags"), m;
     if (tags && (m = new RegExp("(?:^| )" + regexp_quote(full_ordertag) + "#(\\S+)", "i").exec(tags)))
-        this.tagvalue = parse_tagvalue(m[1]);
+        this.tagvalue = tagvalue_parse(m[1]);
     this.isgroup = false;
     this.id = 0;
     if (rows[l].getAttribute("data-anno-tag")) {
@@ -4170,7 +4259,7 @@ function tag_dragto(l) {
         m += '<span style="padding-left:2em';
         if (srcindex !== dragindex)
             m += ';font-weight:bold';
-        m += '">#' + dragtag + '#' + unparse_tagvalue(newval) + '</span>';
+        m += '">#' + dragtag + '#' + tagvalue_unparse(newval) + '</span>';
     }
     if (dragindex == srcindex)
         y = rowanal[srcindex].middle();
@@ -4308,15 +4397,15 @@ function row_move(srcindex) {
             plt_tbody.insertBefore(e, sibling);
             srcindex > dstindex ? ++range[0] : --range[1];
         }
-        fix_row_classes(plt_tbody);
+        searchbody_postreorder(plt_tbody);
     }
 }
 
 function reorder(jq, new_order) {
-    var plt_tbody = $(jq)[0], pida = "data-pid";
-    if (plt_tbody.tagName === "TABLE")
-        plt_tbody = $(plt_tbody).children().filter("tbody")[0];
-    var cur = plt_tbody.childNodes[0], rowmap = null;
+    var tbody = $(jq)[0], pida = "data-pid";
+    if (tbody.tagName === "TABLE")
+        tbody = $(tbody).children().filter("tbody")[0];
+    var cur = tbody.childNodes[0], rowmap = null;
     while (cur && (cur.nodeType != 1 || !cur.hasAttribute(pida)))
         cur = cur.nextSibling;
     var cpid = cur ? cur.getAttribute(pida) : 0;
@@ -4341,79 +4430,13 @@ function reorder(jq, new_order) {
                 }
             }
             for (var j = 0; rowmap[npid] && j < rowmap[npid].length; ++j) {
-                var e = plt_tbody.removeChild(rowmap[npid][j]);
-                plt_tbody.insertBefore(e, cur);
+                var e = tbody.removeChild(rowmap[npid][j]);
+                tbody.insertBefore(e, cur);
             }
             delete rowmap[npid];
         }
     }
-    fix_row_classes(plt_tbody);
-}
-
-function fix_row_classes(tbody) {
-    for (var cur = tbody.firstChild, e = 1; cur; cur = cur.nextSibling)
-        if (cur.nodeName == "TR") {
-            var c = cur.className;
-            if (!/^plx/.test(c))
-                e = 1 - e;
-            if (/\bk[01]\b/.test(c))
-                cur.className = c.replace(/\bk[01]\b/, "k" + e);
-            else if (/\bplheading\b/.test(c)) {
-                e = 1;
-                var np = 0;
-                for (var sub = cur.nextSibling; sub; sub = sub.nextSibling)
-                    if (sub.nodeName == "TR") {
-                        if (/\bplheading\b/.test(sub.className))
-                            break;
-                        np += /^plx/.test(sub.className) ? 0 : 1;
-                    }
-                $(cur).find(".plheading_count").html(plural(np, "paper"));
-            }
-        }
-}
-
-function fill_anno_row(row, anno) {
-    if (!anno.empty) {
-        if (anno.tag)
-            row.setAttribute("data-tags", anno.annoid === null ? "" : anno.tag + "#" + anno.tagval);
-        var heading = anno.heading === null ? "" : anno.heading;
-        var $g = $(row).find(".plheading_group").attr({"data-format": anno.format || 0, "data-title": heading});
-        $g.text(heading === "" ? heading : heading + " ");
-        anno.format && render_text.on.call($g[0]);
-        // `plheading_count` is taken care of in `fix_row_classes`
-    }
-}
-
-function add_anno_row(anno, before) {
-    var $r = $("tr.pl_headrow:first-child > th");
-    var titlecol = 0, ncol = $r.length;
-    for (var i = 0; i != ncol; ++i)
-        if ($($r[i]).hasClass("pl_title"))
-            titlecol = i;
-
-    var h;
-    if (anno.empty)
-        h = '<tr class="plheading_blank"><td class="plheading_blank" colspan="' + ncol + '"></td></tr>';
-    else {
-        h = '<tr class="plheading"';
-        if (anno.tag)
-            h += ' data-anno-tag="' + anno.tag + '"';
-        if (anno.annoid)
-            h += ' data-anno-id="' + anno.annoid + '"';
-        h += '>';
-        if (titlecol)
-            h += '<td class="plheading_spacer" colspan="' + titlecol + '"></td>';
-        h += '<td class="plheading" colspan="' + (ncol - titlecol) + '">' +
-            '<span class="plheading_group"></span>' +
-            '<span class="plheading_count"></span></td></tr>';
-    }
-
-    var row = $(h)[0];
-    if (anno.tag && anno.tag === full_dragtag)
-        add_draghandle.call($(row).find("td.plheading")[0]);
-    plt_tbody.insertBefore(row, before);
-    fill_anno_row(row, anno)
-    return row;
+    searchbody_postreorder(tbody);
 }
 
 function taganno_success(rv) {
@@ -4424,7 +4447,10 @@ function taganno_success(rv) {
     for (var i = 0; i < rv.anno.length; ++i) {
         var anno = rv.anno[i];
         var row = $headings.filter('[data-anno-id="' + anno.annoid + '"]')[0];
-        row ? fill_anno_row(row, anno) : (row = add_anno_row(anno, null));
+        if (!row)
+            row = tagannorow_add(plt_tbody, null, anno);
+        else
+            tagannorow_fill(row, anno);
         annoid_seen[anno.annoid] = true;
         rv.tag === full_ordertag && row_move(analyze_rows(row));
     }
@@ -4442,10 +4468,10 @@ function commit_drag(si, di) {
         if (rowanal[i].newvalue === rowanal[i].tagvalue)
             /* do nothing */;
         else if (rowanal[i].id) {
-            var x = unparse_tagvalue(rowanal[i].newvalue);
+            var x = tagvalue_unparse(rowanal[i].newvalue);
             saves.push(rowanal[i].id + " " + dragtag + "#" + (x === "" ? "clear" : x));
         } else if (rowanal[i].annoid)
-            annosaves.push({annoid: rowanal[i].annoid, tagval: unparse_tagvalue(rowanal[i].newvalue)});
+            annosaves.push({annoid: rowanal[i].annoid, tagval: tagvalue_unparse(rowanal[i].newvalue)});
     if (saves.length)
         $.post(hoturl_post("api/settags", {forceShow: 1}),
                {tagassignment: saves.join(",")},
@@ -4585,7 +4611,7 @@ function edit_anno(locator) {
         $d = $(hc.render());
         for (var i = 0; i < annos.length; ++i) {
             $d.find("input[name='heading_" + annos[i].annoid + "']").val(annos[i].heading);
-            $d.find("input[name='tagval_" + annos[i].annoid + "']").val(unparse_tagvalue(annos[i].tagval));
+            $d.find("input[name='tagval_" + annos[i].annoid + "']").val(tagvalue_unparse(annos[i].tagval));
         }
         $d.on("click", "button", onclick).on("click", "a.deletegroup-link", ondeleteclick);
         $d.find(".need-tooltip").each(add_tooltip);
@@ -4601,20 +4627,6 @@ function edit_anno(locator) {
 function plinfo_tags(selector) {
     plt_tbody || set_plt_tbody($(selector));
 };
-
-function add_draghandle() {
-    var x = document.createElement("span");
-    x.className = "dragtaghandle";
-    x.setAttribute("title", "Drag to change order");
-    if (this.tagName === "TD") {
-        x.style.float = "right";
-        x.style.position = "static";
-        x.style.paddingRight = "24px";
-        this.insertBefore(x, null);
-    } else
-        this.parentElement.insertBefore(x, this.nextSibling);
-    $(this).removeClass("need-draghandle");
-}
 
 plinfo_tags.edit_anno = edit_anno;
 plinfo_tags.add_draghandle = add_draghandle;
