@@ -1556,8 +1556,7 @@ function tracker(start) {
         trackerstate = null;
     if (start && (!trackerstate || !is_my_tracker())) {
         trackerstate = [siteurl_absolute_base, Math.floor(Math.random() * 100000), null, null];
-        if (hotcrp_list && hotcrp_list.info)
-            trackerstate[3] = hotcrp_list.info;
+        hotcrp_list && (trackerstate[3] = hotcrp_list.info);
     }
     if (trackerstate) {
         var req = "track=" + trackerstate[1] + "%20x", reqdata = {};
@@ -5439,7 +5438,7 @@ function add_list() {
     if (href && href.substring(0, siteurl.length) === siteurl
         && is_listable(href)
         && ($hl = $self.closest(".has-hotlist")).length)
-        set_cookie($hl.attr("data-hotlist") || $hl.attr("data-hotlist-info"));
+        set_cookie($hl.attr("data-hotlist"));
     return true;
 }
 function unload_list() {
