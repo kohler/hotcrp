@@ -3991,9 +3991,58 @@ function add_draghandle() {
 }
 
 
+var plt_tbody, full_ordertag, dragtag, full_dragtag;
 
-var plt_tbody, full_ordertag, dragtag, full_dragtag,
-    rowanal, rowanal_gaps, rowanal_gappos, highlight_entries,
+function PaperRow(tbody, l, r, index) {
+    var rows = plt_tbody.childNodes, i;
+    this.l = l;
+    this.r = r;
+    this.index = index;
+    this.tagvalue = false;
+    var tags = rows[l].getAttribute("data-tags"), m;
+    if (tags && (m = new RegExp("(?:^| )" + regexp_quote(full_ordertag) + "#(\\S+)", "i").exec(tags)))
+        this.tagvalue = tagvalue_parse(m[1]);
+    this.isgroup = false;
+    this.id = 0;
+    if (rows[l].getAttribute("data-anno-tag")) {
+        this.isgroup = true;
+        if (rows[l].hasAttribute("data-anno-id"))
+            this.annoid = +rows[l].getAttribute("data-anno-id");
+    } else {
+        this.id = +rows[l].getAttribute("data-pid");
+        if (dragtag)
+            this.entry = $(rows[l]).find("input[name='tag:" + dragtag + " " + this.id + "']")[0];
+    }
+}
+PaperRow.prototype.top = function () {
+    return $(plt_tbody.childNodes[this.l]).offset().top;
+};
+PaperRow.prototype.bottom = function () {
+    return $(plt_tbody.childNodes[this.r]).geometry().bottom;
+};
+PaperRow.prototype.middle = function () {
+    return (this.top() + this.bottom()) / 2;
+};
+PaperRow.prototype.right = function () {
+    return $(plt_tbody.childNodes[this.l]).geometry().right;
+};
+PaperRow.prototype.titlehint = function () {
+    var tg = $(plt_tbody.childNodes[this.l]).find("a.ptitle, span.plheading_group"),
+        titletext = null, m;
+    if (tg.length) {
+        titletext = tg[0].getAttribute("data-title");
+        if (!titletext)
+            titletext = tg.text();
+        if (titletext && titletext.length > 60 && (m = /^.{0,60}(?=\s)/.exec(titletext)))
+            titletext = m[0] + "…";
+        else if (titletext && titletext.length > 60)
+            titletext = titletext.substr(0, 60) + "…";
+    }
+    return titletext;
+};
+
+
+var rowanal, highlight_entries,
     dragging, srcindex, dragindex, dragger,
     scroller, mousepos, scrolldelta;
 
@@ -4053,50 +4102,16 @@ function tag_save() {
            {addtags: ch}, make_tag_save_callback(this));
 }
 
-function PaperRow(l, r, index) {
-    var rows = plt_tbody.childNodes, i;
-    this.l = l;
-    this.r = r;
-    this.index = index;
-    this.tagvalue = false;
-    var tags = rows[l].getAttribute("data-tags"), m;
-    if (tags && (m = new RegExp("(?:^| )" + regexp_quote(full_ordertag) + "#(\\S+)", "i").exec(tags)))
-        this.tagvalue = tagvalue_parse(m[1]);
-    this.isgroup = false;
-    this.id = 0;
-    if (rows[l].getAttribute("data-anno-tag")) {
-        this.isgroup = true;
-        if (rows[l].hasAttribute("data-anno-id"))
-            this.annoid = +rows[l].getAttribute("data-anno-id");
-    } else {
-        this.id = +rows[l].getAttribute("data-pid");
-        if (dragtag)
-            this.entry = $(rows[l]).find("input[name='tag:" + dragtag + " " + this.id + "']")[0];
-    }
+function make_gapf() {
+    var gaps = [], gappos = 0;
+    while (gaps.length < 4)
+        gaps.push([1, 1, 1, 1, 1, 2, 2, 2, 3, 4][Math.floor(Math.random() * 10)]);
+    return function (reset) {
+        reset && (gappos = 3);
+        ++gappos;
+        return gaps[gappos & 3];
+    };
 }
-PaperRow.prototype.top = function () {
-    return $(plt_tbody.childNodes[this.l]).offset().top;
-};
-PaperRow.prototype.bottom = function () {
-    return $(plt_tbody.childNodes[this.r]).geometry().bottom;
-};
-PaperRow.prototype.middle = function () {
-    return (this.top() + this.bottom()) / 2;
-};
-PaperRow.prototype.titlehint = function () {
-    var tg = $(plt_tbody.childNodes[this.l]).find("a.ptitle, span.plheading_group"),
-        titletext = null, m;
-    if (tg.length) {
-        titletext = tg[0].getAttribute("data-title");
-        if (!titletext)
-            titletext = tg.text();
-        if (titletext && titletext.length > 60 && (m = /^.{0,60}(?=\s)/.exec(titletext)))
-            titletext = m[0] + "…";
-        else if (titletext && titletext.length > 60)
-            titletext = titletext.substr(0, 60) + "…";
-    }
-    return titletext;
-};
 
 function analyze_rows(e) {
     var rows = plt_tbody.childNodes, i, l, r, e, eindex = null;
@@ -4111,14 +4126,14 @@ function analyze_rows(e) {
                 r = i;
             else {
                 if (l !== null)
-                    rowanal.push(new PaperRow(l, r, rowanal.length));
+                    rowanal.push(new PaperRow(plt_tbody, l, r, rowanal.length));
                 l = r = i;
             }
             if (e == rows[i])
                 eindex = rowanal.length;
         }
     if (l !== null)
-        rowanal.push(new PaperRow(l, r, rowanal.length));
+        rowanal.push(new PaperRow(plt_tbody, l, r, rowanal.length));
 
     // search for paper
     if (typeof e === "number")
@@ -4142,12 +4157,9 @@ function analyze_rows(e) {
         }
     s2d = Math.sqrt(s2d);
     if (nd >= 3 && sd >= 0.9 * nd && sd <= 1.1 * nd && s2d >= 0.9 * nd && s2d <= 1.1 * nd)
-        rowanal_gaps = null;
-    else {
-        rowanal_gaps = [];
-        while (rowanal_gaps.length < 3)
-            rowanal_gaps.push([1, 1, 1, 1, 1, 2, 2, 2, 3, 4][Math.floor(Math.random() * 10)]);
-    }
+        rowanal.gapf = function () { return 1; };
+    else
+        rowanal.gapf = make_gapf();
 
     return eindex;
 }
@@ -4269,23 +4281,13 @@ function tag_dragto(l) {
     if (rowanal[srcindex].entry)
         x = $(rowanal[srcindex].entry).offset().left - 6;
     else
-        x = $(plt_tbody.childNodes[rowanal[srcindex].l]).geometry().right - 20;
+        x = rowanal[srcindex].right() - 20;
     dragger.html(m).at(x, y).color("edittagbubble" + (srcindex == dragindex ? " sametag" : ""));
-}
-
-function value_increment() {
-    if (!rowanal_gaps)
-        return 1;
-    else {
-        rowanal_gappos = (rowanal_gappos + 1) % rowanal_gaps.length;
-        return rowanal_gaps[rowanal_gappos];
-    }
 }
 
 function calculate_shift(si, di) {
     var simax = endgroup_index(si);
-    rowanal_gappos = 0;
-    var i, j, sdelta = value_increment();
+    var i, j, sdelta = rowanal.gapf(true);
     if (rowanal[si].tagvalue !== false
         && simax + 1 < rowanal.length
         && rowanal[simax + 1].tagvalue !== false) {
@@ -4310,19 +4312,19 @@ function calculate_shift(si, di) {
             else if (rowanal[i - 1].tagvalue === false)
                 newval = false;
             else if (i == 1)
-                newval += value_increment();
+                newval += rowanal.gapf();
             else
                 newval += rowanal[i - 1].tagvalue - rowanal[i - 2].tagvalue;
         } else {
             if (i > 0
-                && rowanal[i].tagvalue > rowanal[i - 1].tagvalue + value_increment()
+                && rowanal[i].tagvalue > rowanal[i - 1].tagvalue + rowanal.gapf()
                 && rowanal[i].tagvalue > newval)
                 delta = 0;
             if (i == di && !si_moved && !rowanal[si].isgroup && i > 0) {
                 if (rowanal[i - 1].isgroup)
                     delta = rowanal[i - 1].newvalue - rowanal[i].tagvalue;
                 else if (rowanal[i].isgroup)
-                    delta = rowanal[i - 1].newvalue + value_increment() - rowanal[i].tagvalue;
+                    delta = rowanal[i - 1].newvalue + rowanal.gapf() - rowanal[i].tagvalue;
             }
             newval = rowanal[i].tagvalue + delta;
         }
@@ -4352,7 +4354,7 @@ function calculate_shift(si, di) {
     }
     if (rowanal.length == di) {
         if (newval !== false)
-            newval += value_increment();
+            newval += rowanal.gapf();
         for (j = si; j <= simax; ++j)
             rowanal[j].newvalue = adjust_newval(j);
     }
