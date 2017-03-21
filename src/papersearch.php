@@ -3092,12 +3092,10 @@ class PaperSearch {
     }
 
     private function _check_sort_order_anno($sorters) {
-        $thetag = null;
-        $tagger = new Tagger($this->user);
+        $thetag = false;
         foreach ($sorters as $sorter) {
-            if (!preg_match('/\A(?:#|tag:\s*|tagval:\s*)(\S+)\z/', $sorter, $m)
-                || !($tag = $tagger->check($m[1]))
-                || ($thetag !== null && $tag !== $thetag))
+            $tag = Tagger::check_tag_keyword($sorter, $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID);
+            if (!$tag || ($thetag && $tag !== $thetag))
                 return false;
             $thetag = $tag;
         }
@@ -3250,9 +3248,16 @@ class PaperSearch {
             && ($sort = $sole_qe->get_float("sort"))
             && ($tag = self::_check_sort_order_anno($sort))) {
             $dt = $this->conf->tags()->add(TagInfo::base($tag));
-            if ($dt->has_order_anno()
-                || get($sole_qe->get_float("view", []), "#" . $dt->tag) === "edit")
+            $views = $sole_qe->get_float("view", []);
+            if ($dt->has_order_anno())
                 $order_anno_tag = $dt;
+            else {
+                foreach ($sole_qe->get_float("view", []) as $vk => $action)
+                    if ($action === "edit"
+                        && ($t = Tagger::check_tag_keyword($vk, $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID | Tagger::NOTAGKEYWORD))
+                        && strcasecmp($t, $dt->tag) == 0)
+                        $order_anno_tag = $dt;
+            }
         }
 
         // add permissions tables if we will filter the results

@@ -526,6 +526,7 @@ class Tagger {
     const NOCHAIR = 8;
     const ALLOWSTAR = 16;
     const ALLOWCONTACTID = 32;
+    const NOTAGKEYWORD = 64;
 
     public $error_html = false;
     private $conf;
@@ -582,6 +583,17 @@ class Tagger {
         if ($m[3] !== "")
             $t .= "#" . substr($m[3], 1);
         return $t;
+    }
+
+    static function check_tag_keyword($text, Contact $user, $flags = 0) {
+        $re = '/\A(?:#|tagval:\s*'
+            . ($flags & self::NOTAGKEYWORD ? '' : '|tag:\s*')
+            . ')(\S+)\z/i';
+        if (preg_match($re, $text, $m)) {
+            $tagger = new Tagger($user);
+            return $tagger->check($m[1], $flags);
+        } else
+            return false;
     }
 
     function view_score($tag) {

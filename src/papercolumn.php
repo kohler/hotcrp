@@ -1231,9 +1231,8 @@ class Tag_PaperColumn extends PaperColumn {
         $is_value = $this->is_value || $this->is_value === null;
         return new EditTag_PaperColumn($this->column_json() + ["tagvalue" => $is_value], $this->dtag);
     }
-    function sorts_my_tag($sorter) {
-        return preg_match('/\A(?:edit)?(?:#|tag:|tagval:)\s*(\S+)\z/i', $sorter->type, $m)
-            && strcasecmp($m[1], $this->xtag) == 0;
+    function sorts_my_tag($sorter, Contact $user) {
+        return strcasecmp(Tagger::check_tag_keyword($sorter->type, $user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID), $this->xtag) == 0;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
@@ -1326,7 +1325,7 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
             return false;
         if ($visible > 0 && ($tid = $pl->table_id())) {
             $sorter = get($pl->sorters, 0);
-            if ($this->sorts_my_tag($sorter)
+            if ($this->sorts_my_tag($sorter, $pl->contact)
                 && !$sorter->reverse
                 && (!$pl->search->thenmap || $pl->search->is_order_anno)
                 && $this->is_value) {
