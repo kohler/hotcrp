@@ -907,7 +907,7 @@ class PaperList {
         $defsortname = null;
         if (isset($fdef->is_selector) && $sort_url
             && $this->default_sort_column->name !== "id")
-            $defsortname = $this->default_sort_column->name;
+            $defsortname = $this->default_sort_column->sort_name();
 
         $tooltip = "";
         if ($defsortname == "searchsort") {
@@ -915,16 +915,22 @@ class PaperList {
             $t = "#";
         }
 
-        $s0 = get($this->sorters, 0);
-        if ($s0 && $s0->thenmap === null
-            && ((($fdef->name == $s0->type || $fdef->name == "edit" . $s0->type)
+        $s0sort_name = null;
+        if (!empty($this->sorters[0]) && $this->sorters[0]->thenmap === null)
+            $s0sort_name = $this->sorters[0]->field->sort_name();
+        if ($s0sort_name
+            && ((($fdef->name == $s0sort_name
+                  || $fdef->name == "edit" . $s0sort_name
+                  || $fdef->name == $this->sorters[0]->type
+                  || $fdef->name == "edit" . $this->sorters[0]->type)
                  && $sort_url)
-                || $defsortname == $s0->type)) {
+                || $defsortname == $s0sort_name)) {
+            $s0 = $this->sorters[0];
             $tooltip = $s0->reverse ? "Forward sort" : "Reverse sort";
             $sort_class = "pl_sort_def" . ($s0->reverse ? "_rev" : "");
-            $sort_url .= urlencode($s0->type . ($s0->reverse ? "" : " reverse"));
+            $sort_url .= urlencode($s0sort_name . ($s0->reverse ? "" : " reverse"));
         } else if ($fdef->sort && $sort_url)
-            $sort_url .= urlencode($fdef->name);
+            $sort_url .= urlencode($fdef->sort_name());
         else if ($defsortname)
             $sort_url .= urlencode($defsortname);
         else
@@ -1135,7 +1141,7 @@ class PaperList {
                 array_shift($this->sorters);
         }
 
-        if (empty($this->sorters) || get($this->sorters[0], "field"))
+        if (empty($this->sorters) || $this->sorters[0]->field)
             /* all set */;
         else if ($this->sorters[0]->type
                  && ($c = $this->find_column($this->sorters[0]->type))

@@ -169,6 +169,9 @@ class PaperColumn extends Column {
     function completion_name() {
         return $this->completion ? $this->name : false;
     }
+    function sort_name() {
+        return $this->name;
+    }
 
     function content_empty(PaperList $pl, PaperInfo $row) {
         return false;
@@ -1407,6 +1410,9 @@ class Score_PaperColumn extends PaperColumn {
     function completion_name() {
         return $this->form_field->abbreviation();
     }
+    function sort_name() {
+        return $this->form_field->abbreviation();
+    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         // Do not use viewable_scores to determine content emptiness, since
         // that would load the scores from the DB -- even for folded score
@@ -1692,6 +1698,9 @@ class Formula_PaperColumn extends PaperColumn {
             return "\"{$this->formula->name}\"";
         else
             return $this->formula->name;
+    }
+    function sort_name() {
+        return $this->formula->name;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
