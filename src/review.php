@@ -315,7 +315,7 @@ class ReviewField {
 
         $avgtext = $this->unparse_average($v->avg);
         if ($v->n > 1 && $v->stddev)
-            $avgtext .= sprintf(" &plusmn; %.2f", $v->stddev);
+            $avgtext .= sprintf(" ± %.2f", $v->stddev);
 
         $args = "v=";
         for ($key = 1; $key <= $max; $key++)
