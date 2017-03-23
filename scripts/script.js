@@ -3975,6 +3975,57 @@ function searchbody_postreorder(tbody) {
         }
 }
 
+function reorder(jq, pids, heads) {
+    var tbody = $(jq)[0], pida = "data-pid";
+    if (tbody.tagName === "TABLE")
+        tbody = $(tbody).children().filter("tbody")[0];
+
+    var rowmap = [], xpid, cur = tbody.firstChild, next;
+    while (cur) {
+        if (cur.nodeType == 1 && (xpid = cur.getAttribute(pida)))
+            rowmap[xpid] = rowmap[xpid] || [];
+        next = cur.nextSibling;
+        if (xpid)
+            rowmap[xpid].push(cur);
+        else
+            tbody.removeChild(cur);
+        cur = next;
+    }
+
+    cur = tbody.firstChild;
+    while (cur && cur.nodeType != 1)
+        cur = cur.nextSibling;
+    var cpid = cur ? cur.getAttribute(pida) : 0;
+
+    var pid_index = 0, head_index = 0;
+    heads = heads || [];
+    while (pid_index < pids.length || head_index < heads.length) {
+        // handle headings
+        if (head_index < heads.length && heads[head_index].pos == pid_index) {
+            tagannorow_add(tbody, cur, heads[head_index]);
+            ++head_index;
+        } else {
+            var npid = pids[pid_index];
+            if (cpid == npid) {
+                do {
+                    cur = cur.nextSibling;
+                    if (!cur || cur.nodeType == 1)
+                        cpid = cur ? cur.getAttribute(pida) : 0;
+                } while (cpid == npid);
+            } else {
+                for (var j = 0; rowmap[npid] && j < rowmap[npid].length; ++j) {
+                    var e = tbody.removeChild(rowmap[npid][j]);
+                    tbody.insertBefore(e, cur);
+                }
+                delete rowmap[npid];
+            }
+            ++pid_index;
+        }
+    }
+
+    searchbody_postreorder(tbody);
+}
+
 
 function add_draghandle() {
     var x = document.createElement("span");
@@ -4400,44 +4451,6 @@ function row_move(srcindex) {
         }
         searchbody_postreorder(plt_tbody);
     }
-}
-
-function reorder(jq, new_order) {
-    var tbody = $(jq)[0], pida = "data-pid";
-    if (tbody.tagName === "TABLE")
-        tbody = $(tbody).children().filter("tbody")[0];
-    var cur = tbody.childNodes[0], rowmap = null;
-    while (cur && (cur.nodeType != 1 || !cur.hasAttribute(pida)))
-        cur = cur.nextSibling;
-    var cpid = cur ? cur.getAttribute(pida) : 0;
-    for (var index = 0; cur && index < new_order.length; ++index) {
-        var npid = new_order[index];
-        if (cpid == npid) {
-            do {
-                cur = cur.nextSibling;
-                if (!cur || cur.nodeType == 1)
-                    cpid = cur ? cur.getAttribute(pida) : 0;
-            } while (cpid == npid);
-        } else {
-            if (!rowmap) {
-                var xpid;
-                rowmap = [];
-                for (var trav = cur; trav; trav = trav.nextSibling) {
-                    if (trav.nodeType == 1) {
-                        xpid = trav.getAttribute(pida);
-                        rowmap[xpid] = rowmap[xpid] || [];
-                    }
-                    rowmap[xpid].push(trav);
-                }
-            }
-            for (var j = 0; rowmap[npid] && j < rowmap[npid].length; ++j) {
-                var e = tbody.removeChild(rowmap[npid][j]);
-                tbody.insertBefore(e, cur);
-            }
-            delete rowmap[npid];
-        }
-    }
-    searchbody_postreorder(tbody);
 }
 
 function taganno_success(rv) {
