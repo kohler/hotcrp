@@ -1709,8 +1709,9 @@ function comet_tracker() {
 function load(dlx, is_initial) {
     if (dlx)
         window.hotcrp_status = dl = dlx;
-    if (!dl.load)
-        dl.load = now_sec();
+    dl.load = dl.load || now_sec();
+    dl.perm = dl.perm || {};
+    dl.myperm = dl.perm[hotcrp_paperid];
     dl.rev = dl.rev || {};
     dl.tracker_status = dl.tracker_status || "off";
     has_tracker = !!dl.tracker;
@@ -2776,11 +2777,10 @@ function comment_identity_time(cj) {
 
 
 function edit_allowed(cj) {
-    if (!hotcrp_status || !hotcrp_status.perm || !hotcrp_status.perm[hotcrp_paperid])
-        // Probably the user has been logged out.
+    var p = hotcrp_status.myperm;
+    if (!p)
         return true;
-    var p = hotcrp_status.perm[hotcrp_paperid];
-    if (cj.response)
+    else if (cj.response)
         return p.can_responds && p.can_responds[cj.response] === true;
     else
         return p.can_comment === true;
@@ -2814,8 +2814,8 @@ function render_editing(hc, cj) {
         hc.push('<div class="fx2 hint">', '</div>');
         if (hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true)
             hc.push('<input type="checkbox" name="blind" value="1" tabindex="1" id="htctlcb' + idctr + '" />&nbsp;<label for="htctlcb' + idctr + '">Anonymous to authors</label><br />\n');
-        var au_allowseerev = hotcrp_status.perm[hotcrp_paperid].some_author_can_view_review;
-        if (au_allowseerev)
+        if (hotcrp_status.myperm
+            && hotcrp_status.myperm.some_author_can_view_review)
             hc.push('Authors will be notified immediately.');
         else
             hc.push('Authors cannot view comments at the moment.');
