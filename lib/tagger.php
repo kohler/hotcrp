@@ -46,7 +46,7 @@ class TagMapItem {
     }
     function tag_regex() {
         $t = preg_quote($this->tag);
-        return $this->pattern ? str_replace("\\*", ".*", $t) : $t;
+        return $this->pattern ? str_replace("\\*", "[^\\s#]*", $t) : $t;
     }
     function order_anno_list() {
         if ($this->order_anno_list == false) {
@@ -208,7 +208,7 @@ class TagMap implements IteratorAggregate {
             if (TagInfo::basic_check($ltag)) {
                 $this->storage[$ltag] = $t;
                 if (strpos($ltag, "*") !== false) {
-                    $t->pattern = "{\A" . strtolower(str_replace("\\*", ".*", $t->tag_regex())) . "\z}";
+                    $t->pattern = "{\A" . strtolower(str_replace("\\*", "[^\\s#]*", $t->tag_regex())) . "\z}";
                     $this->has_pattern = true;
                     $this->pattern_storage[] = $t;
                     $this->pattern_re = null;
