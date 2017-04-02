@@ -12,6 +12,7 @@ class TagMapItem {
     public $conf;
     public $pattern = false;
     public $pattern_instance = false;
+    public $pattern_version = 0;
     public $chair = false;
     public $track = false;
     public $votish = false;
@@ -152,6 +153,7 @@ class TagMap implements IteratorAggregate {
     private $sorted = false;
     private $pattern_re = null;
     private $pattern_storage = [];
+    private $pattern_version = 0; // = count($pattern_storage)
     private $color_re = null;
     private $badge_re = null;
     private $emoji_re = null;
@@ -169,32 +171,40 @@ class TagMap implements IteratorAggregate {
             return false;
         return get($this->conf->emoji_code_map(), substr($ltag, 1, $len - 2), false);
     }
+    private function update_patterns($tag, $ltag, TagMapItem $t = null) {
+        if (!$this->pattern_re) {
+            $a = [];
+            foreach ($this->pattern_storage as $p)
+                $a[] = strtolower($p->tag_regex());
+            $this->pattern_re = "{\A(?:" . join("|", $a) . ")\z}";
+        }
+        if (preg_match($this->pattern_re, $ltag)) {
+            $version = $t ? $t->pattern_version : 0;
+            foreach ($this->pattern_storage as $i => $p)
+                if ($i >= $version && preg_match($p->pattern, $ltag)) {
+                    if (!$t) {
+                        $t = clone $p;
+                        $t->set_tag($tag);
+                        $t->pattern = false;
+                        $t->pattern_instance = true;
+                        $this->storage[$ltag] = $t;
+                        $this->sorted = false;
+                    } else
+                        $t->merge($p);
+                }
+        }
+        if ($t)
+            $t->pattern_version = $this->pattern_version;
+        return $t;
+    }
     function check($tag) {
         $ltag = strtolower($tag);
         $t = get($this->storage, $ltag);
         if (!$t && $ltag && $ltag[0] === ":" && $this->check_emoji_code($ltag))
             $t = $this->add($tag);
-        if (!$t && $this->has_pattern) {
-            if (!$this->pattern_re) {
-                $a = [];
-                foreach ($this->pattern_storage as $p)
-                    $a[] = strtolower($p->tag_regex());
-                $this->pattern_re = "{\A(?:" . join("|", $a) . ")\z}";
-            }
-            if (preg_match($this->pattern_re, $ltag))
-                foreach ($this->pattern_storage as $p)
-                    if (preg_match($p->pattern, $ltag)) {
-                        if (!$t) {
-                            $t = clone $p;
-                            $t->set_tag($tag);
-                            $t->pattern = false;
-                            $t->pattern_instance = true;
-                            $this->storage[$ltag] = $t;
-                            $this->sorted = false;
-                        } else
-                            $t->merge($p);
-                    }
-        }
+        if ($this->has_pattern
+            && (!$t || $t->pattern_version < $this->pattern_version))
+            $t = $this->update_patterns($tag, $ltag, $t);
         return $t;
     }
     function check_base($tag) {
@@ -204,22 +214,26 @@ class TagMap implements IteratorAggregate {
         $ltag = strtolower($tag);
         $t = get($this->storage, $ltag);
         if (!$t) {
-            $t = new TagMapItem($tag, $this->conf);
-            if (TagInfo::basic_check($ltag)) {
-                $this->storage[$ltag] = $t;
-                if (strpos($ltag, "*") !== false) {
-                    $t->pattern = "{\A" . strtolower(str_replace("\\*", "[^\\s#]*", $t->tag_regex())) . "\z}";
-                    $this->has_pattern = true;
-                    $this->pattern_storage[] = $t;
-                    $this->pattern_re = null;
-                }
-                if ($ltag[0] === ":" && ($e = $this->check_emoji_code($ltag))) {
-                    $t->emoji[] = $e;
-                    $this->has_emoji = $this->has_decoration = true;
-                }
-                $this->sorted = false;
+            $t = new TagMapItem($tag, $this->conf, 0);
+            if (!TagInfo::basic_check($ltag))
+                return $t;
+            $this->storage[$ltag] = $t;
+            $this->sorted = false;
+            if ($ltag[0] === ":" && ($e = $this->check_emoji_code($ltag))) {
+                $t->emoji[] = $e;
+                $this->has_emoji = $this->has_decoration = true;
+            }
+            if (strpos($ltag, "*") !== false) {
+                $t->pattern = "{\A" . strtolower(str_replace("\\*", "[^\\s#]*", $t->tag_regex())) . "\z}";
+                $this->has_pattern = true;
+                $this->pattern_storage[] = $t;
+                $this->pattern_re = null;
+                ++$this->pattern_version;
             }
         }
+        if ($this->has_pattern && !$t->pattern
+            && $t->pattern_version < $this->pattern_version)
+            $t = $this->update_patterns($tag, $ltag, $t);
         return $t;
     }
     private function sort() {
