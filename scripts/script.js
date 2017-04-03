@@ -5669,7 +5669,7 @@ function make_info(n, c, sv) {
         if (!sccolor[svx]) {
             var j = $('<span style="display:none" class="svb ' + svx + '"></span>').appendTo(document.body), m;
             sccolor[svx] = [0, 0, 0];
-            if ((m = /^rgba?\((\d+),(\d+),(\d+)[,)]/.exec(j.css("color").replace(/\s+/g, ""))))
+            if ((m = /^\s*rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)[\s,)]/.exec(j.css("color"))))
                 sccolor[svx] = [+m[1], +m[2], +m[3]];
             j.remove();
         }
