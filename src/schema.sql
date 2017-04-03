@@ -368,7 +368,7 @@ CREATE TABLE `PaperStorage` (
 DROP TABLE IF EXISTS `PaperTag`;
 CREATE TABLE `PaperTag` (
   `paperId` int(11) NOT NULL,
-  `tag` varbinary(80) NOT NULL,		# see TAG_MAXLEN in init.php
+  `tag` varchar(80) NOT NULL,		# case-insensitive; see TAG_MAXLEN in init.php
   `tagIndex` float NOT NULL DEFAULT '0',
   PRIMARY KEY (`paperId`,`tag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -381,7 +381,7 @@ CREATE TABLE `PaperTag` (
 
 DROP TABLE IF EXISTS `PaperTagAnno`;
 CREATE TABLE `PaperTagAnno` (
-  `tag` varbinary(80) NOT NULL,   # see TAG_MAXLEN in init.php
+  `tag` varchar(80) NOT NULL,   # case-insensitive; see TAG_MAXLEN in init.php
   `annoId` int(11) NOT NULL,
   `tagIndex` float NOT NULL DEFAULT '0',
   `heading` varbinary(8192) DEFAULT NULL,
@@ -496,7 +496,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 162);
+insert into Settings (name, value) values ('allowPaperOption', 163);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

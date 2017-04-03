@@ -1128,6 +1128,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperTag change `tag` `tag` varbinary(80) NOT NULL")
         && $conf->ql("alter table PaperTagAnno change `tag` `tag` varbinary(80) NOT NULL"))
         $conf->update_schema_version(162);
+    if ($conf->sversion == 162
+        && $conf->ql("alter table PaperTag change `tag` `tag` varchar(80) NOT NULL")
+        && $conf->ql("alter table PaperTagAnno change `tag` `tag` varchar(80) NOT NULL"))
+        $conf->update_schema_version(163);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
