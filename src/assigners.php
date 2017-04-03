@@ -1708,11 +1708,14 @@ class AssignmentSet {
         $contacts = $this->lookup_users($req, $assigner);
         if ($contacts === false)
             return false;
+        $filter_contact = null;
+        if (count($contacts) == 1 && $contacts[0] && $contacts[0]->contactId > 0)
+            $filter_contact = $contacts[0];
 
         // maybe filter papers
         if (count($pids) > 20
-            && count($contacts) == 1 && $contacts[0] && $contacts[0]->contactId > 0
-            && ($pf = $assigner->paper_filter($contacts[0], $req, $this->astate))) {
+            && $filter_contact
+            && ($pf = $assigner->paper_filter($filter_contact, $req, $this->astate))) {
             $npids = [];
             foreach ($pids as $p)
                 if (get($pf, $p))
@@ -1745,8 +1748,7 @@ class AssignmentSet {
             $this->encounter_order[$p] = $p;
 
             $cf = null;
-            if (count($contacts) > 1
-                || ($contacts[0] && $contacts[0]->contactId))
+            if (count($contacts) > 1 || $filter_contact)
                 $cf = $assigner->contact_filter($p, $req, $this->astate);
 
             foreach ($contacts as $contact) {
