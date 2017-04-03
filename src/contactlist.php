@@ -532,8 +532,6 @@ class ContactList {
         $pq = "select u.contactId,
         firstName, lastName, email, affiliation, roles, contactTags,
         voicePhoneNumber, u.collaborators, lastLogin, disabled";
-        if (isset($queryOptions['topics']))
-            $pq .= ",\n    (select group_concat(topicId, ' ', interest) from TopicInterest where contactId=u.contactId) topicInterest";
         if (isset($queryOptions["reviews"])) {
             $rf[] = "count(if(reviewNeedsSubmit<=0,reviewSubmitted,reviewId)) numReviews";
             $rf[] = "count(reviewSubmitted) numReviewsSubmitted";
@@ -626,6 +624,8 @@ class ContactList {
         while (($row = Contact::fetch($result)))
             $rows[] = $row;
         Contact::$allow_nonexistent_properties = false;
+        if (isset($queryOptions["topics"]))
+            Contact::load_topic_interests($rows);
         return $rows;
     }
 

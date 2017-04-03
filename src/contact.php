@@ -91,7 +91,7 @@ class Contact {
     static private $active_forceShow = false;
 
 
-    public function __construct($trueuser = null, Conf $conf = null) {
+    function __construct($trueuser = null, Conf $conf = null) {
         global $Conf;
         $this->conf = $conf ? : $Conf;
         if ($trueuser)
@@ -102,7 +102,7 @@ class Contact {
             $this->disabled = true;
     }
 
-    public static function fetch($result, Conf $conf = null) {
+    static function fetch($result, Conf $conf = null) {
         global $Conf;
         $conf = $conf ? : $Conf;
         $user = $result ? $result->fetch_object("Contact", [null, $conf]) : null;
@@ -213,14 +213,14 @@ class Contact {
     }
 
     // begin changing contactId to cid
-    public function __get($name) {
+    function __get($name) {
         if ($name === "cid")
             return $this->contactId;
         else
             return null;
     }
 
-    public function __set($name, $value) {
+    function __set($name, $value) {
         if ($name === "cid")
             $this->contactId = $this->cid = $value;
         else {
@@ -230,7 +230,7 @@ class Contact {
         }
     }
 
-    static public function set_sorter($c, Conf $conf) {
+    static function set_sorter($c, Conf $conf) {
         if (!$conf->sort_by_last && isset($c->unaccentedName)) {
             $c->sorter = trim("$c->unaccentedName $c->email");
             return;
@@ -246,7 +246,7 @@ class Contact {
             $c->sorter = UnicodeHelper::deaccent($c->sorter);
     }
 
-    static public function compare($a, $b) {
+    static function compare($a, $b) {
         return strnatcasecmp($a->sorter, $b->sorter);
     }
 
@@ -259,7 +259,7 @@ class Contact {
 
     // initialization
 
-    public function activate() {
+    function activate() {
         global $Now;
         $this->activated_ = true;
         $trueuser = get($_SESSION, "trueuser");
@@ -932,7 +932,7 @@ class Contact {
             $this->conf->qe_raw("delete from TopicInterest where contactId=$this->contactId");
             if (!empty($tf))
                 $this->conf->qe_raw("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $tf));
-            unset($this->topicInterest, $this->topic_interest_map_);
+            unset($this->topic_interest_map_);
         }
 
         // Roles
@@ -1637,34 +1637,35 @@ class Contact {
             return $this->topic_interest_map_;
         if ($this->contactId <= 0)
             return array();
-        if (property_exists($this, "topicInterest")) {
-            $this->topic_interest_map_ = [];
-            foreach (explode(",", $this->topicInterest) as $tandi)
-                if (($pos = strpos($tandi, " "))
-                    && ($i = (int) substr($tandi, $pos + 1))) {
-                    $t = (int) substr($tandi, 0, $pos);
-                    $this->topic_interest_map_[$t] = $i;
-                }
-        } else if (($this->roles & self::ROLE_PCLIKE)
-                   && $this !== $Me
-                   && ($pcm = $this->conf->pc_members())
-                   && $this === get($pcm, $this->contactId)) {
-            $result = $this->conf->qe("select contactId, topicId, interest from TopicInterest where interest!=0 order by contactId");
-            foreach ($pcm as $pc)
-                $pc->topic_interest_map_ = array();
-            $pc = null;
-            while (($row = edb_row($result))) {
-                if (!$pc || $pc->contactId != $row[0])
-                    $pc = get($pcm, $row[0]);
-                if ($pc)
-                    $pc->topic_interest_map_[(int) $row[1]] = (int) $row[2];
-            }
-            Dbl::free($result);
-        } else {
+        if (($this->roles & self::ROLE_PCLIKE)
+            && $this !== $Me
+            && ($pcm = $this->conf->pc_members())
+            && $this === get($pcm, $this->contactId))
+            self::load_topic_interests($pcm);
+        else {
             $result = $this->conf->qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
             $this->topic_interest_map_ = Dbl::fetch_iimap($result);
         }
         return $this->topic_interest_map_;
+    }
+
+    static function load_topic_interests($contacts) {
+        if (empty($contacts))
+            return;
+        $cbyid = [];
+        foreach ($contacts as $c) {
+            $c->topic_interest_map_ = [];
+            $cbyid[$c->contactId] = $c;
+        }
+        $result = $c->conf->qe("select contactId, topicId, interest from TopicInterest where interest!=0 order by contactId");
+        $c = null;
+        while (($row = edb_row($result))) {
+            if (!$c || $c->contactId != $row[0])
+                $c = get($cbyid, $row[0]);
+            if ($c)
+                $c->topic_interest_map_[(int) $row[1]] = (int) $row[2];
+        }
+        Dbl::free($result);
     }
 
 

@@ -101,17 +101,20 @@ function urlencode_matches($m) {
 
 if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     assert($Conf->sversion >= 73);
-    $result = $Conf->qe_raw("select ContactInfo.*,
-        (select group_concat(topicId, ' ', interest) from TopicInterest where contactId=ContactInfo.contactId) topicInterest
-        from ContactInfo
-        where " . paperselPredicate($papersel) . "
-        order by lastName, firstName, email");
+    $users = [];
+    $result = $Conf->qe_raw("select ContactInfo.* from ContactInfo where " . paperselPredicate($papersel));
+    while (($user = Contact::fetch($result, $Conf)))
+        $users[] = $user;
+    Dbl::free($result);
+
+    usort($users, "Contact::compare");
+    Contact::load_topic_interests($users);
 
     // NB This format is expected to be parsed by profile.php's bulk upload.
     $tagger = new Tagger($Me);
     $people = [];
     $has = (object) [];
-    while (($user = Contact::fetch($result, $Conf))) {
+    foreach ($users as $user) {
         $row = (object) ["first" => $user->firstName, "last" => $user->lastName,
             "email" => $user->email, "phone" => $user->voicePhoneNumber,
             "disabled" => !!$user->disabled];
