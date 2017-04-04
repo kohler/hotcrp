@@ -40,6 +40,33 @@ class Cleaner {
         if ($match != "")
             self::$hash_preg = str_replace("*", "[0-9a-f]*", $match) . "[0-9a-f]*";
     }
+
+    static function populate($dir, Fparts $fparts, $pos) {
+        if ($pos < $fparts->n && $pos % 1 == 0) {
+            $dir .= $fparts->components[$pos];
+            ++$pos;
+        }
+        if ($pos >= $fparts->n)
+            return 1;
+        $di = [];
+        $preg = $fparts->pregs[$pos];
+        $n = 0;
+        $isdir = $pos + 1 < $fparts->n;
+        foreach (scandir($dir, SCANDIR_SORT_NONE) as $x) {
+            $x = "/$x";
+            if ($x !== "/." && $x !== "/.." && preg_match($preg, $x)) {
+                $di[] = $n;
+                $di[] = $x;
+                if ($isdir)
+                    $n += self::populate("$dir$x", $fparts, $pos + 1);
+                else
+                    $n += 1;
+            }
+        }
+        $di[] = $n;
+        self::$dirinfo[$dir] = $di;
+        return $n;
+    }
 }
 
 $arg = getopt("hn:c:Vm:", array("help", "name:", "count:", "verbose", "match:"));
@@ -246,15 +273,26 @@ class Fparts {
 }
 
 $fparts = new Fparts($dp);
+Cleaner::populate("", $fparts, 0);
 
 
-function populate_dirinfo($bdir, $preg) {
-    $di = [];
-    foreach (scandir($bdir, SCANDIR_SORT_NONE) as $x)
-        if ($x !== "." && $x !== ".." && preg_match($preg, "/$x"))
-            $di[] = "/$x";
-    Cleaner::$dirinfo[$bdir] = $di;
-    return $di;
+function random_index($di) {
+    $l = 0;
+    $r = count($di) - 1;
+    $val = mt_rand(0, $di[$r]);
+    if ($di[$r] == ($r >> 1)) {
+        $l = $r = $val << 1;
+        //error_log("*$val ?{$l}[" . $di[$l] . "," . $di[$l + 2] . ")");
+    }
+    while ($l + 2 < $r) {
+        $m = $l + (($r - $l) >> 1) & ~1;
+        //error_log("*$val ?{$m}[" . $di[$m] . "," . $di[$m + 2] . ") @[$l,$r)");
+        if ($val < $di[$m])
+            $r = $m;
+        else
+            $l = $m;
+    }
+    return $l;
 }
 
 function try_random_match(Fparts $fparts) {
@@ -265,20 +303,36 @@ function try_random_match(Fparts $fparts) {
             $bdir .= $fparts->components[$i];
         else {
             $di = get(Cleaner::$dirinfo, $bdir);
-            if ($di === null)
-                $di = populate_dirinfo($bdir, $fparts->pregs[$i]);
             if (empty($di))
                 return false;
-            $ndi = count($di);
-            $start = mt_rand(0, $ndi - 1);
-            $build = false;
-            for ($tries = 0; $tries < $ndi; $start = ($start + 1) % $ndi, ++$tries) {
-                if (($build = $fparts->match_component($di[$start], $i)))
+            $ndi = count($di) - 1;
+            $idx = random_index($di);
+            for ($tries = ($ndi - 2) >> 1; $tries > 0; --$tries) {
+                //error_log(json_encode([$i, $idx, $di[$idx + 1], $fparts->pregs[$i]]));
+                if (($build = $fparts->match_component($di[$idx + 1], $i)))
                     break;
+                $idx += 2;
+                if ($idx == $ndi)
+                    $idx = 0;
             }
             // remove last part from list
-            if ($i == $fparts->n - 1)
-                array_splice(Cleaner::$dirinfo[$bdir], $start, 1);
+            if ($i == $fparts->n - 1) {
+                $arr = &Cleaner::$dirinfo[$bdir];
+                if ($idx == $ndi - 2)
+                    /* nothing */;
+                else if ($di[$idx + 2] - $di[$idx] ==
+                         $di[$ndi] - $di[$ndi - 2])
+                    $arr[$idx + 1] = $di[$ndi - 1];
+                else {
+                    for ($j = $idx + 2; $j < $ndi; $j += 2) {
+                        $arr[$j - 1] = $arr[$j + 1];
+                        $arr[$j] = $arr[$j - 2] + $arr[$j + 2] - $arr[$j];
+                    }
+                }
+                array_pop($arr);
+                array_pop($arr);
+                unset($arr);
+            }
             $bdir .= $build;
         }
     if (!$fparts->match_complete())
