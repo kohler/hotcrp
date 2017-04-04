@@ -277,16 +277,17 @@ Cleaner::populate("", $fparts, 0);
 
 
 function random_index($di) {
+    global $verbose;
     $l = 0;
     $r = count($di) - 1;
-    $val = mt_rand(0, $di[$r]);
+    $val = mt_rand(0, $di[$r] - 1);
     if ($di[$r] == ($r >> 1)) {
         $l = $r = $val << 1;
-        //error_log("*$val ?{$l}[" . $di[$l] . "," . $di[$l + 2] . ")");
+        //$verbose && error_log("*$val ?{$l}[" . $di[$l] . "," . $di[$l + 2] . ")");
     }
     while ($l + 2 < $r) {
         $m = $l + (($r - $l) >> 1) & ~1;
-        //error_log("*$val ?{$m}[" . $di[$m] . "," . $di[$m + 2] . ") @[$l,$r)");
+        //$verbose && error_log("*$val ?{$m}[" . $di[$m] . "," . $di[$m + 2] . ") @[$l,$r)");
         if ($val < $di[$m])
             $r = $m;
         else
@@ -296,19 +297,22 @@ function random_index($di) {
 }
 
 function try_random_match(Fparts $fparts) {
+    global $verbose;
     $fparts->clear();
     $bdir = "";
     for ($i = 0; $i < $fparts->n; ++$i)
         if ($i % 2 == 0)
             $bdir .= $fparts->components[$i];
         else {
-            $di = get(Cleaner::$dirinfo, $bdir);
+            if (!isset(Cleaner::$dirinfo[$bdir]))
+                return false;
+            $di = &Cleaner::$dirinfo[$bdir];
             if (empty($di))
                 return false;
             $ndi = count($di) - 1;
             $idx = random_index($di);
             for ($tries = ($ndi - 2) >> 1; $tries > 0; --$tries) {
-                //error_log(json_encode([$i, $idx, $di[$idx + 1], $fparts->pregs[$i]]));
+                //$verbose && error_log(json_encode([$i, $idx, $di[$idx + 1], $fparts->pregs[$i]]));
                 if (($build = $fparts->match_component($di[$idx + 1], $i)))
                     break;
                 $idx += 2;
@@ -317,22 +321,22 @@ function try_random_match(Fparts $fparts) {
             }
             // remove last part from list
             if ($i == $fparts->n - 1) {
-                $arr = &Cleaner::$dirinfo[$bdir];
+                $delta = $di[$idx + 2] - $di[$idx];
                 if ($idx == $ndi - 2)
                     /* nothing */;
-                else if ($di[$idx + 2] - $di[$idx] ==
-                         $di[$ndi] - $di[$ndi - 2])
-                    $arr[$idx + 1] = $di[$ndi - 1];
+                else if ($di[$ndi] - $di[$ndi - 2] == $delta)
+                    $di[$idx + 1] = $di[$ndi - 1];
                 else {
                     for ($j = $idx + 2; $j < $ndi; $j += 2) {
-                        $arr[$j - 1] = $arr[$j + 1];
-                        $arr[$j] = $arr[$j - 2] + $arr[$j + 2] - $arr[$j];
+                        $di[$j - 1] = $di[$j + 1];
+                        $di[$j] = $di[$j + 2] - $delta;
                     }
                 }
-                array_pop($arr);
-                array_pop($arr);
-                unset($arr);
+                assert($di[$ndi - 2] == $di[$ndi] - $delta);
+                array_pop($di);
+                array_pop($di);
             }
+            unset($di);
             $bdir .= $build;
         }
     if (!$fparts->match_complete())
