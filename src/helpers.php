@@ -56,130 +56,42 @@ function cvtnum($value, $default = -1) {
 
 // web helpers
 
-global $_hoturl_defaults;
-$_hoturl_defaults = null;
-
 function hoturl_defaults($options = array()) {
-    global $_hoturl_defaults;
     foreach ($options as $k => $v)
         if ($v !== null)
-            $_hoturl_defaults[$k] = urlencode($v);
+            Conf::$hoturl_defaults[$k] = urlencode($v);
         else
-            unset($_hoturl_defaults[$k]);
+            unset(Conf::$hoturl_defaults[$k]);
     $ret = array();
-    if ($_hoturl_defaults)
-        foreach ($_hoturl_defaults as $k => $v)
+    if (Conf::$hoturl_defaults)
+        foreach (Conf::$hoturl_defaults as $k => $v)
             $ret[$k] = urldecode($v);
     return $ret;
 }
 
 function hoturl_site_relative($page, $options = null) {
-    global $Conf, $Me, $_hoturl_defaults;
-    $t = $page . Navigation::php_suffix();
-    // parse options, separate anchor; see also redirectSelf
-    $anchor = "";
-    if (is_array($options)) {
-        $x = "";
-        foreach ($options as $k => $v)
-            if ($v === null || $v === false)
-                /* skip */;
-            else if ($k !== "anchor")
-                $x .= ($x === "" ? "" : "&amp;") . $k . "=" . urlencode($v);
-            else
-                $anchor = "#" . urlencode($v);
-        $options = $x;
-    } else if (preg_match('/\A(.*?)(#.*)\z/', $options, $m))
-        list($options, $anchor) = array($m[1], $m[2]);
-    // append defaults
-    $are = '/\A(|.*?(?:&|&amp;))';
-    $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
-    if ($_hoturl_defaults)
-        foreach ($_hoturl_defaults as $k => $v)
-            if (!preg_match($are . preg_quote($k) . '=/', $options))
-                $options .= "&amp;" . $k . "=" . $v;
-    // append forceShow to links to same paper if appropriate
-    $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
-    if ($is_paper_page && $Conf->paper
-        && preg_match($are . 'p=' . $Conf->paper->paperId . $zre, $options)
-        && $Me->can_administer($Conf->paper)
-        && $Conf->paper->has_conflict($Me)
-        && !preg_match($are . 'forceShow=/', $options))
-        $options .= "&amp;forceShow=1";
-    // create slash-based URLs if appropriate
-    if ($options) {
-        if ($page == "review"
-            && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $options, $m)) {
-            $t .= "/" . $m[2];
-            $options = $m[1] . $m[3];
-            if (preg_match($are . 'p=\d+' . $zre, $options, $m))
-                $options = $m[1] . $m[2];
-        } else if ($page == "paper"
-                   && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m)
-                   && preg_match($are . 'm=(\w+)' . $zre, $m[1] . $m[3], $m2)) {
-            $t .= "/" . $m[2] . "/" . $m2[2];
-            $options = $m2[1] . $m2[3];
-        } else if (($is_paper_page
-                    && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m))
-                   || ($page == "profile"
-                       && preg_match($are . 'u=([^&?]+)' . $zre, $options, $m))
-                   || ($page == "help"
-                       && preg_match($are . 't=(\w+)' . $zre, $options, $m))
-                   || ($page == "settings"
-                       && preg_match($are . 'group=(\w+)' . $zre, $options, $m))
-                   || ($page == "graph"
-                       && preg_match($are . 'g=([^&?]+)' . $zre, $options, $m))
-                   || ($page == "doc"
-                       && preg_match($are . 'file=([^&]+)' . $zre, $options, $m))
-                   || preg_match($are . '__PATH__=([^&]+)' . $zre, $options, $m)) {
-            $t .= "/" . str_replace("%2F", "/", $m[2]);
-            $options = $m[1] . $m[3];
-        }
-        $options = preg_replace('/&(?:amp;)?\z/', "", $options);
-    }
-    if ($options && preg_match('/\A&(?:amp;)?(.*)\z/', $options, $m))
-        $options = $m[1];
-    if ($options)
-        return $t . "?" . $options . $anchor;
-    else
-        return $t . $anchor;
+    global $Conf;
+    return $Conf->hoturl($page, $options, Conf::HOTURL_SITE_RELATIVE);
 }
 
 function hoturl($page, $options = null) {
-    $siteurl = Navigation::siteurl();
-    $t = hoturl_site_relative($page, $options);
-    if ($page !== "index")
-        return $siteurl . $t;
-    $expectslash = 5 + strlen(Navigation::php_suffix());
-    if (strlen($t) < $expectslash
-        || substr($t, 0, $expectslash) !== "index" . Navigation::php_suffix()
-        || (strlen($t) > $expectslash && $t[$expectslash] === "/"))
-        return $siteurl . $t;
-    else
-        return ($siteurl !== "" ? $siteurl : Navigation::site_path())
-            . substr($t, $expectslash);
+    global $Conf;
+    return $Conf->hoturl($page, $options);
 }
 
 function hoturl_post($page, $options = null) {
-    if (is_array($options))
-        $options["post"] = post_value();
-    else if ($options)
-        $options .= "&amp;post=" . post_value();
-    else
-        $options = "post=" . post_value();
-    return hoturl($page, $options);
+    global $Conf;
+    return $Conf->hoturl($page, $options, Conf::HOTURL_POST);
 }
 
 function hoturl_absolute($page, $options = null) {
-    return opt("paperSite") . "/" . hoturl_site_relative($page, $options);
+    global $Conf;
+    return $Conf->hoturl($page, $options, Conf::HOTURL_ABSOLUTE);
 }
 
 function hoturl_absolute_nodefaults($page, $options = null) {
-    global $_hoturl_defaults;
-    $defaults = $_hoturl_defaults;
-    $_hoturl_defaults = null;
-    $url = hoturl_absolute($page, $options);
-    $_hoturl_defaults = $defaults;
-    return $url;
+    global $Conf;
+    return $Conf->hoturl($page, $options, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
 }
 
 function hoturl_site_relative_raw($page, $options = null) {

@@ -117,6 +117,8 @@ class Conf {
 
     static public $review_deadlines = array("pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard");
 
+    static public $hoturl_defaults = null;
+
     function __construct($options, $make_dsn) {
         // unpack dsn, connect to database, load current settings
         if ($make_dsn && ($this->dsn = Dbl::make_dsn($options)))
@@ -1900,6 +1902,121 @@ class Conf {
             $this->opt["scriptAssetsUrl"] = $base;
     }
 
+    const HOTURL_RAW = 1;
+    const HOTURL_POST = 2;
+    const HOTURL_ABSOLUTE = 4;
+    const HOTURL_SITE_RELATIVE = 8;
+    const HOTURL_NO_DEFAULTS = 16;
+
+    function hoturl($page, $options = null, $flags = 0) {
+        global $Me;
+        $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
+        $t = $page . Navigation::php_suffix();
+        // parse options, separate anchor; see also redirectSelf
+        $anchor = "";
+        if (is_array($options)) {
+            $x = "";
+            foreach ($options as $k => $v)
+                if ($v === null || $v === false)
+                    /* skip */;
+                else if ($k !== "anchor")
+                    $x .= ($x === "" ? "" : $amp) . $k . "=" . urlencode($v);
+                else
+                    $anchor = "#" . urlencode($v);
+            $options = $x;
+        } else if (is_string($options)) {
+            if (preg_match('/\A(.*?)(#.*)\z/', $options, $m))
+                list($options, $anchor) = array($m[1], $m[2]);
+        } else
+            $options = "";
+        if ($flags & self::HOTURL_POST)
+            $options .= ($options === "" ? "" : $amp) . "post=" . post_value();
+        // append defaults
+        $are = '/\A(|.*?(?:&|&amp;))';
+        $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
+        if (Conf::$hoturl_defaults && !($flags & self::HOTURL_NO_DEFAULTS))
+            foreach (Conf::$hoturl_defaults as $k => $v)
+                if (!preg_match($are . preg_quote($k) . '=/', $options))
+                    $options .= $amp . $k . "=" . $v;
+        // append forceShow to links to same paper if appropriate
+        $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
+        if ($is_paper_page && $this->paper
+            && preg_match($are . 'p=' . $this->paper->paperId . $zre, $options)
+            && $Me->conf === $this
+            && $Me->can_administer($this->paper)
+            && $this->paper->has_conflict($Me)
+            && !preg_match($are . 'forceShow=/', $options))
+            $options .= $amp . "forceShow=1";
+        // create slash-based URLs if appropriate
+        if ($options) {
+            if ($page == "review"
+                && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $options, $m)) {
+                $t .= "/" . $m[2];
+                $options = $m[1] . $m[3];
+                if (preg_match($are . 'p=\d+' . $zre, $options, $m))
+                    $options = $m[1] . $m[2];
+            } else if ($page == "paper"
+                       && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m)
+                       && preg_match($are . 'm=(\w+)' . $zre, $m[1] . $m[3], $m2)) {
+                $t .= "/" . $m[2] . "/" . $m2[2];
+                $options = $m2[1] . $m2[3];
+            } else if (($is_paper_page
+                        && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m))
+                       || ($page == "profile"
+                           && preg_match($are . 'u=([^&?]+)' . $zre, $options, $m))
+                       || ($page == "help"
+                           && preg_match($are . 't=(\w+)' . $zre, $options, $m))
+                       || ($page == "settings"
+                           && preg_match($are . 'group=(\w+)' . $zre, $options, $m))
+                       || ($page == "graph"
+                           && preg_match($are . 'g=([^&?]+)' . $zre, $options, $m))
+                       || ($page == "doc"
+                           && preg_match($are . 'file=([^&]+)' . $zre, $options, $m))
+                       || preg_match($are . '__PATH__=([^&]+)' . $zre, $options, $m)) {
+                $t .= "/" . str_replace("%2F", "/", $m[2]);
+                $options = $m[1] . $m[3];
+            }
+            $options = preg_replace('/&(?:amp;)?\z/', "", $options);
+        }
+        if ($options && preg_match('/\A&(?:amp;)?(.*)\z/', $options, $m))
+            $options = $m[1];
+        if ($options !== "")
+            $t .= "?" . $options;
+        if ($anchor !== "")
+            $t .= $anchor;
+        if ($flags & self::HOTURL_SITE_RELATIVE)
+            return $t;
+        $need_site_path = false;
+        if ($page === "index") {
+            $expect = "index" . Navigation::php_suffix();
+            if (substr($t, 0, strlen($expect)) === $expect
+                && ($t === $expect || $t[strlen($expect)] === "?" || $t[strlen($expect)] === "#")) {
+                $need_site_path = true;
+                $t = substr($t, strlen($expect));
+            }
+        }
+        if (($flags & self::HOTURL_ABSOLUTE) || $this !== Conf::$g)
+            return $this->opt("paperSite") . "/" . $t;
+        else {
+            $siteurl = Navigation::siteurl();
+            if ($need_site_path && $siteurl === "")
+                $siteurl = Navigation::site_path();
+            return $siteurl . $t;
+        }
+    }
+
+    function hoturl_site_relative($page, $options = null) {
+        return $this->hoturl($page, $options, self::HOTURL_SITE_RELATIVE);
+    }
+
+    function hoturl_post($page, $options = null) {
+        return $this->hoturl($page, $options, self::HOTURL_POST);
+    }
+
+    function hoturl_raw($page, $options = null) {
+        return $this->hoturl($page, $options, self::HOTURL_RAW);
+    }
+
 
     //
     // Paper storage
@@ -2908,7 +3025,7 @@ class Conf {
         $is_home = $id === "home";
         $site_div = '<div id="header_site" class="'
             . ($is_home ? "header_site_home" : "header_site_page")
-            . '"><h1><a class="qq" href="' . hoturl("index") . '">'
+            . '"><h1><a class="qq" href="' . $this->hoturl("index") . '">'
             . htmlspecialchars($this->short_name);
         if (!$is_home)
             $site_div .= ' <span style="font-weight:normal">Home</span>';
@@ -2920,9 +3037,9 @@ class Conf {
             // profile link
             $profile_parts = [];
             if ($Me->has_email() && !$Me->disabled) {
-                $profile_parts[] = '<a class="q" href="' . hoturl("profile") . '"><strong>'
+                $profile_parts[] = '<a class="q" href="' . $this->hoturl("profile") . '"><strong>'
                     . htmlspecialchars($Me->email)
-                    . '</strong></a> &nbsp; <a href="' . hoturl("profile") . '">Profile</a>';
+                    . '</strong></a> &nbsp; <a href="' . $this->hoturl("profile") . '">Profile</a>';
             }
 
             // "act as" link
@@ -2942,11 +3059,11 @@ class Conf {
             // help, sign out
             $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
             if (!$Me->disabled)
-                $profile_parts[] = '<a href="' . hoturl("help", $x) . '">Help</a>';
+                $profile_parts[] = '<a href="' . $this->hoturl("help", $x) . '">Help</a>';
             if (!$Me->has_email() && !isset($this->opt["httpAuthLogin"]))
-                $profile_parts[] = '<a href="' . hoturl("index", "signin=1") . '" class="nw">Sign in</a>';
+                $profile_parts[] = '<a href="' . $this->hoturl("index", "signin=1") . '" class="nw">Sign in</a>';
             if (!$Me->is_empty() || isset($this->opt["httpAuthLogin"]))
-                $profile_parts[] = '<a href="' . hoturl_post("index", "signout=1") . '" class="nw">Sign out</a>';
+                $profile_parts[] = '<a href="' . $this->hoturl_post("index", "signout=1") . '" class="nw">Sign out</a>';
 
             if (!empty($profile_parts))
                 $profile_html .= join(' <span class="barsep">·</span> ', $profile_parts);
