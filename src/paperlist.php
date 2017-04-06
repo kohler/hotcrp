@@ -83,9 +83,9 @@ class PaperListReviewAnalysis {
         if (!$this->row)
             return $t;
         if ($this->needsSubmit)
-            $href = hoturl("review", "r=" . unparseReviewOrdinal($this->row));
+            $href = $this->row->conf->hoturl("review", "r=" . unparseReviewOrdinal($this->row));
         else
-            $href = hoturl("paper", "p=" . $this->row->paperId . "#r" . unparseReviewOrdinal($this->row));
+            $href = $this->row->conf->hoturl("paper", "p=" . $this->row->paperId . "#r" . unparseReviewOrdinal($this->row));
         return '<a href="' . $href . '">' . $t . '</a>';
     }
 }
@@ -378,7 +378,7 @@ class PaperList {
                    && $row->reviewSubmitted > 0
                    && $row->reviewContactId != $this->contact->contactId)
             $pl .= "#r" . unparseReviewOrdinal($row);
-        return hoturl($pt, $pl);
+        return $row->conf->hoturl($pt, $pl);
     }
 
     // content downloaders
