@@ -22,15 +22,17 @@ class PaperListRenderState {
 }
 
 class PaperListReviewAnalysis {
+    private $prow;
+    private $row = null;
     public $needsSubmit = false;
     public $round = "";
-    private $row = null;
-    function __construct($row, Conf $conf) {
+    function __construct($row, PaperInfo $prow) {
+        $this->prow = $prow;
         if ($row->reviewId) {
             $this->row = $row;
             $this->needsSubmit = !get($row, "reviewSubmitted");
             if ($row->reviewRound)
-                $this->round = htmlspecialchars($conf->round_name($row->reviewRound));
+                $this->round = htmlspecialchars($prow->conf->round_name($row->reviewRound));
         }
     }
     function icon_html($includeLink) {
@@ -65,13 +67,13 @@ class PaperListReviewAnalysis {
             return "Delegated";
         else if ($this->row->reviewType == REVIEW_EXTERNAL
                  && $this->row->timeApprovalRequested)
-            return "Awaiting&nbsp;approval";
+            return "Awaiting approval";
         else if ($this->row->reviewModified > 1)
-            return "In&nbsp;progress";
+            return "In progress";
         else if ($this->row->reviewModified > 0)
             return "Accepted";
         else
-            return "Not&nbsp;started";
+            return "Not started";
     }
     function status_html() {
         $t = $this->description_html();
@@ -83,9 +85,9 @@ class PaperListReviewAnalysis {
         if (!$this->row)
             return $t;
         if ($this->needsSubmit)
-            $href = $this->row->conf->hoturl("review", "r=" . unparseReviewOrdinal($this->row));
+            $href = $this->prow->conf->hoturl("review", "r=" . unparseReviewOrdinal($this->row));
         else
-            $href = $this->row->conf->hoturl("paper", "p=" . $this->row->paperId . "#r" . unparseReviewOrdinal($this->row));
+            $href = $this->prow->conf->hoturl("paper", "p=" . $this->row->paperId . "#r" . unparseReviewOrdinal($this->row));
         return '<a href="' . $href . '">' . $t . '</a>';
     }
 }
@@ -1180,7 +1182,7 @@ class PaperList {
     }
 
     function make_review_analysis($xrow, PaperInfo $row) {
-        return new PaperListReviewAnalysis($xrow, $row->conf);
+        return new PaperListReviewAnalysis($xrow, $row);
     }
 
     function add_header_script($script, $uniqueid = false) {
