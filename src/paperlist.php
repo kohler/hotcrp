@@ -151,6 +151,8 @@ class PaperList {
 
     static public $include_stash = true;
 
+    static public $magic_sort_info; // accessed by sort function during _sort
+
     function __construct($search, $args = array(), $qreq = null) {
         $this->search = $search;
         $this->conf = $this->search->conf;
@@ -275,16 +277,14 @@ class PaperList {
     }
 
     private function _sort($rows, $duplicates) {
-        global $magic_sort_info;      /* ugh, PHP constraints */
-
-        $code = "global \$magic_sort_info; \$x = 0;\n";
+        $code = "\$x = 0;\n";
         if (($thenmap = $this->search->thenmap)) {
             foreach ($rows as $row)
                 $row->_then_sort_info = $thenmap[$row->paperId];
             $code .= "if ((\$x = \$a->_then_sort_info - \$b->_then_sort_info)) return \$x < 0 ? -1 : 1;\n";
         }
 
-        $magic_sort_info = $this->sorters;
+        self::$magic_sort_info = $this->sorters;
         foreach ($this->sorters as $i => $s) {
             $s->field->sort_prepare($this, $rows, $s);
             $rev = ($s->reverse ? "-" : "");
@@ -292,7 +292,7 @@ class PaperList {
                 $code .= "if (!\$x)";
             else
                 $code .= "if (!\$x && \$a->_then_sort_info == {$s->thenmap})";
-            $code .= " { \$s = \$magic_sort_info[$i]; "
+            $code .= " { \$s = PaperList::\$magic_sort_info[$i]; "
                 . "\$x = $rev\$s->field->compare(\$a, \$b, \$s); }\n";
         }
 
@@ -308,7 +308,7 @@ class PaperList {
         $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
 
         usort($rows, create_function("\$a, \$b", $code));
-        unset($magic_sort_info);
+        self::$magic_sort_info = null;
         return $rows;
     }
 
