@@ -38,8 +38,12 @@ additional packages for PHP and MySQL, such as:
 * Debian Linux: php5-common, php5-gd, php5-mysql,
   libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x),
   zip, (poppler-utils)
-* Ubuntu Linux: php5-common, php5-gd, php5-mysql,
+* Ubuntu Linux (before 16.04): php5-common, php5-gd, php5-mysql,
   libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x),
+  zip, (poppler-utils), and a package for SMTP support, such
+  as sendmail or postfix
+* Ubuntu Linux (16.04 and later): php-common, php-gd, php-mysql,
+  libapache2-mod-php (or libapache-mod-php for Apache 1.x),
   zip, (poppler-utils), and a package for SMTP support, such
   as sendmail or postfix
 
@@ -62,7 +66,9 @@ stored in `conf/options.php`, which HotCRP marks as world-unreadable. You must
 ensure that your PHP can read this file.
 
 2. Edit `conf/options.php`, which is annotated to guide you.
-(`lib/createdb.sh` creates this file based on `src/distoptions.php`.)
+(`lib/createdb.sh` creates this file based on `src/distoptions.php`.) Make
+sure that `conf/options.php` is readable by the user that your webserver runs
+as.
 
 3. Configure your web server to access HotCRP. The right way to do this
 depends on which server you’re running.
