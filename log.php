@@ -216,8 +216,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     }
 
     $act = $row->action;
-    $t = "<td class='pl pl_logid'>" . htmlspecialchars($row->logId) . "</td>"
-        . "<td class='pl pl_time'>" . $Conf->unparse_time_short($row->timestamp) . "</td>"
+    $t = "<td class='pl pl_time'>" . $Conf->unparse_time_short($row->timestamp) . "</td>"
         . "<td class='pl pl_ip'>" . htmlspecialchars($row->ipaddr) . "</td>"
         . "<td class='pl pl_name'>";
     if ($row->email) {
@@ -266,7 +265,6 @@ searchbar();
 if (count($trs)) {
     echo "<table class='pltable pltable_full'>
   <thead><tr class='pl_headrow'>
-    <th class='pll pl_logid'>#</th>
     <th class='pll pl_time'>Time</th>
     <th class='pll pl_ip'>IP</th>
     <th class='pll pl_name'>Account</th>

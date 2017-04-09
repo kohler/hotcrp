@@ -1538,9 +1538,6 @@ img.bm {
 	font-weight: bold;
 	font-size: smaller;
 }
-th.pl.pl_logid, td.pl.pl_logid {
-	padding-right: 12px;
-}
 table.setreviewform th {
 	border-bottom: 1px solid #999999;
 }
@@ -1668,7 +1665,7 @@ th.pll {
 	text-align: left;
 }
 
-th.plc, th.plrd, th.pl_id, th.pl_logid, th.pl_sel, th.pl_confsel,
+th.plc, th.plrd, th.pl_id, th.pl_sel, th.pl_confsel,
 th.pl_revtype, th.pl_revstat, th.pl_topicscore, th.pl_desirability,
 th.pl_score, th.pl_uscores, th.pl_tag, th.pl_tagval, th.pl_formula {
 	text-align: center;
@@ -1678,7 +1675,7 @@ th.plr {
 	text-align: right;
 }
 
-td.plr, td.plrd, td.pl_id, td.pl_logid, td.pl_sel,
+td.plr, td.plrd, td.pl_id, td.pl_sel,
 td.pl_revpref, td.pl_topicscore, td.pl_desirability,
 td.pl_tag, td.pl_tagval, td.pl_formula {
 	text-align: right;
