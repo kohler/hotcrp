@@ -47,7 +47,9 @@ class TagMapItem {
     }
     function tag_regex() {
         $t = preg_quote($this->tag);
-        return $this->pattern ? str_replace("\\*", "[^\\s#]*", $t) : $t;
+        if ($this->pattern)
+            $t = str_replace("\\*", "[^\\s#]*", $t);
+        return $t;
     }
     function order_anno_list() {
         if ($this->order_anno_list == false) {
