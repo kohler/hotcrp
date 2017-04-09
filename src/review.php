@@ -1140,29 +1140,32 @@ $blind\n";
             else if (!$fval)
                 $fval = "";
 
-            $x .= "\n==+== " . chr(64 + $i) . ". " . $f->name;
-            if ($f->view_score < VIEWSCORE_REVIEWERONLY)
-                $x .= " (secret)";
-            else if ($f->view_score < VIEWSCORE_PC)
-                $x .= " (shown only to chairs)";
-            else if ($f->view_score < VIEWSCORE_AUTHOR)
-                $x .= " (hidden from authors)";
-            $x .= "\n";
+            $y = "==+== " . chr(64 + $i) . ". ";
+            $x .= "\n" . prefix_word_wrap($y, $f->name, "==+==    ");
             if ($f->description) {
                 $d = cleannl($f->description);
                 if (strpbrk($d, "&<") !== false)
                     $d = self::cleanDescription($d);
-                $x .= prefix_word_wrap("==-==    ", $d, "==-==    ");
+                $x .= prefix_word_wrap("==-==    ", trim($d), "==-==    ");
             }
             if ($f->has_options) {
-                $first = true;
+                $x .= "==-== Choices:\n";
                 foreach ($f->options as $num => $value) {
-                    $y = ($first ? "==-== Choices: " : "==-==          ") . "$num. ";
+                    $y = "==-==    $num. ";
                     $x .= prefix_word_wrap($y, $value, str_pad("==-==", strlen($y)));
-                    $first = false;
                 }
                 if ($f->allow_empty)
-                    $x .= "==-==          No entry\n==-== Enter your choice:\n";
+                    $x .= "==-==    No entry\n";
+            }
+            if ($f->view_score < VIEWSCORE_REVIEWERONLY)
+                $x .= "==-== Secret field.\n";
+            else if ($f->view_score < VIEWSCORE_PC)
+                $x .= "==-== Shown only to chairs.\n";
+            else if ($f->view_score < VIEWSCORE_AUTHOR)
+                $x .= "==-== Hidden from authors.\n";
+            if ($f->has_options) {
+                if ($f->allow_empty)
+                    $x .= "==-== Enter your choice:\n";
                 else if ($f->option_letter)
                     $x .= "==-== Enter the letter of your choice:\n";
                 else
@@ -1283,7 +1286,7 @@ $blind\n";
 
         while ($text != "") {
             $pos = strpos($text, "\n");
-            $line = ($pos === FALSE ? $text : substr($text, 0, $pos + 1));
+            $line = ($pos === false ? $text : substr($text, 0, $pos + 1));
             $lineno++;
 
             if (substr($line, 0, 6) == "==+== ") {
@@ -1336,6 +1339,13 @@ $blind\n";
                     $field = "reviewFormat";
                     $mode = 1;
                 } else if (preg_match('/^==\+== [A-Z]\.\s*(.*?)\s*$/', $line, $match)) {
+                    while (substr($text, strlen($line), 6) === "==+== ") {
+                        $pos = strpos($text, "\n", strlen($line));
+                        $xline = ($pos === false ? substr($text, strlen($line)) : substr($text, strlen($line), $pos + 1 - strlen($line)));
+                        if (preg_match('/^==\+==\s+(.*?)\s*$/', $xline, $xmatch))
+                            $match[1] .= " " . $xmatch[1];
+                        $line .= $xline;
+                    }
                     $fname = $match[1];
                     if (!isset($this->fieldName[strtolower($fname)]))
                         $fname = preg_replace('/\s*\((hidden from authors|PC only|shown only to chairs|secret)\)\z/', "", $fname);
@@ -1346,7 +1356,7 @@ $blind\n";
                         $nfields++;
                     } else {
                         $this->garbageMessage($tf, $lineno, $garbage);
-                        self::tfError($tf, true, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for " . htmlspecialchars($this->conf->short_name) . " reviews.  Ignoring this section.", $lineno);
+                        self::tfError($tf, true, "Review field “" . htmlentities($fname) . "” is not used for " . htmlspecialchars($this->conf->short_name) . " reviews.  Ignoring this section.", $lineno);
                         $field = null;
                     }
                     $mode = 1;
