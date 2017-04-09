@@ -1172,7 +1172,7 @@ $blind\n";
                     $x .= "==-== Enter the number of your choice:\n";
                 if ($fval == "" && $f->allow_empty)
                     $fval = "No entry";
-                else
+                else if ($fval == "")
                     $fval = "(Your choice here)";
             } else if ($format_description)
                 $x .= prefix_word_wrap("==-== ", $format_description, "==-== ");
