@@ -35,13 +35,9 @@ Apache is preloaded on most Linux distributions. You may need to install
 additional packages for PHP and MySQL, such as:
 
 * Fedora Linux: php-mysql, php-gd, zip, (poppler-utils)
-* Debian Linux: php5-common, php5-gd, php5-mysql,
-  libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x),
-  zip, (poppler-utils)
-* Ubuntu Linux: php5-common, php5-gd, php5-mysql,
-  libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x),
-  zip, (poppler-utils), and a package for SMTP support, such
-  as sendmail or postfix
+* Ubuntu Linux: php-common, php-gd, php-mysql, libapache2-mod-php (or
+  libapache-mod-php for Apache 1.x), zip, (poppler-utils), and a package for
+  SMTP support, such as sendmail or postfix
 
 You may need to restart the Apache web server after installing these
 packages (`sudo apachectl graceful` or `sudo apache2ctl graceful`). If
