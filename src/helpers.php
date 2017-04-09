@@ -353,10 +353,11 @@ class SessionList {
         } else
             return null;
     }
-    function info_string() {
+    function info_string($minimal = false) {
         $j = ["ids" => self::encode_ids($this->ids)];
         foreach (get_object_vars($this) as $k => $v)
-            if ($k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "id_position")
+            if ($k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "id_position"
+                && (!$minimal || $k === "listid" || $k === "description" || $k === "url"))
                 $j[$k] = $v;
         return json_encode($j);
     }
@@ -398,7 +399,10 @@ class SessionList {
     }
     function set_cookie() {
         global $Now;
-        setcookie("hotlist-info", $this->info_string(), $Now + 20, Navigation::site_path());
+        $s = $this->info_string();
+        if (strlen($s) > 1500)
+            $s = $this->info_string(true);
+        setcookie("hotlist-info", $s, $Now + 20, Navigation::site_path());
     }
     static function clear_cookie() {
         global $Now;
