@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class GetJson_SearchAction extends SearchAction {
+class GetJsonPapers_SearchAction extends SearchAction {
     private $iszip;
     private $zipdoc;
     public function __construct($iszip) {
@@ -55,5 +55,49 @@ class GetJson_SearchAction extends SearchAction {
     }
 }
 
-SearchAction::register("get", "json", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJson_SearchAction(false));
-SearchAction::register("get", "jsonattach", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJson_SearchAction(true));
+class GetJsonReviews_SearchAction extends SearchAction {
+    # tailored for Review Quality Collector. Don't remove parts.
+    private $iszip;
+    private $zipdoc;
+    function allow(Contact $user) {
+        return $user->is_manager();
+    }
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        $actions[] = [3070, $this->subname, "Reviews", "Reviews (JSON)"];
+    }
+    function run(Contact $user, $qreq, $ssel) {
+        $conf = $user->conf;
+        $results = [];
+        $results["hotcrp_version"] = HOTCRP_VERSION;
+        //----- get reviews:
+        $reviews = $conf->qe_raw("select * from PaperReview where paperId in (" . implode(",", $ssel->selection()) . ")");
+        $results["reviews"] = $reviews->fetch_all(MYSQLI_ASSOC);
+        //----- get papers:
+        $papers = $conf->qe_raw("select * from Paper where paperId in (" . implode(",", $ssel->selection()) . ")");
+        $the_papers = $papers->fetch_all(MYSQLI_ASSOC);
+        $nullify_sha = function($paper) { unset($paper["sha1"]); return $paper; };
+        $the_papers = array_map($nullify_sha, $the_papers);
+        $results["papers"] = $the_papers;
+        //----- get reviewers:
+        $the_ids = implode(",", $ssel->selection());
+        $query = "select contactId, firstName, lastName, unaccentedName, email, preferredEmail, " .
+            "affiliation, country, roles, disabled, contactTags " .
+            "from contactinfo where contactId in (" .
+            "select distinct contactId from PaperReview where paperId in (" .
+            $the_ids . "))";
+        $contacts = $conf->qe_raw($query);
+        $results["contacts"] = $contacts->fetch_all(MYSQLI_ASSOC);
+        //----- get review form descriptors:
+        $reviewform = $conf->qe_raw("select data from Settings where name = 'review_form'");
+        $results["reviewform"] = $reviewform->fetch_all(MYSQLI_ASSOC);
+        //----- export:
+        header("Content-Type: application/json");
+        #header("Content-Disposition: attachment; filename=" . "review-data.json");
+        echo json_encode($results, JSON_PRETTY_PRINT | JSON_PARTIAL_OUTPUT_ON_ERROR | JSON_HEX_QUOT) . "\n";
+        exit;
+    }
+}
+
+SearchAction::register("get", "json", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJsonPapers_SearchAction(false));
+SearchAction::register("get", "jsonattach", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJsonPapers_SearchAction(true));
+SearchAction::register("get", "jsonreviews", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJsonReviews_SearchAction(false));
