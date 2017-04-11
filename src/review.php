@@ -268,7 +268,7 @@ class ReviewField {
         if (!$this->option_letter || is_numeric($value))
             $value = (float) $value;
         else if (strlen($value) === 1)
-            $value = $this->option_letter - ord($value);
+            $value = (float) $this->option_letter - ord($value);
         else if (ord($value[0]) + 1 === ord($value[1]))
             $value = ($this->option_letter - ord($value[0])) - 0.5;
         if (!is_float($value) || $value <= 0.8)
