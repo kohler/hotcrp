@@ -513,13 +513,13 @@ function value($key, $value) {
 function contact_value($key, $field = null) {
     global $Acct, $useRequest, $Qreq;
     if ($useRequest && isset($Qreq[$key]))
-        return htmlspecialchars($Qreq[$key]);
+        return $Qreq[$key];
     else if ($field == "password") {
         $v = $Acct->plaintext_password();
-        return htmlspecialchars($v ? : "");
+        return $v ? : "";
     } else if ($field !== false) {
         $v = $field ? $Acct->$field : $Acct->$key;
-        return htmlspecialchars($v === null ? "" : $v);
+        return $v !== null ? $v : "";
     } else
         return "";
 }
@@ -666,7 +666,7 @@ if (!$Conf->external_login())
     echofield(0, "uemail", "Email",
               Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus", "size" => 52]));
 else if (!$newProfile) {
-    echofield(0, "uemail", "Username", contact_value("uemail", "email"));
+    echofield(0, "uemail", "Username", htmlspecialchars(contact_value("uemail", "email")));
     echofield(0, "preferredEmail", "Email",
               Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "want-focus", "size" => 52]));
 } else {
@@ -796,7 +796,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     We use this information when assigning reviews.
     For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;
     or, for a whole institution, &ldquo;<tt>INRIA</tt>&rdquo;.</div>
-    <textarea name='collaborators' rows='5' cols='50'>", contact_value("collaborators"), "</textarea>\n";
+    <textarea name='collaborators' rows='5' cols='50'>", htmlspecialchars(contact_value("collaborators")), "</textarea>\n";
 
     $topics = $Conf->topic_map();
     if (!empty($topics)) {
