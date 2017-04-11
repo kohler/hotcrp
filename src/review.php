@@ -549,19 +549,22 @@ class ReviewForm {
 
             echo '<div class="revev">';
             if ($f->has_options) {
-                echo '<select name="', $field, '" onchange="hiliter(this)">';
-                $noentry = $f->allow_empty ? "No entry" : "(Your choice here)";
+                echo "<table><tbody>\n";
                 if (!$f->parse_value($fval, true))
-                    echo '<option value="0" selected="selected">', $noentry, '</option>';
-                else if ($f->allow_empty)
-                    echo '<option value="0">', $noentry, '</option>';
+                    $fval = 0;
+                if ($f->allow_empty)
+                    echo '<tr><td>',
+                        Ht::radio_h($field, 0, $fval == 0, ["id" => $field . "_0"]),
+                        '&nbsp;</td>',
+                        '<td colspan="2">', Ht::label("No entry"), "</td></tr>\n";
                 foreach ($f->options as $num => $what) {
-                    echo '<option value="', $num, '"';
-                    if ($num == $fval)
-                        echo ' selected="selected"';
-                    echo ">$num. ", htmlspecialchars($what), "</option>";
+                    echo '<tr><td>',
+                        Ht::radio_h($field, $num, $fval == $num, ["id" => $field . "_" . $num]),
+                        '&nbsp;</td>',
+                        '<td>', Ht::label($f->unparse_value($num, ReviewField::VALUE_REV_NUM) . '&nbsp;'), '</td>',
+                        '<td>', Ht::label(htmlspecialchars($what)), "</td></tr>\n";
                 }
-                echo "</select>";
+                echo "</tbody></table>";
             } else {
                 if ($format_description)
                     echo $format_description;
