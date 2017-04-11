@@ -1348,10 +1348,12 @@ class Formula {
         } else if (preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {
             $e = new DecisionFexpr;
             $t = $m[1];
-        } else if (preg_match('/\A(?:is:?)?(rev?|pc(?:rev?)?)\b(.*)\z/is', $t,  $m)) {
-            $rt = strtolower($m[1][0]) === "p" ? REVIEW_PC : 0;
-            $e = new Fexpr(">=", new RevtypeFexpr, new ConstantFexpr($rt, Fexpr::FREVTYPE));
-            $t = $m[2];
+        } else if (preg_match('/\Ais:?rev?\b(.*)\z/is', $t, $m)) {
+            $e = new Fexpr(">=", new RevtypeFexpr, new ConstantFexpr(0, Fexpr::FREVTYPE));
+            $t = $m[1];
+        } else if (preg_match('/\A(?:is:?)?pcrev?\b(.*)\z/is', $t, $m)) {
+            $e = new Fexpr(">=", new RevtypeFexpr, new ConstantFexpr(REVIEW_PC, Fexpr::FREVTYPE));
+            $t = $m[1];
         } else if (preg_match('/\A(?:is:?)?(pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?|optional)\b(.*)\z/is', $t, $m)) {
             $e = new Fexpr("==", new RevtypeFexpr, new ConstantFexpr($m[1], Fexpr::FREVTYPE));
             $t = $m[2];
@@ -1366,7 +1368,7 @@ class Formula {
                    || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
             $e = new TagFexpr($m[1], true);
             $t = $m[2];
-        } else if (preg_match('/\A((?:r|re|rev|review)(?:|type|round|words|auwords)|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
+        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)?|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
             $t = ":" . $m[2];
             $e = $this->_reviewer_decoration($this->_reviewer_base($m[1]), $t);
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer)\b(.*)\z/is', $t, $m)) {
