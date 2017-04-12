@@ -5493,7 +5493,7 @@ function prepare() {
     $(document.body).on("click", "a", add_list);
     $(document.body).on("submit", "form", add_list);
     $(document.body).on("click", "tbody.pltable > tr.pl", row_click);
-    $(document.body).on("click", "span.fn5 > a", override_conflict);
+    $(document.body).on("click", "a.fn5", override_conflict);
     hotcrp_list && $(window).on("beforeunload", unload_list);
 }
 document.body ? prepare() : $(prepare);
