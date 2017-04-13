@@ -1856,7 +1856,7 @@ class PaperTable {
 
     function _paptabTabLink($text, $link, $image, $highlight) {
         return '<div class="' . ($highlight ? "papmodex" : "papmode")
-            . '"><a href="' . $link . '" class="xx">'
+            . '"><a href="' . $link . '" class="noul">'
             . Ht::img($image, "[$text]", "papmodeimg")
             . "&nbsp;<u" . ($highlight ? ' class="x"' : "") . ">" . $text
             . "</u></a></div>\n";

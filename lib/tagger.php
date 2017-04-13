@@ -714,10 +714,14 @@ class Tagger {
             foreach ($m as $mx)
                 if (($t = $dt->check($mx[1])) && $t->badges) {
                     $tag = $this->unparse(trim($mx[0]));
-                    $b = '<span class="badge ' . $t->badges[0] . 'badge">#' . $tag . '</span>';
-                    if (($link = $this->link($tag)))
-                        $b = '<a class="qq" href="' . $link . '">' . $b . '</a>';
-                    $x .= ' ' . $b;
+                    if (($link = $this->link($tag))) {
+                        if (($hash = strpos($tag, "#")) !== false)
+                            $b = '<a class="nn" href="' . $link . '"><u class="x">#' . substr($tag, 0, $hash) . '</u>' . substr($tag, $hash) . '</a>';
+                        else
+                            $b = '<a class="qq" href="' . $link . '">#' . $tag . '</a>';
+                    } else
+                        $b = "#$tag";
+                    $x .= ' <span class="badge ' . $t->badges[0] . 'badge">' . $b . '</span>';
                 }
         return $x === "" ? "" : '<span class="tagdecoration">' . $x . '</span>';
     }

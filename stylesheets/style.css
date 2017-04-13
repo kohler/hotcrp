@@ -108,14 +108,14 @@ table.vbar td.quicklinks, #trackerconnect {
 a.q, a.u, a.qx {
 	color: black;
 }
-a.qq, a.uu, a.maillink, a.btn {
+a.qq, a.uu, a.nn, a.maillink, a.btn {
 	color: inherit;
 }
-a.q:active, a.u:active, a.qq:active, a.uu:active, a.maillink:active {
+a.q:active, a.qq:active, a.u:active, a.uu:active, a.nn:active, a.maillink:active {
 	color: red;
 }
-a.q, a.qq, a.qx, a.x, a.xx, a.btn,
-div.papmodex > a, div.papmodex:hover > a.xx, div.leftmenu_item > a,
+a.q, a.qq, a.qx, a.x, a.xx, a.nn, a.btn,
+div.papmodex > a, div.papmodex:hover > a.noul, div.leftmenu_item > a,
 a.pnum, a.ptitle, a.maillink, u.x, .noul {
 	text-decoration: none;
 }

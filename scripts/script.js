@@ -4917,9 +4917,10 @@ function compute_row_tagset(ptr, tagstr) {
                 q = "order:#" + tbase;
             else
                 q = "#" + tbase;
-            h = '<a href="' + hoturl("search", {q: q}) + '" class="qq nw">#' + tbase + '</a>';
             if ((tagx & 2) || tindex != "0")
-                h += "#" + tindex;
+                h = '<a class="nn nw" href="' + hoturl("search", {q: q}) + '"><u class="x">#' + tbase + '</u>#' + tindex + '</a>';
+            else
+                h = '<a class="qq nw" href="' + hoturl("search", {q: q}) + '">#' + tbase + '</a>';
             if (tagx & 1)
                 h = '<strong>' + h + '</strong>';
             t.push([h, text.substring(twiddle, hash), text.substring(hash + 1), tagx]);
