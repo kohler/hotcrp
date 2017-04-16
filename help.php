@@ -1400,7 +1400,7 @@ administrator’s identity.</p>");
   merit ratings of 2 or better.</p></li>
 
 <li><p><strong>Assign discussion orders using <a
-  href='" . hoturl("help", "t=tags") . "'>tags</a></strong> (optional).  Common
+  href='" . hoturl("help", "t=tags#values") . "'>tags</a></strong> (optional).  Common
   discussion orders include sorted by overall ranking (high-to-low,
   low-to-high, or alternating), sorted by topic, and <a href=\"" .
   hoturl("autoassign", "a=discorder") . "\">grouped by PC conflicts</a>.
@@ -1429,9 +1429,11 @@ administrator’s identity.</p>");
 <ol>
 
 <li><p>The <b>meeting tracker</b> can keep PC members coordinated.
-  Search for a discussion order, navigate to the first paper in that
-  order, and activate the tracker using the “&#9759;”
-  button. From that point on, the paper being viewed by that tab
+  Create a search with papers in whatever order you like (such as an explicit
+  <a href=\"" . hoturl("help", "t=tags#values") . "\">discussion order</a>).
+  Then navigate to the first paper in that
+  order and select “&#9759;” to activate the tracker.
+  From that point on, that browser tab’s position in the order
   is broadcast to all logged-in PC members, along with the next papers
   in the discussion order. You can also view the discussion
   status on the <a href=\"" . hoturl("buzzer") . "\">discussion
