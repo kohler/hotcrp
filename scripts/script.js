@@ -5482,10 +5482,20 @@ function unload_list() {
     hotcrp_list && set_cookie(hotcrp_list.info);
 }
 function row_click(e) {
-    var j = $(e.target);
-    if (j.hasClass("pl_id") || j.hasClass("pl_title")
-        || j.closest("td").hasClass("pl_rowclick"))
-        $(this).find("a.pnum")[0].click();
+    var $tgt = $(e.target);
+    if (e.target.tagName !== "A"
+        && ($tgt.hasClass("pl_id") || $tgt.hasClass("pl_title")
+            || $tgt.closest("td").hasClass("pl_rowclick"))) {
+        var $a = $(this).find("a.pnum").first();
+        add_list.call($a[0]);
+        if (e.metaKey || e.ctrlKey || e.which == 2) {
+            var w = window.open($a.attr("href"), "_blank");
+            w.blur();
+            window.focus();
+        } else
+            window.location = $a.attr("href");
+        event_prevent(e);
+    }
 }
 function override_conflict(e) {
     return foldup(this, e, {n: 5, f: false});
