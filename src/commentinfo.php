@@ -66,12 +66,15 @@ class CommentInfo {
             $t = array("papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
             if (!$prow->has_author($Me))
                 $t[] = "papercomment.nonauthor=true";
+            $crow = new CommentInfo(null, $prow, $Conf);
+            $crow->commentType = COMMENTTYPE_RESPONSE;
             foreach ($Conf->resp_round_list() as $i => $rname) {
                 $isuf = $i ? "_$i" : "";
                 $wl = $Conf->setting("resp_words$isuf", 500);
                 $j = array("words" => $wl);
                 $ix = false;
-                if ($Me->can_respond($prow, (object) array("commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i))) {
+                $crow->commentRound = $i;
+                if ($Me->can_respond($prow, $crow)) {
                     if ($i)
                         $ix = $Conf->message_html("resp_instrux_$i", array("wordlimit" => $wl));
                     if ($ix === false)

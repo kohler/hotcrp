@@ -418,20 +418,33 @@ else {
     }
     // restore comment across logout bounce
     if (req("editcomment")) {
+        $cid = req("c");
+        $preferred_resp_round = false;
+        if (($x = req("response")))
+            $preferred_resp_round = $Conf->resp_round_number($x);
+        if ($preferred_resp_round === false)
+            $preferred_resp_round = $Me->preferred_resp_round_number($prow);
         $j = null;
-        if (($cid = req("c"))) {
-            foreach ($paperTable->viewable_comments() as $crow)
-                if ($crow->commentId == $cid)
-                    $j = $crow->unparse_json($Me, true);
+        foreach ($paperTable->viewable_comments() as $crow) {
+            if ($crow->commentId == $cid
+                || ($cid === null
+                    && ($crow->commentType & COMMENTTYPE_RESPONSE) != 0
+                    && $crow->commentRound === $preferred_resp_round))
+                $j = $crow->unparse_json($Me, true);
         }
-        if (!$j)
-            $j = (object) ["is_new" => true, "response" => req("response"), "editable" => true];
-        $j->text = req("comment");
-        $j->visibility = req("visibility");
-        $tags = trim((string) req("commenttags"));
-        $j->tags = $tags === "" ? [] : preg_split('/\s+/', $tags);
-        $j->blind = !!req("blind");
-        $j->draft = !!req("draft");
+        if (!$j) {
+            $j = (object) ["is_new" => true, "editable" => true];
+            if ($preferred_resp_round !== false)
+                $j->response = $Conf->resp_round_name($preferred_resp_round);
+        }
+        if (($x = req("comment")) !== null) {
+            $j->text = $x;
+            $j->visibility = req("visibility");
+            $tags = trim((string) req("commenttags"));
+            $j->tags = $tags === "" ? [] : preg_split('/\s+/', $tags);
+            $j->blind = !!req("blind");
+            $j->draft = !!req("draft");
+        }
         Ht::stash_script("papercomment.edit(" . json_encode($j) . ")");
     }
 }

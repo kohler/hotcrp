@@ -2662,6 +2662,18 @@ class Contact {
         return $whyNot;
     }
 
+    function preferred_resp_round_number(PaperInfo $prow) {
+        $rights = $this->rights($prow);
+        if ($rights->act_author) {
+            foreach ($prow->conf->resp_round_list() as $rname) {
+                $rnum = $prow->conf->resp_round_number($rname);
+                if ($rnum !== false && $prow->conf->time_author_respond($rnum))
+                    return $rnum;
+            }
+        }
+        return false;
+    }
+
     function can_view_comment(PaperInfo $prow, $crow, $forceShow) {
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
         $rights = $this->rights($prow, $forceShow);
