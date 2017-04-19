@@ -553,15 +553,15 @@ class ReviewForm {
                 if (!$f->parse_value($fval, true))
                     $fval = 0;
                 if ($f->allow_empty)
-                    echo '<tr><td>',
+                    echo '<tr><td class="nw">',
                         Ht::radio_h($field, 0, $fval == 0, ["id" => $field . "_0"]),
                         '&nbsp;</td>',
                         '<td colspan="2">', Ht::label("No entry"), "</td></tr>\n";
                 foreach ($f->options as $num => $what) {
-                    echo '<tr><td>',
+                    echo '<tr><td class="nw">',
                         Ht::radio_h($field, $num, $fval == $num, ["id" => $field . "_" . $num]),
                         '&nbsp;</td>',
-                        '<td>', Ht::label($f->unparse_value($num, ReviewField::VALUE_REV_NUM) . '&nbsp;'), '</td>',
+                        '<td class="nw">', Ht::label($f->unparse_value($num, ReviewField::VALUE_REV_NUM) . '&nbsp;'), '</td>',
                         '<td>', Ht::label(htmlspecialchars($what)), "</td></tr>\n";
                 }
                 echo "</tbody></table>";
