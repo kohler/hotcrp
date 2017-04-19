@@ -3123,6 +3123,7 @@ function add(cj, editing) {
     if (editing == null && cj.response && cj.draft && cj.editable)
         editing = true;
     render_cmt(j, cj, editing);
+    return $$(cid);
 }
 
 function edit_this() {
@@ -3130,10 +3131,12 @@ function edit_this() {
 }
 
 function edit(cj) {
-    var cid = cj_cid(cj);
-    if (!$$(cid) && cj.response)
-        add(cj, true);
-    var $c = $cmt($$(cid));
+    var cid = cj_cid(cj), elt = $$(cid);
+    if (!elt && cj.response)
+        elt = add(cj, true);
+    if (!elt && /\beditcomment\b/.test(window.location.search))
+        return false;
+    var $c = $cmt(elt);
     if (!$c.find("textarea[name='comment']").length)
         render_cmt($c, cj, true);
     location.hash = "#" + cid;
