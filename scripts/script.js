@@ -5440,12 +5440,15 @@ $(function () {
 
 // list management, conflict management
 (function ($) {
+var cookie_set_at;
 function set_cookie(info) {
     var p = "", m;
     if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
         p = "; path=" + m[1];
-    if (info)
+    if (info) {
+        cookie_set_at = now_msec();
         document.cookie = "hotlist-info=" + encodeURIComponent(info) + "; max-age=20" + p;
+    }
 }
 function is_listable(href) {
     return /^(?:paper|review|profile)(?:|\.php)\//.test(href.substring(siteurl.length));
@@ -5482,7 +5485,8 @@ function add_list() {
     return true;
 }
 function unload_list() {
-    hotcrp_list && set_cookie(hotcrp_list.info);
+    if (hotcrp_list && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
+        set_cookie(hotcrp_list.info);
 }
 function row_click(e) {
     var $tgt = $(e.target);
