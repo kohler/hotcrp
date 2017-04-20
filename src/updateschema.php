@@ -1132,6 +1132,38 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperTag change `tag` `tag` varchar(80) NOT NULL")
         && $conf->ql("alter table PaperTagAnno change `tag` `tag` varchar(80) NOT NULL"))
         $conf->update_schema_version(163);
+    if ($conf->sversion == 163
+        && $conf->ql("alter table Capability change `timeExpires` `timeExpires` bigint(11) NOT NULL")
+        && $conf->ql("alter table ContactInfo change `passwordTime` `passwordTime` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table ContactInfo change `passwordUseTime` `passwordUseTime` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table ContactInfo change `creationTime` `creationTime` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table ContactInfo change `updateTime` `updateTime` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table ContactInfo change `lastLogin` `lastLogin` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table FilteredDocument change `createdAt` `createdAt` bigint(11) NOT NULL")
+        && $conf->ql("alter table Formula change `timeModified` `timeModified` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table Paper change `timeSubmitted` `timeSubmitted` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table Paper change `timeWithdrawn` `timeWithdrawn` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table Paper change `timeFinalSubmitted` `timeFinalSubmitted` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table Paper change `timeModified` `timeModified` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table Paper change `timestamp` `timestamp` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table Paper change `pdfFormatStatus` `pdfFormatStatus` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table PaperComment change `timeModified` `timeModified` bigint(11) NOT NULL")
+        && $conf->ql("alter table PaperComment change `timeNotified` `timeNotified` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table PaperComment change `timeDisplayed` `timeDisplayed` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table PaperOption change `value` `value` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table PaperReview change `timeRequested` `timeRequested` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table PaperReview change `timeRequestNotified` `timeRequestNotified` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table PaperReview change `reviewModified` `reviewModified` bigint(1) DEFAULT NULL")
+        && $conf->ql("alter table PaperReview change `reviewAuthorModified` `reviewAuthorModified` bigint(1) DEFAULT NULL")
+        && $conf->ql("alter table PaperReview change `reviewSubmitted` `reviewSubmitted` bigint(1) DEFAULT NULL")
+        && $conf->ql("alter table PaperReview change `reviewNotified` `reviewNotified` bigint(1) DEFAULT NULL")
+        && $conf->ql("alter table PaperReview change `reviewAuthorNotified` `reviewAuthorNotified` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table PaperReview change `reviewAuthorSeen` `reviewAuthorSeen` bigint(1) DEFAULT NULL")
+        && $conf->ql("alter table PaperReview change `timeDisplayed` `timeDisplayed` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table PaperReview change `timeApprovalRequested` `timeApprovalRequested` bigint(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("alter table PaperStorage change `timestamp` `timestamp` bigint(11) NOT NULL")
+        && $conf->ql("alter table Settings change `value` `value` bigint(11) NOT NULL"))
+        $conf->update_schema_version(164);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
