@@ -18,6 +18,15 @@ function document_error($status, $msg) {
     }
 }
 
+function make_document_history(DocumentInfo $doc) {
+    $pj = ["hash" => $doc->text_hash(), "at" => $doc->timestamp, "mimetype" => $doc->mimetype];
+    if ($doc->size)
+        $pj["size"] = $doc->size;
+    if ($doc->filename)
+        $pj["filename"] = $doc->filename;
+    return $pj;
+}
+
 // Determine the intended paper
 function document_download() {
     global $Conf, $Me;
@@ -118,11 +127,7 @@ function document_download() {
 
         $pjs = $actives = [];
         foreach ($docs as $doc) {
-            $pj = ["hash" => $doc->text_hash(), "at" => $doc->timestamp, "mimetype" => $doc->mimetype];
-            if ($doc->size)
-                $pj["size"] = $doc->size;
-            if ($doc->filename)
-                $pj["filename"] = $doc->filename;
+            $pj = make_document_history($doc);
             $pj["active"] = true;
             $actives[$doc->paperStorageId] = true;
             $pjs[] = $pj;
@@ -131,14 +136,8 @@ function document_download() {
         if ($Me->can_view_document_history($prow)) {
             $result = $Conf->qe("select paperStorageId, paperId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $paperId, $documentType);
             while (($doc = DocumentInfo::fetch($result, $Conf, $prow))) {
-                if (get($actives, $row->paperStorageId))
-                    continue;
-                $pj = ["hash" => $doc->text_hash(), "at" => $row->timestamp, "mimetype" => $row->mimetype];
-                if ($row->size)
-                    $pj["size"] = $row->size;
-                if ($row->filename)
-                    $pj["filename"] = $row->filename;
-                $pjs[] = $pj;
+                if (!get($actives, $doc->paperStorageId))
+                    $pjs[] = make_document_history($doc);
             }
         }
 
