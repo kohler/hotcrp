@@ -2726,8 +2726,11 @@ var vismap = {rev: "hidden from authors",
               pc: "hidden from authors and external reviewers",
               admin: "shown only to administrators"};
 var cmts = {}, has_unload = false;
-var idctr = 0, resp_rounds = {};
-var detwiddle = new RegExp("^" + (hotcrp_user.cid ? hotcrp_user.cid : "") + "~");
+var idctr = 0, resp_rounds = {}, detwiddle;
+if (hotcrp_user && hotcrp_user.cid)
+    detwiddle = new RegExp("^" + hotcrp_user.cid + "~");
+else
+    detwiddle = /^~/;
 
 function $cmt(e) {
     var $c = $(e).closest(".cmtg");
