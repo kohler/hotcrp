@@ -1368,9 +1368,6 @@ img.next {
 table.reviewers, div.revnotes {
 	margin-bottom: 0.5em;
 }
-table.reviewers_scores {
-	margin-top: -0.5em;
-}
 table.reviewers {
 	line-height: 1.25;
 	margin-left: -6px;

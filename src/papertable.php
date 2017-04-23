@@ -2017,7 +2017,7 @@ class PaperTable {
                 htmlspecialchars($status_info[1]), "</span></p>";
             $this->paptabDownload();
             if ($this->paptabAbstract())
-                echo '<div class="paptab">';
+                echo '<div class="paptab paptabr">';
             else
                 echo '<div class="paptab1">';
             $this->paptabAuthors(!$this->editable && $this->mode === "edit"

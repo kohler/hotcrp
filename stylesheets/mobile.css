@@ -40,13 +40,13 @@ h2.paptitle {
 	display: none;
 }
 .paptab {
-	float: none;
 	width: 100%;
+	float: none;
 }
 .paptab_abstract {
 	padding-right: 0;
 }
-.paptab + .paptab {
+.paptabr {
 	padding-top: 1em;
 }
 .papcard, .pedcard, .notecard, .revcard, .cmtcard {
@@ -82,4 +82,14 @@ table.pltable {
 .reviewersdiv {
 	font-size: smaller;
 	overflow-x: scroll;
+	margin-top: -0.25em;
+}
+.rvl, .rvr {
+	width: 100%;
+	float: none;
+}
+.rvr {
+	margin-top: 8px;
+	border-top: 1px solid #ffecef;
+	padding: 8px 0 0;
 }
