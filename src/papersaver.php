@@ -103,7 +103,7 @@ class Default_PaperSaver extends PaperSaver {
         if ($action === "submit")
             $pj->submitted = true;
         else if ($action === "final")
-            $pj->final_submitted = true;
+            $pj->final_submitted = $pj->submitted = true;
         else
             $pj->submitted = false;
 

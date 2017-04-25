@@ -792,6 +792,7 @@ class PaperStatus extends MessageSet {
     function save_paper_json($pj) {
         global $Now;
         assert(!$this->hide_docids);
+        assert(is_object($pj));
 
         $paperid = get($pj, "pid", get($pj, "id", null));
         if ($paperid !== null && is_int($paperid) && $paperid <= 0)
