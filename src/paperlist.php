@@ -980,7 +980,7 @@ class PaperList {
             $jsmap[] = "\"anonau\":2";
         }
         // total folding, row number folding
-        if ($rstate->row_folded)
+        if (isset($rstate->row_folded))
             $classes[] = "fold3c";
         if ($has_sel) {
             $jsmap[] = "\"rownum\":6";
