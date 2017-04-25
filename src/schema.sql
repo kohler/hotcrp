@@ -147,7 +147,7 @@ CREATE TABLE `Mimetype` (
 DROP TABLE IF EXISTS `Paper`;
 CREATE TABLE `Paper` (
   `paperId` int(11) NOT NULL AUTO_INCREMENT,
-  `title` varbinary(256) DEFAULT NULL,
+  `title` varbinary(512) DEFAULT NULL,
   `authorInformation` varbinary(8192) DEFAULT NULL,
   `abstract` varbinary(16384) DEFAULT NULL,
   `collaborators` varbinary(8192) DEFAULT NULL,
@@ -496,7 +496,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 164);
+insert into Settings (name, value) values ('allowPaperOption', 165);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

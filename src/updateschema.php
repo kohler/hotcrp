@@ -1164,6 +1164,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperStorage change `timestamp` `timestamp` bigint(11) NOT NULL")
         && $conf->ql("alter table Settings change `value` `value` bigint(11) NOT NULL"))
         $conf->update_schema_version(164);
+    if ($conf->sversion == 164
+        && $conf->ql("alter table Paper change `title` `title` varbinary(512) DEFAULT NULL"))
+        $conf->update_schema_version(165);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
