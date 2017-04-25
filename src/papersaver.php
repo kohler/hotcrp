@@ -5,7 +5,8 @@
 
 class PaperSaver {
     static private $list = [];
-    static public function register($prio, PaperSaver $saver) {
+
+    static function register($prio, PaperSaver $saver) {
         self::$list[] = [$prio, count(self::$list), $saver];
         usort(self::$list, function ($a, $b) {
             if ($a[0] != $b[0])
@@ -14,25 +15,27 @@ class PaperSaver {
                 return $a[1] - $b[1];
         });
     }
-    static public function apply_all(Contact $user, $pj, $opj, $qreq, $action) {
+    static function apply_all(Contact $user, $opj, Qrequest $qreq, $action) {
+        $pj = PaperStatus::clone_json($opj);
         if (!isset($pj->pid))
             $pj->pid = -1;
         foreach (self::$list as $fn)
             $fn[2]->apply($user, $pj, $opj, $qreq, $action);
+        return $pj;
     }
-    static public function all_diffs($pj, $opj) {
+    static function diffs_all(Contact $user, $pj, $opj) {
         $diffs = [];
         foreach (self::$list as $fn)
-            $fn[2]->diffs($diffs, $pj, $opj);
+            $fn[2]->diffs($diffs, $user, $pj, $opj);
         return $diffs;
     }
 
-    public function apply(Contact $user, $pj, $opj, $qreq, $action) {
+    function apply(Contact $user, $pj, $opj, Qrequest $qreq, $action) {
     }
-    public function diffs(&$diffs, $pj, $opj) {
+    function diffs(&$diffs, Contact $user, $pj, $opj) {
     }
 
-    static public function replace_contacts($pj, $qreq) {
+    static function replace_contacts($pj, $qreq) {
         $pj->contacts = array();
         foreach ($qreq as $k => $v)
             if (str_starts_with($k, "contact_")) {
@@ -52,8 +55,7 @@ class PaperSaver {
 }
 
 class Default_PaperSaver extends PaperSaver {
-    public function apply(Contact $user, $pj, $opj, $qreq, $action) {
-        global $Conf;
+    function apply(Contact $user, $pj, $opj, Qrequest $qreq, $action) {
         // Title, abstract, collaborators
         foreach (array("title", "abstract", "collaborators") as $k)
             if (isset($qreq[$k]))
@@ -116,13 +118,13 @@ class Default_PaperSaver extends PaperSaver {
         }
 
         // Blindness
-        if ($action !== "final" && $Conf->subBlindOptional())
+        if ($action !== "final" && $user->conf->subBlindOptional())
             $pj->nonblind = !$qreq->blind;
 
         // Topics
         if ($qreq->has_topics) {
             $pj->topics = (object) array();
-            foreach ($Conf->topic_map() as $tid => $tname)
+            foreach ($user->conf->topic_map() as $tid => $tname)
                 if (+$qreq["top$tid"] > 0)
                     $pj->topics->$tname = true;
         }
@@ -130,7 +132,7 @@ class Default_PaperSaver extends PaperSaver {
         // Options
         if (!isset($pj->options))
             $pj->options = (object) [];
-        foreach ($Conf->paper_opts->option_list() as $o)
+        foreach ($user->conf->paper_opts->option_list() as $o)
             if ($qreq["has_opt$o->id"]
                 && (!$o->final || $action === "final")) {
                 $okey = $o->abbreviation();
@@ -140,7 +142,7 @@ class Default_PaperSaver extends PaperSaver {
             unset($pj->options);
 
         // PC conflicts
-        if ($Conf->setting("sub_pcconf")
+        if ($user->conf->setting("sub_pcconf")
             && ($action !== "final" || $user->privChair)
             && $qreq->has_pcconf) {
             $cmax = $user->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
@@ -156,8 +158,7 @@ class Default_PaperSaver extends PaperSaver {
         }
     }
 
-    public function diffs(&$diffs, $pj, $opj) {
-        global $Conf;
+    function diffs(&$diffs, Contact $user, $pj, $opj) {
         if (!$opj) {
             $diffs["new"] = true;
             return;
@@ -173,7 +174,7 @@ class Default_PaperSaver extends PaperSaver {
             $diffs["topics"] = true;
         $pjopt = get($pj, "options", (object) []);
         $opjopt = get($opj, "options", (object) []);
-        foreach ($Conf->paper_opts->option_list() as $o) {
+        foreach ($user->conf->paper_opts->option_list() as $o) {
             $oabbr = $o->abbreviation();
             if (!get($pjopt, $oabbr) != !get($opjopt, $oabbr)
                 || (get($pjopt, $oabbr)
@@ -182,7 +183,7 @@ class Default_PaperSaver extends PaperSaver {
                 break;
             }
         }
-        if ($Conf->subBlindOptional() && !get($pj, "nonblind") !== !get($opj, "nonblind"))
+        if ($user->conf->subBlindOptional() && !get($pj, "nonblind") !== !get($opj, "nonblind"))
             $diffs["anonymity"] = true;
         if (json_encode(get($pj, "pc_conflicts")) !== json_encode(get($opj, "pc_conflicts")))
             $diffs["PC conflicts"] = true;

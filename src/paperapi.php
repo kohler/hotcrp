@@ -5,6 +5,7 @@
 
 class PaperApi {
     static function setdecision_api(Contact $user, $qreq, $prow) {
+        global $Now;
         if (!$user->can_set_decision($prow))
             return ["ok" => false, "error" => "You can’t set the decision for paper #$prow->paperId."];
         $dnum = cvtint($qreq->decision);
@@ -15,6 +16,11 @@ class PaperApi {
         if ($result && ($dnum > 0 || $prow->outcome > 0))
             $user->conf->update_paperacc_setting($dnum > 0);
         Dbl::free($result);
+        // accepted papers are always submitted
+        if ($dnum > 0 && $prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0) {
+            $user->conf->qe("update Paper set timeSubmitted=$Now where paperId=?", $prow->paperId);
+            $user->conf->update_papersub_setting(true);
+        }
         if ($result)
             return ["ok" => true, "result" => htmlspecialchars($decs[$dnum])];
         else
