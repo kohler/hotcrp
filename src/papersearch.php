@@ -2104,11 +2104,12 @@ class PaperSearch {
     private $_quiet_count = 0;
 
     var $q;
+    private $_qe;
 
     public $regex = [];
     public $contradictions = [];
-    public $overrideMatchPreg = false;
-    public $matchPreg;
+    private $_match_preg;
+    private $_match_preg_query;
 
     private $contact_match = array();
     private $noratings = false;
@@ -2129,7 +2130,6 @@ class PaperSearch {
     private $_matches = null; // list of ints
 
     static private $_sort_keywords = null;
-    static private $current_search;
 
     static private $_keywords = array("option" => "option", "opt" => "option");
 
@@ -3134,6 +3134,33 @@ class PaperSearch {
         }
     }
 
+    private function _make_qe() {
+        if ($this->_qe !== null)
+            return $this->_qe;
+
+        // parse and clean the query
+        $qe = $this->_searchQueryType($this->q);
+        //Conf::msg_debugt(json_export($qe->export_json()));
+        if (!$qe)
+            $qe = new True_SearchTerm;
+
+        // apply complex limiters (only current example: "acc" for non-chairs)
+        if ($this->limitName === "acc" && !$this->privChair)
+            $qe = SearchTerm::make_op("and", [$qe, $this->_searchQueryWord("dec:yes")]);
+
+        // apply review rounds (top down, needs separate step)
+        if ($this->_has_review_adjustment)
+            $qe = $qe->adjust_reviews(null, $this);
+
+        // extract regular expressions and set _reviewer if the query is
+        // about exactly one reviewer, and warn about contradictions
+        $qe->extract_metadata(true, $this);
+        foreach ($this->contradictions as $contradiction => $garbage)
+            $this->warn($contradiction);
+
+        return ($this->_qe = $qe);
+    }
+
     function _search() {
         if ($this->_matches === false)
             return false;
@@ -3144,23 +3171,7 @@ class PaperSearch {
             return true;
         }
 
-        // parse and clean the query
-        self::$current_search = $this;
-        $qe = $this->_searchQueryType($this->q);
-        //Conf::msg_debugt(json_export($qe->export_json()));
-        if (!$qe)
-            $qe = new True_SearchTerm;
-
-        // apply complex limiters (only current example: "acc" for non-chairs)
-        $limit = $this->limitName;
-        if ($limit === "acc" && !$this->privChair)
-            $qe = SearchTerm::make_op("and", [$qe, $this->_searchQueryWord("dec:yes")]);
-
-        // apply review rounds (top down, needs separate step)
-        if ($this->_has_review_adjustment)
-            $qe = $qe->adjust_reviews(null, $this);
-        self::$current_search = null;
-
+        $qe = $this->_make_qe();
         //Conf::msg_debugt(json_export($qe->export_json()));
 
         // collect clauses into tables, columns, and filters
@@ -3176,6 +3187,7 @@ class PaperSearch {
         //Conf::msg_info(Ht::pre_text(var_export($filters, true)));
 
         // status limitation parts
+        $limit = $this->limitName;
         if ($limit === "editpref")
             $limit = "rable";
         if ($limit === "rable") {
@@ -3405,30 +3417,6 @@ class PaperSearch {
             $this->is_order_anno = $order_anno_tag->tag;
         }
 
-        // extract regular expressions and set _reviewer if the query is
-        // about exactly one reviewer, and warn about contradictions
-        $qe->extract_metadata(true, $this);
-        foreach ($this->contradictions as $contradiction => $garbage)
-            $this->warn($contradiction);
-
-        // set $this->matchPreg from $this->regex
-        if (!$this->overrideMatchPreg) {
-            $this->matchPreg = array();
-            foreach (TextMatch_SearchTerm::$map as $k => $v)
-                if (isset($this->regex[$k]) && count($this->regex[$k])) {
-                    $a = $b = array();
-                    foreach ($this->regex[$k] as $x) {
-                        $a[] = $x->preg_utf8;
-                        if (isset($x->preg_raw))
-                            $b[] = $x->preg_raw;
-                    }
-                    $x = (object) array("preg_utf8" => join("|", $a));
-                    if (count($a) == count($b))
-                        $x->preg_raw = join("|", $b);
-                    $this->matchPreg[$v] = $x;
-                }
-        }
-
         return true;
     }
 
@@ -3596,8 +3584,8 @@ class PaperSearch {
         $l = SessionList::create($this->listId($sort), $ids,
                                  $this->description($listname),
                                  $this->url_site_relative_raw());
-        if ($this->matchPreg)
-            $l->matchPreg = $this->matchPreg;
+        if ($this->field_highlighters())
+            $l->highlight = $this->_match_preg_query ? : true;
         return $l;
     }
 
@@ -3614,6 +3602,30 @@ class PaperSearch {
                     $this->_highlight_tags[] = substr($s->type, 1);
         }
         return $this->_highlight_tags;
+    }
+
+
+    function set_field_highlighter_query($q) {
+        $ps = new PaperSearch($this->user, ["q" => $q]);
+        $this->_match_preg = $ps->field_highlighters();
+        $this->_match_preg_query = $q;
+    }
+
+    function field_highlighters() {
+        if ($this->_match_preg === null) {
+            $this->_match_preg = [];
+            $this->_make_qe();
+            if (!empty($this->regex)) {
+                foreach (TextMatch_SearchTerm::$map as $k => $v)
+                    if (isset($this->regex[$k]) && !empty($this->regex[$k]))
+                        $this->_match_preg[$v] = Text::merge_pregexes($this->regex[$k]);
+            }
+        }
+        return $this->_match_preg;
+    }
+
+    function field_highlighter($field) {
+        return get($this->field_highlighters(), $field, "");
     }
 
 

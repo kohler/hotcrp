@@ -304,7 +304,7 @@ class TitlePaperColumn extends PaperColumn {
             && $pl->conf->tags()->has_decoration;
         if ($this->has_decoration)
             $pl->qopts["tags"] = 1;
-        $this->highlight = get($pl->search->matchPreg, "title");
+        $this->highlight = $pl->search->field_highlighter("title");
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b) {
@@ -434,6 +434,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
 class AuthorsPaperColumn extends PaperColumn {
     private $aufull;
     private $anonau;
+    private $highlight;
     function __construct($cj) {
         parent::__construct($cj);
     }
@@ -443,6 +444,7 @@ class AuthorsPaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         $this->aufull = !$pl->is_folded("aufull");
         $this->anonau = !$pl->is_folded("anonau");
+        $this->highlight = $pl->search->field_highlighter("authorInformation");
         return $pl->contact->can_view_some_authors();
     }
     private function affiliation_map($row) {
@@ -466,8 +468,7 @@ class AuthorsPaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $out = [];
-        $highlight = get($pl->search->matchPreg, "authorInformation", "");
-        if (!$highlight && !$this->aufull) {
+        if (!$this->highlight && !$this->aufull) {
             foreach ($row->author_list() as $au)
                 $out[] = $au->abbrevname_html();
             return join(", ", $out);
@@ -476,7 +477,7 @@ class AuthorsPaperColumn extends PaperColumn {
             $aus = $affout = [];
             $any_affhl = false;
             foreach ($row->author_list() as $i => $au) {
-                $name = Text::highlight($au->name(), $highlight, $didhl);
+                $name = Text::highlight($au->name(), $this->highlight, $didhl);
                 if (!$this->aufull
                     && ($first = htmlspecialchars($au->firstName))
                     && (!$didhl || substr($name, 0, strlen($first)) === $first)
@@ -485,7 +486,7 @@ class AuthorsPaperColumn extends PaperColumn {
                 $auy[] = $name;
                 if ($affmap[$i] !== null) {
                     $out[] = join(", ", $auy);
-                    $affout[] = Text::highlight($affmap[$i], $highlight, $didhl);
+                    $affout[] = Text::highlight($affmap[$i], $this->highlight, $didhl);
                     $any_affhl = $any_affhl || $didhl;
                     $auy = [];
                 }
@@ -541,7 +542,7 @@ class CollabPaperColumn extends PaperColumn {
         $x = "";
         foreach (explode("\n", $row->collaborators) as $c)
             $x .= ($x === "" ? "" : ", ") . trim($c);
-        return Text::highlight($x, get($pl->search->matchPreg, "collaborators"));
+        return Text::highlight($x, $pl->search->field_highlighter("collaborators"));
     }
     function text(PaperList $pl, PaperInfo $row) {
         $x = "";
@@ -562,7 +563,7 @@ class AbstractPaperColumn extends PaperColumn {
         return $row->abstract == "";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $t = Text::highlight($row->abstract, get($pl->search->matchPreg, "abstract"), $highlight_count);
+        $t = Text::highlight($row->abstract, $pl->search->field_highlighter("abstract"), $highlight_count);
         if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
             $pl->need_render = true;
             $t = '<div class="need-format" data-format="' . $format . '.abs.plx">' . $t . '</div>';
@@ -1118,6 +1119,7 @@ class PCConflictListPaperColumn extends PaperColumn {
 
 class ConflictMatchPaperColumn extends PaperColumn {
     private $field;
+    private $highlight;
     function __construct($cj) {
         parent::__construct($cj);
         if ($cj->name === "authorsmatch")
@@ -1126,6 +1128,7 @@ class ConflictMatchPaperColumn extends PaperColumn {
             $this->field = "collaborators";
     }
     function prepare(PaperList $pl, $visible) {
+        $this->highlight = $pl->search->field_highlighter($this->field);
         return $pl->contact->privChair;
     }
     function header(PaperList $pl, $is_text) {
@@ -1136,11 +1139,10 @@ class ConflictMatchPaperColumn extends PaperColumn {
             return "<strong>Potential conflict in $what</strong>";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return get($pl->search->matchPreg, $this->field, "") == "";
+        return $this->highlight == "";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $preg = get($pl->search->matchPreg, $this->field, "");
-        if ($preg == "")
+        if ($this->highlight == "")
             return "";
         $text = "";
         if ($this->field === "collaborators")
@@ -1156,7 +1158,7 @@ class ConflictMatchPaperColumn extends PaperColumn {
             }, $row->author_list());
         foreach ($lines as $line)
             if (($line = trim($line)) != "") {
-                $line = Text::highlight($line, $preg, $n);
+                $line = Text::highlight($line, $this->highlight, $n);
                 if ($n)
                     $text .= ($text ? "; " : "") . $line;
             }

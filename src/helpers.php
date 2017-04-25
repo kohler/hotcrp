@@ -310,6 +310,7 @@ class SessionList {
     public $description;
     public $url;
     public $timestamp;
+    public $highlight;
     static private $active_listid = null;
     static private $active_list = null;
     static private $requested_list = false;
@@ -357,7 +358,8 @@ class SessionList {
         $j = ["ids" => self::encode_ids($this->ids)];
         foreach (get_object_vars($this) as $k => $v)
             if ($k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "id_position"
-                && (!$minimal || $k === "listid" || $k === "description" || $k === "url"))
+                && (!$minimal || $k === "listid" || $k === "description" || $k === "url")
+                && $v !== null)
                 $j[$k] = $v;
         return json_encode($j);
     }

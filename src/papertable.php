@@ -90,21 +90,14 @@ class PaperTable {
         if (isset($ms["re"]) && isset($this->qreq->reviewId))
             $this->mode = "re";
 
-        $this->matchPreg = array();
-        $matcher = array();
-        if (($l = SessionList::active()) && isset($l->matchPreg) && $l->matchPreg)
-            $matcher = self::_combine_match_preg($matcher, $l->matchPreg);
-        if (($mpreg = $this->conf->session("temp_matchPreg"))) {
-            $matcher = self::_combine_match_preg($matcher, $mpreg);
-            $this->conf->save_session("temp_matchPreg", null);
+        $this->matchPreg = [];
+        if (($l = SessionList::active()) && $l->highlight
+            && preg_match('_\Ap/([^/]*)/([^/]*)(?:/|\z)_', $l->listid, $m)) {
+            $hlquery = is_string($l->highlight) ? $l->highlight : urldecode($m[2]);
+            $ps = new PaperSearch($Me, ["t" => $m[1], "q" => $hlquery]);
+            foreach ($ps->field_highlighters() as $k => $v)
+                $this->matchPreg[$k] = $v;
         }
-        foreach ($matcher as $k => $v)
-            if (is_string($v) && $v !== "") {
-                if ($v[0] !== "{")
-                    $v = "{(" . $v . ")}i";
-                $this->matchPreg[$k] = $v;
-            } else if (is_object($v))
-                $this->matchPreg[$k] = $v;
         if (empty($this->matchPreg))
             $this->matchPreg = null;
     }
@@ -2346,16 +2339,6 @@ class PaperTable {
             $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] =
                 $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = $pl->ids[0];
             // DISABLED: check if the paper is in the current list
-            // if (($curpl = SessionList::requested())
-            //     && isset($curpl->listno) && $curpl->listno
-            //     && str_starts_with($curpl->listid, "p")
-            //     && !preg_match(',\Ap/[^/]*//,', $curpl->listid)
-            //     && array_search($pl->ids[0], $curpl->ids) !== false) {
-            //    // preserve current list
-            //    if (isset($pl->matchPreg) && $pl->matchPreg)
-            //        $Conf->save_session("temp_matchPreg", $pl->matchPreg);
-            //    $pl = $curpl;
-            // }
             unset($_REQUEST["ls"], $_GET["ls"], $_POST["ls"]);
             $pl->set_cookie();
             // ensure URI makes sense ("paper/2" not "paper/searchterm")

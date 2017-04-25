@@ -235,11 +235,11 @@ if ($revuser) {
     // search outline from old CRP, done here in a very different way
     preg_match_all('/[a-z&]{2,}/', strtolower($revuser->firstName . " " . $revuser->lastName . " " . $revuser->affiliation), $match);
     $useless = $useless_words;
-    $search = array();
+    $hlsearch = [];
     $showco = "";
     foreach ($match[0] as $s)
         if (!isset($useless[$s])) {
-            $search[] = "co:" . (ctype_alnum($s) ? $s : "\"$s\"");
+            $hlsearch[] = "co:" . (ctype_alnum($s) ? $s : "\"$s\"");
             $showco .= $s . " ";
             $useless[$s] = 1;
         }
@@ -249,7 +249,7 @@ if ($revuser) {
     $showau = "";
     foreach ($match[0] as $s)
         if (!isset($useless[$s])) {
-            $search[] = "au:" . (ctype_alnum($s) ? $s : "\"$s\"");
+            $hlsearch[] = "au:" . (ctype_alnum($s) ? $s : "\"$s\"");
             $showau .= $s . " ";
             $useless[$s] = 1;
         }
@@ -260,7 +260,7 @@ if ($revuser) {
     if ($showco !== "")
         $col[2][] = "<div class='f-c'>Conflict search terms for paper collaborators</div><div class='f-e'>"
             . htmlspecialchars(rtrim($showco)) . "</div>";
-    $col[2][] = "<a href=\"" . hoturl("search", "q=" . urlencode(join(" OR ", $search) . ($showco ? " show:co" : "") . ($showau ? " show:au" : "")) . "&amp;linkto=assign") . "\">Search for potential conflicts</a>";
+    $col[2][] = "<a href=\"" . hoturl("search", "q=" . urlencode(join(" OR ", $hlsearch) . ($showco ? " show:co" : "") . ($showau ? " show:au" : "")) . "&amp;linkto=assign") . "\">Search for potential conflicts</a>";
 
     // Topic links
     $interest = [[], []];
@@ -291,18 +291,12 @@ if ($revuser) {
     // main assignment form
     $search = new PaperSearch($Me, array("t" => $qreq->t, "q" => $qreq->q,
                                          "urlbase" => hoturl_site_relative_raw("manualassign", "reviewer=$reviewer")));
+    if (!empty($hlsearch))
+        $search->set_field_highlighter_query(join(" OR ", $hlsearch));
     $paperList = new PaperList($search, ["sort" => true, "reviewer" => $revuser], make_qreq());
     $paperList->display .= " topics ";
     if ($qreq->kind != "c")
         $paperList->display .= "reviewers ";
-    if (isset($showau)) {
-        $search->overrideMatchPreg = true;
-        $search->matchPreg = array();
-        if ($showau)
-            $search->matchPreg["authorInformation"] = make_match_preg($showau);
-        if ($showco)
-            $search->matchPreg["collaborators"] = make_match_preg($showco);
-    }
     $a = isset($qreq->sort) ? "&amp;sort=" . urlencode($qreq->sort) : "";
     echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl_post("manualassign", "reviewer=$reviewer&amp;kind={$qreq->kind}$a"),
         "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
