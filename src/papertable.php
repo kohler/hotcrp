@@ -545,13 +545,17 @@ class PaperTable {
         if (count($accepts) == 1)
             $uploader .= " accept='" . $accepts[0]->mimetype . "'";
         $uploader .= ' size="30"';
-        if ($documentType == DTYPE_SUBMISSION || ($flags & self::ENABLESUBMIT)) {
-            $uploader .= ' onchange="false';
+        if ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL
+            || ($flags & self::ENABLESUBMIT)) {
+            $onchange = [];
             if ($documentType == DTYPE_SUBMISSION)
-                $uploader .= ";fold('isready',0);paperform_checkready()";
+                $onchange[] = "fold('isready',0);paperform_checkready()";
+            else if ($documentType == DTYPE_FINAL)
+                $onchange[] = "paperform_checkready(true)";
             if ($flags & self::ENABLESUBMIT)
-                $uploader .= ";form.submitpaper.disabled=false";
-            $uploader .= '"';
+                $onchange[] = "form.submitpaper.disabled=false";
+            if ($onchange)
+                $uploader .= ' onchange="' . join(";", $onchange) . '"';
         }
         $uploader .= " />";
         if ($doc && $optionType)

@@ -1992,7 +1992,8 @@ class Contact {
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         // NB logic order here is important elsewhere
-        if ($prow->outcome <= 0 || !$this->can_view_decision($prow, $override))
+        // Don’t report “rejected” error to admins
+        if ($prow->outcome <= 0 || !$this->can_view_decision($prow, true))
             $whyNot["rejected"] = 1;
         else if (!$this->conf->collectFinalPapers())
             $whyNot["deadline"] = "final_open";

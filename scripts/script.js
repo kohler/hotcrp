@@ -2270,7 +2270,7 @@ function paperform_checkready(ischecked) {
     if ($j.is(":visible"))
         is = $j.is(":checked");
     else
-        is = was;
+        is = was || ischecked;
     if (!is)
         t = "Save draft";
     else if (was)
