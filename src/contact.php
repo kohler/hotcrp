@@ -7,7 +7,7 @@ class Contact_Update {
     public $qv = [];
     public $cdb_uqv = [];
     public $different_email;
-    public function __construct($inserting, $different_email) {
+    function __construct($inserting, $different_email) {
         if ($inserting)
             $this->qv["firstName"] = $this->qv["lastName"] = "";
         $this->different_email = $different_email;
@@ -348,7 +348,7 @@ class Contact {
         return $this;
     }
 
-    public function set_forceShow($on) {
+    function set_forceShow($on) {
         global $Me;
         if ($this->contactId == $Me->contactId) {
             self::$active_forceShow = $this->privChair && $on;
@@ -359,7 +359,7 @@ class Contact {
         }
     }
 
-    public function activate_database_account() {
+    function activate_database_account() {
         assert($this->has_email());
         if (!$this->has_database_account()) {
             $reg = clone $_SESSION["trueuser"];
@@ -374,7 +374,7 @@ class Contact {
         return $this;
     }
 
-    static public function contactdb() {
+    static function contactdb() {
         if (self::$contactdb_dblink === false) {
             self::$contactdb_dblink = null;
             if (($dsn = opt("contactdb_dsn")))
@@ -383,7 +383,7 @@ class Contact {
         return self::$contactdb_dblink;
     }
 
-    static public function contactdb_find_by_email($email) {
+    static function contactdb_find_by_email($email) {
         $acct = null;
         if (($cdb = self::contactdb())) {
             $result = Dbl::ql($cdb, "select * from ContactInfo where email=?", $email);
@@ -393,7 +393,7 @@ class Contact {
         return $acct;
     }
 
-    static public function contactdb_find_by_id($cid) {
+    static function contactdb_find_by_id($cid) {
         $acct = null;
         if (($cdb = self::contactdb())) {
             $result = Dbl::ql($cdb, "select * from ContactInfo where contactDbId=?", $cid);
@@ -403,7 +403,7 @@ class Contact {
         return $acct;
     }
 
-    public function contactdb_user($refresh = false) {
+    function contactdb_user($refresh = false) {
         if ($this->contactDbId && !$this->contactId)
             return $this;
         else if ($refresh || $this->contactdb_user_ === false) {
@@ -416,7 +416,7 @@ class Contact {
         return $this->contactdb_user_;
     }
 
-    public function contactdb_update() {
+    function contactdb_update() {
         global $Now;
         if (!($cdb = self::contactdb()) || !$this->has_database_account())
             return false;
@@ -452,13 +452,13 @@ class Contact {
             return false;
     }
 
-    public function is_actas_user() {
+    function is_actas_user() {
         return $this->activated_
             && ($trueuser = get($_SESSION, "trueuser"))
             && strcasecmp($trueuser->email, $this->email) != 0;
     }
 
-    public function update_trueuser($always) {
+    function update_trueuser($always) {
         if (($trueuser = get($_SESSION, "trueuser"))
             && strcasecmp($trueuser->email, $this->email) == 0) {
             foreach (array("firstName", "lastName", "affiliation", "country") as $k)
@@ -815,7 +815,7 @@ class Contact {
             $cu->qv[$k] = $this->$k = $v;
     }
 
-    static public function parse_roles_json($j) {
+    static function parse_roles_json($j) {
         $roles = 0;
         if (isset($j->pc) && $j->pc)
             $roles |= self::ROLE_PC;
@@ -1006,7 +1006,7 @@ class Contact {
         return true;
     }
 
-    public function change_email($email) {
+    function change_email($email) {
         $aupapers = self::email_authored_papers($this->conf, $email, $this);
         $this->conf->ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
         $this->save_authored_papers($aupapers);
@@ -1178,20 +1178,20 @@ class Contact {
     // } else
     //     change local password and update time;
 
-    public static function valid_password($input) {
+    static function valid_password($input) {
         return $input !== "" && $input !== "0" && $input !== "*"
             && trim($input) === $input;
     }
 
-    public static function random_password($length = 14) {
+    static function random_password($length = 14) {
         return hotcrp_random_password($length);
     }
 
-    public static function password_storage_cleartext() {
+    static function password_storage_cleartext() {
         return opt("safePasswords") < 1;
     }
 
-    public function allow_contactdb_password() {
+    function allow_contactdb_password() {
         $cdbu = $this->contactdb_user();
         return $cdbu && $cdbu->password;
     }
@@ -1202,7 +1202,7 @@ class Contact {
             && (!$this->has_database_account() || $this->password === "");
     }
 
-    public function plaintext_password() {
+    function plaintext_password() {
         // Return the currently active plaintext password. This might not
         // equal $this->password because of the cdb.
         if ($this->password === "") {
@@ -1308,7 +1308,7 @@ class Contact {
         }
     }
 
-    public function check_password($input) {
+    function check_password($input) {
         global $Now;
         assert(!$this->conf->external_login());
         if (($this->contactId && $this->disabled)
@@ -1353,7 +1353,7 @@ class Contact {
     const CHANGE_PASSWORD_PLAINTEXT = 1;
     const CHANGE_PASSWORD_NO_CDB = 2;
 
-    public function change_password($old, $new, $flags) {
+    function change_password($old, $new, $flags) {
         global $Now;
         assert(!$this->conf->external_login());
         if ($new === null)
@@ -1426,7 +1426,7 @@ class Contact {
     }
 
 
-    public function mark_login() {
+    function mark_login() {
         global $Now;
         // at least one login every 90 days is marked as activity
         if (!$this->activity_at || $this->activity_at <= $Now - 7776000
@@ -1435,7 +1435,7 @@ class Contact {
             $this->mark_activity();
     }
 
-    public function mark_activity() {
+    function mark_activity() {
         global $Now;
         if (!$this->activity_at || $this->activity_at < $Now) {
             $this->activity_at = $Now;
@@ -1461,7 +1461,7 @@ class Contact {
 
     // HotCRP roles
 
-    static public function update_rights() {
+    static function update_rights() {
         ++self::$rights_version;
     }
 
@@ -1770,7 +1770,7 @@ class Contact {
         return $ci;
     }
 
-    public function override_deadlines($rights, $override = null) {
+    function override_deadlines($rights, $override = null) {
         if ($rights && $rights instanceof PaperInfo)
             $rights = $this->rights($rights);
         if ($rights ? !$rights->allow_administer : !$this->privChair)
@@ -1781,7 +1781,7 @@ class Contact {
             return isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
     }
 
-    public function allow_administer(PaperInfo $prow = null) {
+    function allow_administer(PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_administer;
@@ -1789,7 +1789,7 @@ class Contact {
             return $this->privChair;
     }
 
-    public function can_change_password($acct) {
+    function can_change_password($acct) {
         if ($this->conf->opt("chairHidePasswords"))
             return get($_SESSION, "trueuser") && $acct && $acct->email
                 && $_SESSION["trueuser"]->email == $acct->email;
@@ -1798,7 +1798,7 @@ class Contact {
                 || ($acct && $this->contactId > 0 && $this->contactId == $acct->contactId);
     }
 
-    public function can_administer(PaperInfo $prow = null, $forceShow = null) {
+    function can_administer(PaperInfo $prow = null, $forceShow = null) {
         if ($prow) {
             $rights = $this->rights($prow, $forceShow);
             return $rights->can_administer;
@@ -1806,7 +1806,7 @@ class Contact {
             return $this->privChair;
     }
 
-    public function act_pc(PaperInfo $prow = null, $forceShow = null) {
+    function act_pc(PaperInfo $prow = null, $forceShow = null) {
         if ($prow) {
             $rights = $this->rights($prow, $forceShow);
             return $rights->allow_pc;
@@ -1814,13 +1814,13 @@ class Contact {
             return $this->isPC;
     }
 
-    public function can_view_tracker() {
+    function can_view_tracker() {
         return $this->privChair
             || ($this->isPC && $this->conf->check_default_track($this, Track::VIEWTRACKER))
             || $this->tracker_kiosk_state;
     }
 
-    public function view_conflict_type(PaperInfo $prow = null) {
+    function view_conflict_type(PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->view_conflict_type;
@@ -1828,12 +1828,12 @@ class Contact {
             return 0;
     }
 
-    public function act_author_view(PaperInfo $prow) {
+    function act_author_view(PaperInfo $prow) {
         $rights = $this->rights($prow);
         return $rights->act_author_view;
     }
 
-    public function actAuthorSql($table, $only_if_complex = false) {
+    function actAuthorSql($table, $only_if_complex = false) {
         $m = array("$table.conflictType>=" . CONFLICT_AUTHOR);
         if (isset($this->capabilities) && !$this->isPC)
             foreach ($this->capabilities as $pid => $cap)
@@ -2208,7 +2208,7 @@ class Contact {
                 && $this->conf->setting("pcrev_editdelegate"));
     }
 
-    public function can_view_review_assignment(PaperInfo $prow, $rrow, $forceShow) {
+    function can_view_review_assignment(PaperInfo $prow, $rrow, $forceShow) {
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_administer
             || $rights->allow_pc
@@ -2216,7 +2216,7 @@ class Contact {
             || $this->can_view_review($prow, $rrow, $forceShow);
     }
 
-    public static function can_some_author_view_submitted_review(PaperInfo $prow) {
+    static function can_some_author_view_submitted_review(PaperInfo $prow) {
         if ($prow->conf->au_seerev == Conf::AUSEEREV_TAGS)
             return $prow->has_any_tag($prow->conf->tag_au_seerev);
         else
@@ -2232,12 +2232,12 @@ class Contact {
                 && $prow->has_any_tag($this->conf->tag_au_seerev));
     }
 
-    public function can_view_some_review() {
+    function can_view_some_review() {
         return $this->is_reviewer()
             || ($this->is_author() && $this->conf->au_seerev != 0);
     }
 
-    public function can_view_review(PaperInfo $prow, $rrow, $forceShow, $viewscore = null) {
+    function can_view_review(PaperInfo $prow, $rrow, $forceShow, $viewscore = null) {
         if (is_int($rrow)) {
             $viewscore = $rrow;
             $rrow = null;
