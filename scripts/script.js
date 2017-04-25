@@ -5454,7 +5454,7 @@ function set_cookie(info) {
     }
 }
 function is_listable(href) {
-    return /^(?:paper|review|profile)(?:|\.php)\//.test(href.substring(siteurl.length));
+    return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(href.substring(siteurl.length));
 }
 function set_list_order(info, tbody) {
     var p0 = -100, p1 = -100, pid, l = [];
