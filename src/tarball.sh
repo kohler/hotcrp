@@ -223,6 +223,7 @@ images/extagseditkw.png
 images/extagssearch.png
 images/extagsset.png
 images/extagvotehover.png
+images/extracker.png
 images/generic.png
 images/generic24.png
 images/genericf.png

@@ -1428,18 +1428,19 @@ administrator’s identity.</p>");
     _subhead("At the meeting", "
 <ol>
 
-<li><p>The <b>meeting tracker</b> can keep PC members coordinated.
-  Create a search with papers in whatever order you like (such as an explicit
+<li><p>The <b>meeting tracker</b> can keep the PC coordinated.
+  Search for papers in whatever order you like (you may want an explicit
   <a href=\"" . hoturl("help", "t=tags#values") . "\">discussion order</a>).
-  Then navigate to the first paper in that
-  order and select “&#9759;” to activate the tracker.
-  From that point on, that browser tab’s position in the order
-  is broadcast to all logged-in PC members, along with the next papers
-  in the discussion order. You can also view the discussion
+  Then open a browser tab to manage the tracker, navigate to the first paper in
+  the order, and select “&#9759;” to activate the tracker.
+  From that point on, PC members see a banner with the tracker
+  tab’s current position in the order:</p>
+  " . Ht::img("extracker.png", "[Meeting tracker]", ["style" => "max-width:714px"]) . "
+  <p>You can also view the discussion
   status on the <a href=\"" . hoturl("buzzer") . "\">discussion
   status page</a>.</p></li>
 
-<li><p>Scribes can, if you like, capture discussions as comments for the authors’
+<li><p>Scribes can capture discussions as comments for the authors’
   reference.</p></li>
 
 <li><p><strong>Paper decisions</strong> can be recorded on the <a
