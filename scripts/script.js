@@ -1576,7 +1576,8 @@ function tracker(start) {
 
 
 // Comet tracker
-var comet_sent_at, comet_stop_until, comet_nerrors = 0, comet_nsuccess = 0;
+var comet_sent_at, comet_stop_until, comet_nerrors = 0, comet_nsuccess = 0,
+    comet_long_timeout = 297000;
 
 var comet_store = (function () {
     var stored_at, refresh_to;
@@ -1647,7 +1648,8 @@ $(window).on("unload", function () { comet_store(-1); });
 
 function comet_tracker() {
     var at = now_msec(),
-        timeout = Math.floor((comet_nsuccess ? 297000 : 1000) + Math.random() * 1000);
+        timeout = Math.floor((comet_nsuccess ? comet_long_timeout : 1000)
+                             + Math.random() * 1000);
 
     // correct tracker_site URL to be a full URL if necessary
     if (dl.tracker_site && !/^(?:https?:|\/)/.test(dl.tracker_site))
@@ -1679,7 +1681,8 @@ function comet_tracker() {
             reload();
         } else if (now - at > 100000)
             // errors after long delays are likely timeouts -- nginx
-            // or Chrome shut down the long poll
+            // or Chrome shut down the long poll. multiplicative decrease
+            comet_long_timeout = Math.max(comet_long_timeout / 2, 30000);
             comet_tracker();
         else if (++comet_nerrors < 3) {
             setTimeout(comet_tracker, 128 << Math.min(comet_nerrors, 12));
