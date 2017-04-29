@@ -558,8 +558,8 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "submitfinalpaper" =>
-     array("subject" => "[%CONFSHORTNAME%] Updated final version #%NUMBER% %TITLEHINT%",
-           "body" => "The final version for paper #%PAPER% has been updated at the %CONFNAME% submissions site.
+     array("subject" => "[%CONFSHORTNAME%] Updated accepted #%NUMBER% %TITLEHINT%",
+           "body" => "Accepted submission #%PAPER% has been updated at the %CONFNAME% submissions site.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
