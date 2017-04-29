@@ -1679,12 +1679,12 @@ function comet_tracker() {
             comet_nerrors = comet_stop_until = 0;
             ++comet_nsuccess;
             reload();
-        } else if (now - at > 100000)
+        } else if (now - at > 100000) {
             // errors after long delays are likely timeouts -- nginx
             // or Chrome shut down the long poll. multiplicative decrease
             comet_long_timeout = Math.max(comet_long_timeout / 2, 30000);
             comet_tracker();
-        else if (++comet_nerrors < 3) {
+        } else if (++comet_nerrors < 3) {
             setTimeout(comet_tracker, 128 << Math.min(comet_nerrors, 12));
             comet_store(-1);
         } else {
