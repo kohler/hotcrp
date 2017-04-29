@@ -1577,7 +1577,7 @@ function tracker(start) {
 
 // Comet tracker
 var comet_sent_at, comet_stop_until, comet_nerrors = 0, comet_nsuccess = 0,
-    comet_long_timeout = 297000;
+    comet_long_timeout = 260000;
 
 var comet_store = (function () {
     var stored_at, refresh_to;
