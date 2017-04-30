@@ -8,7 +8,7 @@ class AutoassignerCosts implements JsonSerializable {
     public $preference = 60;
     public $expertise_x = -200;
     public $expertise_y = -140;
-    public function jsonSerialize() {
+    function jsonSerialize() {
         return get_object_vars($this);
     }
 }
@@ -51,14 +51,14 @@ class Autoassigner {
     const EOLDASSIGN = 3;
     const ENEWASSIGN = 4;
 
-    public function __construct(Conf $conf, $papersel) {
+    function __construct(Conf $conf, $papersel) {
         $this->conf = $conf;
         $this->select_pc(array_keys($this->conf->pc_members()));
         $this->papersel = $papersel;
         $this->costs = new AutoassignerCosts;
     }
 
-    public function select_pc($pcids) {
+    function select_pc($pcids) {
         $this->pcm = $this->load = [];
         $pcids = array_flip($pcids);
         foreach ($this->conf->pc_members() as $cid => $p)
@@ -69,7 +69,7 @@ class Autoassigner {
         return count($this->pcm);
     }
 
-    public function avoid_pair_assignment($pc1, $pc2) {
+    function avoid_pair_assignment($pc1, $pc2) {
         if (!is_numeric($pc1)) {
             $pc1 = $this->conf->pc_member_by_email($pc1);
             $pc1 = $pc1 ? $pc1->contactId : null;
@@ -82,19 +82,19 @@ class Autoassigner {
             $this->badpairs[$pc1][$pc2] = $this->badpairs[$pc2][$pc1] = true;
     }
 
-    public function set_balance($balance) {
+    function set_balance($balance) {
         $this->balance = $balance;
     }
 
-    public function set_method($method) {
+    function set_method($method) {
         $this->method = $method;
     }
 
-    public function set_review_gadget($review_gadget) {
+    function set_review_gadget($review_gadget) {
         $this->review_gadget = $review_gadget;
     }
 
-    public function add_progressf($progressf) {
+    function add_progressf($progressf) {
         $this->progressf[] = $progressf;
     }
 
@@ -104,7 +104,7 @@ class Autoassigner {
     }
 
 
-    public function run_prefconflict($papertype) {
+    function run_prefconflict($papertype) {
         $papers = array_fill_keys($this->papersel, 1);
         $result = $this->conf->qe_raw($this->conf->preferenceConflictQuery($papertype, ""));
         $this->ass = array("paper,action,email");
@@ -117,7 +117,7 @@ class Autoassigner {
         Dbl::free($result);
     }
 
-    public function run_clear($reviewtype) {
+    function run_clear($reviewtype) {
         $papers = array_fill_keys($this->papersel, 1);
         if ($reviewtype == REVIEW_PRIMARY
             || $reviewtype == REVIEW_SECONDARY
@@ -440,7 +440,7 @@ class Autoassigner {
         }
     }
 
-    public function mcmf_progress($mcmf, $what, $phaseno = 0, $nphases = 0) {
+    function mcmf_progress($mcmf, $what, $phaseno = 0, $nphases = 0) {
         if ($what <= MinCostMaxFlow::PMAXFLOW_DONE) {
             $n = min(max($mcmf->current_flow(), 0), $this->ndesired);
             $ndesired = max($this->ndesired, 1);
@@ -641,7 +641,7 @@ class Autoassigner {
         $this->conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . $y . ".");
     }
 
-    public function run_paperpc($action, $preference) {
+    function run_paperpc($action, $preference) {
         if ($this->balance !== self::BALANCE_NEW)
             $this->balance_paperpc($action);
         $this->preferences_paperpc($preference);
@@ -665,14 +665,14 @@ class Autoassigner {
         return array($action, $round ? ",$round" : "");
     }
 
-    public function run_reviews_per_pc($reviewtype, $round, $nass) {
+    function run_reviews_per_pc($reviewtype, $round, $nass) {
         $this->preferences_review($reviewtype);
         $papers = array_fill_keys($this->papersel, ceil((count($this->pcm) * ($nass + 2)) / count($this->papersel)));
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
         $this->assign_method($papers, $action, $round, $nass);
     }
 
-    public function run_more_reviews($reviewtype, $round, $nass) {
+    function run_more_reviews($reviewtype, $round, $nass) {
         if ($this->balance !== self::BALANCE_NEW)
             $this->balance_reviews($reviewtype);
         $this->preferences_review($reviewtype);
@@ -682,7 +682,7 @@ class Autoassigner {
         $this->check_missing_assignments($papers, "revadd");
     }
 
-    public function run_ensure_reviews($reviewtype, $round, $nass) {
+    function run_ensure_reviews($reviewtype, $round, $nass) {
         if ($this->balance !== self::BALANCE_NEW)
             $this->balance_reviews($reviewtype);
         $this->preferences_review($reviewtype);
@@ -806,11 +806,11 @@ class Autoassigner {
     }
 
 
-    public function assignments() {
+    function assignments() {
         return count($this->ass) > 1 ? $this->ass : null;
     }
 
-    public function pc_unhappiness() {
+    function pc_unhappiness() {
         if (!$this->prefs)
             return array();
 
@@ -832,11 +832,11 @@ class Autoassigner {
         return $u;
     }
 
-    public function has_tentative_assignment() {
+    function has_tentative_assignment() {
         return count($this->ass) || $this->mcmf;
     }
 
-    public function tentative_assignment_map() {
+    function tentative_assignment_map() {
         $pcmap = $a = array();
         foreach ($this->pcm as $cid => $p) {
             $pcmap[$p->email] = $cid;
