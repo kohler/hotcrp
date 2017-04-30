@@ -138,9 +138,9 @@ setting is 86400, e.g., 24 hours:
 `session.gc_maxlifetime` to 86400 anyway, then edit `conf/options.php`
 to set `$Opt["sessionLifetime"]` to the correct session timeout.
 
-5. Edit MySQL’s my.cnf (typical location: `/etc/mysql/my.cnf`) to ensure
-that MySQL can handle paper-sized objects.  It should contain something
-like this:
+5. Edit MySQL’s my.cnf (typical locations: `/etc/mysql/my.cnf` or 
+'/etc/mysql/mysql.conf.d/mysqld.cnf') to ensure that MySQL can handle
+paper-sized objects.  It should contain something like this:
 
         [mysqld]
         max_allowed_packet=32M
