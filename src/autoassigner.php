@@ -759,7 +759,11 @@ class Autoassigner {
         return $result;
     }
 
-    public function run_discussion_order($tag, $sequential = false) {
+    function run_discussion_order($tag, $sequential = false) {
+        if (empty($this->papersel)) {
+            $this->ass = [];
+            return;
+        }
         $this->mcmf_round_descriptor = "";
         $this->mcmf_optimizing_for = "Optimizing assignment";
         // load conflicts
