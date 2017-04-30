@@ -109,6 +109,10 @@ class SearchTerm {
             $span = [min($span[0], $span1[0]), max($span[1], $span1[1])];
         $this->set_float("strspan", $span ? : $span1);
     }
+    function set_strspan_owner($str) {
+        if (!isset($this->float["strspan_owner"]))
+            $this->set_float("strspan_owner", $str);
+    }
 
 
     function export_json() {
@@ -282,6 +286,13 @@ class Op_SearchTerm extends SearchTerm {
         }
     }
 
+    function set_strspan_owner($str) {
+        if (!isset($this->float["strspan_owner"])) {
+            parent::set_strspan_owner($str);
+            foreach ($this->child as $qv)
+                $qv->set_strspan_owner($str);
+        }
+    }
     function export_json() {
         $a = [$this->type];
         foreach ($this->child as $qv)
@@ -2675,7 +2686,10 @@ class PaperSearch {
             $srch->warn("There is no “" . htmlspecialchars($word) . "” saved search.");
         else if (!$qe)
             $srch->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
-        return $qe ? : new False_SearchTerm;
+        $qe = $qe ? : new False_SearchTerm;
+        if ($nextq)
+            $qe->set_strspan_owner($nextq);
+        return $qe;
     }
 
     function _search_keyword(&$qt, SearchWord $sword, $keyword, $kwexplicit) {
@@ -3406,7 +3420,8 @@ class PaperSearch {
                 $h = $qe->child[$i]->get_float("heading");
                 if ($h === null) {
                     $span = $qe->child[$i]->get_float("strspan");
-                    $h = rtrim(substr($this->q, $span[0], $span[1] - $span[0]));
+                    $spanstr = $qe->child[$i]->get_float("strspan_owner", $this->q);
+                    $h = rtrim(substr($spanstr, $span[0], $span[1] - $span[0]));
                 }
                 $this->groupmap[$i] = TagAnno::make_heading($h);
             }
