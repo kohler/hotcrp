@@ -1811,21 +1811,23 @@ function hiliter_children(form) {
     jQuery(form).on("change input", "input, select, textarea", hiliter);
 }
 
+function focus_at(felt) {
+    felt.focus();
+    if (!felt.hotcrp_ever_focused) {
+        if (felt.select && $(felt).hasClass("want-select"))
+            felt.select();
+        else if (felt.getAttribute("type") != "file" && felt.setSelectionRange)
+            felt.setSelectionRange(felt.value.length, felt.value.length);
+        felt.hotcrp_ever_focused = true;
+    }
+}
+
 function focus_within(elt, subfocus_selector) {
     var $wf = $(elt).find(".want-focus");
     if (subfocus_selector)
         $wf = $wf.filter(subfocus_selector);
-    if ($wf.length == 1) {
-        var felt = $wf[0];
-        felt.focus();
-        if (!felt.hotcrp_ever_focused) {
-            if (felt.select && $(felt).hasClass("want-select"))
-                felt.select();
-            else if (felt.getAttribute("type") != "file" && felt.setSelectionRange)
-                felt.setSelectionRange(felt.value.length, felt.value.length);
-            felt.hotcrp_ever_focused = true;
-        }
-    }
+    if ($wf.length == 1)
+        focus_at($wf[0]);
     return $wf.length == 1;
 }
 
@@ -3286,7 +3288,9 @@ function make_pseditor(type, url) {
 
 function make_selector_shortcut(type) {
     function find(e) {
-        return e.getElementsByTagName("select")[0] || e.getElementsByTagName("textarea")[0];
+        return e.getElementsByTagName("select")[0]
+            || e.getElementsByTagName("textarea")[0]
+            || $(e).find("input[type=text]")[0];
     }
     function end(evt) {
         var e = $$("fold" + type);
@@ -3305,7 +3309,7 @@ function make_selector_shortcut(type) {
             foldup(e, null, {f: false});
             jQuery(e).scrollIntoView();
             if ((e = find(e))) {
-                e.focus();
+                focus_at(e);
                 e.addEventListener("blur", end, false);
                 e.addEventListener("change", end, false);
             }
@@ -3383,11 +3387,12 @@ function shortcut(top_elt) {
             add("j", quicklink_shortcut);
             add("k", quicklink_shortcut);
             if (top_elt == document) {
-                add(["c"], comment_shortcut);
+                add("c", comment_shortcut);
                 add(["s", "d"], make_selector_shortcut("decision"));
                 add(["s", "l"], make_selector_shortcut("lead"));
                 add(["s", "s"], make_selector_shortcut("shepherd"));
                 add(["s", "t"], make_selector_shortcut("tags"));
+                add(["s", "p"], make_selector_shortcut("revpref"));
                 add("n", nextprev_shortcut);
                 add("p", nextprev_shortcut);
             }

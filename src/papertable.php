@@ -1410,7 +1410,7 @@ class PaperTable {
     }
 
     function papstripReviewPreference() {
-        $this->_papstripBegin();
+        $this->_papstripBegin("revpref");
         echo $this->papt("revpref", "Review preference", array("type" => "ps")),
             "<div class=\"psv\"><form onsubmit=\"return false\"><div>";
         $rp = unparse_preference($this->prow);
