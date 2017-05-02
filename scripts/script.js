@@ -3827,18 +3827,25 @@ function setfollow() {
 }
 
 var add_revpref_ajax = (function () {
-    var outstanding = 0, then = null;
+    var outstanding = 0, then = null, blurred_at = 0;
 
     function rp(selector, on_unload) {
         var $e = $(selector);
-        $e.is("input") && ($e = $e.parent());
+        if ($e.is("input")) {
+            var rpf = wstorage(true, "revpref_focus");
+            if (rpf && now_msec() - rpf < 3000)
+                focus_at($e[0]);
+            $e = $e.parent();
+        }
         $e.off(".revpref_ajax")
             .on("focus.revpref_ajax", "input.revpref", rp_focus)
+            .on("blur.revpref_ajax", "input.revpref", rp_blur)
             .on("change.revpref_ajax", "input.revpref", rp_change)
             .on("keydown.revpref_ajax", "input.revpref", make_onkey("Enter", rp_change));
-        if (on_unload)
-            $(document.body).off(".revpref_ajax")
-                .on("click.revpref_ajax", "a", rp_a_click);
+        if (on_unload) {
+            $(document.body).on("click", "a", rp_a_click);
+            $(window).on("beforeunload", rp_unload);
+        }
     }
 
     rp.then = function (f) {
@@ -3847,6 +3854,10 @@ var add_revpref_ajax = (function () {
 
     function rp_focus() {
         autosub("update", this);
+    }
+
+    function rp_blur() {
+        blurred_at = now_msec();
     }
 
     function rp_change() {
@@ -3879,6 +3890,12 @@ var add_revpref_ajax = (function () {
             return false;
         } else
             return true;
+    }
+
+    function rp_unload() {
+        if ((blurred_at && now_msec() - blurred_at < 1000)
+            || $(":focus").is("input.revpref"))
+            wstorage(true, "revpref_focus", blurred_at || now_msec());
     }
 
     return rp;
