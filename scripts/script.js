@@ -1233,7 +1233,7 @@ function add_tooltip() {
     j.removeClass("need-tooltip");
 }
 
-jQuery(function () { jQuery(".hottooltip, .need-tooltip").each(add_tooltip); });
+jQuery(function () { jQuery(".need-tooltip").each(add_tooltip); });
 
 
 // temporary text
