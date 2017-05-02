@@ -1418,7 +1418,7 @@ class PaperTable {
         echo "<input id=\"revprefform_d\" type=\"text\" class=\"revpref\" name=\"revpref", $this->prow->paperId,
             "\" size=\"4\" value=\"$rp\" tabindex=\"1\" class=\"want-focus want-select\" />",
             "</div></form></div></div>\n";
-        Ht::stash_script("add_revpref_ajax(\"#revprefform_d\");shortcut(\"revprefform_d\").add()");
+        Ht::stash_script("add_revpref_ajax(\"#revprefform_d\",true);shortcut(\"revprefform_d\").add()");
         if (($l = SessionList::active()) && str_starts_with($l->url, "reviewprefs"))
             Ht::stash_script("crpfocus('revprefform')");
     }

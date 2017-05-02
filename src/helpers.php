@@ -504,8 +504,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         $urlrest["p"] = $id;
     }
     return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
-        . "\" class=\"x\" href=\"" . hoturl($baseUrl, $urlrest)
-        . "\" onclick=\"add_revpref_ajax.then(make_link_callback(this));return false\">"
+        . "\" class=\"x\" href=\"" . hoturl($baseUrl, $urlrest) . "\">"
         . ($isprev ? Ht::img("_.gif", "<-", "prev") : "")
         . $paperText
         . ($isprev ? "" : Ht::img("_.gif", "->", "next"))

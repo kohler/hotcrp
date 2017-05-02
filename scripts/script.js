@@ -3827,19 +3827,22 @@ function setfollow() {
 }
 
 var add_revpref_ajax = (function () {
-    var p = null;
+    var outstanding = 0, then = null;
 
-    function rp(selector) {
+    function rp(selector, on_unload) {
         var $e = $(selector);
         $e.is("input") && ($e = $e.parent());
         $e.off(".revpref_ajax")
             .on("focus.revpref_ajax", "input.revpref", rp_focus)
             .on("change.revpref_ajax", "input.revpref", rp_change)
             .on("keydown.revpref_ajax", "input.revpref", make_onkey("Enter", rp_change));
+        if (on_unload)
+            $(document.body).off(".revpref_ajax")
+                .on("click.revpref_ajax", "a", rp_a_click);
     }
 
     rp.then = function (f) {
-        p ? p.then(f) : f();
+        outstanding ? then = f : f();
     };
 
     function rp_focus() {
@@ -3852,7 +3855,7 @@ var add_revpref_ajax = (function () {
             cid = pid.substr(pos + 1);
             pid = pid.substr(0, pos);
         }
-        p = new HPromise();
+        ++outstanding;
         $.ajax(hoturl_post("api/setpref", {p: pid}), {
             method: "POST", data: {pref: self.value, reviewer: cid},
             success: function (rv) {
@@ -3862,9 +3865,20 @@ var add_revpref_ajax = (function () {
             },
             complete: function (xhr, status) {
                 hiliter(self);
-                p.fulfill(null);
+                --outstanding;
+                then && then();
             }
         });
+    }
+
+    function rp_a_click(e) {
+        if (!this.hasAttribute("onclick")
+            && !e.metaKey && !e.ctrlKey && e.which != 2
+            && outstanding) {
+            then = make_link_callback(this);
+            return false;
+        } else
+            return true;
     }
 
     return rp;
