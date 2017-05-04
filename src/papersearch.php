@@ -1656,6 +1656,8 @@ class OptionMatcher {
         if (!$this->kind) {
             if (!$ov)
                 return $this->match_null;
+            else if ($this->value === null)
+                return !$this->match_null;
             else if (is_array($this->value)) {
                 $in = in_array($ov->value, $this->value);
                 return $this->compar === "=" ? $in : !$in;
