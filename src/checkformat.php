@@ -360,12 +360,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         if ($prow->is_joindoc($doc)
             && !$this->failed
             && $spec->timestamp) {
-            if (!$this->has_problem())
-                $x = $spec->timestamp;
-            else if ($this->has_error())
-                $x = -$spec->timestamp;
-            else
-                $x = 0;
+            $x = $this->has_error() ? -$spec->timestamp : $spec->timestamp;
             if ($x != $prow->pdfFormatStatus) {
                 $prow->pdfFormatStatus = $x;
                 $prow->conf->qe("update Paper set pdfFormatStatus=? where paperId=?", $prow->pdfFormatStatus, $prow->paperId);
