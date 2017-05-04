@@ -3154,7 +3154,7 @@ class PaperSearch {
 
         // parse and clean the query
         $qe = $this->_searchQueryType($this->q);
-        //Conf::msg_debugt(json_export($qe->export_json()));
+        // Conf::msg_debugt(json_encode($qe->export_json()));
         if (!$qe)
             $qe = new True_SearchTerm;
 
@@ -3198,7 +3198,7 @@ class PaperSearch {
         $sqi->add_column("outcome", "Paper.outcome");
         $filters = array();
         $filters[] = $qe->sqlexpr($sqi);
-        //Conf::msg_info(Ht::pre_text(var_export($filters, true)));
+        //Conf::msg_debugt(var_export($filters, true));
 
         // status limitation parts
         $limit = $this->limitName;
