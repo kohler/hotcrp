@@ -61,7 +61,9 @@ class PaperContactInfo {
                 reviewSubmitted as review_submitted,
                 reviewNeedsSubmit as review_needs_submit,
                 PaperReview.contactId as review_token_cid";
-        if ($prow->_row_set && !$rev_tokens) {
+        if ($cid && !$rev_tokens
+            && (!$Me || $cid == $Me->contactId)
+            && $prow->_row_set && $prow->_row_set->size() > 1) {
             $result = $conf->qe("$q, Paper.paperId paperId, $cid contactId
                 from Paper
                 left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$cid)
@@ -163,6 +165,9 @@ class PaperInfoSet {
     }
     function all() {
         return $this->prows;
+    }
+    function size() {
+        return count($this->prows);
     }
     function pids() {
         return array_keys($this->by_pid);
