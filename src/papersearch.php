@@ -1586,7 +1586,6 @@ class Formula_SearchTerm extends SearchTerm {
 
 class Option_SearchTerm extends SearchTerm {
     private $om;
-    private $fieldname;
 
     function __construct(OptionMatcher $om) {
         parent::__construct("option");
@@ -1599,29 +1598,12 @@ class Option_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Option_" . count($sqi->tables);
         $this->fieldname = $thistab . "_x";
-        $tm = $this->om->table_matcher();
+        $tm = $this->om->table_matcher("$thistab.paperId");
         $sqi->add_table($thistab, ["left join", $tm[0]]);
-        $sqi->add_column($thistab . "_x", "$thistab.paperId" . $tm[1]);
-        return $sqi->columns[$this->fieldname];
+        return $tm[1];
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        $om = $this->om;
-        if (!$srch->user->can_view_paper_option($row, $om->option, true)
-            || !$row->{$this->fieldname})
-            return false;
-        if ($om->kind) {
-            $ov = $row->option($om->option->id);
-            if ($om->kind === "attachment-count" && $ov)
-                return CountMatcher::compare($ov->value_count(), $om->compar, $om->value);
-            else if ($om->kind === "attachment-name" && $ov) {
-                $reg = Text::star_text_pregexes($om->value);
-                foreach ($ov->documents() as $doc)
-                    if (Text::match_pregexes($reg, $doc->filename, false))
-                        return true;
-            }
-            return false;
-        }
-        return true;
+        return $this->om->exec($row, $srch->user);
     }
 }
 
@@ -1630,6 +1612,8 @@ class OptionMatcher {
     public $compar;
     public $value;
     public $kind;
+    public $pregexes = null;
+    public $match_null = false;
 
     function __construct($option, $compar, $value = null, $kind = 0) {
         if ($option->type === "checkbox" && $value === null)
@@ -1640,21 +1624,55 @@ class OptionMatcher {
         $this->compar = $compar;
         $this->value = $value;
         $this->kind = $kind;
+        $this->match_null = false;
+        if (!$this->kind) {
+            if ($option->type === "checkbox"
+                ? CountMatcher::compare(0, $this->compar, $this->value)
+                : $this->compar === "=" && $this->value === null)
+                $this->match_null = true;
+        } else if ($this->kind === "attachment-count")
+            $this->match_null = CountMatcher::compare(0, $this->compar, $this->value);
     }
-    function table_matcher() {
+    function table_matcher($col) {
         $q = "(select paperId from PaperOption where optionId=" . $this->option->id;
         if (!$this->kind && $this->value !== null) {
             $q .= " and value";
-            if (is_array($this->value))
+            if (is_array($this->value)) {
+                if ($this->compar === "!=")
+                    $q .= " not";
                 $q .= " in (" . join(",", $this->value) . ")";
-            else
-                $q .= ($this->compar === "!=" ? "=" : $this->compar) . $this->value;
+            } else
+                $q .= $this->compar . $this->value;
         }
         $q .= " group by paperId)";
-        if (!$this->kind && $this->compar === ($this->value === null ? "=" : "!="))
-            return [$q, " is null"];
-        else
-            return [$q, ""];
+        if ($this->match_null)
+            $col = "coalesce($col,Paper.paperId)";
+        return [$q, $col];
+    }
+    function exec(PaperInfo $prow, Contact $user) {
+        $ov = null;
+        if ($user->can_view_paper_option($prow, $this->option, true))
+            $ov = $prow->option($this->option->id);
+        if (!$this->kind) {
+            if (!$ov)
+                return $this->match_null;
+            else if (is_array($this->value)) {
+                $in = in_array($ov->value, $this->value);
+                return $this->compar === "=" ? $in : !$in;
+            } else
+                return CountMatcher::compare($ov->value, $this->compar, $this->value);
+        } else if ($this->kind === "attachment-count")
+            return CountMatcher::compare($ov ? $ov->value_count() : 0,
+                                         $this->compar, $this->value);
+        else if ($this->kind === "attachment-name") {
+            if (!$this->pregexes)
+                $this->pregexes = Text::star_text_pregexes($this->value);
+            foreach ($ov ? $ov->documents() : [] as $doc)
+                if (Text::match_pregexes($this->pregexes, $doc->filename, false))
+                    return true;
+            return false;
+        } else
+            return false;
     }
 }
 
@@ -2513,11 +2531,9 @@ class PaperSearch {
                 } else if ($o->has_attachments()) {
                     if ($oval === "any")
                         $qo[] = new OptionMatcher($o, "!=", null);
-                    else if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m)) {
-                        if (CountMatcher::compare(0, $ocompar, $m[1]))
-                            $qo[] = new OptionMatcher($o, "=", null);
+                    else if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
                         $qo[] = new OptionMatcher($o, $ocompar, $m[1], "attachment-count");
-                    } else
+                    else
                         $qo[] = new OptionMatcher($o, "~=", $oval, "attachment-name");
                 } else
                     continue;
