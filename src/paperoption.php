@@ -83,36 +83,16 @@ class PaperOptionValue {
     }
     function sorted_values() {
         if ($this->_data_array === null && count($this->_values) > 1)
-            $this->_load_data();
+            $this->prow->_assign_option_value($this);
         return $this->_values;
     }
     function data() {
         if ($this->_data_array === null)
-            $this->_load_data();
+            $this->prow->_assign_option_value($this);
         return $this->_data;
     }
-    private function _load_data() {
-        if ($this->_data_array === null) {
-            $odata = PaperOption::load_optdata($this->prow);
-            if ($this->option instanceof UnknownPaperOption)
-                $allopt = $this->prow->all_options();
-            else
-                $allopt = $this->prow->options();
-            foreach ($allopt as $oid => $option)
-                $option->assign($odata["v"][$oid], $odata["d"][$oid]);
-            if ($this->_data_array === null)
-                $this->assign($odata["v"][$this->id], $odata["d"][$this->id]);
-        }
-    }
     function invalidate() {
-        $result = $this->prow->conf->qe("select value, `data` from PaperOption where paperId=? and optionId=?", $this->prow->paperId, $this->id);
-        $values = $data_array = [];
-        while ($result && ($row = $result->fetch_row())) {
-            $values[] = (int) $row[0];
-            $data_array[] = $row[1];
-        }
-        Dbl::free($result);
-        $this->assign($values, $data_array);
+        $this->prow->_reload_option_value($this);
     }
 }
 
@@ -536,46 +516,6 @@ class PaperOption {
     function add_search_completion(&$res) {
         array_push($res, "has:{$this->search_keyword()}",
                    "opt:{$this->search_keyword()}");
-    }
-
-    static function load_optdata(PaperInfo $prow) {
-        $result = $prow->conf->qe("select optionId, value, data from PaperOption where paperId=?", $prow->paperId);
-        $optdata = ["v" => [], "d" => []];
-        while (($row = edb_row($result))) {
-            $optdata["v"][$row[0]][] = (int) $row[1];
-            $optdata["d"][$row[0]][] = $row[2];
-        }
-        Dbl::free($result);
-        return $optdata;
-    }
-
-    static function parse_paper_options(PaperInfo $prow, $all) {
-        $optionIds = get($prow, "optionIds");
-        if ($optionIds === "")
-            return [];
-
-        if ($optionIds !== null) {
-            preg_match_all('/(\d+)#(-?\d+)/', $optionIds, $m);
-            $optdata = ["v" => [], "d" => []];
-            for ($i = 0; $i < count($m[1]); ++$i)
-                $optdata["v"][$m[1][$i]][] = (int) $m[2][$i];
-        } else
-            $optdata = self::load_optdata($prow);
-
-        $paper_opts = $prow->conf->paper_opts;
-        $option_array = array();
-        foreach ($optdata["v"] as $oid => $ovalues)
-            if (($o = $paper_opts->find($oid, $all)))
-                $option_array[$oid] = new PaperOptionValue($prow, $o, $ovalues, get($optdata["d"], $oid));
-        uasort($option_array, function ($a, $b) {
-            if ($a->option && $b->option)
-                return PaperOption::compare($a->option, $b->option);
-            else if ($a->option || $b->option)
-                return $a->option ? -1 : 1;
-            else
-                return $a->id - $b->id;
-        });
-        return $option_array;
     }
 
     function value_compare($av, $bv) {

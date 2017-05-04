@@ -195,6 +195,8 @@ class PaperInfo {
     private $_review_id_array = null;
     private $_topics_array = null;
     private $_topic_interest_score_array = null;
+    private $_option_values = null;
+    private $_option_data = null;
     private $_option_array = null;
     private $_all_option_array = null;
     private $_document_array = null;
@@ -719,9 +721,67 @@ class PaperInfo {
         return $pref ? : [0, null];
     }
 
+    private function load_options($row_set, $need_data) {
+        if ($this->_option_values === null
+            && isset($this->optionIds)
+            && (!$need_data || $this->optionIds === "")) {
+            if ($this->optionIds === "")
+                $this->_option_values = $this->_option_data = [];
+            else {
+                $this->_option_values = [];
+                preg_match_all('/(\d+)#(-?\d+)/', $this->optionIds, $m);
+                for ($i = 0; $i < count($m[1]); ++$i)
+                    $this->_option_values[(int) $m[1][$i]][] = (int) $m[2][$i];
+            }
+        } else if ($this->_option_values === null
+                   || ($need_data && $this->_option_data === null)) {
+            $row_set = $row_set ? : new PaperInfoSet($this);
+            foreach ($row_set->all() as $prow)
+                $prow->_option_values = $prow->_option_data = [];
+            $result = $this->conf->qe("select paperId, optionId, value, data, dataOverflow from PaperOption where paperId?a order by paperId", $row_set->pids());
+            while ($result && ($row = $result->fetch_row())) {
+                $prow = $row_set->get((int) $row[0]);
+                $prow->_option_values[(int) $row[1]][] = (int) $row[2];
+                $prow->_option_data[(int) $row[1]][] = $row[3] !== null ? $row[3] : $row[4];
+            }
+            Dbl::free($result);
+        }
+    }
+
+    private function _make_option_array($all) {
+        $this->load_options($this->_row_set, false);
+        $paper_opts = $this->conf->paper_opts;
+        $option_array = [];
+        foreach ($this->_option_values as $oid => $ovalues)
+            if (($o = $paper_opts->find($oid, $all)))
+                $option_array[$oid] = new PaperOptionValue($this, $o, $ovalues, get($this->_option_data, $oid));
+        uasort($option_array, function ($a, $b) {
+            if ($a->option && $b->option)
+                return PaperOption::compare($a->option, $b->option);
+            else if ($a->option || $b->option)
+                return $a->option ? -1 : 1;
+            else
+                return $a->id - $b->id;
+        });
+        return $option_array;
+    }
+
+    function _assign_option_value(PaperOptionValue $ov) {
+        if ($this->_option_data === null)
+            $this->load_options($this->_row_set, true);
+        $ov->assign($this->_option_values[$ov->id], $this->_option_data[$ov->id]);
+    }
+
+    function _reload_option_value(PaperOptionValue $ov) {
+        unset($this->optionIds);
+        $this->_option_values = $this->_option_data = null;
+        $this->load_options(null, true);
+        $ov->assign($this->_option_values[$ov->id], $this->_option_data[$ov->id]);
+    }
+
     function options() {
         if ($this->_option_array === null)
-            $this->_option_array = PaperOption::parse_paper_options($this, false);
+            $this->_option_array = $this->_make_option_array(false);
         return $this->_option_array;
     }
 
@@ -731,7 +791,7 @@ class PaperInfo {
 
     function all_options() {
         if ($this->_all_option_array === null)
-            $this->_all_option_array = PaperOption::parse_paper_options($this, true);
+            $this->_all_option_array = $this->_make_option_array(true);
         return $this->_all_option_array;
     }
 
@@ -740,7 +800,9 @@ class PaperInfo {
     }
 
     function invalidate_options() {
-        $this->_option_array = $this->_all_option_array = null;
+        unset($this->optionIds);
+        $this->_option_array = $this->_all_option_array =
+            $this->_option_values = $this->_option_data = null;
     }
 
     private function _add_documents($dids) {
