@@ -1105,7 +1105,7 @@ class PaperInfo {
     function fetch_comments($extra_where = null) {
         $result = $this->conf->qe(self::fetch_comment_query()
             . " where paperId={$this->paperId}" . ($extra_where ? " and $extra_where" : "")
-            . " order by commentId");
+            . " order by paperId, commentId");
         $comments = array();
         while (($c = CommentInfo::fetch($result, $this, $this->conf)))
             $comments[$c->commentId] = $c;
@@ -1115,16 +1115,17 @@ class PaperInfo {
 
     function load_comments() {
         $row_set = $this->_row_set ? : new PaperInfoSet($this);
+        foreach ($row_set->all() as $prow)
+            $prow->_comment_array = [];
         $result = $this->conf->qe(self::fetch_comment_query()
-            . " where paperId?a order by commentId", $row_set->pids());
+            . " where paperId?a order by paperId, commentId", $row_set->pids());
         $comments = [];
         while (($c = CommentInfo::fetch($result, null, $this->conf))) {
-            $c->set_prow($row_set->get($c->paperId));
-            $comments[$c->paperId][$c->commentId] = $c;
+            $prow = $row_set->get($c->paperId);
+            $c->set_prow($prow);
+            $prow->_comment_array[$c->commentId] = $c;
         }
         Dbl::free($result);
-        foreach ($row_set->all() as $prow)
-            $prow->_comment_array = get($comments, $prow->paperId, []);
     }
 
     function all_comments() {
