@@ -115,7 +115,7 @@ class SearchTerm {
     }
 
 
-    function export_json() {
+    function debug_json() {
         return $this->type;
     }
 
@@ -293,10 +293,10 @@ class Op_SearchTerm extends SearchTerm {
                 $qv->set_strspan_owner($str);
         }
     }
-    function export_json() {
+    function debug_json() {
         $a = [$this->type];
         foreach ($this->child as $qv)
-            $a[] = $qv->export_json();
+            $a[] = $qv->debug_json();
         return $a;
     }
     function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
@@ -1592,6 +1592,10 @@ class Option_SearchTerm extends SearchTerm {
         parent::__construct("option");
         $this->om = $om;
     }
+    function debug_json() {
+        $om = $this->om;
+        return [$this->type, $om->option->abbr, $om->kind, $om->compar, $om->value];
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Option_" . count($sqi->tables);
         $this->fieldname = $thistab . "_x";
@@ -2450,7 +2454,7 @@ class PaperSearch {
         return true;
     }
 
-    static public function analyze_option_search(Conf $conf, $word) {
+    static function analyze_option_search(Conf $conf, $word) {
         if (preg_match('/\A(.*?)([:#](?:[=!<>]=?|≠|≤|≥|)|[=!<>]=?|≠|≤|≥)(.*)\z/', $word, $m)) {
             $oname = $m[1];
             if ($m[2][0] === ":" || $m[2][0] === "#")
@@ -2471,7 +2475,7 @@ class PaperSearch {
             $omatches = $conf->paper_opts->option_list();
         else
             $omatches = $conf->paper_opts->search($oname);
-        // Conf::msg_info(Ht::pre_text(var_export($omatches, true)));
+        // Conf::msg_debugt(var_export($omatches, true));
         if (!empty($omatches)) {
             foreach ($omatches as $oid => $o) {
                 // selectors handle “yes”, “”, and “no” specially
@@ -3154,7 +3158,7 @@ class PaperSearch {
 
         // parse and clean the query
         $qe = $this->_searchQueryType($this->q);
-        // Conf::msg_debugt(json_encode($qe->export_json()));
+        //Conf::msg_debugt(json_encode($qe->debug_json()));
         if (!$qe)
             $qe = new True_SearchTerm;
 
@@ -3186,7 +3190,7 @@ class PaperSearch {
         }
 
         $qe = $this->_make_qe();
-        //Conf::msg_debugt(json_export($qe->export_json()));
+        //Conf::msg_debugt(json_encode($qe->debug_json()));
 
         // collect clauses into tables, columns, and filters
         $sqi = new SearchQueryInfo($this);
