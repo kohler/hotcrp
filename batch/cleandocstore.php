@@ -1,4 +1,22 @@
 <?php
+
+$arg = getopt("hn:c:Vm:d", array("help", "name:", "count:", "verbose", "match:", "dry-run"));
+if (isset($arg["c"]) && !isset($arg["count"]))
+    $arg["count"] = $arg["c"];
+if (isset($arg["V"]) && !isset($arg["verbose"]))
+    $arg["verbose"] = $arg["V"];
+if (isset($arg["m"]) && !isset($arg["match"]))
+    $arg["match"] = $arg["m"];
+if (isset($arg["d"]) && !isset($arg["dry-run"]))
+    $arg["dry-run"] = $arg["d"];
+if (isset($arg["h"]) || isset($arg["help"])) {
+    fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n");
+    exit(0);
+} else if (isset($arg["count"]) && !ctype_digit($arg["count"])) {
+    fwrite(STDERR, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n");
+    exit(1);
+}
+
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 
@@ -27,11 +45,11 @@ class Cleaner {
         $match_algo = "(?:|sha2-)";
         if (preg_match('{\Asha([12])-?(.*)\z}', $match, $m)) {
             if ($m[1] === "1") {
-                self::$fixed_algo = "sha1";
-                self::$fixed_algo_pfx = $match_algo = "";
+                self::$algo_preg = "sha1";
+                self::$algo_pfx_preg = $match_algo = "";
             } else {
-                self::$fixed_algo = "sha256";
-                self::$fixed_algo_pfx = $match_algo = "sha2-";
+                self::$algo_preg = "sha256";
+                self::$algo_pfx_preg = $match_algo = "sha2-";
             }
             $match = $m[2];
         }
@@ -69,27 +87,13 @@ class Cleaner {
     }
 }
 
-$arg = getopt("hn:c:Vm:", array("help", "name:", "count:", "verbose", "match:"));
-if (isset($arg["c"]) && !isset($arg["count"]))
-    $arg["count"] = $arg["c"];
-if (isset($arg["V"]) && !isset($arg["verbose"]))
-    $arg["verbose"] = $arg["V"];
-if (isset($arg["m"]) && !isset($arg["match"]))
-    $arg["match"] = $arg["m"];
-if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n");
-    exit(0);
-} else if (isset($arg["count"]) && !ctype_digit($arg["count"])) {
-    fwrite(STDERR, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n");
-    exit(1);
-}
-
 if (!($dp = $Conf->docstore())) {
    fwrite(STDERR, "php batch/cleandocstore.php: Conference doesn't use docstore\n");
    exit(1);
 }
 $count = isset($arg["count"]) ? intval($arg["count"]) : 10;
 $verbose = isset($arg["verbose"]);
+$dry_run = isset($arg["dry-run"]);
 if (isset($arg["match"]))
     Cleaner::set_match($arg["match"]);
 
@@ -300,6 +304,8 @@ function try_random_match(Fparts $fparts) {
     global $verbose;
     $fparts->clear();
     $bdir = "";
+    $bdirs = $idxes = [];
+
     for ($i = 0; $i < $fparts->n; ++$i)
         if ($i % 2 == 0)
             $bdir .= $fparts->components[$i];
@@ -307,11 +313,11 @@ function try_random_match(Fparts $fparts) {
             if (!isset(Cleaner::$dirinfo[$bdir]))
                 return false;
             $di = &Cleaner::$dirinfo[$bdir];
-            if (empty($di))
-                return false;
             $ndi = count($di) - 1;
+            if ($ndi <= 0)
+                break;
             $idx = random_index($di);
-            for ($tries = ($ndi - 2) >> 1; $tries > 0; --$tries) {
+            for ($tries = $ndi >> 1; $tries > 0; --$tries) {
                 //$verbose && error_log(json_encode([$i, $idx, $di[$idx + 1], $fparts->pregs[$i]]));
                 if (($build = $fparts->match_component($di[$idx + 1], $i)))
                     break;
@@ -319,26 +325,40 @@ function try_random_match(Fparts $fparts) {
                 if ($idx == $ndi)
                     $idx = 0;
             }
-            // remove last part from list
-            if ($i == $fparts->n - 1) {
-                $delta = $di[$idx + 2] - $di[$idx];
-                if ($idx == $ndi - 2)
-                    /* nothing */;
-                else if ($di[$ndi] - $di[$ndi - 2] == $delta)
-                    $di[$idx + 1] = $di[$ndi - 1];
-                else {
-                    for ($j = $idx + 2; $j < $ndi; $j += 2) {
-                        $di[$j - 1] = $di[$j + 1];
-                        $di[$j] = $di[$j + 2] - $delta;
-                    }
-                }
-                assert($di[$ndi - 2] == $di[$ndi] - $delta);
-                array_pop($di);
-                array_pop($di);
-            }
+            $bdirs[] = $bdir;
+            $idxes[] = $idx;
             unset($di);
             $bdir .= $build;
         }
+
+    // account for removal
+    $delta = null;
+    for ($i = count($idxes) - 1; $i >= 0; --$i) {
+        $di = &Cleaner::$dirinfo[$bdirs[$i]];
+        $ndi = count($di) - 1;
+        $idx = $idxes[$i];
+        if ($delta === null)
+            $delta = $di[$idx + 2] - $di[$idx];
+        if ($delta === $di[$idx + 2] - $di[$idx]) {
+            // remove entry
+            if ($delta === $di[$ndi] - $di[$ndi - 2])
+                $di[$idx + 1] = $di[$ndi - 1];
+            else {
+                for ($j = $idx + 2; $j < $ndi; $j += 2) {
+                    $di[$j - 1] = $di[$j + 1];
+                    $di[$j] = $di[$j + 2] - $delta;
+                }
+            }
+            assert($di[$ndi - 2] == $di[$ndi] - $delta);
+            array_pop($di);
+            array_pop($di);
+        } else {
+            for ($j = $idx + 2; $j <= $ndi; $j += 2)
+                $di[$j] -= $delta;
+        }
+        unset($di);
+    }
+
     if (!$fparts->match_complete())
         return false;
     return [$fparts->algo . $fparts->hash, $fparts->extension, $bdir];
@@ -367,7 +387,11 @@ while ($count > 0) {
     else if ($chash !== $doc->binary_hash_data())
         fwrite(STDERR, "$x[2]: incorrect hash\n");
     else if ($hotcrpdoc->s3_check($doc)) {
-        if (unlink($x[2])) {
+        if ($dry_run) {
+            if ($verbose)
+                fwrite(STDOUT, "$x[2]: would remove\n");
+            $ok = true;
+        } else if (unlink($x[2])) {
             if ($verbose)
                 fwrite(STDOUT, "$x[2]: removed\n");
             $ok = true;
