@@ -38,9 +38,13 @@ class DocumentInfo implements JsonSerializable {
         global $Conf;
         $this->conf = $conf ? : $Conf;
         $this->prow = $prow;
-        if ($p)
+        if ($p) {
             foreach ($p as $k => $v)
-                $this->$k = $v;
+                if ($k === "hash")
+                    $this->sha1 = $v;
+                else
+                    $this->$k = $v;
+        }
         $this->paperStorageId = (int) $this->paperStorageId;
         $this->paperId = (int) $this->paperId;
         $this->documentType = (int) $this->documentType;

@@ -1,8 +1,7 @@
 <?php
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/src/init.php");
-require_once("$ConfSitePATH/lib/getopt.php");
 
+require_once("$ConfSitePATH/lib/getopt.php");
 $arg = getopt_rest($argv, "hn:qr", ["help", "name:", "quiet", "disable", "disable-users",
                                     "reviews", "match-title", "ignore-pid"]);
 if (isset($arg["h"]) || isset($arg["help"])
@@ -18,6 +17,8 @@ Options include:
   --reviews        Save JSON reviews\n");
     exit(0);
 }
+
+require_once("$ConfSitePATH/src/init.php");
 
 $file = count($arg["_"]) ? $arg["_"][0] : "-";
 $quiet = isset($arg["q"]) || isset($arg["quiet"]);
