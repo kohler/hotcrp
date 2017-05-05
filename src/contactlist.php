@@ -524,7 +524,7 @@ class ContactList {
         if (!$this->contact->privChair)
             $cfltpids = Dbl::fetch_first_columns($Conf->dblink, "select paperId from PaperConflict where contactId=?", $this->contact->contactId);
         $pid_restriction = "";
-        if (!empty($pid_restriction))
+        if (!empty($cfltpids))
             $pid_restriction = " and paperId not in (" . join(",", $cfltpids) . ")";
 
         $aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
