@@ -1702,7 +1702,7 @@ class Formula_PaperColumn extends PaperColumn {
             return $this->formula->name;
     }
     function sort_name() {
-        return $this->formula->name;
+        return $this->formula->name ? : $this->formula->expression;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
@@ -1809,7 +1809,6 @@ class Formula_PaperColumn extends PaperColumn {
 
 class Formula_PaperColumnFactory extends PaperColumnFactory {
     private $cj;
-    static private $nregistered;
     function __construct($cj) {
         parent::__construct($cj);
         $this->cj = (array) $cj;
@@ -1817,10 +1816,8 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
     private function make(Formula $f) {
         if ($f->formulaId)
             $name = "formula" . $f->formulaId;
-        else {
-            ++self::$nregistered;
-            $name = "formulax" . self::$nregistered;
-        }
+        else
+            $name = "formula:" . $f->expression;
         return new Formula_PaperColumn(["name" => $name] + $this->cj, $f);
     }
     private function all(Contact $user) {

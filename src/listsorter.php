@@ -68,7 +68,7 @@ class ListSorter {
     }
 
     static function push(&$array, $s) {
-        if (count($array)) {
+        if (!empty($array)) {
             $x = $array[count($array) - 1];
             if (((!$s->type && !$s->field) || (!$x->type && !$x->field))
                 && $s->thenmap === $x->thenmap) {

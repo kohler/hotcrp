@@ -2677,7 +2677,7 @@ class PaperSearch {
                 $next_words[] = $w;
         }
 
-        if (count($next_words))
+        if (!empty($next_words))
             $sort->type = join(" ", $next_words);
         return $sort;
     }
