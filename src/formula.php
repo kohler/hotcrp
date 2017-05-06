@@ -483,6 +483,15 @@ class PidFexpr extends SubFexpr {
     }
 }
 
+class PdfSizeFexpr extends SubFexpr {
+    function __construct() {
+        parent::__construct("");
+    }
+    function compile(FormulaCompiler $state) {
+        return '($contact->can_view_pdf($prow) ? (int) $prow->size : null)';
+    }
+}
+
 class ScoreFexpr extends SubFexpr {
     private $field;
     function __construct(ReviewField $field) {
@@ -1304,6 +1313,20 @@ class Formula {
             if (!($e = $this->_parse_expr($t, self::$opprec["u$op"], $in_qc)))
                 return null;
             $e = $op == "!" ? new NegateFexpr($e) : new Fexpr($op, $e);
+        } else if (preg_match('/\Anot([\s(].*|)\z/i', $t, $m)) {
+            $t = $m[1];
+            if (!($e = $this->_parse_expr($t, self::$opprec["u!"], $in_qc)))
+                return null;
+            $e = new NegateFexpr($e);
+        } else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
+            $e = new ConstantFexpr($m[1] + 0.0);
+            $t = $m[2];
+        } else if (preg_match('/\A(false|true)\b(.*)\z/si', $t, $m)) {
+            $e = new ConstantFexpr($m[1], Fexpr::FBOOL);
+            $t = $m[2];
+        } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
+            $e = ConstantFexpr::cnull();
+            $t = $m[1];
         } else if (preg_match('/\Aopt(?:ion)?:\s*(.*)\z/s', $t, $m)) {
             $rest = self::_pop_argument($m[1]);
             $os = PaperSearch::analyze_option_search($this->conf, $rest[1]);
@@ -1331,17 +1354,6 @@ class Formula {
             if ($os->negate)
                 $e = new NegateFexpr($e);
             $t = $rest[2];
-        } else if (preg_match('/\Anot([\s(].*|)\z/i', $t, $m)) {
-            $t = $m[1];
-            if (!($e = $this->_parse_expr($t, self::$opprec["u!"], $in_qc)))
-                return null;
-            $e = new NegateFexpr($e);
-        } else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
-            $e = new ConstantFexpr($m[1] + 0.0);
-            $t = $m[2];
-        } else if (preg_match('/\A(false|true)\b(.*)\z/si', $t, $m)) {
-            $e = new ConstantFexpr($m[1], Fexpr::FBOOL);
-            $t = $m[2];
         } else if (preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(["outcome", PaperSearch::matching_decisions($this->conf, $m[1])]);
             $t = $m[2];
@@ -1374,9 +1386,6 @@ class Formula {
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer)\b(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
-        } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
-            $e = ConstantFexpr::cnull();
-            $t = $m[1];
         } else if (preg_match('/\A([A-Za-z][A-Za-z_.]*)(.*)\z/is', $t, $m)
                    && ($ff = get($this->conf->formula_functions(), $m[1]))) {
             $t = $m[2];

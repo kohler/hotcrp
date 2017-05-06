@@ -51,6 +51,7 @@
 
     {"name": "pid", "factory_class": "PidFexpr"},
     {"name": "paperid", "factory_class": "PidFexpr"},
+    {"name": "pdfsize", "factory_class": "PdfSizeFexpr"},
 
     {"name": "topicscore", "factory_class": "TopicScoreFexpr"},
     {"name": "conf", "factory_class": "ConflictFexpr", "is_pc": false},
