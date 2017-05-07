@@ -544,6 +544,10 @@ event_key.printable = function (evt) {
 event_key.modifier = function (evt) {
     return nonprintable_map[event_key(evt)] > 1;
 };
+event_key.is_default_a = function (evt, a) {
+    return !evt.metaKey && !evt.ctrlKey && evt.which != 2
+        && (!a || !a.getAttribute("onclick"));
+};
 return event_key;
 })();
 
@@ -3883,9 +3887,7 @@ var add_revpref_ajax = (function () {
     }
 
     function rp_a_click(e) {
-        if (!this.hasAttribute("onclick")
-            && !e.metaKey && !e.ctrlKey && e.which != 2
-            && outstanding) {
+        if (outstanding && event_key.is_default_a(e, this)) {
             then = make_link_callback(this);
             return false;
         } else
@@ -5537,12 +5539,13 @@ function row_click(e) {
             || $tgt.closest("td").hasClass("pl_rowclick"))) {
         var $a = $(this).find("a.pnum").first();
         add_list.call($a[0]);
-        if (e.metaKey || e.ctrlKey || e.which == 2) {
+        if (event_key.is_default_a(e))
+            window.location = $a.attr("href");
+        else {
             var w = window.open($a.attr("href"), "_blank");
             w.blur();
             window.focus();
-        } else
-            window.location = $a.attr("href");
+        }
         event_prevent(e);
     }
 }
