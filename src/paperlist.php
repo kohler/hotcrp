@@ -144,6 +144,7 @@ class PaperList {
     // collected during render and exported to caller
     public $count; // also exported to columns access: 1 more than row index
     public $ids;
+    public $headings;
     public $any;
     private $_has;
     private $_any_option_checks;
@@ -692,10 +693,41 @@ class PaperList {
             }
         }
 
+        // set `ids`
         $this->ids = [];
         foreach ($rows as $prow)
             $this->ids[] = $prow->paperId;
+
+        // set `headings`
+        $this->headings = [];
+        if (!empty($this->search->groupmap))
+            $this->_collect_headings($rows);
+
         return $rows;
+    }
+
+    private function _collect_headings($srows) {
+        $groupmap = $this->search->groupmap ? : [];
+        $thenmap = $this->search->thenmap ? : [];
+        $rowpos = 0;
+        for ($grouppos = 0;
+             $rowpos < count($srows) || $grouppos < count($groupmap);
+             ++$grouppos) {
+            $ginfo = get($groupmap, $grouppos);
+            if (($ginfo === null || $ginfo->is_empty()) && $rowpos === 0)
+                continue;
+            $ginfo = $ginfo ? clone $ginfo : TagInfo::make_empty();
+            $ginfo->pos = $rowpos;
+            while ($rowpos < count($srows)
+                   && get_i($thenmap, $srows[$rowpos]->paperId) === $grouppos)
+                ++$rowpos;
+            $ginfo->count = $rowpos - $ginfo->pos;
+            // leave off an empty “Untagged” section unless editing
+            if ($ginfo->count === 0 && $ginfo->tag && !$ginfo->annoId
+                && !$this->has_editable_tags)
+                continue;
+            $this->headings[] = $ginfo;
+        }
     }
 
     function is_folded($field) {
@@ -832,38 +864,14 @@ class PaperList {
         return $t;
     }
 
-    private function _row_thenval($row) {
-        if ($this->search->thenmap)
-            return get_i($this->search->thenmap, $row->paperId);
-        else
-            return 0;
-    }
-
-    private function _heading_info($thenval, $srows, $lastheading) {
-        $headings = [];
-        while ($lastheading != $thenval) {
-            ++$lastheading;
-            $ginfo = get($this->search->groupmap, $lastheading);
-            if (($ginfo === null || $ginfo->is_empty()) && $this->count == 1)
-                continue;
-            $ginfo = $ginfo ? clone $ginfo : TagInfo::make_empty();
-            for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
-                /* do nothing */;
-            $ginfo->count = $i - $this->count + 1;
-            // leave off an empty “Untagged” section unless editing
-            if ($ginfo->count == 0 && $ginfo->tag && !$ginfo->annoId && !$this->has_editable_tags)
-                continue;
-            $ginfo->pos = $this->count - 1;
-            $headings[] = $ginfo;
-        }
-        return $headings;
-    }
-
-    private function _check_heading($thenval, $rstate, $srows, $lastheading, &$body) {
-        $headings = $this->_heading_info($thenval, $srows, $lastheading);
-        if (!empty($headings) && $this->count != 1 && $thenval != $lastheading)
-            $rstate->headingstart[] = count($body);
-        foreach ($headings as $ginfo) {
+    private function _headings_for($headingpos, $rstate, &$body, $last) {
+        for ($did_headingstart = false;
+             $headingpos < count($this->headings)
+             && ($last || $this->count > $this->headings[$headingpos]->pos);
+             ++$headingpos) {
+            if ($this->count !== 1 && $did_headingstart === false)
+                $rstate->headingstart[] = $did_headingstart = count($body);
+            $ginfo = $this->headings[$headingpos];
             if ($ginfo->is_empty()) {
                 $body[] = "  <tr class=\"plheading_blank\"><td class=\"plheading_blank\" colspan=\"$rstate->ncol\"></td></tr>\n";
             } else {
@@ -891,7 +899,7 @@ class PaperList {
                 $rstate->colorindex = 0;
             }
         }
-        return $thenval;
+        return $headingpos;
     }
 
     private function _field_title($fdef) {
@@ -1256,19 +1264,8 @@ class PaperList {
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
-        $headings = [];
-        $lastheading = empty($this->search->groupmap) ? -2 : -1;
-        if ($lastheading > -2)
-            foreach ($rows as $row) {
-                ++$this->count;
-                $thenval = $this->_row_thenval($row);
-                if ($thenval != $lastheading
-                    && ($hs = $this->_heading_info($thenval, $rows, $lastheading)))
-                    $headings = array_merge($headings, $hs);
-                $lastheading = $thenval;
-            }
         $this->count = count($this->ids);
-        return [$this->ids, $headings];
+        return [$this->ids, $this->headings];
     }
 
     function id_array() {
@@ -1357,12 +1354,12 @@ class PaperList {
 
         // collect row data
         $body = array();
-        $lastheading = empty($this->search->groupmap) ? -2 : -1;
+        $headingpos = empty($this->headings) ? -1 : 0;
         $need_render = false;
         foreach ($rows as $row) {
             ++$this->count;
-            if ($lastheading > -2)
-                $lastheading = $this->_check_heading($this->_row_thenval($row), $rstate, $rows, $lastheading, $body);
+            if ($headingpos >= 0)
+                $headingpos = $this->_headings_for($headingpos, $rstate, $body, false);
             $body[] = $this->_row_text($rstate, $row, $fieldDef);
             if ($this->need_render && !$need_render) {
                 Ht::stash_script('$(plinfo.render_needed)', 'plist_render_needed');
@@ -1373,9 +1370,8 @@ class PaperList {
                 $this->need_render = false;
             }
         }
-        if ($lastheading > -2 && $this->search->is_order_anno)
-            while ($lastheading + 1 < count($this->search->groupmap))
-                $lastheading = $this->_check_heading($lastheading + 1, $rstate, $rows, $lastheading, $body);
+        if ($headingpos >= 0 && $headingpos < count($this->headings))
+            $this->_headings_for($headingpos, $rstate, $body, true);
 
         // header cells
         $colhead = "";
@@ -1569,13 +1565,14 @@ class PaperList {
         return $csv;
     }
 
-    private function _check_heading_csv($thenval, $srows, $lastheading, &$csv) {
-        $headings = $this->_heading_info($thenval, $srows, $lastheading);
-        if (!empty($headings)) {
-            $ginfo = $headings[count($headings) - 1];
+    private function _headings_for_csv($headingpos, &$csv) {
+        for (; $headingpos < count($this->headings)
+               && $this->headings[$headingpos]->pos < $this->count;
+               ++$headingpos) {
+            $ginfo = $this->headings[$headingpos];
             $csv["__precomment__"] = $ginfo->is_empty() ? "none" : $ginfo->heading;
         }
-        return $thenval;
+        return $headingpos;
     }
 
     function text_csv($listname, $options = array()) {
@@ -1605,12 +1602,12 @@ class PaperList {
 
         // collect row data
         $body = array();
-        $lastheading = empty($this->search->groupmap) ? -2 : -1;
+        $headingpos = empty($this->headings) ? -1 : 0;
         foreach ($rows as $row) {
             ++$this->count;
             $csv = $this->_row_text_csv_data($row, $fieldDef);
-            if ($lastheading > -2)
-                $lastheading = $this->_check_heading_csv($this->_row_thenval($row), $rows, $lastheading, $csv);
+            if ($headingpos >= 0)
+                $headingpos = $this->_headings_for_csv($headingpos, $csv);
             $body[] = $csv;
         }
 
