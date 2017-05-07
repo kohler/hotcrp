@@ -1808,19 +1808,19 @@ hr.c {
 	font-weight: bold;
 }
 
-.pl_sort, .pl_sort_def, .pl_sort_def_rev {
+.pl_sort {
 	text-decoration: none;
 	color: #444488;
 }
-.pl_sort:hover, .pl_sort_def:hover, .pl_sort_def_rev:hover {
+.pl_sort:hover {
 	text-decoration: underline;
 	color: black;
 }
-.pl_sort_def:after {
+.pl_sorting_fwd:after {
 	content: "\25bc";
 	font-size: 90%;
 }
-.pl_sort_def_rev:after {
+.pl_sorting_rev:after {
 	content: "\25b2";
 	font-size: 90%;
 }

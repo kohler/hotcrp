@@ -936,8 +936,7 @@ class PaperList {
                  && $sort_url)
                 || $defsortname == $s0sort_name)) {
             $s0 = $this->sorters[0];
-            $tooltip = $s0->reverse ? "Forward sort" : "Reverse sort";
-            $sort_class = "pl_sort_def" . ($s0->reverse ? "_rev" : "");
+            $sort_class = "pl_sort pl_sorting" . ($s0->reverse ? "_rev" : "_fwd");
             $sort_url .= urlencode($s0sort_name . ($s0->reverse ? "" : " reverse"));
         } else if ($fdef->sort && $sort_url)
             $sort_url .= urlencode($fdef->sort_name());

@@ -783,7 +783,7 @@ class ContactList {
                     $x .= "    <th class=\"pl pl_$fdef[0]\">";
                     $ftext = $this->header($fieldId, $ord++);
                     if ($fieldId == $this->sortField)
-                        $x .= '<a class="pl_sort_def' . ($this->reverseSort ? "_rev" : "") . '" rel="nofollow" href="' . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . '">' . $ftext . "</a>";
+                        $x .= '<a class="pl_sort pl_sorting' . ($this->reverseSort ? "_rev" : "_fwd") . '" rel="nofollow" href="' . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . '">' . $ftext . "</a>";
                     else if ($fdef[2])
                         $x .= $q . $fieldId . "\">" . $ftext . "</a>";
                     else
