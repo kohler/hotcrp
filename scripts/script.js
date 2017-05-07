@@ -4020,7 +4020,7 @@ function searchbody_postreorder(tbody) {
         }
 }
 
-function reorder(jq, pids, heads) {
+function reorder(jq, pids, groups) {
     var tbody = $(jq)[0], pida = "data-pid";
     if (tbody.tagName === "TABLE")
         tbody = $(tbody).children().filter("tbody")[0];
@@ -4042,13 +4042,13 @@ function reorder(jq, pids, heads) {
         cur = cur.nextSibling;
     var cpid = cur ? cur.getAttribute(pida) : 0;
 
-    var pid_index = 0, head_index = 0;
-    heads = heads || [];
-    while (pid_index < pids.length || head_index < heads.length) {
+    var pid_index = 0, grp_index = 0;
+    groups = groups || [];
+    while (pid_index < pids.length || grp_index < groups.length) {
         // handle headings
-        if (head_index < heads.length && heads[head_index].pos == pid_index) {
-            tagannorow_add(tbody, cur, heads[head_index]);
-            ++head_index;
+        if (grp_index < groups.length && groups[grp_index].pos == pid_index) {
+            tagannorow_add(tbody, cur, groups[grp_index]);
+            ++grp_index;
         } else {
             var npid = pids[pid_index];
             if (cpid == npid) {

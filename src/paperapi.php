@@ -452,8 +452,8 @@ class PaperApi {
 
         $search = new PaperSearch($user, $sarg);
         $pl = new PaperList($search, ["sort" => true], $qreq);
-        $ih = $pl->ids_and_headings();
-        return ["ok" => true, "ids" => $ih[0], "headings" => $ih[1],
+        $ih = $pl->ids_and_groups();
+        return ["ok" => true, "ids" => $ih[0], "groups" => $ih[1],
                 "hotlist_info" => $pl->session_list_object()->info_string()];
     }
 }

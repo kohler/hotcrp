@@ -13,7 +13,7 @@ class PaperListRenderState {
     public $ncol;
     public $titlecol;
     public $last_trclass = "";
-    public $headingstart = array(0);
+    public $groupstart = array(0);
     function __construct($ncol, $titlecol, $skipcallout) {
         $this->ncol = $ncol;
         $this->titlecol = $titlecol;
@@ -144,7 +144,7 @@ class PaperList {
     // collected during render and exported to caller
     public $count; // also exported to columns access: 1 more than row index
     public $ids;
-    public $headings;
+    public $groups;
     public $any;
     private $_has;
     private $_any_option_checks;
@@ -698,15 +698,15 @@ class PaperList {
         foreach ($rows as $prow)
             $this->ids[] = $prow->paperId;
 
-        // set `headings`
-        $this->headings = [];
+        // set `groups`
+        $this->groups = [];
         if (!empty($this->search->groupmap))
-            $this->_collect_headings($rows);
+            $this->_collect_groups($rows);
 
         return $rows;
     }
 
-    private function _collect_headings($srows) {
+    private function _collect_groups($srows) {
         $groupmap = $this->search->groupmap ? : [];
         $thenmap = $this->search->thenmap ? : [];
         $rowpos = 0;
@@ -726,7 +726,7 @@ class PaperList {
             if ($ginfo->count === 0 && $ginfo->tag && !$ginfo->annoId
                 && !$this->has_editable_tags)
                 continue;
-            $this->headings[] = $ginfo;
+            $this->groups[] = $ginfo;
         }
     }
 
@@ -864,14 +864,14 @@ class PaperList {
         return $t;
     }
 
-    private function _headings_for($headingpos, $rstate, &$body, $last) {
-        for ($did_headingstart = false;
-             $headingpos < count($this->headings)
-             && ($last || $this->count > $this->headings[$headingpos]->pos);
-             ++$headingpos) {
-            if ($this->count !== 1 && $did_headingstart === false)
-                $rstate->headingstart[] = $did_headingstart = count($body);
-            $ginfo = $this->headings[$headingpos];
+    private function _groups_for($grouppos, $rstate, &$body, $last) {
+        for ($did_groupstart = false;
+             $grouppos < count($this->groups)
+             && ($last || $this->count > $this->groups[$grouppos]->pos);
+             ++$grouppos) {
+            if ($this->count !== 1 && $did_groupstart === false)
+                $rstate->groupstart[] = $did_groupstart = count($body);
+            $ginfo = $this->groups[$grouppos];
             if ($ginfo->is_empty()) {
                 $body[] = "  <tr class=\"plheading_blank\"><td class=\"plheading_blank\" colspan=\"$rstate->ncol\"></td></tr>\n";
             } else {
@@ -899,7 +899,7 @@ class PaperList {
                 $rstate->colorindex = 0;
             }
         }
-        return $headingpos;
+        return $grouppos;
     }
 
     private function _field_title($fdef) {
@@ -1035,20 +1035,20 @@ class PaperList {
     }
 
     private function _column_split($rstate, $colhead, &$body) {
-        if (count($rstate->headingstart) <= 1)
+        if (count($rstate->groupstart) <= 1)
             return false;
-        $rstate->headingstart[] = count($body);
-        $rstate->split_ncol = count($rstate->headingstart) - 1;
+        $rstate->groupstart[] = count($body);
+        $rstate->split_ncol = count($rstate->groupstart) - 1;
 
         $rownum_marker = "<span class=\"pl_rownum fx6\">";
         $rownum_len = strlen($rownum_marker);
         $nbody = array("<tr>");
         $tbody_class = "pltable" . ($rstate->hascolors ? " pltable_colored" : "");
-        for ($i = 1; $i < count($rstate->headingstart); ++$i) {
+        for ($i = 1; $i < count($rstate->groupstart); ++$i) {
             $nbody[] = '<td class="plsplit_col top" width="' . (100 / $rstate->split_ncol) . '%"><div class="plsplit_col"><table width="100%">';
             $nbody[] = $colhead . "  <tbody class=\"$tbody_class\">\n";
             $number = 1;
-            for ($j = $rstate->headingstart[$i - 1]; $j < $rstate->headingstart[$i]; ++$j) {
+            for ($j = $rstate->groupstart[$i - 1]; $j < $rstate->groupstart[$i]; ++$j) {
                 $x = $body[$j];
                 if (($pos = strpos($x, $rownum_marker)) !== false) {
                     $pos += strlen($rownum_marker);
@@ -1257,7 +1257,7 @@ class PaperList {
         return $t;
     }
 
-    function ids_and_headings() {
+    function ids_and_groups() {
         if (!$this->_prepare())
             return null;
         $field_list = $this->_columns("id", false);
@@ -1265,11 +1265,11 @@ class PaperList {
         if ($rows === null)
             return null;
         $this->count = count($this->ids);
-        return [$this->ids, $this->headings];
+        return [$this->ids, $this->groups];
     }
 
     function id_array() {
-        $idh = $this->ids_and_headings();
+        $idh = $this->ids_and_groups();
         return $idh ? $idh[0] : null;
     }
 
@@ -1354,12 +1354,12 @@ class PaperList {
 
         // collect row data
         $body = array();
-        $headingpos = empty($this->headings) ? -1 : 0;
+        $grouppos = empty($this->groups) ? -1 : 0;
         $need_render = false;
         foreach ($rows as $row) {
             ++$this->count;
-            if ($headingpos >= 0)
-                $headingpos = $this->_headings_for($headingpos, $rstate, $body, false);
+            if ($grouppos >= 0)
+                $grouppos = $this->_groups_for($grouppos, $rstate, $body, false);
             $body[] = $this->_row_text($rstate, $row, $fieldDef);
             if ($this->need_render && !$need_render) {
                 Ht::stash_script('$(plinfo.render_needed)', 'plist_render_needed');
@@ -1370,8 +1370,8 @@ class PaperList {
                 $this->need_render = false;
             }
         }
-        if ($headingpos >= 0 && $headingpos < count($this->headings))
-            $this->_headings_for($headingpos, $rstate, $body, true);
+        if ($grouppos >= 0 && $grouppos < count($this->groups))
+            $this->_groups_for($grouppos, $rstate, $body, true);
 
         // header cells
         $colhead = "";
@@ -1433,6 +1433,8 @@ class PaperList {
                 $enter .= "\" $n=\"" . htmlspecialchars($v);
         if ($this->search->is_order_anno)
             $enter .= "\" data-order-tag=\"{$this->search->is_order_anno}";
+        if ($this->groups)
+            $enter .= "\" data-groups=\"" . htmlspecialchars(json_encode($this->groups));
         foreach ($this->tbody_attr as $k => $v)
             $enter .= "\" $k=\"" . htmlspecialchars($v);
         if (get($options, "list"))
@@ -1565,14 +1567,14 @@ class PaperList {
         return $csv;
     }
 
-    private function _headings_for_csv($headingpos, &$csv) {
-        for (; $headingpos < count($this->headings)
-               && $this->headings[$headingpos]->pos < $this->count;
-               ++$headingpos) {
-            $ginfo = $this->headings[$headingpos];
+    private function _groups_for_csv($grouppos, &$csv) {
+        for (; $grouppos < count($this->groups)
+               && $this->groups[$grouppos]->pos < $this->count;
+               ++$grouppos) {
+            $ginfo = $this->groups[$grouppos];
             $csv["__precomment__"] = $ginfo->is_empty() ? "none" : $ginfo->heading;
         }
-        return $headingpos;
+        return $grouppos;
     }
 
     function text_csv($listname, $options = array()) {
@@ -1602,12 +1604,12 @@ class PaperList {
 
         // collect row data
         $body = array();
-        $headingpos = empty($this->headings) ? -1 : 0;
+        $grouppos = empty($this->groups) ? -1 : 0;
         foreach ($rows as $row) {
             ++$this->count;
             $csv = $this->_row_text_csv_data($row, $fieldDef);
-            if ($headingpos >= 0)
-                $headingpos = $this->_headings_for_csv($headingpos, $csv);
+            if ($grouppos >= 0)
+                $grouppos = $this->_groups_for_csv($grouppos, $csv);
             $body[] = $csv;
         }
 
