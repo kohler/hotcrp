@@ -3967,8 +3967,9 @@ function tagannorow_fill(row, anno) {
     }
 }
 
-function tagannorow_add(tbody, before, anno) {
-    var $r = $(tbody).closest("table").find("thead > tr.pl_headrow:first-child > th");
+function tagannorow_add(tbl, tbody, before, anno) {
+    tbl = tbl || tbody.parentElement;
+    var $r = $(tbl).find("thead > tr.pl_headrow:first-child > th");
     var titlecol = 0, ncol = $r.length;
     for (var i = 0; i != ncol; ++i)
         if ($($r[i]).hasClass("pl_title"))
@@ -4022,10 +4023,9 @@ function searchbody_postreorder(tbody) {
         }
 }
 
-function reorder(jq, pids, groups) {
-    var tbody = $(jq)[0], pida = "data-pid";
-    if (tbody.tagName === "TABLE")
-        tbody = $(tbody).children().filter("tbody")[0];
+function reorder(tbl, pids, groups, remove_all) {
+    var tbody = $(tbl).children().filter("tbody")[0], pida = "data-pid";
+    remove_all && $(tbody).detach();
 
     var rowmap = [], xpid, cur = tbody.firstChild, next;
     while (cur) {
@@ -4049,7 +4049,7 @@ function reorder(jq, pids, groups) {
     while (pid_index < pids.length || grp_index < groups.length) {
         // handle headings
         if (grp_index < groups.length && groups[grp_index].pos == pid_index) {
-            tagannorow_add(tbody, cur, groups[grp_index]);
+            tagannorow_add(tbl, tbody, cur, groups[grp_index]);
             ++grp_index;
         } else {
             var npid = pids[pid_index];
@@ -4060,23 +4060,20 @@ function reorder(jq, pids, groups) {
                         cpid = cur ? cur.getAttribute(pida) : 0;
                 } while (cpid == npid);
             } else {
-                for (var j = 0; rowmap[npid] && j < rowmap[npid].length; ++j) {
-                    var e = tbody.removeChild(rowmap[npid][j]);
-                    tbody.insertBefore(e, cur);
-                }
+                for (var j = 0; rowmap[npid] && j < rowmap[npid].length; ++j)
+                    tbody.insertBefore(rowmap[npid][j], cur);
                 delete rowmap[npid];
             }
             ++pid_index;
         }
     }
 
+    remove_all && $(tbody).appendTo(tbl);
     searchbody_postreorder(tbody);
 }
 
-function table_ids(tbody) {
-    if (tbody.tagName === "TABLE")
-        tbody = $(tbody).children().filter("tbody")[0];
-    var tbl_ids = [], xpid;
+function table_ids(tbl) {
+    var tbody = $(tbl).children().filter("tbody")[0], tbl_ids = [], xpid;
     for (var cur = tbody.firstChild; cur; cur = cur.nextSibling)
         if (cur.nodeType === 1
             && /^pl\b/.test(cur.className)
@@ -4099,7 +4096,7 @@ function href_sorter(href) {
 }
 
 function search_sort_success(tbl, href, data) {
-    reorder(tbl, data.ids, data.groups);
+    reorder(tbl, data.ids, data.groups, true);
     $(tbl).data("groups", data.groups);
     tbl.setAttribute("data-hotlist", data.hotlist_info || "");
     var want_sorter = href_sorter(href);
@@ -4608,7 +4605,7 @@ function taganno_success(rv) {
         var anno = rv.anno[i];
         var row = $headings.filter('[data-anno-id="' + anno.annoid + '"]')[0];
         if (!row)
-            row = tagannorow_add(plt_tbody, null, anno);
+            row = tagannorow_add(null, plt_tbody, null, anno);
         else
             tagannorow_fill(row, anno);
         annoid_seen[anno.annoid] = true;
@@ -4790,7 +4787,6 @@ function plinfo_tags(selector) {
 
 plinfo_tags.edit_anno = edit_anno;
 plinfo_tags.add_draghandle = add_draghandle;
-plinfo_tags.reorder = reorder;
 return plinfo_tags;
 })();
 
