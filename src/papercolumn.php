@@ -308,7 +308,10 @@ class TitlePaperColumn extends PaperColumn {
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b) {
-        return strcasecmp($a->title, $b->title);
+        $cmp = strcasecmp($a->unaccented_title(), $b->unaccented_title());
+        if (!$cmp)
+            $cmp = strcasecmp($a->title, $b->title);
+        return $cmp;
     }
     function header(PaperList $pl, $is_text) {
         return "Title";

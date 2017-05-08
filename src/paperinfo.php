@@ -193,6 +193,7 @@ class PaperInfo {
     // $paperTags: DO NOT LIST (property_exists() is meaningful)
     // $optionIds: DO NOT LIST (property_exists() is meaningful)
 
+    private $_unaccented_title = null;
     private $_contact_info = array();
     private $_contact_info_rights_version = 0;
     private $_author_array = null;
@@ -321,9 +322,15 @@ class PaperInfo {
     }
 
 
+    function unaccented_title() {
+        if ($this->_unaccented_title === null)
+            $this->_unaccented_title = UnicodeHelper::deaccent($this->title);
+        return $this->_unaccented_title;
+    }
+
     function pretty_text_title_indent($width = 75) {
         $n = "Paper #{$this->paperId}: ";
-        $vistitle = UnicodeHelper::deaccent($this->title);
+        $vistitle = $this->unaccented_title();
         $l = (int) (($width + 0.5 - strlen($vistitle) - strlen($n)) / 2);
         return strlen($n) + max(0, $l);
     }
