@@ -5403,7 +5403,7 @@ return function (classes, class_prefix) {
         style || (style = $("<style></style>").appendTo("head")[0].sheet);
         t = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size +
             '" height="' + size + '">' + t + '</svg>';
-        t = 'background: url(data:image/svg+xml;base64,' + btoa(t) + ') fixed;'
+        t = 'background-image: url(data:image/svg+xml;base64,' + btoa(t) + ');'
         x = "." + tags.join(".") + (class_prefix ? $.trim("." + class_prefix) : "");
         style.insertRule(x + " { " + t + " }", 0);
         style.insertRule(x + ".psc { " + t + " }", 0);

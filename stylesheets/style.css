@@ -1840,8 +1840,11 @@ hr.c {
 .pltable_colored > .k1, .pltable_colored > .k1 {
 	background-color: inherit;
 }
-tr {
-	background-attachment: fixed;
+tr.pl {
+	background-position: bottom left;
+}
+tr.plx {
+	background-position: top left;
 }
 .redtag, .redtag.psc {
 	background-color: #ffd8d8;
