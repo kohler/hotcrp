@@ -623,6 +623,8 @@ function hoturl(page, options) {
 
     var x = {t: page + siteurl_suffix};
     if (typeof options === "string") {
+        if (options.charAt(0) === "?")
+            options = options.substr(1);
         if ((m = options.match(/^(.*?)(#.*)$/))) {
             options = m[1];
             anchor = m[2];
