@@ -4002,23 +4002,27 @@ function tagannorow_add(tbl, tbody, before, anno) {
 
 
 function searchbody_postreorder(tbody) {
+    var bad_regex = [/\bk1\b/, /\bk0\b/];
     for (var cur = tbody.firstChild, e = 1; cur; cur = cur.nextSibling)
         if (cur.nodeName == "TR") {
             var c = cur.className;
             if (!/^plx/.test(c))
                 e = 1 - e;
-            if (/\bk[01]\b/.test(c))
+            if (bad_regex[e].test(c))
                 cur.className = c.replace(/\bk[01]\b/, "k" + e);
-            else if (/\bplheading\b/.test(c)) {
+            else if (/^plheading/.test(c)) {
                 e = 1;
                 var np = 0;
                 for (var sub = cur.nextSibling; sub; sub = sub.nextSibling)
                     if (sub.nodeName == "TR") {
-                        if (/\bplheading\b/.test(sub.className))
+                        if (/^plheading/.test(sub.className))
                             break;
                         np += /^plx/.test(sub.className) ? 0 : 1;
                     }
-                $(cur).find(".plheading_count").html(plural(np, "paper"));
+                var np_html = plural(np, "paper");
+                var $np = $(cur).find(".plheading_count");
+                if ($np.html() !== np_html)
+                    $np.html(np_html);
             }
         }
 }
@@ -4027,7 +4031,7 @@ function reorder(tbl, pids, groups, remove_all) {
     var tbody = $(tbl).children().filter("tbody")[0], pida = "data-pid";
     remove_all && $(tbody).detach();
 
-    var rowmap = [], xpid, cur = tbody.firstChild, next;
+    var rowmap = [], xpid = 0, cur = tbody.firstChild, next;
     while (cur) {
         if (cur.nodeType == 1 && (xpid = cur.getAttribute(pida)))
             rowmap[xpid] = rowmap[xpid] || [];
@@ -4040,8 +4044,6 @@ function reorder(tbl, pids, groups, remove_all) {
     }
 
     cur = tbody.firstChild;
-    while (cur && cur.nodeType != 1)
-        cur = cur.nextSibling;
     var cpid = cur ? cur.getAttribute(pida) : 0;
 
     var pid_index = 0, grp_index = 0;
