@@ -775,7 +775,7 @@ class PaperList {
                 $trclass = $m;
             } else
                 $trclass .= " " . $m;
-            if ($row->conflictType > 0 && !$this->contact->can_view_tags($row, false))
+            if ($row->conflictType > 0 && !$row->viewable_tags($this->contact, false))
                 $trclass .= " conflictmark";
         }
         if (($highlightclass = get($this->search->highlightmap, $row->paperId)))

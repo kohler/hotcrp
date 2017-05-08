@@ -5406,6 +5406,7 @@ return function (classes, class_prefix) {
         t = 'background-image: url(data:image/svg+xml;base64,' + btoa(t) + ');'
         x = "." + tags.join(".") + (class_prefix ? $.trim("." + class_prefix) : "");
         style.insertRule(x + " { " + t + " }", 0);
+        style.insertRule(".fold5c " + x + ".conflictmark { background-image: none; }", 0);
         style.insertRule(x + ".psc { " + t + " }", 0);
     }
     fmap[index] = fmap[canonical_index] = "url(#" + id + ")";
