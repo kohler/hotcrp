@@ -1713,6 +1713,7 @@ class Contact {
                 && (!$ci->conflict_type || $forceShow);
 
             // check PC tracking
+            // (see also can_accept_review_assignment*)
             $tracks = $this->conf->has_tracks();
             $isPC = $this->isPC
                 && (!$tracks
@@ -2440,7 +2441,8 @@ class Contact {
         if (!$prow)
             return $this->isPC && $this->conf->check_all_tracks($this, Track::ASSREV);
         $rights = $this->rights($prow);
-        return $rights->allow_pc_broad
+        return ($rights->allow_pc_broad
+                || $this->isPC)
             && ($rights->review_type > 0
                 || $rights->allow_administer
                 || $this->conf->check_tracks($prow, $this, Track::ASSREV));
@@ -2448,7 +2450,8 @@ class Contact {
 
     function can_accept_review_assignment(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        return $rights->allow_pc
+        return ($rights->allow_pc
+                || ($this->isPC && !$rights->conflict_type))
             && ($rights->review_type > 0
                 || $rights->allow_administer
                 || $this->conf->check_tracks($prow, $this, Track::ASSREV));
