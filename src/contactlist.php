@@ -39,6 +39,7 @@ class ContactList {
     var $limit;
     public $have_folds = array();
     var $contactLinkArgs;
+    private $_cfltpids = null;
 
     function __construct($contact, $sortable = true) {
         global $contactListFields;
@@ -510,6 +511,33 @@ class ContactList {
         return $t . "</div></td></tr></tfoot>\n";
     }
 
+    private function _conflict_pids() {
+        global $Conf;
+        if ($this->_cfltpids === null) {
+            $this->_cfltpids = [];
+            if (!$this->contact->privChair || $Conf->has_any_manager()) {
+                $user = $this->contact;
+                $result = $Conf->paper_result($user, $Conf->has_tracks() ? ["tags" => true] : []);
+                while (($row = PaperInfo::fetch($result, $user)))
+                    if (!$user->can_view_paper($row)
+                        || !$user->can_view_review_assignment($row, null, true)
+                        || !$user->can_view_review_identity($row, null, true))
+                        $this->_cfltpids[] = $row->paperId;
+                    else if ($row->conflictType > 0 && !$user->privChair)
+                        error_log("WARNING: counting {$Conf->dbname} #{$row->paperId} for {$user->email} despite conflict");
+                Dbl::free($result);
+            }
+        }
+        return $this->_cfltpids;
+    }
+
+    private function _pid_restriction() {
+        if (($cfltpids = $this->_conflict_pids()))
+            return " and paperId not in (" . join(",", $cfltpids) . ")";
+        else
+            return "";
+    }
+
     function _rows($queryOptions) {
         global $Conf;
 
@@ -518,14 +546,6 @@ class ContactList {
         // not always) we are more restricted: for instance, conflicted PC
         // members never see reviewers for their papers, even if reviewing is
         // not anonymous. Hard to see this as worth fixing.
-
-        // load conflicted papers
-        $cfltpids = [];
-        if (!$this->contact->privChair)
-            $cfltpids = Dbl::fetch_first_columns($Conf->dblink, "select paperId from PaperConflict where contactId=?", $this->contact->contactId);
-        $pid_restriction = "";
-        if (!empty($cfltpids))
-            $pid_restriction = " and paperId not in (" . join(",", $cfltpids) . ")";
 
         $aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
         $rf = ["contactId"];
@@ -540,9 +560,9 @@ class ContactList {
         if (isset($queryOptions["revratings"]))
             $pq .= ", numRatings, sumRatings";
         if (isset($queryOptions["leads"]))
-            $pq .= ",\n    (select count(paperId) from Paper where leadContactId=u.contactId$pid_restriction) numLeads";
+            $pq .= ",\n    (select count(paperId) from Paper where leadContactId=u.contactId" . $this->_pid_restriction() . ") numLeads";
         if (isset($queryOptions["shepherds"]))
-            $pq .= ",\n    (select count(paperId) from Paper where shepherdContactId=u.contactId$pid_restriction) numShepherds";
+            $pq .= ",\n    (select count(paperId) from Paper where shepherdContactId=u.contactId" . $this->_pid_restriction() . ") numShepherds";
         if (isset($queryOptions['scores']))
             foreach ($queryOptions['scores'] as $score) {
                 $rf[] = "group_concat(if(reviewSubmitted>0,$score,null)) $score";
@@ -568,7 +588,7 @@ class ContactList {
                 $jwhere[] = "r.reviewType=" . REVIEW_EXTERNAL;
             if ($this->limit == "req")
                 $jwhere[] = "r.requestedBy=" . $this->contact->contactId;
-            if ($pid_restriction)
+            if (($cfltpids = $this->_conflict_pids()))
                 $jwhere[] = "(r.paperId not in (" . join(",", $cfltpids) . ") or r.contactId=" . $this->contact->contactId . ")";
             $jwhere[] = "(p.timeSubmitted>0 or r.reviewSubmitted>0)";
             if (count($jwhere))
@@ -582,7 +602,7 @@ class ContactList {
             $jwhere = [];
             if (($badratings = PaperSearch::unusableRatings($this->contact)))
                 $jwhere[] = "ReviewRating.reviewId not in (" . join(",", $badratings) . ")";
-            if ($pid_restriction)
+            if (($cfltpids = $this->_conflict_pids()))
                 $jwhere[] = "ReviewRating.paperId not in (" . join(",", $cfltpids) . ")";
             if (!empty($jwhere))
                 $pq .= "\n\t\twhere " . join(" and ", $jwhere);
