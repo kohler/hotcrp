@@ -813,7 +813,7 @@ class ContactAuthor_SearchTerm extends SearchTerm {
         $cids = null;
         if ($sword->kwexplicit && !$sword->quoted) {
             if (strcasecmp($word, "me") === 0)
-                $cids = [$this->cid];
+                $cids = [$srch->cid];
             else if ($srch->user->isPC
                      && (strcasecmp($word, "pc") === 0
                          || (str_starts_with($word, "#")
