@@ -4094,12 +4094,13 @@ function same_ids(tbl, ids) {
 }
 
 function href_sorter(href) {
-    return /[?&;]sort=([^=&;]*)/.exec(href)[1];
+    var m = /[?&;]sort=([^=&;]*)/.exec(href);
+    return m ? m[1] : "";
 }
 
 function search_sort_success(tbl, href, data) {
     reorder(tbl, data.ids, data.groups);
-    tbl.setAttribute("data-groups", data.groups);
+    $(tbl).data("groups", data.groups);
     tbl.setAttribute("data-hotlist", data.hotlist_info || "");
     var want_sorter = href_sorter(href);
     var want_sortclass = want_sorter.replace(/\+reverse$/, "");
@@ -4119,14 +4120,23 @@ function search_sort_success(tbl, href, data) {
 }
 
 function search_sort_save_state(replace, tbl, href) {
+    var groups = $(tbl).data("groups");
+    if (groups && typeof groups === "string")
+        groups = $.parseJSON(groups);
     var state = {
         stateType: "search_sort",
         href: href,
         tableId: tbl.id,
         ids: table_ids(tbl),
-        groups: $.parseJSON(tbl.getAttribute("data-groups") || "null"),
+        groups: groups,
         hotlist_info: tbl.getAttribute("data-hotlist")
     };
+    if (!href_sorter(href)) {
+        var $sorters = $(tbl).children("thead").find("a.pl_sorting_fwd, a.pl_sorting_rev");
+        var active_href = $sorters.length && href_sorter($sorters[0].getAttribute("href"));
+        if (active_href)
+            state.href += "&sort=" + encodeURIComponent(active_href.replace(/\+reverse$/, ""));
+    }
     history[replace ? "replaceState" : "pushState"](state, document.title, href);
 }
 
