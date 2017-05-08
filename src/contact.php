@@ -1697,16 +1697,16 @@ class Contact {
         else if (!$ci->allow_administer || $forceShow === null)
             $forceShow = false;
         else if ($forceShow === "any")
-            $forceShow = !!get($ci, "forced_rights");
+            $forceShow = !!$ci->forced_rights_link;
         if ($forceShow) {
-            if (!get($ci, "forced_rights"))
-                $ci->forced_rights = clone $ci;
-            $ci = $ci->forced_rights;
+            if (!$ci->forced_rights_link)
+                $ci->forced_rights_link = clone $ci;
+            $ci = $ci->forced_rights_link;
         }
 
         // set other rights
-        if (get($ci, "rights_force") !== $forceShow) {
-            $ci->rights_force = $forceShow;
+        if ($ci->rights_forced !== $forceShow) {
+            $ci->rights_forced = $forceShow;
 
             // check current administration status
             $ci->can_administer = $ci->allow_administer
@@ -2105,7 +2105,7 @@ class Contact {
                 && $rights->allow_pc_broad
                 && $this->conf->can_pc_see_all_submissions())
             || ($rights->allow_administer
-                ? $rights->nonblind || $rights->rights_force /* chair can't see blind authors unless forceShow */
+                ? $rights->nonblind || $rights->rights_forced /* chair can't see blind authors unless forceShow */
                 : $rights->act_author_view);
     }
 
@@ -2488,14 +2488,14 @@ class Contact {
                 && $this->conf->setting("pcrev_any") > 0
                 && $this->conf->time_review(null, true, true))
             || ($rights->can_administer
-                && ($prow->timeSubmitted > 0 || $rights->rights_force)
+                && ($prow->timeSubmitted > 0 || $rights->rights_forced)
                 && (!$submit || $this->override_deadlines($rights)));
     }
 
     function can_create_review_from(PaperInfo $prow, Contact $user) {
         $rights = $this->rights($prow);
         return $rights->can_administer
-            && ($prow->timeSubmitted > 0 || $rights->rights_force)
+            && ($prow->timeSubmitted > 0 || $rights->rights_forced)
             && (!$user->isPC || $user->can_accept_review_assignment($prow))
             && ($this->conf->time_review(null, true, true) || $this->override_deadlines($rights));
     }
@@ -2578,7 +2578,7 @@ class Contact {
         return $rights->allow_review
             && ($prow->timeSubmitted > 0
                 || $rights->review_type > 0
-                || ($rights->allow_administer && $rights->rights_force))
+                || ($rights->allow_administer && $rights->rights_forced))
             && ($this->conf->setting("cmt_always") > 0
                 || $this->conf->time_review(null, $rights->allow_pc, true)
                 || ($rights->allow_administer

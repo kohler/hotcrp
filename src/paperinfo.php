@@ -11,6 +11,8 @@ class PaperContactInfo {
     public $review_submitted = 0;
     public $review_needs_submit = 1;
     public $review_token_cid = 0;
+    public $rights_forced = null;
+    public $forced_rights_link = null;
 
     static function make(PaperInfo $prow, $cid) {
         $ci = new PaperContactInfo;
