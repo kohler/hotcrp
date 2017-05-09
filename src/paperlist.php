@@ -713,14 +713,14 @@ class PaperList {
         for ($grouppos = 0;
              $rowpos < count($srows) || $grouppos < count($groupmap);
              ++$grouppos) {
+            while ($rowpos < count($srows)
+                   && get_i($thenmap, $srows[$rowpos]->paperId) === $grouppos)
+                ++$rowpos;
             $ginfo = get($groupmap, $grouppos);
             if (($ginfo === null || $ginfo->is_empty()) && $rowpos === 0)
                 continue;
             $ginfo = $ginfo ? clone $ginfo : TagInfo::make_empty();
             $ginfo->pos = $rowpos;
-            while ($rowpos < count($srows)
-                   && get_i($thenmap, $srows[$rowpos]->paperId) === $grouppos)
-                ++$rowpos;
             $ginfo->count = $rowpos - $ginfo->pos;
             // leave off an empty “Untagged” section unless editing
             if ($ginfo->count === 0 && $ginfo->tag && !$ginfo->annoId
