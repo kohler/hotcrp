@@ -641,6 +641,40 @@ xassert($user_marina->can_accept_review_assignment_ignore_conflict($paper14));
 xassert($user_marina->can_accept_review_assignment($paper14));
 xassert(!$user_marina->can_review($paper14, null));
 
+$Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
+$Conf->invalidate_caches(["tracks" => true]);
+
+xassert(!$user_jon->can_view_paper($paper13));
+xassert(!$user_jon->can_view_pdf($paper13));
+xassert(!$user_jon->can_view_review($paper13, null, null));
+xassert(!$user_jon->can_view_review_identity($paper13, null));
+xassert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper13));
+xassert(!$user_jon->can_accept_review_assignment($paper13));
+xassert(!$user_jon->can_review($paper13, null));
+xassert($user_marina->can_view_paper($paper13));
+xassert($user_marina->can_view_pdf($paper13));
+xassert($user_marina->can_view_review($paper13, null, null));
+xassert($user_marina->can_view_review_identity($paper13, null));
+xassert($user_marina->can_accept_review_assignment_ignore_conflict($paper13));
+xassert($user_marina->can_accept_review_assignment($paper13));
+xassert($user_marina->can_review($paper13, null));
+
+xassert($user_jon->can_view_paper($paper14));
+xassert($user_jon->can_view_pdf($paper14));
+xassert($user_jon->can_view_review($paper14, null, null));
+xassert($user_jon->can_view_review_identity($paper14, null));
+xassert($user_jon->can_accept_review_assignment_ignore_conflict($paper14));
+xassert($user_jon->can_accept_review_assignment($paper14));
+xassert($user_jon->can_review($paper14, null));
+xassert(!$user_marina->can_view_paper($paper14));
+xassert(!$user_marina->can_view_pdf($paper14));
+xassert(!$user_marina->can_view_review($paper14, null, null));
+xassert(!$user_marina->can_view_review_identity($paper14, null));
+xassert(!$user_marina->can_accept_review_assignment_ignore_conflict($paper14));
+xassert(!$user_marina->can_accept_review_assignment($paper14));
+xassert(!$user_marina->can_review($paper14, null));
+
+
 $Conf->check_invariants();
 
 xassert_exit();
