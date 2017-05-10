@@ -148,7 +148,7 @@ class AutoassignerInterface {
     private $live;
     public $ok = false;
 
-    static public function current_costs($qreq) {
+    static function current_costs($qreq) {
         $costs = new AutoassignerCosts;
         if (($x = opt("autoassignCosts"))
             && ($x = json_decode($x))
@@ -161,7 +161,7 @@ class AutoassignerInterface {
         return $costs;
     }
 
-    public function check() {
+    function check() {
         global $Error, $Qreq;
 
         $atypes = array("rev" => "r", "revadd" => "r", "revpc" => "r",
@@ -307,7 +307,7 @@ class AutoassignerInterface {
         return ob_get_clean();
     }
 
-    public function progress($status) {
+    function progress($status) {
         global $Conf;
         if ($this->live && microtime(true) - $this->start_at > 1) {
             $this->live = false;
@@ -322,7 +322,7 @@ class AutoassignerInterface {
         }
     }
 
-    public function run() {
+    function run() {
         global $Conf, $Me, $Qreq, $SSel, $pcsel, $badpairs, $scoreselector;
         assert($this->ok);
         session_write_close(); // this might take a long time
