@@ -39,7 +39,7 @@ if (isset($Qreq->pcs) && is_array($Qreq->pcs)) {
         if (($p = cvtint($p)) > 0)
             $pcsel[$p] = 1;
 } else
-    $pcsel = pcMembers();
+    $pcsel = $Conf->pc_members();
 
 if (!isset($Qreq->pctyp)
     || ($Qreq->pctyp !== "all" && $Qreq->pctyp !== "sel"))
@@ -47,25 +47,26 @@ if (!isset($Qreq->pctyp)
 
 // bad pairs
 // load defaults from last autoassignment or save entry to default
-$pcm = pcMembers();
-if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && !count($_POST)) {
+if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && $Qreq->method() !== "POST") {
     $x = preg_split('/\s+/', $Conf->setting_data("autoassign_badpairs", ""), null, PREG_SPLIT_NO_EMPTY);
+    $pcm = $Conf->pc_members();
     $bpnum = 1;
     for ($i = 0; $i < count($x) - 1; $i += 2)
         if (isset($pcm[$x[$i]]) && isset($pcm[$x[$i+1]])) {
-            $Qreq["bpa$bpnum"] = $x[$i];
-            $Qreq["bpb$bpnum"] = $x[$i+1];
+            $Qreq["bpa$bpnum"] = $pcm[$x[$i]]->email;
+            $Qreq["bpb$bpnum"] = $pcm[$x[$i+1]]->email;
             ++$bpnum;
         }
     if ($Conf->setting("autoassign_badpairs"))
         $Qreq->badpairs = 1;
-} else if (count($_POST) && isset($Qreq->assign) && check_post()) {
+} else if ($Me->privChair && isset($Qreq->assign) && check_post()) {
     $x = array();
     for ($i = 1; isset($Qreq["bpa$i"]); ++$i)
         if ($Qreq["bpa$i"] && $Qreq["bpb$i"]
-            && isset($pcm[$Qreq["bpa$i"]]) && isset($pcm[$Qreq["bpb$i"]])) {
-            $x[] = $Qreq["bpa$i"];
-            $x[] = $Qreq["bpb$i"];
+            && ($pca = $Conf->pc_member_by_email($Qreq["bpa$i"]))
+            && ($pcb = $Conf->pc_member_by_email($Qreq["bpb$i"]))) {
+            $x[] = $pca->contactId;
+            $x[] = $pcb->contactId;
         }
     if (count($x) || $Conf->setting_data("autoassign_badpairs")
         || (!isset($Qreq->badpairs) != !$Conf->setting("autoassign_badpairs")))
@@ -579,7 +580,7 @@ $pctyp_sel = array(array("all", 1, "all"), array("none", 0, "none"));
 $pctags = $Conf->pc_tags();
 if (count($pctags)) {
     $tagsjson = array();
-    foreach (pcMembers() as $pc)
+    foreach ($Conf->pc_members() as $pc)
         $tagsjson[$pc->contactId] = " " . trim(strtolower($pc->viewable_tags($Me))) . " ";
     Ht::stash_script("pc_tags_json=" . json_encode($tagsjson) . ";");
     foreach ($pctags as $tagname => $pctag)
@@ -600,7 +601,7 @@ $summary = [];
 $tagger = new Tagger($Me);
 $nrev = new AssignmentCountSet($Conf);
 $nrev->load_rev();
-foreach (pcMembers() as $p) {
+foreach ($Conf->pc_members() as $p) {
     $t = '<div class="ctelt"><div class="ctelti';
     if (($k = $p->viewable_color_classes($Me)))
         $t .= ' ' . $k;
