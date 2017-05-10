@@ -618,7 +618,7 @@ echo '<div class="pc_ctable">', join("", $summary), "</div>\n",
 
 // Bad pairs
 function bpSelector($i, $which) {
-    static $badPairSelector, $Qreq;
+    global $badPairSelector, $Qreq;
     if (!$badPairSelector)
         $badPairSelector = pc_members_selector_options("(PC member)");
     return Ht::select("bp$which$i", $badPairSelector,
