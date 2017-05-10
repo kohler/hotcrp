@@ -139,14 +139,20 @@ echo '<div class="psmode">',
 
 
 class AutoassignerInterface {
+    private $conf;
+    private $user;
+    private $qreq;
     private $atype;
     private $atype_review;
     private $reviewtype;
+    private $reviewcount;
+    private $reviewround;
     private $discordertag;
     private $autoassigner;
     private $start_at;
     private $live;
     public $ok = false;
+    public $errors = [];
 
     static function current_costs($qreq) {
         $costs = new AutoassignerCosts;
@@ -161,100 +167,99 @@ class AutoassignerInterface {
         return $costs;
     }
 
-    function check() {
-        global $Error, $Qreq;
+    function __construct(Contact $user, Qrequest $qreq) {
+        $this->conf = $user->conf;
+        $this->user = $user;
+        $this->qreq = $qreq;
 
         $atypes = array("rev" => "r", "revadd" => "r", "revpc" => "r",
                         "lead" => true, "shepherd" => true,
                         "prefconflict" => true, "clear" => true,
-                        "discorder" => true);
-        $this->atype = $Qreq->a;
+                        "discorder" => true, "" => null);
+        $this->atype = $qreq->a;
         if (!$this->atype || !isset($atypes[$this->atype])) {
-            $Error["ass"] = true;
-            return Conf::msg_error("Malformed request!");
+            $this->errors["ass"] = "Malformed request!";
+            $this->atype = "";
         }
         $this->atype_review = $atypes[$this->atype] === "r";
 
         $r = false;
         if ($this->atype_review) {
-            $r = $Qreq[$this->atype . "type"];
+            $r = $qreq[$this->atype . "type"];
             if ($r != REVIEW_PRIMARY && $r != REVIEW_SECONDARY
-                && $r != REVIEW_PC) {
-                $Error["ass"] = true;
-                return Conf::msg_error("Malformed request!");
-            }
+                && $r != REVIEW_PC)
+                $this->errors["ass"] = "Malformed request!";
         } else if ($this->atype === "clear") {
-            $r = $Qreq->cleartype;
+            $r = $qreq->cleartype;
             if ($r != REVIEW_PRIMARY && $r != REVIEW_SECONDARY
                 && $r != REVIEW_PC && $r !== "conflict"
-                && $r !== "lead" && $r !== "shepherd") {
-                $Error["clear"] = true;
-                return Conf::msg_error("Malformed request!");
-            }
+                && $r !== "lead" && $r !== "shepherd")
+                $this->errors["clear"] = "Malformed request!";
         }
         $this->reviewtype = $r;
 
-        if ($this->atype_review && $Qreq->rev_round !== ""
-            && ($err = Conf::round_name_error($Qreq->rev_round))) {
-            $Error["rev_round"] = true;
-            return Conf::msg_error($err);
-        }
+        if ($this->atype_review) {
+            $this->reviewcount = cvtint($qreq[$this->atype . "ct"], -1);
+            if ($this->reviewcount <= 0)
+                $this->errors[$this->atype] = "You must assign at least one review.";
 
-        if ($this->atype === "rev" && cvtint($Qreq->revct, -1) <= 0) {
-            $Error["rev"] = true;
-            return Conf::msg_error("Enter the number of reviews you want to assign.");
-        } else if ($this->atype === "revadd" && cvtint($Qreq->revaddct, -1) <= 0) {
-            $Error["revadd"] = true;
-            return Conf::msg_error("You must assign at least one review.");
-        } else if ($this->atype === "revpc" && cvtint($Qreq->revpcct, -1) <= 0) {
-            $Error["revpc"] = true;
-            return Conf::msg_error("You must assign at least one review.");
+            $this->reviewround = $qreq->rev_round;
+            if ($this->reviewround !== ""
+                && ($err = Conf::round_name_error($this->reviewround)))
+                $this->errors["rev_round"] = $err;
         }
 
         if ($this->atype === "discorder") {
-            $tag = trim((string) $Qreq->discordertag);
+            $tag = trim((string) $qreq->discordertag);
             $tag = $tag === "" ? "discuss" : $tag;
             $tagger = new Tagger;
-            if (!($tag = $tagger->check($tag, Tagger::NOVALUE))) {
-                $Error["discordertag"] = true;
-                return Conf::msg_error($tagger->error_html);
-            }
-            $this->discordertag = $tag;
+            if (($tag = $tagger->check($tag, Tagger::NOVALUE)))
+                $this->discordertag = $tag;
+            else
+                $this->errors["discordertag"] = $tagger->error_html;
         }
 
-        return $this->ok = true;
+        $this->ok = empty($this->errors);
+    }
+
+    function check() {
+        global $Error;
+        $Error = $this->errors;
+        foreach ($this->errors as $etype => $msg)
+            Conf::msg_error($msg);
+        return $this->ok;
     }
 
     private function result_html() {
-        global $Conf, $Me, $Qreq, $SSel, $pcsel;
+        global $SSel, $pcsel;
         $assignments = $this->autoassigner->assignments();
         ReviewAssigner::$prefinfo = $this->autoassigner->prefinfo;
         ob_start();
 
         if (!$assignments) {
-            $Conf->warnMsg("Nothing to assign.");
+            Conf::msg_warning("Nothing to assign.");
             return ob_get_clean();
         }
 
-        $assignset = new AssignmentSet($Me, true);
+        $assignset = new AssignmentSet($this->user, true);
         $assignset->parse(join("\n", $assignments));
 
         list($atypes, $apids) = $assignset->types_and_papers(true);
         $badpairs_inputs = $badpairs_arg = array();
-        for ($i = 1; $i <= 20; ++$i)
-            if ($Qreq["bpa$i"] && $Qreq["bpb$i"]) {
-                array_push($badpairs_inputs, Ht::hidden("bpa$i", $Qreq["bpa$i"]),
-                           Ht::hidden("bpb$i", $Qreq["bpb$i"]));
-                $badpairs_arg[] = $Qreq["bpa$i"] . "-" . $Qreq["bpb$i"];
+        for ($i = 1; isset($this->qreq["bpa$i"]); ++$i)
+            if ($this->qreq["bpa$i"] && $this->qreq["bpb$i"]) {
+                array_push($badpairs_inputs, Ht::hidden("bpa$i", $this->qreq["bpa$i"]),
+                           Ht::hidden("bpb$i", $this->qreq["bpb$i"]));
+                $badpairs_arg[] = $this->qreq["bpa$i"] . "-" . $this->qreq["bpb$i"];
             }
         echo Ht::form_div(hoturl_post("autoassign",
                                       ["saveassignment" => 1,
                                        "assigntypes" => join(" ", $atypes),
                                        "assignpids" => join(" ", $apids),
                                        "xbadpairs" => count($badpairs_arg) ? join(" ", $badpairs_arg) : null,
-                                       "profile" => $Qreq->profile,
-                                       "XDEBUG_PROFILE" => $Qreq->XDEBUG_PROFILE,
-                                       "seed" => $Qreq->seed]));
+                                       "profile" => $this->qreq->profile,
+                                       "XDEBUG_PROFILE" => $this->qreq->XDEBUG_PROFILE,
+                                       "seed" => $this->qreq->seed]));
 
         $atype = $assignset->type_description();
         echo "<h3>Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
@@ -263,7 +268,7 @@ class AutoassignerInterface {
         $assignset->echo_unparse_display();
 
         // print preference unhappiness
-        if ($Qreq->profile && $this->atype_review) {
+        if ($this->qreq->profile && $this->atype_review) {
             $umap = $this->autoassigner->pc_unhappiness();
             sort($umap);
             echo '<p style="font-size:65%">Preference unhappiness: ';
@@ -294,8 +299,8 @@ class AutoassignerInterface {
             Ht::submit("download", "Download assignment file"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
         foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_round", "method", "haspap") as $t)
-            if (isset($Qreq[$t]))
-                echo Ht::hidden($t, $Qreq[$t]);
+            if (isset($this->qreq[$t]))
+                echo Ht::hidden($t, $this->qreq[$t]);
         echo Ht::hidden("pcs", join(" ", array_keys($pcsel))),
             join("", $badpairs_inputs),
             Ht::hidden("p", join(" ", $SSel->selection())), "\n";
@@ -308,7 +313,6 @@ class AutoassignerInterface {
     }
 
     function progress($status) {
-        global $Conf;
         if ($this->live && microtime(true) - $this->start_at > 1) {
             $this->live = false;
             echo "</div>\n", Ht::unstash();
@@ -323,42 +327,42 @@ class AutoassignerInterface {
     }
 
     function run() {
-        global $Conf, $Me, $Qreq, $SSel, $pcsel, $badpairs, $scoreselector;
+        global $SSel, $pcsel, $badpairs;
         assert($this->ok);
         session_write_close(); // this might take a long time
         set_time_limit(240);
 
         // prepare autoassigner
-        if ($Qreq->seed && is_numeric($Qreq->seed))
-            srand((int) $Qreq->seed);
-        $this->autoassigner = $autoassigner = new Autoassigner($Conf, $SSel->selection());
-        if ($Qreq->pctyp === "sel") {
+        if ($this->qreq->seed && is_numeric($this->qreq->seed))
+            srand((int) $this->qreq->seed);
+        $this->autoassigner = $autoassigner = new Autoassigner($this->conf, $SSel->selection());
+        if ($this->qreq->pctyp === "sel") {
             $n = $autoassigner->select_pc(array_keys($pcsel));
             if ($n == 0) {
                 Conf::msg_error("Select one or more PC members to assign.");
                 return null;
             }
         }
-        if ($Qreq->balance === "all")
+        if ($this->qreq->balance === "all")
             $autoassigner->set_balance(Autoassigner::BALANCE_ALL);
         foreach ($badpairs as $cid1 => $bp) {
             foreach ($bp as $cid2 => $x)
                 $autoassigner->avoid_pair_assignment($cid1, $cid2);
         }
-        if ($Qreq->method === "random")
+        if ($this->qreq->method === "random")
             $autoassigner->set_method(Autoassigner::METHOD_RANDOM);
         else
             $autoassigner->set_method(Autoassigner::METHOD_MCMF);
         if (opt("autoassignReviewGadget") === "expertise")
             $autoassigner->set_review_gadget(Autoassigner::REVIEW_GADGET_EXPERTISE);
         // save costs
-        $autoassigner->costs = self::current_costs($Qreq);
+        $autoassigner->costs = self::current_costs($this->qreq);
         $costs_json = json_encode($autoassigner->costs);
         if ($costs_json !== opt("autoassignCosts")) {
             if ($costs_json === json_encode(new AutoassignerCosts))
-                $Conf->save_setting("opt.autoassignCosts", null);
+                $this->conf->save_setting("opt.autoassignCosts", null);
             else
-                $Conf->save_setting("opt.autoassignCosts", 1, $costs_json);
+                $this->conf->save_setting("opt.autoassignCosts", 1, $costs_json);
         }
         $autoassigner->add_progressf(array($this, "progress"));
         $this->live = true;
@@ -366,20 +370,17 @@ class AutoassignerInterface {
 
         $this->start_at = microtime(true);
         if ($this->atype === "prefconflict")
-            $autoassigner->run_prefconflict($Qreq->t);
+            $autoassigner->run_prefconflict($this->qreq->t);
         else if ($this->atype === "clear")
             $autoassigner->run_clear($this->reviewtype);
         else if ($this->atype === "lead" || $this->atype === "shepherd")
-            $autoassigner->run_paperpc($this->atype, $Qreq["{$this->atype}score"]);
+            $autoassigner->run_paperpc($this->atype, $this->qreq["{$this->atype}score"]);
         else if ($this->atype === "revpc")
-            $autoassigner->run_reviews_per_pc($this->reviewtype, $Qreq->rev_round,
-                                              cvtint($Qreq->revpcct));
+            $autoassigner->run_reviews_per_pc($this->reviewtype, $this->reviewround, $this->reviewcount);
         else if ($this->atype === "revadd")
-            $autoassigner->run_more_reviews($this->reviewtype, $Qreq->rev_round,
-                                            cvtint($Qreq->revaddct));
+            $autoassigner->run_more_reviews($this->reviewtype, $this->reviewround, $this->reviewcount);
         else if ($this->atype === "rev")
-            $autoassigner->run_ensure_reviews($this->reviewtype, $Qreq->rev_round,
-                                              cvtint($Qreq->revct));
+            $autoassigner->run_ensure_reviews($this->reviewtype, $this->reviewround, $this->reviewcount);
         else if ($this->atype === "discorder")
             $autoassigner->run_discussion_order($this->discordertag);
 
@@ -391,7 +392,7 @@ class AutoassignerInterface {
             echo Ht::unstash_script('$$("propass").innerHTML=' . json_encode($result_html)), "\n";
         }
         if ($this->autoassigner->assignments()) {
-            $Conf->footer();
+            $this->conf->footer();
             exit;
         }
     }
@@ -399,7 +400,7 @@ class AutoassignerInterface {
 
 if (isset($Qreq->assign) && isset($Qreq->a)
     && isset($Qreq->pctyp) && check_post()) {
-    $ai = new AutoassignerInterface;
+    $ai = new AutoassignerInterface($Me, $Qreq);
     if ($ai->check())
         $ai->run();
     ensure_session();
