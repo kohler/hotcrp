@@ -735,7 +735,7 @@ class PaperInfo {
         return $pref ? : [0, null];
     }
 
-    private function load_options($row_set, $need_data) {
+    private function load_options($only_me, $need_data) {
         if ($this->_option_values === null
             && isset($this->optionIds)
             && (!$need_data || $this->optionIds === "")) {
@@ -749,7 +749,10 @@ class PaperInfo {
             }
         } else if ($this->_option_values === null
                    || ($need_data && $this->_option_data === null)) {
-            $row_set = $row_set ? : new PaperInfoSet($this);
+            $old_row_set = $this->_row_set;
+            if ($only_me)
+                $this->_row_set = null;
+            $row_set = $this->_row_set ? : new PaperInfoSet($this);
             foreach ($row_set->all() as $prow)
                 $prow->_option_values = $prow->_option_data = [];
             $result = $this->conf->qe("select paperId, optionId, value, data, dataOverflow from PaperOption where paperId?a order by paperId", $row_set->pids());
@@ -759,11 +762,13 @@ class PaperInfo {
                 $prow->_option_data[(int) $row[1]][] = $row[3] !== null ? $row[3] : $row[4];
             }
             Dbl::free($result);
+            if ($only_me)
+                $this->_row_set = $old_row_set;
         }
     }
 
     private function _make_option_array($all) {
-        $this->load_options($this->_row_set, false);
+        $this->load_options(false, false);
         $paper_opts = $this->conf->paper_opts;
         $option_array = [];
         foreach ($this->_option_values as $oid => $ovalues)
@@ -782,14 +787,14 @@ class PaperInfo {
 
     function _assign_option_value(PaperOptionValue $ov) {
         if ($this->_option_data === null)
-            $this->load_options($this->_row_set, true);
+            $this->load_options(false, true);
         $ov->assign($this->_option_values[$ov->id], $this->_option_data[$ov->id]);
     }
 
     function _reload_option_value(PaperOptionValue $ov) {
         unset($this->optionIds);
         $this->_option_values = $this->_option_data = null;
-        $this->load_options(null, true);
+        $this->load_options(true, true);
         $ov->assign($this->_option_values[$ov->id], $this->_option_data[$ov->id]);
     }
 
