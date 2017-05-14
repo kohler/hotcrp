@@ -1371,7 +1371,7 @@ class Score_PaperColumn extends PaperColumn {
     private $form_field;
     private $xreviewer;
     function __construct($cj, ReviewField $form_field) {
-        parent::__construct(["name" => $form_field->id] + (array) $cj);
+        parent::__construct(["name" => $form_field->abbreviation()] + (array) $cj);
         $this->score = $form_field->id;
         $this->form_field = $form_field;
     }
