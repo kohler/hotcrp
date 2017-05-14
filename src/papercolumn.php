@@ -1771,8 +1771,8 @@ class Formula_PaperColumn extends PaperColumn {
         }
         assert(!!$this->statistics);
     }
-    private function unparse($s) {
-        return $this->formula->unparse_html($s, $this->real_format);
+    private function unparse($x) {
+        return $this->formula->unparse_html($x, $this->real_format);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $v = $this->results[$row->paperId];
@@ -1797,12 +1797,20 @@ class Formula_PaperColumn extends PaperColumn {
         return ($this->statistics && $this->statistics->count())
             || ($this->override_statistics && $this->override_statistics->count());
     }
-    function statistic($pl, $what) {
-        if ($what == ScoreInfo::SUM && !$this->formula->result_format_is_real())
+    private function unparse_stat($x, $stat) {
+        if ($stat == ScoreInfo::MEAN || $stat == ScoreInfo::MEDIAN)
+            return $this->unparse($x);
+        else if ($stat == ScoreInfo::COUNT && is_int($x))
+            return $x;
+        else
+            return $this->real_format ? sprintf($this->real_format, $x) : $x;
+    }
+    function statistic($pl, $stat) {
+        if ($stat == ScoreInfo::SUM && !$this->formula->result_format_is_real())
             return "";
-        $t = $this->unparse($this->statistics->statistic($what));
+        $t = $this->unparse_stat($this->statistics->statistic($stat), $stat);
         if ($this->override_statistics) {
-            $tt = $this->unparse($this->override_statistics->statistic($what));
+            $tt = $this->unparse_stat($this->override_statistics->statistic($stat), $stat);
             if ($t !== $tt)
                 $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
         }

@@ -1224,9 +1224,17 @@ class PaperList {
             $this->error_html[] = "No statistics to show. Try adding formulas to your display; for example, “show:statistics show:(count(rev))”.";
             return "";
         }
-        foreach (array(ScoreInfo::SUM => "Total", ScoreInfo::MEAN => "Mean",
-                       ScoreInfo::MEDIAN => "Median") as $stat => $name) {
-            $t .= "<tr>";
+        $t .= '<tr class="pl_statheadrow">';
+        if ($rstate->titlecol)
+            $t .= "<td colspan=\"{$rstate->titlecol}\"></td>";
+        $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">Statistics</td></tr>\n";
+        foreach ([ScoreInfo::SUM => "Total",
+                  ScoreInfo::MEAN => "Mean",
+                  ScoreInfo::MEDIAN => "Median",
+                  ScoreInfo::STDDEV_P => "Standard deviation"] as $stat => $name) {
+            $t .= '<tr class="pl_statrow">';
+            if ($rstate->titlecol)
+                $t .= "<td colspan=\"{$rstate->titlecol}\"></td>";
             $titled = 0;
             foreach ($fieldDef as $fdef) {
                 if (!$fdef->viewable_column())
@@ -1239,10 +1247,10 @@ class PaperList {
                     $name = '<strong>' . $name . '</strong>';
                     if ($any_empty && $stat != ScoreInfo::SUM)
                         $name .= " of nonempty values";
-                    $t .= '<td colspan="' . $titled . '" class="pl pl_statheader">' . $name . '</td>';
+                    $t .= '<td colspan="' . ($titled - $rstate->titlecol) . '" class="plstat pl_statheader">' . $name . '</td>';
                 }
                 $titled = false;
-                $t .= '<td class="pl ' . $fdef->className;
+                $t .= '<td class="plstat ' . $fdef->className;
                 if ($fdef->fold)
                     $t .= ' fx' . $fdef->fold;
                 $t .= '">';
