@@ -5186,8 +5186,11 @@ function add_column(f) {
         classEnd = " class=\"pl " + (f.className || "pl_" + f.name) +
             " fx" + f.foldnum + "\"",
         h = '<th' + classEnd + '>' + f.title + '</th>';
-    $j.find("tr.pl_headrow").each(function () {
+    $j.find("thead > tr.pl_headrow:first-child").each(function () {
         this.insertBefore($(h)[0], this.childNodes[index] || null);
+    });
+    $j.find("thead > tr.pl_headrow.pl_annorow > td:last-child").each(function () {
+        this.setAttribute("colspan", +this.getAttribute("colspan") + 1);
     });
     h = '<td' + classEnd + '></td>';
     $j.find("tr.pl").each(function () {
