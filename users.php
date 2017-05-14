@@ -312,12 +312,12 @@ if (count($tOpt) > 1) {
 
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
-    Ht::stash_script('foldmap.ul={"aff":2,"tags":3,"topics":1};');
+    $foldmap = ["aff" => 2, "tags" => 3, "topics" => 1, "collab" => 6];
     foreach (array("aff" => "Affiliations", "collab" => "Collaborators",
                    "tags" => "Tags", "topics" => "Topics") as $fold => $text)
-        if (@$pl->have_folds[$fold] !== null) {
+        if (get($pl->have_folds, $fold) !== null) {
             echo Ht::checkbox("show$fold", 1, $pl->have_folds[$fold],
-                               array("onchange" => "fold('ul',!this.checked,'$fold')")),
+                               array("onchange" => "fold('ul',!this.checked,{$foldmap[$fold]},'{$fold}')")),
                 "&nbsp;", Ht::label($text), "<br />\n";
         }
     echo "</td>";

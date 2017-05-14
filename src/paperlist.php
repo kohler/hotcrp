@@ -999,8 +999,7 @@ class PaperList {
             $classes[] = "fold5" . ($this->qreq->forceShow ? "o" : "c");
         }
         if ($this->_table_id) {
-            if (!empty($jsmap))
-                Ht::stash_script("foldmap.pl={" . join(",", $jsmap) . "};");
+            Ht::stash_script("plinfo.set_folds(\"#{$this->_table_id}\",{" . join(",", $jsmap) . "});");
             $args = ["q" => join(" ", $this->ids), "t" => $this->search->limitName];
             if ($this->_reviewer && $this->_reviewer->email !== $this->contact->email)
                 $args["reviewer"] = $this->_reviewer->email;
@@ -1424,10 +1423,7 @@ class PaperList {
         $foldclasses = array();
         if ($this->foldable)
             $foldclasses = $this->_analyze_folds($rstate, $fieldDef);
-        $enter = "";
-        if (self::$include_stash)
-            $enter .= Ht::unstash();
-        $enter .= "<table class=\"pltable plt_" . htmlspecialchars($listname);
+        $enter = "<table class=\"pltable plt_" . htmlspecialchars($listname);
         if ($this->_table_class)
             $enter .= " " . $this->_table_class;
         if (get($options, "list"))
@@ -1448,6 +1444,8 @@ class PaperList {
         if (get($options, "list"))
             $enter .= "\" data-hotlist=\"" . htmlspecialchars($this->session_list_object()->info_string());
         $enter .= "\" data-fold=\"true\">\n";
+        if (self::$include_stash)
+            $enter .= Ht::unstash();
         $exit = "</table>";
 
         // maybe make columns, maybe not

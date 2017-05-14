@@ -1837,14 +1837,13 @@ function focus_within(elt, subfocus_selector) {
     return $wf.length == 1;
 }
 
-var foldmap = {};
-function fold(elt, dofold, foldtype) {
-    var i, foldname, selt, opentxt, closetxt, isopen, foldnum, foldnumid;
+function fold(elt, dofold, foldnum, foldsessiontype) {
+    var i, foldname, selt, opentxt, closetxt, isopen, foldnumid;
 
     // find element
     if (elt instanceof Array) {
         for (i = 0; i < elt.length; i++)
-            fold(elt[i], dofold, foldtype);
+            fold(elt[i], dofold, foldnum, foldsessiontype);
         return false;
     } else if (typeof elt == "string")
         elt = $$("fold" + elt) || $$(elt);
@@ -1853,9 +1852,6 @@ function fold(elt, dofold, foldtype) {
 
     // find element name, fold number, fold/unfold
     foldname = /^fold/.test(elt.id || "") ? elt.id.substr(4) : false;
-    foldnum = foldtype;
-    if (foldname && foldmap[foldname] && foldmap[foldname][foldtype] != null)
-        foldnum = foldmap[foldname][foldtype];
     foldnumid = foldnum ? foldnum : "";
     opentxt = "fold" + foldnumid + "o";
     closetxt = "fold" + foldnumid + "c";
@@ -1873,7 +1869,7 @@ function fold(elt, dofold, foldtype) {
 
         // check for session
         if ((opentxt = elt.getAttribute("data-fold-session")))
-            jQuery.get(hoturl("api/setsession", {var: opentxt.replace("$", foldtype), val: (isopen ? 1 : 0)}));
+            jQuery.get(hoturl("api/setsession", {var: opentxt.replace("$", foldsessiontype || foldnum), val: (isopen ? 1 : 0)}));
     }
 
     return false;
@@ -4935,13 +4931,13 @@ check_version.ignore = function (id) {
 
 // ajax loading of paper information
 var plinfo = (function () {
-var which = "pl", fields, field_order, aufull = {}, loadargs = {}, tagmap = false,
-    _bypid = {}, _bypidx = {};
+var self, foldmap, fields, field_order, aufull = {}, loadargs = {},
+    tagmap = false, _bypid = {}, _bypidx = {};
 
 function field_index(f) {
     var i, index = 0;
-    for (i = 0; i != field_order.length && field_order[i] != f; ++i)
-        if (!field_order[i].column == !f.column && !field_order[i].missing)
+    for (i = 0; i !== field_order.length && field_order[i] !== f; ++i)
+        if (!field_order[i].column === !f.column && !field_order[i].missing)
             ++index;
     return index;
 }
@@ -5182,7 +5178,7 @@ function render_needed() {
 }
 
 function add_column(f) {
-    var index = field_index(f), $j = $("#fold" + which),
+    var index = field_index(f), $j = $(self),
         classEnd = " class=\"pl " + (f.className || "pl_" + f.name) +
             " fx" + f.foldnum + "\"",
         h = '<th' + classEnd + '>' + f.title + '</th>';
@@ -5206,7 +5202,7 @@ function add_row(f) {
     var index = field_index(f),
         h = '<div class="' + (f.className || "pl_" + f.name) +
             " fx" + f.foldnum + '"></div>';
-    $("#fold" + which).find("tr.plx > td.plx").each(function () {
+    $(self).find("tr.plx > td.plx").each(function () {
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
     f.missing = false;
@@ -5220,7 +5216,7 @@ function set(f, $j, text) {
         elt.innerHTML = "";
     else {
         if (elt.className == "")
-            elt.className = "fx" + foldmap[which][f.name];
+            elt.className = "fx" + foldmap[f.name];
         if (f.title && (!f.column || text == "Loading")) {
             if (text.charAt(0) == "<" && (m = /^(<(?:div|p)[^>]*>)([\s\S]*)$/.exec(text)))
                 text = m[1] + '<em class="plx">' + f.title + ':</em> ' + m[2];
@@ -5261,7 +5257,7 @@ function make_callback(dofold, type) {
         if (rv.ok)
             render_some();
         f.loadable = false;
-        fold(which, dofold, f.name);
+        fold(self, dofold, foldmap[f.name], f.name);
     };
 }
 
@@ -5285,7 +5281,7 @@ function plinfo(type, dofold) {
     // fold
     if (!dofold && f.missing)
         f.column ? add_column(f) : add_row(f);
-    fold(which, dofold, type);
+    fold(self, dofold, foldmap[type], type);
     if ((type == "aufull" || type == "anonau") && !dofold
         && (elt = $$("showau")) && !elt.checked)
         elt.click();
@@ -5317,6 +5313,11 @@ function plinfo(type, dofold) {
 
     return false;
 }
+
+plinfo.set_folds = function (sel, foldmap_) {
+    self = $(sel)[0];
+    foldmap = foldmap_;
+};
 
 plinfo.needload = function (la) {
     loadargs = la;
