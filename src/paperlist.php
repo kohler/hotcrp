@@ -153,6 +153,7 @@ class PaperList {
     static public $include_stash = true;
 
     static public $magic_sort_info; // accessed by sort function during _sort
+    static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P];
 
     function __construct($search, $args = array(), $qreq = null) {
         $this->search = $search;
@@ -1227,38 +1228,29 @@ class PaperList {
         if ($rstate->titlecol)
             $t .= "<td colspan=\"{$rstate->titlecol}\"></td>";
         $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">Statistics</td></tr>\n";
-        foreach ([ScoreInfo::SUM => "Total",
-                  ScoreInfo::MEAN => "Mean",
-                  ScoreInfo::MEDIAN => "Median",
-                  ScoreInfo::STDDEV_P => "Standard deviation"] as $stat => $name) {
-            $t .= '<tr class="pl_statrow">';
-            if ($rstate->titlecol)
-                $t .= "<td colspan=\"{$rstate->titlecol}\"></td>";
-            $titled = 0;
+        foreach (self::$stats as $stat) {
+            $t .= '<tr';
+            if ($this->_row_id_pattern)
+                $t .= " id=\"" . str_replace("#", "stat_" . ScoreInfo::$stat_keys[$stat], $this->_row_id_pattern) . "\"";
+            $t .= ' class="pl_statrow" data-statistic="' . ScoreInfo::$stat_keys[$stat] . '">';
+            $col = 0;
             foreach ($fieldDef as $fdef) {
-                if (!$fdef->viewable_column())
+                if (!$fdef->viewable_column() || $fdef->is_folded)
                     continue;
-                if (!$fdef->has_statistics() && is_int($titled) && !$fdef->fold) {
-                    ++$titled;
-                    continue;
-                }
-                if (is_int($titled) && $titled) {
-                    $name = '<strong>' . $name . '</strong>';
-                    if ($any_empty && $stat != ScoreInfo::SUM)
-                        $name .= " of nonempty values";
-                    $t .= '<td colspan="' . ($titled - $rstate->titlecol) . '" class="plstat pl_statheader">' . $name . '</td>';
-                }
-                $titled = false;
-                $t .= '<td class="plstat ' . $fdef->className;
+                $class = "plstat " . $fdef->className;
+                if ($fdef->has_statistics())
+                    $content = $fdef->statistic($this, $stat);
+                else if ($col == $rstate->titlecol) {
+                    $content = ScoreInfo::$stat_names[$stat];
+                    $class = "plstat pl_statheader";
+                } else
+                    $content = "";
+                $t .= '<td class="' . $class;
                 if ($fdef->fold)
                     $t .= ' fx' . $fdef->fold;
-                $t .= '">';
-                if ($fdef->has_statistics())
-                    $t .= $fdef->statistic($this, $stat);
-                $t .= '</td>';
+                $t .= '">' . $content . '</td>';
+                ++$col;
             }
-            if (is_int($titled))
-                return "";
             $t .= "</tr>";
         }
         return $t;
@@ -1527,6 +1519,14 @@ class PaperList {
             }
         }
         $data["$fname.html"] = $m;
+
+        // output statistics
+        if ($fdef->has_statistics()) {
+            $m = [];
+            foreach (self::$stats as $stat)
+                $m[ScoreInfo::$stat_keys[$stat]] = $fdef->statistic($this, $stat);
+            $data["$fname.stat.html"] = $m;
+        }
 
         if ($fdef->has_content)
             $this->_has[$fname] = true;

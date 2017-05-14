@@ -18,6 +18,9 @@ class ScoreInfo {
     const VARIANCE_P = 4;
     const STDDEV_P = 5;
 
+    static public $stat_names = ["Count", "Mean", "Median", "Total", "Variance", "Standard deviation"];
+    static public $stat_keys = ["count", "mean", "median", "total", "var_p", "stddev_p"];
+
     function __construct($data = null) {
         if (is_array($data)) {
             foreach ($data as $key => $value)
@@ -131,18 +134,18 @@ class ScoreInfo {
                              $b->sort_data($sorter, $key));
     }
 
-    function statistic($what) {
-        if ($what == self::COUNT)
+    function statistic($stat) {
+        if ($stat == self::COUNT)
             return $this->_n;
-        else if ($what == self::MEAN)
+        else if ($stat == self::MEAN)
             return $this->mean();
-        else if ($what == self::MEDIAN)
+        else if ($stat == self::MEDIAN)
             return $this->median();
-        else if ($what == self::SUM)
+        else if ($stat == self::SUM)
             return $this->_sum;
-        else if ($what == self::VARIANCE_P)
+        else if ($stat == self::VARIANCE_P)
             return $this->variance_p();
-        else if ($what == self::STDDEV_P)
+        else if ($stat == self::STDDEV_P)
             return $this->stddev_p();
     }
 

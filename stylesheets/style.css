@@ -1616,13 +1616,13 @@ em.plx {
 
 /* paper list tables */
 th.pl {
-	padding: 2px 0.4em 2px 0;
+	padding: 2px 6px 2px 0;
 }
 td.pl {
-	padding: 3px 0.4em 3px 0;
+	padding: 3px 6px 3px 0;
 }
 td.plstat {
-	padding: 1px 0.4em 1px 0;
+	padding: 1px 6px 1px 0;
 }
 th.pl:first-child, td.pl:first-child, td.plx:first-child {
 	padding-left: 6px;
@@ -1715,13 +1715,16 @@ tr.pl_headrow, td.pl_footer {
 	font-size: smaller;
 }
 tr.pl_statrow {
-	background: #f0f0f0;
+	background: #dddddd;
 	font-size: smaller;
 }
 tr.pl_statheadrow {
-	background: #cccccc;
+	background: #dddddd;
 	font-size: smaller;
 	font-weight: bold;
+}
+tr.pl_statheadrow > td {
+	border-top: 1px solid #cccccc;
 }
 tr.pl_footrow > td {
 	border-top: 1px solid #cccccc;

@@ -5178,22 +5178,25 @@ function render_needed() {
 }
 
 function add_column(f) {
-    var index = field_index(f), $j = $(self),
-        classEnd = " class=\"pl " + (f.className || "pl_" + f.name) +
-            " fx" + f.foldnum + "\"",
+    var index = field_index(f), $j = $(self);
+    $j.find("tr.plx > td.plx, td.pl_footer, td.plheading:last-child, " +
+            "thead > tr.pl_headrow.pl_annorow > td:last-child, " +
+            "tfoot > tr.pl_statheadrow > td:last-child").each(function () {
+        this.setAttribute("colspan", +this.getAttribute("colspan") + 1);
+    });
+    var classes = (f.className || 'pl_' + f.name) + ' fx' + f.foldnum,
+        classEnd = ' class="pl ' + classes + '"',
         h = '<th' + classEnd + '>' + f.title + '</th>';
     $j.find("thead > tr.pl_headrow:first-child").each(function () {
         this.insertBefore($(h)[0], this.childNodes[index] || null);
-    });
-    $j.find("thead > tr.pl_headrow.pl_annorow > td:last-child").each(function () {
-        this.setAttribute("colspan", +this.getAttribute("colspan") + 1);
     });
     h = '<td' + classEnd + '></td>';
     $j.find("tr.pl").each(function () {
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
-    $j.find("tr.plx > td.plx, td.pl_footer, td.plheading:last-child").each(function () {
-        this.setAttribute("colspan", +this.getAttribute("colspan") + 1);
+    h = '<td class="plstat ' + classes + '"></td>';
+    $j.find("tfoot > tr.pl_statrow").each(function () {
+        this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
     f.missing = false;
 }
@@ -5249,13 +5252,26 @@ function make_callback(dofold, type) {
         if (tr)
             setTimeout(render_some, 8);
     }
+    function render_statistics() {
+        var tr = $(self).find("tfoot > tr.pl_statrow").first()[0],
+            index = field_index(f), htmlk = f.name + ".stat.html";
+        for (; tr; tr = tr.nextSibling)
+            if (tr.nodeName === "TR" && tr.hasAttribute("data-statistic")) {
+                var stat = tr.getAttribute("data-statistic"),
+                    j = 0, td = tr.childNodes[index];
+                if (td && (stat in values[htmlk]))
+                    td.innerHTML = values[htmlk][stat];
+            }
+    }
     return function (rv) {
         if (type == "aufull")
             aufull[!!dofold] = rv;
-        values = rv;
-        tr = $("tbody > tr.pl").first()[0];
-        if (rv.ok)
+        if (rv.ok) {
+            values = rv;
+            tr = $(self).find("tr.pl").first()[0];
             render_some();
+            values[f.name + ".stat.html"] && render_statistics();
+        }
         f.loadable = false;
         fold(self, dofold, foldmap[f.name], f.name);
     };
