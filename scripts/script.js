@@ -2277,7 +2277,8 @@ function author_change(e, delta) {
 }
 
 function paperform_checkready(ischecked) {
-    var t, $j = $("#paperisready"), is, was = $("#paperform").attr("data-submitted");
+    var t, $j = $("#paperisready"),
+        is, was = $("#paperform").attr("data-submitted");
     if ($j.is(":visible"))
         is = $j.is(":checked");
     else
@@ -2289,7 +2290,7 @@ function paperform_checkready(ischecked) {
     else
         t = "Save and submit";
     var $b = $("#paperform").find(".btn-savepaper");
-    if ($b[0].tagName == "INPUT")
+    if ($b.length && $b[0].tagName == "INPUT")
         $b.val(t);
     else
         $b.html(t);
