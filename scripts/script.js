@@ -5215,7 +5215,7 @@ function set(f, $j, text) {
     var elt = $j[0], m;
     if (!elt)
         /* skip */;
-    else if (text == null || text == "")
+    else if (text == null || text === "")
         elt.innerHTML = "";
     else {
         if (elt.className == "")
