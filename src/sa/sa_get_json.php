@@ -33,9 +33,9 @@ class GetJsonPapers_SearchAction extends SearchAction {
             if ($user->can_administer($prow, true))
                 $pj[$prow->paperId] = $ps->paper_json($prow);
             else {
-                $pj[$prow->paperId] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
+                $pj[$prow->paperId] = (object) ["pid" => $prow->paperId, "error" => "You don't have permission to administer this paper."];
                 if ($this->iszip)
-                    $this->zipdoc->warnings[] = "#$prow->paperId: You don’t have permission to administer this paper.";
+                    $this->zipdoc->warnings[] = "#$prow->paperId: You don't have permission to administer this paper.";
             }
         $pj = array_values($ssel->reorder($pj));
         if (count($pj) == 1) {
@@ -57,8 +57,6 @@ class GetJsonPapers_SearchAction extends SearchAction {
 
 class GetJsonReviews_SearchAction extends SearchAction {
     # tailored for Review Quality Collector. Don't remove parts.
-    private $iszip;
-    private $zipdoc;
     function allow(Contact $user) {
         return $user->is_manager();
     }
@@ -67,29 +65,39 @@ class GetJsonReviews_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $conf = $user->conf;
+        $condition = "paperId in (" . implode(",", $ssel->selection()) . ")";
         $results = [];
         $results["hotcrp_version"] = HOTCRP_VERSION;
-        //----- get reviews:
-        $reviews = $conf->qe_raw("select * from PaperReview where paperId in (" . implode(",", $ssel->selection()) . ")");
-        $results["reviews"] = $reviews->fetch_all(MYSQLI_ASSOC);
-        //----- get papers:
-        $papers = $conf->qe_raw("select * from Paper where paperId in (" . implode(",", $ssel->selection()) . ")");
-        $the_papers = $papers->fetch_all(MYSQLI_ASSOC);
-        $nullify_sha = function($paper) { unset($paper["sha1"]); return $paper; };
-        $the_papers = array_map($nullify_sha, $the_papers);
-        $results["papers"] = $the_papers;
+        #----- get papers:
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
+        $papers = [];
+        $ps = new PaperStatus($user->conf, $user, ["forceShow" => true, "hide_docids" => true]);
+        while (($prow = PaperInfo::fetch($result, $user)))
+            if ($user->can_administer($prow, true))
+                $papers[$prow->paperId] = $ps->paper_json($prow);
+            else
+                $papers[$prow->paperId] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
+        $results["papers"] = array_values($ssel->reorder($papers));
         //----- get reviewers:
-        $the_ids = implode(",", $ssel->selection());
-        $query = "select contactId, firstName, lastName, unaccentedName, email, preferredEmail, " .
-            "affiliation, country, roles, disabled, contactTags " .
-            "from contactinfo where contactId in (" .
-            "select distinct contactId from PaperReview where paperId in (" .
-            $the_ids . "))";
+        $thefields = "contactId, firstName, lastName, email, " .
+                     "country, roles, contactTags";
+        $query = "select $thefields from contactinfo where contactId in (" .
+            "select distinct contactId from PaperReview where $condition)";
         $contacts = $conf->qe_raw($query);
         $results["contacts"] = $contacts->fetch_all(MYSQLI_ASSOC);
-        //----- get review form descriptors:
-        $reviewform = $conf->qe_raw("select data from Settings where name = 'review_form'");
-        $results["reviewform"] = $reviewform->fetch_all(MYSQLI_ASSOC);
+        //----- get review form descriptor:
+        $results["reviewform"] = $conf->review_form_json();
+        //----- get reviews:
+        $thefields = "paperId, reviewId, contactId, reviewType, " .
+            "reviewSubmitted, reviewModified, reviewOrdinal, " .
+            "overAllMerit, reviewerQualification, novelty, technicalMerit, " .
+            "interestToCommunity, longevity, grammar, likelyPresentation, " .
+            "suitableForShort, paperSummary, commentsToAuthor, commentsToPC, " .
+            "commentsToAddress, weaknessOfPaper, strengthOfPaper, " .
+            "potential, fixability, textField7, textField8, " .
+            "reviewFormat";
+        $reviews = $conf->qe_raw("select $thefields from PaperReview where $condition");
+        $results["reviews"] = $reviews->fetch_all(MYSQLI_ASSOC);
         //----- export:
         header("Content-Type: application/json");
         #header("Content-Disposition: attachment; filename=" . "review-data.json");
@@ -100,4 +108,4 @@ class GetJsonReviews_SearchAction extends SearchAction {
 
 SearchAction::register("get", "json", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJsonPapers_SearchAction(false));
 SearchAction::register("get", "jsonattach", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJsonPapers_SearchAction(true));
-SearchAction::register("get", "jsonreviews", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJsonReviews_SearchAction(false));
+SearchAction::register("get", "jsonreviews", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJsonReviews_SearchAction());
