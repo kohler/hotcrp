@@ -1715,11 +1715,11 @@ tr.pl_headrow, td.pl_footer {
 	font-size: smaller;
 }
 tr.pl_statrow {
-	background: #dddddd;
+	background: #eeeeee;
 	font-size: smaller;
 }
 tr.pl_statheadrow {
-	background: #dddddd;
+	background: #eeeeee;
 	font-size: smaller;
 	font-weight: bold;
 }
