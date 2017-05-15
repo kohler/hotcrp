@@ -100,7 +100,8 @@ class ScoreInfo {
         foreach ($this->_scores as $i) {
             while ($i > count($counts))
                 $counts[] = 0;
-            ++$counts[$i - 1];
+            if ($i > 0)
+                ++$counts[$i - 1];
         }
         return $counts;
     }
