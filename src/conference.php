@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Track {
-    private $a;
     const VIEW = 0;
     const VIEWPDF = 1;
     const VIEWREV = 2;
@@ -899,6 +898,13 @@ class Conf {
 
     function track_tags() {
         return $this->_track_tags ? $this->_track_tags : array();
+    }
+
+    function most_permissive_track_tag_for(Contact $user, $perm) {
+        foreach ($this->tracks ? : [] as $t => $tr)
+            if (Track::match_perm($user, $tr[$perm]))
+                return $t;
+        return null;
     }
 
     function check_tracks(PaperInfo $prow, Contact $contact, $type) {

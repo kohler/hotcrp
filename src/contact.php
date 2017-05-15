@@ -2344,13 +2344,17 @@ class Contact {
     }
 
     function can_view_some_review_identity($forceShow = null) {
+        $tags = "";
+        if (($t = $this->conf->most_permissive_track_tag_for($this, Track::VIEWREVID)))
+            $tags = " $t#0 ";
         $prow = new PaperInfo([
             "conflictType" => 0, "managerContactId" => 0,
             "myReviewType" => ($this->is_reviewer() ? 1 : 0),
             "myReviewSubmitted" => 1,
             "myReviewNeedsSubmit" => 0,
             "paperId" => 1, "timeSubmitted" => 1,
-            "paperBlind" => false, "outcome" => 1
+            "paperBlind" => false, "outcome" => 1,
+            "paperTags" => $tags
         ], $this);
         return $this->can_view_review_identity($prow, null, $forceShow);
     }
