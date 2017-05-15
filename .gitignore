@@ -5,6 +5,5 @@ extra/d3/d3-hotcrp.min.js
 extra/d3/node_modules
 filestore
 logs
-tmp
 conf/options.php
 Code/options.inc
