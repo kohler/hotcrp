@@ -1052,26 +1052,6 @@ function review_shepherd_icon() {
     return '<span class="rtshep" title="Shepherd"><span class="rti">S</span></span>';
 }
 
-function scoreCounts($values, $max = null) {
-    $merit = ($max ? array_fill(1, $max, 0) : array());
-    $n = $sum = $sumsq = 0;
-    if (is_string($values))
-        $values = preg_split('/[\s,]+/', $values);
-    foreach ($values ? : array() as $i)
-        if (($i = (int) $i) > 0) {
-            while ($i > count($merit))
-                $merit[count($merit) + 1] = 0;
-            $merit[$i]++;
-            $sum += $i;
-            $sumsq += $i * $i;
-            $n++;
-        }
-    $avg = ($n > 0 ? $sum / $n : 0);
-    $dev = ($n > 1 ? sqrt(($sumsq - $sum*$sum/$n) / ($n - 1)) : 0);
-    return (object) array("v" => $merit, "max" => count($merit),
-                          "n" => $n, "avg" => $avg, "stddev" => $dev);
-}
-
 function displayOptionsSet($sessionvar, $var = null, $val = null) {
     global $Conf;
     if (($x = $Conf->session($sessionvar)) !== null)

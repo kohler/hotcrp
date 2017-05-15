@@ -324,7 +324,8 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     and (reviewSubmitted is not null or timeSubmitted>0)
     group by PaperReview.reviewId>0");
     if (($myrow = edb_orow($result)))
-        $myrow->scores = scoreCounts($myrow->scores, $merit_noptions);
+        $myrow->mean_score = ScoreInfo::mean_of($myrow->scores);
+    Dbl::free($result);
 
     // Information about PC reviews
     $npc = $sumpcSubmit = $npcScore = $sumpcScore = 0;
@@ -339,11 +340,11 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             ++$npc;
             if ($row[0]) {
                 $sumpcSubmit += $row[0];
-                $scores = scoreCounts($row[1], $merit_noptions);
                 ++$npcScore;
-                $sumpcScore += $scores->avg;
+                $sumpcScore += ScoreInfo::mean_of($row[1]);
             }
         }
+        Dbl::free($result);
     }
 
     // Overview
@@ -354,7 +355,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         else
             echo "You have submitted ", $myrow->num_submitted, " of <a href=\"", hoturl("search", "q=&amp;t=r"), "\">", plural($myrow->num_needs_submit, "review"), "</a>";
         if ($merit_field && $merit_field->displayed && $myrow->num_submitted)
-            echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($myrow->scores->avg);
+            echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($myrow->mean_score);
         echo ".<br />\n";
     }
     if (($Me->isPC || $Me->privChair) && $npc) {

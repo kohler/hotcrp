@@ -23,27 +23,45 @@ class ScoreInfo {
 
     function __construct($data = null) {
         if (is_array($data)) {
-            foreach ($data as $key => $value)
-                $this->add($value, $key);
+            foreach ($data as $key => $x)
+                $this->add($x, $key);
         } else if (is_string($data) && $data !== "") {
-            foreach (preg_split('/[\s,]+/', $data) as $s)
-                if (($i = cvtint($s)) > 0)
-                    $this->add($i);
+            foreach (preg_split('/[\s,]+/', $data) as $x)
+                if (is_numeric($x))
+                    $this->add(+$x);
         }
     }
 
-    function add($score, $key = null) {
-        if ($score !== null) {
+    static function mean_of($data) {
+        $n = $sum = 0;
+        if (is_array($data)) {
+            foreach ($data as $x)
+                if ($x !== null) {
+                    ++$n;
+                    $sum += +$x;
+                }
+        } else if (is_string($data) && $data !== "") {
+            foreach (preg_split('/[\s,]+/', $data) as $x)
+                if ($x !== "" && is_numeric($x)) {
+                    ++$n;
+                    $sum += +$x;
+                }
+        }
+        return $n ? $sum / $n : null;
+    }
+
+    function add($x, $key = null) {
+        if ($x !== null) {
             if ($this->_keyed && $key === null)
                 $this->_keyed = false;
-            if (is_bool($score))
-                $score = (int) $score;
+            if (is_bool($x))
+                $x = +$x;
             if ($this->_keyed)
-                $this->_scores[$key] = $score;
+                $this->_scores[$key] = $x;
             else
-                $this->_scores[] = $score;
-            $this->_sum += $score;
-            $this->_sumsq += $score * $score;
+                $this->_scores[] = $x;
+            $this->_sum += $x;
+            $this->_sumsq += $x * $x;
             ++$this->_n;
             $this->_sorted = false;
         }
@@ -78,11 +96,11 @@ class ScoreInfo {
     }
 
     function counts($max = 0) {
-        $counts = $max ? array_fill(0, $max + 1, 0) : array();
+        $counts = $max ? array_fill(0, $max, 0) : array();
         foreach ($this->_scores as $i) {
-            while ($i >= count($counts))
+            while ($i > count($counts))
                 $counts[] = 0;
-            ++$counts[$i];
+            ++$counts[$i - 1];
         }
         return $counts;
     }
@@ -113,6 +131,21 @@ class ScoreInfo {
         return empty($this->_scores) ? 0 : min($this->_scores);
     }
 
+    function statistic($stat) {
+        if ($stat == self::COUNT)
+            return $this->_n;
+        else if ($stat == self::MEAN)
+            return $this->mean();
+        else if ($stat == self::MEDIAN)
+            return $this->median();
+        else if ($stat == self::SUM)
+            return $this->_sum;
+        else if ($stat == self::VARIANCE_P)
+            return $this->variance_p();
+        else if ($stat == self::STDDEV_P)
+            return $this->stddev_p();
+    }
+
     function sort_data($sorter, $key = null) {
         if ($sorter == "Y" && $key !== null && $this->_keyed)
             return get($this->_scores, $key, -1000000);
@@ -127,26 +160,6 @@ class ScoreInfo {
             return $this->max() - $this->min();
         else
             return $this->mean();
-    }
-
-    function compare_by(ScoreInfo $b, $sorter, $key = null) {
-        return self::compare($this->sort_data($sorter, $key),
-                             $b->sort_data($sorter, $key));
-    }
-
-    function statistic($stat) {
-        if ($stat == self::COUNT)
-            return $this->_n;
-        else if ($stat == self::MEAN)
-            return $this->mean();
-        else if ($stat == self::MEDIAN)
-            return $this->median();
-        else if ($stat == self::SUM)
-            return $this->_sum;
-        else if ($stat == self::VARIANCE_P)
-            return $this->variance_p();
-        else if ($stat == self::STDDEV_P)
-            return $this->stddev_p();
     }
 
     static function compare($av, $bv, $null_direction = 1) {
@@ -173,5 +186,10 @@ class ScoreInfo {
         } else if ($av != $bv)
             return $av < $bv ? -1 : 1;
         return 0;
+    }
+
+    function compare_by(ScoreInfo $b, $sorter, $key = null) {
+        return self::compare($this->sort_data($sorter, $key),
+                             $b->sort_data($sorter, $key));
     }
 }

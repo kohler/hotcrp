@@ -311,16 +311,15 @@ class ReviewField {
         $max = count($this->options);
 
         if (!is_object($v))
-            $v = scoreCounts($v, $max);
+            $v = new ScoreInfo($v);
+        $counts = $v->counts($max);
 
-        $avgtext = $this->unparse_average($v->avg);
-        if ($v->n > 1 && $v->stddev)
-            $avgtext .= sprintf(" ± %.2f", $v->stddev);
+        $avgtext = $this->unparse_average($v->mean());
+        if ($v->count() > 1 && ($stddev = $v->stddev_s()))
+            $avgtext .= sprintf(" ± %.2f", $stddev);
 
-        $args = "v=";
-        for ($key = 1; $key <= $max; $key++)
-            $args .= ($args == "v=" ? "" : ",") . $v->v[$key];
-        if ($myscore && $v->v[$myscore] > 0)
+        $args = "v=" . join(",", $counts);
+        if ($myscore && $counts[$myscore - 1] > 0)
             $args .= "&amp;h=$myscore";
         if ($this->option_letter)
             $args .= "&amp;c=" . chr($this->option_letter - 1);
@@ -329,18 +328,18 @@ class ReviewField {
 
         if ($style == 1) {
             $width = 5 * $max + 3;
-            $height = 5 * max(3, max($v->v)) + 3;
+            $height = 5 * max(3, max($counts)) + 3;
             $retstr = "<div class=\"need-scorechart\" style=\"width:${width}px;height:${height}px\" data-scorechart=\"$args&amp;s=1\" title=\"$avgtext\"></div>";
         } else if ($style == 2) {
             $retstr = "<div class=\"sc\">"
                 . "<div class=\"need-scorechart\" style=\"width:64px;height:8px\" data-scorechart=\"$args&amp;s=2\" title=\"$avgtext\"></div>"
                 . "<br />";
             if ($this->option_letter) {
-                for ($key = $max; $key >= 1; $key--)
-                    $retstr .= ($key < $max ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $v->v[$key] . "</span>";
+                for ($key = $max; $key >= 1; --$key)
+                    $retstr .= ($key < $max ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
             } else {
-                for ($key = 1; $key <= $max; $key++)
-                    $retstr .= ($key > 1 ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $v->v[$key] . "</span>";
+                for ($key = 1; $key <= $max; ++$key)
+                    $retstr .= ($key > 1 ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
             }
             $retstr .= '<br /><span class="sc_sum">' . $avgtext . "</span></div>";
         }

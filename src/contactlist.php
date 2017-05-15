@@ -411,17 +411,13 @@ class ContactList {
             return join("; ", $t);
         default:
             $f = $Conf->review_field($fieldId);
-            if (!$f)
+            if (!$f
+                || (!($row->roles & Contact::ROLE_PC)
+                    && !$this->contact->privChair
+                    && $this->limit != "req")
+                || $row->$fieldId === "")
                 return "";
-            if (!($row->roles & Contact::ROLE_PC)
-                && !$this->contact->privChair
-                && $this->limit != "req")
-                return "";
-            $v = scoreCounts($row->$fieldId, $this->scoreMax[$fieldId]);
-            $m = "";
-            if ($v->n > 0)
-                $m = $f->unparse_graph($v, 2, 0);
-            return $m;
+            return $f->unparse_graph($row->$fieldId, 2, 0);
         }
     }
 
