@@ -527,9 +527,10 @@ class Contact {
         if (isset($this->name_for_map_[$key]))
             return $this->name_for_map_[$key];
 
-        $pcm = $this->conf->pc_members();
-        if (isset($pcm[$cid]))
-            $x = $pcm[$cid];
+        if (+$cid === $this->contactId)
+            $x = $this;
+        else if (($pc = $this->conf->pc_member_by_id($cid)))
+            $x = $pc;
         else if (!is_object($x) || !isset($x->email)
                  || !isset($x->firstName) || !isset($x->lastName)) {
             $x = $this->conf->user_by_id($cid);

@@ -1283,6 +1283,10 @@ class Conf {
         return $this->_pc_members_and_admins_cache;
     }
 
+    function pc_member_by_id($cid) {
+        return get($this->pc_members(), $cid);
+    }
+
     function pc_member_by_email($email) {
         foreach ($this->pc_members() as $p)
             if (strcasecmp($p->email, $email) == 0)

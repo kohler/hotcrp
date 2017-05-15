@@ -56,7 +56,6 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
     $want_scores = $mode !== "assign" && $mode !== "edit" && $mode !== "re";
     $want_requested_by = false;
     $want_retract = false;
-    $pcm = pcMembers();
     $score_header = array();
 
     // actual rows
@@ -155,7 +154,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 $t .= '<td style="font-size:smaller">';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
-                else if (($u = get($pcm, $rr->requestedBy)))
+                else if (($u = $conf->pc_member_by_id($rr->requestedBy)))
                     $t .= $Me->reviewer_html_for($rr->requestedBy);
                 else
                     $t .= Text::user_html([$rr->reqFirstName, $rr->reqLastName, $rr->reqEmail]);
@@ -219,7 +218,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 $t .= '<td style="font-size:smaller">';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
-                else if (($u = get($pcm, $rr->requestedBy)))
+                else if (($u = $conf->pc_member_by_id($rr->requestedBy)))
                     $t .= $Me->reviewer_html_for($rr->requestedBy);
                 else
                     $t .= Text::user_html([$rr->reqFirstName, $rr->reqLastName, $rr->reqEmail]);
