@@ -738,11 +738,16 @@ class PaperList {
             $fname = $field->fold ? $field->name : null;
         if ($fname === "authors")
             $fname = "au";
-        return $fname
-            && !$this->_unfold_all
-            && !$this->qreq["show$fname"]
-            && (($x = get($this->_view_fields, $fname)) === false
-                || ($x === null && strpos($this->display, " $fname ") === false));
+        if (!$fname || $this->_unfold_all || $this->qreq["show$fname"])
+            return false;
+        $x = get($this->_view_fields, $fname);
+        if ($x === null) {
+            $x = strpos($this->display, " $fname ");
+            if ($x === false && is_object($field)
+                && ($fname = $field->alternate_display_name()))
+                $x = strpos($this->display, " $fname ");
+        }
+        return $x === false;
     }
 
     private function _check_option_presence(PaperInfo $row) {

@@ -172,6 +172,9 @@ class PaperColumn extends Column {
     function sort_name() {
         return $this->name;
     }
+    function alternate_display_name() {
+        return false;
+    }
 
     function content_empty(PaperList $pl, PaperInfo $row) {
         return false;
@@ -1412,11 +1415,8 @@ class Score_PaperColumn extends PaperColumn {
     function header(PaperList $pl, $is_text) {
         return $is_text ? $this->form_field->abbreviation() : $this->form_field->web_abbreviation();
     }
-    function completion_name() {
-        return $this->form_field->abbreviation();
-    }
-    function sort_name() {
-        return $this->form_field->abbreviation();
+    function alternate_display_name() {
+        return $this->form_field->id;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         // Do not use viewable_scores to determine content emptiness, since

@@ -218,7 +218,7 @@ function savesearch() {
         if ($Me->privChair && !$Conf->subBlindNever())
             $acceptable["anonau"] = 1;
         foreach ($Conf->all_review_fields() as $f)
-            $acceptable[$f->id] = 1;
+            $acceptable[$f->id] = $acceptable[$f->abbreviation()] = 1;
         foreach ($Conf->defined_formula_map($Me) as $f)
             $acceptable["formula" . $f->formulaId] = 1;
         $display = array();

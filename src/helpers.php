@@ -1056,13 +1056,13 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
     global $Conf;
     if (($x = $Conf->session($sessionvar)) !== null)
         /* use session value */;
-    else if ($sessionvar == "pldisplay")
+    else if ($sessionvar === "pldisplay")
         $x = $Conf->setting_data("pldisplay_default", "");
     else
         $x = "";
     if ($x == null || strpos($x, " ") === false) {
         if ($sessionvar == "pldisplay")
-            $x = " overAllMerit ";
+            $x = $Conf->review_form()->default_display();
         else if ($sessionvar == "uldisplay")
             $x = " tags overAllMerit ";
         else
@@ -1074,6 +1074,10 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
         $x = str_replace(" $var ", " ", $x);
         if ($val)
             $x .= "$var ";
+        if (($sessionvar === "pldisplay" || $sessionvar === "pfdisplay")
+            && ($f = $Conf->review_field_search($var))
+            && $var !== $f->id)
+            $x = str_replace(" {$f->id} ", " ", $x);
     }
 
     // store list in $_SESSION

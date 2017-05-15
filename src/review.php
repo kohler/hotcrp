@@ -478,6 +478,15 @@ class ReviewForm {
         return $f && $f->displayed ? $f : null;
     }
 
+    function default_display() {
+        $f = $this->fmap["overAllMerit"];
+        if (!$f->displayed) {
+            foreach ($this->forder as $f)
+                break;
+        }
+        return $f && $f->displayed ? " " . $f->abbreviation() . " " : " ";
+    }
+
     function unparse_full_json() {
         $fmap = array();
         foreach ($this->fmap as $f)
