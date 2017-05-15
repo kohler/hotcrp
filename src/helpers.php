@@ -221,6 +221,12 @@ function foldbutton($foldtype, $foldnum = 0, $content = "") {
         . expander(null, $foldnum) . $content . '</a>';
 }
 
+function foldupbutton($foldnum = 0, $content = "", $j = null) {
+    return '<a href="#" class="q" onclick="return foldup(this,event,'
+        . ($j ? htmlspecialchars(json_encode($j)) : $foldnum) . ')">'
+        . expander(null, $foldnum) . $content . '</a>';
+}
+
 function expander($open, $foldnum = null) {
     $f = $foldnum !== null;
     $foldnum = ($foldnum !== 0 ? $foldnum : "");

@@ -124,7 +124,6 @@ class PaperList {
     private $_allow_duplicates = false;
     private $_view_columns = false;
     private $_view_compact_columns = false;
-    private $_view_statistics = false;
     private $_view_row_numbers = false;
     private $_view_fields = [];
     private $atab;
@@ -227,7 +226,7 @@ class PaperList {
         else if (in_array($k, ["columns", "column", "col"]))
             $this->_view_columns = $v;
         else if (in_array($k, ["statistics", "stat", "stats", "totals"]))
-            $this->_view_statistics = $v;
+            /* skip */;
         else if (in_array($k, ["rownum", "rownumbers"]))
             $this->_view_row_numbers = $v;
         else if (in_array($k, ["authors", "aufull", "anonau"]) && $v
@@ -963,13 +962,22 @@ class PaperList {
     private function _analyze_folds($rstate, $fieldDef) {
         $classes = $jsmap = $jscol = array();
         $has_sel = false;
+        $has_statistics = $has_loadable_statistics = false;
         foreach ($fieldDef as $fdef) {
             $j = ["name" => $fdef->name, "title" => $this->_field_title($fdef),
                   "priority" => $fdef->priority];
             if ($fdef->className != "pl_" . $fdef->name)
                 $j["className"] = $fdef->className;
-            if ($fdef->viewable_column())
+            if ($fdef->viewable_column()) {
                 $j["column"] = true;
+                if ($fdef->has_statistics()) {
+                    $j["has_statistics"] = true;
+                    if ($fdef->has_content)
+                        $has_loadable_statistics = true;
+                    if ($fdef->has_content && !$fdef->is_folded)
+                        $has_statistics = true;
+                }
+            }
             if ($fdef->is_folded && $fdef->has_content)
                 $j["loadable"] = true;
             if ($fdef->is_folded && $fdef->name !== "authors")
@@ -1005,6 +1013,8 @@ class PaperList {
             $jsmap[] = "\"force\":5";
             $classes[] = "fold5" . ($this->qreq->forceShow ? "o" : "c");
         }
+        $classes[] = "fold7" . ($this->is_folded("statistics") ? "c" : "o");
+        $classes[] = "fold8" . ($has_statistics ? "o" : "c");
         if ($this->_table_id) {
             Ht::stash_script("plinfo.set_folds(\"#{$this->_table_id}\",{" . join(",", $jsmap) . "});");
             $args = ["q" => join(" ", $this->ids), "t" => $this->search->limitName];
@@ -1226,19 +1236,17 @@ class PaperList {
         foreach ($fieldDef as $fdef)
             if ($fdef->viewable_column() && $fdef->has_statistics())
                 $any_empty = $any_empty || $fdef->statistic($this, ScoreInfo::COUNT) != $this->count;
-        if ($any_empty === null) {
-            $this->error_html[] = "No statistics to show. Try adding formulas to your display; for example, “show:statistics show:(count(rev))”.";
+        if ($any_empty === null)
             return "";
-        }
-        $t .= '<tr class="pl_statheadrow">';
+        $t .= '<tr class="pl_statheadrow fx8">';
         if ($rstate->titlecol)
             $t .= "<td colspan=\"{$rstate->titlecol}\"></td>";
-        $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">Statistics</td></tr>\n";
+        $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics", ["n" => 7, "st" => "statistics"]) . "</td></tr>\n";
         foreach (self::$stats as $stat) {
             $t .= '<tr';
             if ($this->_row_id_pattern)
                 $t .= " id=\"" . str_replace("#", "stat_" . ScoreInfo::$stat_keys[$stat], $this->_row_id_pattern) . "\"";
-            $t .= ' class="pl_statrow" data-statistic="' . ScoreInfo::$stat_keys[$stat] . '">';
+            $t .= ' class="pl_statrow fx7 fx8" data-statistic="' . ScoreInfo::$stat_keys[$stat] . '">';
             $col = 0;
             foreach ($fieldDef as $fdef) {
                 if (!$fdef->viewable_column() || $fdef->is_folded)
@@ -1324,8 +1332,9 @@ class PaperList {
         // get field array
         $fieldDef = array();
         $ncol = $titlecol = 0;
-        // folds: au:1, anonau:2, fullrow:3, aufull:4, force:5, rownum:6, [fields]
-        $next_fold = 7;
+        // folds: au:1, anonau:2, fullrow:3, aufull:4, force:5, rownum:6, statistics:7,
+        // statistics-exist:8, [fields]
+        $next_fold = 9;
         foreach ($field_list as $fdef) {
             if ($fdef->viewable()) {
                 $fieldDef[] = $fdef;
@@ -1461,7 +1470,7 @@ class PaperList {
 
         // footer
         $foot = "";
-        if ($this->_view_statistics && !$this->_view_columns)
+        if (!$this->_view_columns)
             $foot .= $this->_statistics_rows($rstate, $fieldDef);
         if ($fieldDef[0] instanceof SelectorPaperColumn
             && !defval($options, "nofooter"))

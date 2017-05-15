@@ -1868,7 +1868,8 @@ function fold(elt, dofold, foldnum, foldsessiontype) {
         }
 
         // check for session
-        if ((opentxt = elt.getAttribute("data-fold-session")))
+        if ((opentxt = elt.getAttribute("data-fold-session"))
+            && foldsessiontype !== false)
             jQuery.get(hoturl("api/setsession", {var: opentxt.replace("$", foldsessiontype || foldnum), val: (isopen ? 1 : 0)}));
     }
 
@@ -1898,7 +1899,7 @@ function foldup(e, event, opts) {
         jQuery.get(hoturl("api/setsession", {var: opts.s, val: (dofold ? 1 : 0)}));
     if (event)
         event_stop(event);
-    m = fold(e, dofold, foldnum);
+    m = fold(e, dofold, foldnum, opts.st);
     if ((attr = e.getAttribute(dofold ? "data-onfold" : "data-onunfold")))
         (new Function("foldnum", attr)).call(e, opts);
     return m;
@@ -5326,6 +5327,15 @@ function plinfo(type, dofold) {
             loadargs.f = type;
         $.get(hoturl_post("api", loadargs), make_callback(dofold, type));
     }
+
+    // show or hide statistics rows
+    var statistics = false;
+    for (var t in fields)
+        if (fields[t].has_statistics && $(self).hasClass("fold" + foldmap[t] + "o")) {
+            statistics = true;
+            break;
+        }
+    fold(self, !statistics, 8, false);
 
     return false;
 }

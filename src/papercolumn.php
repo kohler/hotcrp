@@ -1794,16 +1794,17 @@ class Formula_PaperColumn extends PaperColumn {
         return $this->formula->unparse_text($v, $this->real_format);
     }
     function has_statistics() {
-        return ($this->statistics && $this->statistics->count())
-            || ($this->override_statistics && $this->override_statistics->count());
+        return true;
     }
     private function unparse_stat($x, $stat) {
         if ($stat == ScoreInfo::MEAN || $stat == ScoreInfo::MEDIAN)
             return $this->unparse($x);
         else if ($stat == ScoreInfo::COUNT && is_int($x))
             return $x;
+        else if ($this->real_format)
+            return sprintf($this->real_format, $x);
         else
-            return $this->real_format ? sprintf($this->real_format, $x) : $x;
+            return is_int($x) ? $x : sprintf("%.2f", $x);
     }
     function statistic($pl, $stat) {
         if ($stat == ScoreInfo::SUM && !$this->formula->result_format_is_real())
