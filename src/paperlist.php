@@ -794,13 +794,13 @@ class PaperList {
         // main columns
         $tm = "";
         foreach ($fieldDef as $fdef) {
-            if (!$fdef->viewable_column())
+            if (!$fdef->viewable_column()
+                || ($fdef->is_folded && $fdef->has_content))
                 continue;
             $empty = $fdef->content_empty($this, $row);
-            if ($fdef->is_folded) {
-                if (!$empty)
-                    $fdef->has_content = true;
-            } else {
+            if ($fdef->is_folded)
+                $fdef->has_content = !$empty;
+            else {
                 $c = $empty ? "" : $fdef->content($this, $row);
                 if ($c !== "")
                     $fdef->has_content = true;
@@ -816,12 +816,13 @@ class PaperList {
         foreach ($fieldDef as $fdef) {
             if (!$fdef->viewable_row())
                 continue;
-            $empty = $fdef->content_empty($this, $row);
             $is_authors = $fdef->name === "authors";
-            if ($fdef->is_folded && !$is_authors) {
-                if (!$empty)
-                    $fdef->has_content = true;
-            } else {
+            if ($fdef->is_folded && $fdef->has_content && !$is_authors)
+                continue;
+            $empty = $fdef->content_empty($this, $row);
+            if ($fdef->is_folded && !$is_authors)
+                $fdef->has_content = !$empty;
+            else {
                 $c = $empty ? "" : $fdef->content($this, $row);
                 if ($c !== "") {
                     $fdef->has_content = true;
