@@ -64,8 +64,13 @@ class AbbreviationMatcher {
 
             foreach ($this->data as $k => $d)
                 if ($d[2] instanceof Abbreviatable
-                    && strcasecmp($d[2]->abbreviation(), $stext) == 0)
-                    $matches[$k] = true;
+                    && ($abbrs = $d[2]->abbreviation())) {
+                    foreach (is_string($abbrs) ? [$abbrs] : $abbrs as $abbr)
+                        if (strcasecmp($abbr, $stext) == 0) {
+                            $matches[$k] = true;
+                            break;
+                        }
+                }
         }
 
         $this->matches[$text] = $close_matches ? : array_keys($matches);
