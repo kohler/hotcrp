@@ -2799,16 +2799,16 @@ function edit_allowed(cj) {
 }
 
 function render_editing(hc, cj) {
-    var bnote = "", fmtnote, i, x, actions = [];
+    var bnote = "", i, x, actions = [];
     ++idctr;
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form class="shortcutok"><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
-    hc.push('<div class="cmtpreview" style="display:none"></div>');
-    hc.push('<div class="cmtnopreview">');
-    if ((fmtnote = render_text.format_description(cj.format)))
-        hc.push(fmtnote);
-    hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60" style="clear:both"></textarea></div>');
+    var fmtnote = render_text.format_description(cj.format) || "";
+    if (render_text.format_can_preview(cj.format))
+        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="#" class="togglepreview" data-format="' + (cj.format || 0) + '">Preview</a>';
+    fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
+    hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60" style="clear:both"></textarea>');
     if (!cj.response) {
         // visibility
         hc.push('<div class="cmteditinfo f-i fold2o">', '</div>');
@@ -2848,8 +2848,6 @@ function render_editing(hc, cj) {
             actions.push('<button type="button" name="savedraft" class="btn">Save draft</button>' + bnote);
         actions.push('<button type="button" name="bsubmit" class="btn btn-default">Submit</button>' + bnote);
     }
-    if (render_text.format_can_preview(cj.format))
-        actions.push('<button type="button" name="preview" class="btn">Preview</button>');
     actions.push('<button type="button" name="cancel" class="btn">Cancel</button>');
     if (!cj.is_new) {
         x = cj.response ? "Delete response" : "Delete comment";
@@ -2885,18 +2883,6 @@ function make_update_words(jq, wlimit) {
         jq.find("textarea").on("input", setwc).each(setwc);
 }
 
-function make_preview() {
-    var $c = $cmt(this), taj = $c.find("textarea[name=comment]"),
-        previewon = taj.is(":visible"), t;
-    if (previewon) {
-        t = render_text($c.c.format, taj.val());
-        $c.find(".cmtpreview").html('<div class="format' + (t.format || 0) + '">' + t.content + '</div>');
-    }
-    $c.find(".cmtnopreview").toggle(!previewon);
-    $c.find(".cmtpreview").toggle(previewon);
-    $c.find("button[name=preview]").html(previewon ? "Edit" : "Preview");
-}
-
 function activate_editing(j, cj) {
     var elt, tags = [], i;
     j.find("textarea[name=comment]").text(cj.text || "").autogrow();
@@ -2917,7 +2903,6 @@ function activate_editing(j, cj) {
     if ((cj.visibility || "rev") !== "au")
         fold(j.find(".cmteditinfo")[0], true, 2);
     j.find("select[name=visibility]").on("change", visibility_change);
-    j.find("button[name=preview]").click(make_preview);
     if (cj.response && resp_rounds[cj.response].words > 0)
         make_update_words(j, resp_rounds[cj.response].words);
     hiliter_children(j);
@@ -3173,6 +3158,35 @@ return {
     }
 };
 })(jQuery);
+
+
+// previewing
+(function ($) {
+function switch_preview(evt) {
+    var $j = $(this).parent(), $ta;
+    while ($j.length && ($ta = $j.find("textarea")).length == 0)
+        $j = $j.parent();
+    if ($ta.length) {
+        $ta = $ta.first();
+        if ($ta.is(":visible")) {
+            var format = +this.getAttribute("data-format");
+            var t = render_text(format, $ta.val());
+            $ta.hide();
+            $ta.after('<div class="preview"><div class="preview_border"></div><div class="format' + format + '" style="padding:6px 0">' + t.content + '</div><div class="preview_border"></div></div>');
+            this.innerHTML = "Edit";
+        } else {
+            $ta.next().remove();
+            $ta.show();
+            this.innerHTML = "Preview";
+        }
+    }
+    return false;
+}
+function prepare() {
+    $(document.body).on("click", "a.togglepreview", switch_preview);
+}
+document.body ? prepare() : $(prepare);
+})($);
 
 
 // quicklink shortcuts
@@ -4734,7 +4748,7 @@ function edit_anno(locator) {
     }
     function make_onsave($d) {
         return function (rv) {
-            setajaxcheck($d.find("button[name='save']"), rv);
+            setajaxcheck($d.find("button[name=save]"), rv);
             if (rv.ok) {
                 taganno_success(rv);
                 close();

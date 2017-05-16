@@ -2745,12 +2745,12 @@ body#offline .revcard {
 	position: relative;
 	line-height: 1.25;
 }
-.revpreview, .cmtpreview {
-	margin: 0.5em -12px 1em;
-	padding: 1em 12px;
-	background: #f0f0f0;
-	background: linear-gradient(to bottom, rgba(248,246,227,0), #f8f6e3 4px, #f8f6e3 51%, transparent 51%),
-		linear-gradient(to top, rgba(248,246,227,0), #f8f6e3 4px, #f8f6e3 51%, transparent 51%);
+.preview {
+	margin-bottom: 24px;
+}
+.preview_border {
+	border-top: 1px dashed black;
+	max-width: 640px;
 }
 .cmttext.has_wordsover {
 	margin: 0 -5px -3px;
