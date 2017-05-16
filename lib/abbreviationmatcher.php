@@ -128,7 +128,7 @@ class AbbreviationMatcher {
         // only letters & digits
         if ($abbrdetail == 0)
             $name = preg_replace('/\(.*?\)/', ' ', $name);
-        $xname = preg_replace('/[-:\s,.?!()\[\]\{\}_\/\'\"]+/', " ", " $name ");
+        $xname = preg_replace('/[-:\s+,.?!()\[\]\{\}_\/\'\"]+/', " ", " $name ");
         // drop extraneous words
         $xname = preg_replace('/\A(' . str_repeat(' \S+', max(3, $abbrdetail)) . ' ).*\z/', '$1', $xname);
         if ($abbrtype == 1)

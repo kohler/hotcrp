@@ -696,8 +696,12 @@ class Conf {
             if ((!$kwj || get($kwj, "priority", 0) <= get($kwfj, "priority", 0))
                 && preg_match("\1\\A(?:" . $kwfj->match . ")\\z\1", $keyword, $m)) {
                 $x = call_user_func($kwfj->factory, $keyword, $this, $kwfj, $m);
-                if ($x && (is_object($x) || is_array($x)))
-                    $this->add_search_keyword((object) $x);
+                if ($x && (is_object($x) || is_array($x))) {
+                    $x = (object) $x;
+                    if (isset($kwfj->priority) && !isset($x->priority))
+                        $x->priority = $kwfj->priority;
+                    $this->add_search_keyword($x);
+                }
                 $kwj = $this->_search_keywords[$keyword];
             }
         }

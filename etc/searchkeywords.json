@@ -173,6 +173,11 @@
         "factory": "Comment_SearchTerm::response_factory"
     },
     {
+        "match": "[-a-zA-Z0-9\\x80-\\xFF]+",
+        "factory": "Review_SearchTerm::review_field_factory",
+        "priority": -1
+    },
+    {
         "name": "show",
         "parser": "Show_SearchTerm::parse", "allow_parens": true,
         "showtype": true, "sorting": false

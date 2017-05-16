@@ -1070,6 +1070,104 @@ class Review_SearchTerm extends SearchTerm {
         return new Review_SearchTerm($rsm);
     }
 
+    static function review_field_factory($keyword, Conf $conf, $kwfj, $m) {
+        $f = $conf->field_search($keyword);
+        if (count($f) == 1 && $f[0] instanceof ReviewField)
+            return (object) [
+                "name" => $keyword, "parser" => "Review_SearchTerm::parse_review_field",
+                "review_field" => $f[0], "has" => ">0"
+            ];
+        else
+            return null;
+    }
+    static function parse_review_field($word, SearchWord $sword, PaperSearch $srch) {
+        $f = $sword->kwdef->review_field;
+        $rsm = new ReviewSearchMatcher(">0");
+        $rsm->view_score = $f->view_score;
+
+        $contactword = "";
+        while (preg_match('/\A(.+?)([:=<>!]|≠|≤|≥)(.*)\z/s', $word, $m)
+               && !ctype_digit($m[1])) {
+            if ($rsm->apply_review_type($m[1])
+                || $rsm->apply_completeness($m[1])
+                || $rsm->apply_round($m[1], $srch->conf))
+                /* OK */;
+            else
+                $rsm->set_contacts($srch->matching_reviewers($m[1], $sword->quoted, false));
+            $word = ($m[2] === ":" ? $m[3] : $m[2] . $m[3]);
+            $contactword .= $m[1] . ":";
+        }
+
+        if ($f->has_options)
+            return self::parse_score_field($rsm, $word, $f, $srch);
+        else {
+            if ($word === "any" && !$sword->quoted)
+                $value = "$field!=''";
+            else if ($word === "none" && !$sword->quoted)
+                $value = "$field=''";
+            else // XXX
+                $value = "$field like " . Dbl::utf8ci("'%" . sqlq_for_like($word) . "%'");
+            return $rsm->make_field_term($value);
+        }
+    }
+    private static function impossible_score_match(ReviewField $f) {
+        $t = new False_SearchTerm;
+        $r = $f->full_score_range();
+        $t->set_float("contradiction_warning", "$f->name_html scores range from $r[0] to $r[1].");
+        $t->set_float("used_revadj", true);
+        return $t;
+    }
+    private static function parse_score_field(ReviewSearchMatcher $rsm, $word, ReviewField $f, PaperSearch $srch, $noswitch = false) {
+        if ($word === "any")
+            $value = "{$f->id}>0";
+        else if ($word === "none")
+            $value = "{$f->id}=0";
+        else if (preg_match('/\A(\d*?)([=!<>]=?|≠|≤|≥)?\s*([A-Za-z]|\d+)\z/s', $word, $m)) {
+            if ($m[1] === "")
+                $m[1] = 1;
+            $m[2] = CountMatcher::canonical_comparator($m[2]);
+            if ($f->option_letter != (ctype_digit($m[3]) === false))
+                return self::impossible_score_match($f);
+            $score = $m[3];
+            if ($f->option_letter) {
+                if (!$srch->conf->opt("smartScoreCompare") || $noswitch) {
+                    // switch meaning of inequality
+                    if ($m[2][0] === "<")
+                        $m[2] = ">" . substr($m[2], 1);
+                    else if ($m[2][0] === ">")
+                        $m[2] = "<" . substr($m[2], 1);
+                }
+                $score = strtoupper($score);
+                $m[3] = $f->option_letter - ord($score);
+            }
+            if (($m[3] < 1 && ($m[2][0] === "<" || $m[2] === "="))
+                || ($m[3] == 1 && $m[2] === "<")
+                || ($m[3] == count($f->options) && $m[2] === ">")
+                || ($m[3] > count($f->options) && ($m[2][0] === ">" || $m[2] === "=")))
+                return self::impossible_score_match($f);
+            $rsm->set_countexpr((int) $m[1] ? ">=" . $m[1] : "=0");
+            $value = $f->id . $m[2] . $m[3];
+        } else if ($f->option_letter
+                   ? preg_match('/\A\s*([A-Za-z])\s*(-?|\.\.\.?)\s*([A-Za-z])\s*\z/s', $word, $m)
+                   : preg_match('/\A\s*(\d+)\s*(-|\.\.\.?)\s*(\d+)\s*\z/s', $word, $m)) {
+            $qo = array();
+            if ($m[2] === "-" || $m[2] === "") {
+                $qo[] = self::parse_score_field(clone $rsm, $m[1], $f, $srch);
+                $qo[] = self::parse_score_field(clone $rsm, $m[3], $f, $srch);
+            } else
+                $qo[] = self::parse_score_field(clone $rsm, ">=$m[1]", $f, $srch, true);
+            $t = self::parse_score_field(clone $rsm, "<$m[1]", $f, $srch, true);
+            if (!($t instanceof False_SearchTerm))
+                $qo[] = SearchTerm::make_not($t);
+            $t = self::parse_score_field(clone $rsm, ">$m[3]", $f, $srch, true);
+            if (!($t instanceof False_SearchTerm))
+                $qo[] = SearchTerm::make_not($t);
+            return SearchTerm::make_op("and", $qo);
+        } else              // XXX
+            $value = "{$f->id}=-1";
+        return $rsm->make_field_term($value);
+    }
+
 
     function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
         if ($revadj) {
@@ -2024,6 +2122,12 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         } else
             return false;
     }
+    function make_field_term($fieldsql) {
+        if (!$this->completeness)
+            $this->completeness = self::COMPLETE;
+        $this->fieldsql = $fieldsql;
+        return new Review_SearchTerm($this);
+    }
     function simple_name() {
         if (!$this->has_contacts() && $this->fieldsql === null
             && $this->round === null && $this->rate === null
@@ -2358,6 +2462,7 @@ class PaperSearch {
     }
 
     static function parse_reconflict($word, SearchWord $sword, PaperSearch $srch) {
+        // `reconf:` keyword, defined in `etc/searchkeywords.json`
         $args = array();
         while (preg_match('/\A\s*#?(\d+)(?:-#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
             $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
@@ -2375,103 +2480,6 @@ class PaperSearch {
             $contacts = array_map("intval", Dbl::fetch_first_columns($result));
             return new Conflict_SearchTerm(">0", $contacts, $srch->user);
         }
-    }
-
-    private function _search_review_field($word, $f, &$qt, $quoted, $noswitch = false) {
-        $rsm = new ReviewSearchMatcher(">0");
-        $rsm->view_score = $f->view_score;
-
-        $contactword = "";
-        while (preg_match('/\A(.+?)([:=<>!]|≠|≤|≥)(.*)\z/s', $word, $m)
-               && !ctype_digit($m[1])) {
-            if ($rsm->apply_review_type($m[1])
-                || $rsm->apply_completeness($m[1])
-                || $rsm->apply_round($m[1], $this->conf))
-                /* OK */;
-            else
-                $rsm->set_contacts($this->matching_reviewers($m[1], $quoted, false));
-            $word = ($m[2] === ":" ? $m[3] : $m[2] . $m[3]);
-            $contactword .= $m[1] . ":";
-        }
-
-        $field = $f->id;
-        if ($f->has_options) {
-            if ($word === "any")
-                $value = "$field>0";
-            else if ($word === "none")
-                $value = "$field=0";
-            else if (preg_match('/\A(\d*?)([=!<>]=?|≠|≤|≥)?\s*([A-Za-z]|\d+)\z/s', $word, $m)) {
-                if ($m[1] === "")
-                    $m[1] = 1;
-                $m[2] = CountMatcher::canonical_comparator($m[2]);
-                if ($f->option_letter != (ctype_digit($m[3]) == false))
-                    $value = "$field=-1"; // XXX
-                else {
-                    $score = $m[3];
-                    if ($f->option_letter) {
-                        if (!$this->conf->opt("smartScoreCompare") || $noswitch) {
-                            // switch meaning of inequality
-                            if ($m[2][0] === "<")
-                                $m[2] = ">" . substr($m[2], 1);
-                            else if ($m[2][0] === ">")
-                                $m[2] = "<" . substr($m[2], 1);
-                        }
-                        $score = strtoupper($score);
-                        $m[3] = $f->option_letter - ord($score);
-                    }
-                    if (($m[3] < 1 && ($m[2][0] === "<" || $m[2] === "="))
-                        || ($m[3] == 1 && $m[2] === "<")
-                        || ($m[3] == count($f->options) && $m[2] === ">")
-                        || ($m[3] > count($f->options) && ($m[2][0] === ">" || $m[2] === "="))) {
-                        if ($f->option_letter)
-                            $warnings = array("<" => "worse than", ">" => "better than");
-                        else
-                            $warnings = array("<" => "less than", ">" => "greater than");
-                        $t = new False_SearchTerm;
-                        $t->set_float("contradiction_warning", "No $f->name_html scores are " . ($m[2] === "=" ? "" : $warnings[$m[2][0]] . (strlen($m[2]) == 1 ? " " : " or equal to ")) . $score . ".");
-                        $t->set_float("used_revadj", true);
-                        $qt[] = $t;
-                        return false;
-                    } else {
-                        $rsm->set_countexpr((int) $m[1] ? ">=" . $m[1] : "=0");
-                        $value = $field . $m[2] . $m[3];
-                    }
-                }
-            } else if ($f->option_letter
-                       ? preg_match('/\A\s*([A-Za-z])\s*(-?|\.\.\.?)\s*([A-Za-z])\s*\z/s', $word, $m)
-                       : preg_match('/\A\s*(\d+)\s*(-|\.\.\.?)\s*(\d+)\s*\z/s', $word, $m)) {
-                $qo = array();
-                if ($m[2] === "-" || $m[2] === "") {
-                    $this->_search_review_field($contactword . $m[1], $f, $qo, $quoted);
-                    $this->_search_review_field($contactword . $m[3], $f, $qo, $quoted);
-                } else
-                    $this->_search_review_field($contactword . ">=" . $m[1], $f, $qo, $quoted, true);
-                if ($this->_search_review_field($contactword . "<" . $m[1], $f, $qo, $quoted, true))
-                    $qo[count($qo) - 1] = SearchTerm::make_not($qo[count($qo) - 1]);
-                else
-                    array_pop($qo);
-                if ($this->_search_review_field($contactword . ">" . $m[3], $f, $qo, $quoted, true))
-                    $qo[count($qo) - 1] = SearchTerm::make_not($qo[count($qo) - 1]);
-                else
-                    array_pop($qo);
-                $qt[] = SearchTerm::make_op("and", $qo);
-                return true;
-            } else              // XXX
-                $value = "$field=-1";
-        } else {
-            if ($word === "any")
-                $value = "$field!=''";
-            else if ($word === "none")
-                $value = "$field=''";
-            else
-                $value = "$field like " . Dbl::utf8ci("'%" . sqlq_for_like($word) . "%'");
-        }
-
-        if (!$rsm->completeness)
-            $rsm->completeness = ReviewSearchMatcher::COMPLETE;
-        $rsm->fieldsql = $value;
-        $qt[] = new Review_SearchTerm($rsm);
-        return true;
     }
 
     static function analyze_option_search(Conf $conf, $word) {
@@ -2731,9 +2739,7 @@ class PaperSearch {
             $this->_search_options($word, $qt, true);
         // Finally, look for a review field.
         if ($keyword && !isset(self::$_keywords[$keyword]) && empty($qt)) {
-            if (($field = $this->conf->review_field_search($keyword)))
-                $this->_search_review_field($word, $field, $qt, $sword->quoted);
-            else if (!$this->_search_options("$keyword:$word", $qt, false))
+            if (!$this->_search_options("$keyword:$word", $qt, false))
                 $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
         }
     }

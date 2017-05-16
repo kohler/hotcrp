@@ -180,6 +180,14 @@ class ReviewField implements Abbreviatable {
             return [$this->unparse_value(1 + ($n > 2)), $this->unparse_value(2 + ($n > 2) + ($n > 3))];
     }
 
+    function full_score_range() {
+        if (!$this->has_options)
+            return null;
+        $f = $this->option_letter ? count($this->options) : 1;
+        $l = $this->option_letter ? 1 : count($this->options);
+        return [$this->unparse_value($f), $this->unparse_value($l)];
+    }
+
     function abbreviation() {
         if ($this->abbreviation === null) {
             $rf = $this->conf->review_form();
