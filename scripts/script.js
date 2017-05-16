@@ -2481,11 +2481,8 @@ $.extend(render_text, {
     add_format: function (x) {
         x.format && (renderers[x.format] = x);
     },
-    format_description: function (format) {
-        return lookup(format).description || null;
-    },
-    format_has_preview: function (format) {
-        return lookup(format).has_preview || false;
+    format: function (format) {
+        return lookup(format);
     },
     set_default_format: function (format) {
         default_format = format;
@@ -2804,9 +2801,9 @@ function render_editing(hc, cj) {
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form class="shortcutok"><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
-    var fmtnote = render_text.format_description(cj.format) || "";
-    if (render_text.format_has_preview(cj.format))
-        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="#" class="togglepreview" data-format="' + (cj.format || 0) + '">Preview</a>';
+    var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
+    if (fmt.has_preview)
+        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="#" class="togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60" style="clear:both"></textarea>');
     if (!cj.response) {
