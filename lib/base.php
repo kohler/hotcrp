@@ -140,6 +140,10 @@ function friendly_boolean($x) {
         return null;
 }
 
+interface Abbreviatable {
+    public function abbreviation();
+}
+
 
 // email and MIME helpers
 

@@ -56,6 +56,18 @@ class AbbreviationMatcher {
                 $close_matches[] = $k;
         }
 
+
+        if (empty($matches) && empty($close_matches)) {
+            // A call to Abbreviatable::abbreviation() might call back in
+            // to AbbreviationMatcher::find(). Short-circuit that call.
+            $this->matches[$text] = [];
+
+            foreach ($this->data as $k => $d)
+                if ($d[2] instanceof Abbreviatable
+                    && strcasecmp($d[2]->abbreviation(), $stext) == 0)
+                    $matches[$k] = true;
+        }
+
         $this->matches[$text] = $close_matches ? : array_keys($matches);
     }
 
@@ -82,5 +94,49 @@ class AbbreviationMatcher {
             return $a[0];
         else
             return false;
+    }
+
+
+    function unique_abbreviation($name, $data, $stopwords_callback = null) {
+        $last = $stopwords = null;
+        for ($detail = 0; $detail < 5; ++$detail) {
+            if ($detail && !$stopwords && $stopwords_callback)
+                $stopwords = call_user_func($stopwords_callback);
+            $x = self::make_abbreviation($name, $detail, 0, $stopwords);
+            if ($last === $x)
+                continue;
+            $last = $x;
+            $a = $this->find($x);
+            if (count($a) === 1 && $a[0] === $data)
+                return $x;
+        }
+        return null;
+    }
+
+    static function make_abbreviation($name, $abbrdetail, $abbrtype, $stopwords = "") {
+        $name = str_replace("'", "", $name);
+
+        // try to filter out noninteresting words
+        if ($abbrdetail < 2) {
+            $stopwords = (string) $stopwords;
+            if ($stopwords !== "")
+                $stopwords .= "|";
+            $xname = preg_replace('/\b(?:' . $stopwords . 'a|an|be|did|do|for|in|of|or|the|their|they|this|to|with|you)\b/i', '', $name);
+            $name = $xname ? : $name;
+        }
+
+        // only letters & digits
+        if ($abbrdetail == 0)
+            $name = preg_replace('/\(.*?\)/', ' ', $name);
+        $xname = preg_replace('/[-:\s,.?!()\[\]\{\}_\/\'\"]+/', " ", " $name ");
+        // drop extraneous words
+        $xname = preg_replace('/\A(' . str_repeat(' \S+', max(3, $abbrdetail)) . ' ).*\z/', '$1', $xname);
+        if ($abbrtype == 1)
+            return strtolower(str_replace(" ", "-", trim($xname)));
+        else {
+            // drop lowercase letters from words
+            $xname = str_replace(" ", "", ucwords($xname));
+            return preg_replace('/([A-Z][a-z][a-z])[a-z]*/', '$1', $xname);
+        }
     }
 }

@@ -8,7 +8,7 @@
 //         "display_space":ROWS,"visibility":VISIBILITY,
 //         "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}}
 
-class ReviewField {
+class ReviewField implements Abbreviatable {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
@@ -182,18 +182,9 @@ class ReviewField {
 
     function abbreviation() {
         if ($this->abbreviation === null) {
-            $last = $stopwords = null;
-            for ($detail = 0; $detail < 5 && !$this->abbreviation; ++$detail) {
-                if ($detail && !$stopwords)
-                    $stopwords = $this->conf->review_form()->stopwords();
-                $x = self::make_abbreviation($this->name, $detail, 0, $stopwords);
-                if ($last === $x)
-                    continue;
-                $last = $x;
-                $a = $this->conf->field_search($x);
-                if (count($a) === 1 && $a[0] === $this)
-                    $this->abbreviation = $x;
-            }
+            $rf = $this->conf->review_form();
+            $am = $this->conf->abbrev_matcher();
+            $this->abbreviation = $am->unique_abbreviation($this->name, $this, [$rf, "stopwords"]);
             if (!$this->abbreviation)
                 $this->abbreviation = $this->name;
         }
@@ -201,38 +192,12 @@ class ReviewField {
     }
 
     function abbreviation1() {
-        return self::make_abbreviation($this->name, 0, 1);
+        return AbbreviationMatcher::make_abbreviation($this->name, 0, 1);
     }
 
     function web_abbreviation() {
         return '<span class="need-tooltip" data-tooltip="' . $this->name_html
             . '" data-tooltip-dir="b">' . htmlspecialchars($this->abbreviation()) . "</span>";
-    }
-
-    static function make_abbreviation($name, $abbrdetail, $abbrtype, $stopwords = "") {
-        $name = str_replace("'", "", $name);
-
-        // try to filter out noninteresting words
-        if ($abbrdetail < 2) {
-            if ($stopwords !== "")
-                $stopwords .= "|";
-            $xname = preg_replace('/\b(?:' . $stopwords . 'a|an|be|did|do|for|in|of|or|the|their|they|this|to|with|you)\b/i', '', $name);
-            $name = $xname ? : $name;
-        }
-
-        // only letters & digits
-        if ($abbrdetail == 0)
-            $name = preg_replace('/\(.*?\)/', ' ', $name);
-        $xname = preg_replace('/[-:\s,.?!()\[\]\{\}_\/\'\"]+/', " ", " $name ");
-        // drop extraneous words
-        $xname = preg_replace('/\A(' . str_repeat(' \S+', max(3, $abbrdetail)) . ' ).*\z/', '$1', $xname);
-        if ($abbrtype == 1)
-            return strtolower(str_replace(" ", "-", trim($xname)));
-        else {
-            // drop lowercase letters from words
-            $xname = str_replace(" ", "", ucwords($xname));
-            return preg_replace('/([A-Z][a-z][a-z])[a-z]*/', '$1', $xname);
-        }
     }
 
     function uid() {

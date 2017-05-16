@@ -165,13 +165,13 @@ foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
     xassert_eqq(parseReviewOrdinal($t), $n);
 }
 
-// ReviewField::make_abbreviation tests
-xassert_eqq(ReviewField::make_abbreviation("novelty", 0, 0), "Nov");
-xassert_eqq(ReviewField::make_abbreviation("novelty is an amazing", 0, 0), "NovIsAma");
-xassert_eqq(ReviewField::make_abbreviation("novelty is an AWESOME", 0, 0), "NovIsAWESOME");
-xassert_eqq(ReviewField::make_abbreviation("novelty isn't an AWESOME", 0, 0), "NovIsnAWESOME");
-xassert_eqq(ReviewField::make_abbreviation("novelty isn't an AWESOME", 0, 1), "novelty-isnt-awesome");
-xassert_eqq(ReviewField::make_abbreviation("_format", 0, 1), "format");
+// AbbreviationMatcher::make_abbreviation tests
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty", 0, 0), "Nov");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an amazing", 0, 0), "NovIsAma");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an AWESOME", 0, 0), "NovIsAWESOME");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty isn't an AWESOME", 0, 0), "NovIsnAWESOME");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty isn't an AWESOME", 0, 1), "novelty-isnt-awesome");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("_format", 0, 1), "format");
 
 // utf8_word_prefix, etc. tests
 xassert_eqq(UnicodeHelper::utf8_prefix("aaaaaaaa", 7), "aaaaaaa");

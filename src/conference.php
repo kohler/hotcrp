@@ -824,7 +824,7 @@ class Conf {
     }
 
 
-    private function _abbrev_matcher() {
+    function abbrev_matcher() {
         if (!$this->_abbrev_matcher) {
             $this->_abbrev_matcher = new AbbreviationMatcher;
             $this->_abbrev_matcher->add("paper", $this->paper_opts->find_document(DTYPE_SUBMISSION), 1);
@@ -845,7 +845,7 @@ class Conf {
     }
 
     function field_search($text, $tflags = 0) {
-        return $this->_abbrev_matcher()->find($text, $tflags);
+        return $this->abbrev_matcher()->find($text, $tflags);
     }
 
 
@@ -871,7 +871,7 @@ class Conf {
     }
 
     function review_field_search($text) {
-        return $this->_abbrev_matcher()->find1($text, 2);
+        return $this->abbrev_matcher()->find1($text, 2);
     }
 
 
