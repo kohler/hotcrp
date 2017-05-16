@@ -415,7 +415,7 @@ class ContactList {
                 || (!($row->roles & Contact::ROLE_PC)
                     && !$this->contact->privChair
                     && $this->limit != "req")
-                || $row->$fieldId === "")
+                || (string) $row->$fieldId === "")
                 return "";
             return $f->unparse_graph($row->$fieldId, 2, 0);
         }
