@@ -1689,6 +1689,34 @@ class Option_SearchTerm extends SearchTerm {
         parent::__construct("option");
         $this->om = $om;
     }
+    static function parse_factory($keyword, Conf $conf, $kwfj, $m) {
+        $f = $conf->field_search($keyword);
+        if (count($f) == 1 && $f[0] instanceof PaperOption)
+            return (object) [
+                "name" => $keyword, "parser" => "Option_SearchTerm::parse",
+                "has" => "yes"
+            ];
+        else
+            return null;
+    }
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
+        if ($sword->kwdef->name !== "option")
+            $word = $sword->kwdef->name . ":" . $word;
+        $os = PaperSearch::analyze_option_search($srch->conf, $word);
+        if (empty($os->os) && empty($os->warn))
+            $os->warn[] = "“" . htmlspecialchars($word) . "” doesn’t match a submission option.";
+        foreach ($os->warn as $w)
+            $srch->warn($w);
+        if (!empty($os->os)) {
+            $qz = array();
+            foreach ($os->os as $oq)
+                $qz[] = new Option_SearchTerm($oq);
+            $t = SearchTerm::make_op("or", $qz);
+            return $os->negate ? SearchTerm::make_not($t) : $t;
+        } else
+            return new False_SearchTerm;
+    }
+
     function debug_json() {
         $om = $this->om;
         return [$this->type, $om->option->abbr, $om->kind, $om->compar, $om->value];
@@ -2270,8 +2298,6 @@ class PaperSearch {
 
     static private $_sort_keywords = null;
 
-    static private $_keywords = array("option" => "option", "opt" => "option");
-
 
     function __construct(Contact $user, $options, Contact $reviewer = null) {
         if (is_string($options))
@@ -2502,10 +2528,10 @@ class PaperSearch {
         if ($oname === "none" || $oname === "any")
             $omatches = $conf->paper_opts->option_list();
         else
-            $omatches = $conf->paper_opts->search($oname);
+            $omatches = $conf->field_search($oname, Conf::FSRCH_OPTION);
         // Conf::msg_debugt(var_export($omatches, true));
         if (!empty($omatches)) {
-            foreach ($omatches as $oid => $o) {
+            foreach ($omatches as $o) {
                 // selectors handle “yes”, “”, and “no” specially
                 if ($o->has_selector()) {
                     $xval = array();
@@ -2517,7 +2543,7 @@ class PaperSearch {
                             $xval = $o->selector;
                     } else
                         $xval = Text::simple_search($oval, $o->selector);
-                    if (count($xval) == 0)
+                    if (empty($xval))
                         $warn[] = "“" . htmlspecialchars($oval) . "” doesn’t match any " . htmlspecialchars($oname) . " values.";
                     else if (count($xval) == 1) {
                         reset($xval);
@@ -2549,35 +2575,13 @@ class PaperSearch {
                     continue;
             }
         } else if (($ocompar === "=" || $ocompar === "!=") && $oval === "")
-            foreach ($conf->paper_opts->option_list() as $oid => $o)
+            foreach ($conf->paper_opts->option_list() as $o)
                 if ($o->has_selector()) {
                     foreach (Text::simple_search($oname, $o->selector) as $xval => $text)
                         $qo[] = new OptionMatcher($o, $ocompar, $xval);
                 }
 
         return (object) array("os" => $qo, "warn" => $warn, "negate" => $oname === "none");
-    }
-
-    function _search_options($word, &$qt, $report_error) {
-        $os = self::analyze_option_search($this->conf, $word);
-        foreach ($os->warn as $w)
-            $this->warn($w);
-        if (empty($os->os)) {
-            if ($report_error && empty($os->warn))
-                $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a submission option.");
-            if ($report_error || !empty($os->warn))
-                $qt[] = new False_SearchTerm;
-            return false;
-        }
-
-        // add expressions
-        $qz = array();
-        foreach ($os->os as $oq)
-            $qz[] = new Option_SearchTerm($oq);
-        if ($os->negate)
-            $qz = array(SearchTerm::make_not(SearchTerm::make_op("or", $qz)));
-        $qt = array_merge($qt, $qz);
-        return true;
     }
 
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {
@@ -2595,21 +2599,8 @@ class PaperSearch {
             if ($qe)
                 return $qe;
         }
-
-        $original_lword = $lword = strtolower($word);
-        $lword = get(self::$_keywords, $lword) ? : $lword;
-        $qt = [];
-        if (preg_match('/\A[\w-]+\z/', $lword)
-            && $srch->_search_options("$lword:yes", $qt, false))
-            return $qt;
-        else {
-            $has = [];
-            foreach ($srch->search_completion("has") as $h)
-                if (str_starts_with($h, "has:"))
-                    $has[] = "“" . htmlspecialchars($h) . "”";
-            $srch->warn("Unknown “has:” search. I understand " . commajoin($has) . ".");
-            return new False_SearchTerm;
-        }
+        $srch->warn("Unknown search “has:" . htmlspecialchars($word) . "”.");
+        return new False_SearchTerm;
     }
 
     static private function find_end_balanced_parens($str) {
@@ -2733,15 +2724,8 @@ class PaperSearch {
                 $qt[] = $qx;
             else if ($qx)
                 $qt = array_merge($qt, $qx);
-            return;
-        }
-        if ($keyword === "option")
-            $this->_search_options($word, $qt, true);
-        // Finally, look for a review field.
-        if ($keyword && !isset(self::$_keywords[$keyword]) && empty($qt)) {
-            if (!$this->_search_options("$keyword:$word", $qt, false))
-                $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
-        }
+        } else
+            $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
     }
 
     function _searchQueryWord($word) {
@@ -2770,7 +2754,7 @@ class PaperSearch {
         if (($colon = strpos($word, ":")) > 0) {
             $x = substr($word, 0, $colon);
             if (strpos($x, '"') === false) {
-                $keyword = get(self::$_keywords, $x) ? : $x;
+                $keyword = $x;
                 $word = substr($word, $colon + 1);
                 if ($word === false)
                     $word = "";

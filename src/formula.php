@@ -1171,7 +1171,7 @@ class Formula {
 
     function error_html() {
         $this->check();
-        return join("<br/>", $this->_error_html);
+        return join("<br />", $this->_error_html);
     }
     function add_error_html($e) {
         $this->_error_html[] = $e;

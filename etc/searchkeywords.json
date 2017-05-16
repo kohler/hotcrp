@@ -178,6 +178,16 @@
         "priority": -1
     },
     {
+        "name": "option",
+        "parser": "Option_SearchTerm::parse",
+        "has": "any", "synonym": "opt"
+    },
+    {
+        "match": "[-a-zA-Z0-9\\x80-\\xFF]+",
+        "factory": "Option_SearchTerm::parse_factory",
+        "priority": -1
+    },
+    {
         "name": "show",
         "parser": "Show_SearchTerm::parse", "allow_parens": true,
         "showtype": true, "sorting": false

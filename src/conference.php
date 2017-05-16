@@ -828,22 +828,25 @@ class Conf {
     }
 
 
+    const FSRCH_OPTION = 1;
+    const FSRCH_REVIEW = 2;
+
     function abbrev_matcher() {
         if (!$this->_abbrev_matcher) {
             $this->_abbrev_matcher = new AbbreviationMatcher;
-            $this->_abbrev_matcher->add("paper", $this->paper_opts->find_document(DTYPE_SUBMISSION), 1);
-            $this->_abbrev_matcher->add("submission", $this->paper_opts->find_document(DTYPE_SUBMISSION), 1);
+            $this->_abbrev_matcher->add("paper", $this->paper_opts->find_document(DTYPE_SUBMISSION), self::FSRCH_OPTION);
+            $this->_abbrev_matcher->add("submission", $this->paper_opts->find_document(DTYPE_SUBMISSION), self::FSRCH_OPTION);
             if ($this->has_any_accepts()) {
                 $ol = $this->paper_opts->option_list();
-                $this->_abbrev_matcher->add("final", $this->paper_opts->find_document(DTYPE_FINAL), 1);
+                $this->_abbrev_matcher->add("final", $this->paper_opts->find_document(DTYPE_FINAL), self::FSRCH_OPTION);
             } else
                 $ol = $this->paper_opts->nonfinal_option_list();
             // XXX exposes invisible paper options, review fields
             foreach ($ol as $o)
-                $this->_abbrev_matcher->add($o->name, $o, 1);
+                $this->_abbrev_matcher->add($o->name, $o, self::FSRCH_OPTION);
             foreach ($this->all_review_fields() as $f)
                 if ($f->displayed)
-                    $this->_abbrev_matcher->add($f->name, $f, 2);
+                    $this->_abbrev_matcher->add($f->name, $f, self::FSRCH_REVIEW);
         }
         return $this->_abbrev_matcher;
     }
@@ -875,7 +878,7 @@ class Conf {
     }
 
     function review_field_search($text) {
-        return $this->abbrev_matcher()->find1($text, 2);
+        return $this->abbrev_matcher()->find1($text, self::FSRCH_REVIEW);
     }
 
 
