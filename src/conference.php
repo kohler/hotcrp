@@ -724,18 +724,14 @@ class Conf {
         return $this->_formula_functions;
     }
 
-    function defined_formula_map(Contact $user) {
-        if ($this->_defined_formulas !== null && !empty($this->_defined_formulas)) {
-            reset($this->_defined_formulas);
-            if (current($this->_defined_formulas)->user !== $user)
-                $this->_defined_formulas = null;
-        }
+    function defined_formula_map() {
         if ($this->_defined_formulas === null) {
             $this->_defined_formulas = [];
             if ($this->setting("formulas")) {
                 $result = $this->q("select * from Formula order by lower(name)");
-                while ($result && ($f = Formula::fetch($user, $result)))
+                while ($result && ($f = Formula::fetch($this, $result)))
                     $this->_defined_formulas[$f->formulaId] = $f;
+                Dbl::free($result);
             }
         }
         return $this->_defined_formulas;

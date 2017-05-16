@@ -1096,9 +1096,7 @@ class Formula {
     );
 
 
-    function __construct(Contact $user, $expr = null, $allow_review = false) {
-        $this->conf = $user->conf;
-        $this->user = $user;
+    function __construct($expr = null, $allow_review = false) {
         if ($expr !== null) {
             $this->expression = $expr;
             $this->allowReview = $allow_review;
@@ -1111,10 +1109,10 @@ class Formula {
         $this->formulaId = (int) $this->formulaId;
     }
 
-    static function fetch(Contact $user, $result) {
-        $formula = $result ? $result->fetch_object("Formula", [$user]) : null;
+    static function fetch(Conf $conf, $result) {
+        $formula = $result ? $result->fetch_object("Formula") : null;
         if ($formula && !is_int($formula->formulaId)) {
-            $formula->conf = $user->conf;
+            $formula->conf = $conf;
             $formula->merge();
         }
         assert(!$formula || $formula->datatypes === 0);
@@ -1127,11 +1125,13 @@ class Formula {
     function check(Contact $user = null) {
         if ($this->_parse !== null && (!$user || $user === $this->user))
             return !!$this->_parse;
-
         if ($user) {
-            assert($this->conf === $user->conf);
+            assert(!$this->conf || $this->conf === $user->conf);
+            $this->conf = $user->conf;
             $this->user = $user;
         }
+        assert($this->conf && $this->user);
+
         $t = $this->expression;
         $expr_len = strlen($this->expression);
         $e = $this->_parse_ternary($t, false);
@@ -1480,10 +1480,12 @@ class Formula {
     }
 
     private function _compile_function($sortable) {
-        $this->check();
-        $state = new FormulaCompiler($this->user);
-        $expr = $this->_parse ? $this->_parse->compile($state) : "0";
-        $t = self::compile_body($this->user, $state, $expr);
+        if ($this->check()) {
+            $state = new FormulaCompiler($this->user);
+            $expr = $this->_parse->compile($state);
+            $t = self::compile_body($this->user, $state, $expr);
+        } else
+            $t = "return 0;";
 
         $args = '$prow, $rrow_cid, $contact, $forceShow = false';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n");
@@ -1587,7 +1589,7 @@ class Formula {
     }
 
     function view_score(Contact $user) {
-        if ($this->check())
+        if ($this->check($this->user ? : $user))
             return $this->_parse->view_score($user);
         else
             return VIEWSCORE_FALSE;

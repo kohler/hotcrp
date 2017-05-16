@@ -1554,10 +1554,10 @@ class Formula_SearchTerm extends SearchTerm {
         $result = $formula = null;
         if (preg_match('/\A[^(){}\[\]]+\z/', $word) && !$quoted
             && ($result = $srch->conf->qe("select * from Formula where name=?", $word)))
-            $formula = Formula::fetch($srch->user, $result);
+            $formula = Formula::fetch($srch->conf, $result);
         Dbl::free($result);
-        $formula = $formula ? : new Formula($srch->user, $word, $is_graph);
-        if (!$formula->check()) {
+        $formula = $formula ? : new Formula($word, $is_graph);
+        if (!$formula->check($srch->user)) {
             $srch->warn($formula->error_html());
             $formula = null;
         }

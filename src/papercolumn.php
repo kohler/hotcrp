@@ -1570,8 +1570,8 @@ class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
             $name = substr($name, 5);
         else
             return null;
-        $formula = new Formula($user, $name, true);
-        if (!$formula->check()) {
+        $formula = new Formula($name, true);
+        if (!$formula->check($user)) {
             self::instantiate_error($errors, $formula->error_html(), 1);
             return null;
         } else if (!($formula->result_format() instanceof ReviewField)) {
@@ -1835,20 +1835,19 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
     private function all(Contact $user) {
         return array_map(function ($f) {
             return $this->make($f);
-        }, $user->conf->defined_formula_map($user));
+        }, $user->conf->defined_formula_map());
     }
     function instantiate(Contact $user, $name, $errors) {
         if ($name === "formulas")
             return $this->all($user);
         $ff = null;
         $starts_with_formula = str_starts_with($name, "formula");
-        foreach ($user->conf->defined_formula_map($user) as $f)
+        foreach ($user->conf->defined_formula_map() as $f)
             if (strcasecmp($f->name, $name) == 0
                 || ($starts_with_formula && $name === "formula{$f->formulaId}"))
                 $ff = $f;
-        if (!$ff)
-            $ff = new Formula($user, $name);
-        if (!$ff->check()) {
+        $ff = $ff ? : new Formula($name);
+        if (!$ff->check($user)) {
             if ($errors && strpos($name, "(") !== false)
                 self::instantiate_error($errors, $ff->error_html(), 1);
             return null;

@@ -34,25 +34,28 @@ class FormulaGraph {
     function __construct(Contact $user, $fx, $fy) {
         $this->conf = $user->conf;
         $this->user = $user;
+
         $fx = simplify_whitespace($fx);
-        $fy = simplify_whitespace($fy);
         if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
-            $this->fx = new Formula($this->user, "0", true);
+            $this->fx = new Formula("0", true);
             $this->fx_type = self::X_QUERY;
         } else if (strcasecmp($fx, "tag") == 0) {
-            $this->fx = new Formula($this->user, "0", true);
+            $this->fx = new Formula("0", true);
             $this->fx_type = self::X_TAG;
         } else
-            $this->fx = new Formula($this->user, $fx, true);
+            $this->fx = new Formula($fx, true);
+        $this->fx->check($this->user);
+
+        $fy = simplify_whitespace($fy);
         if (strcasecmp($fy, "cdf") == 0) {
             $this->type = self::CDF;
-            $this->fy = new Formula($this->user, "0", true);
+            $this->fy = new Formula("0", true);
         } else if (preg_match('/\A(?:count|bar|bars|barchart)\z/i', $fy)) {
             $this->type = self::BARCHART;
-            $this->fy = new Formula($this->user, "sum(1)", true);
+            $this->fy = new Formula("sum(1)", true);
         } else if (preg_match('/\A(?:stack|frac|fraction)\z/i', $fy)) {
             $this->type = self::FBARCHART;
-            $this->fy = new Formula($this->user, "sum(1)", true);
+            $this->fy = new Formula("sum(1)", true);
         } else {
             if (preg_match('/\A(?:box|boxplot)\s+(.*)\z/i', $fy, $m)) {
                 $this->type = self::BOXPLOT;
@@ -64,12 +67,13 @@ class FormulaGraph {
                 $this->type = self::SCATTER;
                 $fy = $m[1];
             }
-            $this->fy = new Formula($this->user, $fy, true);
-            if (!$this->type) {
-                $this->type = self::SCATTER;
-                if (!$this->fy->datatypes() && $this->fy->can_combine())
-                    $this->type = self::BARCHART;
-            }
+            $this->fy = new Formula($fy, true);
+        }
+        $this->fy->check($this->user);
+        if (!$this->type) {
+            $this->type = self::SCATTER;
+            if (!$this->fy->datatypes() && $this->fy->can_combine())
+                $this->type = self::BARCHART;
         }
 
         if ($this->fx->error_html()) {
@@ -82,7 +86,8 @@ class FormulaGraph {
         } else if (($this->type & self::BARCHART) && !$this->fy->can_combine()) {
             $this->error_html[] = "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.";
             $this->errf["fy"] = true;
-            $this->fy = new Formula($this->user, "sum(0)", true);
+            $this->fy = new Formula("sum(0)", true);
+            $this->fy->check($this->user);
         } else if ($this->type === self::CDF && $this->fx_type === self::X_TAG) {
             $this->error_html[] = "CDFs by tag don’t make sense.";
             $this->errf["fy"] = true;
