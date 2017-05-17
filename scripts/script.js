@@ -3174,6 +3174,7 @@ function switch_preview(evt) {
         } else {
             $ta.next().remove();
             $ta.show();
+            $ta[0].focus();
             this.innerHTML = "Preview";
         }
     }
