@@ -1072,7 +1072,7 @@ For example, this computes the sum of the squares of the overall merit scores:</
 
 <blockquote>sum(OveMer*OveMer)</blockquote>
 
-This calculates an average of overall merit scores, weighted by expertise
+<p>This calculates an average of overall merit scores, weighted by expertise
 (high-expertise reviews are given slightly more weight):</p>
 
 <blockquote>wavg(OveMer, RevExp >= 4 ? 1 : 0.8)</blockquote>
