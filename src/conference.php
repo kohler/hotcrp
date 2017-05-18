@@ -728,7 +728,7 @@ class Conf {
         return $this->_formula_functions;
     }
 
-    function defined_formula_map() {
+    function named_formulas() {
         if ($this->_defined_formulas === null) {
             $this->_defined_formulas = [];
             if ($this->setting("formulas")) {
@@ -739,6 +739,10 @@ class Conf {
             }
         }
         return $this->_defined_formulas;
+    }
+
+    function named_formula_search($text) {
+        return $this->abbrev_matcher()->find1($text, self::FSRCH_FORMULA);
     }
 
 
@@ -830,6 +834,7 @@ class Conf {
 
     const FSRCH_OPTION = 1;
     const FSRCH_REVIEW = 2;
+    const FSRCH_FORMULA = 4;
 
     function abbrev_matcher() {
         if (!$this->_abbrev_matcher) {
@@ -847,6 +852,9 @@ class Conf {
             foreach ($this->all_review_fields() as $f)
                 if ($f->displayed)
                     $this->_abbrev_matcher->add($f->name, $f, self::FSRCH_REVIEW);
+            foreach ($this->named_formulas() as $f)
+                if ($f->name)
+                    $this->_abbrev_matcher->add($f->name, $f, self::FSRCH_FORMULA);
         }
         return $this->_abbrev_matcher;
     }

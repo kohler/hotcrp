@@ -102,7 +102,7 @@ if (isset($Qreq->savedisplayoptions) && $Me->privChair) {
 // save formula
 function visible_formulas() {
     global $Conf, $Me;
-    return array_filter($Conf->defined_formula_map(), function ($f) {
+    return array_filter($Conf->named_formulas(), function ($f) {
         global $Me, $Qreq;
         return $Qreq->t == "a"
             ? $Me->can_view_formula_as_author($f)
@@ -219,7 +219,7 @@ function savesearch() {
             $acceptable["anonau"] = 1;
         foreach ($Conf->all_review_fields() as $f)
             $acceptable[$f->id] = $acceptable[$f->abbreviation()] = 1;
-        foreach ($Conf->defined_formula_map() as $f)
+        foreach ($Conf->named_formulas() as $f)
             $acceptable["formula" . $f->formulaId] = 1;
         $display = array();
         foreach (preg_split('/\s+/', $Conf->session("pldisplay")) as $x)
