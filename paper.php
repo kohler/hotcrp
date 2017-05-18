@@ -239,10 +239,10 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     $notes = join(" ", array_filter($notes, function ($n) { return $n !== ""; }));
 
     $webnotes = "";
-    if (count($ps->messages()))
+    if (!empty($ps->messages()))
         $webnotes .= " <ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>";
 
-    if (!count($diffs)) {
+    if (empty($diffs)) {
         $Conf->warnMsg("There were no changes to submission #$prow->paperId. " . $notes . $webnotes);
         return true;
     }
