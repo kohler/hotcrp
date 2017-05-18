@@ -1703,8 +1703,6 @@ class Option_SearchTerm extends SearchTerm {
         if ($sword->kwdef->name !== "option")
             $word = $sword->kwdef->name . ":" . $word;
         $os = PaperSearch::analyze_option_search($srch->conf, $word);
-        if (empty($os->os) && empty($os->warn))
-            $os->warn[] = "“" . htmlspecialchars($word) . "” doesn’t match a submission option.";
         foreach ($os->warn as $w)
             $srch->warn($w);
         if (!empty($os->os)) {
@@ -2581,6 +2579,8 @@ class PaperSearch {
                         $qo[] = new OptionMatcher($o, $ocompar, $xval);
                 }
 
+        if (empty($qo) && empty($warn))
+            $warn[] = "“" . htmlspecialchars($word) . "” doesn’t match a submission option.";
         return (object) array("os" => $qo, "warn" => $warn, "negate" => $oname === "none", "value_word" => $oval);
     }
 

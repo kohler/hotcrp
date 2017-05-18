@@ -1307,8 +1307,6 @@ class Formula {
 
     private function _parse_option($text) {
         $os = PaperSearch::analyze_option_search($this->conf, $text);
-        if (empty($os->os) && empty($os->warn))
-            $os->warn[] = "“" . htmlspecialchars($text) . "” doesn’t match a submission option.";
         foreach ($os->warn as $w)
             $this->_error_html[] = $w;
         $e = null;
