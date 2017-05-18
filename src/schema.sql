@@ -474,9 +474,8 @@ CREATE TABLE `Settings` (
 DROP TABLE IF EXISTS `TopicArea`;
 CREATE TABLE `TopicArea` (
   `topicId` int(11) NOT NULL AUTO_INCREMENT,
-  `topicName` varchar(200) DEFAULT NULL,
-  PRIMARY KEY (`topicId`),
-  KEY `topicName` (`topicName`)
+  `topicName` varbinary(1024) DEFAULT NULL,
+  PRIMARY KEY (`topicId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -496,7 +495,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 165);
+insert into Settings (name, value) values ('allowPaperOption', 166);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
