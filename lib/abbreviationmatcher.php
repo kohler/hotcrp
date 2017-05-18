@@ -37,7 +37,7 @@ class AbbreviationMatcher {
         $xdtext = str_replace("-", " ", $dtext);
         if (preg_match('{\A[A-Za-z0-9_.]+\z}', $dtext)) {
             $re = preg_replace('{([A-Z])(?=[A-Z0-9_.])}', '$1(?:|.*\b)', $dtext);
-            $re = preg_replace('{([a-z_.])(?=[A-Z0-9_.])}', '$1.*\b', $re);
+            $re = preg_replace('{([a-z_.])(?=[A-Z0-9_.])}', '$1(?:|.*\b)', $re);
             $re = '{\b' . $re . '}i';
         } else {
             $re = join('\b.*\b', preg_split('{[^A-Za-z0-9_.]}', $dtext));
