@@ -1072,6 +1072,7 @@ class Formula {
     private $_format;
     private $_tagrefs;
     private $_error_html = array();
+    private $_recursion;
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
@@ -1129,14 +1130,17 @@ class Formula {
 
     /* parsing */
 
+    private function set_user(Contact $user) {
+        assert(!$this->conf || $this->conf === $user->conf);
+        $this->conf = $user->conf;
+        $this->user = $user;
+    }
+
     function check(Contact $user = null) {
         if ($this->_parse !== null && (!$user || $user === $this->user))
             return !!$this->_parse;
-        if ($user) {
-            assert(!$this->conf || $this->conf === $user->conf);
-            $this->conf = $user->conf;
-            $this->user = $user;
-        }
+        if ($user)
+            $this->set_user($user);
         assert($this->conf && $this->user);
 
         $t = $this->expression;
@@ -1301,6 +1305,34 @@ class Formula {
             return $e0 ? : $e1;
     }
 
+    private function _parse_option($text) {
+        $os = PaperSearch::analyze_option_search($this->conf, $text);
+        if (empty($os->os) && empty($os->warn))
+            $os->warn[] = "“" . htmlspecialchars($text) . "” doesn’t match a submission option.";
+        foreach ($os->warn as $w)
+            $this->_error_html[] = $w;
+        if (empty($os->os))
+            return null;
+        foreach ($os->os as $o) {
+            $ex = new OptionFexpr($o->option);
+            if ($o->kind)
+                $this->_error_html[] = "“" . htmlspecialchars($text) . "” can’t be used in formulas.";
+            else if ($o->value_word === "")
+                /* stick with raw option fexpr */;
+            else if (is_array($o->value) && $o->compar === "!=")
+                $ex = new NegateFexpr(new InFexpr($ex, $o->value));
+            else if (is_array($o->value))
+                $ex = new InFexpr($ex, $o->value);
+            else
+                $ex = new Fexpr(get(self::$_oprewrite, $o->compar, $o->compar),
+                                $ex, new ConstantFexpr($o->value, $o->option));
+            $e = $e ? new Fexpr("||", $e, $ex) : $ex;
+        }
+        if ($os->negate)
+            $e = new NegateFexpr($e);
+        return $e;
+    }
+
     private function _parse_expr(&$t, $level, $in_qc) {
         if (($t = ltrim($t)) === "")
             return null;
@@ -1336,30 +1368,7 @@ class Formula {
             $t = $m[1];
         } else if (preg_match('/\Aopt(?:ion)?:\s*(.*)\z/s', $t, $m)) {
             $rest = self::_pop_argument($m[1]);
-            $os = PaperSearch::analyze_option_search($this->conf, $rest[1]);
-            foreach ($os->warn as $w)
-                $this->_error_html[] = $w;
-            if (!count($os->os) && !count($os->warn))
-                $this->_error_html[] = "“" . htmlspecialchars($rest[1]) . "” doesn’t match a submission option.";
-            if (!count($os->os))
-                return null;
-            foreach ($os->os as $o) {
-                $ex = new OptionFexpr($o->option);
-                if ($o->kind)
-                    $this->_error_html[] = "“" . htmlspecialchars($rest[1]) . "” can’t be used in formulas.";
-                else if ($o->value_word === "")
-                    /* stick with raw option fexpr */;
-                else if (is_array($o->value) && $o->compar === "!=")
-                    $ex = new NegateFexpr(new InFexpr($ex, $o->value));
-                else if (is_array($o->value))
-                    $ex = new InFexpr($ex, $o->value);
-                else
-                    $ex = new Fexpr(get(self::$_oprewrite, $o->compar, $o->compar),
-                                    $ex, new ConstantFexpr($o->value, $o->option));
-                $e = $e ? new Fexpr("||", $e, $ex) : $ex;
-            }
-            if ($os->negate)
-                $e = new NegateFexpr($e);
+            $e = $this->_parse_option($rest[1]);
             $t = $rest[2];
         } else if (preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(["outcome", PaperSearch::matching_decisions($this->conf, $m[1])]);
@@ -1416,6 +1425,28 @@ class Formula {
             if (($quoted = $field[0] === "\""))
                 $field = substr($field, 1, strlen($field) - 2);
             while (1) {
+                $fs = $this->conf->field_search($field);
+                if (count($fs) === 1) {
+                    $f = $fs[0];
+                    if ($f instanceof PaperOption)
+                        $e = $this->_parse_option($f->abbreviation());
+                    else if ($f instanceof ReviewField) {
+                        if ($f->has_options)
+                            $e = $this->_reviewer_decoration(new ScoreFexpr($f), $m[2]);
+                        else
+                            $this->_error_html[] = "Textual review field " . htmlspecialchars($field) . " can’t be used in formulas.";
+                    } else if ($f instanceof Formula) {
+                        if (!$f->_recursion) {
+                            $this->_recursion = true;
+                            $f->set_user($this->user);
+                            $tt = $f->expression;
+                            $e = $f->_parse_ternary($tt, false);
+                            $this->_recursion = false;
+                        } else
+                            $this->_error_html[] = "Circular formula reference.";
+                    }
+                    break;
+                }
                 $f = $this->conf->review_field_search($field);
                 if ($f) {
                     if (!$f->has_options)
