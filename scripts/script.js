@@ -5041,6 +5041,8 @@ function make_tagmap() {
         x = fields.tags.highlight_tags || [];
         for (i = 0; i != x.length; ++i) {
             t = x[i].toLowerCase();
+            if (t.charAt(0) === "~" && t.charAt(1) !== "~")
+                t = hotcrp_user.cid + t;
             tagmap[t] = (tagmap[t] || 0) | 1;
         }
         x = fields.tags.votish_tags || [];
