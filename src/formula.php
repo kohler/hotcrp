@@ -41,10 +41,6 @@ class Fexpr {
         $this->op = $op;
         if ($this->op === "trunc")
             $this->op = "floor";
-        else if ($this->op === "min")
-            $this->op = "least";
-        else if ($this->op === "max")
-            $this->op = "greatest";
         $args = func_get_args();
         if (count($args) == 2 && is_array($args[1]))
             $this->args = $args[1];
@@ -328,11 +324,14 @@ class InFexpr extends Fexpr {
 }
 
 class AggregateFexpr extends Fexpr {
+    function __construct($fn, array $values) {
+        parent::__construct($fn, $values);
+    }
     static function make($ff, $args) {
         $op = $ff->name;
         if (($op === "min" || $op === "max")
             && count($args) > 1)
-            return Fexpr::make($ff, $args);
+            return new Fexpr($op === "min" ? "least" : "greatest", $args);
         if ($op === "average" || $op === "mean"
             || ($op === "wavg" && count($args) == 1))
             $op = "avg";
