@@ -61,11 +61,11 @@ class Fexpr {
     function format() {
         return $this->format_;
     }
-    function format_comparator($cmp, $other_expr = null) {
+    function format_comparator($cmp, Conf $conf, $other_expr = null) {
         if ($this->format_
             && $this->format_ instanceof ReviewField
             && $this->format_->option_letter
-            && !opt("smartScoreCompare")
+            && !$conf->opt("smartScoreCompare")
             && (!$other_expr
                 || $other_expr->format() === $this->format_)) {
             if ($cmp[0] == "<")
@@ -177,13 +177,13 @@ class Fexpr {
                 return "($t1 !== null && $t2 !== null ? pow($t1, $t2) : null)";
             else {
                 if (Formula::$opprec[$op] == 8)
-                    $op = $this->args[0]->format_comparator($op, $this->args[1]);
+                    $op = $this->args[0]->format_comparator($op, $state->conf, $this->args[1]);
                 return "($t1 !== null && $t2 !== null ? $t1 $op $t2 : null)";
             }
         }
 
         if ($op == "greatest" || $op == "least") {
-            $cmp = $this->format_comparator($op == "greatest" ? ">" : "<");
+            $cmp = $this->format_comparator($op == "greatest" ? ">" : "<", $state->conf);
             $t1 = $state->_addltemp($this->args[0]->compile($state), true);
             for ($i = 1; $i < count($this->args); ++$i) {
                 $t2 = $state->_addltemp($this->args[$i]->compile($state));
@@ -397,11 +397,11 @@ class AggregateFexpr extends Fexpr {
         if ($this->op === "any")
             return ["null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", self::cast_bool("~x~")];
         if ($this->op === "min" || $this->op === "max") {
-            $cmp = $this->format_comparator($this->op === "min" ? "<" : ">");
+            $cmp = $this->format_comparator($this->op === "min" ? "<" : ">", $state->conf);
             return ["null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)"];
         }
         if ($this->op == "argmin" || $this->op == "argmax") {
-            $cmp = $this->args[1]->format_comparator($this->op == "argmin" ? "<" : ">");
+            $cmp = $this->args[1]->format_comparator($this->op == "argmin" ? "<" : ">", $state->conf);
             return ["[null, [null]]",
 "if (~l1~ !== null && (~r~[0] === null || ~l1~ $cmp ~r~[0])) {
   ~r~[0] = ~l1~;
@@ -422,7 +422,7 @@ class AggregateFexpr extends Fexpr {
                 $q = "0.5";
             else {
                 $q = $state->_addltemp($this->args[1]->compile($state));
-                if ($this->format_comparator("<") == ">")
+                if ($this->format_comparator("<", $state->conf) == ">")
                     $q = "1 - $q";
             }
             return ["[]", "if (~l~ !== null)\n  array_push(~r~, ~l~);",
