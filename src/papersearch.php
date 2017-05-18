@@ -2581,7 +2581,7 @@ class PaperSearch {
                         $qo[] = new OptionMatcher($o, $ocompar, $xval);
                 }
 
-        return (object) array("os" => $qo, "warn" => $warn, "negate" => $oname === "none");
+        return (object) array("os" => $qo, "warn" => $warn, "negate" => $oname === "none", "value_word" => $oval);
     }
 
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {

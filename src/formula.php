@@ -1311,13 +1311,12 @@ class Formula {
             $os->warn[] = "“" . htmlspecialchars($text) . "” doesn’t match a submission option.";
         foreach ($os->warn as $w)
             $this->_error_html[] = $w;
-        if (empty($os->os))
-            return null;
+        $e = null;
         foreach ($os->os as $o) {
             $ex = new OptionFexpr($o->option);
             if ($o->kind)
                 $this->_error_html[] = "“" . htmlspecialchars($text) . "” can’t be used in formulas.";
-            else if ($o->value_word === "")
+            else if ($os->value_word === "")
                 /* stick with raw option fexpr */;
             else if (is_array($o->value) && $o->compar === "!=")
                 $ex = new NegateFexpr(new InFexpr($ex, $o->value));
@@ -1328,7 +1327,7 @@ class Formula {
                                 $ex, new ConstantFexpr($o->value, $o->option));
             $e = $e ? new Fexpr("||", $e, $ex) : $ex;
         }
-        if ($os->negate)
+        if ($e && $os->negate)
             $e = new NegateFexpr($e);
         return $e;
     }
