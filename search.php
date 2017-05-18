@@ -377,7 +377,7 @@ if ($pl) {
 
     // Row numbers
     if ($pl->has("sel"))
-        $display_options->checkbox_item(1, "rownum", "Row numbers", ["onchange" => "fold('pl',!this.checked,'rownum')"]);
+        $display_options->checkbox_item(1, "rownum", "Row numbers", ["onchange" => "fold('pl',!this.checked,6,'rownum')"]);
 
     // Options
     /*foreach ($Conf->paper_opts->option_list() as $ox)
@@ -600,7 +600,7 @@ if ($pl && $pl->count > 0) {
         echo "<td class='padlb'>",
             Ht::checkbox("showforce", 1, !!$Qreq->forceShow,
                           array("id" => "showforce",
-                                "onchange" => "fold('pl',!this.checked,'force');$('#forceShow').val(this.checked?1:0)")),
+                                "onchange" => "fold('pl',!this.checked,5,'force');$('#forceShow').val(this.checked?1:0)")),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     // Edit formulas link
