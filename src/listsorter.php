@@ -61,9 +61,6 @@ class ListSorter {
                     $sort->score = $x;
         } else
             $sort = PaperSearch::parse_sorter($text);
-
-        if ($sort->score === null)
-            $sort->score = self::default_score_sort();
         return $sort;
     }
 
