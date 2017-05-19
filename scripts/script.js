@@ -232,6 +232,22 @@ window.escape_entities = (function () {
     };
 })();
 
+window.urlencode = (function () {
+    var re = /%20|[!~*'()]/g;
+    var rep = {"%20": "+", "!": "%21", "~": "%7E", "*": "%2A", "'": "%27", "(": "%28", ")": "%29"};
+    return function (s) {
+        if (s === null || typeof s === "number")
+            return s;
+        return encodeURIComponent(s).replace(re, function (match) { return rep[match]; });
+    };
+})();
+
+window.urldecode = function (s) {
+    if (s === null || typeof s === "number")
+        return s;
+    return decodeURIComponent(s.replace(/\+/g, "%20"));
+};
+
 function text_to_html(text) {
     var n = document.createElement("div");
     n.appendChild(document.createTextNode(text));
@@ -4104,29 +4120,45 @@ function same_ids(tbl, ids) {
     return tbl_ids.join(" ") === ids.join(" ");
 }
 
-function href_sorter(href) {
-    var m = /[?&;]sort=([^=&;]*)/.exec(href);
-    return m ? m[1] : "";
+function href_sorter(href, newval) {
+    var re = /([?&;]sort=)([^=&;]*)/;
+    if (newval == null) {
+        var m = re.exec(href);
+        return m ? urldecode(m[2]) : null;
+    } else
+        return href.replace(re, function (all, first) {
+            return first + urlencode(newval);
+        });
+}
+
+function sorter_toggle_reverse(sorter, toggle) {
+    var xsorter = sorter.replace(/[ +]+reverse\b/, "");
+    if (toggle == null)
+        toggle = xsorter == sorter;
+    return xsorter + (toggle ? " reverse" : "");
 }
 
 function search_sort_success(tbl, href, data) {
     reorder(tbl, data.ids, data.groups, true);
     $(tbl).data("groups", data.groups);
     tbl.setAttribute("data-hotlist", data.hotlist_info || "");
-    var want_sorter = href_sorter(href);
-    var want_sortclass = want_sorter.replace(/\+reverse$/, "");
-    var want_revsortclass = want_sortclass + "+reverse";
+    var want_sorter = href_sorter(href),
+        want_fwd_sorter = sorter_toggle_reverse(want_sorter, false);
     var $sorters = $(tbl).children("thead").find("a.pl_sort");
     $sorters.removeClass("pl_sorting_fwd pl_sorting_rev")
         .each(function () {
             var href = this.getAttribute("href"),
-                have_sorter = href_sorter(href);
-            if (have_sorter === want_sortclass || have_sorter === want_revsortclass) {
-                var reversed = want_sorter === want_revsortclass;
-                $(this).addClass(reversed ? "pl_sorting_rev" : "pl_sorting_fwd");
-                this.setAttribute("href", href.replace(/([?&;])sort=[^=&;]*/, "$1sort=" + (reversed ? want_sortclass : want_revsortclass)));
-            } else
-                this.setAttribute("href", href.replace(/([?&;]sort=[^=&;]*)\+reverse(?=[&;]|$)/, "$1"));
+                sorter = sorter_toggle_reverse(href_sorter(href), false);
+            if (sorter === want_fwd_sorter) {
+                var reversed = want_sorter !== want_fwd_sorter;
+                if (reversed)
+                    $(this).addClass("pl_sorting_rev");
+                else {
+                    $(this).addClass("pl_sorting_fwd");
+                    sorter = sorter_toggle_reverse(sorter, true);
+                }
+            }
+            this.setAttribute("href", href_sorter(href, sorter));
         });
 }
 
@@ -4144,19 +4176,16 @@ function search_sort_save_state(replace, tbl, href) {
     };
     if (!href_sorter(href)) {
         var $sorters = $(tbl).children("thead").find("a.pl_sorting_fwd, a.pl_sorting_rev");
-        var active_href = $sorters.length && href_sorter($sorters[0].getAttribute("href"));
-        if (active_href)
-            state.href += "&sort=" + encodeURIComponent(active_href.replace(/\+reverse$/, ""));
+        var active_sorter = $sorters.length && href_sorter($sorters[0].getAttribute("href"));
+        if (active_sorter)
+            state.href = href_sorter(state.href + "&sort=", sorter_toggle_reverse(active_sorter, false));
     }
     history[replace ? "replaceState" : "pushState"](state, document.title, href);
 }
 
-function search_sort_click(evt) {
-    var self = this, href = self.getAttribute("href"), m;
-    if (!event_key.is_default_a(evt)
-        || !href || !(m = /search(?:\.php)?(\?.*)/.exec(href)))
-        return true;
-    $.ajax(hoturl("api/search", m[1]), {
+function search_sort_url(self, href) {
+    var urlparts = /search(?:\.php)?(\?.*)/.exec(href)[1];
+    $.ajax(hoturl("api/search", urlparts), {
         method: "GET", cache: false,
         success: function (data) {
             var tbl = $(self).closest("table")[0];
@@ -4167,6 +4196,31 @@ function search_sort_click(evt) {
                 search_sort_save_state(false, tbl, href);
             } else
                 window.location = href;
+        }
+    });
+}
+
+function search_sort_click(evt) {
+    var href;
+    if (event_key.is_default_a(evt)
+        && (href = this.getAttribute("href"))
+        && /search(?:\.php)?\?/.test(href)) {
+        search_sort_url(this, href);
+        return false;
+    } else
+        return true;
+}
+
+function search_scoresort_change(evt) {
+    var scoresort = $(this).val(), re = / (?:counts|average|median|variance|maxmin|my)\b/;
+    plinfo.set_scoresort(scoresort);
+    $("#foldpl > thead").find("a.pl_sort").each(function () {
+        var href = this.getAttribute("href"), sorter = href_sorter(href);
+        if (re.test(sorter)) {
+            sorter = sorter.replace(re, " " + scoresort);
+            this.setAttribute("href", href_sorter(href, sorter));
+            if (/\bpl_sorting_(?:fwd|rev)/.test(this.className))
+                search_sort_url(this, href_sorter(href, sorter_toggle_reverse(sorter)));
         }
     });
     return false;
@@ -4181,6 +4235,7 @@ if ("pushState" in window.history) {
             && (tbl = document.getElementById(state.tableId)))
             search_sort_success(tbl, state.href, state);
     });
+    $(function () { $("#scoresort").on("change", search_scoresort_change) });
 }
 
 
@@ -5202,7 +5257,7 @@ function add_column(f) {
     var classes = (f.className || 'pl_' + f.name) + ' fx' + f.foldnum,
         classEnd = ' class="pl ' + classes + '"', h = f.title, stmpl;
     if (f.sort_name && (stmpl = self.getAttribute("data-sort-url-template"))) {
-        stmpl = stmpl.replace(/\{sort\}/, encodeURIComponent(f.sort_name));
+        stmpl = stmpl.replace(/\{sort\}/, urlencode(f.sort_name));
         h = '<a class="pl_sort" rel="nofollow" href="' + escape_entities(stmpl) + '">' + h + '</a>';
     }
     h = '<th' + classEnd + '>' + h + '</th>';
@@ -5377,6 +5432,14 @@ plinfo.set_fields = function (fo) {
     }
     if (fields.authors)
         fields.au = fields.anonau = fields.aufull = fields.authors;
+};
+plinfo.set_scoresort = function (ss) {
+    var re = / (?:counts|average|median|variance|minmax|my)$/;
+    for (var i = 0; i < field_order.length; ++i) {
+        var f = field_order[i];
+        if (f.sort_name)
+            f.sort_name = f.sort_name.replace(re, " " + ss);
+    }
 };
 
 plinfo.render_needed = render_needed;
