@@ -324,7 +324,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     and (reviewSubmitted is not null or timeSubmitted>0)
     group by PaperReview.reviewId>0");
     if (($myrow = edb_orow($result)))
-        $myrow->mean_score = ScoreInfo::mean_of($myrow->scores);
+        $myrow->mean_score = ScoreInfo::mean_of($myrow->scores, true);
     Dbl::free($result);
 
     // Information about PC reviews
@@ -341,7 +341,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             if ($row[0]) {
                 $sumpcSubmit += $row[0];
                 ++$npcScore;
-                $sumpcScore += ScoreInfo::mean_of($row[1]);
+                $sumpcScore += ScoreInfo::mean_of($row[1], true);
             }
         }
         Dbl::free($result);

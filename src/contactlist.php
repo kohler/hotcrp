@@ -204,7 +204,7 @@ class ContactList {
                     $scoresort = "A";
                 Contact::$allow_nonexistent_properties = true;
                 foreach ($rows as $row) {
-                    $scoreinfo = new ScoreInfo(get($row, $fieldId));
+                    $scoreinfo = new ScoreInfo(get($row, $fieldId), true);
                     $row->_sort_info = $scoreinfo->sort_data($scoresort);
                     $row->_sort_avg = $scoreinfo->mean();
                 }

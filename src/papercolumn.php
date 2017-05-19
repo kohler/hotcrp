@@ -1403,7 +1403,7 @@ class Score_PaperColumn extends PaperColumn {
         $field = $this->form_field;
         foreach ($rows as $row)
             if (($scores = $row->viewable_scores($field, $pl->contact, null)) !== null) {
-                $scoreinfo = new ScoreInfo($scores);
+                $scoreinfo = new ScoreInfo($scores, true);
                 $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
                 $row->$avginfo = $scoreinfo->mean();
             } else
@@ -1518,7 +1518,7 @@ class FormulaGraph_PaperColumn extends PaperColumn {
         $reviewer = $pl->reviewer_cid();
         foreach ($rows as $row)
             if (($scores = $this->scores($pl, $row, false))) {
-                $scoreinfo = new ScoreInfo($scores);
+                $scoreinfo = new ScoreInfo($scores, true);
                 $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
                 $row->$avginfo = $scoreinfo->mean();
             } else

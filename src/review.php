@@ -284,7 +284,7 @@ class ReviewField implements Abbreviatable {
         $max = count($this->options);
 
         if (!is_object($v))
-            $v = new ScoreInfo($v);
+            $v = new ScoreInfo($v, true);
         $counts = $v->counts($max);
 
         $avgtext = $this->unparse_average($v->mean());

@@ -10,6 +10,7 @@ class ScoreInfo {
     private $_sum = 0;
     private $_sumsq = 0;
     private $_n = 0;
+    private $_positive;
 
     const COUNT = 0;
     const MEAN = 1;
@@ -21,7 +22,8 @@ class ScoreInfo {
     static public $stat_names = ["Count", "Mean", "Median", "Total", "Variance", "Standard deviation"];
     static public $stat_keys = ["count", "mean", "median", "total", "var_p", "stddev_p"];
 
-    function __construct($data = null) {
+    function __construct($data = null, $positive = false) {
+        $this->_positive = $positive;
         if (is_array($data)) {
             foreach ($data as $key => $x)
                 $this->add($x, $key);
@@ -32,30 +34,33 @@ class ScoreInfo {
         }
     }
 
-    static function mean_of($data) {
+    static function mean_of($data, $positive = false) {
         $n = $sum = 0;
         if (is_array($data)) {
             foreach ($data as $x)
-                if ($x !== null) {
+                if ($x !== null && (!$positive || $x > 0)) {
                     ++$n;
                     $sum += +$x;
                 }
         } else if (is_string($data) && $data !== "") {
             foreach (preg_split('/[\s,]+/', $data) as $x)
                 if ($x !== "" && is_numeric($x)) {
-                    ++$n;
-                    $sum += +$x;
+                    $x = +$x;
+                    if (!$positive || $x > 0) {
+                        ++$n;
+                        $sum += +$x;
+                    }
                 }
         }
         return $n ? $sum / $n : null;
     }
 
     function add($x, $key = null) {
-        if ($x !== null) {
+        if (is_bool($x))
+            $x = +$x;
+        if ($x !== null && (!$this->_positive || $x > 0)) {
             if ($this->_keyed && $key === null)
                 $this->_keyed = false;
-            if (is_bool($x))
-                $x = +$x;
             if ($this->_keyed)
                 $this->_scores[$key] = $x;
             else
