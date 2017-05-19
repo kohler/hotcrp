@@ -136,7 +136,6 @@ class PaperList {
     public $qopts; // set by PaperColumn::prepare
     private $_header_script = "";
     private $_header_script_map = [];
-    private $default_sort_column;
 
     // collected during render and exported to caller
     public $count; // also exported to columns access: 1 more than row index
@@ -908,40 +907,24 @@ class PaperList {
             $sort_url = htmlspecialchars(Navigation::siteurl() . $url)
                 . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
 
-        $defsortname = null;
-        if (isset($fdef->is_selector) && $sort_url
-            && $this->default_sort_column->name !== "id")
-            $defsortname = $this->default_sort_column->sort_name();
-
-        $tooltip = "";
-        if ($defsortname == "searchsort") {
-            $tooltip = "Sort by search term order";
-            $t = "#";
-        }
-
         $s0sort_name = null;
         if (!empty($this->sorters[0]) && $this->sorters[0]->thenmap === null)
             $s0sort_name = $this->sorters[0]->field->sort_name();
         if ($s0sort_name
-            && ((($fdef->name == $s0sort_name
-                  || $fdef->name == "edit" . $s0sort_name
-                  || $fdef->name == $this->sorters[0]->type
-                  || $fdef->name == "edit" . $this->sorters[0]->type)
-                 && $sort_url)
-                || $defsortname == $s0sort_name)) {
+            && ($fdef->name == $s0sort_name
+                || $fdef->name == "edit" . $s0sort_name
+                || $fdef->name == $this->sorters[0]->type
+                || $fdef->name == "edit" . $this->sorters[0]->type)
+            && $sort_url) {
             $s0 = $this->sorters[0];
             $sort_class = "pl_sort pl_sorting" . ($s0->reverse ? "_rev" : "_fwd");
             $sort_url .= urlencode($s0sort_name . ($s0->reverse ? "" : " reverse"));
         } else if ($fdef->sort && $sort_url)
             $sort_url .= urlencode($fdef->sort_name());
-        else if ($defsortname)
-            $sort_url .= urlencode($defsortname);
         else
             $sort_url = false;
 
-        if ($sort_url && $tooltip)
-            $t = '<a class="' . $sort_class . ' need-tooltip" rel="nofollow" data-tooltip="' . $tooltip . '" data-tooltip-dir="b" href="' . $sort_url . '">' . $t . '</a>';
-        else if ($sort_url)
+        if ($sort_url)
             $t = '<a class="' . $sort_class . '" rel="nofollow" href="' . $sort_url . '">' . $t . '</a>';
         return $t;
     }
@@ -1129,7 +1112,6 @@ class PaperList {
     }
 
     private function _prepare_sort() {
-        $this->default_sort_column = $this->find_column("id");
         if (!empty($this->sorters))
             $this->sorters[0]->field = null;
 
@@ -1164,7 +1146,7 @@ class PaperList {
                  && $c->prepare($this, PaperColumn::PREP_SORT))
             $this->sorters[0]->field = $c->realize($this);
         else
-            $this->sorters[0]->field = $this->default_sort_column;
+            $this->sorters[0]->field = $this->find_column("id");
         if (!empty($this->sorters))
             $this->sorters[0]->type = $this->sorters[0]->field->name;
 
