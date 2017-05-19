@@ -2631,9 +2631,11 @@ class PaperSearch {
             self::$_sort_keywords =
                 ["by" => "by", "up" => "up", "down" => "down",
                  "reverse" => "down", "reversed" => "down",
-                 "count" => "C", "counts" => "C", "av" => "A", "ave" => "A",
-                 "average" => "A", "avg" => "A", "med" => "E", "median" => "E",
-                 "var" => "V", "variance" => "V", "max-min" => "D",
+                 "counts" => "C", "count" => "C",
+                 "average" => "A", "avg" => "A", "av" => "A", "ave" => "A",
+                 "median" => "E", "med" => "E",
+                 "variance" => "V", "var" => "V",
+                 "maxmin" => "D", "max-min" => "D",
                  "my" => "Y", "score" => ""];
 
         $text = simplify_whitespace($text);
