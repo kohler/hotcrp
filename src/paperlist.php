@@ -5,8 +5,6 @@
 
 class PaperListRenderState {
     public $row_folded = null;
-    public $has_openau = false;
-    public $has_anonau = false;
     public $colorindex = 0;
     public $hascolors = false;
     public $skipcallout;
@@ -813,13 +811,11 @@ class PaperList {
         // extension columns
         $tt = "";
         foreach ($fieldDef as $fdef) {
-            if (!$fdef->viewable_row())
-                continue;
-            $is_authors = $fdef->name === "authors";
-            if ($fdef->is_folded && $fdef->has_content && !$is_authors)
+            if (!$fdef->viewable_row()
+                || ($fdef->is_folded && $fdef->has_content))
                 continue;
             $empty = $fdef->content_empty($this, $row);
-            if ($fdef->is_folded && !$is_authors)
+            if ($fdef->is_folded)
                 $fdef->has_content = !$empty;
             else {
                 $c = $empty ? "" : $fdef->content($this, $row);
@@ -833,15 +829,7 @@ class PaperList {
                     }
                 }
                 $tt .= "<div class=\"" . $fdef->className;
-                if ($is_authors) {
-                    $tt .= " fx1";
-                    if ($this->contact->can_view_authors($row, false))
-                        $rstate->has_openau = true;
-                    else {
-                        $tt .= " fx2";
-                        $rstate->has_anonau = true;
-                    }
-                } else if ($fdef->fold)
+                if ($fdef->fold)
                     $tt .= " fx" . $fdef->fold;
                 $tt .= "\">" . $c . "</div>";
             }
@@ -978,10 +966,10 @@ class PaperList {
                         $has_statistics = true;
                 }
             }
-            if ($fdef->is_folded && $fdef->has_content)
-                $j["loadable"] = true;
-            if ($fdef->is_folded && $fdef->name !== "authors")
+            if ($fdef->is_folded)
                 $j["missing"] = true;
+            if ($fdef->has_content && $fdef->is_folded)
+                $j["loadable"] = true;
             if ($fdef->fold)
                 $j["foldnum"] = $fdef->fold;
             $fdef->annotate_field_js($this, $j);
@@ -994,11 +982,11 @@ class PaperList {
                 $has_sel = true;
         }
         // authorship requires special handling
-        if ($rstate->has_openau || $rstate->has_anonau) {
+        if ($this->has("authors")) {
             $classes[] = "fold1" . ($this->is_folded("authors") ? "c" : "o");
             $jsmap[] = "\"au\":1,\"aufull\":4";
         }
-        if ($rstate->has_anonau) {
+        if ($this->has("anonau")) {
             $classes[] = "fold2" . ($this->is_folded("anonau") ? "c" : "o");
             $jsmap[] = "\"anonau\":2";
         }
@@ -1030,13 +1018,13 @@ class PaperList {
         $titleextra = "";
         if (isset($rstate->row_folded))
             $titleextra .= '<span class="sep"></span><a class="fn3" href="#" onclick="return fold(\'pl\',0,3)">Show all papers</a><a class="fx3" href="#" onclick="return fold(\'pl\',1,3)">Hide unlikely conflicts</a>';
-        if (($rstate->has_openau || $rstate->has_anonau) && $show_links) {
+        if ($this->has("authors") && $show_links) {
             $titleextra .= "<span class='sep'></span>";
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER)
                 $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
-            else if ($this->contact->privChair && $rstate->has_anonau && !$rstate->has_openau)
+            else if ($this->contact->is_manager() && !$this->has("openau"))
                 $titleextra .= '<a class="fn1 fn2" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',false)">Show authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
-            else if ($this->contact->privChair && $rstate->has_anonau)
+            else if ($this->contact->is_manager() && $this->has("anonau"))
                 $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',true)">Show non-anonymous authors</a><a class="fx1 fn2" href="#" onclick="return plinfo(\'anonau\',false)">Show all authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
             else
                 $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show non-anonymous authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
@@ -1339,7 +1327,7 @@ class PaperList {
             if ($fdef->viewable()) {
                 $fieldDef[] = $fdef;
                 $this->columns[$fdef->name] = true;
-                if ($fdef->fold) {
+                if ($fdef->fold === true) {
                     $fdef->fold = $next_fold;
                     ++$next_fold;
                 }
@@ -1386,6 +1374,22 @@ class PaperList {
         }
         if ($grouppos >= 0 && $grouppos < count($this->groups))
             $this->_groups_for($grouppos, $rstate, $body, true);
+
+        // analyze `has`, including authors
+        foreach ($fieldDef as $fdef)
+            if ($fdef->has_content)
+                $this->_has[$fdef->name] = true;
+        if (isset($this->_has["authors"])) {
+            if (!$this->contact->is_manager())
+                $this->_has["openau"] = true;
+            else {
+                foreach ($rows as $row)
+                    if ($this->contact->can_view_authors($row, false))
+                        $this->_has["openau"] = true;
+                    else if ($this->contact->can_view_authors($row, true))
+                        $this->_has["anonau"] = true;
+            }
+        }
 
         // header cells
         $colhead = "";
@@ -1485,14 +1489,6 @@ class PaperList {
         // header scripts to set up delegations
         if ($this->_header_script)
             $enter .= '  <script>' . $this->_header_script . "</script>\n";
-
-        foreach ($fieldDef as $fdef)
-            if ($fdef->has_content && !isset($this->_has[$fdef->name]))
-                $this->_has[$fdef->name] = true;
-        if ($rstate->has_openau)
-            $this->_has["openau"] = true;
-        if ($rstate->has_anonau)
-            $this->_has["anonau"] = true;
 
         return $enter . join("", $body) . " </tbody>\n" . $exit;
     }

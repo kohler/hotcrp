@@ -441,6 +441,7 @@ class AuthorsPaperColumn extends PaperColumn {
     private $aufull;
     private $anonau;
     private $highlight;
+    private $forceable;
     function __construct($cj) {
         parent::__construct($cj);
     }
@@ -451,6 +452,7 @@ class AuthorsPaperColumn extends PaperColumn {
         $this->aufull = !$pl->is_folded("aufull");
         $this->anonau = !$pl->is_folded("anonau");
         $this->highlight = $pl->search->field_highlighter("authorInformation");
+        $this->forceable = $pl->contact->is_manager() ? true : null;
         return $pl->contact->can_view_some_authors();
     }
     private function affiliation_map($row) {
@@ -470,14 +472,14 @@ class AuthorsPaperColumn extends PaperColumn {
         return $aff;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->can_view_authors($row, true);
+        return !$pl->contact->can_view_authors($row, $this->forceable);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $out = [];
         if (!$this->highlight && !$this->aufull) {
             foreach ($row->author_list() as $au)
                 $out[] = $au->abbrevname_html();
-            return join(", ", $out);
+            $t = join(", ", $out);
         } else {
             $affmap = $this->affiliation_map($row);
             $aus = $affout = [];
@@ -502,8 +504,11 @@ class AuthorsPaperColumn extends PaperColumn {
                 foreach ($out as $i => &$x)
                     $x .= ' <span class="auaff">(' . $affout[$i] . ')</span>';
             }
-            return join($any_affhl || $this->aufull ? "; " : ", ", $out);
+            $t = join($any_affhl || $this->aufull ? "; " : ", ", $out);
         }
+        if ($this->forceable && !$pl->contact->can_view_authors($row, false))
+            $t = '<div class="fx2">' . $t . '</div>';
+        return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
         if (!$pl->contact->can_view_authors($row) && !$this->anonau)

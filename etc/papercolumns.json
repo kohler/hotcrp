@@ -145,7 +145,7 @@
     },
     {
         "name": "authors",
-        "row": true, "fold": true, "completion": true, "factory_class": "AuthorsPaperColumn",
+        "row": true, "fold": 1, "completion": true, "factory_class": "AuthorsPaperColumn",
         "synonym": "au", "priority": 150
     },
     {
