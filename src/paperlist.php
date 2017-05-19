@@ -898,10 +898,9 @@ class PaperList {
     }
 
     private function _field_title($fdef) {
-        if (!$fdef->viewable_column())
-            return $fdef->header($this, false);
-
         $t = $fdef->header($this, false);
+        if (!$fdef->viewable_column())
+            return $t;
 
         $sort_url = $q = false;
         $sort_class = "pl_sort";
@@ -952,7 +951,8 @@ class PaperList {
         $has_sel = false;
         $has_statistics = $has_loadable_statistics = false;
         foreach ($fieldDef as $fdef) {
-            $j = ["name" => $fdef->name, "title" => $this->_field_title($fdef),
+            $j = ["name" => $fdef->name,
+                  "title" => $fdef->header($this, false),
                   "priority" => $fdef->priority];
             if ($fdef->className != "pl_" . $fdef->name)
                 $j["className"] = $fdef->className;
@@ -965,6 +965,8 @@ class PaperList {
                     if ($fdef->has_content && !$fdef->is_folded)
                         $has_statistics = true;
                 }
+                if ($fdef->sort)
+                    $j["sort_name"] = $fdef->sort_name();
             }
             if ($fdef->is_folded)
                 $j["missing"] = true;
@@ -1454,6 +1456,10 @@ class PaperList {
             $enter .= "\" $k=\"" . htmlspecialchars($v);
         if (get($options, "list"))
             $enter .= "\" data-hotlist=\"" . htmlspecialchars($this->session_list_object()->info_string());
+        if ($this->sortable && ($url = $this->search->url_site_relative_raw())) {
+            $url = Navigation::siteurl() . $url . (strpos($url, "?") ? "&" : "?") . "sort={sort}";
+            $enter .= "\" data-sort-url-template=\"" . htmlspecialchars($url);
+        }
         $enter .= "\" data-fold=\"true\">\n";
         if (self::$include_stash)
             $enter .= Ht::unstash();

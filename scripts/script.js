@@ -5200,8 +5200,12 @@ function add_column(f) {
         this.setAttribute("colspan", +this.getAttribute("colspan") + 1);
     });
     var classes = (f.className || 'pl_' + f.name) + ' fx' + f.foldnum,
-        classEnd = ' class="pl ' + classes + '"',
-        h = '<th' + classEnd + '>' + f.title + '</th>';
+        classEnd = ' class="pl ' + classes + '"', h = f.title, stmpl;
+    if (f.sort_name && (stmpl = self.getAttribute("data-sort-url-template"))) {
+        stmpl = stmpl.replace(/\{sort\}/, encodeURIComponent(f.sort_name));
+        h = '<a class="pl_sort" rel="nofollow" href="' + escape_entities(stmpl) + '">' + h + '</a>';
+    }
+    h = '<th' + classEnd + '>' + h + '</th>';
     $j.find("thead > tr.pl_headrow:first-child").each(function () {
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
