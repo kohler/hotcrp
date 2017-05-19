@@ -161,11 +161,11 @@ class PaperList {
 
         $this->sortable = isset($args["sort"]) && $args["sort"];
         if ($this->sortable && is_string($args["sort"]))
-            $this->sorters[] = ListSorter::parse_sorter($args["sort"]);
+            $this->sorters[] = PaperSearch::parse_sorter($args["sort"]);
         else if ($this->sortable && $qreq->sort)
-            $this->sorters[] = ListSorter::parse_sorter($qreq->sort);
+            $this->sorters[] = PaperSearch::parse_sorter($qreq->sort);
         else
-            $this->sorters[] = ListSorter::parse_sorter("");
+            $this->sorters[] = PaperSearch::parse_sorter("");
 
         $this->foldable = $this->sortable || !!get($args, "foldable")
             || $this->contact->privChair /* “Override conflicts” fold */;
@@ -898,41 +898,33 @@ class PaperList {
 
     private function _field_title($fdef) {
         $t = $fdef->header($this, false);
-        if (!$fdef->viewable_column())
+        if (!$fdef->viewable_column()
+            || !$fdef->sort
+            || !$this->sortable
+            || !($sort_url = $this->search->url_site_relative_raw()))
             return $t;
 
-        $sort_url = $q = false;
+        $default_score_sort = ListSorter::default_score_sort($this->conf);
+        $sort_name = $fdef->sort_name($default_score_sort);
+        $sort_url = htmlspecialchars(Navigation::siteurl() . $sort_url)
+            . (strpos($sort_url, "?") ? "&amp;" : "?") . "sort=" . urlencode($sort_name);
+        $s0 = get($this->sorters, 0);
+
         $sort_class = "pl_sort";
-        if ($this->sortable && ($url = $this->search->url_site_relative_raw()))
-            $sort_url = htmlspecialchars(Navigation::siteurl() . $url)
-                . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-
-        $s0sort_name = null;
-        if (!empty($this->sorters[0]) && $this->sorters[0]->thenmap === null)
-            $s0sort_name = $this->sorters[0]->field->sort_name();
-        if ($s0sort_name
-            && ($fdef->name == $s0sort_name
-                || $fdef->name == "edit" . $s0sort_name
-                || $fdef->name == $this->sorters[0]->type
-                || $fdef->name == "edit" . $this->sorters[0]->type)
-            && $sort_url) {
-            $s0 = $this->sorters[0];
+        if ($s0 && $s0->thenmap === null
+            && $sort_name === $s0->field->sort_name($s0->score ? : $default_score_sort)) {
             $sort_class = "pl_sort pl_sorting" . ($s0->reverse ? "_rev" : "_fwd");
-            $sort_url .= urlencode($s0sort_name . ($s0->reverse ? "" : " reverse"));
-        } else if ($fdef->sort && $sort_url)
-            $sort_url .= urlencode($fdef->sort_name());
-        else
-            $sort_url = false;
+            $sort_url .= $s0->reverse ? "" : urlencode(" reverse");
+        }
 
-        if ($sort_url)
-            $t = '<a class="' . $sort_class . '" rel="nofollow" href="' . $sort_url . '">' . $t . '</a>';
-        return $t;
+        return '<a class="' . $sort_class . '" rel="nofollow" href="' . $sort_url . '">' . $t . '</a>';
     }
 
     private function _analyze_folds($rstate, $fieldDef) {
         $classes = $jsmap = $jscol = array();
         $has_sel = false;
         $has_statistics = $has_loadable_statistics = false;
+        $default_score_sort = ListSorter::default_score_sort($this->conf);
         foreach ($fieldDef as $fdef) {
             $j = ["name" => $fdef->name,
                   "title" => $fdef->header($this, false),
@@ -949,7 +941,7 @@ class PaperList {
                         $has_statistics = true;
                 }
                 if ($fdef->sort)
-                    $j["sort_name"] = $fdef->sort_name();
+                    $j["sort_name"] = $fdef->sort_name($default_score_sort);
             }
             if ($fdef->is_folded)
                 $j["missing"] = true;
@@ -1155,7 +1147,7 @@ class PaperList {
             if ($s->reverse === null)
                 $s->reverse = false;
             if ($s->score === null)
-                $s->score = ListSorter::default_score_sort();
+                $s->score = ListSorter::default_score_sort($this->conf);
         }
     }
 

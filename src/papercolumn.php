@@ -169,7 +169,7 @@ class PaperColumn extends Column {
     function completion_name() {
         return $this->completion ? $this->name : false;
     }
-    function sort_name() {
+    function sort_name($score_sort) {
         return $this->name;
     }
     function alternate_display_name() {
@@ -906,6 +906,9 @@ class PreferencePaperColumn extends PaperColumn {
     function completion_name() {
         return $this->name ? : "pref:<user>";
     }
+    function sort_name($score_sort) {
+        return "pref";
+    }
     private function preference_values($row) {
         if ($this->careful && !$this->viewer_contact->allow_administer($row))
             return [null, null];
@@ -1270,6 +1273,9 @@ class Tag_PaperColumn extends PaperColumn {
     function completion_name() {
         return "#$this->dtag";
     }
+    function sort_name($score_sort) {
+        return "#$this->dtag";
+    }
     function sort_prepare($pl, &$rows, $sorter) {
         $sorter->sortf = $sortf = "_tag_sort_info." . self::$sortf_ctr;
         ++self::$sortf_ctr;
@@ -1382,6 +1388,10 @@ class Score_PaperColumn extends PaperColumn {
         parent::__construct(["name" => $form_field->abbreviation()] + (array) $cj);
         $this->score = $form_field->id;
         $this->form_field = $form_field;
+    }
+    function sort_name($score_sort) {
+        $score_sort = ListSorter::canonical_long_score_sort($score_sort);
+        return $this->name . ($score_sort ? " $score_sort" : "");
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
@@ -1709,7 +1719,7 @@ class Formula_PaperColumn extends PaperColumn {
         else
             return $this->formula->name;
     }
-    function sort_name() {
+    function sort_name($score_sort) {
         return $this->formula->name ? : $this->formula->expression;
     }
     function prepare(PaperList $pl, $visible) {

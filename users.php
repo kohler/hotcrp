@@ -270,9 +270,9 @@ if (isset($_REQUEST["redisplay"])) {
         if ($f->has_options)
             displayOptionsSet("uldisplay", $f->id, defval($_REQUEST, "show{$f->id}", 0));
 }
-if (isset($_REQUEST["scoresort"])
-    && ($_REQUEST["scoresort"] == "A" || $_REQUEST["scoresort"] == "V"
-        || $_REQUEST["scoresort"] == "D"))
+if (isset($_REQUEST["scoresort"]))
+    $_REQUEST["scoresort"] = ListSorter::canonical_short_score_sort($_REQUEST["scoresort"]);
+if (isset($_REQUEST["scoresort"]))
     $Conf->save_session("scoresort", $_REQUEST["scoresort"]);
 
 
@@ -334,12 +334,13 @@ if (count($tOpt) > 1) {
     }
     echo "<td>", Ht::submit("redisplay", "Redisplay"), "</td></tr>\n";
     if (isset($pl->scoreMax)) {
-        $ss = array();
-        foreach (array("A", "V", "D") as $k) /* ghetto array_intersect_key */
-            if (isset(ListSorter::$score_sorts[$k]))
-                $ss[$k] = ListSorter::$score_sorts[$k];
+        $ss = [];
+        foreach (ListSorter::score_sort_selector_options() as $k => $v)
+            if (in_array($k, ["average", "variance", "maxmin"]))
+                $ss[$k] = $v;
         echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
-            Ht::select("scoresort", $ss, $Conf->session("scoresort", "A")),
+            Ht::select("scoresort", $ss,
+                       ListSorter::canonical_long_score_sort($Conf->session("scoresort", "A"))),
             "</td></tr>";
     }
     echo "</table></div></form>";

@@ -66,12 +66,16 @@ if ($Qreq->redisplay) {
     $Conf->save_session("pldisplay", $pld);
 }
 displayOptionsSet("pldisplay");
-if ($Qreq->scoresort == "M")
-    $Qreq->scoresort = "C";
-if ($Qreq->scoresort && isset(ListSorter::$score_sorts[$Qreq->scoresort]))
+if ($Qreq->scoresort)
+    $Qreq->scoresort = ListSorter::canonical_short_score_sort($Qreq->scoresort);
+else if ($Qreq->sort
+         && ($s = PaperSearch::parse_sorter($Qreq->sort))
+         && $s->score)
+    $Qreq->scoresort = ListSorter::canonical_short_score_sort($s->score);
+if ($Qreq->scoresort)
     $Conf->save_session("scoresort", $Qreq->scoresort);
 if (!$Conf->session("scoresort"))
-    $Conf->save_session("scoresort", ListSorter::default_score_sort());
+    $Conf->save_session("scoresort", ListSorter::default_score_sort($Conf));
 if ($Qreq->redisplay) {
     $forceShow = $Qreq->forceShow || $Qreq->showforce;
     SelfHref::redirect($Qreq, ["tab" => "display", "forceShow" => $forceShow ? : null]);
@@ -425,7 +429,8 @@ if ($pl) {
             if ($Me->privChair)
                 $onchange .= ";plinfo.extra()";
             $sortitem = '<div style="padding-top:1ex">Sort by: &nbsp;'
-                . Ht::select("scoresort", ListSorter::$score_sorts, $Conf->session("scoresort"),
+                . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
+                             ListSorter::canonical_long_score_sort($Conf->session("scoresort")),
                              ["id" => "scoresort", "onchange" => $onchange, "style" => "font-size:100%"])
                 . '<a class="help" href="' . hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
             $display_options->item(30, $sortitem);
@@ -620,7 +625,7 @@ if ($pl && $pl->count > 0) {
         $pld = explode(" ", trim($Conf->setting_data("pldisplay_default", " overAllMerit ")));
         sort($pld);
         if ($Conf->session("pldisplay") != " " . ltrim(join(" ", $pld) . " ")
-            || $Conf->session("scoresort") != ListSorter::default_score_sort(true))
+            || $Conf->session("scoresort") != ListSorter::default_score_sort($Conf, true))
             Ht::stash_script("plinfo.extra()");
     }
 

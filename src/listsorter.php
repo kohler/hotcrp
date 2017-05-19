@@ -29,42 +29,45 @@ class ListSorter {
     }
 
 
-    static public $score_sorts = array("C" => "Counts",
-                                       "A" => "Average",
-                                       "E" => "Median",
-                                       "V" => "Variance",
-                                       "D" => "Max &minus; min",
-                                       "Y" => "My score");
+    static private $score_sort_map = [
+        "C" => "C", "M" => "C", "counts" => "C", "count" => "C",
+        "A" => "A", "average" => "A", "avg" => "A", "av" => "A", "ave" => "A",
+        "E" => "E", "median" => "E", "med" => "E",
+        "V" => "V", "variance" => "V", "var" => "V",
+        "D" => "D", "maxmin" => "D", "max-min" => "D",
+        "Y" => "Y", "my" => "Y", "myscore" => "Y"
+    ];
 
-    static function default_score_sort($nosession = false) {
-        global $Conf;
-        if (!$nosession && $Conf && ($sv = $Conf->session("scoresort")))
-            return $sv;
-        else if ($Conf && ($s = $Conf->setting_data("scoresort_default")))
-            return $s;
+    static private $score_sort_long_map = [
+        "C" => "counts", "A" => "average", "E" => "median", "V" => "variance",
+        "D" => "maxmin", "Y" => "my"
+    ];
+
+    static function canonical_short_score_sort($x) {
+        return get(self::$score_sort_map, $x, null);
+    }
+
+    static function canonical_long_score_sort($x) {
+        $x = get(self::$score_sort_map, $x, null);
+        return $x ? self::$score_sort_long_map[$x] : $x;
+    }
+
+    static function score_sort_selector_options() {
+        return ["counts" => "Counts", "average" => "Average",
+                "median" => "Median", "variance" => "Variance",
+                "maxmin" => "Max &minus; min", "my" => "My score"];
+    }
+
+    static function default_score_sort(Conf $conf, $nosession = false) {
+        if (!$nosession && ($x = $conf->session("scoresort")))
+            return $x;
+        else if (($x = $conf->setting_data("scoresort_default")))
+            return $x;
         else
-            return opt("defaultScoreSort", "C");
+            return $conf->opt("defaultScoreSort", "C");
     }
 
-    static function parse_sorter($text) {
-        // parse the sorter
-        $text = simplify_whitespace($text);
-        if (preg_match('/\A(\d+)([a-z]*)\z/i', $text, $m)
-            || preg_match('/\A([^-,+#]+)[,+#]([a-z]*)\z/i', $text, $m)) {
-            $sort = new ListSorter($m[1]);
-            foreach (str_split(strtoupper($m[2])) as $x)
-                if ($x === "R" || $x === "N")
-                    $sort->reverse = $x === "R";
-                else if ($x === "M")
-                    $sort->score = "C";
-                else if (isset(self::$score_sorts[$x]))
-                    $sort->score = $x;
-        } else
-            $sort = PaperSearch::parse_sorter($text);
-        return $sort;
-    }
-
-    static function push(&$array, $s) {
+    static function push(&$array, ListSorter $s) {
         if (!empty($array)) {
             $x = $array[count($array) - 1];
             if (((!$s->type && !$s->field) || (!$x->type && !$x->field))

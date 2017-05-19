@@ -2294,7 +2294,8 @@ class PaperSearch {
 
     private $_matches = null; // list of ints
 
-    static private $_sort_keywords = null;
+    static private $_sort_keywords = ["by" => "by", "up" => "up", "down" => "down",
+                 "reverse" => "down", "reversed" => "down", "score" => ""];
 
 
     function __construct(Contact $user, $options, Contact $reviewer = null) {
@@ -2627,17 +2628,6 @@ class PaperSearch {
     }
 
     static function parse_sorter($text) {
-        if (!self::$_sort_keywords)
-            self::$_sort_keywords =
-                ["by" => "by", "up" => "up", "down" => "down",
-                 "reverse" => "down", "reversed" => "down",
-                 "counts" => "C", "count" => "C",
-                 "average" => "A", "avg" => "A", "av" => "A", "ave" => "A",
-                 "median" => "E", "med" => "E",
-                 "variance" => "V", "var" => "V",
-                 "maxmin" => "D", "max-min" => "D",
-                 "my" => "Y", "score" => ""];
-
         $text = simplify_whitespace($text);
         $sort = ListSorter::make_empty($text === "");
         if (($ch1 = substr($text, 0, 1)) === "-" || $ch1 === "+") {
@@ -2665,16 +2655,19 @@ class PaperSearch {
         $next_words = array();
         for ($i = 0; $i != count($words); ++$i) {
             $w = $words[$i];
-            if (($bypos === false || $i > $bypos)
-                && isset(self::$_sort_keywords[$w])) {
-                $x = self::$_sort_keywords[$w];
-                if ($x === "up")
-                    $sort->reverse = false;
-                else if ($x === "down")
-                    $sort->reverse = true;
-                else if (ctype_upper($x))
+            if ($bypos === false || $i > $bypos) {
+                if (($x = get(self::$_sort_keywords, $w)) !== null) {
+                    if ($x === "up")
+                        $sort->reverse = false;
+                    else if ($x === "down")
+                        $sort->reverse = true;
+                    continue;
+                } else if (($x = ListSorter::canonical_short_score_sort($w))) {
                     $sort->score = $x;
-            } else if ($bypos === false || $i < $bypos)
+                    continue;
+                }
+            }
+            if ($bypos === false || $i < $bypos)
                 $next_words[] = $w;
         }
 
@@ -3108,7 +3101,7 @@ class PaperSearch {
 
     private function _add_sorters($qe, $thenmap) {
         foreach ($qe->get_float("sort", []) as $s)
-            if (($s = ListSorter::parse_sorter($s))) {
+            if (($s = self::parse_sorter($s))) {
                 $s->thenmap = $thenmap;
                 $this->sorters[] = $s;
             }
