@@ -1886,7 +1886,7 @@ function fold(elt, dofold, foldnum, foldsessiontype) {
         // check for session
         if ((opentxt = elt.getAttribute("data-fold-session"))
             && foldsessiontype !== false)
-            jQuery.get(hoturl("api/setsession", {var: opentxt.replace("$", foldsessiontype || foldnum), val: (isopen ? 1 : 0)}));
+            $.post(hoturl("api/setsession"), {var: opentxt.replace("$", foldsessiontype || foldnum), val: (isopen ? 1 : 0)});
     }
 
     return false;
@@ -1912,7 +1912,7 @@ function foldup(e, event, opts) {
     if ("f" in opts && !!opts.f == !dofold)
         return false;
     if (opts.s)
-        jQuery.get(hoturl("api/setsession", {var: opts.s, val: (dofold ? 1 : 0)}));
+        $.post(hoturl("api/setsession"), {var: opts.s, val: (dofold ? 1 : 0)});
     if (event)
         event_stop(event);
     m = fold(e, dofold, foldnum, opts.st);
@@ -4212,7 +4212,9 @@ function search_sort_click(evt) {
 }
 
 function search_scoresort_change(evt) {
-    var scoresort = $(this).val(), re = / (?:counts|average|median|variance|maxmin|my)\b/;
+    var scoresort = $(this).val(),
+        re = / (?:counts|average|median|variance|maxmin|my)\b/;
+    $.post(hoturl("api/setsession"), {var: "scoresort", val: scoresort});
     plinfo.set_scoresort(scoresort);
     $("#foldpl > thead").find("a.pl_sort").each(function () {
         var href = this.getAttribute("href"), sorter = href_sorter(href);
