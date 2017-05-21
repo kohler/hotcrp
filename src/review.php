@@ -8,7 +8,7 @@
 //         "display_space":ROWS,"visibility":VISIBILITY,
 //         "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}}
 
-class ReviewField implements Abbreviatable {
+class ReviewField implements Abbreviatable, JsonSerializable {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
@@ -131,6 +131,9 @@ class ReviewField implements Abbreviatable {
                     $j->round_list[] = $i ? $round_name : "unnamed";
         }
         return $j;
+    }
+    function jsonSerialize() {
+        return $this->unparse_json();
     }
 
     static function unparse_visibility_value($vs) {
