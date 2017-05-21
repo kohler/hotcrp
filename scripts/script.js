@@ -1944,7 +1944,35 @@ function divclick(event) {
     }
 }
 
-function focus_fold() {
+
+// history
+
+var push_history_state;
+if ("pushState" in window.history)
+    push_history_state = function (href) {
+        var state;
+        if (!history.state) {
+            state = {href: location.href};
+            $(document).trigger("collectState", [state]);
+            history.replaceState(state, document.title, state.href);
+        }
+        if (href) {
+            state = {href: href};
+            $(document).trigger("collectState", [state]);
+            history.pushState(state, document.title, state.href);
+        }
+        return false;
+    };
+else
+    push_history_state = function () { return true; };
+
+
+// focus_fold
+
+window.focus_fold = (function ($) {
+var has_focused;
+
+function focus_fold(do_focus) {
     var e = this, m;
     while (e && !(m = e.className.match(/\b(?:lll|lld|tll|tld)(\d+)/)))
         e = e.parentElement;
@@ -1952,13 +1980,44 @@ function focus_fold() {
         e = e.parentElement;
     if (e) {
         e.className = e.className.replace(/links[0-9]*/, 'links' + m[1]);
-        focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
-        if (window.event)
-            window.event.returnValue = false;
+        if (do_focus)
+            focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
+        has_focused = true;
         return false;
     } else
         return true;
 }
+
+function jump(href) {
+    var hash = href.match(/#.*/);
+    hash = hash ? hash[0] : "";
+    $("a.has-focus-history").each(function () {
+        if (this.getAttribute("href") === hash)
+            return focus_fold.call(this, false);
+    });
+}
+
+$(window).on("popstate", function (event) {
+    var state = (event.originalEvent || event).state;
+    state && jump(state.href);
+});
+
+function handler() {
+    var done = focus_fold.call(this, true);
+    if (!done
+        && this instanceof HTMLAnchorElement
+        && $(this).hasClass("has-focus-history"))
+        push_history_state(this.href);
+    return done;
+}
+
+handler.hash = function () {
+    if (location.hash)
+        has_focused || jump(location.href);
+};
+
+return handler;
+})($);
 
 function make_link_callback(elt) {
     return function () {
@@ -4143,39 +4202,34 @@ function search_sort_success(tbl, href, data) {
         });
 }
 
-function search_sort_save_state(replace, tbl, href) {
+$(document).on("collectState", function (event, state) {
+    var tbl = document.getElementById("foldpl");
+    if (!tbl || !tbl.hasAttribute("data-sort-url-template"))
+        return;
     var groups = $(tbl).data("groups");
     if (groups && typeof groups === "string")
         groups = $.parseJSON(groups);
-    if (location.hash && !/#/.test(href))
-        href += location.hash;
-    var state = {
-        stateType: "search_sort",
-        href: href,
-        tableId: tbl.id,
-        ids: table_ids(tbl),
-        groups: groups,
+    var data = state.sortpl = {
+        ids: table_ids(tbl), groups: groups,
         hotlist_info: tbl.getAttribute("data-hotlist")
     };
-    if (!href_sorter(href)) {
+    if (!href_sorter(state.href)) {
         var active_href = $(tbl).children("thead").find("a.pl_sorting_fwd").attr("href");
         if (active_href && (active_href = href_sorter(active_href)))
-            state.fwd_sorter = sorter_toggle_reverse(active_href, false);
+            data.fwd_sorter = sorter_toggle_reverse(active_href, false);
     }
-    history[replace ? "replaceState" : "pushState"](state, document.title, href);
-}
+});
 
 function search_sort_url(self, href) {
-    var urlparts = /search(?:\.php)?(\?.*)/.exec(href)[1];
+    var urlparts = /search(?:\.php)?(\?[^#]*)/.exec(href)[1];
     $.ajax(hoturl("api/search", urlparts), {
         method: "GET", cache: false,
         success: function (data) {
             var tbl = $(self).closest("table")[0];
             if (data.ok && data.ids && same_ids(tbl, data.ids)) {
-                if (!history.state)
-                    search_sort_save_state(true, tbl, location.href);
+                push_history_state();
                 search_sort_success(tbl, href, data);
-                search_sort_save_state(false, tbl, href);
+                push_history_state(href + location.hash);
             } else
                 window.location = href;
         }
@@ -4214,10 +4268,8 @@ if ("pushState" in window.history) {
     $(document.body).on("click", "a.pl_sort", search_sort_click);
     $(window).on("popstate", function (evt) {
         var state = (evt.originalEvent || evt).state, tbl;
-        if (state
-            && state.stateType === "search_sort"
-            && (tbl = document.getElementById(state.tableId)))
-            search_sort_success(tbl, state.href, state);
+        if (state && state.sortpl && (tbl = document.getElementById("foldpl")))
+            search_sort_success(tbl, state.href, state.sortpl);
     });
     $(function () { $("#scoresort").on("change", search_scoresort_change) });
 }

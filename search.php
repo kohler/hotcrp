@@ -78,7 +78,7 @@ if (!$Conf->session("scoresort"))
     $Conf->save_session("scoresort", ListSorter::default_score_sort($Conf));
 if ($Qreq->redisplay) {
     $forceShow = $Qreq->forceShow || $Qreq->showforce;
-    SelfHref::redirect($Qreq, ["tab" => "display", "forceShow" => $forceShow ? : null]);
+    SelfHref::redirect($Qreq, ["anchor" => "display", "forceShow" => $forceShow ? : null]);
 }
 
 
@@ -244,7 +244,7 @@ function savesearch() {
 
 if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && check_post($Qreq)) {
     savesearch();
-    $Qreq->tab = "ss";
+    $Qreq->tab = "savedsearches";
 }
 
 
@@ -281,15 +281,7 @@ else if (isset($Qreq->qa) || defval($Qreq, "qt", "n") != "n")
     $activetab = 2;
 else
     $activetab = 1;
-$tabs = array("display" => 3, "advanced" => 2, "basic" => 1, "normal" => 1,
-              "ss" => 4);
 $searchform_formulas = "c";
-if (isset($tabs[defval($Qreq, "tab", "x")]))
-    $activetab = $tabs[$Qreq->tab];
-else if (defval($Qreq, "tab", "x") == "formulas") {
-    $activetab = 3;
-    $searchform_formulas = "o";
-}
 if ($activetab == 3 && (!$pl || $pl->count == 0))
     $activetab = 1;
 
@@ -683,15 +675,17 @@ echo "</div>";
 
 // Tab selectors
 echo '<div class="tllx"><table><tr>',
-  "<td><div class='tll1'><a class='tla' onclick='return focus_fold.call(this)' href=\"", SelfHref::make($Qreq, ["tab" => null]), "\">Search</a></div></td>
-  <td><div class='tll2'><a class='tla nw' onclick='return focus_fold.call(this)' href=\"", SelfHref::make($Qreq, ["tab" => "advanced"]), "\">Advanced search</a></div></td>\n";
+  "<td><div class='tll1'><a class='tla has-focus-history' onclick='return focus_fold.call(this)' href=\"\">Search</a></div></td>
+  <td><div class='tll2'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#advanced\">Advanced search</a></div></td>\n";
 if ($ss)
-    echo "  <td><div class='tll4'><a class='tla nw' onclick='return focus_fold.call(this)' href=\"", SelfHref::make($Qreq, ["tab" => "ss"]), "\">Saved searches</a></div></td>\n";
+    echo "  <td><div class='tll4'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#savedsearches\">Saved searches</a></div></td>\n";
 if ($pl && $pl->count > 0)
-    echo "  <td><div class='tll3'><a class='tla nw' onclick='return focus_fold.call(this)' href=\"", SelfHref::make($Qreq, ["tab" => "display"]), "\">Display options</a></div></td>\n";
+    echo "  <td><div class='tll3'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#display\">Display options</a></div></td>\n";
 echo "</tr></table></div></div>\n\n";
 if (!$pl || $pl->count == 0)
     Ht::stash_script("focus_fold.call(\$(\"#searchform .tll$activetab\")[0])");
+Ht::stash_script("focus_fold.hash()");
+echo Ht::unstash();
 
 
 if ($pl) {
