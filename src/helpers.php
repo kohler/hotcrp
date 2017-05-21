@@ -171,7 +171,7 @@ class SelfHref {
                 $x[$ak] = $v;
         }
         foreach ($params as $k => $v)
-            if ($k !== "anchor" && $v !== null)
+            if ($v !== null)
                 $x[$k] = $v;
 
         $page = Navigation::page();
