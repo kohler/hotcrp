@@ -1102,11 +1102,11 @@ class Review_SearchTerm extends SearchTerm {
             return self::parse_score_field($rsm, $word, $f, $srch);
         else {
             if ($word === "any" && !$sword->quoted)
-                $value = "$field!=''";
+                $value = "{$f->id}!=''";
             else if ($word === "none" && !$sword->quoted)
-                $value = "$field=''";
+                $value = "{$f->id}=''";
             else // XXX
-                $value = "$field like " . Dbl::utf8ci("'%" . sqlq_for_like($word) . "%'");
+                $value = "{$f->id} like " . Dbl::utf8ci("'%" . sqlq_for_like($word) . "%'");
             return $rsm->make_field_term($value);
         }
     }
