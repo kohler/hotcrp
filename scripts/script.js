@@ -1972,20 +1972,6 @@ function make_link_callback(elt) {
 }
 
 
-// accounts
-function contactPulldown(which) {
-    var pulldown = $$(which + "_pulldown");
-    if (pulldown.value != "") {
-        var name = $$(which + "_name");
-        var email = $$(which + "_email");
-        var parse = pulldown.value.split("`````");
-        email.value = parse[0];
-        name.value = (parse.length > 1 ? parse[1] : "");
-    }
-    var folder = $$('fold' + which);
-    folder.className = folder.className.replace("foldo", "foldc");
-}
-
 // paper selection
 function papersel(value, name) {
     var ins = document.getElementsByTagName("input"),
