@@ -4102,7 +4102,7 @@ function same_ids(tbl, ids) {
 }
 
 function href_sorter(href, newval) {
-    var re = /([?&;]sort=)([^=&;]*)/;
+    var re = /([?&;]sort=)([^=&;#]*)/;
     if (newval == null) {
         var m = re.exec(href);
         return m ? urldecode(m[2]) : null;
@@ -4123,8 +4123,8 @@ function search_sort_success(tbl, href, data) {
     reorder(tbl, data.ids, data.groups, true);
     $(tbl).data("groups", data.groups);
     tbl.setAttribute("data-hotlist", data.hotlist_info || "");
-    var want_sorter = href_sorter(href),
-        want_fwd_sorter = sorter_toggle_reverse(want_sorter, false);
+    var want_sorter = data.fwd_sorter || href_sorter(href),
+        want_fwd_sorter = want_sorter && sorter_toggle_reverse(want_sorter, false);
     var $sorters = $(tbl).children("thead").find("a.pl_sort");
     $sorters.removeClass("pl_sorting_fwd pl_sorting_rev")
         .each(function () {
@@ -4147,6 +4147,8 @@ function search_sort_save_state(replace, tbl, href) {
     var groups = $(tbl).data("groups");
     if (groups && typeof groups === "string")
         groups = $.parseJSON(groups);
+    if (location.hash && !/#/.test(href))
+        href += location.hash;
     var state = {
         stateType: "search_sort",
         href: href,
@@ -4156,10 +4158,9 @@ function search_sort_save_state(replace, tbl, href) {
         hotlist_info: tbl.getAttribute("data-hotlist")
     };
     if (!href_sorter(href)) {
-        var $sorters = $(tbl).children("thead").find("a.pl_sorting_fwd, a.pl_sorting_rev");
-        var active_sorter = $sorters.length && href_sorter($sorters[0].getAttribute("href"));
-        if (active_sorter)
-            state.href = href_sorter(state.href + "&sort=", sorter_toggle_reverse(active_sorter, false));
+        var active_href = $(tbl).children("thead").find("a.pl_sorting_fwd").attr("href");
+        if (active_href && (active_href = href_sorter(active_href)))
+            state.fwd_sorter = sorter_toggle_reverse(active_href, false);
     }
     history[replace ? "replaceState" : "pushState"](state, document.title, href);
 }
