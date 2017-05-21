@@ -2736,23 +2736,20 @@ class PaperSearch {
                 return $qe;
         }
 
-        // Allow searches like "ovemer>2"; parse as "ovemer:>2".
-        if (preg_match('/\A([-_A-Za-z0-9]+)((?:[=!<>]=?|≠|≤|≥)[^:]+)\z/', $word, $m)) {
-            ++$this->_quiet_count;
-            $qe = $this->_searchQueryWord($m[1] . ":" . $m[2]);
-            --$this->_quiet_count;
-            if (!$qe->is_false())
-                return $qe;
-        }
-
         $keyword = null;
-        if (($colon = strpos($word, ":")) > 0) {
-            $x = substr($word, 0, $colon);
-            if (strpos($x, '"') === false) {
-                $keyword = $x;
-                $word = substr($word, $colon + 1);
-                if ($word === false)
-                    $word = "";
+        if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]+")((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/', $word, $m)) {
+            if ($m[2][0] === ":") {
+                $keyword = $m[1];
+                if ($keyword[0] === '"')
+                    $keyword = trim(substr($keyword, 1, strlen($keyword) - 2));
+                $word = ltrim((string) substr($m[2], 1));
+            } else {
+                // Allow searches like "ovemer>2"; parse as "ovemer:>2".
+                ++$this->_quiet_count;
+                $qe = $this->_searchQueryWord($m[1] . ":" . $m[2]);
+                --$this->_quiet_count;
+                if (!$qe->is_false())
+                    return $qe;
             }
         }
 
@@ -2774,7 +2771,7 @@ class PaperSearch {
     }
 
     static public function pop_word(&$str, Conf $conf) {
-        $wordre = '/\A\s*(?:"[^"]*"?|[a-zA-Z][a-zA-Z0-9]*:(?:"[^"]*(?:"|\z)|[^"\s()]*)+|[^"\s()]+)/s';
+        $wordre = '/\A\s*([-_.a-zA-Z0-9]+:|"[^"]+":|)\s*((?:"[^"]*(?:"|\z)|[^"\s()]*)*)/s';
 
         if (!preg_match($wordre, $str, $m))
             return ($str = "");
@@ -2782,10 +2779,10 @@ class PaperSearch {
         $word = ltrim($m[0]);
 
         // commas in paper number strings turn into separate words
-        if (preg_match('/\A(#?\d+(?:-#?\d+)?),((?:#?\d+(?:-#?\d+)?,?)*)\z/', $word, $m)) {
-            $word = $m[1];
-            if ($m[2] !== "")
-                $str = $m[2] . $str;
+        if (preg_match('/\A(#?\d+(?:-#?\d+)?),((?:#?\d+(?:-#?\d+)?,?)*)\z/', $word, $mx)) {
+            $word = $mx[1];
+            if ($mx[2] !== "")
+                $str = $mx[2] . $str;
         }
 
         // elide colon
@@ -2794,26 +2791,17 @@ class PaperSearch {
             return self::pop_word($str, $conf);
         }
 
-        // check for keyword
-        $keyword = false;
-        if (($colon = strpos($word, ":")) > 0) {
-            $x = substr($word, 0, $colon);
-            if (strpos($x, '"') === false)
-                $keyword = $x;
-        }
-
-        // allow a space after a keyword
-        if ($keyword && strlen($word) <= $colon + 1 && preg_match($wordre, $str, $m)) {
-            $word .= ltrim($m[0]);
-            $str = substr($str, strlen($m[0]));
-        }
-
-        // "show:" may be followed by a parenthesized expression
-        if ($keyword
-            && ($kwdef = $conf->search_keyword($keyword))
+        // some keywords may be followed by a parenthesized expression
+        $kw = $m[1];
+        if ($kw)
+            $kw = substr($kw, 0, strlen($kw) - 1);
+        if ($kw && $kw[0] === '"')
+            $kw = trim(substr($kw, 1, strlen($kw) - 2));
+        if ($kw
+            && ($kwdef = $conf->search_keyword($kw))
             && get($kwdef, "allow_parens")
-            && substr($word, $colon + 1, 1) !== "\""
-            && preg_match('/\A\S*\(/', $str)) {
+            && substr($m[2], 0, 1) !== "\""
+            && preg_match('/\A\s*\(/', $str)) {
             $pos = self::find_end_balanced_parens($str);
             $word .= substr($str, 0, $pos);
             $str = substr($str, $pos);
