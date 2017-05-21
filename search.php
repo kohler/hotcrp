@@ -683,15 +683,15 @@ echo "</div>";
 
 // Tab selectors
 echo '<div class="tllx"><table><tr>',
-  "<td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\",1)' href=\"", SelfHref::make($Qreq, ["tab" => null]), "\">Search</a></div></td>
-  <td><div class='tll2'><a class='tla nw' onclick='return crpfocus(\"searchform\",2)' href=\"", SelfHref::make($Qreq, ["tab" => "advanced"]), "\">Advanced search</a></div></td>\n";
+  "<td><div class='tll1'><a class='tla' onclick='return focus_fold.call(this)' href=\"", SelfHref::make($Qreq, ["tab" => null]), "\">Search</a></div></td>
+  <td><div class='tll2'><a class='tla nw' onclick='return focus_fold.call(this)' href=\"", SelfHref::make($Qreq, ["tab" => "advanced"]), "\">Advanced search</a></div></td>\n";
 if ($ss)
-    echo "  <td><div class='tll4'><a class='tla nw' onclick='return crpfocus(\"searchform\",4)' href=\"", SelfHref::make($Qreq, ["tab" => "ss"]), "\">Saved searches</a></div></td>\n";
+    echo "  <td><div class='tll4'><a class='tla nw' onclick='return focus_fold.call(this)' href=\"", SelfHref::make($Qreq, ["tab" => "ss"]), "\">Saved searches</a></div></td>\n";
 if ($pl && $pl->count > 0)
-    echo "  <td><div class='tll3'><a class='tla nw' onclick='return crpfocus(\"searchform\",3)' href=\"", SelfHref::make($Qreq, ["tab" => "display"]), "\">Display options</a></div></td>\n";
+    echo "  <td><div class='tll3'><a class='tla nw' onclick='return focus_fold.call(this)' href=\"", SelfHref::make($Qreq, ["tab" => "display"]), "\">Display options</a></div></td>\n";
 echo "</tr></table></div></div>\n\n";
 if (!$pl || $pl->count == 0)
-    Ht::stash_script("crpfocus(\"searchform\",$activetab)");
+    Ht::stash_script("focus_fold.call(\$(\"#searchform .tll$activetab\")[0])");
 
 
 if ($pl) {

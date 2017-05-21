@@ -239,7 +239,7 @@ jQuery(\"#homeacct input[name='action']\").on('click',login_type);jQuery(login_t
         Ht::submit("signin", "Sign in", array("tabindex" => 1, "id" => "signin_signin")),
         "</div></div></form>
 <hr class='home' /></div>\n";
-    Ht::stash_script("crpfocus(\"login\", null, 2)");
+    Ht::stash_script("focus_within(\$(\"#login\"));window.scroll(0,0)");
 }
 
 

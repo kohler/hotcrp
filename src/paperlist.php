@@ -493,7 +493,7 @@ class PaperList {
         foreach ($lllgroups as $i => $lllg) {
             $x = $i + 1;
             $foot .= "<table><tbody><tr>\n"
-                . "    <td class=\"pl_footer_desc lll$x\"><a class=\"lla$x\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[1]]) . "#plact\" onclick=\"return crpfocus('plact',this)\">" . $lllg[2] . "</a></td>\n";
+                . "    <td class=\"pl_footer_desc lll$x\"><a class=\"lla$x\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[1]]) . "#plact\" onclick=\"return focus_fold.call(this)\">" . $lllg[2] . "</a></td>\n";
             for ($j = 3; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
                 $class = isset($cell["class"]) ? "lld$x " . $cell["class"] : "lld$x";

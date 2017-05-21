@@ -1419,8 +1419,6 @@ class PaperTable {
             "\" size=\"4\" value=\"$rp\" tabindex=\"1\" class=\"want-focus want-select\" />",
             "</div></form></div></div>\n";
         Ht::stash_script("add_revpref_ajax(\"#revprefform_d\",true);shortcut(\"revprefform_d\").add()");
-        if (($l = SessionList::active()) && str_starts_with($l->url, "reviewprefs"))
-            Ht::stash_script("crpfocus('revprefform')");
     }
 
     private function papstrip_tag_entry($id, $folds) {

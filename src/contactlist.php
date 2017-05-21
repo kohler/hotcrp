@@ -478,7 +478,7 @@ class ContactList {
         if ($this->contact->privChair)
             $types["pcinfo"] = "PC info";
         $nlll = 1;
-        $t .= "<span class=\"lll{$nlll}\"><a class=\"lla{$nlll}\" href=\"#\" onclick=\"return crpfocus('plact',{$nlll})\">Download</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;"
+        $t .= "<span class=\"lll{$nlll}\"><a class=\"lla{$nlll}\" href=\"#\" onclick=\"return focus_fold.call(this)\">Download</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;"
             . Ht::select("getaction", $types, null, ["class" => "want-focus"])
             . "&nbsp; " . Ht::submit("getgo", "Go")
             . "</span>";
@@ -487,7 +487,7 @@ class ContactList {
         if ($this->contact->privChair) {
             ++$nlll;
             $t .= $barsep;
-            $t .= "<span class=\"lll{$nlll}\"><a class=\"lla{$nlll}\" href=\"#\" onclick=\"return crpfocus('plact',{$nlll})\">Tag</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;";
+            $t .= "<span class=\"lll{$nlll}\"><a class=\"lla{$nlll}\" href=\"#\" onclick=\"return focus_fold.call(this)\">Tag</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;";
             $t .= Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), req("tagtype"))
                 . ' &nbsp;tag(s) &nbsp;'
                 . Ht::entry("tag", req("tag"), ["size" => 15, "class" => "want-focus", "onfocus" => "autosub('tagact',this)"])
@@ -495,7 +495,7 @@ class ContactList {
 
             ++$nlll;
             $t .= $barsep;
-            $t .= "<span class=\"lll{$nlll}\"><a class=\"lla{$nlll}\" href=\"#\" onclick=\"return crpfocus('plact',{$nlll})\">Modify</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;";
+            $t .= "<span class=\"lll{$nlll}\"><a class=\"lla{$nlll}\" href=\"#\" onclick=\"return focus_fold.call(this)\">Modify</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;";
             $t .= Ht::select("modifytype", array("disableaccount" => "Disable",
                                                  "enableaccount" => "Enable",
                                                  "resetpassword" => "Reset password",

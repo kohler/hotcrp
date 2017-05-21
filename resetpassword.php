@@ -94,7 +94,7 @@ echo '<div class="f-i">
     "</div>
 </div></form>
 <hr class='home' /></div>\n";
-Ht::stash_script("crpfocus(\"login\", null, 2)");
+Ht::stash_script("focus_within(\$(\"#homereset\"));window.scroll(0,0)");
 
 echo '<hr class="c" />', "\n";
 $Conf->footer();

@@ -957,5 +957,5 @@ John Adams,john@earbox.org,UC Berkeley,pc
 if ($newProfile)
     Ht::stash_script('if(/bulk/.test(location.hash))fold("bulk",false,9)');
 Ht::stash_script('hiliter_children("#accountform");$("textarea").autogrow()');
-Ht::stash_script('crpfocus("account")');
+Ht::stash_script('focus_within($("#accountform"))');
 $Conf->footer();

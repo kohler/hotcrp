@@ -1944,25 +1944,20 @@ function divclick(event) {
     }
 }
 
-function crpfocus(id, subfocus, seltype) {
-    var selt = $$(id), m, $j;
-    if (!selt)
+function focus_fold() {
+    var e = this, m;
+    while (e && !(m = e.className.match(/\b(?:lll|lld|tll|tld)(\d+)/)))
+        e = e.parentElement;
+    while (e && !/\b(?:tab|line)links\d/.test(e.className))
+        e = e.parentElement;
+    if (e) {
+        e.className = e.className.replace(/links[0-9]*/, 'links' + m[1]);
+        focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
+        if (window.event)
+            window.event.returnValue = false;
+        return false;
+    } else
         return true;
-    while (subfocus && typeof subfocus === "object")
-        if ((m = subfocus.className.match(/\b(?:lll|lld|tll|tld)(\d+)/)))
-            subfocus = +m[1];
-        else
-            subfocus = subfocus.parentElement;
-    if (selt && subfocus)
-        selt.className = selt.className.replace(/links[0-9]*/, 'links' + subfocus);
-
-    focus_within(selt, subfocus ? ".lld" + subfocus + " *, .tld" + subfocus + " *" : false);
-
-    if (window.event)
-        window.event.returnValue = false;
-    if (seltype && seltype >= 1)
-        window.scroll(0, 0);
-    return false;
 }
 
 function make_link_callback(elt) {
