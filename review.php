@@ -329,13 +329,6 @@ if (isset($_REQUEST["accept"])) {
 }
 
 
-// paper actions
-if (isset($_REQUEST["setrevpref"]) && check_post()) {
-    PaperActions::setReviewPreference($prow);
-    loadRows();
-}
-
-
 // can we view/edit reviews?
 $viewAny = $Me->can_view_review($prow, null, null);
 $editAny = $Me->can_review($prow, null);

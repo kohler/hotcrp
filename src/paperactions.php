@@ -13,26 +13,4 @@ class PaperActions {
             return Dbl::qe_raw("insert into PaperReviewPreference (paperId,contactId,preference,expertise) values " . join(",", $q) . " on duplicate key update preference=values(preference), expertise=values(expertise)");
         return true;
     }
-
-    static function setReviewPreference($prow) {
-        global $Conf, $Me, $Error;
-        $ajax = defval($_REQUEST, "ajax", false);
-        if (!$Me->allow_administer($prow)
-            || ($contactId = cvtint(@$_REQUEST["reviewer"])) <= 0)
-            $contactId = $Me->contactId;
-        if (isset($_REQUEST["revpref"]) && ($v = parse_preference($_REQUEST["revpref"]))) {
-            if (self::save_review_preferences(array(array($prow->paperId, $contactId, $v[0], $v[1]))))
-                $Conf->confirmMsg($ajax ? "Saved" : "Review preference saved.");
-            else
-                $Error["revpref"] = true;
-            $v = unparse_preference($v);
-        } else {
-            $v = null;
-            Conf::msg_error($ajax ? "Bad preference" : "Bad preference “" . htmlspecialchars($_REQUEST["revpref"]) . "”.");
-            $Error["revpref"] = true;
-        }
-        if ($ajax)
-            $Conf->ajaxExit(array("ok" => !Dbl::has_error() && !@$Error["revpref"],
-                                  "value" => $v));
-    }
 }
