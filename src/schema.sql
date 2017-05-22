@@ -311,8 +311,7 @@ CREATE TABLE `PaperReviewPreference` (
   `contactId` int(11) NOT NULL,
   `preference` int(4) NOT NULL DEFAULT '0',
   `expertise` int(4) DEFAULT NULL,
-  PRIMARY KEY (`paperId`,`contactId`),
-  UNIQUE KEY `contactPaper` (`contactId`,`paperId`)
+  PRIMARY KEY (`paperId`,`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -495,7 +494,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 166);
+insert into Settings (name, value) values ('allowPaperOption', 167);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

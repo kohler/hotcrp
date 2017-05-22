@@ -1171,6 +1171,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table TopicArea drop key `topicName`")
         && $conf->ql("alter table TopicArea change `topicName` `topicName` varbinary(1024) DEFAULT NULL"))
         $conf->update_schema_version(166);
+    if ($conf->sversion == 166
+        && $conf->ql("alter table PaperReviewPreference drop key `contactPaper`"))
+        $conf->update_schema_version(167);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
