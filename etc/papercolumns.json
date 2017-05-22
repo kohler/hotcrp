@@ -203,19 +203,25 @@
         "priority": 1420
     },
     {
+        "name": "administrator",
+        "row": true, "fold": true, "factory_class": "Administrator_PaperColumn",
+        "synonym": ["admin"],
+        "priority": 1500
+    },
+    {
         "name": "lead",
         "row": true, "fold": true, "completion": true, "factory_class": "Lead_PaperColumn",
-        "priority": 1500
+        "priority": 1600
     },
     {
         "name": "shepherd",
         "row": true, "fold": true, "completion": true, "factory_class": "Shepherd_PaperColumn",
-        "priority": 1600
+        "priority": 1700
     },
     {
         "name": "commenters",
         "row": true, "fold": true, "completion": true, "factory_class": "Commenters_PaperColumn",
-        "priority": 1700
+        "priority": 2000
     },
     {
         "name": "foldall", "factory_class": "FoldAll_PaperColumn"

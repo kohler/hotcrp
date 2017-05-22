@@ -2027,6 +2027,28 @@ class Shepherd_PaperColumn extends PaperColumn {
     }
 }
 
+class Administrator_PaperColumn extends PaperColumn {
+    function __construct($cj) {
+        parent::__construct($cj);
+    }
+    function prepare(PaperList $pl, $visible) {
+        return $pl->contact->can_view_manager(null);
+    }
+    function header(PaperList $pl, $is_text) {
+        return "Administrator";
+    }
+    function content_empty(PaperList $pl, PaperInfo $row) {
+        return !$row->managerContactId
+            || !$pl->contact->can_view_manager($row);
+    }
+    function content(PaperList $pl, PaperInfo $row) {
+        return $pl->_contentPC($row, $row->managerContactId, true);
+    }
+    function text(PaperList $pl, PaperInfo $row) {
+        return $pl->_textPC($row, $row->managerContactId, true);
+    }
+}
+
 class FoldAll_PaperColumn extends PaperColumn {
     function __construct($cj) {
         parent::__construct($cj);
