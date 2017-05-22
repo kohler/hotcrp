@@ -90,7 +90,7 @@ class AssignmentState {
     }
     static private function match($x, $q) {
         foreach ($q as $k => $v) {
-            if ($v !== null && get($x, $k) != $v)
+            if ($v !== null && get($x, $k) !== $v)
                 return false;
         }
         return true;
