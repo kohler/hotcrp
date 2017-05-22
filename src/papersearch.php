@@ -614,7 +614,7 @@ class PaperPC_SearchTerm extends SearchTerm {
             && $word === "me"
             && !$sword->quoted
             && $srch->user->privChair)
-            $qt[] = new PaperPC_SearchTerm($ctype, "=0");
+            $qt[] = new PaperPC_SearchTerm($qt[0]->kind, "=0");
         return $qt;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
