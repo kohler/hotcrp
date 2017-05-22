@@ -1256,7 +1256,7 @@ class PreferenceAssigner extends Assigner {
     function __construct($pid, $contact, $pref, $exp) {
         parent::__construct("pref", $pid, $contact);
         $this->pref = $pref;
-        $this->exp = $exp;
+        $this->exp = $exp === "N" ? null : $exp;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($prow->timeWithdrawn > 0)
@@ -1287,6 +1287,9 @@ class PreferenceAssigner extends Assigner {
                 return true;
         }
     }
+    static private function make_exp($exp) {
+        return $exp === null ? "N" : +$exp;
+    }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type($this->type, ["pid", "cid"]))
             return;
@@ -1295,7 +1298,7 @@ class PreferenceAssigner extends Assigner {
         else
             $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
         while (($row = edb_row($result)))
-            $state->load(array("type" => $this->type, "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => +$row[3]));
+            $state->load(array("type" => $this->type, "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])));
         Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
@@ -1321,7 +1324,7 @@ class PreferenceAssigner extends Assigner {
 
         $state->remove(array("type" => $this->type, "pid" => $pid, "cid" => $contact->contactId ? : null));
         if ($ppref[0] || $ppref[1] !== null)
-            $state->add(array("type" => $this->type, "pid" => $pid, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => $ppref[1]));
+            $state->add(array("type" => $this->type, "pid" => $pid, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => self::make_exp($ppref[1])));
     }
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
         return new PreferenceAssigner($item["pid"], $cmap->make_id($item["cid"]),
