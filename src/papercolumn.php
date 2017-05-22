@@ -895,12 +895,8 @@ class PreferencePaperColumn extends PaperColumn {
                 $pl->qopts["allReviewerPreference"] = 1;
             $pl->qopts["topics"] = 1;
         }
-        if ($this->editable && $visible > 0 && ($tid = $pl->table_id())) {
-            $reviewer_cid = 0;
-            if ($pl->contact->privChair)
-                $reviewer_cid = $pl->reviewer_cid() ? : 0;
+        if ($this->editable && $visible > 0 && ($tid = $pl->table_id()))
             $pl->add_header_script("add_revpref_ajax(" . json_encode("#$tid") . ")", "revpref_ajax_$tid");
-        }
         return true;
     }
     function completion_name() {
