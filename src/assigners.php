@@ -367,7 +367,7 @@ class Assigner {
         return get(self::$assigners, $n);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->contact->can_administer($prow)
+        if (!$state->contact->can_administer($prow, $state->override)
             && !$state->contact->privChair)
             return "You can’t administer #{$prow->paperId}.";
         else if ($prow->timeWithdrawn > 0)
@@ -860,7 +860,7 @@ class ConflictAssigner extends Assigner {
         $this->ctype = $ctype;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->contact->can_administer($prow)
+        if (!$state->contact->can_administer($prow, $state->override)
             && !$state->contact->privChair)
             return "You can’t administer #{$prow->paperId}.";
         else
@@ -1185,7 +1185,7 @@ class TagAssigner extends Assigner {
     }
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
         $prow = $state->prow($item["pid"]);
-        $is_admin = $state->contact->can_administer($prow);
+        $is_admin = $state->contact->can_administer($prow, $state->override);
         $tag = $item["_tag"];
         $previndex = $item->before ? $item->before["_index"] : null;
         $index = $item->deleted() ? null : $item["_index"];
@@ -1269,7 +1269,7 @@ class PreferenceAssigner extends Assigner {
             return false;
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        if ($state->contact->can_administer($prow)) {
+        if ($state->contact->can_administer($prow, $state->override)) {
             if (!$contact->can_accept_review_assignment_ignore_conflict($prow))
                 return Text::user_html_nolink($contact) . " can’t enter preferences for #{$prow->paperId}.";
             else
