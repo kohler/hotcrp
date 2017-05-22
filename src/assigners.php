@@ -560,6 +560,9 @@ class ReviewAssigner extends Assigner {
             || (($rdata = ReviewAssigner_Data::make($req, $state, $this->rtype))
                 && !$rdata->can_create_review()))
             return true;
+        // Check whether review assignments are acceptable
+        if (!$contact->can_accept_review_assignment_ignore_conflict($prow))
+            return Text::user_html_nolink($contact) . " cannot be assigned to review #{$prow->paperId}.";
         // Check conflicts
         return Assigner::unconflicted($prow, $contact, $state);
     }
