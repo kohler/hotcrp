@@ -952,7 +952,7 @@ class NextTagAssigner {
         $this->next_index += ($isseq ? 1 : self::$value_increment_map[mt_rand(0, 9)]);
         return $index;
     }
-    function apply($state) {
+    function apply_finisher(AssignmentState $state) {
         if ($this->next_index == $this->first_index)
             return;
         $ltag = strtolower($this->tag);
@@ -1848,7 +1848,7 @@ class AssignmentSet {
     function finish() {
         // call finishers
         foreach ($this->astate->finishers as $fin)
-            $fin->apply($this->astate);
+            $fin->apply_finisher($this->astate);
 
         // create assigners for difference
         foreach ($this->astate->diff() as $pid => $difflist)
