@@ -2065,12 +2065,13 @@ class Contact {
         return $rights->act_author || $rights->can_administer;
     }
 
-    function can_view_manager(PaperInfo $prow = null, $forceShow = null) {
+    function can_view_manager(PaperInfo $prow = null) {
         if ($this->privChair)
             return true;
         if (!$prow)
-            return $this->isPC && !$this->conf->opt("hideManager");
-        $rights = $this->rights($prow);
+            return (!$this->conf->opt("hideManager") && $this->is_reviewer())
+                || ($this->isPC && $this->is_explicit_manager());
+        $rights = $this->rights($prow, "any");
         return $prow->managerContactId == $this->contactId
             || ($rights->potential_reviewer && !$this->conf->opt("hideManager"));
     }
