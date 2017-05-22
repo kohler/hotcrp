@@ -251,6 +251,10 @@ class CsvGenerator {
             return self::always_quote($text);
     }
 
+    function is_empty() {
+        return empty($this->lines);
+    }
+
     function is_csv() {
         return $this->type == self::TYPE_COMMA;
     }
