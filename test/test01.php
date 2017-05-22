@@ -641,6 +641,12 @@ xassert($user_marina->can_accept_review_assignment_ignore_conflict($paper14));
 xassert($user_marina->can_accept_review_assignment($paper14));
 xassert(!$user_marina->can_review($paper14, null));
 
+xassert(AssignmentSet::run($user_chair, "paper,action,user\n13,primary,jon@cs.ucl.ac.uk\n"));
+xassert(AssignmentSet::run($user_chair, "paper,action,user\n14,primary,jon@cs.ucl.ac.uk\n"));
+xassert(AssignmentSet::run($user_chair, "paper,action,user\n13,primary,marina@poema.ru\n"));
+xassert(AssignmentSet::run($user_chair, "paper,action,user\n14,primary,marina@poema.ru\n"));
+xassert(AssignmentSet::run($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n"));
+
 $Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
 $Conf->invalidate_caches(["tracks" => true]);
 
@@ -673,6 +679,12 @@ xassert(!$user_marina->can_view_review_identity($paper14, null));
 xassert(!$user_marina->can_accept_review_assignment_ignore_conflict($paper14));
 xassert(!$user_marina->can_accept_review_assignment($paper14));
 xassert(!$user_marina->can_review($paper14, null));
+
+xassert(!AssignmentSet::run($user_chair, "paper,action,user\n13,primary,jon@cs.ucl.ac.uk\n"));
+xassert(AssignmentSet::run($user_chair, "paper,action,user\n14,primary,jon@cs.ucl.ac.uk\n"));
+xassert(AssignmentSet::run($user_chair, "paper,action,user\n13,primary,marina@poema.ru\n"));
+xassert(!AssignmentSet::run($user_chair, "paper,action,user\n14,primary,marina@poema.ru\n"));
+xassert(AssignmentSet::run($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n"));
 
 
 $Conf->check_invariants();
