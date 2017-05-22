@@ -3404,6 +3404,7 @@ class Contact {
                 $this->conf->update_paperlead_setting();
             if ($type == "manager" && !$revcid != !$this->conf->setting("papermanager"))
                 $this->conf->update_papermanager_setting();
+            Contact::update_rights();
             return true;
         } else
             return false;
