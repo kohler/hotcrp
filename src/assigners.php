@@ -1254,8 +1254,34 @@ class PreferenceAssigner extends Assigner {
         $this->pref = $pref;
         $this->exp = $exp;
     }
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        if ($prow->timeWithdrawn > 0)
+            return "#$prow->paperId has been withdrawn.";
+        else
+            return true;
+    }
+    function allow_special_contact($cclass, &$req, AssignmentState $state) {
+        if ($cclass === "any")
+            return "pc";
+        else if ($cclass === "missing" && $state->contact->isPC)
+            return [$state->contact];
+        else
+            return false;
+    }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        return true;
+        if ($state->contact->can_administer($prow)) {
+            if (!$contact->can_accept_review_assignment_ignore_conflict($prow))
+                return Text::user_html_nolink($contact) . " can’t enter preferences for #{$prow->paperId}.";
+            else
+                return true;
+        } else {
+            if ($contact->contactId !== $state->contact->contactId)
+                return "Can’t change other users’ preferences for #{$prow->paperId}.";
+            else if (!$contact->can_become_reviewer_ignore_conflict($prow))
+                return "Can’t enter preferences for #{$prow->paperId}.";
+            else
+                return true;
+        }
     }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type($this->type, ["pid", "cid"]))
@@ -1629,7 +1655,8 @@ class AssignmentSet {
         } else {
             $cleans = array("paper", "pid", "paper", "paperId",
                             "firstName", "first", "lastName", "last",
-                            "firstName", "firstname", "lastName", "lastname");
+                            "firstName", "firstname", "lastName", "lastname",
+                            "preference", "pref");
             for ($i = 0; $i < count($cleans); $i += 2)
                 if (array_search($cleans[$i], $req) === false
                     && ($j = array_search($cleans[$i + 1], $req)) !== false)

@@ -707,7 +707,7 @@ class PaperInfo {
         return $vals;
     }
 
-    private function load_reviewer_preferences() {
+    function load_reviewer_preferences() {
         $this->allReviewerPreference = $this->conf->fetch_value("select " . $this->conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
         $this->_prefs_array = null;
     }

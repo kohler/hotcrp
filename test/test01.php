@@ -601,6 +601,32 @@ assert_search_papers($user_chair, "admin:marina", "4");
 assert_search_papers($user_marina, "admin:me", "4");
 xassert($user_marina->is_manager());
 
+// preference assignments
+xassert(AssignmentSet::run($user_chair, "paper,user,pref\n1,marina,10\n"));
+xassert(AssignmentSet::run($user_chair, "paper,user,pref\n1,chair,10\n"));
+xassert(AssignmentSet::run($user_chair, "paper,user,pref\n4,marina,10\n"));
+xassert(AssignmentSet::run($user_chair, "paper,user,pref\n4,chair,10\n"));
+
+xassert(AssignmentSet::run($user_marina, "paper,user,action\n4,chair,conflict\n"));
+
+xassert(AssignmentSet::run($user_chair, "paper,user,pref\n1,marina,11\n"));
+xassert(AssignmentSet::run($user_chair, "paper,user,pref\n1,chair,11\n"));
+xassert(!AssignmentSet::run($user_chair, "paper,user,pref\n4,marina,11\n"));
+xassert(AssignmentSet::run($user_chair, "paper,user,pref\n4,chair,11\n"));
+
+xassert(AssignmentSet::run($user_marina, "paper,user,pref\n1,marina,12\n"));
+xassert(!AssignmentSet::run($user_marina, "paper,user,pref\n1,chair,12\n"));
+xassert(AssignmentSet::run($user_marina, "paper,user,pref\n4,marina,12\n"));
+xassert(AssignmentSet::run($user_marina, "paper,user,pref\n4,chair,12\n"));
+
+xassert(AssignmentSet::run($user_marina, "paper,user,action\n4,chair,noconflict\n"));
+
+$paper1->load_reviewer_preferences();
+xassert_eqq($paper1->reviewer_preference($user_marina), [12, null]);
+xassert(AssignmentSet::run($user_marina, "paper,pref\n1,13\n"));
+$paper1->load_reviewer_preferences();
+xassert_eqq($paper1->reviewer_preference($user_marina), [13, null]);
+
 // remove paper administrators
 xassert($user_marina->is_manager());
 assert_search_papers($user_chair, "admin:marina", "4");
