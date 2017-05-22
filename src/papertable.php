@@ -593,7 +593,7 @@ class PaperTable {
             '<div class="papev abstract">';
         if (($f = $this->conf->format_info($this->prow ? $this->prow->paperFormat : null))
             && ($t = get($f, "description")))
-            echo $t;
+            echo '<div class="formatdescription">', $t, '</div>';
         echo $this->editable_textarea("abstract"),
             "</div></div>\n\n";
     }
