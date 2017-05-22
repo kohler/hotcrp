@@ -366,13 +366,14 @@ class Assigner {
     static function find($n) {
         return get(self::$assigners, $n);
     }
-    function check_paper(Contact $user, $prow, AssignmentState $state) {
-        if (!$user->can_administer($prow) && !$user->privChair)
-            return "You can’t administer paper #{$prow->paperId}.";
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        if (!$state->contact->can_administer($prow)
+            && !$state->contact->privChair)
+            return "You can’t administer #{$prow->paperId}.";
         else if ($prow->timeWithdrawn > 0)
-            return "Paper #$prow->paperId has been withdrawn.";
+            return "#$prow->paperId has been withdrawn.";
         else if ($prow->timeSubmitted <= 0)
-            return "Paper #$prow->paperId is not submitted.";
+            return "#$prow->paperId is not submitted.";
         else
             return true;
     }
@@ -427,7 +428,7 @@ class NullAssigner extends Assigner {
     function __construct() {
         parent::__construct("none", 0, 0);
     }
-    function check_paper(Contact $user, $prow, AssignmentState $state) {
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
         return true;
     }
     function contact_set(&$req, AssignmentState $state) {
@@ -843,9 +844,10 @@ class ConflictAssigner extends Assigner {
         parent::__construct("conflict", $pid, $contact);
         $this->ctype = $ctype;
     }
-    function check_paper(Contact $user, $prow, AssignmentState $state) {
-        if (!$user->can_administer($prow) && !$user->privChair)
-            return "You can’t administer paper #{$prow->paperId}.";
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        if (!$state->contact->can_administer($prow)
+            && !$state->contact->privChair)
+            return "You can’t administer #{$prow->paperId}.";
         else
             return true;
     }
@@ -964,8 +966,8 @@ class TagAssigner extends Assigner {
         $this->tag = $tag;
         $this->index = $index;
     }
-    function check_paper(Contact $user, $prow, AssignmentState $state) {
-        if (($whyNot = $user->perm_change_some_tag($prow, $state->override)))
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        if (($whyNot = $state->contact->perm_change_some_tag($prow, $state->override)))
             return whyNotText($whyNot, "change tag");
         else
             return true;
@@ -1752,8 +1754,8 @@ class AssignmentSet {
                 continue;
             }
 
-            $err = $assigner->check_paper($this->contact, $prow, $this->astate);
-            if (!$err || is_string($err)) {
+            $err = $assigner->allow_paper($prow, $this->astate);
+            if ($err !== true) {
                 if (is_string($err))
                     $this->astate->paper_error($err);
                 continue;
