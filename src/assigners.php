@@ -382,8 +382,11 @@ class Assigner {
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         return false;
     }
-    function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
-        return false;
+    static function unconflicted(PaperInfo $prow, Contact $contact, AssignmentState $state) {
+        return $state->override || !$prow->has_conflict($contact);
+    }
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        return self::unconflicted($prow, $contact, $state);
     }
     function load_state(AssignmentState $state) {
     }
@@ -433,7 +436,7 @@ class NullAssigner extends Assigner {
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         return true;
     }
-    function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
@@ -514,7 +517,7 @@ class ReviewAssigner_Data {
             $req["_review_data"] = new ReviewAssigner_Data($req, $state, $rtype);
         return $req["_review_data"];
     }
-    function creator() {
+    function can_create_review() {
         return $this->creator;
     }
 }
@@ -543,7 +546,7 @@ class ReviewAssigner extends Assigner {
             return "pc";
         else if ($this->rtype == 0
                  || (($rdata = ReviewAssigner_Data::make($req, $state, $this->rtype))
-                     && !$rdata->creator()))
+                     && !$rdata->can_create_review()))
             return "reviewers";
         else
             return false;
@@ -551,19 +554,22 @@ class ReviewAssigner extends Assigner {
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         return $this->rtype <= 0 && $cclass != "none";
     }
-    function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         // Conflict allowed if we're not going to assign a new review
-        return $this->rtype == 0 || $prow->has_reviewer($contact)
+        if ($this->rtype == 0 || $prow->has_reviewer($contact)
             || (($rdata = ReviewAssigner_Data::make($req, $state, $this->rtype))
-                && !$rdata->creator());
+                && !$rdata->can_create_review()))
+            return true;
+        // Check conflicts
+        return Assigner::unconflicted($prow, $contact, $state);
     }
     static function load_review_state(AssignmentState $state) {
         $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
         while (($row = edb_row($result))) {
             $round = $state->conf->round_name($row[3]);
-            $state->load(array("type" => "review", "pid" => +$row[0], "cid" => +$row[1],
-                               "_rtype" => +$row[2], "_round" => $round,
-                               "_rsubmitted" => $row[4] > 0 ? 1 : 0));
+            $state->load(["type" => "review", "pid" => +$row[0], "cid" => +$row[1],
+                          "_rtype" => +$row[2], "_round" => $round,
+                          "_rsubmitted" => $row[4] > 0 ? 1 : 0]);
         }
         Dbl::free($result);
     }
@@ -573,7 +579,7 @@ class ReviewAssigner extends Assigner {
     }
     private function make_filter($fkey, $key, $value, &$req, AssignmentState $state) {
         $rdata = ReviewAssigner_Data::make($req, $state, $this->rtype);
-        if ($rdata->creator())
+        if ($rdata->can_create_review())
             return null;
         return $state->make_filter($fkey, [
                 "type" => "review", $key => $value,
@@ -599,17 +605,17 @@ class ReviewAssigner extends Assigner {
         $matches = $state->remove($revmatch);
 
         if ($rdata->newtype) {
-            if ($rdata->creator() && empty($matches)) {
+            if ($rdata->can_create_review() && empty($matches)) {
                 $revmatch["_round"] = $rdata->newround;
                 $matches[] = $revmatch;
             }
-            $pcm = $state->conf->pc_members();
             foreach ($matches as $m) {
                 if (!$m["_rtype"] || $rdata->newtype > 0)
                     $m["_rtype"] = $rdata->newtype;
                 if (!$m["_rtype"] || $m["_rtype"] < 0)
                     $m["_rtype"] = REVIEW_EXTERNAL;
-                if ($m["_rtype"] == REVIEW_EXTERNAL && isset($pcm[$m["cid"]]))
+                if ($m["_rtype"] == REVIEW_EXTERNAL
+                    && $state->conf->pc_member_by_id($m["cid"]))
                     $m["_rtype"] = REVIEW_PC;
                 if ($rdata->newround !== null && $rdata->explicitround)
                     $m["_round"] = $rdata->newround;
@@ -710,7 +716,7 @@ class UnsubmitReviewAssigner extends Assigner {
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         return $cclass != "none";
     }
-    function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
     }
     function load_state(AssignmentState $state) {
@@ -757,8 +763,8 @@ class LeadAssigner extends Assigner {
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         return !$this->isadd || $cclass == "none";
     }
-    function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
-        return !$this->isadd;
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        return !$this->isadd || Assigner::unconflicted($prow, $contact, $state);
     }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type($this->type, ["pid"]))
@@ -769,7 +775,9 @@ class LeadAssigner extends Assigner {
         Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
-        $remcid = $this->isadd || !$contact->contactId ? null : $contact->contactId;
+        $remcid = null;
+        if (!$this->isadd && $contact->contactId)
+            $remcid = $contact->contactId;
         $state->remove(array("type" => $this->type, "pid" => $pid, "_cid" => $remcid));
         if ($this->isadd && $contact->contactId)
             $state->add(array("type" => $this->type, "pid" => $pid, "_cid" => $contact->contactId));
@@ -841,7 +849,7 @@ class ConflictAssigner extends Assigner {
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         return $cclass == "any" && !$this->ctype;
     }
-    function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
     }
     function load_state(AssignmentState $state) {
@@ -962,7 +970,7 @@ class TagAssigner extends Assigner {
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         return true;
     }
-    function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
     }
     function load_state(AssignmentState $state) {
@@ -1226,7 +1234,7 @@ class PreferenceAssigner extends Assigner {
         $this->pref = $pref;
         $this->exp = $exp;
     }
-    function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
     }
     function load_state(AssignmentState $state) {
@@ -1501,19 +1509,22 @@ class AssignmentSet {
         if ($special === "all")
             $special = "any";
 
-        // check missing contact
-        if (!$first && !$last && !$lemail) {
-            if ($assigner->allow_special_contact("missing", $req, $this->astate))
-                return array(null);
+        // check special: missing, "none", "any", "pc", "me", PC tag, "external"
+        if (!$first && !$last && !$lemail)
+            $special = "missing";
+        if ($special === "none" || $special === "any" || $special === "missing") {
+            $x = $assigner->allow_special_contact($special, $req, $this->astate);
+            if (is_array($x))
+                return $x;
+            else if ($x === true) {
+                if ($special === "missing")
+                    return [null];
+                else
+                    return [(object) ["roles" => 0, "contactId" => null, "email" => $special, "sorter" => ""]];
+            } else if (is_string($x))
+                $special = $x;
             else
-                return $this->error("User missing.");
-        }
-
-        // check special: "none", "any", "pc", "me", PC tag, "external"
-        if ($special === "none" || $special === "any") {
-            if (!$assigner->allow_special_contact($special, $req, $this->astate))
-                return $this->error("User “{$xspecial}” not allowed here.");
-            return array((object) array("roles" => 0, "contactId" => null, "email" => $special, "sorter" => ""));
+                return $this->error($special === "missing" ? "User missing." : "User “{$xspecial}” not allowed here.");
         }
         if ($special && !$first && (!$lemail || !$last)) {
             $ret = ContactSearch::make_special($special, $this->contact);
@@ -1754,16 +1765,24 @@ class AssignmentSet {
             foreach ($contacts as $contact) {
                 if ($cf && $contact && $contact->contactId
                     && !get($cf, $contact->contactId))
-                    /* skip */;
-                else if ($contact && $contact->contactId > 0
-                         && !$this->astate->override
-                         && $prow->has_conflict($contact)
-                         && !$assigner->allow_conflict($prow, $contact, $req, $this->astate))
-                    $this->astate->paper_error(Text::user_html_nolink($contact) . " has a conflict with submission #$p.");
-                else if (($err = $assigner->apply($p, $contact, $req, $this->astate))) {
+                    continue;
+                if ($contact && $contact->contactId > 0) {
+                    $err = $assigner->allow_contact($prow, $contact, $req, $this->astate);
+                    if ($err === false) {
+                        if ($prow->has_conflict($contact))
+                            $err = Text::user_html_nolink($contact) . " has a conflict with submission #$p.";
+                        else
+                            $err = Text::user_html_nolink($contact) . " cannot be assigned to submission #$p.";
+                    }
                     if (is_string($err))
-                        $this->astate->error($err);
-                } else
+                        $this->astate->paper_error($err);
+                    if ($err !== true)
+                        continue;
+                }
+                $err = $assigner->apply($p, $contact, $req, $this->astate);
+                if (is_string($err))
+                    $this->astate->error($err);
+                if (!$err)
                     $any_success = true;
             }
         }
