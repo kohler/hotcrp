@@ -45,6 +45,7 @@ class AssignmentState {
     public $prows = array();
     public $finishers = array();
     public $paper_exact_match = true;
+    public $paper_limit = false;
     public $errors = [];
     function __construct(Contact $contact, $override) {
         $this->conf = $contact->conf;
@@ -155,6 +156,9 @@ class AssignmentState {
                     $diff[$pid][] = $item;
         }
         return $diff;
+    }
+    function paper_ids() {
+        return array_keys($this->prows);
     }
     function prow($pid) {
         if (!($p = get($this->prows, $pid))) {
@@ -1286,7 +1290,10 @@ class PreferenceAssigner extends Assigner {
     function load_state(AssignmentState $state) {
         if (!$state->mark_type($this->type, ["pid", "cid"]))
             return;
-        $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
+        if ($state->paper_limit)
+            $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference where paperId?a", $state->paper_ids());
+        else
+            $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
         while (($row = edb_row($result)))
             $state->load(array("type" => $this->type, "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => +$row[3]));
         Dbl::free($result);
@@ -1422,6 +1429,10 @@ class AssignmentSet {
             $override = $this->contact->is_admin_force();
         $this->astate = new AssignmentState($contact, $override);
         $this->cmap = new AssignerContacts($this->conf);
+    }
+
+    function set_paper_limit($limited = false) {
+        $this->astate->paper_limit = $limited;
     }
 
     function contact() {
