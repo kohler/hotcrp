@@ -65,58 +65,36 @@ if ($Qreq->fn === "get"
 
 // Update preferences
 function savePreferences($Qreq, $reset_p) {
-    global $Conf, $Me, $reviewer, $incorrect_reviewer;
+    global $Conf, $Me, $reviewer, $reviewer_contact, $incorrect_reviewer;
     if ($incorrect_reviewer) {
         Conf::msg_error("Preferences not saved.");
         return;
     }
 
-    $setting = array();
-    $error = false;
-    $pmax = 0;
+    $csv = new CsvGenerator;
+    $csv->set_header(["paper", "email", "preference"]);
+    $suffix = "u" . $reviewer;
     foreach ($Qreq as $k => $v)
-        if (strlen($k) > 7 && $k[0] == "r" && substr($k, 0, 7) == "revpref"
-            && ($p = cvtint(substr($k, 7))) > 0) {
-            if (($pref = parse_preference($v))) {
-                $setting[$p] = $pref;
-                $pmax = max($pmax, $p);
-            } else
-                $error = true;
+        if (strlen($k) > 7 && $k[0] == "r" && substr($k, 0, 7) == "revpref") {
+            if (str_ends_with($k, $suffix))
+                $k = substr($k, 0, -strlen($suffix));
+            if (($p = cvtint(substr($k, 7))) > 0)
+                $csv->add([$p, $reviewer_contact->email, $v]);
         }
-
-    if ($error)
-        Conf::msg_error("Preferences must be small positive or negative integers.");
-    if ($pmax == 0 && !$error)
+    if ($csv->is_empty()) {
         Conf::msg_error("No reviewer preferences to update.");
-    if ($pmax == 0)
         return;
+    }
 
-    $deletes = array();
-    for ($p = 1; $p <= $pmax; $p++)
-        if (isset($setting[$p])) {
-            $p0 = $p;
-            while (isset($setting[$p + 1]))
-                ++$p;
-            if ($p0 == $p)
-                $deletes[] = "paperId=$p0";
-            else
-                $deletes[] = "paperId between $p0 and $p";
-        }
-    if (count($deletes))
-        $Conf->qe_raw("delete from PaperReviewPreference where contactId=$reviewer and (" . join(" or ", $deletes) . ")");
-
-    $q = array();
-    for ($p = 1; $p <= $pmax; $p++)
-        if (($pref = get($setting, $p)) && ($pref[0] || $pref[1] !== null))
-            $q[] = array($p, $reviewer, $pref[0], $pref[1]);
-    PaperActions::save_review_preferences($q);
-
-    if (!Dbl::has_error()) {
-        $Conf->confirmMsg("Preferences saved.");
+    $aset = new AssignmentSet($Me, true);
+    $aset->parse($csv->unparse());
+    if ($aset->execute()) {
+        Conf::msg_confirm("Preferences saved.");
         if ($reset_p)
             unset($_REQUEST["p"], $_GET["p"], $_POST["p"], $_REQUEST["pap"], $_GET["pap"], $_POST["pap"]);
         redirectSelf();
-    }
+    } else
+        Conf::msg_error(join("<br />", $aset->errors_html()));
 }
 if ($Qreq->fn === "saveprefs" && check_post())
     savePreferences($Qreq, true);
@@ -140,7 +118,7 @@ if ($Qreq->fn === "setpref" && $SSel && !$SSel->is_empty() && check_post()) {
     else {
         $new_qreq = new Qrequest($Qreq->method());
         foreach ($SSel->selection() as $p)
-            $new_qreq["revpref$p"] = $Qreq->pref;
+            $new_qreq["revpref{$p}u{$reviewer}"] = $Qreq->pref;
         savePreferences($new_qreq, false);
     }
 }
