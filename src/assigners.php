@@ -760,35 +760,50 @@ class UnsubmitReviewAssigner extends Assigner {
 
 class LeadAssigner extends Assigner {
     private $isadd;
+    private $key;
     function __construct($type, $pid, $contact, $isadd) {
         parent::__construct($type, $pid, $contact);
         $this->isadd = $isadd;
+        $this->key = $type;
+        if ($type === "administrator")
+            $this->key = "manager";
+    }
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        if ($this->type === "administrator")
+            return $state->contact->privChair ? true : "You can’t change paper administrators.";
+        else
+            return parent::allow_paper($prow, $state);
     }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         return !$this->isadd || $cclass == "none";
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        return !$this->isadd || Assigner::unconflicted($prow, $contact, $state);
+        if (!$this->isadd)
+            return true;
+        else if (!$contact->can_accept_review_assignment_ignore_conflict($prow)) {
+            $verb = $this->type === "administrator" ? "administer" : $this->type;
+            return Text::user_html_nolink($contact) . " can’t $verb #{$prow->paperId}.";
+        } else
+            return Assigner::unconflicted($prow, $contact, $state);
     }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type($this->type, ["pid"]))
             return;
-        $result = $state->conf->qe("select paperId, " . $this->type . "ContactId from Paper where " . $this->type . "ContactId!=0");
+        $result = $state->conf->qe("select paperId, {$this->key}ContactId from Paper where {$this->key}ContactId!=0");
         while (($row = edb_row($result)))
             $state->load(array("type" => $this->type, "pid" => +$row[0], "_cid" => +$row[1]));
         Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         $remcid = null;
-        if (!$this->isadd && $contact->contactId)
+        if (!$this->isadd && $contact && $contact->contactId)
             $remcid = $contact->contactId;
         $state->remove(array("type" => $this->type, "pid" => $pid, "_cid" => $remcid));
         if ($this->isadd && $contact->contactId)
             $state->add(array("type" => $this->type, "pid" => $pid, "_cid" => $contact->contactId));
     }
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
-        return new LeadAssigner($item["type"], $item["pid"], $cmap->make_id($item["_cid"]),
-                                !$item->deleted());
+        return new LeadAssigner($item["type"], $item["pid"], $cmap->make_id($item["_cid"]), !$item->deleted());
     }
     function unparse_description() {
         return $this->type;
@@ -832,7 +847,7 @@ class LeadAssigner extends Assigner {
         $locks["Paper"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        $aset->contact->assign_paper_pc($this->pid, $this->type,
+        $aset->contact->assign_paper_pc($this->pid, $this->key,
                 $this->isadd ? $this->cid : 0,
                 $this->isadd || !$this->cid ? array() : array("old_cid" => $this->cid));
     }
@@ -1336,6 +1351,12 @@ Assigner::register("clearlead", new LeadAssigner("lead", 0, null, false));
 Assigner::register("shepherd", new LeadAssigner("shepherd", 0, null, true));
 Assigner::register("noshepherd", new LeadAssigner("shepherd", 0, null, false));
 Assigner::register("clearshepherd", new LeadAssigner("shepherd", 0, null, false));
+Assigner::register("administrator", new LeadAssigner("administrator", 0, null, true));
+Assigner::register("noadministrator", new LeadAssigner("administrator", 0, null, false));
+Assigner::register("clearadministrator", new LeadAssigner("administrator", 0, null, false));
+Assigner::register("admin", new LeadAssigner("administrator", 0, null, true));
+Assigner::register("noadmin", new LeadAssigner("administrator", 0, null, false));
+Assigner::register("clearadmin", new LeadAssigner("administrator", 0, null, false));
 Assigner::register("conflict", new ConflictAssigner(0, null, CONFLICT_CHAIRMARK));
 Assigner::register("noconflict", new ConflictAssigner(0, null, 0));
 Assigner::register("clearconflict", new ConflictAssigner(0, null, 0));

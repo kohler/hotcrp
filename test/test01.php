@@ -588,6 +588,29 @@ assert_search_papers($user_chair, "re:opt:mgbaker", "1 2 13 17");
 xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any:external"));
 assert_search_papers($user_chair, "re:opt:mgbaker", "1 2 13 17");
 
+// paper administrators
+assert_search_papers($user_chair, "has:admin", "");
+assert_search_papers($user_chair, "conflict:me", "");
+assert_search_papers($user_chair, "admin:me", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
+assert_search_papers($user_marina, "admin:me", "");
+xassert(!$user_marina->is_manager());
+xassert(AssignmentSet::run($user_chair, "action,paper,user\nadministrator,4,marina@poema.ru\n"));
+assert_search_papers($user_chair, "has:admin", "4");
+assert_search_papers($user_chair, "admin:me", "1 2 3 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
+assert_search_papers($user_chair, "admin:marina", "4");
+assert_search_papers($user_marina, "admin:me", "4");
+xassert($user_marina->is_manager());
+
+// remove paper administrators
+xassert($user_marina->is_manager());
+assert_search_papers($user_chair, "admin:marina", "4");
+xassert(!AssignmentSet::run($user_marina, "paper,action\n4,clearadministrator\n"));
+xassert($user_marina->is_manager());
+assert_search_papers($user_chair, "admin:marina", "4");
+xassert(AssignmentSet::run($user_chair, "paper,action\n4,clearadministrator\n"));
+xassert(!$user_marina->is_manager());
+assert_search_papers($user_chair, "admin:marina", "");
+
 // tracks and view-paper permissions
 AssignmentSet::run($user_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
 $Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+red\"}}");
