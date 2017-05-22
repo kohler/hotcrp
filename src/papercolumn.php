@@ -965,7 +965,7 @@ class PreferencePaperColumn extends PaperColumn {
         else {
             $ptext = $this->text($pl, $row);
             $iname = "revpref" . $row->paperId;
-            if (!$this->is_direct)
+            if ($this->careful)
                 $iname .= "u" . $this->contact->contactId;
             return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($has_cflt && !$this->is_direct ? "&nbsp;" . review_type_icon(-1) : "");
         }
