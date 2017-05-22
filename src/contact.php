@@ -2446,7 +2446,7 @@ class Contact {
         if (!$prow)
             return $this->isPC && $this->conf->check_all_tracks($this, Track::ASSREV);
         $rights = $this->rights($prow);
-        return ($rights->allow_pc_broad
+        return ($rights->allow_administer
                 || $this->isPC)
             && ($rights->review_type > 0
                 || $rights->allow_administer
