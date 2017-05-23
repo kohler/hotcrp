@@ -1174,6 +1174,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 166
         && $conf->ql("alter table PaperReviewPreference drop key `contactPaper`"))
         $conf->update_schema_version(167);
+    if ($conf->sversion == 167
+        && $conf->ql("update PaperReview set reviewOrdinal=0 where reviewOrdinal is null")
+        && $conf->ql("alter table PaperReview change `reviewOrdinal` `reviewOrdinal` int(1) NOT NULL DEFAULT '0'"))
+        $conf->update_schema_version(168);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

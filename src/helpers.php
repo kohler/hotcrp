@@ -881,8 +881,8 @@ function parseReviewOrdinal($text) {
 }
 
 function unparseReviewOrdinal($ord) {
-    if ($ord === null)
-        return "x";
+    if (!$ord)
+        return ".";
     else if (is_object($ord)) {
         if ($ord->reviewOrdinal)
             return $ord->paperId . unparseReviewOrdinal($ord->reviewOrdinal);

@@ -766,7 +766,8 @@ class ReviewForm {
                 $result = $this->conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
                 if ($result) {
                     $crow = edb_row($result);
-                    $qf[] = "reviewOrdinal=coalesce(reviewOrdinal,?)";
+                    // NB `coalesce(reviewOrdinal,0)` is not necessary in modern schemas
+                    $qf[] = "reviewOrdinal=if(coalesce(reviewOrdinal,0)=0,?,reviewOrdinal)";
                     $qv[] = $crow[0] + 1;
                 }
                 Dbl::free($result);

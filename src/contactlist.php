@@ -567,7 +567,7 @@ class ContactList {
         if (isset($queryOptions["repapers"])) {
             $rf[] = "group_concat(r.paperId) paperIds";
             $rf[] = "group_concat(reviewId) reviewIds";
-            $rf[] = "group_concat(coalesce(reviewOrdinal,0)) reviewOrdinals";
+            $rf[] = "group_concat(reviewOrdinal) reviewOrdinals";
             $pq .= ", paperIds, reviewIds, reviewOrdinals";
         } else if (isset($queryOptions["papers"]))
             $pq .= ",\n\t(select group_concat(paperId) from PaperConflict where contactId=u.contactId and conflictType>=" . CONFLICT_AUTHOR . ") paperIds";
