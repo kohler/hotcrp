@@ -2330,9 +2330,10 @@ class Contact {
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
         return $rights->can_administer
-            || ($rrow && ($this->is_my_review($rrow)
-                          || ($rights->allow_pc
-                              && get($rrow, "requestedBy") == $this->contactId)))
+            || ($rrow
+                && ($this->is_my_review($rrow)
+                    || ($rights->allow_pc
+                        && $rrow->requestedBy == $this->contactId)))
             || ($rights->allow_pc
                 && (!($pc_seeblindrev = $this->conf->setting("pc_seeblindrev"))
                     || ($pc_seeblindrev == 2
