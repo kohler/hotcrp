@@ -54,7 +54,13 @@ class ContactSearch {
         else if (strcasecmp($this->text, "me") == 0
                  && (!($this->type & self::F_PC) || ($this->user->roles & Contact::ROLE_PC)))
             return array($this->user->contactId);
-        else
+        else if (strcasecmp($this->text, "chair") == 0) {
+            $chairs = [];
+            foreach ($this->conf->pc_members() as $p)
+                if ($p->roles & Contact::ROLE_CHAIR)
+                    $chairs[] = $p->contactId;
+            return $chairs;
+        } else
             return false;
     }
     private function check_pc_tag() {
