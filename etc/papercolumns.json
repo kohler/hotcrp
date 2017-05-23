@@ -166,7 +166,8 @@
     },
     {
         "name": "pcconf",
-        "row": true, "fold": true, "completion": true, "factory_class": "PCConflictListPaperColumn",
+        "row": true, "fold": true, "completion": "pcconflicts", "factory_class": "PCConflictListPaperColumn",
+        "synonym": ["conflicts", "pcconflicts", "pc-conflicts"],
         "priority": 450
     },
     {

@@ -167,7 +167,12 @@ class PaperColumn extends Column {
             return "&lt;" . htmlspecialchars($this->name) . "&gt;";
     }
     function completion_name() {
-        return $this->completion ? $this->name : false;
+        if (!$this->completion)
+            return false;
+        else if (is_string($this->completion))
+            return $this->completion;
+        else
+            return $this->name;
     }
     function sort_name($score_sort) {
         return $this->name;
