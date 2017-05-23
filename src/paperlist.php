@@ -446,6 +446,7 @@ class PaperList {
                         && !$xrow->reviewType))
                     $prow->_xreviewer = $xrow;
             }
+            Dbl::free($result);
             $this->_xreviewer = $xreviewer;
         }
         return $this->_xreviewer;

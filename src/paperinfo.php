@@ -609,7 +609,9 @@ class PaperInfo {
             return "";
         $out = array();
         $tmap = $this->conf->topic_map();
-        $interests = $interests_user ? $interests_user->topic_interest_map() : array();
+        $interests = [];
+        if ($interests_user)
+            $interests = $interests_user->topic_interest_map();
         $long = false;
         foreach ($topics as $t)
             $out[] = self::render_topic($t, get($interests, $t), $tmap, $long);
@@ -970,6 +972,7 @@ class PaperInfo {
         if (!property_exists($this, "reviewContactIds"))
             $this->load_scores("contactId", "reviewContactIds");
         if ($this->reviewContactIds) {
+            // XXX should include requestedBy checks maybe
             if ($contact->can_view_review($this, null, $forceShow))
                 return json_decode("[" . $this->reviewContactIds . "]");
             else if ($this->review_type($contact))

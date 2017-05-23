@@ -590,6 +590,7 @@ class AbstractPaperColumn extends PaperColumn {
 }
 
 class TopicListPaperColumn extends PaperColumn {
+    private $interest_contact;
     function __construct($cj) {
         parent::__construct($cj);
     }
@@ -598,6 +599,10 @@ class TopicListPaperColumn extends PaperColumn {
             return false;
         if ($visible)
             $pl->qopts["topics"] = 1;
+        // only managers can see other users’ topic interests
+        if ($pl->reviewer_contact() === $pl->contact
+            || $pl->contact->is_manager())
+            $this->interest_contact = $pl->reviewer_contact();
         return true;
     }
     function header(PaperList $pl, $is_text) {
@@ -607,7 +612,7 @@ class TopicListPaperColumn extends PaperColumn {
         return !isset($row->topicIds) || $row->topicIds == "";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $row->unparse_topics_html(true, $pl->reviewer_contact());
+        return $row->unparse_topics_html(true, $this->interest_contact);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $row->unparse_topics_text();
@@ -839,11 +844,14 @@ class TopicScorePaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->conf->has_topics() || !$pl->contact->isPC)
+        $this->contact = $pl->reviewer_contact();
+        if (!$pl->conf->has_topics()
+            || !$pl->contact->isPC
+            || ($this->contact->contactId !== $pl->contact->contactId
+                && !$pl->contact->is_manager()))
             return false;
         if ($visible) {
-            $this->contact = $pl->reviewer_contact();
-            $pl->qopts["reviewer"] = $pl->reviewer_cid();
+            $pl->qopts["reviewer"] = $this->contact->contactId;
             $pl->qopts["topics"] = 1;
         }
         return true;
@@ -867,7 +875,7 @@ class PreferencePaperColumn extends PaperColumn {
     private $contact;
     private $viewer_contact;
     private $is_direct;
-    private $careful;
+    private $not_me;
     function __construct($cj, $contact = null) {
         parent::__construct($cj);
         $this->editable = !!get($cj, "edit");
@@ -877,19 +885,17 @@ class PreferencePaperColumn extends PaperColumn {
         return new PreferencePaperColumn(["name" => $this->name] + (array) self::lookup_json("editpref"), $this->contact);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->isPC)
-            return false;
         $this->viewer_contact = $pl->contact;
-        if (!$this->contact)
-            $this->contact = $pl->reviewer_contact();
-        $this->careful = $this->contact->contactId != $pl->contact->contactId;
-        if (($this->careful || !$this->name /* == this is the user factory */)
-            && !$pl->contact->is_manager())
+        $this->contact = $this->contact ? : $pl->reviewer_contact();
+        $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
+        if (!$pl->contact->isPC
+            || (($this->not_me || !$this->name /* user factory */)
+                && !$pl->contact->is_manager()))
             return false;
         if ($visible) {
             $this->is_direct = $this->contact->contactId == $pl->reviewer_cid();
             if ($this->is_direct) {
-                $pl->qopts["reviewer"] = $pl->reviewer_cid();
+                $pl->qopts["reviewer"] = $this->contact->contactId;
                 $pl->qopts["reviewerPreference"] = 1;
             } else
                 $pl->qopts["allReviewerPreference"] = 1;
@@ -906,7 +912,7 @@ class PreferencePaperColumn extends PaperColumn {
         return "pref";
     }
     private function preference_values($row) {
-        if ($this->careful && !$this->viewer_contact->allow_administer($row))
+        if ($this->not_me && !$this->viewer_contact->allow_administer($row))
             return [null, null];
         else if ($this->is_direct)
             return [$row->reviewerPreference, $row->reviewerExpertise];
@@ -934,15 +940,15 @@ class PreferencePaperColumn extends PaperColumn {
         return 0;
     }
     function header(PaperList $pl, $is_text) {
-        if ($this->careful && $is_text)
+        if ($this->not_me && $is_text)
             return $pl->contact->name_text_for($this->contact) . " preference";
-        else if ($this->careful)
+        else if ($this->not_me)
             return $pl->contact->name_html_for($this->contact) . "<br />preference";
         else
             return "Preference";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $this->careful && !$pl->contact->allow_administer($row);
+        return $this->not_me && !$pl->contact->allow_administer($row);
     }
     private function show_content(PaperList $pl, PaperInfo $row, $zero_empty) {
         $ptext = $this->text($pl, $row);
@@ -950,7 +956,7 @@ class PreferencePaperColumn extends PaperColumn {
             $ptext = "−" /* U+2122 MINUS SIGN */ . substr($ptext, 1);
         if ($zero_empty && $ptext === "0")
             return "";
-        else if ($this->careful && !$pl->contact->can_administer($row, false))
+        else if ($this->not_me && !$pl->contact->can_administer($row, false))
             return '<span class="fx5">' . $ptext . '</span><span class="fn5">?</span>';
         else
             return $ptext;
@@ -965,7 +971,7 @@ class PreferencePaperColumn extends PaperColumn {
         else {
             $ptext = $this->text($pl, $row);
             $iname = "revpref" . $row->paperId;
-            if ($this->careful)
+            if ($this->not_me)
                 $iname .= "u" . $this->contact->contactId;
             return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($has_cflt && !$this->is_direct ? "&nbsp;" . review_type_icon(-1) : "");
         }
