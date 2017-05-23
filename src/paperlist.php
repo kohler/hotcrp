@@ -184,13 +184,8 @@ class PaperList {
             $svar = get($args, "foldtype", "pl") . "display";
             $this->display = $this->conf->session($svar, "");
         }
-        if (isset($args["reviewer"]) && ($r = $args["reviewer"])) {
-            if (!is_object($r)) {
-                error_log(caller_landmark() . ": XXX warning: 'reviewer' not an object"); // BACKWARD COMPAT
-                $r = $this->conf->user_by_id($r);
-            }
-            $this->_reviewer = $r;
-        }
+        if (is_object(get($args, "reviewer")))
+            $this->_reviewer = $args["reviewer"];
         $this->atab = $qreq->atab;
 
         $this->tagger = new Tagger($this->contact);
