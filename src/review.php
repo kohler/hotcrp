@@ -833,7 +833,7 @@ class ReviewForm {
                 $qf[] = "reviewAuthorModified=?";
                 $qv[] = $now;
             } else if ($rrow && !$rrow->reviewAuthorModified
-                       && $rrow->reviewModified !== null) {
+                       && $rrow->reviewModified) {
                 $qf[] = "reviewAuthorModified=?";
                 $qv[] = $rrow->reviewModified;
             }
