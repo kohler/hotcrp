@@ -256,13 +256,15 @@ class SelectorPaperColumn extends PaperColumn {
 }
 
 class ConflictSelector_PaperColumn extends SelectorPaperColumn {
+    private $contact;
     function __construct($cj) {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->privChair)
+        $this->contact = $pl->reviewer_contact();
+        if (!$pl->contact->is_manager())
             return false;
-        $pl->qopts["reviewer"] = $pl->reviewer_cid();
+        $pl->qopts["reviewer"] = $this->contact->contactId;
         if (($tid = $pl->table_id()))
             $pl->add_header_script("add_assrev_ajax(" . json_encode("#$tid") . ")");
         return true;
@@ -274,17 +276,22 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
         return $pl->is_selected($row->paperId, $row->reviewerConflictType > 0);
     }
     function content(PaperList $pl, PaperInfo $row) {
+        $disabled = $row->reviewerConflictType >= CONFLICT_AUTHOR;
+        if (!$pl->contact->allow_administer($row)) {
+            $disabled = true;
+            if (!$pl->contact->can_view_conflicts($row))
+                return "";
+        }
         $pl->mark_has("sel");
         $c = "";
-        if ($row->reviewerConflictType >= CONFLICT_AUTHOR)
+        if ($disabled)
             $c .= ' disabled="disabled"';
         if ($this->checked($pl, $row)) {
             $c .= ' checked="checked"';
             unset($row->folded);
         }
-        return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
-            . '<input type="checkbox" class="cb" '
-            . 'name="assrev' . $row->paperId . 'u' . $pl->reviewer_cid()
+        return '<input type="checkbox" class="cb" '
+            . 'name="assrev' . $row->paperId . 'u' . $this->contact->contactId
             . '" value="-1" tabindex="3"' . $c . ' />';
     }
 }
@@ -593,9 +600,10 @@ class TopicListPaperColumn extends PaperColumn {
         if ($visible)
             $pl->qopts["topics"] = 1;
         // only managers can see other users’ topic interests
-        if ($pl->reviewer_contact() === $pl->contact
-            || $pl->contact->is_manager())
-            $this->interest_contact = $pl->reviewer_contact();
+        $this->interest_contact = $pl->reviewer_contact();
+        if ($this->interest_contact->contactId !== $pl->contact->contactId
+            && !$pl->contact->is_manager())
+            $this->interest_contact = null;
         return true;
     }
     function header(PaperList $pl, $is_text) {
@@ -879,14 +887,15 @@ class PreferencePaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->viewer_contact = $pl->contact;
-        $this->contact = $this->contact ? : $pl->reviewer_contact();
+        $reviewer = $pl->reviewer_contact();
+        $this->contact = $this->contact ? : $reviewer;
         $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
         if (!$pl->contact->isPC
             || (($this->not_me || !$this->name /* user factory */)
                 && !$pl->contact->is_manager()))
             return false;
         if ($visible) {
-            $this->is_direct = $this->contact->contactId == $pl->reviewer_cid();
+            $this->is_direct = $this->contact->contactId == $reviewer->contactId;
             if ($this->is_direct) {
                 $pl->qopts["reviewer"] = $this->contact->contactId;
                 $pl->qopts["reviewerPreference"] = 1;
