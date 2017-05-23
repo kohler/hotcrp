@@ -852,10 +852,8 @@ class TopicScorePaperColumn extends PaperColumn {
             || ($this->contact->contactId !== $pl->contact->contactId
                 && !$pl->contact->is_manager()))
             return false;
-        if ($visible) {
-            $pl->qopts["reviewer"] = $this->contact->contactId;
+        if ($visible)
             $pl->qopts["topics"] = 1;
-        }
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b) {
