@@ -775,13 +775,15 @@ class ReviewDelegationPaperColumn extends PaperColumn {
 }
 
 class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
+    private $contact;
     function __construct($cj) {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
+        $this->contact = $pl->reviewer_contact();
         if (!$pl->contact->is_manager())
             return false;
-        $pl->qopts["reviewer"] = $pl->reviewer_cid();
+        $pl->qopts["reviewer"] = $this->contact->contactId;
         if ($visible > 0 && ($tid = $pl->table_id()))
             $pl->add_header_script("add_assrev_ajax(" . json_encode("#$tid") . ")");
         return true;
@@ -799,7 +801,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         if ($row->reviewerConflictType >= CONFLICT_AUTHOR)
             return '<span class="author">Author</span>';
         $rt = ($row->reviewerConflictType > 0 ? -1 : min(max($row->reviewerReviewType, 0), REVIEW_PRIMARY));
-        if ($pl->reviewer_contact()->can_accept_review_assignment_ignore_conflict($row)
+        if ($this->contact->can_accept_review_assignment_ignore_conflict($row)
             || $rt > 0)
             $options = array(0 => "None",
                              REVIEW_PRIMARY => "Primary",
@@ -808,7 +810,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
                              -1 => "Conflict");
         else
             $options = array(0 => "None", -1 => "Conflict");
-        return Ht::select("assrev{$row->paperId}u" . $pl->reviewer_cid(),
+        return Ht::select("assrev{$row->paperId}u{$this->contact->contactId}",
                           $options, $rt, ["tabindex" => 3]);
     }
 }
