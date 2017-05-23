@@ -10,11 +10,6 @@
         "priority": 10
     },
     {
-        "name": "selunlessconf",
-        "column": true, "minimal": true, "className": "pl_sel", "factory_class": "SelectorPaperColumn",
-        "priority": 10
-    },
-    {
         "name": "selconf",
         "column": true, "minimal": true, "className": "pl_confsel", "factory_class": "ConflictSelector_PaperColumn",
         "priority": 10

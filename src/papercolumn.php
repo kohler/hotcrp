@@ -234,11 +234,6 @@ class SelectorPaperColumn extends PaperColumn {
     function __construct($cj) {
         parent::__construct($cj);
     }
-    function prepare(PaperList $pl, $visible) {
-        if ($this->name == "selunlessconf")
-            $pl->qopts["reviewer"] = $pl->reviewer_cid();
-        return true;
-    }
     function header(PaperList $pl, $is_text) {
         return $is_text ? "Selected" : "";
     }
@@ -246,8 +241,6 @@ class SelectorPaperColumn extends PaperColumn {
         return $pl->is_selected($row->paperId, $this->name == "selon");
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($this->name == "selunlessconf" && $row->reviewerConflictType)
-            return "";
         $pl->mark_has("sel");
         $c = "";
         if ($this->checked($pl, $row)) {
