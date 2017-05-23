@@ -440,13 +440,13 @@ if (!isset($_REQUEST["emailBody"]))
     $_REQUEST["emailBody"] = $null_mailer->expand($mailTemplates["genericmailtool"]["body"]);
 if (substr($_REQUEST["subject"], 0, strlen($subjectPrefix)) == $subjectPrefix)
     $_REQUEST["subject"] = substr($_REQUEST["subject"], strlen($subjectPrefix));
-if (isset($_REQUEST["cc"]) && $Me->privChair)
+if (isset($_REQUEST["cc"]) && $Me->is_manager()) // XXX should only apply to papers you administer
     $_REQUEST["cc"] = simplify_whitespace($_REQUEST["cc"]);
 else if (opt("emailCc"))
     $_REQUEST["cc"] = opt("emailCc");
 else
     $_REQUEST["cc"] = Text::user_email_to($Conf->site_contact());
-if (isset($_REQUEST["replyto"]) && $Me->privChair)
+if (isset($_REQUEST["replyto"]) && $Me->is_manager()) // XXX should only apply to papers you administer
     $_REQUEST["replyto"] = simplify_whitespace($_REQUEST["replyto"]);
 else
     $_REQUEST["replyto"] = opt("emailReplyTo", "");
