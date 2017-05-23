@@ -394,6 +394,15 @@ class PaperList {
         return $this->_reviewer ? : $this->contact;
     }
 
+    function display_reviewer() {
+        if ($this->_reviewer)
+            return $this->_reviewer;
+        else if (($r = $this->search->reviewer()))
+            return $r;
+        else
+            return $this->contact;
+    }
+
     function maybeConflict($row, $text, $visible) {
         if ($visible)
             return $text;

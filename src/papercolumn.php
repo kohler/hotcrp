@@ -721,7 +721,7 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        return !!$pl->contact->isPC;
+        return $pl->contact->isPC;
     }
     function header(PaperList $pl, $is_text) {
         return "Review status";
@@ -1381,11 +1381,70 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
     }
 }
 
-class Score_PaperColumn extends PaperColumn {
+class ScoreGraph_PaperColumn extends PaperColumn {
+    protected $contact;
+    protected $not_me;
+    protected $_sortinfo;
+    protected $_avginfo;
+    function __construct($cj) {
+        parent::__construct($cj);
+    }
+    function prepare(PaperList $pl, $visible) {
+        $this->contact = $pl->display_reviewer();
+        $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
+        if ($visible && $this->not_me
+            && (!$pl->contact->privChair || $pl->conf->has_any_manager()))
+            $pl->qopts["reviewIdentities"] = true;
+    }
+    function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
+        return null;
+    }
+    protected function set_sort_fields(PaperList $pl, PaperInfo $row, $sorter) {
+        $sortinfo = $this->_sortinfo;
+        $avginfo = $this->_avginfo;
+        $s = $this->score_values($pl, $row, null);
+        if ($s !== null) {
+            $scoreinfo = new ScoreInfo($s, true);
+            $cid = $this->contact->contactId;
+            if ($this->not_me
+                && !$row->can_view_review_identity_of($cid, $pl->contact))
+                $cid = 0;
+            $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $cid);
+            $row->$avginfo = $scoreinfo->mean();
+        } else
+            $row->$sortinfo = $row->$avginfo = null;
+    }
+    function compare(PaperInfo $a, PaperInfo $b) {
+        $sortinfo = $this->_sortinfo;
+        if (!($x = ScoreInfo::compare($b->$sortinfo, $a->$sortinfo, -1))) {
+            $avginfo = $this->_avginfo;
+            $x = ScoreInfo::compare($b->$avginfo, $a->$avginfo);
+        }
+        return $x;
+    }
+    function field_content(PaperList $pl, ReviewField $field, PaperInfo $row) {
+        $values = $this->score_values($pl, $row, false);
+        $wrap_conflict = false;
+        if (empty($values) && $row->conflictType > 0
+            && $pl->contact->allow_administer($row)) {
+            $values = $this->score_values($pl, $row, true);
+            $wrap_conflict = true;
+        }
+        if (empty($values))
+            return "";
+        $pl->need_render = true;
+        $cid = $this->contact->contactId;
+        if ($this->not_me && !$row->can_view_review_identity_of($cid, $pl->contact))
+            $cid = 0;
+        $t = $field->unparse_graph($values, 1, get($values, $cid));
+        return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
+    }
+}
+
+class Score_PaperColumn extends ScoreGraph_PaperColumn {
     public $score;
     public $max_score;
     private $form_field;
-    private $xreviewer;
     function __construct($cj, ReviewField $form_field) {
         parent::__construct(["name" => $form_field->abbreviation()] + (array) $cj);
         $this->score = $form_field->id;
@@ -1403,31 +1462,17 @@ class Score_PaperColumn extends PaperColumn {
             $pl->qopts["scores"][$this->score] = true;
             $this->max_score = count($this->form_field->options);
         }
+        parent::prepare($pl, $visible);
         return true;
     }
-    function analyze($pl, &$rows) {
-        $this->xreviewer = $pl->prepare_xreviewer($rows);
+    function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
+        return $row->viewable_scores($this->form_field, $pl->contact, $forceShow);
     }
     function sort_prepare($pl, &$rows, $sorter) {
-        $this->_sortinfo = $sortinfo = "_score_sortinfo." . $this->score . $sorter->score;
-        $this->_avginfo = $avginfo = "_score_avginfo." . $this->score;
-        $reviewer = $pl->reviewer_cid();
-        $field = $this->form_field;
+        $this->_sortinfo = "_score_sortinfo." . $this->score . $sorter->score;
+        $this->_avginfo = "_score_avginfo." . $this->score;
         foreach ($rows as $row)
-            if (($scores = $row->viewable_scores($field, $pl->contact, null)) !== null) {
-                $scoreinfo = new ScoreInfo($scores, true);
-                $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
-                $row->$avginfo = $scoreinfo->mean();
-            } else
-                $row->$sortinfo = $row->$avginfo = null;
-    }
-    function compare(PaperInfo $a, PaperInfo $b) {
-        $sortinfo = $this->_sortinfo;
-        if (!($x = ScoreInfo::compare($b->$sortinfo, $a->$sortinfo, -1))) {
-            $avginfo = $this->_avginfo;
-            $x = ScoreInfo::compare($b->$avginfo, $a->$avginfo);
-        }
-        return $x;
+            parent::set_sort_fields($pl, $row, $sorter);
     }
     function header(PaperList $pl, $is_text) {
         return $is_text ? $this->form_field->abbreviation() : $this->form_field->web_abbreviation();
@@ -1442,22 +1487,7 @@ class Score_PaperColumn extends PaperColumn {
         return !$row->may_have_viewable_scores($this->form_field, $pl->contact, true);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $wrap_conflict = false;
-        $scores = $row->viewable_scores($this->form_field, $pl->contact, false);
-        if (empty($scores) && $row->conflictType > 0 && $pl->contact->allow_administer($row)) {
-            $wrap_conflict = true;
-            $scores = $row->viewable_scores($this->form_field, $pl->contact, true);
-        }
-        if (!$scores)
-            return "";
-        $pl->need_render = true;
-        $my_score = null;
-        if (!$this->xreviewer)
-            $my_score = get($scores, $pl->reviewer_cid());
-        else if (isset($row->_xreviewer))
-            $my_score = get($scores, $row->_xreviewer->reviewContactId);
-        $t = $this->form_field->unparse_graph($scores, 1, $my_score);
-        return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
+        return parent::field_content($pl, $this->form_field, $row);
     }
 }
 
@@ -1484,14 +1514,11 @@ class Score_PaperColumnFactory extends PaperColumnFactory {
     }
 }
 
-class FormulaGraph_PaperColumn extends PaperColumn {
+class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     public $formula;
     private $indexes_function;
     private $formula_function;
     private $results;
-    private $_sortinfo;
-    private $_avginfo;
-    private $xreviewer;
     function __construct($cj, Formula $formula) {
         parent::__construct($cj);
         $this->formula = $formula;
@@ -1499,6 +1526,7 @@ class FormulaGraph_PaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
             || !$this->formula->check($pl->contact)
+            || !($this->formula->result_format() instanceof ReviewField)
             || !($pl->search->limitName == "a"
                  ? $pl->contact->can_view_formula_as_author($this->formula)
                  : $pl->contact->can_view_formula($this->formula)))
@@ -1509,12 +1537,10 @@ class FormulaGraph_PaperColumn extends PaperColumn {
             $this->indexes_function = Formula::compile_indexes_function($pl->contact, $this->formula->datatypes());
         if ($visible)
             $this->formula->add_query_options($pl->qopts);
+        parent::prepare($pl, $visible);
         return true;
     }
-    function analyze($pl, &$rows) {
-        $this->xreviewer = $pl->prepare_xreviewer($rows);
-    }
-    private function scores($pl, PaperInfo $row, $forceShow) {
+    function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
         $indexesf = $this->indexes_function;
         $indexes = $indexesf ? $indexesf($row, $pl->contact, $forceShow) : [null];
         $formulaf = $this->formula_function;
@@ -1527,22 +1553,8 @@ class FormulaGraph_PaperColumn extends PaperColumn {
     function sort_prepare($pl, &$rows, $sorter) {
         $this->_sortinfo = $sortinfo = "_formulagraph_sortinfo." . $this->name;
         $this->_avginfo = $avginfo = "_formulagraph_avginfo." . $this->name;
-        $reviewer = $pl->reviewer_cid();
         foreach ($rows as $row)
-            if (($scores = $this->scores($pl, $row, false))) {
-                $scoreinfo = new ScoreInfo($scores, true);
-                $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
-                $row->$avginfo = $scoreinfo->mean();
-            } else
-                $row->$sortinfo = $row->$avginfo = null;
-    }
-    function compare(PaperInfo $a, PaperInfo $b) {
-        $sortinfo = $this->_sortinfo;
-        if (!($x = ScoreInfo::compare($b->$sortinfo, $a->$sortinfo))) {
-            $avginfo = $this->_avginfo;
-            $x = ScoreInfo::compare($b->$avginfo, $a->$avginfo);
-        }
-        return $x;
+            parent::set_sort_fields($pl, $row, $sorter);
     }
     function header(PaperList $pl, $is_text) {
         $x = $this->formula->column_header();
@@ -1554,22 +1566,7 @@ class FormulaGraph_PaperColumn extends PaperColumn {
             return htmlspecialchars($x);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $values = $this->scores($pl, $row, false);
-        $wrap_conflict = false;
-        if (empty($values) && $row->conflictType > 0 && $pl->contact->allow_administer($row)) {
-            $values = $this->scores($pl, $row, true);
-            $wrap_conflict = true;
-        }
-        if (empty($values))
-            return "";
-        $pl->need_render = true;
-        $my_score = null;
-        if (!$this->xreviewer)
-            $my_score = get($values, $pl->reviewer_cid());
-        else if (isset($row->_xreviewer))
-            $my_score = get($values, $row->_xreviewer->reviewContactId);
-        $t = $this->formula->result_format()->unparse_graph($values, 1, $my_score);
-        return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
+        return parent::field_content($pl, $this->formula->result_format(), $row);
     }
 }
 
