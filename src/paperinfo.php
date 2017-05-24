@@ -6,10 +6,10 @@
 class PaperContactInfo {
     public $paperId;
     public $contactId;
-    public $conflict_type = 0;
-    public $review_type = 0;
-    public $review_submitted = 0;
-    public $review_needs_submit = 1;
+    public $conflictType = 0;
+    public $reviewType = 0;
+    public $reviewSubmitted = 0;
+    public $reviewNeedsSubmit = 1;
     public $review_token_cid = 0;
     public $rights_forced = null;
     public $forced_rights_link = null;
@@ -24,13 +24,13 @@ class PaperContactInfo {
     static function make_my(PaperInfo $prow, $cid, $object) {
         $ci = PaperContactInfo::make($prow, $cid);
         if (property_exists($object, "conflictType"))
-            $ci->conflict_type = (int) $object->conflictType;
+            $ci->conflictType = (int) $object->conflictType;
         if (property_exists($object, "myReviewType"))
-            $ci->review_type = (int) $object->myReviewType;
+            $ci->reviewType = (int) $object->myReviewType;
         if (property_exists($object, "myReviewSubmitted"))
-            $ci->review_submitted = (int) $object->myReviewSubmitted;
+            $ci->reviewSubmitted = (int) $object->myReviewSubmitted;
         if (property_exists($object, "myReviewNeedsSubmit"))
-            $ci->review_needs_submit = (int) $object->myReviewNeedsSubmit;
+            $ci->reviewNeedsSubmit = (int) $object->myReviewNeedsSubmit;
         if (property_exists($object, "myReviewContactId")
             && $object->myReviewContactId != $cid)
             $ci->review_token_cid = (int) $object->myReviewContactId;
@@ -41,13 +41,13 @@ class PaperContactInfo {
         if (isset($this->paperId))
             $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
-        $this->conflict_type = (int) $this->conflict_type;
-        $this->review_type = (int) $this->review_type;
-        $this->review_submitted = (int) $this->review_submitted;
-        if ($this->review_needs_submit !== null)
-            $this->review_needs_submit = (int) $this->review_needs_submit;
+        $this->conflictType = (int) $this->conflictType;
+        $this->reviewType = (int) $this->reviewType;
+        $this->reviewSubmitted = (int) $this->reviewSubmitted;
+        if ($this->reviewNeedsSubmit !== null)
+            $this->reviewNeedsSubmit = (int) $this->reviewNeedsSubmit;
         else
-            $this->review_needs_submit = 1;
+            $this->reviewNeedsSubmit = 1;
         $this->review_token_cid = (int) $this->review_token_cid;
         if ($this->review_token_cid == $this->contactId)
             $this->review_token_cid = null;
@@ -58,10 +58,7 @@ class PaperContactInfo {
         $conf = $prow->conf;
         $pid = $prow->paperId;
         $result = null;
-        $q = "select conflictType as conflict_type,
-                reviewType as review_type,
-                reviewSubmitted as review_submitted,
-                reviewNeedsSubmit as review_needs_submit,
+        $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit,
                 PaperReview.contactId as review_token_cid";
         if ($cid && !$rev_tokens
             && (!$Me || $cid == $Me->contactId)
@@ -299,12 +296,12 @@ class PaperInfo {
             if (!$rev_tokens && property_exists($this, "allReviewNeedsSubmit")) {
                 $ci = PaperContactInfo::make($this, $cid);
                 if (($c = get($this->conflicts(), $cid)))
-                    $ci->conflict_type = $c->conflictType;
-                $ci->review_type = $this->review_type($cid);
+                    $ci->conflictType = $c->conflictType;
+                $ci->reviewType = $this->review_type($cid);
                 $rs = $this->review_cid_int_array(false, "reviewSubmitted", "allReviewSubmitted");
-                $ci->review_submitted = get($rs, $cid, 0);
+                $ci->reviewSubmitted = get($rs, $cid, 0);
                 $rs = $this->review_cid_int_array(false, "reviewNeedsSubmit", "allReviewNeedsSubmit");
-                $ci->review_needs_submit = get($rs, $cid, 1);
+                $ci->reviewNeedsSubmit = get($rs, $cid, 1);
                 $this->_contact_info[$cid] = $ci;
             } else
                 PaperContactInfo::load_into($this, $cid, $rev_tokens);
@@ -391,7 +388,7 @@ class PaperInfo {
 
     function conflict_type($contact = null) {
         $ci = $this->contact_info($contact);
-        return $ci ? $ci->conflict_type : 0;
+        return $ci ? $ci->conflictType : 0;
     }
 
     function has_conflict($contact) {
@@ -411,7 +408,7 @@ class PaperInfo {
         if ($this->_contact_info_rights_version === Contact::$rights_version
             && array_key_exists($cid, $this->_contact_info)) {
             $ci = $this->_contact_info[$cid];
-            return $ci ? $ci->review_type : 0;
+            return $ci ? $ci->reviewType : 0;
         }
         if (!isset($this->allReviewTypes) && isset($this->reviewTypes)
             && ($x = get($this->submitted_review_types(), $cid)) !== null)
@@ -425,13 +422,13 @@ class PaperInfo {
 
     function review_not_incomplete($contact = null) {
         $ci = $this->contact_info($contact);
-        return $ci && $ci->review_type > 0
-            && ($ci->review_submitted > 0 || $ci->review_needs_submit == 0);
+        return $ci && $ci->reviewType > 0
+            && ($ci->reviewSubmitted > 0 || $ci->reviewNeedsSubmit == 0);
     }
 
     function review_submitted($contact = null) {
         $ci = $this->contact_info($contact);
-        return $ci && $ci->review_type > 0 && $ci->review_submitted > 0;
+        return $ci && $ci->reviewType > 0 && $ci->reviewSubmitted > 0;
     }
 
     function pc_can_become_reviewer() {
