@@ -626,40 +626,52 @@ class TopicListPaperColumn extends PaperColumn {
 }
 
 class ReviewerTypePaperColumn extends PaperColumn {
-    protected $xreviewer;
+    private $contact;
+    private $not_me;
+    private $rrow_key;
     function __construct($cj) {
         parent::__construct($cj);
     }
-    function analyze($pl, &$rows) {
-        $this->xreviewer = $pl->prepare_xreviewer($rows);
+    function prepare(PaperList $pl, $visible) {
+        if (!$this->contact)
+            $this->contact = $pl->display_reviewer();
+        $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
+        return true;
     }
     function sort_prepare($pl, &$rows, $sorter) {
-        if (!$this->xreviewer) {
-            foreach ($rows as $row) {
-                $row->_reviewer_type_sort_info = 2 * $row->reviewType;
-                if (!$row->_reviewer_type_sort_info && $row->conflictType)
-                    $row->_reviewer_type_sort_info = -$row->conflictType;
-                else if ($row->reviewType > 0 && !$row->reviewSubmitted)
-                    $row->_reviewer_type_sort_info += 1;
+        foreach ($rows as $row) {
+            if ($this->not_me) {
+                $rtype = $rsubmitted = $ctype = 0;
+                $rstatus = $row->review_status($this->contact);
+                if ($pl->contact->can_view_review_identity($row, $rstatus, true)) {
+                    $rtype = $rstatus->reviewType;
+                    $rsubmitted = $rstatus->reviewSubmitted;
+                }
+                if ($pl->contact->can_view_conflicts($row, true))
+                    $ctype = $rstatus->conflictType;
+            } else {
+                $rtype = $row->reviewType;
+                $rsubmitted = $row->reviewSubmitted;
+                $ctype = $row->conflictType;
             }
-        } else {
-            foreach ($rows as $row)
-                if (isset($row->_xreviewer)) {
-                    $row->_reviewer_type_sort_info = 2 * $row->_xreviewer->reviewType;
-                    if (!$row->_xreviewer->reviewSubmitted)
-                        $row->_reviewer_type_sort_info += 1;
-                } else
-                    $row->_reviewer_type_sort_info = 0;
+            if ($rtype && $rsubmitted)
+                $row->_reviewer_type_sort_info = 2 * $rtype;
+            else if ($rtype)
+                $row->_reviewer_type_sort_info = 2 * $rtype + 1;
+            else if ($ctype)
+                $row->_reviewer_type_sort_info = -1;
+            else
+                $row->_reviewer_type_sort_info = 0;
         }
     }
     function compare(PaperInfo $a, PaperInfo $b) {
         return $b->_reviewer_type_sort_info - $a->_reviewer_type_sort_info;
     }
     function header(PaperList $pl, $is_text) {
-        if ($this->xreviewer && $is_text)
-            return $pl->contact->name_text_for($this->xreviewer) . " review";
-        else if ($this->xreviewer)
-            return $pl->contact->name_html_for($this->xreviewer) . "<br />review";
+        if ($this->not_me && $is_text)
+            return $pl->contact->name_text_for($this->contact) . " review";
+        else if ($this->not_me)
+            return $pl->contact->name_html_for($this->contact) . "<br />review";
         else
             return "Review";
     }
@@ -668,21 +680,35 @@ class ReviewerTypePaperColumn extends PaperColumn {
     const F_SHEPHERD = 4;
     private function analysis(PaperList $pl, PaperInfo $row) {
         $ranal = null;
-        $xrow = $this->xreviewer ? get($row, "_xreviewer") : $row;
-        if ($xrow && $xrow->reviewType) {
-            $ranal = $pl->make_review_analysis($xrow, $row);
-            if ($ranal->needsSubmit)
-                $pl->mark_has("need_review");
-        }
         $flags = 0;
-        if ($xrow && $xrow->conflictType > 0)
-            $flags |= self::F_CONFLICT;
-        if (!$this->xreviewer && ($me = $pl->contact->contactId)) {
-            if ($row->leadContactId == $me)
+        if ($this->not_me) {
+            $rrow = $row->review_status($this->contact);
+            if ($rrow->reviewType
+                && $pl->contact->can_view_review_identity($row, $rrow))
+                $ranal = $pl->make_review_analysis($rrow, $row);
+            if ($rrow->conflictType > 0
+                && $pl->contact->can_view_conflicts($row))
+                $flags |= self::F_CONFLICT;
+            if ($row->leadContactId == $this->contact->contactId
+                && $pl->contact->can_view_lead($row))
                 $flags |= self::F_LEAD;
-            if ($row->shepherdContactId == $me)
+            if ($row->shepherdContactId == $this->contact->contactId
+                && $pl->contact->can_view_shepherd($row))
                 $flags |= self::F_SHEPHERD;
+        } else {
+            if ($row->reviewType)
+                $ranal = $pl->make_review_analysis($row, $row);
+            if ($row->conflictType > 0)
+                $flags |= self::F_CONFLICT;
+            if (($cid = $pl->contact->contactId)) {
+                if ($row->leadContactId == $cid)
+                    $flags |= self::F_LEAD;
+                if ($row->shepherdContactId == $cid)
+                    $flags |= self::F_LEAD;
+            }
         }
+        if ($ranal && $ranal->needsSubmit)
+            $pl->mark_has("need_review");
         return [$ranal, $flags];
     }
     function content(PaperList $pl, PaperInfo $row) {
@@ -793,9 +819,6 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         if ($visible > 0 && ($tid = $pl->table_id()))
             $pl->add_header_script("add_assrev_ajax(" . json_encode("#$tid") . ")");
         return true;
-    }
-    function analyze($pl, &$rows) {
-        $this->xreviewer = false;
     }
     function header(PaperList $pl, $is_text) {
         return "Assignment";

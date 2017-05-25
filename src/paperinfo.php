@@ -11,13 +11,24 @@ class PaperContactInfo {
     public $reviewSubmitted = 0;
     public $reviewNeedsSubmit = 1;
     public $review_token_cid = 0;
+
+    public $is_full = false;
+    public $reviewId;
+    public $reviewModified;
+    public $reviewOrdinal;
+    public $reviewBlind;
+    public $requestedBy;
+    public $timeApprovalRequested;
+    public $reviewRound;
+
     public $rights_forced = null;
     public $forced_rights_link = null;
 
-    static function make(PaperInfo $prow, $cid) {
+    static function make(PaperInfo $prow, $cid, $full = false) {
         $ci = new PaperContactInfo;
         $ci->paperId = $prow->paperId;
         $ci->contactId = $cid;
+        $ci->is_full = $full;
         return $ci;
     }
 
@@ -37,7 +48,7 @@ class PaperContactInfo {
         return $ci;
     }
 
-    private function merge() {
+    private function merge($full) {
         if (isset($this->paperId))
             $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
@@ -51,15 +62,22 @@ class PaperContactInfo {
         $this->review_token_cid = (int) $this->review_token_cid;
         if ($this->review_token_cid == $this->contactId)
             $this->review_token_cid = null;
+        $this->is_full = $full;
+        if ($full && $this->reviewType)
+            foreach (["reviewId", "reviewModified", "reviewOrdinal",
+                      "reviewBlind", "requestedBy", "timeApprovalRequested",
+                      "reviewRound"] as $k)
+                $this->$k = (int) $this->$k;
     }
 
-    static function load_into(PaperInfo $prow, $cid, $rev_tokens = null) {
+    static function load_into(PaperInfo $prow, $cid, $rev_tokens, $full) {
         global $Me;
         $conf = $prow->conf;
         $pid = $prow->paperId;
-        $result = null;
         $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit,
                 PaperReview.contactId as review_token_cid";
+        if ($full)
+            $q .= ", reviewId, reviewModified, reviewOrdinal, reviewBlind, requestedBy, timeApprovalRequested, reviewRound";
         if ($cid && !$rev_tokens
             && (!$Me || $cid == $Me->contactId)
             && $prow->_row_set && $prow->_row_set->size() > 1) {
@@ -71,7 +89,7 @@ class PaperContactInfo {
             $found = false;
             $map = [];
             while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
-                $ci->merge();
+                $ci->merge($full);
                 $map[$ci->paperId] = $ci;
             }
             Dbl::free($result);
@@ -79,6 +97,7 @@ class PaperContactInfo {
                 $row->_add_contact_info($map[$row->paperId]);
             if ($prow->_get_contact_info($cid))
                 return;
+            $result = null;
         }
         if ($cid && !$rev_tokens
             && (!$Me || ($Me->contactId != $cid
@@ -101,16 +120,17 @@ class PaperContactInfo {
                     $q .= " or PaperReview.reviewToken in (" . join(",", $rev_tokens) . ")";
                 $result = $conf->qe_raw("$q))
                     left join PaperConflict on (PaperConflict.paperId=$pid and PaperConflict.contactId=$cid)");
-            }
+            } else
+                $result = null;
         }
         while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
-            $ci->merge();
+            $ci->merge($full);
             $prow->_add_contact_info($ci);
         }
         Dbl::free($result);
         foreach ($cids as $cid)
             if (!$prow->_get_contact_info($cid))
-                $prow->_add_contact_info(PaperContactInfo::make($prow, $cid));
+                $prow->_add_contact_info(PaperContactInfo::make($prow, $cid, $full));
     }
 }
 
@@ -280,7 +300,7 @@ class PaperInfo {
         $this->_contact_info[$ci->contactId] = $ci;
     }
 
-    function contact_info($contact = null) {
+    function contact_info($contact = null, $full = false) {
         global $Me;
         $rev_tokens = null;
         if (!$contact || is_object($contact)) {
@@ -292,8 +312,10 @@ class PaperInfo {
             $this->_contact_info = array();
             $this->_contact_info_rights_version = Contact::$rights_version;
         }
-        if (!array_key_exists($cid, $this->_contact_info)) {
-            if (!$rev_tokens && property_exists($this, "allReviewNeedsSubmit")) {
+        if (!array_key_exists($cid, $this->_contact_info)
+            || ($full && !$this->_contact_info[$cid]->is_full)) {
+            if (!$rev_tokens && !$full
+                && property_exists($this, "allReviewNeedsSubmit")) {
                 $ci = PaperContactInfo::make($this, $cid);
                 if (($c = get($this->conflicts(), $cid)))
                     $ci->conflictType = $c->conflictType;
@@ -304,7 +326,7 @@ class PaperInfo {
                 $ci->reviewNeedsSubmit = get($rs, $cid, 1);
                 $this->_contact_info[$cid] = $ci;
             } else
-                PaperContactInfo::load_into($this, $cid, $rev_tokens);
+                PaperContactInfo::load_into($this, $cid, $rev_tokens, $full);
         }
         return $this->_contact_info[$cid];
     }
@@ -1074,6 +1096,10 @@ class PaperInfo {
                 return array($contact->contactId => $my_score);
         }
         return null;
+    }
+
+    function review_status($cid) {
+        return $this->contact_info($cid, true);
     }
 
     function can_view_review_identity_of($cid, Contact $contact, $forceShow = null) {

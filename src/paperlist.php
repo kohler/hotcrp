@@ -106,7 +106,6 @@ class PaperList {
     public $tagger;
     public $check_format;
     private $_reviewer = null;
-    private $_xreviewer = false;
     public $tbody_attr;
     public $row_attr;
     public $review_list;
@@ -428,32 +427,6 @@ class PaperList {
         if (isset($pcm[$contactId]))
             return $visible ? $this->contact->reviewer_text_for($pcm[$contactId]) : "";
         return "";
-    }
-
-    function prepare_xreviewer($rows) {
-        // PaperSearch is responsible for access control checking use of
-        // `reviewerContact`, but we are careful anyway.
-        if (($xreviewer = $this->search->reviewer())
-            && $xreviewer->contactId != $this->contact->contactId
-            && !empty($rows)
-            && !$this->_xreviewer) {
-            $by_pid = array();
-            foreach ($rows as $row)
-                $by_pid[$row->paperId] = $row;
-            $result = $this->conf->qe_raw("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, timeApprovalRequested, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $xreviewer->contactId . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $xreviewer->contactId . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)");
-            while (($xrow = edb_orow($result))) {
-                $prow = $by_pid[$xrow->paperId];
-                if ($this->contact->allow_administer($prow)
-                    || $this->contact->can_view_review_identity($prow, $xrow, true)
-                    || ($this->contact->privChair
-                        && $xrow->conflictType > 0
-                        && !$xrow->reviewType))
-                    $prow->_xreviewer = $xrow;
-            }
-            Dbl::free($result);
-            $this->_xreviewer = $xreviewer;
-        }
-        return $this->_xreviewer;
     }
 
     private function _footer($ncol, $extra) {
