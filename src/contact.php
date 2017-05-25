@@ -1534,8 +1534,8 @@ class Contact {
                     $this->contactId, $this->review_tokens_);
             }
             $row = edb_row($result);
-            Dbl::free($result);
             $this->has_outstanding_review_ = !!$row;
+            Dbl::free($result);
         }
         return $this->has_outstanding_review_;
     }
@@ -1548,6 +1548,7 @@ class Contact {
                 $result = $this->conf->qe("select requestedBy from PaperReview where requestedBy=? and contactId!=? limit 1", $this->contactId, $this->contactId);
             $row = edb_row($result);
             $this->is_requester_ = $row && $row[0] > 0;
+            Dbl::free($result);
         }
         return $this->is_requester_;
     }
@@ -1559,6 +1560,7 @@ class Contact {
             if ($this->contactId > 0)
                 $result = $this->conf->qe("select paperId from Paper where leadContactId=? limit 1", $this->contactId);
             $this->is_lead_ = edb_nrows($result) > 0;
+            Dbl::free($result);
         }
         return $this->is_lead_;
     }
