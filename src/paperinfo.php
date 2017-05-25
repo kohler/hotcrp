@@ -79,7 +79,6 @@ class PaperContactInfo {
         if ($full)
             $q .= ", reviewId, reviewModified, reviewOrdinal, reviewBlind, requestedBy, timeApprovalRequested, reviewRound";
         if ($cid && !$rev_tokens
-            && (!$Me || $cid == $Me->contactId)
             && $prow->_row_set && $prow->_row_set->size() > 1) {
             $result = $conf->qe("$q, Paper.paperId paperId, $cid contactId
                 from Paper
