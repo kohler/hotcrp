@@ -3528,11 +3528,14 @@ class PaperSearch {
 
     function mark_reviewer($cid) {
         if (!$this->_reviewer_fixed) {
-            if ($cid && ($this->_reviewer
-                         ? $this->_reviewer->contactId == $cid
-                         : $this->_reviewer === false))
-                $this->_reviewer = $this->conf->user_by_id($cid);
-            else
+            if ($cid && $this->_reviewer && $this->_reviewer->contactId == $cid)
+                /* have correct reviewer */;
+            else if ($cid && !$this->_reviewer) {
+                if ($this->user->contactId == $cid)
+                    $this->_reviewer = $this->user;
+                else
+                    $this->_reviewer = $this->conf->user_by_id($cid);
+            } else
                 $this->_reviewer = null;
         }
     }
