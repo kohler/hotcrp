@@ -398,7 +398,7 @@ function render(SettingValues $sv) {
         if ($sv->use_req() && isset($sv->req["top$tid"]))
             $tname = $sv->req["top$tid"];
         echo '<tr>', $td1, '<td class="lentry">',
-            Ht::entry("top$tid", $tname, array("size" => 40, "style" => "width:20em")),
+            Ht::entry("top$tid", $tname, array("size" => 40, "style" => "width:20em", "class" => $sv->has_problem_at("top$tid") ? "setting_error" : null)),
             '</td>';
 
         $tinterests = defval($interests, $tid, array());
@@ -424,7 +424,7 @@ function render(SettingValues $sv) {
         $td1 = "<td></td>";
     }
     echo '<tr><td class="lcaption top">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
-        Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
+        Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em", "class" => $sv->has_problem_at("topnew") ? "setting_error" : null)),
         '</td></tr></table>';
 }
     function crosscheck(SettingValues $sv) {
@@ -441,34 +441,62 @@ function render(SettingValues $sv) {
 
 
 class Topic_SettingParser extends SettingParser {
-    public function parse(SettingValues $sv, Si $si) {
-        foreach (["TopicArea", "PaperTopic", "TopicInterest"] as $t)
-            $sv->need_lock[$t] = true;
-        return true;
+    private $new_topics;
+    private $deleted_topics;
+    private $changed_topics;
+
+    private function check_topic($t) {
+        $t = simplify_whitespace($t);
+        if ($t === "" || !ctype_digit($t))
+            return $t;
+        else
+            return false;
     }
 
-    public function save(SettingValues $sv, Si $si) {
-        $tmap = $sv->conf->topic_map();
-        foreach ($sv->req as $k => $v)
-            if ($k === "topnew") {
-                $news = array();
-                foreach (explode("\n", $v) as $n)
-                    if (($n = simplify_whitespace($n)) !== "")
-                        $news[] = "('" . sqlq($n) . "')";
-                if (count($news))
-                    $sv->conf->qe_raw("insert into TopicArea (topicName) values " . join(",", $news));
-            } else if (strlen($k) > 3 && substr($k, 0, 3) === "top"
-                       && ctype_digit(substr($k, 3))) {
-                $k = (int) substr($k, 3);
-                $v = simplify_whitespace($v);
-                if ($v == "") {
-                    $sv->conf->qe_raw("delete from TopicArea where topicId=$k");
-                    $sv->conf->qe_raw("delete from PaperTopic where topicId=$k");
-                    $sv->conf->qe_raw("delete from TopicInterest where topicId=$k");
-                } else if (isset($tmap[$k]) && $v != $tmap[$k] && !ctype_digit($v))
-                    $sv->conf->qe_raw("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
+    function parse(SettingValues $sv, Si $si) {
+        if (isset($sv->req["topnew"]))
+            foreach (explode("\n", $sv->req["topnew"]) as $x) {
+                $t = $this->check_topic($x);
+                if ($t === false)
+                    $sv->error_at("topnew", "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
+                else if ($t !== "")
+                    $this->new_topics[] = [$t]; // NB array of arrays
             }
+        $tmap = $sv->conf->topic_map();
+        foreach ($sv->req as $k => $x)
+            if (strlen($k) > 3 && substr($k, 0, 3) === "top"
+                && ctype_digit(substr($k, 3))) {
+                $tid = (int) substr($k, 3);
+                $t = $this->check_topic($x);
+                if ($t === false)
+                    $sv->error_at($k, "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
+                else if ($t === "")
+                    $this->deleted_topics[] = $tid;
+                else if (isset($tmap[$tid]) && $tmap[$tid] !== $t)
+                    $this->changed_topics[$tid] = $t;
+            }
+        if (!$sv->has_error()) {
+            foreach (["TopicArea", "PaperTopic", "TopicInterest"] as $t)
+                $sv->need_lock[$t] = true;
+            return true;
+        }
+    }
+
+    function save(SettingValues $sv, Si $si) {
+        if ($this->new_topics)
+            $sv->conf->qe("insert into TopicArea (topicName) values ?v", $this->new_topics);
+        if ($this->deleted_topics) {
+            $sv->conf->qe("delete from TopicArea where topicId?a", $this->deleted_topics);
+            $sv->conf->qe("delete from PaperTopic where topicId?a", $this->deleted_topics);
+            $sv->conf->qe("delete from TopicInterest where topicId?a", $this->deleted_topics);
+        }
+        if ($this->changed_topics) {
+            foreach ($this->changed_topics as $tid => $t)
+                $sv->conf->qe("update TopicArea set topicName=? where topicId=?", $t, $tid);
+        }
         $sv->conf->invalidate_topics();
+        if ($this->new_topics || $this->deleted_topics || $this->changed_topics)
+            $sv->changes[] = "topics";
     }
 }
 
@@ -599,7 +627,7 @@ class Option_SettingParser extends SettingParser {
         }
     }
 
-    public function save(SettingValues $sv, Si $si) {
+    function save(SettingValues $sv, Si $si) {
         $new_opts = $this->stashed_options;
         $current_opts = $sv->conf->paper_opts->nonfixed_option_list();
         $this->option_clean_form_positions($new_opts, $current_opts);
@@ -628,13 +656,13 @@ class Option_SettingParser extends SettingParser {
 
 
 class Banal_SettingParser extends SettingParser {
-    public function parse(SettingValues $sv, Si $si) {
+    function parse(SettingValues $sv, Si $si) {
         if (substr($si->name, 0, 9) === "sub_banal")
             return BanalSettings::parse(substr($si->name, 9), $sv, true);
         else
             return false;
     }
-    public function save(SettingValues $sv, Si $si) {
+    function save(SettingValues $sv, Si $si) {
         global $Now;
         if (substr($si->name, 0, 9) === "sub_banal") {
             $suffix = substr($si->name, 9);
