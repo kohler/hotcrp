@@ -782,7 +782,7 @@ class Conf {
     function topic_map() {
         if ($this->_topic_map === null) {
             $this->_topic_map = $tx = [];
-            $result = $this->qe_raw("select topicId, topicName from TopicArea order by topicName");
+            $result = $this->qe_raw("select topicId, topicName from TopicArea");
             while (($row = edb_row($result))) {
                 if (strcasecmp(substr($row[1], 0, 7), "none of") == 0)
                     $tx[(int) $row[0]] = $row[1];
@@ -790,8 +790,12 @@ class Conf {
                     $this->_topic_map[(int) $row[0]] = $row[1];
             }
             Dbl::free($result);
-            foreach ($tx as $tid => $tname)
-                $this->_topic_map[$tid] = $tname;
+            asort($this->_topic_map, SORT_NATURAL | SORT_FLAG_CASE);
+            if (!empty($tx)) {
+                asort($tx, SORT_NATURAL | SORT_FLAG_CASE);
+                foreach ($tx as $tid => $tname)
+                    $this->_topic_map[$tid] = $tname;
+            }
         }
         return $this->_topic_map;
     }
