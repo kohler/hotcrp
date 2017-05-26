@@ -66,8 +66,11 @@
     },
     {
         "name": "revtype",
-        "column": true, "sort": true, "completion": true, "factory_class": "ReviewerTypePaperColumn",
+        "column": true, "sort": true, "completion": true, "className": "pl_revtype", "factory_class": "ReviewerTypePaperColumn",
         "priority": 820
+    },
+    {
+        "prefix": "revtype:", "factory_class": "ReviewerType_PaperColumnFactory"
     },
     {
         "name": "revstat",

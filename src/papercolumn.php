@@ -629,8 +629,9 @@ class ReviewerTypePaperColumn extends PaperColumn {
     private $contact;
     private $not_me;
     private $rrow_key;
-    function __construct($cj) {
+    function __construct($cj, $contact = null) {
         parent::__construct($cj);
+        $this->contact = $contact;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$this->contact)
@@ -745,6 +746,26 @@ class ReviewerTypePaperColumn extends PaperColumn {
         if ($flags & self::F_CONFLICT)
             $t[] = "Conflict";
         return $t ? join("; ", $t) : "";
+    }
+}
+
+class ReviewerType_PaperColumnFactory extends PaperColumnFactory {
+    function __construct($cj) {
+        parent::__construct($cj);
+    }
+    function instantiate(Contact $user, $name, $errors) {
+        $colon = strpos($name, ":");
+        $x = ContactSearch::make_pc(substr($name, $colon + 1), $user)->ids;
+        if (empty($x)) {
+            self::instantiate_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $colon + 1)) . "”.", 2);
+            return null;
+        }
+        foreach ($x as &$cid) {
+            $u = $user->conf->pc_member_by_id($cid);
+            $fname = substr($name, 0, $colon + 1) . $u->email;
+            $cid = new ReviewerTypePaperColumn(["name" => $fname] + (array) PaperColumn::lookup_json("revtype"), $u);
+        }
+        return $x;
     }
 }
 
