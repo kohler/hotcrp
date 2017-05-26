@@ -172,7 +172,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 169) {
+        if ($this->sversion < 170) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -810,8 +810,7 @@ class Conf {
     }
 
     function has_topics() {
-        $this->topic_map();
-        return !empty($this->_topic_map);
+        return get($this->settings, "has_topics", 0) !== 0;
     }
 
     function topic_count() {
@@ -1514,6 +1513,11 @@ class Conf {
         $any = $this->invariantq("select tag from PaperTag where tag like '%:' limit 1");
         if ($any && !$this->setting("has_colontag"))
             trigger_error("$this->dbname invariant error: has tag " . self::$invariant_row[0] . " but no has_colontag");
+
+        // has_topics is defined
+        $any = $this->invariantq("select topicId from TopicArea limit 1");
+        if (!$any !== !$this->setting("has_topics"))
+            trigger_error("$this->dbname invariant error: has_topics setting incorrect");
     }
 
 

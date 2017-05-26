@@ -60,6 +60,9 @@
         "name": "Final version upload deadline",
         "type": "date", "date_backup": "final_done"
     },
+    "has_topics": {
+        "internal": true, "type": "checkbox"
+    },
     "mailbody_requestreview": {
         "name": "Mail template for external review requests",
         "type": "string"
