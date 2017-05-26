@@ -1470,12 +1470,28 @@ class Contact {
         // Load from database
         $result = null;
         if ($this->contactId > 0) {
-            $qr = $this->review_tokens_ ? " or reviewToken?a" : "";
-            $result = $this->conf->qe("select (select max(conflictType) from PaperConflict where contactId=?), (select paperId from PaperReview where contactId=?$qr limit 1)", $this->contactId, $this->contactId, $this->review_tokens_);
+            $qs = ["(select max(conflictType) from PaperConflict where contactId=?)"];
+            $qv = [$this->contactId];
+            if ($this->review_tokens_) {
+                $qs[] = "exists (select * from PaperReview where contactId=? or reviewToken?a)";
+                $qv[] = $this->contactId;
+                $qv[] = $this->review_tokens_;
+            } else {
+                $qs[] = "exists (select * from PaperReview where contactId=?)";
+                $qv[] = $this->contactId;
+            }
+            if ($this->isPC) {
+                $qs[] = "exists (select * from PaperReview where requestedBy=? and contactId!=?)";
+                $qv[] = $this->contactId;
+                $qv[] = $this->contactId;
+            }
+            $result = $this->conf->qe_apply("select " . join(", ", $qs), $qv);
         }
         $row = edb_row($result);
         $this->is_author_ = $row && $row[0] >= CONFLICT_AUTHOR;
         $this->has_review_ = $row && $row[1] > 0;
+        if ($this->isPC)
+            $this->is_requester_ = $row && $row[2] > 0;
         Dbl::free($result);
 
         // Update contact information from capabilities
