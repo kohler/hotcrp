@@ -1017,16 +1017,17 @@ class Preference_PaperColumnFactory extends PaperColumnFactory {
     }
     function instantiate(Contact $user, $name, $errors) {
         $colon = strpos($name, ":");
-        $cids = ContactSearch::make_pc(substr($name, $colon + 1), $user)->ids;
-        if (empty($cids))
+        $x = ContactSearch::make_pc(substr($name, $colon + 1), $user)->ids;
+        if (empty($x)) {
             self::instantiate_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $colon + 1)) . "”.", 2);
-        else if (count($cids) == 1) {
-            $pcm = $user->conf->pc_members();
-            $fname = substr($name, 0, $colon + 1) . $pcm[$cids[0]]->email;
-            return new PreferencePaperColumn(["name" => $fname] + (array) PaperColumn::lookup_json("pref"), $pcm[$cids[0]]);
-        } else
-            self::instantiate_error($errors, "“" . htmlspecialchars(substr($name, $colon + 1)) . "” matches more than one PC member.", 2);
-        return null;
+            return null;
+        }
+        foreach ($x as &$cid) {
+            $u = $user->conf->pc_member_by_id($cid);
+            $fname = substr($name, 0, $colon + 1) . $u->email;
+            $cid = new PreferencePaperColumn(["name" => $fname] + (array) PaperColumn::lookup_json("pref"), $u);
+        }
+        return $x;
     }
 }
 
