@@ -97,7 +97,7 @@ class MailRecipients {
             $hide = $any_pcrev ? 0 : self::F_HIDE;
             $this->defsel("pcrev", "PC reviewers", $hide);
             $this->defsel("uncpcrev", "PC reviewers with incomplete reviews", $hide);
-            $this->defsel("newpcrev", "PC reviewers with new review assignments", $any_newpcrev ? 0 : self::F_HIDE);
+            $this->defsel("newpcrev", "PC reviewers with new review assignments", $any_newpcrev && $any_pcrev ? 0 : self::F_HIDE);
 
             $hide = $any_extrev ? 0 : self::F_HIDE;
             $this->defsel("extrev", "External reviewers", $hide);
