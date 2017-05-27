@@ -4,39 +4,41 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class MailRecipients {
-
+    private $conf;
     private $contact;
     private $type;
-    private $sel = array();
-    private $sel_nonmanager = array();
+    private $sel = [];
+    private $selflags = [];
     private $papersel;
     public $newrev_since = 0;
     public $error = false;
 
-    private function defsel($name, $description) {
-        assert(!isset($this->sel[$name]));
-        $this->sel[$name] = $description;
-    }
+    const F_ANYPC = 1;
+    const F_GROUP = 2;
+    const F_HIDE = 4;
 
-    private function defsel_nm($name, $description) {
+    private function defsel($name, $description, $flags = 0) {
         assert(!isset($this->sel[$name]));
         $this->sel[$name] = $description;
-        $this->sel_nonmanager[$name] = true;
+        $this->selflags[$name] = $flags;
     }
 
     function __construct($contact, $type, $papersel, $newrev_since) {
-        global $Conf, $Now;
+        global $Now;
+        $this->conf = $contact->conf;
         $this->contact = $contact;
         assert(!!$contact->isPC);
+        $any_pcrev = $any_extrev = 0;
         $any_newpcrev = $any_lead = $any_shepherd = 0;
 
         if ($contact->is_manager()) {
-            $this->defsel("s", "Contact authors of submitted papers");
+            $hide = !$this->conf->setting("papersub");
+            $this->defsel("s", "Contact authors of submitted papers", $hide ? self::F_HIDE : 0);
             $this->defsel("unsub", "Contact authors of unsubmitted papers");
             $this->defsel("au", "All contact authors");
 
             // map "somedec:no"/"somedec:yes" to real decisions
-            $result = Dbl::qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
+            $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
             $dec_pcount = edb_map($result);
             $dec_tcount = array(0 => 0, 1 => 0, -1 => 0);
             foreach ($dec_pcount as $dnum => $dcount)
@@ -46,88 +48,88 @@ class MailRecipients {
                 foreach ($dec_pcount as $dnum => $dcount)
                     if (($type[8] == "n" ? $dnum < 0 : $dnum > 0)
                         && $dcount > $dmaxcount
-                        && ($dname = $Conf->decision_name($dnum))) {
+                        && ($dname = $this->conf->decision_name($dnum))) {
                         $type = "dec:$dname";
                         $dmaxcount = $dcount;
                     }
             }
 
-            $by_dec = array();
-            foreach ($Conf->decision_map() as $dnum => $dname) {
-                $k = "dec:$dname";
-                if ($dnum && (@$dec_pcount[$dnum] > 0 || $type == $k))
-                    $by_dec[$k] = "Contact authors of " . htmlspecialchars($dname) . " papers";
-            }
-            if ($dec_tcount[1] > 0 || $type == "dec:yes")
-                $by_dec["dec:yes"] = "Contact authors of accept-class papers";
-            if ($dec_tcount[-1] > 0 || $type == "dec:no")
-                $by_dec["dec:no"] = "Contact authors of reject-class papers";
-            if ($dec_tcount[0] > 0 || $type == "dec:none")
-                $by_dec["dec:none"] = "Contact authors of undecided papers";
-            if ($type == "dec:any")
-                $by_dec["dec:any"] = "Contact authors of decided papers";
-            if (count($by_dec)) {
-                $this->sel["bydec_group"] = array("optgroup", "Contact authors by decision");
-                foreach ($by_dec as $k => $v)
-                    $this->defsel($k, $v);
-                $this->sel["bydec_group_end"] = array("optgroup");
-            }
+            $this->defsel("bydec_group", "Contact authors by decision", self::F_GROUP);
+            foreach ($this->conf->decision_map() as $dnum => $dname)
+                if ($dnum) {
+                    $k = "dec:$dname";
+                    $hide = !get($dec_pcount, $dnum);
+                    $this->defsel("dec:$dname", "Contact authors of " . htmlspecialchars($dname) . " papers", $hide ? self::F_HIDE : 0);
+                }
+            $this->defsel("dec:yes", "Contact authors of accept-class papers", $dec_tcount[1] == 0 ? self::F_HIDE : 0);
+            $this->defsel("dec:no", "Contact authors of reject-class papers", $dec_tcount[-1] == 0 ? self::F_HIDE : 0);
+            $this->defsel("dec:none", "Contact authors of undecided papers", $dec_tcount[0] == 0 || ($dec_tcount[1] == 0 && $dec_tcount[-1] == 0) ? self::F_HIDE : 0);
+            $this->defsel("dec:any", "Contact authors of decided papers", self::F_HIDE);
+            $this->defsel("bydec_group_end", null, self::F_GROUP);
 
-            $this->sel["rev_group"] = array("optgroup", "Reviewers");
-            $this->defsel("rev", "Reviewers");
-            $this->defsel("crev", "Reviewers with complete reviews");
-            $this->defsel("uncrev", "Reviewers with incomplete reviews");
-            $this->defsel("allcrev", "Reviewers with no incomplete reviews");
-            $this->defsel("pcrev", "PC reviewers");
-            $this->defsel("uncpcrev", "PC reviewers with incomplete reviews");
+            $this->defsel("rev_group", "Reviewers", self::F_GROUP);
 
-            // new assignments query
             // XXX this exposes information about PC review assignments
             // for conflicted papers to the chair; not worth worrying about
-            $aq = "select PaperReview.paperId any_newpcrev from PaperReview";
-            if (!$contact->privChair)
-                $aq .= " join Paper on (Paper.paperId=PaperReview.paperId and Paper.managerContactId=" . $contact->contactId . ")";
-            $aq .= "\n\twhere reviewType>=" . REVIEW_PC . " and reviewSubmitted is null and reviewNeedsSubmit!=0 and timeRequested>timeRequestNotified limit 1";
-            $bcq_manager = "";
-            if (!$contact->privChair)
-                $bcq_manager = " and managerContactId=" . $contact->contactId;
-            $q = "select any_newpcrev, any_lead, any_shepherd
-	from ($aq) a
-	left join (select paperId any_lead from Paper where timeSubmitted>0 and leadContactId!=0$bcq_manager limit 1) b on (true)
-	left join (select paperId any_shepherd from Paper where timeSubmitted>0 and shepherdContactId!=0$bcq_manager limit 1) c on (true)";
-            if (($row = Dbl::fetch_first_row($q)))
-                list($any_newpcrev, $any_lead, $any_shepherd) = $row;
+            if (!$contact->privChair) {
+                $pids = [];
+                $result = $this->conf->qe("select paperId from Paper where managerContactId=?", $contact->contactId);
+                while ($result && ($row = edb_row($result)))
+                    $pids[] = (int) $row[0];
+                Dbl::free($result);
+                $pidw = empty($pids) ? "false" : "paperId in (" . join(",", $pids) . ")";
+            } else
+                $pidw = "true";
+            $row = $this->conf->fetch_first_row("select
+                exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and $pidw),
+                exists (select * from PaperReview where reviewType<" . REVIEW_PC . "  and $pidw),
+                exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and reviewSubmitted is null and reviewNeedsSubmit!=0 and timeRequested>timeRequestNotified and $pidw),
+                exists (select * from Paper where timeSubmitted>0 and leadContactId!=0 and $pidw),
+                exists (select * from Paper where timeSubmitted>0 and shepherdContactId!=0 and $pidw)");
+            list($any_pcrev, $any_extrev, $any_newpcrev, $any_lead, $any_shepherd) = $row;
 
-            $this->defsel("newpcrev", "PC reviewers with new review assignments");
-            $this->defsel("extrev", "External reviewers");
-            $this->defsel("uncextrev", "External reviewers with incomplete reviews");
-            $this->sel["rev_group_end"] = array("optgroup");
+            $hide = $any_pcrev || $any_extrev ? 0 : self::F_HIDE;
+            $this->defsel("rev", "Reviewers", $hide);
+            $this->defsel("crev", "Reviewers with complete reviews", $hide);
+            $this->defsel("uncrev", "Reviewers with incomplete reviews", $hide);
+            $this->defsel("allcrev", "Reviewers with no incomplete reviews", $hide);
+
+            $hide = $any_pcrev ? 0 : self::F_HIDE;
+            $this->defsel("pcrev", "PC reviewers", $hide);
+            $this->defsel("uncpcrev", "PC reviewers with incomplete reviews", $hide);
+            $this->defsel("newpcrev", "PC reviewers with new review assignments", $any_newpcrev ? 0 : self::F_HIDE);
+
+            $hide = $any_extrev ? 0 : self::F_HIDE;
+            $this->defsel("extrev", "External reviewers", $hide);
+            $this->defsel("uncextrev", "External reviewers with incomplete reviews", $hide);
+            $this->defsel("rev_group_end", null, self::F_GROUP);
         }
 
-        $this->defsel_nm("myextrev", "Your requested reviewers");
-        $this->defsel_nm("uncmyextrev", "Your requested reviewers with incomplete reviews");
+        $hide = !$this->contact->is_requester();
+        $this->defsel("myextrev", "Your requested reviewers", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
+        $this->defsel("uncmyextrev", "Your requested reviewers with incomplete reviews", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
 
-        $this->sel["pc_group"] = array("optgroup", "Program committee");
-        $selcount = count($this->sel);
         if ($contact->is_manager()) {
-            if ($any_lead || $type == "lead")
-                $this->defsel("lead", "Discussion leads");
-            if ($any_shepherd || $type == "shepherd")
-                $this->defsel("shepherd", "Shepherds");
+            $this->defsel("lead", "Discussion leads", $any_lead ? 0 : self::F_HIDE);
+            $this->defsel("shepherd", "Shepherds", $any_shepherd ? 0 : self::F_HIDE);
         }
-        $this->defsel_nm("pc", "Program committee");
-        foreach ($Conf->pc_tags() as $t)
+
+        $this->defsel("pc_group", "Program committee", self::F_GROUP);
+        $selcount = count($this->sel);
+        $this->defsel("pc", "Program committee", self::F_ANYPC);
+        foreach ($this->conf->pc_tags() as $t)
             if ($t != "pc")
-                $this->defsel_nm("pc:$t", "PC members tagged “{$t}”");
+                $this->defsel("pc:$t", "#$t program committee", self::F_ANYPC);
         if (count($this->sel) == $selcount + 1)
             unset($this->sel["pc_group"]);
         else
-            $this->sel["pc_group_end"] = array("optgroup");
+            $this->defsel("pc_group_end", null, self::F_GROUP);
 
         if ($contact->privChair)
             $this->defsel("all", "All users");
 
-        if (isset($this->sel[$type]))
+        if (isset($this->sel[$type])
+            && !($this->selflags[$type] & self::F_GROUP))
             $this->type = $type;
         else if ($type == "myuncextrev" && isset($this->sel["uncmyextrev"]))
             $this->type = "uncmyextrev";
@@ -137,12 +139,12 @@ class MailRecipients {
         $this->papersel = $papersel;
 
         if ($this->type == "newpcrev") {
-            $t = @trim($newrev_since);
-            if (preg_match(',\A(?:|n/a|[(]?all[)]?|0)\z,i', $t))
+            $t = trim((string) $newrev_since);
+            if (preg_match(',\A(?:|n/a|\(?all\)?|0)\z,i', $t))
                 $this->newrev_since = 0;
-            else if (($this->newrev_since = $Conf->parse_time($t)) !== false) {
+            else if (($this->newrev_since = $this->conf->parse_time($t)) !== false) {
                 if ($this->newrev_since > $Now)
-                    $Conf->warnMsg("That time is in the future.");
+                    $this->conf->warnMsg("That time is in the future.");
             } else {
                 Conf::msg_error("Invalid date.");
                 $this->error = true;
@@ -151,14 +153,31 @@ class MailRecipients {
     }
 
     function selectors() {
-        return Ht::select("recipients", $this->sel, $this->type, array("id" => "recipients", "onchange" => "setmailpsel(this)"));
+        $sel = [];
+        $last = null;
+        foreach ($this->sel as $n => $d) {
+            if ($this->selflags[$n] & self::F_GROUP) {
+                if ($d !== null)
+                    $sel[$n] = ["optgroup", $d];
+                else if ($last !== null
+                         && ($this->selflags[$last] & self::F_GROUP))
+                    unset($sel[$last]);
+                else
+                    $sel[$n] = ["optgroup"];
+            } else if (!($this->selflags[$n] & self::F_HIDE)
+                       || $n == $this->type)
+                $sel[$n] = $d;
+            else
+                continue;
+            $last = $n;
+        }
+        return Ht::select("recipients", $sel, $this->type, array("id" => "recipients", "onchange" => "setmailpsel(this)"));
     }
 
     function unparse() {
-        global $Conf;
         $t = $this->sel[$this->type];
         if ($this->type == "newpcrev" && $this->newrev_since)
-            $t .= " since " . htmlspecialchars($Conf->parseableTime($this->newrev_since, false));
+            $t .= " since " . htmlspecialchars($this->conf->parseableTime($this->newrev_since, false));
         return $t;
     }
 
@@ -177,7 +196,6 @@ class MailRecipients {
     }
 
     function query($paper_sensitive) {
-        global $Conf;
         $cols = array();
         $where = array("email not regexp '^anonymous[0-9]*\$'");
         $joins = array("ContactInfo");
@@ -201,7 +219,7 @@ class MailRecipients {
             $where[] = "Paper.timeSubmitted>0 and Paper.outcome<0";
         else if (substr($this->type, 0, 4) == "dec:") {
             $nw = count($where);
-            foreach ($Conf->decision_map() as $dnum => $dname)
+            foreach ($this->conf->decision_map() as $dnum => $dname)
                 if (strcasecmp($dname, substr($this->type, 4)) == 0) {
                     $where[] = "Paper.timeSubmitted>0 and Paper.outcome=$dnum";
                     break;
@@ -211,8 +229,8 @@ class MailRecipients {
         }
 
         // additional manager limit
-        if (!isset($this->sel_nonmanager[$this->type])
-            && !$this->contact->privChair)
+        if (!$this->contact->privChair
+            && !($this->selflags[$this->type] & self::F_ANYPC))
             $where[] = "Paper.managerContactId=" . $this->contact->contactId;
 
         // reviewer limit
@@ -241,14 +259,14 @@ class MailRecipients {
         } else {
             $needpaper = $needconflict = true;
             $needreview = false;
-            if ($Conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE) {
+            if ($this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE) {
                 $cols[] = "(coalesce(allr.contactId,0)!=0) has_review";
                 $cols[] = "coalesce(allr.has_outstanding_review,0) has_outstanding_review";
                 $joins[] = "left join (select contactId, max(if(reviewNeedsSubmit!=0 and timeSubmitted>0,1,0)) has_outstanding_review from PaperReview join Paper on (Paper.paperId=PaperReview.paperId) group by PaperReview.contactId) as allr using (contactId)";
             }
             $joins[] = "join Paper";
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
-            if ($Conf->au_seerev == Conf::AUSEEREV_TAGS) {
+            if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS) {
                 $joins[] = "left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)";
                 $cols[] = "PaperTags.paperTags";
             }

@@ -548,6 +548,9 @@ class Conf {
     function fetch_rows(/* $qstr, ... */) {
         return Dbl::fetch_rows(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
     }
+    function fetch_first_row(/* $qstr, ... */) {
+        return Dbl::fetch_first_row(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
+    }
     function fetch_value(/* $qstr, ... */) {
         return Dbl::fetch_value(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
     }
