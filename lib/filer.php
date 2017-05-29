@@ -336,7 +336,7 @@ class Filer {
     function load(DocumentInfo $doc) {
         // Return true iff `$doc` can be loaded.
         if (!($has_content = self::has_content($doc))
-            && ($fspath = $this->filestore_path($doc, true))) {
+            && ($fspath = $this->filestore_path($doc, self::FPATH_EXISTS))) {
             $doc->filestore = $fspath;
             $has_content = true;
         }
@@ -461,7 +461,7 @@ class Filer {
 
     // filestore functions
     function filestore_check(DocumentInfo $doc) {
-        return !!$this->filestore_path($doc, true);
+        return !!$this->filestore_path($doc, self::FPATH_EXISTS);
     }
     static function docstore_fixed_prefix($pattern) {
         if ($pattern == "")
@@ -500,13 +500,9 @@ class Filer {
         return true;
     }
     function store_filestore(DocumentInfo $doc, $no_error = false) {
-        if (!($fspath = $this->filestore_path($doc, false)))
+        $flags = self::FPATH_MKDIR | ($no_error ? self::FPATH_QUIET : 0);
+        if (!($fspath = $this->filestore_path($doc, $flags)))
             return false;
-        $fsdir = Filer::docstore_fixed_prefix($this->filestore_pattern($doc));
-        if (!self::prepare_filestore($fsdir, $fspath)) {
-            $no_error || set_error_html($doc, "Internal error: docstore cannot be initialized.");
-            return false;
-        }
         $content = self::content($doc);
         if (!is_readable($fspath) || file_get_contents($fspath) !== $content) {
             if (file_put_contents($fspath, $content) != strlen($content)) {
@@ -729,12 +725,15 @@ class Filer {
         }
         return $x . $pattern;
     }
-    function filestore_path(DocumentInfo $doc, $search = false) {
+    const FPATH_EXISTS = 1;
+    const FPATH_MKDIR = 2;
+    const FPATH_QUIET = 4;
+    function filestore_path(DocumentInfo $doc, $flags = 0) {
         if ($doc->error || !($pattern = $this->filestore_pattern($doc)))
             return null;
         if (!($f = $this->_expand_filestore($pattern, $doc, true)))
             return null;
-        if ($search && !is_readable($f)) {
+        if (($flags & self::FPATH_EXISTS) && !is_readable($f)) {
             // clean up presence of old files saved w/o extension
             $g = $this->_expand_filestore($pattern, $doc, false);
             if ($f && $g !== $f && is_readable($g)) {
@@ -742,6 +741,12 @@ class Filer {
                     $f = $g;
             } else
                 return null;
+        }
+        if (($flags & self::FPATH_MKDIR)
+            && !self::prepare_filestore(self::docstore_fixed_prefix($pattern), $f)) {
+            if (!($flags & self::FPATH_QUIET))
+                set_error_html($doc, "Internal error: docstore cannot be initialized.");
+            return false;
         }
         return $f;
     }
