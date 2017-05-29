@@ -64,7 +64,7 @@ class PaperOptionValue {
     }
     function document_content($index) {
         if (($doc = $this->document($index))
-            && $doc->docclass->load($doc)
+            && $doc->docclass->load($doc, false)
             && ($content = Filer::content($doc)))
             return $content;
         return false;

@@ -247,7 +247,8 @@ class HotCRPDocument extends Filer {
         }
 
         $doc->size = strlen($doc->content);
-        $this->store_filestore($doc, true); // silently does nothing if error || !filestore
+        // store to filestore; silently does nothing if error || !filestore
+        $this->store_filestore($doc, true);
         return $ok;
     }
 

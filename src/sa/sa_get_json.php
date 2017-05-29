@@ -10,7 +10,7 @@ class GetJson_SearchAction extends SearchAction {
         $this->iszip = $iszip;
     }
     public function document_callback($dj, $prow, $dtype, $drow) {
-        if ($drow->docclass->load($drow)) {
+        if ($drow->docclass->load($drow, true)) {
             $dj->content_file = HotCRPDocument::filename($drow);
             $this->zipdoc->add_as($drow, $dj->content_file);
         }

@@ -45,6 +45,19 @@ class ZipDocument {
         return $this->tmpdir_;
     }
 
+    private function _add_load($doc, $filename, $to_filestore) {
+        if ($doc->docclass && $doc->docclass->load($doc, $to_filestore)) {
+            $doc->_content_reset = true;
+            return true;
+        } else {
+            if (!isset($doc->error_text))
+                $this->warnings[] = "$filename: Couldn’t load document.";
+            else if ($doc->error_text)
+                $this->warnings[] = $doc->error_text;
+            return false;
+        }
+    }
+
     private function _add($doc, $filename, $check_filename) {
         if (is_string($doc))
             $doc = new DocumentInfo(["content" => $doc]);
@@ -68,17 +81,9 @@ class ZipDocument {
         }
 
         // load document
-        if (!isset($doc->filestore) && !isset($doc->content)) {
-            if ($doc->docclass && $doc->docclass->load($doc))
-                $doc->_content_reset = true;
-            else {
-                if (!isset($doc->error_text))
-                    $this->warnings[] = "$filename: Couldn’t load document.";
-                else if ($doc->error_text)
-                    $this->warnings[] = $doc->error_text;
-                return false;
-            }
-        }
+        if (!isset($doc->filestore) && !isset($doc->content)
+            && !$this->_add_load($doc, $filename, true))
+            return false;
 
         // add document to filestore list
         if (is_array($this->_pending)
@@ -125,7 +130,9 @@ class ZipDocument {
         if (isset($doc->filestore)
             && @symlink($doc->filestore, $zip_filename))
             /* OK */;
-        else if (isset($doc->content)) {
+        else {
+            if (!isset($doc->content) && !$this->_add_load($doc, $filename, false))
+                return false;
             $trylen = file_put_contents($zip_filename, $doc->content);
             if ($trylen != strlen($doc->content)) {
                 clean_tempdirs();
@@ -333,18 +340,25 @@ class Filer {
             return $doc->content = @file_get_contents($filename);
         return false;
     }
-    function load(DocumentInfo $doc) {
+    function load(DocumentInfo $doc, $to_filestore = false) {
         // Return true iff `$doc` can be loaded.
-        if (!($has_content = self::has_content($doc))
+        $has_content = self::has_content($doc);
+        if (!$has_content
             && ($fspath = $this->filestore_path($doc, self::FPATH_EXISTS))) {
             $doc->filestore = $fspath;
             $has_content = true;
         }
-        return ($has_content && $this->validate_content($doc))
-            || $this->load_content($doc);
+        if ($has_content && $this->validate_content($doc))
+            return true;
+        else if ($this->load_content($doc)) {
+            if ($to_filestore && $doc->filestore)
+                $doc->content = null;
+            return true;
+        } else
+            return false;
     }
     function load_to_filestore(DocumentInfo $doc) {
-        if (!$this->load($doc))
+        if (!$this->load($doc, true))
             return false;
         if (!isset($doc->filestore)) {
             if (!self::$tempdir && (self::$tempdir = tempdir()) == false) {
@@ -365,7 +379,7 @@ class Filer {
         return true;
     }
     function load_to_memory(DocumentInfo $doc) {
-        if (!$this->load($doc))
+        if (!$this->load($doc, false))
             return false;
         if (isset($doc->filestore) && !isset($doc->content)
             && ($content = @file_get_contents($doc->filestore)) !== false)
@@ -375,7 +389,7 @@ class Filer {
     function store(DocumentInfo $doc) {
         // load content (if unloaded)
         // XXX loading enormous documents into memory...?
-        if (!$this->load($doc)
+        if (!$this->load($doc, false)
             || ($content = self::content($doc)) === null
             || $content === false
             || get($doc, "error"))
@@ -563,7 +577,7 @@ class Filer {
             return $z->download();
         }
         if (!self::has_content($doc)
-            && (!get($doc, "docclass") || !$doc->docclass->load($doc))) {
+            && (!get($doc, "docclass") || !$doc->docclass->load($doc, true))) {
             $error_html = "Don’t know how to download.";
             if (get($doc, "error") && isset($doc->error_html))
                 $error_html = $doc->error_html;
@@ -609,7 +623,7 @@ class Filer {
     // upload
     function upload(DocumentInfo $doc) {
         global $Conf;
-        if (!$this->load($doc) && !$doc->error_html)
+        if (!$this->load($doc, false) && !$doc->error_html)
             set_error_html($doc, "Empty document.");
         if ($doc->error)
             return false;
