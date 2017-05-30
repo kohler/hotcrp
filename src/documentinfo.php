@@ -256,25 +256,28 @@ class DocumentInfo implements JsonSerializable {
         return $x . "</a>" . ($info ? "&nbsp;$info" : "");
     }
     private function link_html_format_info($flags, $suffix) {
-        $info = "";
-        $spects = $this->conf->format_spec($this->documentType)->timestamp;
-        if (!$spects)
-            return [$info, $suffix];
-        $specstatus = 0;
-        if ($this->prow->is_joindoc($this))
-            $specstatus = $this->prow->pdfFormatStatus;
-        if ($specstatus == -$spects && ($flags & self::L_SMALL))
-            $suffix .= "x";
-        else if ($specstatus != $spects) {
-            $cf = new CheckFormat($flags & self::L_REQUIREFORMAT ? CheckFormat::RUN_PREFER_NO : CheckFormat::RUN_NO);
+        if (($spects = $this->conf->format_spec($this->documentType)->timestamp)) {
+            if ($this->prow->is_joindoc($this)) {
+                $specstatus = $this->prow->pdfFormatStatus;
+                if ($specstatus == -$spects && ($flags & self::L_SMALL))
+                    return ["", $suffix . "x"];
+                else if ($specstatus == $spects)
+                    return ["", $suffix];
+            }
+            $runflag = CheckFormat::RUN_NO;
+            if (($flags & self::L_REQUIREFORMAT)
+                || (CheckFormat::$runcount < 3 && mt_rand(0, 7) == 0))
+                $runflag = CheckFormat::RUN_PREFER_NO;
+            $cf = new CheckFormat($runflag);
             $cf->check_document($this->prow, $this);
             if ($cf->has_error()) {
-                $suffix .= "x";
-                if (!($flags & self::L_SMALL))
-                    $info = '<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->messages())) . '">ⓘ</span>';
+                if ($flags & self::L_SMALL)
+                    return ["", $suffix . "x"];
+                else
+                    return ['<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->messages())) . '">ⓘ</span>', $suffix . "x"];
             }
         }
-        return [$info, $suffix];
+        return ["", $suffix];
     }
 
     function metadata() {

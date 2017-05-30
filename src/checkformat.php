@@ -21,6 +21,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     private $conf = null;
     private $checkers = [];
     static private $banal_args;
+    static public $runcount = 0;
 
     function __construct($allow_run = self::RUN_YES) {
         parent::__construct();
@@ -58,6 +59,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         fclose($pipes[1]);
         fclose($pipes[2]);
         $this->banal_status = proc_close($banal_proc);
+        ++self::$runcount;
         return json_decode($this->banal_stdout);
     }
 
