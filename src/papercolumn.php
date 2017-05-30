@@ -1816,6 +1816,8 @@ class Formula_PaperColumn extends PaperColumn {
             return htmlspecialchars($x);
     }
     function analyze(PaperList $pl, &$rows) {
+        if ($this->is_folded)
+            return;
         $formulaf = $this->formula_function;
         $this->results = $this->override_results = [];
         $this->real_format = null;
