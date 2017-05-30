@@ -278,7 +278,7 @@ class PaperList {
 
         self::$magic_sort_info = $this->sorters;
         foreach ($this->sorters as $i => $s) {
-            $s->field->sort_prepare($this, $rows, $s);
+            $s->field->analyze_sort($this, $rows, $s);
             $rev = ($s->reverse ? "-" : "");
             if ($s->thenmap === null)
                 $code .= "if (!\$x)";
