@@ -801,7 +801,8 @@ class ReviewDelegationPaperColumn extends PaperColumn {
             return false;
         $pl->qopts["reviewerName"] = true;
         $pl->qopts["allReviewScores"] = true;
-        $pl->qopts["reviewLimitSql"] = "PaperReview.requestedBy=" . $pl->reviewer_cid();
+        $reviewer = $pl->reviewer_contact();
+        $pl->qopts["reviewLimitSql"] = "PaperReview.requestedBy=" . $reviewer->contactId;
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b) {

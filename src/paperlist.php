@@ -380,10 +380,6 @@ class PaperList {
         return '<span class="fn5"><em>Hidden for conflict</em> <span class="barsep">·</span> <a class="fn5" href="#">Override conflicts</a></span><span class="fx5">' . $text . "</span>";
     }
 
-    function reviewer_cid() {
-        return $this->_reviewer ? $this->_reviewer->contactId : $this->contact->contactId;
-    }
-
     function reviewer_contact() {
         return $this->_reviewer ? : $this->contact;
     }
