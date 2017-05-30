@@ -1005,9 +1005,6 @@ class Review_SearchTerm extends SearchTerm {
         parent::__construct("re", $flags);
         $this->rsm = $rsm;
     }
-    function reviewer_contact_set() {
-        return $this->rsm->contact_set();
-    }
     static function keyword_factory($keyword, Conf $conf, $kwfj, $m) {
         $c = str_replace("-", "", $m[1]);
         return (object) [
@@ -1275,7 +1272,7 @@ class Review_SearchTerm extends SearchTerm {
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
         if ($top) {
-            $v = $this->reviewer_contact_set();
+            $v = $this->rsm->contact_set();
             $srch->mark_reviewer(count($v) == 1 ? $v[0] : null);
         }
     }
