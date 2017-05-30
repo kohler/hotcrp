@@ -98,7 +98,6 @@ class PaperList {
     // columns access
     public $conf;
     public $contact;
-    public $columns = [];
     public $sorters = [];
     private $_columns_by_name = [];
     public $scoresOk = false;
@@ -640,7 +639,7 @@ class PaperList {
         // analyze rows (usually noop)
         $rows = $rowset->all();
         foreach ($field_list as $fdef)
-            $fdef->analyze($this, $rows);
+            $fdef->analyze($this, $rows, $field_list);
 
         // sort rows
         if (!empty($this->sorters)) {
@@ -1276,7 +1275,6 @@ class PaperList {
         foreach ($field_list as $fdef) {
             if ($fdef->viewable()) {
                 $fieldDef[] = $fdef;
-                $this->columns[$fdef->name] = true;
                 if ($fdef->fold === true) {
                     $fdef->fold = $next_fold;
                     ++$next_fold;
@@ -1568,10 +1566,8 @@ class PaperList {
         $fieldDef = array();
         foreach ($field_list as $fdef)
             if ($fdef->viewable() && !$fdef->is_folded
-                && $fdef->header($this, true) != "") {
+                && $fdef->header($this, true) != "")
                 $fieldDef[] = $fdef;
-                $this->columns[$fdef->name] = true;
-            }
 
         // collect row data
         $body = array();

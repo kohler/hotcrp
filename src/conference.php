@@ -2145,7 +2145,6 @@ class Conf {
         //   "allReviewScores"  All review scores (multiple rows per paper)
         //   "reviewerName"     Include reviewer names
         //   "commenterName"    Include commenter names
-        //   "reviewer" => $cid Include reviewerConflictType/reviewerReviewType
         //   "tags"             Include paperTags
         //   "tagIndex" => $tag Include tagIndex of named tag
         //   "tagIndex" => tag array -- include tagIndex, tagIndex1, ...
@@ -2159,12 +2158,6 @@ class Conf {
         $allReviewerQuery = isset($options["allReviews"]) || isset($options["allReviewScores"]);
         $scoresQuery = !$reviewerQuery && isset($options["allReviewScores"]);
         $contactId = $contact ? $contact->contactId : 0;
-        if (isset($options["reviewer"]) && is_object($options["reviewer"]))
-            $reviewerContactId = $options["reviewer"]->contactId;
-        else if (isset($options["reviewer"]))
-            $reviewerContactId = $options["reviewer"];
-        else
-            $reviewerContactId = $contactId;
         if (get($options, "author") || !$contactId)
             $myPaperReview = null;
         else if ($allReviewerQuery)
@@ -2338,7 +2331,7 @@ class Conf {
                 $cols[] = "(select tagIndex from PaperTag where PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($tag) . "') tagIndex" . ($i ? : "");
 
         if (get($options, "reviewerPreference")) {
-            $joins[] = "left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$reviewerContactId)";
+            $joins[] = "left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)";
             $cols[] = "coalesce(PaperReviewPreference.preference, 0) as reviewerPreference";
             $cols[] = "PaperReviewPreference.expertise as reviewerExpertise";
         }

@@ -216,6 +216,7 @@ class PaperInfo {
     private $_contact_info_rights_version = 0;
     private $_author_array = null;
     private $_prefs_array = null;
+    private $_prefs_cid = null;
     private $_review_id_array = null;
     private $_topics_array = null;
     private $_topic_interest_score_array = null;
@@ -729,7 +730,7 @@ class PaperInfo {
 
     function load_reviewer_preferences() {
         $this->allReviewerPreference = $this->conf->fetch_value("select " . $this->conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
-        $this->_prefs_array = null;
+        $this->_prefs_array = $this->_prefs_cid = null;
     }
 
     function reviewer_preferences() {
@@ -751,7 +752,21 @@ class PaperInfo {
 
     function reviewer_preference($contact) {
         $cid = is_int($contact) ? $contact : $contact->contactId;
-        $pref = get($this->reviewer_preferences(), $cid);
+        if ($this->_prefs_cid === null && $this->_prefs_array === null) {
+            $row_set = $this->_row_set ? : new PaperInfoSet($this);
+            foreach ($row_set->all() as $prow)
+                $prow->_prefs_cid = [$cid, null];
+            $result = $this->conf->qe("select paperId, preference, expertise from PaperReviewPreference where paperId?a and contactId=?", $row_set->pids(), $cid);
+            while ($result && ($row = $result->fetch_row())) {
+                $prow = $row_set->get($row[0]);
+                $prow->_prefs_cid[1] = [(int) $row[1], $row[2] === null ? null : (int) $row[2]];
+            }
+            Dbl::free($result);
+        }
+        if ($this->_prefs_cid !== null && $this->_prefs_cid[0] == $cid)
+            $pref = $this->_prefs_cid[1];
+        else
+            $pref = get($this->reviewer_preferences(), $cid);
         return $pref ? : [0, null];
     }
 

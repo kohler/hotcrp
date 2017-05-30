@@ -151,7 +151,7 @@ class PaperColumn extends Column {
     function annotate_field_js(PaperList $pl, &$fjs) {
     }
 
-    function analyze(PaperList $pl, &$rows) {
+    function analyze(PaperList $pl, &$rows, $fields) {
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
     }
@@ -632,6 +632,9 @@ class ReviewerTypePaperColumn extends PaperColumn {
         parent::__construct($cj);
         $this->contact = $contact;
     }
+    function contact() {
+        return $this->contact;
+    }
     function prepare(PaperList $pl, $visible) {
         if (!$this->contact)
             $this->contact = $pl->display_reviewer();
@@ -836,7 +839,6 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         $this->contact = $pl->reviewer_contact();
         if (!$pl->contact->is_manager())
             return false;
-        $pl->qopts["reviewer"] = $this->contact->contactId;
         if ($visible > 0 && ($tid = $pl->table_id()))
             $pl->add_header_script("add_assrev_ajax(" . json_encode("#$tid") . ")");
         return true;
@@ -925,8 +927,8 @@ class PreferencePaperColumn extends PaperColumn {
     private $editable;
     private $contact;
     private $viewer_contact;
-    private $is_direct;
     private $not_me;
+    private $show_conflict;
     function __construct($cj, $contact = null) {
         parent::__construct($cj);
         $this->editable = !!get($cj, "edit");
@@ -944,15 +946,8 @@ class PreferencePaperColumn extends PaperColumn {
             || (($this->not_me || !$this->name /* user factory */)
                 && !$pl->contact->is_manager()))
             return false;
-        if ($visible) {
-            $this->is_direct = $this->contact->contactId == $reviewer->contactId;
-            if ($this->is_direct) {
-                $pl->qopts["reviewer"] = $this->contact->contactId;
-                $pl->qopts["reviewerPreference"] = 1;
-            } else
-                $pl->qopts["allReviewerPreference"] = 1;
+        if ($visible)
             $pl->qopts["topics"] = 1;
-        }
         if ($this->editable && $visible > 0 && ($tid = $pl->table_id()))
             $pl->add_header_script("add_revpref_ajax(" . json_encode("#$tid") . ")", "revpref_ajax_$tid");
         return true;
@@ -966,8 +961,6 @@ class PreferencePaperColumn extends PaperColumn {
     private function preference_values($row) {
         if ($this->not_me && !$this->viewer_contact->allow_administer($row))
             return [null, null];
-        else if ($this->is_direct)
-            return [$row->reviewerPreference, $row->reviewerExpertise];
         else
             return $row->reviewer_preference($this->contact);
     }
@@ -990,6 +983,14 @@ class PreferencePaperColumn extends PaperColumn {
         if ($at != $bt)
             return $at < $bt ? 1 : -1;
         return 0;
+    }
+    function analyze(PaperList $pl, &$rows, $fields) {
+        $this->show_conflict = true;
+        foreach ($fields as $fdef)
+            if ($fdef instanceof ReviewerTypePaperColumn
+                && !$fdef->is_folded
+                && $fdef->contact()->contactId == $this->contact->contactId)
+                $this->show_conflict = false;
     }
     function header(PaperList $pl, $is_text) {
         if ($this->not_me && $is_text)
@@ -1016,7 +1017,7 @@ class PreferencePaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $has_cflt = $row->has_conflict($this->contact);
         if ($has_cflt && !$pl->contact->allow_administer($row))
-            return isset($pl->columns["revtype"]) ? "" : review_type_icon(-1);
+            return $this->show_conflict ? review_type_icon(-1) : "";
         else if (!$this->editable)
             return $this->show_content($pl, $row, false);
         else {
@@ -1024,7 +1025,7 @@ class PreferencePaperColumn extends PaperColumn {
             $iname = "revpref" . $row->paperId;
             if ($this->not_me)
                 $iname .= "u" . $this->contact->contactId;
-            return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($has_cflt && !$this->is_direct ? "&nbsp;" . review_type_icon(-1) : "");
+            return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($this->show_conflict && $has_cflt ? "&nbsp;" . review_type_icon(-1) : "");
         }
     }
     function text(PaperList $pl, PaperInfo $row) {
@@ -1814,7 +1815,7 @@ class Formula_PaperColumn extends PaperColumn {
         else
             return htmlspecialchars($x);
     }
-    function analyze(PaperList $pl, &$rows) {
+    function analyze(PaperList $pl, &$rows, $fields) {
         if ($this->is_folded)
             return;
         $formulaf = $this->formula_function;
