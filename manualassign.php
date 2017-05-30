@@ -78,18 +78,19 @@ function saveAssignments($qreq, $revuser) {
     $lastPaperId = -1;
     $del = $ins = "";
     while (($row = PaperInfo::fetch($result, $Me))) {
+        $conflict_type = $row->conflict_type($revuser);
         if ($row->paperId == $lastPaperId
             || !$Me->can_administer($row)
-            || $row->reviewerConflictType >= CONFLICT_AUTHOR
+            || $conflict_type >= CONFLICT_AUTHOR
             || !isset($qreq->assrev[$row->paperId]))
             continue;
         $lastPaperId = $row->paperId;
         $type = $qreq->assrev[$row->paperId];
-        if ($type >= 0 && $row->reviewerConflictType > 0 && $row->reviewerConflictType < CONFLICT_AUTHOR)
+        if ($type >= 0 && $conflict_type > 0 && $conflict_type < CONFLICT_AUTHOR)
             $del .= " or paperId=$row->paperId";
-        if ($type < 0 && $row->reviewerConflictType < CONFLICT_CHAIRMARK)
+        if ($type < 0 && $conflict_type < CONFLICT_CHAIRMARK)
             $ins .= ", ($row->paperId, {$revuser->contactId}, " . CONFLICT_CHAIRMARK . ")";
-        if ($qreq->kind == "a" && $type != $row->reviewerReviewType
+        if ($qreq->kind == "a" && $type != $row->review_type($revuser)
             && ($type <= 0 || $revuser->can_accept_review_assignment_ignore_conflict($row))) {
             if ($type > 0 && $round_number === null)
                 $round_number = $Conf->round_number($qreq->rev_round, true);

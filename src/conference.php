@@ -2362,12 +2362,6 @@ class Conf {
             $cols[] = "AllConflict.allConflictType";
         }
 
-        if (get($options, "reviewer")) {
-            $joins[] = "left join PaperConflict RPC on (RPC.paperId=Paper.paperId and RPC.contactId=$reviewerContactId)";
-            $joins[] = "left join PaperReview RPR on (RPR.paperId=Paper.paperId and RPR.contactId=$reviewerContactId)";
-            $cols[] = "RPC.conflictType reviewerConflictType, RPR.reviewType reviewerReviewType";
-        }
-
         if (get($options, "reviewerName")) {
             if ($options["reviewerName"] === "lead" || $options["reviewerName"] === "shepherd")
                 $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=Paper." . $options['reviewerName'] . "ContactId)";

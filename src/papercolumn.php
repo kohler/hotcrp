@@ -269,7 +269,6 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
         $this->contact = $pl->reviewer_contact();
         if (!$pl->contact->is_manager())
             return false;
-        $pl->qopts["reviewer"] = $this->contact->contactId;
         if (($tid = $pl->table_id()))
             $pl->add_header_script("add_assrev_ajax(" . json_encode("#$tid") . ")");
         return true;
@@ -278,10 +277,10 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
         return "Conflict?";
     }
     protected function checked(PaperList $pl, PaperInfo $row) {
-        return $pl->is_selected($row->paperId, $row->reviewerConflictType > 0);
+        return $pl->is_selected($row->paperId, $row->conflict_type($this->contact) > 0);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $disabled = $row->reviewerConflictType >= CONFLICT_AUTHOR;
+        $disabled = $row->conflict_type($this->contact) >= CONFLICT_AUTHOR;
         if (!$pl->contact->allow_administer($row)) {
             $disabled = true;
             if (!$pl->contact->can_view_conflicts($row))
@@ -849,9 +848,10 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         return !$pl->contact->allow_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($row->reviewerConflictType >= CONFLICT_AUTHOR)
+        $ci = $row->contact_info($this->contact);
+        if ($ci->conflictType >= CONFLICT_AUTHOR)
             return '<span class="author">Author</span>';
-        $rt = ($row->reviewerConflictType > 0 ? -1 : min(max($row->reviewerReviewType, 0), REVIEW_PRIMARY));
+        $rt = ($ci->conflictType > 0 ? -1 : min(max($ci->reviewType, 0), REVIEW_PRIMARY));
         if ($this->contact->can_accept_review_assignment_ignore_conflict($row)
             || $rt > 0)
             $options = array(0 => "None",
@@ -1014,8 +1014,7 @@ class PreferencePaperColumn extends PaperColumn {
             return $ptext;
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $has_cflt = $this->is_direct ? $row->reviewerConflictType > 0
-            : $row->has_conflict($this->contact);
+        $has_cflt = $row->has_conflict($this->contact);
         if ($has_cflt && !$pl->contact->allow_administer($row))
             return isset($pl->columns["revtype"]) ? "" : review_type_icon(-1);
         else if (!$this->editable)
