@@ -1182,9 +1182,11 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("update PaperReview set reviewModified=0 where reviewModified is null")
         && $conf->ql("alter table PaperReview change `reviewModified` `reviewModified` bigint(1) NOT NULL DEFAULT '0'"))
         $conf->update_schema_version(169);
-    if ($conf->sversion == 169
-        && $conf->ql("insert into Settings (name, value) select 'has_topics', topicId from TopicArea limit 1"))
+    if ($conf->sversion == 169) {
+        if ($conf->fetch_ivalue("select exists (select * from TopicArea)"))
+            $conf->save_setting("has_topics", 1);
         $conf->update_schema_version(170);
+    }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
