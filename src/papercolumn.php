@@ -13,7 +13,6 @@ class PaperColumn extends Column {
     const PREP_SORT = -1;
     const PREP_FOLDED = 0; // value matters
     const PREP_VISIBLE = 1; // value matters
-    const PREP_COMPLETION = 2;
 
     function __construct($cj) {
         parent::__construct($cj);
@@ -625,7 +624,7 @@ class TopicListPaperColumn extends PaperColumn {
 }
 
 class ReviewerTypePaperColumn extends PaperColumn {
-    private $contact;
+    protected $contact;
     private $not_me;
     private $rrow_key;
     function __construct($cj, $contact = null) {
@@ -636,8 +635,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
         return $this->contact;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$this->contact)
-            $this->contact = $pl->display_reviewer();
+        $this->contact = $this->contact ? : $pl->display_reviewer();
         $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
         return true;
     }
@@ -831,12 +829,11 @@ class ReviewDelegationPaperColumn extends PaperColumn {
 }
 
 class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
-    private $contact;
     function __construct($cj) {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $pl->reviewer_contact();
+        $this->contact = $this->contact ? : $pl->reviewer_contact();
         if (!$pl->contact->is_manager())
             return false;
         if ($visible > 0 && ($tid = $pl->table_id()))
@@ -988,7 +985,7 @@ class PreferencePaperColumn extends PaperColumn {
         $this->show_conflict = true;
         foreach ($fields as $fdef)
             if ($fdef instanceof ReviewerTypePaperColumn
-                && !$fdef->is_folded
+                && $fdef->is_visible
                 && $fdef->contact()->contactId == $this->contact->contactId)
                 $this->show_conflict = false;
     }
@@ -1816,7 +1813,7 @@ class Formula_PaperColumn extends PaperColumn {
             return htmlspecialchars($x);
     }
     function analyze(PaperList $pl, &$rows, $fields) {
-        if ($this->is_folded)
+        if (!$this->is_visible)
             return;
         $formulaf = $this->formula_function;
         $this->results = $this->override_results = [];
@@ -2049,12 +2046,12 @@ class Lead_PaperColumn extends PaperColumn {
             || !$pl->contact->can_view_lead($row, true);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $visible = $pl->contact->can_view_lead($row, null);
-        return $pl->_contentPC($row, $row->leadContactId, $visible);
+        $viewable = $pl->contact->can_view_lead($row, null);
+        return $pl->_contentPC($row, $row->leadContactId, $viewable);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $visible = $pl->contact->can_view_lead($row, null);
-        return $pl->_textPC($row, $row->leadContactId, $visible);
+        $viewable = $pl->contact->can_view_lead($row, null);
+        return $pl->_textPC($row, $row->leadContactId, $viewable);
     }
 }
 
@@ -2076,12 +2073,12 @@ class Shepherd_PaperColumn extends PaperColumn {
         // cannot view reviewer identities? WHO GIVES A SHIT
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $visible = $pl->contact->can_view_shepherd($row, null);
-        return $pl->_contentPC($row, $row->shepherdContactId, $visible);
+        $viewable = $pl->contact->can_view_shepherd($row, null);
+        return $pl->_contentPC($row, $row->shepherdContactId, $viewable);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $visible = $pl->contact->can_view_shepherd($row, null);
-        return $pl->_textPC($row, $row->shepherdContactId, $visible);
+        $viewable = $pl->contact->can_view_shepherd($row, null);
+        return $pl->_textPC($row, $row->shepherdContactId, $viewable);
     }
 }
 

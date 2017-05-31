@@ -3805,13 +3805,13 @@ class PaperSearch {
             $pl = new PaperList($this);
             foreach (PaperColumn::lookup_all() as $c)
                 if (($cat = $c->completion_name())
-                    && $c->prepare($pl, PaperColumn::PREP_COMPLETION))
+                    && $c->prepare($pl, 0))
                     $cats[$cat] = true;
             foreach (PaperColumn::lookup_all_factories() as $f) {
                 foreach ($f[1]->completion_instances($this->user) as $c)
                     if (($cat = $c->completion_name())
                         && (!($c instanceof PaperColumn)
-                            || $c->prepare($pl, PaperColumn::PREP_COMPLETION)))
+                            || $c->prepare($pl, 0)))
                         $cats[$cat] = true;
             }
             foreach (array_keys($cats) as $cat)

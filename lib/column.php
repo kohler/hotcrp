@@ -12,7 +12,7 @@ class Column {
     public $sort = false;
     public $completion = false;
     public $minimal = false;
-    public $is_folded = false;
+    public $is_visible = false;
     public $has_content = false;
     public $priority = null;
 
