@@ -1031,10 +1031,6 @@ class PaperList {
 
     private function _view_columns($field_list) {
         // add explicitly requested columns
-        $specials = array_flip(array("cc", "compact", "compactcolumn", "compactcolumns",
-                                     "column", "col", "columns", "sort", "rownum", "rownumbers",
-                                     "stat", "stats", "statistics", "totals",
-                                     "au", "anonau", "aufull"));
         $viewmap_add = [];
         foreach ($this->_view_fields as $k => $v) {
             if (in_array($k, ["au", "anonau", "aufull"]))
