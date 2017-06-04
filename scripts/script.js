@@ -5035,7 +5035,7 @@ check_version.ignore = function (id) {
 
 // ajax loading of paper information
 var plinfo = (function () {
-var self, fields, field_order, aufull = {}, loadargs = {},
+var self, fields, field_order, aufull = {},
     tagmap = false, _bypid = {}, _bypidx = {};
 
 function foldmap(type) {
@@ -5431,14 +5431,16 @@ function plinfo(type, dofold) {
         setTimeout(show_loading(f), 750);
 
         // initiate load
-        delete loadargs.aufull;
-        loadargs.fn = "fieldhtml";
+        var hotlist = $.parseJSON(self.getAttribute("data-hotlist"));
+        var loadargs = {
+            fn: "fieldhtml", f: type, q: hotlist.ids.replace(/'/g, " "),
+            t: hotlist.t || "s", reviewer: hotlist.reviewer
+        };
         if (type == "aufull" || type == "au" || type == "anonau") {
             loadargs.f = "authors";
             if (type == "aufull" ? !dofold : (elt = $$("showaufull")) && elt.checked)
                 loadargs.aufull = 1;
-        } else
-            loadargs.f = type;
+        }
         $.get(hoturl_post("api", loadargs), make_callback(dofold, type));
     }
 
@@ -5457,10 +5459,6 @@ function plinfo(type, dofold) {
 
 plinfo.set_folds = function (sel, foldmap_) {
     self = $(sel)[0];
-};
-
-plinfo.needload = function (la) {
-    loadargs = la;
 };
 
 plinfo.set_fields = function (fo) {

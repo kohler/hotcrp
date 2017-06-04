@@ -3596,6 +3596,8 @@ class PaperSearch {
                                  $this->url_site_relative_raw());
         if ($this->field_highlighters())
             $l->highlight = $this->_match_preg_query ? : true;
+        if ($this->limitName !== "s")
+            $l->t = $this->limitName;
         return $l;
     }
 

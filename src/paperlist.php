@@ -941,11 +941,7 @@ class PaperList {
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
         if ($this->_table_id) {
             Ht::stash_script("plinfo.set_folds(\"#{$this->_table_id}\");");
-            $args = ["q" => join(" ", $this->ids), "t" => $this->search->limitName];
-            if ($this->_reviewer && $this->_reviewer->email !== $this->contact->email)
-                $args["reviewer"] = $this->_reviewer->email;
-            Ht::stash_script("plinfo.needload(" . json_encode($args) . ");"
-                             . "plinfo.set_fields(" . json_encode($jscol) . ");");
+            Ht::stash_script("plinfo.set_fields(" . json_encode($jscol) . ");");
         }
         return $classes;
     }
@@ -1208,6 +1204,8 @@ class PaperList {
     function session_list_object($listname = null) {
         assert($this->ids !== null);
         $listobject = $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
+        if ($this->_reviewer && $this->_reviewer->email !== $this->contact->email)
+            $listobject->reviewer = $this->_reviewer->email;
         $url = $this->search->url_site_relative_raw();
         if (isset($this->qreq->sort))
             $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);
