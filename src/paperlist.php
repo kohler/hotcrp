@@ -892,7 +892,7 @@ class PaperList {
     }
 
     private function _analyze_folds($rstate, $fieldDef) {
-        $classes = $jsmap = $jscol = array();
+        $classes = $jscol = array();
         $has_sel = false;
         $has_statistics = $has_loadable_statistics = false;
         $default_score_sort = ListSorter::default_score_sort($this->conf);
@@ -922,37 +922,25 @@ class PaperList {
                 $j["foldnum"] = $fdef->fold;
             $fdef->annotate_field_js($this, $j);
             $jscol[] = $j;
-            if ($fdef->fold && $fdef->name !== "authors") {
+            if ($fdef->fold)
                 $classes[] = "fold$fdef->fold" . ($fdef->is_visible ? "o" : "c");
-                $jsmap[] = "\"$fdef->name\":$fdef->fold";
-            }
             if (isset($fdef->is_selector))
                 $has_sel = true;
         }
         // authorship requires special handling
-        if ($this->has("authors")) {
-            $classes[] = "fold1" . ($this->is_folded("authors") ? "c" : "o");
-            $jsmap[] = "\"au\":1,\"aufull\":4";
-        }
-        if ($this->has("anonau")) {
+        if ($this->has("anonau"))
             $classes[] = "fold2" . ($this->is_folded("anonau") ? "c" : "o");
-            $jsmap[] = "\"anonau\":2";
-        }
         // total folding, row number folding
         if (isset($rstate->row_folded))
             $classes[] = "fold3c";
-        if ($has_sel) {
-            $jsmap[] = "\"rownum\":6";
+        if ($has_sel)
             $classes[] = "fold6" . ($this->is_folded("rownum") ? "c" : "o");
-        }
-        if ($this->contact->privChair) {
-            $jsmap[] = "\"force\":5";
+        if ($this->contact->privChair)
             $classes[] = "fold5" . ($this->qreq->forceShow ? "o" : "c");
-        }
         $classes[] = "fold7" . ($this->is_folded("statistics") ? "c" : "o");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
         if ($this->_table_id) {
-            Ht::stash_script("plinfo.set_folds(\"#{$this->_table_id}\",{" . join(",", $jsmap) . "});");
+            Ht::stash_script("plinfo.set_folds(\"#{$this->_table_id}\");");
             $args = ["q" => join(" ", $this->ids), "t" => $this->search->limitName];
             if ($this->_reviewer && $this->_reviewer->email !== $this->contact->email)
                 $args["reviewer"] = $this->_reviewer->email;

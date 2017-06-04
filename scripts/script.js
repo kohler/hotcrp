@@ -5035,8 +5035,13 @@ check_version.ignore = function (id) {
 
 // ajax loading of paper information
 var plinfo = (function () {
-var self, foldmap, fields, field_order, aufull = {}, loadargs = {},
+var self, fields, field_order, aufull = {}, loadargs = {},
     tagmap = false, _bypid = {}, _bypidx = {};
+
+function foldmap(type) {
+    var fn = ({anonau:2, aufull:4, force:5, rownum:6})[type];
+    return fn || fields[type].foldnum;
+}
 
 function field_index(f) {
     var i, index = 0;
@@ -5329,7 +5334,7 @@ function set(f, $j, text) {
         elt.innerHTML = "";
     else {
         if (elt.className == "")
-            elt.className = "fx" + foldmap[f.name];
+            elt.className = "fx" + f.foldnum;
         if (f.title && (!f.column || text == "Loading")) {
             if (text.charAt(0) == "<" && (m = /^(<(?:div|p)[^>]*>)([\s\S]*)$/.exec(text)))
                 text = m[1] + '<em class="plx">' + f.title + ':</em> ' + m[2];
@@ -5383,7 +5388,7 @@ function make_callback(dofold, type) {
             values[f.name + ".stat.html"] && render_statistics();
         }
         f.loadable = false;
-        fold(self, dofold, foldmap[f.name], f.name);
+        fold(self, dofold, foldmap(type), f.name);
     };
 }
 
@@ -5407,7 +5412,7 @@ function plinfo(type, dofold) {
     // fold
     if (!dofold && f.missing)
         f.column ? add_column(f) : add_row(f);
-    fold(self, dofold, foldmap[type], type);
+    fold(self, dofold, foldmap(type), type);
     if ((type == "aufull" || type == "anonau") && !dofold
         && (elt = $$("showau")) && !elt.checked)
         elt.click();
@@ -5440,7 +5445,8 @@ function plinfo(type, dofold) {
     // show or hide statistics rows
     var statistics = false;
     for (var t in fields)
-        if (fields[t].has_statistics && $(self).hasClass("fold" + foldmap[t] + "o")) {
+        if (fields[t].has_statistics
+            && $(self).hasClass("fold" + fields[t].foldnum + "o")) {
             statistics = true;
             break;
         }
@@ -5451,7 +5457,6 @@ function plinfo(type, dofold) {
 
 plinfo.set_folds = function (sel, foldmap_) {
     self = $(sel)[0];
-    foldmap = foldmap_;
 };
 
 plinfo.needload = function (la) {
