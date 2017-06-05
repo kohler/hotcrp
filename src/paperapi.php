@@ -365,16 +365,15 @@ class PaperApi {
             $full = (int) $qreq->aufull;
             displayOptionsSet("pldisplay", "aufull", $full);
         }
-        $reviewer = null;
-        if ($qreq->reviewer && $user->privChair && $user->email !== $qreq->reviewer) {
-            $reviewer = $user->conf->user_by_email($qreq->reviewer);
-            unset($qreq->reviewer);
-        }
         if (!isset($qreq->q) && $prow) {
             $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
             $qreq->q = $prow->paperId;
         } else if (!isset($qreq->q))
             $qreq->q = "";
+        $reviewer = null;
+        if ($qreq->reviewer && $user->email !== $qreq->reviewer)
+            $reviewer = $user->conf->user_by_email($qreq->reviewer);
+        unset($qreq->reviewer);
         $search = new PaperSearch($user, $qreq, $reviewer);
         $pl = new PaperList($search);
         $response = $pl->ajaxColumn($qreq->f);
