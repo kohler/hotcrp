@@ -396,6 +396,10 @@ class AggregateFexpr extends Fexpr {
             return ["null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", self::cast_bool("~x~")];
         if ($this->op === "any")
             return ["null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", self::cast_bool("~x~")];
+        if ($this->op === "some")
+            return ["null", "~r~ = ~l~;
+  if (~r~ !== null && ~r~ !== false)
+    break;"];
         if ($this->op === "min" || $this->op === "max") {
             $cmp = $this->format_comparator($this->op === "min" ? "<" : ">", $state->conf);
             return ["null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)"];

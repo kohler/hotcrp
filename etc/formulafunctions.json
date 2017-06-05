@@ -2,6 +2,7 @@
     {"name": "my", "args": true, "factory": "AggregateFexpr::make"},
     {"name": "all", "args": true, "factory": "AggregateFexpr::make"},
     {"name": "any", "args": true, "factory": "AggregateFexpr::make"},
+    {"name": "some", "args": true, "factory": "AggregateFexpr::make"},
     {"name": "avg", "args": true, "factory": "AggregateFexpr::make"},
     {"name": "average", "args": true, "factory": "AggregateFexpr::make"},
     {"name": "mean", "args": true, "factory": "AggregateFexpr::make"},
