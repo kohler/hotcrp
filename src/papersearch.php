@@ -1273,7 +1273,7 @@ class Review_SearchTerm extends SearchTerm {
         parent::extract_metadata($top, $srch);
         if ($top) {
             $v = $this->rsm->contact_set();
-            $srch->mark_reviewer(count($v) == 1 ? $v[0] : null);
+            $srch->mark_context_user(count($v) == 1 ? $v[0] : null);
         }
     }
 }
@@ -2259,8 +2259,8 @@ class PaperSearch {
     var $qt;
     var $allowAuthor;
     private $fields;
-    private $_reviewer = false;
-    private $_reviewer_fixed = false;
+    private $_reviewer_user = false;
+    private $_context_user = false;
     private $urlbase;
     public $warnings = array();
     private $_quiet_count = 0;
@@ -2382,10 +2382,9 @@ class PaperSearch {
         if (strpos($this->urlbase, "&amp;") !== false)
             trigger_error(caller_landmark() . " PaperSearch::urlbase should be a raw URL", E_USER_NOTICE);
 
-        if ($reviewer) {
-            $this->_reviewer = $reviewer;
-            $this->_reviewer_fixed = true;
-        } else if (get($options, "reviewer"))
+        if ($reviewer)
+            $this->_reviewer_user = $this->_context_user = $reviewer;
+        else if (get($options, "reviewer"))
             error_log("PaperSearch::\$reviewer set: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
 
         $this->_allow_deleted = defval($options, "allow_deleted", false);
@@ -3515,25 +3514,25 @@ class PaperSearch {
         return $url;
     }
 
-    function reviewer() {
-        return $this->_reviewer ? : null;
-    }
-
     function reviewer_user() {
-        return $this->_reviewer_fixed ? $this->reviewer() : $this->user;
+        return $this->_reviewer_user ? : $this->user;
     }
 
-    function mark_reviewer($cid) {
-        if (!$this->_reviewer_fixed) {
-            if ($cid && $this->_reviewer && $this->_reviewer->contactId == $cid)
+    function context_user() {
+        return $this->_context_user ? : $this->user;
+    }
+
+    function mark_context_user($cid) {
+        if (!$this->_reviewer_user) {
+            if ($cid && $this->_context_user && $this->_context_user->contactId == $cid)
                 /* have correct reviewer */;
-            else if ($cid && !$this->_reviewer) {
+            else if ($cid && $this->_context_user === false) {
                 if ($this->user->contactId == $cid)
-                    $this->_reviewer = $this->user;
+                    $this->_context_user = $this->user;
                 else
-                    $this->_reviewer = $this->conf->user_by_id($cid);
+                    $this->_context_user = $this->conf->user_by_id($cid);
             } else
-                $this->_reviewer = null;
+                $this->_context_user = null;
         }
     }
 

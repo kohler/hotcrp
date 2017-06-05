@@ -376,7 +376,7 @@ class PaperApi {
         } else if (!isset($qreq->q))
             $qreq->q = "";
         $search = new PaperSearch($user, $qreq, $reviewer);
-        $pl = new PaperList($search, ["reviewer" => $reviewer]);
+        $pl = new PaperList($search);
         $response = $pl->ajaxColumn($qreq->f);
         $response["ok"] = !empty($response);
         return $response;

@@ -104,7 +104,6 @@ class PaperList {
     public $search;
     public $tagger;
     public $check_format;
-    private $_reviewer = null;
     public $tbody_attr;
     public $row_attr;
     public $review_list;
@@ -182,8 +181,6 @@ class PaperList {
             $svar = get($args, "foldtype", "pl") . "display";
             $this->display = $this->conf->session($svar, "");
         }
-        if (is_object(get($args, "reviewer")))
-            $this->_reviewer = $args["reviewer"];
         $this->atab = $qreq->atab;
 
         $this->tagger = new Tagger($this->contact);
@@ -379,17 +376,12 @@ class PaperList {
         return '<span class="fn5"><em>Hidden for conflict</em> <span class="barsep">·</span> <a class="fn5" href="#">Override conflicts</a></span><span class="fx5">' . $text . "</span>";
     }
 
-    function reviewer_contact() {
-        return $this->_reviewer ? : $this->contact;
+    function reviewer_user() {
+        return $this->search->reviewer_user();
     }
 
-    function display_reviewer() {
-        if ($this->_reviewer)
-            return $this->_reviewer;
-        else if (($r = $this->search->reviewer()))
-            return $r;
-        else
-            return $this->contact;
+    function context_user() {
+        return $this->search->context_user();
     }
 
     function maybeConflict($row, $text, $visible) {
@@ -1204,8 +1196,9 @@ class PaperList {
     function session_list_object($listname = null) {
         assert($this->ids !== null);
         $listobject = $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
-        if ($this->_reviewer && $this->_reviewer->email !== $this->contact->email)
-            $listobject->reviewer = $this->_reviewer->email;
+        $reviewer = $this->reviewer_user();
+        if ($reviewer->email !== $this->contact->email)
+            $listobject->reviewer = $reviewer->email;
         $url = $this->search->url_site_relative_raw();
         if (isset($this->qreq->sort))
             $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);

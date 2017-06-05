@@ -138,8 +138,7 @@ assert_search_papers($user_shenker, "au:berkeley fountain)", "24");
 assert_search_papers($user_shenker, "au:berkeley sort:title", "24 15 13 1 6");
 
 // correct conflict information returned
-$pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
-                    ["reviewer" => $user_mgbaker]);
+$pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18", $user_mgbaker));
 $j = $pl->text_json("id selconf");
 xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
 xassert_eqq($j[3]->selconf, "Y");
@@ -147,8 +146,7 @@ xassert_eqq($j[18]->selconf, "Y");
 foreach ([1, 2, 4, 5, 15, 16, 17] as $i)
     xassert_eqq($j[$i]->selconf, "N");
 
-$pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
-                    ["reviewer" => $user_jon]);
+$pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18", $user_jon));
 $j = $pl->text_json("id selconf");
 xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
 xassert_eqq($j[17]->selconf, "Y");

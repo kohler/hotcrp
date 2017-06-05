@@ -265,7 +265,7 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $pl->reviewer_contact();
+        $this->contact = $pl->reviewer_user();
         if (!$pl->contact->is_manager())
             return false;
         if (($tid = $pl->table_id()))
@@ -603,7 +603,7 @@ class TopicListPaperColumn extends PaperColumn {
         if ($visible)
             $pl->qopts["topics"] = 1;
         // only managers can see other users’ topic interests
-        $this->interest_contact = $pl->reviewer_contact();
+        $this->interest_contact = $pl->reviewer_user();
         if ($this->interest_contact->contactId !== $pl->contact->contactId
             && !$pl->contact->is_manager())
             $this->interest_contact = null;
@@ -635,7 +635,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
         return $this->contact;
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $this->contact ? : $pl->display_reviewer();
+        $this->contact = $this->contact ? : $pl->context_user();
         $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
         return true;
     }
@@ -801,7 +801,7 @@ class ReviewDelegationPaperColumn extends PaperColumn {
             return false;
         $pl->qopts["reviewerName"] = true;
         $pl->qopts["allReviewScores"] = true;
-        $reviewer = $pl->reviewer_contact();
+        $reviewer = $pl->reviewer_user();
         $pl->qopts["reviewLimitSql"] = "PaperReview.requestedBy=" . $reviewer->contactId;
         return true;
     }
@@ -833,7 +833,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $this->contact ? : $pl->reviewer_contact();
+        $this->contact = $this->contact ? : $pl->reviewer_user();
         if (!$pl->contact->is_manager())
             return false;
         if ($visible > 0 && ($tid = $pl->table_id()))
@@ -896,7 +896,7 @@ class TopicScorePaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $pl->reviewer_contact();
+        $this->contact = $pl->reviewer_user();
         if (!$pl->conf->has_topics()
             || !$pl->contact->isPC
             || ($this->contact->contactId !== $pl->contact->contactId
@@ -936,7 +936,7 @@ class PreferencePaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->viewer_contact = $pl->contact;
-        $reviewer = $pl->reviewer_contact();
+        $reviewer = $pl->reviewer_user();
         $this->contact = $this->contact ? : $reviewer;
         $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
         if (!$pl->contact->isPC
@@ -1440,7 +1440,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $pl->display_reviewer();
+        $this->contact = $pl->context_user();
         $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
         if ($visible && $this->not_me
             && (!$pl->contact->privChair || $pl->conf->has_any_manager()))
