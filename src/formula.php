@@ -226,6 +226,14 @@ class Fexpr implements JsonSerializable {
         return true;
     }
 
+    function matches_at_most_once() {
+        if ($this->op === "?:")
+            return $this->args[0]->matches_at_most_once() && $this->args[2]->is_null();
+        if ($this->op === "&&")
+            return $this->args[0]->matches_at_most_once() || $this->args[1]->matches_at_most_once();
+        return false;
+    }
+
     function compile_fragments(FormulaCompiler $state) {
         foreach ($this->args as $e)
             if ($e instanceof Fexpr)
@@ -789,44 +797,45 @@ class ReviewerFexpr extends ReviewFexpr {
 }
 
 class ReviewerMatchFexpr extends ReviewFexpr {
+    private $user;
     private $arg;
     private $flags;
     private $istag;
+    private $csearch;
     private static $tagmap = array();
     private static $tagmap_conf = null;
-    function __construct(Conf $conf, $arg) {
-        $this->arg = $arg;
-        $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && $conf->pc_tag_exists($arg));
+    function __construct(Contact $user, $arg) {
+        $this->user = $user;
         $this->format_ = self::FBOOL;
+        $this->arg = $arg;
+        $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && $user->conf->pc_tag_exists($arg));
+        $flags = 0;
+        if ($user->can_view_reviewer_tags())
+            $flags |= ContactSearch::F_TAG;
+        if ($arg[0] === "\"") {
+            $flags |= ContactSearch::F_QUOTED;
+            $arg = str_replace("\"", "", $arg);
+        }
+        $this->csearch = new ContactSearch($flags, $arg, $user);
     }
     function view_score(Contact $user) {
         return $this->istag ? VIEWSCORE_PC : parent::view_score($user);
     }
     function compile(FormulaCompiler $state) {
+        assert($state->user === $this->user);
+        if (!$this->csearch->ids)
+            return "null";
         $state->datatype |= self::ASUBREV;
         $state->queryOptions["reviewIdentities"] = true;
-        $flags = 0;
-        $arg = $this->arg;
-        if ($arg[0] === "\"") {
-            $flags |= ContactSearch::F_QUOTED;
-            $arg = str_replace("\"", "", $arg);
-        }
-        if (!($flags & ContactSearch::F_QUOTED)
-            && ($arg[0] === "#" || $state->conf->pc_tag_exists($arg))
-            && $state->user->can_view_reviewer_tags()) {
+        if ($this->istag) {
             $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
-            $tag = ($arg[0] === "#" ? substr($arg, 1) : $arg);
-            $e = "($cvt ? ReviewerMatchFexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
-        } else {
-            $flags |= ContactSearch::F_TAG;
-            $cs = new ContactSearch($flags, $arg, $state->user);
-            if ($cs->ids)
-                // XXX information leak?
-                $e = "(\$prow->can_view_review_identity_of(" . $state->_rrow_cid() . ", \$contact, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", [" . join(", ", $cs->ids) . "]) !== false : null)";
-            else
-                $e = "null";
-        }
-        return $e;
+            $tag = $this->arg[0] === "#" ? substr($this->arg, 1) : $this->arg;
+            return "($cvt ? ReviewerMatchFexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
+        } else
+            return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact, $forceShow) ? array_search(' . $state->_rrow_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
+    }
+    function matches_at_most_once() {
+        return count($this->csearch->ids) <= 1;
     }
     static function check_tagmap(Conf $conf, $cid, $tag) {
         if ($conf !== self::$tagmap_conf) {
@@ -1191,6 +1200,11 @@ class Formula {
         } else {
             $state = new FormulaCompiler($this->user);
             $e->compile($state);
+            if ($state->datatype && !$this->allowReview && $e->matches_at_most_once()) {
+                $e = new AggregateFexpr("some", [$e]);
+                $state = new FormulaCompiler($this->user);
+                $e->compile($state);
+            }
             $this->datatypes = $state->all_datatypes | $state->datatype;
             if ($state->datatype && !$this->allowReview)
                 $this->_error_html[] = "Illegal formula: can’t return a raw score, use an aggregate function.";
@@ -1314,7 +1328,7 @@ class Formula {
             else {
                 if (strpos($m[1], "\"") !== false)
                     $m[1] = str_replace(["\"", "*"], ["", "\\*"], $m[1]);
-                $ee = new ReviewerMatchFexpr($this->conf, $m[1]);
+                $ee = new ReviewerMatchFexpr($this->user, $m[1]);
             }
             if ($ee)
                 $e1 = $e1 ? new Fexpr("&&", $e1, $ee) : $ee;
