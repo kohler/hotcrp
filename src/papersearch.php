@@ -3584,13 +3584,18 @@ class PaperSearch {
         }
     }
 
-    function listId($sort = "") {
+    function listid($sort = "") {
+        $rest = [];
+        if ($this->_reviewer_user && $this->_reviewer_user->contactId !== $this->user->contactId)
+            $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
+        if ($sort !== "")
+            $rest[] = "sort=" . urlencode($sort);
         return "p/" . $this->limitName . "/" . urlencode($this->q)
-            . "/" . ($sort ? $sort : "");
+            . ($rest ? "/" . join("&", $rest) : "");
     }
 
     function create_session_list_object($ids, $listname, $sort = "") {
-        $l = SessionList::create($this->listId($sort), $ids,
+        $l = SessionList::create($this->listid($sort), $ids,
                                  $this->description($listname),
                                  $this->url_site_relative_raw());
         if ($this->field_highlighters())
