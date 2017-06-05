@@ -792,7 +792,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
             $tag = ($arg[0] === "#" ? substr($arg, 1) : $arg);
             $e = "($cvt ? ReviewerMatchFexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
         } else {
-            $flags |= ContactSearch::F_TAG | ContactSearch::F_NOUSER;
+            $flags |= ContactSearch::F_TAG;
             $cs = new ContactSearch($flags, $arg, $state->user);
             if ($cs->ids)
                 // XXX information leak?
