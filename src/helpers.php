@@ -312,8 +312,6 @@ function decorateNumber($n) {
 class SessionList {
     public $listid;
     public $ids;
-    public $t; // usually null
-    public $reviewer; // usually null
     public $cid;
     public $description;
     public $url;
@@ -366,7 +364,7 @@ class SessionList {
         $j = ["ids" => self::encode_ids($this->ids)];
         foreach (get_object_vars($this) as $k => $v)
             if ($k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "id_position"
-                && (!$minimal || $k === "listid" || $k === "description" || $k === "url" || $k === "t" || $k === "reviewer")
+                && (!$minimal || $k === "listid" || $k === "description" || $k === "url")
                 && $v !== null)
                 $j[$k] = $v;
         return json_encode($j);

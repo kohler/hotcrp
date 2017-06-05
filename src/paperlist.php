@@ -1196,9 +1196,6 @@ class PaperList {
     function session_list_object($listname = null) {
         assert($this->ids !== null);
         $listobject = $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
-        $reviewer = $this->reviewer_user();
-        if ($reviewer->email !== $this->contact->email)
-            $listobject->reviewer = $reviewer->email;
         $url = $this->search->url_site_relative_raw();
         if (isset($this->qreq->sort))
             $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);

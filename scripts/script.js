@@ -5431,11 +5431,7 @@ function plinfo(type, dofold) {
         setTimeout(show_loading(f), 750);
 
         // initiate load
-        var hotlist = $.parseJSON(self.getAttribute("data-hotlist"));
-        var loadargs = {
-            fn: "fieldhtml", f: type, q: hotlist.ids.replace(/'/g, " "),
-            t: hotlist.t || "s", reviewer: hotlist.reviewer
-        };
+        var loadargs = $.extend({fn: "fieldhtml", f: type}, hotlist_search_params(self, true));
         if (type == "aufull" || type == "au" || type == "anonau") {
             loadargs.f = "authors";
             if (type == "aufull" ? !dofold : (elt = $$("showaufull")) && elt.checked)
@@ -5812,6 +5808,25 @@ function prepare() {
 }
 document.body ? prepare() : $(prepare);
 })(jQuery);
+
+function hotlist_search_params(x, ids) {
+    if (x instanceof HTMLElement)
+        x = x.getAttribute("data-hotlist");
+    if (x && typeof x === "string")
+        x = $.parseJSON(x);
+    var m;
+    if (!x || !x.ids || !(m = x.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/)))
+        return false;
+    var q = {q: ids ? x.ids.replace(/'/g, " ") : urldecode(m[2]), t: m[1] || "s"};
+    if (m[3]) {
+        var args = m[3].split(/[&;]/);
+        for (var i = 0; i < args.length; ++i) {
+            var pos = args[i].indexOf("=");
+            q[args[i].substr(0, pos)] = urldecode(args[i].substr(pos + 1));
+        }
+    }
+    return q;
+}
 
 
 // focusing
