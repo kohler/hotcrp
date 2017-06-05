@@ -12,7 +12,7 @@ class Fexpr_Error {
     }
 }
 
-class Fexpr {
+class Fexpr implements JsonSerializable {
     public $op;
     public $args = array();
     public $text;
@@ -231,6 +231,16 @@ class Fexpr {
             if ($e instanceof Fexpr)
                 $e->compile_fragments($state);
     }
+
+    function jsonSerialize() {
+        if ($this->op)
+            $x = ["op" => $this->op];
+        else
+            $x = ["type" => get_class($this)];
+        foreach ($this->args as $e)
+            $x["args"][] = $e->jsonSerialize();
+        return $x;
+    }
 }
 
 class ConstantFexpr extends Fexpr {
@@ -284,6 +294,18 @@ class ConstantFexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         return $this->x;
+    }
+    function jsonSerialize() {
+        if ($this->x === "null")
+            return null;
+        else if ($this->x === "true")
+            return true;
+        else if ($this->x === "false")
+            return false;
+        else if (is_numeric($this->x))
+            return (float) $this->x;
+        else
+            return $this->x;
     }
     static function cnull() {
         return new ConstantFexpr("null");
