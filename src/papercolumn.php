@@ -408,7 +408,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         foreach ($rows as $row) {
             if (!$pl->contact->can_view_review_assignment($row, null, null))
-                $row->_review_status_sort_info = 2147483647;
+                $row->_review_status_sort_info = -2147483647;
             else
                 $row->_review_status_sort_info = $row->num_reviews_submitted()
                     + $row->num_reviews_started($pl->contact) / 1000.0;
