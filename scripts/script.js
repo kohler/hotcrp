@@ -4071,11 +4071,14 @@ function tagannorow_add(tbl, tbody, before, anno) {
 
 function searchbody_postreorder(tbody) {
     var bad_regex = [/\bk1\b/, /\bk0\b/];
-    for (var cur = tbody.firstChild, e = 1; cur; cur = cur.nextSibling)
+    for (var cur = tbody.firstChild, e = 1, n = 0; cur; cur = cur.nextSibling)
         if (cur.nodeName == "TR") {
             var c = cur.className;
-            if (!/^plx/.test(c))
+            if (/^pl(?: |$)/.test(c)) {
                 e = 1 - e;
+                ++n;
+                $(cur.firstChild).find(".pl_rownum").text(n + ". ");
+            }
             if (bad_regex[e].test(c))
                 cur.className = c.replace(/\bk[01]\b/, "k" + e);
             else if (/^plheading/.test(c)) {
