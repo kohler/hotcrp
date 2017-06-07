@@ -5453,11 +5453,8 @@ function plinfo(type, dofold) {
     return false;
 }
 
-plinfo.set_folds = function (sel, foldmap_) {
+plinfo.initialize = function (sel, fo) {
     self = $(sel)[0];
-};
-
-plinfo.set_fields = function (fo) {
     field_order = fo;
     fields = {};
     for (var i = 0; i < fo.length; ++i) {

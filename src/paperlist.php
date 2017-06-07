@@ -931,10 +931,8 @@ class PaperList {
             $classes[] = "fold5" . ($this->qreq->forceShow ? "o" : "c");
         $classes[] = "fold7" . ($this->is_folded("statistics") ? "c" : "o");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
-        if ($this->_table_id) {
-            Ht::stash_script("plinfo.set_folds(\"#{$this->_table_id}\");");
-            Ht::stash_script("plinfo.set_fields(" . json_encode($jscol) . ");");
-        }
+        if ($this->_table_id)
+            Ht::stash_script("plinfo.initialize(\"#{$this->_table_id}\"," . json_encode($jscol) . ");");
         return $classes;
     }
 
@@ -1138,19 +1136,18 @@ class PaperList {
     }
 
     private function _statistics_rows($rstate, $fieldDef) {
-        $t = "";
         $any_empty = null;
         foreach ($fieldDef as $fdef)
             if ($fdef->viewable_column() && $fdef->has_statistics())
                 $any_empty = $any_empty || $fdef->statistic($this, ScoreInfo::COUNT) != $this->count;
         if ($any_empty === null)
             return "";
-        $t .= '<tr class="pl_statheadrow fx8">';
+        $t = '  <tr class="pl_statheadrow fx8">';
         if ($rstate->titlecol)
             $t .= "<td colspan=\"{$rstate->titlecol}\"></td>";
         $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics", ["n" => 7, "st" => "statistics"]) . "</td></tr>\n";
         foreach (self::$stats as $stat) {
-            $t .= '<tr';
+            $t .= '  <tr';
             if ($this->_row_id_pattern)
                 $t .= " id=\"" . str_replace("#", "stat_" . ScoreInfo::$stat_keys[$stat], $this->_row_id_pattern) . "\"";
             $t .= ' class="pl_statrow fx7 fx8" data-statistic="' . ScoreInfo::$stat_keys[$stat] . '">';
@@ -1172,7 +1169,7 @@ class PaperList {
                 $t .= '">' . $content . '</td>';
                 ++$col;
             }
-            $t .= "</tr>";
+            $t .= "</tr>\n";
         }
         return $t;
     }
