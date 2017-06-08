@@ -2938,7 +2938,8 @@ function make_update_words(jq, wlimit) {
 
 function activate_editing(j, cj) {
     var elt, tags = [], i;
-    j.find("textarea[name=comment]").text(cj.text || "").autogrow();
+    j.find("textarea[name=comment]").text(cj.text || "")
+        .on("keydown", keydown_editor).autogrow();
     /*suggest(j.find("textarea")[0], comment_completion_q, {
         drop_nonmatch: 1, decorate: true
     });*/
@@ -3027,6 +3028,15 @@ function save_editor(elt, action, really) {
             $c.closest(".cmtg").html(data.msg);
     }
     $.post(url, $f.serialize(), callback);
+}
+
+function keydown_editor(evt) {
+    if (event_key(evt) === "Enter" && event_modkey(evt) === event_modkey.META) {
+        evt.preventDefault();
+        save_editor(this, "submit");
+        return false;
+    } else
+        return true;
 }
 
 function submit_editor(evt) {
