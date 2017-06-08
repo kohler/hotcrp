@@ -147,7 +147,7 @@ class Default_PaperSaver extends PaperSaver {
             && $qreq->has_pcconf) {
             $cmax = $user->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
             $pj->pc_conflicts = (object) array();
-            foreach (pcMembers() as $pcid => $pc) {
+            foreach ($user->conf->pc_members() as $pcid => $pc) {
                 $ctype = cvtint($qreq["pcc$pcid"], 0);
                 $ctype = max(min($ctype, $cmax), 0);
                 if ($ctype) {
