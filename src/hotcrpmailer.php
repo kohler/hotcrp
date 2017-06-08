@@ -281,7 +281,7 @@ class HotCRPMailer extends Mailer {
             return "cap=" . $Conf->capability_text($this->row, "a");
         if ($what == "%SHEPHERD%" || $what == "%SHEPHERDNAME%"
             || $what == "%SHEPHERDEMAIL%") {
-            $pc = pcMembers();
+            $pc = $Conf->pc_members();
             if (defval($this->row, "shepherdContactId") <= 0
                 || !defval($pc, $this->row->shepherdContactId, null)) {
                 if ($isbool)

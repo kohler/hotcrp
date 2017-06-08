@@ -1017,17 +1017,13 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
     return $text . "  </select>";
 }
 
-function pcMembers() {
-    global $Conf;
-    return $Conf->pc_members();
-}
-
 function pc_members_selector_options($include_none) {
+    global $Conf;
     $sel = array();
     if ($include_none)
         $sel["0"] = is_string($include_none) ? $include_none : "None";
-    $textarg = array("lastFirst" => opt("sortByLastName"));
-    foreach (pcMembers() as $p)
+    $textarg = array("lastFirst" => $Conf->opt("sortByLastName"));
+    foreach ($Conf->pc_members() as $p)
         $sel[htmlspecialchars($p->email)] = Text::name_html($p, $textarg);
     return $sel;
 }

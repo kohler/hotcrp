@@ -4,12 +4,13 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class ReviewTimes {
+    private $conf;
     private $contact;
     private $r = array();
     private $dl = array();
 
-    public function __construct($user, $rounds = null) {
-        global $Conf;
+    function __construct(Contact $user, $rounds = null) {
+        $this->conf = $user->conf;
         $this->contact = $user;
         $qp = "select PaperReview.contactId, timeRequested, reviewSubmitted, reviewRound";
         if (!$this->contact->privChair)
@@ -24,15 +25,15 @@ class ReviewTimes {
             $qp .= " and reviewRound ?a";
             $qa[] = $rounds;
         }
-        $result = Dbl::qe_apply($qp, $qa);
+        $result = $this->conf->qe_apply($qp, $qa);
         while (($row = edb_row($result))) {
             $cid = (int) $row[4] ? "conflicts" : (int) $row[0];
             $this->r[$cid][] = array((int) $row[1], (int) $row[2], (int) $row[3]);
         }
         Dbl::free($result);
-        foreach ($Conf->round_list() as $rn => $r) {
-            $dl = $Conf->review_deadline($rn, true, false);
-            $this->dl[$rn] = +$Conf->setting($dl);
+        foreach ($this->conf->round_list() as $rn => $r) {
+            $dl = $this->conf->review_deadline($rn, true, false);
+            $this->dl[$rn] = +$this->conf->setting($dl);
         }
 
         // maybe hide who's who
@@ -43,7 +44,7 @@ class ReviewTimes {
                     $r[$cid] = $data;
                 else {
                     do {
-                        $ncid = mt_rand(1, 10 * count(pcMembers()));
+                        $ncid = mt_rand(1, 10 * count($this->conf->pc_members()));
                     } while (isset($who[$ncid]));
                     $who[$ncid] = true;
                     $r["x" . $ncid] = $data;
@@ -52,7 +53,7 @@ class ReviewTimes {
         }
     }
 
-    public function json() {
+    function json() {
         // find out who is light and who is heavy
         // (light => less than 0.66 * (80th percentile))
         $nass = array();
@@ -63,13 +64,13 @@ class ReviewTimes {
         if (count($nass))
             $heavy_boundary = 0.66 * $nass[(int) (0.8 * count($nass))];
 
-        $contacts = pcMembers();
+        $contacts = $this->conf->pc_members();
         $need_contacts = [];
         foreach ($this->r as $cid => $x)
             if (!isset($contacts[$cid]) && ctype_digit($cid))
                 $need_contacts[] = $cid;
         if (count($need_contacts)) {
-            $result = Dbl::q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where contactId ?a", $need_contacts);
+            $result = $this->conf->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where contactId ?a", $need_contacts);
             while ($result && ($row = Contact::fetch($result)))
                 $contacts[$row->contactId] = $row;
         }

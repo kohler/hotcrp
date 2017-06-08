@@ -214,7 +214,7 @@ function tag_normalize_compare($a, $b) {
 
 function paper_tag_normalize($prow) {
     $t = array();
-    $pcm = pcMembers();
+    $pcm = $prow->conf->pc_members();
     foreach (explode(" ", $prow->all_tags_text()) as $tag) {
         if (($twiddle = strpos($tag, "~")) > 0
             && ($c = get($pcm, substr($tag, 0, $twiddle)))) {

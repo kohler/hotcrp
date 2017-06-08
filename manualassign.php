@@ -31,7 +31,7 @@ if (is_string($qreq->p))
 if (is_string($qreq->papx))
     $qreq->papx = preg_split('/\s+/', $qreq->papx);
 
-$pcm = pcMembers();
+$pcm = $Conf->pc_members();
 $reviewer = cvtint($qreq->reviewer);
 if ($reviewer <= 0)
     $reviewer = $Me->contactId;

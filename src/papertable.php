@@ -1163,7 +1163,7 @@ class PaperTable {
         assert(!!$this->editable);
         if (!$this->conf->setting("sub_pcconf"))
             return;
-        $pcm = pcMembers();
+        $pcm = $this->conf->pc_members();
         if (!count($pcm))
             return;
 
@@ -1248,7 +1248,7 @@ class PaperTable {
             return;
 
         $pcconf = array();
-        $pcm = pcMembers();
+        $pcm = $this->conf->pc_members();
         foreach ($this->prow->pc_conflicts() as $id => $x) {
             $p = $pcm[$id];
             $text = "<p class=\"odname\">" . $Me->name_html_for($p) . "</p>";
@@ -1272,7 +1272,7 @@ class PaperTable {
         if ($this->prow->$field == 0 && !$editable)
             return;
         $value = $this->prow->$field;
-        $pc = pcMembers();
+        $pc = $this->conf->pc_members();
 
         if ($wholefold === null)
             $this->_papstripBegin($type, true);
@@ -1299,7 +1299,7 @@ class PaperTable {
 
         if ($editable) {
             $selopt = [0];
-            foreach (pcMembers() as $p)
+            foreach ($this->conf->pc_members() as $p)
                 if (!$this->prow
                     || $p->can_accept_review_assignment($this->prow)
                     || $p->contactId == $value)

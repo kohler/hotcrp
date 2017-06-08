@@ -128,7 +128,7 @@ if (isset($_REQUEST["retract"]) && check_post()) {
 // change PC assignments
 function pcAssignments() {
     global $Conf, $Me, $prow;
-    $pcm = pcMembers();
+    $pcm = $Conf->pc_members();
 
     $rname = (string) $Conf->sanitize_round_name(req("rev_round"));
     $round_number = null;
@@ -522,7 +522,7 @@ if ($Me->can_administer($prow)) {
 
     echo '<div class="pc_ctable">';
     $tagger = new Tagger($Me);
-    foreach (pcMembers() as $pc) {
+    foreach ($Conf->pc_members() as $pc) {
         $p = $pcx[$pc->contactId];
         if (!$pc->can_accept_review_assignment_ignore_conflict($prow))
             continue;

@@ -19,14 +19,14 @@ if ($Qreq->reviewer && $Me->privChair
     && $Qreq->reviewer !== $Me->email
     && $Qreq->reviewer !== $Me->contactId) {
     $incorrect_reviewer = true;
-    foreach (pcMembers() as $pcm)
+    foreach ($Conf->pc_members() as $pcm)
         if (strcasecmp($pcm->email, $Qreq->reviewer) == 0
             || (string) $pcm->contactId === $Qreq->reviewer) {
             $reviewer_contact = $pcm;
             $incorrect_reviewer = false;
         }
 } else if (!$Qreq->reviewer && !($Me->roles & Contact::ROLE_PC)) {
-    foreach (pcMembers() as $pcm) {
+    foreach ($Conf->pc_members() as $pcm) {
         $reviewer_contact = $pcm;
         break;
     }
@@ -255,7 +255,7 @@ if ($Me->privChair) {
         $prefcount[$row[0]] = $row[1];
 
     $revopt = pc_members_selector_options(false);
-    foreach (pcMembers() as $pcm)
+    foreach ($Conf->pc_members() as $pcm)
         if (!get($prefcount, $pcm->contactId))
             $revopt[htmlspecialchars($pcm->email)] .= " (no preferences)";
     if (!isset($revopt[htmlspecialchars($reviewer_contact->email)]))
