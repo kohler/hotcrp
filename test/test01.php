@@ -733,6 +733,14 @@ xassert(AssignmentSet::run($user_chair, "paper,action,user\n13,primary,marina@po
 xassert(!AssignmentSet::run($user_chair, "paper,action,user\n14,primary,marina@poema.ru\n"));
 xassert(AssignmentSet::run($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n"));
 
+// check content upload
+$ps = new PaperStatus($Conf);
+xassert(!$ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"/etc/passwd","mimetype":"application/pdf"}}')));
+xassert($ps->has_error_at("paper"));
+$ps->clear();
+xassert(!$ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"./../../../../etc/passwd","mimetype":"application/pdf"}}')));
+xassert($ps->has_error_at("paper"));
+
 
 $Conf->check_invariants();
 

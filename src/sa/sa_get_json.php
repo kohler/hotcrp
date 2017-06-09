@@ -9,10 +9,10 @@ class GetJson_SearchAction extends SearchAction {
     public function __construct($iszip) {
         $this->iszip = $iszip;
     }
-    public function document_callback($dj, $prow, $dtype, $drow) {
-        if ($drow->docclass->load($drow, true)) {
-            $dj->content_file = HotCRPDocument::filename($drow);
-            $this->zipdoc->add_as($drow, $dj->content_file);
+    public function document_callback($dj, DocumentInfo $doc, $dtype, PaperStatus $pstatus) {
+        if ($doc->docclass->load($doc, true)) {
+            $dj->content_file = HotCRPDocument::filename($doc);
+            $this->zipdoc->add_as($doc, $dj->content_file);
         }
     }
     function allow(Contact $user) {
@@ -27,7 +27,7 @@ class GetJson_SearchAction extends SearchAction {
         $ps = new PaperStatus($user->conf, $user, ["forceShow" => true, "hide_docids" => true]);
         if ($this->iszip) {
             $this->zipdoc = new ZipDocument($user->conf->download_prefix . "data.zip");
-            $ps->add_document_callback([$this, "document_callback"]);
+            $ps->on_document_export([$this, "document_callback"]);
         }
         while (($prow = PaperInfo::fetch($result, $user)))
             if ($user->can_administer($prow, true))

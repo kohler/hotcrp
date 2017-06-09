@@ -325,8 +325,6 @@ class Filer {
     static function content_filename($doc) {
         if (is_string(get($doc, "content_file")) && is_readable($doc->content_file))
             return $doc->content_file;
-        if (is_string(get($doc, "file")) && is_readable($doc->file))
-            return $doc->file;
         if (is_string(get($doc, "filestore")) && is_readable($doc->filestore))
             return $doc->filestore;
         return false;
