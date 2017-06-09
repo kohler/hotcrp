@@ -426,15 +426,27 @@ class PaperStatus extends MessageSet {
         if (is_object($topics)) {
             $topic_map = $this->conf->topic_map();
             $pj->topics = (object) array();
-            foreach ($topics as $k => $v)
+            foreach ($topics as $k => $v) {
                 if (!$v)
                     /* skip */;
                 else if (get($topic_map, $k))
                     $pj->topics->$k = true;
-                else if (($x = array_search($k, $topic_map, true)) !== false)
-                    $pj->topics->$x = true;
-                else
-                    $pj->bad_topics[] = $k;
+                else {
+                    $tid = array_search($k, $topic_map, true);
+                    if ($tid === false) {
+                        $tmatches = [];
+                        foreach ($topic_map as $tid => $tname)
+                            if (strcasecmp($k, $tname) == 0)
+                                $tmatches[] = $tid;
+                        if (count($tmatches) == 1)
+                            $tid = $tmatches[0];
+                    }
+                    if ($tid !== false)
+                        $pj->topics->$tid = true;
+                    else
+                        $pj->bad_topics[] = $k;
+                }
+            }
         } else if ($topics)
             $this->error_at("topics", "Format error [topics]");
     }
