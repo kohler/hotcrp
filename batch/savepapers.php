@@ -28,28 +28,98 @@ $match_title = isset($arg["match-title"]);
 $ignore_pid = isset($arg["ignore-pid"]);
 $site_contact = $Conf->site_contact();
 
-if ($file === "-")
+if ($file === "-") {
     $content = stream_get_contents(STDIN);
-else
+    $filepfx = "";
+} else {
     $content = file_get_contents($file);
+    $filepfx = "$file: ";
+}
 if ($content === false) {
-    fwrite(STDERR, "$file: Read error\n");
+    fwrite(STDERR, "{$filepfx}Read error\n");
     exit(1);
+}
+
+// allow uploading a whole zip archive
+global $ziparchive;
+$ziparchive = null;
+if (str_starts_with($content, "\x50\x4B\x03\x04")) {
+    if (!($tmpdir = tempdir())) {
+        fwrite(STDERR, "Cannot create temporary directory\n");
+        exit(1);
+    } else if (file_put_contents("$tmpdir/data.zip", $content) !== strlen($content)) {
+        fwrite(STDERR, "$tmpdir/data.zip: Cannot write file\n");
+        exit(1);
+    }
+
+    $ziparchive = new ZipArchive;
+    if ($ziparchive->open("$tmpdir/data.zip") !== true) {
+        fwrite(STDERR, "{$filepfx}Invalid zip\n");
+        exit(1);
+    } else if ($ziparchive->numFiles == 0) {
+        fwrite(STDERR, "{$filepfx}Empty zipfile\n");
+        exit(1);
+    }
+    // find common directory prefix
+    $slashpos = strpos($ziparchive->getNameIndex(0), "/");
+    if ($slashpos === false || $slashpos === 0)
+        $dirprefix = "";
+    else {
+        $dirprefix = substr($ziparchive->getNameIndex(0), 0, $slashpos + 1);
+        for ($i = 1; $i < $ziparchive->numFiles; ++$i)
+            if (!str_starts_with($ziparchive->getNameIndex($i), $dirprefix))
+                $dirprefix = "";
+    }
+    // find "*-data.json" file
+    $data_filename = [];
+    for ($i = 0; $i < $ziparchive->numFiles; ++$i) {
+        $filename = $ziparchive->getNameIndex($i);
+        if (str_starts_with($filename, $dirprefix)) {
+            $dirname = substr($filename, strlen($dirprefix));
+            if (preg_match(',\A[^/]*(?:\A|[-_])data\.json\z,', $dirname))
+                $data_filename[] = $filename;
+        }
+    }
+    if (count($data_filename) !== 1) {
+        fwrite(STDERR, "{$filepfx}Should contain exactly one `*-data.json` file\n");
+        exit(1);
+    }
+    $data_filename = $data_filename[0];
+    $content = $ziparchive->getFromName($data_filename);
+    $filepfx = ($filepfx ? $file : "<stdin>") . "/" . $data_filename . ": ";
+    if ($content === false) {
+        fwrite(STDERR, "{$filepfx}Could not read\n");
+        exit(1);
+    }
 }
 
 if (($jp = json_decode($content)) === null) {
     Json::decode($content); // our JSON decoder provides error positions
-    fwrite(STDERR, "$file: invalid JSON: " . Json::last_error_msg() . "\n");
+    fwrite(STDERR, "{$filepfx}invalid JSON: " . Json::last_error_msg() . "\n");
     exit(1);
 } else if (!is_object($jp) && !is_array($jp)) {
-    fwrite(STDERR, "$file: invalid JSON, expected array of objects\n");
+    fwrite(STDERR, "{$filepfx}invalid JSON, expected array of objects\n");
     exit(1);
+}
+
+function on_document_import($docj, PaperOption $o, PaperStatus $pstatus) {
+    global $ziparchive;
+    if (isset($docj->content_file)
+        && is_string($docj->content_file)
+        && $ziparchive) {
+        $content = $ziparchive->getFromName($docj->content_file);
+        if ($content === false) {
+            $pstatus->error_at_option($o, "{$docj->content_file}: Could not read");
+            return false;
+        }
+        $docj->content = $content;
+    }
 }
 
 if (is_object($jp))
     $jp = array($jp);
 $index = 0;
-foreach ($jp as $j) {
+foreach ($jp as &$j) {
     ++$index;
     if ($ignore_pid)
         unset($j->pid, $j->id);
@@ -77,6 +147,7 @@ foreach ($jp as $j) {
     $ps = new PaperStatus($Conf, null, ["no_email" => true,
                                         "disable_users" => $disable_users,
                                         "allow_error" => ["topics", "options"]]);
+    $ps->on_document_import("on_document_import");
     $pid = $ps->save_paper_json($j);
     if ($pid && str_starts_with($pidtext, "new")) {
         fwrite(STDERR, "-> #" . $pid . ": ");
@@ -106,4 +177,7 @@ foreach ($jp as $j) {
         foreach ($tf["err"] as $te)
             fwrite(STDERR, $prefix . htmlspecialchars_decode($te) . "\n");
     }
+
+    // clean up memory, hopefully
+    $ps = $j = null;
 }
