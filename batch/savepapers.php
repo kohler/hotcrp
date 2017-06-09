@@ -3,18 +3,19 @@ $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 
 require_once("$ConfSitePATH/lib/getopt.php");
 $arg = getopt_rest($argv, "hn:qr", ["help", "name:", "quiet", "disable", "disable-users",
-                                    "reviews", "match-title", "ignore-pid"]);
+                                    "reviews", "match-title", "ignore-pid", "ignore-errors"]);
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
     fwrite(STDOUT, "Usage: php batch/savepapers.php [-n CONFID] [OPTIONS] FILE
 
 Options include:
-  --quiet          Don't print progress information
-  --disable-users  Newly created users are disabled
-  --match-title    Match papers by title if no `pid`
-  --ignore-pid     Ignore `pid` elements in JSON
-  --reviews        Save JSON reviews\n");
+  --quiet          Don't print progress information.
+  --ignore-errors  Do not exit after first error.
+  --disable-users  Newly created users are disabled.
+  --match-title    Match papers by title if no `pid`.
+  --ignore-pid     Ignore `pid` elements in JSON.
+  --reviews        Save JSON reviews.\n");
     exit(0);
 }
 
@@ -26,6 +27,7 @@ $disable_users = isset($arg["disable"]) || isset($arg["disable-users"]);
 $reviews = isset($arg["r"]) || isset($arg["reviews"]);
 $match_title = isset($arg["match-title"]);
 $ignore_pid = isset($arg["ignore-pid"]);
+$ignore_errors = isset($arg["ignore-errors"]);
 $site_contact = $Conf->site_contact();
 
 if ($file === "-") {
@@ -119,6 +121,8 @@ function on_document_import($docj, PaperOption $o, PaperStatus $pstatus) {
 if (is_object($jp))
     $jp = array($jp);
 $index = 0;
+$nerrors = 0;
+$nsuccesses = 0;
 foreach ($jp as &$j) {
     ++$index;
     if ($ignore_pid)
@@ -136,8 +140,13 @@ foreach ($jp as &$j) {
         $pidtext = "new paper @$index";
     else {
         fwrite(STDERR, "paper @$index: bad pid\n");
-        exit(1);
+        ++$nerrors;
+        if (!$ignore_errors)
+            break;
+        else
+            continue;
     }
+
     if (!$quiet) {
         if (isset($j->title) && is_string($j->title))
             fwrite(STDERR, $pidtext . " (" . UnicodeHelper::utf8_abbreviate($j->title, 40) . "): ");
@@ -158,10 +167,16 @@ foreach ($jp as &$j) {
     $prefix = $pidtext . ": ";
     foreach ($ps->messages() as $msg)
         fwrite(STDERR, $prefix . htmlspecialchars_decode($msg) . "\n");
-    if (!$pid)
-        exit(1);
+    if ($pid)
+        ++$nsuccesses;
+    else {
+        ++$nerrors;
+        if (!$ignore_errors)
+            break;
+    }
+
     // XXX more validation here
-    if (isset($j->reviews) && is_array($j->reviews) && $reviews) {
+    if ($pid && isset($j->reviews) && is_array($j->reviews) && $reviews) {
         $rform = $Conf->review_form();
         $tf = $rform->blank_text_form();
         foreach ($j->reviews as $reviewindex => $reviewj)
@@ -181,3 +196,8 @@ foreach ($jp as &$j) {
     // clean up memory, hopefully
     $ps = $j = null;
 }
+
+if ($nerrors)
+    exit($ignore_errors && $nsuccesses ? 2 : 1);
+else
+    exit(0);
