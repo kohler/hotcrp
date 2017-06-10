@@ -2594,10 +2594,15 @@ class PaperSearch {
                 $qe = call_user_func($kwdef->parser, $kwdef->has, $sword2, $srch);
             } else
                 $qe = null;
+            if ($qe && $sword->keyword === "no") {
+                if (is_array($qe))
+                    $qe = SearchTerm::make_op("or", $qe);
+                $qe = SearchTerm::make_not($qe);
+            }
             if ($qe)
                 return $qe;
         }
-        $srch->warn("Unknown search “has:" . htmlspecialchars($word) . "”.");
+        $srch->warn("Unknown search “" . $sword->keyword . ":" . htmlspecialchars($word) . "”.");
         return new False_SearchTerm;
     }
 

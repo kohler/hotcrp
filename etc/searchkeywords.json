@@ -231,5 +231,9 @@
     {
         "name": "has",
         "parser": "PaperSearch::parse_has"
+    },
+    {
+        "name": "no",
+        "parser": "PaperSearch::parse_has"
     }
 ]
