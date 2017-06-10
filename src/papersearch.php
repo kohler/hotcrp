@@ -2592,7 +2592,8 @@ class PaperSearch {
                 $sword2->keyword = $lword;
                 $sword2->kwdef = $kwdef;
                 $qe = call_user_func($kwdef->parser, $kwdef->has, $sword2, $srch);
-            }
+            } else
+                $qe = null;
             if ($qe)
                 return $qe;
         }
