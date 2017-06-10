@@ -908,7 +908,9 @@ class TextPaperOption extends PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = (string) ($reqv === null ? $ov->data() : $reqv);
         $pt->echo_editable_option_papt($this);
+        $fi = $pt->prow ? $pt->prow->edit_format() : $pt->conf->format_info(null);
         echo '<div class="papev">',
+            ($fi ? $fi->description_preview_html() : ""),
             Ht::textarea("opt$this->id", $reqv, ["class" => "papertext" . $pt->error_class("opt$this->id"), "rows" => max($this->display_space, 1), "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => "true"]),
             "</div></div>\n\n";
     }

@@ -373,6 +373,10 @@ class PaperInfo {
         return $this->format_of($this->abstract, true);
     }
 
+    function edit_format() {
+        return $this->conf->format_info($this->paperFormat);
+    }
+
     function author_list() {
         if (!isset($this->_author_array)) {
             $this->_author_array = array();

@@ -200,6 +200,7 @@ src/settings/s_sub.php
 src/settings/s_subform.php
 src/settings/s_tags.php
 src/settings/s_users.php
+src/textformat.php
 src/updateschema.php
 src/useractions.php
 src/userstatus.php

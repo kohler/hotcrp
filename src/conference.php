@@ -1175,6 +1175,8 @@ class Conf {
                 $this->_format_info = $this->opt["formatInfo"];
             else if (is_string($this->opt["formatInfo"]))
                 $this->_format_info = json_decode($this->opt["formatInfo"], true);
+            foreach ($this->_format_info as $format => &$fi)
+                $fi = new TextFormat($format, $fi);
         }
         if ($format === null)
             $format = $this->default_format;
@@ -1185,7 +1187,7 @@ class Conf {
         if ($format === null)
             $format = $this->default_format;
         if ($format && $text !== null && ($f = $this->format_info($format))
-            && ($re = get($f, "simple_regex")) && preg_match($re, $text))
+            && $f->simple_regex && preg_match($f->simple_regex, $text))
             $format = 0;
         return $format;
     }

@@ -591,9 +591,8 @@ class PaperTable {
             $this->field_hint("Abstract"),
             $this->messages_for("abstract"),
             '<div class="papev abstract">';
-        if (($f = $this->conf->format_info($this->prow ? $this->prow->paperFormat : null))
-            && ($t = get($f, "description")))
-            echo '<div class="formatdescription">', $t, '</div>';
+        if (($fi = $this->conf->format_info($this->prow ? $this->prow->paperFormat : null)))
+            echo $fi->description_preview_html();
         echo $this->editable_textarea("abstract"),
             "</div></div>\n\n";
     }

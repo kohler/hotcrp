@@ -488,32 +488,18 @@ class ReviewForm {
         return $rt;
     }
 
-    private function format_info($rrow, $text) {
+    private function format_info($rrow) {
         $format = $rrow ? $rrow->reviewFormat : null;
         if ($format === null)
             $format = $this->conf->default_format;
-        if ($format && ($f = $this->conf->format_info($format))) {
-            $has_preview = !!get($f, "has_preview");
-            if (!$text || !($t = get($f, "description_text"))) {
-                $t = get($f, "description");
-                if ($text && $t)
-                    $t = Text::html_to_text($t);
-            }
-            return (object) ["format" => $format, "description" => $t, "has_preview" => $has_preview];
-        }
-        return null;
+        return $format ? $this->conf->format_info($format) : null;
     }
 
     private function webFormRows($contact, $prow, $rrow, $useRequest = false) {
         global $ReviewFormError;
         $format_description = "";
-        $fi = $this->format_info($rrow, false);
-        if ($fi && ($fi->description || $fi->has_preview))
-            $format_description = '<div class="formatdescription">'
-                . ($fi->description ? : "")
-                . ($fi->description && $fi->has_preview ? ' <span class="barsep">·</span> ' : "")
-                . ($fi->has_preview ? '<a href="#" class="togglepreview" data-format="' . $fi->format . '">Preview</a>' : "")
-                . '</div>';
+        if (($fi = $this->format_info($rrow)))
+            $format_description = $fi->description_preview_html();
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         echo '<div class="rve">';
         foreach ($this->forder as $field => $f) {
@@ -1110,7 +1096,9 @@ $blind\n";
 
         $i = 0;
         $numericMessage = 0;
-        $format_info = $this->format_info($rrow, true);
+        $format_description = "";
+        if (($fi = $this->format_info($rrow)))
+            $format_description = $fi->description_text();
         foreach ($this->forder as $field => $f) {
             $i++;
             if ($f->view_score <= $revViewScore
@@ -1165,8 +1153,8 @@ $blind\n";
                     $fval = "No entry";
                 else if ($fval == "")
                     $fval = "(Your choice here)";
-            } else if ($format_info && $format_info->description)
-                $x .= prefix_word_wrap("==-== ", $format_info->description, "==-== ");
+            } else if ($format_description !== "")
+                $x .= prefix_word_wrap("==-== ", $format_description, "==-== ");
             $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
         }
         return $x . "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
