@@ -364,6 +364,9 @@ class Text {
             return "";
         list($aw, $zw) = array(preg_match('{\A(?:\pL|\pN)}u', $word),
                                preg_match('{(?:\pL|\pN)\z}u', $word));
+        // Maybe `$word` is not valid UTF-8. Avoid warnings later.
+        if (!$aw && !$zw && !is_valid_utf8($word))
+            return self::utf8_word_regex(convert_to_utf8($word));
         return ($aw ? self::UTF8_INITIAL_NONLETTER : '')
             . str_replace(" ", '(?:\s|\p{Zs})+', $word)
             . ($zw ? '(?:\z|(?!\pL|\pN)(?=\PM))' : '');
