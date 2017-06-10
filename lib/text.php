@@ -469,4 +469,17 @@ class Text {
         }
         return $out;
     }
+
+    static function html_to_text($x) {
+        if (strpos($x, "<") !== false) {
+            $x = preg_replace('{\s*<\s*p\s*>\s*(.*?)\s*<\s*/\s*p\s*>}si', "\n\n\$1\n\n", $x);
+            $x = preg_replace('{\s*<\s*br\s*/?\s*>\s*(?:<\s*/\s*br\s*>\s*)?}si', "\n", $x);
+            $x = preg_replace('{\s*<\s*li\s*>}si', "\n* ", $x);
+            $x = preg_replace('{<\s*(b|strong)\s*>\s*(.*?)\s*<\s*/\s*\1\s*>}si', '**$2**', $x);
+            $x = preg_replace('{<\s*(i|em)\s*>\s*(.*?)\s*<\s*/\s*\1\s*>}si', '*$2*', $x);
+            $x = preg_replace('{<(?:[^"\'>]|".*?"|\'.*?\')*>}s', "", $x);
+            $x = preg_replace('{\n\n\n+}s', "\n\n", $x);
+        }
+        return html_entity_decode(trim($x), ENT_QUOTES, "UTF-8");
+    }
 }

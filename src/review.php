@@ -497,7 +497,7 @@ class ReviewForm {
             if (!$text || !($t = get($f, "description_text"))) {
                 $t = get($f, "description");
                 if ($text && $t)
-                    $t = self::cleanDescription($t);
+                    $t = Text::html_to_text($t);
             }
             return (object) ["format" => $format, "description" => $t, "has_preview" => $has_preview];
         }
@@ -1010,13 +1010,6 @@ class ReviewForm {
         return $x;
     }
 
-    static function cleanDescription($d) {
-        $d = preg_replace('|\s*<\s*br\s*/?\s*>\s*(?:<\s*/\s*br\s*>\s*)?|si', "\n", $d);
-        $d = preg_replace('|\s*<\s*li\s*>|si', "\n* ", $d);
-        $d = preg_replace(',<(?:[^"\'>]|".*?"|\'.*?\')*>,s', "", $d);
-        return html_entity_decode($d, ENT_QUOTES, "UTF-8");
-    }
-
     static function update_review_author_seen() {
         global $Conf, $Now;
         if (self::$review_author_seen && $Conf->sversion >= 92) {
@@ -1143,7 +1136,7 @@ $blind\n";
             if ($f->description) {
                 $d = cleannl($f->description);
                 if (strpbrk($d, "&<") !== false)
-                    $d = self::cleanDescription($d);
+                    $d = Text::html_to_text($d);
                 $x .= prefix_word_wrap("==-==    ", trim($d), "==-==    ");
             }
             if ($f->has_options) {
