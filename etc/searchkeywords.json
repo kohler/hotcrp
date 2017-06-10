@@ -59,6 +59,7 @@
     {
         "name": "pref",
         "parser": "Revpref_SearchTerm::parse",
+        "has": "any",
         "synonym": ["revpref", "repref", "prefexp", "revprefexp", "reprevexp",
                     "prefexpertise", "revprefexpertise", "reprefexpertise"]
     },
