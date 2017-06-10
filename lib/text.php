@@ -368,7 +368,7 @@ class Text {
         if (!$aw && !$zw && !is_valid_utf8($word))
             return self::utf8_word_regex(convert_to_utf8($word));
         return ($aw ? self::UTF8_INITIAL_NONLETTER : '')
-            . str_replace(" ", '(?:\s|\p{Zs})+', $word)
+            . str_replace(" ", '(?:\s|\p{Zs})+', preg_quote($word))
             . ($zw ? '(?:\z|(?!\pL|\pN)(?=\PM))' : '');
     }
 
