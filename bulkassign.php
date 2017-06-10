@@ -69,7 +69,7 @@ function finish_browser_alive() {
 
 function complete_assignment($callback) {
     global $Me;
-    $assignset = new AssignmentSet($Me, false);
+    $assignset = new AssignmentSet($Me, true);
     $assignset->parse($_POST["file"], get($_POST, "filename"),
                       assignment_defaults(), $callback);
     $SSel = SearchSelection::make(make_qreq(), $Me);
@@ -128,7 +128,7 @@ if (isset($_GET["upload"]) && check_post()
     if ($text === false)
         Conf::msg_error("Internal error: cannot read file.");
     else {
-        $assignset = new AssignmentSet($Me, false);
+        $assignset = new AssignmentSet($Me, true);
         $defaults = assignment_defaults();
         $text = convert_to_utf8($text);
         $assignset->parse($text, $filename, $defaults, "keep_browser_alive");
