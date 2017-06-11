@@ -41,7 +41,7 @@ if ($incorrect_reviewer)
 if (isset($Qreq->default) && $Qreq->defaultact)
     $Qreq->fn = $Qreq->defaultact;
 // backwards compat
-if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "uploadpref", "setpref", "saveprefs"])) {
+if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "uploadpref", "saveuploadpref", "setpref", "saveprefs"])) {
     if (isset($Qreq->get)) {
         $Qreq->fn = "get";
         $Qreq->getfn = $Qreq->get;
@@ -63,6 +63,13 @@ if ($Qreq->fn === "get"
     && !isset($Qreq->pap) && !isset($Qreq->p))
     $Qreq->p = $_REQUEST["p"] = "all";
 
+function prefs_hoturl_args() {
+    global $Me, $reviewer;
+    $args = [];
+    if ($reviewer->contactId !== $Me->contactId)
+        $args["reviewer"] = $reviewer->email;
+    return $args;
+}
 
 // Update preferences
 function savePreferences($Qreq, $reset_p) {
@@ -76,7 +83,7 @@ function savePreferences($Qreq, $reset_p) {
     $csv->set_header(["paper", "email", "preference"]);
     $suffix = "u" . $reviewer->contactId;
     foreach ($Qreq as $k => $v)
-        if (strlen($k) > 7 && $k[0] == "r" && substr($k, 0, 7) == "revpref") {
+        if (strlen($k) > 7 && substr($k, 0, 7) == "revpref") {
             if (str_ends_with($k, $suffix))
                 $k = substr($k, 0, -strlen($suffix));
             if (($p = cvtint(substr($k, 7))) > 0)
@@ -104,7 +111,7 @@ if ($Qreq->fn === "saveprefs" && check_post())
 // Select papers
 global $SSel;
 $SSel = null;
-if ($Qreq->fn === "setpref" || $Qreq->fn === "get") {
+if ($Qreq->fn === "setpref" || $Qreq->fn === "get" || $Qreq->fn === "saveuploadpref") {
     $SSel = SearchSelection::make($Qreq, $Me);
     if ($SSel->is_empty())
         Conf::msg_error("No papers selected.");
@@ -126,15 +133,9 @@ if ($Qreq->fn === "setpref" && $SSel && !$SSel->is_empty() && check_post()) {
 
 
 // Parse paper preferences
-function upload_error($csv, $printFilename, $error) {
-    return '<span class="lineno">' . $printFilename . ':' . $csv->lineno() . ':</span> ' . $error;
-}
+function parseUploadedPreferences($text, $filename, $apply) {
+    global $Conf, $Me, $Qreq, $SSel, $reviewer;
 
-function parseUploadedPreferences($filename, $printFilename) {
-    global $Conf;
-    if (($text = file_get_contents($filename)) === false)
-        return Conf::msg_error("Cannot read uploaded file.");
-    $printFilename = htmlspecialchars($printFilename);
     $text = cleannl($text);
     $text = preg_replace('/^==-== /m', '#', $text);
     $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
@@ -154,54 +155,58 @@ function parseUploadedPreferences($filename, $printFilename) {
                 $csv->set_header(["paper", "preference"]);
             else
                 $csv->set_header(["paper", "title", "preference"]);
-        } else
-            $errors[] = upload_error($csv, $printFilename, "this doesn’t appear to be a valid preference file");
+        }
         $csv->unshift($line);
     }
 
-    $successes = 0;
-    $errors = array();
-    $detailed_preference_error = false;
-    $new_qreq = new Qrequest("POST");
-    while (($line = $csv->next())) {
-        if (isset($line["paper"]) && isset($line["preference"])) {
-            $paper = trim($line["paper"]);
-            if ($paper != "" && ctype_digit($paper) && parse_preference($line["preference"]))
-                $new_qreq["revpref" . $line["paper"]] = $line["preference"];
-            else if (!ctype_digit($line["paper"]))
-                $errors[] = upload_error($csv, $printFilename, "“" . htmlspecialchars($paper) . "” is not a valid paper");
-            else if (!$detailed_preference_error) {
-                $errors[] = upload_error($csv, $printFilename, "bad review preference “" . htmlspecialchars(trim($line["preference"])) . "”, should be an integer and an optional expertise marker (X, Y, Z)");
-                $detailed_preference_error = true;
-            } else
-                $errors[] = upload_error($csv, $printFilename, "bad review preference “" . htmlspecialchars(trim($line["preference"])) . "”");
-        } else if (!empty($line))
-            $errors[] = upload_error($csv, $printFilename, "paper and/or preference missing");
-        if (count($errors) == 20) {
-            $errors[] = upload_error($csv, $printFilename, "too many errors, giving up");
-            break;
-        }
-    }
+    $assignset = new AssignmentSet($Me, true);
+    $assignset->set_reviewer($reviewer);
+    $assignset->enable_actions("pref");
+    $assignset->show_column("pref:" . $reviewer->email . ":row", true);
+    $assignset->hide_column("allpref", true);
+    if ($apply)
+        $assignset->enable_papers($SSel->selection());
+    $assignset->parse($csv, $filename);
+    if ($assignset->has_error())
+        $assignset->report_errors();
+    else if ($assignset->is_empty())
+        $Conf->warnMsg("That assignment file makes no changes.");
+    else if ($apply) {
+        if ($assignset->execute(true))
+            redirectSelf();
+    } else {
+        $Conf->header("Review preferences", "revpref", actionBar());
+        echo '<h3>Proposed preference assignment</h3>';
+        $Conf->infoMsg("Select “Apply changes” if this looks OK. (You can always alter your preferences afterwards.)");
 
-    if (count($errors) > 0)
-        Conf::msg_error("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p> None of your preferences were saved; please fix these errors and try again.</div>");
-    else if (count($new_qreq) > 0)
-        savePreferences($new_qreq, true);
+        echo Ht::form_div(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]));
+
+        $assignset->echo_unparse_display();
+
+        echo '<div class="g"></div>',
+            '<div class="aahc"><div class="aa">',
+            Ht::submit("Apply changes"),
+            ' &nbsp;', Ht::submit("cancel", "Cancel"),
+            Ht::hidden("file", $text),
+            Ht::hidden("filename", $filename),
+            '</div></div></div></form>', "\n";
+        $Conf->footer();
+        exit;
+    }
 }
-if ($Qreq->fn === "uploadpref" && file_uploaded($_FILES["uploadedFile"])
-    && check_post())
-    parseUploadedPreferences($_FILES["uploadedFile"]["tmp_name"], $_FILES["uploadedFile"]["name"]);
+if ($Qreq->fn === "saveuploadpref" && check_post() && !$Qreq->cancel)
+    parseUploadedPreferences($Qreq->file, $Qreq->filename, true);
+else if ($Qreq->fn === "uploadpref" && check_post() && $Qreq->has_file("uploadedFile"))
+    parseUploadedPreferences($Qreq->file_contents("uploadedFile"),
+                             $Qreq->file_filename("uploadedFile"), false);
 else if ($Qreq->fn === "uploadpref")
     Conf::msg_error("Select a preferences file to upload.");
 
 
 // Prepare search
-$Qreq->t = "editpref";
-$hoturl_args = [];
-if ($reviewer->contactId !== $Me->contactId)
-    $hoturl_args["reviewer"] = $reviewer->email;
-$Qreq->urlbase = hoturl_site_relative_raw("reviewprefs", $hoturl_args);
+$Qreq->urlbase = hoturl_site_relative_raw("reviewprefs", prefs_hoturl_args());
 $Qreq->q = get($Qreq, "q", "");
+$Qreq->t = "editpref";
 $Qreq->display = displayOptionsSet("pfdisplay");
 
 // Search actions
@@ -314,9 +319,7 @@ echo "</td></tr></table>\n";
 
 
 // main form
-$hoturl_args = [];
-if ($reviewer->contactId !== $Me->contactId)
-    $hoturl_args["reviewer"] = $reviewer->email;
+$hoturl_args = prefs_hoturl_args();
 if ($Qreq->q)
     $hoturl_args["q"] = $Qreq->q;
 echo Ht::form_div(hoturl_post("reviewprefs", $hoturl_args), array("class" => "assignpc", "onsubmit" => "return plist_onsubmit.call(this)", "id" => "sel")),
