@@ -84,7 +84,7 @@ class GetAllRevpref_SearchAction extends SearchAction {
                 $pref = $prow->reviewer_preference($p);
                 $cflt = get($conflicts, $cid);
                 $tv = $prow->topicIds ? $prow->topic_interest_score($p) : 0;
-                if ($pref || $cflt || $tv) {
+                if ($pref[0] !== 0 || $pref[1] !== null || $cflt || $tv) {
                     $texts[$prow->paperId][] = array("paper" => $prow->paperId, "title" => $prow->title, "first" => $p->firstName, "last" => $p->lastName, "email" => $p->email,
                                 "preference" => $pref[0] ? : "",
                                 "expertise" => unparse_expertise($pref[1]),
