@@ -18,23 +18,33 @@ class GetRevpref_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         // maybe download preferences for someone else
         $Rev = $user;
-        if (($cid = cvtint($qreq->reviewer)) > 0 && $user->privChair) {
-            if (!($Rev = $user->conf->user_by_id($cid)))
+        if ($qreq->reviewer) {
+            $Rev = null;
+            foreach ($user->conf->pc_members() as $pcm)
+                if (strcasecmp($pcm->email, $qreq->reviewer) == 0
+                    || (string) $pcm->contactId === $qreq->reviewer) {
+                    $Rev = $pcm;
+                    break;
+                }
+            if (!$Rev)
                 return Conf::msg_error("No such reviewer");
         }
         if (!$Rev->isPC)
             return self::EPERM;
 
-        $result = $Rev->paper_result(["paperId" => $ssel->selection(), "topics" => 1, "reviewerPreference" => 1]);
+        $not_me = $user->contactId !== $Rev->contactId;
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => 1, "reviewerPreference" => 1]);
         $texts = array();
-        while (($prow = PaperInfo::fetch($result, $Rev))) {
+        while (($prow = PaperInfo::fetch($result, $user))) {
+            if ($not_me && !$user->allow_administer($prow))
+                continue;
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
-            if ($Rev->contactId != $user->contactId)
+            if ($not_me)
                 $item["email"] = $Rev->email;
             if ($prow->conflictType > 0)
                 $item["preference"] = "conflict";
             else
-                $item["preference"] = unparse_preference($prow);
+                $item["preference"] = unparse_preference($prow->reviewer_preference($Rev));
             if ($this->extended) {
                 $x = "";
                 if ($Rev->can_view_authors($prow, false))
@@ -46,8 +56,11 @@ class GetRevpref_SearchAction extends SearchAction {
             }
             $texts[$prow->paperId][] = $item;
         }
-        $fields = array_merge(["paper", "title"], $Rev->contactId != $user->contactId ? ["email"] : [], ["preference"]);
-        return new Csv_SearchResult("revprefs", $fields, $ssel->reorder($texts), true);
+        $fields = array_merge(["paper", "title"], $not_me ? ["email"] : [], ["preference"]);
+        $title = "revprefs";
+        if ($not_me)
+            $title .= "-" . (preg_replace('/@.*|[^\w@.]/', "", $Rev->email) ? : "user");
+        return new Csv_SearchResult($title, $fields, $ssel->reorder($texts), true);
     }
 }
 
