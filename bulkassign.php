@@ -78,11 +78,19 @@ function complete_assignment($callback) {
 }
 
 
-if (isset($_REQUEST["saveassignment"]) && check_post()
-    && (isset($_REQUEST["cancel"])
-        || (isset($_POST["file"]) && get($_POST, "assignment_size_estimate") < 1000
-            && complete_assignment(null))))
-    /*redirectSelf()*/;
+// redirect if save cancelled
+if (isset($_REQUEST["saveassignment"]) && isset($_POST["cancel"])) {
+    redirectSelf(); // should not return
+    unset($_REQUEST["saveassignment"], $_GET["saveassignment"], $_POST["saveassignment"]);
+}
+
+// perform quick assignments all at once
+if (isset($_REQUEST["saveassignment"])
+    && check_post()
+    && isset($_POST["file"])
+    && get($_POST, "assignment_size_estimate") < 1000
+    && complete_assignment(null))
+    redirectSelf();
 
 
 $Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Bulk update</strong>", "bulkassign", actionBar());
@@ -170,8 +178,10 @@ if (isset($_GET["upload"]) && check_post()
     }
 }
 
-if (isset($_REQUEST["saveassignment"]) && check_post()
-    && isset($_POST["file"]) && get($_POST, "assignment_size_estimate") >= 1000) {
+if (isset($_REQUEST["saveassignment"])
+    && check_post()
+    && isset($_POST["file"])
+    && get($_POST, "assignment_size_estimate") >= 1000) {
     complete_assignment("keep_browser_alive");
     finish_browser_alive();
 }
