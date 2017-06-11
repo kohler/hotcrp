@@ -329,7 +329,7 @@ class PaperApi {
 
     static function setpref_api(Contact $user, $qreq, $prow) {
         $state = new AssignmentSet($user, true);
-        $state->set_paper_limit(true);
+        $state->enable_papers($prow);
         $reviewer = $qreq->reviewer ? : $user->email;
         if (ctype_digit($reviewer) && ($u = $user->conf->user_by_id($reviewer)))
             $reviewer = $u->email;

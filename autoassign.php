@@ -408,8 +408,8 @@ if (isset($Qreq->assign) && isset($Qreq->a)
 } else if ($Qreq->saveassignment && $Qreq->submit
            && isset($Qreq->assignment) && check_post()) {
     $assignset = new AssignmentSet($Me, true);
+    $assignset->enable_papers($SSel->selection());
     $assignset->parse($Qreq->assignment);
-    $assignset->restrict_papers($SSel->selection());
     $assignset->execute(true);
 }
 

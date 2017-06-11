@@ -69,11 +69,11 @@ function finish_browser_alive() {
 
 function complete_assignment($callback) {
     global $Me;
+    $SSel = SearchSelection::make(make_qreq(), $Me);
     $assignset = new AssignmentSet($Me, true);
+    $assignset->enable_papers($SSel->selection());
     $assignset->parse($_POST["file"], get($_POST, "filename"),
                       assignment_defaults(), $callback);
-    $SSel = SearchSelection::make(make_qreq(), $Me);
-    $assignset->restrict_papers($SSel->selection());
     return $assignset->execute(true);
 }
 

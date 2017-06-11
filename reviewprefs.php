@@ -28,6 +28,7 @@ if ($Qreq->reviewer && $Me->privChair
 } else if (!$Qreq->reviewer && !($Me->roles & Contact::ROLE_PC)) {
     foreach ($Conf->pc_members() as $pcm) {
         redirectSelf(["reviewer" => $pcm->email]);
+        // in case redirection fails:
         $reviewer = $pcm;
         break;
     }

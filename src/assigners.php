@@ -38,7 +38,8 @@ class AssignmentState {
     private $st = array();
     private $types = array();
     public $conf;
-    public $contact;
+    public $contact;  // executor
+    public $reviewer; // default contact
     public $override;
     public $lineno = null;
     public $defaults = array();
@@ -49,7 +50,7 @@ class AssignmentState {
     public $errors = [];
     function __construct(Contact $contact, $override) {
         $this->conf = $contact->conf;
-        $this->contact = $contact;
+        $this->contact = $this->reviewer = $contact;
         $this->override = $override;
     }
     function mark_type($type, $keys) {
@@ -1064,7 +1065,7 @@ class TagAssigner extends Assigner {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->contact)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->reviewer)->ids;
             if (empty($twiddlecids))
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) > 1)
@@ -1120,7 +1121,7 @@ class TagAssigner extends Assigner {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->contact)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->reviewer)->ids;
             if (empty($twiddlecids))
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) == 1)
@@ -1134,12 +1135,15 @@ class TagAssigner extends Assigner {
         if (strcasecmp($m[2], "none") == 0)
             return;
         else if (strcasecmp($m[2], "any") == 0 || strcasecmp($m[2], "all") == 0) {
+            $cid = $state->contact->contactId;
+            if ($state->contact->privChair)
+                $cid = $state->reviewer->contactId;
             if ($m[1])
                 $m[2] = "[^~]*";
-            else if ($state->contact->privChair)
-                $m[2] = "(?:~~|" . $state->contact->contactId . "~|)[^~]*";
+            else if ($state->contact->privChair && $state->reviewer->privChair)
+                $m[2] = "(?:~~|{$cid}~|)[^~]*";
             else
-                $m[2] = "(?:" . $state->contact->contactId . "~|)[^~]*";
+                $m[2] = "(?:{$cid}~|)[^~]*";
         } else {
             if (!preg_match(',[*(],', $m[1] . $m[2]))
                 $search_ltag = strtolower($m[1] . $m[2]);
@@ -1267,8 +1271,8 @@ class PreferenceAssigner extends Assigner {
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         if ($cclass === "any")
             return "pc";
-        else if ($cclass === "missing" && $state->contact->isPC)
-            return [$state->contact];
+        else if ($cclass === "missing" && $state->reviewer->isPC)
+            return [$state->reviewer];
         else
             return false;
     }
@@ -1412,6 +1416,8 @@ class AssignmentSet {
     public $contact;
     public $filename;
     private $assigners = array();
+    private $enabled_pids = null;
+    private $enabled_actions = null;
     private $msgs = array();
     private $has_errors = false;
     private $my_conflicts = null;
@@ -1434,12 +1440,33 @@ class AssignmentSet {
         $this->cmap = new AssignerContacts($this->conf);
     }
 
-    function set_paper_limit($limited = false) {
-        $this->astate->paper_limit = $limited;
+    function set_reviewer(Contact $reviewer) {
+        $this->astate->reviewer = $reviewer;
     }
 
-    function contact() {
-        return $this->contact;
+    function enable_actions($action) {
+        assert(empty($this->assigners));
+        if ($this->enabled_actions === null)
+            $this->enabled_actions = [];
+        if (is_array($action)) {
+            foreach ($action as $a)
+                $this->enable_actions($a);
+        } else if (($a = Assigner::find($action)))
+            $this->enabled_actions[$a->type] = true;
+    }
+
+    function enable_papers($paper) {
+        assert(empty($this->assigners));
+        if ($this->enabled_pids === null)
+            $this->enabled_pids = [];
+        if (is_array($paper)) {
+            foreach ($paper as $p)
+                $this->enable_papers($p);
+        } else if ($paper instanceof PaperInfo) {
+            $this->astate->prows[$paper->paperId] = $paper;
+            $this->enabled_pids[$paper->paperId] = true;
+        } else
+            $this->enabled_pids[$paper] = true;
     }
 
     function push_override($override) {
@@ -1593,7 +1620,7 @@ class AssignmentSet {
                 return $this->error($special === "missing" ? "User missing." : "User “{$xspecial}” not allowed here.");
         }
         if ($special && !$first && (!$lemail || !$last)) {
-            $ret = ContactSearch::make_special($special, $this->contact);
+            $ret = ContactSearch::make_special($special, $this->astate->reviewer);
             if ($ret->ids !== false)
                 return $ret->contacts();
         }
@@ -1624,7 +1651,7 @@ class AssignmentSet {
                 $text = "$last$first";
             if ($email)
                 $text .= " <$email>";
-            $ret = ContactSearch::make_cset($text, $this->contact, $cset);
+            $ret = ContactSearch::make_cset($text, $this->astate->reviewer, $cset);
             if (count($ret->ids) == 1)
                 return $ret->contacts();
             else if (empty($ret->ids))
@@ -1693,8 +1720,14 @@ class AssignmentSet {
         return true;
     }
 
-    function show_column($coldesc) {
-        $this->unparse_columns[$coldesc] = true;
+    function hide_column($coldesc, $force = false) {
+        if (!isset($this->unparse_columns[$coldesc]) || $force)
+            $this->unparse_columns[$coldesc] = false;
+    }
+
+    function show_column($coldesc, $force = false) {
+        if (!isset($this->unparse_columns[$coldesc]) || $force)
+            $this->unparse_columns[$coldesc] = true;
     }
 
     function parse_csv_comment($line) {
@@ -1708,10 +1741,14 @@ class AssignmentSet {
         $this->filename = $filename;
         $this->astate->defaults = $defaults ? : array();
 
-        $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
-        $csv->set_comment_chars("%#");
-        $csv->set_comment_function(array($this, "parse_csv_comment"));
-        if (!($req = $csv->next()))
+        if ($text instanceof CsvParser)
+            $csv = $text;
+        else {
+            $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
+            $csv->set_comment_chars("%#");
+            $csv->set_comment_function(array($this, "parse_csv_comment"));
+        }
+        if (!($req = $csv->header() ? : $csv->next()))
             return $this->error($csv->lineno(), "empty file");
         if (!$this->install_csv_header($csv, $req))
             return false;
@@ -1726,6 +1763,8 @@ class AssignmentSet {
             $this->astate->lineno = $csv->lineno();
             $this->astate->fetch_prows(array_keys($pids));
         }
+        if ($this->enabled_pids !== null)
+            $this->astate->paper_limit = true;
 
         // now parse assignment
         foreach ($lines as $i => $linereq) {
@@ -1745,22 +1784,33 @@ class AssignmentSet {
 
     private function collect_papers($req, &$pids, $report_error) {
         $pfield = trim(get_s($req, "paper"));
-        if ($pfield !== "" && ctype_digit($pfield))
-            $pids[intval($pfield)] = 2;
-        else if ($pfield !== "") {
+        if ($pfield !== "" && ctype_digit($pfield)) {
+            $npids = [intval($pfield)];
+            $val = 2;
+        } else if ($pfield !== "") {
             if (!isset($this->searches[$pfield])) {
-                $search = new PaperSearch($this->contact, $pfield);
+                $search = new PaperSearch($this->contact, $pfield, $this->astate->reviewer);
                 $this->searches[$pfield] = $search->paperList();
                 if ($report_error)
                     foreach ($search->warnings as $w)
                         $this->error($w);
             }
-            foreach ($this->searches[$pfield] as $pid)
-                $pids[$pid] = 1;
-            if (empty($this->searches[$pfield]) && $report_error)
-                $this->error("No papers match “" . htmlspecialchars($pfield) . "”");
-        } else if ($report_error)
-            $this->error("Bad paper column");
+            $npids = $this->searches[$pfield];
+            $val = 1;
+        } else {
+            if ($report_error)
+                $this->error("Bad paper column");
+            return;
+        }
+        if (empty($npids) && $report_error)
+            $this->error("No papers match “" . htmlspecialchars($pfield) . "”");
+
+        // Implement paper restriction
+        if ($this->enabled_pids !== null)
+            $npids = array_filter($npids, function ($pid) { return isset($this->enabled_pids[$pid]); });
+
+        foreach ($npids as $pid)
+            $pids[$pid] = $val;
     }
 
     function apply($req) {
@@ -1780,6 +1830,9 @@ class AssignmentSet {
         $action = strtolower(trim($action));
         if (!($assigner = Assigner::find($action)))
             return $this->error("Unknown action “" . htmlspecialchars($action) . "”");
+        if ($this->enabled_actions !== null
+            && !isset($this->enabled_actions[$assigner->type]))
+            return $this->error("Action “" . htmlspecialchars($action) . "” disabled");
         $assigner->load_state($this->astate);
 
         // clean user parts
@@ -1958,9 +2011,10 @@ class AssignmentSet {
         else
             $query_order = count($assinfo) ? join(" ", array_keys($assinfo)) : "NONE";
         foreach ($this->unparse_columns as $k => $v)
-            $query_order .= " show:$k";
+            if ($v)
+                $query_order .= " show:$k";
         $query_order .= " show:autoassignment";
-        $search = new PaperSearch($this->contact, ["t" => get($_REQUEST, "t", "s"), "q" => $query_order]);
+        $search = new PaperSearch($this->contact, ["t" => get($_REQUEST, "t", "s"), "q" => $query_order], $this->astate->reviewer);
         $plist = new PaperList($search);
         $plist->set_table_id_class("foldpl", "pltable_full");
         echo $plist->table_html("reviewers", ["nofooter" => 1]);
@@ -2001,15 +2055,6 @@ class AssignmentSet {
                 $acsv->add($row);
         $acsv->header = array_keys($acsv->header);
         return $acsv;
-    }
-
-    function restrict_papers($pids) {
-        $pids = array_flip($pids);
-        $new_assigners = [];
-        foreach ($this->assigners as $a)
-            if (isset($pids[$a->pid]))
-                $new_assigners[] = $a;
-        $this->assigners = $new_assigners;
     }
 
     function is_empty() {
