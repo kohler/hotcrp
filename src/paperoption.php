@@ -945,7 +945,7 @@ class TextPaperOption extends PaperOption {
     }
 
     function list_display($isrow) {
-        return ["row" => true];
+        return ["row" => true, "className" => "pl_textoption"];
     }
     function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
         $ov = $row->option($this->id);

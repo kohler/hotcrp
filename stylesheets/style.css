@@ -1695,6 +1695,16 @@ td.plgreen {
 	font-weight: normal;
 }
 
+div.pl_abstract, div.pl_textoption {
+	-webkit-columns: 300px 3;
+	-moz-columns: 300px 3;
+	columns: 300px 3;
+	-webkit-column-gap: 18px;
+	-moz-column-gap: 18px;
+	column-gap: 18px;
+	margin-bottom: 4px;
+}
+
 span.pl_rownum {
 	font-size: smaller;
 	color: #333333;

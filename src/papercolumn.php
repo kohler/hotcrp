@@ -1654,8 +1654,11 @@ class Option_PaperColumn extends PaperColumn {
     private $opt;
     function __construct(PaperOption $opt, $cj, $isrow) {
         $name = $opt->abbreviation() . ($isrow ? "-row" : "");
-        if (($optcj = $opt->list_display($isrow)) === true)
-            $optcj = $isrow ? ["row" => true] : ["column" => true, "className" => "pl_option"];
+        $optcj = $opt->list_display($isrow);
+        if ($optcj === true && $isrow)
+            $optcj = ["row" => true];
+        else if ($optcj === true)
+            $optcj = ["column" => true, "className" => "pl_option"];
         parent::__construct(["name" => $name] + ($optcj ? : []) + $cj);
         $this->opt = $opt;
     }
