@@ -13,7 +13,7 @@ if (!$Qreq)
     $Qreq = make_qreq();
 
 // set reviewer
-$reviewer_contact = $Me;
+$reviewer = $Me;
 $incorrect_reviewer = false;
 if ($Qreq->reviewer && $Me->privChair
     && $Qreq->reviewer !== $Me->email
@@ -22,17 +22,17 @@ if ($Qreq->reviewer && $Me->privChair
     foreach ($Conf->pc_members() as $pcm)
         if (strcasecmp($pcm->email, $Qreq->reviewer) == 0
             || (string) $pcm->contactId === $Qreq->reviewer) {
-            $reviewer_contact = $pcm;
+            $reviewer = $pcm;
             $incorrect_reviewer = false;
         }
 } else if (!$Qreq->reviewer && !($Me->roles & Contact::ROLE_PC)) {
     foreach ($Conf->pc_members() as $pcm) {
-        $reviewer_contact = $pcm;
+        redirectSelf(["reviewer" => $pcm->email]);
+        $reviewer = $pcm;
         break;
     }
 }
-$reviewer = $reviewer_contact->contactId;
-$Qreq->set_attachment("reviewer_contact", $reviewer_contact);
+$Qreq->set_attachment("reviewer_contact", $reviewer);
 if ($incorrect_reviewer)
     Conf::msg_error("Reviewer " . htmlspecialchars($Qreq->reviewer) . " is not on the PC.");
 
@@ -65,7 +65,7 @@ if ($Qreq->fn === "get"
 
 // Update preferences
 function savePreferences($Qreq, $reset_p) {
-    global $Conf, $Me, $reviewer, $reviewer_contact, $incorrect_reviewer;
+    global $Conf, $Me, $reviewer, $incorrect_reviewer;
     if ($incorrect_reviewer) {
         Conf::msg_error("Preferences not saved.");
         return;
@@ -73,13 +73,13 @@ function savePreferences($Qreq, $reset_p) {
 
     $csv = new CsvGenerator;
     $csv->set_header(["paper", "email", "preference"]);
-    $suffix = "u" . $reviewer;
+    $suffix = "u" . $reviewer->contactId;
     foreach ($Qreq as $k => $v)
         if (strlen($k) > 7 && $k[0] == "r" && substr($k, 0, 7) == "revpref") {
             if (str_ends_with($k, $suffix))
                 $k = substr($k, 0, -strlen($suffix));
             if (($p = cvtint(substr($k, 7))) > 0)
-                $csv->add([$p, $reviewer_contact->email, $v]);
+                $csv->add([$p, $reviewer->email, $v]);
         }
     if ($csv->is_empty()) {
         Conf::msg_error("No reviewer preferences to update.");
@@ -118,7 +118,7 @@ if ($Qreq->fn === "setpref" && $SSel && !$SSel->is_empty() && check_post()) {
     else {
         $new_qreq = new Qrequest($Qreq->method());
         foreach ($SSel->selection() as $p)
-            $new_qreq["revpref{$p}u{$reviewer}"] = $Qreq->pref;
+            $new_qreq["revpref{$p}u{$reviewer->contactId}"] = $Qreq->pref;
         savePreferences($new_qreq, false);
     }
 }
@@ -129,7 +129,7 @@ function upload_error($csv, $printFilename, $error) {
     return '<span class="lineno">' . $printFilename . ':' . $csv->lineno() . ':</span> ' . $error;
 }
 
-function parseUploadedPreferences($filename, $printFilename, $reviewer) {
+function parseUploadedPreferences($filename, $printFilename) {
     global $Conf;
     if (($text = file_get_contents($filename)) === false)
         return Conf::msg_error("Cannot read uploaded file.");
@@ -189,14 +189,17 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
 }
 if ($Qreq->fn === "uploadpref" && file_uploaded($_FILES["uploadedFile"])
     && check_post())
-    parseUploadedPreferences($_FILES["uploadedFile"]["tmp_name"], $_FILES["uploadedFile"]["name"], $reviewer);
+    parseUploadedPreferences($_FILES["uploadedFile"]["tmp_name"], $_FILES["uploadedFile"]["name"]);
 else if ($Qreq->fn === "uploadpref")
     Conf::msg_error("Select a preferences file to upload.");
 
 
 // Prepare search
 $Qreq->t = "editpref";
-$Qreq->urlbase = hoturl_site_relative_raw("reviewprefs", "reviewer=$reviewer");
+$hoturl_args = [];
+if ($reviewer->contactId !== $Me->contactId)
+    $hoturl_args["reviewer"] = $reviewer->email;
+$Qreq->urlbase = hoturl_site_relative_raw("reviewprefs", $hoturl_args);
 $Qreq->q = get($Qreq, "q", "");
 $Qreq->display = displayOptionsSet("pfdisplay");
 
@@ -226,7 +229,7 @@ $Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 
 // search
-$search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q], $reviewer_contact);
+$search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q], $reviewer);
 $pl = new PaperList($search, ["sort" => true, "foldtype" => "pf"], $Qreq);
 $pl->set_table_id_class("foldpl", "pltable_full", "p#");
 $pl_text = $pl->table_html("editpref",
@@ -258,10 +261,10 @@ if ($Me->privChair) {
     foreach ($Conf->pc_members() as $pcm)
         if (!get($prefcount, $pcm->contactId))
             $revopt[htmlspecialchars($pcm->email)] .= " (no preferences)";
-    if (!isset($revopt[htmlspecialchars($reviewer_contact->email)]))
-        $revopt[htmlspecialchars($reviewer_contact->email)] = Text::name_html($Me) . " (not on PC)";
+    if (!isset($revopt[htmlspecialchars($reviewer->email)]))
+        $revopt[htmlspecialchars($reviewer->email)] = Text::name_html($Me) . " (not on PC)";
 
-    echo Ht::select("reviewer", $revopt, htmlspecialchars($reviewer_contact->email),
+    echo Ht::select("reviewer", $revopt, htmlspecialchars($reviewer->email),
                     array("onchange" => "\$\$(\"redisplayform\").submit()")),
         "<div class='g'></div></td></tr>\n";
 }
@@ -310,7 +313,12 @@ echo "</td></tr></table>\n";
 
 
 // main form
-echo Ht::form_div(hoturl_post("reviewprefs", "reviewer=$reviewer" . ($Qreq->q ? "&amp;q=" . urlencode($Qreq->q) : "")), array("class" => "assignpc", "onsubmit" => "return plist_onsubmit.call(this)", "id" => "sel")),
+$hoturl_args = [];
+if ($reviewer->contactId !== $Me->contactId)
+    $hoturl_args["reviewer"] = $reviewer->email;
+if ($Qreq->q)
+    $hoturl_args["q"] = $Qreq->q;
+echo Ht::form_div(hoturl_post("reviewprefs", $hoturl_args), array("class" => "assignpc", "onsubmit" => "return plist_onsubmit.call(this)", "id" => "sel")),
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1),
     "<div class='pltable_full_ctr'>\n",
