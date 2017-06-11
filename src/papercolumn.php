@@ -926,6 +926,7 @@ class PreferencePaperColumn extends PaperColumn {
     private $viewer_contact;
     private $not_me;
     private $show_conflict;
+    private $prefix;
     function __construct($cj, $contact = null) {
         parent::__construct($cj);
         $this->editable = !!get($cj, "edit");
@@ -947,6 +948,9 @@ class PreferencePaperColumn extends PaperColumn {
             $pl->qopts["topics"] = 1;
         if ($this->editable && $visible > 0 && ($tid = $pl->table_id()))
             $pl->add_header_script("add_revpref_ajax(" . json_encode("#$tid") . ")", "revpref_ajax_$tid");
+        $this->prefix =  "";
+        if ($this->row)
+            $this->prefix = $pl->contact->reviewer_html_for($this->contact);
         return true;
     }
     function completion_name() {
@@ -990,39 +994,38 @@ class PreferencePaperColumn extends PaperColumn {
                 $this->show_conflict = false;
     }
     function header(PaperList $pl, $is_text) {
-        if ($this->not_me && $is_text)
-            return $pl->contact->name_text_for($this->contact) . " preference";
-        else if ($this->not_me)
-            return $pl->contact->name_html_for($this->contact) . "<br />preference";
-        else
+        if (!$this->not_me || $this->row)
             return "Preference";
+        else if ($is_text)
+            return $pl->contact->name_text_for($this->contact) . " preference";
+        else
+            return $pl->contact->name_html_for($this->contact) . "<br />preference";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return $this->not_me && !$pl->contact->allow_administer($row);
     }
-    private function show_content(PaperList $pl, PaperInfo $row, $zero_empty) {
-        $ptext = $this->text($pl, $row);
-        if ($ptext[0] === "-")
-            $ptext = "−" /* U+2122 MINUS SIGN */ . substr($ptext, 1);
-        if ($zero_empty && $ptext === "0")
-            return "";
-        else if ($this->not_me && !$pl->contact->can_administer($row, false))
-            return '<span class="fx5">' . $ptext . '</span><span class="fn5">?</span>';
-        else
-            return $ptext;
-    }
     function content(PaperList $pl, PaperInfo $row) {
         $has_cflt = $row->has_conflict($this->contact);
-        if ($has_cflt && !$pl->contact->allow_administer($row))
+        $pv = $this->preference_values($row);
+        $ptext = unparse_preference($pv);
+        if (!$this->editable)
+            $ptext = str_replace("-", "−" /* U+2122 */, $ptext);
+        $conflict_wrap = $this->not_me && !$pl->contact->can_administer($row, false);
+        if ($this->row) {
+            if ($ptext !== "")
+                $ptext = $this->prefix . " <span class=\"asspref" . ($pv[0] < 0 ? "-1" : "1") . "\">P" . $ptext . "</span>";
+            return $pl->maybeConflict($row, $ptext, !$conflict_wrap);
+        } else if ($has_cflt && !$pl->contact->allow_administer($row))
             return $this->show_conflict ? review_type_icon(-1) : "";
-        else if (!$this->editable)
-            return $this->show_content($pl, $row, false);
-        else {
-            $ptext = $this->text($pl, $row);
+        else if ($this->editable) {
             $iname = "revpref" . $row->paperId;
             if ($this->not_me)
                 $iname .= "u" . $this->contact->contactId;
             return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($this->show_conflict && $has_cflt ? "&nbsp;" . review_type_icon(-1) : "");
+        } else {
+            if ($conflict_wrap)
+                $ptext = '<span class="fx5">' . $ptext . '</span><span class="fn5">?</span>';
+            return $ptext;
         }
     }
     function text(PaperList $pl, PaperInfo $row) {
@@ -1035,6 +1038,12 @@ class Preference_PaperColumnFactory extends PaperColumnFactory {
         parent::__construct($cj);
     }
     function instantiate(Contact $user, $name, $errors) {
+        $opts = (array) PaperColumn::lookup_json("pref");
+        if (str_ends_with($name, ":row")) {
+            $opts["row"] = true;
+            $opts["column"] = false;
+            $name = substr($name, 0, -4);
+        }
         $colon = strpos($name, ":");
         $x = ContactSearch::make_pc(substr($name, $colon + 1), $user)->ids;
         if (empty($x)) {
@@ -1044,7 +1053,7 @@ class Preference_PaperColumnFactory extends PaperColumnFactory {
         foreach ($x as &$cid) {
             $u = $user->conf->pc_member_by_id($cid);
             $fname = substr($name, 0, $colon + 1) . $u->email;
-            $cid = new PreferencePaperColumn(["name" => $fname] + (array) PaperColumn::lookup_json("pref"), $u);
+            $cid = new PreferencePaperColumn(["name" => $fname] + $opts, $u);
         }
         return $x;
     }
