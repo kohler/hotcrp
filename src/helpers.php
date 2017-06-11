@@ -939,7 +939,7 @@ function parse_preference($n) {
             $p = 0;
         else if (is_numeric($m[1])) {
             if ($m[1] <= 1000000)
-                $p = round($m[1]);
+                $p = (int) round($m[1]);
             else
                 return null;
         } else if ($m[1][0] === "-")
