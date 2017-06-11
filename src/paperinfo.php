@@ -167,7 +167,7 @@ class PaperInfo_Author {
     }
 }
 
-class PaperInfoSet {
+class PaperInfoSet implements IteratorAggregate {
     private $prows = [];
     private $by_pid = [];
     function __construct(PaperInfo $prow = null) {
@@ -192,6 +192,9 @@ class PaperInfoSet {
     }
     function get($pid) {
         return get($this->by_pid, $pid);
+    }
+    function getIterator() {
+        return new ArrayIterator($this->prows);
     }
 }
 
@@ -265,6 +268,13 @@ class PaperInfo {
         if ($prow && !is_int($prow->paperId))
             $prow->merge(null, $contact, $conf);
         return $prow;
+    }
+
+    static function fetch_all($result, $contact, Conf $conf = null) {
+        $set = new PaperInfoSet;
+        while (($prow = self::fetch($result, $contact, $conf)))
+            $set->add($prow);
+        return $set;
     }
 
     static function table_name() {

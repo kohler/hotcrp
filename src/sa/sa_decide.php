@@ -19,11 +19,12 @@ class Decide_SearchAction extends SearchAction {
             return Conf::msg_error("Bad decision value.");
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $success = $fails = array();
-        while (($prow = PaperInfo::fetch($result, $user)))
+        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
             if ($user->can_set_decision($prow, true))
                 $success[] = $prow->paperId;
             else
                 $fails[] = "#" . $prow->paperId;
+        }
         if (count($fails))
             Conf::msg_error("You cannot set paper decisions for " . pluralx($fails, "paper") . " " . commajoin($fails) . ".");
         if (count($success)) {

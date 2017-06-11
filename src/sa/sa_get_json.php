@@ -29,7 +29,7 @@ class GetJson_SearchAction extends SearchAction {
             $this->zipdoc = new ZipDocument($user->conf->download_prefix . "data.zip");
             $ps->on_document_export([$this, "document_callback"]);
         }
-        while (($prow = PaperInfo::fetch($result, $user)))
+        foreach (PaperInfo::fetch_all($result, $user) as $prow)
             if ($user->can_administer($prow, true))
                 $pj[$prow->paperId] = $ps->paper_json($prow);
             else {

@@ -65,7 +65,7 @@ class GetDocument_SearchAction extends SearchAction {
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $downloads = $errors = [];
         $opt = $user->conf->paper_opts->find_document($this->dt);
-        while (($row = PaperInfo::fetch($result, $user)))
+        foreach (PaperInfo::fetch_all($result, $user) as $row)
             if (($whyNot = $user->perm_view_paper_option($row, $opt, true)))
                 $errors[] = self::error_document($opt, $row, whyNotText($whyNot, "view"));
             else if (($doc = $row->document($opt->id)))
@@ -91,7 +91,7 @@ class GetCheckFormat_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $papers = [];
-        while (($prow = PaperInfo::fetch($result, $user)))
+        foreach (PaperInfo::fetch_all($result, $user) as $prow)
             if ($user->can_view_pdf($prow))
                 $papers[$prow->paperId] = $prow;
         $csvg = downloadCSV(false, ["paper", "title", "pages", "format"], "formatcheck");
@@ -127,7 +127,7 @@ class GetAbstract_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => 1]);
         $texts = array();
-        while ($prow = PaperInfo::fetch($result, $user)) {
+        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow)))
                 Conf::msg_error(whyNotText($whyNot, "view"));
             else {
@@ -176,7 +176,7 @@ class GetAuthors_SearchAction extends SearchAction {
         $result = $user->paper_result(["paperId" => $ssel->selection(), "allConflictType" => 1]);
         $texts = array();
         $want_contacttype = false;
-        while (($prow = PaperInfo::fetch($result, $user))) {
+        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
             if (!$user->can_view_authors($prow, true))
                 continue;
             $admin = $user->can_administer($prow, true);
@@ -216,7 +216,7 @@ class GetContacts_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         $contact_map = GetAuthors_SearchAction::contact_map($user->conf, $ssel);
         $result = $user->paper_result(["paperId" => $ssel->selection(), "allConflictType" => 1]);
-        while (($prow = PaperInfo::fetch($result, $user)))
+        foreach (PaperInfo::fetch_all($result, $user) as $prow)
             if ($user->can_administer($prow, true))
                 foreach ($prow->contacts() as $cid => $c) {
                     $a = $contact_map[$cid];
@@ -242,7 +242,7 @@ class GetPcconflicts_SearchAction extends SearchAction {
         $result = $user->paper_result(["paperId" => $ssel->selection(), "allConflictType" => 1]);
         $pcm = $user->conf->pc_members();
         $texts = array();
-        while (($prow = PaperInfo::fetch($result, $user)))
+        foreach (PaperInfo::fetch_all($result, $user) as $prow)
             if ($user->can_view_conflicts($prow, true)) {
                 $m = [];
                 foreach ($prow->conflicts() as $cid => $c)
@@ -268,7 +268,7 @@ class GetTopics_SearchAction extends SearchAction {
         $result = $user->paper_result(array("paperId" => $ssel->selection(), "topics" => 1));
         $texts = array();
         $tmap = $user->conf->topic_map();
-        while (($row = PaperInfo::fetch($result, $user)))
+        foreach (PaperInfo::fetch_all($result, $user) as $row)
             if ($user->can_view_paper($row)) {
                 $out = array();
                 foreach ($row->topics() as $t)

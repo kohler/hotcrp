@@ -35,7 +35,7 @@ class GetRevpref_SearchAction extends SearchAction {
         $not_me = $user->contactId !== $Rev->contactId;
         $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => 1, "reviewerPreference" => 1]);
         $texts = array();
-        while (($prow = PaperInfo::fetch($result, $user))) {
+        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
             if ($not_me && !$user->allow_administer($prow))
                 continue;
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
@@ -76,7 +76,7 @@ class GetAllRevpref_SearchAction extends SearchAction {
         $texts = array();
         $pcm = $user->conf->pc_members();
         $has_conflict = $has_expertise = $has_topic_score = false;
-        while (($prow = PaperInfo::fetch($result, $user))) {
+        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
             if (!$user->can_administer($prow, true))
                 continue;
             $conflicts = $prow->conflicts();

@@ -99,7 +99,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
         $result = $user->paper_result(["paperId" => $ssel->selection(), "myReviewsOpt" => 1]);
         $texts = array();
         $errors = array();
-        while (($row = PaperInfo::fetch($result, $user))) {
+        foreach (PaperInfo::fetch_all($result, $user) as $row) {
             $whyNot = $user->perm_review($row, null);
             if ($whyNot && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"]))
@@ -135,7 +135,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
         $user->set_forceShow(true);
         $errors = [];
         $rowset = new PaperInfoSet;
-        while (($row = PaperInfo::fetch($result, $user)))
+        foreach (PaperInfo::fetch_all($result, $user) as $row)
             if (($whyNot = $user->perm_view_paper($row)))
                 $errors["#$row->paperId: " . whyNotText($whyNot, "view")] = true;
             else
@@ -144,7 +144,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
         $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1]);
         $texts = [];
         $rf = $user->conf->review_form();
-        while (($row = PaperInfo::fetch($result, $user))) {
+        foreach (PaperInfo::fetch_all($result, $user) as $row) {
             if (!$rowset->get($row->paperId))
                 /* skip */;
             else if (($whyNot = $user->perm_view_review($row, null, null)))
@@ -179,7 +179,7 @@ class GetScores_SearchAction extends SearchAction {
         $any_decision = $any_reviewer_identity = false;
         $rf = $user->conf->review_form();
         $bad_pid = -1;
-        while (($row = PaperInfo::fetch($result, $user))) {
+        foreach (PaperInfo::fetch_all($result, $user) as $row) {
             if (!$row->reviewSubmitted || $row->paperId == $bad_pid)
                 /* skip */;
             else if (($whyNot = $user->perm_view_review($row, null, true))) {
@@ -233,7 +233,7 @@ class GetVotes_SearchAction extends SearchAction {
             $showtag = trim($qreq->tag); // no "23~" prefix
             $result = $user->paper_result(["paperId" => $ssel->selection(), "tagIndex" => $tag]);
             $texts = array();
-            while (($prow = PaperInfo::fetch($result, $user)))
+            foreach (PaperInfo::fetch_all($result, $user) as $prow)
                 if ($user->can_view_tags($prow, true))
                     arrayappend($texts[$prow->paperId], array($showtag, (float) $prow->tagIndex, $prow->paperId, $prow->title));
             return new Csv_SearchResult("votes", ["tag", "votes", "paper", "title"], $ssel->reorder($texts));
@@ -255,7 +255,7 @@ class GetRank_SearchAction extends SearchAction {
             $result = $user->paper_result(["paperId" => $ssel->selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"]);
             $real = "";
             $null = "\n";
-            while (($prow = PaperInfo::fetch($result, $user)))
+            foreach (PaperInfo::fetch_all($result, $user) as $prow)
                 if ($user->can_change_tag($prow, $tag, null, 1)) {
                     if ($prow->tagIndex === null)
                         $null .= "X\t$prow->paperId\t$prow->title\n";
@@ -302,7 +302,7 @@ class GetLead_SearchAction extends SearchAction {
         $type = $this->islead ? "lead" : "shepherd";
         $result = $user->paper_result(["paperId" => $ssel->selection(), "reviewerName" => $type]);
         $texts = array();
-        while (($row = PaperInfo::fetch($result, $user)))
+        foreach (PaperInfo::fetch_all($result, $user) as $row)
             if ($row->reviewEmail
                 && ($this->islead ? $user->can_view_lead($row, true) : $user->can_view_shepherd($row, true)))
                 arrayappend($texts[$row->paperId], [$row->paperId, $row->title, $row->reviewFirstName, $row->reviewLastName, $row->reviewEmail]);

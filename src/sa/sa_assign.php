@@ -64,7 +64,7 @@ class Assign_SearchAction extends SearchAction {
             $conflicts = array();
             $assigned = array();
             $nworked = 0;
-            while (($row = PaperInfo::fetch($result, $user))) {
+            foreach (PaperInfo::fetch_all($result, $user) as $row) {
                 if ($asstype && $row->conflictType > 0)
                     $conflicts[] = $row->paperId;
                 else if ($asstype && $row->reviewType >= REVIEW_PC && $asstype != $row->reviewType)
