@@ -234,7 +234,7 @@ class AutoassignerInterface {
     private function result_html() {
         global $SSel, $pcsel;
         $assignments = $this->autoassigner->assignments();
-        ReviewAssigner::$prefinfo = $this->autoassigner->prefinfo;
+        Review_Assigner::$prefinfo = $this->autoassigner->prefinfo;
         ob_start();
 
         if (!$assignments) {

@@ -32,6 +32,21 @@ class AssignmentItem implements ArrayAccess {
     function modified() {
         return $this->after !== null;
     }
+    function get($before, $offset = null) {
+        if ($offset === null)
+            $offset = $before;
+        if ($before || $this->after === null)
+            $x = $this->before;
+        else
+            $x = $this->after;
+        return $x && isset($x[$offset]) ? $x[$offset] : null;
+    }
+    function get_before($offset) {
+        return $this->get(true, $offset);
+    }
+    function differs($offset) {
+        return $this->get(true, $offset) !== $this->get(false, $offset);
+    }
 }
 
 class AssignmentState {
@@ -351,15 +366,9 @@ class AssignmentCsv {
 
 class AssignmentParser {
     public $type;
-    public $pid;
-    public $contact;
-    public $cid;
     static private $assigners = array();
-    function __construct($type, $pid, $contact) {
+    function __construct($type) {
         $this->type = $type;
-        $this->pid = $pid;
-        $this->contact = $contact;
-        $this->cid = $contact ? $contact->contactId : null;
     }
     static function register($n, $a) {
         assert(!get(self::$assigners, $n));
@@ -407,6 +416,22 @@ class AssignmentParser {
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
         return null;
     }
+}
+
+class Assigner {
+    public $item;
+    public $type;
+    public $pid;
+    public $contact;
+    public $cid;
+    function __construct(AssignmentItem $item, AssignerContacts $cmap) {
+        $this->item = $item;
+        $this->type = $item["type"];
+        $this->pid = $item["pid"];
+        $this->cid = $item["cid"] ? : $item["_cid"];
+        if ($this->cid)
+            $this->contact = $cmap->make_id($this->cid);
+    }
     function unparse_description() {
         return "";
     }
@@ -429,9 +454,9 @@ class AssignmentParser {
     }
 }
 
-class NullAssigner extends AssignmentParser {
+class Null_AssignmentParser extends AssignmentParser {
     function __construct() {
-        parent::__construct("none", 0, 0);
+        parent::__construct("none");
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         return true;
@@ -528,24 +553,17 @@ class ReviewAssigner_Data {
     }
 }
 
-class ReviewAssigner extends AssignmentParser {
+class Review_AssignmentParser extends AssignmentParser {
     private $rtype;
-    private $round;
-    private $oldtype = 0;
-    private $notify = null;
-    private $oldsubmitted = 0;
-    private $unsubmit = false;
-    static public $prefinfo = null;
     static private function rtype_name($rtype) {
         if ($rtype > 0)
             return strtolower(ReviewForm::$revtype_names[$rtype]);
         else
             return $rtype < 0 ? "review" : "clearreview";
     }
-    function __construct($pid, $contact, $rtype, $round) {
-        parent::__construct(self::rtype_name($rtype), $pid, $contact);
+    function __construct($rtype) {
+        parent::__construct(self::rtype_name($rtype));
         $this->rtype = $rtype;
-        $this->round = $round;
     }
     function contact_set(&$req, AssignmentState $state) {
         if ($this->rtype > REVIEW_EXTERNAL)
@@ -637,48 +655,78 @@ class ReviewAssigner extends AssignmentParser {
                     $state->add($r);
     }
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
-        $a = new ReviewAssigner($item["pid"], $cmap->make_id($item["cid"]),
-                                $item->deleted() ? 0 : $item["_rtype"], $item["_round"]);
-        if ($item->existed())
-            $a->oldtype = $item->before["_rtype"];
-        if (!$item->existed() && !$item->deleted() && $a->rtype == REVIEW_EXTERNAL)
-            $a->notify = get($state->defaults, "extrev_notify");
-        if ($item->existed())
-            $a->oldsubmitted = $item->before["_rsubmitted"];
-        if ($item->existed() && !$item->deleted()
-            && $a->oldsubmitted && !$item["_rsubmitted"])
-            $a->unsubmit = true;
-        return $a;
+        return new Review_Assigner($item, $cmap, $state);
+    }
+}
+
+class Review_Assigner extends Assigner {
+    private $rtype;
+    private $notify = null;
+    private $unsubmit = false;
+    static public $prefinfo = null;
+    function __construct(AssignmentItem $item, AssignerContacts $cmap,
+                         AssignmentState $state) {
+        parent::__construct($item, $cmap);
+        $this->rtype = $item->get(false, "_rtype");
+        $this->unsubmit = $item->get(true, "_rsubmitted") && !$item->get(false, "_rsubmitted");
+        if (!$item->existed() && $this->rtype == REVIEW_EXTERNAL)
+            $this->notify = get($state->defaults, "extrev_notify");
     }
     function unparse_description() {
         return "review";
     }
+    private function unparse_item(AssignmentSet $aset, $before) {
+        if (!$this->item->get($before, "_rtype"))
+            return "";
+        $t = $aset->contact->reviewer_html_for($this->contact) . ' '
+            . review_type_icon($this->item->get($before, "_rtype"),
+                               !$this->item->get($before, "_rsubmitted"));
+        if (($round = $this->item->get($before, "_round")))
+            $t .= ' <span class="revround" title="Review round">'
+                . htmlspecialchars($round) . '</span>';
+        if (self::$prefinfo
+            && ($cpref = get(self::$prefinfo, $this->cid))
+            && ($pref = get($cpref, $this->pid)))
+            $t .= unparse_preference_span($pref);
+        return $t;
+    }
+    private function icon($before) {
+        return review_type_icon($this->item->get($before, "_rtype"),
+                                !$this->item->get($before, "_rsubmitted"));
+    }
     function unparse_display(AssignmentSet $aset) {
         $aset->show_column("reviewers");
-        $t = $aset->contact->reviewer_html_for($this->contact) . ' ';
-        if ($this->rtype) {
-            if ($this->unsubmit)
-                $t = 'unsubmit ' . $t;
-            $t .= review_type_icon($this->rtype, $this->unsubmit || !$this->oldsubmitted);
-            if ($this->round)
-                $t .= ' <span class="revround" title="Review round">'
-                    . htmlspecialchars($this->round) . '</span>';
-            if (self::$prefinfo
-                && ($cpref = get(self::$prefinfo, $this->cid))
-                && ($pref = get($cpref, $this->pid)))
-                $t .= unparse_preference_span($pref);
-        } else
-            $t = 'clear ' . $t . ' review';
+        $t = $aset->contact->reviewer_html_for($this->contact);
+        if ($this->item->deleted())
+            $t = '<del>' . $t . '</del>';
+        if ($this->item->differs("_rtype") || $this->item->differs("_rsubmitted")) {
+            if ($this->item->get(true, "_rtype"))
+                $t .= ' <del>' . $this->icon(true) . '</del>';
+            if ($this->item->get(false, "_rtype"))
+                $t .= ' <ins>' . $this->icon(false) . '</ins>';
+        } else if ($this->item->get("_rtype"))
+            $t .= ' ' . $this->icon(false);
+        if ($this->item->differs("_round")) {
+            if (($round = $this->item->get(true, "_round")))
+                $t .= ' <del><span class="revround" title="Review round">' . htmlspecialchars($round) . '</span></del>';
+            if (($round = $this->item->get(false, "_round")))
+                $t .= ' <ins><span class="revround" title="Review round">' . htmlspecialchars($round) . '</span></ins>';
+        } else if (($round = $this->item->get("_round")))
+            $t .= ' <span class="revround" title="Review round">' . htmlspecialchars($round) . '</span>';
+        if (!$this->item->existed() && self::$prefinfo
+            && ($cpref = get(self::$prefinfo, $this->cid))
+            && ($pref = get($cpref, $this->pid)))
+            $t .= unparse_preference_span($pref);
         return $t;
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
-        if ($this->rtype >= REVIEW_SECONDARY)
+        if ($this->rtype > 0)
             $rname = strtolower(ReviewForm::$revtype_names[$this->rtype]);
         else
             $rname = "clear";
         $x = ["pid" => $this->pid, "action" => "{$rname}review",
               "email" => $this->contact->email, "name" => $this->contact->name_text()];
-        if ($this->round)
+        if (($round = $this->item["_round"]))
             $x["round"] = $this->round;
         $acsv->add($x);
         if ($this->unsubmit)
@@ -690,9 +738,10 @@ class ReviewAssigner extends AssignmentParser {
             $deltarev->rev = true;
             $ct = $deltarev->ensure($this->cid);
             ++$ct->ass;
-            $ct->rev += ($this->rtype != 0) - ($this->oldtype != 0);
-            $ct->pri += ($this->rtype == REVIEW_PRIMARY) - ($this->oldtype == REVIEW_PRIMARY);
-            $ct->sec += ($this->rtype == REVIEW_SECONDARY) - ($this->oldtype == REVIEW_SECONDARY);
+            $oldtype = $this->item->get(true, "_rtype") ? : 0;
+            $ct->rev += ($this->rtype != 0) - ($oldtype != 0);
+            $ct->pri += ($this->rtype == REVIEW_PRIMARY) - ($oldtype == REVIEW_PRIMARY);
+            $ct->sec += ($this->rtype == REVIEW_SECONDARY) - ($oldtype == REVIEW_SECONDARY);
         }
     }
     function add_locks(AssignmentSet $aset, &$locks) {
@@ -700,8 +749,9 @@ class ReviewAssigner extends AssignmentParser {
     }
     function execute(AssignmentSet $aset) {
         $extra = array();
-        if ($this->round && $this->rtype)
-            $extra["round_number"] = $aset->conf->round_number($this->round, true);
+        $round = $this->item->get(false, "_round");
+        if ($round && $this->rtype)
+            $extra["round_number"] = $aset->conf->round_number($round, true);
         $reviewId = $aset->contact->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId)
             $aset->contact->unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
@@ -715,9 +765,10 @@ class ReviewAssigner extends AssignmentParser {
     }
 }
 
-class UnsubmitReviewAssigner extends AssignmentParser {
-    function __construct($pid, $contact) {
-        parent::__construct("unsubmitreview", $pid, $contact);
+
+class UnsubmitReview_AssignmentParser extends AssignmentParser {
+    function __construct() {
+        parent::__construct("unsubmitreview");
     }
     function contact_set(&$req, AssignmentState $state) {
         return "reviewers";
@@ -730,7 +781,7 @@ class UnsubmitReviewAssigner extends AssignmentParser {
     }
     function load_state(AssignmentState $state) {
         if ($state->mark_type("review", ["pid", "cid"]))
-            ReviewAssigner::load_review_state($state);
+            Review_AssignmentParser::load_review_state($state);
     }
     function paper_filter($contact, &$req, AssignmentState $state) {
         return $state->make_filter("pid", ["type" => "review", "cid" => $contact->contactId, "_rsubmitted" => 1]);
@@ -763,11 +814,12 @@ class UnsubmitReviewAssigner extends AssignmentParser {
     }
 }
 
-class LeadAssigner extends AssignmentParser {
+
+class Lead_AssignmentParser extends AssignmentParser {
     private $isadd;
     private $key;
-    function __construct($type, $pid, $contact, $isadd) {
-        parent::__construct($type, $pid, $contact);
+    function __construct($type, $isadd) {
+        parent::__construct($type);
         $this->isadd = $isadd;
         $this->key = $type;
         if ($type === "administrator")
@@ -808,27 +860,38 @@ class LeadAssigner extends AssignmentParser {
             $state->add(array("type" => $this->type, "pid" => $pid, "_cid" => $contact->contactId));
     }
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
-        return new LeadAssigner($item["type"], $item["pid"], $cmap->make_id($item["_cid"]), !$item->deleted());
+        return new Lead_Assigner($item, $cmap);
+    }
+}
+
+class Lead_Assigner extends Assigner {
+    function __construct(AssignmentItem $item, AssignerContacts $cmap) {
+        parent::__construct($item, $cmap);
+    }
+    function key() {
+        return $this->type === "administrator" ? "manager" : $this->type;
+    }
+    function icon() {
+        if ($this->type === "lead")
+            return review_lead_icon();
+        else if ($this->type === "shepherd")
+            return review_shepherd_icon();
+        else
+            return "($this->type)";
     }
     function unparse_description() {
         return $this->type;
     }
     function unparse_display(AssignmentSet $aset) {
         $aset->show_column($this->type);
-        if ($this->isadd)
+        if (!$this->item->deleted())
             $aset->show_column("reviewers");
-        if (!$this->cid)
-            return "remove $this->type";
-        $t = $aset->contact->reviewer_html_for($this->contact);
-        if ($this->isadd && $this->type === "lead")
-            $t .= " " . review_lead_icon();
-        else if ($this->isadd && $this->type === "shepherd")
-            $t .= " " . review_shepherd_icon();
-        else if ($this->isadd)
-            $t .= " ($this->type)";
-        else
-            $t = "remove $t as $this->type";
-        return $t;
+        $t = [];
+        if ($this->item->existed())
+            $t[] = '<del>' . $aset->contact->reviewer_html_for($this->item->get(true, "_cid")) . " " . $this->icon() . '</del>';
+        if (!$this->item->deleted())
+            $t[] = '<ins>' . $aset->contact->reviewer_html_for($this->contact) . " " . $this->icon() . '</ins>';
+        return join(" ", $t);
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $x = ["pid" => $this->pid, "action" => $this->type];
@@ -852,16 +915,17 @@ class LeadAssigner extends AssignmentParser {
         $locks["Paper"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        $aset->contact->assign_paper_pc($this->pid, $this->key,
-                $this->isadd ? $this->cid : 0,
-                $this->isadd || !$this->cid ? array() : array("old_cid" => $this->cid));
+        $aset->contact->assign_paper_pc($this->pid, $this->key(),
+            $this->item->get(false, "_cid") ? : 0,
+            ["old_cid" => $this->item->get(true, "_cid")]);
     }
 }
 
-class ConflictAssigner extends AssignmentParser {
+
+class Conflict_AssignmentParser extends AssignmentParser {
     private $ctype;
-    function __construct($pid, $contact, $ctype) {
-        parent::__construct("conflict", $pid, $contact);
+    function __construct($ctype) {
+        parent::__construct("conflict");
         $this->ctype = $ctype;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
@@ -893,8 +957,15 @@ class ConflictAssigner extends AssignmentParser {
             $state->add(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId, "_ctype" => $this->ctype));
     }
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
-        return new ConflictAssigner($item["pid"], $cmap->make_id($item["cid"]),
-                                    $item->deleted() ? 0 : $item["_ctype"]);
+        return new Conflict_Assigner($item, $cmap);
+    }
+}
+
+class Conflict_Assigner extends Assigner {
+    private $ctype;
+    function __construct(AssignmentItem $item, AssignerContacts $cmap) {
+        parent::__construct($item, $cmap);
+        $this->ctype = $item->get(false, "_ctype");
     }
     function unparse_description() {
         return "conflict";
@@ -906,8 +977,8 @@ class ConflictAssigner extends AssignmentParser {
             $t .= review_type_icon(-1);
         else
             $t .= "(remove conflict)";
-        if (ReviewAssigner::$prefinfo
-            && ($cpref = get(ReviewAssigner::$prefinfo, $this->cid))
+        if (Review_Assigner::$prefinfo
+            && ($cpref = get(Review_Assigner::$prefinfo, $this->cid))
             && ($pref = get($cpref, $this->pid)))
             $t .= unparse_preference_span($pref);
         return $t;
@@ -928,6 +999,7 @@ class ConflictAssigner extends AssignmentParser {
             $aset->conf->qe("delete from PaperConflict where paperId=$this->pid and contactId=$this->cid");
     }
 }
+
 
 class NextTagAssigner {
     private $tag;
@@ -974,17 +1046,13 @@ class NextTagAssigner {
     }
 }
 
-class TagAssigner extends AssignmentParser {
+class Tag_AssignmentParser extends AssignmentParser {
     const NEXT = 1;
     const NEXTSEQ = 2;
     private $isadd;
-    private $tag;
-    private $index;
-    function __construct($pid, $isadd, $tag, $index) {
-        parent::__construct("tag", $pid, null);
+    function __construct($isadd) {
+        parent::__construct("tag");
         $this->isadd = $isadd;
-        $this->tag = $tag;
-        $this->index = $index;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (($whyNot = $state->contact->perm_change_some_tag($prow, $state->override)))
@@ -1193,35 +1261,47 @@ class TagAssigner extends AssignmentParser {
     }
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
         $prow = $state->prow($item["pid"]);
-        $is_admin = $state->contact->can_administer($prow, $state->override);
-        $tag = $item["_tag"];
-        $previndex = $item->before ? $item->before["_index"] : null;
-        $index = $item->deleted() ? null : $item["_index"];
         // check permissions
-        if ($item["_vote"])
-            $index = $index ? : null;
-        else if (($whyNot = $state->contact->perm_change_tag($prow, $item["ltag"],
-                                                             $previndex, $index, $item->override))) {
-            if (get($whyNot, "otherTwiddleTag"))
-                return null;
-            throw new Exception(whyNotText($whyNot, "tag"));
+        if (!$item["_vote"]) {
+            $whyNot = $state->contact->perm_change_tag($prow, $item["ltag"],
+                $item->get(true, "_index"), $item->get(false, "_index"),
+                $item->override);
+            if ($whyNot) {
+                if (get($whyNot, "otherTwiddleTag"))
+                    return null;
+                throw new Exception(whyNotText($whyNot, "tag"));
+            }
         }
-        // actually assign
-        return new TagAssigner($item["pid"], true, $item["_tag"], $index);
+        return new Tag_Assigner($item, $cmap);
+    }
+}
+
+class Tag_Assigner extends Assigner {
+    private $tag;
+    private $index;
+    function __construct(AssignmentItem $item, AssignerContacts $cmap) {
+        parent::__construct($item, $cmap);
+        $this->tag = $item["_tag"];
+        $this->index = $item->get(false, "_index");
+        if ($this->index == 0 && $item["_vote"])
+            $this->index = null;
     }
     function unparse_description() {
         return "tag";
     }
+    private function unparse_item($before) {
+        $index = $this->item->get($before, "_index");
+        return "#" . htmlspecialchars($this->item->get($before, "_tag"))
+            . ($index ? "#$index" : "");
+    }
     function unparse_display(AssignmentSet $aset) {
         $aset->show_column("tags");
-        $t = "#" . htmlspecialchars($this->tag);
-        if ($this->index === null)
-            $t = "remove $t";
-        else if ($this->index)
-            $t = "add $t#" . $this->index;
-        else
-            $t = "add $t";
-        return $t;
+        $t = [];
+        if ($this->item->existed())
+            $t[] = '<del>' . $this->unparse_item(true) . '</del>';
+        if (!$this->item->deleted())
+            $t[] = '<ins>' . $this->unparse_item(false) . '</ins>';
+        return join(" ", $t);
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $t = $this->tag;
@@ -1254,13 +1334,10 @@ class TagAssigner extends AssignmentParser {
     }
 }
 
-class PreferenceAssigner extends AssignmentParser {
-    private $pref;
-    private $exp;
-    function __construct($pid, $contact, $pref, $exp) {
-        parent::__construct("pref", $pid, $contact);
-        $this->pref = $pref;
-        $this->exp = $exp === "N" ? null : $exp;
+
+class Preference_AssignmentParser extends AssignmentParser {
+    function __construct() {
+        parent::__construct("pref");
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($prow->timeWithdrawn > 0)
@@ -1331,24 +1408,38 @@ class PreferenceAssigner extends AssignmentParser {
             $state->add(array("type" => $this->type, "pid" => $pid, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => self::make_exp($ppref[1])));
     }
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
-        return new PreferenceAssigner($item["pid"], $cmap->make_id($item["cid"]),
-                                      $item->deleted() ? 0 : $item["_pref"],
-                                      $item->deleted() ? null : $item["_exp"]);
+        return new Preference_Assigner($item, $cmap);
+    }
+}
+
+class Preference_Assigner extends Assigner {
+    function __construct(AssignmentItem $item, AssignerContacts $cmap) {
+        parent::__construct($item, $cmap);
     }
     function unparse_description() {
         return "preference";
+    }
+    private function preference_data($before) {
+        $p = [$this->item->get($before, "_pref"),
+              $this->item->get($before, "_exp")];
+        if ($p[1] === "N")
+            $p[1] = null;
+        return $p[0] || $p[1] !== null ? $p : null;
     }
     function unparse_display(AssignmentSet $aset) {
         if (!$this->cid)
             return "remove all preferences";
         $aset->show_column("allpref");
-        return $aset->contact->reviewer_html_for($this->contact) . " " . unparse_preference_span(array($this->pref, $this->exp), true);
+        $t = $aset->contact->reviewer_html_for($this->contact);
+        if (($p = $this->preference_data(true)))
+            $t .= " <del>" . unparse_preference_span($p, true) . "</del>";
+        if (($p = $this->preference_data(false)))
+            $t .= " <ins>" . unparse_preference_span($p, true) . "</ins>";
+        return $t;
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
-        if (!$this->pref && $this->exp === null)
-            $pref = "none";
-        else
-            $pref = unparse_preference($this->pref, $this->exp);
+        $p = $this->preference_data(false);
+        $pref = $p ? unparse_preference($p[0], $p[1]) : "none";
         return ["pid" => $this->pid, "action" => "preference",
                 "email" => $this->contact->email, "name" => $this->contact->name_text(),
                 "preference" => $pref];
@@ -1357,59 +1448,59 @@ class PreferenceAssigner extends AssignmentParser {
         $locks["PaperReviewPreference"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        if (!$this->pref && $this->exp === null)
-            $aset->conf->qe("delete from PaperReviewPreference where paperId=? and contactId=?", $this->pid, $this->cid);
-        else
+        if (($p = $this->preference_data(false)))
             $aset->conf->qe("insert into PaperReviewPreference
                 set paperId=?, contactId=?, preference=?, expertise=?
                 on duplicate key update preference=values(preference), expertise=values(expertise)",
-                    $this->pid, $this->cid, $this->pref, $this->exp);
+                    $this->pid, $this->cid, $p[0], $p[1]);
+        else
+            $aset->conf->qe("delete from PaperReviewPreference where paperId=? and contactId=?", $this->pid, $this->cid);
     }
 }
 
-AssignmentParser::register("none", new NullAssigner);
-AssignmentParser::register("null", new NullAssigner);
-AssignmentParser::register("pri", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
-AssignmentParser::register("primary", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
-AssignmentParser::register("primaryreview", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
-AssignmentParser::register("sec", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
-AssignmentParser::register("secondary", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
-AssignmentParser::register("secondaryreview", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
-AssignmentParser::register("pcreview", new ReviewAssigner(0, null, REVIEW_PC, ""));
-AssignmentParser::register("ext", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
-AssignmentParser::register("external", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
-AssignmentParser::register("extreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
-AssignmentParser::register("externalreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
-AssignmentParser::register("review", new ReviewAssigner(0, null, -1, ""));
-AssignmentParser::register("clearreview", new ReviewAssigner(0, null, 0, ""));
-AssignmentParser::register("noreview", new ReviewAssigner(0, null, 0, ""));
-AssignmentParser::register("unassignreview", new ReviewAssigner(0, null, 0, ""));
-AssignmentParser::register("unsubmitreview", new UnsubmitReviewAssigner(0, null));
-AssignmentParser::register("lead", new LeadAssigner("lead", 0, null, true));
-AssignmentParser::register("nolead", new LeadAssigner("lead", 0, null, false));
-AssignmentParser::register("clearlead", new LeadAssigner("lead", 0, null, false));
-AssignmentParser::register("shepherd", new LeadAssigner("shepherd", 0, null, true));
-AssignmentParser::register("noshepherd", new LeadAssigner("shepherd", 0, null, false));
-AssignmentParser::register("clearshepherd", new LeadAssigner("shepherd", 0, null, false));
-AssignmentParser::register("administrator", new LeadAssigner("administrator", 0, null, true));
-AssignmentParser::register("noadministrator", new LeadAssigner("administrator", 0, null, false));
-AssignmentParser::register("clearadministrator", new LeadAssigner("administrator", 0, null, false));
-AssignmentParser::register("admin", new LeadAssigner("administrator", 0, null, true));
-AssignmentParser::register("noadmin", new LeadAssigner("administrator", 0, null, false));
-AssignmentParser::register("clearadmin", new LeadAssigner("administrator", 0, null, false));
-AssignmentParser::register("conflict", new ConflictAssigner(0, null, CONFLICT_CHAIRMARK));
-AssignmentParser::register("noconflict", new ConflictAssigner(0, null, 0));
-AssignmentParser::register("clearconflict", new ConflictAssigner(0, null, 0));
-AssignmentParser::register("tag", new TagAssigner(0, true, null, 0));
-AssignmentParser::register("settag", new TagAssigner(0, true, null, 0));
-AssignmentParser::register("notag", new TagAssigner(0, false, null, 0));
-AssignmentParser::register("cleartag", new TagAssigner(0, false, null, 0));
-AssignmentParser::register("nexttag", new TagAssigner(0, TagAssigner::NEXT, null, 0));
-AssignmentParser::register("seqnexttag", new TagAssigner(0, TagAssigner::NEXTSEQ, null, 0));
-AssignmentParser::register("nextseqtag", new TagAssigner(0, TagAssigner::NEXTSEQ, null, 0));
-AssignmentParser::register("preference", new PreferenceAssigner(0, null, 0, null));
-AssignmentParser::register("pref", new PreferenceAssigner(0, null, 0, null));
-AssignmentParser::register("revpref", new PreferenceAssigner(0, null, 0, null));
+AssignmentParser::register("none", new Null_AssignmentParser);
+AssignmentParser::register("null", new Null_AssignmentParser);
+AssignmentParser::register("pri", new Review_AssignmentParser(REVIEW_PRIMARY));
+AssignmentParser::register("primary", new Review_AssignmentParser(REVIEW_PRIMARY));
+AssignmentParser::register("primaryreview", new Review_AssignmentParser(REVIEW_PRIMARY));
+AssignmentParser::register("sec", new Review_AssignmentParser(REVIEW_SECONDARY));
+AssignmentParser::register("secondary", new Review_AssignmentParser(REVIEW_SECONDARY));
+AssignmentParser::register("secondaryreview", new Review_AssignmentParser(REVIEW_SECONDARY));
+AssignmentParser::register("pcreview", new Review_AssignmentParser(REVIEW_PC));
+AssignmentParser::register("ext", new Review_AssignmentParser(REVIEW_EXTERNAL));
+AssignmentParser::register("external", new Review_AssignmentParser(REVIEW_EXTERNAL));
+AssignmentParser::register("extreview", new Review_AssignmentParser(REVIEW_EXTERNAL));
+AssignmentParser::register("externalreview", new Review_AssignmentParser(REVIEW_EXTERNAL));
+AssignmentParser::register("review", new Review_AssignmentParser(-1));
+AssignmentParser::register("clearreview", new Review_AssignmentParser(0));
+AssignmentParser::register("noreview", new Review_AssignmentParser(0));
+AssignmentParser::register("unassignreview", new Review_AssignmentParser(0));
+AssignmentParser::register("unsubmitreview", new UnsubmitReview_AssignmentParser);
+AssignmentParser::register("lead", new Lead_AssignmentParser("lead", true));
+AssignmentParser::register("nolead", new Lead_AssignmentParser("lead", false));
+AssignmentParser::register("clearlead", new Lead_AssignmentParser("lead", false));
+AssignmentParser::register("shepherd", new Lead_AssignmentParser("shepherd", true));
+AssignmentParser::register("noshepherd", new Lead_AssignmentParser("shepherd", false));
+AssignmentParser::register("clearshepherd", new Lead_AssignmentParser("shepherd", false));
+AssignmentParser::register("administrator", new Lead_AssignmentParser("administrator", true));
+AssignmentParser::register("noadministrator", new Lead_AssignmentParser("administrator", false));
+AssignmentParser::register("clearadministrator", new Lead_AssignmentParser("administrator", false));
+AssignmentParser::register("admin", new Lead_AssignmentParser("administrator", true));
+AssignmentParser::register("noadmin", new Lead_AssignmentParser("administrator", false));
+AssignmentParser::register("clearadmin", new Lead_AssignmentParser("administrator", false));
+AssignmentParser::register("conflict", new Conflict_AssignmentParser(CONFLICT_CHAIRMARK));
+AssignmentParser::register("noconflict", new Conflict_AssignmentParser(0));
+AssignmentParser::register("clearconflict", new Conflict_AssignmentParser(0));
+AssignmentParser::register("tag", new Tag_AssignmentParser(true));
+AssignmentParser::register("settag", new Tag_AssignmentParser(true));
+AssignmentParser::register("notag", new Tag_AssignmentParser(false));
+AssignmentParser::register("cleartag", new Tag_AssignmentParser(false));
+AssignmentParser::register("nexttag", new Tag_AssignmentParser(Tag_AssignmentParser::NEXT));
+AssignmentParser::register("seqnexttag", new Tag_AssignmentParser(Tag_AssignmentParser::NEXTSEQ));
+AssignmentParser::register("nextseqtag", new Tag_AssignmentParser(Tag_AssignmentParser::NEXTSEQ));
+AssignmentParser::register("preference", new Preference_AssignmentParser);
+AssignmentParser::register("pref", new Preference_AssignmentParser);
+AssignmentParser::register("revpref", new Preference_AssignmentParser);
 
 class AssignmentSet {
     public $conf;

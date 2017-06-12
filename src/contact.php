@@ -3411,7 +3411,7 @@ class Contact {
         }
 
         // make assignments
-        if (isset($extra["old_cid"]))
+        if (isset($extra["old_cid"]) && $extra["old_cid"])
             $result = $this->conf->qe("update Paper set {$type}ContactId=? where paperId" . sql_in_numeric_set($px) . " and {$type}ContactId=?", $revcid, $extra["old_cid"]);
         else
             $result = $this->conf->qe("update Paper set {$type}ContactId=? where paperId" . sql_in_numeric_set($px), $revcid);

@@ -1040,18 +1040,18 @@ function review_type_icon($revtype, $unfinished = null, $title = null) {
     if (!$revtype)
         return '<span class="rt0"></span>';
     $x = $revtypemap[$revtype];
-    return '<span class="rt' . $revtype
+    return '<span class="rto rt' . $revtype
         . ($revtype > 0 && $unfinished ? "n" : "")
         . '" title="' . ($title ? $title : $revtypemap[$revtype][1])
         . '"><span class="rti">' . $revtypemap[$revtype][0] . '</span></span>';
 }
 
 function review_lead_icon() {
-    return '<span class="rtlead" title="Lead"><span class="rti">L</span></span>';
+    return '<span class="rto rtlead" title="Lead"><span class="rti">L</span></span>';
 }
 
 function review_shepherd_icon() {
-    return '<span class="rtshep" title="Shepherd"><span class="rti">S</span></span>';
+    return '<span class="rto rtshep" title="Shepherd"><span class="rti">S</span></span>';
 }
 
 function displayOptionsSet($sessionvar, $var = null, $val = null) {
