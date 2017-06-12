@@ -1429,7 +1429,6 @@ class Preference_Assigner extends Assigner {
     function unparse_display(AssignmentSet $aset) {
         if (!$this->cid)
             return "remove all preferences";
-        $aset->show_column("allpref");
         $t = $aset->contact->reviewer_html_for($this->contact);
         if (($p = $this->preference_data(true)))
             $t .= " <del>" . unparse_preference_span($p, true) . "</del>";

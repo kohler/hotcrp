@@ -163,7 +163,6 @@ function parseUploadedPreferences($text, $filename, $apply) {
     $assignset->set_reviewer($reviewer);
     $assignset->enable_actions("pref");
     $assignset->show_column("pref:" . $reviewer->email . ":row", true);
-    $assignset->hide_column("allpref", true);
     if ($apply)
         $assignset->enable_papers($SSel->selection());
     $assignset->parse($csv, $filename);
