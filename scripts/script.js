@@ -5339,6 +5339,11 @@ function add_row(f) {
     f.missing = false;
 }
 
+function ensure_field(f) {
+    if (f.missing)
+        f.column ? add_column(f) : add_row(f);
+}
+
 function set(f, $j, text) {
     var elt = $j[0], m;
     if (!elt)
@@ -5363,7 +5368,8 @@ function make_callback(dofold, type) {
     function render_some() {
         var index = field_index(f), htmlk = f.name + ".html";
         for (var n = 0; n < 64 && tr; tr = tr.nextSibling)
-            if (tr.nodeName === "TR" && tr.hasAttribute("data-pid") && /\bpl\b/.test(tr.className)) {
+            if (tr.nodeName === "TR" && tr.hasAttribute("data-pid")
+                && /\bpl\b/.test(tr.className)) {
                 var p = +tr.getAttribute("data-pid");
                 for (var k in values)
                     if (k.substr(0, 5) == "attr." && p in values[k])
@@ -5391,28 +5397,35 @@ function make_callback(dofold, type) {
                     td.innerHTML = values[htmlk][stat];
             }
     }
+    function render_start() {
+        ensure_field(f);
+        tr = $(self).find("tr.pl").first()[0];
+        render_some();
+        if (values[f.name + ".stat.html"])
+            render_statistics();
+    }
     return function (rv) {
         if (type == "aufull")
             aufull[!!dofold] = rv;
+        f.loadable = false;
         if (rv.ok) {
             values = rv;
-            tr = $(self).find("tr.pl").first()[0];
-            render_some();
-            values[f.name + ".stat.html"] && render_statistics();
+            $(render_start);
         }
-        f.loadable = false;
         fold(self, dofold, foldmap(type), f.name);
     };
 }
 
 function show_loading(f) {
-    return function () {
+    function go() {
+        ensure_field(f);
         if (f.loadable) {
             var index = field_index(f);
             for (var p in pidmap())
                 set(f, pidfield(p, f, index), "Loading");
         }
-    };
+    }
+    return function () { $(go); };
 }
 
 function plinfo(type, dofold) {
@@ -5423,8 +5436,6 @@ function plinfo(type, dofold) {
         dofold = !dofold.checked;
 
     // fold
-    if (!dofold && f.missing)
-        f.column ? add_column(f) : add_row(f);
     fold(self, dofold, foldmap(type), type);
     if ((type == "aufull" || type == "anonau") && !dofold
         && (elt = $$("showau")) && !elt.checked)
