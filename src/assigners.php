@@ -133,7 +133,7 @@ class AssignmentState {
     function remove($q) {
         return $this->query_remove($q, true, null);
     }
-    function query_unmodified($q) {
+    function query_before($q) {
         return $this->query_remove($q, false, false);
     }
     function add($x) {
@@ -349,7 +349,7 @@ class AssignmentCsv {
     }
 }
 
-class Assigner {
+class AssignmentParser {
     public $type;
     public $pid;
     public $contact;
@@ -429,7 +429,7 @@ class Assigner {
     }
 }
 
-class NullAssigner extends Assigner {
+class NullAssigner extends AssignmentParser {
     function __construct() {
         parent::__construct("none", 0, 0);
     }
@@ -528,7 +528,7 @@ class ReviewAssigner_Data {
     }
 }
 
-class ReviewAssigner extends Assigner {
+class ReviewAssigner extends AssignmentParser {
     private $rtype;
     private $round;
     private $oldtype = 0;
@@ -570,7 +570,7 @@ class ReviewAssigner extends Assigner {
         if (!$contact->can_accept_review_assignment_ignore_conflict($prow))
             return Text::user_html_nolink($contact) . " cannot be assigned to review #{$prow->paperId}.";
         // Check conflicts
-        return Assigner::unconflicted($prow, $contact, $state);
+        return AssignmentParser::unconflicted($prow, $contact, $state);
     }
     static function load_review_state(AssignmentState $state) {
         $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
@@ -715,7 +715,7 @@ class ReviewAssigner extends Assigner {
     }
 }
 
-class UnsubmitReviewAssigner extends Assigner {
+class UnsubmitReviewAssigner extends AssignmentParser {
     function __construct($pid, $contact) {
         parent::__construct("unsubmitreview", $pid, $contact);
     }
@@ -763,7 +763,7 @@ class UnsubmitReviewAssigner extends Assigner {
     }
 }
 
-class LeadAssigner extends Assigner {
+class LeadAssigner extends AssignmentParser {
     private $isadd;
     private $key;
     function __construct($type, $pid, $contact, $isadd) {
@@ -789,7 +789,7 @@ class LeadAssigner extends Assigner {
             $verb = $this->type === "administrator" ? "administer" : $this->type;
             return Text::user_html_nolink($contact) . " can’t $verb #{$prow->paperId}.";
         } else
-            return Assigner::unconflicted($prow, $contact, $state);
+            return AssignmentParser::unconflicted($prow, $contact, $state);
     }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type($this->type, ["pid"]))
@@ -858,7 +858,7 @@ class LeadAssigner extends Assigner {
     }
 }
 
-class ConflictAssigner extends Assigner {
+class ConflictAssigner extends AssignmentParser {
     private $ctype;
     function __construct($pid, $contact, $ctype) {
         parent::__construct("conflict", $pid, $contact);
@@ -963,7 +963,7 @@ class NextTagAssigner {
         $ltag = strtolower($this->tag);
         foreach ($this->pidindex as $pid => $index)
             if ($index >= $this->first_index && $index < $this->next_index) {
-                $x = $state->query_unmodified(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
+                $x = $state->query_before(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
                 if (!empty($x)) {
                     $item = $state->add(["type" => "tag", "pid" => $pid, "ltag" => $ltag,
                                          "_tag" => $this->tag,
@@ -974,7 +974,7 @@ class NextTagAssigner {
     }
 }
 
-class TagAssigner extends Assigner {
+class TagAssigner extends AssignmentParser {
     const NEXT = 1;
     const NEXTSEQ = 2;
     private $isadd;
@@ -1254,7 +1254,7 @@ class TagAssigner extends Assigner {
     }
 }
 
-class PreferenceAssigner extends Assigner {
+class PreferenceAssigner extends AssignmentParser {
     private $pref;
     private $exp;
     function __construct($pid, $contact, $pref, $exp) {
@@ -1367,49 +1367,49 @@ class PreferenceAssigner extends Assigner {
     }
 }
 
-Assigner::register("none", new NullAssigner);
-Assigner::register("null", new NullAssigner);
-Assigner::register("pri", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
-Assigner::register("primary", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
-Assigner::register("primaryreview", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
-Assigner::register("sec", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
-Assigner::register("secondary", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
-Assigner::register("secondaryreview", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
-Assigner::register("pcreview", new ReviewAssigner(0, null, REVIEW_PC, ""));
-Assigner::register("ext", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
-Assigner::register("external", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
-Assigner::register("extreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
-Assigner::register("externalreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
-Assigner::register("review", new ReviewAssigner(0, null, -1, ""));
-Assigner::register("clearreview", new ReviewAssigner(0, null, 0, ""));
-Assigner::register("noreview", new ReviewAssigner(0, null, 0, ""));
-Assigner::register("unassignreview", new ReviewAssigner(0, null, 0, ""));
-Assigner::register("unsubmitreview", new UnsubmitReviewAssigner(0, null));
-Assigner::register("lead", new LeadAssigner("lead", 0, null, true));
-Assigner::register("nolead", new LeadAssigner("lead", 0, null, false));
-Assigner::register("clearlead", new LeadAssigner("lead", 0, null, false));
-Assigner::register("shepherd", new LeadAssigner("shepherd", 0, null, true));
-Assigner::register("noshepherd", new LeadAssigner("shepherd", 0, null, false));
-Assigner::register("clearshepherd", new LeadAssigner("shepherd", 0, null, false));
-Assigner::register("administrator", new LeadAssigner("administrator", 0, null, true));
-Assigner::register("noadministrator", new LeadAssigner("administrator", 0, null, false));
-Assigner::register("clearadministrator", new LeadAssigner("administrator", 0, null, false));
-Assigner::register("admin", new LeadAssigner("administrator", 0, null, true));
-Assigner::register("noadmin", new LeadAssigner("administrator", 0, null, false));
-Assigner::register("clearadmin", new LeadAssigner("administrator", 0, null, false));
-Assigner::register("conflict", new ConflictAssigner(0, null, CONFLICT_CHAIRMARK));
-Assigner::register("noconflict", new ConflictAssigner(0, null, 0));
-Assigner::register("clearconflict", new ConflictAssigner(0, null, 0));
-Assigner::register("tag", new TagAssigner(0, true, null, 0));
-Assigner::register("settag", new TagAssigner(0, true, null, 0));
-Assigner::register("notag", new TagAssigner(0, false, null, 0));
-Assigner::register("cleartag", new TagAssigner(0, false, null, 0));
-Assigner::register("nexttag", new TagAssigner(0, TagAssigner::NEXT, null, 0));
-Assigner::register("seqnexttag", new TagAssigner(0, TagAssigner::NEXTSEQ, null, 0));
-Assigner::register("nextseqtag", new TagAssigner(0, TagAssigner::NEXTSEQ, null, 0));
-Assigner::register("preference", new PreferenceAssigner(0, null, 0, null));
-Assigner::register("pref", new PreferenceAssigner(0, null, 0, null));
-Assigner::register("revpref", new PreferenceAssigner(0, null, 0, null));
+AssignmentParser::register("none", new NullAssigner);
+AssignmentParser::register("null", new NullAssigner);
+AssignmentParser::register("pri", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
+AssignmentParser::register("primary", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
+AssignmentParser::register("primaryreview", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
+AssignmentParser::register("sec", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
+AssignmentParser::register("secondary", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
+AssignmentParser::register("secondaryreview", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
+AssignmentParser::register("pcreview", new ReviewAssigner(0, null, REVIEW_PC, ""));
+AssignmentParser::register("ext", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+AssignmentParser::register("external", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+AssignmentParser::register("extreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+AssignmentParser::register("externalreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+AssignmentParser::register("review", new ReviewAssigner(0, null, -1, ""));
+AssignmentParser::register("clearreview", new ReviewAssigner(0, null, 0, ""));
+AssignmentParser::register("noreview", new ReviewAssigner(0, null, 0, ""));
+AssignmentParser::register("unassignreview", new ReviewAssigner(0, null, 0, ""));
+AssignmentParser::register("unsubmitreview", new UnsubmitReviewAssigner(0, null));
+AssignmentParser::register("lead", new LeadAssigner("lead", 0, null, true));
+AssignmentParser::register("nolead", new LeadAssigner("lead", 0, null, false));
+AssignmentParser::register("clearlead", new LeadAssigner("lead", 0, null, false));
+AssignmentParser::register("shepherd", new LeadAssigner("shepherd", 0, null, true));
+AssignmentParser::register("noshepherd", new LeadAssigner("shepherd", 0, null, false));
+AssignmentParser::register("clearshepherd", new LeadAssigner("shepherd", 0, null, false));
+AssignmentParser::register("administrator", new LeadAssigner("administrator", 0, null, true));
+AssignmentParser::register("noadministrator", new LeadAssigner("administrator", 0, null, false));
+AssignmentParser::register("clearadministrator", new LeadAssigner("administrator", 0, null, false));
+AssignmentParser::register("admin", new LeadAssigner("administrator", 0, null, true));
+AssignmentParser::register("noadmin", new LeadAssigner("administrator", 0, null, false));
+AssignmentParser::register("clearadmin", new LeadAssigner("administrator", 0, null, false));
+AssignmentParser::register("conflict", new ConflictAssigner(0, null, CONFLICT_CHAIRMARK));
+AssignmentParser::register("noconflict", new ConflictAssigner(0, null, 0));
+AssignmentParser::register("clearconflict", new ConflictAssigner(0, null, 0));
+AssignmentParser::register("tag", new TagAssigner(0, true, null, 0));
+AssignmentParser::register("settag", new TagAssigner(0, true, null, 0));
+AssignmentParser::register("notag", new TagAssigner(0, false, null, 0));
+AssignmentParser::register("cleartag", new TagAssigner(0, false, null, 0));
+AssignmentParser::register("nexttag", new TagAssigner(0, TagAssigner::NEXT, null, 0));
+AssignmentParser::register("seqnexttag", new TagAssigner(0, TagAssigner::NEXTSEQ, null, 0));
+AssignmentParser::register("nextseqtag", new TagAssigner(0, TagAssigner::NEXTSEQ, null, 0));
+AssignmentParser::register("preference", new PreferenceAssigner(0, null, 0, null));
+AssignmentParser::register("pref", new PreferenceAssigner(0, null, 0, null));
+AssignmentParser::register("revpref", new PreferenceAssigner(0, null, 0, null));
 
 class AssignmentSet {
     public $conf;
@@ -1451,7 +1451,7 @@ class AssignmentSet {
         if (is_array($action)) {
             foreach ($action as $a)
                 $this->enable_actions($a);
-        } else if (($a = Assigner::find($action)))
+        } else if (($a = AssignmentParser::find($action)))
             $this->enabled_actions[$a->type] = true;
     }
 
@@ -1481,8 +1481,8 @@ class AssignmentSet {
             $this->astate->override = array_pop($this->override_stack);
     }
 
-    function has_assigners() {
-        return !empty($this->assigners);
+    function is_empty() {
+        return empty($this->assigners);
     }
 
     function has_error() {
@@ -1828,7 +1828,7 @@ class AssignmentSet {
             && ($action = get($req, "type")) === null)
             $action = $this->astate->defaults["action"];
         $action = strtolower(trim($action));
-        if (!($assigner = Assigner::find($action)))
+        if (!($assigner = AssignmentParser::find($action)))
             return $this->error("Unknown action “" . htmlspecialchars($action) . "”");
         if ($this->enabled_actions !== null
             && !isset($this->enabled_actions[$assigner->type]))
@@ -1920,9 +1920,9 @@ class AssignmentSet {
         // create assigners for difference
         foreach ($this->astate->diff() as $pid => $difflist)
             foreach ($difflist as $item) {
-                $assigner = Assigner::find($item["type"]);
+                $parser = AssignmentParser::find($item["type"]);
                 try {
-                    if (($a = $assigner->realize($item, $this->cmap, $this->astate)))
+                    if (($a = $parser->realize($item, $this->cmap, $this->astate)))
                         $this->assigners[] = $a;
                 } catch (Exception $e) {
                     $this->error($item->lineno, $e->getMessage());
@@ -2055,10 +2055,6 @@ class AssignmentSet {
                 $acsv->add($row);
         $acsv->header = array_keys($acsv->header);
         return $acsv;
-    }
-
-    function is_empty() {
-        return empty($this->assigners);
     }
 
     function execute($verbose = false) {
