@@ -22,12 +22,12 @@
     {
         "name": "conf",
         "parser": "Conflict_SearchTerm::parse",
-        "synonym": "conflict", "pc_only": false
+        "synonym": "conflict", "pc_only": false, "has": "pc"
     },
     {
         "name": "pcconf",
         "parser": "Conflict_SearchTerm::parse",
-        "synonym": "pcconflict", "pc_only": true
+        "synonym": "pcconflict", "pc_only": true, "has": "any"
     },
     {
         "name": "reconf",
@@ -70,7 +70,7 @@
     {
         "name": "rate",
         "parser": "ReviewAdjustment_SearchTerm::parse_rate",
-        "synonym": ["rating"]
+        "synonym": ["rating"], "has": "any"
     },
     {
         "name": "topic",
