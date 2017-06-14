@@ -1705,6 +1705,7 @@ div.pl_abstract, div.pl_textoption {
 	-webkit-column-gap: 18px;
 	-moz-column-gap: 18px;
 	column-gap: 18px;
+	margin-top: 4px;
 	margin-bottom: 4px;
 }
 
