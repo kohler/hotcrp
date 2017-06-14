@@ -2684,7 +2684,7 @@ function add_review(rrow) {
     // author info
     var revinfo = [], rtype_text = "";
     if (rrow.rtype) {
-        rtype_text = ' &nbsp;<span class="rt' + rrow.rtype + (rrow.submitted ? "" : "n") +
+        rtype_text = ' &nbsp;<span class="rt rt' + rrow.rtype + (rrow.submitted ? "" : "n") +
             '" title="' + rtype_info[rrow.rtype][1] + '"><span class="rti">' +
             rtype_info[rrow.rtype][0] + '</span></span>';
         if (rrow.round)
