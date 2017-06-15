@@ -19,7 +19,7 @@ if ($Qreq->reviewer && $Me->privChair
     && $Qreq->reviewer !== $Me->email
     && $Qreq->reviewer !== $Me->contactId) {
     $incorrect_reviewer = true;
-    foreach ($Conf->pc_members() as $pcm)
+    foreach ($Conf->full_pc_members() as $pcm)
         if (strcasecmp($pcm->email, $Qreq->reviewer) == 0
             || (string) $pcm->contactId === $Qreq->reviewer) {
             $reviewer = $pcm;
