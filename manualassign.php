@@ -290,11 +290,12 @@ if ($revuser) {
     }
 
     // main assignment form
-    $search = new PaperSearch($Me, array("t" => $qreq->t, "q" => $qreq->q,
-                                         "urlbase" => hoturl_site_relative_raw("manualassign", "reviewer=$reviewer")));
+    $search = new PaperSearch($Me, ["t" => $qreq->t, "q" => $qreq->q,
+                                    "urlbase" => hoturl_site_relative_raw("manualassign", ["reviewer" => $reviewer])],
+                              $revuser);
     if (!empty($hlsearch))
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
-    $paperList = new PaperList($search, ["sort" => true, "reviewer" => $revuser], make_qreq());
+    $paperList = new PaperList($search, ["sort" => true], make_qreq());
     $paperList->display .= " topics ";
     if ($qreq->kind != "c")
         $paperList->display .= "reviewers ";
