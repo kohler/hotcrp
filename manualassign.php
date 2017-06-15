@@ -225,7 +225,7 @@ function make_match_preg($str) {
 
 // Current PC member information
 if ($reviewer) {
-    $useless_words = array("university" => 1, "the" => 1, "and" => 1, "of" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "at" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
+    $useless_words = ["university", "the", "and", "of", "univ", "none", "a", "an", "at", "jr", "sr", "iii"];
 
     // search outline from old CRP, done here in a very different way
     preg_match_all('/[a-z&]{2,}/', strtolower($reviewer->firstName . " " . $reviewer->lastName . " " . $reviewer->affiliation), $match);
