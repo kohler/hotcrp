@@ -1308,7 +1308,7 @@ class Conf {
 
     function full_pc_members() {
         if ($this->_pc_members_cache !== null) {
-            $result = $this->q("select $q from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
+            $result = $this->q("select * from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
             while ($result && ($row = $result->fetch_object())) {
                 if (($pc = get($this->_pc_members_and_admins_cache, $row->contactId)))
                     $pc->merge_secondary_properties($row);
