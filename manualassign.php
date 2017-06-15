@@ -209,30 +209,18 @@ echo '<tr><td colspan="2"><div class="aab aabr">',
     "</table>\n</div></form></div></td></tr></table>\n";
 
 
-function make_match_preg($str) {
-    $a = $b = array();
-    foreach (explode(" ", preg_quote($str)) as $word)
-        if ($word != "") {
-            $a[] = Text::utf8_word_regex($word);
-            if (!preg_match("/[\x80-\xFF]/", $word))
-                $b[] = Text::word_regex($word);
-        }
-    $x = (object) array("preg_utf8" => join("|", $a));
-    if (count($a) == count($b))
-        $x->preg_raw = join("|", $b);
-    return $x;
-}
-
 // Current PC member information
 if ($reviewer) {
-    $useless_words = ["university", "the", "and", "of", "univ", "none", "a", "an", "at", "jr", "sr", "iii"];
+    $useless_words = ["university", "the", "and", "of", "univ", "none", "a", "an", "at", "jr", "sr", "iii", "inc"];
 
     // search outline from old CRP, done here in a very different way
-    preg_match_all('/[a-z&]{2,}/', strtolower($reviewer->firstName . " " . $reviewer->lastName . " " . $reviewer->affiliation), $match);
+    $text = UnicodeHelper::deaccent($reviewer->firstName . " " . $reviewer->lastName . " " . $reviewer->affiliation);
+    preg_match_all('/[-a-z&]{2,}/', strtolower($text), $match);
     $showco = array_diff(array_unique($match[0]), $useless_words);
     sort($showco);
 
-    preg_match_all('/[a-z&]{2,}/', strtolower($reviewer->firstName . " " . $reviewer->lastName . " " . $reviewer->affiliation . " " . $reviewer->collaborators), $match);
+    $text .= " " . UnicodeHelper::deaccent($reviewer->collaborators);
+    preg_match_all('/[-a-z&]{2,}/', strtolower($text), $match);
     $showau = array_diff(array_unique($match[0]), $useless_words);
     sort($showau);
 
