@@ -175,7 +175,7 @@ function update_schema_unaccented_name($conf) {
     if (!$conf->dblink->multi_query($q))
         return false;
     do {
-        if ($result = $conf->dblink->store_result())
+        if (($result = $conf->dblink->store_result()))
             $result->free();
     } while ($conf->dblink->more_results() && $conf->dblink->next_result());
     return true;

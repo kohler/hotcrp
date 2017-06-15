@@ -231,8 +231,7 @@ class PaperApi {
         // apply changes
         if (!empty($q)) {
             $mresult = Dbl::multi_qe_apply($user->conf->dblink, join(";", $q), $qv);
-            while (($result = $mresult->next()))
-                Dbl::free($result);
+            $mresult->free_all();
         }
         // return results
         return self::taganno_api($user, $qreq, $prow);

@@ -133,8 +133,7 @@ foreach ($users as $c) {
 }
 
 $mresult = Dbl::multi_qe_apply($Conf->dblink, join("; ", $q), $qv);
-while (($result = $mresult->next()))
-    Dbl::free($result);
+$mresult->free_all();
 
 // process papers
 $result = $Conf->qe("select * from Paper");
@@ -158,8 +157,7 @@ foreach ($papers as $p) {
 }
 
 $mresult = Dbl::multi_qe_apply($Conf->dblink, join("; ", $q), $qv);
-while (($result = $mresult->next()))
-    Dbl::free($result);
+$mresult->free_all();
 
 // process action log
 $result = $Conf->qe("select * from ActionLog");
@@ -187,5 +185,4 @@ while (($x = $result->fetch_object())) {
 Dbl::free($result);
 
 $mresult = Dbl::multi_qe_apply($Conf->dblink, join("; ", $q), $qv);
-while (($result = $mresult->next()))
-    Dbl::free($result);
+$mresult->free_all();

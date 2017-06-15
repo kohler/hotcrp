@@ -40,6 +40,10 @@ class Dbl_MultiResult {
             $result = false;
         return Dbl::do_result($this->dblink, $this->flags, $this->qstr, $result);
     }
+    function free_all() {
+        while (($result = $this->next()))
+            Dbl::free($result);
+    }
 }
 
 class Dbl {

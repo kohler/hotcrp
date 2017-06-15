@@ -1060,8 +1060,7 @@ class PaperInfo {
         Dbl::free($result);
         if (count($qs)) {
             $mresult = Dbl::multi_qe($this->conf->dblink, join(";", $qs));
-            while (($result = $mresult->next()))
-                Dbl::free($result);
+            $mresult->free_all();
             unset($this->reviewWordCounts, $this->allReviewWordCounts);
         }
         return $this->_review_word_counts($restriction, $basek, $k, $count + 1);
