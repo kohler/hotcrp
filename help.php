@@ -1294,11 +1294,15 @@ function chair() {
   been submitted.</p></li>
 
 <li><p><strong><a href='" . hoturl("manualassign", "kind=c") . "'>Assign
-  conflicts.</a></strong> You can assign conflicts <a
-  href='" . hoturl("manualassign", "kind=c") . "'>by PC member</a> or, if
-  PC members have entered preferences, <a
-  href='" . hoturl("autoassign", "a=prefconflict") . "'>automatically</a>
-  by searching for preferences of &minus;100 or less.</p></li>
+  conflicts.</a></strong> HotCRP automatically installs the authors’ declared
+  conflicts. HotCRP <i>does not</i> automatically install other conflicts, such
+  as conflicts indicated by PC members’ “Collaborators and other affiliations”
+  or their review preferences. Use <a href='" .
+  hoturl("manualassign", "kind=c") . "'>the manual assignment tool</a> to
+  search for potential missing conflicts, and use <a href='" .
+  hoturl("autoassign", "a=prefconflict") . "'>the automatic assigner</a>
+  to assign conflicts when PC members have entered preferences of &minus;100
+  or less.</p></li>
 
 <li><p><strong><a href='" . hoturl("manualassign") . "'>Assign
   reviews.</a></strong> You can make assignments <a
