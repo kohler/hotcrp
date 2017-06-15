@@ -73,7 +73,7 @@ function saveAssignments($qreq, $revuser) {
     if (!count($qreq->assrev))
         return;
 
-    $result = $Me->paper_result(["paperId" => array_keys($qreq->assrev), "reviewer" => $revuser->contactId]);
+    $result = $Me->paper_result(["paperId" => array_keys($qreq->assrev)]);
 
     $lastPaperId = -1;
     $del = $ins = "";

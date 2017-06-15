@@ -759,7 +759,7 @@ class Review_Assigner extends Assigner {
     function cleanup(AssignmentSet $aset) {
         if ($this->notify) {
             $reviewer = $aset->conf->user_by_id($this->cid);
-            $prow = $aset->conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
+            $prow = $aset->conf->paperRow(["paperId" => $this->pid], $reviewer);
             HotCRPMailer::send_to($reviewer, $this->notify, $prow);
         }
     }
