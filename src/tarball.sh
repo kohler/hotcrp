@@ -164,6 +164,7 @@ src/listsorter.php
 src/mailclasses.php
 src/mailtemplate.php
 src/meetingtracker.php
+src/mergecontacts.php
 src/messages.csv
 src/multiconference.php
 src/paperapi.php
