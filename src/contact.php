@@ -212,6 +212,21 @@ class Contact {
             $this->disabled = true;
     }
 
+    function merge_secondary_properties($x) {
+        foreach (["preferredEmail", "voicePhoneNumber", "country",
+                  "password", "collaborators"] as $k)
+            if (isset($x->$k))
+                $this->$k = $x->$k;
+        foreach (["passwordTime", "passwordUseTime", "creationTime",
+                  "updateTime", "defaultWatch"] as $k)
+            if (isset($x->$k))
+                $this->$k = (int) $x->$k;
+        if (isset($x->lastLogin))
+            $this->activity_at = $this->lastLogin = (int) $x->lastLogin;
+        if ($x->data)
+            $this->data = array_to_object_recursive($x->data);
+    }
+
     // begin changing contactId to cid
     function __get($name) {
         if ($name === "cid")

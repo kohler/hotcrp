@@ -72,6 +72,7 @@ class Conf {
     private $_pc_members_cache = null;
     private $_pc_tags_cache = null;
     private $_pc_members_and_admins_cache = null;
+    private $_pc_members_fully_loaded = false;
     private $_review_form_cache = null;
     private $_abbrev_matcher = null;
     private $_date_format_initialized = false;
@@ -467,7 +468,7 @@ class Conf {
         // other caches
         $sort_by_last = !!get($this->opt, "sortByLastName");
         if (!$this->sort_by_last != !$sort_by_last)
-            $this->_pc_members_cache = null;
+            $this->invalidate_caches("pc");
         $this->sort_by_last = $sort_by_last;
         $this->_api_map = null;
     }
@@ -1253,8 +1254,11 @@ class Conf {
 
     function pc_members() {
         if ($this->_pc_members_cache === null) {
+            $q = "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled";
+            if ($this->_pc_members_fully_loaded)
+                $q = "*";
             $pc = array();
-            $result = $this->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
+            $result = $this->q("select $q from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
             $by_name_text = array();
             $this->_pc_tags_cache = ["pc" => "pc"];
             while ($result && ($row = Contact::fetch($result, $this))) {
@@ -1300,6 +1304,19 @@ class Conf {
         if ($this->_pc_members_and_admins_cache === null)
             $this->pc_members();
         return $this->_pc_members_and_admins_cache;
+    }
+
+    function full_pc_members() {
+        if ($this->_pc_members_cache !== null) {
+            $result = $this->q("select $q from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
+            while ($result && ($row = $result->fetch_object())) {
+                if (($pc = get($this->_pc_members_and_admins_cache, $row->contactId)))
+                    $pc->merge_secondary_properties($row);
+            }
+            Dbl::free($result);
+        }
+        $this->_pc_members_fully_loaded = true;
+        return $this->pc_members();
     }
 
     function pc_member_by_id($cid) {
