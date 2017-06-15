@@ -78,6 +78,8 @@ class Contact {
     private $capabilities = null;
     private $review_tokens_ = null;
     private $activated_ = false;
+    private $_aucollab_matchers = null;
+    private $_aucollab_general_pregexes = null;
 
     // Per-paper DB information, usually null
     public $myReviewType = null;
@@ -3072,6 +3074,35 @@ class Contact {
 
     function can_view_reviewer_tags(PaperInfo $prow = null) {
         return $this->act_pc($prow);
+    }
+
+
+    function aucollab_matchers() {
+        if ($this->_aucollab_matchers === null) {
+            $this->_aucollab_matchers = [];
+            $m = new PaperInfo_AuthorMatcher($this);
+            if (!$m->is_empty())
+                $this->_aucollab_matchers[] = $m;
+            if ((string) $this->collaborators !== "") {
+                foreach (explode("\n", $this->collaborators) as $co)
+                    if ($co !== "") {
+                        $m = new PaperInfo_AuthorMatcher($co);
+                        if (!$m->is_empty())
+                            $this->_aucollab_matchers[] = $m;
+                    }
+            }
+        }
+        return $this->_aucollab_matchers;
+    }
+
+    function aucollab_general_pregexes() {
+        if ($this->_aucollab_general_pregexes === null) {
+            $l = [];
+            foreach ($this->aucollab_matchers() as $matcher)
+                $l[] = $matcher->general_pregexes;
+            $this->_aucollab_general_pregexes = Text::merge_pregexes($l);
+        }
+        return $this->_aucollab_general_pregexes;
     }
 
 

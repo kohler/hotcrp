@@ -1,0 +1,330 @@
+{
+    "the": {
+        "stop": true
+    },
+    "and": {
+        "stop": true
+    },
+    "of": {
+        "stop": true
+    },
+    "none": {
+        "stop": true
+    },
+
+    "a": {
+        "weak": true
+    },
+    "b": {
+        "weak": true
+    },
+    "c": {
+        "weak": true
+    },
+    "d": {
+        "weak": true
+    },
+    "e": {
+        "weak": true
+    },
+    "f": {
+        "weak": true
+    },
+    "g": {
+        "weak": true
+    },
+    "h": {
+        "weak": true
+    },
+    "i": {
+        "weak": true,
+        "alternate": [{"word": "institute", "if": "m t"}]
+    },
+    "j": {
+        "weak": true
+    },
+    "k": {
+        "weak": true
+    },
+    "l": {
+        "weak": true
+    },
+    "m": {
+        "weak": true,
+        "alternate": [
+            {"word": "mit", "if": "i t"},
+            {"word": "massachusetts", "if": "i t"}
+        ]
+    },
+    "n": {
+        "weak": true
+    },
+    "o": {
+        "weak": true
+    },
+    "p": {
+        "weak": true
+    },
+    "q": {
+        "weak": true
+    },
+    "r": {
+        "weak": true
+    },
+    "s": {
+        "weak": true
+    },
+    "t": {
+        "weak": true,
+        "alternate": [{"word": "technology", "if": "m i"}]
+    },
+    "u": {
+        "weak": true
+    },
+    "v": {
+        "weak": true
+    },
+    "w": {
+        "weak": true
+    },
+    "x": {
+        "weak": true
+    },
+    "y": {
+        "weak": true
+    },
+    "z": {
+        "weak": true
+    },
+    "an": {
+        "weak": true
+    },
+    "at": {
+        "weak": true
+    },
+    "jr": {
+        "weak": true
+    },
+    "sr": {
+        "weak": true
+    },
+    "iii": {
+        "weak": true
+    },
+    "inc": {
+        "stop": true
+    },
+
+    "university": {
+        "weak": true
+    },
+    "college": {
+        "weak": true
+    },
+    "univ": {
+        "stop": true
+    },
+    "research": {
+        "weak": true
+    },
+    "institute": {
+        "weak": true,
+        "alternate": [{"word": "i", "if": "massachusetts technology"}]
+    },
+    "technology": {
+        "weak": true,
+        "alternate": [{"word": "t", "if": "massachusetts institute"}]
+    },
+    "science": {
+        "weak": true
+    },
+    "advanced": {
+        "weak": true
+    },
+    "state": {
+        "weak": true
+    },
+    "tech": {
+        "weak": true,
+        "alternate": ["technology"]
+    },
+    "national": {
+        "weak": true
+    },
+    "san": {
+        "weak": true
+    },
+
+    "uc": {
+        "weak": true,
+        "alternate": [
+            "university california",
+            {"word": "ucla", "if": "los angeles"},
+            {"word": "ucsd", "if": "san diego"},
+            {"word": "ucsb", "if": "santa barbara"},
+            {"word": "ucsf", "if": "san francisco"}
+        ]
+    },
+    "california": {
+        "weak": true,
+        "alternate": [
+            {"word": "uc", "if": "university"},
+            {"word": "caltech", "if": "institute technology"}
+        ]
+    },
+    "angeles": {
+        "alternate": [{"word": "ucla", "if": "university california los"}]
+    },
+    "diego": {
+        "alternate": [{"word": "ucsd", "if": "university california san"}]
+    },
+    "barbara": {
+        "alternate": [{"word": "ucsb", "if": "university california santa"}]
+    },
+    "francisco": {
+        "alternate": [{"word": "ucsf", "if": "university california san"}]
+    },
+    "diego": {
+        "alternate": [{"word": "ucsd", "if": "university san diego"}]
+    },
+    "southern": {
+        "weak": true,
+        "alternate": [{"word": "usc", "if": "university southern"}]
+    },
+    "iisc": {
+        "alternate": ["indian institute science"]
+    },
+    "iit": {
+        "alternate": ["indian institute technology"]
+    },
+    "mit": {
+        "alternate": ["massachusetts technology", "m i t"]
+    },
+    "cmu": {
+        "alternate": ["carnegie mellon"]
+    },
+    "carnegie": {
+        "alternate": [{"word": "cmu", "if": "mellon"}]
+    },
+    "indian": {
+        "alternate": [
+            {"word": "iisc", "if": "institute science"},
+            {"word": "iit", "if": "institute technology"}
+        ]
+    },
+    "umass": {
+        "alternate": ["university massachusetts"]
+    },
+    "caltech": {
+        "alternate": ["california institute technology"]
+    },
+    "massachusetts": {
+        "weak": true,
+        "alternate": [
+            {"word": "umass", "if": "university"},
+            {"word": "mit", "if": "technology"},
+            {"word": "m", "if": "institute technology"}
+        ]
+    },
+    "zurich": {
+        "weak": true
+    },
+    "ethz": {
+        "alternate": ["eth zurich"]
+    },
+    "eth": {
+        "alternate": [{"word": "ethz", "if": "zurich"}]
+    },
+    "hp": {
+        "alternate": ["hewlett packard"]
+    },
+    "hewlett": {
+        "alternate": [{"word": "hp", "if": "packard"}]
+    },
+    "hkust": {
+        "alternate": ["hong kong university science technology"]
+    },
+    "kaist": {
+        "alternate": ["korea advanced institute science technology"]
+    },
+    "kong": {
+        "alternate": [{"word": "hkust", "if": "hong university science technology"}]
+    },
+    "korea": {
+        "alternate": [{"word": "kaist", "if": "advanced institute science technology"}]
+    },
+    "mpi": {
+        "alternate": ["max planck institute"]
+    },
+    "planck": {
+        "alternate": [{"word": "mpi", "if": "max institute"}]
+    },
+    "nist": {
+        "alternate": ["national institute standards technology"]
+    },
+    "standards": {
+        "alternate": [{"word": "nist", "if": "national institute technology"}]
+    },
+    "tu": {
+        "weak": true,
+        "alternate": [{"word": "technische universitat"}]
+    },
+    "technische": {
+        "weak": true,
+        "alternate": [{"word": "tu", "if": "universitat"}]
+    },
+    "universitat": {
+        "weak": true
+    },
+    "ucla": {
+        "alternate": ["university california los angeles", "uc los angeles"]
+    },
+    "ucsd": {
+        "alternate": ["university california san diego", "uc san diego"]
+    },
+    "ucsb": {
+        "alternate": ["university california santa barbara", "uc santa barbara"]
+    },
+    "ucsf": {
+        "alternate": ["university california san francisco", "uc san francisco"]
+    },
+    "ucl": {
+        "alternate": ["university college london"]
+    },
+    "london": {
+        "alternate": [{"word": "ucl", "if": "university college"}]
+    },
+    "usc": {
+        "alternate": ["university southern california"]
+    },
+    "unsw": {
+        "alternate": ["university new south wales"]
+    },
+    "wales": {
+        "alternate": [{"word": "unsw", "if": "university new south"}]
+    },
+    "ncsu": {
+        "alternate": ["north carolina state university"]
+    },
+    "carolina": {
+        "alternate": [{"word": "ncsu", "if": "north state university"}]
+    },
+    "ut": {
+        "alternate": [
+            {"word": "university texas", "if": "austin"},
+            {"word": "university texas", "if": "dallas"}
+        ]
+    },
+    "austin": {
+        "alternate": [{"word": "ut", "if": "texas"}]
+    },
+    "dallas": {
+        "alternate": [{"word": "ut", "if": "texas"}]
+    },
+    "uiuc": {
+        "alternate": ["university illinois urbana champaign"]
+    },
+    "urbana": {
+        "alternate": [{"word": "uiuc", "if": "university illinois champaign"}]
+    }
+}

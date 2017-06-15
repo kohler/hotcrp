@@ -139,31 +139,263 @@ class PaperInfo_Author {
     public $email;
     public $affiliation;
     public $contactId = null;
+    public $firstName_deaccent;
+    public $lastName_deaccent;
+    public $affiliation_deaccent;
 
-    function __construct($line) {
-        $a = explode("\t", $line);
-        $this->firstName = count($a) > 0 ? $a[0] : null;
-        $this->lastName = count($a) > 1 ? $a[1] : null;
-        $this->email = count($a) > 2 ? $a[2] : null;
-        $this->affiliation = count($a) > 3 ? $a[3] : null;
+    function __construct($x, $only_tabs = false) {
+        if (is_object($x)) {
+            $this->firstName = $x->firstName;
+            $this->lastName = $x->lastName;
+            $this->email = $x->email;
+            $this->affiliation = $x->affiliation;
+        } else {
+            $a = explode("\t", $x);
+            if (isset($a[1]) || $only_tabs) {
+                $this->firstName = isset($a[0]) ? $a[0] : "";
+                $this->lastName = isset($a[1]) ? $a[1] : "";
+                $this->email = isset($a[2]) ? $a[2] : "";
+                $this->affiliation = isset($a[3]) ? $a[3] : "";
+            } else {
+                if (preg_match('/\A\s*(\S.*?)\s*\((.*)\)(?:[\s,;.]*|\s*(?:-+|–|—|:)\s+.*)\z/', $x, $m)) {
+                    $this->affiliation = trim($m[2]);
+                    $x = $m[1];
+                } else
+                    $this->affiliation = "";
+                list($this->firstName, $this->lastName, $this->email) = Text::split_name($x, true);
+            }
+        }
     }
     function name() {
-        if ($this->firstName && $this->lastName)
+        if ($this->firstName !== "" && $this->lastName !== "")
             return $this->firstName . " " . $this->lastName;
+        else if ($this->lastName !== "")
+            return $this->lastName;
         else
-            return $this->lastName ? : $this->firstName;
+            return $this->firstName;
+    }
+    function nameaff_html() {
+        $n = htmlspecialchars($this->name());
+        if ($this->affiliation)
+            $n .= ' <span class="auaff">(' . htmlspecialchars($this->affiliation) . ')</span>';
+        return $n;
+    }
+    function nameaff_text() {
+        $n = $this->name();
+        if ($this->affiliation)
+            $n .= ' (' . $this->affiliation . ')';
+        return $n;
     }
     function abbrevname_text() {
-        if ($this->lastName) {
+        if ($this->lastName !== "") {
             $u = "";
-            if ($this->firstName && ($u = Text::initial($this->firstName)) != "")
+            if ($this->firstName !== "" && ($u = Text::initial($this->firstName)) != "")
                 $u .= " "; // non-breaking space
             return $u . $this->lastName;
-        } else
-            return $this->firstName ? : $this->email ? : "???";
+        } else if ($this->firstName !== "")
+            return $this->firstName;
+        else if ($this->email !== "")
+            return $this->email;
+        else
+            return "???";
     }
     function abbrevname_html() {
         return htmlspecialchars($this->abbrevname_text());
+    }
+}
+
+class PaperInfo_AuthorMatcher extends PaperInfo_Author {
+    public $firstName_matcher;
+    public $lastName_matcher;
+    public $affiliation_matcher;
+    public $general_pregexes;
+    public $is_author = false;
+
+    private static $wordinfo;
+
+    function __construct($x) {
+        parent::__construct($x);
+
+        $any = [];
+        if ($this->firstName !== "") {
+            preg_match_all('/[a-z0-9]+/', strtolower(UnicodeHelper::deaccent($this->firstName)), $m);
+            $rr = [];
+            foreach ($m[0] as $w) {
+                $any[] = $rr[] = $w;
+                if (ctype_alpha($w[0])) {
+                    if (strlen($w) === 1)
+                        $any[] = $rr[] = $w . "[a-z]*";
+                    else
+                        $any[] = $rr[] = $w[0] . "(?=\\.)";
+                }
+            }
+            if (!empty($rr))
+                $this->firstName_matcher = (object) [
+                    "preg_raw" => '\b(?:' . join("|", $rr) . ')\b',
+                    "preg_utf8" => Text::UTF8_INITIAL_NONLETTERDIGIT . '(?:' . join("|", $rr) . ')' . Text::UTF8_FINAL_NONLETTERDIGIT
+                ];
+        }
+        if ($this->lastName !== "") {
+            preg_match_all('/[a-z0-9]+/', strtolower(UnicodeHelper::deaccent($this->lastName)), $m);
+            $rr = $ur = [];
+            foreach ($m[0] as $w) {
+                $any[] = $w;
+                $rr[] = '(?=.*\b' . $w . '\b)';
+                $ur[] = '(?=.*' . Text::UTF8_INITIAL_NONLETTERDIGIT . $w . Text::UTF8_FINAL_NONLETTERDIGIT . ')';
+            }
+            if (!empty($rr))
+                $this->lastName_matcher = (object) [
+                    "preg_raw" => '\A' . join("", $rr),
+                    "preg_utf8" => '\A' . join("", $ur)
+                ];
+        }
+        if ($this->affiliation === "" && is_string($x) && $x !== "") {
+            self::wordinfo();
+            preg_match_all('/[a-z0-9&]+/', strtolower(UnicodeHelper::deaccent($x)), $m);
+
+            $directs = $alts = [];
+            $any_weak = false;
+            foreach ($m[0] as $w) {
+                $aw = get(self::$wordinfo, $w);
+                if ($aw && isset($aw->stop) && $aw->stop)
+                    continue;
+                $any[] = preg_quote($w);
+                $directs[] = $w;
+                if ($aw && isset($aw->weak) && $aw->weak)
+                    $any_weak = true;
+                if ($aw && isset($aw->alternate)) {
+                    if (is_array($aw->alternate))
+                        $alts = array_merge($alts, $aw->alternate);
+                    else
+                        $alts[] = $aw->alternate;
+                }
+            }
+
+            $rs = $directs;
+            foreach ($alts as $alt) {
+                if (is_object($alt)) {
+                    if (isset($alt->if) && !self::match_if($alt->if, $rs))
+                        continue;
+                    $alt = $alt->word;
+                }
+                foreach (explode(" ", $alt) as $altw)
+                    if ($altw !== "") {
+                        $any[] = preg_quote($altw);
+                        $rs[] = $altw;
+                        $any_weak = true;
+                    }
+            }
+
+            $rex = '{\b(?:' . str_replace('&', '\\&', join("|", $rs)) . ')\b}';
+            $this->affiliation_matcher = [$directs, $any_weak, $rex];
+        }
+
+        if (!empty($any)) {
+            $content = join("|", $any);
+            $this->general_pregexes = (object) [
+                "preg_raw" => '\b(?:' . $content . ')\b',
+                "preg_utf8" => Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
+            ];
+        }
+    }
+    function is_empty() {
+        return !$this->general_pregexes;
+    }
+    function test($au) {
+        if (!$this->general_pregexes)
+            return false;
+        if (is_string($au))
+            $au = new PaperInfo_Author($au);
+        if ($au->firstName_deaccent === null) {
+            $au->firstName_deaccent = $au->lastName_deaccent = false;
+            $au->firstName_deaccent = UnicodeHelper::deaccent($au->firstName);
+            $au->lastName_deaccent = UnicodeHelper::deaccent($au->lastName);
+            $au->affiliation_deaccent = strtolower(UnicodeHelper::deaccent($au->affiliation));
+        }
+        if ($this->lastName_matcher) {
+            if ($au->lastName !== ""
+                && Text::match_pregexes($this->lastName_matcher, $au->lastName, $au->lastName_deaccent)
+                && ($au->firstName === ""
+                    || !$this->firstName_matcher
+                    || Text::match_pregexes($this->firstName_matcher, $au->firstName, $au->firstName_deaccent)))
+                return true;
+        }
+        if ($this->affiliation_matcher && $au->affiliation !== "") {
+            if (self::test_affiliation($au->affiliation_deaccent, $this->affiliation_matcher))
+                return true;
+        }
+        return false;
+    }
+    function highlight($au) {
+        $aff_suffix = null;
+        if (is_object($au)) {
+            if ($au->affiliation)
+                $aff_suffix = "(" . htmlspecialchars($au->affiliation) . ")";
+            $au = $au->nameaff_text();
+        }
+        $au = Text::highlight($au, $this->general_pregexes);
+        if ($aff_suffix && str_ends_with($au, $aff_suffix))
+            $au = substr($au, 0, -strlen($aff_suffix)) . ' <span class="auaff">' . $aff_suffix . '</span>';
+        return $au;
+    }
+
+    static function wordinfo() {
+        global $ConfSitePATH;
+        // XXX validate input JSON
+        if (self::$wordinfo === null)
+            self::$wordinfo = (array) json_decode(file_get_contents("$ConfSitePATH/etc/affiliationmatching.json"));
+        return self::$wordinfo;
+    }
+    private static function test_affiliation($mtext, $md) {
+        if (!$md[1])
+            return preg_match($md[2], $mtext) === 1;
+        else if (!preg_match_all($md[2], $mtext, $m))
+            return false;
+        $result = true;
+        foreach ($md[0] as $w) { // $md[0] contains the requested words (no alternates).
+            $aw = get(self::$wordinfo, $w);
+            $weak = $aw && isset($aw->weak) && $aw->weak;
+            $saw_w = in_array($w, $m[0]);
+            if (!$saw_w && $aw && isset($aw->alternate)) {
+                // We didn't see a requested word; did we see one of its alternates?
+                foreach ($aw->alternate as $alt) {
+                    if (is_object($alt)) {
+                        if (isset($alt->if) && !self::match_if($alt->if, $md[0]))
+                            continue;
+                        $alt = $alt->word;
+                    }
+                    // Check for every word in the alternate list
+                    $saw_w = true;
+                    $altws = explode(" ", $alt);
+                    foreach ($altws as $altw)
+                        if ($altw !== "" && !in_array($altw, $m[0])) {
+                            $saw_w = false;
+                            break;
+                        }
+                    // If all are found, exit; check if the found alternate is strong
+                    if ($saw_w) {
+                        if ($weak && count($altws) == 1) {
+                            $aw2 = get(self::$wordinfo, $alt);
+                            if (!$aw2 || !isset($aw2->weak) || !$aw2->weak)
+                                $weak = false;
+                        }
+                        break;
+                    }
+                }
+            }
+            if ($saw_w) {
+                if (!$weak)
+                    return true;
+            } else
+                $result = false;
+        }
+        return $result;
+    }
+    private static function match_if($iftext, $ws) {
+        foreach (explode(" ", $iftext) as $w)
+            if ($w !== "" && !in_array($w, $ws))
+                return false;
+        return true;
     }
 }
 
@@ -218,6 +450,7 @@ class PaperInfo {
     private $_contact_info = array();
     private $_contact_info_rights_version = 0;
     private $_author_array = null;
+    private $_collaborator_array = null;
     private $_prefs_array = null;
     private $_prefs_cid = null;
     private $_review_id_array = null;
@@ -437,6 +670,28 @@ class PaperInfo {
 
     function can_author_view_decision() {
         return $this->conf->can_all_author_view_decision();
+    }
+
+    function collaborator_list() {
+        if ($this->_collaborator_array === null) {
+            $this->_collaborator_array = [];
+            foreach (explode("\n", $this->collaborators) as $co)
+                if (($co = trim($co)) !== "")
+                    $this->_collaborator_array[] = new PaperInfo_Author($co);
+        }
+        return $this->_collaborator_array;
+    }
+
+    function field_match_pregexes($reg, $field) {
+        $data = $this->$field;
+        $field_deaccent = $field . "_deaccent";
+        if (!isset($this->$field_deaccent)) {
+            if (preg_match('/[\x80-\xFF]/', $data))
+                $this->$field_deaccent = UnicodeHelper::deaccent($data);
+            else
+                $this->$field_deaccent = false;
+        }
+        return Text::match_pregexes($reg, $data, $this->$field_deaccent);
     }
 
     function review_type($contact) {

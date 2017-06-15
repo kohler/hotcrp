@@ -1203,8 +1203,10 @@ class ConflictMatchPaperColumn extends PaperColumn {
             $this->field = "collaborators";
     }
     function prepare(PaperList $pl, $visible) {
+        $this->contact = $pl->reviewer_user();
         $this->highlight = $pl->search->field_highlighter($this->field);
-        return $pl->contact->privChair;
+        $general_pregexes = $this->contact->aucollab_general_pregexes();
+        return $pl->contact->is_manager() && !empty($general_pregexes);
     }
     function header(PaperList $pl, $is_text) {
         $what = $this->field == "authorInformation" ? "authors" : "collaborators";
@@ -1214,32 +1216,22 @@ class ConflictMatchPaperColumn extends PaperColumn {
             return "<strong>Potential conflict in $what</strong>";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $this->highlight == "";
+        return !$pl->contact->allow_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($this->highlight == "")
+        $field = $this->field;
+        if (!$row->field_match_pregexes($this->contact->aucollab_general_pregexes(), $field))
             return "";
-        $text = "";
-        if ($this->field === "collaborators")
-            $lines = explode("\n", $row->collaborators);
-        else
-            $lines = array_map(function ($a) {
-                $at = Text::name_text($a);
-                if ($a->email)
-                    $at .= " <{$a->email}>";
-                if ($a->affiliation)
-                    $at .= " ({$a->affiliation})";
-                return $at;
-            }, $row->author_list());
-        foreach ($lines as $line)
-            if (($line = trim($line)) != "") {
-                $line = Text::highlight($line, $this->highlight, $n);
-                if ($n)
-                    $text .= ($text ? "; " : "") . $line;
-            }
-        if ($text != "")
+        $text = [];
+        $aus = $field === "collaborators" ? $row->collaborator_list() : $row->author_list();
+        foreach ($aus as $au) {
+            foreach ($this->contact->aucollab_matchers() as $matcher)
+                if ($matcher->test($au))
+                    $text[] = $matcher->highlight($au);
+        }
+        if (!empty($text))
             unset($row->folded);
-        return $text;
+        return join("; ", $text);
     }
 }
 

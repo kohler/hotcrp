@@ -17,7 +17,17 @@
     {
         "name": "co",
         "parser": "TextMatch_SearchTerm::parse",
-        "synonym": ["collab", "collaborators"], "has": "any"
+        "synonym": ["collab", "collaborator", "collaborators"], "has": "any"
+    },
+    {
+        "name": "aumatch",
+        "parser": "AuthorMatch_SearchTerm::parse",
+        "synonym": ["authormatch", "authmatch"]
+    },
+    {
+        "name": "comatch",
+        "parser": "AuthorMatch_SearchTerm::parse",
+        "synonym": ["collabmatch", "collaboratormatch", "collaboratorsmatch"]
     },
     {
         "name": "conf",

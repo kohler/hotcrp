@@ -572,21 +572,58 @@ class TextMatch_SearchTerm extends SearchTerm {
         if ($row->$field === ""
             || ($this->authorish && !$srch->user->can_view_authors($row, true)))
             return false;
-        if ($this->nonempty)
+        else if ($this->nonempty)
             return true;
-        $field_deaccent = $field . "_deaccent";
-        if (!isset($row->$field_deaccent)) {
-            if (preg_match('/[\x80-\xFF]/', $row->$field))
-                $row->$field_deaccent = UnicodeHelper::deaccent($row->$field);
-            else
-                $row->$field_deaccent = false;
-        }
-        return Text::match_pregexes($this->regex, $row->$field, $row->$field_deaccent);
+        else
+            return $row->field_match_pregexes($this->regex, $field);
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
         if ($this->regex)
             $srch->regex[$this->type][] = $this->regex;
+    }
+}
+
+class AuthorMatch_SearchTerm extends SearchTerm {
+    private $field;
+    private $matcher;
+
+    function __construct($type, $matcher) {
+        parent::__construct($type);
+        $this->field = TextMatch_SearchTerm::$map[substr($type, 0, 2)];
+        $this->matcher = $matcher;
+    }
+    static function parse($word, SearchWord $sword) {
+        $type = $sword->kwdef->name;
+        if ($word === "any" && $sword->kwexplicit && !$sword->quoted)
+            return new TextMatch_SearchTerm(substr($type, 0, 2), true);
+        $matcher = new PaperInfo_AuthorMatcher($word);
+        if ($matcher->general_pregexes)
+            return new AuthorMatch_SearchTerm($type, $matcher);
+        else
+            return new False_SearchTerm;
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $sqi->add_column($this->field, "Paper.{$this->field}");
+        return "Paper.{$this->field}!=''";
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        $field = $this->field;
+        if ($row->$field === ""
+            || !$srch->user->can_view_authors($row, true))
+            return false;
+        if (!$row->field_match_pregexes($this->matcher->general_pregexes, $field))
+            return false;
+        $l = $this->type === "aumatch" ? $row->author_list() : $row->collaborator_list();
+        foreach ($l as $au)
+            if ($this->matcher->test($au))
+                return true;
+        return false;
+    }
+    function extract_metadata($top, PaperSearch $srch) {
+        parent::extract_metadata($top, $srch);
+        $srch->regex[substr($this->type, 0, 2)][] = $this->matcher->general_pregexes;
     }
 }
 

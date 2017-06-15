@@ -313,6 +313,24 @@ class Text {
             . ($zw ? '\b' : '');
     }
 
+    const UTF8_INITIAL_NONLETTERDIGIT = '(?:\A|(?!\pL|\pN)\X)';
+    const UTF8_INITIAL_NONLETTER = '(?:\A|(?!\pL)\X)';
+    const UTF8_FINAL_NONLETTERDIGIT = '(?:\z|(?!\pL|\pN)(?=\PM))';
+    const UTF8_FINAL_NONLETTER = '(?:\z|(?!\pL)(?=\PM))';
+
+    static function utf8_word_regex($word) {
+        if ($word === "")
+            return "";
+        list($aw, $zw) = array(preg_match('{\A(?:\pL|\pN)}u', $word),
+                               preg_match('{(?:\pL|\pN)\z}u', $word));
+        // Maybe `$word` is not valid UTF-8. Avoid warnings later.
+        if (!$aw && !$zw && !is_valid_utf8($word))
+            return self::utf8_word_regex(convert_to_utf8($word));
+        return ($aw ? self::UTF8_INITIAL_NONLETTERDIGIT : '')
+            . str_replace(" ", '(?:\s|\p{Zs})+', preg_quote($word))
+            . ($zw ? self::UTF8_FINAL_NONLETTERDIGIT : '');
+    }
+
     static function star_text_pregexes($word) {
         if (is_object($word))
             $reg = $word;
@@ -325,12 +343,9 @@ class Text {
             $word = str_replace('\\\\\S*', '\*', $word);
         }
 
-        if (preg_match("/[\x80-\xFF]/", $word))
-            $reg->preg_utf8 = Text::utf8_word_regex($word);
-        else {
+        if (!preg_match("/[\x80-\xFF]/", $word))
             $reg->preg_raw = Text::word_regex($word);
-            $reg->preg_utf8 = Text::utf8_word_regex($word);
-        }
+        $reg->preg_utf8 = Text::utf8_word_regex($word);
         return $reg;
     }
 
@@ -357,21 +372,6 @@ class Text {
     }
 
 
-    const UTF8_INITIAL_NONLETTER = '(?:\A|(?!\pL|\pN)\X)';
-
-    static function utf8_word_regex($word) {
-        if ($word === "")
-            return "";
-        list($aw, $zw) = array(preg_match('{\A(?:\pL|\pN)}u', $word),
-                               preg_match('{(?:\pL|\pN)\z}u', $word));
-        // Maybe `$word` is not valid UTF-8. Avoid warnings later.
-        if (!$aw && !$zw && !is_valid_utf8($word))
-            return self::utf8_word_regex(convert_to_utf8($word));
-        return ($aw ? self::UTF8_INITIAL_NONLETTER : '')
-            . str_replace(" ", '(?:\s|\p{Zs})+', preg_quote($word))
-            . ($zw ? '(?:\z|(?!\pL|\pN)(?=\PM))' : '');
-    }
-
     static function highlight($text, $match, &$n = null) {
         $n = 0;
         if ($match === null || $match === false || $match === "" || $text == "")
@@ -394,7 +394,7 @@ class Text {
 
         $s = $clean_initial_nonletter = false;
         if ($match !== null && $match !== "") {
-            if (str_starts_with($match, self::UTF8_INITIAL_NONLETTER))
+            if (str_starts_with($match, self::UTF8_INITIAL_NONLETTERDIGIT))
                 $clean_initial_nonletter = true;
             if ($match[0] !== "{")
                 $match = "{(" . $match . ")}is" . $flags;

@@ -1162,7 +1162,7 @@ class PaperTable {
         assert(!!$this->editable);
         if (!$this->conf->setting("sub_pcconf"))
             return;
-        $pcm = $this->conf->pc_members();
+        $pcm = $this->conf->full_pc_members();
         if (!count($pcm))
             return;
 
@@ -1207,6 +1207,29 @@ class PaperTable {
             $label = Ht::label($Me->name_html_for($p), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
+            if ($this->prow) {
+                $aumatches = $details = [];
+                if ($this->prow->field_match_pregexes($p->aucollab_general_pregexes(), "authorInformation")) {
+                    foreach ($this->prow->author_list() as $n => $au) {
+                        foreach ($p->aucollab_matchers() as $matcheridx => $matcher) {
+                            if ($matcher->test($au)) {
+                                $aumatches[$n] = "#" . ($n + 1);
+                                $details[] = '<p>Author ' . $matcher->highlight($au)
+                                    . '<br />matches ' . ($matcheridx ? "collaborator " : "PC member ")
+                                    . $matcher->nameaff_html() . '</p>';
+                            }
+                        }
+                    }
+                }
+                if (!empty($aumatches)) {
+                    ksort($aumatches);
+                    $label .= '<div class="pcconfmatch need-tooltip" data-tooltip-class="gray" data-tooltip="'
+                        . str_replace('"', '&quot;', join('', $details))
+                        . '">Possible conflict with '
+                        . pluralx($aumatches, "author")
+                        . " " . commajoin($aumatches) . '</div>';
+                }
+            }
             $ct = defval($conflict, $id, $nonct);
 
             echo '<div class="ctelt"><div class="ctelti clearfix';

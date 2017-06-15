@@ -1159,7 +1159,7 @@ function tooltip(info) {
     }
     function show_bub() {
         if (content && !bub) {
-            bub = make_bubble(content, {color: "tooltip dark", dir: info.dir});
+            bub = make_bubble(content, {color: "tooltip " + info.className, dir: info.dir});
             bub.near(info.near || info.element).hover(tt.enter, tt.exit);
         } else if (content)
             bub.html(content);
@@ -1205,6 +1205,8 @@ function tooltip(info) {
         info.near = j.attr("data-tooltip-near");
     if (info.near)
         info.near = jqnear(info.near)[0];
+    if (info.className == null)
+        info.className = j.attr("data-tooltip-class") || "dark";
 
     function complete(new_content) {
         var tx = window.global_tooltip;

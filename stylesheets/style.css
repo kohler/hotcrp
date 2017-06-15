@@ -1221,8 +1221,12 @@ pre.email {
 td.rpad {
 	padding-right: 2em;
 }
-div.pcconfaff, div.pcrevsum {
+.pcconfaff, .pcconfmatch, div.pcrevsum {
 	font-size: 69%;
+}
+.pcconfmatch {
+	color: #ff6600;
+	font-weight: bold;
 }
 
 tr.pt_topics > td.entry, tr.pt_actions > td,
@@ -2271,10 +2275,6 @@ div.pst span.hint {
 .bubble > .bubcontent {
 	margin: 4px 0;
 }
-.bubble.gray {
-	background-color: rgba(246, 246, 246, 0.88);
-	border: 1px solid #b8b8b8;
-}
 .bubble.edittagbubble {
 	background-color: #222233;
 	border-width: 0;
@@ -2296,6 +2296,11 @@ div.pst span.hint {
 	border: 0 none;
 	font-size: 75%;
 	line-height: 1.25;
+}
+.bubble.gray {
+	background-color: rgba(246, 246, 255, 0.95);
+	color: black;
+	border: 1px solid #b8b8b8;
 }
 .bubble.tooltip {
 	margin: 0 8px;

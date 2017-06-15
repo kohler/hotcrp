@@ -211,24 +211,14 @@ echo '<tr><td colspan="2"><div class="aab aabr">',
 
 // Current PC member information
 if ($reviewer) {
-    $useless_words = ["university", "the", "and", "of", "univ", "none", "a", "an", "at", "jr", "sr", "iii", "inc"];
-
     // search outline from old CRP, done here in a very different way
-    $text = UnicodeHelper::deaccent($reviewer->firstName . " " . $reviewer->lastName . " " . $reviewer->affiliation);
-    preg_match_all('/[-a-z&]{2,}/', strtolower($text), $match);
-    $showco = array_diff(array_unique($match[0]), $useless_words);
-    sort($showco);
-
-    $text .= " " . UnicodeHelper::deaccent($reviewer->collaborators);
-    preg_match_all('/[-a-z&]{2,}/', strtolower($text), $match);
-    $showau = array_diff(array_unique($match[0]), $useless_words);
-    sort($showau);
-
-    $hlsearch = array_merge(array_map(function ($s) {
-        return "co:" . (ctype_alnum($s) ? $s : "\"$s\"");
-    }, $showco), array_map(function ($s) {
-        return "au:" . (ctype_alnum($s) ? $s : "\"$s\"");
-    }, $showau));
+    $hlsearch = [];
+    foreach ($reviewer->aucollab_matchers() as $index => $matcher) {
+        $text = "match:\"" . str_replace("\"", "", $matcher->nameaff_text()) . "\"";
+        $hlsearch[] = "au" . $text;
+        if (!$index && $Conf->setting("sub_collab"))
+            $hlsearch[] = "co" . $text;
+    }
 
     // Topic links
     $interest = [[], []];
@@ -256,16 +246,8 @@ if ($reviewer) {
         echo join("; ", $cos), '</div></div>';
     }
 
-    if ($showau)
-        echo '<div class="f-i"><div class="f-c">Conflict search terms for paper authors</div>',
-            '<div class="f-e">',
-            htmlspecialchars(join(" ", $showau)), "</div></div>";
-    if ($showco)
-        echo '<div class="f-i"><div class="f-c">Conflict search terms for paper collaborators</div>',
-            '<div class="f-e">',
-            htmlspecialchars(join(" ", $showco)), "</div></div>";
     echo '<div class="f-i"><div class="f-e">',
-        '<a href="', hoturl("search", "q=" . urlencode(join(" OR ", $hlsearch) . ($showco ? " show:co" : "") . ($showau ? " show:au" : "")) . '&amp;linkto=assign'),
+        '<a href="', hoturl("search", "q=" . urlencode(join(" OR ", $hlsearch) . " show:au" . ($Conf->setting("sub_collab") ? " show:co" : "")) . '&amp;linkto=assign'),
         '">Search for potential conflicts</a></div></div>';
 
     // main assignment form
