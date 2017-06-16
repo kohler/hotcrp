@@ -449,6 +449,8 @@ class Ht {
 
 
     static function xmsg($type, $content) {
+        if (is_int($type))
+            $type = $type >= 2 ? "merror" : ($type > 0 ? "warning" : "info");
         if (substr($type, 0, 1) === "x")
             $type = substr($type, 1);
         if ($type === "error")

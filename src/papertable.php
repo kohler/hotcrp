@@ -256,8 +256,7 @@ class PaperTable {
     public function messages_for($field) {
         if ($this->edit_status && ($ms = $this->edit_status->messages_at($field, true))) {
             $status = array_reduce($ms, function ($c, $m) { return max($c, $m[2]); }, 0);
-            $statusmap = ["xinfo", "warning", "error"];
-            return Ht::xmsg($statusmap[$status], '<div class="multimessage"><div class="mmm">' . join("</div>\n<div class=\"mmm\">", array_map(function ($m) { return $m[1]; }, $ms)) . '</div></div>');
+            return Ht::xmsg($status, '<div class="multimessage"><div class="mmm">' . join("</div>\n<div class=\"mmm\">", array_map(function ($m) { return $m[1]; }, $ms)) . '</div></div>');
         } else
             return "";
     }
