@@ -588,17 +588,17 @@ if (!$newProfile) {
     }
     if (!$Acct->affiliation)
         $UserStatus->warning_at("affiliation", "Please enter your affiliation (use “None” or “Unaffiliated” if you have none).");
-    if ($Acct->is_pclike() && !$Acct->collaborators)
-        $UserStatus->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
-    if ($Acct->is_pclike() && $Acct->collaborators
-        && $Acct->collaborators !== $Acct->fix_collaborator_affiliations())
-        $UserStatus->warning_at("collaborators", "Please use parentheses to indicate affiliations in your collaborators.");
-    if ($Acct->is_pclike()
-        && ($n = substr_count($Acct->collaborators, "\n")) < 4
-        && $n < 0.75 * preg_match_all('/[,;]/', $Acct->collaborators))
-        $UserStatus->warning_at("collaborators", "Please enter only one potential conflict per line.");
-    if ($Acct->is_pclike() && $Conf->topic_map() && !$Acct->topic_interest_map())
-        $UserStatus->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
+    if ($Acct->is_pc_member()) {
+        if (!$Acct->collaborators)
+            $UserStatus->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
+        else if ($Acct->collaborators !== $Acct->fix_collaborator_affiliations())
+            $UserStatus->warning_at("collaborators", "Please use parentheses to indicate affiliations in your collaborators.");
+        if (($n = substr_count($Acct->collaborators, "\n")) < 4
+            && $n < 0.75 * preg_match_all('/[,;]/', $Acct->collaborators))
+            $UserStatus->warning_at("collaborators", "Please enter only one potential conflict per line.");
+        if ($Conf->topic_map() && !$Acct->topic_interest_map())
+            $UserStatus->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
+    }
 }
 
 
