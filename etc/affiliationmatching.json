@@ -186,6 +186,9 @@
     "software": {
         "weak": true
     },
+    "america": {
+        "weak": true
+    },
 
     "uc": {
         "weak": true,
