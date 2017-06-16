@@ -104,10 +104,9 @@ class ContactSearch {
 
         // split name components
         list($f, $l, $e) = Text::split_name($this->text, true);
-        if ($f === "" && $l === "" && strpos($e, "@") === false)
-            $n = $e;
-        else
-            $n = trim($f . " " . $l);
+        $n = trim($f . " " . $l);
+        if ($e === "" && strpos($n, " ") === false)
+            $e = $n;
 
         // generalize email
         $estar = $e && strpos($e, "*") !== false;

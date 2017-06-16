@@ -233,7 +233,12 @@ function paper_tag_normalize($prow) {
 function xassert_assign($who, $override, $what) {
     $assignset = new AssignmentSet($who, $override);
     $assignset->parse($what);
-    xassert($assignset->execute());
+    $xassert_success = $assignset->execute();
+    xassert($xassert_success);
+    if (!$xassert_success) {
+        foreach ($assignset->errors_text() as $line)
+            fwrite(STDERR, "  $line\n");
+    }
 }
 
 function xassert_assign_fail($who, $override, $what) {
