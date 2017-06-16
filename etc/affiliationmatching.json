@@ -120,6 +120,9 @@
         "weak": true,
         "alternate": ["u"]
     },
+    "george": {
+        "weak": true
+    },
     "college": {
         "weak": true
     },
@@ -178,6 +181,9 @@
         "weak": true
     },
     "usa": {
+        "weak": true
+    },
+    "software": {
         "weak": true
     },
 
@@ -382,6 +388,9 @@
         "alternate": [{"word": "msr", "if": "research"}]
     },
     "cambridge": {
+        "weak": true
+    },
+    "xi": {
         "weak": true
     }
 }
