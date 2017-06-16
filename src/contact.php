@@ -3085,13 +3085,19 @@ class Contact {
         return join("", $x);
     }
 
-    function fix_collaborator_affiliations() {
-        $s = $this->collaborators;
-        if ($s !== "" && strpos($s, "(") === false
-            && preg_match_all('/[-,;]|–|—/', $s) >= 2)
-            $s = preg_replace('/^(.*)(?:[-,;]|–|—)\s*(.*)$/m', '$1 ($2)',
+    static function fix_collaborator_affiliations($s, $hard = false) {
+        if ($s === "" || (!$hard && strpos($s, "(") !== false))
+            return $s;
+        $n = preg_match_all('/[-,;:]|–|—/', $s);
+        if ($n >= 2 && $n >= 3 * substr_count($s, "("))
+            $s = preg_replace('/^(.*)(?:[-,;:]|–|—)\s*(.*)$/m', '$1 ($2)',
                               self::clean_collaborator_lines($s));
         return $s;
+    }
+
+    static function suspect_collaborator_one_line($s) {
+        return $s !== "" && ($n = substr_count($s, "\n")) < 4
+            && $n < 0.75 * preg_match_all('/[,;]/', $s);
     }
 
     function aucollab_matchers() {
@@ -3101,7 +3107,8 @@ class Contact {
             if (!$m->is_empty())
                 $this->_aucollab_matchers[] = $m;
             if ((string) $this->collaborators !== "") {
-                foreach (explode("\n", $this->fix_collaborator_affiliations()) as $co)
+                $collab = self::fix_collaborator_affiliations($this->collaborators);
+                foreach (explode("\n", $collab) as $co)
                     if ($co !== "") {
                         $m = new PaperInfo_AuthorMatcher($co);
                         if (!$m->is_empty())

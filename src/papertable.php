@@ -1052,7 +1052,7 @@ class PaperTable {
         assert(!!$this->editable);
 
         echo $this->editable_papt("collaborators", $this->field_name($sub_pcconf ? "Other conflicts" : "Potential conflicts")),
-            "<div class='paphint'>";
+            '<div class="paphint"><div class="mmm">';
         if ($this->conf->setting("sub_pcconf"))
             echo "List <em>other</em> people and institutions with which
         the authors have conflicts of interest.  This will help us avoid
@@ -1063,7 +1063,7 @@ class PaperTable {
         conflicts of interest. ", $this->conf->message_html("conflictdef"), "
         Be sure to include conflicted <a href='", hoturl("users", "t=pc"), "'>PC members</a>.
         We use this information when assigning PC and external reviews.";
-        echo " <strong>List one conflict per line.</strong> For example: &ldquo;<samp>Jelena Markovic (EPFL)</samp>&rdquo; or, for a whole institution, &ldquo;<samp>EPFL</samp>&rdquo;.</div>",
+        echo "</div><div class=\"mmm\"><strong>List one conflict per line</strong>, using parentheses for affiliations. Examples: “Jelena Markovic (EPFL)”, “University of Southern California”.</div></div>",
             $this->messages_for("collaborators"),
             '<div class="papev">',
             $this->editable_textarea("collaborators"),
@@ -1206,28 +1206,18 @@ class PaperTable {
             $label = Ht::label($Me->name_html_for($p), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
-            if ($this->prow) {
-                $aumatches = $details = [];
-                if ($this->prow->field_match_pregexes($p->aucollab_general_pregexes(), "authorInformation")) {
-                    foreach ($this->prow->author_list() as $n => $au) {
-                        foreach ($p->aucollab_matchers() as $matcheridx => $matcher) {
-                            if ($matcher->test($au)) {
-                                $aumatches[$n] = "#" . ($n + 1);
-                                $details[] = '<p>Author ' . $matcher->highlight($au)
-                                    . '<br />matches ' . ($matcheridx ? "collaborator " : "PC member ")
-                                    . $matcher->nameaff_html() . '</p>';
-                            }
-                        }
-                    }
-                }
-                if (!empty($aumatches)) {
-                    ksort($aumatches);
-                    $label .= '<div class="pcconfmatch need-tooltip" data-tooltip-class="gray" data-tooltip="'
-                        . str_replace('"', '&quot;', join('', $details))
-                        . '">Possible conflict with '
-                        . pluralx($aumatches, "author")
-                        . " " . commajoin($aumatches) . '</div>';
-                }
+            if ($this->prow
+                && !$this->prow->has_conflict($p)
+                && ($details = $this->prow->potential_conflict($p, true))) {
+                usort($details, function ($a, $b) { return strcmp($a[0], $b[0]); });
+                $authors = array_unique(array_map(function ($x) { return $x[0]; }, $details));
+                $authors = array_filter($authors, function ($f) { return $f !== "other conflicts"; });
+                $messages = join("", array_map(function ($x) { return $x[1]; }, $details));
+                $label .= '<div class="pcconfmatch need-tooltip" data-tooltip-class="gray"'
+                    . ' data-tooltip="' . str_replace('"', '&quot;', $messages)
+                    . '">Possible conflict'
+                    . (empty($authors) ? "" : " with " . pluralx($authors, "author") . " " . commajoin($authors))
+                    . '…</div>';
             }
             $ct = defval($conflict, $id, $nonct);
 
@@ -1707,7 +1697,7 @@ class PaperTable {
             $m .= Ht::xmsg("info", $v);
         if ($this->edit_status && $this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable))
-            $m .= Ht::xmsg("warning", "There are problems with the submission. Please scroll through the form and fix them as appropriate.");
+            $m .= Ht::xmsg("warning", "There may be problems with this submission. Please scroll through the form and fix the problems if appropriate.");
         return $m;
     }
 

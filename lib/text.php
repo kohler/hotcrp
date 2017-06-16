@@ -352,6 +352,8 @@ class Text {
     }
 
     static function merge_pregexes($regex) {
+        if (empty($regex))
+            return false;
         $a = $b = [];
         foreach ($regex as $x) {
             $a[] = $x->preg_utf8;
@@ -365,7 +367,9 @@ class Text {
     }
 
     static function match_pregexes($reg, $text, $deaccented_text) {
-        if (!isset($reg->preg_raw))
+        if (!$reg)
+            return false;
+        else if (!isset($reg->preg_raw))
             return !!preg_match('{' . $reg->preg_utf8 . '}ui', $text);
         else if ($deaccented_text)
             return !!preg_match('{' . $reg->preg_utf8 . '}ui', $deaccented_text);

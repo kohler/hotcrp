@@ -229,14 +229,44 @@ class PaperStatus extends MessageSet {
             }
             if (!empty($pcconflicts))
                 $pj->pc_conflicts = (object) $pcconflicts;
+            if ($prow->collaborators)
+                $pj->collaborators = $prow->collaborators;
         }
 
-        if ($prow->collaborators && $can_view_authors)
-            $pj->collaborators = $prow->collaborators;
-        if (!$prow->collaborators && $can_view_authors && $this->conf->setting("sub_collab")
+        // Now produce messages.
+        if (!$this->ignore_msgs
+            && $can_view_authors) {
+            foreach ($prow->author_list() as $au)
+                if (strpos($au->email, "@") === false
+                    && strpos($au->affiliation, "@") !== false) {
+                    $this->warning_at("authors", "You may have entered an email address in the wrong place. The first author field is for author name, the second for email address, and the third for affiliation.");
+                    break;
+                }
+        }
+        if (!$this->ignore_msgs
+            && $can_view_authors
+            && $this->conf->setting("sub_collab")
             && ($prow->outcome <= 0 || ($contact && !$contact->can_view_decision($prow)))) {
             $field = $this->_($this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
-            $this->warning_at("collaborators", $this->_("Enter the authors’ potential conflicts of interest in the %s field. If none of the authors have conflicts, enter “None”.", $field));
+            if (!$prow->collaborators)
+                $this->warning_at("collaborators", $this->_("Enter the authors’ external conflicts of interest in the %s field. If none of the authors have external conflicts, enter “None”.", $field));
+            else {
+                if ($prow->collaborators !== Contact::fix_collaborator_affiliations($prow->collaborators, true))
+                    $this->warning_at("collaborators", $this->_("Please use parentheses to indicate affiliations in the %s field. (It looks like you might have used other punctuation.)", $field));
+                if (Contact::suspect_collaborator_one_line($prow->collaborators))
+                    $this->warning_at("collaborators", $this->_("Please enter one potential conflict per line in the %s field. (It looks like you might have multiple conflicts per line.)", $field));
+            }
+        }
+        if (!$this->ignore_msgs
+            && $can_view_authors
+            && $this->conf->setting("sub_pcconf")
+            && ($prow->outcome <= 0 || ($contact && !$contact->can_view_decision($prow)))) {
+            foreach ($this->conf->full_pc_members() as $p)
+                if (!$prow->has_conflict($p)
+                    && $prow->potential_conflict($p)) {
+                    $this->warning_at("pcconf", $this->_("Some potential PC conflicts of interest are not marked. Please check the highlighted PC members."));
+                    break;
+                }
         }
 
         $this->ignore_msgs = $was_no_msgs;

@@ -79,7 +79,8 @@
         "alternate": [{"word": "technology", "if": "m i"}]
     },
     "u": {
-        "weak": true
+        "weak": true,
+        "alternate": ["university"]
     },
     "v": {
         "weak": true
@@ -116,7 +117,8 @@
     },
 
     "university": {
-        "weak": true
+        "weak": true,
+        "alternate": ["u"]
     },
     "college": {
         "weak": true
@@ -144,6 +146,24 @@
     "state": {
         "weak": true
     },
+    "lab": {
+        "weak": true
+    },
+    "laboratory": {
+        "weak": true
+    },
+    "labs": {
+        "weak": true
+    },
+    "laboratories": {
+        "weak": true
+    },
+    "corp": {
+        "weak": true
+    },
+    "corporation": {
+        "weak": true
+    },
     "tech": {
         "weak": true,
         "alternate": ["technology"]
@@ -152,6 +172,12 @@
         "weak": true
     },
     "san": {
+        "weak": true
+    },
+    "school": {
+        "weak": true
+    },
+    "usa": {
         "weak": true
     },
 
@@ -171,6 +197,9 @@
             {"word": "uc", "if": "university"},
             {"word": "caltech", "if": "institute technology"}
         ]
+    },
+    "colorado": {
+        "weak": true
     },
     "angeles": {
         "alternate": [{"word": "ucla", "if": "university california los"}]
@@ -198,7 +227,7 @@
         "alternate": ["indian institute technology"]
     },
     "mit": {
-        "alternate": ["massachusetts technology", "m i t"]
+        "alternate": ["massachusetts institute technology", "m i t"]
     },
     "cmu": {
         "alternate": ["carnegie mellon"]
@@ -207,6 +236,7 @@
         "alternate": [{"word": "cmu", "if": "mellon"}]
     },
     "indian": {
+        "weak": true,
         "alternate": [
             {"word": "iisc", "if": "institute science"},
             {"word": "iit", "if": "institute technology"}
@@ -225,6 +255,22 @@
             {"word": "mit", "if": "technology"},
             {"word": "m", "if": "institute technology"}
         ]
+    },
+    "pennsylvania": {
+        "weak": true,
+        "alternate": [
+            "penn",
+            {"word": "upenn", "if": "university", "if_not": "state"}
+        ],
+        "sync": "state"
+    },
+    "penn": {
+        "weak": true,
+        "alternate": ["pennsylvania"],
+        "sync": "state"
+    },
+    "upenn": {
+        "alternate": ["university pennsylvania"]
     },
     "zurich": {
         "weak": true
@@ -292,6 +338,7 @@
         "alternate": ["university college london"]
     },
     "london": {
+        "weak": true,
         "alternate": [{"word": "ucl", "if": "university college"}]
     },
     "usc": {
@@ -310,21 +357,31 @@
         "alternate": [{"word": "ncsu", "if": "north state university"}]
     },
     "ut": {
+        "weak": true,
         "alternate": [
             {"word": "university texas", "if": "austin"},
             {"word": "university texas", "if": "dallas"}
         ]
     },
-    "austin": {
-        "alternate": [{"word": "ut", "if": "texas"}]
-    },
-    "dallas": {
-        "alternate": [{"word": "ut", "if": "texas"}]
+    "texas": {
+        "weak": true,
+        "alternate": [
+            {"word": "ut", "if": "university"}
+        ]
     },
     "uiuc": {
         "alternate": ["university illinois urbana champaign"]
     },
     "urbana": {
         "alternate": [{"word": "uiuc", "if": "university illinois champaign"}]
+    },
+    "msr": {
+        "alternate": ["microsoft research"]
+    },
+    "microsoft": {
+        "alternate": [{"word": "msr", "if": "research"}]
+    },
+    "cambridge": {
+        "weak": true
     }
 }

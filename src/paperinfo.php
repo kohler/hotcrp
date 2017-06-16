@@ -134,10 +134,11 @@ class PaperContactInfo {
 }
 
 class PaperInfo_Author {
-    public $firstName;
-    public $lastName;
-    public $email;
-    public $affiliation;
+    public $firstName = "";
+    public $lastName = "";
+    public $email = "";
+    public $affiliation = "";
+    private $_name;
     public $contactId = null;
     public $firstName_deaccent;
     public $lastName_deaccent;
@@ -151,23 +152,33 @@ class PaperInfo_Author {
             $this->affiliation = $x->affiliation;
         } else {
             $a = explode("\t", $x);
-            if (isset($a[1]) || $only_tabs) {
-                $this->firstName = isset($a[0]) ? $a[0] : "";
-                $this->lastName = isset($a[1]) ? $a[1] : "";
-                $this->email = isset($a[2]) ? $a[2] : "";
-                $this->affiliation = isset($a[3]) ? $a[3] : "";
+            if (isset($a[1])) {
+                $this->firstName = $a[0];
+                $this->lastName = $a[1];
+                if (isset($a[3]) && $a[3] !== "") {
+                    $this->email = $a[2];
+                    $this->affiliation = $a[3];
+                } else if (isset($a[2]) && $a[2] !== "") {
+                    if (strpos($a[2], "@") === false)
+                        $this->affiliation = $a[2];
+                    else
+                        $this->email = $a[2];
+                }
             } else {
                 if (preg_match('/\A\s*(\S.*?)\s*\((.*)\)(?:[\s,;.]*|\s*(?:-+|–|—|:)\s+.*)\z/', $x, $m)) {
                     $this->affiliation = trim($m[2]);
                     $x = $m[1];
                 } else
                     $this->affiliation = "";
+                $this->_name = $x;
                 list($this->firstName, $this->lastName, $this->email) = Text::split_name($x, true);
             }
         }
     }
     function name() {
-        if ($this->firstName !== "" && $this->lastName !== "")
+        if ($this->_name !== null)
+            return $this->_name;
+        else if ($this->firstName !== "" && $this->lastName !== "")
             return $this->firstName . " " . $this->lastName;
         else if ($this->lastName !== "")
             return $this->lastName;
@@ -218,6 +229,8 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
     private static $wordinfo;
 
     function __construct($x) {
+        if (is_string($x) && ($hash = strpos($x, "#")) !== false)
+            $x = substr($x, 0, $hash);
         parent::__construct($x);
 
         $any = [];
@@ -279,12 +292,15 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
                     else
                         $alts[] = $aw->alternate;
                 }
+                if ($aw && isset($aw->sync))
+                    $alts[] = $aw->sync;
             }
 
             $rs = $directs;
             foreach ($alts as $alt) {
                 if (is_object($alt)) {
-                    if (isset($alt->if) && !self::match_if($alt->if, $rs))
+                    if ((isset($alt->if) && !self::match_if($alt->if, $rs))
+                        || (isset($alt->if_not) && self::match_if($alt->if_not, $rs)))
                         continue;
                     $alt = $alt->word;
                 }
@@ -300,8 +316,8 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
             $this->affiliation_matcher = [$directs, $any_weak, $rex];
         }
 
-        if (!empty($any)) {
-            $content = join("|", $any);
+        $content = join("|", $any);
+        if ($content !== "" && $content !== "none") {
             $this->general_pregexes = (object) [
                 "preg_raw" => '\b(?:' . $content . ')\b',
                 "preg_utf8" => Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
@@ -370,7 +386,8 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
                 // We didn't see a requested word; did we see one of its alternates?
                 foreach ($aw->alternate as $alt) {
                     if (is_object($alt)) {
-                        if (isset($alt->if) && !self::match_if($alt->if, $md[0]))
+                        if ((isset($alt->if) && !self::match_if($alt->if, $md[0]))
+                            || (isset($alt->if_not) && self::match_if($alt->if_not, $md[0])))
                             continue;
                         $alt = $alt->word;
                     }
@@ -392,6 +409,17 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
                         break;
                     }
                 }
+            }
+            // Check for sync words: e.g., "penn state university" ≠ "university penn"
+            if ($saw_w && $aw && isset($aw->sync)) {
+                foreach (explode(" ", $aw->sync) as $syncw)
+                    if ($syncw !== ""
+                        && (in_array($syncw, $md[0])
+                            ? !in_array($syncw, $m[0])
+                            : preg_match('/\b' . $syncw . '\b/', $mtext))) {
+                        $saw_w = false;
+                        break;
+                    }
             }
             if ($saw_w) {
                 if (!$weak)
@@ -461,6 +489,7 @@ class PaperInfo {
     private $_contact_info_rights_version = 0;
     private $_author_array = null;
     private $_collaborator_array = null;
+    private $_collaborator_general_pregexes = null;
     private $_prefs_array = null;
     private $_prefs_cid = null;
     private $_review_id_array = null;
@@ -678,18 +707,60 @@ class PaperInfo {
         return $this->conflict_type($contact) >= CONFLICT_AUTHOR;
     }
 
-    function can_author_view_decision() {
-        return $this->conf->can_all_author_view_decision();
-    }
-
-    function collaborator_list() {
-        if ($this->_collaborator_array === null) {
+    function collaborator_list($matcher = false) {
+        if ($this->_collaborator_array === null
+            || (!empty($this->_collaborator_array) && $matcher
+                && !($this->_collaborator_array[0] instanceof PaperInfo_AuthorMatcher))) {
+            $klass = $matcher ? "PaperInfo_AuthorMatcher" : "PaperInfo_Author";
             $this->_collaborator_array = [];
             foreach (explode("\n", $this->collaborators) as $co)
-                if (($co = trim($co)) !== "")
-                    $this->_collaborator_array[] = new PaperInfo_Author($co);
+                if ($co !== "") {
+                    $m = new $klass($co);
+                    if (!$matcher || !$m->is_empty())
+                        $this->_collaborator_array[] = $m;
+                }
         }
         return $this->_collaborator_array;
+    }
+
+    function collaborator_general_pregexes() {
+        if ($this->_collaborator_general_pregexes === null) {
+            $m = array_map(function ($m) { return $m->general_pregexes; }, $this->collaborator_list(true));
+            $this->_collaborator_general_pregexes = Text::merge_pregexes($m);
+        }
+        return $this->_collaborator_general_pregexes;
+    }
+
+    function potential_conflict(Contact $user, $full_info = false) {
+        $details = [];
+        if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
+            foreach ($this->author_list() as $n => $au)
+                foreach ($user->aucollab_matchers() as $matcheridx => $matcher) {
+                    if ($matcher->test($au)) {
+                        if ($full_info)
+                            $details[] = ["#" . ($n + 1), '<div class="mmm">Author ' . $matcher->highlight($au) . '<br />matches ' . ($matcheridx ? "PC collaborator " : "PC member ") . $matcher->nameaff_html() . '</div>'];
+                        else
+                            return true;
+                    }
+                }
+        }
+        if ((string) $this->collaborators !== "") {
+            $au = $user->aucollab_matchers()[0];
+            $autext = $au->nameaff_text();
+            $autext_deaccent = false;
+            if (preg_match('/[\x80-\xFF]/', $autext))
+                $autext_deaccent = UnicodeHelper::deaccent($autext);
+            if (Text::match_pregexes($this->collaborator_general_pregexes(), $autext, $autext_deaccent)) {
+                foreach ($this->collaborator_list(true) as $matcher)
+                    if ($matcher->test($au)) {
+                        if ($full_info)
+                            $details[] = ["other conflicts", '<div class="mmm">PC member ' . $matcher->highlight($au) . '<br />matches other conflict ' . $matcher->nameaff_html() . '</div>'];
+                        else
+                            return true;
+                    }
+            }
+        }
+        return $details;
     }
 
     function field_match_pregexes($reg, $field) {
@@ -702,6 +773,10 @@ class PaperInfo {
                 $this->$field_deaccent = false;
         }
         return Text::match_pregexes($reg, $data, $this->$field_deaccent);
+    }
+
+    function can_author_view_decision() {
+        return $this->conf->can_all_author_view_decision();
     }
 
     function review_type($contact) {

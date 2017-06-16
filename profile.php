@@ -591,11 +591,10 @@ if (!$newProfile) {
     if ($Acct->is_pc_member()) {
         if (!$Acct->collaborators)
             $UserStatus->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
-        else if ($Acct->collaborators !== $Acct->fix_collaborator_affiliations())
-            $UserStatus->warning_at("collaborators", "Please use parentheses to indicate affiliations in your collaborators.");
-        if (($n = substr_count($Acct->collaborators, "\n")) < 4
-            && $n < 0.75 * preg_match_all('/[,;]/', $Acct->collaborators))
-            $UserStatus->warning_at("collaborators", "Please enter only one potential conflict per line.");
+        else if ($Acct->collaborators !== Contact::fix_collaborator_affiliations($Acct->collaborators, true))
+            $UserStatus->warning_at("collaborators", "Please use parentheses to indicate affiliations in your collaborators. (It looks like you might have used other punctuation.)");
+        if (Contact::suspect_collaborator_one_line($Acct->collaborators))
+            $UserStatus->warning_at("collaborators", "Please enter one potential conflict per line.");
         if ($Conf->topic_map() && !$Acct->topic_interest_map())
             $UserStatus->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
     }

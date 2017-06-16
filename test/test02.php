@@ -347,6 +347,10 @@ xassert_eqq($aum->test("Butt (MIT)"), true);
 xassert_eqq($aum->test("Butt (M.I.T.)"), true);
 xassert_eqq($aum->test("Butt (Indian Institute of Technology)"), false);
 xassert_eqq($aum->test("Butt (Institute of Technology)"), false);
+$aum = new PaperInfo_AuthorMatcher("Indian Institute of Science");
+xassert_eqq($aum->test("Butt (Institute of Technology)"), false);
+xassert_eqq($aum->test("Butt (Indian Institute of Technology)"), false);
+xassert_eqq($aum->test("Butt (Indian Institute of Science)"), true);
 $aum = new PaperInfo_AuthorMatcher("D. Thin (Captain Poop)");
 xassert_eqq($aum->test("D. Thin"), true);
 xassert_eqq($aum->test("D.X. Thin"), true);
@@ -413,6 +417,14 @@ xassert_eqq($aum->test("Butt (UC San Diego)"), true);
 xassert_eqq($aum->test("Butt (UC Santa Barbara)"), false);
 xassert_eqq($aum->test("Butt (UC San Diego)"), true);
 xassert_eqq($aum->test("Butt (UC San Diego)"), true);
+$aum = new PaperInfo_AuthorMatcher("UT Austin");
+xassert_eqq($aum->test("Sepideh Maleki (Texas State University)"), false);
+xassert_eqq($aum->test("Sepideh Maleki (University of Texas at Austin)"), true);
+$aum = new PaperInfo_AuthorMatcher("University of Pennsylvania");
+xassert_eqq($aum->test("Sepideh Maleki (Penn State)"), false);
+xassert_eqq($aum->test("Sepideh Maleki (Pennsylvania State University)"), false);
+xassert_eqq($aum->test("Sepideh Maleki (UPenn)"), true);
+xassert_eqq($aum->test("Sepideh Maleki (University of Pennsylvania)"), true);
 
 
 // i18n messages
