@@ -359,8 +359,8 @@ span.hastitle {
 
 /* multimessage */
 .mmm {
-	margin-top: 0.5em;
-	margin-bottom: 0.5em;
+	margin-top: 0.3em;
+	margin-bottom: 0.3em;
 }
 .mmm:first-child {
 	margin-top: 0;
@@ -1091,11 +1091,13 @@ td.lentry.error input, div.error input, input.error, textarea.error {
 div.error > div.f-c, .papet.error > .papfn, .revet.error > .revfn {
 	color: #ff0000;
 }
+/* NB these rules must come after other color-setting rules */
 input.error,
 div.error input, td.error input, tr.error > td input,
 div.error textarea, td.error textarea, tr.error > td textarea,
 div.error > div.f-c,
-span.error {
+span.error,
+h2.error, h3.error, h4.error, h5.error, h6.error {
 	color: #ff0000;
 }
 .dimerror, .wordsovertext {

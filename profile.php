@@ -814,7 +814,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
                 $checked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
                 echo '<td class="ti_interest">', Ht::radio_h("ti$id", $j, $checked), "</td>";
             }
-            echo "</td></tr>\n";
+            echo "</tr>\n";
         }
         echo "    </tbody></table></div>\n";
     }

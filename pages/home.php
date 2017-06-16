@@ -25,10 +25,10 @@ if (!isset($_REQUEST["email"]) || !isset($_REQUEST["action"]))
 // signout
 if (isset($_REQUEST["signout"]))
     LoginHelper::logout(true);
-else if (isset($_REQUEST["signin"]) && !opt("httpAuthLogin"))
+else if (isset($_REQUEST["signin"]) && !$Conf->opt("httpAuthLogin"))
     LoginHelper::logout(false);
 // signin
-if (opt("httpAuthLogin"))
+if ($Conf->opt("httpAuthLogin"))
     LoginHelper::check_http_auth();
 else if (isset($_REQUEST["signin"]))
     LoginHelper::check_login();
@@ -52,16 +52,15 @@ if (!$Me->is_empty() && $Me->disabled) {
 
 // perhaps redirect through account
 function need_profile_redirect($user) {
-    global $Conf;
     if (!get($user, "firstName") && !get($user, "lastName"))
         return true;
-    if (opt("noProfileRedirect"))
+    if ($user->conf->opt("noProfileRedirect"))
         return false;
     if (!$user->affiliation)
         return true;
     if ($user->is_pc_member() && !$user->has_review()
         && (!$user->collaborators
-            || ($Conf->topic_map() && !$user->topic_interest_map())))
+            || ($user->conf->topic_map() && !$user->topic_interest_map())))
         return true;
     return false;
 }
@@ -151,10 +150,11 @@ $links = [];
 $sep = "";
 if ($Me->has_reportable_deadline())
     $links[] = '<li><a href="' . hoturl("deadlines") . '">Deadlines</a></li>';
-if ($Me->isPC || !opt("privatePC"))
+if ($Me->isPC || !$Conf->opt("privatePC"))
     $links[] = '<li><a href="' . hoturl("users", "t=pc") . '">Program committee</a></li>';
-if (opt("conferenceSite") && opt("conferenceSite") != opt("paperSite"))
-    $links[] = '<li><a href="' . opt("conferenceSite") . '">Conference site</a></li>';
+if ($Conf->opt("conferenceSite")
+    && $Conf->opt("conferenceSite") != $Conf->opt("paperSite"))
+    $links[] = '<li><a href="' . $Conf->opt("conferenceSite") . '">Conference site</a></li>';
 if ($Conf->can_all_author_view_decision()) {
     list($n, $nyes) = $Conf->count_submitted_accepted();
     $links[] = '<li>' . $Conf->_("%d papers accepted out of %d submitted.", $nyes, $n) . '</li>';
@@ -178,8 +178,8 @@ if (($v = $Conf->message_html("home")))
 if (!$Me->isPC) {
     echo '<div class="homegrp">
 Welcome to the ', htmlspecialchars($Conf->full_name()), " submissions site.";
-    if (opt("conferenceSite"))
-        echo " For general conference information, see <a href=\"", htmlspecialchars(opt("conferenceSite")), "\">", htmlspecialchars(opt("conferenceSite")), "</a>.";
+    if ($Conf->opt("conferenceSite"))
+        echo " For general conference information, see <a href=\"", htmlspecialchars($Conf->opt("conferenceSite")), "\">", htmlspecialchars($Conf->opt("conferenceSite")), "</a>.";
     echo '</div>';
 }
 if (!$Me->has_email() || isset($_REQUEST["signin"])) {
@@ -191,8 +191,8 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         '<div class="f-contain">';
     if ($Me->is_empty() || isset($_REQUEST["signin"]))
         echo Ht::hidden("testsession", 1);
-    if (opt("contactdb_dsn") && opt("contactdb_loginFormHeading"))
-        echo opt("contactdb_loginFormHeading");
+    if ($Conf->opt("contactdb_dsn") && $Conf->opt("contactdb_loginFormHeading"))
+        echo $Conf->opt("contactdb_loginFormHeading");
     $password_reset = $Conf->session("password_reset");
     if ($password_reset && $password_reset->time < $Now - 900) {
         $password_reset = null;
@@ -200,7 +200,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
     }
     echo '<div class="f-ii">
   <div class="f-c', $email_class, '">',
-        (opt("ldapLogin") ? "Username" : "Email"),
+        ($Conf->opt("ldapLogin") ? "Username" : "Email"),
         '</div>
   <div class="f-e', $email_class, '">',
         Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
@@ -215,7 +215,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         "</div>\n</div>\n";
     if ($password_reset)
         echo Ht::unstash_script("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode($password_reset->password) . ")})");
-    if (opt("ldapLogin"))
+    if ($Conf->opt("ldapLogin"))
         echo Ht::hidden("action", "login");
     else {
         echo "<div class='f-i'>\n  ",
