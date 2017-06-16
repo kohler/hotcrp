@@ -240,6 +240,8 @@ class Text {
             if (preg_match('%^\s*\"?(.*?)\"?\s*<([^<>]+)>\s*$%', $name, $m)
                 || preg_match('%^\s*\"(.*)\"\s+(\S+)\s*$%', $name, $m))
                 list($name, $ret[2]) = array($m[1], $m[2]);
+            else if (strpos($name, "@") === false)
+                /* skip */;
             else if (!preg_match('%^\s*(.*?)\s+(\S+)\s*$%', $name, $m))
                 return array("", "", trim($name));
             else if (strpos($m[2], "@") !== false)

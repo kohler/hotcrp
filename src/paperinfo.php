@@ -176,15 +176,19 @@ class PaperInfo_Author {
     }
     function nameaff_html() {
         $n = htmlspecialchars($this->name());
+        if ($n === "")
+            $n = htmlspecialchars($this->email);
         if ($this->affiliation)
             $n .= ' <span class="auaff">(' . htmlspecialchars($this->affiliation) . ')</span>';
-        return $n;
+        return ltrim($n);
     }
     function nameaff_text() {
         $n = $this->name();
+        if ($n === "")
+            $n = $this->email;
         if ($this->affiliation)
             $n .= ' (' . $this->affiliation . ')';
-        return $n;
+        return ltrim($n);
     }
     function abbrevname_text() {
         if ($this->lastName !== "") {
