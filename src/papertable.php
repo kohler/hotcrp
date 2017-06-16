@@ -1012,8 +1012,8 @@ class PaperTable {
             $control = "contact_" . html_id_encode($au->email);
             $checked = $this->useRequest ? $this->qreq[$control] : true;
             echo '<tr><td class="lcaption">', $title, '</td>',
-                '<td>', Ht::checkbox($control, Text::name_text($au), $checked),
-                '&nbsp;</td><td>', Ht::label(Text::user_html($au)), '</td>',
+                '<td class="nb">', Ht::checkbox($control, Text::name_text($au), $checked),
+                ' </td><td>', Ht::label(Text::user_html($au)), '</td>',
                 '</tr>';
             $title = "";
         }
@@ -1242,10 +1242,10 @@ class PaperTable {
             } else {
                 $checked = $ct->is_conflict();
                 $disabled = $checked && ($ct->is_author() || (!$ct->is_author_mark() && !$this->admin));
-                echo '<table><tr><td>',
+                echo '<table><tr><td class="nb">',
                     Ht::checkbox("pcc$id", $checked ? $ct->value : CONFLICT_AUTHORMARK,
                                  $checked, array("id" => "pcc$id", "disabled" => $disabled)),
-                    '&nbsp;</td><td>', $label, '</td></tr></table>';
+                    ' </td><td>', $label, '</td></tr></table>';
             }
             echo "</div></div>";
         }
