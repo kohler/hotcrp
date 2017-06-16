@@ -24,8 +24,7 @@ class PaperStatus extends MessageSet {
     function __construct(Conf $conf, Contact $contact = null, $options = array()) {
         $this->conf = $conf;
         $this->contact = $contact;
-        foreach (array("no_email", "allow_error",
-                       "forceShow", "export_ids", "hide_docids",
+        foreach (array("no_email", "forceShow", "export_ids", "hide_docids",
                        "export_content", "disable_users",
                        "allow_any_content_file") as $k)
             if (array_key_exists($k, $options))

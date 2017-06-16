@@ -154,8 +154,9 @@ foreach ($jp as &$j) {
             fwrite(STDERR, $pidtext . ": ");
     }
     $ps = new PaperStatus($Conf, null, ["no_email" => true,
-                                        "disable_users" => $disable_users,
-                                        "allow_error" => ["topics", "options"]]);
+                                        "disable_users" => $disable_users]);
+    $ps->allow_error_at("topics", true);
+    $ps->allow_error_at("options", true);
     $ps->on_document_import("on_document_import");
     $pid = $ps->save_paper_json($j);
     if ($pid && str_starts_with($pidtext, "new")) {

@@ -65,9 +65,9 @@ foreach ($content as $email => $cj) {
     if ($acct)
         fwrite(STDOUT, "Saved account $acct->email.\n");
     else {
-        foreach ($us->error_messages() as $msg) {
+        foreach ($us->errors() as $msg) {
             fwrite(STDERR, $msg . "\n");
-            if (!isset($arg["m"]) && $us->has_error("email_inuse"))
+            if (!isset($arg["m"]) && $us->has_error_at("email_inuse"))
                 fwrite(STDERR, "(Use --modify to modify existing users.)\n");
         }
         $status = 1;

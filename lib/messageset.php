@@ -5,10 +5,11 @@
 
 class MessageSet {
     public $ignore_msgs = false;
-    public $allow_error = [];
-    public $werror = [];
+    private $allow_error;
+    private $werror;
     private $errf;
     private $msgs;
+    private $canonfield;
     public $has_warning;
     public $has_error;
 
@@ -24,10 +25,39 @@ class MessageSet {
         $this->has_warning = $this->has_error = false;
     }
 
+    function translate_field($src, $dst) {
+        $this->canonfield[$src] = $this->canonical_field($dst);
+    }
+    function canonical_field($field) {
+        if ($field && $this->canonfield && isset($this->canonfield[$field]))
+            $field = $this->canonfield[$field];
+        return $field;
+    }
+    function allow_error_at($field, $set = null) {
+        $field = $this->canonical_field($field);
+        if ($set === null)
+            return $this->allow_error && isset($this->allow_error[$field]);
+        else if ($set)
+            $this->allow_error[$field] = true;
+        else if ($this->allow_error)
+            unset($this->allow_error[$field]);
+    }
+    function werror_at($field, $set = null) {
+        $field = $this->canonical_field($field);
+        if ($set === null)
+            return $this->werror && isset($this->werror[$field]);
+        else if ($set)
+            $this->werror[$field] = true;
+        else if ($this->werror)
+            unset($this->werror[$field]);
+    }
+
     function msg($field, $msg, $status) {
         if ($this->ignore_msgs)
             return;
-        if ($field && $status == self::WARNING && $this->werror && isset($this->werror, $field))
+        $this->canonfield && ($field = $this->canonical_field($field));
+        if ($status == self::WARNING
+            && $field && $this->werror && isset($this->werror[$field]))
             $status = self::ERROR;
         if ($field)
             $this->errf[$field] = max(get($this->errf, $field, 0), $status);
@@ -35,7 +65,8 @@ class MessageSet {
             $this->msgs[] = [$field, $msg, $status];
         if ($status == self::WARNING)
             $this->has_warning = true;
-        if ($status == self::ERROR && (!$field || !get($this->allow_error, $field)))
+        if ($status == self::ERROR
+            && !($field && $this->allow_error && isset($this->allow_error[$field])))
             $this->has_error = true;
     }
     function error_at($field, $msg) {
@@ -58,9 +89,11 @@ class MessageSet {
         return $this->has_warning || $this->has_error;
     }
     function has_error_at($field) {
+        $this->canonfield && ($field = $this->canonical_field($field));
         return get($this->errf, $field, 0) > 1;
     }
     function has_problem_at($field) {
+        $this->canonfield && ($field = $this->canonical_field($field));
         return get($this->errf, $field, 0) > 0;
     }
 
@@ -102,6 +135,7 @@ class MessageSet {
     function messages_at($field, $include_fields = false) {
         if (empty($this->msgs) || !isset($this->errf[$field]))
             return [];
+        $this->canonfield && ($field = $this->canonical_field($field));
         $ms = array_filter($this->msgs, function ($mx) use ($field) { return $mx[0] === $field; });
         if ($include_fields)
             return $ms;

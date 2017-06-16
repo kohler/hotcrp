@@ -171,9 +171,9 @@ function web_request_as_json($cj) {
         if ($pw === "" && $pw2 === "")
             /* do nothing */;
         else if ($pw !== $pw2)
-            $UserStatus->set_error("password", "Those passwords do not match.");
+            $UserStatus->error_at("password", "Those passwords do not match.");
         else if (!Contact::valid_password($pw))
-            $UserStatus->set_error("password", "Invalid new password.");
+            $UserStatus->error_at("password", "Invalid new password.");
         else if (!$Acct || $Me->can_change_password(null)) {
             $cj->old_password = null;
             $cj->new_password = $pw;
@@ -182,7 +182,7 @@ function web_request_as_json($cj) {
             if ($Acct->check_password($cj->old_password))
                 $cj->new_password = $pw;
             else
-                $UserStatus->set_error("password", "Incorrect current password. New password ignored.");
+                $UserStatus->error_at("password", "Incorrect current password. New password ignored.");
         }
     }
 }
@@ -195,14 +195,14 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
     // check for missing fields
     UserStatus::normalize_name($cj);
     if ($newProfile && !isset($cj->email)) {
-        $user_status->set_error("email", "Email address required.");
+        $user_status->error_at("email", "Email address required.");
         return false;
     }
 
     // check email
     if ($newProfile || $cj->email != $Acct->email) {
         if ($Acct && $Acct->data("locked"))
-            return $user_status->set_error("email", "This account is locked, so you can’t change its email address.");
+            return $user_status->error_at("email", "This account is locked, so you can’t change its email address.");
         else if (($new_acct = $Conf->user_by_email($cj->email))) {
             if ($allow_modification)
                 $cj->id = $new_acct->contactId;
@@ -212,15 +212,15 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
                     $msg = str_replace("an account", "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
                 if (!$newProfile)
                     $msg .= " You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.";
-                return $user_status->set_error("email", $msg);
+                return $user_status->error_at("email", $msg);
             }
         } else if ($Conf->external_login()) {
             if ($cj->email === "")
-                return $user_status->set_error("email", "Not a valid username.");
+                return $user_status->error_at("email", "Not a valid username.");
         } else if ($cj->email === "")
-            return $user_status->set_error("email", "You must supply an email address.");
+            return $user_status->error_at("email", "You must supply an email address.");
         else if (!validate_email($cj->email))
-            return $user_status->set_error("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
+            return $user_status->error_at("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
         if (!$newProfile && !$Me->privChair) {
             $old_preferredEmail = $Acct->preferredEmail;
             $Acct->preferredEmail = $cj->email;
@@ -354,7 +354,7 @@ function parseBulkFile($text, $filename) {
         if (($saved_user = save_user($cj, $ustatus, null, true)))
             $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
                 . Text::user_html_nolink($saved_user) . "</a>";
-        foreach ($ustatus->error_messages() as $e)
+        foreach ($ustatus->errors() as $e)
             $errors[] = "<span class='lineno'>" . $filename . $csv->lineno() . ":</span> " . $e;
     }
 
@@ -400,14 +400,14 @@ else if (isset($Qreq->bulkregister) && $newProfile && $Qreq->has_file("bulk")) {
     if ($newProfile)
         $UserStatus->send_email = true;
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
-    if ($UserStatus->nerrors)
-        Conf::msg_error('<div class="mmm">' . join('</div><div class="mmm">', $UserStatus->error_messages()) . "</div>");
+    if ($UserStatus->has_error)
+        Conf::msg_error('<div class="mmm">' . join('</div><div class="mmm">', $UserStatus->errors()) . "</div>");
     else {
         if ($newProfile)
             $Conf->confirmMsg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.");
         else {
-            if ($UserStatus->error_messages())
-                $Conf->confirmMsg('Profile updated. <div class="mmm">' . join('</div><div class="mmm">', $UserStatus->error_messages()) . "</div>");
+            if ($UserStatus->errors())
+                $Conf->confirmMsg('Profile updated. <div class="mmm">' . join('</div><div class="mmm">', $UserStatus->errors()) . "</div>");
             else
                 $Conf->confirmMsg("Profile updated.");
             if ($Acct->contactId == $Me->contactId)
@@ -526,7 +526,7 @@ function contact_value($key, $field = null) {
 
 function fcclass($field = false) {
     global $UserStatus;
-    if ($field && $UserStatus->has_error($field))
+    if ($field && $UserStatus->has_problem_at($field))
         return "f-c error";
     else
         return "f-c";
@@ -534,7 +534,7 @@ function fcclass($field = false) {
 
 function feclass($field = false) {
     global $UserStatus;
-    if ($field && $UserStatus->has_error($field))
+    if ($field && $UserStatus->has_problem_at($field))
         return "f-e error";
     else
         return "f-e";
@@ -575,10 +575,10 @@ if ($newProfile)
 else
     $Conf->header($Me->email == $Acct->email ? "Profile" : "Account profile", "account", actionBar("account", $Acct));
 $useRequest = !$Acct->has_database_account() && isset($Qreq->watchcomment);
-if ($UserStatus->nerrors)
+if ($UserStatus->has_error)
     $need_highlight = $useRequest = true;
 
-if (!$UserStatus->nerrors && $Conf->session("freshlogin") === "redirect") {
+if (!$UserStatus->has_error && $Conf->session("freshlogin") === "redirect") {
     $Conf->save_session("freshlogin", null);
     $ispc = $Acct->is_pclike();
     $msgs = array();
@@ -706,7 +706,7 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
 
 if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct)) {
     echo '<div id="foldpassword" class="',
-        ($UserStatus->has_error("password") ? "fold3o" : "fold3c"),
+        ($UserStatus->has_problem_at("password") ? "fold3o" : "fold3c"),
         '" style="margin-top:20px">';
     // Hit a button to change your password
     echo Ht::js_button("Change password", "fold('password',null,3)", array("class" => "btn fn3"));
@@ -896,7 +896,7 @@ if ($newProfile) {
     echo '</div><div class="fx9">';
     echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
                   array("id" => "accountform", "autocomplete" => "off")),
-        "<div class='profiletext aahc", ($UserStatus->nerrors ? " alert" : ""), "'>\n",
+        "<div class='profiletext aahc", ($UserStatus->has_error ? " alert" : ""), "'>\n",
         // Don't want chrome to autofill the password changer.
         // But chrome defaults to autofilling the password changer
         // unless we supply an earlier password input.

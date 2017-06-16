@@ -116,7 +116,7 @@ class MergeContacts extends MessageSet {
         else if ($this->oldu->contactId) {
             $user_status = new UserStatus(["send_email" => false]);
             $user_status->save($user_status->user_to_json($this->newu), $this->oldu);
-            foreach ($user_status->error_messages() as $e)
+            foreach ($user_status->errors() as $e)
                 $this->add_error($e);
         }
         return !$this->has_error;

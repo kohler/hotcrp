@@ -243,7 +243,7 @@ function do_tags() {
     foreach ($users as $cid => $cj) {
         $us = new UserStatus(array("send_email" => false));
         if (!$us->save($cj))
-            $errors = array_merge($errors, $us->error_messages());
+            $errors = array_merge($errors, $us->errors());
     }
     Dbl::qe("unlock tables");
     Conf::$no_invalidate_caches = false;

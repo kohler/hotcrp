@@ -3,13 +3,10 @@
 // HotCRP is Copyright (c) 2008-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class UserStatus {
+class UserStatus extends MessageSet {
     private $errf;
-    private $errmsg;
-    public $nerrors;
     public $send_email = null;
     private $no_deprivilege_self = false;
-    private $allow_error = array();
 
     static private $field_synonym_map = array("preferredEmail" => "preferred_email",
                        "voicePhoneNumber" => "phone",
@@ -19,16 +16,12 @@ class UserStatus {
                        "contactTags" => "tags", "uemail" => "email");
 
     function __construct($options = array()) {
-        foreach (array("send_email", "allow_error", "no_deprivilege_self") as $k)
+        parent::__construct();
+        foreach (array("send_email", "no_deprivilege_self") as $k)
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
-        $this->clear();
-    }
-
-    function clear() {
-        $this->errf = array();
-        $this->errmsg = array();
-        $this->nerrors = 0;
+        foreach (self::$field_synonym_map as $src => $dst)
+            $this->translate_field($src, $dst);
     }
 
     function user_to_json($user) {
@@ -102,23 +95,6 @@ class UserStatus {
         return $cj;
     }
 
-    function set_error($field, $html) {
-        if ($field)
-            $this->errf[$field] = true;
-        $this->errmsg[] = $html;
-        if (!$field
-            || !$this->allow_error
-            || array_search($field, $this->allow_error) === false)
-            ++$this->nerrors;
-        return false;
-    }
-
-    private function set_warning($field, $html) {
-        if ($field)
-            $this->errf[$field] = true;
-        $this->errmsg[] = $html;
-    }
-
     private function make_keyed_object($x, $field) {
         if (is_string($x))
             $x = preg_split('/[\s,]+/', $x);
@@ -126,13 +102,13 @@ class UserStatus {
         if (is_array($x)) {
             foreach ($x as $v)
                 if (!is_string($v))
-                    $this->set_error($field, "Format error [$field]");
+                    $this->error_at($field, "Format error [$field]");
                 else if ($v !== "")
                     $res->$v = true;
         } else if (is_object($x))
             $res = $x;
         else
-            $this->set_error($field, "Format error [$field]");
+            $this->error_at($field, "Format error [$field]");
         return $res;
     }
 
@@ -153,14 +129,14 @@ class UserStatus {
         else if (is_array($x))
             $t0 = $x;
         else if ($x !== null)
-            $this->set_error($key, "Format error [$key]");
+            $this->error_at($key, "Format error [$key]");
         $tagger = new Tagger;
         $t1 = array();
         foreach ($t0 as $t)
             if ($t !== "" && ($t = $tagger->check($t, Tagger::NOPRIVATE)))
                 $t1[] = $t;
             else if ($t !== "")
-                $this->set_error($key, $tagger->error_html);
+                $this->error_at($key, $tagger->error_html);
         return $t1;
     }
 
@@ -182,7 +158,7 @@ class UserStatus {
                        "affiliation", "phone", "old_password", "new_password",
                        "city", "state", "zip", "country") as $k)
             if (isset($cj->$k) && !is_string($cj->$k)) {
-                $this->set_error($k, "Format error [$k]");
+                $this->error_at($k, "Format error [$k]");
                 unset($cj->$k);
             }
 
@@ -190,27 +166,27 @@ class UserStatus {
         if (!get($cj, "email") && $old_user)
             $cj->email = $old_user->email;
         else if (!get($cj, "email"))
-            $this->set_error("email", "Email is required.");
-        else if (!isset($this->errf["email"])
+            $this->error_at("email", "Email is required.");
+        else if (!$this->has_problem_at("email")
                  && !validate_email($cj->email)
                  && (!$old_user || $old_user->email !== $cj->email))
-            $this->set_error("email", "Invalid email address “" . htmlspecialchars($cj->email) . "”.");
+            $this->error_at("email", "Invalid email address “" . htmlspecialchars($cj->email) . "”.");
 
         // ID
         if (get($cj, "id") === "new") {
             if (get($cj, "email") && $Conf->user_id_by_email($cj->email)) {
-                $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use.");
-                $this->errf["email_inuse"] = true;
+                $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use.");
+                $this->error_at("email_inuse", false);
             }
         } else {
             if (!get($cj, "id") && $old_user && $old_user->contactId)
                 $cj->id = $old_user->contactId;
             if (get($cj, "id") && !is_int($cj->id))
-                $this->set_error("id", "Format error [id]");
+                $this->error_at("id", "Format error [id]");
             if ($old_user && get($cj, "email")
                 && strtolower($old_user->email) !== strtolower($cj->email)
                 && $Conf->user_id_by_email($cj->email))
-                $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+                $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
         }
 
         // Contactdb information
@@ -228,15 +204,15 @@ class UserStatus {
         // Password changes
         if (isset($cj->new_password) && $old_user && $old_user->data("locked")) {
             unset($cj->new_password);
-            $this->set_warning("password", "Ignoring request to change locked user’s password.");
+            $this->warning_at("password", "Ignoring request to change locked user’s password.");
         }
 
         // Preferred email
         if (get($cj, "preferred_email")
-            && !isset($this->errf["preferred_email"])
+            && !$this->has_problem_at("preferred_email")
             && !validate_email($cj->preferred_email)
             && (!$old_user || $old_user->preferredEmail !== $cj->preferred_email))
-            $this->set_error("preferred_email", "Invalid email address “" . htmlspecialchars($cj->preferred_email) . "”");
+            $this->error_at("preferred_email", "Invalid email address “" . htmlspecialchars($cj->preferred_email) . "”");
 
         // Address
         $address = array();
@@ -246,17 +222,17 @@ class UserStatus {
             if (is_string(get($cj, "address")))
                 $address[] = $cj->address;
             else if (get($cj, "address"))
-                $this->set_error("address", "Format error [address]");
+                $this->error_at("address", "Format error [address]");
             if (is_string(get($cj, "address2")))
                 $address[] = $cj->address2;
             else if (is_string(get($cj, "addressLine2")))
                 $address[] = $cj->addressLine2;
             else if (get($cj, "address2") || get($cj, "addressLine2"))
-                $this->set_error("address2", "Format error [address2]");
+                $this->error_at("address2", "Format error [address2]");
         }
         foreach ($address as $a)
             if (!is_string($a))
-                $this->set_error("address", "Format error [address]");
+                $this->error_at("address", "Format error [address]");
         if (count($address))
             $cj->address = $address;
 
@@ -264,19 +240,19 @@ class UserStatus {
         if (is_array(get($cj, "collaborators")))
             foreach ($cj->collaborators as $c)
                 if (!is_string($c))
-                    $this->set_error("collaborators", "Format error [collaborators]");
-        if (is_array(get($cj, "collaborators")) && !isset($this->errf["collaborators"]))
+                    $this->error_at("collaborators", "Format error [collaborators]");
+        if (is_array(get($cj, "collaborators")) && !$this->has_problem_at("collaborators"))
             $cj->collaborators = join("\n", $cj->collaborators);
         if (get($cj, "collaborators") && !is_string($cj->collaborators)
-            && !isset($this->errf["collaborators"]))
-            $this->set_error("collaborators", "Format error [collaborators]");
+            && !$this->has_problem_at("collaborators"))
+            $this->error_at("collaborators", "Format error [collaborators]");
 
         // Disabled
         if (isset($cj->disabled)) {
             if (($x = friendly_boolean($cj->disabled)) !== null)
                 $cj->disabled = $x;
             else
-                $this->set_error("disabled", "Format error [disabled]");
+                $this->error_at("disabled", "Format error [disabled]");
         }
 
         // Follow
@@ -302,9 +278,9 @@ class UserStatus {
                 && Contact::parse_roles_json($cj->roles) < $old_user->roles) {
                 unset($cj->roles);
                 if ($old_user->data("locked"))
-                    $this->set_warning("roles", "Ignoring request to drop privileges for locked account.");
+                    $this->warning_at("roles", "Ignoring request to drop privileges for locked account.");
                 else
-                    $this->set_warning("roles", "Ignoring request to drop your privileges.");
+                    $this->warning_at("roles", "Ignoring request to drop your privileges.");
             }
         }
 
@@ -367,7 +343,7 @@ class UserStatus {
                 else if (is_numeric($v))
                     $v = (int) $v;
                 else {
-                    $this->set_error("topics", "Topic interest format error");
+                    $this->error_at("topics", "Topic interest format error");
                     continue;
                 }
                 $k = (string) $k;
@@ -379,9 +355,9 @@ class UserStatus {
     function check_invariants($cj) {
         global $Now;
         if (isset($cj->bad_follow) && count($cj->bad_follow))
-            $this->set_warning("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($cj->bad_follow)) . ").");
+            $this->warning_at("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($cj->bad_follow)) . ").");
         if (isset($cj->bad_topics) && count($cj->bad_topics))
-            $this->set_warning("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($cj->bad_topics)) . ").");
+            $this->warning_at("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($cj->bad_topics)) . ").");
     }
 
 
@@ -397,7 +373,7 @@ class UserStatus {
         if (!get($cj, "id"))
             $cj->id = $old_user ? $old_user->contactId : "new";
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {
-            $this->set_error("id", "Saving user with different ID");
+            $this->error_at("id", "Saving user with different ID");
             return false;
         }
 
@@ -410,7 +386,7 @@ class UserStatus {
         $user = $old_user ? : $old_cdb_user;
 
         $this->normalize($cj, $user);
-        if ($this->nerrors)
+        if ($this->has_error)
             return false;
         $this->check_invariants($cj);
 
@@ -421,15 +397,5 @@ class UserStatus {
             return $user;
         else
             return false;
-    }
-
-    function error_messages() {
-        return $this->errmsg;
-    }
-
-    function has_error($field) {
-        if (($x = get(self::$field_synonym_map, $field)))
-            $field = $x;
-        return isset($this->errf[$field]);
     }
 }
