@@ -67,7 +67,7 @@ for ($i = $j = 0; $i < $l; $i += 3, $j += $outl)
     $trans[3][substr(UTF8_ALPHA_TRANS_3, $i, 3)] = rtrim(substr(UTF8_ALPHA_TRANS_3_OUT, $j, $outl));
 
 define(OUTL2, 2);
-define(OUTL3, 2);
+define(OUTL3, 3);
 
 function quote_key($k) {
     if (strlen($k) == 2)
