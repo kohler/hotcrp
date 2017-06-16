@@ -253,9 +253,15 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
                     "preg_utf8" => '\A' . join("", $ur)
                 ];
         }
-        if ($this->affiliation === "" && is_string($x) && $x !== "") {
+
+        $aff = "";
+        if ($this->affiliation !== "" && $this->firstName === "" && $this->lastName === "" && $this->email === "")
+            $aff = $this->affiliation;
+        else if ($this->affiliation === "" && is_string($x))
+            $aff = $x;
+        if ($aff !== "") {
             self::wordinfo();
-            preg_match_all('/[a-z0-9&]+/', strtolower(UnicodeHelper::deaccent($x)), $m);
+            preg_match_all('/[a-z0-9&]+/', strtolower(UnicodeHelper::deaccent($aff)), $m);
 
             $directs = $alts = [];
             $any_weak = false;
