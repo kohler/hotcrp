@@ -592,7 +592,7 @@ if (!$UserStatus->nerrors && $Conf->session("freshlogin") === "redirect") {
     if ($ispc || $Conf->setting("acct_addr") || !count($msgs))
         $msgs[] = "update your " . (count($msgs) ? "other " : "") . "contact information";
     if (!$Me->affiliation || ($ispc && !$Me->collaborators)) {
-        $amsg .= "  We use your ";
+        $amsg .= " We use your ";
         if (!$Me->affiliation)
             $amsg .= "affiliation ";
         if ($ispc && !$Me->collaborators)
@@ -604,7 +604,7 @@ if (!$UserStatus->nerrors && $Conf->session("freshlogin") === "redirect") {
     }
     if ($ispc && $Conf->topic_map() && !$Acct->topic_interest_map()) {
         $msgs[] = "tell us your topic interests";
-        $amsg .= "  We use your topic interests to assign you papers you might like.";
+        $amsg .= " We use your topic interests to assign you papers you might like.";
     }
     $Conf->infoMsg("Please take a moment to " . commajoin($msgs) . "." . $amsg);
 }
@@ -718,8 +718,8 @@ if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct))
             '<div class="', feclass("password"), '">', Ht::password("oldpassword", "", array("size" => 24)), '</div>',
             '</div>';
     }
-    if (opt("contactdb_dsn") && opt("contactdb_loginFormHeading"))
-        echo opt("contactdb_loginFormHeading");
+    if ($Conf->opt("contactdb_dsn") && $Conf->opt("contactdb_loginFormHeading"))
+        echo $Conf->opt("contactdb_loginFormHeading");
     echo '<div class="f-i"><div class="f-ix">
   <div class="', fcclass("password"), '">New password</div>
   <div class="', feclass("password"), '">', Ht::password("upassword", "", array("size" => 24, "class" => "fn"));
@@ -790,12 +790,10 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     echo '<div class="fx1"><div class="g"></div>', "\n";
 
     echo '<h3 class="profile">Collaborators and other affiliations</h3>', "\n",
-        "<div>Please list potential conflicts of interest. ",
+        "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
         $Conf->message_html("conflictdef"),
-        " List one conflict per line.
-    We use this information when assigning reviews.
-    For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;
-    or, for a whole institution, &ldquo;<tt>INRIA</tt>&rdquo;.</div>
+        " <p>List one conflict per line, using parentheses for affiliations.<br />
+    Examples: <span class=\"nw\">“Ping Yen Zhang (INRIA)”, “University College London”</p></div>
     <textarea name='collaborators' rows='5' cols='50'>", htmlspecialchars(contact_value("collaborators")), "</textarea>\n";
 
     $topics = $Conf->topic_map();
