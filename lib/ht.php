@@ -457,14 +457,4 @@ class Ht {
             . '<div class="xmsgc">' . $content . '</div>'
             . '<div class="xmsg1"></div></div>';
     }
-
-    static function ymsg($type, $content) {
-        if (substr($type, 0, 1) === "x")
-            $type = substr($type, 1);
-        if ($type === "error")
-            $type = "merror";
-        return '<div class="ymsg x' . $type . '"><div class="xmsg0"></div>'
-            . '<div class="ymsgc">' . $content . '</div>'
-            . '<div class="xmsg1"></div></div>';
-    }
 }

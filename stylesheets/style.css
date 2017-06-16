@@ -288,18 +288,18 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	margin-top: 0.75em;
 	margin-bottom: 0;
 }
-.xmsg, .ymsg {
+.xmsg {
 	margin: 4px 0;
 	font-weight: normal;
 	font-style: normal;
 }
-.xmsgc, .ymsgc {
+.xmsgc {
 	padding: 0.5em;
 }
-.xmsgc > p:first-child, .ymsgc > p:first-child {
+.xmsgc > p:first-child {
 	margin-top: 0;
 }
-.xmsgc > p:last-child, .ymsgc > p:last-child {
+.xmsgc > p:last-child {
 	margin-bottom: 0;
 }
 .xinfo {
