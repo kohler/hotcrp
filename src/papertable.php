@@ -997,13 +997,13 @@ class PaperTable {
                 continue;
             $control = "contact_" . html_id_encode($au->email);
             $checked = $this->useRequest ? !!$this->qreq[$control] : $au->contactId;
-            echo '<tr><td class="lcaption">', $title, '</td><td>';
+            echo '<tr><td class="lcaption">', $title, '</td><td class="nb">';
             if ($au->contactId)
                 echo Ht::checkbox(null, null, true, array("disabled" => true)),
                     Ht::hidden($control, Text::name_text($au));
             else
                 echo Ht::checkbox($control, Text::name_text($au), $checked);
-            echo '&nbsp;</td><td>', Ht::label(Text::user_html_nolink($au)),
+            echo ' </td><td>', Ht::label(Text::user_html_nolink($au)),
                 '</td></tr>';
             $title = "";
         }
