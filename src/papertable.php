@@ -1003,7 +1003,7 @@ class PaperTable {
                     Ht::hidden($control, Text::name_text($au));
             else
                 echo Ht::checkbox($control, Text::name_text($au), $checked);
-            echo ' </td><td>', Ht::label(Text::user_html_nolink($au)),
+            echo ' </td><td>', Ht::label(Text::user_html_nolink($au)),
                 '</td></tr>';
             $title = "";
         }
@@ -1013,7 +1013,7 @@ class PaperTable {
             $checked = $this->useRequest ? $this->qreq[$control] : true;
             echo '<tr><td class="lcaption">', $title, '</td>',
                 '<td class="nb">', Ht::checkbox($control, Text::name_text($au), $checked),
-                ' </td><td>', Ht::label(Text::user_html($au)), '</td>',
+                ' </td><td>', Ht::label(Text::user_html($au)), '</td>',
                 '</tr>';
             $title = "";
         }
@@ -1245,7 +1245,7 @@ class PaperTable {
                 echo '<table><tr><td class="nb">',
                     Ht::checkbox("pcc$id", $checked ? $ct->value : CONFLICT_AUTHORMARK,
                                  $checked, array("id" => "pcc$id", "disabled" => $disabled)),
-                    ' </td><td>', $label, '</td></tr></table>';
+                    ' </td><td>', $label, '</td></tr></table>';
             }
             echo "</div></div>";
         }
