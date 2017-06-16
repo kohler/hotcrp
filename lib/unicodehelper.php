@@ -19,6 +19,9 @@ class UnicodeHelper {
         "ﬀ" => "ff", "ﬁ" => "fi", "ﬂ" => "fl", "ﬃ" => "ffi", "ﬄ" => "ffl"
     ];
 
+    private static $deaccent_map;
+    private static $deaccent_result;
+
     private static function _utf8FindTransPos($trans, $look) {
         $len = strlen($look);
         $l = 0;
@@ -36,26 +39,45 @@ class UnicodeHelper {
         return false;
     }
 
+    private static function add_deaccent_map($ins, $outs, $step) {
+        $l = strlen($ins);
+        for ($i = 0; $i < $l; $i += $step) {
+            $in = substr($ins, $i, $step);
+            $out = rtrim(substr($outs, $i, $step));
+            if ($out === "")
+                self::$deaccent_map[$in] = 0;
+            else {
+                self::$deaccent_map[$in] = (strlen(self::$deaccent_result) << 2) | strlen($out);
+                self::$deaccent_result .= $out;
+            }
+        }
+    }
+    private static function make_deaccent_map() {
+        if (self::$deaccent_map === null) {
+            self::$deaccent_map = [];
+            self::$deaccent_result = "";
+            self::add_deaccent_map(UTF8_ALPHA_TRANS_2, UTF8_ALPHA_TRANS_2_OUT, 2);
+            self::add_deaccent_map(UTF8_ALPHA_TRANS_3, UTF8_ALPHA_TRANS_3_OUT, 3);
+        }
+    }
+
     static function deaccent($x) {
+        if (self::$deaccent_map === null)
+            self::make_deaccent_map();
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
             $len = strlen($x);
             $out = "";
             foreach ($m[0] as $mx) {
                 $i = $mx[1];
-                $ch = ord($x[$i]);
-                if ($ch >= 0xC0 && $ch <= 0xDF && $i + 1 < $len
-                    && ($w = self::_utf8FindTransPos(UTF8_ALPHA_TRANS_2, substr($x, $i, 2))) !== false) {
+                $l = ord($mx[0]) < 0xE0 ? 2 : 3;
+                $ch = substr($x, $i, $l);
+                if (isset(self::$deaccent_map[$ch])) {
                     $out .= substr($x, $first, $i - $first);
-                    $out .= rtrim(substr(UTF8_ALPHA_TRANS_2_OUT, 2 * $w, 2));
-                    $first = $i + 2;
-                    $i++;
-                } else if ($ch >= 0xE0 && $i + 2 < $len
-                           && ($w = self::_utf8FindTransPos(UTF8_ALPHA_TRANS_3, substr($x, $i, 3))) !== false) {
-                    $out .= substr($x, $first, $i - $first);
-                    $out .= rtrim(substr(UTF8_ALPHA_TRANS_3_OUT, 3 * $w, 3));
-                    $first = $i + 3;
-                    $i += 2;
+                    $m = self::$deaccent_map[$ch];
+                    if ($m)
+                        $out .= substr(self::$deaccent_result, $m >> 2, $m & 3);
+                    $first = $i + $l;
                 }
             }
             $x = $out . substr($x, $first);
@@ -64,6 +86,8 @@ class UnicodeHelper {
     }
 
     static function deaccent_offsets($x) {
+        if (self::$deaccent_map === null)
+            self::make_deaccent_map();
         $offsetmap = [[0, 0]];
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
@@ -71,26 +95,20 @@ class UnicodeHelper {
             $out = "";
             foreach ($m[0] as $mx) {
                 $i = $mx[1];
-                $ch = ord($x[$i]);
-                if ($ch >= 0xC0 && $ch <= 0xDF && $i + 1 < $len
-                    && ($w = self::_utf8FindTransPos(UTF8_ALPHA_TRANS_2, substr($x, $i, 2))) !== false) {
+                $l = ord($mx[0]) < 0xE0 ? 2 : 3;
+                $ch = substr($x, $i, $l);
+                if (isset(self::$deaccent_map[$ch])) {
                     $out .= substr($x, $first, $i - $first);
-                    $out .= rtrim(substr(UTF8_ALPHA_TRANS_2_OUT, 2 * $w, 2));
-                    $first = $i + 2;
-                    array_push($offsetmap, array(strlen($out), $first));
-                    $i++;
-                } else if ($ch >= 0xE0 && $i + 2 < $len
-                           && ($w = self::_utf8FindTransPos(UTF8_ALPHA_TRANS_3, substr($x, $i, 3))) !== false) {
-                    $out .= substr($x, $first, $i - $first);
-                    $out .= rtrim(substr(UTF8_ALPHA_TRANS_3_OUT, 3 * $w, 3));
-                    $first = $i + 3;
-                    array_push($offsetmap, array(strlen($out), $first));
-                    $i += 2;
+                    $m = self::$deaccent_map[$ch];
+                    if ($m)
+                        $out .= substr(self::$deaccent_result, $m >> 2, $m & 3);
+                    $first = $i + $l;
+                    $offsetmap[] = [strlen($out), $first];
                 }
             }
             $x = $out . substr($x, $first);
         }
-        return array($x, $offsetmap);
+        return [$x, $offsetmap];
     }
 
     static function deaccent_translate_offset($offsetmap, $offset) {
