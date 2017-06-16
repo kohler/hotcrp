@@ -237,12 +237,13 @@ class UserStatus extends MessageSet {
             $cj->address = $address;
 
         // Collaborators
-        if (is_array(get($cj, "collaborators")))
+        if (is_array(get($cj, "collaborators"))) {
             foreach ($cj->collaborators as $c)
                 if (!is_string($c))
                     $this->error_at("collaborators", "Format error [collaborators]");
-        if (is_array(get($cj, "collaborators")) && !$this->has_problem_at("collaborators"))
-            $cj->collaborators = join("\n", $cj->collaborators);
+            if (!$this->has_problem_at("collaborators"))
+                $cj->collaborators = join("\n", $cj->collaborators);
+        }
         if (get($cj, "collaborators") && !is_string($cj->collaborators)
             && !$this->has_problem_at("collaborators"))
             $this->error_at("collaborators", "Format error [collaborators]");

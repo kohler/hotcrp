@@ -513,17 +513,8 @@ class PaperStatus extends MessageSet {
         $this->normalize_string($pj, "title", true, $preserve);
         $this->normalize_string($pj, "abstract", false, $preserve);
         $this->normalize_string($pj, "collaborators", false, $preserve);
-        if (isset($pj->collaborators)) {
-            $collab = [];
-            foreach (preg_split('/[\r\n]+/', $pj->collaborators) as $line)
-                $collab[] = preg_replace('/[,;\s]+\z/', '', $line);
-            while (!empty($collab) && $collab[count($collab) - 1] === "")
-                array_pop($collab);
-            if (!empty($collab))
-                $pj->collaborators = join("\n", $collab) . "\n";
-            else
-                $pj->collaborators = "";
-        }
+        if (isset($pj->collaborators))
+            $pj->collaborators = Contact::clean_collaborator_lines($pj->collaborators);
 
         // Authors
         $au_by_email = array();

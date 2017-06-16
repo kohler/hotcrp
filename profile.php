@@ -379,14 +379,14 @@ function parseBulkFile($text, $filename) {
 
 if (!check_post($Qreq))
     /* do nothing */;
-else if (isset($Qreq->bulkregister) && $newProfile && $Qreq->has_file("bulk")) {
+else if ($Qreq->bulkregister && $newProfile && $Qreq->has_file("bulk")) {
     if (($text = $Qreq->file_contents("bulk")) === false)
         Conf::msg_error("Internal error: cannot read file.");
     else
         parseBulkFile($text, $Qreq->file_filename("bulk"));
     $Qreq->bulkentry = "";
     SelfHref::redirect($Qreq, ["anchor" => "bulk"]);
-} else if (isset($Qreq->bulkregister) && $newProfile) {
+} else if ($Qreq->bulkregister && $newProfile) {
     $success = true;
     if ($Qreq->bulkentry && $Qreq->bulkentry !== "Enter users one per line")
         $success = parseBulkFile($Qreq->bulkentry, "");
@@ -578,35 +578,27 @@ $useRequest = !$Acct->has_database_account() && isset($Qreq->watchcomment);
 if ($UserStatus->has_error)
     $need_highlight = $useRequest = true;
 
-if (!$UserStatus->has_error && $Conf->session("freshlogin") === "redirect") {
+if (!$UserStatus->has_error && $Conf->session("freshlogin") === "redirect")
     $Conf->save_session("freshlogin", null);
-    $ispc = $Acct->is_pclike();
-    $msgs = array();
-    $amsg = "";
-    if (!$Me->firstName && !$Me->lastName)
-        $msgs[] = "enter your name" . ($Me->affiliation ? "" : " and affiliation");
-    else if (!$Me->affiliation)
-        $msgs[] = "enter your affiliation";
-    if ($ispc && !$Me->collaborators)
-        $msgs[] = "list your recent collaborators";
-    if ($ispc || $Conf->setting("acct_addr") || !count($msgs))
-        $msgs[] = "update your " . (count($msgs) ? "other " : "") . "contact information";
-    if (!$Me->affiliation || ($ispc && !$Me->collaborators)) {
-        $amsg .= " We use your ";
-        if (!$Me->affiliation)
-            $amsg .= "affiliation ";
-        if ($ispc && !$Me->collaborators)
-            $amsg .= ($Me->affiliation ? "" : "and ") . "recent collaborators ";
-        $amsg .= "to detect paper conflicts; enter “None”";
-        if (!$Me->affiliation)
-            $amsg .= " or “Unaffiliated”";
-        $amsg .= " if you have none.";
+// Set warnings
+if (!$newProfile) {
+    if (!$Acct->firstName && !$Acct->lastName) {
+        $UserStatus->warning_at("firstName", "Please enter your name.");
+        $UserStatus->warning_at("lastName", false);
     }
-    if ($ispc && $Conf->topic_map() && !$Acct->topic_interest_map()) {
-        $msgs[] = "tell us your topic interests";
-        $amsg .= " We use your topic interests to assign you papers you might like.";
-    }
-    $Conf->infoMsg("Please take a moment to " . commajoin($msgs) . "." . $amsg);
+    if (!$Acct->affiliation)
+        $UserStatus->warning_at("affiliation", "Please enter your affiliation (use “None” or “Unaffiliated” if you have none).");
+    if ($Acct->is_pclike() && !$Acct->collaborators)
+        $UserStatus->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
+    if ($Acct->is_pclike() && $Acct->collaborators
+        && $Acct->collaborators !== $Acct->fix_collaborator_affiliations())
+        $UserStatus->warning_at("collaborators", "Please use parentheses to indicate affiliations in your collaborators.");
+    if ($Acct->is_pclike()
+        && ($n = substr_count($Acct->collaborators, "\n")) < 4
+        && $n < 0.75 * preg_match_all('/[,;]/', $Acct->collaborators))
+        $UserStatus->warning_at("collaborators", "Please enter only one potential conflict per line.");
+    if ($Acct->is_pclike() && $Conf->topic_map() && !$Acct->topic_interest_map())
+        $UserStatus->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
 }
 
 
@@ -641,7 +633,6 @@ if ($newProfile)
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "accountform", "autocomplete" => "off")),
-    '<div class="aahc profiletext', ($need_highlight ? " alert" : ""), "\">\n",
     // Don't want chrome to autofill the password changer.
     // But chrome defaults to autofilling the password changer
     // unless we supply an earlier password input.
@@ -652,14 +643,24 @@ if (isset($Qreq->redirect))
 if ($Me->privChair)
     echo Ht::hidden("whichpassword", "");
 
-echo '<div id="foldaccount" class="form foldc ',
-    ($pcrole == "no" ? "fold1c " : "fold1o "),
-    ($Qreq->has_file("bulk") ? "fold2o" : "fold2c"), '">';
-
 if ($newProfile)
     echo_modes(1);
 else if ($Me->privChair)
     echo_modes(0);
+
+if ($UserStatus->has_messages()) {
+    $status = 0;
+    $msgs = [];
+    foreach ($UserStatus->messages(true) as $m) {
+        $status = max($m[2], $status);
+        $msgs[] = '<div class="mmm">' . $m[1] . '</div>';
+    }
+    echo '<div class="xmsgcontainer-atbody">', Ht::xmsg($status, join("", $msgs)), "</div>\n";
+}
+
+echo '<div id="foldaccount" class="aahc profiletext', ($need_highlight ? " alert" : ""),
+    " foldc fold1", ($pcrole == "no" ? "c" : "o"), " fold2",
+    ($Qreq->bulkregister ? "o" : "c"), "\">\n";
 
 echo '<div class="f-contain">', "\n\n";
 if (!$Conf->external_login())
@@ -789,12 +790,15 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
 if ($newProfile || $Acct->isPC || $Me->privChair) {
     echo '<div class="fx1"><div class="g"></div>', "\n";
 
-    echo '<h3 class="profile">Collaborators and other affiliations</h3>', "\n",
+    $className = $UserStatus->has_problem_at("collaborators") ? " error" : "";
+    echo '<h3 class="profile', $className, '">Collaborators and other affiliations</h3>', "\n",
         "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
         $Conf->message_html("conflictdef"),
         " <p>List one conflict per line, using parentheses for affiliations.<br />
-    Examples: <span class=\"nw\">“Ping Yen Zhang (INRIA)”, “University College London”</p></div>
-    <textarea name='collaborators' rows='5' cols='50'>", htmlspecialchars(contact_value("collaborators")), "</textarea>\n";
+    Examples: “Ping Yen Zhang (INRIA)”, “University College London”</p></div>
+    <textarea name=\"collaborators\" rows=\"5\" cols=\"60\"",
+        ($className ? " class=\"" . ltrim($className) . "\"" : ""),
+        ">", htmlspecialchars(contact_value("collaborators")), "</textarea>\n";
 
     $topics = $Conf->topic_map();
     if (!empty($topics)) {
@@ -889,7 +893,6 @@ if (!$newProfile && $Acct->contactId == $Me->contactId)
 echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);
 
 echo "</div>\n", // foldaccount
-    "</div>\n", // aahc
     "</form>\n";
 
 if ($newProfile) {
@@ -920,7 +923,7 @@ if ($newProfile) {
 
     echo '<div>', Ht::submit("bulkregister", "Save accounts"), '</div>';
 
-    echo "<p>Enter or upload CSV user data with header. For example:</p>\n",
+    echo "<p>Enter or upload CSV user data with header. For example:</p>\n",
         '<pre class="entryexample">
 name,email,affiliation,roles
 John Adams,john@earbox.org,UC Berkeley,pc

@@ -296,11 +296,22 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 .xmsgc {
 	padding: 0.5em;
 }
+.xmsgcontainer-atbody {
+	margin: 12px -24px 24px;
+}
 .xmsgc > p:first-child {
 	margin-top: 0;
 }
 .xmsgc > p:last-child {
 	margin-bottom: 0;
+}
+.xmsgcontainer-atbody .xmsg {
+	border-left: 0 none;
+	border-right: 0 none;
+}
+.xmsgcontainer-atbody .xmsgc {
+	padding-left: 24px;
+	padding-right: 24px;
 }
 .xinfo {
 	background: #eeeeff;

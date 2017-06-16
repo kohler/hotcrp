@@ -120,7 +120,7 @@ xassert_eqq($te->lastName, "Thamrongrattanarit");
 xassert_eqq($te->affiliation, "Brandeis University");
 if (function_exists("password_needs_rehash"))
     xassert($te->check_password("isdevitch"));
-xassert_eqq($te->collaborators, "Computational Linguistics Magazine");
+xassert_eqq($te->collaborators, "Computational Linguistics Magazine\n");
 
 // changing email should work too, but not change cdb except for defaults
 $result = Dbl::qe(Contact::contactdb(), "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@_.com', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
@@ -167,7 +167,7 @@ xassert_eqq($te->email, "te@_.com");
 xassert_eqq($te->firstName, "Te");
 xassert_eqq($te->lastName, "Thamrongrattanarit");
 xassert_eqq($te->affiliation, "Brandeis University");
-xassert_eqq($te->collaborators, "Computational Linguistics Magazine");
+xassert_eqq($te->collaborators, "Computational Linguistics Magazine\n");
 
 // create a user in cdb: create, then delete from local db
 $anna = "akhmatova@poema.ru";

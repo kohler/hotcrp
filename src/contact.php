@@ -142,12 +142,8 @@ class Contact {
                        "voicePhoneNumber", "country") as $k)
             if (isset($user->$k))
                 $this->$k = simplify_whitespace($user->$k);
-        if (isset($user->collaborators)) {
-            $this->collaborators = "";
-            foreach (preg_split('/[\r\n]+/', $user->collaborators) as $c)
-                if (($c = simplify_whitespace($c)) !== "")
-                    $this->collaborators .= "$c\n";
-        }
+        if (isset($user->collaborators))
+            $this->collaborators = $user->collaborators;
         self::set_sorter($this, $this->conf);
         if (isset($user->password))
             $this->password = (string) $user->password;
@@ -815,7 +811,7 @@ class Contact {
     }
 
 
-    static private $save_fields = array("firstName" => 6, "lastName" => 6, "email" => 1, "affiliation" => 6, "country" => 6, "preferredEmail" => 1, "voicePhoneNumber" => 1, "unaccentedName" => 0, "collaborators" => 4);
+    static private $save_fields = array("firstName" => 6, "lastName" => 6, "email" => 1, "affiliation" => 6, "country" => 6, "preferredEmail" => 1, "voicePhoneNumber" => 1, "unaccentedName" => 0, "collaborators" => 12);
 
     private function _save_assign_field($k, $v, Contact_Update $cu) {
         $fieldtype = get_i(self::$save_fields, $k);
@@ -823,6 +819,8 @@ class Contact {
             $v = simplify_whitespace($v);
         else if ($fieldtype & 1)
             $v = trim($v);
+        else if ($fieldtype & 8)
+            $v = self::clean_collaborator_lines($v);
         // check CDB version first (in case $this === $cdbu)
         $cdbu = $this->contactDbId ? $this : $this->contactdb_user_;
         if (($fieldtype & 4)
@@ -3077,6 +3075,25 @@ class Contact {
     }
 
 
+    static function clean_collaborator_lines($s) {
+        $x = [];
+        foreach (preg_split('/[\r\n]+/', $s) as $l) {
+            $l = preg_replace('/[.,;\s]+\z/', "", simplify_whitespace($l));
+            if ($l !== "")
+                $x[] = "$l\n";
+        }
+        return join("", $x);
+    }
+
+    function fix_collaborator_affiliations() {
+        $s = $this->collaborators;
+        if ($s !== "" && strpos($s, "(") === false
+            && preg_match_all('/[-,;]|–|—/', $s) >= 2)
+            $s = preg_replace('/^(.*)(?:[-,;]|–|—)\s*(.*)$/m', '$1 ($2)',
+                              self::clean_collaborator_lines($s));
+        return $s;
+    }
+
     function aucollab_matchers() {
         if ($this->_aucollab_matchers === null) {
             $this->_aucollab_matchers = [];
@@ -3084,7 +3101,7 @@ class Contact {
             if (!$m->is_empty())
                 $this->_aucollab_matchers[] = $m;
             if ((string) $this->collaborators !== "") {
-                foreach (explode("\n", $this->collaborators) as $co)
+                foreach (explode("\n", $this->fix_collaborator_affiliations()) as $co)
                     if ($co !== "") {
                         $m = new PaperInfo_AuthorMatcher($co);
                         if (!$m->is_empty())
