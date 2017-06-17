@@ -41,12 +41,12 @@ class MergeContacts extends MessageSet {
         $this->merge1("Paper", "managerContactId");
 
         // paper authorship
-        $result = $this->conf->qe_raw("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($old_user->email) . "\t%'"));
+        $result = $this->conf->qe_raw("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($this->oldu->email) . "\t%'"));
         $q = $qv = [];
         while (($row = PaperInfo::fetch($result, null, $this->conf))) {
             foreach ($row->author_list() as $au)
-                if (strcasecmp($au->email, $old_user->email) == 0)
-                    $au->email = $new_user->email;
+                if (strcasecmp($au->email, $this->oldu->email) == 0)
+                    $au->email = $this->newu->email;
             $q[] = "update Paper set authorInformation=? where paperId=?";
             array_push($qv, $row->parse_author_list(), $row->paperId);
         }
