@@ -288,15 +288,17 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	margin-top: 0.75em;
 	margin-bottom: 0;
 }
-.xmsg {
+.xmsg, div.xmsgs-reset > .xmsg {
 	margin: 4px 0;
 	font-weight: normal;
 	font-style: normal;
+	border-width: 1px;
+	border-style: solid;
 }
-.xmsgc {
-	padding: 0.5em;
+.xmsgc, div.xmsgs-reset > .xmsg > .xmsgc {
+	padding: 0.5em 8px;
 }
-.xmsgcontainer-atbody {
+.xmsgs-atbody {
 	margin: 12px -24px 24px;
 }
 .xmsgc > p:first-child {
@@ -305,29 +307,29 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 .xmsgc > p:last-child {
 	margin-bottom: 0;
 }
-.xmsgcontainer-atbody .xmsg {
-	border-left: 0 none;
-	border-right: 0 none;
+.xmsgs-atbody > .xmsg {
+	border-left-width: 0;
+	border-right-width: 0;
 }
-.xmsgcontainer-atbody .xmsgc {
+.xmsgs-atbody > .xmsg > .xmsgc {
 	padding-left: 24px;
 	padding-right: 24px;
 }
 .xinfo {
 	background: #eeeeff;
-	border: 1px solid #ccccee;
+	border-color: #ccccee;
 }
 .xconfirm {
 	background: #eeffee;
-	border: 1px solid #cceecc;
+	border-color: #cceecc;
 }
 .xwarning {
 	background: #ffffdd;
-	border: 1px solid #ddddcc;
+	border-color: #ddddcc;
 }
 .xmerror {
 	background: #ffeeee;
-	border: 1px solid #eecccc;
+	border-color: #eecccc;
 }
 span.confirm {
 	font-style: italic;
@@ -992,8 +994,8 @@ table#foldtag_color th {
 .leftmenu_body .xmsg {
 	margin-left: -16px;
 	margin-right: -16px;
-	border-left: 0 none;
-	border-right: 0 none;
+	border-left-width: 0;
+	border-right-width: 0;
 }
 .leftmenu_body .xmsgc {
 	padding-left: 16px;
