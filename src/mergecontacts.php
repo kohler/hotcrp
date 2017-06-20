@@ -50,8 +50,10 @@ class MergeContacts extends MessageSet {
             $q[] = "update Paper set authorInformation=? where paperId=?";
             array_push($qv, $row->parse_author_list(), $row->paperId);
         }
-        $mresult = Dbl::multi_qe_apply($this->conf->dblink, join(";", $q), $qv);
-        $mresult->free_all();
+        if (!empty($q)) {
+            $mresult = Dbl::multi_qe_apply($this->conf->dblink, join(";", $q), $qv);
+            $mresult->free_all();
+        }
 
         // ensure uniqueness in PaperConflict
         $result = $this->conf->qe("select paperId, conflictType from PaperConflict where contactId=?",
