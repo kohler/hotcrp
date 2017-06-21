@@ -1225,9 +1225,12 @@ class ConflictMatchPaperColumn extends PaperColumn {
         $text = [];
         $aus = $field === "collaborators" ? $row->collaborator_list() : $row->author_list();
         foreach ($aus as $au) {
+            $matchers = [];
             foreach ($this->contact->aucollab_matchers() as $matcher)
                 if ($matcher->test($au))
-                    $text[] = $matcher->highlight($au);
+                    $matchers[] = $matcher;
+            if (!empty($matchers))
+                $text[] = PaperInfo_AuthorMatcher::highlight_all($au, $matchers);
         }
         if (!empty($text))
             unset($row->folded);

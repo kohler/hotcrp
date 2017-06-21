@@ -352,17 +352,27 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
         }
         return false;
     }
-    function highlight($au) {
+    static function highlight_all($au, $matchers) {
         $aff_suffix = null;
         if (is_object($au)) {
             if ($au->affiliation)
                 $aff_suffix = "(" . htmlspecialchars($au->affiliation) . ")";
             $au = $au->nameaff_text();
         }
-        $au = Text::highlight($au, $this->general_pregexes);
+        $pregexes = [];
+        foreach ($matchers as $matcher)
+            $pregexes[] = $matcher->general_pregexes;
+        if (count($pregexes) > 1)
+            $pregexes = [Text::merge_pregexes($pregexes)];
+        if (!empty($pregexes))
+            $au = Text::highlight($au, $pregexes[0]);
         if ($aff_suffix && str_ends_with($au, $aff_suffix))
-            $au = substr($au, 0, -strlen($aff_suffix)) . ' <span class="auaff">' . $aff_suffix . '</span>';
+            $au = substr($au, 0, -strlen($aff_suffix))
+                . ' <span class="auaff">' . $aff_suffix . '</span>';
         return $au;
+    }
+    function highlight($au) {
+        return self::highlight_all($au, [$this]);
     }
 
     static function wordinfo() {
