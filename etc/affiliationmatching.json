@@ -190,6 +190,12 @@
         "weak": true
     },
 
+    "anu": {
+        "alternate": ["australian national university"]
+    },
+    "australian": {
+        "alternate": [{"word": "anu", "if": "national university"}]
+    },
     "uc": {
         "weak": true,
         "alternate": [
