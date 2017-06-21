@@ -425,6 +425,12 @@ xassert_eqq($aum->test("Sepideh Maleki (Penn State)"), false);
 xassert_eqq($aum->test("Sepideh Maleki (Pennsylvania State University)"), false);
 xassert_eqq($aum->test("Sepideh Maleki (UPenn)"), true);
 xassert_eqq($aum->test("Sepideh Maleki (University of Pennsylvania)"), true);
+$aum = new PaperInfo_AuthorMatcher("UW");
+xassert_eqq($aum->test("Ana Stackelberg (University of Wisconsin—Madison)"), false);
+xassert_eqq($aum->test("Ana Stackelberg (University of Washington)"), true);
+$aum = new PaperInfo_AuthorMatcher("UW Madison");
+xassert_eqq($aum->test("Ana Stackelberg (University of Wisconsin—Madison)"), true);
+xassert_eqq($aum->test("Ana Stackelberg (University of Washington)"), false);
 
 
 // i18n messages
