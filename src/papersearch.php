@@ -3640,7 +3640,7 @@ class PaperSearch {
     function create_session_list_object($ids, $listname, $sort = "") {
         $l = SessionList::create($this->listid($sort), $ids,
                                  $this->description($listname),
-                                 $this->url_site_relative_raw());
+                                 $this->urlbase);
         if ($this->field_highlighters())
             $l->highlight = $this->_match_preg_query ? : true;
         return $l;

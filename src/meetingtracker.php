@@ -66,7 +66,7 @@ class MeetingTracker {
         $tracker = (object) array("trackerid" => $trackerid,
                                   "listid" => $list->listid,
                                   "ids" => $list->ids,
-                                  "url" => $list->url,
+                                  "url" => $list->full_site_relative_url(),
                                   "description" => $list->description,
                                   "start_at" => $start_at,
                                   "position_at" => $position_at,

@@ -315,6 +315,7 @@ class SessionList {
     public $cid;
     public $description;
     public $url;
+    public $urlbase;
     public $timestamp;
     public $highlight;
     static private $active_listid = null;
@@ -360,23 +361,44 @@ class SessionList {
         } else
             return null;
     }
+    function full_site_relative_url() {
+        if ($this->url)
+            return $this->url;
+        else if ($this->urlbase) {
+            $url = $this->urlbase;
+            if (preg_match(',\Ap/[^/]*/([^/]*)(?:|/([^/]*))\z,', $this->listid, $m)) {
+                if ($m[1] !== "" || str_starts_with($url, "search"))
+                    $url .= (strpos($url, "?") ? "&" : "?") . "q=" . $m[1];
+                if (isset($m[2]) && $m[2] !== "") {
+                    foreach (explode("&", $m[2]) as $kv) {
+                        $eq = strpos($kv, "=");
+                        if (!preg_match('/[?&]' . preg_quote(substr($kv, 0, $eq)) . '=/', $url))
+                            $url .= (strpos($url, "?") ? "&" : "?") . $kv;
+                    }
+                }
+            }
+            return $url;
+        } else
+            return null;
+    }
     function info_string($minimal = false) {
         $j = ["ids" => self::encode_ids($this->ids)];
+        $urlkey = $this->urlbase ? "urlbase" : "url";
         foreach (get_object_vars($this) as $k => $v)
-            if ($k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "id_position"
-                && (!$minimal || $k === "listid" || $k === "description" || $k === "url")
-                && $v !== null)
+            if ($v != null
+                && $k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "id_position"
+                && (!$minimal || $k === "listid" || $k === "description" || $k === $urlkey))
                 $j[$k] = $v;
         return json_encode($j);
     }
-    static function create($listid, $ids, $description, $url) {
+    static function create($listid, $ids, $description, $urlbase) {
         global $Me, $Now;
         $lx = new SessionList;
         $lx->listid = $listid;
         $lx->ids = $ids;
         $lx->cid = $Me ? $Me->contactId : 0;
         $lx->description = $description;
-        $lx->url = $url;
+        $lx->urlbase = $urlbase;
         $lx->timestamp = $Now;
         return $lx;
     }
@@ -851,8 +873,9 @@ function actionBar($mode = null, $prow = null) {
             $x .= _one_quicklink($list->ids[$list->id_position - 1], $goBase, $xmode, $listtype, true);
         if ($list->description) {
             $x .= ($list->id_position > 0 ? "&nbsp;&nbsp;" : "");
-            if ($list->url)
-                $x .= '<a id="quicklink_list" class="x" href="' . htmlspecialchars(Navigation::siteurl() . $list->url) . "\">" . $list->description . "</a>";
+            $url = $list->full_site_relative_url();
+            if ($url)
+                $x .= '<a id="quicklink_list" class="x" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $list->description . "</a>";
             else
                 $x .= '<span id="quicklink_list">' . $list->description . '</span>';
         }

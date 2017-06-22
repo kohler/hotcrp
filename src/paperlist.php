@@ -1192,12 +1192,7 @@ class PaperList {
 
     function session_list_object($listname = null) {
         assert($this->ids !== null);
-        $listobject = $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
-        $url = $this->search->url_site_relative_raw();
-        if (isset($this->qreq->sort))
-            $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);
-        $listobject->url = $url;
-        return $listobject;
+        return $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
     }
 
     function table_html($listname, $options = array()) {
