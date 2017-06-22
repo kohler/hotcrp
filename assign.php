@@ -533,7 +533,7 @@ if ($Me->can_administer($prow)) {
         if ($p->conflictType >= CONFLICT_AUTHOR) {
             echo '<div class="pctbass">', review_type_icon(-2),
                 Ht::img("_.gif", ">", array("class" => "next", "style" => "visibility:hidden")), '&nbsp;</div>',
-                '<div id="ass' . $p->contactId . '" class="pctbname pctbname-2 taghl nw">',
+                '<div id="ass' . $p->contactId . '" class="pctbname pctbname-2 taghl">',
                 $Me->name_html_for($pc), '</div>';
         } else {
             if ($p->conflictType > 0)
@@ -553,7 +553,7 @@ if ($Me->can_administer($prow)) {
                 . '</div></div>';
 
             echo '<div id="ass' . $p->contactId . '" class="pctbname pctbname' . $revtype . '">'
-                . '<span class="taghl nw">' . $Me->name_html_for($pc) . '</span>';
+                . '<span class="taghl">' . $Me->name_html_for($pc) . '</span>';
             if ($p->conflictType == 0) {
                 $p->topicInterestScore = $prow->topic_interest_score($pc);
                 if ($p->reviewerPreference || $p->reviewerExpertise || $p->topicInterestScore)

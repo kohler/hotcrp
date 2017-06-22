@@ -1273,9 +1273,6 @@ tr.pt_conflict_ass > td.entry, tr.propass > td.entry {
 	font-size: 69%;
 }
 
-.pctbname {
-	float: left;
-}
 .pctbname, .pctbname-1, .pctbname-2, .pctbname-3,
 .pctbname0, .pctbname1, .pctbname2, .pctbname3, .pctbname4 {
 	padding-right: 1em;
