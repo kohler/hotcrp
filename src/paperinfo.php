@@ -170,7 +170,7 @@ class PaperInfo_Author {
                     $x = $m[1];
                 } else
                     $this->affiliation = "";
-                $this->_name = $x;
+                $this->_name = trim($x);
                 list($this->firstName, $this->lastName, $this->email) = Text::split_name($x, true);
             }
         }
