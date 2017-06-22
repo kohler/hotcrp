@@ -2331,6 +2331,24 @@ class PaperSearch {
     static private $_sort_keywords = ["by" => "by", "up" => "up", "down" => "down",
                  "reverse" => "down", "reversed" => "down", "score" => ""];
 
+    static public $search_type_names = [
+        "a" => "Your submissions",
+        "acc" => "Accepted papers",
+        "act" => "Active papers",
+        "all" => "All papers",
+        "editpref" => "Reviewable papers",
+        "lead" => "Your discussion leads",
+        "manager" => "Papers you administer",
+        "r" => "Your reviews",
+        "rable" => "Reviewable papers",
+        "req" => "Your review requests",
+        "reqrevs" => "Your review requests",
+        "rout" => "Your incomplete reviews",
+        "s" => "Submitted papers",
+        "und" => "Undecided papers",
+        "unm" => "Unmanaged submissions"
+    ];
+
 
     function __construct(Contact $user, $options, Contact $reviewer = null) {
         if (is_string($options))
@@ -3596,35 +3614,20 @@ class PaperSearch {
     }
 
     function description($listname) {
-        if (!$listname) {
-            $a = array("s" => "Submitted papers", "acc" => "Accepted papers",
-                       "act" => "Active papers", "all" => "All papers",
-                       "r" => "Your reviews", "a" => "Your submissions",
-                       "rout" => "Your incomplete reviews",
-                       "req" => "Your review requests",
-                       "reqrevs" => "Your review requests",
-                       "rable" => "Reviewable papers",
-                       "editpref" => "Reviewable papers");
-            if (isset($a[$this->limitName]))
-                $listname = $a[$this->limitName];
-            else
-                $listname = "Papers";
+        if ($listname)
+            $lx = $this->conf->_($listname);
+        else {
+            $limit = $this->limitName;
+            if ($this->limitName === "s" && $this->q === "re:me")
+                $limit = "r";
+            $lx = $this->conf->_c("search_types", get(self::$search_type_names, $limit, "Papers"));
         }
-        $listname = $this->conf->_($listname);
-        if ($this->q === "")
-            return $listname;
-        if (($td = $this->_tag_description())) {
-            if ($listname === "Submitted papers") {
-                if ($this->q === "re:me")
-                    return $this->conf->_("Your reviews");
-                else
-                    return $td;
-            } else
-                return "$td in $listname";
-        } else {
-            $listname = preg_replace("/s\\z/", "", $listname);
-            return "$listname search";
-        }
+        if ($this->q === "" || ($this->limitName === "s" && $this->q === "re:me"))
+            return $lx;
+        else if (($td = $this->_tag_description()))
+            return "$td in $lx";
+        else
+            return "$lx search";
     }
 
     function listid($sort = "") {
@@ -3686,58 +3689,57 @@ class PaperSearch {
     }
 
 
-    static function search_types($user, $reqtype = null) {
-        $tOpt = [];
+    static function search_types(Contact $user, $reqtype = null) {
+        $ts = [];
         if ($user->isPC) {
             if ($user->conf->can_pc_see_all_submissions())
-                $tOpt["act"] = "Active papers";
-            $tOpt["s"] = "Submitted papers";
+                $ts[] = "act";
+            $ts[] = "s";
             if ($user->conf->timePCViewDecision(false) && $user->conf->has_any_accepts())
-                $tOpt["acc"] = "Accepted papers";
+                $ts[] = "acc";
         }
         if ($user->privChair) {
-            $tOpt["all"] = "All papers";
+            $ts[] = "all";
             if (!$user->conf->can_pc_see_all_submissions() && $reqtype === "act")
-                $tOpt["act"] = "Active papers";
+                $ts[] = "act";
         }
         if ($user->is_reviewer())
-            $tOpt["r"] = "Your reviews";
+            $ts[] = "r";
         if ($user->has_outstanding_review()
             || ($user->is_reviewer() && $reqtype === "rout"))
-            $tOpt["rout"] = "Your incomplete reviews";
+            $ts[] = "rout";
         if ($user->isPC) {
             if ($user->is_requester() || $reqtype === "req")
-                $tOpt["req"] = "Your review requests";
+                $ts[] = "req";
             if (($user->conf->has_any_lead_or_shepherd() && $user->is_discussion_lead())
                 || $reqtype === "lead")
-                $tOpt["lead"] = "Your discussion leads";
+                $ts[] = "lead";
             if (($user->privChair ? $user->conf->has_any_manager() : $user->is_manager())
                 || $reqtype === "manager")
-                $tOpt["manager"] = "Papers you administer";
+                $ts[] = "manager";
         }
         if ($user->is_author() || $reqtype === "a")
-            $tOpt["a"] = "Your submissions";
-        foreach ($tOpt as &$itext)
-            $itext = $user->conf->_c("search_type", $itext);
-        return $tOpt;
+            $ts[] = "a";
+        return self::expand_search_types($user, $ts);
     }
 
-    static function manager_search_types($user) {
+    static function manager_search_types(Contact $user) {
         if ($user->privChair) {
             if ($user->conf->has_any_manager())
-                $tOpt = array("manager" => "Papers you administer",
-                              "unm" => "Unmanaged submissions",
-                              "s" => "All submissions");
+                $ts = ["manager", "unm", "s"];
             else
-                $tOpt = array("s" => "Submitted papers");
-            $tOpt["acc"] = "Accepted papers";
-            $tOpt["und"] = "Undecided papers";
-            $tOpt["all"] = "All papers";
+                $ts = ["s"];
+            array_push($ts, "acc", "und", "all");
         } else
-            $tOpt = array("manager" => "Papers you administer");
-        foreach ($tOpt as &$itext)
-            $itext = $user->conf->_c("search_type", $itext);
-        return $tOpt;
+            $ts = ["manager"];
+        return self::expand_search_types($user, $ts);
+    }
+
+    static private function expand_search_types(Contact $user, $ts) {
+        $topt = [];
+        foreach ($ts as $t)
+            $topt[$t] = $user->conf->_c("search_type", self::$search_type_names[$t]);
+        return $topt;
     }
 
     static function searchTypeSelector($tOpt, $type, $tabindex) {
