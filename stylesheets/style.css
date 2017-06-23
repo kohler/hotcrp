@@ -1329,7 +1329,7 @@ tr.pt_conflict_ass > td.entry, tr.propass > td.entry {
 	bottom: -0.125em;
 }
 del .rto {
-	background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M10,0l-10,10'%20fill='none'%20stroke='black'%20/%3E%3C/svg%3E");
+	background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M0,5l10,0'%20fill='none'%20stroke='black'%20/%3E%3C/svg%3E");
 	background-size: 100% 100%;
 }
 .rt4, .rt4n, .rt3, .rt3n, .rt2, .rt2n {
