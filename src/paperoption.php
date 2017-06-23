@@ -28,12 +28,12 @@ class PaperOptionValue {
             $this->option->expand_values($this->_values, $this->_data_array);
         if (count($this->_values) == 1 || !$this->option->takes_multiple()) {
             $this->value = get($this->_values, 0);
-            if (!empty($this->_data_array))
-                $this->_data = $this->_data_array[0];
-        }
-        if ($this->_documents && $this->_values != $old_values)
-            $this->_documents = null;
+            $this->_data = empty($this->_data_array) ? null : $this->_data_array[0];
+        } else
+            $this->value = $this->_data = null;
         $this->anno = null;
+        if ($this->_documents !== null && $this->_values != $old_values)
+            $this->_documents = null;
     }
     function documents() {
         assert($this->prow || empty($this->_values));

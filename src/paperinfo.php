@@ -1187,14 +1187,16 @@ class PaperInfo {
     function _assign_option_value(PaperOptionValue $ov) {
         if ($this->_option_data === null)
             $this->load_options(false, true);
-        $ov->assign($this->_option_values[$ov->id], $this->_option_data[$ov->id]);
+        $ov->assign(get($this->_option_values, $ov->id, []),
+                    get($this->_option_data, $ov->id, []));
     }
 
     function _reload_option_value(PaperOptionValue $ov) {
         unset($this->optionIds);
         $this->_option_values = $this->_option_data = null;
         $this->load_options(true, true);
-        $ov->assign($this->_option_values[$ov->id], $this->_option_data[$ov->id]);
+        $ov->assign(get($this->_option_values, $ov->id, []),
+                    get($this->_option_data, $ov->id, []));
     }
 
     function options() {
