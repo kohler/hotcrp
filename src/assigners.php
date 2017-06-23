@@ -895,20 +895,28 @@ class Lead_Assigner extends Assigner {
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $x = ["pid" => $this->pid, "action" => $this->type];
-        if ($this->isadd) {
+        if ($this->item->deleted())
+            $x["email"] = "none";
+        else {
             $x["email"] = $this->contact->email;
             $x["name"] = $this->contact->name_text();
-        } else
-            $x["email"] = "none";
+        }
         return $x;
     }
     function account(AssignmentCountSet $deltarev) {
         $k = $this->type;
-        if ($this->cid > 0 && ($k === "lead" || $k === "shepherd")) {
+        if ($k === "lead" || $k === "shepherd") {
             $deltarev->$k = true;
-            $ct = $deltarev->ensure($this->cid);
-            ++$ct->ass;
-            $ct->$k += $this->isadd ? 1 : -1;
+            if ($this->item->existed()) {
+                $ct = $deltarev->ensure($this->item->get(true, "_cid"));
+                ++$ct->ass;
+                --$ct->$k;
+            }
+            if (!$this->item->deleted()) {
+                $ct = $deltarev->ensure($this->cid);
+                ++$ct->ass;
+                ++$ct->$k;
+            }
         }
     }
     function add_locks(AssignmentSet $aset, &$locks) {
