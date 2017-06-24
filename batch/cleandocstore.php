@@ -10,10 +10,10 @@ if (isset($arg["m"]) && !isset($arg["match"]))
 if (isset($arg["d"]) && !isset($arg["dry-run"]))
     $arg["dry-run"] = $arg["d"];
 if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n");
+    fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH] [--dry-run]\n");
     exit(0);
 } else if (isset($arg["count"]) && !ctype_digit($arg["count"])) {
-    fwrite(STDERR, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n");
+    fwrite(STDERR, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH] [--dry-run]\n");
     exit(1);
 }
 
@@ -274,6 +274,88 @@ class Fparts {
         return $this->algo !== null
             && strlen($this->hash) === ($this->algo === "" ? 40 : 64);
     }
+    function random_match() {
+        global $verbose;
+        $this->clear();
+        $fm = new Fmatch;
+        for ($i = 0; $i < $this->n; ++$i)
+            if ($i % 2 == 0)
+                $fm->fname .= $this->components[$i];
+            else {
+                if (!isset(Cleaner::$dirinfo[$fm->fname]))
+                    return false;
+                $di = &Cleaner::$dirinfo[$fm->fname];
+                $ndi = count($di) - 1;
+                if ($ndi <= 0)
+                    break;
+                $idx = random_index($di);
+                for ($tries = $ndi >> 1; $tries > 0; --$tries) {
+                    //$verbose && error_log(json_encode([$i, $idx, $di[$idx + 1], $fparts->pregs[$i]]));
+                    if (($build = $this->match_component($di[$idx + 1], $i)))
+                        break;
+                    $idx += 2;
+                    if ($idx == $ndi)
+                        $idx = 0;
+                }
+                $fm->bdirs[] = $fm->fname;
+                $fm->idxes[] = $idx;
+                unset($di);
+                $fm->fname .= $build;
+            }
+        if ($this->match_complete()) {
+            $fm->algohash = $this->algo . $this->hash;
+            $fm->extension = $this->extension;
+        }
+        return $fm;
+    }
+}
+
+class Fmatch {
+    public $bdirs = [];
+    public $idxes = [];
+    public $fname = "";
+    public $algohash;
+    public $extension;
+    public $atime;
+
+    function is_complete() {
+        return $this->algohash !== null;
+    }
+    function remove() {
+        // account for removal
+        $delta = null;
+        for ($i = count($this->idxes) - 1; $i >= 0; --$i) {
+            $di = &Cleaner::$dirinfo[$this->bdirs[$i]];
+            $ndi = count($di) - 1;
+            $idx = $this->idxes[$i];
+            if ($delta === null)
+                $delta = $di[$idx + 2] - $di[$idx];
+            if ($delta === $di[$idx + 2] - $di[$idx]) {
+                // remove entry
+                if ($delta === $di[$ndi] - $di[$ndi - 2])
+                    $di[$idx + 1] = $di[$ndi - 1];
+                else {
+                    for ($j = $idx + 2; $j < $ndi; $j += 2) {
+                        $di[$j - 1] = $di[$j + 1];
+                        $di[$j] = $di[$j + 2] - $delta;
+                    }
+                }
+                assert($di[$ndi - 2] == $di[$ndi] - $delta);
+                array_pop($di);
+                array_pop($di);
+            } else {
+                for ($j = $idx + 2; $j <= $ndi; $j += 2)
+                    $di[$j] -= $delta;
+            }
+            unset($di);
+        }
+        $this->idxes = $this->bdirs = [];
+    }
+    function atime() {
+        if ($this->atime === null)
+            $this->atime = fileatime($this->fname);
+        return $this->atime;
+    }
 }
 
 $fparts = new Fparts($dp);
@@ -300,105 +382,56 @@ function random_index($di) {
     return $l;
 }
 
-function try_random_match(Fparts $fparts) {
-    global $verbose;
-    $fparts->clear();
-    $bdir = "";
-    $bdirs = $idxes = [];
-
-    for ($i = 0; $i < $fparts->n; ++$i)
-        if ($i % 2 == 0)
-            $bdir .= $fparts->components[$i];
-        else {
-            if (!isset(Cleaner::$dirinfo[$bdir]))
-                return false;
-            $di = &Cleaner::$dirinfo[$bdir];
-            $ndi = count($di) - 1;
-            if ($ndi <= 0)
-                break;
-            $idx = random_index($di);
-            for ($tries = $ndi >> 1; $tries > 0; --$tries) {
-                //$verbose && error_log(json_encode([$i, $idx, $di[$idx + 1], $fparts->pregs[$i]]));
-                if (($build = $fparts->match_component($di[$idx + 1], $i)))
-                    break;
-                $idx += 2;
-                if ($idx == $ndi)
-                    $idx = 0;
-            }
-            $bdirs[] = $bdir;
-            $idxes[] = $idx;
-            unset($di);
-            $bdir .= $build;
-        }
-
-    // account for removal
-    $delta = null;
-    for ($i = count($idxes) - 1; $i >= 0; --$i) {
-        $di = &Cleaner::$dirinfo[$bdirs[$i]];
-        $ndi = count($di) - 1;
-        $idx = $idxes[$i];
-        if ($delta === null)
-            $delta = $di[$idx + 2] - $di[$idx];
-        if ($delta === $di[$idx + 2] - $di[$idx]) {
-            // remove entry
-            if ($delta === $di[$ndi] - $di[$ndi - 2])
-                $di[$idx + 1] = $di[$ndi - 1];
-            else {
-                for ($j = $idx + 2; $j < $ndi; $j += 2) {
-                    $di[$j - 1] = $di[$j + 1];
-                    $di[$j] = $di[$j + 2] - $delta;
-                }
-            }
-            assert($di[$ndi - 2] == $di[$ndi] - $delta);
-            array_pop($di);
-            array_pop($di);
-        } else {
-            for ($j = $idx + 2; $j <= $ndi; $j += 2)
-                $di[$j] -= $delta;
-        }
-        unset($di);
-    }
-
-    if (!$fparts->match_complete())
-        return false;
-    return [$fparts->algo . $fparts->hash, $fparts->extension, $bdir];
-}
-
 
 $hotcrpdoc = new HotCRPDocument($Conf, DTYPE_SUBMISSION);
 $ndone = $nsuccess = 0;
 
 while ($count > 0) {
-    $x = null;
-    for ($i = 0; $i < 10000 && !$x; ++$i)
-        $x = try_random_match($fparts);
+    $x = [];
+    for ($i = 0; $x ? count($x) < 5 && $i < 10 : $i < 10000; ++$i) {
+        $fm = $fparts->random_match();
+        if ($fm->is_complete())
+            $x[] = $fm;
+        else
+            $fm->remove();
+    }
     if (!$x) {
         fwrite(STDERR, "Can't find anything to delete.\n");
         break;
     }
-    $doc = new DocumentInfo(["sha1" => $x[0],
-                             "mimetype" => Mimetype::type($x[1])]);
+
+    usort($x, function ($a, $b) {
+        if ($a->atime() !== false && $b->atime() !== false)
+            return $a->atime() - $b->atime();
+        else
+            return $a->atime() ? -1 : 1;
+    });
+    $fm = $x[0];
+    $fm->remove();
+
+    $doc = new DocumentInfo(["sha1" => $fm->algohash,
+                             "mimetype" => Mimetype::type($fm->extension)]);
     $hashalg = $doc->hash_algorithm();
     $ok = false;
     if ($hashalg === false)
-        fwrite(STDERR, "$x[2]: unknown hash\n");
-    else if (($chash = hash_file($hashalg, $x[2], true)) === false)
-        fwrite(STDERR, "$x[2]: is unreadable\n");
+        fwrite(STDERR, "{$fm->fname}: unknown hash\n");
+    else if (($chash = hash_file($hashalg, $fm->fname, true)) === false)
+        fwrite(STDERR, "{$fm->fname}: is unreadable\n");
     else if ($chash !== $doc->binary_hash_data())
-        fwrite(STDERR, "$x[2]: incorrect hash\n");
+        fwrite(STDERR, "{$fm->fname}: incorrect hash\n");
     else if ($hotcrpdoc->s3_check($doc)) {
         if ($dry_run) {
             if ($verbose)
-                fwrite(STDOUT, "$x[2]: would remove\n");
+                fwrite(STDOUT, "{$fm->fname}: would remove\n");
             $ok = true;
-        } else if (unlink($x[2])) {
+        } else if (unlink($fm->fname)) {
             if ($verbose)
-                fwrite(STDOUT, "$x[2]: removed\n");
+                fwrite(STDOUT, "{$fm->fname}: removed\n");
             $ok = true;
         } else
-            fwrite(STDERR, "$x[2]: cannot remove\n");
+            fwrite(STDERR, "{$fm->fname}: cannot remove\n");
     } else
-        fwrite(STDERR, "$x[2]: not on S3\n");
+        fwrite(STDERR, "{$fm->fname}: not on S3\n");
     --$count;
     ++$ndone;
     $nsuccess += $ok ? 1 : 0;
