@@ -52,6 +52,9 @@ if (isset($arg["t"]) || isset($arg["time"])) {
     exit(0);
 }
 
+define("OUTL2", 2);
+define("OUTL3", 3);
+
 $trans = [2 => [], 3 => []];
 $l = strlen(UTF8_ALPHA_TRANS_2);
 assert($l % 2 == 0);
@@ -61,13 +64,10 @@ for ($i = 0; $i < $l; $i += $outl)
     $trans[2][substr(UTF8_ALPHA_TRANS_2, $i, 2)] = rtrim(substr(UTF8_ALPHA_TRANS_2_OUT, $i, $outl));
 $l = strlen(UTF8_ALPHA_TRANS_3);
 assert($l % 3 == 0);
-$outl = 2;
+$outl = 3;
 assert(strlen(UTF8_ALPHA_TRANS_3_OUT) === ($l / 3) * $outl);
 for ($i = $j = 0; $i < $l; $i += 3, $j += $outl)
     $trans[3][substr(UTF8_ALPHA_TRANS_3, $i, 3)] = rtrim(substr(UTF8_ALPHA_TRANS_3_OUT, $j, $outl));
-
-define(OUTL2, 2);
-define(OUTL3, 3);
 
 function quote_key($k) {
     if (strlen($k) == 2)
@@ -99,19 +99,20 @@ function assign_it($sin, $sout, $override, $description = false) {
         fwrite(STDERR, "input argument $sxin->$sout is bad\n");
     else if (strlen($sout) > ($l > 2 ? OUTL3 : OUTL2))
         fwrite(STDERR, "output argument $sxin->$sout too long\n");
-    else if ((!$override && isset($trans[$l][$sin]))
-             || ($sout === "" && !isset($trans[$l][$sin]))
+    else if (($sout === "" && !isset($trans[$l][$sin]))
              || (isset($trans[$l][$sin]) && $trans[$l][$sin] === $soutch))
         /* skip */;
-    else if ($sout === "") {
-        fwrite(STDERR, "unset $sxin\n");
+    else if (!$override && isset($trans[$l][$sin])) {
+        fwrite(STDERR, "ignore $sxin->$sout, have $sxin->" . sprintf("U+%04X", UnicodeHelper::utf8_ord($trans[$l][$sin])) . "\n");
+    } else if ($sout === "") {
+        fwrite(STDERR, "change $sxin->\n");
         unset($trans[strlen($sin)][$sin]);
     } else {
-        fwrite(STDERR, "set $sxin->$sout\n");
+        fwrite(STDERR, "change $sxin->$sout\n");
         $trans[strlen($sin)][$sin] = $soutch;
     }
-
 }
+
 if (isset($arg["f"]) || isset($arg["file"])) {
     $ignore_latin = [0x212B /* ANGSTROM SIGN */ => true];
     $filename = get($arg, "f", get($arg, "file", null));
@@ -155,7 +156,9 @@ if (isset($arg["f"]) || isset($arg["file"])) {
                     else
                         $all[] = $compch;
                 }
-            if (!empty($latin) && count($latinmark) === count($all) && !isset($ignore_latin[$c]))
+            if (!isset($ignore_latin[$c])
+                && !empty($latin)
+                && count($latinmark) === count($all))
                 assign_it($c, join("", $latin), false, $uc[1]);
             else if ($verbose)
                 fwrite(STDERR, "ignoring U+{$uc[0]};{$uc[1]};{$uc[5]}\n");
