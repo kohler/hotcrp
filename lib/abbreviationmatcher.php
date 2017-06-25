@@ -94,11 +94,11 @@ class AbbreviationMatcher {
     function find1($text, $tflags = 0) {
         $a = $this->find($text, $tflags);
         if (empty($a))
-            return null;
+            return false;
         else if (count($a) == 1)
             return $a[0];
         else
-            return false;
+            return null;
     }
 
 
