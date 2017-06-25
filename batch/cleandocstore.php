@@ -195,7 +195,7 @@ class Fparts {
                         return false;
                     $build .= $xext;
                     $text = substr($text, strlen($xext));
-                } else if (preg_match('{\A(\.(?:avi|bin|bz2|csv|docx?|gif|gz|html|jpg|json|mp4|pdf|png|pptx?|ps|tar|tex|txt|xlsx?|zip))}', $text, $m)) {
+                } else if (preg_match('{\A(\.(?:avi|bin|bz2|csv|docx?|gif|gz|html|jpg|json|md|mp4|pdf|png|pptx?|ps|tar|tex|txt|xlsx?|zip))}', $text, $m)) {
                     $xext = $m[1];
                     $build .= $m[1];
                     $text = substr($text, strlen($m[1]));
