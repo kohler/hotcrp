@@ -509,6 +509,13 @@ xassert_eqq($am->find("elan"), [1, 5]);
 xassert_eqq($am->find("elan", 1), [1]);
 xassert_eqq($am->find("elan", 2), [5]);
 xassert_eqq($am->find("elan", 3), [1, 5]);
+xassert_eqq($am->find("é"), [1, 5]);
+$am->add("élange", 6, 2);
+xassert_eqq($am->find("ela"), [1, 5, 6]);
+xassert_eqq($am->find("elan"), [1, 5]);
+xassert_eqq($am->find("elange"), [6]);
+xassert_eqq($am->find("elan*"), [1, 5, 6]);
+xassert_eqq($am->find("e*e"), [6]);
 
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
