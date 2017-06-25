@@ -7,10 +7,9 @@ class AbbreviationMatcher {
     private $data = [];
     private $dnames = [];
     private $matches = [];
-    private $any_deaccent = false;
 
-    function add($name, $data, $tflags = 0) {
-        $this->data[] = [$name, null, $data, $tflags];
+    function add($name, $data, $tflags = 0, $prio = 0) {
+        $this->data[] = [$name, null, $data, $tflags, $prio];
         $this->matches = [];
     }
 
@@ -19,8 +18,6 @@ class AbbreviationMatcher {
         for (; $i !== count($this->data); ++$i) {
             $name = simplify_whitespace($this->data[$i][0]);
             $dname = UnicodeHelper::deaccent($name);
-            if (strlen($name) !== strlen($dname))
-                $this->any_deaccent = true;
             $this->data[$i][0] = $name;
             $this->data[$i][1] = $dname;
             $this->dnames[] = $dname;
@@ -80,12 +77,16 @@ class AbbreviationMatcher {
         if (!array_key_exists($text, $this->matches))
             $this->_find($text);
         $results = [];
-        $last = false;
+        $last = $prio = false;
         foreach ($this->matches[$text] as $k) {
-            if (!$tflags || ($this->data[$k][3] & $tflags) != 0) {
-                $cur = $this->data[$k][2];
-                if (empty($results) || $cur !== $last)
-                    $results[] = $last = $cur;
+            $d = $this->data[$k];
+            if (!$tflags || ($d[3] & $tflags) != 0) {
+                if ($prio === false || $d[4] > $prio) {
+                    $results = [];
+                    $prio = $d[4];
+                }
+                if (empty($results) || $d[2] !== $last)
+                    $results[] = $last = $d[2];
             }
         }
         return $results;
