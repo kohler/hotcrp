@@ -23,7 +23,7 @@ software:
 
 * Apache, http://apache.org/ or Nginx, http://nginx.org/
   (You may be able to use another web server that works with PHP.)
-* PHP version 5.4 or higher, http://php.net/
+* PHP version 5.5 or higher, http://php.net/
   - Including MySQL and GD support
 * MySQL version 5 or higher, http://mysql.org/
 * The zip compressor, http://www.info-zip.org/
