@@ -143,7 +143,7 @@ class AbbreviationMatcher {
     }
 
     private function _find($pattern) {
-        if ($this->nanal !== count($this->data))
+        if (empty($this->matches))
             $this->_analyze();
         // A call to Abbreviatable::abbreviation() might call back in
         // to AbbreviationMatcher::find(). Short-circuit that call.
