@@ -747,9 +747,9 @@ class PaperStatus extends MessageSet {
         if (get($pj, "options"))
             $this->check_options($pj);
         if (!empty($pj->bad_topics))
-            $this->warning_at("topics", $this->_("Unknown topics ignored (%2$s).", count($pj->bad_topics), htmlspecialchars(join("; ", $pj->bad_topics))));
+            $this->warning_at("topics", $this->_("Unknown topics ignored (%2\$s).", count($pj->bad_topics), htmlspecialchars(join("; ", $pj->bad_topics))));
         if (!empty($pj->bad_options))
-            $this->warning_at("options", $this->_("Unknown options ignored (%2$s).", count($pj->bad_options), htmlspecialchars(join("; ", array_keys($pj->bad_options)))));
+            $this->warning_at("options", $this->_("Unknown options ignored (%2\$s).", count($pj->bad_options), htmlspecialchars(join("; ", array_keys($pj->bad_options)))));
     }
 
     static private function author_information($pj) {
