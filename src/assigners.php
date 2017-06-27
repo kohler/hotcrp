@@ -1787,14 +1787,14 @@ class AssignmentSet {
 
     private function install_csv_header($csv, $req) {
         if (!self::is_csv_header($req)) {
+            $csv->unshift($req);
             if (count($req) == 3
                 && (!$req[2] || strpos($req[2], "@") !== false))
-                $csv->set_header(array("paper", "name", "email"));
+                $req = ["paper", "name", "email"];
             else if (count($req) == 2)
-                $csv->set_header(array("paper", "user"));
+                $req = ["paper", "user"];
             else
-                $csv->set_header(array("paper", "action", "user", "round"));
-            $csv->unshift($req);
+                $req = ["paper", "action", "user", "round"];
         } else {
             $cleans = array("paper", "pid", "paper", "paperId",
                             "firstName", "first", "lastName", "last",
@@ -1804,22 +1804,29 @@ class AssignmentSet {
                 if (array_search($cleans[$i], $req) === false
                     && ($j = array_search($cleans[$i + 1], $req)) !== false)
                     $req[$j] = $cleans[$i];
-            $csv->set_header($req);
         }
 
-        $has_action = array_search("action", $csv->header()) !== false
-            || array_search("assignment", $csv->header()) !== false;
-        if (!$has_action && array_search("tag", $csv->header()) !== false)
+        $has_action = array_search("action", $req) !== false
+            || array_search("assignment", $req) !== false;
+        if (!$has_action && array_search("tag", $req) !== false)
             $this->astate->defaults["action"] = "tag";
-        if (!$has_action && array_search("preference", $csv->header()) !== false)
+        if (!$has_action && array_search("preference", $req) !== false)
             $this->astate->defaults["action"] = "preference";
+        if (!$has_action && ($j = array_search("lead", $req)) !== false) {
+            $req[$j] = "user";
+            $this->astate->defaults["action"] = "lead";
+        }
+        $csv->set_header($req);
+
         if (!$has_action && !get($this->astate->defaults, "action"))
             return $this->error($csv->lineno(), "“assignment” column missing");
-        if (array_search("paper", $csv->header()) === false)
+        else if (array_search("paper", $req) === false)
             return $this->error($csv->lineno(), "“paper” column missing");
-        if (!isset($this->astate->defaults["action"]))
-            $this->astate->defaults["action"] = "<missing>";
-        return true;
+        else {
+            if (!isset($this->astate->defaults["action"]))
+                $this->astate->defaults["action"] = "<missing>";
+            return true;
+        }
     }
 
     function hide_column($coldesc, $force = false) {
