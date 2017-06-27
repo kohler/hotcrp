@@ -458,7 +458,7 @@ class PaperStatus extends MessageSet {
             foreach ($topics as $k => $v) {
                 if (!$v)
                     /* skip */;
-                else if (get($topic_map, $k))
+                else if (isset($topic_map[$k]))
                     $pj->topics->$k = true;
                 else {
                     $tid = array_search($k, $topic_map, true);
@@ -467,8 +467,7 @@ class PaperStatus extends MessageSet {
                         foreach ($topic_map as $tid => $tname)
                             if (strcasecmp($k, $tname) == 0)
                                 $tmatches[] = $tid;
-                        if (count($tmatches) == 1)
-                            $tid = $tmatches[0];
+                        $tid = (count($tmatches) == 1 ? $tmatches[0] : false);
                     }
                     if ($tid !== false)
                         $pj->topics->$tid = true;
