@@ -1749,9 +1749,11 @@ class Contact {
             // check PC tracking
             // (see also can_accept_review_assignment*)
             $tracks = $this->conf->has_tracks();
+            $am_lead = $this->contactId > 0 && $prow->leadContactId == $this->contactId;
             $isPC = $this->isPC
                 && (!$tracks
                     || $ci->reviewType >= REVIEW_PC
+                    || $am_lead
                     || !$this->conf->check_track_view_sensitivity()
                     || $this->conf->check_tracks($prow, $this, Track::VIEW));
 
@@ -1762,7 +1764,7 @@ class Contact {
 
             // check whether this is a potential reviewer
             // (existing external reviewer or PC)
-            if ($ci->reviewType > 0 || $ci->allow_administer)
+            if ($ci->reviewType > 0 || $am_lead || $ci->allow_administer)
                 $ci->potential_reviewer = true;
             else if ($ci->allow_pc)
                 $ci->potential_reviewer = !$tracks
@@ -1784,7 +1786,7 @@ class Contact {
                 && isset($this->capabilities[$prow->paperId])
                 && ($this->capabilities[$prow->paperId] & self::CAP_AUTHORVIEW)
                 && !$isPC
-                && $ci->reviewType <= 0)
+                && !$ci->review_status)
                 $ci->view_conflict_type = CONFLICT_AUTHOR;
             $ci->act_author_view = $ci->view_conflict_type >= CONFLICT_AUTHOR;
             $ci->allow_author_view = $ci->act_author_view || $ci->allow_administer;
@@ -1795,8 +1797,7 @@ class Contact {
                 || ($bs == Conf::BLIND_OPTIONAL
                     && !(isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind))
                 || ($bs == Conf::BLIND_UNTILREVIEW
-                    && $ci->reviewType > 0
-                    && $ci->reviewSubmitted > 0)
+                    && $ci->review_status > 0)
                 || ($prow->outcome > 0
                     && ($isPC || $ci->allow_review)
                     && $this->conf->timeReviewerViewAcceptedAuthors());
@@ -2044,7 +2045,7 @@ class Contact {
             return true;
         $rights = $this->rights($prow, "any");
         return $rights->allow_author_view
-            || ($rights->reviewType
+            || ($rights->review_status != 0
                 // assigned reviewer can view PDF of withdrawn, but submitted, paper
                 && (!$pdf || $prow->timeSubmitted != 0))
             || ($rights->allow_pc_broad
@@ -2058,7 +2059,7 @@ class Contact {
         $rights = $this->rights($prow, "any");
         $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author_view
-            && !$rights->reviewType
+            && !$rights->review_status
             && !$rights->allow_pc_broad)
             $whyNot["permission"] = 1;
         else {
@@ -2113,7 +2114,8 @@ class Contact {
         if ($prow) {
             $rights = $this->rights($prow, $forceShow);
             return $rights->can_administer
-                || $prow->leadContactId == $this->contactId
+                || ($this->contactId > 0
+                    && $prow->leadContactId == $this->contactId)
                 || (($rights->allow_pc || $rights->allow_review)
                     && $this->can_view_review_identity($prow, null, $forceShow));
         } else
@@ -2135,7 +2137,7 @@ class Contact {
         return ($rights->nonblind
                 && $prow->timeSubmitted != 0
                 && ($rights->allow_pc_broad
-                    || $rights->reviewType))
+                    || $rights->review_status != 0))
             || ($rights->nonblind
                 && $prow->timeWithdrawn <= 0
                 && $rights->allow_pc_broad
@@ -2178,7 +2180,7 @@ class Contact {
             return false;
         return $rights->act_author_view
             || (($rights->allow_administer
-                 || $rights->reviewType
+                 || $rights->review_status != 0
                  || $rights->allow_pc_broad)
                 && (($oview == "admin" && $rights->allow_administer)
                     || !$oview
@@ -2205,9 +2207,14 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         $oview = $opt->visibility;
         if (!$rights->act_author_view
-            && (($oview == "admin" && !$rights->allow_administer)
-                || ((!$oview || $oview == "rev") && !$rights->allow_administer && !$rights->reviewType && !$rights->allow_pc_broad)
-                || ($oview == "nonblind" && !$this->can_view_authors($prow, $forceShow))))
+            && (($oview == "admin"
+                && !$rights->allow_administer)
+                || ((!$oview || $oview == "rev")
+                    && !$rights->allow_administer
+                    && !$rights->review_status
+                    && !$rights->allow_pc_broad)
+                || ($oview == "nonblind"
+                    && !$this->can_view_authors($prow, $forceShow))))
             $whyNot["optionPermission"] = $opt;
         else if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
             $whyNot["optionNotAccepted"] = $opt;
@@ -2248,7 +2255,7 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_administer
             || $rights->allow_pc
-            || $rights->reviewType
+            || $rights->review_status != 0
             || $this->can_view_review($prow, $rrow, $forceShow);
     }
 
@@ -2303,9 +2310,9 @@ class Contact {
                 && ($pc_seeallrev != Conf::PCSEEREV_UNLESSANYINCOMPLETE
                     || !$this->has_outstanding_review())
                 && ($pc_seeallrev != Conf::PCSEEREV_UNLESSINCOMPLETE
-                    || !$rights->reviewType)
+                    || !$rights->review_status)
                 && $pc_trackok)
-            || ($rights->reviewType
+            || ($rights->review_status != 0
                 && !$rights->view_conflict_type
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
@@ -2326,7 +2333,7 @@ class Contact {
             $whyNot["notSubmitted"] = 1;
         else if (!$rights->act_author_view
                  && !$rights->allow_pc
-                 && !$rights->reviewType)
+                 && !$rights->review_status)
             $whyNot["permission"] = 1;
         else if ($rights->act_author_view
                  && $this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
@@ -2419,7 +2426,9 @@ class Contact {
     function can_request_review(PaperInfo $prow, $check_time) {
         $rights = $this->rights($prow);
         return ($rights->reviewType >= REVIEW_PC
-                 || $rights->allow_administer)
+                || ($this->contactId > 0
+                    && $prow->leadContactId == $this->contactId)
+                || $rights->allow_administer)
             && (!$check_time
                 || $this->conf->time_review(null, false, true)
                 || $this->override_deadlines($rights));
@@ -2430,7 +2439,10 @@ class Contact {
             return null;
         $rights = $this->rights($prow);
         $whyNot = $prow->initial_whynot();
-        if ($rights->reviewType < REVIEW_PC && !$rights->allow_administer)
+        if ($rights->reviewType < REVIEW_PC
+            && ($this->contactId <= 0
+                || $prow->leadContactId != $this->contactId)
+            && !$rights->allow_administer)
             $whyNot["permission"] = 1;
         else {
             $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
@@ -2620,7 +2632,7 @@ class Contact {
         $rights = $this->rights($prow);
         return $rights->allow_review
             && ($prow->timeSubmitted > 0
-                || $rights->reviewType > 0
+                || $rights->review_status != 0
                 || ($rights->allow_administer && $rights->rights_forced))
             && ($this->conf->setting("cmt_always") > 0
                 || $this->conf->time_review(null, $rights->allow_pc, true)
@@ -2783,7 +2795,7 @@ class Contact {
 
     function can_view_comment_tags(PaperInfo $prow, $crow, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
-        return $rights->allow_pc || $rights->reviewType > 0;
+        return $rights->allow_pc || $rights->review_status != 0;
     }
 
     function can_view_some_draft_response() {
@@ -2798,8 +2810,7 @@ class Contact {
                 && $prow->can_author_view_decision())
             || ($rights->allow_pc_broad
                 && $this->conf->timePCViewDecision($rights->view_conflict_type > 0))
-            || ($rights->reviewType > 0
-                && $rights->reviewSubmitted
+            || ($rights->review_status > 0
                 && $this->conf->timeReviewerViewDecision());
     }
 

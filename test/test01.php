@@ -167,6 +167,11 @@ $revreq = array("overAllMerit" => 5, "reviewerQualification" => 4, "ready" => tr
 save_review(1, $user_mgbaker, $revreq);
 assert_search_papers($user_mgbaker, "re:varghese", "1");
 
+// or lead assignment
+assert_search_papers($user_marina, "re:varghese", "");
+xassert_assign($Admin, true, "paper,lead\n1,marina\n");
+assert_search_papers($user_marina, "re:varghese", "1");
+
 // check comment identity
 xassert($Conf->setting("au_seerev") == Conf::AUSEEREV_NO);
 $comment1 = new CommentInfo(null, $paper1);
