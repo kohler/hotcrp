@@ -1749,7 +1749,8 @@ class Contact {
             // check PC tracking
             // (see also can_accept_review_assignment*)
             $tracks = $this->conf->has_tracks();
-            $am_lead = $this->contactId > 0 && $prow->leadContactId == $this->contactId;
+            $am_lead = $this->contactId > 0 && isset($prow->leadContactId)
+                && $prow->leadContactId == $this->contactId;
             $isPC = $this->isPC
                 && (!$tracks
                     || $ci->reviewType >= REVIEW_PC
@@ -2115,6 +2116,7 @@ class Contact {
             $rights = $this->rights($prow, $forceShow);
             return $rights->can_administer
                 || ($this->contactId > 0
+                    && isset($prow->leadContactId)
                     && $prow->leadContactId == $this->contactId)
                 || (($rights->allow_pc || $rights->allow_review)
                     && $this->can_view_review_identity($prow, null, $forceShow));
@@ -2427,6 +2429,7 @@ class Contact {
         $rights = $this->rights($prow);
         return ($rights->reviewType >= REVIEW_PC
                 || ($this->contactId > 0
+                    && isset($prow->leadContactId)
                     && $prow->leadContactId == $this->contactId)
                 || $rights->allow_administer)
             && (!$check_time
@@ -2441,6 +2444,7 @@ class Contact {
         $whyNot = $prow->initial_whynot();
         if ($rights->reviewType < REVIEW_PC
             && ($this->contactId <= 0
+                || !isset($prow->leadContactId)
                 || $prow->leadContactId != $this->contactId)
             && !$rights->allow_administer)
             $whyNot["permission"] = 1;

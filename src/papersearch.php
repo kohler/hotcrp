@@ -3248,6 +3248,8 @@ class PaperSearch {
         $sqi->add_column("timeSubmitted", "Paper.timeSubmitted");
         $sqi->add_column("timeWithdrawn", "Paper.timeWithdrawn");
         $sqi->add_column("outcome", "Paper.outcome");
+        if ($this->conf->has_any_lead_or_shepherd())
+            $sqi->add_column("leadContactId", "Paper.leadContactId");
         $filters = array();
         $filters[] = $qe->sqlexpr($sqi);
         //Conf::msg_debugt(var_export($filters, true));

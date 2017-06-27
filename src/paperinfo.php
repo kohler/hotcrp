@@ -30,7 +30,7 @@ class PaperContactInfo {
         $ci->paperId = $prow->paperId;
         $ci->contactId = $cid;
         $ci->is_full = $full;
-        if ($cid > 0 && $prow->leadContactId == $cid)
+        if ($cid > 0 && isset($prow->leadContactId) && $prow->leadContactId == $cid)
             $ci->review_status = 1;
         return $ci;
     }
