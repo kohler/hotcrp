@@ -1737,10 +1737,14 @@ class AssignmentSet {
 
         // check PC list
         $cset = $assigner->contact_set($req, $this->astate);
-        if ($cset === "pc")
+        $cset_text = "user";
+        if ($cset === "pc") {
             $cset = $this->conf->pc_members();
-        else if ($cset === "reviewers")
+            $cset_text = "PC member";
+        } else if ($cset === "reviewers") {
             $cset = $this->reviewer_set();
+            $cset_text = "reviewer";
+        }
         if ($cset) {
             $text = "";
             if ($first && $last)
@@ -1753,9 +1757,9 @@ class AssignmentSet {
             if (count($ret->ids) == 1)
                 return $ret->contacts();
             else if (empty($ret->ids))
-                $this->error("No user matches “" . self::req_user_html($req) . "”.");
+                $this->error("No $cset_text matches “" . self::req_user_html($req) . "”.");
             else
-                $this->error("“" . self::req_user_html($req) . "” matches more than one user, use a full email address to disambiguate.");
+                $this->error("“" . self::req_user_html($req) . "” matches more than one $cset_text, use a full email address to disambiguate.");
             return false;
         }
 
