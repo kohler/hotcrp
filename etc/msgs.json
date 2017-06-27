@@ -12,5 +12,8 @@
     ["%s external review deadline", "External review deadline", ["!$1"]],
     ["%s external review hard deadline", "External review hard deadline", ["!$1"]],
 
+    ["Unknown topics ignored (%2$s).", "Unknown topic ignored (%2$s).", ["$1=1"]],
+    ["Unknown options ignored (%2$s).", "Unknown option ignored (%2$s).", ["$1=1"]],
+
     ["paper_edit_field", "Authors", "Author", ["$1=1"]]
 ]
