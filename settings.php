@@ -313,7 +313,7 @@ class SettingValues extends MessageSet {
         return isset($this->interesting_groups[$g]);
     }
 
-    function label($name, $html, $label_id = null) {
+    function label($name, $html, $label_id = null, $label_js = null) {
         $name1 = is_array($name) ? $name[0] : $name;
         foreach (is_array($name) ? $name : array($name) as $n)
             if ($this->has_problem_at($n)) {
@@ -322,10 +322,10 @@ class SettingValues extends MessageSet {
             }
         if ($label_id !== false) {
             $label_id = $label_id ? : $name1;
+            $post = "";
             if (($pos = strpos($html, "<input")) !== false)
-                $html = Ht::label(substr($html, 0, $pos), $label_id) . substr($html, $pos);
-            else
-                $html = Ht::label($html, $label_id);
+                list($html, $post) = [substr($html, 0, $pos), substr($html, $pos)];
+            $html = Ht::label($html, $label_id, $label_js) . $post;
         }
         return $html;
     }
@@ -496,18 +496,16 @@ class SettingValues extends MessageSet {
         $x = $this->curv($name);
         if ($x === null || !isset($varr[$x]))
             $x = 0;
-        echo "<table style=\"margin-top:0.25em\">\n";
+        echo "<table style=\"margin-top:0.25em\" id=\"{$name}_table\">\n";
+        $changejs = "settings_radio_table(" . json_encode($name) . ")";
         foreach ($varr as $k => $text) {
-            echo '<tr><td class="nb">',
-                Ht::radio($name, $k, $k == $x, $this->sjs($name, array("id" => "{$name}_{$k}"))),
-                "&nbsp;</td><td>";
-            if (is_array($text))
-                echo $this->label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
-            else
-                echo $this->label($name, $text, true);
-            echo "</td></tr>\n";
+            echo "<tr id=\"{$name}_row_{$k}\" class=\"foldc\"><td class=\"nb\">",
+                Ht::radio($name, $k, $k == $x, $this->sjs($name, ["id" => "{$name}_{$k}", "onchange" => $changejs])),
+                "&nbsp;</td><td>",
+                $this->label($name, $text, true),
+                "</td></tr>\n";
         }
-        echo "</table>\n";
+        echo "</table>\n", Ht::unstash_script($changejs);
     }
     function render_entry($name, $js = []) {
         $v = $this->curv($name);

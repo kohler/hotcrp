@@ -267,7 +267,7 @@ function regexp_quote(s) {
 }
 
 function plural_noun(n, what) {
-    if (jQuery.isArray(n))
+    if ($.isArray(n))
         n = n.length;
     if (n == 1)
         return what;
@@ -283,7 +283,7 @@ function plural_noun(n, what) {
 }
 
 function plural(n, what) {
-    if (jQuery.isArray(n))
+    if ($.isArray(n))
         n = n.length;
     return n + " " + plural_noun(n, what);
 }
@@ -1859,7 +1859,7 @@ function fold(elt, dofold, foldnum, foldsessiontype) {
     var i, foldname, selt, opentxt, closetxt, isopen, foldnumid;
 
     // find element
-    if (elt instanceof Array) {
+    if ($.isArray(elt) || elt.jquery) {
         for (i = 0; i < elt.length; i++)
             fold(elt[i], dofold, foldnum, foldsessiontype);
         return false;

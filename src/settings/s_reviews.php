@@ -149,12 +149,12 @@ function render(SettingValues $sv) {
     $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
                                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
                                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper"));
+                                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviews.</div>"));
     echo "</div>\n";
 
-    echo "<div class=\"g\">Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
+    echo "<div class=\"g\">Can PC members see <strong>reviewer names and comments</strong> except for conflicts?<br />\n";
     $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
-                                    1 => "Only after completing a review for the same paper<br /><span class='hint'>This also hides reviewer-only comments from PC members who have not completed a review for the same paper.</span>"));
+                                    1 => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviewer names.</div>"));
     echo "</div>\n";
 
 
