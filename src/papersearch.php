@@ -535,7 +535,7 @@ class Then_SearchTerm extends Op_SearchTerm {
 class TextMatch_SearchTerm extends SearchTerm {
     private $field;
     private $authorish;
-    private $nonempty = false;
+    private $trivial = null;
     public $regex;
     static public $map = [
         "ti" => "title", "ab" => "abstract", "au" => "authorInformation",
@@ -546,36 +546,41 @@ class TextMatch_SearchTerm extends SearchTerm {
         parent::__construct($t);
         $this->field = self::$map[$t];
         $this->authorish = $t === "au" || $t === "co";
-        if ($text === true)
-            $this->nonempty = true;
+        if (is_bool($text))
+            $this->trivial = $text;
         else
             $this->regex = Text::star_text_pregexes($text);
     }
     static function parse($word, SearchWord $sword) {
-        if ($word === "any" && $sword->kwexplicit && !$sword->quoted)
-            $word = true;
+        if ($sword->kwexplicit && !$sword->quoted) {
+            if ($word === "any")
+                $word = true;
+            else if ($word === "none")
+                $word = false;
+        }
         return new TextMatch_SearchTerm($sword->kwdef->name, $word);
     }
 
     function trivial_rights(Contact $user, PaperSearch $srch) {
-        return $this->nonempty && !$this->authorish;
+        return $this->trivial && !$this->authorish;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->needflags |= $this->flags;
         $sqi->add_column($this->field, "Paper.{$this->field}");
-        if ($this->nonempty && !$this->authorish)
+        if ($this->trivial && !$this->authorish)
             return "Paper.{$this->field}!=''";
         return "true";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        $field = $this->field;
-        if ($row->$field === ""
-            || ($this->authorish && !$srch->user->can_view_authors($row, true)))
-            return false;
-        else if ($this->nonempty)
-            return true;
+        $data = $row->{$this->field};
+        if ($this->authorish && !$srch->user->can_view_authors($row, true))
+            $data = "";
+        if ($data === "")
+            return $this->trivial === false;
+        else if ($this->trivial !== null)
+            return $this->trivial;
         else
-            return $row->field_match_pregexes($this->regex, $field);
+            return $row->field_match_pregexes($this->regex, $this->field);
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
