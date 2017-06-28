@@ -2236,25 +2236,25 @@ class SearchQueryInfo {
     public $negated = false;
     public $needflags = 0;
 
-    public function __construct(PaperSearch $srch) {
+    function __construct(PaperSearch $srch) {
         $this->conf = $srch->conf;
         $this->srch = $srch;
         $this->user = $srch->user;
     }
-    public function add_table($table, $joiner = false) {
+    function add_table($table, $joiner = false) {
         assert($joiner || !count($this->tables));
         $this->tables[$table] = $joiner;
     }
-    public function add_column($name, $expr) {
+    function add_column($name, $expr) {
         assert(!isset($this->columns[$name]) || $this->columns[$name] === $expr);
         $this->columns[$name] = $expr;
     }
-    public function add_conflict_columns() {
+    function add_conflict_columns() {
         if (!isset($this->tables["PaperConflict"]))
             $this->add_table("PaperConflict", array("left join", "PaperConflict", "PaperConflict.contactId={$this->user->contactId}"));
         $this->columns["conflictType"] = "PaperConflict.conflictType";
     }
-    public function add_reviewer_columns() {
+    function add_reviewer_columns() {
         if ($this->user->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
             $this->columns["paperBlind"] = "Paper.blind";
         if (!isset($this->tables["MyReview"])) {
@@ -2267,7 +2267,7 @@ class SearchQueryInfo {
             $this->add_column("myReviewSubmitted", "MyReview.reviewSubmitted");
         }
     }
-    public function add_rights_columns() {
+    function add_rights_columns() {
         if (!isset($this->columns["managerContactId"]))
             $this->columns["managerContactId"] = "Paper.managerContactId";
         if (!isset($this->columns["leadContactId"]))
