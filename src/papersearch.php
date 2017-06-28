@@ -857,7 +857,7 @@ class Author_SearchTerm extends SearchTerm {
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $count = ">0";
-        if (preg_match('/\A(.*?):?((?:[=!<>]=?|≠|≤|≥|)\d+)\z/s', $word, $m)) {
+        if (preg_match('/\A(.*?)(?::|\A|(?=[^\d]))((?:[=!<>]=?|≠|≤|≥|)\d+)\z/s', $word, $m)) {
             $word = $m[1];
             $count = $m[2];
         }
