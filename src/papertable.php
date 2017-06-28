@@ -236,9 +236,17 @@ class PaperTable {
     }
 
     public function has_problem_at($f) {
-        if ($f === "authorInformation")
-            $f = "authors";
-        return $this->edit_status && $this->edit_status->has_problem_at($f);
+        if ($this->edit_status) {
+            if (str_starts_with($f, "au")) {
+                if ($f === "authorInformation")
+                    $f = "authors";
+                else if (preg_match('/\A.*?(\d+)\z/', $f, $m)
+                         && $this->edit_status->has_problem_at("author$m[1]"))
+                    return true;
+            }
+            return $this->edit_status->has_problem_at($f);
+        } else
+            return false;
     }
 
     public function error_class($f) {

@@ -236,12 +236,21 @@ class PaperStatus extends MessageSet {
         // Now produce messages.
         if (!$this->ignore_msgs
             && $can_view_authors) {
-            foreach ($prow->author_list() as $au)
+            $msg1 = $msg2 = false;
+            foreach ($prow->author_list() as $n => $au)
                 if (strpos($au->email, "@") === false
                     && strpos($au->affiliation, "@") !== false) {
-                    $this->warning_at("authors", "You may have entered an email address in the wrong place. The first author field is for author name, the second for email address, and the third for affiliation.");
-                    break;
+                    $msg1 = true;
+                    $this->warning_at("author" . ($n + 1), null);
+                } else if ($au->firstName === "" && $au->lastName === ""
+                           && $au->email === "" && $au->affiliation !== "") {
+                    $msg2 = true;
+                    $this->warning_at("author" . ($n + 1), null);
                 }
+            if ($msg1)
+                $this->warning_at("authors", "You may have entered an email address in the wrong place. The first author field is for author name, the second for email address, and the third for affiliation.");
+            if ($msg2)
+                $this->warning_at("authors", "Please enter a name and optional email address for every author.");
         }
         if (!$this->ignore_msgs
             && $can_view_authors
