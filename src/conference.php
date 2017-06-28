@@ -2370,6 +2370,7 @@ class Conf {
         }
 
         if (get($options, "allConflictType")) {
+            // See also SearchQueryInfo::add_allConflictType_column
             $joins[] = "left join (select paperId, group_concat(concat(contactId,' ',conflictType) separator ',') as allConflictType from PaperConflict where {$papersel}conflictType>0 group by paperId) as AllConflict on (AllConflict.paperId=Paper.paperId)";
             $cols[] = "AllConflict.allConflictType";
         }

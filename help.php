@@ -278,6 +278,7 @@ function searchQuickref() {
     _searchQuickrefRow("Authors", "au:poletto", "author list contains “poletto”");
     if ($Me->isPC)
         _searchQuickrefRow("", "au:pc", "one or more authors are PC members (author email matches PC email)");
+    _searchQuickrefRow("", "au:>4", "more than four authors");
     _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains “liskov”");
     _searchQuickrefRow("Topics", "topic:link", "selected topics match “link”");
 

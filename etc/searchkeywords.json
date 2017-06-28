@@ -11,7 +11,7 @@
     },
     {
         "name": "au",
-        "parser": "ContactAuthor_SearchTerm::parse",
+        "parser": "Author_SearchTerm::parse",
         "synonym": ["author", "auth"]
     },
     {

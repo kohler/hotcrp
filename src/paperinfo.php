@@ -215,6 +215,16 @@ class PaperInfo_Author {
             $n .= ' (' . $this->affiliation . ')';
         return ltrim($n);
     }
+    function name_email_aff_text() {
+        $n = $this->name();
+        if ($n === "")
+            $n = $this->email;
+        else if ($this->email !== "")
+            $n .= " <$this->email>";
+        if ($this->affiliation)
+            $n .= ' (' . $this->affiliation . ')';
+        return ltrim($n);
+    }
     function abbrevname_text() {
         if ($this->lastName !== "") {
             $u = "";

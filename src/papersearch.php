@@ -538,8 +538,7 @@ class TextMatch_SearchTerm extends SearchTerm {
     private $trivial = null;
     public $regex;
     static public $map = [
-        "ti" => "title", "ab" => "abstract", "au" => "authorInformation",
-        "co" => "collaborators"
+        "ti" => "title", "ab" => "abstract", "co" => "collaborators"
     ];
 
     function __construct($t, $text) {
@@ -843,15 +842,25 @@ class Pages_SearchTerm extends SearchTerm {
     }
 }
 
-class ContactAuthor_SearchTerm extends SearchTerm {
+class Author_SearchTerm extends SearchTerm {
     private $csm;
+    private $match;
+    private $fieldname;
+    private $regex;
 
-    function __construct($contacts) {
-        assert(!empty($contacts));
-        parent::__construct("au_cid");
-        $this->csm = new ContactCountMatcher(">0", $contacts);
+    function __construct($countexpr, $contacts, $match) {
+        parent::__construct("au");
+        $this->csm = new ContactCountMatcher($countexpr, $contacts);
+        $this->match = $contacts ? null : $match;
+        if ($this->match)
+            $this->regex = Text::star_text_pregexes($this->match);
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
+        $count = ">0";
+        if (preg_match('/\A(.*?):?((?:[=!<>]=?|≠|≤|≥|)\d+)\z/s', $word, $m)) {
+            $word = $m[1];
+            $count = $m[2];
+        }
         $cids = null;
         if ($sword->kwexplicit && !$sword->quoted) {
             if (strcasecmp($word, "me") === 0)
@@ -861,28 +870,73 @@ class ContactAuthor_SearchTerm extends SearchTerm {
                          || (str_starts_with($word, "#")
                              && $srch->conf->pc_tag_exists(substr($word, 1)))))
                 $cids = $srch->matching_reviewers($word, false, true);
+            else if ($word === "any")
+                $word = null;
+            else if ($word === "none" && $count === ">0") {
+                $count = "=0";
+                $word = null;
+            }
         }
-        if ($cids !== null)
-            return new ContactAuthor_SearchTerm($cids);
-        else
-            return new TextMatch_SearchTerm("au", $word);
+        return new Author_SearchTerm($count, $cids, $word);
     }
     function trivial_rights(Contact $user, PaperSearch $srch) {
         return $this->csm->has_sole_contact($user->contactId);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $thistab = "AuthorConflict_" . count($sqi->tables);
-        $this->fieldname = "{$thistab}_ct";
-        $where = "$thistab.contactId in (" . join(",", $this->csm->contact_set()) . ") and conflictType>=" . CONFLICT_AUTHOR;
-        $sqi->add_table($thistab, ["left join", "PaperConflict", $where]);
-        $sqi->add_column($this->fieldname, "count($thistab.contactId)");
-        return "$thistab.contactId is not null";
+        if ($this->csm->has_contacts() && $this->csm->countexpr() === ">0") {
+            $thistab = "AuthorConflict_" . count($sqi->tables);
+            $this->fieldname = "{$thistab}_present";
+            $sqi->add_table($thistab, ["left join", "(select paperId, 1 present from PaperConflict where contactId in (" . join(",", $this->csm->contact_set()) . ") and conflictType>=" . CONFLICT_AUTHOR . " group by paperId)"]);
+            $sqi->add_column($this->fieldname, "$thistab.present");
+            return "$thistab.present is not null";
+        } else if ($this->csm->has_contacts()) {
+            $sqi->add_allConflictType_column();
+            if ($this->csm->test(0))
+                return "true";
+            else
+                return "AllConflict.allConflictType is not null";
+        } else {
+            $sqi->add_column("authorInformation", "Paper.authorInformation");
+            if ($this->csm->test(0))
+                return "true";
+            else
+                return "Paper.authorInformation!=''";
+        }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        return ($row->conflictType >= CONFLICT_AUTHOR
-                && $this->csm->test_contact($srch->user->contactId))
-            || ($srch->user->can_view_authors($row, true)
-                && (int) $row->{$this->fieldname});
+        if ($this->csm->has_contacts()) {
+            if ($this->fieldname)
+                return (int) $row->{$this->fieldname}
+                    && $srch->user->can_view_authors($row, true);
+            else {
+                $n = 0;
+                $can_view = $srch->user->can_view_authors($row, true);
+                foreach ($this->csm->contact_set() as $cid)
+                    if (($cid === $srch->user->contactId || $can_view)
+                        && $row->has_author($cid))
+                        ++$n;
+                return $this->csm->test($n);
+            }
+        } else {
+            $n = 0;
+            if ($srch->user->can_view_authors($row, true)) {
+                foreach ($row->author_list() as $au) {
+                    if ($this->regex) {
+                        $text = $au->name_email_aff_text();
+                        if (!Text::match_pregexes($this->regex, $text,
+                                                  UnicodeHelper::deaccent($text)))
+                            continue;
+                    }
+                    ++$n;
+                }
+            }
+            return $this->csm->test($n);
+        }
+    }
+    function extract_metadata($top, PaperSearch $srch) {
+        parent::extract_metadata($top, $srch);
+        if ($this->regex)
+            $srch->regex["au"][] = $this->regex;
     }
 }
 
@@ -948,7 +1002,7 @@ class Revpref_SearchTerm extends SearchTerm {
             return null;
 
         $contacts = null;
-        if (preg_match('/\A(.*?[^:=<>!])([:=!<>]=?|≠|≤|≥|\z)(.*)\z/s', $word, $m)
+        if (preg_match('/\A(.*?[^:=<>!]):?([=!<>]=?|≠|≤|≥|\z)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
             $contacts = $srch->matching_reviewers($m[1], $sword->quoted, true);
             $word = ($m[2] === ":" ? $m[3] : $m[2] . $m[3]);
@@ -2280,6 +2334,12 @@ class SearchQueryInfo {
         // XXX could avoid the following if user is privChair for everything:
         $this->add_conflict_columns();
         $this->add_reviewer_columns();
+    }
+    function add_allConflictType_column() {
+        if (!isset($this->tables["AllConflict"])) {
+            $this->add_table("AllConflict", ["left join", "(select paperId, group_concat(concat(contactId,' ',conflictType) separator ',') as allConflictType from PaperConflict where conflictType>0 group by paperId)"]);
+            $this->add_column("allConflictType", "AllConflict.allConflictType");
+        }
     }
 }
 
