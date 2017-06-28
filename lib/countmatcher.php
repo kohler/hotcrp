@@ -77,7 +77,7 @@ class CountMatcher {
             return $this->countexpr();
 
     }
-    function conservative_countexpr() {
+    function conservative_nonnegative_countexpr() {
         if ($this->allowed & 1)
             return ">=0";
         else

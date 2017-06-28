@@ -1272,7 +1272,7 @@ class Review_SearchTerm extends SearchTerm {
         // Make the database query conservative (so change equality
         // constraints to >= constraints, and ignore <=/</!= constraints).
         // We'll do the precise query later.
-        $q[] = "coalesce($thistab.count,0)" . $this->rsm->conservative_countexpr();
+        $q[] = "coalesce($thistab.count,0)" . $this->rsm->conservative_nonnegative_countexpr();
         return "(" . join(" and ", $q) . ")";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
@@ -1577,7 +1577,7 @@ class Comment_SearchTerm extends SearchTerm {
             $where[] = "commentTags is not null"; // conservative
         $thistab = "Comments_" . count($sqi->tables);
         $sqi->add_table($thistab, ["left join", "(select paperId, count(commentId) count from PaperComment" . ($where ? " where " . join(" and ", $where) : "") . " group by paperId)"]);
-        return "coalesce($thistab.count,0)" . $this->csm->conservative_countexpr();
+        return "coalesce($thistab.count,0)" . $this->csm->conservative_nonnegative_countexpr();
     }
     private function _check_tags(CommentInfo $crow, Contact $user) {
         $tags = $crow->viewable_tags($user, true);
