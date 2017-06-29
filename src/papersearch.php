@@ -537,8 +537,9 @@ class TextMatch_SearchTerm extends SearchTerm {
     private $authorish;
     private $trivial = null;
     public $regex;
-    static public $map = [
-        "ti" => "title", "ab" => "abstract", "co" => "collaborators"
+    static public $map = [ // NB see field_highlighters()
+        "ti" => "title", "ab" => "abstract",
+        "au" => "authorInformation", "co" => "collaborators"
     ];
 
     function __construct($t, $text) {
