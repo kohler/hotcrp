@@ -50,8 +50,11 @@ class ContactSearch {
     }
     private function check_simple() {
         if (strcasecmp($this->text, "me") == 0
-            && (!($this->type & self::F_PC) || ($this->reviewer->roles & Contact::ROLE_PC)))
+            && (!($this->type & self::F_PC) || ($this->reviewer->roles & Contact::ROLE_PC))) {
+            if ($this->reviewer !== $this->user)
+                error_log("ContactSearch: me with reviewer: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
             return [$this->reviewer->contactId];
+        }
         if ($this->user->isPC || !$this->conf->opt("privatePC")) {
             if ($this->text === ""
                 || strcasecmp($this->text, "pc") == 0
