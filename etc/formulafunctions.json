@@ -50,22 +50,22 @@
     {"name": "pow", "args": true, "factory": "Fexpr::make"},
     {"name": "exp", "args": true, "factory": "Fexpr::make"},
 
-    {"name": "pid", "factory_class": "PidFexpr"},
-    {"name": "paperid", "factory_class": "PidFexpr"},
-    {"name": "pdfsize", "factory_class": "PdfSizeFexpr"},
+    {"name": "pid", "factory_class": "Pid_Fexpr"},
+    {"name": "paperid", "factory_class": "Pid_Fexpr"},
+    {"name": "pdfsize", "factory_class": "PdfSize_Fexpr"},
 
-    {"name": "topicscore", "factory_class": "TopicScoreFexpr"},
-    {"name": "conf", "factory_class": "ConflictFexpr", "is_pc": false},
-    {"name": "conflict", "factory_class": "ConflictFexpr", "is_pc": false},
-    {"name": "pcconf", "factory_class": "ConflictFexpr", "is_pc": true},
-    {"name": "pcconflict", "factory_class": "ConflictFexpr", "is_pc": true},
+    {"name": "topicscore", "factory_class": "TopicScore_Fexpr"},
+    {"name": "conf", "factory_class": "Conflict_Fexpr", "is_pc": false},
+    {"name": "conflict", "factory_class": "Conflict_Fexpr", "is_pc": false},
+    {"name": "pcconf", "factory_class": "Conflict_Fexpr", "is_pc": true},
+    {"name": "pcconflict", "factory_class": "Conflict_Fexpr", "is_pc": true},
 
-    {"name": "pref", "factory_class": "PrefFexpr", "is_expertise": false},
-    {"name": "revpref", "factory_class": "PrefFexpr", "is_expertise": false},
-    {"name": "prefexp", "factory_class": "PrefFexpr", "is_expertise": true},
-    {"name": "prefexpertise", "factory_class": "PrefFexpr", "is_expertise": true},
-    {"name": "revprefexp", "factory_class": "PrefFexpr", "is_expertise": true},
-    {"name": "revprefexpertise", "factory_class": "PrefFexpr", "is_expertise": true},
+    {"name": "pref", "factory_class": "Pref_Fexpr", "is_expertise": false},
+    {"name": "revpref", "factory_class": "Pref_Fexpr", "is_expertise": false},
+    {"name": "prefexp", "factory_class": "Pref_Fexpr", "is_expertise": true},
+    {"name": "prefexpertise", "factory_class": "Pref_Fexpr", "is_expertise": true},
+    {"name": "revprefexp", "factory_class": "Pref_Fexpr", "is_expertise": true},
+    {"name": "revprefexpertise", "factory_class": "Pref_Fexpr", "is_expertise": true},
 
-    {"name": "firsttag", "args": true, "factory": "FirstTagFexpr::make"}
+    {"name": "firsttag", "args": true, "factory": "FirstTag_Fexpr::make"}
 ]

@@ -508,13 +508,13 @@ class AggregateFexpr extends Fexpr {
     }
 }
 
-class SubFexpr extends Fexpr {
+class Sub_Fexpr extends Fexpr {
     function can_combine() {
         return false;
     }
 }
 
-class PidFexpr extends SubFexpr {
+class Pid_Fexpr extends Sub_Fexpr {
     function __construct() {
         parent::__construct("");
     }
@@ -523,7 +523,7 @@ class PidFexpr extends SubFexpr {
     }
 }
 
-class PdfSizeFexpr extends SubFexpr {
+class PdfSize_Fexpr extends Sub_Fexpr {
     function __construct() {
         parent::__construct("");
     }
@@ -532,7 +532,7 @@ class PdfSizeFexpr extends SubFexpr {
     }
 }
 
-class ScoreFexpr extends SubFexpr {
+class Score_Fexpr extends Sub_Fexpr {
     private $field;
     function __construct(ReviewField $field) {
         parent::__construct("rf");
@@ -554,7 +554,7 @@ class ScoreFexpr extends SubFexpr {
     }
 }
 
-class PrefFexpr extends SubFexpr {
+class Pref_Fexpr extends Sub_Fexpr {
     private $isexpertise;
     function __construct($isexpertise) {
         $this->isexpertise = is_object($isexpertise) ? $isexpertise->is_expertise : $isexpertise;
@@ -573,7 +573,7 @@ class PrefFexpr extends SubFexpr {
     }
 }
 
-class TagFexpr extends SubFexpr {
+class Tag_Fexpr extends Sub_Fexpr {
     private $tag;
     private $isvalue;
     function __construct($tag, $isvalue) {
@@ -599,7 +599,7 @@ class TagFexpr extends SubFexpr {
     }
 }
 
-class FirstTagFexpr extends SubFexpr {
+class FirstTag_Fexpr extends Sub_Fexpr {
     private $tags;
     function __construct($tags) {
         $this->tags = $tags;
@@ -608,14 +608,14 @@ class FirstTagFexpr extends SubFexpr {
     static function make($ff, $args) {
         $ts = [];
         foreach ($args as $arg) {
-            if ($arg instanceof TagFexpr)
+            if ($arg instanceof Tag_Fexpr)
                 $ts[] = $arg->tag();
-            else if ($arg instanceof FirstTagFexpr)
+            else if ($arg instanceof FirstTag_Fexpr)
                 $ts = array_merge($ts, $arg->tags);
             else
                 return null; /* XXX error message */
         }
-        return new FirstTagFexpr($ts);
+        return new FirstTag_Fexpr($ts);
     }
     function view_score(Contact $user) {
         $tagger = new Tagger($user);
@@ -637,7 +637,7 @@ class FirstTagFexpr extends SubFexpr {
     }
 }
 
-class OptionFexpr extends SubFexpr {
+class Option_Fexpr extends Sub_Fexpr {
     private $option;
     function __construct(PaperOption $option) {
         $this->option = $this->format_ = $option;
@@ -661,7 +661,7 @@ class OptionFexpr extends SubFexpr {
     }
 }
 
-class DecisionFexpr extends SubFexpr {
+class Decision_Fexpr extends Sub_Fexpr {
     function __construct() {
         $this->format_ = self::FDECISION;
     }
@@ -680,7 +680,7 @@ class DecisionFexpr extends SubFexpr {
     }
 }
 
-class TimeFieldFexpr extends SubFexpr {
+class TimeField_Fexpr extends Sub_Fexpr {
     private $field;
     function __construct($field) {
         $this->field = $field;
@@ -690,7 +690,7 @@ class TimeFieldFexpr extends SubFexpr {
     }
 }
 
-class TopicScoreFexpr extends SubFexpr {
+class TopicScore_Fexpr extends Sub_Fexpr {
     function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
@@ -704,7 +704,7 @@ class TopicScoreFexpr extends SubFexpr {
     }
 }
 
-class RevtypeFexpr extends SubFexpr {
+class Revtype_Fexpr extends Sub_Fexpr {
     function __construct() {
         $this->format_ = self::FREVTYPE;
     }
@@ -727,7 +727,7 @@ class RevtypeFexpr extends SubFexpr {
     }
 }
 
-class ReviewRoundFexpr extends SubFexpr {
+class ReviewRound_Fexpr extends Sub_Fexpr {
     function __construct() {
         $this->format_ = self::FROUND;
     }
@@ -750,7 +750,7 @@ class ReviewRoundFexpr extends SubFexpr {
     }
 }
 
-class ConflictFexpr extends SubFexpr {
+class Conflict_Fexpr extends Sub_Fexpr {
     private $ispc;
     function __construct($ispc) {
         $this->ispc = is_object($ispc) ? $ispc->is_pc : $ispc;
@@ -771,7 +771,7 @@ class ConflictFexpr extends SubFexpr {
     }
 }
 
-class ReviewFexpr extends SubFexpr {
+class Review_Fexpr extends Sub_Fexpr {
     function view_score(Contact $user) {
         if (!$user->conf->setting("rev_blind"))
             return VIEWSCORE_AUTHOR;
@@ -782,7 +782,7 @@ class ReviewFexpr extends SubFexpr {
     }
 }
 
-class ReviewerFexpr extends ReviewFexpr {
+class Reviewer_Fexpr extends Review_Fexpr {
     function __construct() {
         $this->format_ = Fexpr::FREVIEWER;
     }
@@ -796,7 +796,7 @@ class ReviewerFexpr extends ReviewFexpr {
     }
 }
 
-class ReviewerMatchFexpr extends ReviewFexpr {
+class ReviewerMatch_Fexpr extends Review_Fexpr {
     private $user;
     private $arg;
     private $flags;
@@ -830,7 +830,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
         if ($this->istag) {
             $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
             $tag = $this->arg[0] === "#" ? substr($this->arg, 1) : $this->arg;
-            return "($cvt ? ReviewerMatchFexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
+            return "($cvt ? ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
         } else
             return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact, $forceShow) ? array_search(' . $state->_rrow_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
     }
@@ -853,7 +853,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
     }
 }
 
-class ReviewWordCountFexpr extends SubFexpr {
+class ReviewWordCount_Fexpr extends Sub_Fexpr {
     function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
@@ -1284,7 +1284,7 @@ class Formula {
         $fn = null;
         for ($i = 0; $i < count($fval); $i += 2) {
             list($k, $v) = [$fval[$i], $fval[$i + 1]];
-            $fx = ($k === "outcome" ? new DecisionFexpr : new TimeFieldFexpr($k));
+            $fx = ($k === "outcome" ? new Decision_Fexpr : new TimeField_Fexpr($k));
             if (is_string($v))
                 $fx = new Fexpr(str_replace("0", "", $v), $fx, ConstantFexpr::czero());
             else
@@ -1297,11 +1297,11 @@ class Formula {
     private function _reviewer_base($t) {
         $t = strtolower($t);
         if (preg_match('/\A(?:|r|re|rev|review)type\z/i', $t))
-            return new RevtypeFexpr;
+            return new Revtype_Fexpr;
         else if (preg_match('/\A(?:|r|re|rev|review)round\z/i', $t))
-            return new ReviewRoundFexpr;
+            return new ReviewRound_Fexpr;
         else if (preg_match('/\A(?:|r|re|rev)reviewer\z/i', $t))
-            return new ReviewerFexpr;
+            return new Reviewer_Fexpr;
         else if (preg_match('/\A(?:|r|re|rev|review)(?:|au)words\z/i', $t))
             return new ReviewWordCountFexpr;
         else
@@ -1322,20 +1322,20 @@ class Formula {
                 $e0 = $this->_reviewer_base($m[1]);
             } else if ($rsm->apply_review_type($m[1], true)) {
                 $op = strtolower($m[1][0]) === "p" ? ">=" : "==";
-                $ee = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rsm->review_type, Fexpr::FREVTYPE));
+                $ee = new Fexpr($op, new Revtype_Fexpr, new ConstantFexpr($rsm->review_type, Fexpr::FREVTYPE));
             } else if ($rsm->apply_round($m[1], $this->conf))
                 /* OK */;
             else {
                 if (strpos($m[1], "\"") !== false)
                     $m[1] = str_replace(["\"", "*"], ["", "\\*"], $m[1]);
-                $ee = new ReviewerMatchFexpr($this->user, $m[1]);
+                $ee = new ReviewerMatch_Fexpr($this->user, $m[1]);
             }
             if ($ee)
                 $e1 = $e1 ? new Fexpr("&&", $e1, $ee) : $ee;
             $ex = $m[2];
         }
         if ($rsm->round) {
-            $ee = new InFexpr(new ReviewRoundFexpr, $rsm->round);
+            $ee = new InFexpr(new ReviewRound_Fexpr, $rsm->round);
             $e1 = $e1 ? new Fexpr("&&", $e1, $ee) : $ee;
         }
         if ($e0 && $e1)
@@ -1350,7 +1350,7 @@ class Formula {
             $this->_error_html[] = $w;
         $e = null;
         foreach ($os->os as $o) {
-            $ex = new OptionFexpr($o->option);
+            $ex = new Option_Fexpr($o->option);
             if ($o->kind)
                 $this->_error_html[] = "“" . htmlspecialchars($text) . "” can’t be used in formulas.";
             else if ($os->value_word === "")
@@ -1410,27 +1410,27 @@ class Formula {
             $e = $this->field_search_fexpr(["outcome", PaperSearch::matching_decisions($this->conf, $m[1])]);
             $t = $m[2];
         } else if (preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {
-            $e = new DecisionFexpr;
+            $e = new Decision_Fexpr;
             $t = $m[1];
         } else if (preg_match('/\Ais:?rev?\b(.*)\z/is', $t, $m)) {
-            $e = new Fexpr(">=", new RevtypeFexpr, new ConstantFexpr(0, Fexpr::FREVTYPE));
+            $e = new Fexpr(">=", new Revtype_Fexpr, new ConstantFexpr(0, Fexpr::FREVTYPE));
             $t = $m[1];
         } else if (preg_match('/\A(?:is:?)?pcrev?\b(.*)\z/is', $t, $m)) {
-            $e = new Fexpr(">=", new RevtypeFexpr, new ConstantFexpr(REVIEW_PC, Fexpr::FREVTYPE));
+            $e = new Fexpr(">=", new Revtype_Fexpr, new ConstantFexpr(REVIEW_PC, Fexpr::FREVTYPE));
             $t = $m[1];
         } else if (preg_match('/\A(?:is:?)?(pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?|optional)\b(.*)\z/is', $t, $m)) {
-            $e = new Fexpr("==", new RevtypeFexpr, new ConstantFexpr($m[1], Fexpr::FREVTYPE));
+            $e = new Fexpr("==", new Revtype_Fexpr, new ConstantFexpr($m[1], Fexpr::FREVTYPE));
             $t = $m[2];
         } else if (preg_match('/\A(?:is|status):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($this->conf, $m[1]));
             $t = $m[2];
         } else if (preg_match('/\A(?:tag(?:\s*:\s*|\s+)|#)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
                    || preg_match('/\Atag\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
-            $e = new TagFexpr($m[1], false);
+            $e = new Tag_Fexpr($m[1], false);
             $t = $m[2];
         } else if (preg_match('/\Atag(?:v|-?val|-?value)(?:\s*:\s*|\s+)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
                    || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
-            $e = new TagFexpr($m[1], true);
+            $e = new Tag_Fexpr($m[1], true);
             $t = $m[2];
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)?|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
             $t = ":" . $m[2];
@@ -1468,7 +1468,7 @@ class Formula {
                         $e = $this->_parse_option($f->abbreviation());
                     else if ($f instanceof ReviewField) {
                         if ($f->has_options)
-                            $e = $this->_reviewer_decoration(new ScoreFexpr($f), $m[2]);
+                            $e = $this->_reviewer_decoration(new Score_Fexpr($f), $m[2]);
                         else
                             $this->_error_html[] = "Textual review field " . htmlspecialchars($field) . " can’t be used in formulas.";
                     } else if ($f instanceof Formula) {
@@ -1487,7 +1487,7 @@ class Formula {
                 if ($f) {
                     if (!$f->has_options)
                         return null;
-                    $e = $this->_reviewer_decoration(new ScoreFexpr($f), $m[2]);
+                    $e = $this->_reviewer_decoration(new Score_Fexpr($f), $m[2]);
                     break;
                 }
                 if ($quoted)
