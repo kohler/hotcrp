@@ -4,64 +4,68 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class ContactSearch {
-    const F_SQL = 1;
-    const F_TAG = 2;
-    const F_PC = 4;
-    const F_QUOTED = 8;
-    const F_NOUSER = 16;
+    const F_QUOTED = 1;
+    const F_PC = 2;
+    const F_USER = 4;
+    const F_TAG = 8;
 
     public $conf;
     public $type;
     public $text;
-    public $user;
+    public $reviewer;
+    private $user;
     private $cset = null;
     public $ids = false;
     private $only_pc = false;
     private $contacts = false;
     public $warn_html = false;
 
-    public function __construct($type, $text, Contact $user, $cset = null) {
+    function __construct($type, $text, Contact $user, Contact $reviewer = null, $cset = null) {
         $this->conf = $user->conf;
         $this->type = $type;
         $this->text = $text;
+        $this->reviewer = $reviewer ? : $user;
         $this->user = $user;
         $this->cset = $cset;
-        if ($this->type & self::F_SQL) {
-            $result = $this->conf->qe("select contactId from ContactInfo where $text");
-            $this->ids = Dbl::fetch_first_columns($result);
-        }
-        if ($this->ids === false && (!($this->type & self::F_QUOTED) || $this->text === ""))
+        if ($this->ids === false
+            && (!($this->type & self::F_QUOTED) || $this->text === ""))
             $this->ids = $this->check_simple();
-        if ($this->ids === false && !($this->type & self::F_QUOTED) && ($this->type & self::F_TAG))
+        if ($this->ids === false
+            && ($this->type & self::F_TAG)
+            && !($this->type & self::F_QUOTED)
+            && $this->user->isPC)
             $this->ids = $this->check_pc_tag();
-        if ($this->ids === false && !($this->type & self::F_NOUSER))
+        if ($this->ids === false
+            && ($this->type & self::F_USER))
             $this->ids = $this->check_user();
     }
-    static function make_pc($text, Contact $user) {
-        return new ContactSearch(self::F_PC | self::F_TAG, $text, $user);
+    static function make_pc($text, Contact $user, Contact $reviewer = null) {
+        return new ContactSearch(self::F_PC | self::F_TAG | self::F_USER, $text, $user, $reviewer);
     }
-    static function make_special($text, Contact $user) {
-        return new ContactSearch(self::F_PC | self::F_TAG | self::F_NOUSER, $text, $user);
+    static function make_special($text, Contact $user, Contact $reviewer = null) {
+        return new ContactSearch(self::F_PC | self::F_TAG, $text, $user, $reviewer);
     }
-    static function make_cset($text, Contact $user, $cset) {
-        return new ContactSearch(0, $text, $user, $cset);
+    static function make_cset($text, Contact $user, Contact $reviewer, $cset) {
+        return new ContactSearch(self::F_USER, $text, $user, $reviewer, $cset);
     }
     private function check_simple() {
-        if ($this->text === ""
-            || strcasecmp($this->text, "pc") == 0
-            || (strcasecmp($this->text, "any") == 0 && ($this->type & self::F_PC)))
-            return array_keys($this->conf->pc_members());
-        else if (strcasecmp($this->text, "me") == 0
-                 && (!($this->type & self::F_PC) || ($this->user->roles & Contact::ROLE_PC)))
-            return array($this->user->contactId);
-        else if (strcasecmp($this->text, "chair") == 0) {
-            $chairs = [];
-            foreach ($this->conf->pc_members() as $p)
-                if ($p->roles & Contact::ROLE_CHAIR)
-                    $chairs[] = $p->contactId;
-            return $chairs;
-        } else
-            return false;
+        if (strcasecmp($this->text, "me") == 0
+            && (!($this->type & self::F_PC) || ($this->reviewer->roles & Contact::ROLE_PC)))
+            return [$this->reviewer->contactId];
+        if ($this->user->isPC || !$this->conf->opt("privatePC")) {
+            if ($this->text === ""
+                || strcasecmp($this->text, "pc") == 0
+                || (strcasecmp($this->text, "any") == 0 && ($this->type & self::F_PC)))
+                return array_keys($this->conf->pc_members());
+            else if (strcasecmp($this->text, "chair") == 0) {
+                $chairs = [];
+                foreach ($this->conf->pc_members() as $p)
+                    if ($p->roles & Contact::ROLE_CHAIR)
+                        $chairs[] = $p->contactId;
+                return $chairs;
+            }
+        }
+        return false;
     }
     private function check_pc_tag() {
         $need = $neg = false;
@@ -170,7 +174,8 @@ class ContactSearch {
         Dbl::free($result);
         return $ids;
     }
-    public function contacts() {
+
+    function contacts() {
         global $Me;
         if ($this->contacts === false) {
             $this->contacts = array();
@@ -187,7 +192,7 @@ class ContactSearch {
         }
         return $this->contacts;
     }
-    public function contact($i) {
+    function contact($i) {
         return get($this->contacts(), $i);
     }
 }

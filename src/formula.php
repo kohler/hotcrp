@@ -831,7 +831,7 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
         $this->format_ = self::FBOOL;
         $this->arg = $arg;
         $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && $user->conf->pc_tag_exists($arg));
-        $flags = 0;
+        $flags = ContactSearch::F_USER;
         if ($user->can_view_reviewer_tags())
             $flags |= ContactSearch::F_TAG;
         if ($arg[0] === "\"") {

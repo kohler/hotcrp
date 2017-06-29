@@ -1141,7 +1141,7 @@ class Tag_AssignmentParser extends AssignmentParser {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->reviewer)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->contact, $state->reviewer)->ids;
             if (empty($twiddlecids))
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) > 1)
@@ -1197,7 +1197,7 @@ class Tag_AssignmentParser extends AssignmentParser {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->reviewer)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->contact, $state->reviewer)->ids;
             if (empty($twiddlecids))
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) == 1)
@@ -1718,7 +1718,7 @@ class AssignmentSet {
                 return $this->error($special === "missing" ? "User missing." : "User “{$xspecial}” not allowed here.");
         }
         if ($special && !$first && (!$lemail || !$last)) {
-            $ret = ContactSearch::make_special($special, $this->astate->reviewer);
+            $ret = ContactSearch::make_special($special, $this->astate->contact, $this->astate->reviewer);
             if ($ret->ids !== false)
                 return $ret->contacts();
         }
@@ -1753,7 +1753,7 @@ class AssignmentSet {
                 $text = "$last$first";
             if ($email)
                 $text .= " <$email>";
-            $ret = ContactSearch::make_cset($text, $this->astate->reviewer, $cset);
+            $ret = ContactSearch::make_cset($text, $this->astate->contact, $this->astate->reviewer, $cset);
             if (count($ret->ids) == 1)
                 return $ret->contacts();
             else if (empty($ret->ids))

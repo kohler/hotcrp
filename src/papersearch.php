@@ -844,16 +844,14 @@ class Pages_SearchTerm extends SearchTerm {
 
 class Author_SearchTerm extends SearchTerm {
     private $csm;
-    private $match;
     private $fieldname;
     private $regex;
 
     function __construct($countexpr, $contacts, $match) {
         parent::__construct("au");
         $this->csm = new ContactCountMatcher($countexpr, $contacts);
-        $this->match = $contacts ? null : $match;
-        if ($this->match)
-            $this->regex = Text::star_text_pregexes($this->match);
+        if (!$contacts && $match)
+            $this->regex = Text::star_text_pregexes($match);
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $count = ">0";
@@ -865,11 +863,14 @@ class Author_SearchTerm extends SearchTerm {
         if ($sword->kwexplicit && !$sword->quoted) {
             if (strcasecmp($word, "me") === 0)
                 $cids = [$srch->cid];
+            else if (strcasecmp($word, "pc") === 0
+                     && ($srch->user->isPC || !$srch->conf->opt("privatePC")))
+                $cids = $srch->matching_reviewers("pc", false, true);
             else if ($srch->user->isPC
-                     && (strcasecmp($word, "pc") === 0
-                         || (str_starts_with($word, "#")
-                             && $srch->conf->pc_tag_exists(substr($word, 1)))))
-                $cids = $srch->matching_reviewers($word, false, true);
+                     && $word !== ""
+                     && ($xword = (string) substr($word, $word[0] === "#" ? 1 : 0)) !== ""
+                     && $srch->conf->pc_tag_exists($xword))
+                $cids = $srch->matching_reviewers($xword, false, true);
             else if ($word === "any")
                 $word = null;
             else if ($word === "none" && $count === ">0") {
@@ -2547,22 +2548,23 @@ class PaperSearch {
             return null;
     }
 
-    private function make_contact_match($type, $text, Contact $user) {
+    private function make_contact_match($type, $text) {
+        $reviewer = $this->reviewer_user();
         foreach ($this->contact_match as $i => $cm)
-            if ($cm->type === $type && $cm->text === $text && $cm->user === $user)
+            if ($cm->type === $type && $cm->text === $text && $cm->reviewer === $reviewer)
                 return $cm;
-        return $this->contact_match[] = new ContactSearch($type, $text, $user);
+        return $this->contact_match[] = new ContactSearch($type, $text, $this->user, $reviewer);
     }
 
     function matching_reviewers($word, $quoted, $pc_only) {
-        $type = 0;
+        $type = ContactSearch::F_USER;
         if ($pc_only)
             $type |= ContactSearch::F_PC;
         if ($quoted)
             $type |= ContactSearch::F_QUOTED;
         if (!$quoted && $this->amPC)
             $type |= ContactSearch::F_TAG;
-        $scm = $this->make_contact_match($type, $word, $this->reviewer_user());
+        $scm = $this->make_contact_match($type, $word);
         if ($scm->warn_html)
             $this->warn($scm->warn_html);
         if (!empty($scm->ids))

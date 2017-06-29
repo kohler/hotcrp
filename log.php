@@ -61,7 +61,7 @@ if ($_REQUEST["acct"]) {
     $ids = array();
     $accts = $_REQUEST["acct"];
     while (($word = PaperSearch::pop_word($accts, $Conf))) {
-        $flags = ContactSearch::F_TAG;
+        $flags = ContactSearch::F_TAG | ContactSearch::F_USER;
         if (substr($word, 0, 1) === "\"") {
             $flags |= ContactSearch::F_QUOTED;
             $word = preg_replace(',(?:\A"|"\z),', "", $word);
