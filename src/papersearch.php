@@ -3565,6 +3565,8 @@ class PaperSearch {
             $limit = "r";
         else if ($this->q !== "")
             return true;
+        if (!$this->privChair && $this->reviewer_user() !== $this->user)
+            return true;
         if ($this->conf->has_tracks()) {
             if (!$this->privChair || $limit === "rable")
                 return true;
