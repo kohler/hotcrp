@@ -3,6 +3,20 @@
 // HotCRP is Copyright (c) 2009-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class FormulaCall {
+    public $name;
+    public $text;
+    public $args = [];
+    public $modifier = false;
+    public $kwdef;
+
+    function __construct($kwdef, $name) {
+        $this->name = $kwdef->name;
+        $this->text = $name;
+        $this->kwdef = $kwdef;
+    }
+}
+
 class Fexpr_Error {
     public $expr;
     public $error_html;
@@ -54,8 +68,8 @@ class Fexpr implements JsonSerializable {
         $this->left_landmark = $left;
         $this->right_landmark = $right;
     }
-    static function make($ff, $args) {
-        return new Fexpr($ff->name, $args);
+    static function make(FormulaCall $ff) {
+        return new Fexpr($ff->name, $ff->args);
     }
 
     function format() {
@@ -357,25 +371,37 @@ class AggregateFexpr extends Fexpr {
     function __construct($fn, array $values) {
         parent::__construct($fn, $values);
     }
-    static function make($ff, $args) {
+    static function parse_modifier(FormulaCall $ff, $arg) {
+        if (($ff->name === "variance" || $ff->name === "stddev")
+            && !$ff->modifier
+            && strpos($ff->text, "_") === false
+            && ($arg === ".p" || $arg === ".pop" || $arg === ".s" || $arg === ".samp")) {
+            $ff->modifier = true;
+            if ($arg === ".p" || $arg === ".pop")
+                $ff->name .= "_pop";
+            return true;
+        } else
+            return false;
+    }
+    static function make(FormulaCall $ff) {
         $op = $ff->name;
         if (($op === "min" || $op === "max")
-            && count($args) > 1)
-            return new Fexpr($op === "min" ? "least" : "greatest", $args);
-        if ($op === "wavg" && count($args) == 1)
+            && count($ff->args) > 1)
+            return new Fexpr($op === "min" ? "least" : "greatest", $ff->args);
+        if ($op === "wavg" && count($ff->args) == 1)
             $op = "avg";
         $arg_count = 1;
         if ($op === "atminof" || $op === "atmaxof"
             || $op === "argmin" || $op === "argmax"
             || $op === "wavg" || $op === "quantile")
             $arg_count = 2;
-        if (count($args) != $arg_count)
+        if (count($ff->args) != $arg_count)
             return null;
         if ($op === "atminof" || $op === "atmaxof") {
             $op = "arg" . substr($op, 2, 3);
-            $args = [$args[1], $args[0]];
+            $ff->args = [$ff->args[1], $ff->args[0]];
         }
-        return new AggregateFexpr($op, $args);
+        return new AggregateFexpr($op, $ff->args);
     }
 
     function typecheck_format() {
@@ -553,7 +579,7 @@ class Score_Fexpr extends Sub_Fexpr {
 class Pref_Fexpr extends Sub_Fexpr {
     private $isexpertise;
     function __construct($isexpertise) {
-        $this->isexpertise = is_object($isexpertise) ? $isexpertise->is_expertise : $isexpertise;
+        $this->isexpertise = is_object($isexpertise) ? $isexpertise->kwdef->is_expertise : $isexpertise;
         $this->format_ = $this->isexpertise ? self::FPREFEXPERTISE : null;
     }
     function view_score(Contact $user) {
@@ -601,9 +627,9 @@ class FirstTag_Fexpr extends Sub_Fexpr {
         $this->tags = $tags;
         $this->format_ = Fexpr::FTAG;
     }
-    static function make($ff, $args) {
+    static function make(FormulaCall $ff) {
         $ts = [];
-        foreach ($args as $arg) {
+        foreach ($ff->args as $arg) {
             if ($arg instanceof Tag_Fexpr)
                 $ts[] = $arg->tag();
             else if ($arg instanceof FirstTag_Fexpr)
@@ -749,7 +775,7 @@ class ReviewRound_Fexpr extends Sub_Fexpr {
 class Conflict_Fexpr extends Sub_Fexpr {
     private $ispc;
     function __construct($ispc) {
-        $this->ispc = is_object($ispc) ? $ispc->is_pc : $ispc;
+        $this->ispc = is_object($ispc) ? $ispc->kwdef->is_pc : $ispc;
         $this->format_ = self::FBOOL;
     }
     function compile(FormulaCompiler $state) {
@@ -1241,30 +1267,28 @@ class Formula {
         return null;
     }
 
-    private function _parse_function_args(&$t) {
+    private function _parse_function_args(FormulaCall $ff, &$t) {
         $t = ltrim($t);
-        $es = [];
-
         // collect arguments
         if ($t !== "" && $t[0] === "(") {
             while (1) {
                 $t = substr($t, 1);
                 if (!($e = $this->_parse_ternary($t, false)))
-                    return null;
-                $es[] = $e;
+                    return false;
+                $ff->args[] = $e;
                 $t = ltrim($t);
                 if ($t !== "" && $t[0] === ")")
                     break;
                 else if ($t === "" || $t[0] !== ",")
-                    return null;
+                    return false;
             }
             $t = substr($t, 1);
-        } else if (($e = $this->_parse_expr($t, self::$opprec["u+"], false)))
-            $es[] = $e;
-        else
-            return null;
-
-        return $es;
+            return true;
+        } else if (($e = $this->_parse_expr($t, self::$opprec["u+"], false))) {
+            $ff->args[] = $e;
+            return true;
+        } else
+            return false;
     }
 
     static private function _pop_argument($t) {
@@ -1434,25 +1458,31 @@ class Formula {
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer)\b(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
-        } else if (preg_match('/\A([A-Za-z][A-Za-z_.]*)(.*)\z/is', $t, $m)
-                   && ($ff = get($this->conf->formula_functions(), $m[1]))) {
+        } else if (preg_match('/\A([A-Za-z][A-Za-z_]*)(.*)\z/is', $t, $m)
+                   && ($kwdef = get($this->conf->formula_functions(), $m[1]))) {
             $t = $m[2];
-            $e = $es = null;
-            if (get($ff, "args")) {
-                $es = $this->_parse_function_args($t);
-                if ($es === null)
-                    return null;
+            $ff = new FormulaCall($kwdef, $m[1]);
+            if (get($kwdef, "modifier_parser")) {
+                while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-A-Za-z0-9_.#@]+))(.*)/s', $t, $m)
+                       && !preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1])
+                       && (get($kwdef, "args") || !preg_match('/\A\s*\(/s', $m[2]))
+                       && ($marg = call_user_func($kwdef->modifier_parser, $ff, $m[1], $m[2])))
+                    $t = $m[2];
             }
-            if (isset($ff->factory))
-                $e = call_user_func($ff->factory, $ff, $es);
-            else if (isset($ff->factory_class)) {
-                $cname = $ff->factory_class;
-                $e = new $cname($ff, $es);
+            if (get($kwdef, "args") && !$this->_parse_function_args($ff, $t))
+                return null;
+            $e = null;
+            if (isset($kwdef->factory))
+                $e = call_user_func($kwdef->factory, $ff);
+            else if (isset($kwdef->factory_class)) {
+                $cname = $kwdef->factory_class;
+                $e = new $cname($ff);
             }
             if (!$e)
                 return null;
-        } else if (preg_match('/\A([-A-Za-z0-9_.@]+|\".*?\")(?!\s*\()(.*)\z/s', $t, $m)
-                   && $m[1] !== "\"\"") {
+        } else if (preg_match('/\A([-A-Za-z0-9_.@]+|\".*?\")(.*)\z/s', $t, $m)
+                   && $m[1] !== "\"\""
+                   && !preg_match('/\A\s*\(/s', $m[2])) {
             $field = $m[1];
             if (($quoted = $field[0] === "\""))
                 $field = substr($field, 1, strlen($field) - 2);
