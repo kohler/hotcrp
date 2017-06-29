@@ -713,11 +713,17 @@ class Conf {
     }
 
 
-    function _add_formula_json($fj) {
-        if (is_string($fj->name)) {
-            if (!isset($this->_formula_functions[$fj->name])
-                || get($this->_formula_functions[$fj->name], "priority", 0) <= get($fj, "priority", 0))
-                $this->_formula_functions[$fj->name] = $fj;
+    private function _add_formula_function_json_base($name, $fj) {
+        if (!isset($this->_formula_functions[$name])
+            || get($this->_formula_functions[$name], "priority", 0) <= get($fj, "priority", 0))
+            $this->_formula_functions[$name] = $fj;
+    }
+    function _add_formula_function_json($fj) {
+        if (isset($fj->name) && is_string($fj->name)) {
+            $this->_add_formula_function_json_base($fj->name, $fj);
+            if (($syn = get($fj, "synonym")))
+                foreach (is_string($syn) ? [$syn] : $syn as $x)
+                    $this->_add_formula_function_json_base($x, $fj);
             return true;
         } else
             return false;
@@ -725,9 +731,9 @@ class Conf {
     function formula_functions() {
         if ($this->_formula_functions === null) {
             $this->_formula_functions = [];
-            expand_json_includes_callback(["etc/formulafunctions.json"], [$this, "_add_formula_json"]);
+            expand_json_includes_callback(["etc/formulafunctions.json"], [$this, "_add_formula_function_json"]);
             if (($olist = $this->opt("formulaFunctions")))
-                expand_json_includes_callback($olist, [$this, "_add_formula_json"]);
+                expand_json_includes_callback($olist, [$this, "_add_formula_function_json"]);
         }
         return $this->_formula_functions;
     }

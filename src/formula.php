@@ -362,8 +362,7 @@ class AggregateFexpr extends Fexpr {
         if (($op === "min" || $op === "max")
             && count($args) > 1)
             return new Fexpr($op === "min" ? "least" : "greatest", $args);
-        if ($op === "average" || $op === "mean"
-            || ($op === "wavg" && count($args) == 1))
+        if ($op === "wavg" && count($args) == 1)
             $op = "avg";
         $arg_count = 1;
         if ($op === "atminof" || $op === "atmaxof"
@@ -424,17 +423,16 @@ class AggregateFexpr extends Fexpr {
     private function loop_info(FormulaCompiler $state) {
         if ($this->op === "all")
             return ["null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", self::cast_bool("~x~")];
-        if ($this->op === "any")
+        else if ($this->op === "any")
             return ["null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", self::cast_bool("~x~")];
-        if ($this->op === "some")
+        else if ($this->op === "some")
             return ["null", "~r~ = ~l~;
   if (~r~ !== null && ~r~ !== false)
     break;"];
-        if ($this->op === "min" || $this->op === "max") {
+        else if ($this->op === "min" || $this->op === "max") {
             $cmp = $this->format_comparator($this->op === "min" ? "<" : ">", $state->conf);
             return ["null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)"];
-        }
-        if ($this->op == "argmin" || $this->op == "argmax") {
+        } else if ($this->op == "argmin" || $this->op == "argmax") {
             $cmp = $this->args[1]->format_comparator($this->op == "argmin" ? "<" : ">", $state->conf);
             return ["[null, [null]]",
 "if (~l1~ !== null && (~r~[0] === null || ~l1~ $cmp ~r~[0])) {
@@ -443,15 +441,14 @@ class AggregateFexpr extends Fexpr {
 } else if (~l1~ !== null && ~l1~ == ~r~[0])
   ~r~[1][] = ~l~;",
                     "~x~[1][count(~x~[1]) > 1 ? mt_rand(0, count(~x~[1]) - 1) : 0]"];
-        }
-        if ($this->op === "count")
+        } else if ($this->op === "count")
             return ["0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)"];
-        if ($this->op === "sum")
+        else if ($this->op === "sum")
             return ["null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : ~l~) : ~r~)"];
-        if ($this->op === "avg")
+        else if ($this->op === "avg")
             return ["[0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)",
                     "(~x~[1] ? ~x~[0] / ~x~[1] : null)"];
-        if ($this->op === "median" || $this->op === "quantile") {
+        else if ($this->op === "median" || $this->op === "quantile") {
             if ($this->op === "median")
                 $q = "0.5";
             else {
@@ -461,17 +458,16 @@ class AggregateFexpr extends Fexpr {
             }
             return ["[]", "if (~l~ !== null)\n  array_push(~r~, ~l~);",
                     "AggregateFexpr::quantile(~x~, $q)"];
-        }
-        if ($this->op === "wavg")
+        } else if ($this->op === "wavg")
             return ["[0, 0]", "(~l~ !== null && ~l1~ !== null ? [~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~] : ~r~)",
                     "(~x~[1] ? ~x~[0] / ~x~[1] : null)"];
-        if (preg_match('/\A(var(?:iance)?|std(?:d?ev)?)(|_pop|_samp|[_.][ps])\z/', $this->op, $m)) {
-            $ispop = preg_match('/\A(?:|_pop|[_.]p)\z/', $m[2]);
-            if ($m[1][0] == "v" && !$ispop)
+        else if ($this->op === "stddev" || $this->op === "stddev_pop"
+                 || $this->op === "variance" || $this->op === "variance_pop") {
+            if ($this->op === "variance")
                 $x = "(~x~[2] > 1 ? ~x~[0] / (~x~[2] - 1) - (~x~[1] * ~x~[1]) / (~x~[2] * (~x~[2] - 1)) : (~x~[2] ? 0 : null))";
-            else if ($m[1][0] == "v")
+            else if ($this->op === "variance_pop")
                 $x = "(~x~[2] ? ~x~[0] / ~x~[2] - (~x~[1] * ~x~[1]) / (~x~[2] * ~x~[2]) : null)";
-            else if (!$ispop)
+            else if ($this->op === "stddev")
                 $x = "(~x~[2] > 1 ? sqrt(~x~[0] / (~x~[2] - 1) - (~x~[1] * ~x~[1]) / (~x~[2] * (~x~[2] - 1))) : (~x~[2] ? 0 : null))";
             else
                 $x = "(~x~[2] ? sqrt(~x~[0] / ~x~[2] - (~x~[1] * ~x~[1]) / (~x~[2] * ~x~[2])) : null)";

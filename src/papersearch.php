@@ -3,6 +3,21 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class SearchWord {
+    public $qword;
+    public $word;
+    public $quoted;
+    public $keyword;
+    public $kwexplicit;
+    public $kwdef;
+    function __construct($qword) {
+        $this->qword = $this->word = $qword;
+        $this->quoted = $qword[0] === "\"";
+        if ($this->quoted)
+            $this->word = str_replace('*', '\*', preg_replace('/(?:\A"|"\z)/', '', $qword));
+    }
+}
+
 class SearchOperator {
     public $op;
     public $unary;
@@ -34,21 +49,6 @@ class SearchOperator {
             self::$list["HIGHLIGHT"] = new SearchOperator("highlight", false, 1, "");
         }
         return get(self::$list, $name);
-    }
-}
-
-class SearchWord {
-    public $qword;
-    public $word;
-    public $quoted;
-    public $keyword;
-    public $kwexplicit;
-    public $kwdef;
-    function __construct($qword) {
-        $this->qword = $this->word = $qword;
-        $this->quoted = $qword[0] === "\"";
-        if ($this->quoted)
-            $this->word = str_replace('*', '\*', preg_replace('/(?:\A"|"\z)/', '', $qword));
     }
 }
 
