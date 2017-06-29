@@ -862,22 +862,13 @@ class Author_SearchTerm extends SearchTerm {
         }
         $cids = null;
         if ($sword->kwexplicit && !$sword->quoted) {
-            if (strcasecmp($word, "me") === 0)
-                $cids = [$srch->cid];
-            else if (strcasecmp($word, "pc") === 0
-                     && ($srch->user->isPC || !$srch->conf->opt("privatePC")))
-                $cids = $srch->matching_reviewers("pc", false, true);
-            else if ($srch->user->isPC
-                     && $word !== ""
-                     && ($xword = (string) substr($word, $word[0] === "#" ? 1 : 0)) !== ""
-                     && $srch->conf->pc_tag_exists($xword))
-                $cids = $srch->matching_reviewers($xword, false, true);
-            else if ($word === "any")
+            if ($word === "any")
                 $word = null;
             else if ($word === "none" && $count === ">0") {
-                $count = "=0";
                 $word = null;
-            }
+                $count = "=0";
+            } else
+                $cids = $srch->matching_special_contacts($word);
         }
         return new Author_SearchTerm($count, $cids, $word);
     }
@@ -2572,6 +2563,16 @@ class PaperSearch {
             return $scm->ids;
         else
             return array(-1);
+    }
+
+    function matching_special_contacts($word) {
+        $scm = $this->make_contact_match(ContactSearch::F_TAG, $word);
+        if ($scm->warn_html)
+            $this->warn($scm->warn_html);
+        if (!empty($scm->ids))
+            return $scm->ids;
+        else
+            return $scm->ids === false ? null : [-1];
     }
 
     static function matching_decisions(Conf $conf, $word, $quoted = null) {
