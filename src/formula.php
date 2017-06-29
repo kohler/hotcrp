@@ -554,6 +554,66 @@ class PdfSize_Fexpr extends Sub_Fexpr {
     }
 }
 
+class Author_Fexpr extends Sub_Fexpr {
+    private $matchtype;
+    private $matchidx;
+    static private $matchers = [];
+    function __construct(FormulaCall $ff, Formula $formula) {
+        if ($ff->modifier === "none")
+            $this->matchtype = $ff->modifier;
+        else if (is_array($ff->modifier) && $ff->modifier[0] == $formula->user->contactId)
+            $this->matchtype = $user->contactId;
+        else if (is_array($ff->modifier) || is_object($ff->modifier)) {
+            self::$matchers[] = $ff->modifier;
+            $this->matchtype = "m";
+            $this->matchidx = count(self::$matchers) - 1;
+        }
+    }
+    static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
+        if ($ff->modifier === false && !str_starts_with($arg, ".")) {
+            if (str_starts_with($arg, ":"))
+                $arg = substr($arg, 1);
+            $csm = new ContactSearch(ContactSearch::F_TAG, $arg, $formula->user);
+            if ($csm->ids !== false)
+                $ff->modifier = $csm->ids;
+            else if (!str_starts_with($arg, "#"))
+                $ff->modifier = Text::star_text_pregexes($arg);
+            else
+                return false;
+            return true;
+        } else
+            return false;
+    }
+    function compile(FormulaCompiler $state) {
+        if ($this->matchtype === null)
+            $v = 'count($prow->author_list())';
+        else if ($this->matchtype === "none")
+            $v = '!$prow->author_list()';
+        else if (is_int($this->matchtype))
+            // can always see if you are an author
+            return '($prow->has_author(' . $this->matchtype . ') ? 1 : 0)';
+        else
+            $v = 'Author_Fexpr::count_matches($prow, ' . $this->matchidx . ')';
+        return '($contact->can_view_authors($prow, true) ? ' . $v . ' : null)';
+    }
+    static function count_matches(PaperInfo $prow, $matchidx) {
+        $mf = self::$matchers[$matchidx];
+        $n = 0;
+        if (is_array($mf)) {
+            foreach ($prow->contacts() as $cid => $x)
+                if (array_search($cid, $mf) !== false)
+                    ++$n;
+        } else {
+            foreach ($prow->author_list() as $au) {
+                $text = $au->name_email_aff_text();
+                if (Text::match_pregexes($mf, $text, UnicodeHelper::deaccent($text)))
+                    ++$n;
+            }
+        }
+        return $n;
+    }
+}
+
 class Score_Fexpr extends Sub_Fexpr {
     private $field;
     function __construct(ReviewField $field) {
@@ -1466,17 +1526,17 @@ class Formula {
                 while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-A-Za-z0-9_.#@]+))(.*)/s', $t, $m)
                        && !preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1])
                        && (get($kwdef, "args") || !preg_match('/\A\s*\(/s', $m[2]))
-                       && ($marg = call_user_func($kwdef->modifier_parser, $ff, $m[1], $m[2])))
+                       && ($marg = call_user_func($kwdef->modifier_parser, $ff, $m[1], $m[2], $this)))
                     $t = $m[2];
             }
             if (get($kwdef, "args") && !$this->_parse_function_args($ff, $t))
                 return null;
             $e = null;
             if (isset($kwdef->factory))
-                $e = call_user_func($kwdef->factory, $ff);
+                $e = call_user_func($kwdef->factory, $ff, $this);
             else if (isset($kwdef->factory_class)) {
                 $cname = $kwdef->factory_class;
-                $e = new $cname($ff);
+                $e = new $cname($ff, $this);
             }
             if (!$e)
                 return null;

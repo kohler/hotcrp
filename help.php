@@ -1111,6 +1111,10 @@ scores A, B, and D is A. For instance:</p>
     _alternateRow("", "log(<em>e</em>, <em>b</em>)", "Log to the base <em>b</em>");
     _alternateRow("", "round(<em>e</em>[, <em>m</em>])", "Round to the nearest multiple of <em>m</em>");
     _alternateRow("", "null", "The null value");
+    _alternateRow("Submission properties", "pid", "Paper ID");
+    _alternateRow("", "au", "Number of authors");
+    _alternateRow("", "au:pc", "Number of PC authors");
+    _alternateRow("", "au:<em>text</em>", "Number of authors matching <em>text</em>");
     _alternateRow("Tags", "#<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
     _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");
     _alternateRow("Scores", "overall-merit", "This review’s Overall merit score<div class=\"hint\">Only completed reviews are considered.</div>");

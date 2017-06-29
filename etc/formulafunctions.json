@@ -49,5 +49,8 @@
     {"name": "prefexp", "factory_class": "Pref_Fexpr", "is_expertise": true,
                         "synonym": ["prefexpertise", "revprefexp", "revprefexpertise"]},
 
-    {"name": "firsttag", "args": true, "factory": "FirstTag_Fexpr::make"}
+    {"name": "firsttag", "args": true, "factory": "FirstTag_Fexpr::make"},
+
+    {"name": "au", "factory_class": "Author_Fexpr", "modifier_parser": "Author_Fexpr::parse_modifier",
+                        "synonym": "author"}
 ]
