@@ -360,6 +360,9 @@
     "nist": {
         "alternate": ["national institute standards technology"]
     },
+    "nyu": {
+        "alternate": ["new york university"]
+    },
     "penn": {
         "weak": true,
         "alternate": ["pennsylvania"],
@@ -489,6 +492,12 @@
     },
     "xi": {
         "weak": true
+    },
+    "york": {
+        "weak": true,
+        "alternate": [
+            {"word": "nyu", "if": "new university"}
+        ]
     },
     "zurich": {
         "weak": true
