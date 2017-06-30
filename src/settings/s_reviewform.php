@@ -31,7 +31,7 @@ class ReviewForm_SettingParser extends SettingParser {
                     $onum = ($letters ? ord($m[1]) : (int) $m[1]);
                     $lowonum = min($lowonum, $onum);
                     $opts[$onum] = $m[2];
-                } else if (preg_match('/^No entry$/i', $line))
+                } else if (preg_match('/^(?:0\.\s*)?No entry$/i', $line))
                     $allow_empty = true;
                 else
                     return false;
@@ -186,7 +186,7 @@ are better). For example:</p>
 4. Accept</pre>
 <p>Or use consecutive capital letters (lower letters are better).</p>
 <p>Normally scores are mandatory: a review with a missing score cannot be
-submitted. Add a line “<code>No entry</code>” to make the score optional.</p></div>');
+submitted. Add a line “<code>0. No entry</code>” to make the score optional.</p></div>');
 
     Ht::stash_script("review_form_settings("
                      . json_encode($fmap) . ","
