@@ -2130,7 +2130,7 @@ class TagSearchMatcher {
                     $res[] = "(?:{$user->contactId}~.*|(?!.*~).*)";
                 else
                     $res[] = preg_quote($tm);
-            $this->_re = '/\A(?:' . join("|", $res) . ')\z/i';
+            $this->_re = '{\A(?:' . join("|", $res) . ')\z}i';
         }
         foreach (TagInfo::split_unpack($taglist) as $ti) {
             if (preg_match($this->_re, $ti[0])
