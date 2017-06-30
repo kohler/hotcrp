@@ -1859,7 +1859,7 @@ function fold(elt, dofold, foldnum, foldsessiontype) {
     var i, foldname, selt, opentxt, closetxt, isopen, foldnumid;
 
     // find element
-    if ($.isArray(elt) || elt.jquery) {
+    if (elt && ($.isArray(elt) || elt.jquery)) {
         for (i = 0; i < elt.length; i++)
             fold(elt[i], dofold, foldnum, foldsessiontype);
         return false;
