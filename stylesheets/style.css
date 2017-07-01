@@ -4,9 +4,11 @@
 /* Distributed under an MIT-like license; see LICENSE */
 
 /* page background */
-body {
+html {
 	font-family: "Helvetica Neue", Helvetica, Arial, verdana, tahoma, sans-serif;
-	font-size: 11pt; /* grep MAINSIZE */
+	font-size: 68.75%; /* 11pt; `rem` units relative to this */
+}
+body {
 	color: #333333;
 	background-color: white;
 	margin: 0;
@@ -2121,7 +2123,8 @@ td.pboxi {
 }
 .pspcard {
 	z-index: 4;
-	font-size: 8.7pt; /* 10.5pt / 1.2 */
+	font-size: 8.7pt;
+	font-size: 0.791rem;
 	background: #dddddd;
 	border: 1px solid #aaaaaa;
 	padding: 5px 0;
@@ -2137,6 +2140,7 @@ td.pboxi {
 }
 #papstriptagsedit {
 	font-size: 8.7pt;
+	font-size: 0.791rem;
 }
 .pspcard_body textarea, .pspcard_body select {
 	font-size: inherit;
@@ -2326,7 +2330,9 @@ div.pst span.hint {
 	border: 1px solid #dddddd;
 	box-shadow: 0 0 5px rgba(0,0,0,0.1);
 	font-size: 12px;
+	font-size: 0.853rem;
 	line-height: 16px;
+	line-height: 1.138rem;
 	margin: 4px 8px;
 	padding: 2px 2px;
 	border-radius: 3px;

@@ -117,7 +117,7 @@ function render(SettingValues $sv) {
         $sv->set_oldv("tag_color_$k", join(" ", get($m, 1, [])));
         $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"lxcaption\"></td>"
             . "<td class=\"lxcaption taghl\">$k</td>"
-            . "<td class=\"lentry\" style=\"font-size:10.5pt\">" . $sv->render_entry("tag_color_$k", ["class" => "need-tagcompletion"]) . "</td></tr>"; /* MAINSIZE */
+            . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-tagcompletion"]) . "</td></tr>";
     }
 
     $tag_badge_data = $sv->conf->setting_data("tag_badge", "");
@@ -130,7 +130,7 @@ function render(SettingValues $sv) {
         $sv->set_oldv("tag_badge_$k", join(" ", get($m, 1, [])));
         $tag_colors_rows[] = "<tr><td class=\"lxcaption\"></td>"
             . "<td class=\"lxcaption\"><span class=\"badge {$k}badge\" style=\"margin:0\">$desc</span></td>"
-            . "<td class=\"lentry\" style=\"font-size:10.5pt\">" . $sv->render_entry("tag_badge_$k", ["class" => "need-tagcompletion"]) . "</td></tr>"; /* MAINSIZE */
+            . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_badge_$k", ["class" => "need-tagcompletion"]) . "</td></tr>";
     }
 
     echo Ht::hidden("has_tag_color", 1), Ht::hidden("has_tag_badge", 1),
