@@ -46,6 +46,7 @@ body {
 h1 {
 	display: inline;
 	font-size: 144%;
+	line-height: 1.25;
 	margin: 0;
 }
 #header {
@@ -903,10 +904,7 @@ h3.settings:first-child {
 .settingtext {
 	max-width: 640px;
 	margin: 0.65em 0;
-	line-height: 1.25;
-}
-h3.helppage:first-child {
-	margin-top: 16px;
+	line-height: 1.35;
 }
 h4.helppage {
 	margin: 0.8em 0 0;
@@ -1005,7 +1003,7 @@ table#foldtag_color th {
 }
 .helppagetext, .profiletext, .settingstext {
 	max-width: 640px;
-	line-height: 1.25;
+	line-height: 1.35;
 }
 table.helppage {
 	margin: 0 -16px;
@@ -2311,7 +2309,7 @@ div.pst span.hint {
 	color: #ffffff;
 	border: 0 none;
 	font-size: 75%;
-	line-height: 1.25;
+	line-height: 1.35;
 }
 .bubble.gray {
 	background-color: rgba(246, 246, 255, 0.95);
@@ -2387,7 +2385,7 @@ div.pst span.hint {
 }
 .pavt {
 	margin: 0 -5px;
-	padding: 0.25em 5px;
+	padding: 0.25em 5px 0.15em;
 	font-size: smaller;
 }
 .papfn, .pavfn, .psfn, .revfn {
@@ -2550,9 +2548,9 @@ body#offline .revcard {
 .papev, .revev {
 	margin: 5px 0;
 }
-.paptext, .revhint {
+.revhint {
 	max-width: 640px;
-	line-height: 1.25;
+	line-height: 1.35;
 }
 .paphint, .revhint {
 	font-size: 90%;
@@ -2782,9 +2780,11 @@ body#offline .revcard {
 	background: linear-gradient(to bottom, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 51%, transparent 51%),
 		linear-gradient(to top, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 51%, transparent 51%);
 }
-.paptext, .revtext, .cmttext {
+.pavb, .revtext, .cmttext {
+	line-height: 1.35;
+}
+.revtext, .cmttext {
 	position: relative;
-	line-height: 1.25;
 }
 .preview {
 	margin-bottom: 24px;
