@@ -175,9 +175,9 @@ echo "<table id='offlineform'>";
 // Review forms
 echo "<tr><td><h3>Download forms</h3>\n<div>";
 if ($Me->is_reviewer()) {
-    echo "<a href='", hoturl("search", "get=revform&amp;q=&amp;t=r&amp;p=all"), "'>Your reviews</a><br />\n";
+    echo "<a href='", hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=r&amp;p=all"), "'>Your reviews</a><br />\n";
     if ($Me->has_outstanding_review())
-        echo "<a href='", hoturl("search", "get=revform&amp;q=&amp;t=rout&amp;p=all"), "'>Your incomplete reviews</a><br />\n";
+        echo "<a href='", hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=rout&amp;p=all"), "'>Your incomplete reviews</a><br />\n";
     echo "<a href='", hoturl("offline", "downloadForm=1"), "'>Blank form</a></div>
 <div class='g'></div>
 <span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search", "q="), "'>Search</a> &gt; Download to choose individual papers.\n";
@@ -204,9 +204,9 @@ if ($Conf->setting("tag_rank") && $Me->is_reviewer()) {
     $ranktag = $Conf->setting_data("tag_rank");
     echo "<tr><td><div class='g'></div></td></tr>\n",
         "<tr><td><h3>Download ranking file</h3>\n<div>";
-    echo "<a href=\"", hoturl("search", "get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=r&amp;p=all"), "\">Your reviews</a>";
+    echo "<a href=\"", hoturl("search", "fn=get&amp;getfn=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=r&amp;p=all"), "\">Your reviews</a>";
     if ($Me->isPC)
-        echo "<br />\n<a href=\"", hoturl("search", "get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;p=all"), "\">All submitted papers</a>";
+        echo "<br />\n<a href=\"", hoturl("search", "fn=get&amp;getfn=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;p=all"), "\">All submitted papers</a>";
     echo "</div></td>\n";
 
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");

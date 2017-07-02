@@ -238,7 +238,7 @@ echo "<table class='fx'><tr><td>",
 echo '<div class="lg"></div>', Ht::submit("Prepare assignments", ["class" => "btn btn-default"]),
     " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
 
-echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "t=manager&q=&get=pcassignments&p=all"), '">Download current PC assignments</a></div>';
+echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "fn=get&amp;getfn=pcassignments&amp;t=manager&amp;q=&amp;p=all"), '">Download current PC assignments</a></div>';
 
 echo "</div></form>
 
