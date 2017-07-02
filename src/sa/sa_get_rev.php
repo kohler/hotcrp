@@ -257,14 +257,15 @@ class GetRank_SearchAction extends SearchAction {
             $null = "\n";
             foreach (PaperInfo::fetch_all($result, $user) as $prow)
                 if ($user->can_change_tag($prow, $tag, null, 1)) {
+                    $csvt = CsvGenerator::quote($prow->title);
                     if ($prow->tagIndex === null)
-                        $null .= "X\t$prow->paperId\t$prow->title\n";
-                    else if ($real === "" || $lastIndex == $row->tagIndex - 1)
-                        $real .= "\t$prow->paperId\t$prow->title\n";
-                    else if ($lastIndex == $row->tagIndex)
-                        $real .= "=\t$prow->paperId\t$prow->title\n";
+                        $null .= "X,$prow->paperId,$csvt\n";
+                    else if ($real === "" || $lastIndex == $prow->tagIndex - 1)
+                        $real .= ",$prow->paperId,$csvt\n";
+                    else if ($lastIndex == $prow->tagIndex)
+                        $real .= "=,$prow->paperId,$csvt\n";
                     else
-                        $real .= str_pad("", min($prow->tagIndex - $lastIndex, 5), ">") . "\t$prow->paperId\t$prow->title\n";
+                        $real .= str_pad("", min($prow->tagIndex - $lastIndex, 5), ">") . ",$prow->paperId,$csvt\n";
                     $lastIndex = $prow->tagIndex;
                 }
             $text = "# Edit the rank order by rearranging this file's lines.
@@ -272,8 +273,8 @@ class GetRank_SearchAction extends SearchAction {
 # The first line has the highest rank. Lines starting with \"#\" are
 # ignored. Unranked papers appear at the end in lines starting with
 # \"X\", sorted by overall merit. Create a rank by removing the \"X\"s and
-# rearranging the lines. Lines starting with \"=\" mark papers with the
-# same rank as the preceding papers. Lines starting with \">>\", \">>>\",
+# rearranging the lines. A line starting with \"=\" marks a paper with the
+# same rank as the preceding paper. Lines starting with \">>\", \">>>\",
 # and so forth indicate rank gaps between papers. When you are done,
 # upload the file at\n"
                 . "#   " . hoturl_absolute("offline") . "\n\n"

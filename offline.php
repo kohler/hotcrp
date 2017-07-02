@@ -66,6 +66,17 @@ function saveTagIndexes($tag, $filename, &$settings, &$titles, &$linenos, &$erro
     $settings = $titles = $linenos = array();
 }
 
+function check_tag_index_line(&$line) {
+    if ($line && count($line) >= 2
+        && preg_match('/\A\s*(|[Xx=]|>*|\(?([-+]?\d+)\)?)\s*\z/', $line[0], $m1)
+        && preg_match('/\A\s*(\d+)\s*\z/', $line[1], $m2)) {
+        $line[0] = isset($m1[2]) && $m1[2] !== "" ? $m1[2] : $m1[1];
+        $line[1] = $m2[1];
+        return true;
+    } else
+        return false;
+}
+
 function setTagIndexes() {
     global $Conf, $Me, $Error;
     $filename = null;
@@ -87,44 +98,32 @@ function setTagIndexes() {
     $curIndex = 0;
     $lineno = 1;
     $settings = $titles = $linenos = $errors = array();
+    $csvp = new CsvParser("", CsvParser::TYPE_GUESS);
     foreach (explode("\n", rtrim(cleannl($text))) as $l) {
         if (substr($l, 0, 4) == "Tag:" || substr($l, 0, 6) == "# Tag:") {
             if (!$tag)
                 $tag = $tagger->check(trim(substr($l, ($l[0] == "#" ? 6 : 4))), Tagger::NOVALUE);
-            ++$lineno;
-            continue;
-        } else if ($l == "" || $l[0] == "#") {
-            ++$lineno;
-            continue;
+        } else if (trim($l) !== "" && $l[0] !== "#") {
+            $csvp->unshift($l);
+            $line = $csvp->next();
+            if ($line && check_tag_index_line($line)) {
+                if (isset($settings[$line[1]]))
+                    $errors[$lineno] = "Paper #$line[1] already given on line " . $linenos[$line[1]];
+                if ($line[0] === "X" || $line[0] === "x")
+                    $settings[$line[1]] = null;
+                else if ($line[0] === "" || $line[0] === ">")
+                    $settings[$line[1]] = $curIndex = $curIndex + 1;
+                else if (is_numeric($line[0]))
+                    $settings[$line[1]] = $curIndex = intval($line[0]);
+                else if ($line[0] === "=")
+                    $settings[$line[1]] = $curIndex;
+                else
+                    $settings[$line[1]] = $curIndex = $curIndex + strlen($line[0]);
+                $titles[$line[1]] = trim(get($line, 2, ""));
+                $linenos[$line[1]] = $lineno;
+            } else
+                $errors[$lineno] = "Syntax error";
         }
-        if (preg_match('/\A\s*?([Xx=]|>*|\([-\d]+\))\s+(\d+)\s*(.*?)\s*\z/', $l, $m)) {
-            if (isset($settings[$m[2]]))
-                $errors[$lineno] = "Paper #$m[2] already given on line " . $linenos[$m[2]];
-            if ($m[1] == "X" || $m[1] == "x")
-                $settings[$m[2]] = null;
-            else if ($m[1] == "" || $m[1] == ">")
-                $settings[$m[2]] = $curIndex = $curIndex + 1;
-            else if ($m[1][0] == "(")
-                $settings[$m[2]] = $curIndex = substr($m[1], 1, -1);
-            else if ($m[1] == "=")
-                $settings[$m[2]] = $curIndex;
-            else
-                $settings[$m[2]] = $curIndex = $curIndex + strlen($m[1]);
-            $titles[$m[2]] = $m[3];
-            $linenos[$m[2]] = $lineno;
-        } else if ($RealMe->privChair && preg_match('/\A\s*<\s*([^<>]*?(|<[^<>]*>))\s*>\s*\z/', $l, $m)) {
-            if (count($settings) && $Me)
-                saveTagIndexes($tag, $filename, $settings, $titles, $linenos, $errors);
-            $ret = ContactSearch::make_pc($m[1], $RealMe);
-            $Me = null;
-            if (count($ret->ids) == 1)
-                $Me = $ret->contact(0);
-            else if (count($ret->ids) == 0)
-                $errors[$lineno] = htmlspecialchars($m[1]) . " matches no PC member";
-            else
-                $errors[$lineno] = htmlspecialchars($m[1]) . " matches more than one PC member, give a full email address to disambiguate";
-        } else if (trim($l) !== "")
-            $errors[$lineno] = "Syntax error";
         ++$lineno;
     }
 
@@ -143,8 +142,10 @@ function setTagIndexes() {
         Conf::msg_error($Error["tags"]);
     else if (isset($_REQUEST["setvote"]))
         $Conf->confirmMsg("Votes saved.");
-    else
-        $Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($tag)) . "'>search for “order:{$tag}”</a>.");
+    else {
+        $dtag = $tagger->unparse($tag);
+        $Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($dtag)) . "'>search for “order:{$dtag}”</a>.");
+    }
 }
 if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
     && $Me->is_reviewer() && check_post())
