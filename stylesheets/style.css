@@ -874,6 +874,9 @@ div.hint {
 	font-style: normal;
 	color: #555555;
 }
+.dark .hint {
+	color: #cccccc;
+}
 .hint {
 	font-size: smaller;
 }

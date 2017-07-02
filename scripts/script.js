@@ -1122,6 +1122,9 @@ return function (content, bubopt) {
         },
         self: function () {
             return bubdiv ? jQuery(bubdiv) : null;
+        },
+        outerHTML: function () {
+            return bubdiv ? bubdiv.outerHTML : null;
         }
     };
 
@@ -4561,7 +4564,7 @@ function tag_dragto(l) {
 
     // create dragger
     if (!dragger) {
-        dragger = make_bubble({color: "edittagbubble", dir: "1!*"});
+        dragger = make_bubble({color: "edittagbubble dark", dir: "1!*"});
         window.disable_tooltip = true;
     }
 
@@ -4585,7 +4588,8 @@ function tag_dragto(l) {
         if (srcindex !== dragindex)
             m += ';font-weight:bold';
         m += '">#' + dragtag + '#' + tagvalue_unparse(newval) + '</span>';
-    }
+    } else
+        m += '<div class="hint">Drag up to set order</div>';
     if (dragindex == srcindex)
         y = rowanal[srcindex].middle();
     else if (dragindex < rowanal.length)
@@ -4596,7 +4600,7 @@ function tag_dragto(l) {
         x = $(rowanal[srcindex].entry).offset().left - 6;
     else
         x = rowanal[srcindex].right() - 20;
-    dragger.html(m).at(x, y).color("edittagbubble" + (srcindex == dragindex ? " sametag" : ""));
+    dragger.html(m).at(x, y).color("edittagbubble dark" + (srcindex == dragindex ? " sametag" : ""));
 }
 
 function calculate_shift(si, di) {
