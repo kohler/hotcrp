@@ -1325,8 +1325,8 @@ tr.pt_conflict_ass > td.entry, tr.propass > td.entry {
 /* review type/assignment blocks */
 .rto {
 	display: inline-block;
-	width: 0.75em;
-	height: 0.75em;
+	width: 0.72em;
+	height: 0.72em;
         border-width: 1px;
         position: relative;
 	bottom: -0.125em;
