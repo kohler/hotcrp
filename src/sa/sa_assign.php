@@ -15,12 +15,12 @@ class Assign_SearchAction extends SearchAction {
                           array("auto" => "Automatic assignments",
                                 "zzz1" => null,
                                 "conflict" => "Conflict",
-                                "unconflict" => "No conflict",
+                                "clearconflict" => "No conflict",
                                 "zzz2" => null,
-                                "assign" . REVIEW_PRIMARY => "Primary review",
-                                "assign" . REVIEW_SECONDARY => "Secondary review",
-                                "assign" . REVIEW_PC => "Optional review",
-                                "assign0" => "Clear review",
+                                "primaryreview" => "Primary review",
+                                "secondaryreview" => "Secondary review",
+                                "pcreview" => "Optional review",
+                                "clearreview" => "Clear review",
                                 "zzz3" => null,
                                 "lead" => "Discussion lead",
                                 "shepherd" => "Shepherd"),
@@ -32,57 +32,35 @@ class Assign_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $mt = $qreq->assignfn;
-        $mpc = (string) $qreq->markpc;
-        $pc = null;
-        if ($mpc != "" && $mpc != "0")
-            $pc = $user->conf->user_by_email($mpc);
-
-        if ($mt == "auto") {
-            $t = (in_array($qreq->t, array("acc", "s")) ? $qreq->t : "all");
+        if ($mt === "auto") {
+            $t = in_array($qreq->t, ["acc", "s"]) ? $qreq->t : "all";
             $q = join("+", $ssel->selection());
-            go(hoturl("autoassign", "pap=$q&t=$t&q=$q"));
-        } else if ($mt == "lead" || $mt == "shepherd") {
-            if ($user->assign_paper_pc($ssel->selection(), $mt, $pc))
-                $user->conf->confirmMsg(ucfirst(pluralx($ssel->selection(), $mt)) . " set.");
-            else if (!Dbl::has_error())
-                $user->conf->confirmMsg("No changes.");
-        } else if (!$pc)
-            Conf::msg_error("“" . htmlspecialchars($mpc) . "” is not a PC member.");
-        else if ($mt == "conflict" || $mt == "unconflict") {
-            if ($mt == "conflict") {
-                $user->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) (select paperId, ?, ? from Paper where paperId" . $ssel->sql_predicate() . ") on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $pc->contactId, CONFLICT_CHAIRMARK);
-                $user->log_activity("Mark conflicts with $mpc", $ssel->selection());
-            } else {
-                $user->conf->qe("delete from PaperConflict where PaperConflict.conflictType<? and contactId=? and (paperId" . $ssel->sql_predicate() . ")", CONFLICT_AUTHOR, $pc->contactId);
-                $user->log_activity("Remove conflicts with $mpc", $ssel->selection());
-            }
-        } else if (substr($mt, 0, 6) == "assign"
-                   && ($asstype = substr($mt, 6))
-                   && isset(ReviewForm::$revtype_names[$asstype])) {
-            $user->conf->qe_raw("lock tables PaperConflict write, PaperReview write, PaperReviewRefused write, Paper write, ActionLog write, Settings write");
-            $result = $user->conf->qe_raw("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where Paper.paperId" . $ssel->sql_predicate());
-            $conflicts = array();
-            $assigned = array();
-            $nworked = 0;
-            foreach (PaperInfo::fetch_all($result, $user) as $row) {
-                if ($asstype && $row->conflictType > 0)
-                    $conflicts[] = $row->paperId;
-                else if ($asstype && $row->reviewType >= REVIEW_PC && $asstype != $row->reviewType)
-                    $assigned[] = $row->paperId;
-                else {
-                    $user->assign_review($row->paperId, $pc->contactId, $asstype);
-                    $nworked++;
-                }
-            }
-            if (count($conflicts))
-                Conf::msg_error("Some papers were not assigned because of conflicts (" . join(", ", $conflicts) . ").  If these conflicts are in error, remove them and try to assign again.");
-            if (count($assigned))
-                Conf::msg_error("Some papers were not assigned because the PC member already had an assignment (" . join(", ", $assigned) . ").");
-            if ($nworked)
-                $user->conf->confirmMsg($asstype == 0 ? "Unassigned reviews." : "Assigned reviews.");
-            $user->conf->qe_raw("unlock tables");
-            $user->conf->update_rev_tokens_setting(false);
+            go(hoturl("autoassign", "q=$q&amp;t=$t&amp;pap=$q"));
         }
+
+        $mpc = (string) $qreq->markpc;
+        if ($mpc === "" || $mpc === "0" || strcasecmp($mpc, "none") == 0)
+            $mpc = "none";
+        else if (($pc = $user->conf->user_by_email($mpc)))
+            $mpc = $pc->email;
+        else
+            return "“" . htmlspecialchars($mpc) . "” is not a PC member.";
+        if ($mpc === "none" && $mt !== "lead" && $mt !== "shepherd")
+            return "A PC member is required.";
+        $mpc = CsvGenerator::quote($mpc);
+
+        if (!in_array($mt, ["lead", "shepherd", "conflict", "clearconflict",
+                            "pcreview", "secondaryreview", "primaryreview",
+                            "clearreview"])
+            return "Unknown assignment type.";
+
+        $text = "paper,action,user\n";
+        foreach ($ssel->selection() as $pid)
+            $text .= "$pid,$mt,$mpc\n";
+        $assignset = new AssignmentSet($user);
+        $assignset->enable_papers($ssel->selection());
+        $assignset->parse($text);
+        return $assignset->execute(true);
     }
 }
 
