@@ -153,6 +153,7 @@ xassert_eqq($j[17]->selconf, "Y");
 foreach ([1, 2, 3, 4, 5, 15, 16, 18] as $i)
     xassert_eqq($j[$i]->selconf, "N");
 
+assert_search_papers($user_chair, "re:estrin", "4 8 18");
 assert_search_papers($user_shenker, "re:estrin", "4 8 18");
 
 // normals don't see conflicted reviews

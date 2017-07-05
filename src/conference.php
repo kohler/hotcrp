@@ -84,6 +84,7 @@ class Conf {
     private $_search_keyword_factories = null;
     private $_search_keywords = null;
     private $_defined_formulas = null;
+    private $_assignment_parsers = null;
     private $_emoji_codes = null;
     private $_s3_document = false;
     private $_ims = null;
@@ -707,9 +708,44 @@ class Conf {
     }
 
 
+    private function _add_assignment_parser_json_base($name, $aj) {
+        $b = get($this->_assignment_parsers, $name);
+        if (!$b || get($b, "priority", 0) <= get($aj, "priority", 0))
+            $this->_assignment_parsers[$name] = $aj;
+    }
+    function _add_assignment_parser_json($aj) {
+        if (isset($aj->name) && is_string($aj->name)) {
+            $this->_add_assignment_parser_json_base($aj->name, $aj);
+            if (($syn = get($aj, "synonym")))
+                foreach (is_string($syn) ? [$syn] : $syn as $x)
+                    $this->_add_assignment_parser_json_base($x, $aj);
+            return true;
+        } else
+            return false;
+    }
+    function assignment_parser($keyword) {
+        require_once("assigners.php");
+        if ($this->_assignment_parsers === null) {
+            $this->_assignment_parsers = [];
+            expand_json_includes_callback(["etc/assignmentparsers.json"], [$this, "_add_assignment_parser_json"]);
+            if (($olist = $this->opt("assignmentParsers")))
+                expand_json_includes_callback($olist, [$this, "_add_assignment_parser_json"]);
+        }
+        $aj = get($this->_assignment_parsers, $keyword);
+        if ($aj && !isset($aj->__parser)) {
+            if (($req = get($aj, "require")))
+                foreach (is_string($req) ? [$req] : $req as $x)
+                    require_once($x);
+            $p = $aj->parser_class;
+            $aj->__parser = new $p($aj, $this);
+        }
+        return $aj ? $aj->__parser : null;
+    }
+
+
     private function _add_formula_function_json_base($name, $fj) {
-        if (!isset($this->_formula_functions[$name])
-            || get($this->_formula_functions[$name], "priority", 0) <= get($fj, "priority", 0))
+        $b = get($this->_formula_functions, $name);
+        if (!$b || get($b, "priority", 0) <= get($fj, "priority", 0))
             $this->_formula_functions[$name] = $fj;
     }
     function _add_formula_function_json($fj) {
@@ -1605,6 +1641,8 @@ class Conf {
                 $this->_taginfo = null;
             if (!$caches || isset($caches["formulas"]))
                 $this->_formula_functions = null;
+            if (!$caches || isset($caches["assigners"]))
+                $this->_assignment_parsers = null;
             if (!$caches || isset($caches["tracks"]))
                 Contact::update_rights();
         }
@@ -3414,6 +3452,7 @@ class Conf {
         return call_user_func($uf->callback, $user, $qreq, $prow, $uf);
     }
     function _add_api_json($fj) {
+        // XXX priority
         if (is_string($fj->fn) && !isset($this->_api_map[$fj->fn])
             && isset($fj->callback)) {
             $this->_api_map[$fj->fn] = $fj;

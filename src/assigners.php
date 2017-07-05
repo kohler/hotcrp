@@ -374,19 +374,8 @@ class AssignmentCsv {
 
 class AssignmentParser {
     public $type;
-    static private $assigners = array();
     function __construct($type) {
         $this->type = $type;
-    }
-    static function register($n, $a) {
-        assert(!get(self::$assigners, $n));
-        self::$assigners[$n] = $a;
-    }
-    static function assigner_names() {
-        return array_keys(self::$assigners);
-    }
-    static function find($n) {
-        return get(self::$assigners, $n);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->contact->can_administer($prow, $state->override)
@@ -487,7 +476,7 @@ class ReviewAssigner_Data {
     public $newtype = null;
     public $creator = true;
     public $error = false;
-    private static $type_map = [
+    static public $type_map = [
         "primary" => REVIEW_PRIMARY, "pri" => REVIEW_PRIMARY,
         "secondary" => REVIEW_SECONDARY, "sec" => REVIEW_SECONDARY,
         "optional" => REVIEW_PC, "opt" => REVIEW_PC, "pc" => REVIEW_PC,
@@ -566,9 +555,12 @@ class Review_AssignmentParser extends AssignmentParser {
         else
             return $rtype < 0 ? "review" : "clearreview";
     }
-    function __construct($rtype) {
-        parent::__construct(self::rtype_name($rtype));
-        $this->rtype = $rtype;
+    function __construct($aj) {
+        parent::__construct($aj->name);
+        if ($aj->review_type)
+            $this->rtype = get(ReviewAssigner_Data::$type_map, $aj->review_type, 0);
+        else
+            $this->rtype = -1;
     }
     function contact_set(&$req, AssignmentState $state) {
         if ($this->rtype > REVIEW_EXTERNAL)
@@ -821,17 +813,15 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
 
 
 class Lead_AssignmentParser extends AssignmentParser {
-    private $isadd;
     private $key;
-    function __construct($type, $isadd) {
-        parent::__construct($type);
-        $this->isadd = $isadd;
-        $this->key = $type;
-        if ($type === "administrator")
-            $this->key = "manager";
+    private $isadd;
+    function __construct($aj) {
+        parent::__construct($aj->name);
+        $this->key = $aj->type;
+        $this->isadd = !$aj->remove;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($this->type === "administrator")
+        if ($this->key === "manager")
             return $state->contact->privChair ? true : "You can’t change paper administrators.";
         else
             return parent::allow_paper($prow, $state);
@@ -843,38 +833,37 @@ class Lead_AssignmentParser extends AssignmentParser {
         if (!$this->isadd)
             return true;
         else if (!$contact->can_accept_review_assignment_ignore_conflict($prow)) {
-            $verb = $this->type === "administrator" ? "administer" : $this->type;
+            $verb = $this->key === "manager" ? "administer" : $this->key;
             return Text::user_html_nolink($contact) . " can’t $verb #{$prow->paperId}.";
         } else
             return AssignmentParser::unconflicted($prow, $contact, $state);
     }
     function load_state(AssignmentState $state) {
-        if (!$state->mark_type($this->type, ["pid"], "Lead_Assigner::make"))
+        if (!$state->mark_type($this->key, ["pid"], "Lead_Assigner::make"))
             return;
         $result = $state->conf->qe("select paperId, {$this->key}ContactId from Paper where {$this->key}ContactId!=0");
         while (($row = edb_row($result)))
-            $state->load(array("type" => $this->type, "pid" => +$row[0], "_cid" => +$row[1]));
+            $state->load(array("type" => $this->key, "pid" => +$row[0], "_cid" => +$row[1]));
         Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         $remcid = null;
         if (!$this->isadd && $contact && $contact->contactId)
             $remcid = $contact->contactId;
-        $state->remove(array("type" => $this->type, "pid" => $pid, "_cid" => $remcid));
+        $state->remove(array("type" => $this->key, "pid" => $pid, "_cid" => $remcid));
         if ($this->isadd && $contact->contactId)
-            $state->add(array("type" => $this->type, "pid" => $pid, "_cid" => $contact->contactId));
+            $state->add(array("type" => $this->key, "pid" => $pid, "_cid" => $contact->contactId));
     }
 }
 
 class Lead_Assigner extends Assigner {
+    private $description;
     function __construct(AssignmentItem $item, AssignerContacts $cmap) {
         parent::__construct($item, $cmap);
+        $this->description = $this->type === "manager" ? "administrator" : $this->type;
     }
     static function make(AssignmentItem $item, AssignerContacts $cmap, AssignmentState $state) {
         return new Lead_Assigner($item, $cmap);
-    }
-    function key() {
-        return $this->type === "administrator" ? "manager" : $this->type;
     }
     function icon() {
         if ($this->type === "lead")
@@ -882,13 +871,13 @@ class Lead_Assigner extends Assigner {
         else if ($this->type === "shepherd")
             return review_shepherd_icon();
         else
-            return "($this->type)";
+            return "({$this->description})";
     }
     function unparse_description() {
-        return $this->type;
+        return $this->description;
     }
     function unparse_display(AssignmentSet $aset) {
-        $aset->show_column($this->type);
+        $aset->show_column($this->description);
         if (!$this->item->deleted())
             $aset->show_column("reviewers");
         $t = [];
@@ -899,7 +888,7 @@ class Lead_Assigner extends Assigner {
         return join(" ", $t);
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
-        $x = ["pid" => $this->pid, "action" => $this->type];
+        $x = ["pid" => $this->pid, "action" => $this->description];
         if ($this->item->deleted())
             $x["email"] = "none";
         else {
@@ -928,7 +917,7 @@ class Lead_Assigner extends Assigner {
         $locks["Paper"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        $aset->contact->assign_paper_pc($this->pid, $this->key(),
+        $aset->contact->assign_paper_pc($this->pid, $this->type,
             $this->item->get(false, "_cid") ? : 0,
             ["old_cid" => $this->item->get(true, "_cid")]);
     }
@@ -937,9 +926,9 @@ class Lead_Assigner extends Assigner {
 
 class Conflict_AssignmentParser extends AssignmentParser {
     private $remove;
-    function __construct($remove) {
+    function __construct($aj) {
         parent::__construct("conflict");
-        $this->remove = $remove;
+        $this->remove = $aj->remove;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->contact->can_administer($prow, $state->override)
@@ -1076,9 +1065,16 @@ class Tag_AssignmentParser extends AssignmentParser {
     const NEXT = 1;
     const NEXTSEQ = 2;
     private $isadd;
-    function __construct($isadd) {
+    function __construct($aj) {
         parent::__construct("tag");
-        $this->isadd = $isadd;
+        if ($aj->remove)
+            $this->isadd = false;
+        else if (!$aj->next)
+            $this->isadd = true;
+        else if ($aj->next === "seq")
+            $this->isadd = self::NEXTSEQ;
+        else
+            $this->isadd = self::NEXT;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (($whyNot = $state->contact->perm_change_some_tag($prow, $state->override)))
@@ -1205,9 +1201,9 @@ class Tag_AssignmentParser extends AssignmentParser {
         // NB ignore $index on second & subsequent nexttag assignments
         if (!($fin = get($state->finishers, "seqtag $ltag")))
             $fin = $state->finishers["seqtag $ltag"] =
-                new NextTagAssigner($state, $tag, $index, $this->isadd == self::NEXTSEQ);
+                new NextTagAssigner($state, $tag, $index, $this->isadd === self::NEXTSEQ);
         unset($fin->pidindex[$pid]);
-        return $fin->next_index($this->isadd == self::NEXTSEQ);
+        return $fin->next_index($this->isadd === self::NEXTSEQ);
     }
     private function apply_remove($pid, $contact, AssignmentState $state, $m) {
         $prow = $state->prow($pid);
@@ -1398,14 +1394,14 @@ class Preference_AssignmentParser extends AssignmentParser {
         return $exp === null ? "N" : +$exp;
     }
     function load_state(AssignmentState $state) {
-        if (!$state->mark_type($this->type, ["pid", "cid"], "Preference_Assigner::make"))
+        if (!$state->mark_type("pref", ["pid", "cid"], "Preference_Assigner::make"))
             return;
         if ($state->paper_limit)
             $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference where paperId?a", $state->paper_ids());
         else
             $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
         while (($row = edb_row($result)))
-            $state->load(array("type" => $this->type, "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])));
+            $state->load(array("type" => "pref", "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])));
         Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
@@ -1429,9 +1425,9 @@ class Preference_AssignmentParser extends AssignmentParser {
             $ppref[1] = $pexp[1];
         }
 
-        $state->remove(array("type" => $this->type, "pid" => $pid, "cid" => $contact->contactId ? : null));
+        $state->remove(array("type" => "pref", "pid" => $pid, "cid" => $contact->contactId ? : null));
         if ($ppref[0] || $ppref[1] !== null)
-            $state->add(array("type" => $this->type, "pid" => $pid, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => self::make_exp($ppref[1])));
+            $state->add(array("type" => "pref", "pid" => $pid, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => self::make_exp($ppref[1])));
     }
 }
 
@@ -1483,50 +1479,6 @@ class Preference_Assigner extends Assigner {
     }
 }
 
-AssignmentParser::register("none", new Null_AssignmentParser);
-AssignmentParser::register("null", new Null_AssignmentParser);
-AssignmentParser::register("pri", new Review_AssignmentParser(REVIEW_PRIMARY));
-AssignmentParser::register("primary", new Review_AssignmentParser(REVIEW_PRIMARY));
-AssignmentParser::register("primaryreview", new Review_AssignmentParser(REVIEW_PRIMARY));
-AssignmentParser::register("sec", new Review_AssignmentParser(REVIEW_SECONDARY));
-AssignmentParser::register("secondary", new Review_AssignmentParser(REVIEW_SECONDARY));
-AssignmentParser::register("secondaryreview", new Review_AssignmentParser(REVIEW_SECONDARY));
-AssignmentParser::register("pcreview", new Review_AssignmentParser(REVIEW_PC));
-AssignmentParser::register("ext", new Review_AssignmentParser(REVIEW_EXTERNAL));
-AssignmentParser::register("external", new Review_AssignmentParser(REVIEW_EXTERNAL));
-AssignmentParser::register("extreview", new Review_AssignmentParser(REVIEW_EXTERNAL));
-AssignmentParser::register("externalreview", new Review_AssignmentParser(REVIEW_EXTERNAL));
-AssignmentParser::register("review", new Review_AssignmentParser(-1));
-AssignmentParser::register("clearreview", new Review_AssignmentParser(0));
-AssignmentParser::register("noreview", new Review_AssignmentParser(0));
-AssignmentParser::register("unassignreview", new Review_AssignmentParser(0));
-AssignmentParser::register("unsubmitreview", new UnsubmitReview_AssignmentParser);
-AssignmentParser::register("lead", new Lead_AssignmentParser("lead", true));
-AssignmentParser::register("nolead", new Lead_AssignmentParser("lead", false));
-AssignmentParser::register("clearlead", new Lead_AssignmentParser("lead", false));
-AssignmentParser::register("shepherd", new Lead_AssignmentParser("shepherd", true));
-AssignmentParser::register("noshepherd", new Lead_AssignmentParser("shepherd", false));
-AssignmentParser::register("clearshepherd", new Lead_AssignmentParser("shepherd", false));
-AssignmentParser::register("administrator", new Lead_AssignmentParser("administrator", true));
-AssignmentParser::register("noadministrator", new Lead_AssignmentParser("administrator", false));
-AssignmentParser::register("clearadministrator", new Lead_AssignmentParser("administrator", false));
-AssignmentParser::register("admin", new Lead_AssignmentParser("administrator", true));
-AssignmentParser::register("noadmin", new Lead_AssignmentParser("administrator", false));
-AssignmentParser::register("clearadmin", new Lead_AssignmentParser("administrator", false));
-AssignmentParser::register("conflict", new Conflict_AssignmentParser(false));
-AssignmentParser::register("noconflict", new Conflict_AssignmentParser(true));
-AssignmentParser::register("clearconflict", new Conflict_AssignmentParser(true));
-AssignmentParser::register("tag", new Tag_AssignmentParser(true));
-AssignmentParser::register("settag", new Tag_AssignmentParser(true));
-AssignmentParser::register("notag", new Tag_AssignmentParser(false));
-AssignmentParser::register("cleartag", new Tag_AssignmentParser(false));
-AssignmentParser::register("nexttag", new Tag_AssignmentParser(Tag_AssignmentParser::NEXT));
-AssignmentParser::register("seqnexttag", new Tag_AssignmentParser(Tag_AssignmentParser::NEXTSEQ));
-AssignmentParser::register("nextseqtag", new Tag_AssignmentParser(Tag_AssignmentParser::NEXTSEQ));
-AssignmentParser::register("preference", new Preference_AssignmentParser);
-AssignmentParser::register("pref", new Preference_AssignmentParser);
-AssignmentParser::register("revpref", new Preference_AssignmentParser);
-
 class AssignmentSet {
     public $conf;
     public $contact;
@@ -1567,7 +1519,7 @@ class AssignmentSet {
         if (is_array($action)) {
             foreach ($action as $a)
                 $this->enable_actions($a);
-        } else if (($aparser = AssignmentParser::find($action)))
+        } else if (($aparser = $this->conf->assignment_parser($action)))
             $this->enabled_actions[$aparser->type] = true;
     }
 
@@ -1955,7 +1907,7 @@ class AssignmentSet {
             && ($action = get($req, "type")) === null)
             $action = $this->astate->defaults["action"];
         $action = strtolower(trim($action));
-        if (!($aparser = AssignmentParser::find($action)))
+        if (!($aparser = $this->conf->assignment_parser($action)))
             return $this->error("Unknown action “" . htmlspecialchars($action) . "”");
         if ($this->enabled_actions !== null
             && !isset($this->enabled_actions[$aparser->type]))

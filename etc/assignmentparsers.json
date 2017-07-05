@@ -1,0 +1,97 @@
+[
+    {
+        "name": "none", "parser_class": "Null_AssignmentParser",
+        "synonym": ["null"]
+    },
+    {
+        "name": "review", "parser_class": "Review_AssignmentParser",
+        "review_type": null
+    },
+    {
+        "name": "primaryreview", "parser_class": "Review_AssignmentParser",
+        "synonym": ["pri", "primary"],
+        "review_type": "primary"
+    },
+    {
+        "name": "secondaryreview", "parser_class": "Review_AssignmentParser",
+        "synonym": ["sec", "secondary"],
+        "review_type": "secondary"
+    },
+    {
+        "name": "pcreview", "parser_class": "Review_AssignmentParser",
+        "review_type": "optional"
+    },
+    {
+        "name": "externalreview", "parser_class": "Review_AssignmentParser",
+        "synonym": ["ext", "external", "extreview"],
+        "review_type": "external"
+    },
+    {
+        "name": "clearreview", "parser_class": "Review_AssignmentParser",
+        "synonym": ["noreview", "unassignreview"],
+        "review_type": "none"
+    },
+    {
+        "name": "unsubmitreview", "parser_class": "UnsubmitReview_AssignmentParser"
+    },
+    {
+        "name": "lead", "parser_class": "Lead_AssignmentParser",
+        "type": "lead", "remove": false
+    },
+    {
+        "name": "clearlead", "parser_class": "Lead_AssignmentParser",
+        "synonym": ["nolead"],
+        "type": "lead", "remove": true
+    },
+    {
+        "name": "shepherd", "parser_class": "Lead_AssignmentParser",
+        "type": "shepherd", "remove": false
+    },
+    {
+        "name": "clearshepherd", "parser_class": "Lead_AssignmentParser",
+        "synonym": ["noshepherd"],
+        "type": "shepherd", "remove": true
+    },
+    {
+        "name": "administrator", "parser_class": "Lead_AssignmentParser",
+        "synonym": ["admin", "manager"],
+        "type": "manager", "remove": false
+    },
+    {
+        "name": "clearadministrator", "parser_class": "Lead_AssignmentParser",
+        "synonym": ["clearmanager", "clearadmin", "noadministrator", "nomanager", "noadmin"],
+        "type": "manager", "remove": true
+    },
+    {
+        "name": "conflict", "parser_class": "Conflict_AssignmentParser",
+        "remove": false
+    },
+    {
+        "name": "clearconflict", "parser_class": "Conflict_AssignmentParser",
+        "synonym": ["noconflict"],
+        "remove": true
+    },
+    {
+        "name": "tag", "parser_class": "Tag_AssignmentParser",
+        "synonym": ["settag"],
+        "remove": false, "next": false
+    },
+    {
+        "name": "cleartag", "parser_class": "Tag_AssignmentParser",
+        "synonym": ["notag"],
+        "remove": true
+    },
+    {
+        "name": "nexttag", "parser_class": "Tag_AssignmentParser",
+        "remove": false, "next": true
+    },
+    {
+        "name": "seqnexttag", "parser_class": "Tag_AssignmentParser",
+        "synonym": ["seqtag", "nextseqtag"],
+        "remove": false, "next": "seq"
+    },
+    {
+        "name": "pref", "parser_class": "Preference_AssignmentParser",
+        "synonym": ["preference", "revpref"]
+    }
+]
