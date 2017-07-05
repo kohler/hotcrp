@@ -34,6 +34,27 @@ class Conflict {
         $max = $privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
         return new Conflict(max(min($value, $max), CONFLICT_AUTHORMARK));
     }
+    static function parse($text, $default_yes) {
+        if (is_bool($text))
+            return $text ? $default_yes : 0;
+        $text = strtolower(trim($text));
+        if ($text === "none")
+            return 0;
+        else if (($b = friendly_boolean($text)) !== null)
+            return $b ? $default_yes : 0;
+        else if ($text === "collab" || $text === "collaborator" || $text === "recent collaborator")
+            return 2;
+        else if ($text === "advisor" || $text === "student" || $text === "advisor/student")
+            return 3;
+        else if ($text === "institution" || $text === "institutional")
+            return 4;
+        else if ($text === "personal")
+            return 5;
+        else if ($text === "other")
+            return 6;
+        else
+            return false;
+    }
 
     function is_conflict() {
         return $this->value > 0;

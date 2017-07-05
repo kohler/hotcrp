@@ -525,11 +525,13 @@ class PaperStatus extends MessageSet {
             else {
                 if (is_int($ct) && isset(Conflict::$type_names[$ct]))
                     $ctn = $ct;
-                else if (($ctn = array_search($ct, Conflict::$type_names, true)) !== false)
+                else if (is_bool($ct))
+                    $ctn = $ct ? 1 : 0;
+                else if (is_string($ct) && ($ctn = Conflict::parse($ct, 1)) !== false)
                     /* OK */;
                 else {
                     $pj->bad_pc_conflicts->$email = $ct;
-                    $ctn = array_search("other", Conflict::$type_names, true);
+                    $ctn = Conflict::parse("other", 1);
                 }
                 $pj->pc_conflicts->$email = $ctn;
             }
