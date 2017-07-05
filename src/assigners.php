@@ -931,10 +931,10 @@ class Lead_Assigner extends Assigner {
 
 
 class Conflict_AssignmentParser extends AssignmentParser {
-    private $ctype;
-    function __construct($ctype) {
+    private $remove;
+    function __construct($remove) {
         parent::__construct("conflict");
-        $this->ctype = $ctype;
+        $this->remove = $remove;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->contact->can_administer($prow, $state->override)
@@ -944,7 +944,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             return true;
     }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        return $cclass == "any" && !$this->ctype;
+        return $cclass == "any" && $this->remove;
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
@@ -959,10 +959,23 @@ class Conflict_AssignmentParser extends AssignmentParser {
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         $res = $state->remove(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
-        if (!empty($res) && $res[0]["_ctype"] >= CONFLICT_AUTHOR)
-            $state->add($res[0]);
-        else if ($this->ctype)
-            $state->add(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId, "_ctype" => $this->ctype));
+        if ($this->remove)
+            $ctn = 0;
+        else {
+            $ctn = 1000;
+            $ct = get($req, "conflicttype", get($req, "conflict"));
+            if ($ct !== null && ($ctn = Conflict::parse($ct, 1000)) === false)
+                return "Bad conflict type.";
+        }
+        if (!empty($res)) {
+            $old_ctn = $res[0]["_ctype"];
+            if ($old_ctn >= CONFLICT_AUTHOR || ($ctn === 1000 && $old_ctn > 0))
+                $ctn = $old_ctn;
+        }
+        if ($ctn === 1000)
+            $ctn = CONFLICT_CHAIRMARK;
+        if ($ctn > 0)
+            $state->add(["type" => "conflict", "pid" => $pid, "cid" => $contact->contactId, "_ctype" => $ctn]);
     }
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
         return new Conflict_Assigner($item, $cmap);
@@ -1495,9 +1508,9 @@ AssignmentParser::register("clearadministrator", new Lead_AssignmentParser("admi
 AssignmentParser::register("admin", new Lead_AssignmentParser("administrator", true));
 AssignmentParser::register("noadmin", new Lead_AssignmentParser("administrator", false));
 AssignmentParser::register("clearadmin", new Lead_AssignmentParser("administrator", false));
-AssignmentParser::register("conflict", new Conflict_AssignmentParser(CONFLICT_CHAIRMARK));
-AssignmentParser::register("noconflict", new Conflict_AssignmentParser(0));
-AssignmentParser::register("clearconflict", new Conflict_AssignmentParser(0));
+AssignmentParser::register("conflict", new Conflict_AssignmentParser(false));
+AssignmentParser::register("noconflict", new Conflict_AssignmentParser(true));
+AssignmentParser::register("clearconflict", new Conflict_AssignmentParser(true));
 AssignmentParser::register("tag", new Tag_AssignmentParser(true));
 AssignmentParser::register("settag", new Tag_AssignmentParser(true));
 AssignmentParser::register("notag", new Tag_AssignmentParser(false));
