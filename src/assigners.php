@@ -1549,8 +1549,8 @@ class AssignmentSet {
         if (is_array($action)) {
             foreach ($action as $a)
                 $this->enable_actions($a);
-        } else if (($a = AssignmentParser::find($action)))
-            $this->enabled_actions[$a->type] = true;
+        } else if (($aparser = AssignmentParser::find($action)))
+            $this->enabled_actions[$aparser->type] = true;
     }
 
     function enable_papers($paper) {
@@ -1937,15 +1937,15 @@ class AssignmentSet {
             && ($action = get($req, "type")) === null)
             $action = $this->astate->defaults["action"];
         $action = strtolower(trim($action));
-        if (!($assigner = AssignmentParser::find($action)))
+        if (!($aparser = AssignmentParser::find($action)))
             return $this->error("Unknown action “" . htmlspecialchars($action) . "”");
         if ($this->enabled_actions !== null
-            && !isset($this->enabled_actions[$assigner->type]))
+            && !isset($this->enabled_actions[$aparser->type]))
             return $this->error("Action “" . htmlspecialchars($action) . "” disabled");
-        $assigner->load_state($this->astate);
+        $aparser->load_state($this->astate);
 
         // clean user parts
-        $contacts = $this->lookup_users($req, $assigner);
+        $contacts = $this->lookup_users($req, $aparser);
         if ($contacts === false)
             return false;
         $filter_contact = null;
@@ -1955,7 +1955,7 @@ class AssignmentSet {
         // maybe filter papers
         if (count($pids) > 20
             && $filter_contact
-            && ($pf = $assigner->paper_filter($filter_contact, $req, $this->astate))) {
+            && ($pf = $aparser->paper_filter($filter_contact, $req, $this->astate))) {
             $npids = [];
             foreach ($pids as $p)
                 if (get($pf, $p))
@@ -1978,7 +1978,7 @@ class AssignmentSet {
                 continue;
             }
 
-            $err = $assigner->allow_paper($prow, $this->astate);
+            $err = $aparser->allow_paper($prow, $this->astate);
             if ($err !== true) {
                 if (is_string($err))
                     $this->astate->paper_error($err);
@@ -1989,14 +1989,14 @@ class AssignmentSet {
 
             $cf = null;
             if (count($contacts) > 1 || $filter_contact)
-                $cf = $assigner->contact_filter($p, $req, $this->astate);
+                $cf = $aparser->contact_filter($p, $req, $this->astate);
 
             foreach ($contacts as $contact) {
                 if ($cf && $contact && $contact->contactId
                     && !get($cf, $contact->contactId))
                     continue;
                 if ($contact && $contact->contactId > 0) {
-                    $err = $assigner->allow_contact($prow, $contact, $req, $this->astate);
+                    $err = $aparser->allow_contact($prow, $contact, $req, $this->astate);
                     if ($err === false) {
                         if ($prow->has_conflict($contact))
                             $err = Text::user_html_nolink($contact) . " has a conflict with submission #$p.";
@@ -2008,7 +2008,7 @@ class AssignmentSet {
                     if ($err !== true)
                         continue;
                 }
-                $err = $assigner->apply($p, $contact, $req, $this->astate);
+                $err = $aparser->apply($p, $contact, $req, $this->astate);
                 if (is_string($err))
                     $this->astate->error($err);
                 if (!$err)
@@ -2029,9 +2029,9 @@ class AssignmentSet {
         // create assigners for difference
         foreach ($this->astate->diff() as $pid => $difflist)
             foreach ($difflist as $item) {
-                $parser = AssignmentParser::find($item["type"]);
+                $aparser = AssignmentParser::find($item["type"]);
                 try {
-                    if (($a = $parser->realize($item, $this->cmap, $this->astate)))
+                    if (($a = $aparser->realize($item, $this->cmap, $this->astate)))
                         $this->assigners[] = $a;
                 } catch (Exception $e) {
                     $this->error($item->lineno, $e->getMessage());
