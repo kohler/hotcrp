@@ -682,13 +682,6 @@ class Conf {
         if (($olist = $this->opt("searchKeywords")))
             expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
     }
-    function add_search_keyword($kwj) {
-        assert(is_object($kwj) && is_string($kwj->name));
-        assert(array_key_exists($kwj->name, $this->_search_keywords));
-        $b = $this->_search_keywords[$kwj->name];
-        if (!$b || get($b, "priority", 0) <= get($kwj, "priority", 0))
-            $this->_search_keywords[$kwj->name] = $kwj;
-    }
     function search_keyword($keyword) {
         if ($this->_search_keywords === null)
             $this->make_search_keyword_map();
@@ -702,11 +695,12 @@ class Conf {
                 $x = call_user_func($kwfj->factory, $keyword, $this, $kwfj, $m);
                 if ($x && (is_object($x) || is_array($x))) {
                     $x = (object) $x;
+                    assert($x->name === $keyword);
                     if (isset($kwfj->priority) && !isset($x->priority))
                         $x->priority = $kwfj->priority;
-                    $this->add_search_keyword($x);
+                    if (!$kwj || get($kwj, "priority", 0) <= get($x, "priority", 0))
+                        $kwj = $this->_search_keywords[$keyword] = $x;
                 }
-                $kwj = $this->_search_keywords[$keyword];
             }
         }
         return $kwj;
