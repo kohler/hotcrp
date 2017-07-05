@@ -658,19 +658,29 @@ class Conf {
     }
 
 
-    private function _add_search_keyword_json_base($name, $kwj) {
-        $b = get($this->_search_keyword_base, $name);
-        if (!$b || get($b, "priority", 0) <= get($kwj, "priority", 0))
-            $this->_search_keyword_base[$name] = $kwj;
+    static private function xt_add_without_synonym(&$a, $name, $xt) {
+        $b = get($a, $name);
+        if (!$b || get($b, "priority", 0) <= get($xt, "priority", 0))
+            $a[$name] = $xt;
     }
+    static private function xt_add(&$a, $name, $xt) {
+        self::xt_add_without_synonym($a, $name, $xt);
+        if (($syn = get($xt, "synonym")))
+            foreach (is_string($syn) ? [$syn] : $syn as $synname)
+                self::xt_add_without_synonym($a, $synname, $xt);
+        return true;
+    }
+    static private function xt_resolve_require($xt) {
+        if ($xt && isset($xt->require))
+            foreach (expand_includes($xt->require) as $f)
+                require_once($f);
+    }
+
+
     function _add_search_keyword_json($kwj) {
-        if (isset($kwj->name) && is_string($kwj->name)) {
-            $this->_add_search_keyword_json_base($kwj->name, $kwj);
-            if (($syn = get($kwj, "synonym")))
-                foreach (is_string($syn) ? [$syn] : $syn as $x)
-                    $this->_add_search_keyword_json_base($x, $kwj);
-            return true;
-        } else if (is_string($kwj->match) && is_string($kwj->factory)) {
+        if (isset($kwj->name) && is_string($kwj->name))
+            return self::xt_add($this->_search_keyword_base, $kwj->name, $kwj);
+        else if (is_string($kwj->match) && is_string($kwj->factory)) {
             $this->_search_keyword_factories[] = $kwj;
             return true;
         } else
@@ -693,6 +703,7 @@ class Conf {
         foreach ($this->_search_keyword_factories as $kwfj) {
             if ((!$kwj || get($kwj, "priority", 0) <= get($kwfj, "priority", 0))
                 && preg_match("\1\\A(?:" . $kwfj->match . ")\\z\1", $keyword, $m)) {
+                self::xt_resolve_require($kwfj);
                 $x = call_user_func($kwfj->factory, $keyword, $this, $kwfj, $m);
                 if ($x && (is_object($x) || is_array($x))) {
                     $x = (object) $x;
@@ -708,20 +719,10 @@ class Conf {
     }
 
 
-    private function _add_assignment_parser_json_base($name, $aj) {
-        $b = get($this->_assignment_parsers, $name);
-        if (!$b || get($b, "priority", 0) <= get($aj, "priority", 0))
-            $this->_assignment_parsers[$name] = $aj;
-    }
     function _add_assignment_parser_json($aj) {
-        if (isset($aj->name) && is_string($aj->name)) {
-            $this->_add_assignment_parser_json_base($aj->name, $aj);
-            if (($syn = get($aj, "synonym")))
-                foreach (is_string($syn) ? [$syn] : $syn as $x)
-                    $this->_add_assignment_parser_json_base($x, $aj);
-            return true;
-        } else
-            return false;
+        if (isset($aj->name) && is_string($aj->name))
+            return self::xt_add($this->_assignment_parsers, $aj->name, $aj);
+        return false;
     }
     function assignment_parser($keyword) {
         require_once("assigners.php");
@@ -733,9 +734,7 @@ class Conf {
         }
         $aj = get($this->_assignment_parsers, $keyword);
         if ($aj && !isset($aj->__parser)) {
-            if (($req = get($aj, "require")))
-                foreach (is_string($req) ? [$req] : $req as $x)
-                    require_once($x);
+            self::xt_resolve_require($aj);
             $p = $aj->parser_class;
             $aj->__parser = new $p($aj, $this);
         }
@@ -743,30 +742,23 @@ class Conf {
     }
 
 
-    private function _add_formula_function_json_base($name, $fj) {
-        $b = get($this->_formula_functions, $name);
-        if (!$b || get($b, "priority", 0) <= get($fj, "priority", 0))
-            $this->_formula_functions[$name] = $fj;
-    }
     function _add_formula_function_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)) {
-            $this->_add_formula_function_json_base($fj->name, $fj);
-            if (($syn = get($fj, "synonym")))
-                foreach (is_string($syn) ? [$syn] : $syn as $x)
-                    $this->_add_formula_function_json_base($x, $fj);
-            return true;
-        } else
-            return false;
+        if (isset($fj->name) && is_string($fj->name))
+            return self::xt_add($this->_formula_functions, $fj->name, $fj);
+        return false;
     }
-    function formula_functions() {
+    function formula_function($fname) {
         if ($this->_formula_functions === null) {
             $this->_formula_functions = [];
             expand_json_includes_callback(["etc/formulafunctions.json"], [$this, "_add_formula_function_json"]);
             if (($olist = $this->opt("formulaFunctions")))
                 expand_json_includes_callback($olist, [$this, "_add_formula_function_json"]);
         }
-        return $this->_formula_functions;
+        $ff = get($this->_formula_functions, $fname);
+        self::xt_resolve_require($ff);
+        return $ff;
     }
+
 
     function named_formulas() {
         if ($this->_defined_formulas === null) {
