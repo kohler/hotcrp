@@ -360,7 +360,9 @@ class AssignmentCsv {
     public $header = [];
     public $data = [];
     function add($row) {
-        $this->header = $this->header + $row;
+        foreach ($row as $k => $v)
+            if ($v !== null)
+                $this->header[] = $k;
         $this->data[] = $row;
     }
     function unparse() {
