@@ -47,8 +47,8 @@ class AssignmentItem implements ArrayAccess {
     function differs($offset) {
         return $this->get(true, $offset) !== $this->get(false, $offset);
     }
-    function realize(AssignerContacts $cmap, AssignmentState $astate) {
-        return call_user_func($astate->realizer($this->offsetGet("type")), $this, $cmap, $astate);
+    function realize(AssignmentState $astate) {
+        return call_user_func($astate->realizer($this->offsetGet("type")), $this, $astate);
     }
 }
 
@@ -60,6 +60,7 @@ class AssignmentState {
     public $contact;  // executor
     public $reviewer; // default contact
     public $override;
+    public $cmap;
     public $lineno = null;
     public $defaults = array();
     public $prows = array();
@@ -71,6 +72,7 @@ class AssignmentState {
         $this->conf = $contact->conf;
         $this->contact = $this->reviewer = $contact;
         $this->override = $override;
+        $this->cmap = new AssignerContacts($this->conf);
     }
     function mark_type($type, $keys, $realizer) {
         if (!isset($this->types[$type])) {
@@ -420,13 +422,13 @@ class Assigner {
     public $pid;
     public $contact;
     public $cid;
-    function __construct(AssignmentItem $item, AssignerContacts $cmap) {
+    function __construct(AssignmentItem $item, AssignmentState $state) {
         $this->item = $item;
         $this->type = $item["type"];
         $this->pid = $item["pid"];
         $this->cid = $item["cid"] ? : $item["_cid"];
         if ($this->cid)
-            $this->contact = $cmap->make_id($this->cid);
+            $this->contact = $state->cmap->make_id($this->cid);
     }
     function unparse_description() {
         return "";
@@ -660,16 +662,15 @@ class Review_Assigner extends Assigner {
     private $notify = null;
     private $unsubmit = false;
     static public $prefinfo = null;
-    function __construct(AssignmentItem $item, AssignerContacts $cmap,
-                         AssignmentState $state) {
-        parent::__construct($item, $cmap);
+    function __construct(AssignmentItem $item, AssignmentState $state) {
+        parent::__construct($item, $state);
         $this->rtype = $item->get(false, "_rtype");
         $this->unsubmit = $item->get(true, "_rsubmitted") && !$item->get(false, "_rsubmitted");
         if (!$item->existed() && $this->rtype == REVIEW_EXTERNAL)
             $this->notify = get($state->defaults, "extrev_notify");
     }
-    static function make(AssignmentItem $item, AssignerContacts $cmap, AssignmentState $state) {
-        return new Review_Assigner($item, $cmap, $state);
+    static function make(AssignmentItem $item, AssignmentState $state) {
+        return new Review_Assigner($item, $state);
     }
     function unparse_description() {
         return "review";
@@ -860,12 +861,12 @@ class Lead_AssignmentParser extends AssignmentParser {
 
 class Lead_Assigner extends Assigner {
     private $description;
-    function __construct(AssignmentItem $item, AssignerContacts $cmap) {
-        parent::__construct($item, $cmap);
+    function __construct(AssignmentItem $item, AssignmentState $state) {
+        parent::__construct($item, $state);
         $this->description = $this->type === "manager" ? "administrator" : $this->type;
     }
-    static function make(AssignmentItem $item, AssignerContacts $cmap, AssignmentState $state) {
-        return new Lead_Assigner($item, $cmap);
+    static function make(AssignmentItem $item, AssignmentState $state) {
+        return new Lead_Assigner($item, $state);
     }
     function icon() {
         if ($this->type === "lead")
@@ -977,12 +978,12 @@ class Conflict_AssignmentParser extends AssignmentParser {
 
 class Conflict_Assigner extends Assigner {
     private $ctype;
-    function __construct(AssignmentItem $item, AssignerContacts $cmap) {
-        parent::__construct($item, $cmap);
+    function __construct(AssignmentItem $item, AssignmentState $state) {
+        parent::__construct($item, $state);
         $this->ctype = $item->get(false, "_ctype");
     }
-    static function make(AssignmentItem $item, AssignerContacts $cmap, AssignmentState $state) {
-        return new Conflict_Assigner($item, $cmap);
+    static function make(AssignmentItem $item, AssignmentState $state) {
+        return new Conflict_Assigner($item, $state);
     }
     function unparse_description() {
         return "conflict";
@@ -1295,14 +1296,14 @@ class Tag_AssignmentParser extends AssignmentParser {
 class Tag_Assigner extends Assigner {
     private $tag;
     private $index;
-    function __construct(AssignmentItem $item, AssignerContacts $cmap) {
-        parent::__construct($item, $cmap);
+    function __construct(AssignmentItem $item, AssignmentState $state) {
+        parent::__construct($item, $state);
         $this->tag = $item["_tag"];
         $this->index = $item->get(false, "_index");
         if ($this->index == 0 && $item["_vote"])
             $this->index = null;
     }
-    static function make(AssignmentItem $item, AssignerContacts $cmap, AssignmentState $state) {
+    static function make(AssignmentItem $item, AssignmentState $state) {
         $prow = $state->prow($item["pid"]);
         // check permissions
         if (!$item["_vote"]) {
@@ -1315,7 +1316,7 @@ class Tag_Assigner extends Assigner {
                 throw new Exception(whyNotText($whyNot, "tag"));
             }
         }
-        return new Tag_Assigner($item, $cmap);
+        return new Tag_Assigner($item, $state);
     }
     function unparse_description() {
         return "tag";
@@ -1441,11 +1442,11 @@ class Preference_AssignmentParser extends AssignmentParser {
 }
 
 class Preference_Assigner extends Assigner {
-    function __construct(AssignmentItem $item, AssignerContacts $cmap) {
-        parent::__construct($item, $cmap);
+    function __construct(AssignmentItem $item, AssignmentState $state) {
+        parent::__construct($item, $state);
     }
-    static function make(AssignmentItem $item, AssignerContacts $cmap, AssignmentState $state) {
-        return new Preference_Assigner($item, $cmap);
+    static function make(AssignmentItem $item, AssignmentState $state) {
+        return new Preference_Assigner($item, $state);
     }
     function unparse_description() {
         return "preference";
@@ -1514,7 +1515,7 @@ class AssignmentSet {
         if ($override === null)
             $override = $this->contact->is_admin_force();
         $this->astate = new AssignmentState($contact, $override);
-        $this->cmap = new AssignerContacts($this->conf);
+        $this->cmap = $this->astate->cmap;
     }
 
     function set_reviewer(Contact $reviewer) {
@@ -2009,7 +2010,7 @@ class AssignmentSet {
         foreach ($this->astate->diff() as $pid => $difflist)
             foreach ($difflist as $item) {
                 try {
-                    if (($a = $item->realize($this->cmap, $this->astate)))
+                    if (($a = $item->realize($this->astate)))
                         $this->assigners[] = $a;
                 } catch (Exception $e) {
                     $this->error($item->lineno, $e->getMessage());
