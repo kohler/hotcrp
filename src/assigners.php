@@ -987,17 +987,24 @@ class Conflict_Assigner extends Assigner {
     function unparse_description() {
         return "conflict";
     }
+    private function icon($before) {
+        $ctype = $this->item->get($before, "_ctype");
+        if ($ctype >= CONFLICT_AUTHOR)
+            return review_type_icon(-2);
+        else if ($ctype > 0)
+            return review_type_icon(-1);
+        else
+            return "";
+    }
     function unparse_display(AssignmentSet $aset) {
         $aset->show_column("pcconf");
-        $t = $aset->contact->reviewer_html_for($this->contact) . ' ';
-        if ($this->ctype)
-            $t .= review_type_icon(-1);
+        $t = $aset->contact->reviewer_html_for($this->contact);
+        if ($this->item->deleted())
+            $t = '<del>' . $t . ' ' . $this->icon(true) . '</del>';
+        else if (!$this->item->existed())
+            $t = '<ins>' . $t . ' ' . $this->icon(false) . '</ins>';
         else
-            $t .= "(remove conflict)";
-        if (Review_Assigner::$prefinfo
-            && ($cpref = get(Review_Assigner::$prefinfo, $this->cid))
-            && ($pref = get($cpref, $this->pid)))
-            $t .= unparse_preference_span($pref);
+            $t = $t . ' <del>' . $this->icon(true) . '</del> <ins>' . $this->icon(false) . '</ins>';
         return $t;
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
