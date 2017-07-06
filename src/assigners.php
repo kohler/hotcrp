@@ -390,6 +390,8 @@ class AssignmentParser {
         else
             return true;
     }
+    function load_state(AssignmentState $state) {
+    }
     function contact_set(&$req, AssignmentState $state) {
         return "pc";
     }
@@ -401,8 +403,6 @@ class AssignmentParser {
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return self::unconflicted($prow, $contact, $state);
-    }
-    function load_state(AssignmentState $state) {
     }
     function paper_filter($contact, &$req, AssignmentState $state) {
         return null;
@@ -564,6 +564,10 @@ class Review_AssignmentParser extends AssignmentParser {
         else
             $this->rtype = -1;
     }
+    function load_state(AssignmentState $state) {
+        if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make"))
+            self::load_review_state($state);
+    }
     function contact_set(&$req, AssignmentState $state) {
         if ($this->rtype > REVIEW_EXTERNAL)
             return "pc";
@@ -598,10 +602,6 @@ class Review_AssignmentParser extends AssignmentParser {
                           "_rsubmitted" => $row[4] > 0 ? 1 : 0]);
         }
         Dbl::free($result);
-    }
-    function load_state(AssignmentState $state) {
-        if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make"))
-            self::load_review_state($state);
     }
     private function make_filter($fkey, $key, $value, &$req, AssignmentState $state) {
         $rdata = ReviewAssigner_Data::make($req, $state, $this->rtype);
@@ -769,6 +769,10 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
     function __construct() {
         parent::__construct("unsubmitreview");
     }
+    function load_state(AssignmentState $state) {
+        if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make"))
+            Review_AssignmentParser::load_review_state($state);
+    }
     function contact_set(&$req, AssignmentState $state) {
         return "reviewers";
     }
@@ -777,10 +781,6 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
-    }
-    function load_state(AssignmentState $state) {
-        if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make"))
-            Review_AssignmentParser::load_review_state($state);
     }
     function paper_filter($contact, &$req, AssignmentState $state) {
         return $state->make_filter("pid", ["type" => "review", "cid" => $contact->contactId, "_rsubmitted" => 1]);
@@ -828,6 +828,14 @@ class Lead_AssignmentParser extends AssignmentParser {
         else
             return parent::allow_paper($prow, $state);
     }
+    function load_state(AssignmentState $state) {
+        if (!$state->mark_type($this->key, ["pid"], "Lead_Assigner::make"))
+            return;
+        $result = $state->conf->qe("select paperId, {$this->key}ContactId from Paper where {$this->key}ContactId!=0");
+        while (($row = edb_row($result)))
+            $state->load(array("type" => $this->key, "pid" => +$row[0], "_cid" => +$row[1]));
+        Dbl::free($result);
+    }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         return !$this->isadd || $cclass == "none";
     }
@@ -839,14 +847,6 @@ class Lead_AssignmentParser extends AssignmentParser {
             return Text::user_html_nolink($contact) . " can’t $verb #{$prow->paperId}.";
         } else
             return AssignmentParser::unconflicted($prow, $contact, $state);
-    }
-    function load_state(AssignmentState $state) {
-        if (!$state->mark_type($this->key, ["pid"], "Lead_Assigner::make"))
-            return;
-        $result = $state->conf->qe("select paperId, {$this->key}ContactId from Paper where {$this->key}ContactId!=0");
-        while (($row = edb_row($result)))
-            $state->load(array("type" => $this->key, "pid" => +$row[0], "_cid" => +$row[1]));
-        Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         $remcid = null;
@@ -939,12 +939,6 @@ class Conflict_AssignmentParser extends AssignmentParser {
         else
             return true;
     }
-    function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        return $cclass == "any" && $this->remove;
-    }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        return true;
-    }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("conflict", ["pid", "cid"], "Conflict_Assigner::make"))
             return;
@@ -952,6 +946,12 @@ class Conflict_AssignmentParser extends AssignmentParser {
         while (($row = edb_row($result)))
             $state->load(array("type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]));
         Dbl::free($result);
+    }
+    function allow_special_contact($cclass, &$req, AssignmentState $state) {
+        return $cclass == "any" && $this->remove;
+    }
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        return true;
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         $res = $state->remove(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
@@ -1091,12 +1091,6 @@ class Tag_AssignmentParser extends AssignmentParser {
         else
             return true;
     }
-    function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        return true;
-    }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        return true;
-    }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("tag", ["pid", "ltag"], "Tag_Assigner::make"))
             return;
@@ -1104,6 +1098,12 @@ class Tag_AssignmentParser extends AssignmentParser {
         while (($row = edb_row($result)))
             $state->load(array("type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]));
         Dbl::free($result);
+    }
+    function allow_special_contact($cclass, &$req, AssignmentState $state) {
+        return true;
+    }
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        return true;
     }
     private function cannot_view_error(AssignmentState $state, $pid, $tag) {
         if ($state->prow($pid)->conflict_type($state->contact))
@@ -1376,6 +1376,17 @@ class Preference_AssignmentParser extends AssignmentParser {
         else
             return true;
     }
+    function load_state(AssignmentState $state) {
+        if (!$state->mark_type("pref", ["pid", "cid"], "Preference_Assigner::make"))
+            return;
+        if ($state->paper_limit)
+            $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference where paperId?a", $state->paper_ids());
+        else
+            $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
+        while (($row = edb_row($result)))
+            $state->load(array("type" => "pref", "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])));
+        Dbl::free($result);
+    }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
         if ($cclass === "any")
             return "pc";
@@ -1401,17 +1412,6 @@ class Preference_AssignmentParser extends AssignmentParser {
     }
     static private function make_exp($exp) {
         return $exp === null ? "N" : +$exp;
-    }
-    function load_state(AssignmentState $state) {
-        if (!$state->mark_type("pref", ["pid", "cid"], "Preference_Assigner::make"))
-            return;
-        if ($state->paper_limit)
-            $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference where paperId?a", $state->paper_ids());
-        else
-            $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
-        while (($row = edb_row($result)))
-            $state->load(array("type" => "pref", "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])));
-        Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         foreach (array("preference", "pref", "revpref") as $k)
