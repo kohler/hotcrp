@@ -66,7 +66,6 @@ class AssignmentState {
     public $prows = array();
     public $finishers = array();
     public $paper_exact_match = true;
-    public $paper_limit = false;
     public $errors = [];
     function __construct(Contact $contact, $override) {
         $this->conf = $contact->conf;
@@ -1378,10 +1377,7 @@ class Preference_AssignmentParser extends AssignmentParser {
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("pref", ["pid", "cid"], "Preference_Assigner::make"))
             return;
-        if ($state->paper_limit)
-            $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference where paperId?a", $state->paper_ids());
-        else
-            $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
+        $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference where paperId?a", $state->paper_ids());
         while (($row = edb_row($result)))
             $state->load(array("type" => "pref", "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])));
         Dbl::free($result);
@@ -1524,25 +1520,21 @@ class AssignmentSet {
         assert(empty($this->assigners));
         if ($this->enabled_actions === null)
             $this->enabled_actions = [];
-        if (is_array($action)) {
-            foreach ($action as $a)
-                $this->enable_actions($a);
-        } else if (($aparser = $this->conf->assignment_parser($action)))
-            $this->enabled_actions[$aparser->type] = true;
+        foreach (is_array($action) ? $action : [$action] as $a)
+            if (($aparser = $this->conf->assignment_parser($a)))
+                $this->enabled_actions[$aparser->type] = true;
     }
 
     function enable_papers($paper) {
         assert(empty($this->assigners));
         if ($this->enabled_pids === null)
             $this->enabled_pids = [];
-        if (is_array($paper)) {
-            foreach ($paper as $p)
-                $this->enable_papers($p);
-        } else if ($paper instanceof PaperInfo) {
-            $this->astate->prows[$paper->paperId] = $paper;
-            $this->enabled_pids[$paper->paperId] = true;
-        } else
-            $this->enabled_pids[$paper] = true;
+        foreach (is_array($paper) ? $paper : [$paper] as $p)
+            if ($p instanceof PaperInfo) {
+                $this->astate->prows[$p->paperId] = $p;
+                $this->enabled_pids[] = $p->paperId;
+            } else
+                $this->enabled_pids[] = (int) $p;
     }
 
     function push_override($override) {
@@ -1646,7 +1638,7 @@ class AssignmentSet {
             $this->reviewer_set = array();
             foreach ($this->conf->pc_members() as $p)
                 $this->reviewer_set[$p->contactId] = $p;
-            $result = $this->conf->qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 group by ContactInfo.contactId");
+            $result = $this->conf->qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 and paperId?a group by ContactInfo.contactId", $this->astate->paper_ids());
             while ($result && ($row = Contact::fetch($result, $this->conf)))
                 $this->reviewer_set[$row->contactId] = $row;
             Dbl::free($result);
@@ -1850,8 +1842,6 @@ class AssignmentSet {
             $this->astate->lineno = $csv->lineno();
             $this->astate->fetch_prows(array_keys($pids));
         }
-        if ($this->enabled_pids !== null)
-            $this->astate->paper_limit = true;
 
         // now parse assignment
         foreach ($lines as $i => $linereq) {
@@ -1894,7 +1884,7 @@ class AssignmentSet {
 
         // Implement paper restriction
         if ($this->enabled_pids !== null)
-            $npids = array_filter($npids, function ($pid) { return isset($this->enabled_pids[$pid]); });
+            $npids = array_intersect($npids, $this->enabled_pids);
 
         foreach ($npids as $pid)
             $pids[$pid] = $val;
