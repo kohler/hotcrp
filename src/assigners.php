@@ -409,10 +409,10 @@ class AssignmentParser {
     function paper_filter($contact, &$req, AssignmentState $state) {
         return null;
     }
-    function contact_filter($pid, &$req, AssignmentState $state) {
+    function contact_filter(PaperInfo $prow, &$req, AssignmentState $state) {
         return null;
     }
-    function apply($pid, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
     }
 }
 
@@ -468,7 +468,7 @@ class Null_AssignmentParser extends AssignmentParser {
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
     }
-    function apply($pid, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
     }
 }
 
@@ -617,17 +617,17 @@ class Review_AssignmentParser extends AssignmentParser {
     function paper_filter($contact, &$req, AssignmentState $state) {
         return $this->make_filter("pid", "cid", $contact->contactId, $req, $state);
     }
-    function contact_filter($pid, &$req, AssignmentState $state) {
-        return $this->make_filter("cid", "pid", $pid, $req, $state);
+    function contact_filter(PaperInfo $prow, &$req, AssignmentState $state) {
+        return $this->make_filter("cid", "pid", $prow->paperId, $req, $state);
     }
-    function apply($pid, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
         $rdata = ReviewAssigner_Data::make($req, $state, $this->rtype);
         if ($rdata->error)
             return $rdata->error;
         if (!$contact && $rdata->newtype)
             return "User missing.";
 
-        $revmatch = ["type" => "review", "pid" => $pid,
+        $revmatch = ["type" => "review", "pid" => $prow->paperId,
                      "cid" => $contact ? $contact->contactId : null,
                      "_rtype" => $rdata->oldtype, "_round" => $rdata->oldround];
         $matches = $state->remove($revmatch);
@@ -786,10 +786,10 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
     function paper_filter($contact, &$req, AssignmentState $state) {
         return $state->make_filter("pid", ["type" => "review", "cid" => $contact->contactId, "_rsubmitted" => 1]);
     }
-    function contact_filter($pid, &$req, AssignmentState $state) {
-        return $state->make_filter("cid", ["type" => "review", "pid" => $pid, "_rsubmitted" => 1]);
+    function contact_filter(PaperInfo $prow, &$req, AssignmentState $state) {
+        return $state->make_filter("cid", ["type" => "review", "pid" => $prow->paperId, "_rsubmitted" => 1]);
     }
-    function apply($pid, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
         // parse round and reviewtype arguments
         $rarg0 = trim(get_s($req, "round"));
         $oldround = null;
@@ -803,7 +803,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
             return "Invalid reviewtype.";
 
         // remove existing review
-        $revmatch = ["type" => "review", "pid" => $pid,
+        $revmatch = ["type" => "review", "pid" => $prow->paperId,
                      "cid" => $contact ? $contact->contactId : null,
                      "_rtype" => $oldtype, "_round" => $oldround, "_rsubmitted" => 1];
         $matches = $state->remove($revmatch);
@@ -849,13 +849,13 @@ class Lead_AssignmentParser extends AssignmentParser {
         } else
             return AssignmentParser::unconflicted($prow, $contact, $state);
     }
-    function apply($pid, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
         $remcid = null;
         if (!$this->isadd && $contact && $contact->contactId)
             $remcid = $contact->contactId;
-        $state->remove(array("type" => $this->key, "pid" => $pid, "_cid" => $remcid));
+        $state->remove(array("type" => $this->key, "pid" => $prow->paperId, "_cid" => $remcid));
         if ($this->isadd && $contact->contactId)
-            $state->add(array("type" => $this->key, "pid" => $pid, "_cid" => $contact->contactId));
+            $state->add(array("type" => $this->key, "pid" => $prow->paperId, "_cid" => $contact->contactId));
     }
 }
 
@@ -954,8 +954,8 @@ class Conflict_AssignmentParser extends AssignmentParser {
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
     }
-    function apply($pid, $contact, &$req, AssignmentState $state) {
-        $res = $state->remove(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
+    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
+        $res = $state->remove(array("type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId));
         if ($this->remove)
             $ctn = 0;
         else {
@@ -972,7 +972,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
         if ($ctn === 1000)
             $ctn = CONFLICT_CHAIRMARK;
         if ($ctn > 0)
-            $state->add(["type" => "conflict", "pid" => $pid, "cid" => $contact->contactId, "_ctype" => $ctn]);
+            $state->add(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId, "_ctype" => $ctn]);
     }
 }
 
@@ -1106,14 +1106,14 @@ class Tag_AssignmentParser extends AssignmentParser {
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
     }
-    private function cannot_view_error(AssignmentState $state, $pid, $tag) {
-        if ($state->prow($pid)->conflict_type($state->contact))
-            $state->paper_error("You have a conflict with submission #$pid.");
+    private function cannot_view_error(PaperInfo $prow, $tag, AssignmentState $state) {
+        if ($prow->conflict_type($state->contact))
+            $state->paper_error("You have a conflict with submission #{$prow->paperId}.");
         else
-            $state->paper_error("You can’t view that tag for submission #$pid.");
+            $state->paper_error("You can’t view that tag for submission #{$prow->paperId}.");
         return true;
     }
-    function apply($pid, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
         if (!($tag = get($req, "tag")))
             return "Tag missing.";
 
@@ -1160,7 +1160,7 @@ class Tag_AssignmentParser extends AssignmentParser {
         if ($isadd && strpos($tag, "*") !== false)
             return "Tag wildcards aren’t allowed when adding tags.";
         if (!$isadd)
-            return $this->apply_remove($pid, $contact, $state, $m);
+            return $this->apply_remove($prow, $contact, $state, $m);
 
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
@@ -1182,28 +1182,28 @@ class Tag_AssignmentParser extends AssignmentParser {
         if ($m[3] && $m[3] != "#" && $m[3] != "=" && $m[3] != "==")
             return "“" . htmlspecialchars($m[3]) . "” isn’t allowed when adding tags.";
         if ($this->isadd === self::NEXT || $this->isadd === self::NEXTSEQ)
-            $index = $this->apply_next_index($pid, $tag, $state, $m);
+            $index = $this->apply_next_index($prow->paperId, $tag, $state, $m);
         else
             $index = $m[3] ? cvtnum($m[4], 0) : null;
 
         // if you can't view the tag, you can't set the tag
         // (information exposure)
-        if (!$state->contact->can_view_tag($state->prow($pid), $tag, $state->override))
-            return $this->cannot_view_error($state, $pid, $tag);
+        if (!$state->contact->can_view_tag($prow, $tag, $state->override))
+            return $this->cannot_view_error($prow, $tag, $state);
 
         // save assignment
         $ltag = strtolower($tag);
         if ($index === null
-            && ($x = $state->query(array("type" => "tag", "pid" => $pid, "ltag" => $ltag))))
+            && ($x = $state->query(["type" => "tag", "pid" => $prow->paperId, "ltag" => $ltag])))
             $index = $x[0]["_index"];
         $vtag = $state->conf->tags()->votish_base($tag);
         if ($vtag && $state->conf->tags()->is_vote($vtag) && !$index)
-            $state->remove(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
+            $state->remove(["type" => "tag", "pid" => $prow->paperId, "ltag" => $ltag]);
         else
-            $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
-                              "_tag" => $tag, "_index" => $index ? : 0));
+            $state->add(["type" => "tag", "pid" => $prow->paperId, "ltag" => $ltag,
+                         "_tag" => $tag, "_index" => $index ? : 0]);
         if ($vtag)
-            $this->account_votes($pid, $vtag, $state);
+            $this->account_votes($prow->paperId, $vtag, $state);
     }
     private function apply_next_index($pid, $tag, AssignmentState $state, $m) {
         $ltag = strtolower($tag);
@@ -1215,9 +1215,7 @@ class Tag_AssignmentParser extends AssignmentParser {
         unset($fin->pidindex[$pid]);
         return $fin->next_index($this->isadd === self::NEXTSEQ);
     }
-    private function apply_remove($pid, $contact, AssignmentState $state, $m) {
-        $prow = $state->prow($pid);
-
+    private function apply_remove(PaperInfo $prow, $contact, AssignmentState $state, $m) {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
@@ -1262,10 +1260,10 @@ class Tag_AssignmentParser extends AssignmentParser {
         // if you can't view the tag, you can't clear the tag
         // (information exposure)
         if ($search_ltag && !$state->contact->can_view_tag($prow, $search_ltag, $state->override))
-            return $this->cannot_view_error($state, $pid, $search_ltag);
+            return $this->cannot_view_error($prow, $search_ltag, $state);
 
         // query
-        $res = $state->query(array("type" => "tag", "pid" => $pid, "ltag" => $search_ltag));
+        $res = $state->query(array("type" => "tag", "pid" => $prow->paperId, "ltag" => $search_ltag));
         $tag_re = '{\A' . $m[1] . $m[2] . '\z}i';
         $vote_adjustments = array();
         foreach ($res as $x)
@@ -1278,7 +1276,7 @@ class Tag_AssignmentParser extends AssignmentParser {
                     $vote_adjustments[$v] = true;
             }
         foreach ($vote_adjustments as $vtag => $v)
-            $this->account_votes($pid, $vtag, $state);
+            $this->account_votes($prow->paperId, $vtag, $state);
     }
     private function account_votes($pid, $vtag, AssignmentState $state) {
         $res = $state->query(array("type" => "tag", "pid" => $pid));
@@ -1414,7 +1412,7 @@ class Preference_AssignmentParser extends AssignmentParser {
     static private function make_exp($exp) {
         return $exp === null ? "N" : +$exp;
     }
-    function apply($pid, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
         foreach (array("preference", "pref", "revpref") as $k)
             if (($pref = get($req, $k)) !== null)
                 break;
@@ -1435,9 +1433,9 @@ class Preference_AssignmentParser extends AssignmentParser {
             $ppref[1] = $pexp[1];
         }
 
-        $state->remove(array("type" => "pref", "pid" => $pid, "cid" => $contact->contactId ? : null));
+        $state->remove(array("type" => "pref", "pid" => $prow->paperId, "cid" => $contact->contactId ? : null));
         if ($ppref[0] || $ppref[1] !== null)
-            $state->add(array("type" => "pref", "pid" => $pid, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => self::make_exp($ppref[1])));
+            $state->add(array("type" => "pref", "pid" => $prow->paperId, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => self::make_exp($ppref[1])));
     }
 }
 
@@ -1969,7 +1967,7 @@ class AssignmentSet {
 
             $cf = null;
             if (count($contacts) > 1 || $filter_contact)
-                $cf = $aparser->contact_filter($p, $req, $this->astate);
+                $cf = $aparser->contact_filter($prow, $req, $this->astate);
 
             foreach ($contacts as $contact) {
                 if ($cf && $contact && $contact->contactId
@@ -1988,7 +1986,7 @@ class AssignmentSet {
                     if ($err !== true)
                         continue;
                 }
-                $err = $aparser->apply($p, $contact, $req, $this->astate);
+                $err = $aparser->apply($prow, $contact, $req, $this->astate);
                 if (is_string($err))
                     $this->astate->error($err);
                 if (!$err)
