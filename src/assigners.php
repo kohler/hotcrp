@@ -60,19 +60,22 @@ class AssignmentState {
     public $contact;  // executor
     public $reviewer; // default contact
     public $override;
-    public $cmap;
+    private $cmap;
+    private $reviewer_users = null;
     public $lineno = null;
     public $defaults = array();
     public $prows = array();
     public $finishers = array();
     public $paper_exact_match = true;
     public $errors = [];
+
     function __construct(Contact $contact, $override) {
         $this->conf = $contact->conf;
         $this->contact = $this->reviewer = $contact;
         $this->override = $override;
         $this->cmap = new AssignerContacts($this->conf);
     }
+
     function mark_type($type, $keys, $realizer) {
         if (!isset($this->types[$type])) {
             $this->types[$type] = $keys;
@@ -107,6 +110,7 @@ class AssignmentState {
         $st->items[$k] = new AssignmentItem($x);
         $st->sorted = false;
     }
+
     private function pid_keys($q) {
         if (isset($q["pid"]))
             return array($q["pid"]);
@@ -148,17 +152,18 @@ class AssignmentState {
     function query($q) {
         return $this->query_remove($q, false, null);
     }
+    function query_before($q) {
+        return $this->query_remove($q, false, false);
+    }
     function make_filter($key, $q) {
         $cf = [];
         foreach ($this->query($q) as $m)
             $cf[$m[$key]] = true;
         return $cf;
     }
+
     function remove($q) {
         return $this->query_remove($q, true, null);
-    }
-    function query_before($q) {
-        return $this->query_remove($q, false, false);
     }
     function add($x) {
         $k = $this->extract_key($x);
@@ -171,6 +176,7 @@ class AssignmentState {
         $item->override = $this->override;
         return $item;
     }
+
     function diff() {
         $diff = array();
         foreach ($this->st as $pid => $st) {
@@ -182,6 +188,7 @@ class AssignmentState {
         }
         return $diff;
     }
+
     function paper_ids() {
         return array_keys($this->prows);
     }
@@ -205,6 +212,25 @@ class AssignmentState {
             Dbl::free($result);
         }
     }
+
+    function user_by_id($cid) {
+        return $this->cmap->user_by_id($cid);
+    }
+    function user_by_email($email, $create = false) {
+        return $this->cmap->user_by_email($email, $create);
+    }
+    function pc_users() {
+        return $this->cmap->pc_users();
+    }
+    function reviewer_users() {
+        if ($this->reviewer_users === null)
+            $this->reviewer_users = $this->cmap->reviewer_users($this->paper_ids());
+        return $this->reviewer_users;
+    }
+    function register_user(Contact $c) {
+        return $this->cmap->register_user($c);
+    }
+
     function error($message) {
         $this->errors[] = [$message, true];
     }
@@ -221,32 +247,38 @@ class AssignerContacts {
     static private $next_fake_id = -10;
     static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, roles, contactTags";
     function __construct(Conf $conf) {
+        global $Me;
         $this->conf = $conf;
+        if ($Me && $Me->contactId > 0 && $Me->conf === $conf)
+            $this->store($Me);
     }
     private function make_none($email = null) {
         return new Contact(["contactId" => 0, "roles" => 0, "email" => $email, "sorter" => ""], $this->conf);
     }
-    private function store($c) {
-        if ($c && $c->contactId)
+    private function store(Contact $c) {
+        if ($c->contactId != 0) {
+            if (isset($this->by_id[$c->contactId]))
+                return $this->by_id[$c->contactId];
             $this->by_id[$c->contactId] = $c;
-        if ($c && $c->email)
+        }
+        if ($c->email)
             $this->by_lemail[strtolower($c->email)] = $c;
         return $c;
     }
-    private function store_pc() {
-        foreach ($this->conf->pc_members() as $p)
-            $this->store($p);
-        return ($this->has_pc = true);
+    private function ensure_pc() {
+        if (!$this->has_pc) {
+            foreach ($this->conf->pc_members() as $p)
+                $this->store($p);
+            $this->has_pc = true;
+        }
     }
-    function make_id($cid) {
-        global $Me;
+    function user_by_id($cid) {
         if (!$cid)
             return $this->make_none();
         if (($c = get($this->by_id, $cid)))
             return $c;
-        if ($Me && $Me->contactId > 0 && $cid == $Me->contactId && $Me->conf === $this->conf)
-            return $this->store($Me);
-        if (!$this->has_pc && $this->store_pc() && ($c = get($this->by_id, $cid)))
+        $this->ensure_pc();
+        if (($c = get($this->by_id, $cid)))
             return $c;
         $result = $this->conf->qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
         $c = Contact::fetch($result, $this->conf);
@@ -255,36 +287,44 @@ class AssignerContacts {
         Dbl::free($result);
         return $this->store($c);
     }
-    function lookup_lemail($lemail) {
-        global $Me;
-        if (!$lemail)
+    function user_by_email($email, $create = false) {
+        if (!$email)
             return $this->make_none();
+        $lemail = strtolower($email);
         if (($c = get($this->by_lemail, $lemail)))
             return $c;
-        if ($Me && $Me->contactId > 0 && strcasecmp($lemail, $Me->email) == 0 && $Me->conf === $this->conf)
-            return $this->store($Me);
-        if (!$this->has_pc && $this->store_pc() && ($c = get($this->by_lemail, $lemail)))
+        $this->ensure_pc();
+        if (($c = get($this->by_lemail, $lemail)))
             return $c;
         $result = $this->conf->qe("select " . self::$query . " from ContactInfo where email=?", $lemail);
         $c = Contact::fetch($result, $this->conf);
         Dbl::free($result);
-        return $this->store($c);
-    }
-    function make_email($email) {
-        $c = $this->lookup_lemail(strtolower($email));
-        if (!$c) {
+        if (!$c && $create) {
             $c = new Contact(["contactId" => self::$next_fake_id, "roles" => 0, "email" => $email, "sorter" => $email], $this->conf);
             self::$next_fake_id -= 1;
-            $c = $this->store($c);
         }
-        return $c;
+        return $c ? $this->store($c) : null;
     }
-    function register_contact($c) {
-        $lemail = strtolower($c->email);
-        $cx = $this->lookup_lemail($lemail);
-        if (!$cx || $cx->contactId < 0) {
+    function pc_users() {
+        $this->ensure_pc();
+        return $this->conf->pc_members();
+    }
+    function reviewer_users($pids) {
+        $rset = $this->pc_users();
+        $result = $this->conf->qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 and paperId?a group by ContactInfo.contactId", $pids);
+        while ($result && ($c = Contact::fetch($result, $this->conf)))
+            $rset[$c->contactId] = $this->store($c);
+        Dbl::free($result);
+        return $rset;
+    }
+    function register_user(Contact $c) {
+        if ($c->contactId >= 0)
+            return $c;
+        assert($this->by_id[$c->contactId] === $c);
+        $cx = $this->by_lemail[strtolower($c->email)];
+        if ($cx === $c) {
             // XXX assume that never fails:
-            $cx = Contact::create($this->conf, ["email" => $c->email, "firstName" => get($c, "firstName"), "lastName" => get($c, "lastName")]);
+            $cx = Contact::create($this->conf, ["email" => $c->email, "firstName" => $c->firstName, "lastName" => $c->lastName]);
             $cx = $this->store($cx);
         }
         return $cx;
@@ -427,7 +467,7 @@ class Assigner {
         $this->pid = $item["pid"];
         $this->cid = $item["cid"] ? : $item["_cid"];
         if ($this->cid)
-            $this->contact = $state->cmap->make_id($this->cid);
+            $this->contact = $state->user_by_id($this->cid);
     }
     function unparse_description() {
         return "";
@@ -833,7 +873,7 @@ class Lead_AssignmentParser extends AssignmentParser {
             return;
         $result = $state->conf->qe("select paperId, {$this->key}ContactId from Paper where {$this->key}ContactId!=0");
         while (($row = edb_row($result)))
-            $state->load(array("type" => $this->key, "pid" => +$row[0], "_cid" => +$row[1]));
+            $state->load(["type" => $this->key, "pid" => +$row[0], "_cid" => +$row[1]]);
         Dbl::free($result);
     }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
@@ -944,7 +984,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             return;
         $result = $state->conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0");
         while (($row = edb_row($result)))
-            $state->load(array("type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]));
+            $state->load(["type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]]);
         Dbl::free($result);
     }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
@@ -1096,7 +1136,7 @@ class Tag_AssignmentParser extends AssignmentParser {
             return;
         $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag");
         while (($row = edb_row($result)))
-            $state->load(array("type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]));
+            $state->load(["type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]]);
         Dbl::free($result);
     }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
@@ -1379,7 +1419,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             return;
         $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference where paperId?a", $state->paper_ids());
         while (($row = edb_row($result)))
-            $state->load(array("type" => "pref", "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])));
+            $state->load(["type" => "pref", "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])]);
         Dbl::free($result);
     }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
@@ -1495,9 +1535,7 @@ class AssignmentSet {
     private $my_conflicts = null;
     private $override_stack = array();
     private $astate;
-    private $cmap;
     private $searches = array();
-    private $reviewer_set = false;
     private $papers_encountered = array();
     private $unparse_search = false;
     private $unparse_columns = array();
@@ -1509,7 +1547,6 @@ class AssignmentSet {
         if ($override === null)
             $override = $this->contact->is_admin_force();
         $this->astate = new AssignmentState($contact, $override);
-        $this->cmap = $this->astate->cmap;
     }
 
     function set_reviewer(Contact $reviewer) {
@@ -1633,19 +1670,6 @@ class AssignmentSet {
                 $req[$k] = $a[$i];
     }
 
-    private function reviewer_set() {
-        if ($this->reviewer_set === false) {
-            $this->reviewer_set = array();
-            foreach ($this->conf->pc_members() as $p)
-                $this->reviewer_set[$p->contactId] = $p;
-            $result = $this->conf->qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 and paperId?a group by ContactInfo.contactId", $this->astate->paper_ids());
-            while ($result && ($row = Contact::fetch($result, $this->conf)))
-                $this->reviewer_set[$row->contactId] = $row;
-            Dbl::free($result);
-        }
-        return $this->reviewer_set;
-    }
-
     private function lookup_users(&$req, $assigner) {
         // move all usable identification data to email, firstName, lastName
         if (isset($req["name"]))
@@ -1695,24 +1719,24 @@ class AssignmentSet {
         if (($special === "ext" || $special === "external")
             && $assigner->contact_set($req, $this->astate) === "reviewers") {
             $ret = array();
-            foreach ($this->reviewer_set() as $u)
+            foreach ($this->astate->reviewer_users() as $u)
                 if (!$u->is_pc_member())
                     $ret[] = $u;
             return $ret;
         }
 
         // check for precise email match on existing contact (common case)
-        if ($lemail && ($contact = $this->cmap->lookup_lemail($lemail)))
+        if ($lemail && ($contact = $this->astate->user_by_email($email, false)))
             return array($contact);
 
         // check PC list
         $cset = $assigner->contact_set($req, $this->astate);
         $cset_text = "user";
         if ($cset === "pc") {
-            $cset = $this->conf->pc_members();
+            $cset = $this->astate->pc_users();
             $cset_text = "PC member";
         } else if ($cset === "reviewers") {
-            $cset = $this->reviewer_set();
+            $cset = $this->astate->reviewer_users();
             $cset_text = "reviewer";
         }
         if ($cset) {
@@ -1736,7 +1760,7 @@ class AssignmentSet {
         // create contact
         if (!$email)
             return $this->error("Missing email address");
-        $contact = $this->cmap->make_email($email);
+        $contact = $this->astate->user_by_email($email, true);
         if ($contact->contactId < 0) {
             if (!validate_email($email))
                 return $this->error("Email address “" . htmlspecialchars($email) . "” is invalid.");
@@ -2151,7 +2175,7 @@ class AssignmentSet {
         $this->conf->save_logs(true);
         foreach ($this->assigners as $assigner) {
             if ($assigner->contact && $assigner->contact->contactId < 0) {
-                $assigner->contact = $this->cmap->register_contact($assigner->contact);
+                $assigner->contact = $this->astate->register_user($assigner->contact);
                 $assigner->cid = $assigner->contact->contactId;
             }
             $assigner->add_locks($this, $locks);
