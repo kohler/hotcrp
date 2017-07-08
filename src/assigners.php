@@ -92,13 +92,15 @@ class AssignmentState {
             $this->st[$pid] = (object) array("items" => array());
         return $this->st[$pid];
     }
-    private function extract_key($x) {
+    private function extract_key($x, $pid = null) {
         $tkeys = $this->types[$x["type"]];
         assert($tkeys);
         $t = $x["type"];
         foreach ($tkeys as $k)
             if (isset($x[$k]))
                 $t .= "`" . $x[$k];
+            else if ($pid !== null && $k === "pid")
+                $t .= "`" . $pid;
             else
                 return false;
         return $t;
@@ -124,36 +126,30 @@ class AssignmentState {
         }
         return true;
     }
-    private function do_query_remove($item, $q, $remove, &$res, $modified) {
-        if ($item
-            && !$item->deleted()
-            && self::match($item->after ? : $item->before, $q)
-            && ($modified === null || $item->modified() === $modified)) {
-            $res[] = $item->after ? : $item->before;
-            if ($remove) {
-                $item->after = false;
-                $item->lineno = $this->lineno;
-                $item->override = $this->override;
-            }
-        }
-    }
-    private function query_remove($q, $remove, $modified) {
-        $res = array();
+    private function query_items($q) {
+        $res = [];
         foreach ($this->pid_keys($q) as $pid) {
             $st = $this->pidstate($pid);
-            if (($k = $this->extract_key($q)))
-                $this->do_query_remove(get($st->items, $k), $q, $remove, $res, $modified);
-            else
-                foreach ($st->items as $item)
-                    $this->do_query_remove($item, $q, $remove, $res, $modified);
+            $k = $this->extract_key($q, $pid);
+            foreach ($k ? [get($st->items, $k)] : $st->items as $item)
+                if ($item && !$item->deleted()
+                    && self::match($item->after ? : $item->before, $q))
+                    $res[] = $item;
         }
         return $res;
     }
     function query($q) {
-        return $this->query_remove($q, false, null);
+        $res = [];
+        foreach ($this->query_items($q) as $item)
+            $res[] = $item->after ? : $item->before;
+        return $res;
     }
-    function query_before($q) {
-        return $this->query_remove($q, false, false);
+    function query_unmodified($q) {
+        $res = [];
+        foreach ($this->query_items($q) as $item)
+            if (!$item->modified())
+                $res[] = $item->before;
+        return $res;
     }
     function make_filter($key, $q) {
         $cf = [];
@@ -163,7 +159,14 @@ class AssignmentState {
     }
 
     function remove($q) {
-        return $this->query_remove($q, true, null);
+        $res = [];
+        foreach ($this->query_items($q) as $item) {
+            $res[] = $item->after ? : $item->before;
+            $item->after = false;
+            $item->lineno = $this->lineno;
+            $item->override = $this->override;
+        }
+        return $res;
     }
     function add($x) {
         $k = $this->extract_key($x);
@@ -1132,7 +1135,7 @@ class NextTagAssigner {
         $ltag = strtolower($this->tag);
         foreach ($this->pidindex as $pid => $index)
             if ($index >= $this->first_index && $index < $this->next_index) {
-                $x = $state->query_before(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
+                $x = $state->query_unmodified(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
                 if (!empty($x)) {
                     $item = $state->add(["type" => "tag", "pid" => $pid, "ltag" => $ltag,
                                          "_tag" => $this->tag,
