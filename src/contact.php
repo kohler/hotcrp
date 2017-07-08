@@ -2925,6 +2925,8 @@ class Contact {
     }
 
     function can_view_tag(PaperInfo $prow, $tag, $forceShow = null) {
+        if ($forceShow === ALWAYS_OVERRIDE)
+            return true;
         $rights = $this->rights($prow, $forceShow);
         $tag = TagInfo::base($tag);
         $twiddle = strpos($tag, "~");
@@ -2944,7 +2946,7 @@ class Contact {
     }
 
     function can_view_any_peruser_tags($tag) {
-        return $this->privChair
+        return $this->is_manager()
             || ($this->isPC && $this->conf->tags()->is_votish($tag));
     }
 
