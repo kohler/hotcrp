@@ -1173,7 +1173,7 @@ class Tag_AssignmentParser extends AssignmentParser {
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("tag", ["pid", "ltag"], "Tag_Assigner::make"))
             return;
-        $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag");
+        $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag where paperId?a", $state->paper_ids());
         while (($row = edb_row($result)))
             $state->load(["type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => (float) $row[2]]);
         Dbl::free($result);
