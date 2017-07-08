@@ -376,6 +376,11 @@ function caller_landmark($position = 1, $skipfunction_re = null) {
     return $t ? : "<unknown>";
 }
 
+function assert_callback() {
+    trigger_error("Assertion backtrace: " . json_encode(array_slice(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), 2)), E_USER_WARNING);
+}
+//assert_options(ASSERT_CALLBACK, "assert_callback");
+
 
 // pcntl helpers
 
