@@ -202,12 +202,13 @@ class AssignmentState {
         }
         return $p;
     }
-    function fetch_prows($pids) {
+    function fetch_prows($pids, $initial_load = false) {
         $pids = is_array($pids) ? $pids : array($pids);
         $fetch_pids = array();
         foreach ($pids as $p)
             if (!isset($this->prows[$p]))
                 $fetch_pids[] = $p;
+        assert($initial_load || empty($fetch_pids));
         if (!empty($fetch_pids)) {
             $result = $this->contact->paper_result(["paperId" => $fetch_pids, "tags" => $this->conf->has_tracks()]);
             while ($result && ($prow = PaperInfo::fetch($result, $this->contact)))
@@ -2034,7 +2035,7 @@ class AssignmentSet {
         }
         if (!empty($pids)) {
             $this->astate->lineno = $csv->lineno();
-            $this->astate->fetch_prows(array_keys($pids));
+            $this->astate->fetch_prows(array_keys($pids), true);
         }
 
         // now parse assignment
