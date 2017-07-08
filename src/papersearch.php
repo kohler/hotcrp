@@ -12,7 +12,7 @@ class SearchWord {
     public $kwdef;
     function __construct($qword) {
         $this->qword = $this->word = $qword;
-        $this->quoted = $qword[0] === "\"";
+        $this->quoted = $qword !== "" && $qword[0] === "\"";
         if ($this->quoted)
             $this->word = str_replace('*', '\*', preg_replace('/(?:\A"|"\z)/', '', $qword));
     }
@@ -1666,17 +1666,19 @@ class Topic_SearchTerm extends SearchTerm {
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $value = null;
-        $lword = strtolower($word);
+        $lword = simplify_whitespace(strtolower($word));
         if ($lword === "none" || $lword === "any")
-            $value = ($lword === "any");
-        else {
-            $x = simplify_whitespace($lword);
+            $value = $lword === "any";
+        else if ($lword === "") {
+            $srch->warn("Topic missing.");
+            return new False_SearchTerm;
+        } else {
             $tids = array();
             foreach ($srch->conf->topic_map() as $tid => $tname)
-                if (strstr(strtolower($tname), $x) !== false)
+                if (strstr(strtolower($tname), $lword) !== false)
                     $tids[] = $tid;
             if (empty($tids))
-                $srch->warn("“" . htmlspecialchars($x) . "” does not match any defined paper topic.");
+                $srch->warn("“" . htmlspecialchars($lword) . "” does not match any defined paper topic.");
             $value = $tids;
         }
         return new Topic_SearchTerm($value);
@@ -2879,17 +2881,18 @@ class PaperSearch {
             }
         }
 
-        // Treat unquoted "*", "ANY", and "ALL" as special; return true.
-        if ($word === "*" || $word === "ANY" || $word === "ALL" || $word === "")
-            return new True_SearchTerm;
-        else if ($word === "NONE")
-            return new False_SearchTerm;
-
         $qt = [];
         $sword = new SearchWord($word);
         if ($keyword)
             $this->_search_keyword($qt, $sword, $keyword, true);
         else {
+            // Special-case unquoted "*", "ANY", "ALL", "NONE", "".
+            if ($word === "*" || $word === "ANY" || $word === "ALL"
+                || $word === "")
+                return new True_SearchTerm;
+            else if ($word === "NONE")
+                return new False_SearchTerm;
+            // Otherwise check known keywords.
             foreach ($this->fields as $kw => $x)
                 $this->_search_keyword($qt, $sword, $kw, false);
         }
