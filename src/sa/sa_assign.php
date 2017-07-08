@@ -51,7 +51,7 @@ class Assign_SearchAction extends SearchAction {
 
         if (!in_array($mt, ["lead", "shepherd", "conflict", "clearconflict",
                             "pcreview", "secondaryreview", "primaryreview",
-                            "clearreview"])
+                            "clearreview"]))
             return "Unknown assignment type.";
 
         $text = "paper,action,user\n";
