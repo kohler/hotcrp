@@ -452,9 +452,6 @@ class AssignmentParser {
     function contact_set(&$req, AssignmentState $state) {
         return "pc";
     }
-    function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        return false;
-    }
     static function unconflicted(PaperInfo $prow, Contact $contact, AssignmentState $state) {
         return $state->override || !$prow->has_conflict($contact);
     }
@@ -464,10 +461,13 @@ class AssignmentParser {
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         return false;
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        return self::unconflicted($prow, $contact, $state);
+    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+        return false;
     }
-    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        return false;
+    }
+    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
     }
 }
 
@@ -517,16 +517,16 @@ class Null_AssignmentParser extends AssignmentParser {
     function contact_set(&$req, AssignmentState $state) {
         return false;
     }
-    function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        return true;
-    }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
-        return [];
+        return [$state->none_user()];
+    }
+    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+        return [$state->none_user()];
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
     }
-    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
     }
 }
 
@@ -641,9 +641,6 @@ class Review_AssignmentParser extends AssignmentParser {
         else
             return false;
     }
-    function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        return $this->rtype <= 0 && $cclass != "none";
-    }
     static function load_review_state(AssignmentState $state) {
         $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
         while (($row = edb_row($result))) {
@@ -670,7 +667,13 @@ class Review_AssignmentParser extends AssignmentParser {
         $cf = $this->make_filter("cid", "pid", $prow->paperId, $req, $state);
         return $cf !== false ? $state->users_by_id(array_keys($cf)) : false;
     }
+    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+        return $this->expand_any_user($prow, $req, $state);
+    }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        // User “none” is never allowed
+        if (!$contact->contactId)
+            return false;
         // Conflict allowed if we're not going to assign a new review
         if ($this->rtype == 0 || $prow->has_reviewer($contact)
             || (($rdata = $this->make_rdata($req, $state))
@@ -682,15 +685,13 @@ class Review_AssignmentParser extends AssignmentParser {
         // Check conflicts
         return AssignmentParser::unconflicted($prow, $contact, $state);
     }
-    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->error)
             return $rdata->error;
-        if (!$contact && $rdata->newtype)
-            return "User missing.";
 
         $revmatch = ["type" => "review", "pid" => $prow->paperId,
-                     "cid" => $contact ? $contact->contactId : null,
+                     "cid" => $contact->contactId,
                      "_rtype" => $rdata->oldtype, "_round" => $rdata->oldround];
         $matches = $state->remove($revmatch);
 
@@ -839,9 +840,6 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
     function contact_set(&$req, AssignmentState $state) {
         return "reviewers";
     }
-    function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        return $cclass != "none";
-    }
     function paper_filter($contact, &$req, AssignmentState $state) {
         return $state->make_filter("pid", ["type" => "review", "cid" => $contact->contactId, "_rsubmitted" => 1]);
     }
@@ -849,10 +847,13 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         $cf = $state->make_filter("cid", ["type" => "review", "pid" => $prow->paperId, "_rsubmitted" => 1]);
         return $state->users_by_id(array_keys($cf));
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        return true;
+    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+        return $this->expand_any_user($prow, $req, $state);
     }
-    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        return $contact->contactId != 0;
+    }
+    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         // parse round and reviewtype arguments
         $rarg0 = trim(get_s($req, "round"));
         $oldround = null;
@@ -867,7 +868,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
 
         // remove existing review
         $revmatch = ["type" => "review", "pid" => $prow->paperId,
-                     "cid" => $contact ? $contact->contactId : null,
+                     "cid" => $contact->contactId,
                      "_rtype" => $oldtype, "_round" => $oldround, "_rsubmitted" => 1];
         $matches = $state->remove($revmatch);
         foreach ($matches as $r) {
@@ -900,9 +901,6 @@ class Lead_AssignmentParser extends AssignmentParser {
             $state->load(["type" => $this->key, "pid" => +$row[0], "_cid" => +$row[1]]);
         Dbl::free($result);
     }
-    function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        return $this->remove || $cclass == "none";
-    }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         if ($this->remove) {
             $m = $state->query(["type" => $this->key, "pid" => $prow->paperId]);
@@ -911,8 +909,11 @@ class Lead_AssignmentParser extends AssignmentParser {
         } else
             return false;
     }
+    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+        return $this->expand_any_user($prow, $req, $state);
+    }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        if ($this->remove)
+        if ($this->remove || !$contact->contactId)
             return true;
         else if (!$contact->can_accept_review_assignment_ignore_conflict($prow)) {
             $verb = $this->key === "manager" ? "administer" : $this->key;
@@ -920,9 +921,9 @@ class Lead_AssignmentParser extends AssignmentParser {
         } else
             return AssignmentParser::unconflicted($prow, $contact, $state);
     }
-    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         $remcid = null;
-        if ($this->remove && $contact && $contact->contactId)
+        if ($this->remove && $contact->contactId)
             $remcid = $contact->contactId;
         $state->remove(array("type" => $this->key, "pid" => $prow->paperId, "_cid" => $remcid));
         if (!$this->remove && $contact->contactId)
@@ -1019,9 +1020,6 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $state->load(["type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]]);
         Dbl::free($result);
     }
-    function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        return $cclass == "any" && $this->remove;
-    }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         if ($this->remove) {
             $m = $state->query(["type" => "conflict", "pid" => $prow->paperId]);
@@ -1031,9 +1029,9 @@ class Conflict_AssignmentParser extends AssignmentParser {
             return false;
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        return true;
+        return $contact->contactId != 0;
     }
-    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         $res = $state->remove(array("type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId));
         if ($this->remove)
             $ctn = 0;
@@ -1178,11 +1176,11 @@ class Tag_AssignmentParser extends AssignmentParser {
             $state->load(["type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => (float) $row[2]]);
         Dbl::free($result);
     }
-    function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        return true;
-    }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         return [$state->none_user()];
+    }
+    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+        return $this->expand_any_user($prow, $req, $state);
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
@@ -1194,7 +1192,7 @@ class Tag_AssignmentParser extends AssignmentParser {
             $state->paper_error("You can’t view that tag for submission #{$prow->paperId}.");
         return true;
     }
-    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         if (!($tag = get($req, "tag")))
             return "Tag missing.";
 
@@ -1231,7 +1229,7 @@ class Tag_AssignmentParser extends AssignmentParser {
         else
             list($m[1], $m[2]) = array($xm[1], $xm[2]);
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
-            $m[1] = ($contact && $contact->contactId ? : $state->contact->contactId) . "~";
+            $m[1] = ($contact->contactId ? : $state->contact->contactId) . "~";
         // ignore attempts to change vote tags
         if (!$m[1] && $state->conf->tags()->is_votish($m[2]))
             return false;
@@ -1464,23 +1462,20 @@ class Preference_AssignmentParser extends AssignmentParser {
             $state->load(["type" => "pref", "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])]);
         Dbl::free($result);
     }
-    function allow_special_contact($cclass, &$req, AssignmentState $state) {
-        if ($cclass === "any")
-            return "pc";
-        else if ($cclass === "missing" && $state->reviewer->isPC)
-            return [$state->reviewer];
-        else
-            return false;
-    }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         return array_filter($state->pc_users(),
             function ($u) use ($prow) {
                 return $u->can_become_reviewer_ignore_conflict($prow);
             });
     }
+    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+        return $state->reviewer->isPC ? [$state->reviewer] : false;
+    }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        if ($contact->contactId !== $state->contact->contactId
-            && !$state->contact->can_administer($prow, $state->override))
+        if (!$contact->contactId)
+            return false;
+        else if ($contact->contactId !== $state->contact->contactId
+                 && !$state->contact->can_administer($prow, $state->override))
             return "Can’t change other users’ preferences for #{$prow->paperId}.";
         else if (!$contact->can_become_reviewer_ignore_conflict($prow)) {
             if ($contact->contactId !== $state->contact->contactId)
@@ -1493,7 +1488,7 @@ class Preference_AssignmentParser extends AssignmentParser {
     static private function make_exp($exp) {
         return $exp === null ? "N" : +$exp;
     }
-    function apply(PaperInfo $prow, $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         foreach (array("preference", "pref", "revpref") as $k)
             if (($pref = get($req, $k)) !== null)
                 break;
@@ -1514,7 +1509,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             $ppref[1] = $pexp[1];
         }
 
-        $state->remove(array("type" => "pref", "pid" => $prow->paperId, "cid" => $contact->contactId ? : null));
+        $state->remove(array("type" => "pref", "pid" => $prow->paperId, "cid" => $contact->contactId));
         if ($ppref[0] || $ppref[1] !== null)
             $state->add(array("type" => "pref", "pid" => $prow->paperId, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => self::make_exp($ppref[1])));
     }
@@ -1729,26 +1724,14 @@ class AssignmentSet {
         else if (!$first && $last && strpos(trim($last), " ") === false)
             $special = trim(strtolower($last));
         $xspecial = $special;
-        if ($special === "all" || $special === "any")
-            return "any";
 
         // check special: missing, "none", "any", "pc", "me", PC tag, "external"
-        if (!$first && !$last && !$lemail)
-            $special = "missing";
-        if ($special === "none" || $special === "missing") {
-            $x = $assigner->allow_special_contact($special, $req, $this->astate);
-            if (is_array($x))
-                return $x;
-            else if ($x === true) {
-                if ($special === "missing")
-                    return [null];
-                else
-                    return [(object) ["roles" => 0, "contactId" => null, "email" => $special, "sorter" => ""]];
-            } else if (is_string($x))
-                $special = $x;
-            else
-                return $this->error($special === "missing" ? "User missing." : "User “{$xspecial}” not allowed here.");
-        }
+        if ($special === "all" || $special === "any")
+            return "any";
+        else if ($special === "missing" || (!$first && !$last && !$lemail))
+            return "missing";
+        else if ($special === "none")
+            return [$this->astate->none_user()];
         if ($special && !$first && (!$lemail || !$last)) {
             $ret = ContactSearch::make_special($special, $this->astate->contact, $this->astate->reviewer);
             if ($ret->ids !== false)
@@ -1939,15 +1922,13 @@ class AssignmentSet {
         $contacts = $this->lookup_users($req, $aparser);
         if ($contacts === false || $contacts === null)
             return false;
-        $filter_contact = null;
-        if (is_array($contacts) && count($contacts) == 1
-            && $contacts[0] && $contacts[0]->contactId > 0)
-            $filter_contact = $contacts[0];
 
         // maybe filter papers
         if (count($pids) > 20
-            && $filter_contact
-            && ($pf = $aparser->paper_filter($filter_contact, $req, $this->astate))) {
+            && is_array($contacts)
+            && count($contacts) == 1
+            && $contacts[0]->contactId > 0
+            && ($pf = $aparser->paper_filter($contacts[0], $req, $this->astate))) {
             $npids = [];
             foreach ($pids as $p)
                 if (get($pf, $p))
@@ -1979,7 +1960,7 @@ class AssignmentSet {
 
             $this->encounter_order[$p] = $p;
 
-            // expand “all” contact
+            // expand “all” and “missing”
             $pusers = $contacts;
             if ($pusers === "any") {
                 $pusers = $aparser->expand_any_user($prow, $req, $this->astate);
@@ -1987,22 +1968,30 @@ class AssignmentSet {
                     $this->astate->error("User “any” is not allowed here.");
                     break;
                 }
+            } else if ($pusers === "missing") {
+                $pusers = $aparser->expand_missing_user($prow, $req, $this->astate);
+                if ($pusers === false || $pusers === null) {
+                    $this->astate->error("User required.");
+                    break;
+                }
             }
 
             foreach ($pusers as $contact) {
-                if ($contact && $contact->contactId > 0) {
-                    $err = $aparser->allow_contact($prow, $contact, $req, $this->astate);
-                    if ($err === false) {
-                        if ($prow->has_conflict($contact))
-                            $err = Text::user_html_nolink($contact) . " has a conflict with submission #$p.";
-                        else
-                            $err = Text::user_html_nolink($contact) . " cannot be assigned to submission #$p.";
-                    }
-                    if (is_string($err))
-                        $this->astate->paper_error($err);
-                    if ($err !== true)
-                        continue;
+                $err = $aparser->allow_contact($prow, $contact, $req, $this->astate);
+                if ($err === false) {
+                    if (!$contact->contactId) {
+                        $this->astate->error("User “none” is not allowed here.");
+                        break 2;
+                    } else if ($prow->has_conflict($contact))
+                        $err = Text::user_html_nolink($contact) . " has a conflict with submission #$p.";
+                    else
+                        $err = Text::user_html_nolink($contact) . " cannot be assigned to submission #$p.";
                 }
+                if (is_string($err))
+                    $this->astate->paper_error($err);
+                if ($err !== true)
+                    continue;
+
                 $err = $aparser->apply($prow, $contact, $req, $this->astate);
                 if (is_string($err))
                     $this->astate->error($err);
