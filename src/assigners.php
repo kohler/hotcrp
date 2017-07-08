@@ -457,9 +457,6 @@ class AssignmentParser {
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         return false;
     }
-    function user_filter(PaperInfo $prow, &$req, AssignmentState $state) {
-        return false;
-    }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return self::unconflicted($prow, $contact, $state);
     }
@@ -663,11 +660,8 @@ class Review_AssignmentParser extends AssignmentParser {
         return $this->make_filter("pid", "cid", $contact->contactId, $req, $state);
     }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
-        $cf = $this->user_filter($prow, $req, $state);
+        $cf = $this->make_filter("cid", "pid", $prow->paperId, $req, $state);
         return $cf !== false ? $state->users_by_id(array_keys($cf)) : false;
-    }
-    function user_filter(PaperInfo $prow, &$req, AssignmentState $state) {
-        return $this->make_filter("cid", "pid", $prow->paperId, $req, $state);
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         // Conflict allowed if we're not going to assign a new review
@@ -845,11 +839,8 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         return $state->make_filter("pid", ["type" => "review", "cid" => $contact->contactId, "_rsubmitted" => 1]);
     }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
-        $cf = $this->user_filter($prow, $req, $state);
+        $cf = $state->make_filter("cid", ["type" => "review", "pid" => $prow->paperId, "_rsubmitted" => 1]);
         return $state->users_by_id(array_keys($cf));
-    }
-    function user_filter(PaperInfo $prow, &$req, AssignmentState $state) {
-        return $state->make_filter("cid", ["type" => "review", "pid" => $prow->paperId, "_rsubmitted" => 1]);
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
@@ -1988,14 +1979,7 @@ class AssignmentSet {
                 }
             }
 
-            $cf = false;
-            if (count($pusers) > 1 || $filter_contact)
-                $cf = $aparser->user_filter($prow, $req, $this->astate);
-
             foreach ($pusers as $contact) {
-                if ($cf && $contact && $contact->contactId
-                    && !get($cf, $contact->contactId))
-                    continue;
                 if ($contact && $contact->contactId > 0) {
                     $err = $aparser->allow_contact($prow, $contact, $req, $this->astate);
                     if ($err === false) {
