@@ -433,6 +433,9 @@ class AssignmentParser {
     function __construct($type) {
         $this->type = $type;
     }
+    function expand_papers(&$req, AssignmentState $state) {
+        return false;
+    }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->contact->can_administer($prow, $state->override)
             && !$state->contact->privChair)
@@ -1128,7 +1131,7 @@ class NextTagAssigner {
     function next_index($isseq) {
         $index = $this->next_index;
         $this->next_index += ($isseq ? 1 : self::$value_increment_map[mt_rand(0, 9)]);
-        return $index;
+        return (float) $index;
     }
     function apply_finisher(AssignmentState $state) {
         if ($this->next_index == $this->first_index)
@@ -1150,17 +1153,16 @@ class NextTagAssigner {
 class Tag_AssignmentParser extends AssignmentParser {
     const NEXT = 1;
     const NEXTSEQ = 2;
-    private $isadd;
+    private $remove;
+    private $isnext;
     function __construct($aj) {
         parent::__construct("tag");
-        if ($aj->remove)
-            $this->isadd = false;
-        else if (!$aj->next)
-            $this->isadd = true;
-        else if ($aj->next === "seq")
-            $this->isadd = self::NEXTSEQ;
-        else
-            $this->isadd = self::NEXT;
+        $this->remove = $aj->remove;
+        if (!$this->remove && $aj->next)
+            $this->isnext = $aj->next === "seq" ? self::NEXTSEQ : self::NEXT;
+    }
+    function expand_papers(&$req, AssignmentState $state) {
+        return $this->isnext ? "ALL" : false;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (($whyNot = $state->contact->perm_change_some_tag($prow, $state->override)))
@@ -1173,7 +1175,7 @@ class Tag_AssignmentParser extends AssignmentParser {
             return;
         $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag");
         while (($row = edb_row($result)))
-            $state->load(["type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]]);
+            $state->load(["type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => (float) $row[2]]);
         Dbl::free($result);
     }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
@@ -1208,11 +1210,11 @@ class Tag_AssignmentParser extends AssignmentParser {
         }
 
         // tag parsing; see also PaperSearch::_check_tag
-        $isadd = $this->isadd;
-        if ($tag[0] === "-" && $isadd) {
-            $isadd = false;
+        $remove = $this->remove;
+        if ($tag[0] === "-" && !$remove) {
+            $remove = true;
             $tag = substr($tag, 1);
-        } else if ($tag[0] === "+" && $isadd)
+        } else if ($tag[0] === "+" && !$remove)
             $tag = substr($tag, 1);
         if ($tag[0] === "#")
             $tag = substr($tag, 1);
@@ -1235,11 +1237,11 @@ class Tag_AssignmentParser extends AssignmentParser {
             return false;
 
         // add and remove use different paths
-        $isadd = $isadd && $m[4] !== "none" && $m[4] !== "clear";
-        if ($isadd && strpos($tag, "*") !== false)
+        $remove = $remove || $m[4] === "none" || $m[4] === "clear";
+        if (!$remove && strpos($tag, "*") !== false)
             return "Tag wildcards aren’t allowed when adding tags.";
-        if (!$isadd)
-            return $this->apply_remove($prow, $contact, $state, $m);
+        if ($remove)
+            return $this->apply_remove($prow, $state, $m);
 
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
@@ -1260,7 +1262,7 @@ class Tag_AssignmentParser extends AssignmentParser {
         // resolve index portion
         if ($m[3] && $m[3] != "#" && $m[3] != "=" && $m[3] != "==")
             return "“" . htmlspecialchars($m[3]) . "” isn’t allowed when adding tags.";
-        if ($this->isadd === self::NEXT || $this->isadd === self::NEXTSEQ)
+        if ($this->isnext)
             $index = $this->apply_next_index($prow->paperId, $tag, $state, $m);
         else
             $index = $m[3] ? cvtnum($m[4], 0) : null;
@@ -1280,7 +1282,7 @@ class Tag_AssignmentParser extends AssignmentParser {
             $state->remove(["type" => "tag", "pid" => $prow->paperId, "ltag" => $ltag]);
         else
             $state->add(["type" => "tag", "pid" => $prow->paperId, "ltag" => $ltag,
-                         "_tag" => $tag, "_index" => $index ? : 0]);
+                         "_tag" => $tag, "_index" => (float) $index]);
         if ($vtag)
             $this->account_votes($prow->paperId, $vtag, $state);
     }
@@ -1290,11 +1292,11 @@ class Tag_AssignmentParser extends AssignmentParser {
         // NB ignore $index on second & subsequent nexttag assignments
         if (!($fin = get($state->finishers, "seqtag $ltag")))
             $fin = $state->finishers["seqtag $ltag"] =
-                new NextTagAssigner($state, $tag, $index, $this->isadd === self::NEXTSEQ);
+                new NextTagAssigner($state, $tag, $index, $this->isnext === self::NEXTSEQ);
         unset($fin->pidindex[$pid]);
-        return $fin->next_index($this->isadd === self::NEXTSEQ);
+        return $fin->next_index($this->isnext === self::NEXTSEQ);
     }
-    private function apply_remove(PaperInfo $prow, $contact, AssignmentState $state, $m) {
+    private function apply_remove(PaperInfo $prow, AssignmentState $state, $m) {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
@@ -1361,10 +1363,10 @@ class Tag_AssignmentParser extends AssignmentParser {
         $res = $state->query(array("type" => "tag", "pid" => $pid));
         $tag_re = '{\A\d+~' . preg_quote($vtag) . '\z}i';
         $is_vote = $state->conf->tags()->is_vote($vtag);
-        $total = 0;
+        $total = 0.0;
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"]))
-                $total += $is_vote ? (float) $x["_index"] : 1;
+                $total += $is_vote ? (float) $x["_index"] : 1.0;
         $state->add(array("type" => "tag", "pid" => $pid, "ltag" => strtolower($vtag),
                           "_tag" => $vtag, "_index" => $total, "_vote" => true));
     }
@@ -1876,8 +1878,8 @@ class AssignmentSet {
             $this->show_column($m[1]);
     }
 
-    private function collect_papers($req, &$pids, $report_error) {
-        $pfield = trim(get_s($req, "paper"));
+    private function collect_papers($pfield, &$pids, $report_error) {
+        $pfield = trim($pfield);
         if ($pfield !== "" && ctype_digit($pfield)) {
             $npids = [intval($pfield)];
             $val = 2;
@@ -1907,26 +1909,30 @@ class AssignmentSet {
             $pids[$pid] = $val;
     }
 
-    private function apply($req) {
+    private function collect_parser($req) {
+        if (($action = get($req, "action")) === null
+            && ($action = get($req, "assignment")) === null
+            && ($action = get($req, "type")) === null)
+            $action = $this->astate->defaults["action"];
+        $action = strtolower(trim($action));
+        return $this->conf->assignment_parser($action);
+    }
+
+    private function apply($aparser, $req) {
         // parse paper
         $pids = [];
-        $this->collect_papers($req, $pids, true);
+        $this->collect_papers((string) get($req, "paper"), $pids, true);
         if (empty($pids))
             return false;
         $pfield_straight = join(",", array_values($pids)) === "2";
         $pids = array_keys($pids);
 
         // check action
-        if (($action = get($req, "action")) === null
-            && ($action = get($req, "assignment")) === null
-            && ($action = get($req, "type")) === null)
-            $action = $this->astate->defaults["action"];
-        $action = strtolower(trim($action));
-        if (!($aparser = $this->conf->assignment_parser($action)))
-            return $this->error("Unknown action “" . htmlspecialchars($action) . "”");
+        if (!$aparser)
+            return $this->error("Unknown action.");
         if ($this->enabled_actions !== null
             && !isset($this->enabled_actions[$aparser->type]))
-            return $this->error("Action “" . htmlspecialchars($action) . "” disabled");
+            return $this->error("Action " . htmlspecialchars($aparser->type) . " disabled.");
         $aparser->load_state($this->astate);
 
         // clean user parts
@@ -2030,8 +2036,12 @@ class AssignmentSet {
         // parse file, load papers all at once
         $lines = $pids = [];
         while (($req = $csv->next()) !== false) {
-            $lines[] = [$csv->lineno(), $req];
-            $this->collect_papers($req, $pids, false);
+            $aparser = $this->collect_parser($req);
+            $this->collect_papers((string) get($req, "paper"), $pids, false);
+            if ($aparser
+                && ($pfield = $aparser->expand_papers($req, $this->astate)))
+                $this->collect_papers($pfield, $pids, false);
+            $lines[] = [$csv->lineno(), $aparser, $req];
         }
         if (!empty($pids)) {
             $this->astate->lineno = $csv->lineno();
@@ -2043,10 +2053,10 @@ class AssignmentSet {
             $this->astate->lineno = $linereq[0];
             if ($i % 100 == 0) {
                 if ($alertf)
-                    call_user_func($alertf, $this, $linereq[0], $linereq[1]);
+                    call_user_func($alertf, $this, $linereq[0], $linereq[2]);
                 set_time_limit(30);
             }
-            $this->apply($linereq[1]);
+            $this->apply($linereq[1], $linereq[2]);
         }
         if ($alertf)
             call_user_func($alertf, $this, $csv->lineno(), false);
