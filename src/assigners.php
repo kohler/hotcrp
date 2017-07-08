@@ -1533,7 +1533,6 @@ class AssignmentSet {
     private $msgs = array();
     private $has_errors = false;
     private $my_conflicts = null;
-    private $override_stack = array();
     private $astate;
     private $searches = array();
     private $papers_encountered = array();
@@ -1574,16 +1573,10 @@ class AssignmentSet {
                 $this->enabled_pids[] = (int) $p;
     }
 
-    function push_override($override) {
+    function set_override($override) {
         if ($override === null)
             $override = $this->contact->is_admin_force();
-        $this->override_stack[] = $this->astate->override;
         $this->astate->override = $override;
-    }
-
-    function pop_override() {
-        if (!empty($this->override_stack))
-            $this->astate->override = array_pop($this->override_stack);
     }
 
     function is_empty() {
@@ -1840,49 +1833,6 @@ class AssignmentSet {
             $this->show_column($m[1]);
     }
 
-    function parse($text, $filename = null, $defaults = null, $alertf = null) {
-        $this->filename = $filename;
-        $this->astate->defaults = $defaults ? : array();
-
-        if ($text instanceof CsvParser)
-            $csv = $text;
-        else {
-            $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
-            $csv->set_comment_chars("%#");
-            $csv->set_comment_function(array($this, "parse_csv_comment"));
-        }
-        if (!($req = $csv->header() ? : $csv->next()))
-            return $this->error($csv->lineno(), "empty file");
-        if (!$this->install_csv_header($csv, $req))
-            return false;
-
-        // parse file, load papers all at once
-        $lines = $pids = [];
-        while (($req = $csv->next()) !== false) {
-            $lines[] = [$csv->lineno(), $req];
-            $this->collect_papers($req, $pids, false);
-        }
-        if (!empty($pids)) {
-            $this->astate->lineno = $csv->lineno();
-            $this->astate->fetch_prows(array_keys($pids));
-        }
-
-        // now parse assignment
-        foreach ($lines as $i => $linereq) {
-            $this->astate->lineno = $linereq[0];
-            if ($i % 100 == 0) {
-                if ($alertf)
-                    call_user_func($alertf, $this, $linereq[0], $linereq[1]);
-                set_time_limit(30);
-            }
-            $this->apply($linereq[1]);
-        }
-        if ($alertf)
-            call_user_func($alertf, $this, $csv->lineno(), false);
-
-        $this->finish();
-    }
-
     private function collect_papers($req, &$pids, $report_error) {
         $pfield = trim(get_s($req, "paper"));
         if ($pfield !== "" && ctype_digit($pfield)) {
@@ -1914,7 +1864,7 @@ class AssignmentSet {
             $pids[$pid] = $val;
     }
 
-    function apply($req) {
+    private function apply($req) {
         // parse paper
         $pids = [];
         $this->collect_papers($req, $pids, true);
@@ -2013,7 +1963,47 @@ class AssignmentSet {
         return $any_success;
     }
 
-    function finish() {
+    function parse($text, $filename = null, $defaults = null, $alertf = null) {
+        assert(empty($this->assigners));
+        $this->filename = $filename;
+        $this->astate->defaults = $defaults ? : array();
+
+        if ($text instanceof CsvParser)
+            $csv = $text;
+        else {
+            $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
+            $csv->set_comment_chars("%#");
+            $csv->set_comment_function(array($this, "parse_csv_comment"));
+        }
+        if (!($req = $csv->header() ? : $csv->next()))
+            return $this->error($csv->lineno(), "empty file");
+        if (!$this->install_csv_header($csv, $req))
+            return false;
+
+        // parse file, load papers all at once
+        $lines = $pids = [];
+        while (($req = $csv->next()) !== false) {
+            $lines[] = [$csv->lineno(), $req];
+            $this->collect_papers($req, $pids, false);
+        }
+        if (!empty($pids)) {
+            $this->astate->lineno = $csv->lineno();
+            $this->astate->fetch_prows(array_keys($pids));
+        }
+
+        // now parse assignment
+        foreach ($lines as $i => $linereq) {
+            $this->astate->lineno = $linereq[0];
+            if ($i % 100 == 0) {
+                if ($alertf)
+                    call_user_func($alertf, $this, $linereq[0], $linereq[1]);
+                set_time_limit(30);
+            }
+            $this->apply($linereq[1]);
+        }
+        if ($alertf)
+            call_user_func($alertf, $this, $csv->lineno(), false);
+
         // call finishers
         foreach ($this->astate->finishers as $fin)
             $fin->apply_finisher($this->astate);

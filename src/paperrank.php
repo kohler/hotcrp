@@ -717,12 +717,11 @@ class PaperRank {
 
 
     // save calculated ranks
-    function apply($assignset) {
-        $assignset->push_override(ALWAYS_OVERRIDE);
-        $assignset->apply(array("paper" => "all", "action" => "cleartag", "tag" => $this->dest_tag));
+    function unparse_assignment() {
+        $t = CsvGenerator::quote($this->dest_tag);
+        $a = ["paper,action,tag,index\nall,cleartag,$t\n"];
         foreach ($this->rank as $p => $rank)
-            $assignset->apply(array("paper" => $p, "action" => "tag", "tag" => $this->dest_tag, "index" => $rank));
-        $assignset->pop_override();
+            $a[] = "$p,tag,$t,$rank\n";
+        return join("", $a);
     }
-
 }

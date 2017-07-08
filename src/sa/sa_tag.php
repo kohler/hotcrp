@@ -95,8 +95,8 @@ class Tag_SearchAction extends SearchAction {
                 $r = new PaperRank($source_tag, $tagreq, $papers, $qreq->tagcr_gapless,
                                    "Search", "search");
                 $r->run($qreq->tagcr_method);
-                $r->apply($assignset);
-                $assignset->finish();
+                $assignset->set_override(ALWAYS_OVERRIDE);
+                $assignset->parse($r->unparse_assignment());
                 if ($qreq->q === "")
                     $qreq->q = "order:$tagreq";
             } else
