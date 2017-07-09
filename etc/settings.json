@@ -338,7 +338,7 @@
         "type": "date", "date_backup": "sub_sub"
     },
     "sub_sub": {
-        "name": "Submission deadline",
+        "name": "Submission deadline", "group": "sub",
         "type": "date"
     },
     "sub_update": {
