@@ -725,7 +725,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
         return self::andjoin_sqlexpr($q);
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        for ($i = 0; $ans && $i < count($this->match); $i += 2) {
+        for ($i = 0; $i < count($this->match); $i += 2) {
             $fieldname = $this->match[$i];
             if (!CountMatcher::compare_using($row->$fieldname, $this->match[$i+1]))
                 return false;
