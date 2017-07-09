@@ -1903,8 +1903,7 @@ class Contact {
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
-            && ((($prow->outcome >= 0 || !$this->can_view_decision($prow, $override))
-                 && $this->conf->timeUpdatePaper($prow))
+            && (($prow->outcome >= 0 && $this->conf->timeUpdatePaper($prow))
                 || $this->override_deadlines($rights, $override));
     }
 
