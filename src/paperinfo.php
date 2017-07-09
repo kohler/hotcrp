@@ -773,7 +773,7 @@ class PaperInfo {
                 foreach ($user->aucollab_matchers() as $matcheridx => $matcher) {
                     if ($matcher->test($au)) {
                         if ($full_info)
-                            $details[] = ["#" . ($n + 1), '<div class="mmm">Author ' . $matcher->highlight($au) . '<br />matches ' . ($matcheridx ? "PC collaborator " : "PC member ") . $matcher->nameaff_html() . '</div>'];
+                            $details[] = ["#" . ($n + 1), '<div class="mmm">Author ' . $matcher->highlight($au) . '<br />matches ' . ($matcheridx ? "PC’s collaborator " : "PC member ") . $matcher->nameaff_html() . '</div>'];
                         else
                             return true;
                     }

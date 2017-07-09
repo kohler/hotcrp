@@ -1213,11 +1213,13 @@ class PaperTable {
             Ht::hidden("has_pcconf", 1),
             '<div class="pc_ctable">';
         foreach ($pcm as $id => $p) {
+            $ct = defval($conflict, $id, $nonct);
+            $prow_ctype = $this->prow ? $this->prow->conflict_type($p) : 0;
+
             $label = Ht::label($Me->name_html_for($p), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
-            if ($this->prow
-                && !$this->prow->has_conflict($p)
+            if ($this->prow && !$prow_ctype
                 && ($details = $this->prow->potential_conflict($p, true))) {
                 usort($details, function ($a, $b) { return strcmp($a[0], $b[0]); });
                 $authors = array_unique(array_map(function ($x) { return $x[0]; }, $details));
@@ -1229,11 +1231,12 @@ class PaperTable {
                     . (empty($authors) ? "" : " with " . pluralx($authors, "author") . " " . commajoin($authors))
                     . '…</div>';
             }
-            $ct = defval($conflict, $id, $nonct);
 
             echo '<div class="ctelt"><div class="ctelti clearfix';
             if ($show_colors && ($classes = $p->viewable_color_classes($Me)))
                 echo ' ', $classes;
+            if ($prow_ctype)
+                echo ' boldtag';
             echo '">';
 
             if ($selectors) {
