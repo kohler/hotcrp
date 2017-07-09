@@ -129,6 +129,10 @@ function render(SettingValues $sv) {
             '&nbsp;<span class="error">', Ht::label("Confirm"), "</span></td></tr>";
     echo "</table>\n";
 
+    echo "<p><table>";
+    $sv->echo_checkbox_row("shepherd_hide", "Hide shepherd names from authors");
+    echo "</table></p>\n";
+
     // Final versions
     echo "<h3 id=\"finalversions\" class=\"settings g\">Final versions</h3>\n";
     $sv->echo_messages_near("final_open");

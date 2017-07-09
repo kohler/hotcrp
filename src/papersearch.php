@@ -3876,7 +3876,7 @@ class PaperSearch {
         array_push($res, "has:submission", "has:abstract");
         if ($this->amPC && $this->conf->has_any_manager())
             $res[] = "has:admin";
-        if ($this->amPC && $this->conf->has_any_lead_or_shepherd())
+        if ($this->conf->has_any_lead_or_shepherd() && $this->user->can_view_lead(null, true))
             $res[] = "has:lead";
         if ($this->user->can_view_some_decision()) {
             $res[] = "has:decision";
@@ -3889,7 +3889,7 @@ class PaperSearch {
             if ($this->conf->setting("final_open"))
                 $res[] = "has:final";
         }
-        if ($this->amPC || $this->user->can_view_some_decision())
+        if ($this->conf->has_any_lead_or_shepherd() && $this->user->can_view_shepherd(null, true))
             $res[] = "has:shepherd";
         if ($this->user->can_view_some_review())
             array_push($res, "has:review", "has:creview", "has:ireview", "has:preview", "has:external", "has:comment", "has:aucomment");

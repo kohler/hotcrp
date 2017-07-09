@@ -2043,7 +2043,8 @@ class Lead_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        return $pl->contact->can_view_lead(null, true);
+        return $pl->contact->can_view_lead(null, true)
+            && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
     function header(PaperList $pl, $is_text) {
         return "Discussion lead";
@@ -2067,8 +2068,8 @@ class Shepherd_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        return $pl->contact->isPC
-            || ($pl->conf->has_any_accepts() && $pl->conf->can_some_author_view_decision());
+        return $pl->contact->can_view_shepherd(null, true)
+            && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
     function header(PaperList $pl, $is_text) {
         return "Shepherd";

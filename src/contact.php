@@ -2123,13 +2123,19 @@ class Contact {
             return $this->isPC;
     }
 
-    function can_view_shepherd(PaperInfo $prow, $forceShow = null) {
+    function can_view_shepherd(PaperInfo $prow = null, $forceShow = null) {
         // XXX Allow shepherd view when outcome == 0 && can_view_decision.
         // This is a mediocre choice, but people like to reuse the shepherd field
         // for other purposes, and I might hear complaints.
-        return $this->act_pc($prow, $forceShow)
-            || ($this->can_view_decision($prow, $forceShow)
-                && $this->can_view_review($prow, null, $forceShow));
+        if ($prow) {
+            return $this->act_pc($prow, $forceShow)
+                || (!$this->conf->setting("shepherd_hide")
+                    && $this->can_view_decision($prow, $forceShow)
+                    && $this->can_view_review($prow, null, $forceShow));
+        } else
+            return $this->isPC
+                || (!$this->conf->setting("shepherd_hide")
+                    && $pl->conf->can_some_author_view_decision());
     }
 
     /* NB caller must check can_view_paper() */

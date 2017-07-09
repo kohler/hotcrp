@@ -252,6 +252,10 @@
         "type": "radio", "values": [0, 1, 2, 3],
         "require": "src/settings/s_decisions.php"
     },
+    "shepherd_hide": {
+        "name": "Shepherd visibility",
+        "type": "checkbox"
+    },
     "sub_banal": {
         "type": "checkbox", "parser": "Banal_SettingParser",
         "storage": "val.sub_banal", "extensible": true
