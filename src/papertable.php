@@ -441,8 +441,10 @@ class PaperTable {
 
         // conflicts
         if ($Me->isPC && !$prow->has_conflict($Me)
-            && $this->conf->timeUpdatePaper($prow) && $this->mode !== "assign"
-            && $this->mode !== "contact")
+            && $this->conf->timeUpdatePaper($prow)
+            && $this->mode !== "assign"
+            && $this->mode !== "contact"
+            && $prow->outcome >= 0)
             $out[] = Ht::xmsg("warning", 'The authors still have <a href="' . hoturl("deadlines") . '">time</a> to make changes.');
 
         echo join("", $out);
