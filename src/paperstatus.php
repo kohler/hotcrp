@@ -273,7 +273,7 @@ class PaperStatus extends MessageSet {
             foreach ($this->conf->full_pc_members() as $p)
                 if (!$prow->has_conflict($p)
                     && $prow->potential_conflict($p)) {
-                    $this->warning_at("pcconf", $this->_("Some potential PC conflicts of interest are not marked. Please check the highlighted PC members."));
+                    $this->warning_at("pcconf", $this->_("Some potential PC conflicts of interest are not marked. Please verify the highlighted PC members."));
                     break;
                 }
         }
