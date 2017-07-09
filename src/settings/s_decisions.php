@@ -82,7 +82,6 @@ function render(SettingValues $sv) {
     echo "<div class='g'></div>\n";
     echo "<table>\n";
     $decs = $sv->conf->decision_map();
-    krsort($decs);
 
     // count papers per decision
     $decs_pcount = array();

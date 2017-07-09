@@ -780,12 +780,21 @@ class Conf {
 
     function decision_map() {
         if ($this->_decisions === null) {
-            $this->_decisions = array();
+            $dmap = array();
             if (($j = get($this->settingTexts, "outcome_map"))
                 && ($j = json_decode($j, true))
                 && is_array($j))
-                $this->_decisions = $j;
-            $this->_decisions[0] = "Unspecified";
+                $dmap = $j;
+            $dmap[0] = "Unspecified";
+            $this->_decisions = $dmap;
+            uksort($this->_decisions, function ($ka, $kb) use ($dmap) {
+                if ($ka == 0 || $kb == 0)
+                    return $ka == 0 ? -1 : 1;
+                else if (($ka > 0) !== ($kb > 0))
+                    return $ka > 0 ? 1 : -1;
+                else
+                    return strcasecmp($dmap[$ka], $dmap[$kb]);
+            });
         }
         return $this->_decisions;
     }
