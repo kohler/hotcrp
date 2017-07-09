@@ -2639,7 +2639,9 @@ class Contact {
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
             return $this->can_respond($prow, $crow, $submit);
         $rights = $this->rights($prow);
-        $author = $rights->act_author && $this->conf->setting("cmt_author") > 0;
+        $author = $rights->act_author
+            && $this->conf->setting("cmt_author") > 0
+            && $this->can_view_submitted_review_as_author($prow);
         return ($author
                 || ($rights->allow_review
                     && ($prow->timeSubmitted > 0

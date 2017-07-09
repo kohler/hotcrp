@@ -72,7 +72,7 @@ function render(SettingValues $sv) {
         '</div></td></tr></table>';
 
     echo '<p><table>';
-    $sv->echo_checkbox_row("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers");
+    $sv->echo_checkbox_row("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers when reviews are visible");
     echo "</table></p>\n";
 
 

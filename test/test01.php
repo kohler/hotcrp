@@ -186,7 +186,13 @@ $c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => 
 xassert($c1ok);
 xassert(!$user_van->can_view_comment($paper1, $comment1, false));
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
+xassert(!$user_van->can_comment($paper1, null));
+$Conf->save_setting("cmt_author", 1);
+xassert(!$user_van->can_comment($paper1, null));
 $Conf->save_setting("au_seerev", Conf::AUSEEREV_YES);
+xassert($user_van->can_comment($paper1, null));
+$Conf->save_setting("cmt_author", null);
+xassert(!$user_van->can_comment($paper1, null));
 xassert($user_van->can_view_comment($paper1, $comment1, false));
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("rev_blind", Conf::BLIND_OPTIONAL);
