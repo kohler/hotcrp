@@ -419,7 +419,7 @@ class AssignmentCsv {
     function add($row) {
         foreach ($row as $k => $v)
             if ($v !== null)
-                $this->header[] = $k;
+                $this->header[$k] = true;
         $this->data[] = $row;
     }
     function unparse() {
