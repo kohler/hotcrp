@@ -2830,6 +2830,8 @@ function comment_identity_time(cj) {
         t.push('<div class="cmtname">[' + cj.author + ']</div>');
     else if (cj.author)
         t.push('<div class="cmtname">' + cj.author + '</div>');
+    else if (cj.by_author && !cj.is_new)
+        t.push('<div class="cmtname">[Anonymous author]</div>');
     if (cj.modified_at)
         t.push('<div class="cmttime">' + cj.modified_at_text + '</div>');
     if (!cj.response && cj.tags) {
@@ -2867,7 +2869,7 @@ function render_editing(hc, cj) {
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="#" class="togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60" style="clear:both"></textarea>');
-    if (!cj.response) {
+    if (!cj.response && !cj.by_author) {
         // visibility
         hc.push('<div class="cmteditinfo f-i fold2o">', '</div>');
         hc.push('<div class="f-ix">', '</div>');
@@ -2901,9 +2903,11 @@ function render_editing(hc, cj) {
     } else {
         // actions
         // XXX allow_administer
-        hc.push('<input type="hidden" name="response" value="' + cj.response + '" />');
-        if (cj.is_new || cj.draft)
-            actions.push('<button type="button" name="savedraft" class="btn">Save draft</button>' + bnote);
+        if (cj.response) {
+            hc.push('<input type="hidden" name="response" value="' + cj.response + '" />');
+            if (cj.is_new || cj.draft)
+                actions.push('<button type="button" name="savedraft" class="btn">Save draft</button>' + bnote);
+        }
         actions.push('<button type="button" name="bsubmit" class="btn btn-default">Submit</button>' + bnote);
     }
     actions.push('<button type="button" name="cancel" class="btn">Cancel</button>');
@@ -3117,8 +3121,12 @@ function render_cmt(j, cj, editing, msg) {
     if (cj.response && editing && papercomment.nonauthor)
         hc.push('<div class="xmsg xinfo">Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>');
     else if (!cj.response && editing && cj.author_email && hotcrp_user.email
-             && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase())
-        hc.push('<div class="xmsg xinfo">You didn’t write this comment, but as an administrator you can still make changes.</div>');
+             && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase()) {
+        if (hotcrp_status.myperm && hotcrp_status.myperm.act_author)
+            hc.push('<div class="xmsg xinfo">You didn’t write this comment, but as a fellow author you can still make changes.</div>')
+        else
+            hc.push('<div class="xmsg xinfo">You didn’t write this comment, but as an administrator you can still make changes.</div>');
+    }
     if (editing)
         render_editing(hc, cj);
     else

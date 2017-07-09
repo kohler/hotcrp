@@ -429,6 +429,8 @@ else {
         }
         if (!$j) {
             $j = (object) ["is_new" => true, "editable" => true];
+            if ($Me->act_author_view($prow))
+                $j->by_author = true;
             if ($preferred_resp_round !== false)
                 $j->response = $Conf->resp_round_name($preferred_resp_round);
         }

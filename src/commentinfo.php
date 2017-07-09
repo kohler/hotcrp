@@ -8,6 +8,7 @@ class CommentInfo {
     public $prow;
     public $commentId = 0;
     public $paperId;
+    public $contactId;
     public $timeModified;
     public $timeNotified;
     public $timeDisplayed;
@@ -218,6 +219,8 @@ class CommentInfo {
             $cj = (object) array("pid" => $this->prow->paperId, "is_new" => true, "editable" => true);
             if ($this->commentType & COMMENTTYPE_RESPONSE)
                 $cj->response = $this->conf->resp_round_name($this->commentRound);
+            else if ($this->commentType & COMMENTTYPE_BYAUTHOR)
+                $cj->by_author = true;
             return $cj;
         }
 
@@ -231,6 +234,8 @@ class CommentInfo {
             $cj->draft = true;
         if ($this->commentType & COMMENTTYPE_RESPONSE)
             $cj->response = $this->conf->resp_round_name($this->commentRound);
+        else if ($this->commentType & COMMENTTYPE_BYAUTHOR)
+            $cj->by_author = true;
         if ($contact->can_comment($this->prow, $this))
             $cj->editable = true;
 
@@ -338,7 +343,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         Dbl::qe($q);
     }
 
-    function save($req, $contact) {
+    function save($req, Contact $contact) {
         global $Now;
         if (is_array($req))
             $req = (object) $req;
@@ -352,6 +357,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR;
         else if ($is_response)
             $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR | COMMENTTYPE_DRAFT;
+        else if ($contact->act_author_view($this->prow))
+            $ctype = COMMENTTYPE_AUTHOR | COMMENTTYPE_BYAUTHOR;
         else if ($req_visibility == "a" || $req_visibility == "au")
             $ctype = COMMENTTYPE_AUTHOR;
         else if ($req_visibility == "p" || $req_visibility == "pc")
@@ -371,7 +378,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             if (($rname = $this->conf->resp_round_name($this->commentRound)) != "1")
                 $ctags .= "{$rname}response ";
         } else if (get($req, "tags")
-                   && preg_match_all(',\S+,', $req->tags, $m)) {
+                   && preg_match_all(',\S+,', $req->tags, $m)
+                   && !$contact->act_author_view($this->prow)) {
             $tagger = new Tagger($contact);
             $ctags = array();
             foreach ($m[0] as $text)

@@ -2774,10 +2774,6 @@ body#offline .revcard {
 	padding: 8px 12px;
 	font-size: 90%;
 }
-.cmtg .xmerror {
-	border-top: 2px solid red;
-	border-bottom: 2px solid red;
-}
 .response .cmtg .xinfo {
 	background: rgba(255, 221, 193, 0.5);
 	background: linear-gradient(to bottom, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 51%, transparent 51%),

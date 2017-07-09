@@ -15,6 +15,10 @@
         "name": "Allow comments even if reviewing is closed",
         "type": "checkbox"
     },
+    "cmt_author": {
+        "name": "Allow authors to post comments",
+        "type": "checkbox"
+    },
     "decisions": {
         "parser": "Decision_SettingParser"
     },

@@ -71,6 +71,11 @@ function render(SettingValues $sv) {
         '<button type="button" onclick="settings_add_resp_round()">Add response round</button>',
         '</div></td></tr></table>';
 
+    echo '<p><table>';
+    $sv->echo_checkbox_row("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers");
+    echo "</table></p>\n";
+
+
     echo "<h3 class=\"settings g\">Decisions</h3>\n";
 
     echo "Who can see paper <b>decisions</b> (accept/reject)?<br />\n";

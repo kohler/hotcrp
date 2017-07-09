@@ -456,24 +456,28 @@ assert_search_papers($user_chair, "#none", "11 12 14 15 16 18 19 20 21 22 23 24 
 assert_search_papers($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
 
 // comment searches
+$paper2 = $Conf->paperRow(2, $user_chair);
+xassert($user_mgbaker->can_comment($paper2, null));
+xassert(!$user_mgbaker->can_comment($paper18, null));
+xassert($user_marina->can_comment($paper1, null));
+xassert($user_marina->can_comment($paper18, null));
 assert_search_papers($user_chair, "cmt:any", "1");
 assert_search_papers($user_chair, "has:comment", "1");
 assert_search_papers($user_chair, "has:response", "");
 assert_search_papers($user_chair, "has:author-comment", "1");
 $comment2 = new CommentInfo(null, $paper18);
-$c2ok = $comment2->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
+$c2ok = $comment2->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_marina);
 xassert($c2ok);
 assert_search_papers($user_chair, "cmt:any", "1 18");
 assert_search_papers($user_chair, "cmt:any>1", "");
 $comment3 = new CommentInfo(null, $paper18);
-$c3ok = $comment3->save(array("text" => "test", "visibility" => "a", "blind" => false, "tags" => "redcmt"), $user_mgbaker);
+$c3ok = $comment3->save(array("text" => "test", "visibility" => "a", "blind" => false, "tags" => "redcmt"), $user_marina);
 xassert($c3ok);
 assert_search_papers($user_chair, "cmt:any>1", "18");
 assert_search_papers($user_chair, "cmt:jon", "");
-assert_search_papers($user_chair, "cmt:mgbaker", "1 18");
-assert_search_papers($user_chair, "cmt:mgbaker>1", "18");
+assert_search_papers($user_chair, "cmt:marina", "18");
+assert_search_papers($user_chair, "cmt:marina>1", "18");
 assert_search_papers($user_chair, "cmt:#redcmt", "18");
-$paper2 = $Conf->paperRow(2, $user_chair);
 $comment4 = new CommentInfo(null, $paper2);
 $c2ok = $comment4->save(array("text" => "test", "visibility" => "p", "blind" => false), $user_mgbaker);
 assert_search_papers($user_chair, "has:comment", "1 2 18");

@@ -2639,19 +2639,23 @@ class Contact {
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
             return $this->can_respond($prow, $crow, $submit);
         $rights = $this->rights($prow);
-        return $rights->allow_review
-            && ($prow->timeSubmitted > 0
-                || $rights->review_status != 0
-                || ($rights->allow_administer && $rights->rights_forced))
-            && ($this->conf->setting("cmt_always") > 0
-                || $this->conf->time_review(null, $rights->allow_pc, true)
-                || ($rights->allow_administer
-                    && (!$submit || $this->override_deadlines($rights))))
+        $author = $rights->act_author && $this->conf->setting("cmt_author") > 0;
+        return ($author
+                || ($rights->allow_review
+                    && ($prow->timeSubmitted > 0
+                        || $rights->review_status != 0
+                        || ($rights->allow_administer && $rights->rights_forced))
+                    && ($this->conf->setting("cmt_always") > 0
+                        || $this->conf->time_review(null, $rights->allow_pc, true)
+                        || ($rights->allow_administer
+                            && (!$submit || $this->override_deadlines($rights))))))
             && (!$crow
                 || $crow->contactId == $this->contactId
+                || $rights->allow_administer
                 || ($crow->contactId == $rights->review_token_cid
                     && $rights->review_token_cid)
-                || $rights->allow_administer);
+                || ($author
+                    && ($crow->commentType & COMMENTTYPE_BYAUTHOR)));
     }
 
     function can_submit_comment(PaperInfo $prow, $crow) {
@@ -2668,7 +2672,10 @@ class Contact {
         if ($crow && $crow->contactId != $this->contactId
             && !$rights->allow_administer)
             $whyNot["differentReviewer"] = 1;
-        else if (!$rights->allow_pc && !$rights->allow_review)
+        else if (!$rights->allow_pc
+                 && !$rights->allow_review
+                 && (!$rights->act_author
+                     || $this->conf->setting("cmt_author", 0) <= 0))
             $whyNot["permission"] = 1;
         else if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
@@ -2748,6 +2755,7 @@ class Contact {
             || ($rights->act_author_view
                 && $ctype >= COMMENTTYPE_AUTHOR
                 && (($ctype & COMMENTTYPE_RESPONSE)    // author's response
+                    || ($ctype & COMMENTTYPE_BYAUTHOR)
                     || (!($ctype & COMMENTTYPE_DRAFT)  // author-visible cmt
                         && $this->can_view_submitted_review_as_author($prow))))
             || (!$rights->view_conflict_type
@@ -2787,7 +2795,7 @@ class Contact {
     }
 
     function can_view_comment_identity(PaperInfo $prow, $crow, $forceShow) {
-        if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
+        if ($crow && ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR)))
             return $this->can_view_authors($prow, $forceShow);
         $rights = $this->rights($prow, $forceShow);
         return $rights->can_administer
