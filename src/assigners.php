@@ -642,7 +642,7 @@ class Review_AssignmentParser extends AssignmentParser {
             return false;
     }
     static function load_review_state(AssignmentState $state) {
-        $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
+        $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview where paperId?a", $state->paper_ids());
         while (($row = edb_row($result))) {
             $round = $state->conf->round_name($row[3]);
             $state->load(["type" => "review", "pid" => +$row[0], "cid" => +$row[1],
@@ -674,13 +674,18 @@ class Review_AssignmentParser extends AssignmentParser {
         // User “none” is never allowed
         if (!$contact->contactId)
             return false;
+        // PC reviews must be PC members
+        $rdata = $this->make_rdata($req, $state);
+        if ($rdata->newtype >= REVIEW_PC && !$contact->is_pc_member())
+            return Text::user_html_nolink($contact) . " is not a PC member and cannot be assigned a PC review.";
         // Conflict allowed if we're not going to assign a new review
-        if ($this->rtype == 0 || $prow->has_reviewer($contact)
-            || (($rdata = $this->make_rdata($req, $state))
-                && !$rdata->can_create_review()))
+        if ($this->rtype == 0
+            || $prow->has_reviewer($contact)
+            || !$rdata->can_create_review())
             return true;
         // Check whether review assignments are acceptable
-        if (!$contact->can_accept_review_assignment_ignore_conflict($prow))
+        if ($contact->is_pc_member()
+            && !$contact->can_accept_review_assignment_ignore_conflict($prow))
             return Text::user_html_nolink($contact) . " cannot be assigned to review #{$prow->paperId}.";
         // Check conflicts
         return AssignmentParser::unconflicted($prow, $contact, $state);
@@ -693,30 +698,28 @@ class Review_AssignmentParser extends AssignmentParser {
         $revmatch = ["type" => "review", "pid" => $prow->paperId,
                      "cid" => $contact->contactId,
                      "_rtype" => $rdata->oldtype, "_round" => $rdata->oldround];
-        $matches = $state->remove($revmatch);
+        $res = $state->remove($revmatch);
+        assert(count($res) <= 1);
 
-        if ($rdata->newtype) {
-            if ($rdata->can_create_review() && empty($matches)) {
-                $revmatch["_round"] = $rdata->newround;
-                $matches[] = $revmatch;
-            }
-            foreach ($matches as $m) {
-                if (!$m["_rtype"] || $rdata->newtype > 0)
-                    $m["_rtype"] = $rdata->newtype;
-                if (!$m["_rtype"] || $m["_rtype"] < 0)
-                    $m["_rtype"] = REVIEW_EXTERNAL;
-                if ($m["_rtype"] == REVIEW_EXTERNAL
-                    && $state->conf->pc_member_by_id($m["cid"]))
-                    $m["_rtype"] = REVIEW_PC;
-                if ($rdata->newround !== null && $rdata->explicitround)
-                    $m["_round"] = $rdata->newround;
-                $state->add($m);
-            }
-        } else
+        if ($rdata->can_create_review() && empty($res)) {
+            $revmatch["_round"] = $rdata->newround;
+            $res[] = $revmatch;
+        }
+        if ($rdata->newtype && !empty($res)) {
+            $m = $res[0];
+            if (!$m["_rtype"] || $rdata->newtype > 0)
+                $m["_rtype"] = $rdata->newtype;
+            if (!$m["_rtype"] || $m["_rtype"] < 0)
+                $m["_rtype"] = REVIEW_EXTERNAL;
+            if ($m["_rtype"] == REVIEW_EXTERNAL
+                && $state->conf->pc_member_by_id($m["cid"]))
+                $m["_rtype"] = REVIEW_PC;
+            if ($rdata->newround !== null && $rdata->explicitround)
+                $m["_round"] = $rdata->newround;
+            $state->add($m);
+        } else if (!$rdata->newtype && !empty($res) && $res[0]["_rsubmitted"])
             // do not remove submitted reviews
-            foreach ($matches as $r)
-                if ($r["_rsubmitted"])
-                    $state->add($r);
+            $state->add($res[0]);
     }
 }
 
