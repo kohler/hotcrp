@@ -1487,7 +1487,7 @@ class Formula {
             $e = $this->_parse_option($rest[1]);
             $t = $rest[2];
         } else if (preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
-            $e = $this->field_search_fexpr(["outcome", PaperSearch::matching_decisions($this->conf, $m[1])]);
+            $e = $this->field_search_fexpr(["outcome", PaperSearch::decision_matchexpr($this->conf, $m[1])]);
             $t = $m[2];
         } else if (preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {
             $e = new Decision_Fexpr;

@@ -356,6 +356,9 @@ use assignment type <code>clearcontact</code>.</dd>
 <code>value</code> column sets the tag value.
 To clear a tag, use assignment type <code>cleartag</code> or value <code>none</code>.</dd>
 
+<dt><code>decision</code></dt>
+<dd>Set the decision. The <code>decision</code> column gives the decision.</dd>
+
 <dt><code>preference</code></dt>
 <dd>Set reviewer preference and expertise. The <code>preference</code> column
 gives the preference value.</dd>

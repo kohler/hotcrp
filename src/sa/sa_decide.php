@@ -13,25 +13,15 @@ class Decide_SearchAction extends SearchAction {
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide", "onclick" => "return plist_submit.call(this)"])];
     }
     function run(Contact $user, $qreq, $ssel) {
-        $o = cvtint($qreq->decision);
-        $decision_map = $user->conf->decision_map();
-        if ($o === null || !isset($decision_map[$o]))
-            return Conf::msg_error("Bad decision value.");
-        $result = $user->paper_result(["paperId" => $ssel->selection()]);
-        $success = $fails = array();
-        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
-            if ($user->can_set_decision($prow, true))
-                $success[] = $prow->paperId;
-            else
-                $fails[] = "#" . $prow->paperId;
-        }
-        if (count($fails))
-            Conf::msg_error("You cannot set paper decisions for " . pluralx($fails, "paper") . " " . commajoin($fails) . ".");
-        if (count($success)) {
-            $user->conf->qe("update Paper set outcome=$o where paperId ?a", $success);
-            $user->conf->update_paperacc_setting($o > 0);
-            redirectSelf(array("atab" => "decide", "decision" => $o));
-        }
+        $aset = new AssignmentSet($user, true);
+        $decision = $qreq->decision;
+        if (is_numeric($decision))
+            $decision = get($user->conf->decision_map(), +$decision);
+        $aset->parse("paper,action,decision\n" . join(" ", $ssel->selection()) . ",decision," . CsvGenerator::quote($decision));
+        if ($aset->execute())
+            redirectSelf(["atab" => "decide", "decision" => $qreq->decision]);
+        else
+            Conf::msg_error(join("<br />", $aset->errors_html()));
     }
 }
 

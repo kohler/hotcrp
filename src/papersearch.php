@@ -678,7 +678,7 @@ class Decision_SearchTerm extends SearchTerm {
         $this->match = $match;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $dec = PaperSearch::matching_decisions($srch->conf, $word, $sword->quoted);
+        $dec = PaperSearch::decision_matchexpr($srch->conf, $word, $sword->quoted);
         if (is_array($dec) && empty($dec)) {
             $srch->warn("“" . htmlspecialchars($word) . "” doesn’t match a decision.");
             $dec[] = -10000000;
@@ -2577,7 +2577,7 @@ class PaperSearch {
             return $scm->ids === false ? null : [-1];
     }
 
-    static function matching_decisions(Conf $conf, $word, $quoted = null) {
+    static function decision_matchexpr(Conf $conf, $word, $quoted = null) {
         if ($quoted === null && ($quoted = ($word && $word[0] === '"')))
             $word = str_replace('"', '', $word);
         $lword = strtolower($word);
@@ -2586,13 +2586,25 @@ class PaperSearch {
                 return ">0";
             else if ($lword === "no")
                 return "<0";
-            else if ($lword === "?" || $lword === "none" || $lword === "unknown")
+            else if ($lword === "?" || $lword === "none"
+                     || $lword === "unknown" || $lword === "unspecified")
                 return [0];
             else if ($lword === "any")
                 return "!=0";
         }
         $flags = $quoted ? Text::SEARCH_ONLY_EXACT : Text::SEARCH_UNPRIVILEGE_EXACT;
         return array_keys(Text::simple_search($word, $conf->decision_map(), $flags));
+    }
+    static function matching_decisions(Conf $conf, $word, $quoted = null) {
+        $dec = self::decision_matchexpr($conf, $word, $quoted);
+        if (is_string($dec)) {
+            $cm = new CountMatcher($dec);
+            $dec = [];
+            foreach ($conf->decision_map() as $d => $x)
+                if ($cm->test($d))
+                    $dec[] = $d;
+        }
+        return $dec;
     }
 
     static function status_field_matcher(Conf $conf, $word, $quoted = null) {
@@ -2605,7 +2617,7 @@ class PaperSearch {
         else if (strcasecmp($word, "active") == 0)
             return ["timeWithdrawn", "<=0"];
         else
-            return ["outcome", self::matching_decisions($conf, $word, $quoted)];
+            return ["outcome", self::decision_matchexpr($conf, $word, $quoted)];
     }
 
     static function parse_reconflict($word, SearchWord $sword, PaperSearch $srch) {

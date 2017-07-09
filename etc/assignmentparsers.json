@@ -102,5 +102,13 @@
     {
         "name": "pref", "parser_class": "Preference_AssignmentParser",
         "synonym": ["preference", "revpref"]
+    },
+    {
+        "name": "decision", "parser_class": "Decision_AssignmentParser",
+        "remove": false
+    },
+    {
+        "name": "cleardecision", "parser_class": "Decision_AssignmentParser",
+        "remove": true
     }
 ]

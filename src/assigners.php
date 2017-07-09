@@ -1594,6 +1594,104 @@ class Preference_Assigner extends Assigner {
     }
 }
 
+
+class Decision_AssignmentParser extends UserlessAssignmentParser {
+    private $remove;
+    function __construct($aj) {
+        parent::__construct("decision");
+        $this->remove = $aj->remove;
+    }
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        if (!$state->contact->can_set_decision($prow, $state->override))
+            return "You can’t change the decision for #{$prow->paperId}.";
+        else
+            return true;
+    }
+    function load_state(AssignmentState $state) {
+        if (!$state->mark_type("decision", ["pid"], "Decision_Assigner::make"))
+            return;
+        foreach ($state->prows() as $prow)
+            $state->load(["type" => "decision", "pid" => $prow->paperId, "_decision" => +$prow->outcome]);
+    }
+    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        if (!$this->remove) {
+            if (!isset($req["decision"]))
+                return "Decision missing.";
+            $dec = PaperSearch::matching_decisions($state->conf, $req["decision"]);
+            if (count($dec) == 1)
+                $dec = $dec[0];
+            else if (empty($dec))
+                return "No decisions match “" . htmlspecialchars($req["decision"]) . "”.";
+            else
+                return "More than one decision matches “" . htmlspecialchars($req["decision"]) . "”.";
+        }
+        $state->remove(["type" => "decision", "pid" => $prow->paperId]);
+        if (!$this->remove && $dec)
+            $state->add(["type" => "decision", "pid" => $prow->paperId, "_decision" => +$dec]);
+    }
+}
+
+class Decision_Assigner extends Assigner {
+    function __construct(AssignmentItem $item, AssignmentState $state) {
+        parent::__construct($item, $state);
+    }
+    static function make(AssignmentItem $item, AssignmentState $state) {
+        return new Decision_Assigner($item, $state);
+    }
+    static function decision_html(Conf $conf, $dec) {
+        if (!$dec) {
+            $class = "pstat_sub";
+            $dname = "No decision";
+        } else {
+            $class = $dec < 0 ? "pstat_decno" : "pstat_decyes";
+            $dname = $conf->decision_name($dec) ? : "Unknown decision #$dec";
+        }
+        return "<span class=\"pstat $class\">" . htmlspecialchars($dname) . "</span>";
+    }
+    function unparse_display(AssignmentSet $aset) {
+        $aset->show_column($this->description);
+        $t = [];
+        if ($this->item->existed())
+            $t[] = '<del>' . self::decision_html($aset->conf, $this->item->get(true, "_decision")) . '</del>';
+        $t[] = '<ins>' . self::decision_html($aset->conf, $this->item["_decision"]) . '</ins>';
+        return join(" ", $t);
+    }
+    function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
+        $x = ["pid" => $this->pid, "action" => "decision"];
+        if ($this->item->deleted())
+            $x["decision"] = "none";
+        else
+            $x["decision"] = $aset->conf->decision_name($this->item["_decision"]);
+        return $x;
+    }
+    function add_locks(AssignmentSet $aset, &$locks) {
+        $locks["Paper"] = "write";
+    }
+    function execute(AssignmentSet $aset) {
+        global $Now;
+        $dec = $this->item->deleted() ? 0 : $this->item["_decision"];
+        $aset->conf->qe("update Paper set outcome=? where paperId=?", $dec, $this->pid);
+        if ($dec > 0) {
+            // accepted papers are always submitted
+            $prow = $aset->prow($this->pid);
+            $aset->cleanup_callback("paperacc", function ($aset) {
+                $aset->conf->update_paperacc_setting(true);
+            });
+            if ($prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0) {
+                $aset->conf->qe("update Paper set timeSubmitted=$Now where paperId=?", $this->pid);
+                $aset->cleanup_callback("papersub", function ($aset) {
+                    $aset->conf->update_papersub_setting(true);
+                });
+            }
+        } else if ($this->item->get(true, "_decision") > 0)
+            $aset->cleanup_callback("paperacc-", function ($aset) {
+                $aset->conf->update_paperacc_setting(false);
+            });
+    }
+}
+
+
+
 class AssignmentSet {
     public $conf;
     public $contact;
@@ -1895,8 +1993,10 @@ class AssignmentSet {
 
     private function collect_papers($pfield, &$pids, $report_error) {
         $pfield = trim($pfield);
-        if ($pfield !== "" && ctype_digit($pfield)) {
-            $npids = [intval($pfield)];
+        if ($pfield !== "" && preg_match('/\A[\d,\s]+\z/', $pfield)) {
+            $npids = [];
+            foreach (preg_split('/[,\s]+/', $pfield) as $pid)
+                $npids[] = intval($pid);
             $val = 2;
         } else if ($pfield !== "") {
             if (!isset($this->searches[$pfield])) {
@@ -1911,7 +2011,7 @@ class AssignmentSet {
         } else {
             if ($report_error)
                 $this->error("Bad paper column");
-            return;
+            return 0;
         }
         if (empty($npids) && $report_error)
             $this->error("No papers match “" . htmlspecialchars($pfield) . "”");
@@ -1922,6 +2022,7 @@ class AssignmentSet {
 
         foreach ($npids as $pid)
             $pids[$pid] = $val;
+        return $val;
     }
 
     private function collect_parser($req) {
@@ -1936,10 +2037,10 @@ class AssignmentSet {
     private function apply($aparser, $req) {
         // parse paper
         $pids = [];
-        $this->collect_papers((string) get($req, "paper"), $pids, true);
+        $x = $this->collect_papers((string) get($req, "paper"), $pids, true);
         if (empty($pids))
             return false;
-        $pfield_straight = join(",", array_values($pids)) === "2";
+        $pfield_straight = $x == 2;
         $pids = array_keys($pids);
 
         // check action
@@ -2223,6 +2324,10 @@ class AssignmentSet {
                 $acsv->add($row);
         $acsv->header = array_keys($acsv->header);
         return $acsv;
+    }
+
+    function prow($pid) {
+        return $this->astate->prow($pid);
     }
 
     function execute($verbose = false) {
