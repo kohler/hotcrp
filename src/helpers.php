@@ -805,9 +805,9 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
     if (isset($whyNot["blindSubmission"]))
         $ms[] = $conf->_("Submission to this conference is blind.");
     if (isset($whyNot["author"]))
-        $ms[] = $conf->_("You aren’t a contact for submission #%d.", $paperId);
+        $ms[] = $conf->_("You aren’t a contact for #%d.", $paperId);
     if (isset($whyNot["conflict"]))
-        $ms[] = $conf->_("You have a conflict with submission #%d.", $paperId);
+        $ms[] = $conf->_("You have a conflict with #%d.", $paperId);
     if (isset($whyNot["externalReviewer"]))
         $ms[] = $conf->_("External reviewers cannot view other reviews.");
     if (isset($whyNot["differentReviewer"]))

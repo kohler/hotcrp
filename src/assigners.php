@@ -387,8 +387,8 @@ class AssignmentCountSet {
         while (($row = edb_row($result))) {
             $ct = $this->ensure($row[0]);
             $ct->rev = strlen($row[1]);
-            $ct->pri = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
-            $ct->sec = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
+            $ct->pri = substr_count($row[1], REVIEW_PRIMARY);
+            $ct->sec = substr_count($row[1], REVIEW_SECONDARY);
         }
         Dbl::free($result);
     }
@@ -1187,9 +1187,9 @@ class Tag_AssignmentParser extends AssignmentParser {
     }
     private function cannot_view_error(PaperInfo $prow, $tag, AssignmentState $state) {
         if ($prow->conflict_type($state->contact))
-            $state->paper_error("You have a conflict with submission #{$prow->paperId}.");
+            $state->paper_error("You have a conflict with #{$prow->paperId}.");
         else
-            $state->paper_error("You can’t view that tag for submission #{$prow->paperId}.");
+            $state->paper_error("You can’t view that tag for #{$prow->paperId}.");
         return true;
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
@@ -1493,19 +1493,19 @@ class Preference_AssignmentParser extends AssignmentParser {
             if (($pref = get($req, $k)) !== null)
                 break;
         if ($pref === null)
-            return "Missing preference";
+            return "Missing preference.";
         $pref = trim((string) $pref);
         if ($pref == "" || $pref == "none")
             $ppref = array(0, null);
         else if (($ppref = parse_preference($pref)) === null)
-            return "Invalid preference “" . htmlspecialchars($pref) . "”";
+            return "Invalid preference “" . htmlspecialchars($pref) . "”.";
 
         foreach (array("expertise", "revexp") as $k)
             if (($exp = get($req, $k)) !== null)
                 break;
         if ($exp && ($exp = trim($exp)) !== "") {
             if (($pexp = parse_preference($exp)) === null || $pexp[0])
-                return "Invalid expertise “" . htmlspecialchars($exp) . "”";
+                return "Invalid expertise “" . htmlspecialchars($exp) . "”.";
             $ppref[1] = $pexp[1];
         }
 
@@ -1983,9 +1983,9 @@ class AssignmentSet {
                         $this->astate->error("User “none” is not allowed here.");
                         break 2;
                     } else if ($prow->has_conflict($contact))
-                        $err = Text::user_html_nolink($contact) . " has a conflict with submission #$p.";
+                        $err = Text::user_html_nolink($contact) . " has a conflict with #$p.";
                     else
-                        $err = Text::user_html_nolink($contact) . " cannot be assigned to submission #$p.";
+                        $err = Text::user_html_nolink($contact) . " cannot be assigned to #$p.";
                 }
                 if (is_string($err))
                     $this->astate->paper_error($err);
