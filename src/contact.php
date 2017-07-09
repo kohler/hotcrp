@@ -2135,7 +2135,7 @@ class Contact {
         } else
             return $this->isPC
                 || (!$this->conf->setting("shepherd_hide")
-                    && $pl->conf->can_some_author_view_decision());
+                    && $this->conf->can_some_author_view_decision());
     }
 
     /* NB caller must check can_view_paper() */
