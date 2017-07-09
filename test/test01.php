@@ -104,6 +104,12 @@ xassert(!$user_capability->can_administer($paper1));
 xassert(!$user_capability->can_view_tags($paper1));
 xassert(!$user_capability->can_update_paper($paper1));
 
+// rejected papers cannot be updated
+xassert($user_estrin->can_update_paper($paper1));
+xassert_assign($user_chair, "paper,action,decision\n1,decision,no\n");
+$paper1 = $Conf->paperRow(1, $user_chair);
+xassert(!$user_estrin->can_update_paper($paper1));
+
 // change submission date
 $Conf->save_setting("sub_update", $Now - 5);
 $Conf->save_setting("sub_sub", $Now - 5);
