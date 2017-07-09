@@ -471,6 +471,24 @@ class AssignmentParser {
     }
 }
 
+class UserlessAssignmentParser extends AssignmentParser {
+    function __construct($type) {
+        parent::__construct($type);
+    }
+    function contact_set(&$req, AssignmentState $state) {
+        return false;
+    }
+    function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
+        return [$state->none_user()];
+    }
+    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+        return [$state->none_user()];
+    }
+    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        return true;
+    }
+}
+
 class Assigner {
     public $item;
     public $type;
@@ -507,23 +525,11 @@ class Assigner {
     }
 }
 
-class Null_AssignmentParser extends AssignmentParser {
+class Null_AssignmentParser extends UserlessAssignmentParser {
     function __construct() {
         parent::__construct("none");
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        return true;
-    }
-    function contact_set(&$req, AssignmentState $state) {
-        return false;
-    }
-    function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
-        return [$state->none_user()];
-    }
-    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
-        return [$state->none_user()];
-    }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         return true;
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
@@ -1182,7 +1188,7 @@ class NextTagAssigner {
     }
 }
 
-class Tag_AssignmentParser extends AssignmentParser {
+class Tag_AssignmentParser extends UserlessAssignmentParser {
     const NEXT = 1;
     const NEXTSEQ = 2;
     private $remove;
@@ -1209,15 +1215,6 @@ class Tag_AssignmentParser extends AssignmentParser {
         while (($row = edb_row($result)))
             $state->load(["type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => (float) $row[2]]);
         Dbl::free($result);
-    }
-    function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
-        return [$state->none_user()];
-    }
-    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
-        return $this->expand_any_user($prow, $req, $state);
-    }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        return true;
     }
     private function cannot_view_error(PaperInfo $prow, $tag, AssignmentState $state) {
         if ($prow->conflict_type($state->contact))
