@@ -230,7 +230,7 @@ function paper_tag_normalize($prow) {
     return $t;
 }
 
-function xassert_assign($who, $override, $what) {
+function xassert_assign($who, $what, $override = false) {
     $assignset = new AssignmentSet($who, $override);
     $assignset->parse($what);
     $xassert_success = $assignset->execute();
@@ -241,7 +241,7 @@ function xassert_assign($who, $override, $what) {
     }
 }
 
-function xassert_assign_fail($who, $override, $what) {
+function xassert_assign_fail($who, $what, $override = false) {
     $assignset = new AssignmentSet($who, $override);
     $assignset->parse($what);
     xassert(!$assignset->execute());

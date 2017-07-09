@@ -170,7 +170,7 @@ assert_search_papers($user_mgbaker, "re:varghese", "1");
 
 // or lead assignment
 assert_search_papers($user_marina, "re:varghese", "");
-xassert_assign($Admin, true, "paper,lead\n1,marina\n");
+xassert_assign($Admin, "paper,lead\n1,marina\n", true);
 assert_search_papers($user_marina, "re:varghese", "1");
 
 // check comment identity
@@ -320,48 +320,48 @@ $assignset->parse("paper,tag
 2,fart\n");
 xassert_eqq(join("\n", $assignset->errors_text()), "You have a conflict with #1.");
 
-xassert_assign($user_estrin, false, "paper,tag\n2,fart\n");
+xassert_assign($user_estrin, "paper,tag\n2,fart\n");
 assert_search_papers($user_chair, "#fart", "2");
 
-xassert_assign($Admin, false, "paper,tag\n1,#fart\n");
+xassert_assign($Admin, "paper,tag\n1,#fart\n");
 assert_search_papers($user_chair, "#fart", "1 2");
 assert_search_papers($user_estrin, "#fart", "2");
 
 // check twiddle tags
-xassert_assign($Admin, false, "paper,tag\n1,~fart\n1,~~fart\n1,varghese~fart\n1,mjh~fart\n");
+xassert_assign($Admin, "paper,tag\n1,~fart\n1,~~fart\n1,varghese~fart\n1,mjh~fart\n");
 $paper1->load_tags();
 xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "fart chair~fart mjh~fart varghese~fart jon~vote#10 marina~vote#5 ~~fart");
 
-xassert_assign($Admin, false, "paper,tag\n1,all#none\n");
+xassert_assign($Admin, "paper,tag\n1,all#none\n");
 $paper1->load_tags();
 xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "mjh~fart varghese~fart jon~vote#10 marina~vote#5");
 
-xassert_assign($Admin, false, "paper,tag\n1,fart\n");
+xassert_assign($Admin, "paper,tag\n1,fart\n");
 $paper1->load_tags();
 xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "fart mjh~fart varghese~fart jon~vote#10 marina~vote#5");
 
-xassert_assign($user_varghese, false, "paper,tag\n1,all#clear\n1,~green\n");
+xassert_assign($user_varghese, "paper,tag\n1,all#clear\n1,~green\n");
 $paper1->load_tags();
 xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "mjh~fart varghese~green jon~vote#10 marina~vote#5");
 
-xassert_assign($Admin, true, "paper,tag\nall,fart#clear\n1,fart#4\n2,fart#5\n3,fart#6\n");
+xassert_assign($Admin, "paper,tag\nall,fart#clear\n1,fart#4\n2,fart#5\n3,fart#6\n", true);
 assert_search_papers($user_chair, "order:fart", "1 2 3");
 xassert_eqq(search_text_col($user_chair, "order:fart", "tagval:fart"), "1 4\n2 5\n3 6\n");
 
-xassert_assign($Admin, true, "action,paper,tag\nnexttag,6,fart\nnexttag,5,fart\nnexttag,4,fart\n");
+xassert_assign($Admin, "action,paper,tag\nnexttag,6,fart\nnexttag,5,fart\nnexttag,4,fart\n", true);
 assert_search_papers($user_chair, "order:fart", "1 2 3 6 5 4");
 
-xassert_assign($Admin, true, "action,paper,tag\nseqnexttag,7,fart#3\nseqnexttag,8,fart\n");
+xassert_assign($Admin, "action,paper,tag\nseqnexttag,7,fart#3\nseqnexttag,8,fart\n", true);
 assert_search_papers($user_chair, "order:fart", "7 8 1 2 3 6 5 4");
 
-xassert_assign($Admin, true, "action,paper,tag\ncleartag,8,fArt\n");
+xassert_assign($Admin, "action,paper,tag\ncleartag,8,fArt\n", true);
 assert_search_papers($user_chair, "order:fart", "7 1 2 3 6 5 4");
 
-xassert_assign($Admin, true, "action,paper,tag\ntag,8,fArt#4\n");
+xassert_assign($Admin, "action,paper,tag\ntag,8,fArt#4\n", true);
 assert_search_papers($user_chair, "order:fart", "7 8 1 2 3 6 5 4");
 
 $paper8 = $Conf->paperRow(8, $user_chair);
@@ -369,23 +369,23 @@ xassert_eqq($paper8->tag_value("fart"), 4.0);
 xassert(strpos($paper8->all_tags_text(), " fArt#") !== false);
 
 // defined tags: chair
-xassert_assign($user_varghese, false, "paper,tag\n1,chairtest\n");
+xassert_assign($user_varghese, "paper,tag\n1,chairtest\n");
 assert_search_papers($user_varghese, "#chairtest", "1");
-xassert_assign($user_varghese, false, "paper,tag\n1,chairtest#clear\n");
+xassert_assign($user_varghese, "paper,tag\n1,chairtest#clear\n");
 assert_search_papers($user_varghese, "#chairtest", "");
 
 $Conf->save_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest"));
 $Conf->invalidate_caches(["taginfo" => true]);
-xassert_assign($Admin, true, "paper,tag\n1,chairtest\n");
+xassert_assign($Admin, "paper,tag\n1,chairtest\n", true);
 assert_search_papers($user_chair, "#chairtest", "1");
 assert_search_papers($user_varghese, "#chairtest", "1");
-xassert_assign_fail($user_varghese, false, "paper,tag\n1,chairtest#clear\n");
+xassert_assign_fail($user_varghese, "paper,tag\n1,chairtest#clear\n");
 assert_search_papers($user_varghese, "#chairtest", "1");
 
 // pattern tags: chair
-xassert_assign($user_varghese, false, "paper,tag\n1,chairtest1\n");
+xassert_assign($user_varghese, "paper,tag\n1,chairtest1\n");
 assert_search_papers($user_varghese, "#chairtest1", "1");
-xassert_assign($user_varghese, false, "paper,tag\n1,chairtest1#clear\n");
+xassert_assign($user_varghese, "paper,tag\n1,chairtest1#clear\n");
 assert_search_papers($user_varghese, "#chairtest1", "");
 
 $Conf->save_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest*"));
@@ -393,10 +393,10 @@ $Conf->invalidate_caches(["taginfo" => true]);
 xassert($Conf->tags()->has_pattern);
 $ct = $Conf->tags()->check("chairtest0");
 xassert(!!$ct);
-xassert_assign($Admin, true, "paper,tag\n1,chairtest1\n");
+xassert_assign($Admin, "paper,tag\n1,chairtest1\n", true);
 assert_search_papers($user_chair, "#chairtest1", "1");
 assert_search_papers($user_varghese, "#chairtest1", "1");
-xassert_assign_fail($user_varghese, false, "paper,tag\n1,chairtest1#clear\n");
+xassert_assign_fail($user_varghese, "paper,tag\n1,chairtest1#clear\n");
 assert_search_papers($user_varghese, "#chairtest1", "1");
 
 // pattern tag merging
@@ -412,10 +412,10 @@ assert_search_papers($user_chair, "round:R1", "12 13");
 assert_search_papers($user_chair, "round:R1 re:any", "12 13");
 assert_search_papers($user_chair, "round:R1 re:>=0", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 
-xassert_assign($Admin, true, "action,paper,user,round\nclearreview,all,huitema,R1\n");
+xassert_assign($Admin, "action,paper,user,round\nclearreview,all,huitema,R1\n", true);
 assert_search_papers($user_chair, "re:huitema", "8 10");
 
-xassert_assign($Admin, true, "action,paper,user,round\nprimary,13,huitema,R1\n");
+xassert_assign($Admin, "action,paper,user,round\nprimary,13,huitema,R1\n", true);
 
 // search combinations
 assert_search_papers($user_chair, "re:huitema", "8 10 13");
@@ -445,7 +445,7 @@ assert_search_papers($user_chair, "calories≥200", "1 2 3 4");
 
 // Check all tags
 assert_search_papers($user_chair, "#none", "9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
-xassert_assign($Admin, false, "paper,tag\n9,~private\n10,~~chair\n");
+xassert_assign($Admin, "paper,tag\n9,~private\n10,~~chair\n");
 assert_search_papers($user_chair, "#none", "11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
 assert_search_papers($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
 
@@ -530,14 +530,14 @@ $assignset->parse("action,paper,email,reviewtype\nreview,all,mgbaker@cs.stanford
 xassert_eqq(join("\n", $assignset->errors_text()), "");
 xassert($assignset->execute());
 
-xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,all,mgbaker@cs.stanford.edu,secondary:primary\n"));
+xassert_assign($user_chair, "action,paper,email,reviewtype\nreview,all,mgbaker@cs.stanford.edu,secondary:primary\n");
 assert_search_papers($user_chair, "re:sec:mgbaker", "");
 assert_search_papers($user_chair, "re:pri:mgbaker", "1 2 13 17");
 $review2d = fetch_review(2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == 1);
 
-xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,2,mgbaker@cs.stanford.edu,primary:secondary\n"));
+xassert_assign($user_chair, "action,paper,email,reviewtype\nreview,2,mgbaker@cs.stanford.edu,primary:secondary\n");
 assert_search_papers($user_chair, "re:sec:mgbaker", "2");
 assert_search_papers($user_chair, "re:pri:mgbaker", "1 13 17");
 $review2d = fetch_review(2, $user_mgbaker);
@@ -555,7 +555,7 @@ function get_pcassignment_csv() {
     return $csvg->unparse();
 }
 $old_pcassignments = get_pcassignment_csv();
-xassert(AssignmentSet::run($user_chair, $old_pcassignments));
+xassert_assign($user_chair, $old_pcassignments);
 xassert_eqq(get_pcassignment_csv(), $old_pcassignments);
 
 // `any` assignments
@@ -563,12 +563,12 @@ assert_search_papers($user_chair, "re:R1", "12 13");
 assert_search_papers($user_chair, "re:R2", "13");
 assert_search_papers($user_chair, "re:R3", "12");
 assert_search_papers($user_chair, "round:none", "1 2 3 4 5 6 7 8 9 10 11 14 15 16 17 18");
-xassert(AssignmentSet::run($user_chair, "action,paper,email,round\nreview,all,all,R1:none\n"));
+xassert_assign($user_chair, "action,paper,email,round\nreview,all,all,R1:none\n");
 assert_search_papers($user_chair, "re:R1", "");
 assert_search_papers($user_chair, "re:R2", "13");
 assert_search_papers($user_chair, "re:R3", "12");
 assert_search_papers($user_chair, "round:none", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18");
-xassert(AssignmentSet::run($user_chair, "action,paper,email,round\nreview,1-5,all,none:R1"));
+xassert_assign($user_chair, "action,paper,email,round\nreview,1-5,all,none:R1");
 assert_search_papers($user_chair, "re:R1", "1 2 3 4 5");
 assert_search_papers($user_chair, "re:R2", "13");
 assert_search_papers($user_chair, "re:R3", "12");
@@ -577,19 +577,19 @@ assert_search_papers($user_chair, "round:none", "6 7 8 9 10 11 12 13 14 15 16 17
 assert_search_papers($user_chair, "sec:any", "2");
 assert_search_papers($user_chair, "has:sec", "2");
 assert_search_papers($user_chair, "2 AND pri:mgbaker", "");
-xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,any,secondary:primary"));
+xassert_assign($user_chair, "action,paper,email,reviewtype\nreview,any,any,secondary:primary");
 assert_search_papers($user_chair, "sec:any", "");
 assert_search_papers($user_chair, "has:sec", "");
 assert_search_papers($user_chair, "2 AND pri:mgbaker", "2");
 
 assert_search_papers($user_chair, "pri:mgbaker", "1 2 13 17");
-xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any"));
+xassert_assign($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any");
 assert_search_papers($user_chair, "pri:mgbaker", "1 2 13 17");
-xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any:pcreview"));
+xassert_assign($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any:pcreview");
 assert_search_papers($user_chair, "pri:mgbaker", "");
 assert_search_papers($user_chair, "re:opt:mgbaker", "1 2 13 17");
 
-xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any:external"));
+xassert_assign($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any:external");
 assert_search_papers($user_chair, "re:opt:mgbaker", "1 2 13 17");
 
 // paper administrators
@@ -598,7 +598,7 @@ assert_search_papers($user_chair, "conflict:me", "");
 assert_search_papers($user_chair, "admin:me", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 assert_search_papers($user_marina, "admin:me", "");
 xassert(!$user_marina->is_manager());
-xassert(AssignmentSet::run($user_chair, "action,paper,user\nadministrator,4,marina@poema.ru\n"));
+xassert_assign($user_chair, "action,paper,user\nadministrator,4,marina@poema.ru\n");
 assert_search_papers($user_chair, "has:admin", "4");
 assert_search_papers($user_chair, "admin:me", "1 2 3 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 assert_search_papers($user_chair, "admin:marina", "4");
@@ -606,38 +606,38 @@ assert_search_papers($user_marina, "admin:me", "4");
 xassert($user_marina->is_manager());
 
 // preference assignments
-xassert(AssignmentSet::run($user_chair, "paper,user,pref\n1,marina,10\n"));
-xassert(AssignmentSet::run($user_chair, "paper,user,pref\n1,chair@_.com,10\n"));
-xassert(AssignmentSet::run($user_chair, "paper,user,pref\n4,marina,10\n"));
-xassert(AssignmentSet::run($user_chair, "paper,user,pref\n4,chair@_.com,10\n"));
+xassert_assign($user_chair, "paper,user,pref\n1,marina,10\n");
+xassert_assign($user_chair, "paper,user,pref\n1,chair@_.com,10\n");
+xassert_assign($user_chair, "paper,user,pref\n4,marina,10\n");
+xassert_assign($user_chair, "paper,user,pref\n4,chair@_.com,10\n");
 
-xassert(AssignmentSet::run($user_marina, "paper,user,action\n4,chair@_.com,conflict\n"));
+xassert_assign($user_marina, "paper,user,action\n4,chair@_.com,conflict\n");
 
-xassert(AssignmentSet::run($user_chair, "paper,user,pref\n1,marina,11\n"));
-xassert(AssignmentSet::run($user_chair, "paper,user,pref\n1,chair@_.com,11\n"));
-xassert(!AssignmentSet::run($user_chair, "paper,user,pref\n4,marina,11\n"));
-xassert(AssignmentSet::run($user_chair, "paper,user,pref\n4,chair@_.com,11\n"));
+xassert_assign($user_chair, "paper,user,pref\n1,marina,11\n");
+xassert_assign($user_chair, "paper,user,pref\n1,chair@_.com,11\n");
+xassert_assign_fail($user_chair, "paper,user,pref\n4,marina,11\n");
+xassert_assign($user_chair, "paper,user,pref\n4,chair@_.com,11\n");
 
-xassert(AssignmentSet::run($user_marina, "paper,user,pref\n1,marina,12\n"));
-xassert(!AssignmentSet::run($user_marina, "paper,user,pref\n1,chair@_.com,12\n"));
-xassert(AssignmentSet::run($user_marina, "paper,user,pref\n4,marina,12\n"));
-xassert(AssignmentSet::run($user_marina, "paper,user,pref\n4,chair@_.com,12\n"));
+xassert_assign($user_marina, "paper,user,pref\n1,marina,12\n");
+xassert_assign_fail($user_marina, "paper,user,pref\n1,chair@_.com,12\n");
+xassert_assign($user_marina, "paper,user,pref\n4,marina,12\n");
+xassert_assign($user_marina, "paper,user,pref\n4,chair@_.com,12\n");
 
-xassert(AssignmentSet::run($user_marina, "paper,user,action\n4,chair@_.com,noconflict\n"));
+xassert_assign($user_marina, "paper,user,action\n4,chair@_.com,noconflict\n");
 
 $paper1->load_reviewer_preferences();
 xassert_eqq($paper1->reviewer_preference($user_marina), [12, null]);
-xassert(AssignmentSet::run($user_marina, "paper,pref\n1,13\n"));
+xassert_assign($user_marina, "paper,pref\n1,13\n");
 $paper1->load_reviewer_preferences();
 xassert_eqq($paper1->reviewer_preference($user_marina), [13, null]);
 
 // remove paper administrators
 xassert($user_marina->is_manager());
 assert_search_papers($user_chair, "admin:marina", "4");
-xassert(!AssignmentSet::run($user_marina, "paper,action\n4,clearadministrator\n"));
+xassert_assign_fail($user_marina, "paper,action\n4,clearadministrator\n");
 xassert($user_marina->is_manager());
 assert_search_papers($user_chair, "admin:marina", "4");
-xassert(AssignmentSet::run($user_chair, "paper,action\n4,clearadministrator\n"));
+xassert_assign($user_chair, "paper,action\n4,clearadministrator\n");
 xassert(!$user_marina->is_manager());
 assert_search_papers($user_chair, "admin:marina", "");
 
