@@ -1001,21 +1001,28 @@ class Lead_Assigner extends Assigner {
 
 class Conflict_AssignmentParser extends AssignmentParser {
     private $remove;
+    private $iscontact;
     function __construct($aj) {
         parent::__construct("conflict");
         $this->remove = $aj->remove;
+        $this->iscontact = $aj->iscontact;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->contact->can_administer($prow, $state->override)
-            && !$state->contact->privChair)
+            && !$state->contact->privChair
+            && !$state->contact->act_author_view($prow))
             return "You can’t administer #{$prow->paperId}.";
+        else if (!$this->iscontact
+                 && !$state->contact->can_administer($prow, $state->override)
+                 && ($whyNot = $state->contact->perm_update_paper($prow, $state->override)))
+            return whyNotText($whyNot, "edit");
         else
             return true;
     }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("conflict", ["pid", "cid"], "Conflict_Assigner::make"))
             return;
-        $result = $state->conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0");
+        $result = $state->conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0 and paperId?a", $state->paper_ids());
         while (($row = edb_row($result)))
             $state->load(["type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]]);
         Dbl::free($result);
@@ -1034,22 +1041,37 @@ class Conflict_AssignmentParser extends AssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         $res = $state->remove(array("type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId));
         if ($this->remove)
-            $ctn = 0;
+            $ct = 0;
+        else if ($this->iscontact)
+            $ct = CONFLICT_CONTACTAUTHOR;
         else {
-            $ctn = 1000;
-            $ct = get($req, "conflicttype", get($req, "conflict"));
-            if ($ct !== null && ($ctn = Conflict::parse($ct, 1000)) === false)
+            $ct = 1000;
+            $cts = get($req, "conflicttype", get($req, "conflict"));
+            if ($cts !== null && ($ct = Conflict::parse($cts, 1000)) === false)
                 return "Bad conflict type.";
         }
         if (!empty($res)) {
-            $old_ctn = $res[0]["_ctype"];
-            if ($old_ctn >= CONFLICT_AUTHOR || ($ctn === 1000 && $old_ctn > 0))
-                $ctn = $old_ctn;
+            $old_ct = $res[0]["_ctype"];
+            if ((!$this->iscontact && $old_ct >= CONFLICT_AUTHOR)
+                || (!$this->iscontact
+                    && $ct < CONFLICT_CHAIRMARK
+                    && $old_ct == CONFLICT_CHAIRMARK
+                    && !$state->contact->can_administer($prow, $state->override))
+                || ($this->iscontact
+                    && $ct == 0
+                    && $old_ct > 0
+                    && $old_ct < CONFLICT_AUTHOR)
+                || ($ct === 1000 && $old_ct > 0))
+                $ct = $old_ct;
         }
-        if ($ctn === 1000)
-            $ctn = CONFLICT_CHAIRMARK;
-        if ($ctn > 0)
-            $state->add(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId, "_ctype" => $ctn]);
+        if ($ct === 1000) {
+            if ($state->contact->can_administer($prow, $state->override))
+                $ct = CONFLICT_CHAIRMARK;
+            else
+                $ct = CONFLICT_AUTHORMARK;
+        }
+        if ($ct > 0)
+            $state->add(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId, "_ctype" => $ct]);
     }
 }
 
@@ -1060,6 +1082,15 @@ class Conflict_Assigner extends Assigner {
         $this->ctype = $item->get(false, "_ctype");
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
+        if ($item->deleted()
+            && $item->get(true, "_ctype") >= CONFLICT_CONTACTAUTHOR) {
+            $ncontacts = 0;
+            foreach ($state->query(["type" => "conflict", "pid" => $item["pid"]]) as $m)
+                if ($m["_ctype"] >= CONFLICT_CONTACTAUTHOR)
+                    ++$ncontacts;
+            if ($ncontacts == 0)
+                throw new Exception("Each submission must have at least one contact.");
+        }
         return new Conflict_Assigner($item, $state);
     }
     function unparse_description() {

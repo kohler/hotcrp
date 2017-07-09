@@ -64,12 +64,21 @@
     },
     {
         "name": "conflict", "parser_class": "Conflict_AssignmentParser",
-        "remove": false
+        "remove": false, "iscontact": false
     },
     {
         "name": "clearconflict", "parser_class": "Conflict_AssignmentParser",
         "synonym": ["noconflict"],
-        "remove": true
+        "remove": true, "iscontact": false
+    },
+    {
+        "name": "contact", "parser_class": "Conflict_AssignmentParser",
+        "remove": false, "iscontact": true
+    },
+    {
+        "name": "clearcontact", "parser_class": "Conflict_AssignmentParser",
+        "synonym": ["nocontact"],
+        "remove": true, "iscontact": true
     },
     {
         "name": "tag", "parser_class": "Tag_AssignmentParser",

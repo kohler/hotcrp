@@ -641,6 +641,43 @@ xassert_assign($user_chair, "paper,action\n4,clearadministrator\n");
 xassert(!$user_marina->is_manager());
 assert_search_papers($user_chair, "admin:marina", "");
 
+// conflicts and contacts
+function sorted_conflicts(PaperInfo $prow, $contacts) {
+    $c = $contacts ? $prow->contacts(true) : $prow->conflicts(true);
+    $c = array_map(function ($c) { return $c->email; }, $c);
+    sort($c);
+    return join(" ", $c);
+}
+
+$paper3 = $Conf->paperRow(3, $user_chair);
+xassert_eqq(sorted_conflicts($paper3, true), "sclin@leland.stanford.edu");
+xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
+
+$user_sclin = $Conf->user_by_email("sclin@leland.stanford.edu");
+$Conf->save_setting("sub_update", $Now + 10);
+$Conf->save_setting("sub_sub", $Now + 10);
+xassert($user_sclin->can_update_paper($paper3));
+xassert_assign($user_sclin, "paper,action,user\n3,conflict,rguerin@ibm.com\n");
+$paper3 = $Conf->paperRow(3, $user_chair);
+xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
+
+$Conf->save_setting("sub_update", $Now - 5);
+$Conf->save_setting("sub_sub", $Now - 5);
+xassert_assign_fail($user_sclin, "paper,action,user\n3,clearconflict,rguerin@ibm.com\n");
+$paper3 = $Conf->paperRow(3, $user_chair);
+xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
+
+xassert_assign($user_chair, "paper,action,user\n3,clearconflict,rguerin@ibm.com\n3,clearconflict,sclin@leland.stanford.edu\n3,clearcontact,mgbaker@cs.stanford.edu\n");
+$paper3 = $Conf->paperRow(3, $user_chair);
+xassert_eqq(sorted_conflicts($paper3, true), "sclin@leland.stanford.edu");
+xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
+
+xassert_assign_fail($user_chair, "paper,action,user\n3,clearcontact,sclin@leland.stanford.edu\n");
+xassert_assign($user_chair, "paper,action,user\n3,clearcontact,sclin@leland.stanford.edu\n3,contact,mgbaker@cs.stanford.edu\n");
+$paper3 = $Conf->paperRow(3, $user_chair);
+xassert_eqq(sorted_conflicts($paper3, true), "mgbaker@cs.stanford.edu");
+xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu");
+
 // tracks and view-paper permissions
 AssignmentSet::run($user_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
 $Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+red\"}}");

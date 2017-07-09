@@ -346,6 +346,11 @@ use email <code>none</code> or assignment type <code>clearshepherd</code>.</dd>
 and/or <code>user</code> columns locate the PC user. To clear a conflict,
 use assignment type <code>clearconflict</code>.</dd>
 
+<dt><code>contact</code></dt>
+<dd>Mark a submission contact. The <code>email</code>, <code>name</code>,
+and/or <code>user</code> columns locate the user. To clear a contact,
+use assignment type <code>clearcontact</code>.</dd>
+
 <dt><code>tag</code></dt>
 <dd>Add a tag. The <code>tag</code> column names the tag and the optional
 <code>value</code> column sets the tag value.
