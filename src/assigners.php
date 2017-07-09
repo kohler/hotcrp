@@ -202,6 +202,9 @@ class AssignmentState {
         }
         return $p;
     }
+    function prows() {
+        return $this->prows;
+    }
     function fetch_prows($pids, $initial_load = false) {
         $pids = is_array($pids) ? $pids : array($pids);
         $fetch_pids = array();
@@ -519,9 +522,6 @@ class Assigner {
     function execute(AssignmentSet $aset) {
     }
     function cleanup(AssignmentSet $aset) {
-    }
-    function notify_tracker() {
-        return false;
     }
 }
 
@@ -905,10 +905,9 @@ class Lead_AssignmentParser extends AssignmentParser {
     function load_state(AssignmentState $state) {
         if (!$state->mark_type($this->key, ["pid"], "Lead_Assigner::make"))
             return;
-        $result = $state->conf->qe("select paperId, {$this->key}ContactId from Paper where {$this->key}ContactId!=0");
-        while (($row = edb_row($result)))
-            $state->load(["type" => $this->key, "pid" => +$row[0], "_cid" => +$row[1]]);
-        Dbl::free($result);
+        $k = $this->key . "ContactId";
+        foreach ($state->prows() as $prow)
+            $state->load(["type" => $this->key, "pid" => $prow->paperId, "_cid" => +$prow->$k]);
     }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         if ($this->remove) {
@@ -1004,6 +1003,9 @@ class Lead_Assigner extends Assigner {
         $aset->contact->assign_paper_pc($this->pid, $this->type,
             $this->item->get(false, "_cid") ? : 0,
             ["old_cid" => $this->item->get(true, "_cid")]);
+        $aset->cleanup_callback("lead", function ($aset) {
+            $aset->conf->update_paperlead_setting();
+        });
     }
 }
 
@@ -1468,9 +1470,7 @@ class Tag_Assigner extends Assigner {
             && !$aset->conf->setting("has_colontag"))
             $aset->conf->save_setting("has_colontag", 1);
         $aset->contact->log_activity("Tag: " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);
-    }
-    function notify_tracker() {
-        return true;
+        $aset->cleanup_notify_tracker($this->pid);
     }
 }
 
@@ -1606,10 +1606,11 @@ class AssignmentSet {
     private $my_conflicts = null;
     private $astate;
     private $searches = array();
-    private $papers_encountered = array();
     private $unparse_search = false;
     private $unparse_columns = array();
     private $assignment_type = null;
+    private $cleanup_callbacks;
+    private $cleanup_notify_tracker;
 
     function __construct(Contact $contact, $override = null) {
         $this->conf = $contact->conf;
@@ -2269,19 +2270,24 @@ class AssignmentSet {
         }
 
         // clean up
-        $this->conf->update_rev_tokens_setting(false);
-        $this->conf->update_paperlead_setting();
-
-        $pids = array();
-        foreach ($this->assigners as $assigner) {
+        $this->cleanup_callbacks = $this->cleanup_notify_tracker = [];
+        foreach ($this->assigners as $assigner)
             $assigner->cleanup($this);
-            if ($assigner->pid > 0 && $assigner->notify_tracker())
-                $pids[$assigner->pid] = true;
-        }
-        if (!empty($pids) && $this->conf->opt("trackerCometSite"))
-            MeetingTracker::contact_tracker_comet($this->conf, array_keys($pids));
+        foreach ($this->cleanup_callbacks as $cb)
+            call_user_func($cb, $this);
+        if (!empty($this->cleanup_notify_tracker)
+            && $this->conf->opt("trackerCometSite"))
+            MeetingTracker::contact_tracker_comet($this->conf, array_keys($this->cleanup_notify_tracker));
+        $this->conf->update_rev_tokens_setting(false);
 
         return true;
+    }
+
+    function cleanup_callback($name, $func) {
+        $this->cleanup_callbacks[$name] = $func;
+    }
+    function cleanup_notify_tracker($pid) {
+        $this->cleanup_notify_tracker[$pid] = true;
     }
 
     private static function _review_count_link($count, $word, $pl, $prefix, $pc) {
