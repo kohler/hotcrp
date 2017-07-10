@@ -197,4 +197,27 @@ xassert($user_estrin->act_author_view($paper1));
 xassert($user_floyd->act_author_view($paper1));
 xassert($user_van->act_author_view($paper1));
 
+// user merging
+$us->save((object) ["email" => "anne1@_.com", "tags" => ["a#1"], "roles" => (object) ["pc" => true]]);
+$us->save((object) ["email" => "anne2@_.com", "first" => "Anne", "last" => "Dudfield", "data" => (object) ["data_test" => 139], "tags" => ["a#2", "b#3"], "roles" => (object) ["sysadmin" => true], "collaborators" => "derpo\n"]);
+$user_anne1 = user("anne1@_.com");
+$user_anne2 = user("anne2@_.com");
+xassert_assign($user_chair, "paper,action,user\n1,conflict,anne2@_.com");
+xassert($user_anne1 && $user_anne2);
+$merger = new MergeContacts($user_anne2, $user_anne1);
+xassert($merger->run());
+$user_anne1 = user("anne1@_.com");
+$user_anne2 = user("anne2@_.com");
+xassert($user_anne1 && !$user_anne2);
+xassert_eqq($user_anne1->firstName, "Anne");
+xassert_eqq($user_anne1->lastName, "Dudfield");
+xassert_eqq($user_anne1->collaborators, "derpo\n");
+xassert_eqq($user_anne1->tag_value("a"), 1.0);
+xassert_eqq($user_anne1->tag_value("b"), 3.0);
+xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
+xassert_eqq($user_anne1->data("data_test"), 139);
+xassert_eqq($user_anne1->email, "anne1@_.com");
+$paper1 = $Conf->paperRow(1);
+xassert($paper1->has_conflict($user_anne1));
+
 xassert_exit();
