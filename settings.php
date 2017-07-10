@@ -613,11 +613,11 @@ class SettingValues extends MessageSet {
         if ($v !== null && $this->use_req())
             return $v;
         else if ($si->date_backup && $this->curv($si->date_backup) == $v)
-            return $si->placeholder;
+            return "";
         else if ($si->placeholder !== "N/A" && $si->placeholder !== "none" && $v === 0)
             return "none";
         else if ($v <= 0)
-            return $si->placeholder;
+            return "";
         else if ($v == 1)
             return "now";
         else

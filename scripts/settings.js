@@ -59,7 +59,7 @@ function add() {
         jQuery("div[data-round-number=" + i + "] > :first-child").append('<div class="hint">Example name: “R1”</div>');
     jQuery("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
     jQuery("#extrev_roundtag").append('<option value="#' + i + '" id="extrev_roundtag_' + i + '">(new round)</option>');
-    jQuery("div[data-round-number=" + i + "] input.temptext").each(mktemptext);
+    jQuery("div[data-round-number=" + i + "] input[placeholder]").each(mktemptext);
     jQuery("#roundname_" + i).focus().on("input change", namechange);
 }
 
