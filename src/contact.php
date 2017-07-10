@@ -865,6 +865,8 @@ class Contact {
                        "collaborators", "preferredEmail", "country") as $k)
             if (isset($cj->$k))
                 $this->_save_assign_field($k, $cj->$k, $cu);
+        if (isset($cj->preferred_email) && !isset($cj->preferredEmail))
+            $this->_save_assign_field("preferredEmail", $cj->preferred_email, $cu);
         if (isset($cj->phone))
             $this->_save_assign_field("voicePhoneNumber", $cj->phone, $cu);
         $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $cu);
@@ -1096,6 +1098,10 @@ class Contact {
                        "voicePhoneNumber", "unaccentedName") as $k)
             if (isset($reg[$k]))
                 $safereg->$k = $reg[$k];
+        foreach (["preferred_email" => "preferredEmail",
+                  "phone" => "voicePhoneNumber"] as $k1 => $k2)
+            if (isset($reg[$k1]) && !isset($safereg->$k2))
+                $safereg->$k2 = $reg[$k1];
         return $safereg;
     }
 

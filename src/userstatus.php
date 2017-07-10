@@ -36,7 +36,7 @@ class UserStatus extends MessageSet {
         // keys that might come from user or contactdb
         $cdb_user = $user->contactdb_user();
         foreach (["email", "firstName", "lastName", "affiliation",
-                  "collaborators"] as $k)
+                  "collaborators", "country"] as $k)
             if ($user->$k !== null && $user->$k !== "")
                 $cj->$k = $user->$k;
             else if ($cdb_user && $cdb_user->$k !== null && $cdb_user->$k !== "")
