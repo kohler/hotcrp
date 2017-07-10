@@ -2068,7 +2068,7 @@ class PaperTable {
 
         Ht::stash_script("shortcut().add()");
         if ($this->editable)
-            Ht::stash_script('hiliter_children("#paperform")');
+            Ht::stash_script('hiliter_children("#paperform", true)');
     }
 
     private function _paptabSepContaining($t) {
