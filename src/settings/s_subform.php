@@ -263,9 +263,9 @@ class SettingRenderer_SubForm extends SettingRenderer {
             foreach ($otlist as $ot)
                 $otypes[$ot[1] . ":final"] = $ot[2] . " (final version)";
         }
-        echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "do_option_type(this)", "id" => "optvt$id")),
+        echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "return do_option_type(this)", "id" => "optvt$id")),
             "</div></div></td>\n";
-        Ht::stash_script("do_option_type(\$\$('optvt$id'),true)");
+        Ht::stash_script("do_option_type(\$\$('optvt$id'))");
 
         echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
             $sv->label("optp$id", "Visibility"), "</div><div class='f-e'>",

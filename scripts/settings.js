@@ -14,15 +14,14 @@ function next_lexicographic_permutation(i, size) {
 }
 
 
-function do_option_type(e, nohilite) {
+function do_option_type(e) {
     var m;
-    if (!nohilite)
-        hiliter(e);
     if ((m = e.name.match(/^optvt(.*)$/))) {
         fold("optv" + m[1], e.value != "selector" && e.value != "radio");
         fold("optvis" + m[1], !/:final/.test(e.value), 2);
         fold("optvis" + m[1], e.value != "pdf:final", 3);
     }
+    return true;
 }
 
 
@@ -33,7 +32,6 @@ function settings_add_track() {
     jQuery("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\"></div>");
     j = jQuery("#trackgroup" + i);
     j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
-    hiliter_children(j);
     j.find("input[placeholder]").each(mktemptext);
 }
 
@@ -510,7 +508,6 @@ function settings_add_resp_round() {
     jQuery("#response_n").before("<div id=\"response_" + i + "\" style=\"padding-top:1em\"></div>");
     j = jQuery("#response_" + i);
     j.html(jQuery("#response_n").html().replace(/_n\"/g, "_" + i + "\""));
-    hiliter_children(j);
     j.find("input[placeholder]").each(mktemptext);
     j.find("textarea").css({height: "auto"}).autogrow().val(jQuery("#response_n textarea").val());
     return false;
