@@ -1445,8 +1445,8 @@ class PaperTable {
             "<div class=\"psv\"><form onsubmit=\"return false\"><div>";
         $rp = unparse_preference($this->prow);
         $rp = ($rp == "0" ? "" : $rp);
-        echo "<input id=\"revprefform_d\" type=\"text\" class=\"revpref\" name=\"revpref", $this->prow->paperId,
-            "\" size=\"4\" value=\"$rp\" tabindex=\"1\" class=\"want-focus want-select\" />",
+        echo "<input id=\"revprefform_d\" type=\"text\" name=\"revpref", $this->prow->paperId,
+            "\" size=\"4\" value=\"$rp\" tabindex=\"1\" class=\"revpref want-focus want-select\" />",
             "</div></form></div></div>\n";
         Ht::stash_script("add_revpref_ajax(\"#revprefform_d\",true);shortcut(\"revprefform_d\").add()");
     }
