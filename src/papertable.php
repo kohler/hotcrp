@@ -639,10 +639,10 @@ class PaperTable {
         if ($max_authors != 1)
             $t .= '<td class="rxcaption">' . $n . '.</td>';
         return $t . '<td class="lentry">'
-            . Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)", "placeholder" => "Name", "class" => "need-autogrow eauname" . $this->error_class("auname$n"))) . ' '
-            . Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)", "placeholder" => "Email", "class" => "need-autogrow eauemail" . $this->error_class("auemail$n"))) . ' '
-            . Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation", "class" => "need-autogrow eauaff" . $this->error_class("auaff$n")))
-            . '<span class="nb btnbox aumovebox"><a href="#" class="qx btn need-tooltip" data-tooltip="Move up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx btn need-tooltip" data-tooltip="Move down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx btn need-tooltip" data-tooltip="Delete" onclick="return author_change(this,Infinity)" tabindex="-1">✖</a></span></td></tr>';
+            . Ht::entry("auname$n", $name, array("size" => "35", "placeholder" => "Name", "class" => "need-autogrow eauname" . $this->error_class("auname$n"))) . ' '
+            . Ht::entry("auemail$n", $email, array("size" => "30", "placeholder" => "Email", "class" => "need-autogrow eauemail" . $this->error_class("auemail$n"))) . ' '
+            . Ht::entry("auaff$n", $aff, array("size" => "32", "placeholder" => "Affiliation", "class" => "need-autogrow eauaff" . $this->error_class("auaff$n")))
+            . '<span class="nb btnbox aumovebox"><a href="#" class="qx btn need-tooltip moveup" data-tooltip="Move up" tabindex="-1">&#x25b2;</a><a href="#" class="qx btn need-tooltip movedown" data-tooltip="Move down" tabindex="-1">&#x25bc;</a><a href="#" class="qx btn need-tooltip delete" data-tooltip="Delete" tabindex="-1">✖</a></span></td></tr>';
     }
 
     private function echo_editable_authors() {
@@ -682,6 +682,7 @@ class PaperTable {
                 ++$n;
             } while ($n <= $min_authors);
         echo "</tbody></table></div></div>\n\n";
+        Ht::stash_script('author_table_events("#auedittable")');
     }
 
     private function authorData($table, $type, $viewAs = null, $prefix = "") {

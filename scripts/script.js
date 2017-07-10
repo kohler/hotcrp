@@ -2334,6 +2334,27 @@ function author_change(e, delta) {
     return false;
 }
 
+function author_table_events($j) {
+    $j = $($j);
+    $j.on("input change", "input, select, textarea", function () {
+        author_change(this, 0);
+        return true;
+    });
+    $j.on("click", "a", function () {
+        var $a = $(this), delta;
+        if ($a.hasClass("moveup"))
+            delta = -1;
+        else if ($a.hasClass("movedown"))
+            delta = 1;
+        else if ($a.hasClass("delete"))
+            delta = Infinity;
+        else
+            return true;
+        author_change(this, delta);
+        return false;
+    });
+}
+
 function paperform_checkready(ischecked) {
     var t, $j = $("#paperisready"),
         is, was = $("#paperform").attr("data-submitted");
