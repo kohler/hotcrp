@@ -184,9 +184,8 @@ echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
 
 // Paper selection
-$q = ($qreq->q == "" ? "(All)" : $qreq->q);
 echo "<tr><td>Paper selection: &nbsp;</td><td>",
-    Ht::entry("q", $q,
+    Ht::entry("q", $qreq->q,
               ["id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
                "title" => "Paper numbers or search terms"]),
     " &nbsp;in &nbsp;";
