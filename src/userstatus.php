@@ -15,6 +15,14 @@ class UserStatus extends MessageSet {
                        "zipCode" => "zip", "postal_code" => "zip",
                        "contactTags" => "tags", "uemail" => "email");
 
+    static public $topic_interest_name_map = [
+        "low" => -2,
+        "mlow" => -1, "mediumlow" => -1, "medium-low" => -1, "medium_low" => -1,
+        "medium" => 0, "none" => 0,
+        "mhigh" => 2, "mediumhigh" => 2, "medium-high" => 2, "medium_high" => 2,
+        "high" => 4
+    ];
+
     function __construct($options = array()) {
         parent::__construct();
         foreach (array("send_email", "no_deprivilege_self") as $k)
@@ -22,6 +30,20 @@ class UserStatus extends MessageSet {
                 $this->$k = $options[$k];
         foreach (self::$field_synonym_map as $src => $dst)
             $this->translate_field($src, $dst);
+    }
+
+    static function unparse_roles_json($roles) {
+        if ($roles) {
+            $rj = (object) array();
+            if ($roles & Contact::ROLE_CHAIR)
+                $rj->chair = $rj->pc = true;
+            if ($roles & Contact::ROLE_PC)
+                $rj->pc = true;
+            if ($roles & Contact::ROLE_ADMIN)
+                $rj->sysadmin = true;
+            return $rj;
+        } else
+            return null;
     }
 
     function user_to_json($user) {
@@ -55,15 +77,8 @@ class UserStatus extends MessageSet {
             if (($x = $user->data($k)))
                 $cj->$k = $x;
 
-        if ($user->roles) {
-            $cj->roles = (object) array();
-            if ($user->roles & Contact::ROLE_CHAIR)
-                $cj->roles->chair = $cj->roles->pc = true;
-            else if ($user->roles & Contact::ROLE_PC)
-                $cj->roles->pc = true;
-            if ($user->roles & Contact::ROLE_ADMIN)
-                $cj->roles->sysadmin = true;
-        }
+        if ($user->roles)
+            $cj->roles = self::unparse_roles_json($user->roles);
 
         if ($user->defaultWatch) {
             $cj->follow = (object) array();
@@ -331,16 +346,10 @@ class UserStatus extends MessageSet {
                     $cj->bad_topics[] = $k;
                     continue;
                 }
-                if ($v === "mlow" || $v === "medium-low")
-                    $v = -1;
-                else if ($v === true || $v === "mhigh" || $v === "medium-high")
-                    $v = 2;
-                else if ($v === "low")
-                    $v = -2;
-                else if ($v === "high")
-                    $v = 4;
-                else if ($v === "medium" || $v === "none" || $v === false)
-                    $v = 0;
+                if (is_bool($v))
+                    $v = $v ? 2 : 0;
+                else if (is_string($v) && isset(self::$topic_interest_name_map[$v]))
+                    $v = self::$topic_interest_name_map[$v];
                 else if (is_numeric($v))
                     $v = (int) $v;
                 else {
