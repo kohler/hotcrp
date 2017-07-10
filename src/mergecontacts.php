@@ -31,6 +31,9 @@ class MergeContacts extends MessageSet {
                                $this->oldu->contactId))
             $this->add_error($this->conf->db_error_html(true));
     }
+    private function replace_contact_string($k) {
+        return (string) $this->oldu->$k !== "" && (string) $this->newu->$k === "";
+    }
     private function merge() {
         assert($this->oldu->contactId && $this->newu->contactId);
 
@@ -56,8 +59,7 @@ class MergeContacts extends MessageSet {
         }
 
         // ensure uniqueness in PaperConflict
-        $result = $this->conf->qe("select paperId, conflictType from PaperConflict where contactId=?",
-                                  $this->oldu->contactId);
+        $result = $this->conf->qe("select paperId, conflictType from PaperConflict where contactId=?", $this->oldu->contactId);
         $qv = [];
         while (($row = edb_row($result)))
             $qv[] = [$row[0], $this->newu->contactId, $row[1]];
@@ -65,25 +67,35 @@ class MergeContacts extends MessageSet {
             $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $qv);
         $this->conf->qe("delete from PaperConflict where contactId=?", $this->oldu->contactId);
 
-        // merge user data: roles and tags
-        if (($this->oldu->roles | $this->newu->roles) != $this->newu->roles) {
-            $this->newu->roles |= $this->oldu->roles;
-            $this->conf->qe("update ContactInfo set roles=? where contactId=?",
-                            $this->newu->roles, $this->newu->contactId);
+        // merge user data via Contact::save_json
+        $cj = (object) ["email" => $this->newu->email];
+
+        foreach (["firstName", "lastName", "affiliation", "country",
+                  "collaborators"] as $k)
+            if ($this->replace_contact_string($k))
+                $cj->$k = $this->oldu->$k;
+        if ($this->replace_contact_string("voicePhoneNumber"))
+            $cj->phone = $this->oldu->voicePhoneNumber;
+
+        if (($old_data = $this->oldu->data())) {
+            $cj->data = (object) [];
+            $new_data = $this->newu->data();
+            foreach ($old_data as $k => $v)
+                if (!isset($new_data->$k))
+                    $cj->data->$k = $v;
         }
 
-        $old_tags = $this->newu->contactTags;
-        if ($this->oldu->contactTags)
-            foreach (TagInfo::split_unpack($this->oldu->contactTags) as $ti) {
-                if ($this->newu->tag_value($ti[0]) === false) {
-                    if ((string) $this->newu->contactTags === "")
-                        $this->newu->contactTags = " ";
-                    $this->newu->contactTags .= $ti[0] . "#" . $ti[1] . " ";
-                }
-            }
-        if ($old_tags !== $this->newu->contactTags)
-            $this->conf->qe("update ContactInfo set contactTags=? where contactId=?",
-                            $this->newu->contactTags, $this->newu->contactId);
+        if (($this->oldu->roles | $this->newu->roles) != $this->newu->roles)
+            $cj->roles = UserStatus::unparse_roles_json($this->oldu->roles | $this->newu->roles);
+
+        $cj->tags = [];
+        foreach (TagInfo::split_unpack($this->newu->contactTags) as $ti)
+            $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
+        foreach (TagInfo::split_unpack($this->oldu->contactTags) as $ti)
+            if ($this->newu->tag_value($ti[0]) === false)
+                $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
+
+        $this->newu->save_json($cj, null, false);
 
         // merge more things
         $this->merge1("ActionLog", "contactId");
@@ -107,8 +119,6 @@ class MergeContacts extends MessageSet {
             $this->add_error($this->conf->db_error_html(true));
 
         $this->conf->qe_raw("unlock tables");
-        if ($this->oldu->roles)
-            $this->conf->invalidate_caches("pc");
     }
 
     function run() {
