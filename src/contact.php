@@ -881,7 +881,7 @@ class Contact {
 
         // Data
         $old_datastr = $this->data_str();
-        $data = (object) array();
+        $data = get($cj, "data", (object) array());
         foreach (array("address", "city", "state", "zip") as $k)
             if (isset($cj->$k) && ($x = $cj->$k)) {
                 while (is_array($x) && $x[count($x) - 1] === "")
