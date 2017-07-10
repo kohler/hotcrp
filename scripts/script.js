@@ -1907,6 +1907,11 @@ function hiliter_children(form, on_unload) {
     }
 }
 
+function form_highlight(form) {
+    var $f = $(form);
+    $f.toggleClass("alert", form_differs($f));
+}
+
 function focus_at(felt) {
     felt.focus();
     if (!felt.hotcrp_ever_focused) {

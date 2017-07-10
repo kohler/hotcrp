@@ -22,7 +22,7 @@ class SettingRenderer_Reviews extends SettingRenderer {
         echo '</div>';
         if ($deletable)
             echo '<div class="inb" style="padding-left:2em">',
-                Ht::hidden("deleteround_$rnum", ""),
+                Ht::hidden("deleteround_$rnum", "", ["data-default-value" => ""]),
                 Ht::js_button("Delete round", "review_round_settings.kill(this)"),
                 '</div>';
         if ($rnum === '$')
@@ -128,7 +128,7 @@ function render(SettingValues $sv) {
     for ($i = 1; $i < count($rounds); ++$i)
         if ($rounds[$i] === ";")
             echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
-                Ht::hidden("deleteround_$i", 1);
+                Ht::hidden("deleteround_$i", 1, ["data-default-value" => "1"]);
     Ht::stash_script("review_round_settings.init()");
 
     $extselector = array_merge(["#same" => "(same as PC)"], $selector);
