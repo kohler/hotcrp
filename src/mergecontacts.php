@@ -34,6 +34,26 @@ class MergeContacts extends MessageSet {
     private function replace_contact_string($k) {
         return (string) $this->oldu->$k !== "" && (string) $this->newu->$k === "";
     }
+    private function basic_user_json() {
+        $cj = (object) ["email" => $this->newu->email];
+
+        foreach (["firstName", "lastName", "affiliation", "country",
+                  "collaborators"] as $k)
+            if ($this->replace_contact_string($k))
+                $cj->$k = $this->oldu->$k;
+        if ($this->replace_contact_string("voicePhoneNumber"))
+            $cj->phone = $this->oldu->voicePhoneNumber;
+
+        if (($old_data = $this->oldu->data())) {
+            $cj->data = (object) [];
+            $new_data = $this->newu->data();
+            foreach ($old_data as $k => $v)
+                if (!isset($new_data->$k))
+                    $cj->data->$k = $v;
+        }
+
+        return $cj;
+    }
     private function merge() {
         assert($this->oldu->contactId && $this->newu->contactId);
 
@@ -68,22 +88,7 @@ class MergeContacts extends MessageSet {
         $this->conf->qe("delete from PaperConflict where contactId=?", $this->oldu->contactId);
 
         // merge user data via Contact::save_json
-        $cj = (object) ["email" => $this->newu->email];
-
-        foreach (["firstName", "lastName", "affiliation", "country",
-                  "collaborators"] as $k)
-            if ($this->replace_contact_string($k))
-                $cj->$k = $this->oldu->$k;
-        if ($this->replace_contact_string("voicePhoneNumber"))
-            $cj->phone = $this->oldu->voicePhoneNumber;
-
-        if (($old_data = $this->oldu->data())) {
-            $cj->data = (object) [];
-            $new_data = $this->newu->data();
-            foreach ($old_data as $k => $v)
-                if (!isset($new_data->$k))
-                    $cj->data->$k = $v;
-        }
+        $cj = $this->basic_user_json();
 
         if (($this->oldu->roles | $this->newu->roles) != $this->newu->roles)
             $cj->roles = UserStatus::unparse_roles_json($this->oldu->roles | $this->newu->roles);
@@ -124,10 +129,14 @@ class MergeContacts extends MessageSet {
     function run() {
         // actually merge users or change email
         if ($this->oldu->contactId && $this->newu->contactId)
+            // both users in database
             $this->merge();
-        else if ($this->oldu->contactId) {
+        else {
             $user_status = new UserStatus(["send_email" => false]);
-            $user_status->save($user_status->user_to_json($this->newu), $this->oldu);
+            if ($this->oldu->contactId) // new user in contactdb, old user in database
+                $user_status->save($user_status->user_to_json($this->newu), $this->oldu);
+            else                        // old user in contactdb, new user in database
+                $user_status->save($this->basic_user_json(), $this->newu);
             foreach ($user_status->errors() as $e)
                 $this->add_error($e);
         }
