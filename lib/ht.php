@@ -181,18 +181,6 @@ class Ht {
         return '<input type="radio"' . substr($t, 22);
     }
 
-    static function checkbox_h($name, $value = 1, $checked = false, $js = null) {
-        $js = $js ? $js : array();
-        if (!isset($js["onchange"]))
-            $js["onchange"] = "hiliter(this)";
-        return self::checkbox($name, $value, $checked, $js);
-    }
-
-    static function radio_h($name, $value = 1, $checked = false, $js = null) {
-        $t = self::checkbox_h($name, $value, $checked, $js);
-        return '<input type="radio"' . substr($t, 22);
-    }
-
     static function label($html, $id = null, $js = null) {
         if (!$id || $id === true)
             $id = self::$_lastcontrolid;
@@ -268,13 +256,6 @@ class Ht {
         return '<input type="' . $type . '" name="' . $name . '" value="'
             . htmlspecialchars($value === null ? "" : $value) . '"'
             . self::extra($js) . ' />';
-    }
-
-    static function entry_h($name, $value, $js = null) {
-        $js = $js ? $js : array();
-        if (!isset($js["onchange"]))
-            $js["onchange"] = "hiliter(this)";
-        return self::entry($name, $value, $js);
     }
 
     static function password($name, $value, $js = null) {

@@ -160,6 +160,7 @@ else
 // Change PC member
 echo "<table><tr><td><div class='aahc assignpc_pcsel'>",
     Ht::form_div(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
+Ht::stash_script('hiliter_children("#selectreviewerform")');
 
 $result = $Conf->qe_raw("select ContactInfo.contactId, count(reviewId)
                 from ContactInfo
@@ -179,28 +180,26 @@ foreach ($Conf->pc_members() as $pc)
         . plural(defval($rev_count, $pc->contactId, 0), "assignment") . ")";
 
 echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
-    "<td>", Ht::select("reviewer", $rev_opt, $reviewer ? $reviewer->email : 0, array("onchange" => "hiliter(this)")), "</td></tr>",
+    "<td>", Ht::select("reviewer", $rev_opt, $reviewer ? $reviewer->email : 0), "</td></tr>",
     "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
 
 // Paper selection
 $q = ($qreq->q == "" ? "(All)" : $qreq->q);
 echo "<tr><td>Paper selection: &nbsp;</td><td>",
-    Ht::entry_h("q", $q,
-                array("id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
-                      "title" => "Paper numbers or search terms")),
+    Ht::entry("q", $q,
+              ["id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
+               "title" => "Paper numbers or search terms"]),
     " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
-    echo Ht::select("t", $tOpt, $qreq->t, array("onchange" => "hiliter(this)"));
+    echo Ht::select("t", $tOpt, $qreq->t);
 else
     echo join("", $tOpt);
 echo "</td></tr>\n",
     "<tr><td colspan='2'><div class='g'></div>\n";
 
-echo Ht::radio("kind", "a", $qreq->kind == "a",
-               array("onchange" => "hiliter(this)")),
+echo Ht::radio("kind", "a", $qreq->kind == "a"),
     "&nbsp;", Ht::label("Assign reviews and/or conflicts"), "<br />\n",
-    Ht::radio("kind", "c", $qreq->kind == "c",
-               array("onchange" => "hiliter(this)")),
+    Ht::radio("kind", "c", $qreq->kind == "c"),
     "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
 
 echo '<tr><td colspan="2"><div class="aab aabr">',

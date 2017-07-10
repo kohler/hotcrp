@@ -754,16 +754,16 @@ echo '<h3 class="profile">Email notification</h3>';
 $follow = isset($formcj->follow) ? $formcj->follow : (object) [];
 if ($newProfile ? $Me->privChair : $Acct->isPC) {
     echo "<table><tr><td>Send mail for: &nbsp;</td>",
-        "<td>", Ht::checkbox_h("watchcomment", 1, !!get($follow, "reviews")), "&nbsp;",
+        "<td>", Ht::checkbox("watchcomment", 1, !!get($follow, "reviews")), "&nbsp;",
         Ht::label($Conf->_("Reviews and comments on authored or reviewed papers")), "</td></tr>",
-        "<tr><td></td><td>", Ht::checkbox_h("watchcommentall", 1, !!get($follow, "allreviews")), "&nbsp;",
+        "<tr><td></td><td>", Ht::checkbox("watchcommentall", 1, !!get($follow, "allreviews")), "&nbsp;",
         Ht::label($Conf->_("Reviews and comments on <i>any</i> paper")), "</td></tr>";
     if (!$newProfile && $Acct->privChair)
-        echo "<tr><td></td><td>", Ht::checkbox_h("watchfinalall", 1, !!get($follow, "allfinal")), "&nbsp;",
+        echo "<tr><td></td><td>", Ht::checkbox("watchfinalall", 1, !!get($follow, "allfinal")), "&nbsp;",
             Ht::label($Conf->_("Updates to final versions")), "</td></tr>";
     echo "</table>";
 } else
-    echo Ht::checkbox_h("watchcomment", 1, !!get($follow, "reviews")), "&nbsp;",
+    echo Ht::checkbox("watchcomment", 1, !!get($follow, "reviews")), "&nbsp;",
         Ht::label($Conf->_("Send mail for new comments on authored or reviewed papers"));
 
 
@@ -773,14 +773,14 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     foreach (array("chair" => "PC chair",
                    "pc" => "PC member",
                    "no" => "Not on the PC") as $k => $v) {
-        echo Ht::radio_h("pctype", $k, $pcrole === $k,
-                          array("id" => "pctype_$k", "onchange" => "fold('account',\$\$('pctype_no').checked,1)")),
+        echo Ht::radio("pctype", $k, $pcrole === $k,
+                       ["id" => "pctype_$k", "onchange" => "fold('account',\$\$('pctype_no').checked,1)"]),
             "&nbsp;", Ht::label($v), "<br />\n";
     }
 
     echo "</td><td><span class='sep'></span></td><td class='nw'>";
     $is_ass = isset($formcj->roles) && get($formcj->roles, "sysadmin");
-    echo Ht::checkbox_h("ass", 1, $is_ass), "&nbsp;</td>",
+    echo Ht::checkbox("ass", 1, $is_ass), "&nbsp;</td>",
         "<td>", Ht::label("Sysadmin"), "<br/>",
         '<div class="hint">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</div></td></tr></table>', "\n";
 }
@@ -815,7 +815,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
             $ival = (float) get($formcj_topics, $id);
             for ($j = -2; $j <= 2; ++$j) {
                 $checked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
-                echo '<td class="ti_interest">', Ht::radio_h("ti$id", $j, $checked), "</td>";
+                echo '<td class="ti_interest">', Ht::radio("ti$id", $j, $checked), "</td>";
             }
             echo "</tr>\n";
         }

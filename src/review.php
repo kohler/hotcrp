@@ -535,12 +535,12 @@ class ReviewForm {
                     $fval = 0;
                 if ($f->allow_empty)
                     echo '<tr><td class="nw">',
-                        Ht::radio_h($field, 0, $fval == 0, ["id" => $field . "_0"]),
+                        Ht::radio($field, 0, $fval == 0, ["id" => $field . "_0"]),
                         '&nbsp;</td>',
                         '<td colspan="2">', Ht::label("No entry"), "</td></tr>\n";
                 foreach ($f->options as $num => $what) {
                     echo '<tr><td class="nw">',
-                        Ht::radio_h($field, $num, $fval == $num, ["id" => $field . "_" . $num]),
+                        Ht::radio($field, $num, $fval == $num, ["id" => $field . "_" . $num]),
                         '&nbsp;</td>',
                         '<td class="nw">', Ht::label($f->unparse_value($num, ReviewField::VALUE_REV_NUM) . '&nbsp;'), '</td>',
                         '<td>', Ht::label(htmlspecialchars($what)), "</td></tr>\n";
@@ -1771,7 +1771,7 @@ $blind\n";
         // blind?
         if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
             echo '<div class="revet"><span class="revfn">',
-                Ht::checkbox_h("blind", 1, ($useRequest ? req("blind") : (!$rrow || $rrow->reviewBlind))),
+                Ht::checkbox("blind", 1, ($useRequest ? req("blind") : (!$rrow || $rrow->reviewBlind))),
                 "&nbsp;", Ht::label("Anonymous review"),
                 "</span><hr class=\"c\" /></div>\n",
                 '<div class="revhint">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>\n",
