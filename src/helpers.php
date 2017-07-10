@@ -255,42 +255,6 @@ function reviewType($paperId, $row, $long = 0) {
         return "";
 }
 
-function topicTable($prow, $active = 0) {
-    global $Conf;
-    $paperId = ($prow ? $prow->paperId : -1);
-
-    // get current topics
-    $paperTopic = array();
-    $tmap = $Conf->topic_map();
-    if ($paperId > 0) {
-        $result = Dbl::q("select topicId from PaperTopic where paperId=$paperId");
-        while ($row = edb_row($result))
-            $paperTopic[$row[0]] = $tmap[$row[0]];
-    }
-    $allTopics = ($active < 0 ? $paperTopic : $tmap);
-    if (count($allTopics) == 0)
-        return "";
-
-    $out = '<div class="ctable">';
-    $i = 0;
-    foreach ($tmap as $tid => $tname) {
-        if (!isset($allTopics[$tid]))
-            continue;
-        $out .= '<div class="ctelt"><div class="ctelti">';
-        $tname = '<span class="topic0">' . htmlspecialchars($tname) . '</span>';
-        if ($paperId <= 0 || $active >= 0) {
-            $out .= '<table><tr><td class="nw">'
-                . Ht::checkbox_h("top$tid", 1, ($active > 0 ? isset($_REQUEST["top$tid"]) : isset($paperTopic[$tid])),
-                                 array("disabled" => $active < 0))
-                . "&nbsp;</td><td>" . Ht::label($tname) . "</td></tr></table>";
-        } else
-            $out .= $tname;
-        $out .= "</div></div>\n";
-        $i++;
-    }
-    return $out . "</div>";
-}
-
 function actas_link($cid, $contact = null) {
     global $Conf;
     $contact = !$contact && is_object($cid) ? $cid : $contact;

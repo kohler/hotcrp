@@ -1136,16 +1136,22 @@ class PaperTable {
 
     private function echo_editable_topics() {
         assert(!!$this->editable);
-        $topicMode = (int) $this->useRequest;
-        if (($topicTable = topicTable($this->prow, $topicMode))) {
-            echo $this->editable_papt("topics", $this->field_name("Topics")),
-                $this->field_hint("Topics", "Select any topics that apply to your submission."),
-                $this->messages_for("topics"),
-                '<div class="papev">',
-                Ht::hidden("has_topics", 1),
-                $topicTable,
-                "</div></div>\n\n";
+        if (!$this->conf->has_topics())
+            return;
+        echo $this->editable_papt("topics", $this->field_name("Topics")),
+            $this->field_hint("Topics", "Select any topics that apply to your submission."),
+            $this->messages_for("topics"),
+            '<div class="papev">',
+            Ht::hidden("has_topics", 1),
+            '<div class="ctable">';
+        $ptopics = $this->prow ? $this->prow->topics() : [];
+        foreach ($this->conf->topic_map() as $tid => $tname) {
+            $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : isset($ptopics[$tid]);
+            echo '<div class="ctelt"><div class="ctelti"><table><tr><td class="nw">',
+                Ht::checkbox("top$tid", 1, $checked),
+                '&nbsp;</td><td>', Ht::label($tname), "</td></tr></table></div></div>\n";
         }
+        echo "</div></div></div>\n\n";
     }
 
     public function echo_editable_option_papt(PaperOption $o, $label = null) {
