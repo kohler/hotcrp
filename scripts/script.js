@@ -1822,20 +1822,89 @@ var hotcrp_load = {
 };
 
 
+function input_is_checkboxlike(elt) {
+    return elt instanceof HTMLInputElement && (elt.type === "checkbox" || elt.type === "radio");
+}
+
+function input_default_value(elt) {
+    if (input_is_checkboxlike(elt)) {
+        if (elt.hasAttribute("data-default-checked"))
+            return !!elt.getAttribute("data-default-checked");
+        else
+            return elt.defaultChecked;
+    } else {
+        if (elt.hasAttribute("data-default-value"))
+            return elt.getAttribute("data-default-value");
+        else
+            return elt.defaultValue;
+    }
+}
+
+function form_differs(form) {
+    var same = true, $f = $(form).find("input, select, textarea");
+    if (!$f.length && $f.is("input, select, textarea"))
+        $f = $(form);
+    $f.each(function () {
+        var $me = $(this);
+        if ($me.hasClass("ignore-diff"))
+            return true;
+        var expected = input_default_value(this);
+        var current;
+        if (input_is_checkboxlike(this))
+            same = this.checked === expected;
+        else {
+            var current = this instanceof HTMLSelectElement ? $me.val() : this.value;
+            same = text_eq(current, expected);
+        }
+        return same;
+    });
+    return !same;
+}
+
+function form_defaults(form, values) {
+    if (values) {
+        $(form).find("input, select, textarea").each(function () {
+            if (input_is_checkboxlike(this))
+                this.setAttribute("data-default-checked", values[this.name] ? "1" : "");
+            else
+                this.setAttribute("data-default-value", values[this.name] || "");
+        });
+    } else {
+        values = {};
+        $(form).find("input, select, textarea").each(function () {
+            values[this.name] = input_default_value(this);
+        });
+        return values;
+    }
+}
+
 function hiliter(elt, off) {
     if (typeof elt === "string")
         elt = document.getElementById(elt);
     else if (!elt || elt.preventDefault)
         elt = this;
-    while (elt && elt.tagName && (elt.tagName != "DIV"
-                                  || !/\baahc\b/.test(elt.className)))
+    while (elt && elt.tagName
+           && (elt.tagName != "DIV" || !/\baahc\b/.test(elt.className)))
         elt = elt.parentNode;
     if (elt && elt.tagName && elt.className)
         elt.className = elt.className.replace(" alert", "") + (off ? "" : " alert");
 }
 
-function hiliter_children(form) {
-    jQuery(form).on("change input", "input, select, textarea", hiliter);
+function hiliter_children(form, on_unload) {
+    function hilite() {
+        if (!$(this).hasClass("ignore-diff"))
+            $(form).toggleClass("alert", form_differs(this) || form_differs(form));
+    }
+    $(form).on("change input", "input, select, textarea", hilite);
+    if (on_unload) {
+        $(form).on("submit", function () {
+            $(this).addClass("submitting");
+        });
+        $(window).on("beforeunload", function () {
+            if ($(form).hasClass("alert") && !$(form).hasClass("submitting"))
+                return "If you leave this page now, your edits may be lost.";
+        });
+    }
 }
 
 function focus_at(felt) {
@@ -2998,7 +3067,7 @@ function beforeunload() {
         $c = $cmt($cs[i]);
         text = $($cs[i]).val().replace(/\s+$/, "");
         if (!text_eq(text, ($c.c && $c.c.text) || ""))
-            return "Your comment edits have not been saved. If you leave this page now, they will be lost.";
+            return "If you leave this page now, your edits will be lost.";
     }
 }
 
@@ -5038,6 +5107,7 @@ function override_deadlines(elt, callback) {
         else {
             var fjq = ejq.closest("form");
             fjq.children("div").first().append('<input type="hidden" name="' + ejq.attr("data-override-submit") + '" value="1" /><input type="hidden" name="override" value="1" />');
+            fjq.addClass("submitting");
             fjq[0].submit();
         }
         djq.remove();

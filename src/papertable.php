@@ -1788,7 +1788,8 @@ class PaperTable {
             Ht::stash_html("<div class='popupbg'><div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this submission from consideration and/or
   publication? $admins</p>\n"
-    . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"))
+    . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"),
+                   ["onsubmit" => '$("#paperform").addClass("submitting");return true'])
     . Ht::textarea("reason", null,
                    array("id" => "withdrawreason", "rows" => 3, "cols" => 40,
                          "style" => "width:99%", "placeholder" => "Optional explanation", "spellcheck" => "true"))
@@ -1812,10 +1813,10 @@ class PaperTable {
     function echoActions($top) {
         if ($this->admin && !$top) {
             $v = (string) $this->qreq->emailNote;
-            echo "<div>", Ht::checkbox("doemail", 1, true), "&nbsp;",
+            echo "<div>", Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), "&nbsp;",
                 Ht::label("Email authors, including:"), "&nbsp; ",
-                Ht::entry("emailNote", $v,
-                          array("id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation")), "</div>\n";
+                Ht::entry("emailNote", $v, ["id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff"]),
+                "</div>\n";
         }
 
         $buttons = $this->_collectActionButtons();
@@ -1823,7 +1824,8 @@ class PaperTable {
         if ($this->admin && $this->prow) {
             $buttons[] = array(Ht::js_button("Delete", "popup(this,'delp',0,true)", ["class" => "btn"]), "(admin only)");
             Ht::stash_html("<div class='popupbg'><div id='popup_delp' class='popupc'>"
-    . Ht::form_div(hoturl_post("paper", "p={$this->prow->paperId}&amp;m=edit"))
+    . Ht::form_div(hoturl_post("paper", "p={$this->prow->paperId}&amp;m=edit"),
+                   ["onsubmit" => '$("#paperform").addClass("submitting");return true'])
     . "<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>\n"
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))

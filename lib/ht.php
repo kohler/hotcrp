@@ -107,9 +107,12 @@ class Ht {
         $disabled = get($js, "disabled");
         if (is_array($disabled))
             unset($js["disabled"]);
-        $x = '<select name="' . $name . '"' . self::extra($js) . ">";
         if ($selected === null || !isset($opt[$selected]))
             $selected = key($opt);
+        $x = '<select name="' . $name . '"' . self::extra($js);
+        if (!isset($js["data-default-value"]))
+            $x .= ' data-default-value="' . htmlspecialchars($selected) . '"';
+        $x .= '>';
         $optionstyles = get($js, "optionstyles", null);
         $optgroup = "";
         foreach ($opt as $value => $info) {
