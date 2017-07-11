@@ -1174,6 +1174,7 @@ Use an aggregate function to calculate a property over all review scores.</p>");
 
 
 function chair() {
+    global $Conf;
     _subhead("Submission time", "
 <p>Follow these steps to prepare to accept paper submissions.</p>
 
@@ -1463,6 +1464,11 @@ administrator’s identity.</p>");
 
 </ol>", "meeting");
 
+    if (!$Conf->setting("shepherd_hide"))
+        $shepherd_visible = " This will also make shepherd names visible to authors.";
+    else
+        $shepherd_visible = "";
+
     _subhead("After the meeting", "
 <ol>
 
@@ -1477,7 +1483,7 @@ administrator’s identity.</p>");
 
 <li><p>Set <a href='" . hoturl("settings", "group=dec") . "'>“Who can
   <strong>see decisions?</strong>”</a> to “Authors, PC members,
-  and reviewers.”</p></li>
+  and reviewers.”$shepherd_visible</p></li>
 
 <li><p><strong><a href='" . hoturl("mail") . "'>Send mail to
   authors</a></strong> informing them that reviews and decisions are
