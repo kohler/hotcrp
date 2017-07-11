@@ -163,17 +163,27 @@ class Ht {
             $js = $checked;
             $checked = false;
         }
-        $js = $js ? $js : array();
+        $js = $js ? : array();
         if (!get($js, "id"))
             $js["id"] = "htctl" . ++self::$_controlid;
         self::$_lastcontrolid = $js["id"];
         if (!isset($js["class"]))
             $js["class"] = "cb";
+        assert($checked !== null);
+        if ($checked === null)
+            $checked = isset($_REQUEST[$name]) && $_REQUEST[$name] === $value;
+        if (isset($js["data-default-checked"]) || isset($js["data-default-value"])) {
+            $dc = get($js, "data-default-checked");
+            if ($dc === null)
+                $dc = get($js, "data-default-value");
+            $dc = $dc ? "1" : "";
+            if (!!$checked === !!$dc)
+                $dc = null;
+            $js["data-default-checked"] = $dc;
+        }
         $t = '<input type="checkbox"'; /* NB see Ht::radio */
         if ($name)
             $t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
-        if ($checked === null)
-            $checked = isset($_REQUEST[$name]) && $_REQUEST[$name] === $value;
         if ($checked)
             $t .= " checked=\"checked\"";
         return $t . self::extra($js) . " />";
@@ -245,11 +255,16 @@ class Ht {
     }
 
     private static function apply_placeholder(&$value, &$js) {
+        if ($value === null)
+            $value = "";
         if (($temp = get($js, "placeholder"))) {
-            if ($value === null || $value === "" || $value === $temp)
+            if ($value === "" || $value === $temp)
                 $js["class"] = trim(get_s($js, "class") . " temptext");
             self::stash_script("jQuery(hotcrp_load.temptext)", "temptext");
         }
+        if (($default = get($js, "data-default-value")) !== null
+            && $value === $default)
+            unset($js["data-default-value"]);
     }
 
     static function entry($name, $value, $js = null) {
@@ -257,8 +272,7 @@ class Ht {
         self::apply_placeholder($value, $js);
         $type = get($js, "type") ? : "text";
         return '<input type="' . $type . '" name="' . $name . '" value="'
-            . htmlspecialchars($value === null ? "" : $value) . '"'
-            . self::extra($js) . ' />';
+            . htmlspecialchars($value) . '"' . self::extra($js) . ' />';
     }
 
     static function password($name, $value, $js = null) {
@@ -271,8 +285,7 @@ class Ht {
         $js = $js ? $js : array();
         self::apply_placeholder($value, $js);
         return '<textarea name="' . $name . '"' . self::extra($js)
-            . '>' . htmlspecialchars($value === null ? "" : $value)
-            . '</textarea>';
+            . '>' . htmlspecialchars($value) . '</textarea>';
     }
 
     static function actions($actions, $js = array(), $extra_text = "") {

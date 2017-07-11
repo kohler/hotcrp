@@ -586,7 +586,8 @@ class CheckboxPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
-        $pt->echo_editable_option_papt($this, Ht::checkbox("opt{$this->id}", 1, $reqv) . "&nbsp;" . Ht::label(htmlspecialchars($this->name)));
+        $cb = Ht::checkbox("opt{$this->id}", 1, $reqv, ["data-default-checked" => !!$ov->value]);
+        $pt->echo_editable_option_papt($this, $cb . "&nbsp;" . Ht::label(htmlspecialchars($this->name)));
         echo "</div>\n\n";
         Ht::stash_script("jQuery('#opt{$this->id}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
@@ -657,10 +658,12 @@ class SelectorPaperOption extends PaperOption {
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">';
         if ($this->type === "selector")
-            echo Ht::select("opt$this->id", $this->selector, $reqv);
+            echo Ht::select("opt$this->id", $this->selector, $reqv,
+                ["data-default-value" => $ov->value]);
         else
             foreach ($this->selector as $val => $text) {
-                echo Ht::radio("opt$this->id", $val, $val == $reqv),
+                echo Ht::radio("opt$this->id", $val, $val == $reqv,
+                    ["data-default-checked" => $val == $ov->value]),
                     "&nbsp;", Ht::label(htmlspecialchars($text)), "<br />\n";
             }
         echo "</div></div>\n\n";
@@ -842,7 +845,7 @@ class NumericPaperOption extends PaperOption {
         $reqv = (string) ($reqv === null ? $ov->value : $reqv);
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
-            Ht::entry("opt$this->id", $reqv, ["size" => 8, "class" => trim($pt->error_class("opt$this->id"))]),
+            Ht::entry("opt$this->id", $reqv, ["size" => 8, "class" => trim($pt->error_class("opt$this->id")), "data-default-value" => $ov->value]),
             "</div></div>\n\n";
     }
 
@@ -911,7 +914,7 @@ class TextPaperOption extends PaperOption {
         $fi = $pt->prow ? $pt->prow->edit_format() : $pt->conf->format_info(null);
         echo '<div class="papev">',
             ($fi ? $fi->description_preview_html() : ""),
-            Ht::textarea("opt$this->id", $reqv, ["class" => "papertext" . $pt->error_class("opt$this->id"), "rows" => max($this->display_space, 1), "cols" => 60, "spellcheck" => "true"]),
+            Ht::textarea("opt$this->id", $reqv, ["class" => "papertext" . $pt->error_class("opt$this->id"), "rows" => max($this->display_space, 1), "cols" => 60, "spellcheck" => "true", "data-default-value" => $ov->data()]),
             "</div></div>\n\n";
     }
 

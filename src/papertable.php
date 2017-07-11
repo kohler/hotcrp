@@ -1029,13 +1029,14 @@ class PaperTable {
             if (!$au->contactId && (!$au->email || !validate_email($au->email)))
                 continue;
             $control = "contact_" . html_id_encode($au->email);
-            $checked = $this->useRequest ? !!$this->qreq[$control] : $au->contactId;
+            $checked = !!($this->useRequest ? $this->qreq[$control] : $au->contactId);
             echo '<tr><td class="lcaption">', $title, '</td><td class="nb">';
             if ($au->contactId)
                 echo Ht::checkbox(null, null, true, array("disabled" => true)),
                     Ht::hidden($control, Text::name_text($au));
             else
-                echo Ht::checkbox($control, Text::name_text($au), $checked);
+                echo Ht::checkbox($control, Text::name_text($au), $checked,
+                    ["data-default-checked" => !!$au->contactId]);
             echo ' </td><td>', Ht::label(Text::user_html_nolink($au)),
                 '</td></tr>';
             $title = "";
@@ -1045,7 +1046,7 @@ class PaperTable {
             $control = "contact_" . html_id_encode($au->email);
             $checked = $this->useRequest ? $this->qreq[$control] : true;
             echo '<tr><td class="lcaption">', $title, '</td>',
-                '<td class="nb">', Ht::checkbox($control, Text::name_text($au), $checked),
+                '<td class="nb">', Ht::checkbox($control, Text::name_text($au), $checked, ["data-default-checked" => true]),
                 ' </td><td>', Ht::label(Text::user_html($au)), '</td>',
                 '</tr>';
             $title = "";
@@ -1069,10 +1070,12 @@ class PaperTable {
     }
 
     private function echo_editable_anonymity() {
-        $blind = ($this->useRequest ? !!$this->qreq->blind : (!$this->prow || $this->prow->blind));
         assert(!!$this->editable);
-        echo $this->editable_papt("blind", Ht::checkbox("blind", 1, $blind)
-                                  . "&nbsp;" . Ht::label($this->field_name("Anonymous submission"))),
+        $pblind = !$this->prow || $this->prow->blind;
+        $blind = $this->useRequest ? !!$this->qreq->blind : $pblind;
+        echo $this->editable_papt("blind",
+            Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind])
+                . "&nbsp;" . Ht::label($this->field_name("Anonymous submission"))),
             $this->field_hint("Anonymous submission", "Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"),
             $this->messages_for("blind"),
             "</div>\n\n";
@@ -1169,9 +1172,10 @@ class PaperTable {
             '<div class="ctable">';
         $ptopics = $this->prow ? $this->prow->topics() : [];
         foreach ($this->conf->topic_map() as $tid => $tname) {
-            $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : isset($ptopics[$tid]);
+            $pchecked = isset($ptopics[$tid]);
+            $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
             echo '<div class="ctelt"><div class="ctelti"><table><tr><td class="nw">',
-                Ht::checkbox("top$tid", 1, $checked),
+                Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked]),
                 '&nbsp;</td><td>', Ht::label($tname), "</td></tr></table></div></div>\n";
         }
         echo "</div></div></div>\n\n";
@@ -1260,11 +1264,14 @@ class PaperTable {
                 echo '<div class="pctb_editconf_sconf">';
                 if ($disabled)
                     echo '<strong>', ($pct >= CONFLICT_AUTHOR ? "Author" : "Conflict"), '</strong>';
-                else
+                else {
+                    $js["data-default-value"] = Conflict::constrain_editable($pct, $this->admin);
                     echo Ht::select("pcc$id", $ctypes, Conflict::constrain_editable($ct, $this->admin), $js);
+                }
                 echo '</div>', $label;
             } else {
                 $js["disabled"] = $disabled;
+                $js["data-default-checked"] = $pct > 0;
                 echo '<table><tr><td class="nb">',
                     Ht::checkbox("pcc$id", $ct > 0 ? $ct : CONFLICT_AUTHORMARK,
                                  $ct > 0, $js),
