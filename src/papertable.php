@@ -2047,6 +2047,8 @@ class PaperTable {
             $form_js["onsubmit"] = "return docheckpaperstillready()";
         if ($prow && $prow->timeSubmitted > 0)
             $form_js["data-submitted"] = $prow->timeSubmitted;
+        if ($this->useRequest)
+            $form_js["class"] = "alert";
         $form = Ht::form(hoturl_post("paper", "p=" . ($prow ? $prow->paperId : "new") . "&amp;m=edit"), $form_js);
 
         $this->echoDivEnter();
