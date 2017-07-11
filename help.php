@@ -1319,7 +1319,9 @@ function chair() {
   href='" . hoturl("autoassign") . "'>automatically</a>.  PC
   review assignments can be “primary” or “secondary”; the difference is
   that primary reviewers are expected to complete their review, but a
-  secondary reviewer can choose to delegate their review to someone else.</p>
+  secondary reviewer can delegate their review to someone else. You can
+  also assign PC “metareviews”. Unlike normal reviewers, a metareviewer can
+  view all other reviews before submitting their own.</p>
 
   <p>The default assignments pages apply to all submitted papers.  You can
   also assign subsets of papers obtained through <a
