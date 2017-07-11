@@ -1823,7 +1823,7 @@ var hotcrp_load = {
 
 
 function input_is_checkboxlike(elt) {
-    return elt instanceof HTMLInputElement && (elt.type === "checkbox" || elt.type === "radio");
+    return elt.type === "checkbox" || elt.type === "radio";
 }
 
 function input_default_value(elt) {
@@ -1842,7 +1842,7 @@ function input_default_value(elt) {
 
 function form_differs(form) {
     var same = true, $f = $(form).find("input, select, textarea");
-    if (!$f.length && $f.is("input, select, textarea"))
+    if (!$f.length && (form.tagName === "INPUT" || form.tagName === "SELECT" || form.tagName === "TEXTAREA"))
         $f = $(form);
     $f.each(function () {
         var $me = $(this);
