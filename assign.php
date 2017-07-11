@@ -150,9 +150,10 @@ function pcAssignments() {
         left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=?)
         where " . join(" and ", $where), $qv);
     while (($row = edb_orow($result))) {
-        $pctype = defval($_REQUEST, "pcs$row->contactId", 0);
-        if ($row->conflictType >= CONFLICT_AUTHOR)
+        if ($row->conflictType >= CONFLICT_AUTHOR
+            || !isset($_REQUEST["pcs$row->contactId"]))
             continue;
+        $pctype = $_REQUEST["pcs$row->contactId"];
 
         // manage conflicts
         if ($row->conflictType && $pctype >= 0)
