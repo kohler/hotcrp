@@ -2031,7 +2031,8 @@ class Contact {
             && $prow->outcome > 0
             && $this->conf->collectFinalPapers()
             && $this->can_view_decision($prow, $override)
-            && ($this->conf->time_submit_final_version() || $this->override_deadlines($rights, $override));
+            && ($this->conf->time_submit_final_version()
+                || $this->override_deadlines($rights, $override));
     }
 
     function perm_submit_final_paper(PaperInfo $prow, $override = null) {
@@ -2051,7 +2052,8 @@ class Contact {
             $whyNot["rejected"] = 1;
         else if (!$this->conf->collectFinalPapers())
             $whyNot["deadline"] = "final_open";
-        else if (!$this->conf->time_submit_final_version() && !$this->override_deadlines($rights, $override))
+        else if (!$this->conf->time_submit_final_version()
+                 && !$this->override_deadlines($rights, $override))
             $whyNot["deadline"] = "final_done";
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
