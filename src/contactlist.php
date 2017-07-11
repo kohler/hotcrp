@@ -158,8 +158,8 @@ class ContactList {
     }
 
     function _sortScores($a, $b) {
-        $x = $b->_sort_info - $a->_sort_info;
-        $x = $x ? : $b->_sort_avg - $a->_sort_avg;
+        if (!($x = ScoreInfo::compare($b->_sort_info, $a->_sort_info, -1)))
+            $x = ScoreInfo::compare($b->_sort_avg, $a->_sort_avg);
         return $x ? ($x < 0 ? -1 : 1) : $this->_sortBase($a, $b);
     }
 
