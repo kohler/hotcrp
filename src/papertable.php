@@ -1172,7 +1172,7 @@ class PaperTable {
             '<div class="papev">',
             Ht::hidden("has_topics", 1),
             '<div class="ctable">';
-        $ptopics = $this->prow ? $this->prow->topics() : [];
+        $ptopics = $this->prow ? $this->prow->topic_map() : [];
         foreach ($this->conf->topic_map() as $tid => $tname) {
             $pchecked = isset($ptopics[$tid]);
             $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;

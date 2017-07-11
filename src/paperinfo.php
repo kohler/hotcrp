@@ -981,6 +981,13 @@ class PaperInfo {
         return $this->_topics_array;
     }
 
+    function topic_map() {
+        $t = [];
+        foreach ($this->topics() as $tid)
+            $t[$tid] = true;
+        return $t;
+    }
+
     function unparse_topics_text() {
         $tarr = $this->topics();
         if (!$tarr)
