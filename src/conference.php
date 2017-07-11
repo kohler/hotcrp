@@ -1113,7 +1113,7 @@ class Conf {
     function sanitize_round_name($rname) {
         if ($rname === null)
             return $this->assignment_round_name(false);
-        else if ($rname === "" || preg_match('/\A(?:\(none\)|none|default|unnamed)\z/i', $rname))
+        else if ($rname === "" || preg_match('/\A(?:\(none\)|none|unnamed)\z/i', $rname))
             return "";
         else if (self::round_name_error($rname))
             return false;
@@ -1133,7 +1133,7 @@ class Conf {
     }
 
     function round_number($name, $add) {
-        if (!$name || !strcasecmp($name, "default") || !strcasecmp($name, "unnamed"))
+        if (!$name || !strcasecmp($name, "unnamed"))
             return 0;
         for ($i = 1; $i != count($this->rounds); ++$i)
             if (!strcasecmp($this->rounds[$i], $name))
