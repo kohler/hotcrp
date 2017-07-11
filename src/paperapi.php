@@ -14,7 +14,7 @@ class PaperApi {
             $dec = $user->conf->fetch_value("select outcome from Paper where paperId=?", $prow->paperId);
             return ["ok" => true, "result" => htmlspecialchars(get($user->conf->decision_map(), +$dec))];
         } else
-            return ["ok" => false, "error" => join("<br />", $state->errors_html())];
+            return ["ok" => false, "error" => join("<br />", $aset->errors_html())];
     }
 
     private static function set_paper_pc_api(Contact $user, $qreq, $prow, $type) {
