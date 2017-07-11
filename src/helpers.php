@@ -1023,7 +1023,8 @@ function review_type_icon($revtype, $unfinished = null, $title = null) {
                                1 => array("E", "External review"),
                                2 => array("P", "PC review"),
                                3 => array("2", "Secondary review"),
-                               4 => array("1", "Primary review"));
+                               4 => array("1", "Primary review"),
+                               5 => array("M", "Metareview"));
     if (!$revtype)
         return '<span class="rt0"></span>';
     $x = $revtypemap[$revtype];

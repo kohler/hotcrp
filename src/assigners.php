@@ -350,13 +350,14 @@ class AssignerContacts {
 class AssignmentCount {
     public $ass = 0;
     public $rev = 0;
+    public $meta = 0;
     public $pri = 0;
     public $sec = 0;
     public $lead = 0;
     public $shepherd = 0;
     function add(AssignmentCount $ct) {
         $xct = new AssignmentCount;
-        foreach (["rev", "pri", "sec", "ass", "lead", "shepherd"] as $k)
+        foreach (["rev", "meta", "pri", "sec", "ass", "lead", "shepherd"] as $k)
             $xct->$k = $this->$k + $ct->$k;
         return $xct;
     }
@@ -390,6 +391,7 @@ class AssignmentCountSet {
         while (($row = edb_row($result))) {
             $ct = $this->ensure($row[0]);
             $ct->rev = strlen($row[1]);
+            $ct->meta = substr_count($row[1], REVIEW_META);
             $ct->pri = substr_count($row[1], REVIEW_PRIMARY);
             $ct->sec = substr_count($row[1], REVIEW_SECONDARY);
         }
@@ -545,6 +547,7 @@ class ReviewAssigner_Data {
     public $creator = true;
     public $error = false;
     static public $type_map = [
+        "meta" => REVIEW_META, "metareview" => REVIEW_META,
         "primary" => REVIEW_PRIMARY, "pri" => REVIEW_PRIMARY,
         "secondary" => REVIEW_SECONDARY, "sec" => REVIEW_SECONDARY,
         "optional" => REVIEW_PC, "opt" => REVIEW_PC, "pc" => REVIEW_PC,
@@ -815,6 +818,7 @@ class Review_Assigner extends Assigner {
             ++$ct->ass;
             $oldtype = $this->item->get(true, "_rtype") ? : 0;
             $ct->rev += ($this->rtype != 0) - ($oldtype != 0);
+            $ct->meta += ($this->rtype == REVIEW_META) - ($oldtype == REVIEW_META);
             $ct->pri += ($this->rtype == REVIEW_PRIMARY) - ($oldtype == REVIEW_PRIMARY);
             $ct->sec += ($this->rtype == REVIEW_SECONDARY) - ($oldtype == REVIEW_SECONDARY);
         }
@@ -2408,7 +2412,9 @@ class AssignmentSet {
     private static function _review_count_report_one($ct, $pc) {
         $t = self::_review_count_link($ct->rev, "review", true, "re", $pc);
         $x = array();
-        if ($ct->pri != $ct->rev)
+        if ($ct->meta != 0)
+            $x[] = self::_review_count_link($ct->meta, "meta", false, "meta", $pc);
+        if ($ct->pri != $ct->rev && (!$ct->meta || $ct->meta != $ct->rev))
             $x[] = self::_review_count_link($ct->pri, "primary", false, "pri", $pc);
         if ($ct->sec != 0 && $ct->sec != $ct->rev && $ct->pri + $ct->sec != $ct->rev)
             $x[] = self::_review_count_link($ct->sec, "secondary", false, "sec", $pc);

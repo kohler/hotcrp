@@ -1483,6 +1483,15 @@ class Conf {
         $this->settings["papermanager"] = $this->fetch_ivalue("select value from Settings where name='papermanager'");
     }
 
+    function update_metareviews_setting($adding) {
+        if ($this->setting("metareviews", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
+            $this->qe_raw("insert into Settings (name, value)
+                select 'metareviews', ifnull((select paperId from PaperReview where reviewType=" . REVIEW_META . " limit 1), 0)
+                on duplicate key update value=values(value)");
+            $this->settings["metareviews"] = $this->fetch_ivalue("select value from Settings where name='metareviews'");
+        }
+    }
+
 
     static private $invariant_row = null;
 
@@ -1516,6 +1525,10 @@ class Conf {
         $any = $this->invariantq("select paperId from Paper where managerContactId>0 limit 1");
         if ($any !== !!get($this->settings, "papermanager"))
             trigger_error("$this->dbname invariant error: papermanager");
+
+        $any = $this->invariantq("select paperId from PaperReview where reviewType=" . REVIEW_META . " limit 1");
+        if ($any !== !!get($this->settings, "metareviews"))
+            trigger_error("$this->dbname invariant error: metareviews");
 
         // no empty text options
         $text_options = array();
@@ -1970,6 +1983,10 @@ class Conf {
 
     function has_any_manager() {
         return $this->_track_admin_sensitivity || !!get($this->settings, "papermanager");
+    }
+
+    function has_any_metareviews() {
+        return !!get($this->settings, "metareviews");
     }
 
     function can_pc_see_all_submissions() {

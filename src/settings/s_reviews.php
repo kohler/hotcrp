@@ -146,6 +146,8 @@ function render(SettingValues $sv) {
     $sv->echo_checkbox('pcrev_any', "PC members can review any submitted paper");
 
     echo "<div class=\"g\">Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
+    if ($sv->conf->has_any_metareviews())
+        echo "<div class=\"hint\">Metareviewers can always see their papers’ reviews and reviewer names.</div>\n";
     $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
                                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
                                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",

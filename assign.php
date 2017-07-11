@@ -145,7 +145,9 @@ function pcAssignments() {
                 $t[] = "{$prow->paperId},clearconflict,$user\n";
             if ($rtype <= 0)
                 $t[] = "{$prow->paperId},clearreview,$user\n";
-            if ($rtype == REVIEW_PRIMARY)
+            if ($rtype == REVIEW_META)
+                $t[] = "{$prow->paperId},metareview,$user,$round\n";
+            else if ($rtype == REVIEW_PRIMARY)
                 $t[] = "{$prow->paperId},primary,$user,$round\n";
             else if ($rtype == REVIEW_SECONDARY)
                 $t[] = "{$prow->paperId},secondary,$user,$round\n";
@@ -490,9 +492,12 @@ if ($Me->can_administer($prow)) {
     echo join(' <span class="barsep">·</span> ', $x), '</p>';
 
     echo '<div id="assignmentselector" style="display:none">',
-        Ht::select("pcs\$", array(0 => "None", REVIEW_PRIMARY => "Primary",
-                                  REVIEW_SECONDARY => "Secondary",
-                                  REVIEW_PC => "Optional", -1 => "Conflict"),
+        Ht::select("pcs\$", [0 => "None",
+                             REVIEW_PRIMARY => "Primary",
+                             REVIEW_SECONDARY => "Secondary",
+                             REVIEW_PC => "Optional",
+                             REVIEW_META => "Metareview",
+                             -1 => "Conflict"],
                    "@", array("id" => "pcs\$_selector", "size" => 5, "onchange" => "assigntable.sel(this,\$)", "onclick" => "assigntable.sel(null,\$)", "onblur" => "assigntable.sel(0,\$)")),
         '</div>';
 
@@ -544,7 +549,7 @@ if ($Me->can_administer($prow)) {
         // then, number of reviews
         echo '<div class="pctbnrev">';
         $numReviews = strlen($p->allReviews);
-        $numPrimary = preg_match_all("|" . REVIEW_PRIMARY . "|", $p->allReviews, $matches);
+        $numPrimary = substr_count($p->allReviews, REVIEW_PRIMARY);
         if (!$numReviews)
             echo "0 reviews";
         else {

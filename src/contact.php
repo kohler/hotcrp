@@ -64,6 +64,7 @@ class Contact {
     private $is_author_;
     private $has_review_;
     private $has_outstanding_review_ = null;
+    private $is_metareviewer_;
     private $is_requester_;
     private $is_lead_;
     private $is_explicit_manager_;
@@ -1525,7 +1526,8 @@ class Contact {
     private function check_rights_version() {
         if ($this->rights_version_ !== self::$rights_version) {
             $this->is_author_ = $this->has_review_ = $this->has_outstanding_review_ =
-                $this->is_requester_ = $this->is_lead_ = $this->is_explicit_manager_ = null;
+                $this->is_requester_ = $this->is_lead_ = $this->is_explicit_manager_ =
+                $this->is_metareviewer_ = null;
             $this->rights_version_ = self::$rights_version;
         }
     }
@@ -1546,6 +1548,16 @@ class Contact {
 
     function is_reviewer() {
         return $this->isPC || $this->has_review();
+    }
+
+    function is_metareviewer() {
+        if (!isset($this->is_metareviewer_)) {
+            if ($this->isPC && $this->conf->setting("metareviews"))
+                $this->is_metareviewer_ = !!$this->conf->fetch_ivalue("select paperId from PaperReview where contactId={$this->contactId} and reviewType=" . REVIEW_META . " limit 1");
+            else
+                $this->is_metareviewer_ = false;
+        }
+        return $this->is_metareviewer_;
     }
 
     function all_roles() {
@@ -2302,7 +2314,9 @@ class Contact {
         assert(!$rrow || $prow->paperId == $rrow->paperId);
         $rights = $this->rights($prow, $forceShow);
         if ($rights->can_administer
-            || ($rrow && $this->is_my_review($rrow)
+            || $rights->reviewType == REVIEW_META
+            || ($rrow
+                && $this->is_my_review($rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY))
             return true;
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
@@ -2383,6 +2397,7 @@ class Contact {
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
         return $rights->can_administer
+            || $rights->reviewType == REVIEW_META
             || ($rrow
                 && ($this->is_my_review($rrow)
                     || ($rights->allow_pc
@@ -2403,9 +2418,13 @@ class Contact {
         $tags = "";
         if (($t = $this->conf->most_permissive_track_tag_for($this, Track::VIEWREVID)))
             $tags = " $t#0 ";
+        if ($this->isPC)
+            $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;
+        else
+            $rtype = $this->is_reviewer() ? REVIEW_EXTERNAL : 0;
         $prow = new PaperInfo([
             "conflictType" => 0, "managerContactId" => 0,
-            "myReviewType" => ($this->is_reviewer() ? 1 : 0),
+            "myReviewType" => $rtype,
             "myReviewSubmitted" => 1,
             "myReviewNeedsSubmit" => 0,
             "paperId" => 1, "timeSubmitted" => 1,
@@ -2757,8 +2776,9 @@ class Contact {
     function can_view_comment(PaperInfo $prow, $crow, $forceShow) {
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
         $rights = $this->rights($prow, $forceShow);
-        return ($crow && $crow->contactId == $this->contactId) // wrote this comment
-            || ($crow && $crow->contactId == $rights->review_token_cid)
+        return ($crow
+                && ($crow->contactId == $this->contactId // wrote this comment
+                    || $crow->contactId == $rights->review_token_cid))
             || $rights->can_administer
             || ($rights->act_author_view
                 && $ctype >= COMMENTTYPE_AUTHOR
@@ -2769,7 +2789,9 @@ class Contact {
             || (!$rights->view_conflict_type
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && $this->can_view_review($prow, null, $forceShow)
-                && (($rights->allow_pc && !$this->conf->setting("pc_seeblindrev"))
+                && (($rights->allow_pc
+                     && !$this->conf->setting("pc_seeblindrev"))
+                    || $rights->reviewType == REVIEW_META
                     || $prow->review_not_incomplete($this))
                 && ($rights->allow_pc
                     ? $ctype >= COMMENTTYPE_PCONLY
@@ -2783,14 +2805,6 @@ class Contact {
         $rights = $this->rights($prow, null);
         return $rights->can_administer
             || $rights->allow_pc;
-        return $rights->can_administer
-            || (!$rights->view_conflict_type
-                && $this->can_view_review($prow, null, null)
-                && (($rights->allow_pc && !$this->conf->setting("pc_seeblindrev"))
-                    || $prow->review_not_incomplete($this))
-                && ($rights->allow_pc
-                    ? $ctype >= COMMENTTYPE_PCONLY
-                    : $ctype >= COMMENTTYPE_REVIEWER));
     }
 
     function canViewCommentReviewWheres() {
@@ -3473,6 +3487,8 @@ class Contact {
                 && !$rrow->reviewSubmitted)
                 $this->update_review_delegation($pid, $reviewer_cid, 0);
         }
+        if ($type == REVIEW_META || $oldtype == REVIEW_META)
+            $this->conf->update_metareviews_setting($type == REVIEW_META ? 1 : -1);
 
         Contact::update_rights();
         return $reviewId;

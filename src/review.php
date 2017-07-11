@@ -357,7 +357,9 @@ class ReviewForm {
     private $_mailer_info;
     private $_mailer_preps;
 
-    static public $revtype_names = ["None", "External", "PC", "Secondary", "Primary"];
+    static public $revtype_names = [
+        "None", "External", "PC", "Secondary", "Primary", "Meta"
+    ];
 
     // XXX all negative ratings should have negative numbers
     // values are HTML

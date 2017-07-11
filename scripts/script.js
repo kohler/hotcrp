@@ -2297,7 +2297,7 @@ return {
             $$("ass" + which).className = "pctbname pctbname" + elt.value;
             folder.firstChild.className = "rto rt" + elt.value;
             folder.firstChild.innerHTML = '<span class="rti">' +
-                (["&minus;", "A", "C", "", "E", "P", "2", "1"])[+elt.value + 3] + "</span>";
+                (["&minus;", "A", "C", "", "E", "P", "2", "1", "M"])[+elt.value + 3] + "</span>";
             hiliter(folder.firstChild);
         }
         if (folder && elt !== 0)
@@ -2657,7 +2657,8 @@ var formj, ratingsj, form_order;
 var rtype_info = {
     "-3": ["−" /* &minus; */, "Refused"], "-2": ["A", "Author"],
     "-1": ["C", "Conflict"], 1: ["E", "External review"],
-    2: ["P", "PC review"], 3: ["2", "Secondary review"], 4: ["1", "Primary review"]
+    2: ["P", "PC review"], 3: ["2", "Secondary review"],
+    4: ["1", "Primary review"], 5: ["M", "Metareview"]
 };
 
 function score_tooltip_enter(evt) {

@@ -111,9 +111,10 @@ Assignment methods:
 </ul>
 <hr class='hr' />
 Types of PC review:
-<dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory, may not be delegated</dd>
-  <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>Mandatory, may be delegated to external reviewers</dd>
-  <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd></dl>
+<dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory review</dd>
+  <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>May be delegated to external reviewers</dd>
+  <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd>
+  <dt>" . review_type_icon(REVIEW_META) . " Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
 </div></div>";
 
 
@@ -204,6 +205,7 @@ echo '<div id="foldoptions" class="lg foldc fold2o fold3c">',
     Ht::select("default_action", array("primary" => "primary reviews",
                                        "secondary" => "secondary reviews",
                                        "pcreview" => "optional PC reviews",
+                                       "metareview" => "metareviews",
                                        "review" => "external reviews",
                                        "conflict" => "PC conflicts",
                                        "lead" => "discussion leads",
@@ -212,7 +214,7 @@ echo '<div id="foldoptions" class="lg foldc fold2o fold3c">',
                                        "settag" => "replace tags",
                                        "preference" => "reviewer preferences"),
                defval($_REQUEST, "default_action", "primary"),
-               array("id" => "tsel", "onchange" => "fold(\"options\",this.value!=\"review\");fold(\"options\",!/^(?:primary|secondary|(?:pc)?review)$/.test(this.value),2)"));
+               array("id" => "tsel", "onchange" => "fold(\"options\",this.value!=\"review\");fold(\"options\",!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),2)"));
 $rev_rounds = $Conf->round_selector_options();
 if (count($rev_rounds) > 1)
     echo '<span class="fx2">&nbsp; in round &nbsp;',

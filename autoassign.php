@@ -187,13 +187,14 @@ class AutoassignerInterface {
         $r = false;
         if ($this->atype_review) {
             $r = $qreq[$this->atype . "type"];
-            if ($r != REVIEW_PRIMARY && $r != REVIEW_SECONDARY
-                && $r != REVIEW_PC)
+            if ($r != REVIEW_META && $r != REVIEW_PRIMARY
+                && $r != REVIEW_SECONDARY && $r != REVIEW_PC)
                 $this->errors["ass"] = "Malformed request!";
         } else if ($this->atype === "clear") {
             $r = $qreq->cleartype;
-            if ($r != REVIEW_PRIMARY && $r != REVIEW_SECONDARY
-                && $r != REVIEW_PC && $r !== "conflict"
+            if ($r != REVIEW_META && $r != REVIEW_PRIMARY
+                && $r != REVIEW_SECONDARY && $r != REVIEW_PC
+                && $r !== "conflict"
                 && $r !== "lead" && $r !== "shepherd")
                 $this->errors["clear"] = "Malformed request!";
         }
@@ -457,9 +458,10 @@ Assignment methods:
 </ul>
 <hr class='hr' />
 Types of PC review:
-<dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory, may not be delegated</dd>
-  <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>Mandatory, may be delegated to external reviewers</dd>
-  <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd></dl>
+<dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory review</dd>
+  <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>May be delegated to external reviewers</dd>
+  <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd>
+  <dt>" . review_type_icon(REVIEW_META) . " Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
 </div></div>\n";
 echo Ht::unstash_script("hiliter_children(\"#autoassignform\")");
 
@@ -502,7 +504,7 @@ echo_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["o
 echo "&nbsp; ",
     Ht::entry("revct", get($Qreq, "revct", 1),
               array("size" => 3, "onfocus" => 'autosub(false,this)')), "&nbsp; ";
-doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
+doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s)</td></tr>\n";
 
 echo_radio_row("a", "revadd", "Assign", ["open" => true]);
@@ -510,7 +512,7 @@ echo "&nbsp; ",
     Ht::entry("revaddct", get($Qreq, "revaddct", 1),
               array("size" => 3, "onfocus" => 'autosub(false,this)')),
     "&nbsp; <i>additional</i>&nbsp; ";
-doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
+doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s) per selected paper</td></tr>\n";
 
 echo_radio_row("a", "revpc", "Assign each PC member", ["open" => true]);
@@ -518,7 +520,7 @@ echo "&nbsp; ",
     Ht::entry("revpcct", get($Qreq, "revpcct", 1),
               array("size" => 3, "onfocus" => 'autosub(false,this)')),
     "&nbsp; additional&nbsp; ";
-doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
+doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s) from this paper selection</td></tr>\n";
 
 // Review round
@@ -554,7 +556,7 @@ echo '<tr><td colspan="2" class="mg"></td></tr>';
 
 // clear assignments
 echo_radio_row("a", "clear", "Clear all &nbsp;", ["open" => true]);
-doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"));
+doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"));
 echo " &nbsp;assignments for selected papers and PC members</td></tr>\n";
 
 // gap

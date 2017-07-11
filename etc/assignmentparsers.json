@@ -8,6 +8,11 @@
         "review_type": null
     },
     {
+        "name": "metareview", "parser_class": "Review_AssignmentParser",
+        "synonym": ["meta"],
+        "review_type": "meta"
+    },
+    {
         "name": "primaryreview", "parser_class": "Review_AssignmentParser",
         "synonym": ["pri", "primary"],
         "review_type": "primary"
@@ -19,6 +24,7 @@
     },
     {
         "name": "pcreview", "parser_class": "Review_AssignmentParser",
+        "synonym": ["optionalreview", "optionalpcreview"],
         "review_type": "optional"
     },
     {

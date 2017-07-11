@@ -850,13 +850,17 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         $ci = $row->contact_info($this->contact);
         if ($ci->conflictType >= CONFLICT_AUTHOR)
             return '<span class="author">Author</span>';
-        $rt = ($ci->conflictType > 0 ? -1 : min(max($ci->reviewType, 0), REVIEW_PRIMARY));
+        if ($ci->conflictType > 0)
+            $rt = -1;
+        else
+            $rt = min(max($ci->reviewType, 0), REVIEW_META);
         if ($this->contact->can_accept_review_assignment_ignore_conflict($row)
             || $rt > 0)
             $options = array(0 => "None",
                              REVIEW_PRIMARY => "Primary",
                              REVIEW_SECONDARY => "Secondary",
                              REVIEW_PC => "Optional",
+                             REVIEW_META => "Metareview",
                              -1 => "Conflict");
         else
             $options = array(0 => "None", -1 => "Conflict");
