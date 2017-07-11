@@ -128,68 +128,56 @@ if (isset($_REQUEST["retract"]) && check_post()) {
 // change PC assignments
 function pcAssignments() {
     global $Conf, $Me, $prow;
-    $pcm = $Conf->pc_members();
 
-    $rname = (string) $Conf->sanitize_round_name(req("rev_round"));
-    $round_number = null;
+    $reviewer = req("reviewer");
+    if (($rname = $Conf->sanitize_round_name(req("rev_round"))) === "")
+        $rname = "unnamed";
+    $round = CsvGenerator::quote(":" . (string) $rname);
 
-    $qv = [$prow->paperId, $prow->paperId];
-    $where = array("ContactInfo.roles!=0", "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0");
-    if (req("reviewer") && isset($pcm[$_REQUEST["reviewer"]])) {
-        $where[] = "ContactInfo.contactId=?";
-        $qv[] = $_REQUEST["reviewer"];
-    }
-
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, ContactInfo read, ActionLog write, Settings write");
-
-    // don't record separate PC conflicts on author conflicts
-    $result = $Conf->qe_apply("select ContactInfo.contactId,
-        PaperConflict.conflictType, reviewType, reviewModified, reviewId
-        from ContactInfo
-        left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=?)
-        left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=?)
-        where " . join(" and ", $where), $qv);
-    while (($row = edb_orow($result))) {
-        if ($row->conflictType >= CONFLICT_AUTHOR
-            || !isset($_REQUEST["pcs$row->contactId"]))
-            continue;
-        $pctype = $_REQUEST["pcs$row->contactId"];
-
-        // manage conflicts
-        if ($row->conflictType && $pctype >= 0)
-            $Conf->qe("delete from PaperConflict where paperId=? and contactId=?", $prow->paperId, $row->contactId);
-        else if (!$row->conflictType && $pctype < 0)
-            $Conf->qe("insert into PaperConflict set paperId=?, contactId=?, conflictType=?", $prow->paperId, $row->contactId, CONFLICT_CHAIRMARK);
-
-        // manage assignments
-        $pctype = max($pctype, 0);
-        if ($pctype != $row->reviewType
-            && ($pctype == 0 || $pctype == REVIEW_PRIMARY
-                || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC)
-            && ($pctype == 0
-                || $pcm[$row->contactId]->can_accept_review_assignment($prow))) {
-            if ($pctype != 0 && $round_number === null)
-                $round_number = $Conf->round_number($rname, true);
-            $Me->assign_review($prow->paperId, $row->contactId, $pctype,
-                               array("round_number" => $round_number));
+    $t = ["paper,action,email,round\n"];
+    foreach ($Conf->pc_members() as $cid => $p)
+        if ((!$reviewer || strcasecmp($p->email, $reviewer) == 0
+             || (string) $p->contactId === $reviewer)
+            && isset($_REQUEST["pcs$cid"])
+            && ($rtype = cvtint($_REQUEST["pcs$cid"], null)) !== null) {
+            $user = CsvGenerator::quote($p->email);
+            if ($rtype >= 0)
+                $t[] = "{$prow->paperId},clearconflict,$user\n";
+            if ($rtype <= 0)
+                $t[] = "{$prow->paperId},clearreview,$user\n";
+            if ($rtype == REVIEW_PRIMARY)
+                $t[] = "{$prow->paperId},primary,$user,$round\n";
+            else if ($rtype == REVIEW_SECONDARY)
+                $t[] = "{$prow->paperId},secondary,$user,$round\n";
+            else if ($rtype == REVIEW_PC || $rtype == REVIEW_EXTERNAL)
+                $t[] = "{$prow->paperId},pcreview,$user,$round\n";
+            else if ($rtype < 0)
+                $t[] = "{$prow->paperId},conflict,$user\n";
         }
+
+    $aset = new AssignmentSet($Me, true);
+    $aset->enable_papers($prow);
+    $aset->parse(join("", $t));
+    if ($aset->execute()) {
+        if (req("ajax"))
+            json_exit(["ok" => true]);
+        else {
+            $Conf->confirmMsg("Assignments saved.");
+            redirectSelf();
+            // NB normally redirectSelf() does not return
+            loadRows();
+        }
+    } else {
+        if (req("ajax"))
+            json_exit(["ok" => false, "error" => join("<br />", $aset->errors_html())]);
+        else
+            $Conf->errorMsg(join("<br />", $aset->errors_html()));
     }
 }
 
-if (isset($_REQUEST["update"]) && $Me->allow_administer($prow) && check_post()) {
+if (isset($_REQUEST["update"]) && $Me->allow_administer($prow) && check_post())
     pcAssignments();
-    $Conf->qe("unlock tables");
-    $Conf->update_rev_tokens_setting(false);
-    if (!Dbl::has_error())
-        $Conf->confirmMsg("Assignments saved.");
-    if (defval($_REQUEST, "ajax"))
-        $Conf->ajaxExit(array("ok" => !Dbl::has_error()));
-    else {
-        redirectSelf();
-        // NB normally redirectSelf() does not return
-        loadRows();
-    }
-} else if (isset($_REQUEST["update"]) && defval($_REQUEST, "ajax")) {
+else if (isset($_REQUEST["update"]) && defval($_REQUEST, "ajax")) {
     Conf::msg_error("Only administrators can assign papers.");
     $Conf->ajaxExit(array("ok" => 0));
 }
@@ -538,11 +526,14 @@ if ($Me->can_administer($prow)) {
                 $Me->name_html_for($pc), '</div>';
         } else {
             if ($p->conflictType > 0)
-                $revtype = -1;
-            else if ($p->reviewType)
-                $revtype = $p->reviewType;
-            else
-                $revtype = ($p->refused ? -3 : 0);
+                $revtype = $value = -1;
+            else {
+                $value = $p->reviewType;
+                if ($p->reviewType)
+                    $revtype = $p->reviewType;
+                else
+                    $revtype = ($p->refused ? -3 : 0);
+            }
             $title = ($p->refused ? "Review previously declined" : "Assignment");
             // NB manualassign.php also uses the "pcs$contactId" convention
             echo '<div class="pctbass">'
@@ -550,7 +541,7 @@ if ($Me->can_administer($prow)) {
                 . '<a id="folderass' . $p->contactId . '" href="#" onclick="return assigntable.open(' . $p->contactId . ')">'
                 . review_type_icon($revtype, false, $title)
                 . Ht::img("_.gif", ">", array("class" => "next")) . '</a>&nbsp;'
-                . Ht::hidden("pcs$p->contactId", $p->conflictType == 0 ? $p->reviewType : -1, array("id" => "pcs$p->contactId"))
+                . Ht::hidden("pcs$p->contactId", $value, ["id" => "pcs$p->contactId", "data-default-value" => $value])
                 . '</div></div>';
 
             echo '<div id="ass' . $p->contactId . '" class="pctbname pctbname' . $revtype . '">'
