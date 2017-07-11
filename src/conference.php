@@ -1446,23 +1446,24 @@ class Conf {
 
 
     // update the 'papersub' setting: are there any submitted papers?
-    function update_papersub_setting($forsubmit) {
-        $papersub = defval($this->settings, "papersub");
-        if ((int) $papersub <= 0 || !$forsubmit) {
-            $this->q_raw("insert into Settings (name, value) select 'papersub', ifnull((select paperId from Paper where "
+    function update_papersub_setting($adding) {
+        if ($this->setting("papersub", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
+            $this->q_raw("insert into Settings (name, value)
+                select 'papersub', ifnull((select paperId from Paper where "
                          . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0")
-                         . " limit 1), 0) on duplicate key update value=values(value)");
+                         . " limit 1), 0)
+                on duplicate key update value=values(value)");
             $this->settings["papersub"] = $this->fetch_ivalue("select value from Settings where name='papersub'");
         }
     }
 
-    function update_paperacc_setting($foraccept) {
-        global $Now;
-        if (!isset($this->settings["paperacc"]) && $foraccept)
-            $this->q_raw("insert into Settings (name, value) values ('paperacc', $Now) on duplicate key update value=value");
-        else if (get($this->settings, "paperacc", 0) <= 0 || !$foraccept)
-            $this->q_raw("update Settings set value=coalesce((select timeSubmitted from Paper where timeSubmitted>0 and outcome>0 limit 1),0) where name='paperacc'");
-        $this->settings["paperacc"] = $this->fetch_ivalue("select value from Settings where name='paperacc'");
+    function update_paperacc_setting($adding) {
+        if ($this->setting("paperacc", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
+            $this->q_raw("insert into Settings (name, value)
+                select 'paperacc', ifnull((select paperId from Paper where outcome>0 limit 1), 0)
+                on duplicate key update value=values(value)");
+            $this->settings["paperacc"] = $this->fetch_ivalue("select value from Settings where name='paperacc'");
+        }
     }
 
     function update_rev_tokens_setting($always) {

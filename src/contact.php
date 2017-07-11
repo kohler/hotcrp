@@ -3402,22 +3402,24 @@ class Contact {
         $rrow = edb_orow($result);
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
+        $type = max((int) $type, 0);
+        $oldtype = $rrow ? (int) $rrow->reviewType : 0;
 
         // can't delete a review that's in progress
-        if ($type <= 0 && $rrow && $rrow->reviewType && $rrow->reviewModified > 1) {
-            if ($rrow->reviewType >= REVIEW_SECONDARY)
+        if ($type <= 0 && $oldtype && $rrow->reviewModified > 1) {
+            if ($oldtype >= REVIEW_SECONDARY)
                 $type = REVIEW_PC;
             else
                 return $reviewId;
         }
         // PC members always get PC reviews
-        if ($type == REVIEW_EXTERNAL && get($this->conf->pc_members(), $reviewer_cid))
+        if ($type == REVIEW_EXTERNAL && $this->conf->pc_member_by_id($reviewer_cid))
             $type = REVIEW_PC;
 
         // change database
-        if ($type > 0 && ($round = get($extra, "round_number")) === null)
+        if ($type && ($round = get($extra, "round_number")) === null)
             $round = $this->conf->assignment_round($type == REVIEW_EXTERNAL);
-        if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
+        if ($type && !$oldtype) {
             $qa = "";
             if (get($extra, "mark_notify"))
                 $qa .= ", timeRequestNotified=$Now";
@@ -3427,12 +3429,12 @@ class Contact {
             if (($new_requester = get($extra, "requester_contact")))
                 $new_requester_cid = $new_requester->contactId;
             $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, reviewRound=$round, timeRequested=$Now$qa, requestedBy=$new_requester_cid";
-        } else if ($type > 0 && ($rrow->reviewType != $type || $rrow->reviewRound != $round)) {
+        } else if ($type && ($oldtype != $type || $rrow->reviewRound != $round)) {
             $q = "update PaperReview set reviewType=$type, reviewRound=$round";
             if (!$rrow->reviewSubmitted)
                 $q .= ", reviewNeedsSubmit=1";
             $q .= " where reviewId=$reviewId";
-        } else if ($type <= 0 && $rrow && $rrow->reviewType)
+        } else if (!$type && $oldtype)
             $q = "delete from PaperReview where reviewId=$reviewId";
         else
             return $reviewId;
@@ -3440,39 +3442,38 @@ class Contact {
         if (!($result = $this->conf->qe_raw($q)))
             return false;
 
-        if ($q[0] == "d") {
-            $msg = "Removed " . ReviewForm::$revtype_names[$rrow->reviewType] . " review";
-            $reviewId = 0;
-        } else if ($q[0] == "u")
-            $msg = "Changed " . ReviewForm::$revtype_names[$rrow->reviewType] . " review to " . ReviewForm::$revtype_names[$type];
-        else {
+        if ($type && !$oldtype) {
             $msg = "Added " . ReviewForm::$revtype_names[$type] . " review";
             $reviewId = $result->insert_id;
-        }
+        } else if (!$type) {
+            $msg = "Removed " . ReviewForm::$revtype_names[$oldtype] . " review";
+            $reviewId = 0;
+        } else
+            $msg = "Changed " . ReviewForm::$revtype_names[$oldtype] . " review to " . ReviewForm::$revtype_names[$type];
         $this->conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
-        if ($q[0] == "i") {
+        if ($type && !$oldtype) {
             $this->conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
             if (($req_email = get($extra, "requested_email")))
                 $this->conf->qe("delete from ReviewRequest where paperId=$pid and email=?", $req_email);
             if ($type < REVIEW_SECONDARY)
                 $this->update_review_delegation($pid, $new_requester_cid, 1);
-        } else if ($q[0] == "d") {
-            if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0)
+            if ($type >= REVIEW_PC
+                && $this->conf->setting("pcrev_assigntime", 0) < $Now)
+                $this->conf->save_setting("pcrev_assigntime", $Now);
+        } else if (!$type) {
+            if ($oldtype < REVIEW_SECONDARY && $rrow->requestedBy > 0)
                 $this->update_review_delegation($pid, $rrow->requestedBy, -1);
+            // Mark rev_tokens setting for future update by update_rev_tokens_setting
+            if (get($rrow, "reviewToken"))
+                $this->conf->settings["rev_tokens"] = -1;
         } else {
-            if ($type == REVIEW_SECONDARY && $rrow->reviewType != REVIEW_SECONDARY
+            if ($type == REVIEW_SECONDARY && $oldtype != REVIEW_SECONDARY
                 && !$rrow->reviewSubmitted)
                 $this->update_review_delegation($pid, $reviewer_cid, 0);
         }
 
-        // Mark rev_tokens setting for future update by update_rev_tokens_setting
-        if ($rrow && get($rrow, "reviewToken") && $type <= 0)
-            $this->conf->settings["rev_tokens"] = -1;
-        // Set pcrev_assigntime
-        if ($q[0] == "i" && $type >= REVIEW_PC && $this->conf->setting("pcrev_assigntime", 0) < $Now)
-            $this->conf->save_setting("pcrev_assigntime", $Now);
         Contact::update_rights();
         return $reviewId;
     }

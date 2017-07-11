@@ -93,7 +93,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
             $reason = defval($_REQUEST, "emailNote", "");
         Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-100,0), withdrawReason=? where paperId=$prow->paperId", $reason != "" ? $reason : null);
         $numreviews = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$prow->paperId and reviewNeedsSubmit!=0");
-        $Conf->update_papersub_setting(false);
+        $Conf->update_papersub_setting(-1);
         loadRows();
 
         // email contact authors themselves
@@ -122,7 +122,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
         Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,0), withdrawReason=null where paperId=$prow->paperId");
-        $Conf->update_papersub_setting(true);
+        $Conf->update_papersub_setting(0);
         loadRows();
         $Me->log_activity("Revived", $prow->paperId);
         redirectSelf();
@@ -179,7 +179,7 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     }
     $wasSubmitted = $opj && get($opj, "submitted");
     if (get($pj, "submitted") || $Conf->can_pc_see_all_submissions())
-        $Conf->update_papersub_setting(true);
+        $Conf->update_papersub_setting(1);
     if ($wasSubmitted != get($pj, "submitted"))
         $diffs["submission"] = 1;
 
@@ -356,9 +356,9 @@ if ($Qreq->delete && check_post()) {
         }
         if (!$error) {
             $Conf->confirmMsg("Paper #$prow->paperId deleted.");
-            $Conf->update_papersub_setting(false);
+            $Conf->update_papersub_setting(-1);
             if ($prow->outcome > 0)
-                $Conf->update_paperacc_setting(false);
+                $Conf->update_paperacc_setting(-1);
             $Me->log_activity("Deleted", $prow->paperId);
         }
 

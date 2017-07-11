@@ -1677,17 +1677,17 @@ class Decision_Assigner extends Assigner {
             // accepted papers are always submitted
             $prow = $aset->prow($this->pid);
             $aset->cleanup_callback("paperacc", function ($aset) {
-                $aset->conf->update_paperacc_setting(true);
+                $aset->conf->update_paperacc_setting(1);
             });
             if ($prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0) {
                 $aset->conf->qe("update Paper set timeSubmitted=$Now where paperId=?", $this->pid);
                 $aset->cleanup_callback("papersub", function ($aset) {
-                    $aset->conf->update_papersub_setting(true);
+                    $aset->conf->update_papersub_setting(1);
                 });
             }
         } else if ($this->item->get(true, "_decision") > 0)
             $aset->cleanup_callback("paperacc-", function ($aset) {
-                $aset->conf->update_paperacc_setting(false);
+                $aset->conf->update_paperacc_setting(-1);
             });
     }
 }

@@ -1060,7 +1060,7 @@ class PaperStatus extends MessageSet {
             $is_submitted = !get($pj, "withdrawn") && get($pj, "submitted");
             $was_submitted = $old_pj && !get($old_pj, "withdrawn") && get($old_pj, "submitted");
             if ($is_submitted != $was_submitted)
-                $this->conf->update_papersub_setting($is_submitted);
+                $this->conf->update_papersub_setting($is_submitted ? 1 : -1);
         }
 
         // update PaperTopics
