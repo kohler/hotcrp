@@ -415,19 +415,6 @@ if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
 }
 
 
-// add primary or secondary reviewer
-if (isset($_REQUEST["addpc"]) && $Me->allow_administer($prow) && check_post()) {
-    if (($pcid = cvtint(req("pcid"))) <= 0)
-        Conf::msg_error("Enter a PC member.");
-    else if (($pctype = cvtint(req("pctype"))) == REVIEW_PRIMARY
-             || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
-        $Me->assign_review($prow->paperId, $pcid, $pctype);
-        $Conf->update_rev_tokens_setting(false);
-    }
-    loadRows();
-}
-
-
 // paper table
 $paperTable = new PaperTable($prow, make_qreq(), "assign");
 $paperTable->initialize(false, false);
