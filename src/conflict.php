@@ -53,7 +53,7 @@ class Conflict {
             return 5;
         else if ($text === "other")
             return 6;
-        else if ($text === "confirmed")
+        else if ($text === "confirmed" || $text === "chair-confirmed")
             return CONFLICT_CHAIRMARK;
         else
             return false;
