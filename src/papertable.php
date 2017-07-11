@@ -1207,24 +1207,6 @@ class PaperTable {
         $selectors = $this->conf->setting("sub_pcconfsel");
         $show_colors = $Me->can_view_reviewer_tags($this->prow);
 
-        $conflict = array();
-        if ($this->useRequest) {
-            foreach ($pcm as $id => $row)
-                if (isset($this->qreq["pcc$id"])
-                    && ($ct = cvtint($this->qreq["pcc$id"])) > 0)
-                    $conflict[$id] = Conflict::force_author_mark($ct, $this->admin);
-        }
-        if ($this->prow) {
-            $result = $this->conf->qe_raw("select contactId, conflictType from PaperConflict where paperId=" . $this->prow->paperId);
-            while (($row = edb_row($result))) {
-                $ct = new Conflict($row[1]);
-                if (!$this->useRequest || (!$ct->is_author_mark() && !$this->admin))
-                    $conflict[$row[0]] = $ct;
-            }
-        }
-
-        $pcconfs = array();
-        $nonct = Conflict::make_nonconflict();
         if ($selectors) {
             $ctypes = Conflict::$type_descriptions;
             $extra = array("class" => "pctbconfselector");
@@ -1242,13 +1224,16 @@ class PaperTable {
             Ht::hidden("has_pcconf", 1),
             '<div class="pc_ctable">';
         foreach ($pcm as $id => $p) {
-            $ct = defval($conflict, $id, $nonct);
-            $prow_ctype = $this->prow ? $this->prow->conflict_type($p) : 0;
+            $pct = $this->prow ? $this->prow->conflict_type($p) : 0;
+            if ($this->useRequest)
+                $ct = Conflict::constrain_editable($this->qreq["pcc$id"], $this->admin);
+            else
+                $ct = $pct;
 
             $label = Ht::label($Me->name_html_for($p), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
-            if ($this->prow && !$prow_ctype
+            if ($this->prow && !$pct
                 && ($details = $this->prow->potential_conflict($p, true))) {
                 usort($details, function ($a, $b) { return strcmp($a[0], $b[0]); });
                 $authors = array_unique(array_map(function ($x) { return $x[0]; }, $details));
@@ -1264,29 +1249,25 @@ class PaperTable {
             echo '<div class="ctelt"><div class="ctelti clearfix';
             if ($show_colors && ($classes = $p->viewable_color_classes($Me)))
                 echo ' ', $classes;
-            if ($prow_ctype)
+            if ($pct)
                 echo ' boldtag';
             echo '">';
 
+            $js = ["id" => "pcc$id"];
+            $disabled = $pct >= CONFLICT_AUTHOR
+                || ($pct > 0 && !$this->admin && !Conflict::is_author_mark($pct));
             if ($selectors) {
                 echo '<div class="pctb_editconf_sconf">';
-                $extra["id"] = "pcc$id";
-                if ($ct->is_author())
-                    echo "<strong>Author</strong>";
-                else if ($ct->is_conflict() && !$ct->is_author_mark()) {
-                    if (!$this->admin)
-                        echo "<strong>Conflict</strong>";
-                    else
-                        echo Ht::select("pcc$id", $ctypes, CONFLICT_CHAIRMARK, $extra);
-                } else
-                    echo Ht::select("pcc$id", $ctypes, $ct->value, $extra);
+                if ($disabled)
+                    echo '<strong>', ($pct >= CONFLICT_AUTHOR ? "Author" : "Conflict"), '</strong>';
+                else
+                    echo Ht::select("pcc$id", $ctypes, Conflict::constrain_editable($ct, $this->admin), $js);
                 echo '</div>', $label;
             } else {
-                $checked = $ct->is_conflict();
-                $disabled = $checked && ($ct->is_author() || (!$ct->is_author_mark() && !$this->admin));
+                $js["disabled"] = $disabled;
                 echo '<table><tr><td class="nb">',
-                    Ht::checkbox("pcc$id", $checked ? $ct->value : CONFLICT_AUTHORMARK,
-                                 $checked, array("id" => "pcc$id", "disabled" => $disabled)),
+                    Ht::checkbox("pcc$id", $ct > 0 ? $ct : CONFLICT_AUTHORMARK,
+                                 $ct > 0, $js),
                     ' </td><td>', $label, '</td></tr></table>';
             }
             echo "</div></div>";

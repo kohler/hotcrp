@@ -12,7 +12,7 @@ define("REVIEW_PC", 2);
 define("REVIEW_EXTERNAL", 1);
 
 define("CONFLICT_NONE", 0);
-define("CONFLICT_PCMARK", 1);
+define("CONFLICT_PCMARK", 1); /* unused */
 define("CONFLICT_AUTHORMARK", 2);
 define("CONFLICT_MAXAUTHORMARK", 7);
 define("CONFLICT_CHAIRMARK", 8);

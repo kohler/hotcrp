@@ -15,12 +15,12 @@ class PaperSaver {
                 return $a[1] - $b[1];
         });
     }
-    static function apply_all(Contact $user, $opj, Qrequest $qreq, $action) {
+    static function apply_all(Contact $user, $prow, $opj, Qrequest $qreq, $action) {
         $pj = PaperStatus::clone_json($opj);
         if (!isset($pj->pid))
             $pj->pid = -1;
         foreach (self::$list as $fn)
-            $fn[2]->apply($user, $pj, $opj, $qreq, $action);
+            $fn[2]->apply($user, $pj, $prow, $opj, $qreq, $action);
         return $pj;
     }
     static function diffs_all(Contact $user, $pj, $opj) {
@@ -30,7 +30,7 @@ class PaperSaver {
         return $diffs;
     }
 
-    function apply(Contact $user, $pj, $opj, Qrequest $qreq, $action) {
+    function apply(Contact $user, $pj, $prow, $opj, Qrequest $qreq, $action) {
     }
     function diffs(&$diffs, Contact $user, $pj, $opj) {
     }
@@ -55,7 +55,9 @@ class PaperSaver {
 }
 
 class Default_PaperSaver extends PaperSaver {
-    function apply(Contact $user, $pj, $opj, Qrequest $qreq, $action) {
+    function apply(Contact $user, $pj, $prow, $opj, Qrequest $qreq, $action) {
+        $admin = $prow ? $user->can_administer($prow) : $user->privChair;
+
         // Title, abstract, collaborators
         foreach (array("title", "abstract", "collaborators") as $k)
             if (isset($qreq[$k]))
@@ -143,13 +145,11 @@ class Default_PaperSaver extends PaperSaver {
 
         // PC conflicts
         if ($user->conf->setting("sub_pcconf")
-            && ($action !== "final" || $user->privChair)
+            && ($action !== "final" || $admin)
             && $qreq->has_pcconf) {
-            $cmax = $user->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
             $pj->pc_conflicts = (object) array();
             foreach ($user->conf->pc_members() as $pcid => $pc) {
-                $ctype = cvtint($qreq["pcc$pcid"], 0);
-                $ctype = max(min($ctype, $cmax), 0);
+                $ctype = Conflict::constrain_editable($qreq["pcc$pcid"], $admin);
                 if ($ctype) {
                     $email = $pc->email;
                     $pj->pc_conflicts->$email = Conflict::$type_names[$ctype];

@@ -283,7 +283,7 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
 
     $ps = new PaperStatus($Conf, $Me);
     $opj = $prow ? $ps->paper_json($prow) : null;
-    $pj = PaperSaver::apply_all($Me, $opj, $Qreq, $action);
+    $pj = PaperSaver::apply_all($Me, $prow, $opj, $Qreq, $action);
     $diffs = PaperSaver::diffs_all($Me, $pj, $opj);
 
     // check deadlines

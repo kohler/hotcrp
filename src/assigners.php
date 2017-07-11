@@ -1053,7 +1053,8 @@ class Conflict_AssignmentParser extends AssignmentParser {
         return $contact->contactId != 0;
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        $res = $state->remove(array("type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId));
+        $res = $state->remove(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId]);
+        $admin = $state->contact->can_administer($prow, $state->override);
         if ($this->remove)
             $ct = 0;
         else if ($this->iscontact)
@@ -1063,6 +1064,8 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $cts = get($req, "conflicttype", get($req, "conflict"));
             if ($cts !== null && ($ct = Conflict::parse($cts, 1000)) === false)
                 return "Bad conflict type.";
+            if ($ct !== 1000)
+                $ct = Conflict::constrain_editable($ct, $admin);
         }
         if (!empty($res)) {
             $old_ct = $res[0]["_ctype"];
@@ -1070,7 +1073,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
                 || (!$this->iscontact
                     && $ct < CONFLICT_CHAIRMARK
                     && $old_ct == CONFLICT_CHAIRMARK
-                    && !$state->contact->can_administer($prow, $state->override))
+                    && !$admin)
                 || ($this->iscontact
                     && $ct == 0
                     && $old_ct > 0
@@ -1078,12 +1081,8 @@ class Conflict_AssignmentParser extends AssignmentParser {
                 || ($ct === 1000 && $old_ct > 0))
                 $ct = $old_ct;
         }
-        if ($ct === 1000) {
-            if ($state->contact->can_administer($prow, $state->override))
-                $ct = CONFLICT_CHAIRMARK;
-            else
-                $ct = CONFLICT_AUTHORMARK;
-        }
+        if ($ct === 1000)
+            $ct = $admin ? CONFLICT_CHAIRMARK : CONFLICT_AUTHORMARK;
         if ($ct > 0)
             $state->add(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId, "_ctype" => $ct]);
     }
