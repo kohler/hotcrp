@@ -317,16 +317,16 @@ class PaperApi {
     }
 
     static function setpref_api(Contact $user, $qreq, $prow) {
-        $state = new AssignmentSet($user, true);
-        $state->enable_papers($prow);
+        $aset = new AssignmentSet($user, true);
+        $aset->enable_papers($prow);
         $reviewer = $qreq->reviewer ? : $user->email;
         if (ctype_digit($reviewer) && ($u = $user->conf->user_by_id($reviewer)))
             $reviewer = $u->email;
-        $state->parse("paper,user,preference\n{$prow->paperId},$reviewer," . CsvGenerator::quote($qreq->pref, true));
-        if ($state->execute())
+        $aset->parse("paper,user,preference\n{$prow->paperId},$reviewer," . CsvGenerator::quote($qreq->pref, true));
+        if ($aset->execute())
             return ["ok" => true, "response" => "Saved", "value" => unparse_preference($qreq->pref)];
         else
-            return ["ok" => false, "error" => join("<br />", $state->errors_html())];
+            return ["ok" => false, "error" => join("<br />", $aset->errors_html())];
     }
 
     static function checkformat_api(Contact $user, $qreq, $prow) {
