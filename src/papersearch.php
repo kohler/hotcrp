@@ -2201,7 +2201,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         parent::__construct($countexpr, $contacts);
     }
     function apply_review_type($word, $allow_pc = false) {
-        if ($word === "pri" || $word === "primary")
+        if ($word === "meta")
+            $this->review_type = REVIEW_META;
+        else if ($word === "pri" || $word === "primary")
             $this->review_type = REVIEW_PRIMARY;
         else if ($word === "sec" || $word === "secondary")
             $this->review_type = REVIEW_SECONDARY;

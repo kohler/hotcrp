@@ -1498,7 +1498,7 @@ class Formula {
         } else if (preg_match('/\A(?:is:?)?pcrev?\b(.*)\z/is', $t, $m)) {
             $e = new Fexpr(">=", new Revtype_Fexpr, new ConstantFexpr(REVIEW_PC, Fexpr::FREVTYPE));
             $t = $m[1];
-        } else if (preg_match('/\A(?:is:?)?(pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?|optional)\b(.*)\z/is', $t, $m)) {
+        } else if (preg_match('/\A(?:is:?)?(meta|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?|optional)\b(.*)\z/is', $t, $m)) {
             $e = new Fexpr("==", new Revtype_Fexpr, new ConstantFexpr($m[1], Fexpr::FREVTYPE));
             $t = $m[2];
         } else if (preg_match('/\A(?:is|status):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
