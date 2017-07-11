@@ -1387,9 +1387,9 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         $srch->_has_review_adjustment = true;
         if (!$srch->user->isPC)
             return new ReviewAdjustment_SearchTerm($srch->conf);
-        else if ($word === "none" && !$sword->quoted)
+        else if (strcasecmp($word, "none") == 0 || strcasecmp($word, "unnamed") == 0)
             return self::make_round($srch->conf, [0]);
-        else if ($word === "any" && !$sword->quoted)
+        else if (strcasecmp($word, "any") == 0)
             return self::make_round($srch->conf, range(1, count($srch->conf->round_list()) - 1));
         else {
             $x = simplify_whitespace($word);
@@ -2230,7 +2230,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     }
     function apply_round($word, Conf $conf) {
         $round = $conf->round_number($word, false);
-        if ($round || $word === "unnamed") {
+        if ($round || strcasecmp($word, "unnamed") == 0) {
             $this->round[] = $round;
             return true;
         } else
