@@ -1448,7 +1448,7 @@ class Conf {
     // update the 'papersub' setting: are there any submitted papers?
     function update_papersub_setting($adding) {
         if ($this->setting("papersub", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
-            $this->q_raw("insert into Settings (name, value)
+            $this->qe_raw("insert into Settings (name, value)
                 select 'papersub', ifnull((select paperId from Paper where "
                          . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0")
                          . " limit 1), 0)
@@ -1459,7 +1459,7 @@ class Conf {
 
     function update_paperacc_setting($adding) {
         if ($this->setting("paperacc", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
-            $this->q_raw("insert into Settings (name, value)
+            $this->qe_raw("insert into Settings (name, value)
                 select 'paperacc', ifnull((select paperId from Paper where outcome>0 limit 1), 0)
                 on duplicate key update value=values(value)");
             $this->settings["paperacc"] = $this->fetch_ivalue("select value from Settings where name='paperacc'");
