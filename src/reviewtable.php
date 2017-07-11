@@ -99,9 +99,11 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
             if ($Me->contactId == $rr->contactId && !$rr->reviewSubmitted)
                 $id = "Your $id";
             $t .= '<a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '" class="q"><b>' . $id . '</b></a>';
-        } else if (!$canView)
+        } else if (!$canView
+                   || ($rr->reviewModified <= 1 && !$Me->can_review($prow, $rr)))
             $t .= $id;
-        else if ($rrow || $rr->reviewModified <= 0
+        else if ($rrow
+                 || $rr->reviewModified <= 1
                  || (($mode === "re" || $mode === "assign")
                      && $Me->can_review($prow, $rr)))
             $t .= '<a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '">' . $id . '</a>';
