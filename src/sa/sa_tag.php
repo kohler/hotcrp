@@ -34,7 +34,7 @@ class Tag_SearchAction extends SearchAction {
             . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "onclick" => "return plist_submit.call(this)"]);
         if ($user->privChair) {
             $t .= "<div class='fx'><div style='margin:2px 0'>"
-                . Ht::checkbox("tagcr_gapless", 1, $qreq->tagcr_gapless, array("style" => "margin-left:0"))
+                . Ht::checkbox("tagcr_gapless", 1, !!$qreq->tagcr_gapless, array("style" => "margin-left:0"))
                 . "&nbsp;" . Ht::label("Gapless order") . "</div>"
                 . "<div style='margin:2px 0'>Using: &nbsp;"
                 . Ht::select("tagcr_method", PaperRank::methods(), $qreq->tagcr_method)
