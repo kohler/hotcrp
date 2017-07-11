@@ -334,13 +334,13 @@ class ReviewField implements Abbreviatable, JsonSerializable {
             && preg_match('/\A\s*([0-9]+|[A-Z])(\W|\z)/', $text, $m))
             $text = $m[1];
         if (!$strict && ctype_digit($text))
-            $text = (int) $text;
+            $text = intval($text);
         if (!$text || !$this->has_options || !isset($this->options[$text]))
             return null;
         else if ($this->option_letter)
             return $this->option_letter - ord($text);
         else
-            return $text;
+            return (int) $text;
     }
 }
 
@@ -542,7 +542,7 @@ class ReviewForm {
                         '<td colspan="2">', Ht::label("No entry"), "</td></tr>\n";
                 foreach ($f->options as $num => $what) {
                     echo '<tr><td class="nw">',
-                        Ht::radio($field, $num, $fval == $num, ["id" => $field . "_" . $num]),
+                        Ht::radio($field, $num, $fval === $num, ["id" => $field . "_" . $num]),
                         '&nbsp;</td>',
                         '<td class="nw">', Ht::label($f->unparse_value($num, ReviewField::VALUE_REV_NUM) . '&nbsp;'), '</td>',
                         '<td>', Ht::label(htmlspecialchars($what)), "</td></tr>\n";
