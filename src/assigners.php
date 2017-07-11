@@ -561,12 +561,12 @@ class ReviewAssigner_Data {
     }
     static function separate($key, $req, $state, $rtype) {
         $a0 = $a1 = trim(get_s($req, $key));
-        $require_match = $a0 !== "" && !$rtype;
+        $require_match = $rtype ? false : $a0 !== "";
         if ($a0 === "" && $rtype != 0)
             $a0 = $a1 = get($state->defaults, $key);
         if ($a0 !== null && ($colon = strpos($a0, ":")) !== false) {
-            $a1 = substr($a0, $colon + 1);
-            $a0 = substr($a0, 0, $colon);
+            $a1 = (string) substr($a0, $colon + 1);
+            $a0 = (string) substr($a0, 0, $colon);
             $require_match = true;
         }
         $a0 = is_string($a0) ? trim($a0) : $a0;
@@ -599,9 +599,12 @@ class ReviewAssigner_Data {
         if ($rarg1 !== null && $rarg1 !== "" && $this->newtype != 0
             && ($this->newround = $state->conf->sanitize_round_name($rarg1)) === false)
             $this->error = Conf::round_name_error($rarg1);
+        if ($rarg0 !== "" && $rarg1 !== null)
+            $this->explicitround = (string) get($req, "round") !== "";
+        if ($rarg0 === "")
+            $rmatch = false;
         if ($this->oldtype === null && $rtype > 0 && $rmatch)
             $this->oldtype = $rtype;
-        $this->explicitround = get($req, "round") !== null;
 
         $this->creator = !$tmatch && !$rmatch && $this->newtype != 0;
     }
@@ -822,7 +825,7 @@ class Review_Assigner extends Assigner {
     function execute(AssignmentSet $aset) {
         $extra = array();
         $round = $this->item->get(false, "_round");
-        if ($round && $this->rtype)
+        if ($round !== null && $this->rtype)
             $extra["round_number"] = $aset->conf->round_number($round, true);
         $reviewId = $aset->contact->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId)
