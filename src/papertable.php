@@ -328,11 +328,17 @@ class PaperTable {
     }
 
     private function editable_textarea($fieldName) {
-        if ($this->useRequest && isset($this->qreq[$fieldName]))
-            $text = $this->qreq[$fieldName];
-        else
-            $text = $this->prow ? $this->prow->$fieldName : "";
-        return Ht::textarea($fieldName, $text, ["class" => "papertext" . $this->error_class($fieldName), "rows" => self::$textAreaRows[$fieldName], "cols" => 60, "spellcheck" => $fieldName === "abstract" ? "true" : null]);
+        $js = ["class" => "papertext" . $this->error_class($fieldName),
+               "rows" => self::$textAreaRows[$fieldName], "cols" => 60];
+        if ($fieldName === "abstract")
+            $js["spellcheck"] = true;
+        $value = $pvalue = $this->prow ? $this->prow->$fieldName : "";
+        if ($this->useRequest && isset($this->qreq[$fieldName])) {
+            $value = cleannl($this->qreq[$fieldName]);
+            if ($value !== $pvalue)
+                $js["data-default-value"] = $pvalue;
+        }
+        return Ht::textarea($fieldName, $value, $js);
     }
 
     private function entryData($fieldName, $table_type = false) {
@@ -634,14 +640,38 @@ class PaperTable {
         return true;
     }
 
-    private function editable_authors_tr($n, $name, $email, $aff, $max_authors) {
+    private function editable_author_component_entry($n, $pfx, $au) {
+        $auval = "";
+        if ($pfx === "auname") {
+            $js = ["size" => "35", "placeholder" => "Name"];
+            if ($au && $au->firstName && $au->lastName && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au->lastName))
+                $auval = $au->lastName . ", " . $au->firstName;
+            else if ($au)
+                $auval = $au->name();
+        } else if ($pfx === "auemail") {
+            $js = ["size" => "30", "placeholder" => "Email"];
+            $auval = $au ? $au->email : "";
+        } else {
+            $js = ["size" => "32", "placeholder" => "Affiliation"];
+            $auval = $au ? $au->affiliation : "";
+        }
+        if ($this->useRequest)
+            $val = (string) get($this->qreq, $n === "\$" ? "" : "$pfx$n");
+        else
+            $val = $auval;
+        $js["class"] = "need-autogrow e$pfx" . $this->error_class("$pfx$n");
+        if ($val !== $auval)
+            $js["data-default-value"] = $auval;
+        return Ht::entry("$pfx$n", $val, $js);
+    }
+    private function editable_authors_tr($n, $au, $max_authors) {
         $t = '<tr>';
         if ($max_authors != 1)
             $t .= '<td class="rxcaption">' . $n . '.</td>';
         return $t . '<td class="lentry">'
-            . Ht::entry("auname$n", $name, array("size" => "35", "placeholder" => "Name", "class" => "need-autogrow eauname" . $this->error_class("auname$n"))) . ' '
-            . Ht::entry("auemail$n", $email, array("size" => "30", "placeholder" => "Email", "class" => "need-autogrow eauemail" . $this->error_class("auemail$n"))) . ' '
-            . Ht::entry("auaff$n", $aff, array("size" => "32", "placeholder" => "Affiliation", "class" => "need-autogrow eauaff" . $this->error_class("auaff$n")))
+            . $this->editable_author_component_entry($n, "auname", $au) . ' '
+            . $this->editable_author_component_entry($n, "auemail", $au) . ' '
+            . $this->editable_author_component_entry($n, "auaff", $au)
             . '<span class="nb btnbox aumovebox"><a href="#" class="qx btn need-tooltip moveup" data-tooltip="Move up" tabindex="-1">&#x25b2;</a><a href="#" class="qx btn need-tooltip movedown" data-tooltip="Move down" tabindex="-1">&#x25bc;</a><a href="#" class="qx btn need-tooltip delete" data-tooltip="Delete" tabindex="-1">✖</a></span></td></tr>';
     }
 
@@ -659,26 +689,18 @@ class PaperTable {
             '<div class="papev"><table id="auedittable" class="auedittable">',
             '<tbody data-last-row-blank="true" data-min-rows="', $min_authors, '" ',
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
-            'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', "", "", "", $max_authors)), '">';
+            'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', null, $max_authors)), '">';
 
-        $blankAu = array("", "", "", "");
-        if ($this->useRequest) {
-            for ($n = 1; $this->qreq["auname$n"] || $this->qreq["auemail$n"] || $this->qreq["auaff$n"]; ++$n)
-                echo $this->editable_authors_tr($n, (string) $this->qreq["auname$n"], (string) $this->qreq["auemail$n"], (string) $this->qreq["auaff$n"], $max_authors);
-        } else {
-            $aulist = $this->prow ? $this->prow->author_list() : array();
-            for ($n = 1; $n <= count($aulist); ++$n) {
-                $au = $aulist[$n - 1];
-                if ($au->firstName && $au->lastName && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au->lastName))
-                    $auname = $au->lastName . ", " . $au->firstName;
-                else
-                    $auname = $au->name();
-                echo $this->editable_authors_tr($n, $auname, $au->email, $au->affiliation, $max_authors);
-            }
-        }
+        $aulist = $this->prow ? $this->prow->author_list() : array();
+        for ($n = 1;
+             $n <= count($aulist)
+             || ($this->useRequest
+                 && (isset($this->qreq["auname$n"]) || isset($this->qreq["auemail$n"]) || isset($this->qreq["auaff$n"])));
+             ++$n)
+            echo $this->editable_authors_tr($n, get($aulist, $n - 1), $max_authors);
         if ($max_authors <= 0 || $n <= $max_authors)
             do {
-                echo $this->editable_authors_tr($n, "", "", "", $max_authors);
+                echo $this->editable_authors_tr($n, null, $max_authors);
                 ++$n;
             } while ($n <= $min_authors);
         echo "</tbody></table></div></div>\n\n";
