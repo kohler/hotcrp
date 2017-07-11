@@ -1853,7 +1853,7 @@ function form_differs(form) {
         if (input_is_checkboxlike(this))
             same = this.checked === expected;
         else {
-            var current = this instanceof HTMLSelectElement ? $me.val() : this.value;
+            var current = this.tagName === "SELECT" ? $me.val() : this.value;
             same = text_eq(current, expected);
         }
         return same;
