@@ -660,7 +660,7 @@ class SelectorPaperOption extends PaperOption {
             echo Ht::select("opt$this->id", $this->selector, $reqv);
         else
             foreach ($this->selector as $val => $text) {
-                echo Ht::radio("opt$this->id", $val, $val == $req),
+                echo Ht::radio("opt$this->id", $val, $val == $reqv),
                     "&nbsp;", Ht::label(htmlspecialchars($text)), "<br />\n";
             }
         echo "</div></div>\n\n";
