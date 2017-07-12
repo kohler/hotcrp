@@ -100,7 +100,6 @@ function urlencode_matches($m) {
 }
 
 if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
-    assert($Conf->sversion >= 73);
     $users = [];
     $result = $Conf->qe_raw("select ContactInfo.* from ContactInfo where " . paperselPredicate($papersel));
     while (($user = Contact::fetch($result, $Conf)))

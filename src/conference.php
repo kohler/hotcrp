@@ -180,7 +180,7 @@ class Conf {
             updateSchema($this);
             Dbl::$nerrors = $old_nerrors;
         }
-        if ($this->sversion < 73)
+        if ($this->sversion < 95)
             self::msg_error("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
 
         // invalidate all caches after loading from backup
