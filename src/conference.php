@@ -955,7 +955,7 @@ class Conf {
         return $this->_track_tags ? $this->_track_tags : array();
     }
 
-    function most_permissive_track_tag_for(Contact $user, $perm) {
+    function permissive_track_tag_for(Contact $user, $perm) {
         foreach ($this->tracks ? : [] as $t => $tr)
             if (Track::match_perm($user, $tr[$perm]))
                 return $t;
@@ -963,24 +963,24 @@ class Conf {
     }
 
     function check_tracks(PaperInfo $prow, Contact $contact, $type) {
+        $unmatched = true;
         if ($this->tracks) {
-            $matched = false;
             foreach ($this->tracks as $t => $tr)
-                if ($t === "_" ? !$matched : $prow->has_tag($t)) {
-                    $matched = true;
-                    if (!Track::match_perm($contact, $tr[$type]))
-                        return false;
+                if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
+                    $unmatched = false;
+                    if (Track::match_perm($contact, $tr[$type]))
+                        return true;
                 }
         }
-        return true;
+        return $unmatched;
     }
 
     function check_admin_tracks(PaperInfo $prow, Contact $contact) {
         if ($this->_track_admin_sensitivity) {
-            $matched = false;
+            $unmatched = true;
             foreach ($this->tracks as $t => $tr)
-                if ($t === "_" ? !$matched : $prow->has_tag($t)) {
-                    $matched = true;
+                if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
+                    $unmatched = false;
                     if ($tr[Track::ADMIN] && Track::match_perm($contact, $tr[Track::ADMIN]))
                         return true;
                 }

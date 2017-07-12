@@ -2418,7 +2418,7 @@ class Contact {
 
     function can_view_some_review_identity($forceShow = null) {
         $tags = "";
-        if (($t = $this->conf->most_permissive_track_tag_for($this, Track::VIEWREVID)))
+        if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID)))
             $tags = " $t#0 ";
         if ($this->isPC)
             $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;

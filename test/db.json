@@ -11,11 +11,11 @@
     {"name": "Marina Tsvetaeva", "email": "marina@poema.ru", "roles": ["pc"]},
     {"name": "Mark Handley", "email": "mjh@isi.edu", "affiliation": "Information Sciences Institute", "roles": ["pc"]},
     {"name": "Mary Baker", "email": "mgbaker@cs.stanford.edu", "affiliation": "Stanford University", "roles": ["pc"]},
-    {"name": "Paul Francis", "email": "pfrancis@ntt.jp", "affiliation": "NTT", "roles": ["pc"]},
+    {"name": "Paul Francis", "email": "pfrancis@ntt.jp", "affiliation": "NTT", "roles": ["pc"], "tags": "blue"},
     {"name": "Peter Danzig", "email": "peter.danzig@usc.edu", "affiliation": "University of Southern California", "roles": ["pc"]},
     {"name": "Peter Druschel", "email": "pdruschel@cs.rice.edu", "affiliation": "Rice", "roles": ["pc"]},
     {"name": "Roch Guerin", "email": "rguerin@ibm.com", "affiliation": "IBM", "roles": ["pc"]},
-    {"name": "Sally Floyd", "email": "floyd@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory", "roles": ["pc"]},
+    {"name": "Sally Floyd", "email": "floyd@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory", "roles": ["pc"], "tags": "red blue"},
     {"name": "Scott Shenker", "email": "shenker@parc.xerox.com", "affiliation": "Xerox PARC", "roles": ["pc", "chair"]},
     {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"},
     {"name": "Wilma Ojuelegba", "email": "ojuelegba@gmail.com", "affiliation": "Stanford", "roles": ["pc"]}

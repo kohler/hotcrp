@@ -844,6 +844,36 @@ xassert(AssignmentSet::run($user_chair, "paper,action,user\n13,primary,marina@po
 xassert(!AssignmentSet::run($user_chair, "paper,action,user\n14,primary,marina@poema.ru\n"));
 xassert(AssignmentSet::run($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n"));
 
+// combinations of tracks
+$Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"red\":{\"view\":\"+red\"},\"blue\":{\"view\":\"+blue\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
+$Conf->invalidate_caches(["tracks" => true]);
+
+# 1: none; 2: red; 3: green; 4: red green; 5: blue; 6: red blue; 7: green blue; 8: red green blue
+xassert(AssignmentSet::run($user_chair, "paper,tag\nall,-green\nall,-red\nall,-blue\n2 4 6 8,+red\n3 4 7 8,+green\n5 6 7 8,+blue\n"));
+xassert(AssignmentSet::run($user_chair, "paper,action,user\nall,clearadministrator\nall,clearlead\n"));
+assert_search_papers($user_chair, "#red", "2 4 6 8");
+assert_search_papers($user_chair, "#green", "3 4 7 8");
+assert_search_papers($user_chair, "#blue", "5 6 7 8");
+
+$user_floyd = $Conf->user_by_email("floyd@ee.lbl.gov");
+$user_pfrancis = $Conf->user_by_email("pfrancis@ntt.jp");
+xassert(!$user_marina->has_tag("red") && !$user_marina->has_tag("blue"));
+xassert($user_estrin->has_tag("red") && !$user_estrin->has_tag("blue"));
+xassert(!$user_pfrancis->has_tag("red") && $user_pfrancis->has_tag("blue"));
+xassert($user_floyd->has_tag("red") && $user_floyd->has_tag("blue"));
+
+for ($pid = 1; $pid <= 8; ++$pid) {
+    $paper = $Conf->paperRow($pid, $user_chair);
+    foreach ([$user_marina, $user_estrin, $user_pfrancis, $user_floyd] as $cidx => $user) {
+        if ((!($cidx & 1) && (($pid - 1) & 2)) /* user not red && paper green */
+            || (($cidx & 1) && ($pid == 1 || (($pid - 1) & 1))) /* user red && paper red or none */
+            || (($cidx & 2) && (($pid - 1) & 4))) /* user blue && paper blue */
+            xassert($user->can_view_paper($paper), "user {$user->email} can view paper $pid");
+        else
+            xassert(!$user->can_view_paper($paper), "user {$user->email} can't view paper $pid");
+    }
+}
+
 // check content upload
 $ps = new PaperStatus($Conf);
 xassert(!$ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"/etc/passwd","mimetype":"application/pdf"}}')));
