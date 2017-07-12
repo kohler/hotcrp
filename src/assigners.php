@@ -290,7 +290,7 @@ class AssignerContacts {
     }
     function user_by_id($cid) {
         if (!$cid)
-            return $this->make_none();
+            return $this->none_user();
         if (($c = get($this->by_id, $cid)))
             return $c;
         $this->ensure_pc();
@@ -305,7 +305,7 @@ class AssignerContacts {
     }
     function user_by_email($email, $create = false) {
         if (!$email)
-            return $this->make_none();
+            return $this->none_user();
         $lemail = strtolower($email);
         if (($c = get($this->by_lemail, $lemail)))
             return $c;
