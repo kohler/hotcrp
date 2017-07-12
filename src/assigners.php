@@ -1959,13 +1959,29 @@ class AssignmentSet {
 
         $has_action = array_search("action", $req) !== false
             || array_search("assignment", $req) !== false;
-        if (!$has_action && array_search("tag", $req) !== false)
-            $this->astate->defaults["action"] = "tag";
-        if (!$has_action && array_search("preference", $req) !== false)
-            $this->astate->defaults["action"] = "preference";
-        if (!$has_action && ($j = array_search("lead", $req)) !== false) {
-            $req[$j] = "user";
-            $this->astate->defaults["action"] = "lead";
+        if (!$has_action && !isset($this->astate->defaults["action"])) {
+            $defaults = $modifications = [];
+            if (array_search("tag", $req) !== false)
+                $defaults[] = "tag";
+            if (array_search("preference", $req) !== false)
+                $defaults[] = "preference";
+            if (($j = array_search("lead", $req)) !== false) {
+                $defaults[] = "lead";
+                $modifications = [$j, "user"];
+            }
+            if (($j = array_search("shepherd", $req)) !== false) {
+                $defaults[] = "shepherd";
+                $modifications = [$j, "user"];
+            }
+            if (($j = array_search("decision", $req)) !== false) {
+                $defaults[] = "decision";
+                $modifications = [$j, "decision"];
+            }
+            if (count($defaults) == 1) {
+                $this->astate->defaults["action"] = $defaults[0];
+                for ($i = 0; $i < count($modifications); $i += 2)
+                    $req[$modifications[$i]] = $modifications[$i + 1];
+            }
         }
         $csv->set_header($req);
 
