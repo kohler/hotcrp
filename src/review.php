@@ -715,17 +715,21 @@ class ReviewForm {
                         $fval = 0;
                     else if (!($fval = $f->parse_value($fval, false)))
                         continue;
+                    $fval_diffs = $fval != ($rrow ? $rrow->$field : 0);
                 } else {
                     $fval = rtrim($fval);
-                    if ($fval != "")
+                    if ($fval !== "")
                         $fval .= "\n";
                     // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
                     $fval = convert_to_utf8($fval);
                     if ($f->include_word_count())
                         $wc += count_words($fval);
+                    $fval_diffs = $rrow
+                        ? strcmp($rrow->$field, $fval) != 0
+                          && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0
+                        : $fval !== "";
                 }
-                if ($rrow && strcmp($rrow->$field, $fval) != 0
-                    && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0)
+                if ($fval_diffs)
                     $diff_view_score = max($diff_view_score, $f->view_score);
                 $qf[] = "$field=?";
                 $qv[] = $fval;
