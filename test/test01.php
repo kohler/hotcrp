@@ -882,6 +882,13 @@ $ps->clear();
 xassert(!$ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"./../../../../etc/passwd","mimetype":"application/pdf"}}')));
 xassert($ps->has_error_at("paper"));
 
+// check accept invariant
+assert_search_papers($user_chair, "dec:yes", "");
+xassert(!$Conf->setting("paperacc"));
+xassert_assign($user_chair, "paper,decision\n1,accept\n");
+assert_search_papers($user_chair, "dec:yes", "1");
+xassert($Conf->setting("paperacc"));
+
 
 $Conf->check_invariants();
 
