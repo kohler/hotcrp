@@ -272,7 +272,8 @@ function fetch_review($pid, $contact) {
     global $Conf;
     $pid = is_object($pid) ? $pid->paperId : $pid;
     $cid = is_object($contact) ? $contact->contactId : $contact;
-    return $Conf->reviewRow(["paperId" => $pid, "contactId" => $cid]);
+    return $Conf->reviewRow(["paperId" => $pid, "contactId" => $cid,
+        "ratings" => true]);
 }
 
 function save_review($pid, $contact, $revreq) {

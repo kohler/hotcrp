@@ -1837,10 +1837,17 @@ $blind\n";
 
         // ratings
         if ($contact->can_view_review_ratings($prow, $rrow)) {
-            if ($rrow->canViewRatings)
-                $rj["ratings"] = json_decode("[" . $rrow->allRatings . "]");
+            $ratings = [];
+            if ((string) $rrow->allRatings !== "") {
+                foreach (explode(",", $rrow->allRatings) as $rx) {
+                    list($cid, $rating) = explode(" ", $rx);
+                    $ratings[+$cid] = (int) $rating;
+                }
+                if ($rrow->canViewRatings)
+                    $rj["ratings"] = array_values($ratings);
+            }
             if ($contact->can_rate_review($prow, $rrow))
-                $rj["user_rating"] = $rrow->myRating === null ? null : (int) $rrow->myRating;
+                $rj["user_rating"] = get($ratings, $contact->contactId);
         }
 
         // review text

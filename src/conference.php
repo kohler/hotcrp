@@ -2585,12 +2585,7 @@ class Conf {
         $qv = [];
         if (isset($selector["ratings"]))
             $q .= ",
-                (select group_concat(rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId) allRatings";
-        if (isset($selector["myRating"])) {
-            $q .= ",
-                (select rating from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId and contactId=?) myRating";
-            $qv[] = $selector["myRating"];
-        }
+                (select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId) allRatings";
         $q .= "\n               from PaperReview
                 join ContactInfo using (contactId)
                 left join ContactInfo as ReqCI on (ReqCI.contactId=PaperReview.requestedBy)\n";

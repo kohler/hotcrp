@@ -2467,10 +2467,8 @@ class PaperTable {
         global $Me;
 
         $sel = array("paperId" => $this->prow->paperId, "array" => true);
-        if ($this->conf->setting("rev_ratings") != REV_RATINGS_NONE) {
+        if ($this->conf->setting("rev_ratings") != REV_RATINGS_NONE)
             $sel["ratings"] = true;
-            $sel["myRating"] = $Me->contactId;
-        }
         $this->all_rrows = $this->conf->reviewRow($sel, $whyNot);
 
         $this->viewable_rrows = array();
