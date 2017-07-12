@@ -799,11 +799,11 @@ xassert($user_marina->can_accept_review_assignment_ignore_conflict($paper14));
 xassert($user_marina->can_accept_review_assignment($paper14));
 xassert(!$user_marina->can_review($paper14, null));
 
-xassert(AssignmentSet::run($user_chair, "paper,action,user\n13,primary,jon@cs.ucl.ac.uk\n"));
-xassert(AssignmentSet::run($user_chair, "paper,action,user\n14,primary,jon@cs.ucl.ac.uk\n"));
-xassert(AssignmentSet::run($user_chair, "paper,action,user\n13,primary,marina@poema.ru\n"));
-xassert(AssignmentSet::run($user_chair, "paper,action,user\n14,primary,marina@poema.ru\n"));
-xassert(AssignmentSet::run($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n"));
+xassert_assign($user_chair, "paper,action,user\n13,primary,jon@cs.ucl.ac.uk\n");
+xassert_assign($user_chair, "paper,action,user\n14,primary,jon@cs.ucl.ac.uk\n");
+xassert_assign($user_chair, "paper,action,user\n13,primary,marina@poema.ru\n");
+xassert_assign($user_chair, "paper,action,user\n14,primary,marina@poema.ru\n");
+xassert_assign($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n");
 
 $Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
 $Conf->invalidate_caches(["tracks" => true]);
@@ -838,19 +838,19 @@ xassert(!$user_marina->can_accept_review_assignment_ignore_conflict($paper14));
 xassert(!$user_marina->can_accept_review_assignment($paper14));
 xassert(!$user_marina->can_review($paper14, null));
 
-xassert(!AssignmentSet::run($user_chair, "paper,action,user\n13,primary,jon@cs.ucl.ac.uk\n"));
-xassert(AssignmentSet::run($user_chair, "paper,action,user\n14,primary,jon@cs.ucl.ac.uk\n"));
-xassert(AssignmentSet::run($user_chair, "paper,action,user\n13,primary,marina@poema.ru\n"));
-xassert(!AssignmentSet::run($user_chair, "paper,action,user\n14,primary,marina@poema.ru\n"));
-xassert(AssignmentSet::run($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n"));
+xassert_assign_fail($user_chair, "paper,action,user\n13,primary,jon@cs.ucl.ac.uk\n");
+xassert_assign($user_chair, "paper,action,user\n14,primary,jon@cs.ucl.ac.uk\n");
+xassert_assign($user_chair, "paper,action,user\n13,primary,marina@poema.ru\n");
+xassert_assign_fail($user_chair, "paper,action,user\n14,primary,marina@poema.ru\n");
+xassert_assign($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n");
 
 // combinations of tracks
 $Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"red\":{\"view\":\"+red\"},\"blue\":{\"view\":\"+blue\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
 $Conf->invalidate_caches(["tracks" => true]);
 
 # 1: none; 2: red; 3: green; 4: red green; 5: blue; 6: red blue; 7: green blue; 8: red green blue
-xassert(AssignmentSet::run($user_chair, "paper,tag\nall,-green\nall,-red\nall,-blue\n2 4 6 8,+red\n3 4 7 8,+green\n5 6 7 8,+blue\n"));
-xassert(AssignmentSet::run($user_chair, "paper,action,user\nall,clearadministrator\nall,clearlead\n"));
+xassert_assign($user_chair, "paper,tag\nall,-green\nall,-red\nall,-blue\n2 4 6 8,+red\n3 4 7 8,+green\n5 6 7 8,+blue\n");
+xassert_assign($user_chair, "paper,action,user\nall,clearadministrator\nall,clearlead\n");
 assert_search_papers($user_chair, "#red", "2 4 6 8");
 assert_search_papers($user_chair, "#green", "3 4 7 8");
 assert_search_papers($user_chair, "#blue", "5 6 7 8");
