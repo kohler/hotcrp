@@ -2200,7 +2200,7 @@ class Conf {
     }
 
     function query_all_reviewer_preference() {
-        return "group_concat(concat(contactId,' ',preference,' ',coalesce(expertise,'.')) separator ',')";
+        return "group_concat(contactId,' ',preference,' ',coalesce(expertise,'.'))";
     }
 
     private function paperQuery(Contact $contact = null, $options = array()) {
@@ -2428,7 +2428,7 @@ class Conf {
 
         if (get($options, "allConflictType")) {
             // See also SearchQueryInfo::add_allConflictType_column
-            $joins[] = "left join (select paperId, group_concat(concat(contactId,' ',conflictType) separator ',') as allConflictType from PaperConflict where {$papersel}conflictType>0 group by paperId) as AllConflict on (AllConflict.paperId=Paper.paperId)";
+            $joins[] = "left join (select paperId, group_concat(contactId,' ',conflictType) as allConflictType from PaperConflict where {$papersel}conflictType>0 group by paperId) as AllConflict on (AllConflict.paperId=Paper.paperId)";
             $cols[] = "AllConflict.allConflictType";
         }
 
