@@ -1100,7 +1100,9 @@ return function (content, bubopt) {
             else {
                 while (n.childNodes.length)
                     n.removeChild(n.childNodes[0]);
-                if (content)
+                if (content && content.jquery)
+                    content.appendTo(n);
+                else
                     n.appendChild(content);
             }
             nearpos && show();
@@ -1878,6 +1880,11 @@ function form_defaults(form, values) {
     }
 }
 
+function form_highlight(form, elt) {
+    var $f = $(form);
+    $f.toggleClass("alert", (elt && form_differs(elt)) || form_differs($f));
+}
+
 function hiliter(elt, off) {
     if (typeof elt === "string")
         elt = document.getElementById(elt);
@@ -1893,7 +1900,7 @@ function hiliter(elt, off) {
 function hiliter_children(form, on_unload) {
     function hilite() {
         if (!$(this).hasClass("ignore-diff"))
-            $(form).toggleClass("alert", form_differs(this) || form_differs(form));
+            form_highlight(form, this);
     }
     $(form).on("change input", "input, select, textarea", hilite);
     if (on_unload) {
@@ -1905,11 +1912,6 @@ function hiliter_children(form, on_unload) {
                 return "If you leave this page now, your edits may be lost.";
         });
     }
-}
-
-function form_highlight(form) {
-    var $f = $(form);
-    $f.toggleClass("alert", form_differs($f));
 }
 
 function focus_at(felt) {
@@ -2270,44 +2272,65 @@ function plactions_dofold() {
 
 // assignment selection
 var assigntable = (function () {
-var state = [], blurring = 0;
-function close(which) {
-    return function () {
-        if (state[0] == which && state[1])
-            state[1] = state[1].remove() && null;
-    };
-}
-return {
-    open: function (which) {
-        if ((state[0] != which || !state[1]) && blurring != which) {
-            state[1] && state[1].remove();
-            var h = $("#assignmentselector").html().replace(/\$/g, which);
-            state = [which, make_bubble({content: h, dir: "l", color: "tooltip dark"})];
-            state[1].near("#folderass" + which);
-            $("#pcs" + which + "_selector").val(+$("#pcs" + which).val());
-        }
-        if (blurring != which)
-            $$("pcs" + which + "_selector").focus();
-        return false;
-    },
-    sel: function (elt, which) {
-        var folder = $$("folderass" + which);
-        if (elt) {
-            $("#pcs" + which).val(elt.value);
-            $$("ass" + which).className = "pctbname pctbname" + elt.value;
-            folder.firstChild.className = "rto rt" + elt.value;
-            folder.firstChild.innerHTML = '<span class="rti">' +
-                (["&minus;", "A", "C", "", "E", "P", "2", "1", "M"])[+elt.value + 3] + "</span>";
-            hiliter(folder.firstChild);
-        }
-        if (folder && elt !== 0)
-            folder.focus();
-        setTimeout(close(which), 50);
-        if (elt === 0 && state) {
+var active, bubble, blurring = 0;
+function opener() {
+    if (!this.id || this.id.substr(0, 9) !== "folderass")
+        return true;
+
+    var self = this, which = +self.id.substr(9);
+    function change() {
+        $("#ass" + which).className = "pctbname pctbname" + this.value;
+        self.firstChild.className = "rto rt" + this.value;
+        self.firstChild.innerHTML = '<span class="rti">' +
+            (["&minus;", "A", "C", "", "E", "P", "2", "1", "M"])[+this.value + 3] +
+            "</span>";
+        var $h = $("#pcs" + which).val(this.value);
+        form_highlight($h.closest("form"), $h);
+        self.focus();
+        close();
+    }
+    function click() {
+        self.focus();
+        close();
+    }
+    function blur() {
+        close();
+        if (bubble) {
             blurring = which;
-            setTimeout(function () { blurring = 0; }, 300)
+            setTimeout(function () { blurring = 0; }, 300);
         }
     }
+    function close() {
+        setTimeout(function () {
+            if (active == which && bubble) {
+                bubble.remove();
+                bubble = null;
+            }
+        }, 50);
+    }
+
+    if ((active != which || !bubble) && blurring != which) {
+        bubble && bubble.remove();
+        var $sel = $('<select name="pcs' + which + '" size="6">'
+            + '<option value="0">None</option>'
+            + '<option value="4">Primary</option>'
+            + '<option value="3">Secondary</option>'
+            + '<option value="2">Optional</option>'
+            + '<option value="5">Metareview</option>'
+            + '<option value="-1">Conflict</option></select>');
+        $sel.on("click", click).on("change", change).on("blur", blur)
+            .val(+$("#pcs" + which).val());
+        active = which;
+        bubble = make_bubble({content: $sel, dir: "l", color: "tooltip dark"});
+        bubble.near("#folderass" + which);
+    }
+    if (blurring != which)
+        bubble.self().find("select")[0].focus();
+    return false;
+}
+return function (j) {
+    hiliter_children(j, true);
+    $(j).on("click", "a", opener);
 };
 })();
 

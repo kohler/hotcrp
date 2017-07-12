@@ -472,9 +472,10 @@ if ($Me->can_administer($prow)) {
 
     // PC conflicts row
     echo '<hr class="papcard_sep" />',
-        Ht::form($loginUrl, array("id" => "ass")), '<div class="aahc">',
         "<h3 style=\"margin-top:0\">PC review assignments</h3>",
+        Ht::form_div($loginUrl, array("id" => "ass")),
         '<p>';
+    Ht::stash_script('assigntable("#ass")');
 
     $rev_round = (string) $Conf->sanitize_round_name(req("rev_round"));
     $rev_rounds = $Conf->round_selector_options();
@@ -490,16 +491,6 @@ if ($Me->can_administer($prow)) {
     else
         $x[] = "Review preferences display as “P#”.";
     echo join(' <span class="barsep">·</span> ', $x), '</p>';
-
-    echo '<div id="assignmentselector" style="display:none">',
-        Ht::select("pcs\$", [0 => "None",
-                             REVIEW_PRIMARY => "Primary",
-                             REVIEW_SECONDARY => "Secondary",
-                             REVIEW_PC => "Optional",
-                             REVIEW_META => "Metareview",
-                             -1 => "Conflict"],
-                   "@", array("id" => "pcs\$_selector", "size" => 5, "onchange" => "assigntable.sel(this,\$)", "onclick" => "assigntable.sel(null,\$)", "onblur" => "assigntable.sel(0,\$)")),
-        '</div>';
 
     echo '<div class="pc_ctable">';
     $tagger = new Tagger($Me);
@@ -530,7 +521,7 @@ if ($Me->can_administer($prow)) {
             // NB manualassign.php also uses the "pcs$contactId" convention
             echo '<div class="pctbass">'
                 . '<div id="foldass' . $p->contactId . '" class="foldc" style="position:relative">'
-                . '<a id="folderass' . $p->contactId . '" href="#" onclick="return assigntable.open(' . $p->contactId . ')">'
+                . '<a id="folderass' . $p->contactId . '" href="#">'
                 . review_type_icon($revtype, false, $title)
                 . Ht::img("_.gif", ">", array("class" => "next")) . '</a>&nbsp;'
                 . Ht::hidden("pcs$p->contactId", $value, ["id" => "pcs$p->contactId", "data-default-value" => $value])
