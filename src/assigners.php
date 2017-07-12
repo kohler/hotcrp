@@ -2381,6 +2381,7 @@ class AssignmentSet {
         foreach ($locks as $t => $type)
             $tables[] = "$t $type";
         $this->conf->qe("lock tables " . join(", ", $tables));
+        $this->cleanup_callbacks = $this->cleanup_notify_tracker = [];
 
         foreach ($this->assigners as $assigner)
             $assigner->execute($this);
@@ -2397,7 +2398,6 @@ class AssignmentSet {
         }
 
         // clean up
-        $this->cleanup_callbacks = $this->cleanup_notify_tracker = [];
         foreach ($this->assigners as $assigner)
             $assigner->cleanup($this);
         foreach ($this->cleanup_callbacks as $cb)
