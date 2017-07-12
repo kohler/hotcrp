@@ -526,12 +526,12 @@ echo join("", $tags);*/
 $Conf->save_setting("pc_seeallrev", Conf::PCSEEREV_IFCOMPLETE);
 Contact::update_rights();
 $review2a = fetch_review(2, $user_jon);
-xassert(!$review2a->reviewSubmitted);
+xassert(!$review2a->reviewSubmitted && !$review2a->reviewAuthorSeen);
 xassert($user_jon->can_view_review($paper2, $review2a, false));
 xassert(!$user_pdruschel->can_view_review($paper2, $review2a, false));
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
 $review2a = save_review(2, $user_jon, $revreq);
-xassert($review2a->reviewSubmitted);
+xassert($review2a->reviewSubmitted && !$review2a->reviewAuthorSeen);
 xassert($user_jon->can_view_review($paper2, $review2a, false));
 xassert(!$user_pdruschel->can_view_review($paper2, $review2a, false));
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
@@ -888,6 +888,24 @@ xassert(!$Conf->setting("paperacc"));
 xassert_assign($user_chair, "paper,decision\n1,accept\n");
 assert_search_papers($user_chair, "dec:yes", "1");
 xassert($Conf->setting("paperacc"));
+
+// check reviewAuthorSeen
+$user_author2 = $Conf->user_by_email("micke@cdt.luth.se");
+$review2b = fetch_review(2, $user_pdruschel);
+xassert(!$user_author2->can_view_review($paper2, $review2b, null));
+xassert(!$review2b->reviewAuthorSeen);
+$Conf->save_setting("au_seerev", Conf::AUSEEREV_YES);
+xassert($user_author2->can_view_review($paper2, $review2b, null));
+
+$rjson = $Conf->review_form()->unparse_review_json($paper2, $review2b, $user_chair);
+ReviewForm::update_review_author_seen();
+$review2b = fetch_review(2, $user_pdruschel);
+xassert(!$review2b->reviewAuthorSeen);
+
+$rjson = $Conf->review_form()->unparse_review_json($paper2, $review2b, $user_author2);
+ReviewForm::update_review_author_seen();
+$review2b = fetch_review(2, $user_pdruschel);
+xassert(!!$review2b->reviewAuthorSeen);
 
 
 $Conf->check_invariants();

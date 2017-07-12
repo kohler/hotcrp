@@ -2453,8 +2453,8 @@ class Contact {
     function can_view_review_time(PaperInfo $prow, $rrow, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
         return !$rights->act_author_view
-            || ($rrow && get($rrow, "reviewAuthorSeen")
-                && $rrow->reviewAuthorSeen <= $rrow->reviewModified);
+            || ($rrow && $rrow->reviewAuthorSeen
+                && $rrow->reviewAuthorSeen <= $rrow->reviewAuthorModified);
     }
 
     function can_request_review(PaperInfo $prow, $check_time) {

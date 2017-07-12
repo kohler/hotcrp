@@ -999,26 +999,38 @@ class ReviewForm {
     }
 
     static function update_review_author_seen() {
-        global $Conf, $Now;
-        if (self::$review_author_seen && $Conf->sversion >= 92) {
-            Dbl::qe("update PaperReview set reviewAuthorSeen=coalesce(reviewAuthorSeen,$Now) where reviewId ?a", self::$review_author_seen);
-            self::$review_author_seen = null;
+        while (self::$review_author_seen) {
+            $conf = self::$review_author_seen[0][0];
+            $q = $qv = $next = [];
+            foreach (self::$review_author_seen as $x)
+                if ($x[0] === $conf) {
+                    $q[] = $x[1];
+                    $qv[] = $x[2];
+                    $qv[] = $x[3];
+                } else
+                    $next[] = $x;
+            self::$review_author_seen = $next;
+            $mresult = Dbl::multi_qe_apply($conf->dblink, join(";", $q), $qv);
+            $mresult->free_all();
         }
     }
 
     static private function check_review_author_seen($prow, $rrow, $contact,
                                                      $no_update = false) {
         global $Now;
-        if ($rrow && !get($rrow, "reviewAuthorSeen")
+        if ($rrow && !$rrow->reviewAuthorSeen
             && $contact->act_author_view($prow)
             && !$contact->is_actas_user()) {
+            assert($rrow->reviewAuthorModified > 0);
             $rrow->reviewAuthorSeen = $Now;
             if (!$no_update) {
                 if (!self::$review_author_seen) {
                     register_shutdown_function("ReviewForm::update_review_author_seen");
-                    self::$review_author_seen = array();
+                    self::$review_author_seen = [];
                 }
-                self::$review_author_seen[] = $rrow->reviewId;
+                self::$review_author_seen[] = [$contact->conf,
+                    "update PaperReview set reviewAuthorSeen=? where reviewId=?",
+                    $rrow->reviewAuthorSeen, $rrow->reviewId];
             }
         }
     }
