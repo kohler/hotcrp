@@ -316,30 +316,6 @@ class PaperList {
             return "";
     }
 
-    function _sortReviewOrdinal(&$rows) {
-        for ($i = 0; $i < count($rows); $i++) {
-            for ($j = $i + 1; $j < count($rows) && $rows[$i]->paperId == $rows[$j]->paperId; $j++)
-                /* do nothing */;
-            // insertion sort
-            for ($k = $i + 1; $k < $j; $k++) {
-                $v = $rows[$k];
-                for ($l = $k - 1; $l >= $i; $l--) {
-                    $w = $rows[$l];
-                    if ($v->reviewOrdinal && $w->reviewOrdinal)
-                        $cmp = $v->reviewOrdinal - $w->reviewOrdinal;
-                    else if ($v->reviewOrdinal || $w->reviewOrdinal)
-                        $cmp = $v->reviewOrdinal ? -1 : 1;
-                    else
-                        $cmp = $v->reviewId - $w->reviewId;
-                    if ($cmp >= 0)
-                        break;
-                    $rows[$l + 1] = $rows[$l];
-                }
-                $rows[$l + 1] = $v;
-            }
-        }
-    }
-
 
     function _contentDownload($row) {
         if ($row->size == 0 || !$this->contact->can_view_pdf($row))
@@ -617,8 +593,6 @@ class PaperList {
         if (!empty($this->sorters)) {
             $review_rows = count($rows) !== count($pids);
             $rows = $this->_sort($rows, $review_rows);
-            if (isset($this->qopts["allReviewScores"]))
-                $this->_sortReviewOrdinal($rows);
         }
 
         // set `any->optID`
