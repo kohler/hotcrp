@@ -2470,6 +2470,7 @@ class PaperTable {
         if ($this->conf->setting("rev_ratings") != REV_RATINGS_NONE)
             $sel["ratings"] = true;
         $this->all_rrows = $this->conf->reviewRow($sel, $whyNot);
+        usort($this->all_rrows, "PaperInfo::review_compare");
 
         $this->viewable_rrows = array();
         $round_mask = 0;
@@ -2524,6 +2525,10 @@ class PaperTable {
             $this->crows = $this->prow->all_comments();
             $this->mycrows = $this->prow->viewable_comments($Me, null);
         }
+    }
+
+    function all_reviews() {
+        return $this->all_rrows;
     }
 
     function viewable_comments() {

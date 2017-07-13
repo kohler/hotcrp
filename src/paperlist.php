@@ -289,7 +289,7 @@ class PaperList {
         if ($duplicates)
             foreach ($rows as $row)
                 if (isset($row->reviewId)) {
-                    $code .= "if (!\$x) \$x = PaperList::review_row_compare(\$a, \$b);\n";
+                    $code .= "if (!\$x) \$x = PaperInfo::review_compare(\$a, \$b);\n";
                     break;
                 }
 
@@ -565,26 +565,6 @@ class PaperList {
         return $field_list;
     }
 
-    static function review_row_compare($a, $b) {
-        if ($a->paperId != $b->paperId)
-            return $a->paperId < $b->paperId ? -1 : 1;
-        if (!$a->reviewOrdinal !== !$b->reviewOrdinal)
-            return $a->reviewOrdinal ? -1 : 1;
-        else if ($a->reviewOrdinal != $b->reviewOrdinal)
-            return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
-        else if ($a->timeRequested != $b->timeRequested)
-            return $a->timeRequested < $b->timeRequested ? -1 : 1;
-        else if (isset($a->sorter) && isset($b->sorter)
-                 && ($x = strcmp($a->sorter, $b->sorter)) != 0)
-            return $x;
-        else if ($a->reviewType != $b->reviewType)
-            return $a->reviewType < $b->reviewType ? 1 : -1;
-        else if ($a->reviewId != $b->reviewId)
-            return $a->reviewId < $b->reviewId ? -1 : 1;
-        else
-            return 0;
-    }
-
 
     private function _rows($field_list) {
         if (!$field_list)
@@ -623,7 +603,7 @@ class PaperList {
                 $this->review_list[$row->paperId][] = $row;
             }
             foreach ($this->review_list as &$revlist)
-                usort($revlist, "PaperList::review_row_compare");
+                usort($revlist, "PaperInfo::review_compare");
             unset($revlist);
             Dbl::free($result);
         }

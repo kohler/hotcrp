@@ -38,7 +38,7 @@ function loadRows() {
         $wnt = whyNotText($whyNot, "request reviews for");
         error_go(hoturl("paper", ["p" => $prow->paperId]), $wnt);
     }
-    $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
+    $rrows = $Conf->reviewRow(array("paperId" => $prow->paperId, "array" => 1), $whyNot);
 }
 
 function rrow_by_reviewid($rid) {
@@ -420,6 +420,7 @@ if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
 // paper table
 $paperTable = new PaperTable($prow, make_qreq(), "assign");
 $paperTable->initialize(false, false);
+$paperTable->resolveReview(false);
 
 confHeader();
 
@@ -442,8 +443,8 @@ if ($Conf->setting("extrev_chairreq")) {
     $result = $Conf->qe_apply("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy, reason, reviewRound from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=?$q", $qv);
     $proposals = edb_orows($result);
 }
-$t = reviewTable($prow, $rrows, null, null, "assign", $proposals);
-$t .= reviewLinks($prow, $rrows, null, null, "assign", $allreviewslink);
+$t = reviewTable($prow, $paperTable->all_reviews(), null, null, "assign", $proposals);
+$t .= reviewLinks($prow, $paperTable->all_reviews(), null, null, "assign", $allreviewslink);
 if ($t !== "")
     echo '<hr class="papcard_sep" />', $t;
 

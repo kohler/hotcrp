@@ -104,8 +104,9 @@ class HotCRPMailer extends Mailer {
                 ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
                 from PaperReview
                 join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
-                where PaperReview.paperId=" . $this->row->paperId . " order by reviewOrdinal");
+                where PaperReview.paperId=" . $this->row->paperId);
             $rrows = edb_orows($result);
+            usort($rrows, "PaperInfo::review_compare");
         }
 
         // save old au_seerev setting, and reset it so authors can see them.

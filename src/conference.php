@@ -2626,9 +2626,7 @@ class Conf {
             $qv[] = $selector["contactId"];
         }
 
-        // this review order is also implemented by PaperList::review_row_compare
-        $q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId
-                order by " . join(", ", $order) . ", reviewOrdinal, timeRequested, reviewType desc, reviewId";
+        $q .= " where " . join(" and ", $where) . " group by PaperReview.reviewId";
 
         $result = $this->qe_apply($q, $qv);
         if (!$result) {

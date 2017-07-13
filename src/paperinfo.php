@@ -1550,6 +1550,31 @@ class PaperInfo {
             && $contact->can_view_review_identity($this, $rrow, $forceShow);
     }
 
+    static function review_compare($a, $b) {
+        if ($a->paperId != $b->paperId)
+            return (int) $a->paperId < (int) $b->paperId ? -1 : 1;
+        if ($a->reviewOrdinal && $b->reviewOrdinal
+            && $a->reviewOrdinal != $b->reviewOrdinal)
+            return (int) $a->reviewOrdinal < (int) $b->reviewOrdinal ? -1 : 1;
+        $asub = (int) $a->reviewSubmitted;
+        $bsub = (int) $b->reviewSubmitted;
+        if (($asub > 0) != ($bsub > 0))
+            return $asub > 0 ? -1 : 1;
+        if ($asub != $bsub)
+            return $asub < $bsub ? -1 : 1;
+        if ($a->timeRequested != $b->timeRequested)
+            return (int) $a->timeRequested < (int) $b->timeRequested ? -1 : 1;
+        if (isset($a->sorter) && isset($b->sorter)
+            && ($x = strcmp($a->sorter, $b->sorter)) != 0)
+            return $x;
+        if ($a->reviewType != $b->reviewType)
+            return (int) $a->reviewType > (int) $b->reviewType ? -1 : 1;
+        if ($a->reviewId != $b->reviewId)
+            return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
+        return 0;
+    }
+
+
     static function fetch_comment_query() {
         return "select PaperComment.*,
             firstName reviewFirstName, lastName reviewLastName, email reviewEmail
