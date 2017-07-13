@@ -661,6 +661,17 @@ class ReviewForm {
         }
     }
 
+    function author_nonempty($rrow) {
+        foreach ($this->forder as $field => $f)
+            if ($f->view_score >= VIEWSCORE_AUTHORDEC
+                && (!$f->round_mask || $f->is_round_visible($rrow))
+                && ($f->has_options
+                    ? $rrow->$field != 0
+                    : (string) $rrow->$field !== ""))
+                return true;
+        return false;
+    }
+
     function word_count($rrow) {
         $wc = 0;
         foreach ($this->forder as $field => $f)
@@ -740,35 +751,42 @@ class ReviewForm {
         if ($rrow && $rrow->reviewModified > 1 && $rrow->reviewModified > $now)
             $now = $rrow->reviewModified + 1;
 
-        // potentially assign review ordinal (requires table locking since
-        // mySQL is stupid)
-        $locked = false;
         if ($newsubmit) {
-            $diff_view_score = max($diff_view_score, VIEWSCORE_AUTHOR);
             array_push($qf, "reviewSubmitted=?", "reviewNeedsSubmit=?");
             array_push($qv, $now, 0);
-            if (!$rrow || !$rrow->reviewOrdinal) {
-                $table_suffix = "";
-                if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
-                    $table_suffix = ", PaperTag read";
-                $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
-                if (!$result)
-                    return $result;
-                $locked = true;
-                $result = $this->conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
-                if ($result) {
-                    $crow = edb_row($result);
-                    // NB `coalesce(reviewOrdinal,0)` is not necessary in modern schemas
-                    $qf[] = "reviewOrdinal=if(coalesce(reviewOrdinal,0)=0,?,reviewOrdinal)";
-                    $qv[] = $crow[0] + 1;
-                }
-                Dbl::free($result);
-                $qf[] = "timeDisplayed=?";
-                $qv[] = $now;
-            }
         }
         if ($approval_requested) {
             $qf[] = "timeApprovalRequested=?";
+            $qv[] = $now;
+        }
+
+        // potentially assign review ordinal (requires table locking since
+        // mySQL is stupid)
+        $locked = $newordinal = false;
+        if ((!$rrow && $newsubmit && $diff_view_score >= VIEWSCORE_AUTHORDEC)
+            || ($rrow && !$rrow->reviewOrdinal
+                && ($rrow->reviewSubmitted > 0 || $newsubmit)
+                && ($diff_view_score >= VIEWSCORE_AUTHORDEC
+                    || $this->author_nonempty($rrow)))) {
+            $table_suffix = "";
+            if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
+                $table_suffix = ", PaperTag read";
+            $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
+            if (!$result)
+                return $result;
+            $locked = true;
+            $result = $this->conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
+            if ($result) {
+                $crow = edb_row($result);
+                // NB `coalesce(reviewOrdinal,0)` is not necessary in modern schemas
+                $qf[] = "reviewOrdinal=if(coalesce(reviewOrdinal,0)=0,?,reviewOrdinal)";
+                $qv[] = $crow[0] + 1;
+            }
+            Dbl::free($result);
+            $newordinal = true;
+        }
+        if ($newsubmit || $newordinal || ($submit && !$rrow->timeDisplayed)) {
+            $qf[] = "timeDisplayed=?";
             $qv[] = $now;
         }
 
@@ -894,7 +912,7 @@ class ReviewForm {
             $rrow = $this->conf->reviewRow(["paperId" => $prow->paperId, "reviewId" => $reviewId]);
         $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
                                "check_function" => "HotCRPMailer::check_can_view_review"];
-        if ($submit)
+        if ($submit && $rrow->reviewOrdinal)
             $this->_mailer_info["reviewNumber"] = $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
         if ($submit && ($notify || $notify_author) && $rrow) {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
@@ -1696,7 +1714,7 @@ $blind\n";
         echo "<h3>";
         if ($rrow) {
             echo '<a href="', hoturl("review", "r=$reviewOrdinal" . $forceShow), '" class="q">Edit Review';
-            if ($rrow->reviewSubmitted)
+            if ($rrow->reviewOrdinal)
                 echo "&nbsp;#", $reviewOrdinal;
             echo "</a>";
         } else

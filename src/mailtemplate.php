@@ -254,10 +254,10 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "reviewsubmit" =>
-     array("subject" => "[%CONFSHORTNAME%] Submitted review #%REVIEWNUMBER% %TITLEHINT%",
+     array("subject" => "[%CONFSHORTNAME%] Submitted %REVIEWNAME(SUBJECT)% %TITLEHINT%",
            "body" => "Greetings,
 
-Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted. The review is available at the paper site.
+%REVIEWNAME% for %CONFNAME% paper #%NUMBER% has been submitted. The review is available at the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
        Title: %TITLE%
@@ -273,10 +273,10 @@ Contact %ADMIN% with any questions or concerns.
 %REVIEWS%\n"),
 
      "reviewupdate" =>
-     array("subject" => "[%CONFSHORTNAME%] Updated review #%REVIEWNUMBER% %TITLEHINT%",
+     array("subject" => "[%CONFSHORTNAME%] Updated %REVIEWNAME(SUBJECT)% %TITLEHINT%",
            "body" => "Greetings,
 
-Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated. The review is available at the paper site.
+%REVIEWNAME% for %CONFNAME% paper #%NUMBER% has been updated. The review is available at the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
        Title: %TITLE%

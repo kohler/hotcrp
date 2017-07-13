@@ -2327,6 +2327,7 @@ class Contact {
         // See also PaperInfo::can_view_review_identity_of.
         return ($rights->act_author_view
                 && $rrowSubmitted
+                && (!$rrow || $rrow->reviewOrdinal > 0)
                 && $this->can_view_submitted_review_as_author($prow)
                 && ($viewscore >= VIEWSCORE_AUTHOR
                     || ($viewscore >= VIEWSCORE_AUTHORDEC

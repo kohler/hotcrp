@@ -2803,7 +2803,7 @@ function add_review(rrow) {
                 + '&nbsp;<u>Plain text</u></a>');
 
     hc.push('<h3><a href="' + hoturl_html("review", rlink) + '" class="u">'
-            + 'Review' + (rrow.submitted ? '&nbsp;#' + rid : '') + '</a></h3>');
+            + 'Review' + (rrow.ordinal ? '&nbsp;#' + rid : '') + '</a></h3>');
 
     // author info
     var revinfo = [], rtype_text = "";

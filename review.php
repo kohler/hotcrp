@@ -240,7 +240,7 @@ function downloadForm($editable) {
     if ($editable)
         $text = $rf->textFormHeader(count($rrows) > 1) . $text;
     $filename = (count($rrows) > 1 ? "reviews" : "review") . "-" . $prow->paperId;
-    if (count($rrows) == 1 && $rrows[0]->reviewSubmitted)
+    if (count($rrows) == 1 && $rrows[0]->reviewOrdinal)
         $filename .= unparseReviewOrdinal($rrows[0]->reviewOrdinal);
     downloadText($text, $filename, !$editable);
 }

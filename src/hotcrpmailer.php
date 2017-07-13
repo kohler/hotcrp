@@ -262,6 +262,18 @@ class HotCRPMailer extends Mailer {
         }
         if ($what == "%NUMBER%" || $what == "%PAPER%")
             return $this->row->paperId;
+        if ($what == "%REVIEWNAME(SUBJECT)%") {
+            if ($this->reviewNumber !== "")
+                return "review #" . $this->reviewNumber;
+            else
+                return "review";
+        }
+        if ($what == "%REVIEWNAME%" || str_starts_with($what, "%REVIEWNAME(")) {
+            if ($this->reviewNumber !== "")
+                return "Review #" . $this->reviewNumber;
+            else
+                return "A review";
+        }
         if ($what == "%REVIEWNUMBER%")
             return $this->reviewNumber;
         if ($what == "%REVIEWID%") {

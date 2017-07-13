@@ -81,8 +81,10 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
 
         // review ID
         $id = "Review";
-        if ($rr->reviewSubmitted)
+        if ($rr->reviewOrdinal)
             $id .= " #" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
+        else if ($rr->reviewSubmitted)
+            /* OK */;
         else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
             $id .= " (delegated)";
         else if ($rr->reviewModified > 1 && $rr->timeApprovalRequested > 0)
