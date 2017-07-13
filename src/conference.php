@@ -2364,16 +2364,24 @@ class Conf {
         // fields
         if ($myPaperReview) {
             // see also papercolumn.php
-            array_push($cols, "PaperReview.reviewType, PaperReview.reviewId",
-                       "PaperReview.reviewModified, PaperReview.reviewSubmitted, PaperReview.timeApprovalRequested",
-                       "PaperReview.reviewNeedsSubmit, PaperReview.reviewOrdinal",
-                       "PaperReview.reviewBlind, PaperReview.reviewToken, PaperReview.timeRequested",
-                       "PaperReview.contactId as reviewContactId, PaperReview.requestedBy",
+            array_push($cols, "PaperReview.reviewId",
+                       "PaperReview.contactId as reviewContactId",
+                       "PaperReview.reviewToken",
+                       "PaperReview.reviewType",
+                       "PaperReview.reviewRound",
+                       "PaperReview.requestedBy",
+                       "PaperReview.timeRequested",
+                       "PaperReview.reviewBlind",
+                       "PaperReview.reviewModified",
+                       "PaperReview.reviewSubmitted",
+                       "PaperReview.reviewAuthorSeen",
+                       "PaperReview.reviewOrdinal",
+                       "PaperReview.timeApprovalRequested",
+                       "PaperReview.reviewNeedsSubmit",
                        "max($myPaperReview.reviewType) as myReviewType",
                        "max($myPaperReview.reviewSubmitted) as myReviewSubmitted",
                        "min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit",
-                       "$myPaperReview.contactId as myReviewContactId",
-                       "PaperReview.reviewRound");
+                       "$myPaperReview.contactId as myReviewContactId");
         } else
             $cols[] = "null reviewType, null reviewId, null myReviewType";
 

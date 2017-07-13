@@ -1315,7 +1315,7 @@ class Review_SearchTerm extends SearchTerm {
             $wheretext = "";
             if (!empty($where))
                 $wheretext = " where " . join(" and ", $where);
-            $sqi->add_table($thistab, array("left join", "(select r.paperId, count(r.reviewId) count, group_concat(r.reviewId, ' ', r.contactId, ' ', r.reviewType, ' ', coalesce(r.reviewSubmitted,0), ' ', r.reviewNeedsSubmit, ' ', r.requestedBy, ' ', r.reviewToken, ' ', r.reviewBlind) info from $reviewtable$wheretext group by paperId)"));
+            $sqi->add_table($thistab, array("left join", "(select r.paperId, count(r.reviewId) count, group_concat(r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewNeedsSubmit) info from $reviewtable$wheretext group by paperId)"));
             $sqi->add_column($this->fieldname . "_info", $thistab . ".info");
         }
 
@@ -1337,7 +1337,7 @@ class Review_SearchTerm extends SearchTerm {
             $count_only = !$this->rsm->fieldsql;
             foreach (explode(",", $row->{$fieldname . "_info"}) as $info)
                 if ($info !== "") {
-                    list($rrow->reviewId, $rrow->contactId, $rrow->reviewType, $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->requestedBy, $rrow->reviewToken, $rrow->reviewBlind) = explode(" ", $info);
+                    list($rrow->reviewId, $rrow->contactId, $rrow->reviewToken, $rrow->reviewType, $rrow->requestedBy, $rrow->reviewBlind, $rrow->reviewSubmitted, $rrow->reviewAuthorSeen, $rrow->reviewNeedsSubmit) = explode(" ", $info);
                     if ($count_only
                         ? !$srch->user->can_view_review_assignment($row, $rrow, true)
                         : !$srch->user->can_view_review($row, $rrow, true))
