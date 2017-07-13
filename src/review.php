@@ -332,7 +332,7 @@ class ReviewField implements Abbreviatable, JsonSerializable {
 
     function parse_value($text, $strict) {
         if (!$strict && strlen($text) > 1
-            && preg_match('/\A\s*([0-9]+|[A-Z])(\W|\z)/', $text, $m))
+            && preg_match('/\A\s*([0-9]+|[A-Z])(?:\W|\z)/', $text, $m))
             $text = $m[1];
         if (!$strict && ctype_digit($text))
             $text = intval($text);
@@ -533,8 +533,12 @@ class ReviewForm {
             echo '<div class="revev">';
             if ($f->has_options) {
                 echo "<table><tbody>\n";
+                // Keys to $f->options are string if option_letter, else int.
+                // Need to match exactly.
                 if (!$f->parse_value($fval, true))
                     $fval = 0;
+                else if (!$f->option_letter)
+                    $fval = (int) $fval;
                 foreach ($f->options as $num => $what) {
                     echo '<tr><td class="nw">',
                         Ht::radio($field, $num, $fval === $num, ["id" => $field . "_" . $num]),
@@ -544,7 +548,7 @@ class ReviewForm {
                 }
                 if ($f->allow_empty)
                     echo '<tr><td class="nw">',
-                        Ht::radio($field, 0, $fval == 0, ["id" => $field . "_0"]),
+                        Ht::radio($field, 0, $fval === 0, ["id" => $field . "_0"]),
                         '&nbsp;</td>',
                         '<td colspan="2">', Ht::label("No entry"), "</td></tr>\n";
                 echo "</tbody></table>";
