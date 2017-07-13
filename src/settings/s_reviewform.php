@@ -131,25 +131,52 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     public function save(SettingValues $sv, Si $si) {
-        if ($sv->update("review_form", json_encode($this->nrfj))) {
-            $rf = $sv->conf->review_form();
-            $scoreModified = array();
-            foreach ($this->nrfj as $fid => $fj)
-                if (get($fj, "position") && get($fj, "options")) {
-                    $result = $sv->conf->qe_raw("update PaperReview set $fid=0 where $fid>" . count($fj->options));
-                    if ($result && $result->affected_rows > 0)
-                        $scoreModified[] = htmlspecialchars($fj->name);
-                    Dbl::free($result);
-                }
-            foreach ($rf->fmap as $fid => $f) {
-                foreach (self::$setting_prefixes as $fx)
-                    unset($sv->req["$fx$fid"]);
+        global $Now;
+        if (!$sv->update("review_form", json_encode($this->nrfj)))
+            return;
+        $oform = $sv->conf->review_form();
+        $nform = new ReviewForm($this->nrfj, $sv->conf);
+        $scoreModified = array();
+        $reset_wordcount = $assign_ordinal = false;
+        foreach ($nform->all_fields() as $nf) {
+            $of = $oform->fmap[$nf->id];
+            if ($nf->displayed && $nf->has_options) {
+                $result = $sv->conf->qe_raw("update PaperReview set {$nf->id}=0 where {$nf->id}>" . count($nf->options));
+                if ($result && $result->affected_rows > 0)
+                    $scoreModified[] = $nf->name_html;
             }
-            if (count($scoreModified))
-                $sv->warning_at(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
-            $sv->conf->invalidate_caches(["rf" => true]);
-            // reset all word counts in case author visibility changed
+            if ($of->include_word_count() != $nf->include_word_count())
+                $reset_wordcount = true;
+            if ($of->displayed && $of->view_score < VIEWSCORE_AUTHORDEC
+                && $nf->displayed && $nf->view_score >= VIEWSCORE_AUTHORDEC)
+                $assign_ordinal = true;
+            foreach (self::$setting_prefixes as $fx)
+                unset($sv->req[$fx . $nf->id]);
+        }
+        if (!empty($scoreModified))
+            $sv->warning_at(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
+        $sv->conf->invalidate_caches(["rf" => true]);
+        // reset all word counts if author visibility changed
+        if ($reset_wordcount)
             $sv->conf->qe("update PaperReview set reviewWordCount=null");
+        // assign review ordinals if necessary
+        if ($assign_ordinal) {
+            $result = $sv->conf->qe("select * from PaperReview where reviewOrdinal=0 and reviewSubmitted>0");
+            $rrows = edb_orows($result);
+            $locked = false;
+            $q = $qv = [];
+            foreach ($rrows as $rrow)
+                if ($nform->author_nonempty($rrow)) {
+                    if (!$locked) {
+                        $sv->conf->qe("lock tables PaperReview write");
+                        $locked = true;
+                    }
+                    $max_ordinal = $sv->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $rrow->paperId);
+                    if ($max_ordinal !== null)
+                        $sv->conf->qe("update PaperReview set reviewOrdinal=?, timeDisplayed=? where paperId=? and reviewId=?", $max_ordinal + 1, $Now, $rrow->paperId, $rrow->reviewId);
+                }
+            if ($locked)
+                $sv->conf->qe("unlock tables");
         }
     }
 }

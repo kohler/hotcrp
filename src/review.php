@@ -157,7 +157,8 @@ class ReviewField implements Abbreviatable, JsonSerializable {
     }
 
     function include_word_count() {
-        return !$this->has_options && $this->view_score >= VIEWSCORE_AUTHORDEC;
+        return $this->displayed && !$this->has_options
+            && $this->view_score >= VIEWSCORE_AUTHORDEC;
     }
 
     function typical_score() {
@@ -381,9 +382,8 @@ class ReviewForm {
             return strcmp($a->id, $b->id);
     }
 
-    function __construct($rfj, $conf) {
-        global $Conf;
-        $this->conf = $conf ? : $Conf;
+    function __construct($rfj, Conf $conf) {
+        $this->conf = $conf;
 
         // prototype fields
         foreach (array("paperSummary", "commentsToAuthor", "commentsToPC",
@@ -775,12 +775,11 @@ class ReviewForm {
             if (!$result)
                 return $result;
             $locked = true;
-            $result = $this->conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
-            if ($result) {
-                $crow = edb_row($result);
+            $max_ordinal = $this->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
+            if ($max_ordinal !== null) {
                 // NB `coalesce(reviewOrdinal,0)` is not necessary in modern schemas
                 $qf[] = "reviewOrdinal=if(coalesce(reviewOrdinal,0)=0,?,reviewOrdinal)";
-                $qv[] = $crow[0] + 1;
+                $qv[] = $max_ordinal + 1;
             }
             Dbl::free($result);
             $newordinal = true;
