@@ -1270,38 +1270,22 @@ class Review_SearchTerm extends SearchTerm {
         return $this->rsm->rate === null && $this->rsm->has_sole_contact($user->contactId);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if (($thistab = $this->rsm->simple_name()))
-            $thistab = "Reviews_" . $thistab;
-        else
-            $thistab = "Reviews_" . count($sqi->tables);
-        $this->fieldname = $thistab;
+        $q = array();
+        $this->_set_flags($q, $sqi);
+        $sqi->add_review_signature_columns();
+        if ($this->rsm->wordcountexpr)
+            $sqi->add_review_word_count_columns();
 
-        if (!isset($sqi->tables[$thistab])) {
+        if ($this->rsm->is_simple())
+            $thistab = "R_sigs";
+        else {
+            $thistab = "Reviews_" . count($sqi->tables);
+            $this->fieldname = $thistab;
+
             $where = array();
             $reviewtable = "PaperReview r";
-            if ($this->rsm->review_type)
-                $where[] = "reviewType=" . $this->rsm->review_type;
-            $cwhere = array();
-            if ($this->rsm->completeness & ReviewSearchMatcher::COMPLETE)
-                $cwhere[] = "reviewSubmitted>0";
-            if ($this->rsm->completeness & ReviewSearchMatcher::INCOMPLETE)
-                $cwhere[] = "reviewNeedsSubmit!=0";
-            if ($this->rsm->completeness & ReviewSearchMatcher::INPROGRESS)
-                $cwhere[] = "(reviewSubmitted is null and reviewModified>0)";
-            if ($this->rsm->completeness & ReviewSearchMatcher::APPROVABLE) {
-                if ($sqi->srch->privChair)
-                    $cwhere[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
-                else
-                    $cwhere[] = "(reviewSubmitted is null and timeApprovalRequested>0 and requestedBy={$sqi->user->cid})";
-            }
-            if (!empty($cwhere))
-                $where[] = "(" . join(" or ", $cwhere) . ")";
-            if ($this->rsm->round !== null) {
-                if (empty($this->rsm->round))
-                    $where[] = "false";
-                else
-                    $where[] = "reviewRound" . sql_in_numeric_set($this->rsm->round);
-            }
+            if ($this->rsm->completeness & ReviewSearchMatcher::APPROVABLE)
+                $where[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
             if ($this->rsm->rate !== null)
                 $sqi->srch->_add_rating_sql($reviewtable, $where, $this->rsm->rate);
             if ($this->rsm->has_contacts()) {
@@ -1315,12 +1299,10 @@ class Review_SearchTerm extends SearchTerm {
             $wheretext = "";
             if (!empty($where))
                 $wheretext = " where " . join(" and ", $where);
-            $sqi->add_table($thistab, array("left join", "(select r.paperId, count(r.reviewId) count, group_concat(r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewNeedsSubmit) info from $reviewtable$wheretext group by paperId)"));
-            $sqi->add_column($this->fieldname . "_info", $thistab . ".info");
+            $sqi->add_table($thistab, array("left join", "(select r.paperId, count(r.reviewId) count, group_concat(r.reviewId) reviewIds from $reviewtable$wheretext group by paperId)"));
+            $sqi->add_column($this->fieldname . "_reviewIds", $thistab . ".reviewIds");
         }
 
-        $q = array();
-        $this->_set_flags($q, $sqi);
         // Make the database query conservative (so change equality
         // constraints to >= constraints, and ignore <=/</!= constraints).
         // We'll do the precise query later.
@@ -1330,33 +1312,21 @@ class Review_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         if (!$this->_check_flags($row, $srch))
             return false;
-        $fieldname = $this->fieldname;
-        if (!isset($row->$fieldname)) {
-            $row->$fieldname = 0;
-            $rrow = (object) array("paperId" => $row->paperId);
-            $count_only = !$this->rsm->fieldsql;
-            foreach (explode(",", $row->{$fieldname . "_info"}) as $info)
-                if ($info !== "") {
-                    list($rrow->reviewId, $rrow->contactId, $rrow->reviewToken, $rrow->reviewType, $rrow->requestedBy, $rrow->reviewBlind, $rrow->reviewSubmitted, $rrow->reviewAuthorSeen, $rrow->reviewNeedsSubmit) = explode(" ", $info);
-                    if ($count_only
-                        ? !$srch->user->can_view_review_assignment($row, $rrow, true)
-                        : !$srch->user->can_view_review($row, $rrow, true))
-                        continue;
-                    if ($this->rsm->has_contacts()
-                        ? !$srch->user->can_view_review_identity($row, $rrow, true)
-                        : /* don't count delegated reviews unless contacts given */
-                          $rrow->reviewSubmitted <= 0 && $rrow->reviewNeedsSubmit <= 0)
-                        continue;
-                    if (isset($this->rsm->view_score)
-                        && $this->rsm->view_score <= $srch->user->view_score_bound($row, $rrow))
-                        continue;
-                    if ($this->rsm->wordcountexpr
-                        && !$this->rsm->wordcountexpr->test($srch->word_count_for($row, $rrow->reviewId)))
-                        continue;
-                    ++$row->$fieldname;
-                }
+        if ($this->fieldname)
+            $rids = explode(",", $row->{$this->fieldname . "_reviewIds"});
+        else
+            $rids = array_keys($row->reviews_by_id());
+        $n = 0;
+        if (!empty($rids) && $rids[0] !== "") {
+            if ($this->rsm->wordcountexpr)
+                $row->ensure_review_word_counts();
+            foreach ($rids as $rid) {
+                $rrow = get($row->reviews_by_id(), $rid);
+                assert($rrow !== null);
+                $n += $this->rsm->test_review($srch->user, $row, $rrow, $srch);
+            }
         }
-        return $this->rsm->test((int) $row->$fieldname);
+        return $this->rsm->test($n);
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
@@ -2261,6 +2231,50 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         } else
             return false;
     }
+    function is_simple() {
+        return !($this->completeness & self::APPROVABLE)
+            && !$this->fieldsql
+            && $this->rate === null;
+    }
+    function test_review(Contact $user, PaperInfo $prow, ReviewInfo $rrow, PaperSearch $srch) {
+        if ($this->review_type && $this->review_type !== $rrow->reviewType)
+            return false;
+        if ($this->completeness) {
+            // NB APPROVABLE is assumed to be tested earlier; we limit
+            if ((($this->completeness & self::COMPLETE)
+                 && !$rrow->reviewSubmitted)
+                || (($this->completeness & self::INCOMPLETE)
+                    && $rrow->reviewNeedsSubmit)
+                || (($this->completeness & self::INPROGRESS)
+                    && ($rrow->reviewSubmitted || !$rrow->reviewModified))
+                || (($this->completeness & self::APPROVABLE)
+                    && !$user->allow_administer($prow)
+                    && $rrow->requestedBy != $user->contactId))
+                return false;
+        }
+        if ($this->round !== null && !in_array($rrow->reviewRound, $this->round))
+            return false;
+        if ($this->fieldsql
+            ? !$user->can_view_review($prow, $rrow, true)
+            : !$user->can_view_review_assignment($prow, $rrow, true))
+            return false;
+        if ($this->has_contacts()) {
+            if (!$this->test_contact($rrow->contactId)
+                && (!$this->tokens || !in_array($rrow->reviewToken, $this->tokens)))
+                return false;
+            if (!$user->can_view_review_identity($prow, $rrow, true))
+                return false;
+        } else if ($rrow->reviewSubmitted <= 0 && $rrow->reviewNeedsSubmit <= 0)
+            // don't count delegated reviews unless contacts given
+            return false;
+        if ($this->wordcountexpr
+            && !$this->wordcountexpr->test($rrow->reviewWordCount))
+            return false;
+        if (isset($this->view_score)
+            && $this->view_score <= $user->view_score_bound($prow, $rrow))
+            return false;
+        return true;
+    }
 }
 
 class RevprefSearchMatcher extends ContactCountMatcher {
@@ -2323,6 +2337,26 @@ class SearchQueryInfo {
             $this->add_column("myReviewSubmitted", "MyReview.reviewSubmitted");
         }
     }
+    function add_review_signature_columns() {
+        if (!isset($this->columns["reviewSignatures"])) {
+            $this->add_table("R_sigs", ["left join", "(select paperId, count(*) count, " . ReviewInfo::review_signature_sql() . " reviewSignatures from PaperReview r group by paperId)"]);
+            $this->add_column("reviewSignatures", "R_sigs.reviewSignatures");
+        }
+    }
+    function add_score_columns($fid) {
+        $this->add_review_signature_columns();
+        if (!isset($this->columns["{$fid}Signature"])) {
+            $this->tables["R_sigs"][1] = str_replace(" from PaperReview", ", group_concat($fid order by reviewId) {$fid}Signature from PaperReview", $this->tables["R_sigs"][1]);
+            $this->add_column("{$fid}Signature", "R_sigs.{$fid}Signature");
+        }
+    }
+    function add_review_word_count_columns() {
+        $this->add_review_signature_columns();
+        if (!isset($this->columns["reviewWordCountSignature"])) {
+            $this->tables["R_sigs"][1] = str_replace(" from PaperReview", ", group_concat(coalesce(reviewWordCount,'.') order by reviewId) reviewWordCountSignature from PaperReview", $this->tables["R_sigs"][1]);
+            $this->add_column("reviewWordCountSignature", "R_sigs.reviewWordCountSignature");
+        }
+    }
     function add_rights_columns() {
         if (!isset($this->columns["managerContactId"]))
             $this->columns["managerContactId"] = "Paper.managerContactId";
@@ -2379,7 +2413,6 @@ class PaperSearch {
     public $_interesting_ratings = array();
     private $_ssRecursion = array();
     private $_allow_deleted = false;
-    private $_reviewWordCounts = false;
     public $thenmap = null;
     public $groupmap = null;
     public $is_order_anno = false;
@@ -3205,17 +3238,6 @@ class PaperSearch {
     // Check the results of the query, reducing the possibly conservative
     // overestimate produced by the database to a precise result.
 
-    function word_count_for(PaperInfo $row, $reviewId) {
-        if ($this->_reviewWordCounts === false)
-            $this->_reviewWordCounts = Dbl::fetch_iimap($this->conf->qe("select reviewId, reviewWordCount from PaperReview"));
-        if (!isset($this->_reviewWordCounts[$reviewId])) {
-            $cid2rid = $row->all_review_ids();
-            foreach ($row->all_review_word_counts($row) as $cid => $rwc)
-                $this->_reviewWordCounts[$cid2rid[$cid]] = $rwc;
-        }
-        return $this->_reviewWordCounts[$reviewId];
-    }
-
     private function _add_deleted_papers($qe) {
         if ($qe->type === "or" || $qe->type === "then") {
             foreach ($qe->child as $subt)
@@ -3447,21 +3469,12 @@ class PaperSearch {
                 && $this->conf->has_any_manager()
                 && $this->conf->tags()->has_sitewide))
             $sqi->add_column("paperTags", "(select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag where PaperTag.paperId=Paper.paperId)");
-        if (get($this->_query_options, "scores")
-            || get($this->_query_options, "reviewTypes")
-            || get($this->_query_options, "reviewContactIds")) {
-            $j = "group_concat(contactId order by reviewId) reviewContactIds";
-            $sqi->add_column("reviewContactIds", "R_submitted.reviewContactIds");
-            if (get($this->_query_options, "reviewTypes")) {
-                $j .= ", group_concat(reviewType order by reviewId) reviewTypes";
-                $sqi->add_column("reviewTypes", "R_submitted.reviewTypes");
-            }
-            foreach (get($this->_query_options, "scores") ? : array() as $f) {
-                $j .= ", group_concat($f order by reviewId) {$f}Scores";
-                $sqi->add_column("{$f}Scores", "R_submitted.{$f}Scores");
-            }
-            $sqi->add_table("R_submitted", array("left join", "(select paperId, $j from PaperReview where reviewSubmitted>0 group by paperId)"));
-        }
+        if (get($this->_query_options, "reviewSignatures"))
+            $sqi->add_review_signature_columns();
+        foreach (get($this->_query_options, "scores", []) as $f)
+            $sqi->add_score_columns($f);
+        if (get($this->_query_options, "reviewWordCounts"))
+            $sqi->add_review_word_count_columns();
 
         // create query
         $q = "select ";
@@ -3541,7 +3554,7 @@ class PaperSearch {
                 }
             }
         } else
-            $this->_matches = $rowset->pids();
+            $this->_matches = $rowset->paper_ids();
 
         // add deleted papers explicitly listed by number (e.g. action log)
         if ($this->_allow_deleted)

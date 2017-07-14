@@ -395,22 +395,18 @@ class ReviewStatusPaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if ($pl->contact->privChair)
-            $pl->qopts["startedReviewCount"] = true;
-        else if ($pl->contact->is_reviewer())
-            $pl->qopts["startedReviewCount"] = $pl->qopts["inProgressReviewCount"] = true;
-        else if ($pl->conf->timeAuthorViewReviews())
-            $pl->qopts["inProgressReviewCount"] = true;
-        else
+        if ($pl->contact->privChair || $pl->contact->is_reviewer() || $pl->conf->timeAuthorViewReviews()) {
+            $pl->qopts["reviewSignatures"] = true;
+            return true;
+        } else
             return false;
-        return true;
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         foreach ($rows as $row) {
             if (!$pl->contact->can_view_review_assignment($row, null, null))
                 $row->_review_status_sort_info = -2147483647;
             else
-                $row->_review_status_sort_info = $row->num_reviews_submitted()
+                $row->_review_status_sort_info = $row->num_reviews_submitted($pl->contact)
                     + $row->num_reviews_started($pl->contact) / 1000.0;
         }
     }
@@ -429,12 +425,12 @@ class ReviewStatusPaperColumn extends PaperColumn {
         return !$pl->contact->can_view_review_assignment($row, null, null);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $done = $row->num_reviews_submitted();
+        $done = $row->num_reviews_submitted($pl->contact);
         $started = $row->num_reviews_started($pl->contact);
         return "<b>$done</b>" . ($done == $started ? "" : "/$started");
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $done = $row->num_reviews_submitted();
+        $done = $row->num_reviews_submitted($pl->contact);
         $started = $row->num_reviews_started($pl->contact);
         return $done . ($done == $started ? "" : "/$started");
     }
@@ -1122,42 +1118,48 @@ class ReviewerListPaperColumn extends PaperColumn {
         if (!$pl->contact->can_view_some_review_identity(null))
             return false;
         $this->topics = $pl->conf->has_topics();
-        if ($visible) {
-            $pl->qopts["reviewList"] = 1;
-            if ($pl->contact->privChair)
-                $pl->qopts["allReviewerPreference"] = $pl->qopts["topics"] = 1;
-        }
+        $pl->qopts["reviewSignatures"] = true;
+        if ($visible && $pl->contact->privChair)
+            $pl->qopts["allReviewerPreference"] = $pl->qopts["topics"] = true;
         return true;
     }
     function header(PaperList $pl, $is_text) {
         return "Reviewers";
     }
+    private function reviews_with_names(PaperInfo $row) {
+        if (($rrows = $row->reviews_by_id())) {
+            $row->ensure_reviewer_names();
+            usort($rrows, "ReviewInfo::compare");
+        }
+        return $rrows;
+    }
     function content(PaperList $pl, PaperInfo $row) {
         // see also search.php > getaction == "reviewers"
-        if (!isset($pl->review_list[$row->paperId]))
-            return "";
         $x = [];
-        foreach ($pl->review_list[$row->paperId] as $xrow) {
-            $ranal = $pl->make_review_analysis($xrow, $row);
-            $n = $pl->contact->reviewer_html_for($xrow) . "&nbsp;" . $ranal->icon_html(false);
-            if ($pl->contact->privChair) {
-                $pref = $row->reviewer_preference((int) $xrow->contactId);
-                if ($this->topics && $row->has_topics())
-                    $pref[2] = $row->topic_interest_score((int) $xrow->contactId);
-                $n .= unparse_preference_span($pref);
+        foreach ($this->reviews_with_names($row) as $xrow)
+            if ($pl->contact->can_view_review_identity($row, $xrow, true)) {
+                $ranal = $pl->make_review_analysis($xrow, $row);
+                $n = $pl->contact->reviewer_html_for($xrow) . "&nbsp;" . $ranal->icon_html(false);
+                if ($pl->contact->privChair) {
+                    $pref = $row->reviewer_preference((int) $xrow->contactId);
+                    if ($this->topics && $row->has_topics())
+                        $pref[2] = $row->topic_interest_score((int) $xrow->contactId);
+                    $n .= unparse_preference_span($pref);
+                }
+                $x[] = '<span class="nw">' . $n . '</span>';
             }
-            $x[] = '<span class="nw">' . $n . '</span>';
-        }
-        return $pl->maybeConflict($row, join(", ", $x),
-                                  $pl->contact->can_view_review_identity($row, null, false));
+        if (empty($x))
+            return "";
+        else
+            return $pl->maybeConflict($row, join(", ", $x), $pl->contact->can_view_review_identity($row, null, false));
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (!isset($pl->review_list[$row->paperId])
-            || !$pl->contact->can_view_review_identity($row, null))
+        if (!$pl->contact->can_view_review_identity($row, null))
             return "";
         $x = [];
-        foreach ($pl->review_list[$row->paperId] as $xrow)
-            $x[] = $pl->contact->name_text_for($xrow);
+        foreach ($this->reviews_with_names($row) as $xrow)
+            if ($pl->contact->can_view_review_identity($row, $xrow))
+                $x[] = $pl->contact->name_text_for($xrow);
         return join("; ", $x);
     }
 }
@@ -1452,7 +1454,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
         if ($visible && $this->not_me
             && (!$pl->contact->privChair || $pl->conf->has_any_manager()))
-            $pl->qopts["reviewIdentities"] = true;
+            $pl->qopts["reviewSignatures"] = true;
     }
     function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
         return null;
@@ -1524,7 +1526,13 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         return true;
     }
     function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
-        return $row->viewable_scores($this->form_field, $pl->contact, $forceShow);
+        $fid = $this->form_field->id;
+        $row->ensure_review_score($this->form_field);
+        $scores = [];
+        foreach ($row->viewable_submitted_reviews_by_user($pl->contact, $forceShow) as $rrow)
+            if ($rrow->$fid)
+                $scores[$rrow->contactId] = $rrow->$fid;
+        return $scores;
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         $this->_sortinfo = "_score_sortinfo." . $this->score . $sorter->score;
@@ -1539,7 +1547,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         return $this->form_field->id;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        // Do not use viewable_scores to determine content emptiness, since
+        // Do not use score_values to determine content emptiness, since
         // that would load the scores from the DB -- even for folded score
         // columns.
         return !$row->may_have_viewable_scores($this->form_field, $pl->contact, true);

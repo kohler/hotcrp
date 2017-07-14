@@ -106,7 +106,6 @@ class PaperList {
     public $check_format;
     public $tbody_attr;
     public $row_attr;
-    public $review_list;
     public $table_type;
     public $need_render;
     public $has_editable_tags = false;
@@ -289,7 +288,7 @@ class PaperList {
         if ($duplicates)
             foreach ($rows as $row)
                 if (isset($row->reviewId)) {
-                    $code .= "if (!\$x) \$x = PaperInfo::review_compare(\$a, \$b);\n";
+                    $code .= "if (!\$x) \$x = ReviewInfo::compare(\$a, \$b);\n";
                     break;
                 }
 
@@ -562,27 +561,6 @@ class PaperList {
                 $pids[$row->paperId] = true;
             }
         Dbl::free($result);
-
-        // prepare review query (see also search > getfn == "reviewers")
-        $this->review_list = array();
-        if (isset($this->qopts["reviewList"]) && $rowset->all()) {
-            $result = $this->conf->qe("select Paper.paperId, reviewId, reviewType,
-                reviewSubmitted, reviewModified, timeApprovalRequested, reviewNeedsSubmit, reviewRound,
-                reviewOrdinal, timeRequested,
-                PaperReview.contactId, lastName, firstName, email
-                from Paper
-                join PaperReview using (paperId)
-                join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
-                where paperId?a", array_keys($pids));
-            while (($row = edb_orow($result))) {
-                Contact::set_sorter($row, $this->conf);
-                $this->review_list[$row->paperId][] = $row;
-            }
-            foreach ($this->review_list as &$revlist)
-                usort($revlist, "PaperInfo::review_compare");
-            unset($revlist);
-            Dbl::free($result);
-        }
 
         // analyze rows (usually noop)
         $rows = $rowset->all();

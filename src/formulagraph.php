@@ -203,13 +203,14 @@ class FormulaGraph {
             $d = [0, 0, 0];
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             foreach ($revs as $rcid) {
+                $rrow = $rcid ? $prow->review_by_user($rcid) : null;
                 $d[0] = $fxf($prow, $rcid, $this->user);
                 $d[1] = $fyf($prow, $rcid, $this->user);
                 if ($d[0] === null || $d[1] === null)
                     continue;
                 $d[2] = $prow->paperId;
-                if ($rcid && ($o = $prow->review_ordinal($rcid)))
-                    $d[2] .= unparseReviewOrdinal($o);
+                if ($rrow && $rrow->reviewOrdinal)
+                    $d[2] .= unparseReviewOrdinal($rrow->reviewOrdinal);
                 if ($ps === self::REVIEWER_COLOR)
                     $s = get($this->reviewer_color, $d[0]) ? : "";
                 if ($this->fx_type === self::X_QUERY) {
@@ -254,11 +255,12 @@ class FormulaGraph {
             foreach ($revs as $rcid) {
                 if (($x = $fxf($prow, $rcid, $this->user)) === null)
                     continue;
+                $rrow = $rcid ? $prow->review_by_user($rcid) : null;
                 if ($ps === self::REVIEWER_COLOR)
                     $s = get($this->reviewer_color, $d[0]) ? : "";
                 $d = [$x, $fytrack($prow, $rcid, $this->user), $prow->paperId, $s];
-                if ($rcid && ($o = $prow->review_ordinal($rcid)))
-                    $d[2] .= unparseReviewOrdinal($o);
+                if ($rrow && $rrow->reviewOrdinal)
+                    $d[2] .= unparseReviewOrdinal($rrow->reviewOrdinal);
                 foreach ($queries as $q) {
                     $q && ($d[4] = $q);
                     if ($this->fx_type === self::X_TAG)
@@ -405,7 +407,7 @@ class FormulaGraph {
         $this->fx->add_query_options($queryOptions);
         $this->fy->add_query_options($queryOptions);
         if ($this->fx->is_indexed() || $this->fy->is_indexed())
-            $queryOptions["reviewOrdinals"] = true;
+            $queryOptions["reviewSignatures"] = true;
 
         $result = $this->user->paper_result($queryOptions);
         $rowset = new PaperInfoSet;

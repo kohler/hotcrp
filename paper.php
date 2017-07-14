@@ -92,7 +92,6 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
             $reason = defval($_REQUEST, "emailNote", "");
         Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-100,0), withdrawReason=? where paperId=$prow->paperId", $reason != "" ? $reason : null);
-        $numreviews = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$prow->paperId and reviewNeedsSubmit!=0");
         $Conf->update_papersub_setting(-1);
         loadRows();
 
@@ -102,8 +101,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
                                         $prow, array("reason" => $reason, "infoNames" => 1));
 
         // email reviewers
-        if (($numreviews > 0 && $Conf->time_review_open())
-            || $prow->num_reviews_assigned() > 0)
+        if ($prow->reviews_by_id())
             HotCRPMailer::send_reviewers("@withdrawreviewer", $prow, array("reason" => $reason));
 
         // remove voting tags so people don't have phantom votes

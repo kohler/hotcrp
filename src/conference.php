@@ -2301,64 +2301,20 @@ class Conf {
         } else if ($myPaperReview)
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
 
-        // started reviews
-        if (get($options, "startedReviewCount"))
-            $cols[] = "(select count(*) from PaperReview where paperId=Paper.paperId and (reviewSubmitted>0 or reviewNeedsSubmit>0)) startedReviewCount";
-        if (get($options, "inProgressReviewCount"))
-            $cols[] = "(select count(*) from PaperReview where paperId=Paper.paperId and (reviewSubmitted>0 or reviewModified>0)) inProgressReviewCount";
-
-        // submitted reviews
-        $j = "select paperId, count(*) count";
-        $before_ncols = count($cols);
-        if (get($options, "startedReviewCount") || get($options, "inProgressReviewCount"))
-            $cols[] = "coalesce(R_submitted.count,0) reviewCount";
-        if (get($options, "scores"))
-            foreach ($options["scores"] as $fid) {
-                $cols[] = "R_submitted.{$fid}Scores";
-                if ($myPaperReview)
-                    $cols[] = "$myPaperReview.$fid";
-                $j .= ", group_concat($fid order by reviewId) {$fid}Scores";
+        // review signatures
+        if (get($options, "reviewSignatures") || get($options, "scores")
+            || get($options, "reviewWordCounts")) {
+            $cols[] = "R_alls.reviewSignatures";
+            $j = "";
+            foreach (get($options, "scores", []) as $fid) {
+                $cols[] = "R_alls.{$fid}Signature";
+                $j .= ", group_concat($fid order by reviewId) {$fid}Signature";
             }
-        if (get($options, "reviewTypes") || get($options, "reviewIdentities")) {
-            $cols[] = "R_submitted.reviewTypes";
-            $j .= ", group_concat(reviewType order by reviewId) reviewTypes";
-        }
-        if (get($options, "reviewIdentities")) {
-            $cols[] = "R_submitted.reviewRequestedBys";
-            $j .= ", group_concat(requestedBy order by reviewId) reviewRequestedBys";
-            if ($this->review_blindness() == self::BLIND_OPTIONAL) {
-                $cols[] = "R_submitted.reviewBlinds";
-                $j .= ", group_concat(reviewBlind order by reviewId) reviewBlinds";
+            if (get($options, "reviewWordCounts")) {
+                $cols[] = "R_alls.reviewWordCountSignature";
+                $j .= ", group_concat(coalesce(reviewWordCount,'.') order by reviewId) reviewWordCountSignature";
             }
-            if ($contact && $contact->review_tokens()) {
-                $cols[] = "R_submitted.reviewTokens";
-                $j .= ", group_concat(reviewToken order by reviewId) reviewTokens";
-            }
-        }
-        if (get($options, "reviewRounds")) {
-            $cols[] = "R_submitted.reviewRounds";
-            $j .= ", group_concat(reviewRound order by reviewId) reviewRounds";
-        }
-        if (get($options, "reviewWordCounts") && $this->sversion >= 99) {
-            $cols[] = "R_submitted.reviewWordCounts";
-            $j .= ", group_concat(reviewWordCount order by reviewId) reviewWordCounts";
-        }
-        if (get($options, "reviewOrdinals")) {
-            $cols[] = "R_submitted.reviewOrdinals";
-            $j .= ", group_concat(reviewOrdinal order by reviewId) reviewOrdinals";
-        }
-        if (get($options, "reviewTypes") || get($options, "scores") || get($options, "reviewContactIds") || get($options, "reviewOrdinals") || get($options, "reviewIdentities")) {
-            $cols[] = "R_submitted.reviewContactIds";
-            $j .= ", group_concat(contactId order by reviewId) reviewContactIds";
-        }
-        if (count($cols) != $before_ncols)
-            $joins[] = "left join ($j from PaperReview where {$papersel}reviewSubmitted>0 group by paperId) R_submitted on (R_submitted.paperId=Paper.paperId)";
-
-        // assignments
-        if (get($options, "assignments")) {
-            $j = "select paperId, group_concat(contactId order by reviewId) allReviewContactIds, group_concat(reviewType order by reviewId) allReviewTypes, group_concat(reviewRound order by reviewId) allReviewRounds, group_concat(coalesce(reviewSubmitted,0) order by reviewId) allReviewSubmitted, group_concat(reviewNeedsSubmit order by reviewId) allReviewNeedsSubmit";
-            $cols[] = "R_all.allReviewContactIds, R_all.allReviewTypes, R_all.allReviewRounds, R_all.allReviewSubmitted, R_all.allReviewNeedsSubmit";
-            $joins[] = "left join ($j from PaperReview where {$papersel}true group by paperId) R_all on (R_all.paperId=Paper.paperId)";
+            $joins[] = "left join (select paperId, " . ReviewInfo::review_signature_sql() . " reviewSignatures$j from PaperReview r where {$papersel}true group by paperId) R_alls on (R_alls.paperId=Paper.paperId)";
         }
 
         // fields

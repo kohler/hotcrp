@@ -1645,7 +1645,7 @@ class Contact {
 
     function review_token_cid($prow, $rrow = null) {
         if (!$this->review_tokens_)
-            return null;
+            return 0;
         if (!$rrow) {
             $ci = $prow->contact_info($this);
             return $ci->review_token_cid;
@@ -1653,7 +1653,7 @@ class Contact {
                    && array_search($rrow->reviewToken, $this->review_tokens_) !== false)
             return (int) $rrow->contactId;
         else
-            return null;
+            return 0;
     }
 
     function change_review_token($token, $on) {

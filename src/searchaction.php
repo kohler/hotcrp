@@ -122,28 +122,28 @@ class SearchAction {
         $reviewnames = array(REVIEW_PC => "pcreview", REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary");
         $any_round = false;
         $texts = array();
-        $result = $user->paper_result(["paperId" => $selection, "assignments" => 1]);
+        $result = $user->paper_result(["paperId" => $selection, "reviewSignatures" => 1]);
         while (($prow = PaperInfo::fetch($result, $user)))
             if (!$user->allow_administer($prow)) {
                 $texts[] = array();
                 $texts[] = array("paper" => $prow->paperId,
                                  "action" => "none",
                                  "title" => "You cannot override your conflict with this paper");
-            } else if ($prow->all_reviewers()) {
+            } else if ($prow->reviews_by_id()) {
                 $texts[] = array();
                 $texts[] = array("paper" => $prow->paperId,
                                  "action" => "clearreview",
                                  "email" => "#pc",
                                  "round" => "any",
                                  "title" => $prow->title);
-                foreach ($prow->all_reviewers() as $cid)
-                    if (($pc = get($pcm, $cid))
-                        && ($rtype = $prow->review_type($cid)) >= REVIEW_PC) {
-                        $round = $prow->review_round($cid);
+                foreach ($prow->reviews_by_id() as $rrow)
+                    if ($rrow->reviewType >= REVIEW_PC
+                        && ($pc = get($pcm, $rrow->contactId))) {
+                        $round = $rrow->reviewRound;
                         $round_name = $round ? $round_list[$round] : "none";
                         $any_round = $any_round || $round != 0;
                         $texts[] = array("paper" => $prow->paperId,
-                                         "action" => $reviewnames[$rtype],
+                                         "action" => $reviewnames[$rrow->reviewType],
                                          "email" => $pc->email,
                                          "round" => $round_name);
                     }

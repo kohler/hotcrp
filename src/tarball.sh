@@ -180,6 +180,7 @@ src/paperstatus.php
 src/papertable.php
 src/paperrank.php
 src/review.php
+src/reviewinfo.php
 src/reviewtable.php
 src/reviewtimes.php
 src/sa/sa_assign.php

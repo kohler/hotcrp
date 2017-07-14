@@ -2470,7 +2470,7 @@ class PaperTable {
         if ($this->conf->setting("rev_ratings") != REV_RATINGS_NONE)
             $sel["ratings"] = true;
         $this->all_rrows = $this->conf->reviewRow($sel, $whyNot);
-        usort($this->all_rrows, "PaperInfo::review_compare");
+        usort($this->all_rrows, "ReviewInfo::compare");
 
         $this->viewable_rrows = array();
         $round_mask = 0;

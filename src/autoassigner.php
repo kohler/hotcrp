@@ -177,7 +177,7 @@ class Autoassigner {
             $this->eass[(int) $row[1]][(int) $row[0]] = self::ENOASSIGN;
 
         // then load preferences
-        $result = $this->conf->paper_result(null, ["paperId" => $this->papersel, "topics" => true, "allReviewerPreference" => true, "allConflictType" => true, "assignments" => true, "tags" => $this->conf->check_track_sensitivity(Track::ASSREV)]);
+        $result = $this->conf->paper_result(null, ["paperId" => $this->papersel, "topics" => true, "allReviewerPreference" => true, "allConflictType" => true, "reviewSignatures" => true, "tags" => $this->conf->check_track_sensitivity(Track::ASSREV)]);
         $nmade = 0;
         while (($row = PaperInfo::fetch($result, null, $this->conf))) {
             $pid = $row->paperId;

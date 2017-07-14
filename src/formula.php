@@ -626,13 +626,11 @@ class Score_Fexpr extends Sub_Fexpr {
     function compile(FormulaCompiler $state) {
         if ($this->field->view_score <= $state->user->permissive_view_score_bound())
             return "null";
-        $fid = $this->field->id;
-        if (!isset($state->queryOptions["scores"]))
-            $state->queryOptions["scores"] = array();
-        $state->queryOptions["scores"][$fid] = $fid;
         $state->datatype |= Fexpr::ASUBREV;
-        $scores = $state->define_gvar($fid, "\$prow->viewable_scores(\"$fid\", \$contact, \$forceShow)");
-        return "((int) get($scores, " . $state->_rrow_cid() . ") ? : null)";
+        $fid = $this->field->id;
+        $state->_ensure_rrow_score($fid);
+        $rrow = $state->_rrow();
+        return "($rrow && {$rrow}->$fid ? {$rrow}->$fid : null)";
     }
 }
 
@@ -801,9 +799,9 @@ class Revtype_Fexpr extends Sub_Fexpr {
             $view_score = $state->user->permissive_view_score_bound();
             if (VIEWSCORE_PC <= $view_score)
                 return "null";
-            $state->queryOptions["reviewTypes"] = true;
-            $rt = $state->define_gvar("revtypes", "\$prow->submitted_review_types()");
-            return "get($rt, " . $state->_rrow_cid() . ")";
+            $state->queryOptions["reviewSignatures"] = true;
+            $rrow = $state->_rrow();
+            return "($rrow ? {$rrow}->reviewType : null)";
         }
         return $rt;
     }
@@ -818,15 +816,15 @@ class ReviewRound_Fexpr extends Sub_Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
+        $rrow = $state->_rrow();
         if ($state->looptype == self::LMY)
-            $rt = $state->define_gvar("myrevround", "\$prow->review_round(\$contact->contactId)");
+            return $state->define_gvar("myrevround", "{$rrow} ? {$rrow}->reviewRound : null");
         else {
             $view_score = $state->user->permissive_view_score_bound();
             if (VIEWSCORE_PC <= $view_score)
                 return "null";
-            $state->queryOptions["reviewRounds"] = true;
-            $rt = $state->define_gvar("revrounds", "\$prow->submitted_review_rounds()");
-            return "get($rt, " . $state->_rrow_cid() . ")";
+            $state->queryOptions["reviewSignatures"] = true;
+            return "($rrow ? {$rrow}->reviewRound : null)";
         }
         return $rt;
     }
@@ -873,7 +871,7 @@ class Reviewer_Fexpr extends Review_Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
-        $state->queryOptions["reviewIdentities"] = true;
+        $state->queryOptions["reviewSignatures"] = true;
         return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact, $forceShow) ? ' . $state->_rrow_cid() . ' : null)';
     }
 }
@@ -908,7 +906,7 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
         if (!$this->csearch->ids)
             return "null";
         $state->datatype |= self::ASUBREV;
-        $state->queryOptions["reviewIdentities"] = true;
+        $state->queryOptions["reviewSignatures"] = true;
         if ($this->istag) {
             $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
             $tag = $this->arg[0] === "#" ? substr($this->arg, 1) : $this->arg;
@@ -940,18 +938,15 @@ class ReviewWordCount_Fexpr extends Sub_Fexpr {
         return VIEWSCORE_PC;
     }
     function compile(FormulaCompiler $state) {
-        $state->datatype |= self::ASUBREV;
-        if ($state->looptype == self::LMY)
-            $rt = $state->define_gvar("myrevwordcount", "\$prow->submitted_review_word_count(\$contact->contactId)");
-        else {
+        if ($state->looptype != self::LMY) {
             $view_score = $state->user->permissive_view_score_bound();
             if (VIEWSCORE_PC <= $view_score)
                 return "null";
-            $state->queryOptions["reviewWordCounts"] = true;
-            $rt = $state->define_gvar("revwordcounts", "\$prow->submitted_review_word_counts()");
-            return "get($rt, " . $state->_rrow_cid() . ")";
         }
-        return $rt;
+        $state->datatype |= self::ASUBREV;
+        $state->_ensure_review_word_counts();
+        $rrow = $state->_rrow();
+        return "($rrow ? {$rrow}->reviewWordCount : null)";
     }
 }
 
@@ -1016,12 +1011,12 @@ class FormulaCompiler {
             $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer();";
         return '$pc_can_review';
     }
-    function _add_submitted_reviewers() {
-        if ($this->check_gvar('$submitted_reviewers')) {
-            $this->queryOptions["reviewContactIds"] = true;
-            $this->gstmt[] = "\$submitted_reviewers = array_flip(\$prow->viewable_submitted_reviewers(\$contact, \$forceShow));";
+    function _add_vsreviews() {
+        if ($this->check_gvar('$vsreviews')) {
+            $this->queryOptions["reviewSignatures"] = true;
+            $this->gstmt[] = "\$vsreviews = \$prow->viewable_submitted_reviews_by_user(\$contact, \$forceShow);";
         }
-        return '$submitted_reviewers';
+        return '$vsreviews';
     }
     function _add_review_prefs() {
         if ($this->check_gvar('$allrevprefs')) {
@@ -1074,6 +1069,28 @@ class FormulaCompiler {
         else
             return '~i~';
     }
+    function _rrow() {
+        if ($this->looptype == Fexpr::LNONE)
+            return $this->define_gvar("rrow", "\$prow->review_by_user(\$rrow_cid)");
+        else if ($this->looptype == Fexpr::LMY)
+            return $this->define_gvar("myrrow", "\$prow->review_by_user(" . $this->user->contactId . ")");
+        else {
+            $this->_add_vsreviews();
+            return 'get($vsreviews, ~i~)';
+        }
+    }
+    function _ensure_rrow_score($fid) {
+        if (!isset($this->queryOptions["scores"]))
+            $this->queryOptions["scores"] = array();
+        $this->queryOptions["scores"][$fid] = $fid;
+        if ($this->check_gvar('$ensure_score_' . $fid))
+            $this->gstmt[] = '$prow->ensure_review_score("' . $fid . '");';
+    }
+    function _ensure_review_word_counts() {
+        $this->queryOptions["reviewWordCounts"] = true;
+        if ($this->check_gvar('$ensure_reviewWordCounts'))
+            $this->gstmt[] = '$prow->ensure_review_word_counts();';
+    }
 
     private function _push() {
         $this->_stack[] = array($this->lprefix, $this->lstmt, $this->looptype, $this->datatype);
@@ -1099,10 +1116,11 @@ class FormulaCompiler {
     }
     private function _join_lstmt($isblock) {
         $indent = "\n" . str_pad("", $this->indent);
+        $t = $isblock ? "{" . $indent : "";
+        $t .= join($indent, $this->lstmt);
         if ($isblock)
-            return "{" . $indent . join($indent, $this->lstmt) . substr($indent, 0, $this->indent - 1) . "}";
-        else
-            return join($indent, $this->lstmt);
+            $t .= substr($indent, 0, $this->indent - 1) . "}";
+        return $t;
     }
 
     function loop_variable($datatype) {
@@ -1110,7 +1128,7 @@ class FormulaCompiler {
         if ($datatype & Fexpr::APCCANREV)
             $g[] = $this->_add_pc_can_review();
         if ($datatype & Fexpr::ASUBREV)
-            $g[] = $this->_add_submitted_reviewers();
+            $g[] = $this->_add_vsreviews();
         if ($datatype & Fexpr::APREF)
             $g[] = $this->_add_review_prefs();
         if ($datatype & Fexpr::ACONF)
@@ -1152,8 +1170,10 @@ class FormulaCompiler {
         else {
             $g = $this->loop_variable($this->datatype);
             $loop = "foreach ($g as \$i$p => \$v$p) " . $this->_join_lstmt(true);
-            if ($this->datatype == Fexpr::APREF)
-                $loop = str_replace("\$allrevprefs[~i~]", "\$v$p", $loop);
+            if ($this->datatype === Fexpr::ASUBREV)
+                $loop = str_replace('get($vsreviews, ~i~)', "\$v$p", $loop);
+            else if ($this->datatype === Fexpr::APREF)
+                $loop = str_replace('$allrevprefs[~i~]', "\$v$p", $loop);
             $loop = str_replace("~i~", "\$i$p", $loop);
         }
 
@@ -1383,7 +1403,7 @@ class Formula {
         else if (preg_match('/\A(?:|r|re|rev)reviewer\z/i', $t))
             return new Reviewer_Fexpr;
         else if (preg_match('/\A(?:|r|re|rev|review)(?:|au)words\z/i', $t))
-            return new ReviewWordCountFexpr;
+            return new ReviewWordCount_Fexpr;
         else
             return null;
     }
