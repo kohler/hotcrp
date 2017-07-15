@@ -178,7 +178,7 @@ function render(SettingValues $sv) {
             && $sv->newv("sub_sub") > $Now
             && $sv->newv("seedec") != Conf::SEEDEC_ALL
             && $sv->conf->fetch_value("select paperId from Paper where outcome<0 limit 1") > 0)
-            $sv->warning_at(null, "Paper updates are allowed, but only for non-rejected papers. This exposes decision information that would otherwise be hidden from authors.");
+            $sv->warning_at(null, "Updates will not be allowed for rejected submissions. This exposes decision information that would otherwise be hidden from authors.");
 
         if ($sv->has_interest("au_seerev")
             && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
