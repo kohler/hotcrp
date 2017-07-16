@@ -105,6 +105,10 @@ xassert_array_eqq(CsvParser::split_lines("\r\naaa"),
 xassert_array_eqq(CsvParser::split_lines("\na\r\nb\rc\n"),
                   array("\n", "a\r\n", "b\r", "c\n"));
 
+// numrangejoin tests
+xassert_eqq(numrangejoin([1, 2, 3, 4, 6, 8]), "1–4, 6, and 8");
+xassert_eqq(numrangejoin(["#1", "#2", "#3", 4, "xx6", "xx7", 8]), "#1–3, 4, xx6–7, and 8");
+
 // random PHP behavior tests
 if (PHP_MAJOR_VERSION >= 7)
     xassert_eqq(substr("", 0, 1), ""); // UGH

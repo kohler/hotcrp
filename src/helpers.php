@@ -599,14 +599,24 @@ function numrangejoin($range) {
     $i = 0;
     $a = array();
     while ($i < count($range)) {
-        for ($j = $i + 1;
-             $j < count($range) && $range[$j-1] == $range[$j] - 1;
-             $j++)
-            /* nada */;
-        if ($j == $i + 1)
+        $format = $num = null;
+        if ($range[$i] !== "" && ctype_digit($range[$i])) {
+            $plen = 0;
+            $format = "%0" . strlen($range[$i]) . "d";
+            $num = intval($range[$i]);
+        } else if (preg_match('/\A(\D*)(\d+)\z/', $range[$i], $m)) {
+            $plen = strlen($m[1]);
+            $format = str_replace("%", "%%", $m[1]) . "%0" . strlen($m[2]) . "d";
+            $num = intval($m[2]);
+        }
+        $j = $i + 1;
+        while ($format !== null && $j < count($range)
+               && sprintf($format, $num + ($j - $i)) === (string) $range[$j])
+            ++$j;
+        if ($j === $i + 1)
             $a[] = $range[$i];
         else
-            $a[] = $range[$i] . "&ndash;" . $range[$j - 1];
+            $a[] = $range[$i] . "–" . substr($range[$j - 1], $plen);
         $i = $j;
     }
     return commajoin($a);
