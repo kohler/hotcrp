@@ -1242,9 +1242,9 @@ td.rpad {
 .pcconfaff, .pcconfmatch, div.pcrevsum {
 	font-size: 69%;
 }
-.pcconfmatch {
-	color: #ff6600;
+.pcconfmatch-highlight {
 	font-weight: bold;
+	color: #ff6600;
 }
 
 tr.pt_topics > td.entry, tr.pt_actions > td,

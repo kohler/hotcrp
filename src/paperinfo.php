@@ -826,10 +826,9 @@ class PaperInfo {
             foreach ($this->author_list() as $n => $au)
                 foreach ($user->aucollab_matchers() as $matcheridx => $matcher) {
                     if ($matcher->test($au)) {
-                        if ($full_info)
-                            $details[] = ["#" . ($n + 1), '<div class="mmm">Author ' . $matcher->highlight($au) . '<br />matches ' . ($matcheridx ? "PC’s collaborator " : "PC member ") . $matcher->nameaff_html() . '</div>'];
-                        else
+                        if (!$full_info)
                             return true;
+                        $details[] = ["#" . ($n + 1), '<div class="mmm">Author ' . $matcher->highlight($au) . '<br />matches ' . ($matcheridx ? "PC’s collaborator " : "PC member ") . $matcher->nameaff_html() . '</div>'];
                     }
                 }
         }
@@ -842,14 +841,29 @@ class PaperInfo {
             if (Text::match_pregexes($this->collaborator_general_pregexes(), $autext, $autext_deaccent)) {
                 foreach ($this->collaborator_list(true) as $matcher)
                     if ($matcher->test($au)) {
-                        if ($full_info)
-                            $details[] = ["other conflicts", '<div class="mmm">PC member ' . $matcher->highlight($au) . '<br />matches other conflict ' . $matcher->nameaff_html() . '</div>'];
-                        else
+                        if (!$full_info)
                             return true;
+                        $details[] = ["other conflicts", '<div class="mmm">PC member ' . $matcher->highlight($au) . '<br />matches other conflict ' . $matcher->nameaff_html() . '</div>'];
                     }
             }
         }
         return $details;
+    }
+
+    function potential_conflict_html(Contact $user, $highlight = false) {
+        if (!($details = $this->potential_conflict($user, true)))
+            return false;
+        usort($details, function ($a, $b) { return strnatcmp($a[0], $b[0]); });
+        $authors = array_unique(array_map(function ($x) { return $x[0]; }, $details));
+        $authors = array_filter($authors, function ($f) { return $f !== "other conflicts"; });
+        $messages = join("", array_map(function ($x) { return $x[1]; }, $details));
+        return '<div class="pcconfmatch'
+            . ($highlight ? " pcconfmatch-highlight" : "")
+            . ' need-tooltip" data-tooltip-class="gray"'
+            . ' data-tooltip="' . str_replace('"', '&quot;', $messages)
+            . '">Possible conflict'
+            . (empty($authors) ? "" : " with " . pluralx($authors, "author") . " " . numrangejoin($authors))
+            . '</div>';
     }
 
     function field_match_pregexes($reg, $field) {

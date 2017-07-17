@@ -1239,18 +1239,9 @@ class PaperTable {
             $label = Ht::label($Me->name_html_for($p), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
-            if ($this->prow && !$pct
-                && ($details = $this->prow->potential_conflict($p, true))) {
-                usort($details, function ($a, $b) { return strcmp($a[0], $b[0]); });
-                $authors = array_unique(array_map(function ($x) { return $x[0]; }, $details));
-                $authors = array_filter($authors, function ($f) { return $f !== "other conflicts"; });
-                $messages = join("", array_map(function ($x) { return $x[1]; }, $details));
-                $label .= '<div class="pcconfmatch need-tooltip" data-tooltip-class="gray"'
-                    . ' data-tooltip="' . str_replace('"', '&quot;', $messages)
-                    . '">Possible conflict'
-                    . (empty($authors) ? "" : " with " . pluralx($authors, "author") . " " . commajoin($authors))
-                    . '…</div>';
-            }
+            if ($this->prow && $pct < CONFLICT_AUTHOR
+                && ($pcconfmatch = $this->prow->potential_conflict_html($p, $pct <= 0)))
+                $label .= $pcconfmatch;
 
             echo '<div class="ctelt"><div class="ctelti clearfix';
             if ($show_colors && ($classes = $p->viewable_color_classes($Me)))
