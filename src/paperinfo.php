@@ -1208,7 +1208,7 @@ class PaperInfo {
         return $this->_prefs_array;
     }
 
-    function reviewer_preference($contact) {
+    function reviewer_preference($contact, $include_topic_score = false) {
         $cid = is_int($contact) ? $contact : $contact->contactId;
         if ($this->_prefs_cid === null && $this->_prefs_array === null) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
@@ -1225,7 +1225,10 @@ class PaperInfo {
             $pref = $this->_prefs_cid[1];
         else
             $pref = get($this->reviewer_preferences(), $cid);
-        return $pref ? : [0, null];
+        $pref = $pref ? : [0, null];
+        if ($include_topic_score)
+            $pref[] = $this->topic_interest_score($contact);
+        return $pref;
     }
 
     private function load_options($only_me, $need_data) {

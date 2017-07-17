@@ -452,21 +452,13 @@ if ($t !== "")
 // PC assignments
 if ($Me->can_administer($prow)) {
     $result = $Conf->qe("select ContactInfo.contactId,
-        PaperConflict.conflictType,
-        PaperReview.reviewType,
-        coalesce(preference,0) as reviewerPreference,
-        expertise as reviewerExpertise,
-        coalesce(allReviews,'') as allReviews,
-        coalesce(PRR.paperId,0) as refused
+        group_concat(reviewType separator '') allReviews,
+        exists(select paperId from PaperReviewRefused where paperId=? and contactId=ContactInfo.contactId) refused
         from ContactInfo
-        left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=?)
-        left join PaperReview on (PaperReview.paperId=? and PaperReview.contactId=ContactInfo.contactId)
-        left join PaperReviewPreference on (PaperReviewPreference.paperId=? and PaperReviewPreference.contactId=ContactInfo.contactId)
-        left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
-        left join PaperReviewRefused PRR on (PRR.paperId=? and PRR.contactId=ContactInfo.contactId)
+        left join PaperReview using (contactId)
         where ContactInfo.roles!=0 and (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0
         group by ContactInfo.contactId",
-        $prow->paperId, $prow->paperId, $prow->paperId, $prow->paperId);
+        $prow->paperId);
     $pcx = array();
     while (($row = edb_orow($result)))
         $pcx[$row->contactId] = $row;
@@ -503,38 +495,34 @@ if ($Me->can_administer($prow)) {
         // first, name and assignment
         $color = $pc->viewable_color_classes($Me);
         echo '<div class="ctelt"><div class="ctelti' . ($color ? " $color" : "") . '">';
-        if ($p->conflictType >= CONFLICT_AUTHOR) {
+        $conflict_type = $prow->conflict_type($pc);
+        if ($conflict_type >= CONFLICT_AUTHOR) {
             echo '<div class="pctbass">', review_type_icon(-2),
                 Ht::img("_.gif", ">", array("class" => "next", "style" => "visibility:hidden")), '&nbsp;</div>',
-                '<div id="ass' . $p->contactId . '" class="pctbname pctbname-2 taghl">',
+                '<div id="ass' . $pc->contactId . '" class="pctbname pctbname-2 taghl">',
                 $Me->name_html_for($pc), '</div>';
         } else {
-            if ($p->conflictType > 0)
+            if ($conflict_type > 0)
                 $revtype = $value = -1;
             else {
-                $value = $p->reviewType;
-                if ($p->reviewType)
-                    $revtype = $p->reviewType;
-                else
-                    $revtype = ($p->refused ? -3 : 0);
+                $revtype = $value = $prow->review_type($pc);
+                if (!$revtype && $p->refused)
+                    $revtype = -3;
             }
             $title = ($p->refused ? "Review previously declined" : "Assignment");
             // NB manualassign.php also uses the "pcs$contactId" convention
             echo '<div class="pctbass">'
-                . '<div id="foldass' . $p->contactId . '" class="foldc" style="position:relative">'
-                . '<a id="folderass' . $p->contactId . '" href="#">'
+                . '<div id="foldass' . $pc->contactId . '" class="foldc" style="position:relative">'
+                . '<a id="folderass' . $pc->contactId . '" href="#">'
                 . review_type_icon($revtype, false, $title)
                 . Ht::img("_.gif", ">", array("class" => "next")) . '</a>&nbsp;'
-                . Ht::hidden("pcs$p->contactId", $value, ["id" => "pcs$p->contactId", "data-default-value" => $value])
+                . Ht::hidden("pcs$pc->contactId", $value, ["id" => "pcs$pc->contactId", "data-default-value" => $value])
                 . '</div></div>';
 
-            echo '<div id="ass' . $p->contactId . '" class="pctbname pctbname' . $revtype . '">'
+            echo '<div id="ass' . $pc->contactId . '" class="pctbname pctbname' . $revtype . '">'
                 . '<span class="taghl">' . $Me->name_html_for($pc) . '</span>';
-            if ($p->conflictType == 0) {
-                $p->topicInterestScore = $prow->topic_interest_score($pc);
-                if ($p->reviewerPreference || $p->reviewerExpertise || $p->topicInterestScore)
-                    echo unparse_preference_span($p);
-            }
+            if ($conflict_type == 0)
+                echo unparse_preference_span($prow->reviewer_preference($pc, true));
             echo '</div>';
         }
 
