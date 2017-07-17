@@ -718,9 +718,11 @@ span.expander > span.in0 {
 }
 
 /* Action area */
-.aa, .aax {
+.aa {
 	padding: 0.3em;
 	margin: 0.5em 0;
+	background: #f2f2f2;
+	border-radius: 5px;
 }
 .aa:first-child {
 	margin-top: 0;
@@ -728,11 +730,7 @@ span.expander > span.in0 {
 .aa:last-child {
 	margin-bottom: 0;
 }
-.aa {
-	background: #f2f2f2;
-	border-radius: 5px;
-}
-.aahc.alert .aa, .aahc.alert .aax {
+.aahc.alert .aa {
 	background: #ffaaaa;
 }
 
