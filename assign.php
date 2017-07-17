@@ -487,6 +487,7 @@ if ($Me->can_administer($prow)) {
 
     echo '<div class="pc_ctable">';
     $tagger = new Tagger($Me);
+    $show_possible_conflicts = $Me->can_view_authors($prow, true);
     foreach ($Conf->full_pc_members() as $pc) {
         $p = $pcx[$pc->contactId];
         if (!$pc->can_accept_review_assignment_ignore_conflict($prow))
@@ -524,7 +525,8 @@ if ($Me->can_administer($prow)) {
             if ($conflict_type == 0)
                 echo unparse_preference_span($prow->reviewer_preference($pc, true));
             echo '</div>';
-            if (($pcconfmatch = $prow->potential_conflict_html($pc, $conflict_type <= 0)))
+            if ($show_possible_conflicts
+                && ($pcconfmatch = $prow->potential_conflict_html($pc, $conflict_type <= 0)))
                 echo $pcconfmatch;
         }
 
