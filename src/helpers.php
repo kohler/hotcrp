@@ -596,29 +596,39 @@ function prefix_commajoin($what, $prefix, $joinword = "and") {
 }
 
 function numrangejoin($range) {
-    $i = 0;
-    $a = array();
-    while ($i < count($range)) {
-        $format = $num = null;
-        if ($range[$i] !== "" && ctype_digit($range[$i])) {
-            $plen = 0;
-            $format = "%0" . strlen($range[$i]) . "d";
-            $num = intval($range[$i]);
-        } else if (preg_match('/\A(\D*)(\d+)\z/', $range[$i], $m)) {
-            $plen = strlen($m[1]);
-            $format = str_replace("%", "%%", $m[1]) . "%0" . strlen($m[2]) . "d";
-            $num = intval($m[2]);
+    $a = [];
+    $format = null;
+    foreach ($range as $current) {
+        if ($format !== null
+            && sprintf($format, $intval + 1) === (string) $current) {
+            ++$intval;
+            $last = $current;
+            continue;
+        } else {
+            if ($format !== null && $first === $last)
+                $a[] = $first;
+            else if ($format !== null)
+                $a[] = $first . "–" . substr($last, $plen);
+            if ($current !== "" && ctype_digit($current)) {
+                $format = "%0" . strlen($current) . "d";
+                $plen = 0;
+                $first = $last = $current;
+                $intval = intval($current);
+            } else if (preg_match('/\A(\D*)(\d+)\z/', $current, $m)) {
+                $format = str_replace("%", "%%", $m[1]) . "%0" . strlen($m[2]) . "d";
+                $plen = strlen($m[1]);
+                $first = $last = $current;
+                $intval = intval($m[2]);
+            } else {
+                $format = null;
+                $a[] = $current;
+            }
         }
-        $j = $i + 1;
-        while ($format !== null && $j < count($range)
-               && sprintf($format, $num + ($j - $i)) === (string) $range[$j])
-            ++$j;
-        if ($j === $i + 1)
-            $a[] = $range[$i];
-        else
-            $a[] = $range[$i] . "–" . substr($range[$j - 1], $plen);
-        $i = $j;
     }
+    if ($format !== null && $first === $last)
+        $a[] = $first;
+    else if ($format !== null)
+        $a[] = $first . "–" . substr($last, $plen);
     return commajoin($a);
 }
 
