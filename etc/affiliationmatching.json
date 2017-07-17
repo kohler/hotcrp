@@ -247,6 +247,9 @@
     "anu": {
         "alternate": ["australian national university"]
     },
+    "austin": {
+        "sync": "ut texas"
+    },
     "australian": {
         "alternate": [{"word": "anu", "if": "national university"}]
     },

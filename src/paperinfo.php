@@ -388,10 +388,9 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
                     || Text::match_pregexes($this->firstName_matcher, $au->firstName, $au->firstName_deaccent)))
                 return true;
         }
-        if ($this->affiliation_matcher && $au->affiliation !== "") {
-            if (self::test_affiliation($au->affiliation_deaccent, $this->affiliation_matcher))
-                return true;
-        }
+        if ($this->affiliation_matcher && $au->affiliation !== ""
+            && $this->test_affiliation($au->affiliation_deaccent))
+            return true;
         return false;
     }
     static function highlight_all($au, $matchers) {
@@ -424,13 +423,14 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
             self::$wordinfo = (array) json_decode(file_get_contents("$ConfSitePATH/etc/affiliationmatching.json"));
         return self::$wordinfo;
     }
-    private static function test_affiliation($mtext, $md) {
-        if (!$md[1])
-            return preg_match($md[2], $mtext) === 1;
-        else if (!preg_match_all($md[2], $mtext, $m))
+    private function test_affiliation($mtext) {
+        list($am_words, $am_any_weak, $am_regex) = $this->affiliation_matcher;
+        if (!$am_any_weak)
+            return preg_match($am_regex, $mtext) === 1;
+        else if (!preg_match_all($am_regex, $mtext, $m))
             return false;
         $result = true;
-        foreach ($md[0] as $w) { // $md[0] contains the requested words (no alternates).
+        foreach ($am_words as $w) { // $am_words contains no alternates
             $aw = get(self::$wordinfo, $w);
             $weak = $aw && isset($aw->weak) && $aw->weak;
             $saw_w = in_array($w, $m[0]);
@@ -438,8 +438,8 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
                 // We didn't see a requested word; did we see one of its alternates?
                 foreach ($aw->alternate as $alt) {
                     if (is_object($alt)) {
-                        if ((isset($alt->if) && !self::match_if($alt->if, $md[0]))
-                            || (isset($alt->if_not) && self::match_if($alt->if_not, $md[0])))
+                        if ((isset($alt->if) && !self::match_if($alt->if, $am_words))
+                            || (isset($alt->if_not) && self::match_if($alt->if_not, $am_words)))
                             continue;
                         $alt = $alt->word;
                     }
@@ -462,16 +462,23 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
                     }
                 }
             }
-            // Check for sync words: e.g., "penn state university" ≠ "university penn"
-            if ($saw_w && $aw && isset($aw->sync)) {
-                foreach (explode(" ", $aw->sync) as $syncw)
-                    if ($syncw !== ""
-                        && (in_array($syncw, $md[0])
-                            ? !in_array($syncw, $m[0])
-                            : preg_match('/\b' . $syncw . '\b/', $mtext))) {
-                        $saw_w = false;
-                        break;
-                    }
+            // Check for sync words: e.g., "penn state university" ≠ "university penn".
+            // If *any* sync word is in matcher, then *some* sync word must be in subject.
+            // If *no* sync word is in matcher, then *no* sync word allowed in subject.
+            if ($saw_w && $aw && isset($aw->sync) && $aw->sync !== "") {
+                $syncws = explode(" ", $aw->sync);
+                $has_any_syncs = false;
+                foreach ($syncws as $syncw)
+                    $has_any_syncs = $has_any_syncs || in_array($syncw, $am_words);
+                if ($has_any_syncs) {
+                    $saw_w = false;
+                    foreach ($syncws as $syncw)
+                        $saw_w = $saw_w || in_array($syncw, $m[0]);
+                } else {
+                    $saw_w = true;
+                    foreach ($syncws as $syncw)
+                        $saw_w = $saw_w && !in_array($syncw, $m[0]);
+                }
             }
             if ($saw_w) {
                 if (!$weak)
