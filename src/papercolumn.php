@@ -1109,7 +1109,7 @@ class PreferenceList_PaperColumn extends PaperColumn {
     }
 }
 
-class ReviewerListPaperColumn extends PaperColumn {
+class ReviewerList_PaperColumn extends PaperColumn {
     private $topics;
     function __construct($cj) {
         parent::__construct($cj);
@@ -1129,7 +1129,9 @@ class ReviewerListPaperColumn extends PaperColumn {
     private function reviews_with_names(PaperInfo $row) {
         if (($rrows = $row->reviews_by_id())) {
             $row->ensure_reviewer_names();
-            usort($rrows, "ReviewInfo::compare");
+            foreach ($rrows as $rrow)
+                Contact::set_sorter($rrow, $row->conf);
+            usort($rrows, "Contact::compare");
         }
         return $rrows;
     }
