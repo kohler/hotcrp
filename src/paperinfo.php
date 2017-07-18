@@ -1409,9 +1409,10 @@ class PaperInfo {
         return $doc ? $doc->npages() : 0;
     }
 
-    function load_reviews() {
+    function load_reviews($always = false) {
         if (property_exists($this, "reviewSignatures")
-            && $this->_review_array === null) {
+            && $this->_review_array === null
+            && !$always) {
             $this->_review_array = $this->_review_cid_array = $this->_reviews_have = [];
             if ((string) $this->reviewSignatures !== "")
                 foreach (explode(",", $this->reviewSignatures) as $rs) {
@@ -1422,13 +1423,15 @@ class PaperInfo {
             return;
         }
 
-        if ($this->_row_set && $this->_review_array === null)
+        if ($this->_row_set && ($this->_review_array === null || $always))
             $row_set = $this->_row_set;
         else
             $row_set = new PaperInfoSet($this);
-        foreach ($row_set->all() as $prow)
-            $prow->_review_array = $prow->_review_cid_array = $prow->_reviews_have = [];
-        $result = $this->conf->qe("select * from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
+        foreach ($row_set->all() as $prow) {
+            $prow->_review_array = $prow->_review_cid_array = [];
+            $prow->_reviews_have = ["full" => true];
+        }
+        $result = $this->conf->qe("select *, (select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId) allRatings from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
         while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
             $prow = $row_set->get($rrow->paperId);
             $prow->_review_array[$rrow->reviewId] = $rrow;
@@ -1521,6 +1524,11 @@ class PaperInfo {
             || $this->review_type($contact);
     }
 
+    function ensure_full_reviews() {
+        if (!isset($this->_reviews_have["full"]))
+            $this->load_reviews(true);
+    }
+
     function ensure_reviewer_names() {
         if (!isset($this->_reviews_have["names"])) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
@@ -1534,21 +1542,17 @@ class PaperInfo {
                         $rrow->lastName = $c->lastName;
                         $rrow->email = $c->email;
                     } else
-                        $missing[$rrow->contactId] = null;
+                        $missing[$rrow->contactId][] = $rrow;
             }
             if (!empty($missing)) {
                 $result = $this->conf->qe("select contactId, firstName, lastName, email from ContactInfo where contactId?a", array_keys($missing));
                 while ($result && ($c = $result->fetch_object()))
-                    $missing[$c->contactId] = $c;
+                    foreach (get($missing, $c->contactId, []) as $rrow) {
+                        $rrow->firstName = $c->firstName;
+                        $rrow->lastName = $c->lastName;
+                        $rrow->email = $c->email;
+                    }
                 Dbl::free($result);
-                foreach ($row_set->all() as $prow) {
-                    foreach ($prow->reviews_by_id() as $rrow)
-                        if (($c = get($missing, $rrow->contactId)) !== null) {
-                            $rrow->firstName = $c->firstName;
-                            $rrow->lastName = $c->lastName;
-                            $rrow->email = $c->email;
-                        }
-                }
             }
         }
     }
@@ -1569,7 +1573,8 @@ class PaperInfo {
 
     function ensure_review_score($fid) {
         $fid = is_object($fid) ? $fid->id : $fid;
-        if (!isset($this->_reviews_have[$fid])) {
+        if (!isset($this->_reviews_have[$fid])
+            && !isset($this->_reviews_have["full"])) {
             $this->_reviews_have[$fid] = true;
             $k = $fid . "Signature";
             if (!property_exists($this, $k))
@@ -1614,6 +1619,10 @@ class PaperInfo {
             if (!empty($bad_ids))
                 $this->_update_review_word_counts($bad_ids);
         }
+    }
+
+    function ensure_review_ratings() {
+        $this->ensure_full_reviews();
     }
 
     static function fetch_comment_query() {
