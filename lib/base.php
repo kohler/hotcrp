@@ -210,10 +210,15 @@ if (!function_exists("json_last_error_msg")) {
         return false;
     }
 }
-if (!defined("JSON_PRETTY_PRINT"))
-    define("JSON_PRETTY_PRINT", 0);
-if (!defined("JSON_UNESCAPED_UNICODE"))
-    define("JSON_UNESCAPED_UNICODE", 0);
+if (defined("JSON_UNESCAPED_LINE_TERMINATORS")) {
+    function to_json($x, $flags = 0) {
+        return json_encode($x, $flags | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
+    }
+} else {
+    function to_json($x, $flags = 0) {
+        return json_encode($x, $flags);
+    }
+}
 
 
 // array and object helpers

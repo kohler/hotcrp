@@ -1605,7 +1605,7 @@ class Conf {
         } else {
             $dval = $data;
             if (is_array($dval) || is_object($dval))
-                $dval = json_encode($dval);
+                $dval = to_json($dval);
             if ($this->qe("insert into Settings (name, value, data) values (?, ?, ?) on duplicate key update value=values(value), data=values(data)", $name, $value, $dval)) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $data;
@@ -2849,7 +2849,7 @@ class Conf {
 
     static function msg_debugt($text) {
         if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true)
-            $text = json_encode($text);
+            $text = to_json($text);
         self::msg_on(self::$g, "merror", Ht::pre_text_wrap($text));
         return false;
     }
@@ -2967,14 +2967,14 @@ class Conf {
             Ht::stash_html($this->make_script_file("//code.jquery.com/jquery-migrate-3.0.0.min.js", true));
 
         // Javascript settings to set before script.js
-        Ht::stash_script("siteurl=" . json_encode(Navigation::siteurl()) . ";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
+        Ht::stash_script("siteurl=" . to_json(Navigation::siteurl()) . ";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
         if (session_id() !== "")
             Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
         if ($list)
-            Ht::stash_script("hotcrp_list=" . json_encode(["id" => $list->listid, "info" => $list->info_string()]) . ";");
+            Ht::stash_script("hotcrp_list=" . to_json(["id" => $list->listid, "info" => $list->info_string()]) . ";");
         if (($urldefaults = hoturl_defaults()))
-            Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults) . ";");
-        Ht::stash_script("assetsurl=" . json_encode($this->opt["assetsUrl"]) . ";");
+            Ht::stash_script("siteurl_defaults=" . to_json($urldefaults) . ";");
+        Ht::stash_script("assetsurl=" . to_json($this->opt["assetsUrl"]) . ";");
         $huser = (object) array();
         if ($Me && $Me->email)
             $huser->email = $Me->email;
@@ -2982,7 +2982,7 @@ class Conf {
             $huser->is_pclike = true;
         if ($Me && $Me->has_database_account())
             $huser->cid = $Me->contactId;
-        Ht::stash_script("hotcrp_user=" . json_encode($huser) . ";");
+        Ht::stash_script("hotcrp_user=" . to_json($huser) . ";");
 
         $pid = get($_REQUEST, "paperId");
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
@@ -3060,7 +3060,7 @@ class Conf {
         $my_deadlines = null;
         if ($Me) {
             $my_deadlines = $Me->my_deadlines($this->paper);
-            Ht::stash_script("hotcrp_deadlines.init(" . json_encode($my_deadlines) . ")");
+            Ht::stash_script("hotcrp_deadlines.init(" . to_json($my_deadlines) . ")");
         }
         if ($this->default_format)
             Ht::stash_script("render_text.set_default_format(" . $this->default_format . ")");
@@ -3226,7 +3226,7 @@ class Conf {
         $hpcj["__order__"] = $list;
         if ($this->sort_by_last)
             $hpcj["__sort__"] = "last";
-        Ht::stash_script("hotcrp_pc=" . json_encode($hpcj) . ";");
+        Ht::stash_script("hotcrp_pc=" . to_json($hpcj) . ";");
     }
 
 
@@ -3259,7 +3259,7 @@ class Conf {
             header("Content-Type: application/json");
         if (check_post())
             header("Access-Control-Allow-Origin: *");
-        echo json_encode($values);
+        echo to_json($values);
     }
 
     function ajaxExit($values = null, $div = false) {

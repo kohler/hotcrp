@@ -910,7 +910,7 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
         if ($this->istag) {
             $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
             $tag = $this->arg[0] === "#" ? substr($this->arg, 1) : $this->arg;
-            return "($cvt ? ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
+            return "($cvt ? ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . to_json($tag) . ") : null)";
         } else
             return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact, $forceShow) ? array_search(' . $state->_rrow_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
     }

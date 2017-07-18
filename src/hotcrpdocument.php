@@ -145,9 +145,9 @@ class HotCRPDocument extends Filer {
         }
         $filename = self::s3_filename($doc);
         $s3->save($filename, $doc->content, $doc->mimetype,
-                  array("hotcrp" => json_encode($meta)));
+                  array("hotcrp" => to_json($meta)));
         if ($s3->status != 200)
-            error_log("S3 error: POST $filename: $s3->status $s3->status_text " . json_encode($s3->response_headers));
+            error_log("S3 error: POST $filename: $s3->status $s3->status_text " . to_json($s3->response_headers));
         return $s3->status == 200;
     }
 
@@ -174,9 +174,9 @@ class HotCRPDocument extends Filer {
         if (is_string($infoJson))
             $columns["infoJson"] = $infoJson;
         else if (is_object($infoJson) || is_associative_array($infoJson))
-            $columns["infoJson"] = json_encode($infoJson);
+            $columns["infoJson"] = to_json($infoJson);
         else if (is_object(get($doc, "metadata")))
-            $columns["infoJson"] = json_encode($doc->metadata);
+            $columns["infoJson"] = to_json($doc->metadata);
         if ($doc->size)
             $columns["size"] = $doc->size;
         if ($doc->filterType)
@@ -230,7 +230,7 @@ class HotCRPDocument extends Filer {
                 $doc->content = $content;
                 $ok = true;
             } else if ($s3->status != 200)
-                error_log("S3 error: GET $filename: $s3->status $s3->status_text " . json_encode($s3->response_headers));
+                error_log("S3 error: GET $filename: $s3->status $s3->status_text " . to_json($s3->response_headers));
         }
 
         // ignore dbNoPapers second time through
