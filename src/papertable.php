@@ -2185,7 +2185,7 @@ class PaperTable {
         $rcjs = [];
         foreach ($this->viewable_rrows as $rr)
             if ($rr->reviewSubmitted || $rr->reviewModified > 1)
-                $rcjs[] = $rf->unparse_review_json($prow, $rr, $Me, true);
+                $rcjs[] = $rf->unparse_review_json($prow, $rr, $Me, null, ReviewForm::RJ_DISPLAYED_AT);
         if ($this->include_comments())
             foreach ($this->mycrows as $cr)
                 $rcjs[] = $cr->unparse_json($Me, true);

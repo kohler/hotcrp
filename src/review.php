@@ -283,7 +283,7 @@ class ReviewField implements Abbreviatable, JsonSerializable {
 
     function unparse_average($value) {
         assert($this->has_options);
-        return (string) $this->unparse_value($value, false, "%.2f");
+        return (string) $this->unparse_value($value, 0, "%.2f");
     }
 
     function unparse_graph($v, $style, $myscore) {
@@ -1834,14 +1834,21 @@ $blind\n";
         Ht::stash_script('hiliter_children(".editrevform")', "form_revcard");
     }
 
-    function unparse_review_json($prow, $rrow, $contact, $include_displayed_at = false) {
+    const RJ_DISPLAYED_AT = 1;
+    const RJ_NO_EDITABLE = 2;
+    const RJ_UNPARSE_RATINGS = 4;
+    const RJ_ALL_RATINGS = 8;
+    const RJ_NO_REVIEWERONLY = 16;
+    function unparse_review_json(PaperInfo $prow, $rrow, Contact $contact,
+                                 $forceShow = null, $flags = 0) {
         self::check_review_author_seen($prow, $rrow, $contact);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
+        $editable = !($flags & self::RJ_NO_EDITABLE);
 
         $rj = array("pid" => $prow->paperId, "rid" => (int) $rrow->reviewId);
         if ($rrow->reviewOrdinal)
             $rj["ordinal"] = unparseReviewOrdinal($rrow->reviewOrdinal);
-        if ($contact->can_view_review_round($prow, $rrow, null)) {
+        if ($contact->can_view_review_round($prow, $rrow, $forceShow)) {
             $rj["rtype"] = (int) $rrow->reviewType;
             if (($round = $this->conf->round_name($rrow->reviewRound)))
                 $rj["round"] = $round;
@@ -1854,14 +1861,15 @@ $blind\n";
             $rj["draft"] = true;
         if (!$rrow->reviewSubmitted && $rrow->timeApprovalRequested)
             $rj["needs_approval"] = true;
-        if ($contact->can_review($prow, $rrow))
+        if ($contact->can_review($prow, $rrow) && $editable)
             $rj["editable"] = true;
 
         // identity and time
-        $showtoken = $contact->review_token_cid($prow, $rrow);
-        if ($contact->can_view_review_identity($prow, $rrow, null)
+        $showtoken = $contact->review_token_cid($prow, $rrow) && $editable;
+        if ($contact->can_view_review_identity($prow, $rrow, $forceShow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
             $rj["reviewer"] = Text::user_html($rrow);
+            $rj["reviewer_name"] = Text::name_text($rrow);
             $rj["reviewer_email"] = $rrow->email;
         }
         if ($showtoken)
@@ -1871,7 +1879,7 @@ $blind\n";
             $rj["modified_at"] = (int) $time;
             $rj["modified_at_text"] = $this->conf->printableTime($time);
         }
-        if ($include_displayed_at)
+        if ($flags & self::RJ_DISPLAYED_AT)
             // XXX exposes information, should hide before export
             $rj["displayed_at"] = (int) $rrow->timeDisplayed;
 
@@ -1881,12 +1889,15 @@ $blind\n";
             if ((string) $rrow->allRatings !== "") {
                 foreach (explode(",", $rrow->allRatings) as $rx) {
                     list($cid, $rating) = explode(" ", $rx);
-                    $ratings[+$cid] = (int) $rating;
+                    if ($flags & self::RJ_UNPARSE_RATINGS)
+                        $ratings[+$cid] = self::$rating_types[(int) $rating];
+                    else
+                        $ratings[+$cid] = (int) $rating;
                 }
-                if ($rrow->canViewRatings)
+                if (($flags & self::RJ_ALL_RATINGS) || $rrow->canViewRatings)
                     $rj["ratings"] = array_values($ratings);
             }
-            if ($contact->can_rate_review($prow, $rrow))
+            if ($contact->can_rate_review($prow, $rrow) && $editable)
                 $rj["user_rating"] = get($ratings, $contact->contactId);
         }
 
@@ -1894,7 +1905,9 @@ $blind\n";
         // (field UIDs always are uppercase so can't conflict)
         foreach ($this->forder as $fid => $f)
             if ($f->view_score > $revViewScore
-                && (!$f->round_mask || $f->is_round_visible($rrow))) {
+                && (!$f->round_mask || $f->is_round_visible($rrow))
+                && ($f->view_score > VIEWSCORE_REVIEWERONLY
+                    || !($flags & self::RJ_NO_REVIEWERONLY))) {
                 if ($f->has_options)
                     $rj[$f->uid()] = $f->unparse_value($rrow->$fid);
                 else
