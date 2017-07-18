@@ -165,7 +165,7 @@ class ReviewField implements Abbreviatable, JsonSerializable {
         if ($this->_typical_score === false && $this->has_options) {
             $n = count($this->options);
             if ($n == 1)
-                $this->_typical_scpre = $this->unparse_value(1);
+                $this->_typical_score = $this->unparse_value(1);
             else if ($this->option_letter)
                 $this->_typical_score = $this->unparse_value($n - 1);
             else
