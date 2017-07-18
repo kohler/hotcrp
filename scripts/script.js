@@ -2730,7 +2730,10 @@ function score_header_tooltips(j) {
 
 function render_review_body(rrow) {
     var view_order = $.grep(form_order, function (f) {
-        return f.options ? f.uid in rrow : !!rrow[f.uid];
+        if (f.options && f.allow_empty)
+            return f.uid in rrow;
+        else
+            return !!rrow[f.uid];
     });
     var t = "", i, f, x, nextf, last_display = 0, display;
     for (i = 0; i != view_order.length; ++i) {
