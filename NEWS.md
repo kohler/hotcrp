@@ -1,6 +1,12 @@
 HotCRP NEWS
 ===========
 
+## Version 2.102 - 10.Apr.2017
+
+* Chairs can export reviews as JSON, along with reviewer and paper metadata and
+  the description of the review form.
+  This will be used by reviewqualitycollector.org to serve HotCRP conferences. 
+  
 ## Version 2.101
 
 * Support delegated reviews that must be “approved” by the delegating PC
@@ -22,7 +28,6 @@ HotCRP NEWS
 * Many bug fixes.
 
 * Thanks for feature requests and bug reports to many users.
-
 
 ## Version 2.100 - 15.Jun.2016
 
