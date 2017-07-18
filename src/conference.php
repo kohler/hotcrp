@@ -3184,6 +3184,14 @@ class Conf {
         }
     }
 
+    static function git_status() {
+        global $ConfSitePATH;
+        $args = array();
+        if (is_dir("$ConfSitePATH/.git"))
+            exec("export GIT_DIR=" . escapeshellarg($ConfSitePATH) . "/.git; git rev-parse HEAD 2>/dev/null; git rev-parse v" . HOTCRP_VERSION . " 2>/dev/null", $args);
+        return count($args) == 2 ? $args : null;
+    }
+
     function footer() {
         global $Me, $ConfSitePATH;
         echo "</div>\n", // class='body'
@@ -3193,12 +3201,8 @@ class Conf {
         if (!$this->opt("noFooterVersion")) {
             if ($Me && $Me->privChair) {
                 echo " v", HOTCRP_VERSION;
-                if (is_dir("$ConfSitePATH/.git")) {
-                    $args = array();
-                    exec("export GIT_DIR=" . escapeshellarg($ConfSitePATH) . "/.git; git rev-parse HEAD 2>/dev/null; git rev-parse v" . HOTCRP_VERSION . " 2>/dev/null", $args);
-                    if (count($args) == 2 && $args[0] != $args[1])
-                        echo " [", substr($args[0], 0, 7), "...]";
-                }
+                if (($git_data = self::git_status()) && $git_data[0] !== $git_data[1])
+                    echo " [", substr($git_data[0], 0, 7), "...]";
             } else
                 echo "<!-- Version ", HOTCRP_VERSION, " -->";
         }

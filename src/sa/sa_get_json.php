@@ -55,5 +55,47 @@ class GetJson_SearchAction extends SearchAction {
     }
 }
 
+class GetJsonRQC_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        return $user->is_manager();
+    }
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        $actions[] = [1092, $this->subname, "Paper information", "JSON for reviewqualitycollector.org"];
+    }
+    function run(Contact $user, $qreq, $ssel) {
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
+        $results = ["hotcrp_version" => HOTCRP_VERSION];
+        if (($git_data = Conf::git_status()))
+            $results["hotcrp_commit"] = $git_data[0];
+        $rf = $user->conf->review_form();
+        $results["reviewform"] = $rf->unparse_json(0, VIEWSCORE_REVIEWERONLY);
+        $pj = [];
+        $ps = new PaperStatus($user->conf, $user, ["forceShow" => true, "hide_docids" => true]);
+        foreach (PaperInfo::fetch_all($result, $user) as $prow)
+            if ($user->can_administer($prow, true)) {
+                $pj[$prow->paperId] = $j = $ps->paper_json($prow);
+                $prow->ensure_full_reviews();
+                $prow->ensure_reviewer_names();
+                $prow->ensure_review_ratings();
+                $rs = [];
+                foreach ($prow->reviews_by_id() as $rrow)
+                    if ($rrow->reviewSubmitted > 0
+                        && $user->can_view_review($prow, $rrow, true))
+                        $rs[] = $rrow;
+                usort($rs, "ReviewInfo::compare");
+                foreach ($rs as $rrow)
+                    $j->reviews[] = $rf->unparse_review_json($prow, $rrow, $user, true, ReviewForm::RJ_NO_EDITABLE | ReviewForm::RJ_UNPARSE_RATINGS | ReviewForm::RJ_ALL_RATINGS | ReviewForm::RJ_NO_REVIEWERONLY);
+            } else
+                $pj[$prow->paperId] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
+        $pj = array_values($ssel->reorder($pj));
+        $results["papers"] = $pj;
+        header("Content-Type: application/json");
+        header("Content-Disposition: attachment; filename=" . mime_quote_string($user->conf->download_prefix . "rqc.json"));
+        echo to_json($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+        exit;
+    }
+}
+
 SearchAction::register("get", "json", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJson_SearchAction(false));
 SearchAction::register("get", "jsonattach", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJson_SearchAction(true));
+SearchAction::register("get", "jsonrqc", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJsonRQC_SearchAction);
