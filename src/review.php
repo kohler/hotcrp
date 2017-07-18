@@ -12,6 +12,7 @@ class ReviewField implements Abbreviatable, JsonSerializable {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
+    const VALUE_STRING = 4;
 
     public $id;
     public $conf;
@@ -254,8 +255,10 @@ class ReviewField implements Abbreviatable, JsonSerializable {
             $text = self::unparse_letter($this->option_letter, $value);
         else if ($real_format)
             $text = sprintf($real_format, $value);
-        else
+        else if ($flags & self::VALUE_STRING)
             $text = (string) $value;
+        else
+            $text = $value;
         if ($flags & (self::VALUE_SC | self::VALUE_REV_NUM)) {
             $vc = $this->value_class($value);
             if ($flags & self::VALUE_REV_NUM)
@@ -513,7 +516,7 @@ class ReviewForm {
             if ($useRequest)
                 $fval = (string) req($field);
             else if ($rrow)
-                $fval = $f->unparse_value($rrow->$field);
+                $fval = $f->unparse_value($rrow->$field, ReviewField::VALUE_STRING);
 
             echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="revet';
             if (isset($ReviewFormError[$field]))
@@ -1149,7 +1152,7 @@ $blind\n";
                 $fval = rtrim($req[$field]);
             else if ($rrow != null && isset($rrow->$field)) {
                 if ($f->has_options)
-                    $fval = $f->unparse_value($rrow->$field);
+                    $fval = $f->unparse_value($rrow->$field, ReviewField::VALUE_STRING);
                 else
                     $fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
             }
@@ -1241,7 +1244,7 @@ $blind\n";
             $fval = "";
             if (isset($rrow->$field)) {
                 if ($f->has_options)
-                    $fval = $f->unparse_value($rrow->$field);
+                    $fval = $f->unparse_value($rrow->$field, ReviewField::VALUE_STRING);
                 else
                     $fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
             }
