@@ -1,0 +1,230 @@
+[
+    {
+        "name": "assign", "post": true,
+        "renderer": "Assign_SearchAction::render",
+        "position": 700,
+        "enable_if": ["manager"],
+        "require": "src/sa/sa_assign.php",
+        "factory_class": "Assign_SearchAction"
+    },
+    {
+        "name": "decide", "post": true,
+        "renderer": "Decide_SearchAction::render",
+        "position": 900,
+        "enable_if": ["manager"],
+        "require": "src/sa/sa_decide.php",
+        "factory_class": "Decide_SearchAction"
+    },
+    {
+        "name": "get", "get": true,
+        "renderer": "Get_SearchAction::render",
+        "require": "src/sa/sa_get_sub.php",
+        "xxx": true
+    },
+    {
+        "name": "get/json", "get": true,
+        "selector": "Paper information/JSON",
+        "position": 1090,
+        "enable_if": ["manager"],
+        "require": "src/sa/sa_get_json.php",
+        "factory_class": "GetJson_SearchAction",
+        "has_attachments": false
+    },
+    {
+        "name": "get/jsonattach", "get": true,
+        "selector": "Paper information/JSON with attachments",
+        "position": 1091,
+        "enable_if": ["manager"],
+        "require": "src/sa/sa_get_json.php",
+        "factory_class": "GetJson_SearchAction",
+        "has_attachments": true
+    },
+    {
+        "name": "get/pcassignments", "get": true,
+        "selector": "Review assignments/PC assignments",
+        "position": 2099,
+        "enable_if": ["manager"],
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetPcassignments_SearchAction"
+    },
+    {
+        "name": "get/revform", "get": true, "paper_optional": true,
+        "selector": "Review assignments/Review forms",
+        "position": 2000,
+        "enable_if": ["reviewer"],
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetReviewForm_SearchAction",
+        "zip": false
+    },
+    {
+        "name": "get/revformz", "get": true, "paper_optional": true,
+        "selector": "Review assignments/Review forms (zip)",
+        "position": 2001,
+        "enable_if": ["reviewer"],
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetReviewForm_SearchAction",
+        "zip": true
+    },
+    {
+        "name": "get/rev", "get": true,
+        "selector": "Reviews/Reviews",
+        "position": 3060,
+        "enable_if": ["view_review"],
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetReviews_SearchAction",
+        "zip": false
+    },
+    {
+        "name": "get/revz", "get": true,
+        "selector": "Reviews/Reviews (zip)",
+        "position": 3061,
+        "enable_if": ["view_review"],
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetReviews_SearchAction",
+        "zip": true
+    },
+    {
+        "name": "get/scores", "get": true,
+        "selector": "Reviews/Scores",
+        "position": 3070,
+        "enable_if": ["view_review"],
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetScores_SearchAction"
+    },
+    {
+        "name": "get/votes", "get": true,
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetVotes_SearchAction",
+        "xxx": true
+    },
+    {
+        "name": "get/rank", "get": true,
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetRank_SearchAction",
+        "xxx": true
+    },
+    {
+        "name": "get/lead", "get": true,
+        "selector": "Reviews/Discussion leads",
+        "position": 3090,
+        "check_display": true,
+        "enable_if": ["pc"],
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetLead_SearchAction",
+        "type": "lead"
+    },
+    {
+        "name": "get/shepherd", "get": true,
+        "selector": "Reviews/Shepherds",
+        "position": 3091,
+        "enable_if": ["pc"],
+        "check_display": true,
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetShepherd_SearchAction"
+    },
+    {
+        "name": "get/revpref", "get": true,
+        "selector": "Preference file",
+        "position": -100,
+        "enable_if": ["pc"],
+        "require": "src/sa/sa_get_revpref.php",
+        "factory_class": "GetRevpref_SearchAction",
+        "abstracts": false
+    },
+    {
+        "name": "get/revprefx", "get": true,
+        "selector": "Preference file with abstracts",
+        "position": -99,
+        "enable_if": ["pc"],
+        "require": "src/sa/sa_get_revpref.php",
+        "factory_class": "GetRevpref_SearchAction",
+        "abstracts": true
+    },
+    {
+        "name": "get/allrevpref", "get": true,
+        "selector": "Review assignments/PC review preferences",
+        "position": 2060,
+        "enable_if": ["manager"],
+        "require": "src/sa/sa_get_revpref.php",
+        "factory_class": "GetRevpref_SearchAction"
+    },
+    {
+        "name": "get/paper", "get": true,
+        "selector": "Documents/Submissions",
+        "position": 100,
+        "require": "src/sa/sa_get_sub.php",
+        "factory_class": "GetDocument_SearchAction",
+        "final": false
+    },
+    {
+        "name": "get/final", "get": true,
+        "selector": "Documents/Final versions",
+        "position": 0,
+        "display_if": ["final"],
+        "require": "src/sa/sa_get_sub.php",
+        "factory_class": "GetDocument_SearchAction",
+        "final": true
+    },
+    {
+        "name": "get/checkformat", "get": true,
+        "selector": "Documents/Format check",
+        "position": 999,
+        "enable_if": ["paper", "manager"],
+        "require": "src/sa/sa_get_sub.php",
+        "factory_class": "GetCheckFormat_SearchAction"
+    },
+    {
+        "name": "get/abstract", "get": true,
+        "selector": "Paper information/Abstracts",
+        "position": 1000,
+        "require": "src/sa/sa_get_sub.php",
+        "factory_class": "GetAbstract_SearchAction"
+    },
+    {
+        "name": "get/authors", "get": true,
+        "selector": "Paper information/Authors", "xxx": true,
+        "position": 1001,
+        "require": "src/sa/sa_get_sub.php",
+        "factory_class": "GetAuthors_SearchAction"
+    },
+    {
+        "name": "get/contact", "get": true,
+        "require": "src/sa/sa_get_sub.php",
+        "factory_class": "GetContacts_SearchAction"
+    },
+    {
+        "name": "get/topics", "get": true,
+        "selector": "Paper information/Topics",
+        "position": 1050,
+        "require": "src/sa/sa_get_sub.php",
+        "factory_class": "GetTopics_SearchAction"
+    },
+    {
+        "name": "get/pcconf", "get": true,
+        "selector": "Paper information/PC conflicts",
+        "position": 1060,
+        "require": "src/sa/sa_get_sub.php",
+        "factory_class": "GetPcconflicts_SearchAction"
+    },
+    {
+        "name": "get/csv", "get": true,
+        "selector": "Paper information/CSV",
+        "position": 1089,
+        "require": "src/sa/sa_get_sub.php",
+        "factory_class": "GetCSV_SearchAction"
+    },
+    {
+        "name": "mail", "get": true,
+        "renderer": "Mail_SearchAction::render",
+        "position": 1000,
+        "enable_if": ["manager"],
+        "require": "src/sa/sa_mail.php"
+    },
+    {
+        "name": "tag", "post": true,
+        "renderer": "Tag_SearchAction::render",
+        "position": 500,
+        "enable_if": ["pc"],
+        "require": "src/sa/sa_tag.php"
+    }
+]
