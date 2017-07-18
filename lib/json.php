@@ -8,7 +8,8 @@ foreach (["JSON_ERROR_NONE" => 0, "JSON_ERROR_DEPTH" => 1,
           "JSON_ERROR_SYNTAX" => 4, "JSON_ERROR_UTF8" => 5,
           "JSON_ERROR_EMPTY_KEY" => 100,
           "JSON_FORCE_OBJECT" => 1, "JSON_PRETTY_PRINT" => 8,
-          "JSON_UNESCAPED_SLASHES" => 16, "JSON_UNESCAPED_UNICODE" => 32] as $k => $v)
+          "JSON_UNESCAPED_SLASHES" => 16, "JSON_UNESCAPED_UNICODE" => 32,
+          "JSON_UNESCAPED_LINE_TERMINATORS" => 2048] as $k => $v)
     if (!defined($k))
         define($k, $v);
 
@@ -33,7 +34,8 @@ class Json {
               "\025" => "\\u0015", "\026" => "\\u0016", "\027" => "\\u0017",
               "\030" => "\\u0018", "\031" => "\\u0019", "\032" => "\\u001A",
               "\033" => "\\u001B", "\034" => "\\u001C", "\035" => "\\u001D",
-              "\036" => "\\u001E", "\037" => "\\u001F");
+              "\036" => "\\u001E", "\037" => "\\u001F",
+              "\xE2\x80\xA8" => "\\u2028", "\xE2\x80\xA9" => "\\u2029");
 
     static private $string_unmap =
         array("\\\"" => "\"", "\\\\" => "\\", "\\/" => "/",
@@ -198,7 +200,10 @@ class Json {
         else if (is_int($x) || is_float($x))
             return (string) $x;
         else if (is_string($x)) {
-            $pat = ($options & JSON_UNESCAPED_SLASHES) ? '/[\\"\000-\037]/' : ',[\\"/\000-\037],';
+            if ($options & JSON_UNESCAPED_SLASHES)
+                $pat = "{[\\\"\\x00-\\x1F]|\xE2\x80[\xA8\xA9]}";
+            else
+                $pat = "{[\\\"/\\x00-\\x1F]|\xE2\x80[\xA8\xA9]}";
             return "\"" . preg_replace_callback($pat, "Json::encode_escape", $x) . "\"";
         } else if (is_object($x) || is_array($x)) {
             $as_object = null;

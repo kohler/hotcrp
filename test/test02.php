@@ -122,6 +122,9 @@ xassert_eqq(json_encode(Json::decode("{}")), "{}");
 xassert_eqq(json_encode(Json::decode('"\\u0030"')), '"0"');
 xassert_eqq(Json::encode("\n"), '"\\n"');
 xassert_eqq(Json::encode("\007"), '"\\u0007"');
+xassert_eqq(Json::encode("–"), '"–"');
+xassert_eqq(Json::decode(Json::encode("–")), "–");
+xassert_eqq(Json::decode(Json::encode("\xE2\x80\xA8\xE2\x80\xA9")), "\xE2\x80\xA8\xE2\x80\xA9");
 xassert_eqq(json_encode(Json::decode('{"1":"1"}')), '{"1":"1"}');
 $x = Json::decode_landmarks('{
     "a": ["b", "c"],
