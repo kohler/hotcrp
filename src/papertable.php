@@ -2457,11 +2457,9 @@ class PaperTable {
     function resolveReview($want_review) {
         global $Me;
 
-        $sel = array("paperId" => $this->prow->paperId, "array" => true);
-        if ($this->conf->setting("rev_ratings") != REV_RATINGS_NONE)
-            $sel["ratings"] = true;
-        $this->all_rrows = $this->conf->reviewRow($sel, $whyNot);
-        usort($this->all_rrows, "ReviewInfo::compare");
+        $this->prow->ensure_full_reviews();
+        $this->prow->ensure_reviewer_names();
+        $this->all_rrows = $this->prow->reviews_by_id();
 
         $this->viewable_rrows = array();
         $round_mask = 0;

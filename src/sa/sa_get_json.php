@@ -77,13 +77,7 @@ class GetJsonRQC_SearchAction extends SearchAction {
                 $prow->ensure_full_reviews();
                 $prow->ensure_reviewer_names();
                 $prow->ensure_review_ratings();
-                $rs = [];
-                foreach ($prow->reviews_by_id() as $rrow)
-                    if ($rrow->reviewSubmitted > 0
-                        && $user->can_view_review($prow, $rrow, true))
-                        $rs[] = $rrow;
-                usort($rs, "ReviewInfo::compare");
-                foreach ($rs as $rrow)
+                foreach ($prow->viewable_submitted_reviews_by_id($user, true) as $rrow)
                     $j->reviews[] = $rf->unparse_review_json($prow, $rrow, $user, true, ReviewForm::RJ_NO_EDITABLE | ReviewForm::RJ_UNPARSE_RATINGS | ReviewForm::RJ_ALL_RATINGS | ReviewForm::RJ_NO_REVIEWERONLY);
             } else
                 $pj[$prow->paperId] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];

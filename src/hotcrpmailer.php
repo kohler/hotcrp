@@ -100,13 +100,9 @@ class HotCRPMailer extends Mailer {
         if ($this->rrow)
             $rrows = array($this->rrow);
         else {
-            $result = Dbl::qe("select PaperReview.*,
-                ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
-                from PaperReview
-                join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
-                where PaperReview.paperId=" . $this->row->paperId);
-            $rrows = edb_orows($result);
-            usort($rrows, "ReviewInfo::compare");
+            $this->row->ensure_full_reviews();
+            $this->row->ensure_reviewer_names();
+            $rrows = $this->row->reviews_by_id();
         }
 
         // save old au_seerev setting, and reset it so authors can see them.

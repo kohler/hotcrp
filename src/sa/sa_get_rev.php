@@ -25,6 +25,8 @@ class GetReviewBase_SearchAction extends SearchAction {
     }
     protected function finish(Contact $user, $ssel, $texts, $errors) {
         $texts = $ssel->reorder($texts);
+        uksort($errors, "strnatcmp");
+
         if (empty($texts)) {
             if (empty($errors))
                 Conf::msg_error("No papers selected.");
@@ -131,34 +133,26 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
         $actions[] = [3060 + $this->iszip, $this->subname, "Reviews", "Reviews" . ($this->iszip ? " (zip)" : "")];
     }
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->paper_result(["paperId" => $ssel->selection()]);
-        $user->set_forceShow(true);
-        $errors = [];
-        $rowset = new PaperInfoSet;
-        foreach (PaperInfo::fetch_all($result, $user) as $row)
-            if (($whyNot = $user->perm_view_paper($row)))
-                $errors["#$row->paperId: " . whyNotText($whyNot, "view")] = true;
-            else
-                $rowset->add($row);
-
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1]);
-        $texts = [];
         $rf = $user->conf->review_form();
+        $user->set_forceShow(true);
+        $result = $user->paper_result(["paperId" => $ssel->selection()]);
+        $errors = $texts = [];
         foreach (PaperInfo::fetch_all($result, $user) as $row) {
-            if (!$rowset->get($row->paperId))
-                /* skip */;
-            else if (($whyNot = $user->perm_view_review($row, null, null)))
+            if (($whyNot = $user->perm_view_paper($row))) {
+                $errors["#$row->paperId: " . whyNotText($whyNot, "view")] = true;
+                continue;
+            }
+            if (($whyNot = $user->perm_view_review($row, null, null)))
                 $errors["#$row->paperId: " . whyNotText($whyNot, "view review")] = true;
-            else if ($row->reviewSubmitted)
-                defappend($texts[$row->paperId], $rf->pretty_text($row, $row, $user) . "\n");
+            else {
+                $row->ensure_full_reviews();
+                $row->ensure_reviewer_names();
+                foreach ($row->viewable_submitted_reviews_by_id($user, null) as $rrow)
+                    defappend($texts[$row->paperId], $rf->pretty_text($row, $rrow, $user) . "\n");
+            }
+            foreach ($row->viewable_comments($user, null) as $crow)
+                defappend($texts[$row->paperId], $crow->unparse_text($user) . "\n");
         }
-
-        foreach ($rowset->all() as $prow) {
-            foreach ($prow->viewable_comments($user, null) as $crow)
-                defappend($texts[$prow->paperId], $crow->unparse_text($user) . "\n");
-        }
-
-        uksort($errors, function ($a, $b) { return strnatcmp($a, $b); });
         $this->finish($user, $ssel, $texts, $errors);
     }
 }
@@ -171,43 +165,44 @@ class GetScores_SearchAction extends SearchAction {
         $actions[] = [3070, $this->subname, "Reviews", "Scores"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviewScores" => 1, "reviewerName" => 1]);
-
-        // compose scores; NB chair is always forceShow
-        $errors = array();
-        $texts = $any_scores = array();
-        $any_decision = $any_reviewer_identity = false;
         $rf = $user->conf->review_form();
-        $bad_pid = -1;
-        foreach (PaperInfo::fetch_all($result, $user) as $row) {
-            if (!$row->reviewSubmitted || $row->paperId == $bad_pid)
-                /* skip */;
-            else if (($whyNot = $user->perm_view_review($row, null, true))) {
-                $errors[] = whyNotText($whyNot, "view reviews for") . "<br />";
-                $bad_pid = $row->paperId;
-            } else {
-                $a = array("paper" => $row->paperId, "title" => $row->title);
+        $user->set_forceShow(true);
+        $result = $user->paper_result(["paperId" => $ssel->selection()]);
+        // compose scores; NB chair is always forceShow
+        $errors = $texts = $any_scores = array();
+        $any_decision = $any_reviewer_identity = false;
+        foreach (PaperInfo::fetch_all($result, $user) as $row)
+            if (($whyNot = $user->perm_view_paper($row)))
+                $errors[] = "#$row->paperId: " . whyNotText($whyNot, "view");
+            else if (($whyNot = $user->perm_view_review($row, null, null)))
+                $errors[] = "#$row->paperId: " . whyNotText($whyNot, "view review");
+            else {
+                $row->ensure_full_reviews();
+                $row->ensure_reviewer_names();
+                $a = ["paper" => $row->paperId, "title" => $row->title];
                 if ($row->outcome && $user->can_view_decision($row, true))
                     $a["decision"] = $any_decision = $user->conf->decision_name($row->outcome);
-                $view_bound = $user->view_score_bound($row, $row, true);
-                $this_scores = false;
-                foreach ($rf->forder as $field => $f)
-                    if ($f->view_score > $view_bound && $f->has_options
-                        && ($row->$field || $f->allow_empty)) {
-                        $a[$f->abbreviation()] = $f->unparse_value($row->$field);
-                        $any_scores[$f->abbreviation()] = $this_scores = true;
+                foreach ($row->viewable_submitted_reviews_by_id($user, null) as $rrow) {
+                    $view_bound = $user->view_score_bound($row, $rrow, null);
+                    $this_scores = false;
+                    $b = $a;
+                    foreach ($rf->forder as $field => $f)
+                        if ($f->view_score > $view_bound && $f->has_options
+                            && ($rrow->$field || $f->allow_empty)) {
+                            $b[$f->abbreviation()] = $f->unparse_value($rrow->$field);
+                            $any_scores[$f->abbreviation()] = $this_scores = true;
+                        }
+                    if ($user->can_view_review_identity($row, $rrow, null)) {
+                        $any_reviewer_identity = true;
+                        $b["reviewername"] = trim($rrow->firstName . " " . $rrow->lastName);
+                        $b["email"] = $rrow->email;
                     }
-                if ($user->can_view_review_identity($row, $row, true)) {
-                    $any_reviewer_identity = true;
-                    $a["email"] = $row->reviewEmail;
-                    $a["reviewername"] = trim($row->reviewFirstName . " " . $row->reviewLastName);
+                    if ($this_scores)
+                        arrayappend($texts[$row->paperId], $b);
                 }
-                if ($this_scores)
-                    arrayappend($texts[$row->paperId], $a);
             }
-        }
 
-        if (count($texts)) {
+        if (!empty($texts)) {
             $header = array("paper", "title");
             if ($any_decision)
                 $header[] = "decision";
@@ -216,9 +211,9 @@ class GetScores_SearchAction extends SearchAction {
             $header = array_merge($header, array_keys($any_scores));
             return new Csv_SearchResult("scores", $header, $ssel->reorder($texts), true);
         } else {
-            if (!count($errors))
+            if (empty($errors))
                 $errors[] = "No papers selected.";
-            Conf::msg_error(join("", $errors));
+            Conf::msg_error(join("<br />", $errors));
         }
     }
 }
