@@ -38,7 +38,7 @@ function loadRows() {
         $wnt = whyNotText($whyNot, "request reviews for");
         error_go(hoturl("paper", ["p" => $prow->paperId]), $wnt);
     }
-    $rrows = $Conf->reviewRow(array("paperId" => $prow->paperId, "array" => 1), $whyNot);
+    $rrows = $prow->reviews_by_id();
 }
 
 function rrow_by_reviewid($rid) {
