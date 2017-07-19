@@ -2217,8 +2217,7 @@ class Conf {
         //   "myReviews"        All reviews authored by $contactId
         //   "myOutstandingReviews" All unsubmitted reviews auth by $contactId
         //   "myReviewsOpt"     myReviews, + include papers not yet reviewed
-        //   "allReviews"       All reviews (multiple rows per paper)
-        //   "allReviewScores"  All review scores (multiple rows per paper)
+        //   "reviewJoinSql"    All matching reviews (multiple rows per paper)
         //   "reviewerName"     Include reviewer names
         //   "commenterName"    Include commenter names
         //   "tags"             Include paperTags
@@ -2230,13 +2229,11 @@ class Conf {
         //   "assignments"
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
 
-        $reviewerQuery = isset($options["myReviews"]) || isset($options["allReviews"]) || isset($options["myReviewRequests"]) || isset($options["myReviewsOpt"]) || isset($options["myOutstandingReviews"]);
-        $allReviewerQuery = isset($options["allReviews"]) || isset($options["allReviewScores"]);
-        $scoresQuery = !$reviewerQuery && isset($options["allReviewScores"]);
+        $reviewerQuery = isset($options["myReviews"]) || isset($options["myReviewRequests"]) || isset($options["myReviewsOpt"]) || isset($options["myOutstandingReviews"]) || isset($options["reviewJoinSql"]);
         $contactId = $contact ? $contact->contactId : 0;
         if (get($options, "author") || !$contactId)
             $myPaperReview = null;
-        else if ($allReviewerQuery)
+        else if (isset($options["reviewJoinSql"]))
             $myPaperReview = "MyPaperReview";
         else
             $myPaperReview = "PaperReview";
@@ -2295,10 +2292,9 @@ class Conf {
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin and PaperReview.reviewNeedsSubmit!=0)";
         else if (get($options, "myReviewsOpt"))
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
-        else if (get($options, "allReviews") || get($options, "allReviewScores")) {
-            $x = (get($options, "reviewLimitSql") ? " and (" . $options["reviewLimitSql"] . ")" : "");
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId$x)";
-        } else if ($myPaperReview)
+        else if (get($options, "reviewJoinSql"))
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and (" . $options["reviewJoinSql"] . "))";
+        else if ($myPaperReview)
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
 
         // review signatures
@@ -2341,7 +2337,7 @@ class Conf {
         } else
             $cols[] = "null reviewType, null reviewId, null myReviewType";
 
-        if ($reviewerQuery || $scoresQuery) {
+        if ($reviewerQuery) {
             $cols[] = "PaperReview.reviewEditVersion as reviewEditVersion";
             $cols[] = ($this->sversion >= 105 ? "PaperReview.reviewFormat" : "null") . " as reviewFormat";
             foreach ($this->all_review_fields() as $f)
@@ -2435,7 +2431,7 @@ class Conf {
             $pq .= "\nwhere " . join("\n    and ", $where);
 
         // grouping and ordering
-        if ($reviewerQuery || $scoresQuery || $tokens)
+        if ($reviewerQuery || $tokens)
             $pq .= "\ngroup by Paper.paperId, PaperReview.reviewId";
         else
             $pq .= "\ngroup by Paper.paperId";
@@ -2443,7 +2439,7 @@ class Conf {
             $pq .= "\n" . $options["order"];
         else {
             $pq .= "\norder by Paper.paperId";
-            if ($reviewerQuery || $scoresQuery || $tokens)
+            if ($reviewerQuery || $tokens)
                 $pq .= ", PaperReview.reviewOrdinal";
         }
 
@@ -2544,15 +2540,13 @@ class Conf {
 
         $q = "select PaperReview.*,
                 ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.roles as contactRoles,
-                ContactInfo.contactTags,
-                ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail";
+                ContactInfo.contactTags";
         $qv = [];
         if (isset($selector["ratings"]))
             $q .= ",
                 (select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId) allRatings";
         $q .= "\n               from PaperReview
-                join ContactInfo using (contactId)
-                left join ContactInfo as ReqCI on (ReqCI.contactId=PaperReview.requestedBy)\n";
+                join ContactInfo using (contactId)\n";
 
         $where = array();
         if (isset($paperId)) {

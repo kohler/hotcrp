@@ -796,9 +796,8 @@ class ReviewDelegationPaperColumn extends PaperColumn {
         if (!$pl->contact->isPC)
             return false;
         $pl->qopts["reviewerName"] = true;
-        $pl->qopts["allReviewScores"] = true;
         $reviewer = $pl->reviewer_user();
-        $pl->qopts["reviewLimitSql"] = "PaperReview.requestedBy=" . $reviewer->contactId;
+        $pl->qopts["reviewJoinSql"] = "PaperReview.requestedBy=" . $reviewer->contactId;
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {

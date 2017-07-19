@@ -440,7 +440,7 @@ if ($Conf->setting("extrev_chairreq")) {
         $q = " and requestedBy=?";
         $qv[] = $Me->contactId;
     }
-    $result = $Conf->qe_apply("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy, reason, reviewRound from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=?$q", $qv);
+    $result = $Conf->qe_apply("select name, email, requestedBy, reason, reviewRound from ReviewRequest where ReviewRequest.paperId=?$q", $qv);
     $proposals = edb_orows($result);
 }
 $t = reviewTable($prow, $paperTable->all_reviews(), null, null, "assign", $proposals);
