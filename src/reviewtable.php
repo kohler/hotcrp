@@ -142,12 +142,10 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 $n .= _review_table_actas($rr);
             $t .= '<td class="rl"><span class="taghl">' . $n . '</span>'
                 . ($rtype ? " $rtype" : "") . "</td>";
-            if ($show_colors && (get($rr, "contactRoles") || get($rr, "contactTags"))) {
-                $tags = Contact::roles_all_contact_tags(get($rr, "contactRoles"), get($rr, "contactTags"));
-                $tags = Tagger::strip_nonviewable($tags, $Me);
-                if ($tags && ($color = $conf->tags()->color_classes($tags)))
-                    $tclass = $color;
-            }
+            if ($show_colors
+                && ($p = $conf->pc_member_by_id($rr->contactId))
+                && ($color = $p->viewable_color_classes($Me)))
+                $tclass .= ($tclass ? " " : "") . $color;
         }
 
         // requester
