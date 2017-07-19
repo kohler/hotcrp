@@ -119,7 +119,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         if ($cflttype > 0 && !$admin)
             $rtype = "";
         else if ($rr->reviewType > 0) {
-            $rtype = review_type_icon($rr->reviewType);
+            $rtype = review_type_icon($rr->reviewType, $rr->reviewNeedsSubmit != 0);
             if ($admin && $mode === "assign")
                 $rtype .= _review_table_round_selector($prow, $rr);
             else if ($rr->reviewRound > 0 && $Me->can_view_review_round($prow, $rr))
