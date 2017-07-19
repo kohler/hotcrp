@@ -26,6 +26,7 @@ class PaperContactInfo {
     public $rights_forced = null;
     public $forced_rights_link = null;
 
+    public $vsreviews_array = null;
     public $vsreviews_cid_array = null;
     public $vsreviews_force_show = null;
 
@@ -1420,6 +1421,8 @@ class PaperInfo {
                     $this->_review_array[$rrow->reviewId] = $rrow;
                     $this->_review_cid_array[$rrow->contactId] = $rrow;
                 }
+            uasort($this->_review_array, "ReviewInfo::compare");
+            uasort($this->_review_cid_array, "ReviewInfo::compare");
             return;
         }
 
@@ -1427,17 +1430,24 @@ class PaperInfo {
             $row_set = $this->_row_set;
         else
             $row_set = new PaperInfoSet($this);
-        foreach ($row_set->all() as $prow) {
+        foreach ($row_set as $prow) {
             $prow->_review_array = $prow->_review_cid_array = [];
             $prow->_reviews_have = ["full" => true];
         }
-        $result = $this->conf->qe("select *, (select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId) allRatings from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
+        $ratings = "''";
+        if ($this->conf->setting("rev_ratings") != REV_RATINGS_NONE)
+            $ratings = "(select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId)";
+        $result = $this->conf->qe("select PaperReview.*, $ratings allRatings from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
         while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
             $prow = $row_set->get($rrow->paperId);
             $prow->_review_array[$rrow->reviewId] = $rrow;
             $prow->_review_cid_array[$rrow->contactId] = $rrow;
         }
         Dbl::free($result);
+        foreach ($row_set as $prow) {
+            uasort($prow->_review_array, "ReviewInfo::compare");
+            uasort($prow->_review_cid_array, "ReviewInfo::compare");
+        }
     }
 
     function reviews_by_id() {
@@ -1491,15 +1501,28 @@ class PaperInfo {
             return $this->num_reviews_in_progress($user, $forceShow);
     }
 
+    function viewable_submitted_reviews_by_id(Contact $contact, $forceShow) {
+        $cinfo = $this->contact_info($contact);
+        if ($cinfo->vsreviews_array === null
+            || $forceShow !== $cinfo->vsreviews_force_show) {
+            $cinfo->vsreviews_array = [];
+            $cinfo->vsreviews_cid_array = null;
+            $cinfo->vsreviews_force_show = $forceShow;
+            foreach ($this->reviews_by_id() as $id => $rrow)
+                if ($contact->can_view_review($this, $rrow, $forceShow))
+                    $cinfo->vsreviews_array[$id] = $rrow;
+        }
+        return $cinfo->vsreviews_array;
+    }
+
     function viewable_submitted_reviews_by_user(Contact $contact, $forceShow) {
         $cinfo = $this->contact_info($contact);
         if ($cinfo->vsreviews_cid_array === null
             || $forceShow !== $cinfo->vsreviews_force_show) {
+            $rrows = $this->viewable_submitted_reviews_by_id($contact, $forceShow);
             $cinfo->vsreviews_cid_array = [];
-            $cinfo->vsreviews_force_show = $forceShow;
-            foreach ($this->reviews_by_user() as $id => $rrow)
-                if ($contact->can_view_review($this, $rrow, $forceShow))
-                    $cinfo->vsreviews_cid_array[$id] = $rrow;
+            foreach ($rrows as $rrow)
+                $cinfo->vsreviews_cid_array[$rrow->contactId] = $rrow;
         }
         return $cinfo->vsreviews_cid_array;
     }
