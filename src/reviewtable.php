@@ -154,14 +154,13 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         if ($mode === "assign") {
             if (($cflttype <= 0 || $admin)
                 && $rr->reviewType == REVIEW_EXTERNAL
-                && !$showtoken) {
+                && !$showtoken
+                && $rr->requestedBy) {
                 $t .= '<td style="font-size:smaller">';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
-                else if (($u = $conf->pc_member_by_id($rr->requestedBy)))
-                    $t .= $Me->reviewer_html_for($rr->requestedBy);
                 else
-                    $t .= Text::user_html([$rr->reqFirstName, $rr->reqLastName, $rr->reqEmail]);
+                    $t .= $Me->reviewer_html_for($rr->requestedBy);
                 $t .= '</td>';
                 $want_requested_by = true;
             } else
@@ -222,10 +221,8 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 $t .= '<td style="font-size:smaller">';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
-                else if (($u = $conf->pc_member_by_id($rr->requestedBy)))
+                else if ($rr->requestedBy)
                     $t .= $Me->reviewer_html_for($rr->requestedBy);
-                else
-                    $t .= Text::user_html([$rr->reqFirstName, $rr->reqLastName, $rr->reqEmail]);
                 $t .= '</td>';
                 $want_requested_by = true;
             }
