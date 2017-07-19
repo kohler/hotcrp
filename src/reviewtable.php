@@ -282,7 +282,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         $t .= "\">\n";
         if ($score_header_text) {
             $t .= '<tr><td class="empty" colspan="2"></td>';
-            if ($mode === "assign")
+            if ($mode === "assign" && !$want_requested_by)
                 $t .= '<td class="empty"></td>';
             $t .= $score_header_text . "</tr>\n";
         }
