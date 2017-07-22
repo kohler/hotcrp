@@ -2104,16 +2104,6 @@ body#offline td#upload {
 	z-index: 5;
 }
 
-/* reviews and comments */
-table.pbox {
-	width: 100%;
-}
-td.pboxi {
-	width: 14em;
-	vertical-align: top;
-	position: relative;
-}
-
 /* paper strip */
 .pspcard_container {
 	float: left;
