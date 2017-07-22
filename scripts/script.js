@@ -2735,18 +2735,24 @@ function render_review_body(rrow) {
         else
             return !!rrow[f.uid];
     });
-    var t = "", i, f, x;
+    var t = "", i, f, x, nextf, last_display = 0, display;
     for (i = 0; i != view_order.length; ++i) {
         f = view_order[i];
+        nextf = view_order[i + 1];
+        if (last_display != 1 && f.options && nextf && nextf.options) {
+            display = 1;
+            t += '<div class="rvg">';
+        } else
+            display = last_display == 1 ? 2 : 0;
 
-        t += '<div class="rv rvg" data-rf="' + f.uid +
+        t += '<div class="rv rv' + "glr".charAt(display) + '" data-rf="' + f.uid +
             '"><div class="revvt"><div class="revfn">' + f.name_html;
         if (f.visibility != "au" && f.visibility != "audec")
             t += '<div class="revvis">(' +
                 (({secret: "secret", admin: "shown only to chairs",
                    pc: "hidden from authors"})[f.visibility] || f.visibility) +
                 ')</div>';
-        t += '</div></div><div class="revv revvg';
+        t += '</div></div><div class="revv revv' + "glr".charAt(display);
 
         if (!f.options) {
             x = render_text(rrow.format, rrow[f.uid], f.uid);
@@ -2758,6 +2764,9 @@ function render_review_body(rrow) {
             t += ' rev_unknown">' + (f.allow_empty ? "No entry" : "Unknown");
 
         t += '</div></div>';
+        if (display == 2)
+            t += '</div>';
+        last_display = display;
     }
     return t;
 }

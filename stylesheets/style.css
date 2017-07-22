@@ -2596,7 +2596,7 @@ body#offline .revcard {
 }
 .rvg {
 	border-top: 1px solid #ffecef;
-	padding: 12px 0;
+	padding: 8px 0;
 }
 .rvg:first-child {
 	border-top: 0 none;
