@@ -1135,11 +1135,13 @@ class PaperTable {
             echo " psc1";
         if ($foldid)
             echo " fold", ($folded ? "c" : "o");
-        if (is_string($extra))
-            echo " " . $extra;
-        else if (is_array($extra))
+        if ($extra) {
+            if (isset($extra["class"]))
+                echo " ", $extra["class"];
             foreach ($extra as $k => $v)
-                echo "\" $k=\"", str_replace("\"", "&quot;", $v);
+                if ($k !== "class")
+                    echo "\" $k=\"", str_replace("\"", "&quot;", $v);
+        }
         echo '">';
         ++$this->npapstrip;
     }
@@ -1457,7 +1459,7 @@ class PaperTable {
 
     private function papstrip_tag_entry($id, $folds) {
         if (!$this->npapstrip_tag_entry)
-            $this->_papstripBegin(null, null, "psc_te");
+            $this->_papstripBegin(null, null, ["class" => "psc_te"]);
         ++$this->npapstrip_tag_entry;
         echo '<div', ($id ? " id=\"fold{$id}\"" : ""),
             ' class="pste', ($folds ? " $folds" : ""), '">';

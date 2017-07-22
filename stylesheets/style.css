@@ -1882,49 +1882,53 @@ tr.pl {
 tr.plx {
 	background-position: top left;
 }
-.redtag, .redtag.psc {
+.redtag, .orangetag, .yellowtag, .greentag, .bluetag, .purpletag, .graytag, .whitetag {
+	-webkit-print-color-adjust: exact;
+	color-adjust: exact;
+}
+.redtag {
 	background-color: #ffd8d8;
 }
 .redtag .pst {
 	background-color: #f8d0d0;
 }
-.orangetag, .orangetag.psc {
+.orangetag {
 	background-color: #fdebcc;
 }
 .orangetag .pst {
 	background-color: #f2debb;
 }
-.yellowtag, .yellowtag.psc {
+.yellowtag {
 	background-color: #fdffcb;
 }
 .yellowtag .pst {
 	background-color: #f0eeb4;
 }
-.greentag, .greentag.psc {
+.greentag {
 	background-color: #d8ffd8;
 }
 .greentag .pst {
 	background-color: #c4f2c4;
 }
-.bluetag, .bluetag.psc {
+.bluetag {
 	background-color: #d8d8ff;
 }
 .bluetag .pst {
 	background-color: #ccccf2;
 }
-.purpletag, .purpletag.psc {
+.purpletag {
 	background-color: #f2d8f8;
 }
 .purpletag .pst {
 	background-color: #eac7f2;
 }
-.graytag, .graytag.psc {
+.graytag {
 	background-color: #e2e2e2;
 }
 .graytag .pst {
 	background-color: #d9d9d9;
 }
-.whitetag, .whitetag.psc {
+.whitetag {
 	background-color: #ffffff;
 }
 .whitetag .pst {
@@ -2137,6 +2141,9 @@ body#offline td#upload {
 .psc {
 	padding: 7px 0;
 	border-top: 1px solid #eeeeee;
+	-webkit-column-break-inside: avoid;
+	page-break-inside: avoid;
+	break-inside: avoid;
 }
 .psc.psc_te {
 	padding: 3px 0;
@@ -2856,6 +2863,33 @@ del .tagcolorspan {
 .wordsover {
 	font-weight: bold;
 	color: #cc0000;
+}
+
+/* print */
+@media print {
+.pspcard_container {
+	float: none;
+	position: static;
+	width: auto;
+	margin-left: 0;
+	margin-bottom: 16px;
+}
+.pspcard_body {
+        -webkit-column-count: 200px 2;
+        -moz-columns: 200px 2;
+        columns: 200px 2;
+}
+.papcard, .pedcard, .notecard, .revcard, .cmtcard {
+	margin-left: -24px;
+	margin-right: -24px;
+}
+.fold6c .abstract {
+	max-height: none !important;
+	overflow-y: visible !important;
+}
+.paptab_abstract .fn6 {
+	display: none;
+}
 }
 
 #tracker {
