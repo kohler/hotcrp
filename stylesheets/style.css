@@ -2563,6 +2563,7 @@ body#offline .revcard {
 }
 .rvl, .rvr {
 	width: 50%;
+	max-width: 360px;
 	float: left;
 }
 .revvl {
