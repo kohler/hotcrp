@@ -623,7 +623,7 @@ class PaperTable {
             $extra = ["fold" => "paper", "foldnum" => 6,
                       "foldsession" => "foldpaperb",
                       "foldtitle" => "Toggle full abstract"];
-        echo '<div class="paptab"><div class="paptab_abstract"><div class="pg">',
+        echo '<div class="paperinfo-cl"><div class="paperinfo-abstract"><div class="pg">',
             $this->papt("abstract", "Abstract", $extra),
             '<div class="pavb abstract"><div class="paptext format0';
         if ($this->prow && !$this->entryMatches
@@ -632,11 +632,11 @@ class PaperTable {
             Ht::stash_script('$(render_text.on_page)', 'render_on_page');
         } else
             $text = Ht::link_urls(Text::single_line_paragraphs($text));
-        echo '">', $text, "</div>";
+        echo '">', $text, "</div></div></div></div>";
         if ($extra)
             echo '<div class="fn6 textdiv-shade"></div>',
                 '<div class="fn6 textdiv-expander"><a class="x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
-        echo "</div></div></div></div>\n";
+        echo "</div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");
         return true;
@@ -2054,14 +2054,13 @@ class PaperTable {
             echo '<p class="xd"><span class="pstat ', $status_info[0], '">',
                 htmlspecialchars($status_info[1]), "</span></p>";
             $this->paptabDownload();
-            if ($this->paptabAbstract())
-                echo '<div class="paptab paptabr">';
-            else
-                echo '<div class="paptab1">';
+            echo '<div class="paperinfo"><div class="paperinfo-r">';
+            $has_abstract = $this->paptabAbstract();
+            echo '<div class="paperinfo-c', ($has_abstract ? "r" : "b"), '">';
             $this->paptabAuthors(!$this->editable && $this->mode === "edit"
                                  && $prow->timeSubmitted > 0);
             $this->paptabTopicsOptions($Me->can_administer($prow));
-            echo '</div>';
+            echo '</div></div></div>';
         }
         $this->echoDivExit();
 

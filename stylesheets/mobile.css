@@ -39,14 +39,11 @@ h2.paptitle {
 .pspcard_open {
 	display: none;
 }
-.paptab {
-	width: 100%;
-	float: none;
+.paperinfo, .paperinfo-r, .paperinfo-cl, .paperinfo-cr, .paperinfo-cb {
+	display: block;
+	width: auto;
 }
-.paptab_abstract {
-	padding-right: 0;
-}
-.paptabr {
+.paperinfo-cr {
 	padding-top: 1em;
 }
 .papcard, .pedcard, .notecard, .revcard, .cmtcard {

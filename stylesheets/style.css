@@ -2373,13 +2373,34 @@ div.pst span.hint {
 }
 
 /* paper */
-.paptab {
-	width: 50%;
-	float: left;
+.paperinfo {
+	display: table;
+	width: 100%;
 }
-.paptab_abstract {
-	padding-right: 1.5em;
+.paperinfo-r {
+	display: table-row;
+}
+.paperinfo-cl, .paperinfo-cr {
+	width: 50%;
+}
+.paperinfo-cl, .paperinfo-cr, .paperinfo-cb {
+	display: table-cell;
+	vertical-align: top;
+	position: relative;
+}
+.paperinfo-abstract {
 	word-wrap: break-word;
+	position: relative;
+}
+.fold6c .paperinfo-cl {
+	overflow-y: hidden;
+	height: 13ex;
+}
+.abstract {
+	padding-right: 1.5em;
+}
+.fold6c .abstract {
+	position: absolute;
 }
 .pavt {
 	margin: 0 -5px;
@@ -2404,22 +2425,15 @@ div.pst span.hint {
 .papt span.hint {
 	float: right;
 }
-.abstract {
-	position: relative;
-}
-.fold6c .abstract {
-	max-height: 11.8ex;
-	overflow-y: hidden;
-}
 .textdiv-shade {
 	z-index: 1;
 	position: absolute;
 	bottom: 0%;
 	width: 100%;
-	height: 48px;
+	height: 56px;
 	background: white;
 	background: linear-gradient(to top, #ffffff, rgba(255,255,255,0) 12px),
-		linear-gradient(340deg, #ffffff, #ffffff 32px, rgba(255,255,255,0) 50px);
+		linear-gradient(340deg, #ffffff, #ffffff 40px, rgba(255,255,255,0) 58px);
 }
 .textdiv-expander {
 	z-index: 2;
@@ -2431,7 +2445,7 @@ div.pst span.hint {
 .textdiv-expander > a {
 	display: inline-block;
 	background: white;
-	padding: 0 8px;
+	padding: 0 1.5em 0 8px;
 	border-radius: 4px;
 }
 
@@ -2886,13 +2900,6 @@ body {
 .papcard, .pedcard, .notecard, .revcard, .cmtcard {
 	margin-left: -24px;
 	margin-right: -24px;
-}
-.fold6c .abstract {
-	max-height: none !important;
-	overflow-y: visible !important;
-}
-.paptab_abstract .fn6 {
-	display: none;
 }
 }
 
