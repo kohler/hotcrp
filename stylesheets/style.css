@@ -2868,6 +2868,9 @@ del .tagcolorspan {
 
 /* print */
 @media print {
+body {
+	color: black;
+}
 .pspcard_container {
 	float: none;
 	position: static;
