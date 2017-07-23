@@ -217,10 +217,12 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
             // requester
             if ($cflttype <= 0 || $admin) {
                 $t .= '<td style="font-size:smaller">';
-                if ($rr->requestedBy == $Me->contactId)
-                    $t .= "you";
-                else if ($rr->requestedBy)
-                    $t .= $Me->reviewer_html_for($rr->requestedBy);
+                if ($rr->requestedBy) {
+                    if ($rr->requestedBy == $Me->contactId)
+                        $t .= "you";
+                    else
+                        $t .= $Me->reviewer_html_for($rr->requestedBy);
+                }
                 $t .= '</td>';
                 $want_requested_by = true;
             }
@@ -245,8 +247,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                     . ' '
                     . Ht::submit("deny", "Deny request", array("style" => "font-size:smaller"))
                     . '</div></form>';
-            }
-            else if ($rr->reqEmail === $Me->email)
+            } else if ($Me->contactId && $rr->requestedBy === $Me->contactId)
                 $t .= _retract_review_request_form($prow, $rr);
             $t .= '</td>';
 
