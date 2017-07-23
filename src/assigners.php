@@ -913,8 +913,10 @@ class Lead_AssignmentParser extends AssignmentParser {
         if (!$state->mark_type($this->key, ["pid"], "Lead_Assigner::make"))
             return;
         $k = $this->key . "ContactId";
-        foreach ($state->prows() as $prow)
-            $state->load(["type" => $this->key, "pid" => $prow->paperId, "_cid" => +$prow->$k]);
+        foreach ($state->prows() as $prow) {
+            if (($cid = +$prow->$k))
+                $state->load(["type" => $this->key, "pid" => $prow->paperId, "_cid" => $cid]);
+        }
     }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         if ($this->remove) {
