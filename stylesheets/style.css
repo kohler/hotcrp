@@ -2795,17 +2795,18 @@ body#offline .revcard {
 .preview {
 	margin-bottom: 24px;
 }
-.preview_border {
+.preview-border {
 	border-top: 1px dashed black;
 	max-width: 640px;
 }
-.cmttext.has_wordsover {
+.has-overlong {
+	position: relative;
 	margin: 0 -5px -3px;
 	padding: 0 5px 3px;
 	background: #f5ecec;
 	background: linear-gradient(to right, #f5ecec, #f5ecec 655px, rgba(245,236,236,0) 655px);
 }
-.wordsover_mark {
+.overlong-mark {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -2814,10 +2815,10 @@ body#offline .revcard {
 	background: #ffffff;
 	background: linear-gradient(to top, rgba(255,255,255,0), #ffffff 10px);
 }
-.wordsover_allowed {
+.overlong-allowed {
 	visibility: hidden;
 }
-.wordsover_content {
+.overlong-content {
 	position: relative;
 	z-index: 1;
 }

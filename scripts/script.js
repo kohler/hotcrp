@@ -3070,7 +3070,9 @@ function make_update_words(jq, wlimit) {
 function activate_editing(j, cj) {
     var elt, tags = [], i;
     j.find("textarea[name=comment]").text(cj.text || "")
-        .on("keydown", keydown_editor).autogrow();
+        .on("keydown", keydown_editor)
+        .on("hotcrp_renderPreview", render_preview)
+        .autogrow();
     /*suggest(j.find("textarea")[0], comment_completion_q, {
         drop_nonmatch: 1, decorate: true
     });*/
@@ -3262,29 +3264,36 @@ function render_cmt(j, cj, editing, msg) {
         activate_editing(j, cj);
     else {
         (cj.response ? chead.parent() : j).find("a.cmteditor").click(edit_this);
-        render_cmt_text(j.find(".cmttext"), cj, chead);
+        render_cmt_text(cj.format, cj.text || "", cj.response,
+                        j.find(".cmttext"), chead);
     }
 
     return j;
 }
 
-function render_cmt_text(textj, cj, chead) {
-    var t = render_text(cj.format, cj.text || ""), wlimit, wc,
+function render_cmt_text(format, value, response, textj, chead) {
+    var t = render_text(format, value), wlimit, wc,
         fmt = "format" + (t.format || 0);
     textj.addClass(fmt);
-    if (cj.response && resp_rounds[cj.response]
-        && (wlimit = resp_rounds[cj.response].words) > 0) {
-        wc = count_words(cj.text);
-        chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
+    if (response && resp_rounds[response]
+        && (wlimit = resp_rounds[response].words) > 0) {
+        wc = count_words(value);
+        chead && chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
         if (wc > wlimit) {
-            chead.find(".words").addClass("wordsover");
-            wc = count_words_split(cj.text, wlimit);
-            textj.addClass("has_wordsover").removeClass(fmt).prepend('<div class="wordsover_mark"><div class="wordsover_allowed ' + fmt + '"></div></div><div class="wordsover_content ' + fmt + '"></div>');
-            textj.find(".wordsover_allowed").html(render_text(cj.format, wc[0]).content);
-            textj = textj.find(".wordsover_content");
+            chead && chead.find(".words").addClass("wordsover");
+            wc = count_words_split(value, wlimit);
+            textj.addClass("has-overlong").removeClass(fmt).prepend('<div class="overlong-mark"><div class="overlong-allowed ' + fmt + '"></div></div><div class="overlong-content ' + fmt + '"></div>');
+            textj.find(".overlong-allowed").html(render_text(format, wc[0]).content);
+            textj = textj.find(".overlong-content");
         }
     }
     textj.html(t.content);
+}
+
+function render_preview(evt, format, value, dest) {
+    var $c = $cmt($(evt.target));
+    render_cmt_text(format, value, $c.c ? $c.c.response : 0, $(dest), null);
+    return false;
 }
 
 function add(cj, editing) {
@@ -3368,9 +3377,9 @@ function switch_preview(evt) {
         $ta = $ta.first();
         if ($ta.is(":visible")) {
             var format = +this.getAttribute("data-format");
-            var t = render_text(format, $ta.val());
             $ta.hide();
-            $ta.after('<div class="preview"><div class="preview_border"></div><div class="format' + format + '" style="padding:6px 0">' + t.content + '</div><div class="preview_border"></div></div>');
+            $ta.after('<div class="preview"><div class="preview-border" style="margin-bottom:6px"></div><div></div><div class="preview-border" style="margin-top:6px"></div></div>');
+            $ta.trigger("hotcrp_renderPreview", [format, $ta[0].value, $ta[0].nextSibling.firstChild.nextSibling]);
             this.innerHTML = "Edit";
         } else {
             $ta.next().remove();
@@ -3381,6 +3390,11 @@ function switch_preview(evt) {
     }
     return false;
 }
+$(document).on("hotcrp_renderPreview", function (evt, format, value, dest) {
+    var t = render_text(format, value);
+    dest.className = "format" + (t.format || 0);
+    dest.innerHTML = t.content;
+});
 function prepare() {
     $(document.body).on("click", "a.togglepreview", switch_preview);
 }
@@ -5880,7 +5894,7 @@ save_tags.open = function (noload) {
 };
 $(function () {
     if ($$("foldtags"))
-        jQuery(window).on("hotcrp_deadlines", function (evt, dl) {
+        $(window).on("hotcrp_deadlines", function (evt, dl) {
             if (dl.p && dl.p[hotcrp_paperid] && dl.p[hotcrp_paperid].tags)
                 save_tags.success(dl.p[hotcrp_paperid]);
         });
