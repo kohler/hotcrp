@@ -28,6 +28,7 @@ class FormulaGraph {
     private $reviewer_color = false;
     private $remapped_rounds = [];
     private $tags = [];
+    private $_data;
     public $error_html = [];
     public $errf = [];
 
@@ -154,7 +155,7 @@ class FormulaGraph {
                 $d->label = $this->queries[$q];
         }
         unset($d);
-        return $data;
+        $this->_data = $data;
     }
 
     private function _prepare_reviewer_color(Contact $user) {
@@ -224,7 +225,7 @@ class FormulaGraph {
                     $data[$s][] = $d;
             }
         }
-        return $data;
+        $this->_data = $data;
     }
 
     // combine data: [x, y, pids, style, [query]]
@@ -294,7 +295,7 @@ class FormulaGraph {
             }
             $ndata[] = $d;
         }
-        return $ndata;
+        $this->_data = $ndata;
     }
 
     private function _valuemap_axes($format) {
@@ -307,20 +308,20 @@ class FormulaGraph {
         return $axes;
     }
 
-    private function _valuemap_collect($data, $axes) {
+    private function _valuemap_collect($axes) {
         assert(!!$axes);
         $vs = [];
         if ($this->type == self::CDF) {
-            foreach ($data as $dx)
+            foreach ($this->_data as $dx)
                 foreach ($dx->d as $d)
                     $vs[$d] = true;
         } else if ($this->type & self::BARCHART) {
-            foreach ($data as $d) {
+            foreach ($this->_data as $d) {
                 ($axes & 1) && $d[0] !== null && ($vs[$d[0]] = true);
                 ($axes & 2) && $d[1] !== null && ($vs[$d[1]] = true);
             }
         } else {
-            foreach ($data as $dx)
+            foreach ($this->_data as $dx)
                 foreach ($dx as $d) {
                     ($axes & 1) && $d[0] !== null && ($vs[$d[0]] = true);
                     ($axes & 2) && $d[1] !== null && ($vs[$d[1]] = true);
@@ -329,21 +330,21 @@ class FormulaGraph {
         return $vs;
     }
 
-    private function _valuemap_rewrite(&$data, $axes, $m) {
+    private function _valuemap_rewrite($axes, $m) {
         assert(!!$axes);
         if ($this->type == self::CDF) {
-            foreach ($data as $dx) {
+            foreach ($this->_data as $dx) {
                 foreach ($dx->d as &$d)
                     array_key_exists($d, $m) && ($d = $m[$d]);
                 unset($d);
             }
         } else if ($this->type & self::BARCHART) {
-            foreach ($data as &$d) {
+            foreach ($this->_data as &$d) {
                 ($axes & 1) && array_key_exists($d[0], $m) && ($d[0] = $m[$d[0]]);
                 ($axes & 2) && array_key_exists($d[1], $m) && ($d[1] = $m[$d[1]]);
             }
         } else {
-            foreach ($data as &$dx) {
+            foreach ($this->_data as &$dx) {
                 foreach ($dx as &$d) {
                     ($axes & 1) && array_key_exists($d[0], $m) && ($d[0] = $m[$d[0]]);
                     ($axes & 2) && array_key_exists($d[1], $m) && ($d[1] = $m[$d[1]]);
@@ -353,9 +354,9 @@ class FormulaGraph {
         }
     }
 
-    private function _reviewer_reformat(&$data) {
+    private function _reviewer_reformat() {
         if (!($axes = $this->_valuemap_axes(Fexpr::FREVIEWER))
-            || !($cids = $this->_valuemap_collect($data, $axes)))
+            || !($cids = $this->_valuemap_collect($axes)))
             return;
         $cids = array_filter(array_keys($cids), "is_numeric");
         $result = Dbl::qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", $cids);
@@ -370,12 +371,12 @@ class FormulaGraph {
             $c->sort_position = ++$i;
             $m[$c->contactId] = $i;
         }
-        $this->_valuemap_rewrite($data, $axes, $m);
+        $this->_valuemap_rewrite($axes, $m);
     }
 
-    private function _revround_reformat(&$data) {
+    private function _revround_reformat() {
         if (!($axes = $this->_valuemap_axes(Fexpr::FROUND))
-            || !($rs = $this->_valuemap_collect($data, $axes)))
+            || !($rs = $this->_valuemap_collect($axes)))
             return;
         $i = 0;
         $m = [];
@@ -384,12 +385,12 @@ class FormulaGraph {
                 $this->remapped_rounds[++$i] = $rname;
                 $m[$n] = $i;
             }
-        $this->_valuemap_rewrite($data, $axes, $m);
+        $this->_valuemap_rewrite($axes, $m);
     }
 
-    private function _tag_reformat(&$data) {
+    private function _tag_reformat() {
         if (!($axes = $this->_valuemap_axes(Fexpr::FTAG))
-            || !($rs = $this->_valuemap_collect($data, $axes)))
+            || !($rs = $this->_valuemap_collect($axes)))
             return;
         $tagger = new Tagger($this->user);
         uksort($this->tags, [$tagger, "tag_compare"]);
@@ -397,10 +398,13 @@ class FormulaGraph {
         $m = [];
         foreach ($this->tags as $tag => $ri)
             $m[$ri] = ++$i;
-        $this->_valuemap_rewrite($data, $axes, $m);
+        $this->_valuemap_rewrite($axes, $m);
     }
 
     function data() {
+        if ($this->_data !== null)
+            return $this->_data;
+
         // load data
         $paperIds = array_keys($this->papermap);
         $queryOptions = array("paperId" => $paperIds, "tags" => true);
@@ -417,16 +421,16 @@ class FormulaGraph {
         Dbl::free($result);
 
         if ($this->type == self::CDF)
-            $data = $this->_cdf_data($rowset);
+            $this->_cdf_data($rowset);
         else if ($this->type & self::BARCHART)
-            $data = $this->_combine_data($rowset);
+            $this->_combine_data($rowset);
         else
-            $data = $this->_scatter_data($rowset);
-        $this->_reviewer_reformat($data);
-        $this->_revround_reformat($data);
-        $this->_tag_reformat($data);
+            $this->_scatter_data($rowset);
+        $this->_reviewer_reformat();
+        $this->_revround_reformat();
+        $this->_tag_reformat();
 
-        return $data;
+        return $this->_data;
     }
 
     function axis_info_settings($axis) {
