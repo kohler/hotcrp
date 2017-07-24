@@ -83,4 +83,12 @@ class ReviewInfo {
             return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
         return 0;
     }
+
+    static function compare_id($a, $b) {
+        if ($a->paperId != $b->paperId)
+            return (int) $a->paperId < (int) $b->paperId ? -1 : 1;
+        if ($a->reviewId != $b->reviewId)
+            return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
+        return 0;
+    }
 }

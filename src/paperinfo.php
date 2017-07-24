@@ -576,7 +576,6 @@ class PaperInfo {
     private $_conflict_array = null;
     private $_conflict_array_email;
     private $_review_array = null;
-    private $_review_cid_array = null;
     private $_reviews_have = [];
     private $_comment_array = null;
     private $_comment_skeleton_array = null;
@@ -662,7 +661,7 @@ class PaperInfo {
         if ($this->_rights_version !== Contact::$rights_version) {
             if ($this->_rights_version) {
                 $this->_contact_info = $this->_reviews_have = [];
-                $this->_review_array = $this->_review_cid_array = $this->_conflict_array = null;
+                $this->_review_array = $this->_conflict_array = null;
                 unset($this->reviewSignatures, $this->allConflictType);
             }
             $this->_rights_version = Contact::$rights_version;
@@ -889,7 +888,7 @@ class PaperInfo {
         if (array_key_exists($cid, $this->_contact_info))
             $rrow = $this->_contact_info[$cid];
         else
-            $rrow = get($this->reviews_by_user(), $cid);
+            $rrow = $this->review_by_user($cid);
         return $rrow ? $rrow->reviewType : 0;
     }
 
@@ -1414,15 +1413,13 @@ class PaperInfo {
         if (property_exists($this, "reviewSignatures")
             && $this->_review_array === null
             && !$always) {
-            $this->_review_array = $this->_review_cid_array = $this->_reviews_have = [];
+            $this->_review_array = $this->_reviews_have = [];
             if ((string) $this->reviewSignatures !== "")
                 foreach (explode(",", $this->reviewSignatures) as $rs) {
                     $rrow = ReviewInfo::make_signature($this, $rs);
                     $this->_review_array[$rrow->reviewId] = $rrow;
-                    $this->_review_cid_array[$rrow->contactId] = $rrow;
                 }
             uasort($this->_review_array, "ReviewInfo::compare");
-            uasort($this->_review_cid_array, "ReviewInfo::compare");
             return;
         }
 
@@ -1431,7 +1428,7 @@ class PaperInfo {
         else
             $row_set = new PaperInfoSet($this);
         foreach ($row_set as $prow) {
-            $prow->_review_array = $prow->_review_cid_array = [];
+            $prow->_review_array = [];
             $prow->_reviews_have = ["full" => true];
         }
         $ratings = "''";
@@ -1441,13 +1438,10 @@ class PaperInfo {
         while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
             $prow = $row_set->get($rrow->paperId);
             $prow->_review_array[$rrow->reviewId] = $rrow;
-            $prow->_review_cid_array[$rrow->contactId] = $rrow;
         }
         Dbl::free($result);
-        foreach ($row_set as $prow) {
+        foreach ($row_set as $prow)
             uasort($prow->_review_array, "ReviewInfo::compare");
-            uasort($prow->_review_cid_array, "ReviewInfo::compare");
-        }
     }
 
     function reviews_by_id() {
@@ -1456,15 +1450,18 @@ class PaperInfo {
         return $this->_review_array;
     }
 
-    function reviews_by_user() {
-        if ($this->_review_cid_array === null)
-            $this->load_reviews();
-        return $this->_review_cid_array;
+    function reviews_ordered_by_id() {
+        $reviews = $this->reviews_by_id();
+        usort($reviews, "ReviewInfo::compare_id");
+        return $reviews;
     }
 
     function review_by_user($contact) {
         $cid = self::contact_to_cid($contact);
-        return get($this->reviews_by_user(), $cid);
+        foreach ($this->reviews_by_id() as $rrow)
+            if ($rrow->contactId == $cid)
+                return $rrow;
+        return null;
     }
 
     function num_reviews_submitted(Contact $user, $forceShow = null) {
@@ -1603,7 +1600,7 @@ class PaperInfo {
             if (!property_exists($this, $k))
                 $this->load_review_fields($fid);
             $x = explode(",", $this->$k);
-            foreach (array_values($this->reviews_by_id()) as $i => $rrow)
+            foreach ($this->reviews_ordered_by_id() as $i => $rrow)
                 $rrow->$fid = (int) $x[$i];
         }
     }
@@ -1634,7 +1631,8 @@ class PaperInfo {
                 $this->load_review_fields("reviewWordCount", true);
             $x = explode(",", $this->reviewWordCountSignature);
             $bad_ids = [];
-            foreach (array_values($this->reviews_by_id()) as $i => $rrow)
+
+            foreach ($this->reviews_ordered_by_id() as $i => $rrow)
                 if ($x[$i] !== ".")
                     $rrow->reviewWordCount = (int) $x[$i];
                 else
