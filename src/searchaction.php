@@ -129,14 +129,14 @@ class SearchAction {
                 $texts[] = array("paper" => $prow->paperId,
                                  "action" => "none",
                                  "title" => "You cannot override your conflict with this paper");
-            } else if ($prow->reviews_by_id()) {
+            } else if (($rrows = $prow->reviews_by_display())) {
                 $texts[] = array();
                 $texts[] = array("paper" => $prow->paperId,
                                  "action" => "clearreview",
                                  "email" => "#pc",
                                  "round" => "any",
                                  "title" => $prow->title);
-                foreach ($prow->reviews_by_id() as $rrow)
+                foreach ($rrows as $rrow)
                     if ($rrow->reviewType >= REVIEW_PC
                         && ($pc = get($pcm, $rrow->contactId))) {
                         $round = $rrow->reviewRound;

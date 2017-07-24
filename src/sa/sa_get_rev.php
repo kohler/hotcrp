@@ -147,7 +147,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
             else {
                 $row->ensure_full_reviews();
                 $row->ensure_reviewer_names();
-                foreach ($row->viewable_submitted_reviews_by_id($user, null) as $rrow)
+                foreach ($row->viewable_submitted_reviews_by_display($user, null) as $rrow)
                     defappend($texts[$row->paperId], $rf->pretty_text($row, $rrow, $user) . "\n");
             }
             foreach ($row->viewable_comments($user, null) as $crow)
@@ -182,7 +182,7 @@ class GetScores_SearchAction extends SearchAction {
                 $a = ["paper" => $row->paperId, "title" => $row->title];
                 if ($row->outcome && $user->can_view_decision($row, true))
                     $a["decision"] = $any_decision = $user->conf->decision_name($row->outcome);
-                foreach ($row->viewable_submitted_reviews_by_id($user, null) as $rrow) {
+                foreach ($row->viewable_submitted_reviews_by_display($user, null) as $rrow) {
                     $view_bound = $user->view_score_bound($row, $rrow, null);
                     $this_scores = false;
                     $b = $a;

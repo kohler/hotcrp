@@ -1419,7 +1419,6 @@ class PaperInfo {
                     $rrow = ReviewInfo::make_signature($this, $rs);
                     $this->_review_array[$rrow->reviewId] = $rrow;
                 }
-            uasort($this->_review_array, "ReviewInfo::compare");
             return;
         }
 
@@ -1440,8 +1439,6 @@ class PaperInfo {
             $prow->_review_array[$rrow->reviewId] = $rrow;
         }
         Dbl::free($result);
-        foreach ($row_set as $prow)
-            uasort($prow->_review_array, "ReviewInfo::compare");
     }
 
     function reviews_by_id() {
@@ -1450,10 +1447,14 @@ class PaperInfo {
         return $this->_review_array;
     }
 
-    function reviews_ordered_by_id() {
-        $reviews = $this->reviews_by_id();
-        usort($reviews, "ReviewInfo::compare_id");
-        return $reviews;
+    function reviews_by_id_order() {
+        return array_values($this->reviews_by_id());
+    }
+
+    function reviews_by_display() {
+        $rrows = $this->reviews_by_id();
+        uasort($rrows, "ReviewInfo::compare");
+        return $rrows;
     }
 
     function review_by_user($contact) {
@@ -1498,14 +1499,14 @@ class PaperInfo {
             return $this->num_reviews_in_progress($user, $forceShow);
     }
 
-    function viewable_submitted_reviews_by_id(Contact $contact, $forceShow) {
+    function viewable_submitted_reviews_by_display(Contact $contact, $forceShow) {
         $cinfo = $this->contact_info($contact);
         if ($cinfo->vsreviews_array === null
             || $forceShow !== $cinfo->vsreviews_force_show) {
             $cinfo->vsreviews_array = [];
             $cinfo->vsreviews_cid_array = null;
             $cinfo->vsreviews_force_show = $forceShow;
-            foreach ($this->reviews_by_id() as $id => $rrow)
+            foreach ($this->reviews_by_display() as $id => $rrow)
                 if ($contact->can_view_review($this, $rrow, $forceShow))
                     $cinfo->vsreviews_array[$id] = $rrow;
         }
@@ -1516,7 +1517,7 @@ class PaperInfo {
         $cinfo = $this->contact_info($contact);
         if ($cinfo->vsreviews_cid_array === null
             || $forceShow !== $cinfo->vsreviews_force_show) {
-            $rrows = $this->viewable_submitted_reviews_by_id($contact, $forceShow);
+            $rrows = $this->viewable_submitted_reviews_by_display($contact, $forceShow);
             $cinfo->vsreviews_cid_array = [];
             foreach ($rrows as $rrow)
                 $cinfo->vsreviews_cid_array[$rrow->contactId] = $rrow;
@@ -1600,7 +1601,7 @@ class PaperInfo {
             if (!property_exists($this, $k))
                 $this->load_review_fields($fid);
             $x = explode(",", $this->$k);
-            foreach ($this->reviews_ordered_by_id() as $i => $rrow)
+            foreach ($this->reviews_by_id_order() as $i => $rrow)
                 $rrow->$fid = (int) $x[$i];
         }
     }
@@ -1632,7 +1633,7 @@ class PaperInfo {
             $x = explode(",", $this->reviewWordCountSignature);
             $bad_ids = [];
 
-            foreach ($this->reviews_ordered_by_id() as $i => $rrow)
+            foreach ($this->reviews_by_id_order() as $i => $rrow)
                 if ($x[$i] !== ".")
                     $rrow->reviewWordCount = (int) $x[$i];
                 else
