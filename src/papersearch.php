@@ -2244,7 +2244,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             if ((($this->completeness & self::COMPLETE)
                  && !$rrow->reviewSubmitted)
                 || (($this->completeness & self::INCOMPLETE)
-                    && $rrow->reviewNeedsSubmit)
+                    && !$rrow->reviewNeedsSubmit)
                 || (($this->completeness & self::INPROGRESS)
                     && ($rrow->reviewSubmitted || !$rrow->reviewModified))
                 || (($this->completeness & self::APPROVABLE)
