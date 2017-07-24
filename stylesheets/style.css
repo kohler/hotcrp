@@ -1114,9 +1114,6 @@ span.error,
 h2.error, h3.error, h4.error, h5.error, h6.error {
 	color: #ff0000;
 }
-.dimerror, .wordsovertext {
-	color: #903030;
-}
 
 
 .helpside {
