@@ -263,9 +263,9 @@ class SettingRenderer_SubForm extends SettingRenderer {
             foreach ($otlist as $ot)
                 $otypes[$ot[1] . ":final"] = $ot[2] . " (final version)";
         }
-        echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "return do_option_type(this)", "id" => "optvt$id")),
+        echo Ht::select("optvt$id", $otypes, $optvt, ["id" => "optvt$id", "class" => "optvt"]),
             "</div></div></td>\n";
-        Ht::stash_script("do_option_type(\$\$('optvt$id'))");
+        Ht::stash_script('$(function () { $(document.body).on("change", "select.optvt", settings_option_type); $("select.optvt").each(settings_option_type); });', "settings_optvt");
 
         echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
             $sv->label("optp$id", "Visibility"), "</div><div class='f-e'>",
@@ -361,8 +361,8 @@ function render(SettingValues $sv) {
         '</div>';
 
     echo "<h3 class=\"settings\">Options and attachments</h3>\n";
-    echo "<p class=\"settingtext\">Options and attachments are additional data entered by authors at submission time. Option names should be brief (“PC paper,” “Best Student Paper,” “Supplemental material”). The optional description can explain further and may use XHTML. Add options one at a time.</p>\n";
-    echo "<div class='g'></div>\n",
+    echo "<p class=\"settingtext\">Options and attachments are additional data entered by authors at submission time. Option names should be brief (“PC paper,” “Supplemental material”). The optional description can explain further and may use XHTML. Add options one at a time.</p>\n";
+    echo "<div class=\"g\"></div>\n",
         Ht::hidden("has_options", 1);
     $sep = "";
     $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator

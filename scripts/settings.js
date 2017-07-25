@@ -14,12 +14,12 @@ function next_lexicographic_permutation(i, size) {
 }
 
 
-function do_option_type(e) {
+function settings_option_type() {
     var m;
-    if ((m = e.name.match(/^optvt(.*)$/))) {
-        fold("optv" + m[1], e.value != "selector" && e.value != "radio");
-        fold("optvis" + m[1], !/:final/.test(e.value), 2);
-        fold("optvis" + m[1], e.value != "pdf:final", 3);
+    if ((m = this.name.match(/^optvt(.*)$/))) {
+        fold("optv" + m[1], this.value != "selector" && this.value != "radio");
+        fold("optvis" + m[1], !/:final/.test(this.value), 2);
+        fold("optvis" + m[1], this.value != "pdf:final", 3);
     }
     return true;
 }
