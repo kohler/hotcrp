@@ -233,7 +233,7 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     $notes = join(" ", array_filter($notes, function ($n) { return $n !== ""; }));
 
     $webnotes = "";
-    if (!empty($ps->messages()))
+    if (count($ps->messages()))
         $webnotes .= " <ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>";
 
     if (empty($diffs)) {
