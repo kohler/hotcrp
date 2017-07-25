@@ -14,19 +14,22 @@ help () {
     echo "Usage: ${LIBDIR}createdb.sh [-c CONFIG] [MYSQLOPTIONS] [DBNAME]"
     echo
     echo "Options:"
-    echo "  -c, --config=CONFIG     Configuration file is CONFIG [conf/options.php]."
+    echo '  -c, --config=CONFIG     Configuration file is CONFIG [conf/options.php].'
     echo "      --minimal           Output minimal configuration file."
     echo "      --batch             Batch installation: never stop for input."
     echo "      --force             Answer yes to all questions."
     echo "      --replace           Replace existing database and user."
     echo "  -q, --quiet             Be quiet."
     echo "      --dbuser=USER,PASS  Specify database USER and PASS."
+    echo "      --host=HOST         Specify database host."
+    echo "      --grant-host=HOST   HOST is granted DB access privilege (in addition"
+    echo '                          to `localhost`).'
     echo "      --no-dbuser         Do not create database user."
     echo "      --no-schema         Do not load initial schema."
     echo "      --no-setup-phase    Don't give special treatment to the first user."
     echo
     echo "MYSQLOPTIONS are sent to mysql and mysqladmin."
-    echo "Common options include '--user=ADMIN_USERNAME' and '--password=ADMIN_PASSWORD'"
+    echo 'Common options include `--user=ADMIN_USERNAME` and `--password=ADMIN_PASSWORD`'
     echo "to select a database admin user able to create new tables."
     exit 0
 }
@@ -49,10 +52,10 @@ set_dbuserpass () {
 
 add_granthost () {
     if expr "$1" : '[-a-zA-Z0-9.*][-a-zA-Z0-9.*]*$' >/dev/null; then
-	granthosts="$granthosts $1"
+        granthosts="$granthosts $1"
     else
-	echo "Expected --grant-host=HOSTNAME" 1>&2
-	usage
+        echo "Expected --grant-host=HOSTNAME" 1>&2
+        usage
     fi
 }
 
@@ -124,13 +127,13 @@ while [ $# -gt 0 ]; do
     --no-setup-phase)
         setup_phase="grep -v 'setupPhase'";;
     -V|--verb|--verbo|--verbos|--verbose)
-	verbose=true;;
+        verbose=true;;
     --host=*|--host)
-	FLAGS="$FLAGS '$1'"; has_host=true;;
+        FLAGS="$FLAGS '$1'"; has_host=true;;
     --grant-host=*)
-	add_granthost "`echo "$1" | sed 's/^[^=]*=//'`";;
+        add_granthost "`echo "$1" | sed 's/^[^=]*=//'`";;
     --grant-host)
-	add_granthost "$2"; shift;;
+        add_granthost "$2"; shift;;
     -*)
         FLAGS="$FLAGS '$1'";;
     *)
@@ -202,14 +205,14 @@ if ! $batch; then
         echo "Creating the database and database user for your conference."
     fi
     if test -z "$granthosts"; then
-	echo "* Access for the database user is allowed only from the local host."
-	if test "$has_host" = true; then
-	    echo
-	    echo "* Since you are running MySQL on a remote host, it will likely"
-	    echo "* cause problems that HotCRP is restricting the database user"
-	    echo "* to localhost access only. Add a \`--grant-host=THISHOST\`"
-	    echo "* argument to also allow access from other hosts."
-	fi
+        echo "* Access for the database user is allowed only from the local host."
+        if test "$has_host" = true; then
+            echo
+            echo "* Since you are running MySQL on a remote host, it will likely"
+            echo "* cause problems that HotCRP is restricting the database user"
+            echo "* to localhost access only. Add \`--grant-host=HOST\` arguments"
+            echo "* to also allow access from other hosts."
+        fi
     fi
     echo
 fi
@@ -394,15 +397,15 @@ if [ "$createuser" = y ]; then
     # 2. DROP USER
     # 3. CREATE USER
     for host in $allhosts; do
-	if $verbose; then
-	    cat <<__EOF__
+        if $verbose; then
+            cat <<__EOF__
 . GRANT USAGE ON *.* TO '$DBUSER'@'$host' IDENTIFIED BY <REDACTED>;
 . DROP USER '$DBUSER'@'$host';
 . FLUSH PRIVILEGES;
 . CREATE USER '$DBUSER'@'$host' IDENTIFIED BY <REDACTED>;
 __EOF__
-	fi
-	eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
+        fi
+        eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
 GRANT USAGE ON *.* TO '$DBUSER'@'$host' IDENTIFIED BY '`sql_dbpass`';
 DROP USER '$DBUSER'@'$host';
 FLUSH PRIVILEGES;
@@ -418,15 +421,15 @@ if [ "$createdb" = y -o "$createuser" = y ]; then
 DELETE FROM db WHERE db='$DBNAME' AND User='$DBUSER';
 __EOF__
     for host in $allhosts; do
-	if $verbose; then
-	    cat <<__EOF__
+        if $verbose; then
+            cat <<__EOF__
 . GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX,
 .     REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES
 .     ON \`$DBNAME\`.* TO '$DBUSER'@'$host';
 . GRANT RELOAD ON *.* TO '$DBUSER'@'$host';
 __EOF__
-	fi
-	eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
+        fi
+        eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX,
     REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES
     ON \`$DBNAME\`.* TO '$DBUSER'@'$host';
