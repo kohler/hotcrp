@@ -39,7 +39,7 @@ h2.paptitle {
 .pspcard_open {
 	display: none;
 }
-.paperinfo, .paperinfo-r, .paperinfo-cl, .paperinfo-cr, .paperinfo-cb {
+.paperinfo, .paperinfo-row, .paperinfo-cl, .paperinfo-cr, .paperinfo-cb {
 	display: block;
 	width: auto;
 }

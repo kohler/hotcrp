@@ -634,8 +634,8 @@ class PaperTable {
             $text = Ht::link_urls(Text::single_line_paragraphs($text));
         echo '">', $text, "</div></div></div></div>";
         if ($extra)
-            echo '<div class="fn6 textdiv-shade"></div>',
-                '<div class="fn6 textdiv-expander"><a class="x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
+            echo '<div class="fn6 longtext-fader"></div>',
+                '<div class="fn6 longtext-expander"><a class="x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
         echo "</div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");
@@ -2054,7 +2054,7 @@ class PaperTable {
             echo '<p class="xd"><span class="pstat ', $status_info[0], '">',
                 htmlspecialchars($status_info[1]), "</span></p>";
             $this->paptabDownload();
-            echo '<div class="paperinfo"><div class="paperinfo-r">';
+            echo '<div class="paperinfo"><div class="paperinfo-row">';
             $has_abstract = $this->paptabAbstract();
             echo '<div class="paperinfo-c', ($has_abstract ? "r" : "b"), '">';
             $this->paptabAuthors(!$this->editable && $this->mode === "edit"

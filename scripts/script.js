@@ -2674,6 +2674,19 @@ return render_text;
 })();
 
 
+// abstract
+$(function () {
+    function check_abstract_height() {
+        var want_hidden = $("#foldpaper").hasClass("fold6c")
+            && $(".abstract").geometry().bottom <= $(".paperinfo-cl").geometry().bottom;
+        $(".longtext-fader, .longtext-expander").toggle(!want_hidden);
+    }
+    if ($(".paperinfo-abstract").length) {
+        check_abstract_height();
+        $(window).on("resize", check_abstract_height);
+    }
+});
+
 // reviews
 window.review_form = (function ($) {
 var formj, ratingsj, form_order;

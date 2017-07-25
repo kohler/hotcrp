@@ -2374,7 +2374,7 @@ div.pst span.hint {
 	display: table;
 	width: 100%;
 }
-.paperinfo-r {
+.paperinfo-row {
 	display: table-row;
 }
 .paperinfo-cl, .paperinfo-cr {
@@ -2422,7 +2422,7 @@ div.pst span.hint {
 .papt span.hint {
 	float: right;
 }
-.textdiv-shade {
+.longtext-fader {
 	z-index: 1;
 	position: absolute;
 	bottom: 0%;
@@ -2432,19 +2432,20 @@ div.pst span.hint {
 	background: linear-gradient(to top, #ffffff, rgba(255,255,255,0) 12px),
 		linear-gradient(340deg, #ffffff, #ffffff 40px, rgba(255,255,255,0) 58px);
 }
-.textdiv-expander {
+.longtext-expander {
 	z-index: 2;
 	position: absolute;
 	bottom: 0%;
 	width: 100%;
 	text-align: right;
 }
-.textdiv-expander > a {
+.longtext-expander > a {
 	display: inline-block;
 	background: white;
 	padding: 0 1.5em 0 8px;
 	border-radius: 4px;
 }
+
 
 .pg {
 	margin-top: 1em;
