@@ -3856,7 +3856,7 @@ function make_suggestions(pfx, precaret, postcaret, options) {
         if (res.length) {
             if (best_postcaret_index !== null)
                 res[best_postcaret_index] = res[best_postcaret_index].replace(/^<div class="suggestion/, '<div class="suggestion active');
-            return {list: res, lengths: [pfx.length + precaret_length, postcaret_length]};
+            return {list: res, offsets: [pfx_length, pfx_length + precaret_length, pfx_length + precaret_length + postcaret_length]};
         } else
             return null;
     };
@@ -3874,6 +3874,10 @@ function suggest(elt, suggestions_promise, options) {
     function finish_display(cinfo) {
         if (!cinfo || !cinfo.list.length)
             return kill();
+        var matchpos = elt.selectionStart - cinfo.offsets[1];
+        if (hiding && hiding === elt.value.substring(matchpos, matchpos + cinfo.offsets[0]))
+            return;
+        hiding = false;
         if (!hintdiv) {
             hintdiv = make_bubble({dir: "nw", color: "suggest"});
             hintdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
@@ -3888,15 +3892,14 @@ function suggest(elt, suggestions_promise, options) {
             '">' + cinfo.list.join('') + '</div>';
 
         var $elt = jQuery(elt),
-            shadow = textarea_shadow($elt, elt.tagName == "INPUT" ? 2000 : 0),
-            matchpos = elt.selectionStart - cinfo.lengths[0];
+            shadow = textarea_shadow($elt, elt.tagName == "INPUT" ? 2000 : 0);
         shadow.text(elt.value.substring(0, matchpos))
             .append("<span>&#x2060;</span>")
             .append(document.createTextNode(elt.value.substring(matchpos)));
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
         $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
         hintdiv.html(t).near($pos, elt);
-        hintdiv.self().attr("data-autocomplete-pos", matchpos + " " + (matchpos + cinfo.lengths[0]) + " " + (matchpos + cinfo.lengths[0] + cinfo.lengths[1]));
+        hintdiv.self().data("autocompletePos", [matchpos, cinfo.offsets]);
         shadow.remove();
     }
 
@@ -3933,16 +3936,17 @@ function suggest(elt, suggestions_promise, options) {
     }
 
     function do_complete(text, smatch, done, ignore_empty_completion) {
-        var poss = hintdiv.self().attr("data-autocomplete-pos").split(" ");
-        if ((!smatch || text == elt.value.substring(+poss[0], +poss[2]))
+        var poss = hintdiv.self().data("autocompletePos");
+        var startPos = poss[0], endPos = poss[0] + poss[1][2];
+        if ((!smatch || text == elt.value.substring(startPos, endPos))
             && ignore_empty_completion) {
             done && kill();
             return null; /* null == no completion occurred (false == failed) */
         }
         done && (text += " ");
-        var val = elt.value.substring(0, +poss[0]) + text + elt.value.substring(+poss[2]);
+        var val = elt.value.substring(0, startPos) + text + elt.value.substring(endPos);
         $(elt).val(val);
-        elt.selectionStart = elt.selectionEnd = +poss[0] + text.length;
+        elt.selectionStart = elt.selectionEnd = startPos + text.length;
         done ? kill() : setTimeout(display, 1);
         return true;
     }
@@ -3993,29 +3997,30 @@ function suggest(elt, suggestions_promise, options) {
 
     function kp(evt) {
         var k = event_key(evt), m = event_modkey(evt), completed = null;
-        if (k != "Tab" || m)
+        if (k !== "Tab" || m)
             tabfail = false;
-        if (k == "Escape" && !m) {
+        if (k === "Escape" && !m) {
             if (hintdiv) {
+                var poss = hintdiv.self().data("autocompletePos");
                 kill();
-                hiding = true;
+                hiding = this.value.substring(poss[0], poss[0] + poss[1][0]);
                 evt.stopImmediatePropagation();
             }
             return true;
         }
-        if ((k == "Tab" || k == "Enter") && !m && hintdiv)
-            completed = maybe_complete(hintdiv.self().find(".suggestion.active"), k == "Enter" && !interacted);
+        if ((k === "Tab" || k === "Enter") && !m && hintdiv)
+            completed = maybe_complete(hintdiv.self().find(".suggestion.active"), k === "Enter" && !interacted);
         if (completed || (!tabfail && completed !== null)) {
             tabfail = !completed;
             evt.preventDefault();
             evt.stopPropagation();
             return false;
         }
-        if (k.substring(0, 5) == "Arrow" && !m && hintdiv && move_active(k)) {
+        if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
             evt.preventDefault();
             return false;
         }
-        if (!hiding && !tabfail && (hintdiv || event_key.printable(evt)))
+        if (!tabfail && (hintdiv || event_key.printable(evt) || k === "Backspace"))
             setTimeout(display, 1);
         return true;
     }
@@ -4045,8 +4050,8 @@ function suggest(elt, suggestions_promise, options) {
     else if (elt) {
         suggdata = $(elt).data("suggest");
         if (!suggdata) {
-            $(elt).data("suggest", (suggdata = {promises: []}));
-            $(elt).on("keydown", kp).on("blur", blur);
+            suggdata = {promises: []};
+            $(elt).data("suggest", suggdata).on("keydown", kp).on("blur", blur);
             elt.autocomplete = "off";
         }
         if ($.inArray(suggestions_promise, suggdata.promises) < 0)
