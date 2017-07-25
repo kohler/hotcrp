@@ -261,7 +261,7 @@ class AbbreviationMatcher {
             $stopwords = (string) $stopwords;
             if ($stopwords !== "")
                 $stopwords .= "|";
-            $xname = preg_replace('/\b(?:' . $stopwords . 'a|an|be|did|do|for|in|of|or|the|their|they|this|to|with|you)\b/i', '', $name);
+            $xname = preg_replace('/\b(?:' . $stopwords . 'a|an|and|be|did|do|for|in|of|or|the|their|they|this|to|with|you)\b/i', '', $name);
             $name = $xname ? : $name;
         }
 
