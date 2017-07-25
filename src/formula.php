@@ -1539,7 +1539,7 @@ class Formula {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
         } else if (preg_match('/\A([A-Za-z][A-Za-z_]*)(.*)\z/is', $t, $m)
-                   && ($kwdef = $this->conf->formula_function($m[1]))) {
+                   && ($kwdef = $this->conf->formula_function($m[1], $this->user))) {
             $t = $m[2];
             $ff = new FormulaCall($kwdef, $m[1]);
             if (get($kwdef, "modifier_parser")) {

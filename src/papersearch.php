@@ -2756,7 +2756,7 @@ class PaperSearch {
 
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {
         $lword = strtolower($word);
-        if (($kwdef = $srch->conf->search_keyword($lword))) {
+        if (($kwdef = $srch->conf->search_keyword($lword, $srch->user))) {
             if (get($kwdef, "has_parser"))
                 $qe = call_user_func($kwdef->has_parser, $word, $sword, $srch);
             else if (get($kwdef, "has")) {
@@ -2887,7 +2887,7 @@ class PaperSearch {
         $word = $sword->word;
         $sword->keyword = $keyword;
         $sword->kwexplicit = $kwexplicit;
-        $sword->kwdef = $this->conf->search_keyword($keyword);
+        $sword->kwdef = $this->conf->search_keyword($keyword, $this->user);
         if ($sword->kwdef && get($sword->kwdef, "parser")) {
             $qx = call_user_func($sword->kwdef->parser, $word, $sword, $this);
             if ($qx && !is_array($qx))

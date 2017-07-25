@@ -658,22 +658,51 @@ class Conf {
     }
 
 
-    static private function xt_add_without_synonym(&$a, $name, $xt) {
-        $b = get($a, $name);
-        if (!$b || get($b, "priority", 0) <= get($xt, "priority", 0))
-            $a[$name] = $xt;
-    }
     static private function xt_add(&$a, $name, $xt) {
-        self::xt_add_without_synonym($a, $name, $xt);
+        $a[$name][] = $xt;
         if (($syn = get($xt, "synonym")))
             foreach (is_string($syn) ? [$syn] : $syn as $synname)
-                self::xt_add_without_synonym($a, $synname, $xt);
+                $a[$synname][] = $xt;
         return true;
     }
-    static private function xt_resolve_require($xt) {
-        if ($xt && isset($xt->require))
+    static function xt_resolve_require($xt) {
+        if ($xt && isset($xt->require) && !isset($xt->__require_resolved)) {
             foreach (expand_includes($xt->require) as $f)
                 require_once($f);
+            $xt->__require_resolved = true;
+        }
+    }
+    static function xt_enabled($xt, Contact $user = null) {
+        if ($xt && isset($xt->enable_if)) {
+            if (is_bool($xt->enable_if))
+                return $xt->enable_if;
+            $es = is_string($xt->enable_if) ? [$xt->enable_if] : $xt->enable_if;
+            foreach ($es as $e) {
+                if (($not = str_starts_with($e, "!")))
+                    $e = substr($e, 1);
+                if (!$user)
+                    $b = true;
+                else if ($e === "manager")
+                    $b = $user->is_manager();
+                else if ($e === "pc")
+                    $b = $user->isPC;
+                else if ($e === "reviewer")
+                    $b = $user->is_reviewer();
+                else if ($e === "view_review")
+                    $b = $user->can_view_some_review();
+                else if (strpos($e, "::") !== false) {
+                    self::xt_resolve_require($xt);
+                    $b = call_user_func($e, $xt, $user);
+                } else
+                    $b = false;
+                if ($not ? $b : !$b)
+                    return false;
+            }
+        }
+        return true;
+    }
+    static function xt_priority_ge($xta, $xtb) {
+        return $xta && (!$xtb || get($xta, "priority", 0) >= get($xtb, "priority", 0));
     }
 
 
@@ -693,28 +722,30 @@ class Conf {
         if (($olist = $this->opt("searchKeywords")))
             expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
     }
-    function search_keyword($keyword) {
+    function search_keyword($keyword, Contact $user = null) {
         if ($this->_search_keywords === null)
             $this->make_search_keyword_map();
-        if (array_key_exists($keyword, $this->_search_keywords))
-            return $this->_search_keywords[$keyword];
-        $kwj = get($this->_search_keyword_base, $keyword);
+        $kwj = null;
+        foreach (get($this->_search_keyword_base, $keyword, []) as $xt)
+            if (self::xt_priority_ge($xt, $kwj) && self::xt_enabled($xt, $user))
+                $kwj = $xt;
         $this->_search_keywords[$keyword] = $kwj;
-        foreach ($this->_search_keyword_factories as $kwfj) {
-            if ((!$kwj || get($kwj, "priority", 0) <= get($kwfj, "priority", 0))
-                && preg_match("\1\\A(?:" . $kwfj->match . ")\\z\1", $keyword, $m)) {
-                self::xt_resolve_require($kwfj);
-                $x = call_user_func($kwfj->factory, $keyword, $this, $kwfj, $m);
-                if ($x && (is_object($x) || is_array($x))) {
-                    $x = (object) $x;
-                    assert($x->name === $keyword);
-                    if (isset($kwfj->priority) && !isset($x->priority))
-                        $x->priority = $kwfj->priority;
-                    if (!$kwj || get($kwj, "priority", 0) <= get($x, "priority", 0))
-                        $kwj = $this->_search_keywords[$keyword] = $x;
+        foreach ($this->_search_keyword_factories as $fxt) {
+            if (self::xt_priority_ge($fxt, $kwj) && self::xt_enabled($fxt, $user)
+                && preg_match("\1\\A(?:" . $fxt->match . ")\\z\1", $keyword, $m)) {
+                self::xt_resolve_require($fxt);
+                $xt = call_user_func($fxt->factory, $keyword, $this, $fxt, $m);
+                if ($xt && (is_object($xt) || is_array($xt))) {
+                    $xt = (object) $xt;
+                    assert($xt->name === $keyword);
+                    if (!isset($xt->priority) && isset($fxt->priority))
+                        $xt->priority = $fxt->priority;
+                    if (self::xt_priority_ge($xt, $kwj))
+                        $kwj = $this->_search_keywords[$keyword] = $xt;
                 }
             }
         }
+        self::xt_resolve_require($kwj);
         return $kwj;
     }
 
@@ -732,7 +763,10 @@ class Conf {
             if (($olist = $this->opt("assignmentParsers")))
                 expand_json_includes_callback($olist, [$this, "_add_assignment_parser_json"]);
         }
-        $aj = get($this->_assignment_parsers, $keyword);
+        $aj = null;
+        foreach (get($this->_assignment_parsers, $keyword, []) as $xt)
+            if (self::xt_priority_ge($xt, $aj))
+                $aj = $xt;
         if ($aj && !isset($aj->__parser)) {
             self::xt_resolve_require($aj);
             $p = $aj->parser_class;
@@ -747,14 +781,17 @@ class Conf {
             return self::xt_add($this->_formula_functions, $fj->name, $fj);
         return false;
     }
-    function formula_function($fname) {
+    function formula_function($fname, Contact $user) {
         if ($this->_formula_functions === null) {
             $this->_formula_functions = [];
             expand_json_includes_callback(["etc/formulafunctions.json"], [$this, "_add_formula_function_json"]);
             if (($olist = $this->opt("formulaFunctions")))
                 expand_json_includes_callback($olist, [$this, "_add_formula_function_json"]);
         }
-        $ff = get($this->_formula_functions, $fname);
+        $ff = null;
+        foreach (get($this->_formula_functions, $fname, []) as $xt)
+            if (self::xt_priority_ge($xt, $ff) && self::xt_enabled($xt, $user))
+                $ff = $xt;
         self::xt_resolve_require($ff);
         return $ff;
     }
