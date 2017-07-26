@@ -1865,6 +1865,8 @@ function form_differs(form) {
             var current = this.tagName === "SELECT" ? $me.val() : this.value;
             same = text_eq(current, expected);
         }
+        if (!same)
+            console.log("differs " + this.name + " expected " + expected);
         return same;
     });
     return !same;

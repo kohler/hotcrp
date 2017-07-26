@@ -60,7 +60,7 @@ function settings_option_move_enable() {
     $(".settings_opt:last-child .settings_opt_movedown").prop("disabled", true);
     var index = 0;
     $(".settings_opt_fp").each(function () {
-        if (this.value !== "deleted") {
+        if (this.value !== "deleted" && this.name !== "optfp_0") {
             ++index;
             if (this.value != index)
                 $(this).val(index).change();
