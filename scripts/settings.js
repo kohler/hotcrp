@@ -22,6 +22,43 @@ function settings_option_type() {
     return true;
 }
 
+function settings_option_move() {
+    var odiv = $(this).closest(".settings_opt")[0];
+    if ($(this).hasClass("settings_opt_moveup") && odiv.previousSibling)
+        odiv.parentNode.insertBefore(odiv, odiv.previousSibling);
+    else if ($(this).hasClass("settings_opt_movedown") && odiv.nextSibling)
+        odiv.parentNode.insertBefore(odiv, odiv.nextSibling.nextSibling);
+    else if ($(this).hasClass("settings_opt_delete")) {
+        if ($(odiv).find(".settings_opt_id").val() === "new")
+            $(odiv).remove();
+        else {
+            $(odiv).find(".settings_opt_fp").val("deleted").change();
+            $(odiv).find(".f-i, .f-ix").each(function () {
+                if (!$(this).find(".settings_opt_fp").length)
+                    $(this).remove();
+            });
+            $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
+            $(odiv).append('<div class="f-i"><em>(Option deleted)</em></div></div>');
+        }
+    }
+    settings_option_move_enable();
+    return false;
+}
+
+function settings_option_move_enable() {
+    $(".settings_opt_moveup, .settings_opt_movedown").prop("disabled", false);
+    $(".settings_opt:first-child .settings_opt_moveup").prop("disabled", true);
+    $(".settings_opt:last-child .settings_opt_movedown").prop("disabled", true);
+    var index = 0;
+    $(".settings_opt_fp").each(function () {
+        if (this.value !== "deleted") {
+            ++index;
+            if (this.value != index)
+                $(this).val(index).change();
+        }
+    });
+}
+
 
 function settings_add_track() {
     var i, h, j;

@@ -234,7 +234,8 @@ class SettingRenderer_SubForm extends SettingRenderer {
             $sv->label("optn_$xpos", "Option name"),
             '</div><div class="f-e">',
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", array("placeholder" => "(Enter new option)", "size" => 50, "id" => "optn_$xpos"))),
-            Ht::hidden("optid_$xpos", $o->id ? : "new"),
+            Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings_opt_id"]),
+            Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings_opt_fp", "data-default-value" => $xpos]),
             '</div></div><div class="f-i"><div class="f-c">',
             $sv->label("optd_$xpos", "Description"),
             '</div><div class="f-e">',
@@ -276,27 +277,12 @@ class SettingRenderer_SubForm extends SettingRenderer {
             Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "settings_optvt", "id" => "optvt_$xpos"]),
             "</div></div></div>\n";
 
-        Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings_optvt", settings_option_type); /* $("#settings_opts").on("click", "button", settings_option_move); */ $("select.settings_optvt").each(settings_option_type); })', 'settings_optvt');
+        Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings_optvt", settings_option_type); $("#settings_opts").on("click", "button", settings_option_move); settings_option_move_enable(); $("select.settings_optvt").each(settings_option_type); })', 'settings_optvt');
 
         echo '<div class="f-ix fn2"><div class="f-ii"><div class="f-c">',
             $sv->label("optp_$xpos", "Visibility"),
             '</div><div class="f-e">',
             Ht::select("optp_$xpos", ["admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"], $o->visibility, ["id" => "optp_$xpos"]),
-            "</div></div></div>\n";
-
-        $x = array();
-        // can't use "foreach ($sv->conf->paper_opts->nonfixed_option_list())" because caller
-        // uses cursor
-        for ($n = 0; $n < count($sv->conf->paper_opts->nonfixed_option_list()); ++$n)
-            $x[$n + 1] = ordinal($n + 1);
-        if (!$o->id)
-            $x[$n + 1] = ordinal($n + 1);
-        else
-            $x["delete"] = "Delete option";
-        echo '<div class="f-ix"><div class="f-ii"><div class="f-c">',
-            $sv->label("optfp_$xpos", "Form order"),
-            '</div><div class="f-e">',
-            Ht::select("optfp_$xpos", $x, $o->position, ["id" => "optfp_$xpos"]),
             "</div></div></div>\n";
 
         echo '<div class="f-ix fn3"><div class="f-ii"><div class="f-c">',
@@ -325,6 +311,12 @@ class SettingRenderer_SubForm extends SettingRenderer {
             '<div class="hint" style="margin-top:1ex">Enter choices one per line.  The first choice will be the default.</div>',
             Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", array("rows" => $rows, "cols" => 50, "id" => "optv_$xpos"))),
             "</div>\n";
+
+        echo '<hr class="c" /><div class="f-i"><div class="f-e">',
+            Ht::button("Move up", ["class" => "settings_opt_moveup"]),
+            Ht::button("Move down", ["class" => "settings_opt_movedown", "style" => "margin-left: 1em"]),
+            Ht::button("Delete from form", ["class" => "settings_opt_delete", "style" => "margin-left: 1em"]),
+            "</div></div>\n";
 
         echo '<hr class="c" /></div>';
     }
@@ -583,41 +575,11 @@ class Option_SettingParser extends SettingParser {
         return $o;
     }
 
-    private function option_clean_form_positions($new_opts, $current_opts) {
-        foreach ($new_opts as $id => $o) {
-            $current_o = get($current_opts, $id);
-            $o->old_position = ($current_o ? $current_o->position : $o->position);
-            $o->position_set = false;
-        }
-        for ($i = 0; $i < count($new_opts); ++$i) {
-            $best = null;
-            foreach ($new_opts as $id => $o)
-                if (!$o->position_set
-                    && (!$best
-                        || ($o->display() === PaperOption::DISP_SUBMISSION
-                            && $best->display() !== PaperOption::DISP_SUBMISSION)
-                        || $o->position < $best->position
-                        || ($o->position == $best->position
-                            && $o->position != $o->old_position
-                            && $best->position == $best->old_position)
-                        || ($o->position == $best->position
-                            && strcasecmp($o->name, $best->name) < 0)
-                        || ($o->position == $best->position
-                            && strcasecmp($o->name, $best->name) == 0
-                            && strcmp($o->name, $best->name) < 0)))
-                    $best = $o;
-            $best->position = $i + 1;
-            $best->position_set = true;
-        }
-    }
-
     function parse(SettingValues $sv, Si $si) {
-        $current_opts = $sv->conf->paper_opts->nonfixed_option_list();
-
         // convert request to JSON
-        $new_opts = $current_opts;
+        $new_opts = $sv->conf->paper_opts->nonfixed_option_list();
         for ($i = 1; isset($sv->req["optid_$i"]); ++$i) {
-            if (get($sv->req, "optfp_$i") === "delete")
+            if (get($sv->req, "optfp_$i") === "deleted")
                 unset($new_opts[cvtint(get($sv->req, "optid_$i"))]);
             else if (($o = $this->option_request_to_json($sv, $i)))
                 $new_opts[$o->id] = $o;
@@ -625,15 +587,17 @@ class Option_SettingParser extends SettingParser {
 
         // check abbreviations
         $optabbrs = array();
-        foreach ($new_opts as $id => $o)
+        foreach ($new_opts as $id => $o) {
             if (preg_match('/\Aopt\d+\z/', $o->abbr))
                 $sv->error_at("optn_$o->req_xpos", "Option name “" . htmlspecialchars($o->name) . "” is reserved. Please pick another option name.");
             else if (get($optabbrs, $o->abbr))
                 $sv->error_at("optn_$o->req_xpos", "Multiple options abbreviate to “{$o->abbr}”. Please pick option names that abbreviate uniquely.");
             else
                 $optabbrs[$o->abbr] = $o;
+        }
 
         if (!$sv->has_error()) {
+            uasort($new_opts, "PaperOption::compare");
             $this->stashed_options = $new_opts;
             $sv->need_lock["PaperOption"] = true;
             return true;
@@ -641,21 +605,16 @@ class Option_SettingParser extends SettingParser {
     }
 
     function save(SettingValues $sv, Si $si) {
-        $new_opts = $this->stashed_options;
-        $current_opts = $sv->conf->paper_opts->nonfixed_option_list();
-        $this->option_clean_form_positions($new_opts, $current_opts);
-
-        uasort($new_opts, array("PaperOption", "compare"));
         $newj = [];
-        foreach ($new_opts as $id => $o)
-            $newj[$id] = $o->unparse();
+        foreach ($this->stashed_options as $o)
+            $newj[$o->id] = $o->unparse();
         $sv->save("next_optionid", null);
         $sv->save("options", empty($newj) ? null : json_encode((object) $newj));
 
         $deleted_ids = array();
-        foreach ($current_opts as $id => $o)
-            if (!get($new_opts, $id))
-                $deleted_ids[] = $id;
+        foreach ($sv->conf->paper_opts->nonfixed_option_list() as $o)
+            if (!isset($newj[$o->id]))
+                $deleted_ids[] = $o->id;
         if (!empty($deleted_ids))
             $sv->conf->qe("delete from PaperOption where optionId?a", $deleted_ids);
 
