@@ -252,8 +252,8 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
   <div class="f-i">\
     <button id="moveup_$" class="revfield_moveup" type="button">Move up</button><span class="sep"></span>\
 <button id="movedown_$" class="revfield_movedown" type="button">Move down</button><span class="sep"></span>\
+<button id="remove_$" class="revfield_remove" type="button">Delete from form</button><span class="sep"></span>\
     <select name="samples_$" id="samples_$" class="revfield_samples"></select>\
-    <span class="sep"></span><button id="remove_$" class="revfield_remove" type="button">Remove</button>\
 <input type="hidden" name="order_$" id="order_$" class="revfield_order" value="0" />\
   </div>\
   <div class="f-i">\

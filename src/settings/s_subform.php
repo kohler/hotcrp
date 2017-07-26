@@ -207,7 +207,8 @@ class SettingRenderer_SubForm extends SettingRenderer {
         if ($sv->use_req()) {
             $oxpos = $this->find_option_req($sv, $o, $xpos);
             if (isset($sv->req["optn_$oxpos"])) {
-                $o = PaperOption::make(array("id" => $sv->req["optid_$oxpos"],
+                $id = cvtint($sv->req["optid_$oxpos"]);
+                $o = PaperOption::make(array("id" => $id <= 0 ? 0 : $id,
                     "name" => $sv->req["optn_$oxpos"],
                     "description" => get($sv->req, "optd_$oxpos"),
                     "type" => get($sv->req, "optvt_$oxpos", "checkbox"),
@@ -228,36 +229,29 @@ class SettingRenderer_SubForm extends SettingRenderer {
         echo '<div class="settings_opt fold2c fold3o ',
             (PaperOption::type_has_selector($optvt) ? "fold4o" : "fold4c"),
             '" data-fold="true">';
-        echo "<table><tr><td><div class='f-contain'>\n",
-            "  <div class='f-i'>",
-              "<div class='f-c'>",
-              $sv->label("optn_$xpos", "Option name"),
-              Ht::hidden("optid_$xpos", $o->id ? : "new"),
-              "</div>",
-              "<div class='f-e'>",
-              Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", array("placeholder" => "(Enter new option)", "size" => 50, "id" => "optn_$xpos"))),
-              "</div>\n",
-            "  </div><div class='f-i'>",
-              "<div class='f-c'>",
-              $sv->label("optd_$xpos", "Description"),
-              "</div>",
-              "<div class='f-e'>",
-              Ht::textarea("optd_$xpos", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd_$xpos")),
-              "</div>\n",
-            "  </div></div></td>";
+        echo '<div class="f-ix"><div class="f-i">',
+            '<div class="f-c">',
+            $sv->label("optn_$xpos", "Option name"),
+            '</div><div class="f-e">',
+            Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", array("placeholder" => "(Enter new option)", "size" => 50, "id" => "optn_$xpos"))),
+            Ht::hidden("optid_$xpos", $o->id ? : "new"),
+            '</div></div><div class="f-i"><div class="f-c">',
+            $sv->label("optd_$xpos", "Description"),
+            '</div><div class="f-e">',
+            Ht::textarea("optd_$xpos", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd_$xpos")),
+            "</div></div></div>\n";
 
-        echo '<td style="padding-left:1em">';
         if ($o->id && ($examples = $o->example_searches())) {
-            echo '<div class="f-i"><div class="f-c">Example ' . pluralx($examples, "search") . "</div>";
-            foreach ($examples as &$ex)
-                $ex = "<a href=\"" . hoturl("search", array("q" => $ex[0])) . "\">" . htmlspecialchars($ex[0]) . "</a>";
-            echo '<div class="f-e">', join("<br/>", $examples), "</div></div>";
+            echo '<div class="f-ix"><div class="f-i"><div class="f-c">',
+                'Example ', pluralx($examples, "search"),
+                '</div><div class="f-e">',
+                join("<br />", array_map(function ($ex) {
+                    return Ht::link(htmlspecialchars($ex[0]), hoturl("search", ["q" => $ex[0]]));
+                }, $examples)),
+                "</div></div></div>\n";
         }
 
-        echo "</td></tr>\n  <tr><td colspan='2'><table><tr>";
-
-        echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-            $sv->label("optvt_$xpos", "Type"), "</div><div class='f-e'>";
+        echo '<hr class="c" />';
 
         $show_final = $sv->conf->collectFinalPapers();
         foreach ($sv->conf->paper_opts->nonfixed_option_list() as $ox)
@@ -275,17 +269,21 @@ class SettingRenderer_SubForm extends SettingRenderer {
             foreach ($otlist as $ot)
                 $otypes[$ot[1] . ":final"] = $ot[2] . " (final version)";
         }
-        echo Ht::select("optvt_$xpos", $otypes, $optvt, array("class" => "settings_optvt", "id" => "optvt_$xpos")),
-            "</div></div></td>\n";
-        Ht::stash_script('$(function () { $(document.body).on("change input", "select.settings_optvt", settings_option_type); $("select.settings_optvt").each(settings_option_type); })', 'settings_optvt');
 
-        echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
-            $sv->label("optp_$xpos", "Visibility"), "</div><div class='f-e'>",
-            Ht::select("optp_$xpos", array("admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->visibility, ["id" => "optp_$xpos"]),
-            "</div></div></td>\n";
+        echo '<div class="f-ix"><div class="f-ii"><div class="f-c">',
+            $sv->label("optvt_$xpos", "Type"),
+            '</div><div class="f-e">',
+            Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "settings_optvt", "id" => "optvt_$xpos"]),
+            "</div></div></div>\n";
 
-        echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-            $sv->label("optfp_$xpos", "Form order"), "</div><div class='f-e'>";
+        Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings_optvt", settings_option_type); /* $("#settings_opts").on("click", "button", settings_option_move); */ $("select.settings_optvt").each(settings_option_type); })', 'settings_optvt');
+
+        echo '<div class="f-ix fn2"><div class="f-ii"><div class="f-c">',
+            $sv->label("optp_$xpos", "Visibility"),
+            '</div><div class="f-e">',
+            Ht::select("optp_$xpos", ["admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"], $o->visibility, ["id" => "optp_$xpos"]),
+            "</div></div></div>\n";
+
         $x = array();
         // can't use "foreach ($sv->conf->paper_opts->nonfixed_option_list())" because caller
         // uses cursor
@@ -295,22 +293,27 @@ class SettingRenderer_SubForm extends SettingRenderer {
             $x[$n + 1] = ordinal($n + 1);
         else
             $x["delete"] = "Delete option";
-        echo Ht::select("optfp_$xpos", $x, $o->position, ["id" => "optfp_$xpos"]),
-            "</div></div></td>\n";
+        echo '<div class="f-ix"><div class="f-ii"><div class="f-c">',
+            $sv->label("optfp_$xpos", "Form order"),
+            '</div><div class="f-e">',
+            Ht::select("optfp_$xpos", $x, $o->position, ["id" => "optfp_$xpos"]),
+            "</div></div></div>\n";
 
-        echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
-            $sv->label("optdt_$xpos", "Display"), "</div><div class='f-e'>";
-        echo Ht::select("optdt_$xpos", ["default" => "Default",
-                                        "prominent" => "Prominent",
-                                        "topics" => "With topics",
-                                        "submission" => "Near submission"],
-                        $o->display_name(), ["id" => "optdt_$xpos"]),
-            "</div></div></td>\n";
+        echo '<div class="f-ix fn3"><div class="f-ii"><div class="f-c">',
+            $sv->label("optdt_$xpos", "Display"),
+            '</div><div class="f-e">',
+            Ht::select("optdt_$xpos", ["default" => "Default",
+                                       "prominent" => "Prominent",
+                                       "topics" => "With topics",
+                                       "submission" => "Near submission"],
+                       $o->display_name(), ["id" => "optdt_$xpos"]),
+            "</div></div></div>\n";
 
         if (isset($otypes["pdf:final"]))
-            echo "<td class='pad fx2'><div class='f-i'><div class='f-c'>&nbsp;</div><div class='f-e hint' style='margin-top:0.7ex'>(Set by accepted authors during final version submission period)</div></div></td>\n";
-
-        echo "</tr></table>";
+            echo '<div class="f-ix fx2"><div class="f-ii"><div class="f-c">&nbsp;</div>',
+                '<div class="f-e hint" style="margin-top:0.7ex">',
+                '(Set by accepted authors during final version submission period)',
+                "</div></div></div>\n";
 
         $rows = 3;
         if (PaperOption::type_has_selector($optvt) && count($o->selector)) {
@@ -318,12 +321,12 @@ class SettingRenderer_SubForm extends SettingRenderer {
             $rows = max(count($o->selector), 3);
         } else
             $value = "";
-        echo "<div class='fx4'>",
-            "<div class='hint' style='margin-top:1ex'>Enter choices one per line.  The first choice will be the default.</div>",
+        echo '<div class="f-ix fx4 c">',
+            '<div class="hint" style="margin-top:1ex">Enter choices one per line.  The first choice will be the default.</div>',
             Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", array("rows" => $rows, "cols" => 50, "id" => "optv_$xpos"))),
-            "</div>";
+            "</div>\n";
 
-        echo "</td></tr></table>\n\n</div>";
+        echo '<hr class="c" /></div>';
     }
 
 function render(SettingValues $sv) {
@@ -377,12 +380,14 @@ function render(SettingValues $sv) {
         Ht::hidden("has_options", 1);
     $sep = "";
     $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator
+    echo '<div id="settings_opts" class="c">';
     $pos = 1;
     foreach ($all_options as $o) {
         $this->render_option($sv, $o, $pos);
         ++$pos;
     }
     $this->render_option($sv, null, $pos);
+    echo "</div>\n\n";
 
 
     // Topics
