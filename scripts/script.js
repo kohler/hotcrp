@@ -2393,7 +2393,7 @@ function author_change(e, delta) {
     }
 
     function any_interesting(row) {
-        var $x = $(row).find("input"), i;
+        var $x = $(row).find("input, select, textarea"), i;
         if (!$tbody.attr("data-last-row-blank"))
             return false;
         for (i = 0; i != $x.length; ++i) {
@@ -2421,7 +2421,7 @@ function author_change(e, delta) {
         var $tr = $(trs[i - 1]), td0h = $($tr[0].firstChild).html();
         if (td0h !== i + "." && /^(?:\d+|\$).$/.test(td0h))
             $($tr[0].firstChild).html(i + ".");
-        $tr.find("input, select").each(function () {
+        $tr.find("input, select, textarea").each(function () {
             var m = /^(.*?)(?:\d+|\$)$/.exec(this.getAttribute("name"));
             if (m && m[2] != i)
                 this.setAttribute("name", m[1] + i);
