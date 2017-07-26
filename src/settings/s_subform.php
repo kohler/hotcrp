@@ -233,7 +233,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
               $sv->label("optd$id", "Description"),
               "</div>",
               "<div class='f-e'>",
-              Ht::textarea("optd$id", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd$id")),
+              Ht::textarea("optd$id", $o->description, array("rows" => 2, "cols" => 50)),
               "</div>\n",
             "  </div></div></td>";
 
@@ -266,13 +266,13 @@ class SettingRenderer_SubForm extends SettingRenderer {
             foreach ($otlist as $ot)
                 $otypes[$ot[1] . ":final"] = $ot[2] . " (final version)";
         }
-        echo Ht::select("optvt$id", $otypes, $optvt, array("class" => "settings_optvt", "id" => "optvt$id")),
+        echo Ht::select("optvt$id", $otypes, $optvt, array("class" => "settings_optvt")),
             "</div></div></td>\n";
         Ht::stash_script('$(function () { $(document.body).on("change input", "select.settings_optvt", settings_option_type); $("select.settings_optvt").each(settings_option_type); })', 'settings_optvt');
 
         echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
             $sv->label("optp$id", "Visibility"), "</div><div class='f-e'>",
-            Ht::select("optp$id", array("admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->visibility, array("id" => "optp$id")),
+            Ht::select("optp$id", array("admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->visibility),
             "</div></div></td>\n";
 
         echo "<td class='pad'><div class='f-i'><div class='f-c'>",
@@ -286,7 +286,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
             $x[$n + 1] = ordinal($n + 1);
         else
             $x["delete"] = "Delete option";
-        echo Ht::select("optfp$id", $x, $o->position, array("id" => "optfp$id")),
+        echo Ht::select("optfp$id", $x, $o->position),
             "</div></div></td>\n";
 
         echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
@@ -295,7 +295,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
                                      "prominent" => "Prominent",
                                      "topics" => "With topics",
                                      "submission" => "Near submission"],
-                        $o->display_name(), array("id" => "optdt$id")),
+                        $o->display_name()),
             "</div></div></td>\n";
 
         if (isset($otypes["pdf:final"]))
