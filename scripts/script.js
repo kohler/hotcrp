@@ -1266,29 +1266,36 @@ jQuery(function () { jQuery(".need-tooltip").each(add_tooltip); });
 
 
 // temporary text
-window.mktemptext = (function () {
-function ttaction(event) {
-    var $e = $(this), p = $e.attr("placeholder"), v = $e.val();
-    if (event.type == "focus" && v === p)
-        $e.val("");
-    if (event.type == "blur" && (v === "" | v === p))
-        $e.val(p);
-    $e.toggleClass("temptext", event.type != "focus" && (v === "" || v === p));
-}
-
 if (Object.prototype.toString.call(window.operamini) === '[object OperaMini]'
     || !("placeholder" in document.createElement("input"))
-    || !("placeholder" in document.createElement("textarea")))
+    || !("placeholder" in document.createElement("textarea"))) {
+    window.mktemptext = (function () {
+    function ttaction(event) {
+        var $e = $(this), p = $e.attr("placeholder"), v = $e.val();
+        if (event.type == "focus" && v === p)
+            $e.val("");
+        if (event.type == "blur" && (v === "" | v === p))
+            $e.val(p);
+        $e.toggleClass("temptext", event.type != "focus" && (v === "" || v === p));
+    }
+
     return function (e) {
         e = typeof e === "number" ? this : e;
-        $(e).on("focus blur change", ttaction);
+        $(e).on("focus blur change input", ttaction);
         ttaction.call(e, {type: "blur"});
     };
-else
-    return function (e) {
-        ttaction.call(typeof e === "number" ? this : e, {type: "focus"});
+    })();
+} else {
+    window.mktemptext = function (e) {
+        e = typeof e === "number" ? this : e;
+        var p = e.getAttribute("placeholder");
+        if (e.getAttribute("value") == p)
+            e.setAttribute("value", "");
+        if (e.value == p)
+            e.value = "";
+        $(e).removeClass("temptext");
     };
-})();
+}
 
 
 // style properties
