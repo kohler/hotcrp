@@ -40,6 +40,15 @@ function settings_option_move() {
             $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
             $(odiv).append('<div class="f-i"><em>(Option deleted)</em></div></div>');
         }
+    } else if ($(this).hasClass("settings_opt_new")) {
+        var h = $("#settings_newopt").html();
+        var next = 1;
+        while ($("#optn_" + next).length)
+            ++next;
+        h = h.replace(/_0/g, "_" + next);
+        odiv = $(h).appendTo("#settings_opts");
+        odiv.find("input[placeholder]").each(mktemptext);
+        $("#optn_" + next)[0].focus();
     }
     settings_option_move_enable();
     return false;

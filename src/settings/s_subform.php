@@ -186,6 +186,7 @@ class BanalSettings {
 }
 
 class SettingRenderer_SubForm extends SettingRenderer {
+    private $have_options = null;
     private function find_option_req(SettingValues $sv, PaperOption $o, $xpos) {
         if ($o->id) {
             for ($i = 1; isset($sv->req["optid_$i"]); ++$i)
@@ -312,10 +313,21 @@ class SettingRenderer_SubForm extends SettingRenderer {
             Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", array("rows" => $rows, "cols" => 50, "id" => "optv_$xpos"))),
             "</div>\n";
 
+        $delete_text = "Delete from form";
+        if ($o->id) {
+            if ($this->have_options === null) {
+                $this->have_options = [];
+                foreach ($sv->conf->fetch_rows("select distinct optionId from PaperOption") as $row)
+                    $this->have_options[$row[0]] = true;
+            }
+            if (isset($this->have_options[$o->id]))
+                $delete_text = "Delete from form and submissions";
+        }
+
         echo '<hr class="c" /><div class="f-i"><div class="f-e">',
             Ht::button("Move up", ["class" => "settings_opt_moveup"]),
             Ht::button("Move down", ["class" => "settings_opt_movedown", "style" => "margin-left: 1em"]),
-            Ht::button("Delete from form", ["class" => "settings_opt_delete", "style" => "margin-left: 1em"]),
+            Ht::button($delete_text, ["class" => "settings_opt_delete", "style" => "margin-left: 1em"]),
             "</div></div>\n";
 
         echo '<hr class="c" /></div>';
@@ -367,18 +379,19 @@ function render(SettingValues $sv) {
         '</div>';
 
     echo "<h3 class=\"settings\">Options and attachments</h3>\n";
-    echo "<p class=\"settingtext\">Options and attachments are additional data entered by authors at submission time. Option names should be brief (“PC paper,” “Supplemental material”). The optional description can explain further and may use XHTML. Add options one at a time.</p>\n";
-    echo "<div class=\"g\"></div>\n",
-        Ht::hidden("has_options", 1);
-    $sep = "";
+    echo "<p class=\"settingtext\">Options and attachments are additional data entered by authors at submission time. Option names should be brief (“PC paper,” “Supplemental material”). The optional HTML description can explain further.</p>\n";
+    echo "<div class='g'></div>\n",
+        Ht::hidden("has_options", 1), "\n\n";
     $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator
     echo '<div id="settings_opts" class="c">';
-    $pos = 1;
-    foreach ($all_options as $o) {
-        $this->render_option($sv, $o, $pos);
-        ++$pos;
-    }
-    $this->render_option($sv, null, $pos);
+    $pos = 0;
+    foreach ($all_options as $o)
+        $this->render_option($sv, $o, ++$pos);
+    echo "</div>\n",
+        '<div style="margin-top:2em">',
+        Ht::js_button("Add option", "settings_option_move.call(this)", ["class" => "settings_opt_new btn"]),
+        "</div>\n<div id=\"settings_newopt\" style=\"display:none\">";
+    $this->render_option($sv, null, 0);
     echo "</div>\n\n";
 
 
