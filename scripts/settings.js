@@ -15,12 +15,10 @@ function next_lexicographic_permutation(i, size) {
 
 
 function settings_option_type() {
-    var m;
-    if ((m = this.name.match(/^optvt(.*)$/))) {
-        fold("optv" + m[1], this.value != "selector" && this.value != "radio");
-        fold("optvis" + m[1], !/:final/.test(this.value), 2);
-        fold("optvis" + m[1], this.value != "pdf:final", 3);
-    }
+    var v = this.value;
+    foldup(this, null, {n: 2, f: !/:final/.test(v)});
+    foldup(this, null, {n: 3, f: v != "pdf:final"});
+    foldup(this, null, {n: 4, f: v != "selector" && v != "radio"});
     return true;
 }
 

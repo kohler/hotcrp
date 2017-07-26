@@ -211,6 +211,15 @@ class SettingRenderer_SubForm extends SettingRenderer {
                 $o->selector = explode("\n", rtrim(defval($sv->req, "optv$id", "")));
         }
 
+        $optvt = $o->type;
+        if ($optvt == "text" && $o->display_space > 3)
+            $optvt .= ":ds_" . $o->display_space;
+        if ($o->final)
+            $optvt .= ":final";
+
+        echo '<div class="settings_opt fold2c fold3o ',
+            (PaperOption::type_has_selector($optvt) ? "fold4o" : "fold4c"),
+            '" data-fold="true">';
         echo "<table><tr><td><div class='f-contain'>\n",
             "  <div class='f-i'>",
               "<div class='f-c'>",
@@ -236,16 +245,10 @@ class SettingRenderer_SubForm extends SettingRenderer {
             echo '<div class="f-e">', join("<br/>", $examples), "</div></div>";
         }
 
-        echo "</td></tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2c fold3o'><tr>";
+        echo "</td></tr>\n  <tr><td colspan='2'><table><tr>";
 
         echo "<td class='pad'><div class='f-i'><div class='f-c'>",
             $sv->label("optvt$id", "Type"), "</div><div class='f-e'>";
-
-        $optvt = $o->type;
-        if ($optvt == "text" && $o->display_space > 3)
-            $optvt .= ":ds_" . $o->display_space;
-        if ($o->final)
-            $optvt .= ":final";
 
         $show_final = $sv->conf->collectFinalPapers();
         foreach ($sv->conf->paper_opts->nonfixed_option_list() as $ox)
@@ -263,9 +266,9 @@ class SettingRenderer_SubForm extends SettingRenderer {
             foreach ($otlist as $ot)
                 $otypes[$ot[1] . ":final"] = $ot[2] . " (final version)";
         }
-        echo Ht::select("optvt$id", $otypes, $optvt, ["id" => "optvt$id", "class" => "optvt"]),
+        echo Ht::select("optvt$id", $otypes, $optvt, array("class" => "settings_optvt", "id" => "optvt$id")),
             "</div></div></td>\n";
-        Ht::stash_script('$(function () { $(document.body).on("change", "select.optvt", settings_option_type); $("select.optvt").each(settings_option_type); });', "settings_optvt");
+        Ht::stash_script('$(function () { $(document.body).on("change input", "select.settings_optvt", settings_option_type); $("select.settings_optvt").each(settings_option_type); })', 'settings_optvt');
 
         echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
             $sv->label("optp$id", "Visibility"), "</div><div class='f-e'>",
@@ -306,13 +309,12 @@ class SettingRenderer_SubForm extends SettingRenderer {
             $rows = max(count($o->selector), 3);
         } else
             $value = "";
-        echo "<div id='foldoptv$id' class='", (PaperOption::type_has_selector($optvt) ? "foldo" : "foldc"),
-            "'><div class='fx'>",
+        echo "<div class='fx4'>",
             "<div class='hint' style='margin-top:1ex'>Enter choices one per line.  The first choice will be the default.</div>",
             Ht::textarea("optv$id", $value, $sv->sjs("optv$id", array("rows" => $rows, "cols" => 50))),
-            "</div></div>";
+            "</div>";
 
-        echo "</td></tr></table>\n";
+        echo "</td></tr></table>\n\n</div>";
     }
 
 function render(SettingValues $sv) {
@@ -366,13 +368,8 @@ function render(SettingValues $sv) {
         Ht::hidden("has_options", 1);
     $sep = "";
     $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator
-    foreach ($all_options as $o) {
-        echo $sep;
+    foreach ($all_options as $o)
         $this->render_option($sv, $o);
-        $sep = "\n<div style=\"margin-top:3em\"></div>\n";
-    }
-
-    echo $sep;
     $this->render_option($sv, null);
 
 

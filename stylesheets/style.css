@@ -946,6 +946,9 @@ table#foldtag_color th {
 .settings_revdata {
 	clear: both;
 }
+.settings_opt + .settings_opt {
+	margin-top: 3em;
+}
 
 /* help pages */
 .leftmenu_menucontainer {
