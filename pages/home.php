@@ -198,7 +198,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         $password_reset = null;
         $Conf->save_session("password_reset", null);
     }
-    echo '<div class="f-ii">
+    echo '<div class="f-i">
   <div class="f-c', $email_class, '">',
         ($Conf->opt("ldapLogin") ? "Username" : "Email"),
         '</div>
