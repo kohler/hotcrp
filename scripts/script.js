@@ -1397,7 +1397,7 @@ function display_main(is_initial) {
 
     if (dlname) {
         s = "<a href=\"" + hoturl_html("deadlines") + "\">" + dlname + " deadline</a> ";
-        if (!dltime || dltime < now)
+        if (!dltime || dltime - now < 0.5)
             s += "is NOW";
         else
             s += unparse_interval(dltime, now);
