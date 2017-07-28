@@ -470,18 +470,22 @@ span.hastitle {
  	display: none;
 }
 
-/* checkboxes */
-.hangcheck {
-	margin: 2px 0 2px 1.5em;
+/* search > display options */
+.dispopt-item, .dispopt-checkitem {
+	margin-top: 2px;
+	margin-bottom: 2px;
 }
-.hangcheck-item {
+.dispopt-checkitem {
+	margin-left: 1.5em;
+}
+.dispopt-check {
 	display: inline-block;
-	margin-left: -1.3em;
-	width: 1.3em;
+	margin-left: -1.4em;
+	width: 1.4em;
 	text-align: left;
 	white-space: nowrap;
 }
-.hangcheck-ctrl {
+.dispopt-checkctrl {
 	margin: 0;
 }
 
@@ -1758,6 +1762,10 @@ span.dragtaghandle {
 	height: 1.3em;
 	cursor: move;
 	background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAAAXNSR0IArs4c6QAAADtJREFUCNdjOHz4zs/Dh+9cYEADTAwMDF8YGBj4Dh++gypha6sizMDAoMSADyAby4Qm94WBgYEPn04GAD/XFLwv6x9HAAAAAElFTkSuQmCC') repeat;
+}
+
+.editformulas-formula {
+	margin: 1em 0 2em;
 }
 
 span.match {
@@ -3163,6 +3171,11 @@ a.help {
 .popup-actions .btn {
 	float: right;
 	margin-left: 1em;
+}
+.popup-bottom {
+	clear: both;
+	padding-top: 12px;
+	margin-bottom: -12px;
 }
 
 /* scores */

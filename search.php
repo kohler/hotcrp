@@ -104,68 +104,79 @@ if (isset($Qreq->savedisplayoptions) && $Me->privChair) {
 
 
 // save formula
-function formulas_with_new() {
-    global $Conf, $Me, $Qreq;
-    $formulas = $Conf->visible_named_formulas($Me, $Qreq->t == "a");
-    $formulas["n"] = (object) array("formulaId" => "n", "name" => "",
-                                    "expression" => "", "createdBy" => 0);
-    return $formulas;
-}
-
 function saveformulas() {
-    global $Conf, $Me, $Qreq;
+    global $Conf, $Me, $Now, $Qreq;
+    $formula_by_id = [];
+    foreach ($Conf->named_formulas() as $f)
+        $formula_by_id[$f->formulaId] = $f;
+    $errors = $by_name = [];
 
-    // parse names and expressions
-    $ok = true;
-    $changes = array();
-    $names = array();
+    $q = $qv = [];
+    for ($fidx = 1; isset($Qreq["formulaid_$fidx"]); ++$fidx) {
+        $name = simplify_whitespace((string) $Qreq["formulaname_$fidx"]);
+        $expr = simplify_whitespace((string) $Qreq["formulaexpression_$fidx"]);
+        $id = $Qreq["formulaid_$fidx"];
+        $deleted = $Qreq["formuladeleted_$fidx"];
 
-    foreach (formulas_with_new() as $fdef) {
-        $name = simplify_whitespace(defval($Qreq, "name_$fdef->formulaId", $fdef->name));
-        $expr = simplify_whitespace(defval($Qreq, "expression_$fdef->formulaId", $fdef->expression));
-
-        if ($name != "" && $expr != "") {
-            if (isset($names[$name]))
-                $ok = Conf::msg_error("You have two formulas named “" . htmlspecialchars($name) . "”.  Please change one of the names.");
-            $names[$name] = true;
-        }
-
-        if ($name == $fdef->name && $expr == $fdef->expression)
-            /* do nothing */;
-        else if (!$Me->privChair && $fdef->createdBy < 0)
-            $ok = Conf::msg_error("You can’t change formula “" . htmlspecialchars($fdef->name) . "” because it was created by an administrator.");
-        else if (($name == "" || $expr == "") && $fdef->formulaId != "n")
-            $changes[] = "delete from Formula where formulaId=$fdef->formulaId";
-        else if ($name == "")
-            $ok = Conf::msg_error("Please enter a name for your new formula.");
-        else if ($expr == "")
-            $ok = Conf::msg_error("Please enter a definition for your new formula.");
-        else {
-            $formula = new Formula($expr);
-            if (!$formula->check($Me))
-                $ok = Conf::msg_error($formula->error_html());
-            else {
-                $exprViewScore = $formula->view_score($Me);
-                if ($exprViewScore <= $Me->permissive_view_score_bound())
-                    $ok = Conf::msg_error("The expression “" . htmlspecialchars($expr) . "” refers to paper properties that you aren’t allowed to view. Please define a different expression.");
-                else if ($fdef->formulaId == "n") {
-                    $changes[] = "insert into Formula (name, heading, headingTitle, expression, createdBy, timeModified) values ('" . sqlq($name) . "', '', '', '" . sqlq($expr) . "', " . ($Me->privChair ? -$Me->contactId : $Me->contactId) . ", " . time() . ")";
-                    if (!$Conf->setting("formulas"))
-                        $changes[] = "insert into Settings (name, value) values ('formulas', 1) on duplicate key update value=1";
-                } else
-                    $changes[] = "update Formula set name='" . sqlq($name) . "', expression='" . sqlq($expr) . "', timeModified=" . time() . " where formulaId=$fdef->formulaId";
+        $fdef = null;
+        if ($id === "new") {
+            if (($name === "" && $expr === "") || $deleted)
+                continue;
+            $fdef = null;
+        } else if (($fdef = $formula_by_id[$id])) {
+            if (!$Me->can_edit_formula($fdef)
+                && ($name !== $fdef->name || $expr !== $fdef->expression || $deleted)) {
+                $errors[] = "You can’t change formula “" . htmlspecialchars($fdef->name) . "”.";
+                continue;
+            } else if ($deleted) {
+                $q[] = "delete from Formula where formulaId=?";
+                $qv[] = $fdef->formulaId;
+                continue;
             }
+        } else {
+            Conf::msg_error("skipped $id");
+            continue;
         }
+
+        if ($name === "") {
+            $errors[] = "Missing formula name.";
+            continue;
+        } else if ($expr === "") {
+            $errors[] = "Missing formula expression.";
+            continue;
+        }
+
+        $lname = strtolower($name);
+        if (isset($by_name[$lname]) && ($by_name[$lname] || $fdef->name !== $name))
+            $errors[] = "You have two formulas named “" . htmlspecialchars($name) . "”; please change one of the names.";
+        $by_name[$lname] = $fdef->name !== $name;
+
+        $f = new Formula($expr);
+        if ($f->check($Me)) {
+            $exprViewScore = $f->view_score($Me);
+            if ($exprViewScore <= $Me->permissive_view_score_bound())
+                $errors[] = "The expression “" . htmlspecialchars($expr) . "” refers to paper properties that you aren’t allowed to view. Please define a different expression.";
+            else if (!$fdef) {
+                $q[] = "insert into Formula set name=?, heading='', headingTitle='', expression=?, createdBy=?, timeModified=?";
+                array_push($qv, $name, $expr, ($Me->privChair ? -1 : 1) * $Me->contactId, $Now);
+                $q[] = "insert into Settings set name='formulas', value=1 on duplicate key update value=1";
+            } else if ($name !== $fdef->name || $expr !== $fdef->expression) {
+                $q[] = "update Formula set name=?, expression=?, timeModified=? where formulaId=?";
+                array_push($qv, $name, $expr, $Now, $fdef->formulaId);
+            }
+        } else
+            $errors[] = $f->error_html();
     }
 
-    $Qreq->tab = "formulas";
-    if ($ok) {
-        foreach ($changes as $change)
-            Dbl::qe_raw($change);
-        if (!Dbl::has_error()) {
-            $Conf->confirmMsg("Formulas saved.");
-            SelfHref::redirect($Qreq);
+    if ($errors)
+        Conf::msg_error(join("", array_map(function ($x) { return "<div class=\"mmm\">$x</div>"; }, $errors)));
+    else {
+        if (!empty($q)) {
+            $mresult = Dbl::multi_qe_apply($Conf->dblink, join(";", $q), $qv);
+            $mresult->free_all();
+            Conf::msg_confirm("Formulas saved.");
         }
+        SelfHref::redirect($Qreq);
     }
 }
 
@@ -308,12 +319,12 @@ class Search_DisplayOptions {
         $checked = display_option_checked($type);
         if (!isset($options["onchange"]))
             $options["onchange"] = "plinfo('$type',this)";
-        $x = '<div class="hangcheck"';
+        $x = '<div class="dispopt-checkitem"';
         if (get($options, "indent"))
             $x .= ' style="padding-left:2em"';
         unset($options["indent"]);
-        $options["class"] = "hangcheck-ctrl";
-        $x .= '><span class="hangcheck-item">' . Ht::checkbox("show$type", 1, $checked, $options)
+        $options["class"] = "dispopt-checkctrl";
+        $x .= '><span class="dispopt-check">' . Ht::checkbox("show$type", 1, $checked, $options)
             . '&nbsp;</span>' . Ht::label($title) . '</div>';
         $this->item($column, $x);
     }
@@ -411,7 +422,7 @@ if ($pl) {
             $onchange = "hiliter(\"redisplay\")";
             if ($Me->privChair)
                 $onchange .= ";plinfo.extra()";
-            $sortitem = '<div style="padding-top:1ex">Sort by: &nbsp;'
+            $sortitem = '<div class="dispopt-item" style="margin-top:1ex">Sort by: &nbsp;'
                 . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
                              ListSorter::canonical_long_score_sort($Conf->session("scoresort")),
                              ["id" => "scoresort", "onchange" => $onchange, "style" => "font-size:100%"])
@@ -422,8 +433,19 @@ if ($pl) {
 
     // Formulas group
     $display_options->set_header(40, "<strong>Formulas:</strong>");
-    foreach ($Conf->visible_named_formulas($Me, $Qreq->t == "a") as $formula)
+    foreach ($Conf->viewable_named_formulas($Me, $Qreq->t == "a") as $formula)
         $display_options->checkbox_item(40, "formula{$formula->formulaId}", htmlspecialchars($formula->name));
+    if ($Me->isPC && $Qreq->t != "a") {
+        $fjs = [];
+        foreach ($Conf->viewable_named_formulas($Me, false) as $f) {
+            $fj = ["name" => $f->name, "expression" => $f->expression, "id" => $f->formulaId];
+            if ($Me->can_edit_formula($f))
+                $fj["editable"] = true;
+            $fjs[] = $fj;
+        }
+        Ht::stash_script("edit_formulas.formulas=" . json_encode($fjs));
+        $display_options->item(40, '<div class="dispopt-item" style="margin-top:3px"><a href="#" onclick="edit_formulas();return false">Edit formulas</a></div>');
+    }
 }
 
 
@@ -573,10 +595,8 @@ if ($pl && $pl->count > 0) {
         $h = get($display_options->headers, $column);
         echo '<div class="ctelt">';
         if ((string) $h !== "")
-            echo '<div>', $h, '</div>';
-        foreach ($items as $item)
-            echo '<div>', $item, '</div>';
-        echo '</div>';
+            echo '<div class="dispopt-hdr">', $h, '</div>';
+        echo join("", $items), '</div>';
     }
     echo "</div>\n";
 
@@ -590,10 +610,6 @@ if ($pl && $pl->count > 0) {
                           array("id" => "showforce",
                                 "onchange" => "fold('pl',!this.checked,5,'force');$('#forceShow').val(this.checked?1:0)")),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
-
-    // Edit formulas link
-    if ($Me->isPC && $Qreq->t != "a")
-        echo "<td class='padlb'>", Ht::js_button("Edit formulas", "fold('searchform',0,3)"), "</td>";
 
     echo "<td class='padlb'>";
     // "Set default display"
@@ -618,46 +634,6 @@ if ($pl && $pl->count > 0) {
 
     // Done
     echo "</div></form>";
-
-    // Formulas
-    if ($Me->isPC) {
-        echo Ht::form_div(hoturl_post("search", "saveformulas=1"), array("class" => "fx3"));
-        echo_request_as_hidden_inputs();
-
-        echo "<p style='width:44em;margin-top:0'><strong>Formulas</strong> are calculated
-from review statistics.  For example, “sum(OveMer)”
-would display the sum of a paper’s Overall merit scores.
-<a class='hint' href='", hoturl("help", "t=formulas"), "' target='_blank'>Learn more</a></p>";
-
-        echo "<table id='formuladefinitions'><thead><tr>",
-            "<th></th><th class='f-c'>Name</th><th class='f-c'>Definition</th>",
-            "</tr></thead><tbody>";
-        $any = 0;
-        $fs = $Conf->visible_named_formulas($Me, $Qreq->t == "a");
-        $fs["n"] = (object) array("formulaId" => "n", "name" => "", "expression" => "", "createdBy" => 0);
-        foreach ($fs as $formulaId => $fdef) {
-            $name = defval($Qreq, "name_$formulaId", $fdef->name);
-            $expression = defval($Qreq, "expression_$formulaId", $fdef->expression);
-            $disabled = ($Me->privChair || $fdef->createdBy > 0 ? "" : " disabled='disabled'");
-            echo "<tr>";
-            if ($fdef->formulaId == "n")
-                echo "<td class='lmcaption' style='padding:10px 1em 0 0'>New formula</td>";
-            else if ($any == 0) {
-                echo "<td class='lmcaption' style='padding:0 1em 0 0'>Existing formulas</td>";
-                $any = 1;
-            } else
-                echo "<td></td>";
-            echo "<td class='lxcaption'>",
-                "<input type='text' style='width:16em' name='name_$formulaId'$disabled tabindex='8' value=\"" . htmlspecialchars($name) . "\" />",
-                "</td><td style='padding:2px 0'>",
-                "<input type='text' style='width:30em' name='expression_$formulaId'$disabled tabindex='8' value=\"" . htmlspecialchars($expression) . "\" />",
-                "</td></tr>\n";
-        }
-        echo "<tr><td colspan='3' style='padding:1ex 0 0;text-align:right'>",
-            Ht::js_button("Cancel", "fold('searchform',1,3)", array("tabindex" => 8)),
-            "&nbsp; ", Ht::submit("Save changes", array("style" => "font-weight:bold", "tabindex" => 8)),
-            "</td></tr></tbody></table></div></form>\n";
-    }
 
     echo "</div>";
 }

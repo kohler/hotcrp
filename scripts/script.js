@@ -607,6 +607,11 @@ wstorage.json = function (is_session, key) {
 
 // hoturl
 function hoturl_add(url, component) {
+    var hash = url.indexOf("#");
+    if (hash >= 0) {
+        component += url.substring(hash);
+        url = url.substring(0, hash);
+    }
     return url + (url.indexOf("?") < 0 ? "?" : "&") + component;
 }
 
@@ -1921,6 +1926,7 @@ function hiliter_children(form, on_unload) {
 }
 
 function focus_at(felt) {
+    felt.jquery && (felt = felt[0]);
     felt.focus();
     if (!felt.hotcrp_ever_focused) {
         if (felt.select && $(felt).hasClass("want-select"))
@@ -3162,7 +3168,7 @@ function save_editor(elt, action, really) {
         if (!data.ok) {
             if (data.loggedout) {
                 has_unload = false;
-                $f[0].method = "POST";
+                $f[0].method = "post";
                 $f[0].action = hoturl_post("paper", $.extend({editcomment: 1}, carg));
                 $f[0].submit();
             }
@@ -4997,7 +5003,7 @@ function edit_anno(locator) {
             var $row = $(hc.render());
             $row.appendTo($d.find(".tagannos"));
             $row.find("input[name='heading_n" + last_newannoid + "']").focus();
-            $d.find(".popup_bottom").scrollIntoView();
+            $d.find(".popup-bottom").scrollIntoView();
             popup_near($d, window);
         } else {
             var anno = [];
@@ -5099,9 +5105,12 @@ function expand_archive() {
 // popup dialogs
 function popup_skeleton() {
     var hc = new HtmlCollector;
-    hc.push('<div class="popupbg"><div class="popupo popupcenter"><form>', '</form><div class="popup_bottom"></div></div></div>');
+    hc.push('<div class="popupbg"><div class="popupo popupcenter"><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form><div class="popup-bottom"></div></div></div>');
     hc.push_actions = function (actions) {
-        return hc.push('<div class="popup-actions">' + actions.join("") + '</div>');
+        hc.push('<div class="popup-actions">', '</div>');
+        if (actions)
+            hc.push(actions.join("")).pop();
+        return hc;
     };
     return hc;
 }
@@ -5177,7 +5186,12 @@ function popup_close(popup) {
 }
 
 function popup_render(hc) {
-    var $d = $(hc.render()).appendTo(document.body);
+    var $d = hc;
+    if (typeof hc === "string")
+        $d = $(hc);
+    else if (hc instanceof HtmlCollector)
+        $d = $(hc.render());
+    $d.appendTo(document.body);
     $d.find(".need-tooltip").each(add_tooltip);
     $d.on("click", function (evt) {
         evt.target == $d[0] && popup_close($d);
@@ -5732,6 +5746,66 @@ plinfo.on_set_tags = function (f) {
 
 return plinfo;
 })();
+
+
+/* formula editor functions */
+function edit_formulas() {
+    var $d, nformulas = 0;
+    function push_formula(hc, f) {
+        ++nformulas;
+        hc.push('<div class="editformulas-formula" data-formula-number="' + nformulas + '">', '</div>');
+        hc.push('<div class="f-i"><div class="f-c">Name</div><div class="f-e">');
+        if (f.editable) {
+            hc.push('<div style="float:right"><a class="closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete formula">x</a></div>');
+            hc.push('<textarea class="editformulas-name" name="formulaname_' + nformulas + '" rows="1" cols="60" style="width:37.5rem;width:calc(99% - 2.5em)">' + escape_entities(f.name) + '</textarea>');
+            hc.push('<hr class="c" />');
+        } else
+            hc.push(escape_entities(f.name));
+        hc.push('</div></div><div class="f-i"><div class="f-c">Expression</div><div class="f-e">');
+        if (f.editable)
+            hc.push('<textarea class="editformulas-expression" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:calc(99%)">' + escape_entities(f.expression) + '</textarea>')
+                .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '" />');
+        else
+            hc.push(escape_entities(f.expression));
+        hc.push_pop('</div></div>');
+    }
+    function onclick() {
+        if (this.name == "cancel")
+            popup_close($d);
+        else if (this.name == "add") {
+            var hc = new HtmlCollector;
+            push_formula(hc, {name: "", expression: "", editable: true, id: "new"});
+            var $f = $(hc.render()).appendTo($d.find(".editformulas"));
+            $f.find("textarea").autogrow();
+            focus_at($f.find(".editformulas-name"));
+            $d.find(".popup-bottom").scrollIntoView();
+        } else if (this.name == "save")
+            return true;
+    }
+    function ondelete() {
+        var $x = $(this).closest(".editformulas-formula");
+        $x.find(".editformulas-expression").closest(".f-i").hide();
+        $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
+        $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1" />');
+        return false;
+    }
+    function create() {
+        var hc = popup_skeleton(), i;
+        hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
+        hc.push('<h2>Named formulas</h2>');
+        hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a> are calculated from review statistics and paper information. For example, “sum(OveMer)” is the sum of a paper’s Overall merit scores. Test formulas with search terms like “show:(sum(OveMer))”. Here you can save formulas by name, allowing them to be used in other formulas or displayed by default as a list column.</p>');
+        hc.push('<div class="editformulas">', '</div>');
+        for (i in edit_formulas.formulas || [])
+            push_formula(hc, edit_formulas.formulas[i]);
+        hc.pop_push('<button name="add" type="button" class="btn">Add formula</button>');
+        hc.push_actions(['<button name="save" type="submit" tabindex="1000" class="btn btn-default popup-btn">Save</button>', '<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button>']);
+        $d = popup_render(hc);
+        $d.on("click", "button", onclick);
+        $d.on("click", "a.delete-link", ondelete);
+        $d.find("form").attr({action: hoturl_add(window.location.href, "saveformulas=1&post=" + siteurl_postvalue), method: "post"});
+    }
+    create();
+}
 
 
 /* pattern fill functions */

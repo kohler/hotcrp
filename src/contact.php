@@ -2880,6 +2880,10 @@ class Contact {
         return $formula->view_score($this) > $bound;
     }
 
+    function can_edit_formula(Formula $formula) {
+        return $this->privChair || ($this->isPC && $formula->createdBy > 0);
+    }
+
     // A review field is visible only if its view_score > view_score_bound.
     function view_score_bound(PaperInfo $prow, $rrow, $forceShow = null) {
         // Returns the maximum view_score for an invisible review
