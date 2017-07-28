@@ -546,20 +546,16 @@ function add_dialog(fid, focus) {
         }
         $dt.html(hc.render());
     }
-    function close() {
-        window.global_tooltip && window.global_tooltip.erase();
-        $d.remove();
-    }
     function onsubmit() {
         add_field(fid);
         template && fill_field(fid, samples[template - 1], false);
         $("#shortName_" + fid)[0].focus();
-        close();
+        popup_close($d);
         return false;
     }
     function onclick() {
         if (this.name == "cancel")
-            close();
+            popup_close($d);
         else if (this.name == "next" || this.name == "prev") {
             var dir = this.name == "next" ? 1 : -1;
             template += dir;
@@ -589,13 +585,11 @@ function add_dialog(fid, focus) {
         hc.push('<div class="newreviewfield-template" style="width:500px;max-width:90%;min-height:6em"></div>');
         hc.push_actions(['<button name="add" type="submit" tabindex="1000" class="btn popup-btn want-focus">Create field</button>',
             '<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button>']);
-        $d = $(hc.render());
+        $d = popup_render(hc);
         render_template();
-        $d.appendTo(document.body);
         $d.find(".newreviewfield-template-name").on("click", change_template);
         $d.on("click", "button", onclick);
         $d.find("form").on("submit", onsubmit);
-        popup_near($d[0].childNodes[0], window);
     }
     create();
 }

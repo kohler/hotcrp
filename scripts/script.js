@@ -4988,13 +4988,9 @@ function edit_anno(locator) {
     plt_tbody || set_plt_tbody(elt);
     var mytag = elt.getAttribute("data-anno-tag"),
         annoid = elt.hasAttribute("data-anno-id") ? +elt.getAttribute("data-anno-id") : null;
-    function close() {
-        window.global_tooltip && window.global_tooltip.erase();
-        $d.remove();
-    }
     function onclick(evt) {
         if (this.name === "cancel")
-            close();
+            popup_close($d);
         else if (this.name === "add") {
             var hc = new HtmlCollector;
             add_anno(hc, {});
@@ -5002,7 +4998,7 @@ function edit_anno(locator) {
             $row.appendTo($d.find(".tagannos"));
             $row.find("input[name='heading_n" + last_newannoid + "']").focus();
             $d.find(".popup_bottom").scrollIntoView();
-            popup_near($d[0].childNodes[0], window);
+            popup_near($d, window);
         } else {
             var anno = [];
             for (var i = 0; i < annos.length; ++i) {
@@ -5037,7 +5033,7 @@ function edit_anno(locator) {
             setajaxcheck($d.find("button[name=save]"), rv);
             if (rv.ok) {
                 taganno_success(rv);
-                close();
+                popup_close($d);
             }
         };
     }
@@ -5049,7 +5045,7 @@ function edit_anno(locator) {
         hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32" tabindex="1000" /></td></tr>');
         hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" tabindex="1000" />', '</td></tr>');
         if (anno.annoid)
-            hc.push(' <a class="closebtn deletegroup-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete group">x</a>');
+            hc.push(' <a class="closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete group">x</a>');
         hc.pop_n(2);
     }
     function show_dialog(rv) {
@@ -5064,18 +5060,12 @@ function edit_anno(locator) {
         hc.pop();
         hc.push('<div class="g"><button name="add" type="button" tabindex="1000" class="btn">Add group</button></div>');
         hc.push_actions(['<button name="save" type="submit" tabindex="1000" class="btn btn-default">Save changes</button>', '<button name="cancel" type="button" tabindex="1001" class="btn">Cancel</button>']);
-        $d = $(hc.render());
+        $d = popup_render(hc);
         for (var i = 0; i < annos.length; ++i) {
             $d.find("input[name='heading_" + annos[i].annoid + "']").val(annos[i].heading);
             $d.find("input[name='tagval_" + annos[i].annoid + "']").val(tagvalue_unparse(annos[i].tagval));
         }
-        $d.on("click", "button", onclick).on("click", "a.deletegroup-link", ondeleteclick);
-        $d.find(".need-tooltip").each(add_tooltip);
-        $d.click(function (evt) {
-            evt.target == $d[0] && close();
-        });
-        $d.appendTo($(document.body));
-        popup_near($d[0].childNodes[0], window);
+        $d.on("click", "button", onclick).on("click", "a.delete-link", ondeleteclick);
     }
     $.post(hoturl_post("api/taganno", {tag: mytag}), show_dialog);
 }
@@ -5126,8 +5116,6 @@ function popup_near(elt, anchor) {
         elt.parentNode.style.display = "block";
         parent_offset = $(elt.parentNode).offset();
     }
-    $(elt).find(".need-tooltip").each(add_tooltip);
-    $(elt).find("textarea").autogrow();
     var anchorPos = $(anchor).geometry();
     var wg = $(window).geometry();
     var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
@@ -5138,7 +5126,7 @@ function popup_near(elt, anchor) {
     elt.style.top = y + "px";
     var viselts = $(elt).find("input, button, textarea, select").filter(":visible");
     var efocus = viselts.filter(".want-focus")[0] || viselts.filter(":not(.dangerous)")[0];
-    efocus && efocus.focus();
+    efocus && focus_at(efocus);
 }
 
 function popup(anchor, which, dofold, populate) {
@@ -5182,6 +5170,23 @@ function popup(anchor, which, dofold, populate) {
     return false;
 }
 
+function popup_close(popup) {
+    window.global_tooltip && window.global_tooltip.erase();
+    popup.find("textarea, input[type=text]").unautogrow();
+    popup.remove();
+}
+
+function popup_render(hc) {
+    var $d = $(hc.render()).appendTo(document.body);
+    $d.find(".need-tooltip").each(add_tooltip);
+    $d.on("click", function (evt) {
+        evt.target == $d[0] && popup_close($d);
+    });
+    popup_near($d, window);
+    $d.find("textarea, input[type=text]").autogrow();
+    return $d;
+}
+
 function override_deadlines(elt, callback) {
     var ejq = jQuery(elt);
     var djq = jQuery('<div class="popupbg"><div class="popupo"><p>'
@@ -5206,7 +5211,7 @@ function override_deadlines(elt, callback) {
         djq.remove();
     });
     djq.appendTo(document.body);
-    popup_near(djq[0].childNodes[0], elt);
+    popup_near(djq, elt);
 }
 
 
