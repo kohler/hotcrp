@@ -2780,8 +2780,8 @@ function render_review_body(rrow) {
             x = render_text(rrow.format, rrow[f.uid], f.uid);
             t += ' revtext format' + (x.format || 0) + '">' + x.content;
         } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid])))
-            t += '">' + f.score_info.unparse_revnum(x) + " " +
-                escape_entities(f.options[x - 1]);
+            t += '"><table><tr><td class="nw">' + f.score_info.unparse_revnum(x) +
+                "&nbsp;</td><td>" + escape_entities(f.options[x - 1]) + "</td></tr></table>";
         else
             t += ' rev_unknown">' + (f.allow_empty ? "No entry" : "Unknown");
 
