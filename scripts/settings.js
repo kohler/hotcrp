@@ -578,9 +578,7 @@ function add_dialog(fid, focus) {
         render_template();
     }
     function create() {
-        var hc = new HtmlCollector;
-        hc.push('<div class="popupbg">', '</div>');
-        hc.push('<div class="popupo popupcenter"><form>', '</form></div>');
+        var hc = popup_skeleton();
         hc.push('<h2>' + (has_options ? "Add score field" : "Add text field") + '</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
         hc.push('<table style="width:500px;max-width:90%;margin-bottom:2em"><tbody><tr>', '</tr></tbody></table>');
@@ -589,16 +587,14 @@ function add_dialog(fid, focus) {
         hc.push('<td style="text-align:right"><button name="next" type="button" tabindex="1002" class="btn need-tooltip" data-tooltip="Next template">&gt;</button></td>');
         hc.pop();
         hc.push('<div class="newreviewfield-template" style="width:500px;max-width:90%;min-height:6em"></div>');
-        hc.push('<div class="popup-actions"><button name="add" type="submit" tabindex="1000" class="btn popup-btn want-focus">Create field</button>');
-        hc.push('<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button></div>');
-        hc.push('<div class="popup_bottom"></div>');
+        hc.push_actions(['<button name="add" type="submit" tabindex="1000" class="btn popup-btn want-focus">Create field</button>',
+            '<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button>']);
         $d = $(hc.render());
         render_template();
         $d.appendTo(document.body);
         $d.find(".newreviewfield-template-name").on("click", change_template);
         $d.on("click", "button", onclick);
         $d.find("form").on("submit", onsubmit);
-        $d.find(".need-tooltip").each(add_tooltip);
         popup_near($d[0].childNodes[0], window);
     }
     create();

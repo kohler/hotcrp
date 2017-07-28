@@ -2570,6 +2570,10 @@ HtmlCollector.prototype.push_pop = function (text) {
     this.html += text;
     this.pop();
 };
+HtmlCollector.prototype.pop_push = function (open, close) {
+    this.pop();
+    this.push(open, close);
+};
 HtmlCollector.prototype.pop_collapse = function (pos) {
     if (pos == null)
         pos = this.open.length ? this.open.length - 1 : 0;
@@ -5045,9 +5049,7 @@ function edit_anno(locator) {
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
             return;
-        var hc = new HtmlCollector;
-        hc.push('<div class="popupbg">', '</div>');
-        hc.push('<div class="popupo popupcenter"><form>', '</form></div>');
+        var hc = popup_skeleton();
         hc.push('<h2>Annotate #' + mytag.replace(/^\d+~/, "~") + ' order</h2>');
         hc.push('<div class="tagannos">', '</div>');
         annos = rv.anno;
@@ -5055,8 +5057,7 @@ function edit_anno(locator) {
             add_anno(hc, annos[i]);
         hc.pop();
         hc.push('<div class="g"><button name="add" type="button" tabindex="1000" class="btn">Add group</button></div>');
-        hc.push('<div class="popup-actions"><button name="save" type="submit" tabindex="1000" class="btn btn-default">Save changes</button><button name="cancel" type="button" tabindex="1001" class="btn">Cancel</button></div>');
-        hc.push('<div class="popup_bottom"></div>');
+        hc.push_actions(['<button name="save" type="submit" tabindex="1000" class="btn btn-default">Save changes</button>', '<button name="cancel" type="button" tabindex="1001" class="btn">Cancel</button>']);
         $d = $(hc.render());
         for (var i = 0; i < annos.length; ++i) {
             $d.find("input[name='heading_" + annos[i].annoid + "']").val(annos[i].heading);
@@ -5100,12 +5101,27 @@ function expand_archive() {
 }
 
 // popup dialogs
+function popup_skeleton() {
+    var hc = new HtmlCollector;
+    hc.push('<div class="popupbg"><div class="popupo popupcenter"><form>', '</form><div class="popup_bottom"></div></div></div>');
+    hc.push_actions = function (actions) {
+        return hc.push('<div class="popup-actions">' + actions.join("") + '</div>');
+    };
+    return hc;
+}
+
 function popup_near(elt, anchor) {
+    if (elt.jquery)
+        elt = elt[0];
+    if ($(elt).hasClass("popupbg"))
+        elt = elt.childNodes[0];
     var parent_offset = {left: 0, top: 0};
-    if (/popupbg/.test(elt.parentNode.className)) {
+    if ($(elt.parentNode).hasClass("popupbg")) {
         elt.parentNode.style.display = "block";
         parent_offset = $(elt.parentNode).offset();
     }
+    $(elt).find(".need-tooltip").each(add_tooltip);
+    $(elt).find("textarea").autogrow();
     var anchorPos = $(anchor).geometry();
     var wg = $(window).geometry();
     var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
