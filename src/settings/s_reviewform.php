@@ -66,8 +66,8 @@ class ReviewForm_SettingParser extends SettingParser {
     function parse(SettingValues $sv, Si $si) {
         $this->nrfj = (object) array();
         $option_error = "Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
-    2. Medium quality
-    3. High quality</pre>";
+2. Medium quality
+3. High quality</pre>";
 
         $rf = $sv->conf->review_form();
         foreach ($rf->fmap as $fid => $f) {
@@ -215,9 +215,24 @@ are better). For example:</p>
 <p>Normally scores are mandatory: a review with a missing score cannot be
 submitted. Add a line “<code>0. No entry</code>” to make the score optional.</p></div>');
 
+    $rfj = $rf->unparse_full_json();
+    $qs = [];
+    foreach ($rf->all_fields() as $f) {
+        if ($f->has_options)
+            $qs[] = "exists (select * from PaperReview where {$f->id}!=0) {$f->id}";
+        else
+            $qs[] = "exists (select * from PaperReview where {$f->id} is not null and {$f->id}!='') {$f->id}";
+    }
+    $result = $sv->conf->qe("select " . join(", ", $qs));
+    $reviews_exist = edb_orow($result);
+    error_log(json_encode($reviews_exist));
+    Dbl::free($result);
+    foreach ($rf->all_fields() as $id => $f)
+        $rfj[$id]->has_any_nonempty = !!$reviews_exist->$id;
+
     Ht::stash_script("review_form_settings("
                      . json_encode($fmap) . ","
-                     . json_encode($rf->unparse_full_json()) . ","
+                     . json_encode($rfj) . ","
                      . json_encode($samples) . ","
                      . json_encode($sv->message_field_map()) . ","
                      . json_encode($req) . ")");

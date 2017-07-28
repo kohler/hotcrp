@@ -134,7 +134,7 @@ return {init: init, add: add, kill: kill};
 
 
 window.review_form_settings = (function () {
-var fieldmap, fieldorder, original, samples,
+var field_has_options, fieldorder, original, samples,
     colors = ["sv", "Red to green", "svr", "Green to red",
               "sv-blpu", "Blue to purple", "sv-publ", "Purple to blue",
               "sv-viridis", "Purple to yellow", "sv-viridisr", "Yellow to purple"];
@@ -266,6 +266,7 @@ function fill_field(fid, fieldj) {
     $("#revfield_" + fid + " textarea").trigger("change");
     $("#revfieldview_" + fid).html("").append(create_field_view(fid, fieldj));
     $("#round_list_" + fid).val((fieldj.round_list || []).join(" "));
+    $("#remove_" + fid).html(fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
     check_change(fid);
     return false;
 }
@@ -432,7 +433,7 @@ function append_field(fid, pos) {
     $f = $(revfield_template.replace(/\$/g, fid));
     $f.find(".settings_revfieldpos").html(String.fromCharCode(64 + pos) + ".");
 
-    if (fieldmap[fid]) {
+    if (field_has_options[fid]) {
         $j = $f.find(".reviewfield_option_class_prefix");
         for (i = 0; i < colors.length; i += 2)
             $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
@@ -463,22 +464,22 @@ function append_field(fid, pos) {
 
     var sampleopt = "<option value=\"x\">Load field from library...</option>";
     for (i = 0; i != samples.length; ++i)
-        if (!samples[i].options == !fieldmap[fid])
+        if (!samples[i].options == !field_has_options[fid])
             sampleopt += "<option value=\"" + i + "\">" + samples[i].selector + "</option>";
     $f.find(".revfield_samples").html(sampleopt).on("change", samples_change);
 
     $f.find(".revfield_remove").on("click", remove);
     $f.find(".revfield_moveup, .revfield_movedown").on("click", move_field);
-    $f.find("input, textarea, select").on("change", check_this_change);
+    $f.find("input, textarea, select").on("change input", check_this_change);
     $f.appendTo("#reviewform_container");
 
     fill_field(fid, original[fid]);
     $f.find(".need-tooltip").each(add_tooltip);
 }
 
-function rfs(fieldmapj, originalj, samplesj, errf, request) {
+function rfs(field_has_optionsj, originalj, samplesj, errf, request) {
     var i, fid, $j;
-    fieldmap = fieldmapj;
+    field_has_options = field_has_optionsj;
     original = originalj;
     samples = samplesj;
 
@@ -531,12 +532,12 @@ rfs.add = function (has_options, fid) {
     for (i = 0, $n = $c.firstChild; $n; ++i, $n = $n.nextSibling)
         x.push([$n.getAttribute("data-revfield"), i]);
     // otherwise prefer fields that have ever been defined
-    for (fid in fieldmap)
+    for (fid in field_has_options)
         if ($.inArray(fid, fieldorder) < 0)
             x.push([fid, ++i + (original[fid].name && original[fid].name != "Field name" ? 0 : 1000)]);
     x.sort(function (a, b) { return a[1] - b[1]; });
     for (i = 0; i != x.length; ++i)
-        if (!fieldmap[x[i][0]] == !has_options)
+        if (!field_has_options[x[i][0]] == !has_options)
             return do_add(x[i][0], true);
     alert("You’ve reached the maximum number of " + (has_options ? "score fields." : "text fields."));
 };
