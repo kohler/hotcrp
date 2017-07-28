@@ -379,8 +379,8 @@ class ReviewForm {
     static function fmap_compare($a, $b) {
         if ($a->displayed != $b->displayed)
             return $a->displayed ? -1 : 1;
-        else if ($a->displayed)
-            return $a->display_order - $b->display_order;
+        else if ($a->displayed && $a->display_order != $b->display_order)
+            return $a->display_order < $b->display_order ? -1 : 1;
         else
             return strcmp($a->id, $b->id);
     }
@@ -415,22 +415,15 @@ class ReviewForm {
                 $f->assign($j);
 
         // assign field order
-        $forder = array();
-        $this->fieldName = array();
-        foreach ($this->fmap as $fid => $f) {
-            $this->fieldName[strtolower($f->name)] = $fid;
-            if ($f->displayed)
-                $forder[sprintf("%03d.%s", $f->display_order, $fid)] = $f;
-        }
-        ksort($forder);
-        $n = 0;
-        foreach ($forder as $f)
-            $f->display_order = ++$n;
         uasort($this->fmap, "ReviewForm::fmap_compare");
-        $this->forder = array();
+        $this->fieldName = $this->forder = [];
+        $do = 0;
         foreach ($this->fmap as $f)
-            if ($f->displayed)
+            if ($f->displayed) {
+                $this->fieldName[strtolower($f->name)] = $f->id;
+                $f->display_order = ++$do;
                 $this->forder[$f->id] = $f;
+            }
     }
 
     function all_fields() {
@@ -1367,18 +1360,17 @@ $blind\n";
                             $match[1] .= " " . $xmatch[1];
                         $line .= $xline;
                     }
-                    $fname = $match[1];
-                    if (!isset($this->fieldName[strtolower($fname)]))
-                        $fname = preg_replace('/\s*\((hidden from authors|PC only|shown only to chairs|secret)\)\z/', "", $fname);
-                    $fn =& $this->fieldName[strtolower($fname)];
-                    if (isset($fn)) {
-                        $field = $fn;
-                        $tf['fieldLineno'][$fn] = $lineno;
+                    $field = get($this->fieldName, strtolower($match[1]));
+                    if (!$field) {
+                        $fname = preg_replace('/\s*\((hidden from authors|PC only|shown only to chairs|secret)\)\z/i', "", $match[1]);
+                        $field = get($this->fieldName, strtolower($fname));
+                    }
+                    if ($field) {
+                        $tf['fieldLineno'][$field] = $lineno;
                         $nfields++;
                     } else {
                         $this->garbageMessage($tf, $lineno, $garbage);
-                        self::tfError($tf, true, "Review field “" . htmlentities($fname) . "” is not used for " . htmlspecialchars($this->conf->short_name) . " reviews.  Ignoring this section.", $lineno);
-                        $field = null;
+                        self::tfError($tf, true, "Review field “" . htmlentities($match[1]) . "” is not used for " . htmlspecialchars($this->conf->short_name) . " reviews.  Ignoring this section.", $lineno);
                     }
                     $mode = 1;
                 } else {

@@ -63,7 +63,7 @@ class ReviewForm_SettingParser extends SettingParser {
         return true;
     }
 
-    public function parse(SettingValues $sv, Si $si) {
+    function parse(SettingValues $sv, Si $si) {
         $this->nrfj = (object) array();
         $option_error = "Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
     2. Medium quality
@@ -130,7 +130,7 @@ class ReviewForm_SettingParser extends SettingParser {
         return true;
     }
 
-    public function save(SettingValues $sv, Si $si) {
+    function save(SettingValues $sv, Si $si) {
         global $Now;
         if (!$sv->update("review_form", json_encode($this->nrfj)))
             return;
