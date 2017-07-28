@@ -5114,7 +5114,8 @@ function popup_near(elt, anchor) {
     y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - parent_offset.top;
     elt.style.left = x + "px";
     elt.style.top = y + "px";
-    var efocus = $(elt).find("input, button, textarea, select").filter(":visible").filter(":not(.dangerous)")[0];
+    var viselts = $(elt).find("input, button, textarea, select").filter(":visible");
+    var efocus = viselts.filter(".want-focus")[0] || viselts.filter(":not(.dangerous)")[0];
     efocus && efocus.focus();
 }
 

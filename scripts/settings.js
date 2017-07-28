@@ -242,22 +242,18 @@ function check_this_change() {
 }
 
 function fill_order() {
-    var i, $c = $("#reviewform_container")[0], $n;
-    for (i = 1, $n = $c.firstChild; $n; ++i, $n = $n.nextSibling) {
-        $($n).find(".settings_revfieldpos").html(String.fromCharCode(64 + i) + ".");
-        $($n).find(".revfield_order").val(i);
-    }
-    $c = $("#reviewform_removedcontainer")[0];
-    for ($n = $c.firstChild; $n; $n = $n.nextSibling)
-        $($n).find(".revfield_order").val(0);
+    var i, c = $("#reviewform_container")[0], n;
+    for (i = 1, n = c.firstChild; n; ++i, n = n.nextSibling)
+        $(n).find(".revfield_order").val(i);
+    c = $("#reviewform_removedcontainer")[0];
+    for (n = c.firstChild; n; n = n.nextSibling)
+        $(n).find(".revfield_order").val(0);
 }
 
-function fill_field(fid, fieldj) {
-    if (fid instanceof Node)
-        fid = get_fid(fid);
+function fill_field(fid, fieldj, order) {
     fieldj = fieldj || original[fid] || {};
     $("#shortName_" + fid).val(fieldj.name || "");
-    $("#order_" + fid).val(fieldj.position || 0);
+    order && $("#order_" + fid).val(fieldj.position || 0);
     $("#description_" + fid).val(fieldj.description || "");
     $("#authorView_" + fid).val(fieldj.visibility || "pc");
     $("#options_" + fid).val(options_to_text(fieldj));
@@ -281,27 +277,11 @@ function remove() {
     fill_order();
 }
 
-function samples_change() {
-    var val = $(this).val();
-    if (val == "original")
-        fill_field(this);
-    else if (val != "x")
-        fill_field(this, samples[val]);
-}
-
 var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain fold2c errloc_$" data-revfield="$" data-fold="true">\
-<div id="revfieldpos_$" class="settings_revfieldpos"></div>\
 <div id="revfieldview_$" class="settings_revfieldview fn2"></div>\
 <div id="revfieldedit_$" class="settings_revfieldedit fx2">\
   <div class="f-i errloc_shortName_$">\
     <input name="shortName_$" id="shortName_$" type="text" size="50" style="font-weight:bold" placeholder="Field name" />\
-  </div>\
-  <div class="f-i">\
-    <button id="moveup_$" class="revfield_moveup" type="button">Move up</button><span class="sep"></span>\
-<button id="movedown_$" class="revfield_movedown" type="button">Move down</button><span class="sep"></span>\
-<button id="remove_$" class="revfield_remove" type="button">Delete from form</button><span class="sep"></span>\
-    <select name="samples_$" id="samples_$" class="revfield_samples"></select>\
-<input type="hidden" name="order_$" id="order_$" class="revfield_order" value="0" />\
   </div>\
   <div class="f-i">\
     <div class="f-ix">\
@@ -332,20 +312,26 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
     <div class="f-c">Options</div>\
     <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-content-selector="#review_form_caption_options" data-tooltip-dir="l" data-tooltip-type="focus"></textarea>\
   </div>\
+  <div class="f-i">\
+    <button id="moveup_$" class="btn revfield_moveup" type="button">Move up</button><span class="sep"></span>\
+<button id="movedown_$" class="btn revfield_movedown" type="button">Move down</button><span class="sep"></span>\
+<button id="remove_$" class="btn revfield_remove" type="button">Delete from form</button><span class="sep"></span>\
+<input type="hidden" name="order_$" id="order_$" class="revfield_order" value="0" />\
+  </div>\
 </div><hr class="c" /></div>';
 
 var revfieldview_template = '<div>\
-<div class="settings_revfn"></div>\
-<div class="settings_revrounds"></div>\
-<div class="settings_revvis"></div>\
-<div class="settings_reveditor"><button type="button">Edit</button></div>\
+<span class="settings_revfn"></span>\
+<span class="settings_revrounds"></span>\
+<span class="settings_revvis"></span>\
+<span class="settings_reveditor"><button type="button" class="btn">Edit</button></span>\
 <div class="settings_revdata"></div>\
 </div>';
 
 function option_value_html(fieldj, value) {
     var cc = 48, ccdelta = 1, t, n;
     if (!value || value < 0)
-        return "Unknown";
+        return ["", "No entry"];
     if (fieldj.option_letter) {
         cc = fieldj.option_letter.charCodeAt(0) + fieldj.options.length;
         ccdelta = -1;
@@ -358,31 +344,37 @@ function option_value_html(fieldj, value) {
             n = 1;
         t += " " + (fieldj.option_class_prefix || "sv") + n;
     }
-    return t + '">' + String.fromCharCode(cc + value * ccdelta) + '.</span> ' +
-        escape_entities(fieldj.options[value - 1] || "Unknown");
+    return [t + '">' + String.fromCharCode(cc + value * ccdelta) + '.</span>',
+            escape_entities(fieldj.options[value - 1] || "Unknown")];
 }
 
 function view_unfold(event) {
     foldup(this, event, {n: 2, f: false});
     var $f = $(this).closest(".settings_revfield");
     $f.find("textarea").css("height", "auto").autogrow();
+    $f.find("input[type=text]").autogrow();
     $f.find("input[placeholder]").each(mktemptext);
+}
+
+function field_visibility_text(visibility) {
+    if ((visibility || "pc") === "pc")
+        return "(hidden from authors)";
+    else if (visibility === "admin")
+        return "(shown only to administrators)";
+    else if (visibility === "secret")
+        return "(secret)";
+    else if (visibility === "audec")
+        return "(hidden from authors until decision)";
+    else
+        return "";
 }
 
 function create_field_view(fid, fieldj) {
     var $f = $(revfieldview_template.replace(/\$/g, fid)), $x, i, j, x;
     $f.find(".settings_revfn").text(fieldj.name || "<unnamed>");
 
-    x = "";
-    if ((fieldj.visibility || "pc") === "pc")
-        x = "(hidden from authors)";
-    else if (fieldj.visibility === "admin")
-        x = "(shown only to administrators)";
-    else if (fieldj.visibility === "secret")
-        x = "(secret)";
-    else if (fieldj.visibility === "audec")
-        x = "(hidden from authors until decision)";
     $x = $f.find(".settings_revvis");
+    x = field_visibility_text(fieldj.visibility);
     x ? $x.text(x) : $x.remove();
 
     x = "";
@@ -394,8 +386,8 @@ function create_field_view(fid, fieldj) {
     x ? $x.text(x) : $x.remove();
 
     if (fieldj.options) {
-        x = [option_value_html(fieldj, 1),
-             option_value_html(fieldj, fieldj.options.length)];
+        x = [option_value_html(fieldj, 1).join(" "),
+             option_value_html(fieldj, fieldj.options.length).join(" ")];
         fieldj.option_letter && x.reverse();
     } else
         x = ["Text field"];
@@ -431,7 +423,6 @@ function append_field(fid, pos) {
     }
 
     $f = $(revfield_template.replace(/\$/g, fid));
-    $f.find(".settings_revfieldpos").html(String.fromCharCode(64 + pos) + ".");
 
     if (field_has_options[fid]) {
         $j = $f.find(".reviewfield_option_class_prefix");
@@ -462,18 +453,12 @@ function append_field(fid, pos) {
     } else
         $f.find(".reviewrow_rounds").remove();
 
-    var sampleopt = "<option value=\"x\">Load field from library...</option>";
-    for (i = 0; i != samples.length; ++i)
-        if (!samples[i].options == !field_has_options[fid])
-            sampleopt += "<option value=\"" + i + "\">" + samples[i].selector + "</option>";
-    $f.find(".revfield_samples").html(sampleopt).on("change", samples_change);
-
     $f.find(".revfield_remove").on("click", remove);
     $f.find(".revfield_moveup, .revfield_movedown").on("click", move_field);
     $f.find("input, textarea, select").on("change input", check_this_change);
     $f.appendTo("#reviewform_container");
 
-    fill_field(fid, original[fid]);
+    fill_field(fid, original[fid], true);
     $f.find(".need-tooltip").each(add_tooltip);
 }
 
@@ -513,20 +498,115 @@ function rfs(field_has_optionsj, originalj, samplesj, errf, request) {
     }
 };
 
-function do_add(fid, focus) {
+function add_field(fid) {
     fieldorder.push(fid);
     original[fid] = original[fid] || {};
     original[fid].position = fieldorder.length;
     append_field(fid, fieldorder.length);
     $("#revfieldview_" + fid).find("button").click();
-    focus && $("#shortName_" + fid).focus();
     hiliter("reviewform_container");
     return true;
 }
 
+function add_dialog(fid, focus) {
+    var $d, template = 0, has_options = field_has_options[fid];
+    function render_template() {
+        var $dtn = $d.find(".newreviewfield-template-name"),
+            $dt = $d.find(".newreviewfield-template"),
+            hc = new HtmlCollector;
+        if (!template || !samples[template - 1] || !samples[template - 1].options != !has_options) {
+            template = 0;
+            $dtn.text("(Empty field)");
+        } else {
+            var s = samples[template - 1];
+            $d.find(".newreviewfield-template-name").text(s.selector);
+            var hc = new HtmlCollector;
+            hc.push('<div><span class="settings_revfn">' + text_to_html(s.name) + '</span>', '<hr class="c" /></div>');
+            var x = field_visibility_text(s.visibility);
+            if (x)
+                hc.push('<span class="settings_revvis">' + text_to_html(x) + '</span>');
+            hc.pop();
+            hc.push('<div class="settings_revhint">' + text_to_html(s.description || "") + '</div>');
+            if (s.options) {
+                x = [];
+                for (var i = 1; i <= s.options.length; ++i)
+                    x.push(i);
+                if (s.option_letter)
+                    x.reverse();
+                hc.push('<table class="settings_revoptions"><tbody>', '</tbody></table>');
+                for (var i = 0; i < x.length; ++i) {
+                    var ov = option_value_html(s, x[i]);
+                    hc.push('<tr><td class="nw">' + ov[0] + ' </td>' +
+                            '<td>' + ov[1] + '</td></tr>');
+                }
+                if (s.allow_empty)
+                    hc.push('<tr><td colspan="2">No entry</td></tr>');
+                hc.pop();
+            }
+        }
+        $dt.html(hc.render());
+    }
+    function close() {
+        window.global_tooltip && window.global_tooltip.erase();
+        $d.remove();
+    }
+    function onsubmit() {
+        add_field(fid);
+        template && fill_field(fid, samples[template - 1], false);
+        $("#shortName_" + fid)[0].focus();
+        close();
+        return false;
+    }
+    function onclick() {
+        if (this.name == "cancel")
+            close();
+        else if (this.name == "next" || this.name == "prev") {
+            var dir = this.name == "next" ? 1 : -1;
+            template += dir;
+            if (template < 0)
+                template = samples.length;
+            while (template && samples[template - 1] && !samples[template - 1].options != !has_options)
+                template += dir;
+            render_template();
+        }
+        return true;
+    }
+    function change_template() {
+        ++template;
+        while (samples[template - 1] && !samples[template - 1].options != !has_options)
+            ++template;
+        render_template();
+    }
+    function create() {
+        var hc = new HtmlCollector;
+        hc.push('<div class="popupbg">', '</div>');
+        hc.push('<div class="popupo popupcenter"><form>', '</form></div>');
+        hc.push('<h2>' + (has_options ? "Add score field" : "Add text field") + '</h2>');
+        hc.push('<p>Choose a template for the new field.</p>');
+        hc.push('<table style="width:500px;max-width:90%;margin-bottom:2em"><tbody><tr>', '</tr></tbody></table>');
+        hc.push('<td style="text-align:left"><button name="prev" type="button" tabindex="1002" class="btn need-tooltip" data-tooltip="Previous template">&lt;</button></td>');
+        hc.push('<td class="newreviewfield-template-name" style="text-align:center"></td>');
+        hc.push('<td style="text-align:right"><button name="next" type="button" tabindex="1002" class="btn need-tooltip" data-tooltip="Next template">&gt;</button></td>');
+        hc.pop();
+        hc.push('<div class="newreviewfield-template" style="width:500px;max-width:90%;min-height:6em"></div>');
+        hc.push('<div class="popup-actions"><button name="add" type="submit" tabindex="1000" class="btn popup-btn want-focus">Create field</button>');
+        hc.push('<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button></div>');
+        hc.push('<div class="popup_bottom"></div>');
+        $d = $(hc.render());
+        render_template();
+        $d.appendTo(document.body);
+        $d.find(".newreviewfield-template-name").on("click", change_template);
+        $d.on("click", "button", onclick);
+        $d.find("form").on("submit", onsubmit);
+        $d.find(".need-tooltip").each(add_tooltip);
+        popup_near($d[0].childNodes[0], window);
+    }
+    create();
+}
+
 rfs.add = function (has_options, fid) {
     if (fid)
-        return do_add(fid, false);
+        return add_field(fid);
     // prefer recently removed fields
     var $c = $("#reviewform_removedcontainer")[0], $n, x = [], i;
     for (i = 0, $n = $c.firstChild; $n; ++i, $n = $n.nextSibling)
@@ -538,7 +618,7 @@ rfs.add = function (has_options, fid) {
     x.sort(function (a, b) { return a[1] - b[1]; });
     for (i = 0; i != x.length; ++i)
         if (!field_has_options[x[i][0]] == !has_options)
-            return do_add(x[i][0], true);
+            return add_dialog(x[i][0]);
     alert("You’ve reached the maximum number of " + (has_options ? "score fields." : "text fields."));
 };
 
