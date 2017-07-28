@@ -2552,6 +2552,7 @@ HtmlCollector.prototype.push = function (open, close) {
         return this.open.length - 1;
     } else
         this.html += open;
+    return this;
 };
 HtmlCollector.prototype.pop = function (pos) {
     if (pos == null)
@@ -2562,17 +2563,19 @@ HtmlCollector.prototype.pop = function (pos) {
         this.open.pop();
         this.close.pop();
     }
+    return this;
 };
 HtmlCollector.prototype.pop_n = function (n) {
     this.pop(Math.max(0, this.open.length - n));
+    return this;
 };
 HtmlCollector.prototype.push_pop = function (text) {
     this.html += text;
-    this.pop();
+    return this.pop();
 };
 HtmlCollector.prototype.pop_push = function (open, close) {
     this.pop();
-    this.push(open, close);
+    return this.push(open, close);
 };
 HtmlCollector.prototype.pop_collapse = function (pos) {
     if (pos == null)
@@ -2584,6 +2587,7 @@ HtmlCollector.prototype.pop_collapse = function (pos) {
         this.open.pop();
         this.close.pop();
     }
+    return this;
 };
 HtmlCollector.prototype.render = function () {
     this.pop(0);
@@ -2593,6 +2597,7 @@ HtmlCollector.prototype.clear = function () {
     this.open = [];
     this.close = [];
     this.html = "";
+    return this;
 };
 
 
