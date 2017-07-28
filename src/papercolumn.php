@@ -1594,9 +1594,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         if (!$pl->scoresOk
             || !$this->formula->check($pl->contact)
             || !($this->formula->result_format() instanceof ReviewField)
-            || !($pl->search->limitName == "a"
-                 ? $pl->contact->can_view_formula_as_author($this->formula)
-                 : $pl->contact->can_view_formula($this->formula)))
+            || !$pl->contact->can_view_formula($this->formula, $pl->search->limitName == "a"))
             return false;
         $this->formula_function = $this->formula->compile_sortable_function();
         $this->indexes_function = null;
@@ -1794,9 +1792,7 @@ class Formula_PaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
             || !$this->formula->check($pl->contact)
-            || !($pl->search->limitName == "a"
-                 ? $pl->contact->can_view_formula_as_author($this->formula)
-                 : $pl->contact->can_view_formula($this->formula)))
+            || !$pl->contact->can_view_formula($this->formula, $pl->search->limitName == "a"))
             return false;
         $this->formula_function = $this->formula->compile_function();
         if ($visible)

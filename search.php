@@ -104,18 +104,9 @@ if (isset($Qreq->savedisplayoptions) && $Me->privChair) {
 
 
 // save formula
-function visible_formulas() {
-    global $Conf, $Me;
-    return array_filter($Conf->named_formulas(), function ($f) {
-        global $Me, $Qreq;
-        return $Qreq->t == "a"
-            ? $Me->can_view_formula_as_author($f)
-            : $Me->can_view_formula($f);
-    });
-}
-
 function formulas_with_new() {
-    $formulas = visible_formulas();
+    global $Conf, $Me, $Qreq;
+    $formulas = $Conf->visible_named_formulas($Me, $Qreq->t == "a");
     $formulas["n"] = (object) array("formulaId" => "n", "name" => "",
                                     "expression" => "", "createdBy" => 0);
     return $formulas;
@@ -431,7 +422,7 @@ if ($pl) {
 
     // Formulas group
     $display_options->set_header(40, "<strong>Formulas:</strong>");
-    foreach (visible_formulas() as $formula)
+    foreach ($Conf->visible_named_formulas($Me, $Qreq->t == "a") as $formula)
         $display_options->checkbox_item(40, "formula{$formula->formulaId}", htmlspecialchars($formula->name));
 }
 
@@ -642,7 +633,7 @@ would display the sum of a paper’s Overall merit scores.
             "<th></th><th class='f-c'>Name</th><th class='f-c'>Definition</th>",
             "</tr></thead><tbody>";
         $any = 0;
-        $fs = visible_formulas();
+        $fs = $Conf->visible_named_formulas($Me, $Qreq->t == "a");
         $fs["n"] = (object) array("formulaId" => "n", "name" => "", "expression" => "", "createdBy" => 0);
         foreach ($fs as $formulaId => $fdef) {
             $name = defval($Qreq, "name_$formulaId", $fdef->name);

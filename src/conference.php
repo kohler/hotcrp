@@ -814,6 +814,12 @@ class Conf {
         return $this->abbrev_matcher()->find1($text, self::FSRCH_FORMULA);
     }
 
+    function visible_named_formulas(Contact $user, $author_only = false) {
+        return array_filter($this->named_formulas(), function ($f) use ($user, $author_only) {
+            return $user->can_view_formula($f, $author_only);
+        });
+    }
+
 
     function decision_map() {
         if ($this->_decisions === null) {

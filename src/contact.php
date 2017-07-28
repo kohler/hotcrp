@@ -2872,12 +2872,12 @@ class Contact {
         return $this->can_administer(null, $forceShow);
     }
 
-    function can_view_formula(Formula $formula) {
-        return $formula->view_score($this) > $this->permissive_view_score_bound();
-    }
-
-    function can_view_formula_as_author(Formula $formula) {
-        return $formula->view_score($this) > $this->author_permissive_view_score_bound();
+    function can_view_formula(Formula $formula, $as_author = false) {
+        if ($as_author)
+            $bound = $this->author_permissive_view_score_bound();
+        else
+            $bound = $this->permissive_view_score_bound();
+        return $formula->view_score($this) > $bound;
     }
 
     // A review field is visible only if its view_score > view_score_bound.
