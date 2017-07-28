@@ -1858,15 +1858,12 @@ function form_differs(form) {
         if ($me.hasClass("ignore-diff"))
             return true;
         var expected = input_default_value(this);
-        var current;
         if (input_is_checkboxlike(this))
             same = this.checked === expected;
         else {
             var current = this.tagName === "SELECT" ? $me.val() : this.value;
             same = text_eq(current, expected);
         }
-        if (!same)
-            console.log("differs " + this.name + " expected " + expected);
         return same;
     });
     return !same;
