@@ -432,9 +432,11 @@ if ($pl) {
     }
 
     // Formulas group
-    $display_options->set_header(40, "<strong>Formulas:</strong>");
-    foreach ($Conf->viewable_named_formulas($Me, $Qreq->t == "a") as $formula)
+    $named_formulas = $Conf->viewable_named_formulas($Me, $Qreq->t == "a");
+    foreach ($named_formulas as $formula)
         $display_options->checkbox_item(40, "formula{$formula->formulaId}", htmlspecialchars($formula->name));
+    if ($named_formulas)
+        $display_options->set_header(40, "<strong>Formulas:</strong>");
     if ($Me->isPC && $Qreq->t != "a") {
         $fjs = [];
         foreach ($Conf->viewable_named_formulas($Me, false) as $f) {
@@ -444,7 +446,7 @@ if ($pl) {
             $fjs[] = $fj;
         }
         Ht::stash_script("edit_formulas.formulas=" . json_encode($fjs));
-        $display_options->item(40, '<div class="dispopt-item" style="margin-top:3px"><a href="#" onclick="edit_formulas();return false">Edit formulas</a></div>');
+        $display_options->item(40, '<div class="dispopt-item"><a href="#" onclick="edit_formulas();return false">Edit formulas</a></div>');
     }
 }
 

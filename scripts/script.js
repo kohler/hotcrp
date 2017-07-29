@@ -5793,11 +5793,11 @@ function edit_formulas() {
         var hc = popup_skeleton(), i;
         hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
         hc.push('<h2>Named formulas</h2>');
-        hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a> are calculated from review statistics and paper information. For example, “sum(OveMer)” is the sum of a paper’s Overall merit scores. Test formulas with search terms like “show:(sum(OveMer))”. Here you can save formulas by name, allowing them to be used in other formulas or displayed by default as a list column.</p>');
+        hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
         hc.push('<div class="editformulas">', '</div>');
         for (i in edit_formulas.formulas || [])
             push_formula(hc, edit_formulas.formulas[i]);
-        hc.pop_push('<button name="add" type="button" class="btn">Add formula</button>');
+        hc.pop_push('<button name="add" type="button" class="btn">Add named formula</button>');
         hc.push_actions(['<button name="save" type="submit" tabindex="1000" class="btn btn-default popup-btn">Save</button>', '<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button>']);
         $d = popup_render(hc);
         $d.on("click", "button", onclick);
