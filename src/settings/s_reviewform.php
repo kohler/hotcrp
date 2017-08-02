@@ -225,7 +225,6 @@ submitted. Add a line “<code>0. No entry</code>” to make the score optional.
     }
     $result = $sv->conf->qe("select " . join(", ", $qs));
     $reviews_exist = edb_orow($result);
-    error_log(json_encode($reviews_exist));
     Dbl::free($result);
     foreach ($rf->all_fields() as $id => $f)
         $rfj[$id]->has_any_nonempty = !!$reviews_exist->$id;
