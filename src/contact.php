@@ -3475,13 +3475,13 @@ class Contact {
             return false;
 
         if ($type && !$oldtype) {
-            $msg = "Added " . ReviewForm::$revtype_names[$type] . " review";
             $reviewId = $result->insert_id;
+            $msg = "Review $reviewId added (" . ReviewForm::$revtype_names[$type] . ")";
         } else if (!$type) {
             $msg = "Removed " . ReviewForm::$revtype_names[$oldtype] . " review";
             $reviewId = 0;
         } else
-            $msg = "Changed " . ReviewForm::$revtype_names[$oldtype] . " review to " . ReviewForm::$revtype_names[$type];
+            $msg = "Review $reviewId changed (" . ReviewForm::$revtype_names[$oldtype] . " to " . ReviewForm::$revtype_names[$type] . ")";
         $this->conf->log_for($this, $reviewer_cid, $msg, $pid);
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
