@@ -185,6 +185,8 @@ class Contact {
             $this->has_outstanding_review_ = $user->has_outstanding_review;
         if (isset($user->is_site_contact))
             $this->is_site_contact = $user->is_site_contact;
+        if (isset($user->is_deleted))
+            $this->is_deleted = $user->is_deleted;
     }
 
     private function db_load() {
@@ -650,6 +652,20 @@ class Contact {
         return $this->roles & self::ROLE_PCLIKE;
     }
 
+    function role_html() {
+        if ($this->roles & (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN | Contact::ROLE_PC)) {
+            if ($this->roles & Contact::ROLE_CHAIR)
+                return '<span class="pcrole">chair</span>';
+            else if (($this->roles & (Contact::ROLE_ADMIN | Contact::ROLE_PC)) == (Contact::ROLE_ADMIN | Contact::ROLE_PC))
+                return '<span class="pcrole">PC, sysadmin</span>';
+            else if ($this->roles & Contact::ROLE_ADMIN)
+                return '<span class="pcrole">sysadmin</span>';
+            else
+                return '<span class="pcrole">PC</span>';
+        } else
+            return '';
+    }
+
     function has_tag($t) {
         if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0)
             return true;
@@ -1013,10 +1029,7 @@ class Contact {
             if ($send && !$this->disabled)
                 $this->sendAccountInfo("create", false);
             $type = $this->disabled ? "disabled " : "";
-            if ($Me && $Me->has_email() && $Me->email !== $this->email)
-                $this->conf->log("Created {$type}account ($Me->email)", $this);
-            else
-                $this->conf->log("Created {$type}account", $this);
+            $this->conf->log_for($Me && $Me->has_email() ? $Me : $this, $this, "Created {$type}account");
         }
 
         $actor = $actor ? : $Me;
@@ -1069,14 +1082,13 @@ class Contact {
                  && edb_nrows($result) > 0))
             $new_roles |= self::ROLE_ADMIN;
         // log role change
-        $actor_email = ($actor ? " by $actor->email" : "");
         foreach (array(self::ROLE_PC => "pc",
                        self::ROLE_ADMIN => "sysadmin",
                        self::ROLE_CHAIR => "chair") as $role => $type)
             if (($new_roles & $role) && !($old_roles & $role))
-                $this->conf->log("Added as $type$actor_email", $this);
+                $this->conf->log_for($actor ? : $this, $this, "Added as $type");
             else if (!($new_roles & $role) && ($old_roles & $role))
-                $this->conf->log("Removed as $type$actor_email", $this);
+                $this->conf->log_for($actor ? : $this, $this, "Removed as $type");
         // save the roles bits
         if ($old_roles != $new_roles) {
             $this->conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
@@ -1157,7 +1169,7 @@ class Contact {
             }
             return $acct;
         } else {
-            $conf->log("Account $email creation failure", $Me);
+            $conf->log_for($Me, null, "Account $email creation failure", $Me);
             return null;
         }
     }
@@ -1433,7 +1445,7 @@ class Contact {
             else
                 $capmgr = $this->conf->capability_manager();
             $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
-            $this->conf->log("Created password reset " . substr($rest["capability"], 0, 8) . "...", $this);
+            $this->conf->log_for($this, null, "Created password reset " . substr($rest["capability"], 0, 8) . "...");
             $template = "@resetpassword";
         }
 
@@ -1473,13 +1485,13 @@ class Contact {
     function log_activity($text, $paperId = null) {
         $this->mark_activity();
         if (!$this->is_anonymous_user())
-            $this->conf->log($text, $this, $paperId);
+            $this->conf->log_for($this, $this, $text, $paperId);
     }
 
     function log_activity_for($user, $text, $paperId = null) {
         $this->mark_activity();
         if (!$this->is_anonymous_user())
-            $this->conf->log($text . " by $this->email", $user, $paperId);
+            $this->conf->log_for($this, $user, $text, $paperId);
     }
 
 
@@ -3472,7 +3484,7 @@ class Contact {
             $reviewId = 0;
         } else
             $msg = "Changed " . ReviewForm::$revtype_names[$oldtype] . " review to " . ReviewForm::$revtype_names[$type];
-        $this->conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);
+        $this->conf->log_for($this, $reviewer_cid, $msg, $pid);
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
         if ($type && !$oldtype) {

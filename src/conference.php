@@ -174,7 +174,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 170) {
+        if ($this->sversion < 172) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -3313,7 +3313,7 @@ class Conf {
     // Action recording
     //
 
-    const action_log_query = "insert into ActionLog (ipaddr, contactId, paperId, action) values ?v";
+    const action_log_query = "insert into ActionLog (ipaddr, contactId, destContactId, paperId, action) values ?v";
 
     function save_logs($on) {
         if ($on && $this->_save_logs === false)
@@ -3323,7 +3323,7 @@ class Conf {
             $last_pids = null;
             foreach ($this->_save_logs as $cid_text => $pids) {
                 $pos = strpos($cid_text, "|");
-                $who = substr($cid_text, 0, $pos);
+                list($user, $dest_user) = explode(",", substr($cid_text, 0, $pos));
                 $what = substr($cid_text, $pos + 1);
                 $pids = array_keys($pids);
 
@@ -3336,7 +3336,7 @@ class Conf {
                     continue;
                 }
 
-                $qv[] = self::format_log_values($what, $who, $pids);
+                $qv[] = self::format_log_values($what, $user, $dest_user, $pids);
                 $last_pids = $pids;
             }
             if (!empty($qv))
@@ -3345,14 +3345,20 @@ class Conf {
         }
     }
 
-    function log($text, $who, $pids = null) {
-        if (!$who)
-            $who = 0;
-        else if (!is_numeric($who)) {
-            if ($who->email && !$who->contactId)
-                $text .= " <{$who->email}>";
-            $who = $who->contactId;
-        }
+    private static function log_clean_user($user, &$text) {
+        if (!$user)
+            return 0;
+        else if (!is_numeric($user)) {
+            if ($user->email && !$user->contactId)
+                $text .= " <{$user->email}>";
+            return $user->contactId;
+        } else
+            return $user;
+    }
+
+    function log_for($user, $dest_user, $text, $pids = null) {
+        $user = self::log_clean_user($user, $text);
+        $dest_user = self::log_clean_user($dest_user, $text);
 
         if (is_object($pids))
             $pids = array($pids->paperId);
@@ -3363,9 +3369,9 @@ class Conf {
             $ps[] = is_object($p) ? $p->paperId : $p;
 
         if ($this->_save_logs === false)
-            $this->qe(self::action_log_query, [self::format_log_values($text, $who, $ps)]);
+            $this->qe(self::action_log_query, [self::format_log_values($text, $user, $dest_user, $ps)]);
         else {
-            $key = "$who|$text";
+            $key = "$user,$dest_user|$text";
             if (!isset($this->_save_logs[$key]))
                 $this->_save_logs[$key] = [];
             foreach ($ps as $p)
@@ -3373,13 +3379,13 @@ class Conf {
         }
     }
 
-    private static function format_log_values($text, $who, $pids) {
+    private static function format_log_values($text, $user, $dest_user, $pids) {
         $pid = null;
         if (count($pids) == 1)
             $pid = $pids[0];
         else if (count($pids) > 1)
             $text .= " (papers " . join(", ", $pids) . ")";
-        return [get($_SERVER, "REMOTE_ADDR"), (int) $who, $pid, substr($text, 0, 4096)];
+        return [get($_SERVER, "REMOTE_ADDR"), (int) $user, (int) $dest_user, $pid, substr($text, 0, 4096)];
     }
 
 

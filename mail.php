@@ -241,7 +241,7 @@ class MailSender {
     }
 
     private function send_prep($prep) {
-        global $Conf;
+        global $Conf, $Me;
 
         $cbkey = "c" . join("_", $prep->contacts) . "p" . $prep->paperId;
         if ($this->sending && !defval($_REQUEST, $cbkey))
@@ -254,7 +254,7 @@ class MailSender {
         if ($this->sending) {
             Mailer::send_preparation($prep);
             foreach ($prep->contacts as $cid)
-                $Conf->log("Account was sent mail" . $this->mailid_text, $cid, $prep->paperId);
+                $Conf->log_for($Me, $cid, "Sent mail" . $this->mailid_text, $prep->paperId);
         }
 
         // hide passwords from non-chair users

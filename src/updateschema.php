@@ -1187,6 +1187,19 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
             $conf->save_setting("has_topics", 1);
         $conf->update_schema_version(170);
     }
+    if ($conf->sversion == 170
+        && $conf->ql("alter table ActionLog drop key `contactId`")
+        && $conf->ql("alter table ActionLog drop key `paperId`")
+        && $conf->ql("alter table ActionLog add `destContactId` int(11) NOT NULL DEFAULT '0'"))
+        $conf->update_schema_version(171);
+    if ($conf->sversion == 171
+        && $conf->ql("CREATE TABLE `DeletedContactInfo` (
+  `contactId` int(11) NOT NULL,
+  `firstName` varchar(60) NOT NULL,
+  `lastName` varchar(60) NOT NULL,
+  `email` varchar(120) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
+        $conf->update_schema_version(172);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

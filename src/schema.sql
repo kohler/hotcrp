@@ -6,13 +6,12 @@ DROP TABLE IF EXISTS `ActionLog`;
 CREATE TABLE `ActionLog` (
   `logId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int(11) NOT NULL,
+  `destContactId` int(11) NOT NULL DEFAULT '0',
   `paperId` int(11) DEFAULT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `ipaddr` varbinary(32) DEFAULT NULL,
   `action` varbinary(4096) NOT NULL,
-  PRIMARY KEY (`logId`),
-  KEY `contactId` (`contactId`),
-  KEY `paperId` (`paperId`)
+  PRIMARY KEY (`logId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -65,6 +64,20 @@ CREATE TABLE `ContactInfo` (
   UNIQUE KEY `rolesContactId` (`roles`,`contactId`),
   UNIQUE KEY `email` (`email`),
   KEY `fullName` (`lastName`,`firstName`,`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+--
+-- Table structure for table `DeletedContactInfo`
+--
+
+DROP TABLE IF EXISTS `DeletedContactInfo`;
+CREATE TABLE `DeletedContactInfo` (
+  `contactId` int(11) NOT NULL,
+  `firstName` varchar(60) NOT NULL,
+  `lastName` varchar(60) NOT NULL,
+  `email` varchar(120) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -494,7 +507,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 170);
+insert into Settings (name, value) values ('allowPaperOption', 172);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

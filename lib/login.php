@@ -157,7 +157,7 @@ class LoginHelper {
                 $Conf->confirmMsg("A password reset link has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ". When you receive that email, follow its instructions to create a new password.");
             else if ($worked) {
                 $Conf->confirmMsg("Your password has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ".  When you receive that email, return here to sign in.");
-                $Conf->log("Sent password", $xuser);
+                $Conf->log_for($xuser, null, "Sent password");
             }
             return null;
         }

@@ -481,6 +481,8 @@ if (isset($Qreq->delete) && !Dbl::has_error() && check_post($Qreq)) {
         else if ($Acct->data("locked"))
             Conf::msg_error("This account is locked and can’t be deleted.");
         else {
+            $Conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, email=?",
+                     $Acct->contactId, $Acct->firstName, $Acct->lastName, $Acct->email);
             foreach (array("ContactInfo",
                            "PaperComment", "PaperConflict", "PaperReview",
                            "PaperReviewPreference", "PaperReviewRefused",

@@ -1537,8 +1537,16 @@ img.bm {
 	vertical-align: top;
 }
 .pcrole {
+	display: inline-block;
+	font-size: 69%;
+	line-height: 1;
+	padding: 2px 0.3em 2px;
+	background-color: #cccccc;
+	border-radius: 0.3em;
+	bottom: 1px;
+	position: relative;
+	white-space: nowrap;
 	font-weight: bold;
-	font-size: smaller;
 }
 table.setreviewform th {
 	border-bottom: 1px solid #999999;

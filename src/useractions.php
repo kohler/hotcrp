@@ -31,7 +31,7 @@ class UserActions {
         else {
             $Conf->save_logs(true);
             foreach ($enabled_cids as $cid)
-                $Conf->log("Account disabled by $contact->email", $cid);
+                $Conf->log_for($contact, $cid, "Account disabled");
             $Conf->save_logs(false);
             return (object) ["ok" => true];
         }
@@ -51,7 +51,7 @@ class UserActions {
         else {
             $Conf->save_logs(true);
             foreach ($disabled_cids as $cid)
-                $Conf->log("Account enabled by $contact->email", $cid);
+                $Conf->log_for($contact, $cid, "Account enabled");
             $Conf->save_logs(false);
             return self::modify_password_mail("password='' and contactId!=" . $contact->contactId, true, "create", $disabled_cids);
         }
