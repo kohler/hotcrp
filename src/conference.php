@@ -3334,10 +3334,10 @@ class Conf {
 
                 // Combine `Tag:` messages
                 if (substr($what, 0, 5) === "Tag: "
-                    && ($n = count($qv))
-                    && substr($qv[$n-1][3], 0, 5) === "Tag: "
+                    && ($n = count($qv)) > 0
+                    && substr($qv[$n-1][4], 0, 5) === "Tag: "
                     && $last_pids === $pids) {
-                    $qv[$n-1][3] = $what . substr($qv[$n-1][3], 4);
+                    $qv[$n-1][4] = $what . substr($qv[$n-1][4], 4);
                     continue;
                 }
 
