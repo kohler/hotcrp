@@ -2392,14 +2392,16 @@ div.pst span.hint {
 	position: relative;
 }
 .fold6c .paperinfo-cl {
-	overflow-y: hidden;
-	height: 13ex;
+	height: 6.5em;
+}
+.fold6c .paperinfo-abstract {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
 }
 .abstract {
 	padding-right: 1.5em;
-}
-.fold6c .abstract {
-	position: absolute;
 }
 .pavt {
 	margin: 0 -5px;
