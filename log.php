@@ -417,15 +417,26 @@ foreach ($visible_rows as $row) {
     // } else
     //     $t .= "[None]";
 
-    if (preg_match('/\AReview (\d+)(.*)\z/s', $act, $m)) {
+    if (substr($act, 0, 6) === "Review"
+        && preg_match('/\AReview (\d+)(.*)\z/s', $act, $m)) {
         $at = "<a href=\"" . hoturl("review", "r=$m[1]") . "\">Review " . $m[1] . "</a>";
         $act = $m[2];
-    } else if (preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {
+    } else if (substr($act, 0, 7) === "Comment"
+               && preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {
         $at = "<a href=\"" . hoturl("paper", "p=$row->paperId") . "\">Comment " . $m[1] . "</a>";
         $act = $m[2];
-    } else if (preg_match('/\A(Sending|Sent|Account was sent) mail #(\d+)(.*)\z/s', $act, $m)) {
+    } else if (strpos($act, " mail ") !== false
+               && preg_match('/\A(Sending|Sent|Account was sent) mail #(\d+)(.*)\z/s', $act, $m)) {
         $at = $m[1] . " <a href=\"" . hoturl("mail", "fromlog=$m[2]") . "\">mail #$m[2]</a>";
         $act = $m[3];
+    } else if (substr($act, 0, 5) === "Tag: ") {
+        $at = "Tag: ";
+        $act = substr($act, 5);
+        while (preg_match('/\A([-+])#([^\s#]*)(#[-+\d.]+ ?| ?)(.*)\z/s', $act, $m)) {
+            $at .= $m[1] . "<a href=\"" . hoturl("search", "q=%23" . urlencode($m[2])) . "\">#"
+                . htmlspecialchars($m[2]) . "</a>" . htmlspecialchars($m[3]);
+            $act = $m[4];
+        }
     } else
         $at = "";
     if (preg_match('/\A(.*) \(papers ([\d, ]+)\)?\z/', $act, $m)) {
