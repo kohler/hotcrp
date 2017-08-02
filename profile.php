@@ -481,8 +481,7 @@ if (isset($Qreq->delete) && !Dbl::has_error() && check_post($Qreq)) {
         else if ($Acct->data("locked"))
             Conf::msg_error("This account is locked and can’t be deleted.");
         else {
-            $Conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, email=?",
-                     $Acct->contactId, $Acct->firstName, $Acct->lastName, $Acct->email);
+            $Conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?", $Acct->contactId, $Acct->firstName, $Acct->lastName, $Acct->unaccentedName, $Acct->email);
             foreach (array("ContactInfo",
                            "PaperComment", "PaperConflict", "PaperReview",
                            "PaperReviewPreference", "PaperReviewRefused",
@@ -498,7 +497,7 @@ if (isset($Qreq->delete) && !Dbl::has_error() && check_post($Qreq)) {
                 $Conf->invalidate_caches(["pc" => 1]);
             // done
             $Conf->confirmMsg("Permanently deleted account " . htmlspecialchars($Acct->email) . ".");
-            $Me->log_activity("Permanently deleted account " . htmlspecialchars($Acct->email) . " ($Acct->contactId)");
+            $Me->log_activity_for($Acct, "Permanently deleted account " . htmlspecialchars($Acct->email));
             go(hoturl("users", "t=all"));
         }
     }

@@ -77,6 +77,7 @@ CREATE TABLE `DeletedContactInfo` (
   `contactId` int(11) NOT NULL,
   `firstName` varchar(60) NOT NULL,
   `lastName` varchar(60) NOT NULL,
+  `unaccentedName` varchar(120) NOT NULL,
   `email` varchar(120) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -507,7 +508,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 172);
+insert into Settings (name, value) values ('allowPaperOption', 173);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

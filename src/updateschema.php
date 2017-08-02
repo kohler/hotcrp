@@ -1200,6 +1200,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
   `email` varchar(120) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
         $conf->update_schema_version(172);
+    if ($conf->sversion == 172
+        && $conf->ql("alter table DeletedContactInfo add `unaccentedName` varchar(120) NOT NULL DEFAULT ''")
+        && $conf->ql("alter table DeletedContactInfo change `unaccentedName` `unaccentedName` varchar(120) NOT NULL"))
+        $conf->update_schema_version(173);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

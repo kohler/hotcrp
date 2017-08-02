@@ -61,7 +61,7 @@ if ($_REQUEST["acct"]) {
     $ids = array();
     $accts = $_REQUEST["acct"];
     while (($word = PaperSearch::pop_word($accts, $Conf))) {
-        $flags = ContactSearch::F_TAG | ContactSearch::F_USER;
+        $flags = ContactSearch::F_TAG | ContactSearch::F_USER | ContactSearch::F_ALLOW_DELETED;
         if (substr($word, 0, 1) === "\"") {
             $flags |= ContactSearch::F_QUOTED;
             $word = preg_replace(',(?:\A"|"\z),', "", $word);
@@ -72,9 +72,10 @@ if ($_REQUEST["acct"]) {
     }
     $where = array();
     if (count($ids)) {
-        $result = Dbl::qe("select contactId, email from ContactInfo where contactId ?a", $ids);
+        $result = $Conf->qe("select contactId, email from ContactInfo where contactId?a union select contactId, email from DeletedContactInfo where contactId?a", $ids, $ids);
         while (($row = edb_row($result))) {
             $where[] = "contactId=$row[0]";
+            $where[] = "destContactId=$row[0]";
             $where[] = "action like " . Dbl::utf8ci("'% " . sqlq_for_like($row[1]) . "%'");
         }
     }
@@ -169,8 +170,8 @@ function searchbar() {
 
 
 $query = "select logId, unix_timestamp(time) as timestamp, "
-    . " ipaddr, contactId, action, firstName, lastName, email, paperId "
-    . " from ActionLog left join ContactInfo using (contactId)";
+    . " ipaddr, contactId, destContactId, action, paperId "
+    . " from ActionLog";
 if (count($wheres))
     $query .= " where " . join(" and ", $wheres);
 $query .= " order by logId desc";
@@ -186,94 +187,153 @@ if ($firstDate || $page === false)
     $maxNrows = $nrows;
 
 $n = 0;
-$trs = array();
+$visible_rows = [];
+$unknown_cids = [];
+$users = $Conf->pc_members_and_admins();
 while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     if ($firstDate && $row->timestamp > $firstDate) {
         $start++;
         $nrows--;
-        continue;
     } else if ($page === false && ($n % $count != 0 || $n + $count < $nrows)) {
         $n++;
-        continue;
-    } else if ($page === false) {
-        $start = $n;
-        $page = ($n / $count) + 1;
-        $nrows -= $n;
-        $maxNrows -= $n - 1;
-        $n = 0;
-    }
-
-    $n++;
-    if ($n == 1) {
-        if ($start != 0 && !$firstDate)
-            $_REQUEST["date"] = $Conf->unparse_time_short($row->timestamp);
-        else if ($firstDate) {
-            $offset = $start % $count;
-            $page = (int) ($start / $count) + ($offset ? 2 : 1);
-            $nrows = min($nlinks * $count + 1, $nrows);
-            $maxNrows = min($nlinks * $count + 1, $maxNrows);
+    } else {
+        if ($page === false) {
+            $start = $n;
+            $page = ($n / $count) + 1;
+            $nrows -= $n;
+            $maxNrows -= $n - 1;
+            $n = 0;
         }
-    }
 
-    $act = $row->action;
-    $t = "<td class='pl pl_time'>" . $Conf->unparse_time_short($row->timestamp) . "</td>"
-        . "<td class='pl pl_ip'>" . htmlspecialchars($row->ipaddr) . "</td>"
-        . "<td class='pl pl_name'>";
-    if ($row->email) {
-        $t .= "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email)) . "\">"
-            . Text::user_html_nolink($row) . "</a>";
-        if ($row->contactId !== $Me->contactId)
-            $t .= "&nbsp;" . actas_link($row);
-    } else if ($row->firstName || $row->lastName)
-        $t .= Text::user_html_nolink($row);
-    else if ($row->contactId)
-        $t .= "[Deleted account $row->contactId]";
+        $n++;
+        if ($n == 1) {
+            if ($start != 0 && !$firstDate)
+                $_REQUEST["date"] = $Conf->unparse_time_short($row->timestamp);
+            else if ($firstDate) {
+                $offset = $start % $count;
+                $page = (int) ($start / $count) + ($offset ? 2 : 1);
+                $nrows = min($nlinks * $count + 1, $nrows);
+                $maxNrows = min($nlinks * $count + 1, $maxNrows);
+            }
+        }
+
+        $visible_rows[] = $row;
+        if ($row->contactId && !isset($users[$row->contactId]))
+            $unknown_cids[$row->contactId] = true;
+        if ($row->destContactId && !isset($users[$row->destContactId]))
+            $unknown_cids[$row->destContactId] = true;
+    }
+}
+Dbl::free($result);
+
+// load unknown users
+if (!empty($unknown_cids)) {
+    $result = $Conf->qe("select contactId, firstName, lastName, email, roles from ContactInfo where contactId?a", array_keys($unknown_cids));
+    while (($user = Contact::fetch($result, $Conf))) {
+        $users[$user->contactId] = $user;
+        unset($unknown_cids[$user->contactId]);
+    }
+    Dbl::free($result);
+    if (!empty($unknown_cids)) {
+        foreach ($unknown_cids as $cid => $x) {
+            $user = $users[$cid] = new Contact(["contactId" => $cid, "disabled" => true]);
+            $user->disabled = "deleted";
+        }
+        $result = $Conf->qe("select contactId, firstName, lastName, email, 1 disabled from DeletedContactInfo where contactId?a", array_keys($unknown_cids));
+        while (($user = Contact::fetch($result, $Conf))) {
+            $users[$user->contactId] = $user;
+            $user->disabled = "deleted";
+        }
+        Dbl::free($result);
+    }
+}
+
+// render rows
+function render_user(Contact $user = null) {
+    global $Me;
+    if (!$user)
+        return "";
+    else if (!$user->email && $user->disabled === "deleted")
+        return '<del>' . $user->contactId . '</del>';
     else {
-        if (preg_match(',\A(.*)<([^>]*@[^>]*)>\s*(.*)\z,', $act, $m)) {
-            $t .= htmlspecialchars($m[2]);
-            $act = $m[1] . $m[3];
-        } else
-            $t .= "[None]";
+        $t = $Me->reviewer_html_for($user);
+        if ($user->disabled === "deleted")
+            $t = "<del>" . $t . " &lt;" . htmlspecialchars($user->email) . "&gt;</del>";
+        else {
+            $t = '<a href="' . hoturl("profile", "u=" . urlencode($user->email)) . '">' . $t . '</a>';
+            if (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE))
+                $t .= ' &lt;' . htmlspecialchars($user->email) . '&gt;';
+            if (isset($user->roles) && ($rolet = $user->role_html()))
+                $t .= " $rolet";
+        }
+        return $t;
     }
-    $t .= "</td><td class=\"pl pl_act\">";
+}
 
-    if (preg_match('/^Review (\d+)/', $act, $m)) {
-        $t .= "<a href=\"" . hoturl("review", "r=$m[1]") . "\">Review " . $m[1] . "</a>";
-        $act = substr($act, strlen($m[0]));
-    } else if (preg_match('/^Comment (\d+)/', $act, $m)) {
-        $t .= "<a href=\"" . hoturl("paper", "p=$row->paperId") . "\">Comment " . $m[1] . "</a>";
-        $act = substr($act, strlen($m[0]));
-    } else if (preg_match('/^(Sending|Account was sent) mail #(\d+)/', $act, $m)) {
-        $t .= $m[1] . " <a href=\"" . hoturl("mail", "fromlog=$m[2]") . "\">mail #$m[2]</a>";
-        $act = substr($act, strlen($m[0]));
-    }
-    if (preg_match('/ \(papers ([\d, ]+)\)?$/', $act, $m)) {
-        $t .= htmlspecialchars(substr($act, 0, strlen($act) - strlen($m[0])))
-            . " (<a href=\"" . hoturl("search", "t=all&amp;q=" . preg_replace('/[\s,]+/', "+", $m[1]))
+$trs = [];
+$has_dest_user = false;
+foreach ($visible_rows as $row) {
+    $act = $row->action;
+
+    $t = ['<td class="pl pl_time">' . $Conf->unparse_time_short($row->timestamp) . '</td>'];
+    $t[] = '<td class="pl pl_ip">' . htmlspecialchars($row->ipaddr) . '</td>';
+
+    $user = $row->contactId ? get($users, $row->contactId) : null;
+    $dest_user = $row->destContactId ? get($users, $row->destContactId) : null;
+    if (!$user && $dest_user)
+        $user = $dest_user;
+
+    $t[] = '<td class="pl pl_name">' . render_user($user) . '</td>';
+    if ($dest_user && $user !== $dest_user) {
+        $t[] = '<td class="pl pl_name">' . render_user($dest_user) . '</td>';
+        $has_dest_user = true;
+    } else
+        $t[] = '<td></td>';
+
+    // XXX users that aren't in contactId slot
+    // if (preg_match(',\A(.*)<([^>]*@[^>]*)>\s*(.*)\z,', $act, $m)) {
+    //     $t .= htmlspecialchars($m[2]);
+    //     $act = $m[1] . $m[3];
+    // } else
+    //     $t .= "[None]";
+
+    if (preg_match('/\AReview (\d+)(.*)\z/s', $act, $m)) {
+        $at = "<a href=\"" . hoturl("review", "r=$m[1]") . "\">Review " . $m[1] . "</a>";
+        $act = $m[2];
+    } else if (preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {
+        $at = "<a href=\"" . hoturl("paper", "p=$row->paperId") . "\">Comment " . $m[1] . "</a>";
+        $act = $m[2];
+    } else if (preg_match('/\A(Sending|Sent|Account was sent) mail #(\d+)(.*)\z/s', $act, $m)) {
+        $at = $m[1] . " <a href=\"" . hoturl("mail", "fromlog=$m[2]") . "\">mail #$m[2]</a>";
+        $act = $m[3];
+    } else
+        $at = "";
+    if (preg_match('/\A(.*) \(papers ([\d, ]+)\)?\z/', $act, $m)) {
+        $at .= htmlspecialchars($m[1])
+            . " (<a href=\"" . hoturl("search", "t=all&amp;q=" . preg_replace('/[\s,]+/', "+", $m[2]))
             . "\">papers</a> "
-            . preg_replace('/(\d+)/', "<a href=\"" . hoturl("paper", "p=\$1") . "\">\$1</a>", $m[1])
+            . preg_replace('/(\d+)/', "<a href=\"" . hoturl("paper", "p=\$1") . "\">\$1</a>", $m[2])
             . ")";
     } else
-        $t .= htmlspecialchars($act);
-
+        $at .= htmlspecialchars($act);
     if ($row->paperId)
-        $t .= " (paper <a href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">" . htmlspecialchars($row->paperId) . "</a>)";
-    $trs[] = $t . "</td>";
+        $at .= " (paper <a href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">" . htmlspecialchars($row->paperId) . "</a>)";
+    $t[] = '<td class="pl pl_act">' . $at . '</td>';
+    $trs[] = '    <tr class="k' . (count($trs) % 2) . '">' . join("", $t) . "</tr>\n";
 }
 
 searchbar();
-if (count($trs)) {
-    echo "<table class='pltable pltable_full'>
-  <thead><tr class='pl_headrow'>
-    <th class='pll pl_time'>Time</th>
-    <th class='pll pl_ip'>IP</th>
-    <th class='pll pl_name'>Account</th>
-    <th class='pll pl_act'>Action</th>
-  </tr></thead>
-  <tbody class='pltable'>\n";
-    for ($i = 0; $i < count($trs); ++$i)
-        echo "    <tr class='k", $i % 2, " pl'>", $trs[$i], "</tr>\n";
-    echo "</tbody></table>\n";
+if (!empty($trs)) {
+    echo '<table class="pltable pltable_full">
+  <thead><tr class="pl_headrow"><th class="pll pl_time">Time</th><th class="pll pl_ip">IP</th><th class="pll pl_name">User</th>';
+    if ($has_dest_user)
+        echo '<th class="pll pl_name">Affected user</th>';
+    else
+        echo '<th></th>';
+    echo '<th class="pll pl_act">Action</th></tr></thead>',
+        "\n  <tbody class=\"pltable\">\n",
+        join("", $trs),
+        "  </tbody>\n</table>\n";
 } else
     echo "No records\n";
 

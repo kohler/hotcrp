@@ -1524,8 +1524,10 @@ img.bm {
 }
 .pl_lastvisit, .pl_time {
 	padding-right: 1.25em;
-	font-size: smaller;
 	white-space: nowrap;
+}
+td.pl_lastvisit, td.pl_time {
+	font-size: smaller;
 }
 .pl_name {
 	white-space: nowrap;

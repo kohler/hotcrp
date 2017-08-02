@@ -185,8 +185,6 @@ class Contact {
             $this->has_outstanding_review_ = $user->has_outstanding_review;
         if (isset($user->is_site_contact))
             $this->is_site_contact = $user->is_site_contact;
-        if (isset($user->is_deleted))
-            $this->is_deleted = $user->is_deleted;
     }
 
     private function db_load() {

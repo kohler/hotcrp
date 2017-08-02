@@ -8,6 +8,7 @@ class ContactSearch {
     const F_PC = 2;
     const F_USER = 4;
     const F_TAG = 8;
+    const F_ALLOW_DELETED = 16;
 
     public $conf;
     public $type;
@@ -131,16 +132,19 @@ class ContactSearch {
         else if ($this->type & self::F_PC)
             $cs = $this->conf->pc_members();
         else {
-            $q = array();
+            $where = array();
             if ($n !== "") {
                 $x = sqlq_for_like(UnicodeHelper::deaccent($n));
-                $q[] = "unaccentedName like '%" . preg_replace('/[\s*]+/', "%", $x) . "%'";
+                $where[] = "unaccentedName like '%" . preg_replace('/[\s*]+/', "%", $x) . "%'";
             }
             if ($e !== "") {
                 $x = sqlq_for_like($e);
-                $q[] = "email like '" . preg_replace('/[\s*]+/', "%", $x) . "'";
+                $where[] = "email like '" . preg_replace('/[\s*]+/', "%", $x) . "'";
             }
-            $result = $this->conf->qe_raw("select firstName, lastName, unaccentedName, email, contactId, roles from ContactInfo where " . join(" or ", $q));
+            $q = "select contactId, firstName, lastName, unaccentedName, email, roles from ContactInfo where " . join(" or ", $where);
+            if ($this->type & self::F_ALLOW_DELETED)
+                $q .= " union select contactId, firstName, lastName, unaccentedName, email, 0 roles from DeletedContactInfo where " . join(" or ", $where);
+            $result = $this->conf->qe_raw($q);
             $cs = array();
             while ($result && ($row = Contact::fetch($result)))
                 $cs[$row->contactId] = $row;
