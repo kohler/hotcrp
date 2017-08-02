@@ -374,7 +374,7 @@ function render_user(Contact $user = null) {
     if (!$user)
         return "";
     else if (!$user->email && $user->disabled === "deleted")
-        return '<del>' . $user->contactId . '</del>';
+        return '<del>[deleted user ' . $user->contactId . ']</del>';
     else {
         $t = $Me->reviewer_html_for($user);
         if ($user->disabled === "deleted")
