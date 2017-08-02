@@ -9,20 +9,19 @@ if (!$Me->privChair)
 
 list($DEFAULT_COUNT, $MAX_COUNT) = array(50, 200);
 
-if (defval($_REQUEST, "page", "") == "earliest")
+$page = req("page");
+if ($page === "earliest")
     $page = false;
-else if (($page = cvtint(@$_REQUEST["page"], -1)) <= 0)
-    $page = 1;
+else {
+    $page = cvtint($page, -1);
+    if ($page <= 0)
+        $page = 1;
+}
+
 if (($count = cvtint(@$_REQUEST["n"], -1)) <= 0)
     $count = $DEFAULT_COUNT;
 $count = min($count, $MAX_COUNT);
-if (($offset = cvtint(@$_REQUEST["offset"], -1)) < 0 || $offset >= $count)
-    $offset = 0;
-if ($offset == 0 || $page == 1) {
-    $start = ($page - 1) * $count;
-    $offset = 0;
-} else
-    $start = ($page - 2) * $count + $offset;
+
 $nlinks = 4;
 
 $Conf->header("Log", "actionlog", actionBar());
@@ -106,14 +105,68 @@ if (($count = cvtint(@$_REQUEST["n"])) <= 0) {
 $firstDate = false;
 if ($_REQUEST["date"] == "")
     $_REQUEST["date"] = "now";
-if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
-    if (($firstDate = $Conf->parse_time($_REQUEST["date"])) === false) {
+if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"])) {
+    $firstDate = $Conf->parse_time($_REQUEST["date"]);
+    if ($firstDate === false) {
         Conf::msg_error("“" . htmlspecialchars($_REQUEST["date"]) . "” is not a valid date.");
         $Eclass["date"] = " error";
+    } else if ($firstDate)
+        $wheres[] = "time<=from_unixtime($firstDate)";
+}
+
+class LogRowGenerator {
+    private $conf;
+    private $wheres;
+    private $page_size;
+    private $lower_offset_bound = 0;
+    private $upper_offset_bound = INF;
+    private $rows_offset;
+    private $rows;
+
+    function __construct(Conf $conf, $wheres, $page_size) {
+        $this->conf = $conf;
+        $this->wheres = $wheres;
+        $this->page_size = $page_size;
     }
 
-function searchbar() {
-    global $Conf, $Eclass, $page, $start, $count, $nrows, $maxNrows, $nlinks, $offset;
+    private function load_rows($offset, $limit) {
+        $q = "select logId, unix_timestamp(time) timestamp, ipaddr, contactId, destContactId, action, paperId from ActionLog";
+        if (!empty($this->wheres))
+            $q .= " where " . join(" and ", $this->wheres);
+        $result = $this->conf->qe_raw($q . " order by logId desc limit $offset,$limit");
+        $this->rows = [];
+        $this->rows_offset = $offset;
+        while ($result && ($row = $result->fetch_object()))
+            $this->rows[] = $row;
+        if (!empty($this->rows))
+            $this->lower_offset_bound = max($this->lower_offset_bound, $this->rows_offset + count($this->rows));
+        if (count($this->rows) < $limit)
+            $this->upper_offset_bound = min($this->upper_offset_bound, $this->rows_offset + count($this->rows));
+        Dbl::free($result);
+    }
+
+    function has_page($pageno, $load_npages = null) {
+        global $nlinks;
+        assert(is_int($pageno) && $pageno >= 1);
+        $offset = ($pageno - 1) * $this->page_size;
+        if ($offset >= $this->lower_offset_bound && $offset < $this->upper_offset_bound) {
+            $limit = $load_npages ? $load_npages * $this->page_size : ($nlinks + 1) * $this->page_size + 1;
+            $this->load_rows($offset, $limit);
+        }
+        return $offset < $this->lower_offset_bound;
+    }
+
+    function page_rows($pageno) {
+        if ($this->has_page($pageno)) {
+            $offset = ($pageno - 1) * $this->page_size;
+            return array_slice($this->rows, $offset - $this->rows_offset, $this->page_size);
+        } else
+            return [];
+    }
+}
+
+function searchbar(LogRowGenerator $lrg, $page, $count) {
+    global $Conf, $Eclass, $nlinks;
 
     echo Ht::form_div(hoturl("log"), array("method" => "get")), "<table id='searchform'><tr>
   <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
@@ -133,10 +186,9 @@ function searchbar() {
   <td class='lentry", $Eclass['date'], "'><input type='text' size='40' name='date' value=\"", htmlspecialchars($_REQUEST["date"]), "\" /></td>
 </tr></table></div></form>";
 
-    if ($nrows > $count || $page > 1) {
+    if ($page > 1 || $lrg->has_page(2)) {
         $urls = array();
-        $_REQUEST["offset"] = $offset;
-        foreach (array("q", "pap", "acct", "n", "offset") as $x)
+        foreach (array("q", "pap", "acct", "n") as $x)
             if ($_REQUEST[$x])
                 $urls[] = "$x=" . urlencode($_REQUEST[$x]);
         $url = hoturl("log", join("&amp;", $urls));
@@ -149,82 +201,41 @@ function searchbar() {
         echo "</div></td><td><div class='lognavdr'>";
         if ($page - $nlinks > 1)
             echo "&nbsp;...";
-        for ($p = max($page - $nlinks - 1, 0); $p + 1 < $page; $p++)
-            echo "&nbsp;<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>";
+        for ($p = max($page - $nlinks, 1); $p < $page; ++$p)
+            echo "&nbsp;<a href='$url&amp;page=", $p, "'>", $p, "</a>";
         echo "</div></td><td><div><strong class='thispage'>&nbsp;", $page, "&nbsp;</strong></div></td><td><div class='lognavd'>";
-        $o = ($offset ? $offset - $count : 0);
-        for ($p = $page; $p * $count + $o < $start + min($nlinks * $count + 1, $nrows); $p++)
-            echo "<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>&nbsp;";
-        if ($nrows == $maxNrows)
+        for ($p = $page + 1; $p <= $page + $nlinks && $lrg->has_page($p); ++$p)
+            echo "<a href='$url&amp;page=", $p, "'>", $p, "</a>&nbsp;";
+        if ($lrg->has_page($page + $nlinks + 1))
             echo "...&nbsp;";
         echo "</div></td><td><div class='lognavx'>";
-        if ($nrows > $count)
+        if ($lrg->has_page($page + 1))
             echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Older ", Ht::img("_.gif", "->", array("class" => "next")), "</strong></a>";
         echo "</div></td><td><div class='lognavd'>";
-        if ($nrows > $count)
+        if ($lrg->has_page($page + $nlinks + 1))
             echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";
         echo "</div></td></tr></table>";
     }
     echo "<div class='g'></div>\n";
 }
 
+$lrg = new LogRowGenerator($Conf, $wheres, $count);
 
-$query = "select logId, unix_timestamp(time) as timestamp, "
-    . " ipaddr, contactId, destContactId, action, paperId "
-    . " from ActionLog";
-if (count($wheres))
-    $query .= " where " . join(" and ", $wheres);
-$query .= " order by logId desc";
-if (!$firstDate && $page !== false) {
-    $maxNrows = $nlinks * $count + 1;
-    $query .= " limit $start,$maxNrows";
+if ($page === false) { // handle `earliest`
+    $page = 1;
+    while ($lrg->has_page($page + 1, ceil(2000 / $count)))
+        ++$page;
 }
 
-//$Conf->infoMsg(nl2br(htmlspecialchars($query)));
-$result = $Conf->qe_raw($query);
-$nrows = edb_nrows($result);
-if ($firstDate || $page === false)
-    $maxNrows = $nrows;
-
-$n = 0;
-$visible_rows = [];
+$visible_rows = $lrg->page_rows($page);
 $unknown_cids = [];
 $users = $Conf->pc_members_and_admins();
-while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
-    if ($firstDate && $row->timestamp > $firstDate) {
-        $start++;
-        $nrows--;
-    } else if ($page === false && ($n % $count != 0 || $n + $count < $nrows)) {
-        $n++;
-    } else {
-        if ($page === false) {
-            $start = $n;
-            $page = ($n / $count) + 1;
-            $nrows -= $n;
-            $maxNrows -= $n - 1;
-            $n = 0;
-        }
-
-        $n++;
-        if ($n == 1) {
-            if ($start != 0 && !$firstDate)
-                $_REQUEST["date"] = $Conf->unparse_time_short($row->timestamp);
-            else if ($firstDate) {
-                $offset = $start % $count;
-                $page = (int) ($start / $count) + ($offset ? 2 : 1);
-                $nrows = min($nlinks * $count + 1, $nrows);
-                $maxNrows = min($nlinks * $count + 1, $maxNrows);
-            }
-        }
-
-        $visible_rows[] = $row;
-        if ($row->contactId && !isset($users[$row->contactId]))
-            $unknown_cids[$row->contactId] = true;
-        if ($row->destContactId && !isset($users[$row->destContactId]))
-            $unknown_cids[$row->destContactId] = true;
-    }
+foreach ($visible_rows as $row) {
+    if ($row->contactId && !isset($users[$row->contactId]))
+        $unknown_cids[$row->contactId] = true;
+    if ($row->destContactId && !isset($users[$row->destContactId]))
+        $unknown_cids[$row->destContactId] = true;
 }
-Dbl::free($result);
 
 // load unknown users
 if (!empty($unknown_cids)) {
@@ -322,7 +333,7 @@ foreach ($visible_rows as $row) {
     $trs[] = '    <tr class="k' . (count($trs) % 2) . '">' . join("", $t) . "</tr>\n";
 }
 
-searchbar();
+searchbar($lrg, $page, $count);
 if (!empty($trs)) {
     echo '<table class="pltable pltable_full">
   <thead><tr class="pl_headrow"><th class="pll pl_time">Time</th><th class="pll pl_ip">IP</th><th class="pll pl_name">User</th>';
