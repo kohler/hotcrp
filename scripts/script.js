@@ -1931,8 +1931,12 @@ function focus_at(felt) {
     if (!felt.hotcrp_ever_focused) {
         if (felt.select && $(felt).hasClass("want-select"))
             felt.select();
-        else if (felt.getAttribute("type") != "file" && felt.setSelectionRange)
-            felt.setSelectionRange(felt.value.length, felt.value.length);
+        else if (felt.setSelectionRange) {
+            try {
+                felt.setSelectionRange(felt.value.length, felt.value.length);
+            } catch (e) { // ignore errors
+            }
+        }
         felt.hotcrp_ever_focused = true;
     }
 }
