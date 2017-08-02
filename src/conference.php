@@ -2260,6 +2260,7 @@ class Conf {
         //   "myReviews"        All reviews authored by $contactId
         //   "myOutstandingReviews" All unsubmitted reviews auth by $contactId
         //   "myReviewsOpt"     myReviews, + include papers not yet reviewed
+        //   "myConflicts"      Only conflicted papers
         //   "reviewJoinSql"    All matching reviews (multiple rows per paper)
         //   "reviewerName"     Include reviewer names
         //   "commenterName"    Include commenter names
@@ -2467,6 +2468,10 @@ class Conf {
             $where[] = "leadContactId=$contactId";
         if (get($options, "unmanaged"))
             $where[] = "managerContactId=0";
+        if (get($options, "myManaged"))
+            $where[] = "managerContactId=$contactId";
+        if (get($options, "myConflicts"))
+            $where[] = "PaperConflict.conflictType>0";
 
         $pq = "select " . join(",\n    ", $cols)
             . "\nfrom " . join("\n    ", $joins);

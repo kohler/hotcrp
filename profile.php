@@ -663,11 +663,14 @@ echo '<div id="foldaccount" class="aahc profiletext', ($need_highlight ? " alert
     ($Qreq->bulkregister ? "o" : "c"), "\">\n";
 
 echo '<div class="f-contain">', "\n\n";
+$actas = "";
+if ($Acct !== $Me && $Me->privChair)
+    $actas = '&nbsp;' . actas_link($Acct);
 if (!$Conf->external_login())
     echofield(0, "uemail", "Email",
-              Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus", "size" => 52]));
+              Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus", "size" => 52]) . $actas);
 else if (!$newProfile) {
-    echofield(0, "uemail", "Username", htmlspecialchars(contact_value("uemail", "email")));
+    echofield(0, "uemail", "Username", htmlspecialchars(contact_value("uemail", "email")) . $actas);
     echofield(0, "preferredEmail", "Email",
               Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "want-focus", "size" => 52]));
 } else {

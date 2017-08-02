@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
-if (!$Me->privChair)
+if (!$Me->is_manager())
     $Me->escape();
 
 list($DEFAULT_COUNT, $MAX_COUNT) = array(50, 200);
@@ -27,28 +27,30 @@ $nlinks = 4;
 $Conf->header("Log", "actionlog", actionBar());
 
 $wheres = array();
-$Eclass["q"] = $Eclass["pap"] = $Eclass["acct"] = $Eclass["n"] = $Eclass["date"] = "";
+$Eclass["q"] = $Eclass["p"] = $Eclass["acct"] = $Eclass["n"] = $Eclass["date"] = "";
 
 $_REQUEST["q"] = trim(defval($_REQUEST, "q", ""));
-$_REQUEST["pap"] = trim(defval($_REQUEST, "pap", ""));
+$_REQUEST["p"] = trim(defval($_REQUEST, "p", ""));
 $_REQUEST["acct"] = trim(defval($_REQUEST, "acct", ""));
 $_REQUEST["n"] = trim(defval($_REQUEST, "n", "$DEFAULT_COUNT"));
 $_REQUEST["date"] = trim(defval($_REQUEST, "date", "now"));
 
-if ($_REQUEST["pap"]) {
-    $Search = new PaperSearch($Me, array("t" => "all", "q" => $_REQUEST["pap"],
+$include_pids = null;
+if ($_REQUEST["p"]) {
+    $Search = new PaperSearch($Me, array("t" => "all", "q" => $_REQUEST["p"],
                                          "allow_deleted" => true));
     if (count($Search->warnings))
         $Conf->warnMsg(join("<br />\n", $Search->warnings));
-    $pl = $Search->paperList();
-    if (count($pl)) {
+    $include_pids = $Search->paperList();
+    if (!empty($include_pids)) {
         $where = array();
-        foreach ($pl as $p) {
+        foreach ($include_pids as $p) {
             $where[] = "paperId=$p";
             $where[] = "action like '%(papers% $p,%'";
             $where[] = "action like '%(papers% $p)%'";
         }
         $wheres[] = "(" . join(" or ", $where) . ")";
+        $include_pids = array_flip($include_pids);
     } else {
         if (!count($Search->warnings))
             $Conf->warnMsg("No papers match that search.");
@@ -121,7 +123,10 @@ class LogRowGenerator {
     private $lower_offset_bound = 0;
     private $upper_offset_bound = INF;
     private $rows_offset;
+    private $rows_limit;
     private $rows;
+    private $filter;
+    private $page_to_offset;
 
     function __construct(Conf $conf, $wheres, $page_size) {
         $this->conf = $conf;
@@ -129,20 +134,56 @@ class LogRowGenerator {
         $this->page_size = $page_size;
     }
 
-    private function load_rows($offset, $limit) {
+    function has_filter() {
+        return !!$this->filter;
+    }
+
+    function set_filter($filter) {
+        $this->filter = $filter;
+        $this->rows = null;
+        $this->lower_offset_bound = 0;
+        $this->upper_offset_bound = INF;
+        $this->page_to_offset = [];
+    }
+
+    private function load_rows($pageno, $limit) {
         $q = "select logId, unix_timestamp(time) timestamp, ipaddr, contactId, destContactId, action, paperId from ActionLog";
         if (!empty($this->wheres))
             $q .= " where " . join(" and ", $this->wheres);
-        $result = $this->conf->qe_raw($q . " order by logId desc limit $offset,$limit");
+        $offset = ($pageno - 1) * $this->page_size;
+        $db_offset = $offset;
+        if ($this->filter && $db_offset !== 0) {
+            if (!isset($this->page_to_offset[$pageno]))
+                $this->load_rows(max($pageno - 4, 1), 4 * $this->page_size + 1);
+            $db_offset = $this->page_to_offset[$pageno];
+        }
+
         $this->rows = [];
         $this->rows_offset = $offset;
-        while ($result && ($row = $result->fetch_object()))
-            $this->rows[] = $row;
-        if (!empty($this->rows))
-            $this->lower_offset_bound = max($this->lower_offset_bound, $this->rows_offset + count($this->rows));
-        if (count($this->rows) < $limit)
-            $this->upper_offset_bound = min($this->upper_offset_bound, $this->rows_offset + count($this->rows));
-        Dbl::free($result);
+        $this->rows_limit = $limit;
+        $n = 0;
+        while ($n < $limit) {
+            $result = $this->conf->qe_raw($q . " order by logId desc limit $db_offset,$limit");
+            $first_db_offset = $db_offset;
+            while ($result && ($row = $result->fetch_object())) {
+                ++$db_offset;
+                if (!$this->filter || call_user_func($this->filter, $row)) {
+                    $this->rows[] = $row;
+                    ++$n;
+                    if ($this->filter && $n % $this->page_size === 0)
+                        $this->page_to_offset[$pageno + ($n / $this->page_size)] = $db_offset;
+                }
+            }
+            Dbl::free($result);
+
+            if ($first_db_offset + $limit !== $db_offset)
+                break;
+        }
+
+        if ($n > 0)
+            $this->lower_offset_bound = max($this->lower_offset_bound, $this->rows_offset + $n);
+        if ($n < $limit)
+            $this->upper_offset_bound = min($this->upper_offset_bound, $this->rows_offset + $n);
     }
 
     function has_page($pageno, $load_npages = null) {
@@ -150,45 +191,82 @@ class LogRowGenerator {
         assert(is_int($pageno) && $pageno >= 1);
         $offset = ($pageno - 1) * $this->page_size;
         if ($offset >= $this->lower_offset_bound && $offset < $this->upper_offset_bound) {
-            $limit = $load_npages ? $load_npages * $this->page_size : ($nlinks + 1) * $this->page_size + 1;
-            $this->load_rows($offset, $limit);
+            $limit = $load_npages ? $load_npages * $this->page_size : ($nlinks + 1) * $this->page_size + 30;
+            $this->load_rows($pageno, $limit);
         }
         return $offset < $this->lower_offset_bound;
     }
 
     function page_rows($pageno) {
-        if ($this->has_page($pageno)) {
-            $offset = ($pageno - 1) * $this->page_size;
-            return array_slice($this->rows, $offset - $this->rows_offset, $this->page_size);
-        } else
+        assert(is_int($pageno) && $pageno >= 1);
+        if (!$this->has_page($pageno))
             return [];
+        $offset = ($pageno - 1) * $this->page_size;
+        if ($offset < $this->rows_offset
+            || $offset + $this->page_size > $this->rows_offset + $this->rows_limit)
+            $this->load_rows($pageno, $this->page_size);
+        return array_slice($this->rows, $offset - $this->rows_offset, $this->page_size);
+    }
+
+    static function row_pid_filter($row, $pidset, $want_in, $include_pids, $no_papers_result) {
+        if (preg_match('/\A(.*) \(papers ([\d, ]+)\)?\z/', $row->action, $m)) {
+            preg_match_all('/\d+/', $m[2], $mm);
+            $pids = [];
+            foreach ($mm[0] as $pid)
+                if (isset($pidset[$pid]) === $want_in)
+                    $pids[] = $pid;
+            if (empty($pids))
+                return false;
+            if ($include_pids) {
+                $ok = false;
+                foreach ($pids as $pid)
+                    if (isset($include_pids[$pid]))
+                        $ok = true;
+                if (!$ok)
+                    return false;
+            }
+            if (count($pids) === 1) {
+                $row->action = $m[1];
+                $row->paperId = $pids[0];
+            } else
+                $row->action = $m[1] . " (papers " . join(", ", $pids) . ")";
+            return true;
+        } else
+            return $no_papers_result;
     }
 }
 
 function searchbar(LogRowGenerator $lrg, $page, $count) {
-    global $Conf, $Eclass, $nlinks;
+    global $Conf, $Me, $Eclass, $nlinks;
 
     echo Ht::form_div(hoturl("log"), array("method" => "get")), "<table id='searchform'><tr>
   <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
-  <td class='lentry", $Eclass['q'], "'><input type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>
+  <td class='lentry", $Eclass['q'], "'>", Ht::entry("q", req_s("q"), ["size" => 40]),
+        "<span class=\"sep\"></span></td>
   <td rowspan='3'>", Ht::submit("search", "Search"), "</td>
 </tr><tr>
-  <td class='lxcaption", $Eclass['pap'], "'>Concerning paper(s)</td>
-  <td class='lentry", $Eclass['pap'], "'><input type='text' size='40' name='pap' value=\"", htmlspecialchars(defval($_REQUEST, "pap", "")), "\" /></td>
+  <td class='lxcaption", $Eclass['p'], "'>Concerning paper(s)</td>
+  <td class='lentry", $Eclass['p'], "'>", Ht::entry("p", req_s("p"), ["size" => 40]), "</td>
 </tr><tr>
   <td class='lxcaption", $Eclass['acct'], "'>Concerning account(s)</td>
-  <td class='lentry'><input type='text' size='40' name='acct' value=\"", htmlspecialchars(defval($_REQUEST, "acct", "")), "\" /></td>
+  <td class='lentry", $Eclass["acct"], "'>", Ht::entry("acct", req_s("acct"), ["size" => 40]), "</td>
 </tr><tr>
   <td class='lxcaption", $Eclass['n'], "'>Show</td>
-  <td class='lentry", $Eclass['n'], "'><input type='text' size='4' name='n' value=\"", htmlspecialchars($_REQUEST["n"]), "\" /> &nbsp;records at a time</td>
+  <td class='lentry", $Eclass['n'], "'>", Ht::entry("n", req_s("n"), ["size" => 4]), " &nbsp;records at a time</td>
 </tr><tr>
   <td class='lxcaption", $Eclass['date'], "'>Starting at</td>
-  <td class='lentry", $Eclass['date'], "'><input type='text' size='40' name='date' value=\"", htmlspecialchars($_REQUEST["date"]), "\" /></td>
-</tr></table></div></form>";
+  <td class='lentry", $Eclass['date'], "'>", Ht::entry("date", req_s("date"), ["size" => 40]), "</td>
+</tr>";
+    if ($Me->privChair && (req("forceShow") || $lrg->has_filter()))
+        echo "<tr>
+  <td class=\"lentry\" colspan=\"2\">", Ht::checkbox("forceShow", 1, !!req("forceShow")),
+        "&nbsp;", Ht::label("Include results for conflict papers administered by others"),
+        "</td>\n</tr>";
+    echo "</table></div></form>";
 
     if ($page > 1 || $lrg->has_page(2)) {
         $urls = array();
-        foreach (array("q", "pap", "acct", "n") as $x)
+        foreach (array("q", "p", "acct", "n") as $x)
             if ($_REQUEST[$x])
                 $urls[] = "$x=" . urlencode($_REQUEST[$x]);
         $url = hoturl("log", join("&amp;", $urls));
@@ -220,6 +298,37 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
 }
 
 $lrg = new LogRowGenerator($Conf, $wheres, $count);
+
+if (!$Me->privChair) {
+    $result = $Conf->paper_result($Me, $Conf->check_any_admin_tracks($Me) ? [] : ["myManaged" => true]);
+    $good_pids = [];
+    foreach (PaperInfo::fetch_all($result, $Me) as $prow)
+        if ($Me->allow_administer($prow))
+            $good_pids[$prow->paperId] = true;
+    $lrg->set_filter(function ($row) use ($good_pids, $include_pids, $Me) {
+        if ($row->contactId === $Me->contactId)
+            return true;
+        else if ($row->paperId)
+            return isset($good_pids[$row->paperId]);
+        else
+            return LogRowGenerator::row_pid_filter($row, $good_pids, true, $include_pids, false);
+    });
+} else if ($Conf->has_any_manager() && !req("forceShow")) {
+    $result = $Conf->paper_result($Me, ["myConflicts" => true]);
+    $bad_pids = [];
+    foreach (PaperInfo::fetch_all($result, $Me) as $prow)
+        if (!$Me->allow_administer($prow))
+            $bad_pids[$prow->paperId] = true;
+    if (!empty($bad_pids))
+        $lrg->set_filter(function ($row) use ($bad_pids, $include_pids, $Me) {
+            if ($row->contactId === $Me->contactId)
+                return true;
+            else if ($row->paperId)
+                return !isset($bad_pids[$row->paperId]);
+            else
+                return LogRowGenerator::row_pid_filter($row, $bad_pids, false, $include_pids, true);
+        });
+}
 
 if ($page === false) { // handle `earliest`
     $page = 1;

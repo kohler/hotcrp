@@ -621,6 +621,7 @@ class PaperInfo {
         $set = new PaperInfoSet;
         while (($prow = self::fetch($result, $contact, $conf)))
             $set->add($prow);
+        Dbl::free($result);
         return $set;
     }
 
