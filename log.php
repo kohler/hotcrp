@@ -297,7 +297,10 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
     else if ($first_timestamp)
         $dplaceholder = $Conf->unparse_time_short($first_timestamp);
 
-    echo Ht::form_div(hoturl("log"), array("method" => "get")), "<table id='searchform'><tr>
+    echo Ht::form_div(hoturl("log"), array("method" => "get"));
+    if ($Qreq->forceShow)
+        echo Ht::hidden("forceShow", 1);
+    echo "<table id=\"searchform\"><tr>
   <td class='lxcaption", get($Eclass, "q", ""), "'>With <b>any</b> of the words</td>
   <td class='lentry", get($Eclass, "q", ""), "'>", Ht::entry("q", $Qreq->q, ["size" => 40]),
         "<span class=\"sep\"></span></td>
@@ -314,17 +317,12 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
 </tr><tr>
   <td class='lxcaption", get($Eclass, "date"), "'>Starting at</td>
   <td class='lentry", get($Eclass, "date"), "'>", Ht::entry("date", $date, ["size" => 40, "placeholder" => $dplaceholder]), "</td>
-</tr>";
-    if ($Me->privChair && ($Qreq->forceShow || $lrg->has_filter()))
-        echo "<tr>
-  <td class=\"lentry\" colspan=\"2\">", Ht::checkbox("forceShow", 1, !!$Qreq->forceShow),
-        "&nbsp;", Ht::label("Include results for conflict papers administered by others"),
-        "</td>\n</tr>";
-    echo "</table></div></form>";
+</tr>
+</table></div></form>";
 
     if ($page > 1 || $lrg->has_page(2)) {
         $urls = ["q=" . urlencode($Qreq->q)];
-        foreach (array("p", "acct", "n") as $x)
+        foreach (array("p", "acct", "n", "forceShow") as $x)
             if ($Qreq[$x])
                 $urls[] = "$x=" . urlencode($Qreq[$x]);
         $lrg->set_log_url_base(hoturl("log", join("&amp;", $urls)));
@@ -357,6 +355,14 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
 
 $lrg = new LogRowGenerator($Conf, $wheres, $count);
 
+$chair_conflict_pids = [];
+if ($Me->privChair && $Conf->has_any_manager()) {
+    $result = $Conf->paper_result($Me, ["myConflicts" => true]);
+    foreach (PaperInfo::fetch_all($result, $Me) as $prow)
+        if (!$Me->allow_administer($prow))
+            $chair_conflict_pids[$prow->paperId] = true;
+}
+
 if (!$Me->privChair) {
     $result = $Conf->paper_result($Me, $Conf->check_any_admin_tracks($Me) ? [] : ["myManaged" => true]);
     $good_pids = [];
@@ -371,21 +377,15 @@ if (!$Me->privChair) {
         else
             return LogRowGenerator::row_pid_filter($row, $good_pids, true, $include_pids, false);
     });
-} else if ($Conf->has_any_manager() && !$Qreq->forceShow) {
-    $result = $Conf->paper_result($Me, ["myConflicts" => true]);
-    $bad_pids = [];
-    foreach (PaperInfo::fetch_all($result, $Me) as $prow)
-        if (!$Me->allow_administer($prow))
-            $bad_pids[$prow->paperId] = true;
-    if (!empty($bad_pids))
-        $lrg->set_filter(function ($row) use ($bad_pids, $include_pids, $Me) {
-            if ($row->contactId === $Me->contactId)
-                return true;
-            else if ($row->paperId)
-                return !isset($bad_pids[$row->paperId]);
-            else
-                return LogRowGenerator::row_pid_filter($row, $bad_pids, false, $include_pids, true);
-        });
+} else if ($Conf->has_any_manager() && !$Qreq->forceShow && !empty($chair_conflict_pids)) {
+    $lrg->set_filter(function ($row) use ($chair_conflict_pids, $include_pids, $Me) {
+        if ($row->contactId === $Me->contactId)
+            return true;
+        else if ($row->paperId)
+            return !isset($chair_conflict_pids[$row->paperId]);
+        else
+            return LogRowGenerator::row_pid_filter($row, $chair_conflict_pids, false, $include_pids, true);
+    });
 }
 
 if ($first_timestamp) {
@@ -520,9 +520,30 @@ foreach ($visible_rows as $row) {
     } else
         $at .= htmlspecialchars($act);
     if ($row->paperId)
-        $at .= " (paper <a href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">" . htmlspecialchars($row->paperId) . "</a>)";
+        $at .= " (<a href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">paper " . htmlspecialchars($row->paperId) . "</a>)";
     $t[] = '<td class="pl pl_act">' . $at . '</td>';
     $trs[] = '    <tr class="k' . (count($trs) % 2) . '">' . join("", $t) . "</tr>\n";
+}
+
+if (!$Me->privChair || !empty($chair_conflict_pids)) {
+    echo '<div class="xmsgs-atbody">';
+    if (!$Me->privChair)
+        $Conf->msg("xinfo", "Only showing your actions and entries for papers you administer.");
+    else if (!empty($chair_conflict_pids)
+             && (!$include_pids || array_intersect_key($include_pids, $chair_conflict_pids))) {
+        $req = [];
+        foreach (["q", "p", "acct", "n"] as $k)
+            if ($Qreq->$k !== "")
+                $req[$k] = $Qreq->$k;
+        $req["page"] = $page;
+        if ($page > 1 && $lrg->page_delta() > 0)
+            $req["offset"] = $lrg->page_delta();
+        if ($Qreq->forceShow)
+            $Conf->msg("xinfo", "Showing all entries. (" . Ht::link("Unprivileged view", selfHref($req + ["forceShow" => null])) . ")");
+        else
+            $Conf->msg("xinfo", "Not showing entries for " . Ht::link("conflicted administered papers", hoturl("search", "q=" . join("+", array_keys($chair_conflict_pids)))) . ". (" . Ht::link("Override conflicts", selfHref($req + ["forceShow" => 1])) . ")");
+    }
+    echo '</div>';
 }
 
 searchbar($lrg, $page, $count);
