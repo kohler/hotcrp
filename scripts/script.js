@@ -2706,7 +2706,7 @@ $(function () {
             && $(".abstract").geometry().bottom <= $(".paperinfo-cl").geometry().bottom;
         $(".longtext-fader, .longtext-expander").toggle(!want_hidden);
     }
-    if ($(".paperinfo-abstract").length) {
+    if ($(".paperinfo-abstract").length && false) {
         check_abstract_height();
         $(window).on("resize", check_abstract_height);
     }
