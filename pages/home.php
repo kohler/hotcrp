@@ -139,8 +139,7 @@ if ($Me->is_manager()) {
     }
     $links[] = '<a href="' . hoturl("autoassign") . '">Assignments</a>';
     $links[] = '<a href="' . hoturl("mail") . '">Mail</a>';
-    if ($Me->privChair)
-        $links[] = '<a href="' . hoturl("log") . '">Action log</a>';
+    $links[] = '<a href="' . hoturl("log") . '">Action log</a>';
     $inside_links[] = '<h4>Administration</h4><ul style="margin-bottom:0.75em">'
         . '<li>' . join('</li><li>', $links) . '</li></ul>';
 }
