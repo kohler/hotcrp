@@ -6561,17 +6561,16 @@ function textarea_shadow($self, width) {
 (function ($) {
 var autogrowers = null;
 function resizer() {
-    for (var i = 0; i != autogrowers.length; ++i)
+    for (var i = autogrowers.length - 1; i >= 0; --i)
         autogrowers[i].data("autogrowing")();
 }
 function remover($self, shadow) {
     $self.removeData("autogrowing");
     shadow && shadow.remove();
-    for (var i = 0; i != autogrowers.length; ++i)
+    for (var i = autogrowers.length - 1; i >= 0; --i)
         if (autogrowers[i] === $self) {
             autogrowers[i] = autogrowers[autogrowers.length - 1];
             autogrowers.pop();
-            break;
         }
 }
 function do_autogrow_textarea($self) {
