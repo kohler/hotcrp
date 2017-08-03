@@ -677,7 +677,7 @@ class Review_AssignmentParser extends AssignmentParser {
     }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         $cf = $this->make_filter("cid", "pid", $prow->paperId, $req, $state);
-        return $cf !== false ? $state->users_by_id(array_keys($cf)) : false;
+        return $cf !== null ? $state->users_by_id(array_keys($cf)) : false;
     }
     function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
