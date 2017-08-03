@@ -323,8 +323,8 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
     echo "</table></div></form>";
 
     if ($page > 1 || $lrg->has_page(2)) {
-        $urls = array();
-        foreach (array("q", "p", "acct", "n") as $x)
+        $urls = array("q" => urlencode($Qreq->q));
+        foreach (array("p", "acct", "n") as $x)
             if ($Qreq[$x])
                 $urls[] = "$x=" . urlencode($Qreq[$x]);
         $lrg->set_log_url_base(hoturl("log", join("&amp;", $urls)));
