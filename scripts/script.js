@@ -6562,25 +6562,21 @@ function textarea_shadow($self, width) {
 var autogrowers = null;
 function resizer() {
     for (var i = autogrowers.length - 1; i >= 0; --i)
-        autogrowers[i].data("autogrowing")();
+        autogrowers[i]();
 }
 function remover($self, shadow) {
-    $self.removeData("autogrowing");
+    var f = $self.data("autogrower");
+    $self.removeData("autogrower");
     shadow && shadow.remove();
     for (var i = autogrowers.length - 1; i >= 0; --i)
-        if (autogrowers[i] === $self) {
+        if (autogrowers[i] === f) {
             autogrowers[i] = autogrowers[autogrowers.length - 1];
             autogrowers.pop();
         }
 }
-function do_autogrow_textarea($self) {
-    if ($self.data("autogrowing")) {
-        $self.data("autogrowing")();
-        return;
-    }
-
+function make_textarea_autogrower($self) {
     var shadow, minHeight, lineHeight;
-    var update = function (event) {
+    return function (event) {
         if (event === false)
             return remover($self, shadow);
         var width = $self.width();
@@ -6600,20 +6596,11 @@ function do_autogrow_textarea($self) {
 
         var wh = Math.max($(window).height() - 4 * lineHeight, 4 * lineHeight);
         $self.height(Math.min(wh, Math.max(shadow.height(), minHeight)));
-    }
-
-    $self.on("change input", update).data("autogrowing", update);
-    $self.val() && update();
-    autogrowers.push($self);
+    };
 }
-function do_autogrow_text_input($self) {
-    if ($self.data("autogrowing")) {
-        $self.data("autogrowing")();
-        return;
-    }
-
+function make_input_autogrower($self) {
     var shadow;
-    var update = function (event) {
+    return function (event) {
         if (event === false)
             return remover($self, shadow);
         var width = $self.width(), ws;
@@ -6632,27 +6619,33 @@ function do_autogrow_text_input($self) {
         shadow.text($self[0].value + "  ");
         ws = $self.css(["minWidth", "maxWidth"]);
         $self.outerWidth(Math.max(Math.min(shadow.outerWidth(), parseFloat(ws.maxWidth), $(window).width()), parseFloat(ws.minWidth)));
-    }
-
-    $self.on("change input", update).data("autogrowing", update);
-    $self.val() && update();
-    autogrowers.push($self);
+    };
 }
 $.fn.autogrow = function () {
     this.each(function () {
-        if (this.tagName === "TEXTAREA" || (this.tagName === "INPUT" && this.type === "text")) {
-            if (!autogrowers) {
-                autogrowers = [];
-                $(window).resize(resizer);
+        var $self = $(this), f = $self.data("autogrower");
+        if (!f) {
+            if (this.tagName === "TEXTAREA")
+                f = make_textarea_autogrower($self);
+            else if (this.tagName === "INPUT" && this.type === "text")
+                f = make_input_autogrower($self);
+            if (f) {
+                $self.data("autogrower", f).on("change input", f);
+                if (!autogrowers) {
+                    autogrowers = [];
+                    $(window).resize(resizer);
+                }
+                autogrowers.push(f);
             }
-            (this.tagName === "TEXTAREA" ? do_autogrow_textarea : do_autogrow_text_input)($(this));
         }
+        if (f && $self.val() !== "")
+            f();
     });
 	return this;
 };
 $.fn.unautogrow = function () {
     this.each(function () {
-        var f = $(this).data("autogrowing");
+        var f = $(this).data("autogrower");
         f && f(false);
     });
     return this;
