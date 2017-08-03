@@ -226,8 +226,8 @@ class PaperTable {
             if ($ever_viewable && $this->allFolded)
                 $folders[] = $folds["p"] ? "fold9c" : "fold9o";
         }
-        $folders[] = $folds["b"] ? "fold6c" : "fold6o";
         $folders[] = $folds["t"] ? "fold5c" : "fold5o";
+        $folders[] = $folds["b"] ? "fold6c" : "fold6o";
 
         // echo div
         echo '<div id="foldpaper" class="', join(" ", $folders), '">';
@@ -634,8 +634,8 @@ class PaperTable {
             $text = Ht::link_urls(Text::single_line_paragraphs($text));
         echo '">', $text, "</div></div></div></div>";
         if ($extra)
-            echo '<div class="fn6 longtext-fader"></div>',
-                '<div class="fn6 longtext-expander"><a class="x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
+            echo '<div class="fn6 fx7 longtext-fader"></div>',
+                '<div class="fn6 fx7 longtext-expander"><a class="x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
         echo "</div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");

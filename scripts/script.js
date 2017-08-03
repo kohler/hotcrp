@@ -2008,15 +2008,28 @@ function foldup(e, event, opts) {
     dofold = !(new RegExp("\\bfold" + (foldnum ? foldnum : "") + "c\\b")).test(e.className);
     if ("f" in opts && !!opts.f == !dofold)
         return false;
+    opts.f = dofold;
     if (opts.s)
         $.post(hoturl("api/setsession"), {var: opts.s, val: (dofold ? 1 : 0)});
     if (event)
         event_stop(event);
     m = fold(e, dofold, foldnum, opts.st);
-    if ((attr = e.getAttribute(dofold ? "data-onfold" : "data-onunfold")))
-        (new Function("foldnum", attr)).call(e, opts);
+    $(e).trigger("fold", opts);
     return m;
 }
+
+$(function () {
+    $(document.body).on("fold", function (evt, opts) {
+        var attr = opts.f ? "onfold" : "onunfold";
+        var folder = $(evt.target).data(attr);
+        if (typeof folder === "string") {
+            folder = new Function("foldnum", folder);
+            $(evt.target).data(attr, folder);
+        }
+        if (typeof folder === "function")
+            folder.call(evt.target, opts);
+    });
+});
 
 // special-case folding for author table
 function aufoldup(event) {
@@ -2679,6 +2692,8 @@ function on() {
         $j.html(f.content);
     var s = $.trim(this.className.replace(/(?:^| )(?:need-format|format\d+)(?= |$)/g, " "));
     this.className = s + (s ? " format" : "format") + (f.format || 0);
+    if (f.format)
+        $j.trigger("renderText", f);
 }
 
 $.extend(render_text, {
@@ -2702,12 +2717,16 @@ return render_text;
 // abstract
 $(function () {
     function check_abstract_height() {
-        var want_hidden = $("#foldpaper").hasClass("fold6c")
-            && $(".abstract").geometry().bottom <= $(".paperinfo-cl").geometry().bottom;
-        $(".longtext-fader, .longtext-expander").toggle(!want_hidden);
+        var want_hidden = $("#foldpaper").hasClass("fold6c");
+        if (want_hidden) {
+            var $ab = $(".abstract");
+            want_hidden = $ab.height() <= $ab.closest(".paperinfo-abstract").height() - $ab.position().top;
+        }
+        $("#foldpaper").toggleClass("fold7c", want_hidden);
     }
-    if ($(".paperinfo-abstract").length && false) {
+    if ($(".paperinfo-abstract").length) {
         check_abstract_height();
+        $("#foldpaper").on("fold renderText", check_abstract_height);
         $(window).on("resize", check_abstract_height);
     }
 });
