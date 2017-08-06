@@ -2026,7 +2026,7 @@ $(function () {
             folder = new Function("foldnum", folder);
             $(evt.target).data(attr, folder);
         }
-        if (typeof folder === "function")
+        if ($.isFunction(folder))
             folder.call(evt.target, opts);
     });
 });
