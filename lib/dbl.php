@@ -440,6 +440,18 @@ class Dbl {
         return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_APPLY);
     }
 
+    static function multi_ql(/* [$dblink,] $qstr, ... */) {
+        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_LOG);
+    }
+
+    static function multi_ql_raw(/* [$dblink,] $qstr */) {
+        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_RAW | self::F_LOG);
+    }
+
+    static function multi_ql_apply(/* [$dblink,] $qstr, [$argv] */) {
+        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_APPLY | self::F_LOG);
+    }
+
     static function multi_qe(/* [$dblink,] $qstr, ... */) {
         return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_ERROR);
     }
