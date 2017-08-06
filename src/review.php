@@ -500,19 +500,19 @@ class ReviewForm {
             $format_description = $fi->description_preview_html();
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         echo '<div class="rve">';
-        foreach ($this->forder as $field => $f) {
+        foreach ($this->forder as $fid => $f) {
             if ($f->view_score <= $revViewScore
                 || ($f->round_mask && !$f->is_round_visible($rrow)))
                 continue;
 
             $fval = "";
             if ($useRequest)
-                $fval = (string) req($field);
+                $fval = (string) req($fid);
             else if ($rrow)
-                $fval = $f->unparse_value($rrow->$field, ReviewField::VALUE_STRING);
+                $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
 
             echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="revet';
-            if (isset($ReviewFormError[$field]))
+            if (isset($ReviewFormError[$fid]))
                 echo " error";
             echo '"><div class="revfn">', $f->name_html;
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
@@ -537,20 +537,20 @@ class ReviewForm {
                     $fval = (int) $fval;
                 foreach ($f->options as $num => $what) {
                     echo '<tr><td class="nw">',
-                        Ht::radio($field, $num, $fval === $num, ["id" => $field . "_" . $num]),
+                        Ht::radio($fid, $num, $fval === $num, ["id" => $fid . "_" . $num]),
                         '&nbsp;</td>',
                         '<td class="nw">', Ht::label($f->unparse_value($num, ReviewField::VALUE_REV_NUM) . '&nbsp;'), '</td>',
                         '<td>', Ht::label(htmlspecialchars($what)), "</td></tr>\n";
                 }
                 if ($f->allow_empty)
                     echo '<tr><td class="nw">',
-                        Ht::radio($field, 0, $fval === 0, ["id" => $field . "_0"]),
+                        Ht::radio($fid, 0, $fval === 0, ["id" => $fid . "_0"]),
                         '&nbsp;</td>',
                         '<td colspan="2">', Ht::label("No entry"), "</td></tr>\n";
                 echo "</tbody></table>";
             } else {
                 echo $format_description;
-                echo Ht::textarea($field, $fval,
+                echo Ht::textarea($fid, $fval,
                         array("class" => "reviewtext need-autogrow", "rows" => $f->display_space,
                               "cols" => 60, "onchange" => "hiliter(this)",
                               "spellcheck" => "true"));
@@ -583,27 +583,27 @@ class ReviewForm {
         $submit = defval($req, "ready", false);
         unset($req["unready"]);
         $nokfields = 0;
-        foreach ($this->forder as $field => $f) {
-            if (!isset($req[$field]) && !$submit)
+        foreach ($this->forder as $fid => $f) {
+            if (!isset($req[$fid]) && !$submit)
                 continue;
-            if (!isset($req[$field])) {
+            if (!isset($req[$fid])) {
                 if ($f->round_mask && !$f->is_round_visible($rrow))
                     continue;
                 if ($f->view_score >= VIEWSCORE_PC)
                     $missing[] = $f->name;
             }
-            $fval = get($req, $field, ($rrow ? $rrow->$field : ""));
+            $fval = get($req, $fid, ($rrow ? $rrow->$fid : ""));
             if ($f->has_options) {
                 $fval = trim($fval);
                 if ($f->parse_is_empty($fval)) {
                     if ($submit && $f->view_score >= VIEWSCORE_PC
                         && !$f->allow_empty) {
                         $provide[] = $f->name;
-                        $ReviewFormError[$field] = 1;
+                        $ReviewFormError[$fid] = 1;
                     }
                 } else if (!$f->parse_value($fval, false)) {
                     $outofrange[] = $f;
-                    $ReviewFormError[$field] = 1;
+                    $ReviewFormError[$fid] = 1;
                 } else
                     $nokfields++;
             } else if (trim($fval) !== "")
@@ -662,23 +662,23 @@ class ReviewForm {
     }
 
     function author_nonempty($rrow) {
-        foreach ($this->forder as $field => $f)
+        foreach ($this->forder as $fid => $f)
             if ($f->view_score >= VIEWSCORE_AUTHORDEC
                 && (!$f->round_mask || $f->is_round_visible($rrow))
                 && ($f->has_options
-                    ? $rrow->$field != 0
-                    : (string) $rrow->$field !== ""))
+                    ? $rrow->$fid != 0
+                    : (string) $rrow->$fid !== ""))
                 return true;
         return false;
     }
 
     function word_count($rrow) {
         $wc = 0;
-        foreach ($this->forder as $field => $f)
-            if ($rrow->$field
+        foreach ($this->forder as $fid => $f)
+            if ($rrow->$fid
                 && (!$f->round_mask || $f->is_round_visible($rrow))
                 && $f->include_word_count())
-                $wc += count_words($rrow->$field);
+                $wc += count_words($rrow->$fid);
         return $wc;
     }
 
@@ -717,16 +717,16 @@ class ReviewForm {
         $qf = $qv = [];
         $diff_view_score = VIEWSCORE_FALSE;
         $wc = 0;
-        foreach ($this->forder as $field => $f)
-            if (isset($req[$field])
+        foreach ($this->forder as $fid => $f)
+            if (isset($req[$fid])
                 && (!$f->round_mask || $f->is_round_visible($rrow))) {
-                $fval = $req[$field];
+                $fval = $req[$fid];
                 if ($f->has_options) {
                     if ($f->parse_is_empty($fval))
                         $fval = 0;
                     else if (!($fval = $f->parse_value($fval, false)))
                         continue;
-                    $fval_diffs = $fval != ($rrow ? $rrow->$field : 0);
+                    $fval_diffs = $fval != ($rrow ? $rrow->$fid : 0);
                 } else {
                     $fval = rtrim($fval);
                     if ($fval !== "")
@@ -736,13 +736,13 @@ class ReviewForm {
                     if ($f->include_word_count())
                         $wc += count_words($fval);
                     $fval_diffs = $rrow
-                        ? strcmp($rrow->$field, $fval) != 0
-                          && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0
+                        ? strcmp($rrow->$fid, $fval) != 0
+                          && strcmp(cleannl($rrow->$fid), cleannl($fval)) != 0
                         : $fval !== "";
                 }
                 if ($fval_diffs)
                     $diff_view_score = max($diff_view_score, $f->view_score);
-                $qf[] = "$field=?";
+                $qf[] = "$fid=?";
                 $qv[] = $fval;
             }
 
@@ -1134,20 +1134,20 @@ $blind\n";
         $format_description = "";
         if (($fi = $this->format_info($rrow)))
             $format_description = $fi->description_text();
-        foreach ($this->forder as $field => $f) {
+        foreach ($this->forder as $fid => $f) {
             $i++;
             if ($f->view_score <= $revViewScore
                 || ($f->round_mask && !$f->is_round_visible($rrow)))
                 continue;
 
             $fval = "";
-            if ($req && isset($req[$field]))
-                $fval = rtrim($req[$field]);
-            else if ($rrow != null && isset($rrow->$field)) {
+            if ($req && isset($req[$fid]))
+                $fval = rtrim($req[$fid]);
+            else if ($rrow != null && isset($rrow->$fid)) {
                 if ($f->has_options)
-                    $fval = $f->unparse_value($rrow->$field, ReviewField::VALUE_STRING);
+                    $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
                 else
-                    $fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
+                    $fval = rtrim(str_replace("\r\n", "\n", $rrow->$fid));
             }
             if ($f->has_options && isset($f->options[$fval]))
                 $fval = "$fval. " . $f->options[$fval];
@@ -1228,18 +1228,18 @@ $blind\n";
 
         $i = 0;
         $lastNumeric = null;
-        foreach ($this->forder as $field => $f) {
+        foreach ($this->forder as $fid => $f) {
             $i++;
             if ($f->view_score <= $revViewScore
                 || ($f->round_mask && !$f->is_round_visible($rrow)))
                 continue;
 
             $fval = "";
-            if (isset($rrow->$field)) {
+            if (isset($rrow->$fid)) {
                 if ($f->has_options)
-                    $fval = $f->unparse_value($rrow->$field, ReviewField::VALUE_STRING);
+                    $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
                 else
-                    $fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
+                    $fval = rtrim(str_replace("\r\n", "\n", $rrow->$fid));
             }
             if ($fval == "")
                 continue;
@@ -1542,16 +1542,16 @@ $blind\n";
     function webGuidanceRows($revViewScore, $extraclass="") {
         $x = '';
 
-        foreach ($this->forder as $field => $f) {
+        foreach ($this->forder as $fid => $f) {
             if ($f->view_score <= $revViewScore
                 || (!$f->description && !$f->has_options))
                 continue;
 
-            $x .= "<tr class='rev_$field'>\n";
-            $x .= "  <td class='caption rev_$field$extraclass'>";
+            $x .= "<tr class='rev_$fid'>\n";
+            $x .= "  <td class='caption rev_$fid$extraclass'>";
             $x .= $f->name_html . "</td>\n";
 
-            $x .= "  <td class='entry rev_$field$extraclass'>";
+            $x .= "  <td class='entry rev_$fid$extraclass'>";
             if ($f->description)
                 $x .= "<div class='rev_description'>" . $f->description . "</div>";
             if ($f->has_options) {
@@ -1943,11 +1943,11 @@ $blind\n";
             $xbarsep = $barsep;
         } else
             $xbarsep = "";
-        foreach ($this->forder as $field => $f)
+        foreach ($this->forder as $fid => $f)
             if ($f->view_score > $revViewScore && $f->has_options
-                && $rrow->$field) {
+                && $rrow->$fid) {
                 $t .= $xbarsep . $f->name_html . "&nbsp;"
-                    . $f->unparse_value($rrow->$field, ReviewField::VALUE_SC);
+                    . $f->unparse_value($rrow->$fid, ReviewField::VALUE_SC);
                 $xbarsep = $barsep;
             }
 
