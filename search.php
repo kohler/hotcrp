@@ -239,7 +239,7 @@ function savesearch() {
         Dbl::qe_raw("delete from Settings where name='ss:" . sqlq($name) . "'");
         SelfHref::redirect($Qreq);
     } else {
-        Dbl::qe_raw("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)");
+        Dbl::qe_raw("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode_db($arr)) . "') on duplicate key update value=values(value), data=values(data)");
         SelfHref::redirect($Qreq, ["q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null]);
     }
 }
@@ -445,7 +445,7 @@ if ($pl) {
                 $fj["editable"] = true;
             $fjs[] = $fj;
         }
-        Ht::stash_script("edit_formulas.formulas=" . json_encode($fjs));
+        Ht::stash_script("edit_formulas.formulas=" . json_encode_browser($fjs));
         $display_options->item(40, '<div class="dispopt-item"><a href="#" onclick="edit_formulas();return false">Edit formulas</a></div>');
     }
 }

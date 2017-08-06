@@ -108,7 +108,7 @@ class MeetingTracker {
                 ++$count;
             }
             if ($f !== false) {
-                fwrite($f, to_json($j));
+                fwrite($f, json_encode_db($j));
                 fclose($f);
                 return;
             } else
@@ -226,7 +226,7 @@ class MeetingTracker {
                                  "url" => $tracker->url,
                                  "calculated_at" => $Now);
         if ($acct->privChair)
-            $status->listinfo = to_json(["listid" => $tracker->listid, "ids" => SessionList::encode_ids($tracker->ids), "description" => $tracker->description, "url" => $tracker->url]);
+            $status->listinfo = json_encode_browser(["listid" => $tracker->listid, "ids" => SessionList::encode_ids($tracker->ids), "description" => $tracker->description, "url" => $tracker->url]);
         if ($acct->conf->opt("trackerHideConflicts"))
             $status->hide_conflicts = true;
         if ($status->position !== false)

@@ -211,13 +211,18 @@ if (!function_exists("json_last_error_msg")) {
     }
 }
 if (defined("JSON_UNESCAPED_LINE_TERMINATORS")) {
-    function to_json($x, $flags = 0) {
-        return json_encode($x, $flags | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
+    // JSON_UNESCAPED_UNICODE is only safe to send to the browser if
+    // JSON_UNESCAPED_LINE_TERMINATORS is defined.
+    function json_encode_browser($x, $flags = 0) {
+        return json_encode($x, $flags | JSON_UNESCAPED_UNICODE);
     }
 } else {
-    function to_json($x, $flags = 0) {
+    function json_encode_browser($x, $flags = 0) {
         return json_encode($x, $flags);
     }
+}
+function json_encode_db($x, $flags = 0) {
+    return json_encode($x, $flags | JSON_UNESCAPED_UNICODE);
 }
 
 

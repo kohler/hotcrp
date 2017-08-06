@@ -73,5 +73,5 @@ if (!count($messages))
     echo "{\"ok\":true}\n";
 else {
     $j = array("ok" => true, "messages" => join("", $messages));
-    echo json_encode($j);
+    echo json_encode_browser($j);
 }

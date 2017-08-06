@@ -269,7 +269,7 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
         if (!$pl->contact->is_manager())
             return false;
         if (($tid = $pl->table_id()))
-            $pl->add_header_script("add_assrev_ajax(" . json_encode("#$tid") . ")");
+            $pl->add_header_script("add_assrev_ajax(" . json_encode_browser("#$tid") . ")");
         return true;
     }
     function header(PaperList $pl, $is_text) {
@@ -832,7 +832,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         if (!$pl->contact->is_manager())
             return false;
         if ($visible > 0 && ($tid = $pl->table_id()))
-            $pl->add_header_script("add_assrev_ajax(" . json_encode("#$tid") . ")");
+            $pl->add_header_script("add_assrev_ajax(" . json_encode_browser("#$tid") . ")");
         return true;
     }
     function header(PaperList $pl, $is_text) {
@@ -946,7 +946,7 @@ class PreferencePaperColumn extends PaperColumn {
         if ($visible)
             $pl->qopts["topics"] = 1;
         if ($this->editable && $visible > 0 && ($tid = $pl->table_id()))
-            $pl->add_header_script("add_revpref_ajax(" . json_encode("#$tid") . ")", "revpref_ajax_$tid");
+            $pl->add_header_script("add_revpref_ajax(" . json_encode_browser("#$tid") . ")", "revpref_ajax_$tid");
         $this->prefix =  "";
         if ($this->row)
             $this->prefix = $pl->contact->reviewer_html_for($this->contact);
@@ -1260,7 +1260,7 @@ class TagList_PaperColumn extends PaperColumn {
         if ($visible)
             $pl->qopts["tags"] = 1;
         if ($visible && $this->editable && ($tid = $pl->table_id()))
-            $pl->add_header_script("plinfo_tags(" . json_encode("#$tid") . ")", "plinfo_tags");
+            $pl->add_header_script("plinfo_tags(" . json_encode_browser("#$tid") . ")", "plinfo_tags");
         if ($this->editable)
             $pl->has_editable_tags = true;
         return true;
@@ -1418,7 +1418,7 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
                 $pl->tbody_attr["data-drag-tag"] = $this->dtag;
             }
             $pl->has_editable_tags = true;
-            $pl->add_header_script("plinfo_tags(" . json_encode("#$tid") . ")", "plinfo_tags");
+            $pl->add_header_script("plinfo_tags(" . json_encode_browser("#$tid") . ")", "plinfo_tags");
         }
         $this->className = $this->is_value ? "pl_edittagval" : "pl_edittag";
         return true;

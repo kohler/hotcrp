@@ -423,7 +423,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
                         if ($cr->commentType & COMMENTTYPE_DRAFT)
                             $what = "Edit draft";
                     }
-            $x = '<a href="#' . $cid . '" onclick=\'return papercomment.edit_response(' . json_encode($rname) . ')\' class="xx">'
+            $x = '<a href="#' . $cid . '" onclick=\'return papercomment.edit_response(' . json_encode_browser($rname) . ')\' class="xx">'
                 . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
                 . ($cflttype >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
                 . $what . ($i ? " $rname" : "") . ' response</u></a>';

@@ -261,7 +261,7 @@ class Decision_SettingParser extends SettingParser {
         }
 
         if ($update)
-            $sv->save("outcome_map", json_encode($decs));
+            $sv->save("outcome_map", json_encode_db($decs));
     }
 }
 

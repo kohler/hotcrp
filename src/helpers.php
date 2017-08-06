@@ -223,7 +223,7 @@ function foldbutton($foldtype, $foldnum = 0, $content = "") {
 
 function foldupbutton($foldnum = 0, $content = "", $j = null) {
     return '<a href="#" class="q" onclick="return foldup(this,event,'
-        . ($j ? htmlspecialchars(to_json($j)) : $foldnum) . ')">'
+        . ($j ? htmlspecialchars(json_encode_browser($j)) : $foldnum) . ')">'
         . expander(null, $foldnum) . $content . '</a>';
 }
 
@@ -353,7 +353,7 @@ class SessionList {
                 && $k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "id_position"
                 && (!$minimal || $k === "listid" || $k === "description" || $k === $urlkey))
                 $j[$k] = $v;
-        return to_json($j);
+        return json_encode_browser($j);
     }
     static function create($listid, $ids, $description, $urlbase) {
         global $Me, $Now;

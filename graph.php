@@ -42,7 +42,7 @@ if ($Graph == "procrastination") {
     echo "<h2>Procrastination</h2>\n";
     echo_graph();
     $rt = new ReviewTimes($Me);
-    echo Ht::unstash_script('jQuery(function () { hotcrp_graphs.procrastination("#hotgraph",' . json_encode($rt->json()) . '); })');
+    echo Ht::unstash_script('jQuery(function () { hotcrp_graphs.procrastination("#hotgraph",' . json_encode_browser($rt->json()) . '); })');
 }
 
 
@@ -125,7 +125,7 @@ if ($Graph == "formula") {
         echo_graph();
 
         echo Ht::unstash();
-        echo '<script>hotgraph_info={data:', json_encode($fg->data()), ",\n",
+        echo '<script>hotgraph_info={data:', json_encode_browser($fg->data()), ",\n",
             '  selector:"#hotgraph",', $fg->axis_info_settings("x"),
             ',', $fg->axis_info_settings("y"), "};\n";
         $gtype = "scatter";

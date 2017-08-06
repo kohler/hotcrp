@@ -378,7 +378,7 @@ class Track_SettingParser extends SettingParser {
             if (count((array) $t) || get($tracks, "_"))
                 $tracks->$trackname = $t;
         }
-        $sv->save("tracks", count((array) $tracks) ? json_encode($tracks) : null);
+        $sv->save("tracks", count((array) $tracks) ? json_encode_db($tracks) : null);
         return false;
     }
 }

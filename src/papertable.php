@@ -2210,10 +2210,10 @@ class PaperTable {
         foreach ($rcjs as $rcj) {
             unset($rcj->displayed_at);
             if (isset($rcj->rid))
-                $s .= "review_form.add_review(" . to_json($rcj) . ");\n";
+                $s .= "review_form.add_review(" . json_encode_browser($rcj) . ");\n";
             else {
                 ++$ncmt;
-                $s .= "papercomment.add(" . to_json($rcj) . ");\n";
+                $s .= "papercomment.add(" . json_encode_browser($rcj) . ");\n";
             }
         }
 
@@ -2229,7 +2229,7 @@ class PaperTable {
                 foreach ($this->conf->time_author_respond() as $i => $rname) {
                     if (!$this->has_response($i)) {
                         ++$ncmt;
-                        $s .= "papercomment.add({is_new:true,editable:true,response:" . to_json($rname) . "},true);\n";
+                        $s .= "papercomment.add({is_new:true,editable:true,response:" . json_encode_browser($rname) . "},true);\n";
                     }
                 }
         }
@@ -2473,9 +2473,9 @@ class PaperTable {
                 $min_view_score = min($min_view_score, $Me->view_score_bound($this->prow, $rrow));
             }
         $rf = $this->conf->review_form();
-        Ht::stash_script("review_form.set_form(" . to_json($rf->unparse_json($round_mask, $min_view_score)) . ")");
+        Ht::stash_script("review_form.set_form(" . json_encode_browser($rf->unparse_json($round_mask, $min_view_score)) . ")");
         if ($Me->can_view_review_ratings())
-            Ht::stash_script("review_form.set_ratings(" . to_json($rf->unparse_ratings_json()) . ")");
+            Ht::stash_script("review_form.set_ratings(" . json_encode_browser($rf->unparse_ratings_json()) . ")");
 
         $rrid = strtoupper(defval($_REQUEST, "reviewId", ""));
         while ($rrid !== "" && $rrid[0] === "0")

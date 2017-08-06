@@ -440,7 +440,7 @@ else {
             $j->blind = !!req("blind");
             $j->draft = !!req("draft");
         }
-        Ht::stash_script("papercomment.edit(" . json_encode($j) . ")");
+        Ht::stash_script("papercomment.edit(" . json_encode_browser($j) . ")");
     }
 }
 

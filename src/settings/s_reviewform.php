@@ -132,7 +132,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     function save(SettingValues $sv, Si $si) {
         global $Now;
-        if (!$sv->update("review_form", json_encode($this->nrfj)))
+        if (!$sv->update("review_form", json_encode_db($this->nrfj)))
             return;
         $oform = $sv->conf->review_form();
         $nform = new ReviewForm($this->nrfj, $sv->conf);
@@ -230,11 +230,11 @@ submitted. Add a line “<code>0. No entry</code>” to make the score optional.
         $rfj[$id]->has_any_nonempty = !!$reviews_exist->$id;
 
     Ht::stash_script("review_form_settings("
-                     . json_encode($fmap) . ","
-                     . json_encode($rfj) . ","
-                     . json_encode($samples) . ","
-                     . json_encode($sv->message_field_map()) . ","
-                     . json_encode($req) . ")");
+                     . json_encode_browser($fmap) . ","
+                     . json_encode_browser($rfj) . ","
+                     . json_encode_browser($samples) . ","
+                     . json_encode_browser($sv->message_field_map()) . ","
+                     . json_encode_browser($req) . ")");
 
     echo Ht::hidden("has_review_form", 1),
         "<div id=\"reviewform_container\"></div>",

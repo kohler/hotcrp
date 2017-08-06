@@ -346,7 +346,7 @@ class TagMap implements IteratorAggregate {
             $m = (int) get(self::$multicolor_map, $key);
             if (!($m & $color_type_bit)) {
                 if ($color_type_bit == 1)
-                    Ht::stash_script("make_pattern_fill(" . json_encode($key) . ")");
+                    Ht::stash_script("make_pattern_fill(" . json_encode_browser($key) . ")");
                 self::$multicolor_map[$key] = $m | $color_type_bit;
             }
         }

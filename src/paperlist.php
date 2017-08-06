@@ -864,7 +864,7 @@ class PaperList {
         $classes[] = "fold7" . ($this->is_folded("statistics") ? "c" : "o");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
         if ($this->_table_id)
-            Ht::stash_script("plinfo.initialize(\"#{$this->_table_id}\"," . json_encode($jscol) . ");");
+            Ht::stash_script("plinfo.initialize(\"#{$this->_table_id}\"," . json_encode_browser($jscol) . ");");
         return $classes;
     }
 
@@ -1291,7 +1291,7 @@ class PaperList {
         if ($this->search->is_order_anno)
             $enter .= "\" data-order-tag=\"{$this->search->is_order_anno}";
         if ($this->groups)
-            $enter .= "\" data-groups=\"" . htmlspecialchars(json_encode($this->groups));
+            $enter .= "\" data-groups=\"" . htmlspecialchars(json_encode_browser($this->groups));
         foreach ($this->tbody_attr as $k => $v)
             $enter .= "\" $k=\"" . htmlspecialchars($v);
         if (get($options, "list"))

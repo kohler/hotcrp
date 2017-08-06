@@ -44,12 +44,12 @@ class GetJson_SearchAction extends SearchAction {
         } else
             $pj_filename = $user->conf->download_prefix . "data.json";
         if ($this->iszip) {
-            $this->zipdoc->add(to_json($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
+            $this->zipdoc->add(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
             $this->zipdoc->download();
         } else {
             header("Content-Type: application/json");
             header("Content-Disposition: attachment; filename=" . mime_quote_string($pj_filename));
-            echo to_json($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+            echo json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
         }
         exit;
     }
@@ -85,7 +85,7 @@ class GetJsonRQC_SearchAction extends SearchAction {
         $results["papers"] = $pj;
         header("Content-Type: application/json");
         header("Content-Disposition: attachment; filename=" . mime_quote_string($user->conf->download_prefix . "rqc.json"));
-        echo to_json($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+        echo json_encode($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
         exit;
     }
 }

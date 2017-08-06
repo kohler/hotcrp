@@ -54,7 +54,7 @@ function keep_browser_alive($assignset, $lineno, $line) {
             $text .= " processing";
         else
             $text .= " <code>" . htmlspecialchars(join(",", $line)) . "</code>";
-        echo Ht::unstash_script("\$\$('mailcount').innerHTML=" . json_encode($text) . ";");
+        echo Ht::unstash_script("\$\$('mailcount').innerHTML=" . json_encode_browser($text) . ";");
         flush();
         while (@ob_end_flush())
             /* skip */;

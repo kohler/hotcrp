@@ -802,7 +802,7 @@ class Autoassigner {
             $search[] = $pid;
         }
         $this->ass[1] = "# hotcrp_assign_display_search " . join(" ", $search);
-        //echo Ht::unstash_script("$('#propass').before(" . json_encode(Ht::pre_text_wrap($m->debug_info(true) . "\n")) . ")");
+        //echo Ht::unstash_script("$('#propass').before(" . json_encode_browser(Ht::pre_text_wrap($m->debug_info(true) . "\n")) . ")");
     }
 
 

@@ -225,7 +225,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
             $old_preferredEmail = $Acct->preferredEmail;
             $Acct->preferredEmail = $cj->email;
             $capmgr = $Conf->capability_manager();
-            $rest = array("capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => $Now + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
+            $rest = array("capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => $Now + 259200, "data" => json_encode_db(array("uemail" => $cj->email)))));
             $mailer = new HotCRPMailer($Acct, null, $rest);
             $prep = $mailer->make_preparation("@changeemail", $rest);
             if ($prep->sendable) {

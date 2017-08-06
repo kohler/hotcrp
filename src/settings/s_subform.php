@@ -622,7 +622,7 @@ class Option_SettingParser extends SettingParser {
         foreach ($this->stashed_options as $o)
             $newj[$o->id] = $o->unparse();
         $sv->save("next_optionid", null);
-        $sv->save("options", empty($newj) ? null : json_encode((object) $newj));
+        $sv->save("options", empty($newj) ? null : json_encode_db((object) $newj));
 
         $deleted_ids = array();
         foreach ($sv->conf->paper_opts->nonfixed_option_list() as $o)
