@@ -8,8 +8,8 @@ foreach (["JSON_ERROR_NONE" => 0, "JSON_ERROR_DEPTH" => 1,
           "JSON_ERROR_SYNTAX" => 4, "JSON_ERROR_UTF8" => 5,
           "JSON_ERROR_EMPTY_KEY" => 100,
           "JSON_FORCE_OBJECT" => 16, "JSON_PRETTY_PRINT" => 128,
-          "JSON_UNESCAPED_SLASHES" => 64, "JSON_UNESCAPED_UNICODE" => 256,
-          "JSON_UNESCAPED_LINE_TERMINATORS" => 2048] as $k => $v)
+          "JSON_UNESCAPED_SLASHES" => 64,
+          "JSON_UNESCAPED_UNICODE" => 256] as $k => $v)
     if (!defined($k))
         define($k, $v);
 
