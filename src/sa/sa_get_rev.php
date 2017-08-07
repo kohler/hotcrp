@@ -98,7 +98,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
             return;
         }
 
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "myReviewsOpt" => 1]);
+        $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $texts = array();
         $errors = array();
         foreach (PaperInfo::fetch_all($result, $user) as $row) {
@@ -113,7 +113,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
                     if (!isset($whyNot["deadline"]))
                         defappend($texts[$row->paperId], prefix_word_wrap("==-== ", strtoupper(whyNotHtmlToText($t)) . "\n\n", "==-== "));
                 }
-                $rrow = $row->reviewContactId ? $row : null;
+                $rrow = $row->full_review_of_user($user);
                 defappend($texts[$row->paperId], $rf->textForm($row, $rrow, $user, null) . "\n");
             }
         }

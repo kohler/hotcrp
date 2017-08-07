@@ -577,6 +577,7 @@ class PaperInfo {
     private $_conflict_array_email;
     private $_review_array = null;
     private $_reviews_have = [];
+    private $_full_reviews_of = null;
     private $_comment_array = null;
     private $_comment_skeleton_array = null;
     public $_row_set;
@@ -1410,6 +1411,13 @@ class PaperInfo {
         return $doc ? $doc->npages() : 0;
     }
 
+    private function ratings_query() {
+        if ($this->conf->setting("rev_ratings") != REV_RATINGS_NONE)
+            return "(select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId)";
+        else
+            return "''";
+    }
+
     function load_reviews($always = false) {
         if (property_exists($this, "reviewSignatures")
             && $this->_review_array === null
@@ -1431,10 +1439,7 @@ class PaperInfo {
             $prow->_review_array = [];
             $prow->_reviews_have = ["full" => true];
         }
-        $ratings = "''";
-        if ($this->conf->setting("rev_ratings") != REV_RATINGS_NONE)
-            $ratings = "(select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId)";
-        $result = $this->conf->qe("select PaperReview.*, $ratings allRatings from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
+        $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
         while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
             $prow = $row_set->get($rrow->paperId);
             $prow->_review_array[$rrow->reviewId] = $rrow;
@@ -1464,6 +1469,26 @@ class PaperInfo {
             if ($rrow->contactId == $cid)
                 return $rrow;
         return null;
+    }
+
+    function full_review_of_user($contact) {
+        $cid = self::contact_to_cid($contact);
+        if ($this->_full_reviews_of === null && !isset($this->_reviews_have["full"])) {
+            $row_set = $this->_row_set ? : new PaperInfoSet($this);
+            foreach ($row_set as $prow)
+                $prow->_full_reviews_of = [$cid => null];
+            $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId?a and contactId=? order by paperId, reviewId", $row_set->paper_ids(), $cid);
+            while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
+                $prow = $row_set->get($rrow->paperId);
+                $prow->_full_reviews_of[$cid] = $rrow;
+            }
+            Dbl::free($result);
+        }
+        if ($this->_full_reviews_of !== null
+            && array_key_exists($cid, $this->_full_reviews_of))
+            return $this->_full_reviews_of[$cid];
+        $this->ensure_full_reviews();
+        return $this->review_of_user($contact);
     }
 
     function num_reviews_submitted(Contact $user, $forceShow = null) {

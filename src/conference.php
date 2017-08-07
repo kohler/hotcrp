@@ -2259,7 +2259,6 @@ class Conf {
         //   "myReviewRequests" Only reviews requested by $contactId
         //   "myReviews"        All reviews authored by $contactId
         //   "myOutstandingReviews" All unsubmitted reviews auth by $contactId
-        //   "myReviewsOpt"     myReviews, + include papers not yet reviewed
         //   "myConflicts"      Only conflicted papers
         //   "reviewJoinSql"    All matching reviews (multiple rows per paper)
         //   "reviewerName"     Include reviewer names
@@ -2273,7 +2272,7 @@ class Conf {
         //   "assignments"
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
 
-        $reviewerQuery = isset($options["myReviews"]) || isset($options["myReviewRequests"]) || isset($options["myReviewsOpt"]) || isset($options["myOutstandingReviews"]) || isset($options["reviewJoinSql"]);
+        $reviewerQuery = isset($options["myReviews"]) || isset($options["myReviewRequests"]) || isset($options["myOutstandingReviews"]) || isset($options["reviewJoinSql"]);
         $contactId = $contact ? $contact->contactId : 0;
         if (get($options, "author") || !$contactId)
             $myPaperReview = null;
@@ -2334,8 +2333,6 @@ class Conf {
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
         else if (get($options, "myOutstandingReviews"))
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin and PaperReview.reviewNeedsSubmit!=0)";
-        else if (get($options, "myReviewsOpt"))
-            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
         else if (get($options, "reviewJoinSql"))
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and (" . $options["reviewJoinSql"] . "))";
         else if ($myPaperReview)
