@@ -320,23 +320,24 @@ class PaperList {
         return "&nbsp;" . $row->document($dtype)->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
     }
 
-    function _paperLink($row) {
+    function _paperLink(PaperInfo $row) {
         $pt = $this->_paper_link_page ? : "paper";
-        if ($pt === "finishreview")
-            $pt = $row->reviewNeedsSubmit ? "review" : "paper";
-        if ($pt === "review" && !isset($row->reviewId))
-            $pt = "paper";
+        $rrow = null;
+        if ($pt === "review" || $pt === "finishreview") {
+            $rrow = $row->review_status($this->contact);
+            if (!$rrow)
+                $pt = "paper";
+            if ($pt === "finishreview")
+                $pt = $rrow->reviewNeedsSubmit ? "review" : "paper";
+        }
         $pl = "p=" . $row->paperId;
         if ($pt === "paper" && $this->_paper_link_mode)
             $pl .= "&amp;m=" . $this->_paper_link_mode;
-        else if ($pt === "review" && isset($row->reviewId)) {
-            $pl .= "&amp;r=" . unparseReviewOrdinal($row);
-            if ($row->reviewSubmitted > 0)
+        else if ($pt === "review") {
+            $pl .= "&amp;r=" . unparseReviewOrdinal($rrow);
+            if ($rrow->reviewSubmitted > 0)
                 $pl .= "&amp;m=r";
-        } else if ($pt === "paper" && isset($row->reviewId)
-                   && $row->reviewSubmitted > 0
-                   && $row->reviewContactId != $this->contact->contactId)
-            $pl .= "#r" . unparseReviewOrdinal($row);
+        }
         return $row->conf->hoturl($pt, $pl);
     }
 
