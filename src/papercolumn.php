@@ -621,7 +621,7 @@ class TopicListPaperColumn extends PaperColumn {
 
 class ReviewerTypePaperColumn extends PaperColumn {
     protected $contact;
-    private $not_me;
+    private $self;
     private $rrow_key;
     function __construct($cj, $contact = null) {
         parent::__construct($cj);
@@ -632,25 +632,19 @@ class ReviewerTypePaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ? : $pl->context_user();
-        $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
+        $this->self = $this->contact->contactId === $pl->contact->contactId;
         return true;
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         foreach ($rows as $row) {
-            if ($this->not_me) {
-                $rtype = $rsubmitted = $ctype = 0;
-                $rstatus = $row->review_status($this->contact);
-                if ($pl->contact->can_view_review_identity($row, $rstatus, true)) {
-                    $rtype = $rstatus->reviewType;
-                    $rsubmitted = $rstatus->reviewSubmitted;
-                }
-                if ($pl->contact->can_view_conflicts($row, true))
-                    $ctype = $rstatus->conflictType;
-            } else {
-                $rtype = $row->reviewType;
-                $rsubmitted = $row->reviewSubmitted;
-                $ctype = $row->conflictType;
+            $rstatus = $row->review_status($this->contact);
+            $rtype = $rsubmitted = $ctype = 0;
+            if ($this->self || $pl->contact->can_view_review_identity($row, $rstatus, true)) {
+                $rtype = $rstatus->reviewType;
+                $rsubmitted = $rstatus->reviewSubmitted;
             }
+            if ($this->self || $pl->contact->can_view_conflicts($row, true))
+                $ctype = $rstatus->conflictType;
             if ($rtype && $rsubmitted)
                 $row->_reviewer_type_sort_info = 2 * $rtype;
             else if ($rtype)
@@ -665,47 +659,34 @@ class ReviewerTypePaperColumn extends PaperColumn {
         return $b->_reviewer_type_sort_info - $a->_reviewer_type_sort_info;
     }
     function header(PaperList $pl, $is_text) {
-        if ($this->not_me && $is_text)
-            return $pl->contact->name_text_for($this->contact) . " review";
-        else if ($this->not_me)
-            return $pl->contact->name_html_for($this->contact) . "<br />review";
-        else
+        if ($this->self)
             return "Review";
+        else if ($is_text)
+            return $pl->contact->name_text_for($this->contact) . " review";
+        else
+            return $pl->contact->name_html_for($this->contact) . "<br />review";
     }
     const F_CONFLICT = 1;
     const F_LEAD = 2;
     const F_SHEPHERD = 4;
     private function analysis(PaperList $pl, PaperInfo $row) {
+        $rrow = $row->review_status($this->contact);
         $ranal = null;
-        $flags = 0;
-        if ($this->not_me) {
-            $rrow = $row->review_status($this->contact);
-            if ($rrow->reviewType
-                && $pl->contact->can_view_review_identity($row, $rrow))
-                $ranal = $pl->make_review_analysis($rrow, $row);
-            if ($rrow->conflictType > 0
-                && $pl->contact->can_view_conflicts($row))
-                $flags |= self::F_CONFLICT;
-            if ($row->leadContactId == $this->contact->contactId
-                && $pl->contact->can_view_lead($row))
-                $flags |= self::F_LEAD;
-            if ($row->shepherdContactId == $this->contact->contactId
-                && $pl->contact->can_view_shepherd($row))
-                $flags |= self::F_SHEPHERD;
-        } else {
-            if ($row->reviewType)
-                $ranal = $pl->make_review_analysis($row, $row);
-            if ($row->conflictType > 0)
-                $flags |= self::F_CONFLICT;
-            if (($cid = $pl->contact->contactId)) {
-                if ($row->leadContactId == $cid)
-                    $flags |= self::F_LEAD;
-                if ($row->shepherdContactId == $cid)
-                    $flags |= self::F_SHEPHERD;
-            }
-        }
+        if ($rrow->reviewType
+            && ($this->self || $pl->contact->can_view_review_identity($row, $rrow)))
+            $ranal = $pl->make_review_analysis($rrow, $row);
         if ($ranal && !$ranal->rrow->reviewSubmitted)
             $pl->mark_has("need_review");
+        $flags = 0;
+        if ($rrow->conflictType
+            && ($this->self || $pl->contact->can_view_conflicts($row)))
+            $flags |= self::F_CONFLICT;
+        if ($row->leadContactId == $this->contact->contactId
+            && ($this->self || $pl->contact->can_view_lead($row)))
+            $flags |= self::F_LEAD;
+        if ($row->shepherdContactId == $this->contact->contactId
+            && ($this->self || $pl->contact->can_view_shepherd($row)))
+            $flags |= self::F_SHEPHERD;
         return [$ranal, $flags];
     }
     function content(PaperList $pl, PaperInfo $row) {
