@@ -1049,6 +1049,7 @@ class ReviewForm {
         if ($rrow && !$rrow->reviewAuthorSeen
             && $contact->act_author_view($prow)
             && !$contact->is_actas_user()) {
+            // XXX combination of review tokens & authorship gets weird
             assert($rrow->reviewAuthorModified > 0);
             $rrow->reviewAuthorSeen = $Now;
             if (!$no_update) {
