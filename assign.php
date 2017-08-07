@@ -312,30 +312,19 @@ function proposeReview($email, $round) {
     return true;
 }
 
-function unassignedAnonymousContact() {
-    global $rrows;
-    $n = "";
-    while (1) {
-        $name = "anonymous$n";
-        $good = true;
-        foreach ($rrows as $rr)
-            if ($rr->email === $name) {
-                $good = false;
-                break;
-            }
-        if ($good)
-            return $name;
-        $n = ($n === "" ? 2 : $n + 1);
-    }
-}
-
 function createAnonymousReview() {
     global $Conf, $Me, $Now, $prow, $rrows;
 
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write, PaperConflict read, ActionLog write");
 
     // find an unassigned anonymous review contact
-    $contactemail = unassignedAnonymousContact();
+    $n = "";
+    while (1) {
+        $contactemail = "anonymous$n";
+        if (!$Conf->fetch_ivalue("select exists (select * from PaperReview join ContactInfo using (contactId) where paperId=? and email=?)", $prow->paperId, $contactemail))
+            break;
+        $n = ($n === "" ? 2 : $n + 1);
+    }
     $result = $Conf->qe("select contactId from ContactInfo where email=?", $contactemail);
     if (edb_nrows($result) == 1) {
         $row = edb_row($result);
