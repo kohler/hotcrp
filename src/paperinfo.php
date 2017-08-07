@@ -889,7 +889,7 @@ class PaperInfo {
         if (array_key_exists($cid, $this->_contact_info))
             $rrow = $this->_contact_info[$cid];
         else
-            $rrow = $this->review_by_user($cid);
+            $rrow = $this->review_of_user($cid);
         return $rrow ? $rrow->reviewType : 0;
     }
 
@@ -1458,7 +1458,7 @@ class PaperInfo {
         return $rrows;
     }
 
-    function review_by_user($contact) {
+    function review_of_user($contact) {
         $cid = self::contact_to_cid($contact);
         foreach ($this->reviews_by_id() as $rrow)
             if ($rrow->contactId == $cid)
@@ -1534,7 +1534,7 @@ class PaperInfo {
             if (array_key_exists($cid, $this->_contact_info))
                 $rrow = $this->review_status($cid);
             else
-                $rrow = $this->review_by_user($cid);
+                $rrow = $this->review_of_user($cid);
             return $rrow
                 && $contact->can_view_review_identity($this, $rrow, $forceShow);
         }

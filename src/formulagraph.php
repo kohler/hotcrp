@@ -204,7 +204,7 @@ class FormulaGraph {
             $d = [0, 0, 0];
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             foreach ($revs as $rcid) {
-                $rrow = $rcid ? $prow->review_by_user($rcid) : null;
+                $rrow = $rcid ? $prow->review_of_user($rcid) : null;
                 $d[0] = $fxf($prow, $rcid, $this->user);
                 $d[1] = $fyf($prow, $rcid, $this->user);
                 if ($d[0] === null || $d[1] === null)
@@ -256,7 +256,7 @@ class FormulaGraph {
             foreach ($revs as $rcid) {
                 if (($x = $fxf($prow, $rcid, $this->user)) === null)
                     continue;
-                $rrow = $rcid ? $prow->review_by_user($rcid) : null;
+                $rrow = $rcid ? $prow->review_of_user($rcid) : null;
                 if ($ps === self::REVIEWER_COLOR)
                     $s = get($this->reviewer_color, $d[0]) ? : "";
                 $d = [$x, $fytrack($prow, $rcid, $this->user), $prow->paperId, $s];

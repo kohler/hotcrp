@@ -1071,9 +1071,9 @@ class FormulaCompiler {
     }
     function _rrow() {
         if ($this->looptype == Fexpr::LNONE)
-            return $this->define_gvar("rrow", "\$prow->review_by_user(\$rrow_cid)");
+            return $this->define_gvar("rrow", "\$prow->review_of_user(\$rrow_cid)");
         else if ($this->looptype == Fexpr::LMY)
-            return $this->define_gvar("myrrow", "\$prow->review_by_user(" . $this->user->contactId . ")");
+            return $this->define_gvar("myrrow", "\$prow->review_of_user(" . $this->user->contactId . ")");
         else {
             $this->_add_vsreviews();
             return 'get($vsreviews, ~i~)';
