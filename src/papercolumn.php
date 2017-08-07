@@ -701,7 +701,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
                 if ($row->leadContactId == $cid)
                     $flags |= self::F_LEAD;
                 if ($row->shepherdContactId == $cid)
-                    $flags |= self::F_LEAD;
+                    $flags |= self::F_SHEPHERD;
             }
         }
         if ($ranal && !$ranal->rrow->reviewSubmitted)
