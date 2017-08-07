@@ -149,12 +149,16 @@ class ReviewField implements Abbreviatable, JsonSerializable {
     }
 
     function is_round_visible($rrow) {
+        if (!$this->round_mask)
+            return true;
         // NB missing $rrow is only possible for PC reviews
         $round = $rrow ? $rrow->reviewRound : $this->conf->assignment_round(false);
-        return !$this->round_mask
-            || $round === null
+        return $round === null
             || ($this->round_mask & (1 << $round))
-            || ($rrow && ($fid = $this->id) && $rrow->$fid);
+            || ($rrow
+                && ($fid = $this->id)
+                && isset($rrow->$fid)
+                && ($this->has_options ? (int) $rrow->$fid !== 0 : $rrow->$fid !== ""));
     }
 
     function include_word_count() {
@@ -584,15 +588,18 @@ class ReviewForm {
         unset($req["unready"]);
         $nokfields = 0;
         foreach ($this->forder as $fid => $f) {
-            if (!isset($req[$fid]) && !$submit)
-                continue;
-            if (!isset($req[$fid])) {
-                if ($f->round_mask && !$f->is_round_visible($rrow))
-                    continue;
+            if (isset($req[$fid]))
+                $fval = $req[$fid];
+            else if ($submit
+                     && (!$f->round_mask || $f->is_round_visible($rrow))) {
                 if ($f->view_score >= VIEWSCORE_PC)
                     $missing[] = $f->name;
-            }
-            $fval = get($req, $fid, ($rrow ? $rrow->$fid : ""));
+                if ($rrow && isset($rrow->$fid))
+                    $fval = $rrow->$fid;
+                else
+                    $fval = "";
+            } else
+                continue;
             if ($f->has_options) {
                 $fval = trim($fval);
                 if ($f->parse_is_empty($fval)) {
@@ -663,11 +670,10 @@ class ReviewForm {
 
     function author_nonempty($rrow) {
         foreach ($this->forder as $fid => $f)
-            if ($f->view_score >= VIEWSCORE_AUTHORDEC
+            if (isset($rrow->$fid)
                 && (!$f->round_mask || $f->is_round_visible($rrow))
-                && ($f->has_options
-                    ? $rrow->$fid != 0
-                    : (string) $rrow->$fid !== ""))
+                && $f->view_score >= VIEWSCORE_AUTHORDEC
+                && ($f->has_options ? (int) $rrow->$fid !== 0 : $rrow->$fid !== ""))
                 return true;
         return false;
     }
@@ -675,9 +681,10 @@ class ReviewForm {
     function word_count($rrow) {
         $wc = 0;
         foreach ($this->forder as $fid => $f)
-            if ($rrow->$fid
+            if (isset($rrow->$fid)
                 && (!$f->round_mask || $f->is_round_visible($rrow))
-                && $f->include_word_count())
+                && $f->include_word_count()
+                && $rrow->$fid !== "")
                 $wc += count_words($rrow->$fid);
         return $wc;
     }
@@ -1900,10 +1907,10 @@ $blind\n";
                 && (!$f->round_mask || $f->is_round_visible($rrow))
                 && ($f->view_score > VIEWSCORE_REVIEWERONLY
                     || !($flags & self::RJ_NO_REVIEWERONLY))) {
+                $fval = get($rrow, $fid);
                 if ($f->has_options)
-                    $rj[$f->uid()] = $f->unparse_value($rrow->$fid);
-                else
-                    $rj[$f->uid()] = $rrow->$fid;
+                    $fval = $f->unparse_value((int) $fval);
+                $rj[$f->uid()] = $fval;
             }
         if (($fmt = $rrow->reviewFormat) === null)
             $fmt = $this->conf->default_format;
@@ -1944,10 +1951,12 @@ $blind\n";
         } else
             $xbarsep = "";
         foreach ($this->forder as $fid => $f)
-            if ($f->view_score > $revViewScore && $f->has_options
-                && $rrow->$fid) {
+            if (isset($rrow->$fid)
+                && $f->view_score > $revViewScore
+                && $f->has_options
+                && (int) $rrow->$fid !== 0) {
                 $t .= $xbarsep . $f->name_html . "&nbsp;"
-                    . $f->unparse_value($rrow->$fid, ReviewField::VALUE_SC);
+                    . $f->unparse_value((int) $rrow->$fid, ReviewField::VALUE_SC);
                 $xbarsep = $barsep;
             }
 
