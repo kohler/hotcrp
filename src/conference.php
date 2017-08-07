@@ -2426,10 +2426,7 @@ class Conf {
         }
 
         if (get($options, "reviewerName")) {
-            if ($options["reviewerName"] === "lead" || $options["reviewerName"] === "shepherd")
-                $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=Paper." . $options["reviewerName"] . "ContactId)";
-            else if (get($options, "reviewerName"))
-                $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)";
+            $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)";
             array_push($cols, "ReviewerContactInfo.firstName as reviewFirstName",
                        "ReviewerContactInfo.lastName as reviewLastName",
                        "ReviewerContactInfo.email as reviewEmail",

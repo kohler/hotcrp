@@ -536,6 +536,8 @@ class Contact {
     }
 
     private function calculate_name_for($pfx, $user) {
+        if ($pfx === "o")
+            return (object) ["firstName" => $user->firstName, "lastName" => $user->lastName, "email" => $user->email, "contactTags" => get($user, "contactTags")];
         if ($pfx === "t")
             return Text::name_text($user);
         $n = Text::name_html($user);
@@ -544,6 +546,7 @@ class Contact {
             $n = '<span class="' . $colors . '">' . $n . '</span>';
         return $n;
     }
+
     private function name_for($pfx, $x) {
         $cid = is_object($x) ? $x->contactId : $x;
         $key = $pfx . $cid;
@@ -555,14 +558,15 @@ class Contact {
         else if (($pc = $this->conf->pc_member_by_id($cid)))
             $x = $pc;
 
-        if (is_object($x) && isset($x->firstName) && isset($x->lastName) && isset($x->email))
-            return ($this->name_for_map_[$key] = $this->calculate_name_for($pfx, $x));
+        if (!(is_object($x) && isset($x->firstName) && isset($x->lastName) && isset($x->email))) {
+            if ($pfx === "o") {
+                $x = $this->conf->user_by_id($cid);
+                $this->contact_sorter_map_[$cid] = $x->sorter;
+            } else
+                $x = $this->name_for("o", $x);
+        }
 
-        $x = $this->conf->user_by_id($cid);
-        $this->contact_sorter_map_[$cid] = $x->sorter;
-        foreach (["", "t", "r"] as $p)
-            $this->name_for_map_[$p . $cid] = $this->calculate_name_for($p, $x);
-        return $this->name_for_map_[$key];
+        return ($this->name_for_map_[$key] = $this->calculate_name_for($pfx, $x));
     }
 
     function name_html_for($x) {
@@ -571,6 +575,10 @@ class Contact {
 
     function name_text_for($x) {
         return $this->name_for("t", $x);
+    }
+
+    function name_object_for($x) {
+        return $this->name_for("o", $x);
     }
 
     function reviewer_html_for($x) {

@@ -296,12 +296,15 @@ class GetLead_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $type = $this->islead ? "lead" : "shepherd";
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "reviewerName" => $type]);
+        $key = $type . "ContactId";
+        $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $texts = array();
         foreach (PaperInfo::fetch_all($result, $user) as $row)
-            if ($row->reviewEmail
-                && ($this->islead ? $user->can_view_lead($row, true) : $user->can_view_shepherd($row, true)))
-                arrayappend($texts[$row->paperId], [$row->paperId, $row->title, $row->reviewFirstName, $row->reviewLastName, $row->reviewEmail]);
+            if ($row->$key
+                && ($this->islead ? $user->can_view_lead($row, true) : $user->can_view_shepherd($row, true))) {
+                $name = $user->name_object_for($row->$key);
+                arrayappend($texts[$row->paperId], [$row->paperId, $row->title, $name->firstName, $name->lastName, $name->email]);
+            }
         return new Csv_SearchResult("{$type}s", ["paper", "title", "first", "last", "{$type}email"], $ssel->reorder($texts));
     }
 }
