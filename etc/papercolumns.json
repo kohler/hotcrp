@@ -56,13 +56,8 @@
     },
     {
         "name": "revdelegation",
-        "column": true, "sort": true, "className": "pl_text", "factory_class": "ReviewDelegationPaperColumn",
+        "row": true, "className": "pl_text", "factory_class": "ReviewDelegation_PaperColumn",
         "priority": 800
-    },
-    {
-        "name": "revsubmitted",
-        "column": true, "completion": true, "className": "pl_text", "factory_class": "ReviewSubmittedPaperColumn",
-        "priority": 810
     },
     {
         "name": "revtype",

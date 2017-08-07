@@ -1445,6 +1445,7 @@ class PaperInfo {
             $prow->_review_array[$rrow->reviewId] = $rrow;
         }
         Dbl::free($result);
+        // XXX resets ensure_reviewer_names(), etc.
     }
 
     function reviews_by_id() {
@@ -1571,13 +1572,20 @@ class PaperInfo {
             || $this->review_type($contact);
     }
 
+    function ensure_reviews() {
+        if ($this->_review_array === null)
+            $this->load_reviews();
+    }
+
     function ensure_full_reviews() {
         if (!isset($this->_reviews_have["full"]))
             $this->load_reviews(true);
     }
 
     function ensure_reviewer_names() {
-        if (!isset($this->_reviews_have["names"])) {
+        $this->ensure_reviews();
+        if (!empty($this->_review_array)
+            && !isset($this->_reviews_have["names"])) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
             $pcm = $this->conf->pc_members();
             $missing = [];
@@ -1600,6 +1608,28 @@ class PaperInfo {
                         $rrow->email = $c->email;
                     }
                 Dbl::free($result);
+            }
+        }
+    }
+
+    function ensure_reviewer_last_login() {
+        $this->ensure_reviews();
+        if (!empty($this->_review_array)
+            && !isset($this->_reviews_have["lastLogin"])) {
+            $row_set = $this->_row_set ? : new PaperInfoSet($this);
+            $users = [];
+            foreach ($row_set->all() as $prow) {
+                $prow->_reviews_have["lastLogin"] = true;
+                foreach ($prow->reviews_by_id() as $rrow)
+                    $users[$rrow->contactId] = true;
+            }
+            if (!empty($users)) {
+                $result = $this->conf->qe("select contactId, lastLogin from ContactInfo where contactId?a", array_keys($users));
+                $users = Dbl::fetch_iimap($result);
+                foreach ($row_set->all() as $prow) {
+                    foreach ($prow->reviews_by_id() as $rrow)
+                        $rrow->reviewLastLogin = $users[$rrow->contactId];
+                }
             }
         }
     }

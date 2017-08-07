@@ -2260,8 +2260,6 @@ class Conf {
         //   "myReviews"        All reviews authored by $contactId
         //   "myOutstandingReviews" All unsubmitted reviews auth by $contactId
         //   "myConflicts"      Only conflicted papers
-        //   "reviewJoinSql"    All matching reviews (multiple rows per paper)
-        //   "reviewerName"     Include reviewer names
         //   "commenterName"    Include commenter names
         //   "tags"             Include paperTags
         //   "tagIndex" => $tag Include tagIndex of named tag
@@ -2272,12 +2270,10 @@ class Conf {
         //   "assignments"
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
 
-        $reviewerQuery = isset($options["myReviews"]) || isset($options["myReviewRequests"]) || isset($options["myOutstandingReviews"]) || isset($options["reviewJoinSql"]);
+        $reviewerQuery = isset($options["myReviews"]) || isset($options["myOutstandingReviews"]);
         $contactId = $contact ? $contact->contactId : 0;
         if (get($options, "author") || !$contactId)
             $myPaperReview = null;
-        else if (isset($options["reviewJoinSql"]))
-            $myPaperReview = "MyPaperReview";
         else
             $myPaperReview = "PaperReview";
 
@@ -2327,14 +2323,10 @@ class Conf {
         if ($contact && ($reviewerQuery || $myPaperReview)
             && ($tokens = $contact->review_tokens()))
             $reviewjoin = "($reviewjoin or reviewToken in (" . join(",", $tokens) . "))";
-        if (get($options, "myReviewRequests"))
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_EXTERNAL . ")";
-        else if (get($options, "myReviews"))
+        if (get($options, "myReviews"))
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
         else if (get($options, "myOutstandingReviews"))
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin and PaperReview.reviewNeedsSubmit!=0)";
-        else if (get($options, "reviewJoinSql"))
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and (" . $options["reviewJoinSql"] . "))";
         else if ($myPaperReview)
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
 
@@ -2425,14 +2417,6 @@ class Conf {
             $cols[] = "AllConflict.allConflictType";
         }
 
-        if (get($options, "reviewerName")) {
-            $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)";
-            array_push($cols, "ReviewerContactInfo.firstName as reviewFirstName",
-                       "ReviewerContactInfo.lastName as reviewLastName",
-                       "ReviewerContactInfo.email as reviewEmail",
-                       "ReviewerContactInfo.lastLogin as reviewLastLogin");
-        }
-
         if (get($options, "foldall"))
             $cols[] = "1 as folded";
 
@@ -2456,6 +2440,8 @@ class Conf {
             $where[] = "managerContactId=0";
         if (get($options, "myManaged"))
             $where[] = "managerContactId=$contactId";
+        if (get($options, "myReviewRequests"))
+            $where[] = "exists (select * from PaperReview where paperId=Paper.paperId and requestedBy=$contactId and reviewType=" . REVIEW_EXTERNAL . ")";
         if (get($options, "myConflicts"))
             $where[] = "PaperConflict.conflictType>0";
 

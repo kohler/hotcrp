@@ -704,7 +704,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
                     $flags |= self::F_LEAD;
             }
         }
-        if ($ranal && $ranal->needsSubmit)
+        if ($ranal && !$ranal->rrow->reviewSubmitted)
             $pl->mark_has("need_review");
         return [$ranal, $flags];
     }
@@ -765,61 +765,56 @@ class ReviewerType_PaperColumnFactory extends PaperColumnFactory {
     }
 }
 
-class ReviewSubmittedPaperColumn extends PaperColumn {
-    function __construct($cj) {
-        parent::__construct($cj);
-    }
-    function prepare(PaperList $pl, $visible) {
-        return $pl->contact->isPC;
-    }
-    function header(PaperList $pl, $is_text) {
-        return "Review status";
-    }
-    function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$row->reviewId;
-    }
-    function content(PaperList $pl, PaperInfo $row) {
-        if (!$row->reviewId)
-            return "";
-        $ranal = $pl->make_review_analysis($row, $row);
-        if ($ranal->needsSubmit)
-            $pl->mark_has("need_review");
-        return $ranal->status_html();
-    }
-}
-
-class ReviewDelegationPaperColumn extends PaperColumn {
+class ReviewDelegation_PaperColumn extends PaperColumn {
+    private $requester;
     function __construct($cj) {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->isPC)
             return false;
-        $pl->qopts["reviewerName"] = true;
-        $reviewer = $pl->reviewer_user();
-        $pl->qopts["reviewJoinSql"] = "PaperReview.requestedBy=" . $reviewer->contactId;
+        $pl->qopts["reviewSignatures"] = true;
+        $this->requester = $pl->reviewer_user();
         return true;
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $x = strcasecmp($a->reviewLastName, $b->reviewLastName);
-        $x = $x ? $x : strcasecmp($a->reviewFirstName, $b->reviewFirstName);
-        return $x ? $x : strcasecmp($a->reviewEmail, $b->reviewEmail);
-    }
     function header(PaperList $pl, $is_text) {
-        return "Reviewer";
+        return "Requested reviews";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $t = Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
-        if ($pl->contact->isPC) {
-            if (!$row->reviewLastLogin)
-                $time = "Never";
-            else if ($pl->contact->privChair)
-                $time = $row->conf->unparse_time_short($row->reviewLastLogin);
-            else
-                $time = $row->conf->unparse_time_obscure($row->reviewLastLogin);
-            $t .= "<br /><small class=\"nw\">Last update: $time</small>";
+        global $Now;
+        $rx = [];
+        $row->ensure_reviewer_names();
+        foreach ($row->reviews_by_display() as $rrow) {
+            if ($rrow->reviewType == REVIEW_EXTERNAL
+                && $rrow->requestedBy == $this->requester->contactId) {
+                if (!$pl->contact->can_view_review($row, $rrow, true))
+                    continue;
+                if ($pl->contact->can_view_review_identity($row, $rrow, true))
+                    $t = $pl->contact->reviewer_html_for($rrow);
+                else
+                    $t = "review";
+                $ranal = $pl->make_review_analysis($rrow, $row);
+                $description = $ranal->description_text();
+                if ($rrow->reviewOrdinal)
+                    $description = rtrim("#" . unparseReviewOrdinal($rrow) . " " . $description);
+                $description = $ranal->wrap_link($description, "uu");
+                if (!$rrow->reviewSubmitted && $rrow->reviewNeedsSubmit >= 0)
+                    $description = '<strong class="overdue">' . $description . '</strong>';
+                $t .= ", $description";
+                if (!$rrow->reviewSubmitted) {
+                    $pl->mark_has("need_review");
+                    $row->ensure_reviewer_last_login();
+                    if (!$rrow->reviewLastLogin)
+                        $t .= ' <span class="hint">(never logged in)</span>';
+                    else if ($rrow->reviewLastLogin >= $Now - 259200)
+                        $t .= ' <span class="hint">(last site activity ' . plural(round(($Now - $rrow->reviewLastLogin) / 3600), "hour") . ' ago)</span>';
+                    else
+                        $t .= ' <span class="hint">(last site activity ' . plural(round(($Now - $rrow->reviewLastLogin) / 86400), "day") . ' ago)</span>';
+                }
+                $rx[] = $t;
+            }
         }
-        return $t;
+        return join('; ', $rx);
     }
 }
 
@@ -1126,12 +1121,11 @@ class ReviewerList_PaperColumn extends PaperColumn {
         return "Reviewers";
     }
     private function reviews_with_names(PaperInfo $row) {
-        if (($rrows = $row->reviews_by_id())) {
-            $row->ensure_reviewer_names();
-            foreach ($rrows as $rrow)
-                Contact::set_sorter($rrow, $row->conf);
-            usort($rrows, "Contact::compare");
-        }
+        $row->ensure_reviewer_names();
+        $rrows = $row->reviews_by_id();
+        foreach ($rrows as $rrow)
+            Contact::set_sorter($rrow, $row->conf);
+        usort($rrows, "Contact::compare");
         return $rrows;
     }
     function content(PaperList $pl, PaperInfo $row) {

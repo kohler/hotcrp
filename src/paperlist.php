@@ -21,26 +21,25 @@ class PaperListRenderState {
 
 class PaperListReviewAnalysis {
     private $prow;
-    private $row = null;
-    public $needsSubmit = false;
+    public $rrow = null;
     public $round = "";
     function __construct($row, PaperInfo $prow) {
         $this->prow = $prow;
         if ($row->reviewId) {
-            $this->row = $row;
-            $this->needsSubmit = !get($row, "reviewSubmitted");
+            $this->rrow = $row;
             if ($row->reviewRound)
                 $this->round = htmlspecialchars($prow->conf->round_name($row->reviewRound));
         }
     }
     function icon_html($includeLink) {
-        if (($title = get(ReviewForm::$revtype_names, $this->row->reviewType)))
+        $rrow = $this->rrow;
+        if (($title = get(ReviewForm::$revtype_names, $rrow->reviewType)))
             $title .= " review";
         else
             $title = "Review";
-        if ($this->needsSubmit)
-            $title .= " (" . strtolower($this->description_html()) . ")";
-        $t = review_type_icon($this->row->reviewType, $this->needsSubmit, $title);
+        if (!$rrow->reviewSubmitted)
+            $title .= " (" . $this->description_text() . ")";
+        $t = review_type_icon($rrow->reviewType, !$rrow->reviewSubmitted, $title);
         if ($includeLink)
             $t = $this->wrap_link($t);
         if ($this->round)
@@ -49,44 +48,39 @@ class PaperListReviewAnalysis {
     }
     function icon_text() {
         $x = "";
-        if ($this->row->reviewType)
-            $x = get_s(ReviewForm::$revtype_names, $this->row->reviewType);
+        if ($this->rrow->reviewType)
+            $x = get_s(ReviewForm::$revtype_names, $this->rrow->reviewType);
         if ($x !== "" && $this->round)
             $x .= ":" . $this->round;
         return $x;
     }
-    function description_html() {
-        if (!$this->row)
+    function description_text() {
+        if (!$this->rrow)
             return "";
-        else if (!$this->needsSubmit)
-            return "Complete";
-        else if ($this->row->reviewType == REVIEW_SECONDARY
-                 && $this->row->reviewNeedsSubmit <= 0)
-            return "Delegated";
-        else if ($this->row->reviewType == REVIEW_EXTERNAL
-                 && $this->row->timeApprovalRequested)
-            return "Awaiting approval";
-        else if ($this->row->reviewModified > 1)
-            return "In progress";
-        else if ($this->row->reviewModified > 0)
-            return "Accepted";
+        else if ($this->rrow->reviewSubmitted)
+            return "complete";
+        else if ($this->rrow->reviewType == REVIEW_SECONDARY
+                 && $this->rrow->reviewNeedsSubmit <= 0)
+            return "delegated";
+        else if ($this->rrow->reviewType == REVIEW_EXTERNAL
+                 && $this->rrow->timeApprovalRequested)
+            return "awaiting approval";
+        else if ($this->rrow->reviewModified > 1)
+            return "in progress";
+        else if ($this->rrow->reviewModified > 0)
+            return "accepted";
         else
-            return "Not started";
+            return "not started";
     }
-    function status_html() {
-        $t = $this->description_html();
-        if ($this->needsSubmit && $t !== "Delegated")
-            $t = "<strong class=\"overdue\">$t</strong>";
-        return $this->needsSubmit ? $t : $this->wrap_link($t);
-    }
-    function wrap_link($t) {
-        if (!$this->row)
-            return $t;
-        if ($this->needsSubmit)
-            $href = $this->prow->conf->hoturl("review", "r=" . unparseReviewOrdinal($this->row));
+    function wrap_link($html, $klass = null) {
+        if (!$this->rrow)
+            return $html;
+        if (!$this->rrow->reviewSubmitted)
+            $href = $this->prow->conf->hoturl("review", "r=" . unparseReviewOrdinal($this->rrow));
         else
-            $href = $this->prow->conf->hoturl("paper", "p=" . $this->row->paperId . "#r" . unparseReviewOrdinal($this->row));
-        return '<a href="' . $href . '">' . $t . '</a>';
+            $href = $this->prow->conf->hoturl("paper", "p=" . $this->rrow->paperId . "#r" . unparseReviewOrdinal($this->rrow));
+        $t = $klass ? "<a class=\"$klass\"" : "<a";
+        return $t . ' href="' . $href . '">' . $html . '</a>';
     }
 }
 
@@ -502,7 +496,7 @@ class PaperList {
             return "sel id title revtype revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reqrevs":
             $this->_default_linkto("review");
-            return "id title revdelegation revsubmitted revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
+            return "id title revdelegation revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reviewAssignment":
             $this->_default_linkto("assign");
             return "id title revpref topicscore desirability assrev authors authorsmatch collabmatch topics allrevtopicpref reviewers tags scores formulas";
