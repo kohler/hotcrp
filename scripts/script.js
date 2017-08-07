@@ -2005,7 +2005,7 @@ function foldup(e, event, opts) {
     foldnum = opts.n || 0;
     if (!foldnum && (m = e.className.match(/\bfold(\d*)[oc]\b/)))
         foldnum = m[1];
-    dofold = !(new RegExp("\\bfold" + (foldnum ? foldnum : "") + "c\\b")).test(e.className);
+    dofold = !(new RegExp("\\bfold" + (foldnum || "") + "c\\b")).test(e.className);
     if ("f" in opts && !!opts.f == !dofold)
         return false;
     opts.f = dofold;
@@ -2018,7 +2018,8 @@ function foldup(e, event, opts) {
     return m;
 }
 
-$(function () {
+(function () {
+function prepare() {
     $(document.body).on("fold", function (evt, opts) {
         var attr = opts.f ? "onfold" : "onunfold";
         var folder = $(evt.target).data(attr);
@@ -2029,7 +2030,9 @@ $(function () {
         if ($.isFunction(folder))
             folder.call(evt.target, opts);
     });
-});
+}
+document.body ? prepare() : $(prepare);
+})();
 
 // special-case folding for author table
 function aufoldup(event) {

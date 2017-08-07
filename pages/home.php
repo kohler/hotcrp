@@ -468,7 +468,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             "<h4><a href=\"#\" onclick=\"return foldup(this,event,{n:20})\" class=\"x homeactivity\">Recent activity<span class='fx20'>:</span></a></h4>",
             "</div>";
         if (!$Conf->session("foldhomeactivity", 1))
-            Ht::stash_script("foldup(jQuery(\"#homeactivity\")[0],null,{n:20})");
+            Ht::stash_script("foldup(\$(\"#homeactivity\")[0],null,{n:20})");
     }
 
     echo "</div>\n";
