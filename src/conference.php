@@ -2513,27 +2513,12 @@ class Conf {
         return $rrows;
     }
 
-    function comment_query($where) {
-        return "select PaperComment.*, firstName reviewFirstName, lastName reviewLastName, email reviewEmail
-                from PaperComment join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
-                where $where order by commentId";
-    }
-
     function comment_rows($q, $contact) {
         $result = $this->qe_raw($q);
         $crows = array();
-        while (($row = PaperInfo::fetch($result, $contact))) {
+        while (($row = PaperInfo::fetch($result, $contact)))
             $crows[$row->commentId] = $row;
-            $row->threadContacts = array($row->contactId => 1);
-            for ($r = $row; defval($r, "replyTo", 0) && isset($crows[$r->replyTo]); $r = $crows[$r->replyTo])
-                /* do nothing */;
-            $row->threadHead = $r->commentId;
-            $r->threadContacts[$row->contactId] = 1;
-        }
         Dbl::free($result);
-        foreach ($crows as $row)
-            if ($row->threadHead != $row->commentId)
-                $row->threadContacts = $crows[$row->threadHead]->threadContacts;
         return $crows;
     }
 
