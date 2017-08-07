@@ -2378,14 +2378,6 @@ class Conf {
         } else
             $cols[] = "null reviewType, null reviewId, null myReviewType";
 
-        if ($reviewerQuery) {
-            $cols[] = "PaperReview.reviewEditVersion as reviewEditVersion";
-            $cols[] = ($this->sversion >= 105 ? "PaperReview.reviewFormat" : "null") . " as reviewFormat";
-            foreach ($this->all_review_fields() as $f)
-                if ($reviewerQuery || $f->has_options)
-                    $cols[] = "PaperReview.$f->id as $f->id";
-        }
-
         if ($myPaperReview == "MyPaperReview")
             $joins[] = "left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$contactId)";
 
