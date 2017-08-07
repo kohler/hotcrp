@@ -1265,10 +1265,6 @@ class Review_SearchTerm extends SearchTerm {
         }
         return $this;
     }
-    function trivial_rights(Contact $user, PaperSearch $srch) {
-        // tokens OK
-        return $this->rsm->rate === null && $this->rsm->has_sole_contact($user->contactId);
-    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $q = array();
         $this->_set_flags($q, $sqi);
