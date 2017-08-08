@@ -1577,33 +1577,6 @@ $blind\n";
         return $x;
     }
 
-    function set_can_view_ratings($prow, $rrows, $contact) {
-        $my_rrow = null;
-        foreach ($rrows as $rrow)
-            if (!isset($rrow->allRatings) || $rrow->allRatings === "")
-                $rrow->canViewRatings = false;
-            else if ($rrow->contactId != $contact->contactId
-                     || $contact->can_administer($prow)
-                     || $this->conf->timePCViewAllReviews()
-                     || strpos($rrow->allRatings, ",") !== false)
-                $rrow->canViewRatings = true;
-            else
-                $my_rrow = $rrow;
-        if ($my_rrow) {
-            // Do not show rating counts if rater identity is unambiguous.
-            // See also PaperSearch::_clauseTermSetRating.
-            $nsubraters = 0;
-            $rateset = $this->conf->setting("rev_ratings");
-            foreach ($rrows as $rrow)
-                if ($rrow->reviewNeedsSubmit == 0
-                    && $rrow->contactId != $contact->contactId
-                    && ($rateset == REV_RATINGS_PC_EXTERNAL
-                        || ($rateset == REV_RATINGS_PC && $rrow->reviewType > REVIEW_EXTERNAL)))
-                    ++$nsubraters;
-            $my_rrow->canViewRatings = $nsubraters >= 2;
-        }
-    }
-
     private function _echo_accept_decline($prow, $rrow, $reviewPostLink) {
         if ($rrow && !$rrow->reviewModified && $rrow->reviewType < REVIEW_SECONDARY) {
             $buttons = [];
@@ -1679,7 +1652,7 @@ $blind\n";
         echo Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-$type:0"]);
     }
 
-    function show($prow, $rrows, $rrow, &$options) {
+    function show(PaperInfo $prow, $rrow, &$options) {
         global $Me, $useRequest;
 
         if (!$options)
@@ -1791,7 +1764,7 @@ $blind\n";
             && $rrow->contactId == $Me->contactId
             && $rrow->reviewType == REVIEW_SECONDARY) {
             $ndelegated = 0;
-            foreach ($rrows as $rr)
+            foreach ($prow->reviews_by_id() as $rr)
                 if ($rr->reviewType == REVIEW_EXTERNAL
                     && $rr->requestedBy == $rrow->contactId)
                     $ndelegated++;
@@ -1840,6 +1813,15 @@ $blind\n";
     const RJ_UNPARSE_RATINGS = 4;
     const RJ_ALL_RATINGS = 8;
     const RJ_NO_REVIEWERONLY = 16;
+
+    static private function unparse_rating($rating, $flags) {
+        $rating = (int) $rating;
+        if (($flags & self::RJ_UNPARSE_RATINGS) && isset(self::$rating_types[$rating]))
+            return self::$rating_types[$rating];
+        else
+            return $rating;
+    }
+
     function unparse_review_json(PaperInfo $prow, $rrow, Contact $contact,
                                  $forceShow = null, $flags = 0) {
         self::check_review_author_seen($prow, $rrow, $contact);
@@ -1885,21 +1867,21 @@ $blind\n";
             $rj["displayed_at"] = (int) $rrow->timeDisplayed;
 
         // ratings
-        if ($contact->can_view_review_ratings($prow, $rrow)) {
+        if ((string) $rrow->allRatings !== ""
+            && $contact->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0)) {
             $ratings = [];
-            if ((string) $rrow->allRatings !== "") {
-                foreach (explode(",", $rrow->allRatings) as $rx) {
-                    list($cid, $rating) = explode(" ", $rx);
-                    if ($flags & self::RJ_UNPARSE_RATINGS)
-                        $ratings[+$cid] = self::$rating_types[(int) $rating];
-                    else
-                        $ratings[+$cid] = (int) $rating;
-                }
-                if (($flags & self::RJ_ALL_RATINGS) || $rrow->canViewRatings)
-                    $rj["ratings"] = array_values($ratings);
+            foreach (explode(",", $rrow->allRatings) as $rx) {
+                list($cid, $rating) = explode(" ", $rx);
+                $ratings[] = self::unparse_rating($rating, $flags);
             }
-            if ($contact->can_rate_review($prow, $rrow) && $editable)
-                $rj["user_rating"] = get($ratings, $contact->contactId);
+            $rj["ratings"] = $ratings;
+        }
+        if ($editable && $contact->can_rate_review($prow, $rrow)) {
+            if ((string) $rrow->allRatings !== ""
+                && preg_match('/(?:\A|,)' . $contact->contactId . ' (\d+)/', $rrow->allRatings, $m))
+                $rj["user_rating"] = self::unparse_rating($m[1], $flags);
+            else
+                $rj["user_rating"] = null;
         }
 
         // review text

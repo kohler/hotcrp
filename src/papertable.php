@@ -2181,7 +2181,6 @@ class PaperTable {
                 " in plain text</u></a></div></div>\n";
 
         $rf = $this->conf->review_form();
-        $rf->set_can_view_ratings($prow, $this->all_rrows, $Me);
 
         $rcjs = [];
         foreach ($this->viewable_rrows as $rr)
@@ -2327,8 +2326,7 @@ class PaperTable {
             self::echo_review_clickthrough();
 
         $rf = $this->conf->review_form();
-        $rf->set_can_view_ratings($prow, $this->all_rrows, $Me);
-        $rf->show($prow, $this->all_rrows, $this->editrrow, $opt);
+        $rf->show($prow, $this->editrrow, $opt);
     }
 
 

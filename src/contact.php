@@ -2664,19 +2664,37 @@ class Contact {
             return true;
     }
 
-    function can_view_review_ratings(PaperInfo $prow = null, $rrow = null) {
+    function can_view_review_ratings(PaperInfo $prow = null, $rrow = null, $override_self = false) {
         $rs = $this->conf->setting("rev_ratings");
         if ($rs != REV_RATINGS_PC && $rs != REV_RATINGS_PC_EXTERNAL)
             return false;
         if (!$prow)
             return $this->is_reviewer();
         $rights = $this->rights($prow);
-        return $this->can_view_review($prow, $rrow, null)
-            && ($rights->allow_pc || $rights->allow_review);
+        if (!$this->can_view_review($prow, $rrow, null)
+            || (!$rights->allow_pc && !$rights->allow_review))
+            return false;
+        if (!$rrow
+            || $override_self
+            || $rrow->contactId != $this->contactId
+            || $this->can_administer($prow)
+            || $this->conf->timePCViewAllReviews()
+            || (isset($rrow->allRatings) && strpos($rrow->allRatings, ",") !== false))
+            return true;
+        // Do not show rating counts if rater identity is unambiguous.
+        // See also PaperSearch::_clauseTermSetRating.
+        $nsubraters = 0;
+        foreach ($prow->reviews_by_id() as $rrow)
+            if ($rrow->reviewNeedsSubmit == 0
+                && $rrow->contactId != $this->contactId
+                && ($rs == REV_RATINGS_PC_EXTERNAL
+                    || ($rs == REV_RATINGS_PC && $rrow->reviewType > REVIEW_EXTERNAL)))
+                ++$nsubraters;
+        return $nsubraters >= 2;
     }
 
     function can_rate_review(PaperInfo $prow, $rrow) {
-        return $this->can_view_review_ratings($prow, $rrow)
+        return $this->can_view_review_ratings($prow, $rrow, true)
             && !$this->is_my_review($rrow);
     }
 
