@@ -382,8 +382,7 @@ class PaperApi {
 
     static function reviewround_api(Contact $user, $qreq, $prow) {
         if (!$qreq->r
-            || !($rr = $user->conf->reviewRow($qreq->r))
-            || $rr->paperId != $prow->paperId)
+            || !($rr = $prow->review_of_id($qreq->r)))
             return ["ok" => false, "error" => "No such review."];
         if (!$user->can_administer($prow))
             return ["ok" => false, "error" => "Permission error."];

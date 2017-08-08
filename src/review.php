@@ -915,7 +915,7 @@ class ReviewForm {
         if ($contactId != $submitter->contactId)
             $submitter = $this->contact_by_id($contactId);
         if ($submit || $approval_requested || ($rrow && $rrow->timeApprovalRequested))
-            $rrow = $this->conf->reviewRow(["paperId" => $prow->paperId, "reviewId" => $reviewId]);
+            $rrow = $prow->fresh_review_of_id($reviewId);
         $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
                                "check_function" => "HotCRPMailer::check_can_view_review"];
         if ($submit && $rrow->reviewOrdinal)
@@ -982,11 +982,20 @@ class ReviewForm {
             return $this->reviewer_error($req, $tf, $user->privChair ? "No such user." : null);
 
         // look up paper & review rows, check review permission
-        if (!($prow = $this->conf->paperRow($req["paperId"], $user, $whyNot)))
+        $prow = $this->conf->paperRow($req["paperId"], $user, $whyNot);
+        if (!$prow)
             return $this->tfError($tf, true, whyNotText($whyNot, "review"));
-        $rrow_args = ["paperId" => $prow->paperId, "first" => true,
-                      "contactId" => $reviewer->contactId, "rev_tokens" => $user->review_tokens()];
-        $rrow = $this->conf->reviewRow($rrow_args);
+        $rrow = $prow->fresh_review_of_user($reviewer);
+        if (!$rrow && $user->review_tokens()) {
+            $prow->ensure_reviewer_names();
+            $prow->ensure_full_reviews();
+            foreach ($prow->reviews_by_id() as $xrrow)
+                if ($xrrow->reviewToken
+                    && in_array($xrrow->reviewToken, $user->review_tokens())) {
+                    $rrow = $xrrow;
+                    break;
+                }
+        }
         $new_rrid = false;
         if ($user !== $reviewer && !$rrow) {
             if (!$user->can_create_review_from($prow, $reviewer))
@@ -997,7 +1006,7 @@ class ReviewForm {
             $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, $extra);
             if (!$new_rrid)
                 return $this->tfError($tf, true, "Internal error while creating review.");
-            $rrow = $this->conf->reviewRow($rrow_args);
+            $rrow = $prow->fresh_review_of_id($new_rrid);
         }
         if (($whyNot = $user->perm_submit_review($prow, $rrow))) {
             if ($user === $reviewer || $user->can_view_review_identity($prow, $rrow))

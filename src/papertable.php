@@ -2439,10 +2439,8 @@ class PaperTable {
         if (!($prow = $Conf->paperRow($sel, $Me, $whyNot)))
             return null;
         $rrow = null;
-        if (isset($sel["reviewId"])) {
-            $sel["paperId"] = $prow->paperId;
-            $rrow = $Conf->reviewRow($sel);
-        }
+        if (isset($sel["reviewId"]))
+            $rrow = $prow->review_of_id($sel["reviewId"]);
         if (($whyNot = $Me->perm_view_paper($prow))
             || (!isset($_REQUEST["paperId"])
                 && !$Me->can_view_review($prow, $rrow, null)

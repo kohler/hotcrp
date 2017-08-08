@@ -268,20 +268,17 @@ function fetch_paper($pid, $contact) {
     return $Conf->paperRow($pid, $contact);
 }
 
-function fetch_review($pid, $contact) {
-    global $Conf;
-    $pid = is_object($pid) ? $pid->paperId : $pid;
-    $cid = is_object($contact) ? $contact->contactId : $contact;
-    return $Conf->reviewRow(["paperId" => $pid, "contactId" => $cid,
-        "ratings" => true]);
+function fetch_review(PaperInfo $prow, $contact) {
+    return $prow->fresh_review_of_user($contact);
 }
 
-function save_review($pid, $contact, $revreq) {
+function save_review($paper, $contact, $revreq) {
     global $Conf;
-    $pid = is_object($pid) ? $pid->paperId : $pid;
+    $pid = is_object($paper) ? $paper->paperId : $paper;
+    $prow = fetch_paper($pid, $contact);
     $rf = $Conf->review_form();
-    $rf->save_review($revreq, fetch_review($pid, $contact), fetch_paper($pid, $contact), $contact);
-    return fetch_review($pid, $contact);
+    $rf->save_review($revreq, fetch_review($prow, $contact), $prow, $contact);
+    return fetch_review($prow, $contact);
 }
 
 echo "* Tests initialized.\n";

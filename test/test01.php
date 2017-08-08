@@ -208,7 +208,7 @@ $Conf->save_setting("au_seerev", Conf::AUSEEREV_NO);
 // check comment/review visibility when reviews are incomplete
 $Conf->save_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSINCOMPLETE);
 Contact::update_rights();
-$review1 = $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mgbaker->contactId));
+$review1 = fetch_review($paper1, $user_mgbaker);
 xassert(!$user_wilma->has_review());
 xassert(!$user_wilma->has_outstanding_review());
 xassert($user_wilma->can_view_review($paper1, $review1, false));
@@ -251,6 +251,7 @@ AssignmentSet::run($user_chair, "paper,action,email\n3,primary,ojuelegba@gmail.c
 xassert($user_wilma->has_outstanding_review());
 xassert(!$user_wilma->can_view_review($paper1, $review1, false));
 xassert(!$user_wilma->can_view_review($paper1, $review2, false));
+$paper3 = fetch_paper(3, $user_wilma);
 save_review(3, $user_wilma, $revreq);
 xassert(!$user_wilma->has_outstanding_review());
 xassert($user_wilma->can_view_review($paper1, $review1, false));
@@ -525,7 +526,7 @@ echo join("", $tags);*/
 // check review visibility for “not unless completed on same paper”
 $Conf->save_setting("pc_seeallrev", Conf::PCSEEREV_IFCOMPLETE);
 Contact::update_rights();
-$review2a = fetch_review(2, $user_jon);
+$review2a = fetch_review($paper2, $user_jon);
 xassert(!$review2a->reviewSubmitted && !$review2a->reviewAuthorSeen);
 xassert($review2a->reviewOrdinal == 0);
 xassert($user_jon->can_view_review($paper2, $review2a, false));
@@ -542,20 +543,20 @@ xassert($user_jon->can_view_review($paper2, $review2a, false));
 xassert($user_pdruschel->can_view_review($paper2, $review2a, false));
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
 AssignmentSet::run($user_chair, "paper,action,email\n2,secondary,mgbaker@cs.stanford.edu\n");
-$review2d = fetch_review(2, $user_mgbaker);
+$review2d = fetch_review($paper2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == 1);
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
 $user_external = Contact::create($Conf, ["email" => "external@_.com", "name" => "External Reviewer"]);
 $user_mgbaker->assign_review(2, $user_external->contactId, REVIEW_EXTERNAL);
-$review2d = fetch_review(2, $user_mgbaker);
+$review2d = fetch_review($paper2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == -1);
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
-$review2e = fetch_review(2, $user_external);
+$review2e = fetch_review($paper2, $user_external);
 xassert(!$user_mgbaker->can_view_review($paper2, $review2e, false));
 $review2e = save_review(2, $user_external, $revreq);
-$review2d = fetch_review(2, $user_mgbaker);
+$review2d = fetch_review($paper2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == 0);
 xassert($user_mgbaker->can_view_review($paper2, $review2a, false));
@@ -576,14 +577,14 @@ xassert($assignset->execute());
 xassert_assign($user_chair, "action,paper,email,reviewtype\nreview,all,mgbaker@cs.stanford.edu,secondary:primary\n");
 assert_search_papers($user_chair, "re:sec:mgbaker", "");
 assert_search_papers($user_chair, "re:pri:mgbaker", "1 2 13 17");
-$review2d = fetch_review(2, $user_mgbaker);
+$review2d = fetch_review($paper2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == 1);
 
 xassert_assign($user_chair, "action,paper,email,reviewtype\nreview,2,mgbaker@cs.stanford.edu,primary:secondary\n");
 assert_search_papers($user_chair, "re:sec:mgbaker", "2");
 assert_search_papers($user_chair, "re:pri:mgbaker", "1 13 17");
-$review2d = fetch_review(2, $user_mgbaker);
+$review2d = fetch_review($paper2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == 0);
 
@@ -893,7 +894,7 @@ xassert($Conf->setting("paperacc"));
 
 // check reviewAuthorSeen
 $user_author2 = $Conf->user_by_email("micke@cdt.luth.se");
-$review2b = fetch_review(2, $user_pdruschel);
+$review2b = fetch_review($paper2, $user_pdruschel);
 xassert(!$user_author2->can_view_review($paper2, $review2b, null));
 xassert(!$review2b->reviewAuthorSeen);
 $Conf->save_setting("au_seerev", Conf::AUSEEREV_YES);
@@ -901,12 +902,12 @@ xassert($user_author2->can_view_review($paper2, $review2b, null));
 
 $rjson = $Conf->review_form()->unparse_review_json($paper2, $review2b, $user_chair);
 ReviewForm::update_review_author_seen();
-$review2b = fetch_review(2, $user_pdruschel);
+$review2b = fetch_review($paper2, $user_pdruschel);
 xassert(!$review2b->reviewAuthorSeen);
 
 $rjson = $Conf->review_form()->unparse_review_json($paper2, $review2b, $user_author2);
 ReviewForm::update_review_author_seen();
-$review2b = fetch_review(2, $user_pdruschel);
+$review2b = fetch_review($paper2, $user_pdruschel);
 xassert(!!$review2b->reviewAuthorSeen);
 
 

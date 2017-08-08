@@ -1317,7 +1317,7 @@ class Review_SearchTerm extends SearchTerm {
             if ($this->rsm->wordcountexpr)
                 $row->ensure_review_word_counts();
             foreach ($rids as $rid) {
-                $rrow = get($row->reviews_by_id(), $rid);
+                $rrow = $row->review_of_id($rid);
                 assert($rrow !== null);
                 $n += $this->rsm->test_review($srch->user, $row, $rrow, $srch);
             }

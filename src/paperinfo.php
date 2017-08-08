@@ -1432,17 +1432,24 @@ class PaperInfo {
             $row_set = $this->_row_set;
         else
             $row_set = new PaperInfoSet($this);
+        $had = [];
         foreach ($row_set as $prow) {
             $prow->_review_array = [];
+            $had += $prow->_reviews_have;
             $prow->_reviews_have = ["full" => true];
         }
+
         $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
         while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
             $prow = $row_set->get($rrow->paperId);
             $prow->_review_array[$rrow->reviewId] = $rrow;
         }
         Dbl::free($result);
-        // XXX resets ensure_reviewer_names(), etc.
+
+        if (get($had, "names"))
+            $this->ensure_reviewer_names();
+        if (get($had, "lastLogin"))
+            $this->ensure_reviewer_last_login();
     }
 
     function reviews_by_id() {
@@ -1459,6 +1466,10 @@ class PaperInfo {
         $rrows = $this->reviews_by_id();
         uasort($rrows, "ReviewInfo::compare");
         return $rrows;
+    }
+
+    function review_of_id($id) {
+        return get($this->reviews_by_id(), $id);
     }
 
     function review_of_user($contact) {
@@ -1487,6 +1498,21 @@ class PaperInfo {
             return $this->_full_reviews_of[$cid];
         $this->ensure_full_reviews();
         return $this->review_of_user($contact);
+    }
+
+    private function fresh_review_of($key, $value) {
+        $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email from PaperReview join ContactInfo using (contactId) where paperId=? and $key=? order by paperId, reviewId", $this->paperId, $value);
+        $rrow = ReviewInfo::fetch($result, $this->conf);
+        Dbl::free($result);
+        return $rrow;
+    }
+
+    function fresh_review_of_id($id) {
+        return $this->fresh_review_of("reviewId", $id);
+    }
+
+    function fresh_review_of_user($contact) {
+        return $this->fresh_review_of("contactId", self::contact_to_cid($contact));
     }
 
     function num_reviews_submitted(Contact $user, $forceShow = null) {
