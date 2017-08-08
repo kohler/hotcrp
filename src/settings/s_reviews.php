@@ -293,7 +293,7 @@ class Round_SettingParser extends SettingParser {
                     $osuffix = $isuffix;
                 $ndeadlines = 0;
                 foreach (Conf::$review_deadlines as $k) {
-                    $v = parse_value($sv, Si::get($k . $isuffix));
+                    $v = $sv->parse_value(Si::get($k . $isuffix));
                     $sv->save($k . $osuffix, $v <= 0 ? null : $v);
                     $ndeadlines += $v > 0;
                 }

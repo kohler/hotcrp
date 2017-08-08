@@ -861,7 +861,7 @@ class SettingValues extends MessageSet {
             }
         }
     }
-    private function parse_value(Si $si) {
+    function parse_value(Si $si) {
         global $Now;
 
         if (!isset($sv->req[$si->name])) {
