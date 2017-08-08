@@ -50,9 +50,6 @@ class PaperContactInfo {
             $ci->reviewSubmitted = (int) $object->myReviewSubmitted;
         if (property_exists($object, "myReviewNeedsSubmit"))
             $ci->reviewNeedsSubmit = (int) $object->myReviewNeedsSubmit;
-        if (property_exists($object, "myReviewContactId")
-            && $object->myReviewContactId != $cid)
-            $ci->review_token_cid = (int) $object->myReviewContactId;
         $ci->update_review_status();
         return $ci;
     }

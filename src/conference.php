@@ -2272,9 +2272,8 @@ class Conf {
 
         $reviewerQuery = isset($options["myReviews"]) || isset($options["myOutstandingReviews"]);
         $contactId = $contact ? $contact->contactId : 0;
-        if (get($options, "author") || !$contactId)
-            $myPaperReview = null;
-        else
+        $myPaperReview = null;
+        if ($contactId && !get($options, "author"))
             $myPaperReview = "PaperReview";
 
         // paper selection
@@ -2347,31 +2346,12 @@ class Conf {
         }
 
         // fields
-        if ($myPaperReview) {
-            // see also papercolumn.php
-            array_push($cols, "PaperReview.reviewId",
-                       "PaperReview.contactId as reviewContactId",
-                       "PaperReview.reviewToken",
-                       "PaperReview.reviewType",
-                       "PaperReview.reviewRound",
-                       "PaperReview.requestedBy",
-                       "PaperReview.timeRequested",
-                       "PaperReview.reviewBlind",
-                       "PaperReview.reviewModified",
-                       "PaperReview.reviewSubmitted",
-                       "PaperReview.reviewAuthorSeen",
-                       "PaperReview.reviewOrdinal",
-                       "PaperReview.timeApprovalRequested",
-                       "PaperReview.reviewNeedsSubmit",
-                       "max($myPaperReview.reviewType) as myReviewType",
+        if ($myPaperReview)
+            array_push($cols, "max($myPaperReview.reviewType) as myReviewType",
                        "max($myPaperReview.reviewSubmitted) as myReviewSubmitted",
-                       "min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit",
-                       "$myPaperReview.contactId as myReviewContactId");
-        } else
-            $cols[] = "null reviewType, null reviewId, null myReviewType";
-
-        if ($myPaperReview == "MyPaperReview")
-            $joins[] = "left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$contactId)";
+                       "min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit");
+        else
+            $cols[] = "null myReviewType";
 
         if (get($options, "topics"))
             $cols[] = "(select group_concat(topicId) from PaperTopic where PaperTopic.paperId=Paper.paperId) topicIds";
@@ -2451,20 +2431,11 @@ class Conf {
             $pq .= "\nwhere " . join("\n    and ", $where);
 
         // grouping and ordering
-        if ($reviewerQuery || $tokens)
-            $pq .= "\ngroup by Paper.paperId, PaperReview.reviewId";
-        else
-            $pq .= "\ngroup by Paper.paperId";
-        if (get($options, "order") && $options["order"] != "order by Paper.paperId")
-            $pq .= "\n" . $options["order"];
-        else {
-            $pq .= "\norder by Paper.paperId";
-            if ($reviewerQuery || $tokens)
-                $pq .= ", PaperReview.reviewOrdinal";
-        }
+        $pq .= "\ngroup by Paper.paperId\n"
+            . get($options, "order", "order by Paper.paperId") . "\n";
 
         //Conf::msg_debugt($pq);
-        return $pq . "\n";
+        return $pq;
     }
 
     function paperRow($sel, Contact $contact = null, &$whyNot = null) {
@@ -2649,8 +2620,7 @@ class Conf {
                 PaperConflict.conflictType,
                 MyPaperReview.reviewType as myReviewType,
                 MyPaperReview.reviewSubmitted as myReviewSubmitted,
-                MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit,
-                MyPaperReview.contactId as myReviewContactId\n";
+                MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit\n";
     }
 
     private function _commentFlowQuery($contact, $t0, $limit) {
