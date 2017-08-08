@@ -1557,7 +1557,8 @@ class PaperInfo {
             $cinfo->vsreviews_cid_array = null;
             $cinfo->vsreviews_force_show = $forceShow;
             foreach ($this->reviews_by_display() as $id => $rrow)
-                if ($contact->can_view_review($this, $rrow, $forceShow))
+                if ($rrow->reviewSubmitted > 0
+                    && $contact->can_view_review($this, $rrow, $forceShow))
                     $cinfo->vsreviews_array[$id] = $rrow;
         }
         return $cinfo->vsreviews_array;
