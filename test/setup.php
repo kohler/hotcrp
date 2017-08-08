@@ -51,9 +51,15 @@ foreach ($json->papers as $p) {
     if (!$ps->save_paper_json($p))
         die_hard("* failed to create paper $p->title:\n" . htmlspecialchars_decode(join("\n", $ps->messages())) . "\n");
 }
-$assignset = new AssignmentSet($Admin, true);
-$assignset->parse($json->assignments_1, null, null);
-$assignset->execute();
+function setup_assignments($assignments, Contact $user) {
+    if (is_array($assignments))
+        $assignments = join("\n", $assignments);
+    $assignset = new AssignmentSet($user, true);
+    $assignset->parse($assignments, null, null);
+    if (!$assignset->execute())
+        die_hard("* failed to run assignments:\n" . $assignset->errors_text(true));
+}
+setup_assignments($json->assignments_1, $Admin);
 
 class Xassert {
     static public $n = 0;
