@@ -2260,7 +2260,9 @@ class PaperTable {
         if ($this->all_rrows
             && ($whyNot = $Me->perm_view_review($this->prow, null, null)))
             $m[] = "You can’t see the reviews for this submission. " . whyNotText($whyNot, "review");
-        if ($this->prow && $this->prow->reviewType && !$this->conf->time_review_open()) {
+        if ($this->prow
+            && !$this->conf->time_review_open()
+            && $this->prow->review_type($Me)) {
             if ($this->rrow)
                 $m[] = "You can’t edit your review because the site is not open for reviewing.";
             else
@@ -2281,7 +2283,7 @@ class PaperTable {
         // review messages
         $whyNot = $Me->perm_view_review($prow, null, false);
         $msgs = array();
-        if (!$this->rrow && $this->prow->reviewType <= 0)
+        if (!$this->rrow && !$this->prow->review_type($Me))
             $msgs[] = "You haven’t been assigned to review this submission, but you can review it anyway.";
         if ($whyNot && $Me->is_admin_force()) {
             $msgs[] = $this->_privilegeMessage();
