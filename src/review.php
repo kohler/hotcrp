@@ -359,11 +359,6 @@ class ReviewForm {
     public $fmap = array();
     public $forder;
     public $fieldName;
-    private $_mailer_template;
-    private $_mailer_always_combine;
-    private $_mailer_diff_view_score;
-    private $_mailer_info;
-    private $_mailer_preps;
 
     static public $revtype_names = [
         "None", "External", "PC", "Secondary", "Primary", "Meta"
@@ -497,8 +492,7 @@ class ReviewForm {
         return $format ? $this->conf->format_info($format) : null;
     }
 
-    private function webFormRows($contact, $prow, $rrow, $useRequest = false) {
-        global $ReviewFormError;
+    private function webFormRows($contact, $prow, $rrow, ReviewValues $rvalues = null) {
         $format_description = "";
         if (($fi = $this->format_info($rrow)))
             $format_description = $fi->description_preview_html();
@@ -510,13 +504,13 @@ class ReviewForm {
                 continue;
 
             $fval = "";
-            if ($useRequest)
-                $fval = (string) req($fid);
+            if ($rvalues && isset($rvalues->req[$fid]))
+                $fval = $rvalues->req[$fid];
             else if ($rrow)
                 $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
 
             echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="revet';
-            if (isset($ReviewFormError[$fid]))
+            if ($rvalues && $rvalues->has_problem_at($fid))
                 echo " error";
             echo '"><div class="revfn">', $f->name_html;
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
@@ -564,110 +558,6 @@ class ReviewForm {
         echo "</div>\n";
     }
 
-    function tfError(&$tf, $isError, $text, $field = null) {
-        $e = "";
-        if (isset($tf["filename"])) {
-            $e .= htmlspecialchars($tf["filename"]) . ":";
-            if (is_int($field))
-                $e .= $field;
-            else if ($field === null || !isset($tf["fieldLineno"][$field]))
-                $e .= $tf["firstLineno"];
-            else
-                $e .= $tf["fieldLineno"][$field];
-        }
-        if (defval($tf, 'paperId'))
-            $e .= " (paper #" . $tf['paperId'] . ")";
-        $tf[$isError ? 'anyErrors' : 'anyWarnings'] = true;
-        $tf['err'][] = ($e ? "<span class='lineno'>" . $e . ":</span> " : "") . $text;
-        return false;
-    }
-
-    function checkRequestFields(&$req, $rrow, &$tf) {
-        global $ReviewFormError;
-        $submit = defval($req, "ready", false);
-        unset($req["unready"]);
-        $nokfields = 0;
-        foreach ($this->forder as $fid => $f) {
-            if (isset($req[$fid]))
-                $fval = $req[$fid];
-            else if ($submit
-                     && (!$f->round_mask || $f->is_round_visible($rrow))) {
-                if ($f->view_score >= VIEWSCORE_PC)
-                    $missing[] = $f->name;
-                if ($rrow && isset($rrow->$fid))
-                    $fval = $rrow->$fid;
-                else
-                    $fval = "";
-            } else
-                continue;
-            if ($f->has_options) {
-                $fval = trim($fval);
-                if ($f->parse_is_empty($fval)) {
-                    if ($submit && $f->view_score >= VIEWSCORE_PC
-                        && !$f->allow_empty) {
-                        $provide[] = $f->name;
-                        $ReviewFormError[$fid] = 1;
-                    }
-                } else if (!$f->parse_value($fval, false)) {
-                    $outofrange[] = $f;
-                    $ReviewFormError[$fid] = 1;
-                } else
-                    $nokfields++;
-            } else if (trim($fval) !== "")
-                $nokfields++;
-        }
-        if (isset($missing) && $tf)
-            self::tfError($tf, false, commajoin($missing) . " " . pluralx($missing, "field") . " missing from form.  Preserving any existing values.");
-        if ($rrow && defval($rrow, "reviewEditVersion", 0) > defval($req, "version", 0)
-            && $nokfields > 0 && $tf && isset($tf["text"])) {
-            self::tfError($tf, true, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line &ldquo;<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>&rdquo; to your offline review form for paper #" . $req["paperId"] . " and upload the form again.");
-            return 0;
-        }
-        if (isset($req["reviewerEmail"]) && $rrow
-            && strcasecmp($rrow->email, $req["reviewerEmail"]) != 0
-            && (!isset($req["reviewerName"]) || $req["reviewerName"] != trim("$rrow->firstName $rrow->lastName"))) {
-            self::tfError($tf, true, "This review form claims to be written by " . htmlspecialchars($req["reviewerEmail"]) . " rather than the review&rsquo;s owner, " . Text::user_html($rrow) . ".  If you want to upload it anyway, remove the &ldquo;<code>==+==&nbsp;Reviewer</code>&rdquo; line from the form and try again.", "reviewerEmail");
-            return 0;
-        }
-        if (isset($outofrange)) {
-            if ($tf)
-                foreach ($outofrange as $f)
-                    self::tfError($tf, true, "Bad value for field \"" . $f->name_html . "\"", $f->id);
-            else {
-                foreach ($outofrange as $f)
-                    $oor2[] = $f->name_html;
-                Conf::msg_error("Bad values for " . commajoin($oor2) . ".  Please fix this and submit again.");
-            }
-            return 0;
-        }
-        if ($nokfields == 0 && $tf) {
-            $tf["ignoredBlank"][] = "#" . $req["paperId"];
-            return 0;
-        }
-        if (isset($provide)) {
-            $w = "You did not set some mandatory fields.  Please set " . htmlspecialchars(commajoin($provide)) . " and submit again.";
-            if ($tf)
-                self::tfError($tf, false, $w);
-            else
-                Conf::msg_warning($w);
-            $req["unready"] = true;
-        }
-        return $nokfields > 0;
-    }
-
-    function review_watch_callback($prow, $minic) {
-        $rrow = $this->_mailer_info["rrow"];
-        if ($minic->can_view_review($prow, $rrow, false, $this->_mailer_diff_view_score)
-            && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $prow, $this->_mailer_info))) {
-            // Don't combine preparations unless you can see all submitted
-            // reviewer identities
-            if (!$this->_mailer_always_combine
-                && !$minic->can_view_review_identity($prow, $rrow, false))
-                $p->unique_preparation = true;
-            $this->_mailer_preps[] = $p;
-        }
-    }
-
     function author_nonempty($rrow) {
         foreach ($this->forder as $fid => $f)
             if (isset($rrow->$fid)
@@ -697,335 +587,6 @@ class ReviewForm {
             && $this->conf->setting("pcrev_editdelegate");
     }
 
-    function save_review($req, $rrow, $prow, $contact, &$tf = null) {
-        $newsubmit = $approval_requested = false;
-        if (get($req, "ready") && !get($req, "unready")
-            && (!$rrow || !$rrow->reviewSubmitted)) {
-            if ($contact->isPC || !$this->review_needs_approval($rrow))
-                $newsubmit = true;
-            else
-                $approval_requested = true;
-        }
-        $submit = $newsubmit || ($rrow && $rrow->reviewSubmitted);
-        $admin = $contact->allow_administer($prow);
-
-        if (!$contact->timeReview($prow, $rrow)
-            && (!isset($req['override']) || !$admin))
-            return Conf::msg_error("The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($admin ? "  Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""));
-
-        $qf = $qv = [];
-        $diff_view_score = VIEWSCORE_FALSE;
-        $wc = 0;
-        foreach ($this->forder as $fid => $f)
-            if (isset($req[$fid])
-                && (!$f->round_mask || $f->is_round_visible($rrow))) {
-                $fval = $req[$fid];
-                if ($f->has_options) {
-                    if ($f->parse_is_empty($fval))
-                        $fval = 0;
-                    else if (!($fval = $f->parse_value($fval, false)))
-                        continue;
-                    $fval_diffs = $fval != ($rrow ? $rrow->$fid : 0);
-                } else {
-                    $fval = rtrim($fval);
-                    if ($fval !== "")
-                        $fval .= "\n";
-                    // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
-                    $fval = convert_to_utf8($fval);
-                    if ($f->include_word_count())
-                        $wc += count_words($fval);
-                    $fval_diffs = $rrow
-                        ? strcmp($rrow->$fid, $fval) != 0
-                          && strcmp(cleannl($rrow->$fid), cleannl($fval)) != 0
-                        : $fval !== "";
-                }
-                if ($fval_diffs)
-                    $diff_view_score = max($diff_view_score, $f->view_score);
-                $qf[] = "$fid=?";
-                $qv[] = $fval;
-            }
-
-        // get the current time
-        $now = time();
-        if ($rrow && $rrow->reviewModified > 1 && $rrow->reviewModified > $now)
-            $now = $rrow->reviewModified + 1;
-
-        if ($newsubmit) {
-            array_push($qf, "reviewSubmitted=?", "reviewNeedsSubmit=?");
-            array_push($qv, $now, 0);
-        }
-        if ($approval_requested) {
-            $qf[] = "timeApprovalRequested=?";
-            $qv[] = $now;
-        }
-
-        // potentially assign review ordinal (requires table locking since
-        // mySQL is stupid)
-        $locked = $newordinal = false;
-        if ((!$rrow && $newsubmit && $diff_view_score >= VIEWSCORE_AUTHORDEC)
-            || ($rrow && !$rrow->reviewOrdinal
-                && ($rrow->reviewSubmitted > 0 || $newsubmit)
-                && ($diff_view_score >= VIEWSCORE_AUTHORDEC
-                    || $this->author_nonempty($rrow)))) {
-            $table_suffix = "";
-            if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
-                $table_suffix = ", PaperTag read";
-            $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
-            if (!$result)
-                return $result;
-            $locked = true;
-            $max_ordinal = $this->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
-            if ($max_ordinal !== null) {
-                // NB `coalesce(reviewOrdinal,0)` is not necessary in modern schemas
-                $qf[] = "reviewOrdinal=if(coalesce(reviewOrdinal,0)=0,?,reviewOrdinal)";
-                $qv[] = $max_ordinal + 1;
-            }
-            Dbl::free($result);
-            $newordinal = true;
-        }
-        if ($newsubmit || $newordinal || ($submit && !$rrow->timeDisplayed)) {
-            $qf[] = "timeDisplayed=?";
-            $qv[] = $now;
-        }
-
-        // check whether used a review token
-        $usedReviewToken = $contact->review_token_cid($prow, $rrow);
-
-        // blind? reviewer type? edit version?
-        $reviewBlind = $this->conf->is_review_blind(!!get($req, "blind"));
-        if ($rrow && $reviewBlind != $rrow->reviewBlind)
-            $diff_view_score = max($diff_view_score, VIEWSCORE_ADMINONLY);
-        $qf[] = "reviewBlind=?";
-        $qv[] = $reviewBlind ? 1 : 0;
-        if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL
-            && $contact->contactId == $rrow->contactId
-            && $contact->isPC && !$usedReviewToken) {
-            $qf[] = "reviewType=?";
-            $qv[] = REVIEW_PC;
-        }
-        if ($rrow && $diff_view_score > VIEWSCORE_FALSE
-            && isset($req["version"]) && ctype_digit($req["version"])
-            && $req["version"] > get($rrow, "reviewEditVersion")) {
-            $qf[] = "reviewEditVersion=?";
-            $qv[] = $req["version"] + 0;
-        }
-        if ($diff_view_score > VIEWSCORE_FALSE && $this->conf->sversion >= 98) {
-            $qf[] = "reviewWordCount=?";
-            $qv[] = $wc;
-        }
-        if (isset($req["reviewFormat"]) && $this->conf->sversion >= 104
-            && $this->conf->opt("formatInfo")) {
-            $fmt = null;
-            foreach ($this->conf->opt("formatInfo") as $k => $f)
-                if (get($f, "name") && strcasecmp($f["name"], $req["reviewFormat"]) == 0)
-                    $fmt = (int) $k;
-            if (!$fmt && $req["reviewFormat"]
-                && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $f["reviewFormat"]))
-                $fmt = 0;
-            $qf[] = "reviewFormat=?";
-            $qv[] = $fmt;
-        }
-
-        // notification
-        $notification_bound = $now - self::NOTIFICATION_DELAY;
-        $notify = $notify_author = false;
-        if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome != 0
-            && $prow->can_author_view_decision())
-            $diff_view_score = VIEWSCORE_AUTHOR;
-        if (!$rrow || !$rrow->reviewModified || $diff_view_score > VIEWSCORE_FALSE) {
-            $qf[] = "reviewModified=?";
-            $qv[] = $now;
-        }
-        if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
-            if ($diff_view_score >= VIEWSCORE_AUTHOR) {
-                $qf[] = "reviewAuthorModified=?";
-                $qv[] = $now;
-            } else if ($rrow && !$rrow->reviewAuthorModified
-                       && $rrow->reviewModified) {
-                $qf[] = "reviewAuthorModified=?";
-                $qv[] = $rrow->reviewModified;
-            }
-            // do not notify on updates within 3 hours
-            if ($submit && $diff_view_score > VIEWSCORE_ADMINONLY) {
-                if (!$rrow || !$rrow->reviewNotified
-                    || $rrow->reviewNotified < $notification_bound) {
-                    $qf[] = "reviewNotified=?";
-                    $qv[] = $now;
-                    $notify = true;
-                }
-                if ((!$rrow || !$rrow->reviewAuthorNotified
-                     || $rrow->reviewAuthorNotified < $notification_bound)
-                    && $diff_view_score >= VIEWSCORE_AUTHOR
-                    && Contact::can_some_author_view_submitted_review($prow)) {
-                    $qf[] = "reviewAuthorNotified=?";
-                    $qv[] = $now;
-                    $notify_author = true;
-                }
-            }
-        }
-
-        // actually affect database
-        if ($rrow) {
-            array_push($qv, $prow->paperId, $rrow->reviewId);
-            $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf) . " where paperId=? and reviewId=?", $qv);
-            $reviewId = $rrow->reviewId;
-            $contactId = $rrow->contactId;
-        } else {
-            array_unshift($qf, "paperId=?", "contactId=?", "reviewType=?", "requestedBy=?", "reviewRound=?");
-            array_unshift($qv, $prow->paperId, $contact->contactId, REVIEW_PC, $contact->contactId, $this->conf->assignment_round(false));
-            $result = $this->conf->qe_apply("insert into PaperReview set " . join(", ", $qf), $qv);
-            $reviewId = $result ? $result->insert_id : null;
-            $contactId = $contact->contactId;
-        }
-
-        // unlock tables even if problem
-        if ($locked)
-            $this->conf->qe_raw("unlock tables");
-        if (!$result)
-            return $result;
-
-        // update caches
-        Contact::update_rights();
-
-        // look up review ID
-        if (!$reviewId)
-            return $reviewId;
-        $req['reviewId'] = $reviewId;
-
-        // log updates -- but not if review token is used
-        if (!$usedReviewToken && $diff_view_score > VIEWSCORE_FALSE) {
-            $text = "Review $reviewId ";
-            if ($rrow && $contact->contactId != $rrow->contactId)
-                $text .= "by $rrow->email ";
-            $text .= $newsubmit ? "submitted" : ($submit ? "updated" : "saved draft");
-            $contact->log_activity($text, $prow);
-        }
-
-        // potentially email chair, reviewers, and authors
-        $this->_mailer_preps = [];
-        $submitter = $contact;
-        if ($contactId != $submitter->contactId)
-            $submitter = $this->conf->cached_user_by_id($contactId);
-        if ($submit || $approval_requested || ($rrow && $rrow->timeApprovalRequested))
-            $rrow = $prow->fresh_review_of_id($reviewId);
-        $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
-                               "check_function" => "HotCRPMailer::check_can_view_review"];
-        if ($submit && $rrow->reviewOrdinal)
-            $this->_mailer_info["reviewNumber"] = $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
-        if ($submit && ($notify || $notify_author) && $rrow) {
-            $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
-            $this->_mailer_always_combine = false;
-            $this->_mailer_diff_view_score = $diff_view_score;
-            if ($this->conf->timeEmailChairAboutReview())
-                HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
-            $prow->notify(WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
-        } else if ($rrow && !$submit && ($approval_requested || $rrow->timeApprovalRequested)) {
-            $this->_mailer_template = $approval_requested ? "@reviewapprovalrequest" : "@reviewapprovalupdate";
-            $this->_mailer_always_combine = true;
-            $this->_mailer_diff_view_score = null;
-            $this->_mailer_info["rrow_unsubmitted"] = true;
-            if ($this->conf->timeEmailChairAboutReview())
-                HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
-            if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy))) {
-                $this->review_watch_callback($prow, $requester);
-                $this->review_watch_callback($prow, $submitter);
-            }
-        }
-        if (!empty($this->_mailer_preps))
-            HotCRPMailer::send_combined_preparations($this->_mailer_preps);
-        unset($this->_mailer_info, $this->_mailer_preps);
-
-        // if external, forgive the requestor from finishing their review
-        if ($rrow && $rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy && $submit)
-            $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
-
-        if ($tf !== null) {
-            $what = "#$prow->paperId" . ($rrow && $rrow->reviewSubmitted ? unparseReviewOrdinal($rrow->reviewOrdinal) : "");
-            if ($newsubmit)
-                $tf["newlySubmitted"][] = $what;
-            else if ($diff_view_score > VIEWSCORE_FALSE && $submit)
-                $tf["updated"][] = $what;
-            else if ($approval_requested || ($rrow && $rrow->timeApprovalRequested))
-                $tf["approvalRequested"][] = $what;
-            else if ($diff_view_score > VIEWSCORE_FALSE)
-                $tf["savedDraft"][] = $what;
-            else
-                $tf["unchanged"][] = $what;
-            if ($notify_author)
-                $tf["authorNotified"][] = $what;
-        }
-
-        return $result;
-    }
-
-    private function reviewer_error($req, &$tf, $msg = null) {
-        if (!$msg)
-            $msg = "Can’t submit a review for this reviewer.";
-        $msg = htmlspecialchars($req["reviewerEmail"]) . ": " . $msg;
-        return $this->tfError($tf, true, $msg . "<br /><span class=\"hint\">You may be mistakenly submitting a review form intended for someone else. Remove the form’s “Reviewer:” line to enter your own review.</span>", "reviewerEmail");
-    }
-
-    function check_save_review(Contact $user, $req, &$tf, Contact $reviewer = null) {
-        // look up reviewer
-        $reviewer = $reviewer ? : $user;
-        if (isset($req["reviewerEmail"])
-            && strcasecmp($req["reviewerEmail"], $user->email) != 0
-            && !($reviewer = $this->conf->user_by_email($req["reviewerEmail"])))
-            return $this->reviewer_error($req, $tf, $user->privChair ? "No such user." : null);
-
-        // look up paper & review rows, check review permission
-        $prow = $this->conf->paperRow($req["paperId"], $user, $whyNot);
-        if (!$prow)
-            return $this->tfError($tf, true, whyNotText($whyNot, "review"));
-        $rrow = $prow->fresh_review_of_user($reviewer);
-        if (!$rrow && $user->review_tokens()) {
-            $prow->ensure_reviewer_names();
-            $prow->ensure_full_reviews();
-            foreach ($prow->reviews_by_id() as $xrrow)
-                if ($xrrow->reviewToken
-                    && in_array($xrrow->reviewToken, $user->review_tokens())) {
-                    $rrow = $xrrow;
-                    break;
-                }
-        }
-        $new_rrid = false;
-        if ($user !== $reviewer && !$rrow) {
-            if (!$user->can_create_review_from($prow, $reviewer))
-                return $this->reviewer_error($req, $tf);
-            $extra = [];
-            if (isset($req["round"]))
-                $extra["round_number"] = $this->conf->round_number($req["round"], false);
-            $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, $extra);
-            if (!$new_rrid)
-                return $this->tfError($tf, true, "Internal error while creating review.");
-            $rrow = $prow->fresh_review_of_id($new_rrid);
-        }
-        if (($whyNot = $user->perm_submit_review($prow, $rrow))) {
-            if ($user === $reviewer || $user->can_view_review_identity($prow, $rrow))
-                return $this->tfError($tf, true, whyNotText($whyNot, "review"));
-            else
-                return $this->reviewer_error($req, $tf);
-        }
-
-        // actually check review and save
-        if ($this->checkRequestFields($req, $rrow, $tf)) {
-            $this->save_review($req, $rrow, $prow, $user, $tf);
-            return true;
-        } else {
-            if ($new_rrid)
-                $user->assign_review($prow->paperId, $reviewer->contactId, 0);
-            return false;
-        }
-    }
-
-
-    function textFormHeader($type) {
-        $x = "==+== " . $this->conf->short_name . " Paper Review Form" . ($type === true ? "s" : "") . "\n";
-        $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
-==-== For further guidance, or to upload this file when you are done, go to:
-==-== " . hoturl_absolute_raw("offline") . "\n\n";
-        return $x;
-    }
 
     static function update_review_author_seen() {
         while (self::$review_author_seen) {
@@ -1078,6 +639,14 @@ class ReviewForm {
                 return $rrow->reviewAuthorNotified;
         } else
             return $rrow->reviewModified;
+    }
+
+    function textFormHeader($type) {
+        $x = "==+== " . $this->conf->short_name . " Paper Review Form" . ($type === true ? "s" : "") . "\n";
+        $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
+==-== For further guidance, or to upload this file when you are done, go to:
+==-== " . hoturl_absolute_raw("offline") . "\n\n";
+        return $x;
     }
 
     function textForm($prow, $rrow, $contact, $req = null) {
@@ -1276,278 +845,6 @@ $blind\n";
         return $x;
     }
 
-    function garbageMessage(&$tf, $lineno, &$garbage) {
-        if (isset($garbage))
-            self::tfError($tf, false, "Review form appears to begin with garbage; ignoring it.", $lineno);
-        unset($garbage);
-    }
-
-    static function blank_text_form() {
-        return ["err" => [], "confirm" => []];
-    }
-
-    function beginTextForm($filename, $printFilename) {
-        if (($contents = file_get_contents($filename)) === false)
-            return null;
-        return array('text' => cleannl($contents), 'filename' => $printFilename,
-                     'lineno' => 0, 'err' => array(), 'confirm' => array());
-    }
-
-    function parseTextForm(&$tf, $override) {
-        $text = $tf['text'];
-        $lineno = $tf['lineno'];
-        $tf['firstLineno'] = $lineno + 1;
-        $tf['fieldLineno'] = array();
-        $req = array();
-        if ($override !== null)
-            $req["override"] = $override;
-
-        $mode = 0;
-        $nfields = 0;
-        $field = 0;
-        $anyDirectives = 0;
-
-        while ($text != "") {
-            $pos = strpos($text, "\n");
-            $line = ($pos === false ? $text : substr($text, 0, $pos + 1));
-            $lineno++;
-
-            if (substr($line, 0, 6) == "==+== ") {
-                // make sure we record that we saw the last field
-                if ($mode && $field != null && !isset($req[$field]))
-                    $req[$field] = "";
-
-                $anyDirectives++;
-                if (preg_match('{\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z}', $line, $m)
-                    && $m[1] != $this->conf->short_name) {
-                    $this->garbageMessage($tf, $lineno, $garbage);
-                    self::tfError($tf, true, "Ignoring review form, which appears to be for a different conference.<br />(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)", $lineno);
-                    return null;
-                } else if (preg_match('/^==\+== Begin Review/i', $line)) {
-                    if ($nfields > 0)
-                        break;
-                } else if (preg_match('/^==\+== Paper #?(\d+)/i', $line, $match)) {
-                    if ($nfields > 0)
-                        break;
-                    $req['paperId'] = $tf['paperId'] = $match[1];
-                    $req['blind'] = 1;
-                    $tf['firstLineno'] = $lineno;
-                } else if (preg_match('/^==\+== Reviewer:\s*(.*)\s*<(\S+?)>/', $line, $match)) {
-                    $tf["fieldLineno"]["reviewerEmail"] = $lineno;
-                    $req["reviewerName"] = $match[1];
-                    $req["reviewerEmail"] = $match[2];
-                } else if (preg_match('/^==\+== Paper (Number|\#)\s*$/i', $line)) {
-                    if ($nfields > 0)
-                        break;
-                    $field = "paperNumber";
-                    $tf["fieldLineno"][$field] = $lineno;
-                    $mode = 1;
-                    $req['blind'] = 1;
-                    $tf['firstLineno'] = $lineno;
-                } else if (preg_match('/^==\+== Submit Review\s*$/i', $line)
-                           || preg_match('/^==\+== Review Ready\s*$/i', $line)) {
-                    $req['ready'] = true;
-                } else if (preg_match('/^==\+== Open Review\s*$/i', $line)) {
-                    $req['blind'] = 0;
-                } else if (preg_match('/^==\+== Version\s*(\d+)$/i', $line, $match)) {
-                    if (defval($req, "version", 0) < $match[1])
-                        $req['version'] = $match[1];
-                } else if (preg_match('/^==\+== Review Readiness\s*/i', $line)) {
-                    $field = "readiness";
-                    $mode = 1;
-                } else if (preg_match('/^==\+== Review Anonymity\s*/i', $line)) {
-                    $field = "anonymity";
-                    $mode = 1;
-                } else if (preg_match('/^==\+== Review Format\s*/i', $line)) {
-                    $field = "reviewFormat";
-                    $mode = 1;
-                } else if (preg_match('/^==\+== [A-Z]\.\s*(.*?)\s*$/', $line, $match)) {
-                    while (substr($text, strlen($line), 6) === "==+== ") {
-                        $pos = strpos($text, "\n", strlen($line));
-                        $xline = ($pos === false ? substr($text, strlen($line)) : substr($text, strlen($line), $pos + 1 - strlen($line)));
-                        if (preg_match('/^==\+==\s+(.*?)\s*$/', $xline, $xmatch))
-                            $match[1] .= " " . $xmatch[1];
-                        $line .= $xline;
-                    }
-                    $field = get($this->fieldName, strtolower($match[1]));
-                    if (!$field) {
-                        $fname = preg_replace('/\s*\((hidden from authors|PC only|shown only to chairs|secret)\)\z/i', "", $match[1]);
-                        $field = get($this->fieldName, strtolower($fname));
-                    }
-                    if ($field) {
-                        $tf['fieldLineno'][$field] = $lineno;
-                        $nfields++;
-                    } else {
-                        $this->garbageMessage($tf, $lineno, $garbage);
-                        self::tfError($tf, true, "Review field “" . htmlentities($match[1]) . "” is not used for " . htmlspecialchars($this->conf->short_name) . " reviews.  Ignoring this section.", $lineno);
-                    }
-                    $mode = 1;
-                } else {
-                    $field = null;
-                    $mode = 1;
-                }
-            } else if ($mode < 2 && (substr($line, 0, 5) == "==-==" || ltrim($line) == ""))
-                /* ignore line */;
-            else {
-                if ($mode == 0) {
-                    $garbage = $line;
-                    $field = null;
-                }
-                if ($field != null)
-                    $req[$field] = defval($req, $field, "") . $line;
-                $mode = 2;
-            }
-
-            $text = substr($text, strlen($line));
-        }
-
-        if ($nfields == 0 && $tf['firstLineno'] == 1)
-            self::tfError($tf, true, "That didn&rsquo;t appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.", $lineno);
-
-        $tf['text'] = $text;
-        $tf['lineno'] = $lineno - 1;
-
-        if (isset($req["readiness"]))
-            $req["ready"] = strcasecmp(trim($req["readiness"]), "Ready") == 0;
-        if (isset($req["anonymity"]))
-            $req["blind"] = strcasecmp(trim($req["anonymity"]), "Open") != 0;
-        if (isset($req["reviewFormat"]))
-            $req["reviewFormat"] = trim($req["reviewFormat"]);
-
-        if (isset($req["paperId"]))
-            /* OK */;
-        else if (isset($req["paperNumber"])
-                 && ($pid = cvtint(trim($req["paperNumber"]), -1)) > 0)
-            $req["paperId"] = $tf["paperId"] = $pid;
-        else if ($nfields > 0) {
-            self::tfError($tf, true, "This review form doesn’t report which paper number it is for.  Make sure you’ve entered the paper number in the right place and try again.", defval($tf["fieldLineno"], "paperNumber", $lineno));
-            $nfields = 0;
-        }
-
-        if ($nfields == 0 && $text) // try again
-            return $this->parseTextForm($tf, $override);
-        else if ($nfields == 0)
-            return null;
-        else
-            return $req;
-    }
-
-    function parse_json($j) {
-        if (!is_object($j) && !is_array($j))
-            return false;
-        $req = [];
-
-        // XXX validate more
-        $first = $last = null;
-        foreach ($j as $k => $v) {
-            if ($k === "round") {
-                if ($v === null || is_string($v))
-                    $req["round"] = $v;
-            } else if ($k === "blind") {
-                if (is_bool($v))
-                    $req["blind"] = $v ? 1 : 0;
-            } else if ($k === "submitted") {
-                if (is_bool($v))
-                    $req["ready"] = $v ? 1 : 0;
-            } else if ($k === "draft") {
-                if (is_bool($v))
-                    $req["ready"] = $v ? 0 : 1;
-            } else if ($k === "name" || $k === "reviewer_name") {
-                if (is_string($v))
-                    $req["reviewerName"] = simplify_whitespace($v);
-            } else if ($k === "email" || $k === "reviewer_email") {
-                if (is_string($v))
-                    $req["reviewerEmail"] = trim($v);
-            } else if ($k === "affiliation" || $k === "reviewer_affiliation") {
-                if (is_string($v))
-                    $req["reviewerAffiliation"] = $v;
-            } else if ($k === "first" || $k === "firstName") {
-                if (is_string($v))
-                    $first = simplify_whitespace($v);
-            } else if ($k === "last" || $k === "lastName") {
-                if (is_string($v))
-                    $last = simplify_whitespace($v);
-            } else if ($k === "format") {
-                if (is_int($v))
-                    $req["reviewFormat"] = $v;
-            } else if ($k === "version") {
-                if (is_int($v))
-                    $req["version"] = $v;
-            } else if (($f = $this->conf->review_field_search($k))) {
-                if ((is_string($v) || is_int($v) || $v === null)
-                    && !isset($req[$f->id]))
-                    $req[$f->id] = $v;
-            }
-        }
-        if (!isset($req["reviewerName"]) && ($first || $last))
-            $req["reviewerName"] = ($first && $last ? "$last, $first" : ($last ? : $first));
-        if (!isset($req["ready"]))
-            $req["ready"] = 1;
-
-        return empty($req) ? null : $req;
-    }
-
-    private static function _paperCommaJoin($pl, $a, $single) {
-        while (preg_match('/\b(\w+)\*/', $pl, $m))
-            $pl = preg_replace('/\b' . $m[1] . '\*/', pluralx(count($a), $m[1]), $pl);
-        if ($single)
-            return preg_replace('/\|.*/', "", $pl);
-        $pids = array();
-        foreach ($a as &$x)
-            if (preg_match('/\A(#?)(\d+)([A-Z]*)\z/', $x, $m)) {
-                $x = "<a href=\"" . hoturl("paper", ["p" => $m[2], "anchor" => $m[3] ? "r$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
-                $pids[] = $m[2];
-            }
-        $t = str_replace("|", "", $pl) . commajoin($a);
-        if (count($pids) > 1)
-            $t = '<span class="has-hotlist" data-hotlist="p/s/' . join("+", $pids) . '">' . $t . '</span>';
-        return $t;
-    }
-
-    function textFormMessages(&$tf) {
-        if (!empty($tf["err"])) {
-            $anyErrors = get($tf, "anyErrors");
-            $anyWarnings = get($tf, "anyWarnings");
-            $message = "";
-            if (!get($tf, "singlePaper")) {
-                if ($anyErrors && $anyWarnings)
-                    $message = "There were errors and warnings while parsing the uploaded review file. ";
-                else if ($anyErrors)
-                    $message = "There were errors while parsing the uploaded review file. ";
-                else
-                    $message = "There were warnings while parsing the uploaded review file. ";
-            }
-            $this->conf->msg($anyErrors ? "merror" : "warning", $message . '<div class="parseerr"><p>' . join("</p>\n<p>", $tf['err']) . "</p></div>");
-        }
-
-        $confirm = array();
-        $single = get($tf, "singlePaper");
-        if (!empty($tf["confirm"]))
-            $confirm = array_merge($confirm, $tf["confirm"]);
-        if (!empty($tf["newlySubmitted"]))
-            $confirm[] = self::_paperCommaJoin("Review*| ", $tf["newlySubmitted"], $single) . " submitted.";
-        if (!empty($tf["updated"]))
-            $confirm[] = self::_paperCommaJoin("Review*| ", $tf["updated"], $single) . " updated.";
-        if (!empty($tf["approvalRequested"]))
-            $confirm[] = self::_paperCommaJoin("Review*| ", $tf["approvalRequested"], $single) . " submitted for approval. The requester has been notified.";
-        if (!empty($tf["savedDraft"])) {
-            if ($single)
-                $confirm[] = "Draft review saved. However, this version is marked as not ready for others to see. Please finish the review and submit again.";
-            else
-                $confirm[] = self::_paperCommaJoin("Draft review*| for paper* ", $tf["savedDraft"], $single) . " saved.";
-        }
-        $nconfirm = count($confirm);
-        if (!empty($tf["authorNotified"]))
-            $confirm[] = self::_paperCommaJoin("Notified authors| about updated review*| ", $tf["authorNotified"], $single) . ".";
-        if (!empty($tf["unchanged"]))
-            $confirm[] = self::_paperCommaJoin("Review*| ", $tf["unchanged"], $single) . " unchanged.";
-        if (!empty($tf["ignoredBlank"]))
-            $confirm[] = self::_paperCommaJoin("Ignored blank review form*| ", $tf["ignoredBlank"], $single) . ".";
-        // self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . self::_paperCommaJoin("review form* for paper*", $tf["ignoredBlank"]) . ".");
-        if (!empty($confirm))
-            $this->conf->msg($nconfirm ? "confirm" : "warning", "<div class='parseerr'><p>" . join("</p>\n<p>", $confirm) . "</p></div>");
-    }
-
     function webGuidanceRows($revViewScore, $extraclass="") {
         $x = '';
 
@@ -1652,12 +949,12 @@ $blind\n";
         echo Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-$type:0"]);
     }
 
-    function show(PaperInfo $prow, $rrow, &$options) {
-        global $Me, $useRequest;
+    function show(PaperInfo $prow, $rrow, &$options, ReviewValues $rvalues = null) {
+        global $Me;
 
         if (!$options)
             $options = array();
-        $editmode = defval($options, "edit", false);
+        $editmode = get($options, "edit", false);
 
         $reviewOrdinal = unparseReviewOrdinal($rrow);
         self::check_review_author_seen($prow, $rrow, $Me);
@@ -1748,9 +1045,6 @@ $blind\n";
       <span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search"), "'>Search</a> or <a href='", hoturl("offline"), "'>Offline reviewing</a> to download or upload many forms at once.</span></td>
     </tr></table></div>\n";
 
-        // ready?
-        $ready = ($useRequest ? req("ready") : !($rrow && $rrow->reviewModified > 1 && !$rrow->reviewSubmitted));
-
         // review card
         echo '<div class="revcard_body">';
 
@@ -1787,7 +1081,8 @@ $blind\n";
         // blind?
         if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
             echo '<div class="revet"><span class="revfn">',
-                Ht::checkbox("blind", 1, ($useRequest ? req("blind") : (!$rrow || $rrow->reviewBlind))),
+                Ht::hidden("has_blind", 1),
+                Ht::checkbox("blind", 1, ($rvalues ? !!get($rvalues->req, "blind") : (!$rrow || $rrow->reviewBlind))),
                 "&nbsp;", Ht::label("Anonymous review"),
                 "</span><hr class=\"c\" /></div>\n",
                 '<div class="revhint">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>\n",
@@ -1795,7 +1090,7 @@ $blind\n";
         }
 
         // form body
-        $this->webFormRows($Me, $prow, $rrow, $useRequest);
+        $this->webFormRows($Me, $prow, $rrow, $rvalues);
 
         // review actions
         if ($Me->timeReview($prow, $rrow) || $admin) {
@@ -1945,5 +1240,810 @@ $blind\n";
             }
 
         return $t . "</td></tr>";
+    }
+}
+
+class ReviewValues extends MessageSet {
+    public $rf;
+    public $conf;
+
+    public $text;
+    public $filename;
+    public $lineno;
+    public $firstLineno;
+    public $fieldLineno;
+    private $garbage_lineno;
+
+    public $paperId;
+    public $req;
+
+    private $finished = 0;
+    public $newlySubmitted;
+    public $updated;
+    public $approvalRequested;
+    public $savedDraft;
+    public $authorNotified;
+    public $unchanged;
+    public $ignoredBlank;
+
+    private $_mailer_template;
+    private $_mailer_always_combine;
+    private $_mailer_diff_view_score;
+    private $_mailer_info;
+    private $_mailer_preps;
+
+    function __construct(ReviewForm $rf) {
+        $this->rf = $rf;
+        $this->conf = $rf->conf;
+    }
+
+    static function make_text(ReviewForm $rf, $text, $filename = null) {
+        $rv = new ReviewValues($rf);
+        $rv->text = $text;
+        $rv->lineno = 0;
+        $rv->filename = $filename;
+        return $rv;
+    }
+
+    function rmsg($field, $msg, $status) {
+        $e = "";
+        if ($this->filename) {
+            $e .= htmlspecialchars($this->filename);
+            if (is_int($field)) {
+                if ($field)
+                    $e .= ":" . $field;
+                $field = null;
+            } else if ($field && isset($this->fieldLineno[$field]))
+                $e .= ":" . $this->fieldLineno[$field];
+            else
+                $e .= ":" . $this->lineno;
+            if ($this->paperId)
+                $e .= " (paper #" . $this->paperId . ")";
+        }
+        if ($e)
+            $msg = '<span class="lineno">' . $e . ':</span> ' . $msg;
+        $this->msg($field, $msg, $status);
+    }
+
+    private function check_garbage() {
+        if ($this->garbage_lineno)
+            $this->rmsg($this->garbage_lineno, "Review form appears to begin with garbage; ignoring it.", self::WARNING);
+        $this->garbage_lineno = null;
+    }
+
+    function parse_text($override) {
+        assert($this->text !== null && $this->finished === 0);
+
+        $text = $this->text;
+        $this->firstLineno = $this->lineno + 1;
+        $this->fieldLineno = [];
+        $this->garbage_lineno = null;
+        $this->req = [];
+        $this->paperId = false;
+        if ($override !== null)
+            $this->req["override"] = $override;
+
+        $mode = 0;
+        $nfields = 0;
+        $field = 0;
+        $anyDirectives = 0;
+
+        while ($text !== "") {
+            $pos = strpos($text, "\n");
+            $line = ($pos === false ? $text : substr($text, 0, $pos + 1));
+            ++$this->lineno;
+
+            if (substr($line, 0, 6) == "==+== ") {
+                // make sure we record that we saw the last field
+                if ($mode && $field != null && !isset($this->req[$field]))
+                    $this->req[$field] = "";
+
+                $anyDirectives++;
+                if (preg_match('{\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z}', $line, $m)
+                    && $m[1] != $this->conf->short_name) {
+                    $this->check_garbage();
+                    $this->rmsg("confid", "Ignoring review form, which appears to be for a different conference.<br />(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)", self::ERROR);
+                    return false;
+                } else if (preg_match('/^==\+== Begin Review/i', $line)) {
+                    if ($nfields > 0)
+                        break;
+                } else if (preg_match('/^==\+== Paper #?(\d+)/i', $line, $match)) {
+                    if ($nfields > 0)
+                        break;
+                    $this->paperId = intval($match[1]);
+                    $this->req["blind"] = 1;
+                    $this->firstLineno = $this->fieldLineno["paperNumber"] = $this->lineno;
+                } else if (preg_match('/^==\+== Reviewer:\s*(.*)$/', $line, $match)
+                           && ($user = Text::split_name($match[1], true))
+                           && $user[2]) {
+                    $this->fieldLineno["reviewerEmail"] = $this->lineno;
+                    $this->req["reviewerFirst"] = $user[0];
+                    $this->req["reviewerLast"] = $user[1];
+                    $this->req["reviewerEmail"] = $user[2];
+                } else if (preg_match('/^==\+== Paper (Number|\#)\s*$/i', $line)) {
+                    if ($nfields > 0)
+                        break;
+                    $field = "paperNumber";
+                    $this->fieldLineno[$field] = $lineno;
+                    $mode = 1;
+                    $this->req["blind"] = 1;
+                    $this->firstLineno = $lineno;
+                } else if (preg_match('/^==\+== Submit Review\s*$/i', $line)
+                           || preg_match('/^==\+== Review Ready\s*$/i', $line)) {
+                    $this->req["ready"] = true;
+                } else if (preg_match('/^==\+== Open Review\s*$/i', $line)) {
+                    $this->req["blind"] = 0;
+                } else if (preg_match('/^==\+== Version\s*(\d+)$/i', $line, $match)) {
+                    if (get($this->req, "version", 0) < intval($match[1]))
+                        $this->req["version"] = intval($match[1]);
+                } else if (preg_match('/^==\+== Review Readiness\s*/i', $line)) {
+                    $field = "readiness";
+                    $mode = 1;
+                } else if (preg_match('/^==\+== Review Anonymity\s*/i', $line)) {
+                    $field = "anonymity";
+                    $mode = 1;
+                } else if (preg_match('/^==\+== Review Format\s*/i', $line)) {
+                    $field = "reviewFormat";
+                    $mode = 1;
+                } else if (preg_match('/^==\+== [A-Z]\.\s*(.*?)\s*$/', $line, $match)) {
+                    while (substr($text, strlen($line), 6) === "==+== ") {
+                        $pos = strpos($text, "\n", strlen($line));
+                        $xline = ($pos === false ? substr($text, strlen($line)) : substr($text, strlen($line), $pos + 1 - strlen($line)));
+                        if (preg_match('/^==\+==\s+(.*?)\s*$/', $xline, $xmatch))
+                            $match[1] .= " " . $xmatch[1];
+                        $line .= $xline;
+                    }
+                    $field = get($this->rf->fieldName, strtolower($match[1]));
+                    if (!$field) {
+                        $fname = preg_replace('/\s*\((hidden from authors|PC only|shown only to chairs|secret)\)\z/i', "", $match[1]);
+                        $field = get($this->rf->fieldName, strtolower($fname));
+                    }
+                    if ($field) {
+                        $this->fieldLineno[$field] = $this->lineno;
+                        $nfields++;
+                    } else {
+                        $this->check_garbage();
+                        $this->rmsg(null, "Review field “" . htmlentities($match[1]) . "” is not used for " . htmlspecialchars($this->conf->short_name) . " reviews.  Ignoring this section.", self::ERROR);
+                    }
+                    $mode = 1;
+                } else {
+                    $field = null;
+                    $mode = 1;
+                }
+            } else if ($mode < 2 && (substr($line, 0, 5) == "==-==" || ltrim($line) == ""))
+                /* ignore line */;
+            else {
+                if ($mode == 0) {
+                    $this->garbage_lineno = $this->lineno;
+                    $field = null;
+                }
+                if ($field != null)
+                    $this->req[$field] = get($this->req, $field, "") . $line;
+                $mode = 2;
+            }
+
+            $text = (string) substr($text, strlen($line));
+        }
+
+        if ($nfields == 0 && $this->firstLineno == 1)
+            $this->rmsg(null, "That didn’t appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.", self::ERROR);
+
+        $this->text = $text;
+        --$this->lineno;
+
+        if (isset($this->req["readiness"]))
+            $this->req["ready"] = strcasecmp(trim($this->req["readiness"]), "Ready") == 0;
+        if (isset($this->req["anonymity"]))
+            $this->req["blind"] = strcasecmp(trim($this->req["anonymity"]), "Open") != 0;
+        if (isset($this->req["reviewFormat"]))
+            $this->req["reviewFormat"] = trim($this->req["reviewFormat"]);
+
+        if ($this->paperId)
+            /* OK */;
+        else if (isset($this->req["paperNumber"])
+                 && ($pid = cvtint(trim($this->req["paperNumber"]), -1)) > 0)
+            $this->paperId = $pid;
+        else if ($nfields > 0) {
+            $this->rmsg("paperNumber", "This review form doesn’t report which paper number it is for.  Make sure you’ve entered the paper number in the right place and try again.", self::ERROR);
+            $nfields = 0;
+        }
+
+        if ($nfields == 0 && $text) // try again
+            return $this->parse_text($override);
+        else
+            return $nfields != 0;
+    }
+
+    function parse_json($j) {
+        assert($this->text === null && $this->finished === 0);
+
+        if (!is_object($j) && !is_array($j))
+            return false;
+        $this->req = [];
+
+        // XXX validate more
+        $first = $last = null;
+        foreach ($j as $k => $v) {
+            if ($k === "round") {
+                if ($v === null || is_string($v))
+                    $this->req["round"] = $v;
+            } else if ($k === "blind") {
+                if (is_bool($v))
+                    $this->req["blind"] = $v ? 1 : 0;
+            } else if ($k === "submitted") {
+                if (is_bool($v))
+                    $this->req["ready"] = $v ? 1 : 0;
+            } else if ($k === "draft") {
+                if (is_bool($v))
+                    $this->req["ready"] = $v ? 0 : 1;
+            } else if ($k === "name" || $k === "reviewer_name") {
+                if (is_string($v))
+                    list($this->req["reviewerFirst"], $this->req["reviewerLast"]) = Text::split_name($v);
+            } else if ($k === "email" || $k === "reviewer_email") {
+                if (is_string($v))
+                    $this->req["reviewerEmail"] = trim($v);
+            } else if ($k === "affiliation" || $k === "reviewer_affiliation") {
+                if (is_string($v))
+                    $this->req["reviewerAffiliation"] = $v;
+            } else if ($k === "first" || $k === "firstName") {
+                if (is_string($v))
+                    $this->req["reviewerFirst"] = simplify_whitespace($v);
+            } else if ($k === "last" || $k === "lastName") {
+                if (is_string($v))
+                    $this->req["reviewerLast"] = simplify_whitespace($v);
+            } else if ($k === "format") {
+                if (is_int($v))
+                    $this->req["reviewFormat"] = $v;
+            } else if ($k === "version") {
+                if (is_int($v))
+                    $this->req["version"] = $v;
+            } else if (($f = $this->conf->review_field_search($k))) {
+                if ((is_string($v) || is_int($v) || $v === null)
+                    && !isset($this->req[$f->id]))
+                    $this->req[$f->id] = $v;
+            }
+        }
+        if (!empty($this->req) && isset($this->req["ready"]))
+            $this->req["ready"] = 1;
+
+        return !empty($this->req);
+    }
+
+    static private $ignore_web_keys = [
+        "submitreview" => true, "savedraft" => true, "unsubmitreview" => true,
+        "deletereview" => true, "r" => true, "m" => true, "post" => true,
+        "forceShow" => true, "update" => true, "has_blind" => true, "default" => true
+    ];
+
+    function parse_web(Qrequest $qreq, $override) {
+        assert($this->text === null && $this->finished === 0);
+        $this->req = [];
+        foreach ($qreq as $k => $v) {
+            if (isset(self::$ignore_web_keys[$k]) || !is_scalar($v))
+                /* skip */;
+            else if ($k === "p")
+                $this->paperId = cvtint($v);
+            else if ($k === "forceShow")
+                $this->req["override"] = !!$v;
+            else if ($k === "blind" || $k === "version" || $k === "ready")
+                $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);
+            else if ($k === "format")
+                $this->req["reviewFormat"] = cvtint($v);
+            else if (isset($this->rf->fmap[$k]))
+                $this->req[$k] = $v;
+            else if (($f = $this->conf->review_field_search($k))
+                     && !isset($this->req[$f->id]))
+                $this->req[$f->id] = $v;
+        }
+        if (!empty($this->req)) {
+            if (!$qreq->has_blind && !isset($this->req["blind"]))
+                $this->req["blind"] = 1;
+            if ($override)
+                $this->req["override"] = 1;
+            return true;
+        } else
+            return false;
+    }
+
+    private function reviewer_error($msg) {
+        if (!$msg)
+            $msg = $this->conf->_("Can’t submit a review for %s.", htmlspecialchars($this->req["reviewerEmail"]));
+        $this->rmsg("reviewerEmail", $msg, self::ERROR);
+        $this->rmsg("reviewerEmail", $this->conf->_("(You may be mistakenly submitting a review form intended for someone else.)"), self::INFO);
+    }
+
+    function check_and_save(Contact $user, PaperInfo $prow = null, ReviewInfo $rrow = null) {
+        assert(!$rrow || $rrow->paperId == $prow->paperId);
+
+        // look up paper
+        if (!$prow) {
+            if (!$this->paperId) {
+                $this->rmsg("paperNumber", "This review form doesn’t report which paper number it is for.  Make sure you’ve entered the paper number in the right place and try again.", self::ERROR);
+                return false;
+            }
+            $prow = $this->conf->paperRow($this->paperId, $user, $whyNot);
+            if (!$prow) {
+                $this->rmsg("paperNumber", whyNotText($whyNot, "review"), self::ERROR);
+                return false;
+            }
+        }
+        if ($this->paperId && $prow->paperId != $this->paperId) {
+            $this->rmsg("paperNumber", "This review form is for paper #{$this->paperId}, not paper #{$prow->paperId}; did you mean to upload it here? I have ignored the form.", MessageSet::ERROR);
+            return false;
+        }
+        $this->paperId = $prow->paperId;
+
+        // look up reviewer
+        $reviewer = $user;
+        if ($rrow) {
+            if ($rrow->contactId != $user->contactId)
+                $reviewer = $this->conf->cached_user_by_id($rrow->contactId);
+        } else if (isset($this->req["reviewerEmail"])
+                   && strcasecmp($this->req["reviewerEmail"], $user->email) != 0) {
+            if (!($reviewer = $this->conf->user_by_email($this->req["reviewerEmail"]))) {
+                $this->reviewer_error($user->privChair ? $this->conf->_("No such user %s.", htmlspecialchars($this->req["reviewerEmail"])) : null);
+                return false;
+            }
+        }
+
+        // look up review
+        if (!$rrow)
+            $rrow = $prow->fresh_review_of_user($reviewer);
+        if (!$rrow && $user->review_tokens()) {
+            $prow->ensure_reviewer_names();
+            $prow->ensure_full_reviews();
+            foreach ($prow->reviews_by_id() as $xrrow)
+                if ($xrrow->reviewToken
+                    && in_array($xrrow->reviewToken, $user->review_tokens())) {
+                    $rrow = $xrrow;
+                    break;
+                }
+        }
+
+        // maybe create review
+        $new_rrid = false;
+        if (!$rrow && $user !== $reviewer) {
+            if (!$user->can_create_review_from($prow, $reviewer)) {
+                $this->reviewer_error(null);
+                return false;
+            }
+            $extra = [];
+            if (isset($this->req["round"]))
+                $extra["round_number"] = $this->conf->round_number($this->req["round"], false);
+            $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, $extra);
+            if (!$new_rrid) {
+                $this->rmsg(null, "Internal error while creating review.", self::ERROR);
+                return false;
+            }
+            $rrow = $prow->fresh_review_of_id($new_rrid);
+        }
+
+        // check permission
+        $whyNot = $user->perm_submit_review($prow, $rrow);
+        if ($whyNot) {
+            if ($user === $reviewer || $user->can_view_review_identity($prow, $rrow))
+                $this->rmsg(null, whyNotText($whyNot, "review"), self::ERROR);
+            else
+                $this->reviewer_error(null);
+            return false;
+        }
+
+        // actually check review and save
+        if ($this->check($rrow))
+            return $this->do_save($user, $prow, $rrow);
+        else {
+            if ($new_rrid)
+                $user->assign_review($prow->paperId, $reviewer->contactId, 0);
+            return false;
+        }
+    }
+
+    private function check(ReviewInfo $rrow = null) {
+        $submit = get($this->req, "ready");
+        $before_nerrors = $this->nerrors();
+        $nokfields = 0;
+        $unready = false;
+        foreach ($this->rf->forder as $fid => $f) {
+            if (isset($this->req[$fid]))
+                $fval = $this->req[$fid];
+            else if ($submit
+                     && (!$f->round_mask || $f->is_round_visible($rrow))) {
+                if ($rrow && isset($rrow->$fid))
+                    $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
+                else
+                    $fval = "";
+            } else
+                continue;
+            if ($f->has_options) {
+                $fval = trim($fval);
+                if ($f->parse_is_empty($fval)) {
+                    if ($submit
+                        && $f->view_score >= VIEWSCORE_PC
+                        && !$f->allow_empty) {
+                        $this->warning_at($fid, $this->conf->_("You must provide a value for %s in order to submit your review.", $f->name_html));
+                        $unready = true;
+                    }
+                } else if ($f->parse_value($fval, false))
+                    ++$nokfields;
+                else {
+                    $this->warning_at($fid, $this->conf->_("Bad %s value “%s”.", $f->name_html, htmlspecialchars(UnicodeHelper::utf8_abbreviate($fval, 100))));
+                    unset($this->req[$fid]);
+                    $unready = true;
+                }
+            } else if (trim($fval) !== "")
+                ++$nokfields;
+        }
+        if ($rrow
+            && isset($this->req["reviewerEmail"])
+            && strcasecmp($rrow->email, $this->req["reviewerEmail"]) != 0
+            && (!isset($this->req["reviewerFirst"])
+                || !isset($this->req["reviewerLast"])
+                || strcasecmp($this->req["reviewerFirst"], $rrow->firstName) != 0
+                || strcasecmp($this->req["reviewerLast"], $rrow->lastName) != 0)) {
+            $msg = $this->conf->_("The review form was meant for %s, but this review belongs to %s. If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", Text::user_html(["name" => get($this->req, "reviewerName"), "email" => $this->req["reviewerEmail"]]), Text::user_html($rrow));
+            $this->error_at("reviewerEmail", $msg);
+        } else if ($rrow
+                   && $rrow->reviewEditVersion > get($this->req, "version", 0)
+                   && $nokfields > 0
+                   && $this->text !== null) {
+            $this->rmsg($this->firstLineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
+        } else if ($unready) {
+            $this->warning_at("ready", null);
+            $this->req["ready"] = 0;
+        }
+        if ($this->nerrors() !== $before_nerrors)
+            return false;
+        else if ($nokfields > 0)
+            return true;
+        else {
+            $this->ignoredBlank[] = "#" . $this->paperId;
+            return false;
+        }
+    }
+
+    function review_watch_callback($prow, $minic) {
+        $rrow = $this->_mailer_info["rrow"];
+        if ($minic->can_view_review($prow, $rrow, false, $this->_mailer_diff_view_score)
+            && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $prow, $this->_mailer_info))) {
+            // Don't combine preparations unless you can see all submitted
+            // reviewer identities
+            if (!$this->_mailer_always_combine
+                && !$minic->can_view_review_identity($prow, $rrow, false))
+                $p->unique_preparation = true;
+            $this->_mailer_preps[] = $p;
+        }
+    }
+
+    private function do_save(Contact $user, PaperInfo $prow, $rrow) {
+        assert($this->paperId == $prow->paperId);
+        assert(!$rrow || $rrow->paperId == $prow->paperId);
+
+        $newsubmit = $approval_requested = false;
+        if (get($this->req, "ready")
+            && (!$rrow || !$rrow->reviewSubmitted)) {
+            if ($user->isPC || !$this->rf->review_needs_approval($rrow))
+                $newsubmit = true;
+            else
+                $approval_requested = true;
+        }
+        $submit = $newsubmit || ($rrow && $rrow->reviewSubmitted);
+        $admin = $user->allow_administer($prow);
+
+        if (!$user->timeReview($prow, $rrow)
+            && (!isset($this->req["override"]) || !$admin)) {
+            $this->rmsg(null, "The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($admin ? " Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""), self::ERROR);
+            return false;
+        }
+
+        $qf = $qv = [];
+        $diff_view_score = VIEWSCORE_FALSE;
+        $wc = 0;
+        foreach ($this->rf->forder as $fid => $f)
+            if (isset($this->req[$fid])
+                && (!$f->round_mask || $f->is_round_visible($rrow))) {
+                $fval = $this->req[$fid];
+                if ($f->has_options) {
+                    if ($f->parse_is_empty($fval))
+                        $fval = 0;
+                    else if (!($fval = $f->parse_value($fval, false)))
+                        continue;
+                    $fval_diffs = $fval != ($rrow ? $rrow->$fid : 0);
+                } else {
+                    $fval = rtrim($fval);
+                    if ($fval !== "")
+                        $fval .= "\n";
+                    // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
+                    $fval = convert_to_utf8($fval);
+                    if ($f->include_word_count())
+                        $wc += count_words($fval);
+                    $fval_diffs = $rrow
+                        ? strcmp($rrow->$fid, $fval) != 0
+                          && strcmp(cleannl($rrow->$fid), cleannl($fval)) != 0
+                        : $fval !== "";
+                }
+                if ($fval_diffs)
+                    $diff_view_score = max($diff_view_score, $f->view_score);
+                if ($fval_diffs || !$rrow) {
+                    $qf[] = "$fid=?";
+                    $qv[] = $fval;
+                }
+            }
+
+        // get the current time
+        $now = time();
+        if ($rrow && $rrow->reviewModified > 1 && $rrow->reviewModified > $now)
+            $now = $rrow->reviewModified + 1;
+
+        if ($newsubmit) {
+            array_push($qf, "reviewSubmitted=?", "reviewNeedsSubmit=?");
+            array_push($qv, $now, 0);
+        }
+        if ($approval_requested) {
+            $qf[] = "timeApprovalRequested=?";
+            $qv[] = $now;
+        }
+
+        // potentially assign review ordinal (requires table locking since
+        // mySQL is stupid)
+        $locked = $newordinal = false;
+        if ((!$rrow && $newsubmit && $diff_view_score >= VIEWSCORE_AUTHORDEC)
+            || ($rrow && !$rrow->reviewOrdinal
+                && ($rrow->reviewSubmitted > 0 || $newsubmit)
+                && ($diff_view_score >= VIEWSCORE_AUTHORDEC
+                    || $this->rf->author_nonempty($rrow)))) {
+            $table_suffix = "";
+            if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
+                $table_suffix = ", PaperTag read";
+            $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
+            if (!$result)
+                return $result;
+            $locked = true;
+            $max_ordinal = $this->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
+            if ($max_ordinal !== null) {
+                // NB `coalesce(reviewOrdinal,0)` is not necessary in modern schemas
+                $qf[] = "reviewOrdinal=if(coalesce(reviewOrdinal,0)=0,?,reviewOrdinal)";
+                $qv[] = $max_ordinal + 1;
+            }
+            Dbl::free($result);
+            $newordinal = true;
+        }
+        if ($newsubmit || $newordinal || ($submit && !$rrow->timeDisplayed)) {
+            $qf[] = "timeDisplayed=?";
+            $qv[] = $now;
+        }
+
+        // check whether used a review token
+        $usedReviewToken = $user->review_token_cid($prow, $rrow);
+
+        // blind? reviewer type? edit version?
+        $reviewBlind = $this->conf->is_review_blind(!!get($this->req, "blind"));
+        if (!$rrow
+            || $reviewBlind != $rrow->reviewBlind) {
+            $diff_view_score = max($diff_view_score, VIEWSCORE_ADMINONLY);
+            $qf[] = "reviewBlind=?";
+            $qv[] = $reviewBlind ? 1 : 0;
+        }
+        if ($rrow
+            && $rrow->reviewType == REVIEW_EXTERNAL
+            && $user->contactId == $rrow->contactId
+            && $user->isPC
+            && !$usedReviewToken) {
+            $qf[] = "reviewType=?";
+            $qv[] = REVIEW_PC;
+        }
+        if ($rrow
+            && $diff_view_score > VIEWSCORE_FALSE
+            && isset($this->req["version"])
+            && ctype_digit($this->req["version"])
+            && $this->req["version"] > get($rrow, "reviewEditVersion")) {
+            $qf[] = "reviewEditVersion=?";
+            $qv[] = $this->req["version"] + 0;
+        }
+        if ($diff_view_score > VIEWSCORE_FALSE
+            && $this->conf->sversion >= 98) {
+            $qf[] = "reviewWordCount=?";
+            $qv[] = $wc;
+        }
+        if (isset($this->req["reviewFormat"])
+            && $this->conf->sversion >= 104
+            && $this->conf->opt("formatInfo")) {
+            $fmt = null;
+            foreach ($this->conf->opt("formatInfo") as $k => $f)
+                if (get($f, "name") && strcasecmp($f["name"], $this->req["reviewFormat"]) == 0)
+                    $fmt = (int) $k;
+            if (!$fmt && $this->req["reviewFormat"]
+                && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $f["reviewFormat"]))
+                $fmt = 0;
+            $qf[] = "reviewFormat=?";
+            $qv[] = $fmt;
+        }
+
+        // notification
+        $notification_bound = $now - ReviewForm::NOTIFICATION_DELAY;
+        $notify = $notify_author = false;
+        if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome != 0
+            && $prow->can_author_view_decision())
+            $diff_view_score = VIEWSCORE_AUTHOR;
+        if (!$rrow || !$rrow->reviewModified || $diff_view_score > VIEWSCORE_FALSE) {
+            $qf[] = "reviewModified=?";
+            $qv[] = $now;
+        }
+        if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
+            if ($diff_view_score >= VIEWSCORE_AUTHOR) {
+                $qf[] = "reviewAuthorModified=?";
+                $qv[] = $now;
+            } else if ($rrow && !$rrow->reviewAuthorModified
+                       && $rrow->reviewModified) {
+                $qf[] = "reviewAuthorModified=?";
+                $qv[] = $rrow->reviewModified;
+            }
+            // do not notify on updates within 3 hours
+            if ($submit && $diff_view_score > VIEWSCORE_ADMINONLY) {
+                if (!$rrow || !$rrow->reviewNotified
+                    || $rrow->reviewNotified < $notification_bound) {
+                    $qf[] = "reviewNotified=?";
+                    $qv[] = $now;
+                    $notify = true;
+                }
+                if ((!$rrow || !$rrow->reviewAuthorNotified
+                     || $rrow->reviewAuthorNotified < $notification_bound)
+                    && $diff_view_score >= VIEWSCORE_AUTHOR
+                    && Contact::can_some_author_view_submitted_review($prow)) {
+                    $qf[] = "reviewAuthorNotified=?";
+                    $qv[] = $now;
+                    $notify_author = true;
+                }
+            }
+        }
+
+        // actually affect database
+        if ($rrow) {
+            if (!empty($qf)) {
+                array_push($qv, $prow->paperId, $rrow->reviewId);
+                $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf) . " where paperId=? and reviewId=?", $qv);
+            } else
+                $result = true;
+            $reviewId = $rrow->reviewId;
+            $contactId = $rrow->contactId;
+        } else {
+            array_unshift($qf, "paperId=?", "contactId=?", "reviewType=?", "requestedBy=?", "reviewRound=?");
+            array_unshift($qv, $prow->paperId, $user->contactId, REVIEW_PC, $user->contactId, $this->conf->assignment_round(false));
+            $result = $this->conf->qe_apply("insert into PaperReview set " . join(", ", $qf), $qv);
+            $reviewId = $result ? $result->insert_id : null;
+            $contactId = $user->contactId;
+        }
+
+        // unlock tables even if problem
+        if ($locked)
+            $this->conf->qe_raw("unlock tables");
+        if (!$result)
+            return false;
+
+        // update caches
+        Contact::update_rights();
+
+        // look up review ID
+        if (!$reviewId)
+            return false;
+        $this->req["reviewId"] = $reviewId;
+
+        // log updates -- but not if review token is used
+        if (!$usedReviewToken && $diff_view_score > VIEWSCORE_FALSE) {
+            $text = "Review $reviewId "
+                . ($newsubmit ? "submitted" : ($submit ? "updated" : "saved draft"));
+            $user->log_activity_for($rrow->contactId, $text, $prow);
+        }
+
+        // potentially email chair, reviewers, and authors
+        $submitter = $user;
+        if ($contactId != $submitter->contactId)
+            $submitter = $this->conf->cached_user_by_id($contactId);
+        if ($submit || $approval_requested || ($rrow && $rrow->timeApprovalRequested))
+            $rrow = $prow->fresh_review_of_id($reviewId);
+
+        $this->_mailer_preps = [];
+        $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
+                               "check_function" => "HotCRPMailer::check_can_view_review"];
+        if ($submit && $rrow->reviewOrdinal)
+            $this->_mailer_info["reviewNumber"] = $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
+        if ($submit && ($notify || $notify_author) && $rrow) {
+            $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
+            $this->_mailer_always_combine = false;
+            $this->_mailer_diff_view_score = $diff_view_score;
+            if ($this->conf->timeEmailChairAboutReview())
+                HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
+            $prow->notify(WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $user);
+        } else if ($rrow && !$submit && ($approval_requested || $rrow->timeApprovalRequested)) {
+            $this->_mailer_template = $approval_requested ? "@reviewapprovalrequest" : "@reviewapprovalupdate";
+            $this->_mailer_always_combine = true;
+            $this->_mailer_diff_view_score = null;
+            $this->_mailer_info["rrow_unsubmitted"] = true;
+            if ($this->conf->timeEmailChairAboutReview())
+                HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
+            if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy))) {
+                $this->review_watch_callback($prow, $requester);
+                $this->review_watch_callback($prow, $submitter);
+            }
+        }
+        if (!empty($this->_mailer_preps))
+            HotCRPMailer::send_combined_preparations($this->_mailer_preps);
+        unset($this->_mailer_info, $this->_mailer_preps);
+
+        // if external, forgive the requestor from finishing their review
+        if ($rrow && $rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy && $submit)
+            $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
+
+        $what = "#$prow->paperId" . ($rrow && $rrow->reviewSubmitted ? unparseReviewOrdinal($rrow->reviewOrdinal) : "");
+        if ($newsubmit)
+            $this->newlySubmitted[] = $what;
+        else if ($diff_view_score > VIEWSCORE_FALSE && $submit)
+            $this->updated[] = $what;
+        else if ($approval_requested || ($rrow && $rrow->timeApprovalRequested))
+            $this->approvalRequested[] = $what;
+        else if ($diff_view_score > VIEWSCORE_FALSE)
+            $this->savedDraft[] = $what;
+        else
+            $this->unchanged[] = $what;
+        if ($notify_author)
+            $this->authorNotified[] = $what;
+
+        return true;
+    }
+
+    private function _confirm_message($fmt, $info) {
+        $pids = array();
+        foreach ($info as &$x)
+            if (preg_match('/\A(#?)(\d+)([A-Z]*)\z/', $x, $m)) {
+                $x = "<a href=\"" . hoturl("paper", ["p" => $m[2], "anchor" => $m[3] ? "r$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
+                $pids[] = $m[2];
+            }
+        $t = $this->conf->_($fmt, count($info), commajoin($info), $this->text === null);
+        if (count($pids) > 1)
+            $t = '<span class="has-hotlist" data-hotlist="p/s/' . join("+", $pids) . '">' . $t . '</span>';
+        $this->msg(null, $t, self::INFO);
+        return true;
+    }
+
+    function finish() {
+        $confirm = false;
+        if ($this->newlySubmitted)
+            $confirm = $this->_confirm_message("Reviews %2\$s submitted.", $this->newlySubmitted);
+        if ($this->updated)
+            $confirm = $this->_confirm_message("Reviews %2\$s updated.", $this->updated);
+        if ($this->approvalRequested)
+            $confirm = $this->_confirm_message("Reviews %2\$s submitted for approval.", $this->newlySubmitted);
+        if ($this->savedDraft)
+            $confirm = $this->_confirm_message("Draft reviews for papers %2\$s saved.", $this->savedDraft);
+        if ($this->authorNotified)
+            $this->_confirm_message("Authors were notified about updated reviews %2\$s.", $this->authorNotified);
+        if (count($this->unchanged) + count($this->ignoredBlank) > 1
+            || $this->text !== null
+            || !$this->has_messages()) {
+            if ($this->unchanged)
+                $this->_confirm_message("Reviews %2\$s unchanged.", $this->unchanged);
+            if ($this->ignoredBlank)
+                $this->_confirm_message("Ignored blank review forms %2\$s.", $this->ignoredBlank);
+        }
+        $this->finished = $confirm ? 2 : 1;
+    }
+
+    function report() {
+        if (!$this->finished)
+            $this->finish();
+        if ($this->finished < 3 && $this->has_messages()) {
+            $hdr = "";
+            if ($this->text !== null) {
+                if ($this->has_error() && $this->has_warning())
+                    $hdr = $this->conf->_("There were errors and warnings while parsing the uploaded review file.");
+                else if ($this->has_error())
+                    $hdr = $this->conf->_("There were errors while parsing the uploaded review file.");
+                else if ($this->has_warning())
+                    $hdr = $this->conf->_("There were warnings while parsing the uploaded review file.");
+            }
+            $m = '<div class="parseerr"><p>' . join("</p>\n<p>", $this->messages()) . '</p></div>';
+            $this->conf->msg($this->has_error() || $this->has_problem_at("ready") ? "merror" : ($this->has_warning() || $this->finished == 1 ? "warning" : "confirm"),
+                $hdr . $m);
+        }
+        $this->finished = 3;
     }
 }

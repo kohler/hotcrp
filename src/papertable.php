@@ -26,6 +26,7 @@ class PaperTable {
 
     private $qreq;
     private $useRequest;
+    private $review_values;
     private $npapstrip = 0;
     private $npapstrip_tag_entry;
     private $allFolded;
@@ -127,6 +128,10 @@ class PaperTable {
 
     function set_edit_status(PaperStatus $status) {
         $this->edit_status = $status;
+    }
+
+    function set_review_values(ReviewValues $rvalues = null) {
+        $this->review_values = $rvalues;
     }
 
     function can_view_reviews() {
@@ -2326,7 +2331,7 @@ class PaperTable {
             self::echo_review_clickthrough();
 
         $rf = $this->conf->review_form();
-        $rf->show($prow, $this->editrrow, $opt);
+        $rf->show($prow, $this->editrrow, $opt, $this->review_values);
     }
 
 

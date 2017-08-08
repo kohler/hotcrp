@@ -286,7 +286,9 @@ function save_review($paper, $contact, $revreq) {
     $pid = is_object($paper) ? $paper->paperId : $paper;
     $prow = fetch_paper($pid, $contact);
     $rf = $Conf->review_form();
-    $rf->save_review($revreq, fetch_review($prow, $contact), $prow, $contact);
+    $tf = new ReviewValues($rf);
+    $tf->parse_web(new Qrequest("POST", $revreq), false);
+    $tf->check_and_save($contact, $prow, fetch_review($prow, $contact));
     return fetch_review($prow, $contact);
 }
 

@@ -83,4 +83,47 @@ assert_search_papers($user_chair, "-cre:mgbaker", "2-30");
 
 assert_search_papers($user_chair, "ovemer:5", "1");
 
+$paper1 = fetch_paper(1, $user_chair);
+$rrow = fetch_review($paper1, $user_mgbaker);
+$review1A = file_get_contents("$ConfSitePATH/test/review1A.txt");
+$tf = ReviewValues::make_text($Conf->review_form(), $review1A, "review1A.txt");
+xassert($tf->parse_text(false));
+xassert($tf->check_and_save($user_mgbaker));
+
+assert_search_papers($user_chair, "ovemer:4", "1");
+
+$tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/Testconf I/', 'Testconf IIII', $review1A), "review1A-1.txt");
+xassert(!$tf->parse_text(false));
+xassert($tf->has_error_at("confid"));
+
+$tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/^4/m', 'Mumps', $review1A), "review1A-2.txt");
+xassert($tf->parse_text(false));
+xassert($tf->check_and_save($user_mgbaker));
+xassert_eqq(join(" ", $tf->unchanged), "#1A");
+xassert($tf->has_problem_at("overAllMerit"));
+
+$tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/^4/m', 'No entry', $review1A), "review1A-3.txt");
+xassert($tf->parse_text(false));
+xassert($tf->check_and_save($user_mgbaker));
+xassert_eqq(join(" ", $tf->unchanged), "#1A");
+xassert($tf->has_problem_at("overAllMerit"));
+xassert(strpos(join("\n", $tf->messages_at("overAllMerit")), "must provide") !== false);
+//error_log(var_export($tf->messages(true), true));
+
+$tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: butt@butt.com', $review1A), "review1A-4.txt");
+xassert($tf->parse_text(false));
+xassert(!$tf->check_and_save($user_mgbaker));
+xassert($tf->has_problem_at("reviewerEmail"));
+
+$tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baaaker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5", $review1A)), "review1A-5.txt");
+xassert($tf->parse_text(false));
+xassert(!$tf->check_and_save($user_mgbaker, $paper1, fetch_review($paper1, $user_mgbaker)));
+xassert($tf->has_problem_at("reviewerEmail"));
+
+$tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5", $review1A)), "review1A-5.txt");
+xassert($tf->parse_text(false));
+xassert($tf->check_and_save($user_mgbaker, $paper1, fetch_review($paper1, $user_mgbaker)));
+xassert(!$tf->has_problem_at("reviewerEmail"));
+//error_log(var_export($tf->messages(true), true));
+
 xassert_exit();

@@ -86,24 +86,13 @@ if (isset($_REQUEST["uploadForm"])
     && file_uploaded($_FILES['uploadedFile'])
     && check_post()) {
     // parse form, store reviews
-    $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
-
-    if (!($req = $rf->parseTextForm($tf, req("override"))))
-        /* error already reported */;
-    else if (isset($req['paperId']) && $req['paperId'] != $prow->paperId)
-        $rf->tfError($tf, true, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.");
-    else if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
-        $rf->tfError($tf, true, whyNotText($whyNot, "review"));
-    else {
-        $req["paperId"] = $prow->paperId;
-        if ($rf->checkRequestFields($req, $paperTable->editrrow, $tf))
-            $rf->save_review($req, $paperTable->editrrow, $prow, $Me, $tf);
-    }
-
-    if (count($tf['err']) == 0 && $rf->parseTextForm($tf, req("override")))
-        $rf->tfError($tf, false, "Only the first review form in the file was parsed.  <a href='" . hoturl("offline") . "'>Upload multiple-review files here.</a>");
-
-    $rf->textFormMessages($tf);
+    $tf = ReviewValues::make_text($rf, file_get_contents($_FILES["uploadedFile"]["tmp_name"]),
+            $_FILES["uploadedFile"]["name"]);
+    if ($tf->parse_text(req("override")))
+        $tf->check_and_save($Me, $prow, $paperTable->editrrow);
+    if (!$tf->has_error() && $tf->parse_text(req("override")))
+        $tf->msg(null, "Only the first review form in the file was parsed. <a href='" . hoturl("offline") . "'>Upload multiple-review files here.</a>", MessageSet::WARNING);
+    $tf->report();
     loadRows();
 } else if (isset($_REQUEST["uploadForm"]))
     Conf::msg_error("Select a review form to upload.");
@@ -153,17 +142,19 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
 
 // update review action
 if (isset($_REQUEST["update"]) && check_post()) {
-    $tf = array("singlePaper" => true);
+    $tf = new ReviewValues($rf);
+    $tf->paperId = $prow->paperId;
     if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
-        Conf::msg_error(whyNotText($whyNot, "review"));
-    else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow, $tf)) {
-        if ($rf->save_review($_REQUEST, $paperTable->editrrow, $prow, $Me, $tf)) {
-            $rf->textFormMessages($tf);
-            if (!get($tf, "anyErrors") && !get($tf, "anyWarnings"))
-                redirectSelf();             // normally does not return
-            loadRows();
-        }
+        $tf->msg(null, whyNotText($whyNot, "review"), MessageSet::ERROR);
+    else if ($tf->parse_web(make_qreq(), req("forceShow"))
+             && $tf->check_and_save($Me, $prow, $paperTable->editrrow)
+             && !$tf->has_problem_at("ready")) {
+        $tf->report();
+        redirectSelf(); // normally does not return
     }
+    loadRows();
+    $tf->report();
+    $paperTable->set_review_values($tf);
 }
 
 

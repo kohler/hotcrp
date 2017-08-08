@@ -1,0 +1,55 @@
+==+== Testconf I Paper Review Form
+==-== DO NOT CHANGE LINES THAT START WITH "==+==" UNLESS DIRECTED!
+==-== For further guidance, or to upload this file when you are done, go to:
+==-== http://hotcrp.lcdf.org/test/offline
+
+==+== =====================================================================
+==+== Begin Review #1A
+==+== Reviewer: Mary Baker <mgbaker@cs.stanford.edu>
+==-== Updated 8 Aug 2017 6:46:19pm EDT
+
+==+== Paper #1
+==-== Title: Scalable Timers for Soft State Protocols
+
+==+== Review Readiness
+==-== Enter "Ready" if the review is ready for others to see:
+
+Ready
+
+==+== A. Overall merit
+==-== Choices:
+==-==    1. Reject
+==-==    2. Weak reject
+==-==    3. Weak accept
+==-==    4. Accept
+==-==    5. Strong accept
+==-== Enter the number of your choice:
+
+4
+
+==+== B. Reviewer expertise
+==-== Choices:
+==-==    1. No familiarity
+==-==    2. Some familiarity
+==-==    3. Knowledgeable
+==-==    4. Expert
+==-== Enter the number of your choice:
+
+2
+
+==+== C. Paper summary
+
+This is a summary.
+
+==+== D. Comments for author
+
+Comments for the authors.
+
+==+== E. Comments for PC
+==-== Hidden from authors.
+
+
+
+==+== Scratchpad (for unsaved private notes)
+
+==+== End Review

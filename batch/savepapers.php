@@ -179,18 +179,19 @@ foreach ($jp as &$j) {
     // XXX more validation here
     if ($pid && isset($j->reviews) && is_array($j->reviews) && $reviews) {
         $rform = $Conf->review_form();
-        $tf = $rform->blank_text_form();
+        $tf = new ReviewValues($rform);
+        $prow = $Conf->paperRow(["paperId" => $pid], $site_contact);
         foreach ($j->reviews as $reviewindex => $reviewj)
-            if (($rreq = $rform->parse_json($reviewj))
-                && isset($rreq["reviewerEmail"])
-                && validate_email($rreq["reviewerEmail"])) {
-                $rreq["paperId"] = $pid;
-                $user_req = Text::analyze_name(["name" => get($rreq, "reviewerName"), "email" => $rreq["reviewerEmail"], "affiliation" => get($rreq, "reviewerAffiliation")]);
+            if ($tf->parse_json($reviewj)
+                && isset($tf->req["reviewerEmail"])
+                && validate_email($tf->req["reviewerEmail"])) {
+                $tf->paperId = $pid;
+                $user_req = Text::analyze_name(["name" => get($tf->req, "reviewerName"), "email" => $rf->req["reviewerEmail"], "affiliation" => get($tf->req, "reviewerAffiliation")]);
                 $user = Contact::create($Conf, $user_req);
-                $rform->check_save_review($site_contact, $rreq, $tf, $user);
+                $tf->check_and_save($site_contact, $prow, null);
             } else
-                $tf["err"][] = "invalid review @$reviewindex";
-        foreach ($tf["err"] as $te)
+                $tf->msg(null, "invalid review @$reviewindex", MessageSet::ERROR);
+        foreach ($tf->messages() as $te)
             fwrite(STDERR, $prefix . htmlspecialchars_decode($te) . "\n");
     }
 

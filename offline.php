@@ -25,11 +25,11 @@ if (isset($_REQUEST["downloadForm"])) {
 if (isset($_REQUEST["uploadForm"])
     && file_uploaded($_FILES["uploadedFile"])
     && check_post()) {
-    $tf = $rf->beginTextForm($_FILES["uploadedFile"]["tmp_name"],
-                             $_FILES["uploadedFile"]["name"]);
-    while (($req = $rf->parseTextForm($tf, req("override"))))
-        $rf->check_save_review($Me, $req, $tf);
-    $rf->textFormMessages($tf);
+    $tf = ReviewValues::make_text($rf, file_get_contents($_FILES["uploadedFile"]["tmp_name"]),
+                         $_FILES["uploadedFile"]["name"]);
+    while ($tf->parse_text(req("override")))
+        $tf->check_and_save($Me, null, null);
+    $tf->report();
     // Uploading forms may have completed the reviewer's task; recheck roles.
     Contact::update_rights();
 } else if (isset($_REQUEST["uploadForm"]))

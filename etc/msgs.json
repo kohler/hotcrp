@@ -15,5 +15,20 @@
     ["Unknown topics ignored (%2$s).", "Unknown topic ignored (%2$s).", ["$1=1"]],
     ["Unknown options ignored (%2$s).", "Unknown option ignored (%2$s).", ["$1=1"]],
 
-    ["paper_edit_field", "Authors", "Author", ["$1=1"]]
+    ["paper_edit_field", "Authors", "Author", ["$1=1"]],
+
+    ["Reviews %2$s submitted.", "Review %2$s submitted.", ["$1=1"]],
+    ["Reviews %2$s submitted.", "Review submitted.", ["$3"]],
+    ["Reviews %2$s updated.", "Review %2$s updated.", ["$1=1"]],
+    ["Reviews %2$s updated.", "Review updated.", ["$3"]],
+    ["Reviews %2$s submitted for approval.", "Review %2$s submitted for approval.", ["$1=1"]],
+    ["Reviews %2$s submitted for approval.", "Review submitted for approval.", ["$3"]],
+    ["Draft reviews for papers %2$s saved.", "Draft review for paper %2$s saved.", ["$1=1"]],
+    ["Draft reviews for papers %2$s saved.", "Draft review saved. However, this version is marked as not ready for others to see. Please finish the review and submit again.", ["$3"]],
+    ["Authors were notified about updated reviews %2$s.", "Authors were notified about update review %2$s.", ["$1=1"]],
+    ["Authors were notified about updated reviews %2$s.", "Authors were notified.", ["$3"]],
+    ["Reviews %2$s unchanged.", "Review %2$s unchanged.", ["$1=1"]],
+    ["Reviews %2$s unchanged.", "Review unchanged.", ["$3"]],
+    ["Ignored blank review forms %2$s.", "Ignored blank review form %2$s.", ["$1=1"]],
+    ["Ignored blank review forms %2$s.", "Ignored blank review form.", ["$3"]]
 ]
