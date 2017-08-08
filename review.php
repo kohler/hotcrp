@@ -197,8 +197,8 @@ if (isset($_REQUEST["deletereview"]) && check_post()
 // download review form action
 function downloadView($prow, $rr, $editable) {
     global $rf, $Me, $Conf;
-    if ($editable && $prow->reviewType > 0
-        && (!$rr || $rr->contactId == $Me->contactId))
+    if ($editable && (!$rr || $rr->contactId == $Me->contactId)
+        && $prow->review_type($Me) > 0)
         return $rf->textForm($prow, $rr, $Me, $_REQUEST) . "\n";
     else if ($editable)
         return $rf->textForm($prow, $rr, $Me, null) . "\n";
