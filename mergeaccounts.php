@@ -37,7 +37,7 @@ function crpmerge($MiniMe) {
     if (strcasecmp($_SESSION["trueuser"]->email, $merger->newu->email) != 0)
         $_SESSION["trueuser"] = (object) ["email" => $merger->newu->email];
 
-    if (!$merger->has_error) {
+    if (!$merger->has_error()) {
         $Conf->confirmMsg("Merged account " . htmlspecialchars($merger->oldu->email) . ".");
         $merger->newu->log_activity("Merged account " . $merger->oldu->email);
         go(hoturl("index"));

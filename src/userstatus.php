@@ -396,7 +396,7 @@ class UserStatus extends MessageSet {
         $user = $old_user ? : $old_cdb_user;
 
         $this->normalize($cj, $user);
-        if ($this->has_error)
+        if ($this->has_error())
             return false;
         $this->check_invariants($cj);
 

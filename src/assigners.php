@@ -1708,7 +1708,7 @@ class AssignmentSet {
     private $enabled_pids = null;
     private $enabled_actions = null;
     private $msgs = array();
-    private $has_errors = false;
+    private $has_error = false;
     private $my_conflicts = null;
     private $astate;
     private $searches = array();
@@ -1762,12 +1762,12 @@ class AssignmentSet {
     }
 
     function has_error() {
-        return $this->has_errors;
+        return $this->has_error;
     }
 
     function clear_errors() {
         $this->msgs = [];
-        $this->has_errors = false;
+        $this->has_error = false;
     }
 
     // error(message) OR error(lineno, message)
@@ -1780,7 +1780,7 @@ class AssignmentSet {
         else
             $this->msgs[] = [$l, $msg, $status];
         if ($status == 2)
-            $this->has_errors = true;
+            $this->has_error = true;
     }
 
     function error($message, $message1 = null) {
@@ -1817,7 +1817,7 @@ class AssignmentSet {
     }
 
     function report_errors() {
-        if (!empty($this->msgs) && $this->has_errors)
+        if (!empty($this->msgs) && $this->has_error)
             Conf::msg_error('Assignment errors: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div> Please correct these errors and try again.');
         else if (!empty($this->msgs))
             Conf::msg_warning('Assignment warnings: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div>');
@@ -2356,12 +2356,12 @@ class AssignmentSet {
 
     function execute($verbose = false) {
         global $Now;
-        if ($this->has_errors || empty($this->assigners)) {
+        if ($this->has_error || empty($this->assigners)) {
             if ($verbose && !empty($this->msgs))
                 $this->report_errors();
             else if ($verbose)
                 $this->conf->warnMsg("Nothing to assign.");
-            return !$this->has_errors; // true means no errors
+            return !$this->has_error; // true means no errors
         }
 
         // mark activity now to avoid DB errors later

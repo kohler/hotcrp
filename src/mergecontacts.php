@@ -118,7 +118,7 @@ class MergeContacts extends MessageSet {
         $this->merge1_ignore("ReviewRating", "contactId");
 
         // Remove the old contact record
-        if (!$this->has_error) {
+        if (!$this->has_error()) {
             $this->conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?", $this->oldu->contactId, $this->oldu->firstName, $this->oldu->lastName, $this->oldu->unaccentedName, $this->oldu->email);
             if (!$this->conf->q("delete from ContactInfo where contactId=?", $this->oldu->contactId))
                 $this->add_error($this->conf->db_error_html(true));
@@ -141,6 +141,6 @@ class MergeContacts extends MessageSet {
             foreach ($user_status->errors() as $e)
                 $this->add_error($e);
         }
-        return !$this->has_error;
+        return !$this->has_error();
     }
 }

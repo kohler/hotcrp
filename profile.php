@@ -400,7 +400,7 @@ else if ($Qreq->bulkregister && $newProfile && $Qreq->has_file("bulk")) {
     if ($newProfile)
         $UserStatus->send_email = true;
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
-    if ($UserStatus->has_error)
+    if ($UserStatus->has_error())
         Conf::msg_error('<div class="mmm">' . join('</div><div class="mmm">', $UserStatus->errors()) . "</div>");
     else {
         if ($newProfile)
@@ -576,10 +576,10 @@ if ($newProfile)
 else
     $Conf->header($Me->email == $Acct->email ? "Profile" : "Account profile", "account", actionBar("account", $Acct));
 $useRequest = !$Acct->has_database_account() && isset($Qreq->watchcomment);
-if ($UserStatus->has_error)
+if ($UserStatus->has_error())
     $need_highlight = $useRequest = true;
 
-if (!$UserStatus->has_error && $Conf->session("freshlogin") === "redirect")
+if (!$UserStatus->has_error() && $Conf->session("freshlogin") === "redirect")
     $Conf->save_session("freshlogin", null);
 // Set warnings
 if (!$newProfile) {
@@ -902,7 +902,7 @@ if ($newProfile) {
     echo '</div><div class="fx9">';
     echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
                   array("id" => "accountform", "autocomplete" => "off")),
-        "<div class='profiletext aahc", ($UserStatus->has_error ? " alert" : ""), "'>\n",
+        "<div class='profiletext aahc", ($UserStatus->has_error() ? " alert" : ""), "'>\n",
         // Don't want chrome to autofill the password changer.
         // But chrome defaults to autofilling the password changer
         // unless we supply an earlier password input.

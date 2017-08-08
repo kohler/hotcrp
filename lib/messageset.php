@@ -22,7 +22,7 @@ class MessageSet {
     }
     function clear() {
         $this->errf = $this->msgs = [];
-        $this->has_warning = $this->has_error = false;
+        $this->has_warning = $this->has_error = 0;
     }
 
     function translate_field($src, $dst) {
@@ -64,10 +64,10 @@ class MessageSet {
         if ($msg)
             $this->msgs[] = [$field, $msg, $status];
         if ($status == self::WARNING)
-            $this->has_warning = true;
+            ++$this->has_warning;
         if ($status == self::ERROR
             && !($field && $this->allow_error && isset($this->allow_error[$field])))
-            $this->has_error = true;
+            ++$this->has_error;
     }
     function error_at($field, $msg) {
         $this->msg($field, $msg, self::ERROR);
@@ -80,13 +80,19 @@ class MessageSet {
     }
 
     function has_error() {
+        return $this->has_error > 0;
+    }
+    function nerrors() {
         return $this->has_error;
     }
     function has_warning() {
+        return $this->has_warning > 0;
+    }
+    function nwarnings() {
         return $this->has_warning;
     }
     function has_problem() {
-        return $this->has_warning || $this->has_error;
+        return $this->has_warning > 0 || $this->has_error > 0;
     }
     function has_messages() {
         return !empty($this->msgs);
