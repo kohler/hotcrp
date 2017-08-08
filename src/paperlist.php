@@ -109,7 +109,6 @@ class PaperList {
     private $_unfold_all = false;
     private $_paper_link_page;
     private $_paper_link_mode;
-    private $_allow_duplicates = false;
     private $_view_columns = false;
     private $_view_compact_columns = false;
     private $_view_row_numbers = false;
@@ -257,7 +256,7 @@ class PaperList {
             return get($this->find_columns($name, $errors), 0);
     }
 
-    private function _sort($rows, $duplicates) {
+    private function _sort($rows) {
         $code = "\$x = 0;\n";
         if (($thenmap = $this->search->thenmap)) {
             foreach ($rows as $row)
@@ -278,14 +277,6 @@ class PaperList {
         }
 
         $code .= "if (!\$x) \$x = \$a->paperId - \$b->paperId;\n";
-
-        if ($duplicates)
-            foreach ($rows as $row)
-                if (isset($row->reviewId)) {
-                    $code .= "if (!\$x) \$x = ReviewInfo::compare(\$a, \$b);\n";
-                    break;
-                }
-
         $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
 
         usort($rows, create_function("\$a, \$b", $code));
@@ -464,8 +455,6 @@ class PaperList {
     private function _default_linkto($page) {
         if (!$this->_paper_link_page)
             $this->_paper_link_page = $page;
-        if ($page === "review" || $page === "finishreview")
-            $this->_allow_duplicates = true;
     }
 
     private function _list_columns($listname) {
@@ -548,12 +537,10 @@ class PaperList {
         if (!$result)
             return null;
         $rowset = new PaperInfoSet;
-        $pids = [];
         while (($row = PaperInfo::fetch($result, $this->contact)))
-            if (($this->_allow_duplicates || !isset($pids[$row->paperId]))
-                && (!$this->_only_selected || $this->is_selected($row->paperId))) {
+            if (!$this->_only_selected || $this->is_selected($row->paperId)) {
+                assert(!$rowset->get($row->paperId));
                 $rowset->add($row);
-                $pids[$row->paperId] = true;
             }
         Dbl::free($result);
 
@@ -563,10 +550,8 @@ class PaperList {
             $fdef->analyze($this, $rows, $field_list);
 
         // sort rows
-        if (!empty($this->sorters)) {
-            $review_rows = count($rows) !== count($pids);
-            $rows = $this->_sort($rows, $review_rows);
-        }
+        if (!empty($this->sorters))
+            $rows = $this->_sort($rows);
 
         // set `any->optID`
         if (($nopts = $this->conf->paper_opts->count_option_list())) {
