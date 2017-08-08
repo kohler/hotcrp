@@ -21,16 +21,15 @@ class IntlMsg {
             return 0;
         $nreq = 0;
         foreach ($this->require as $req)
-            if (preg_match('/\A\s*\$(\w+)\s*(|[=!<>]=?|≠|≤|≥)\s*(|[-+]?(?:\d+\.?\d*|\.\d+))\s*\z/', $req, $m)
-                && ($m[2] === "") === ($m[3] === "")) {
+            if (preg_match('/\A\s*\$(\w+)\s*([=!<>]=?|≠|≤|≥)\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*\z/', $req, $m)) {
                 $arg = $this->arg($ms, $args, $m[1]);
-                if ((string) $arg === ""
-                    || ($m[2] !== "" && !CountMatcher::compare((float) $arg, $m[2], (float) $m[3])))
+                if ((string) $arg === "" || !CountMatcher::compare((float) $arg, $m[2], (float) $m[3]))
                     return false;
                 ++$nreq;
-            } else if (preg_match('/\A\s*!\s*\$(\w+)\s*\z/', $req, $m)) {
-                $arg = $this->arg($ms, $args, $m[1]);
-                if ((string) $arg !== "" && $arg !== 0)
+            } else if (preg_match('/\A\s*(|!)\s*\$(\w+)\s*\z/', $req, $m)) {
+                $arg = $this->arg($ms, $args, $m[2]);
+                $bool_arg = (string) $arg !== "" && $arg !== 0;
+                if ($bool_arg !== ($m[1] === ""))
                     return false;
                 ++$nreq;
             }
