@@ -196,6 +196,9 @@ function search_text_col($user, $text, $col = "id") {
 function assert_search_papers($user, $text, $result) {
     if (is_array($result))
         $result = join(" ", $result);
+    $result = preg_replace_callback('/(\d+)-(\d+)/', function ($m) {
+        return join(" ", range(+$m[1], +$m[2]));
+    }, $result);
     xassert_eqq(join(" ", array_keys(search_json($user, $text))), $result);
 }
 
