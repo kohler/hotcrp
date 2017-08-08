@@ -337,13 +337,11 @@ function render(SettingValues $sv) {
     echo "<h3 class=\"settings\">Abstract and PDF</h3>\n";
 
     echo '<div id="foldpdfupload" class="fold2o fold3o">';
-    $sv->set_oldv("sub_noabstract", opt_yes_no_optional("noAbstract"));
     echo '<div>', $sv->label("sub_noabstract", "Is an abstract required to register a submission?"),
         '&nbsp; ',
         $sv->render_select("sub_noabstract", [0 => "Abstract required", 2 => "Abstract optional", 1 => "No abstract"]),
         '</div>';
 
-    $sv->set_oldv("sub_nopapers", opt_yes_no_optional("noPapers"));
     echo '<div>', $sv->label("sub_nopapers", "Is a PDF required to complete a submission?"),
         '&nbsp; ',
         $sv->render_select("sub_nopapers", [0 => "PDF required", 2 => "PDF optional", 1 => "No PDF allowed"], ["onchange" => "sub_nopapers_change()"]),
