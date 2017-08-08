@@ -2518,7 +2518,6 @@ class Contact {
     function timeReview(PaperInfo $prow, $rrow) {
         $rights = $this->rights($prow);
         if ($rights->reviewType > 0
-            || $prow->reviewId
             || ($rrow
                 && $this->is_my_review($rrow))
             || ($rrow
