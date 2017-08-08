@@ -23,12 +23,12 @@ class PaperListReviewAnalysis {
     private $prow;
     public $rrow = null;
     public $round = "";
-    function __construct($row, PaperInfo $prow) {
+    function __construct($rrow, PaperInfo $prow) {
         $this->prow = $prow;
-        if ($row->reviewId) {
-            $this->rrow = $row;
-            if ($row->reviewRound)
-                $this->round = htmlspecialchars($prow->conf->round_name($row->reviewRound));
+        if ($rrow->reviewId) {
+            $this->rrow = $rrow;
+            if ($rrow->reviewRound)
+                $this->round = htmlspecialchars($prow->conf->round_name($rrow->reviewRound));
         }
     }
     function icon_html($includeLink) {

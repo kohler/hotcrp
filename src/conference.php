@@ -2478,8 +2478,8 @@ class Conf {
     function review_rows($q, $contact) {
         $result = $this->qe_raw($q);
         $rrows = array();
-        while (($row = PaperInfo::fetch($result, $contact, $this)))
-            $rrows[$row->reviewId] = $row;
+        while (($rrow = PaperInfo::fetch($result, $contact, $this)))
+            $rrows[$rrow->reviewId] = $rrow;
         Dbl::free($result);
         return $rrows;
     }
@@ -2624,7 +2624,7 @@ class Conf {
     }
 
     private function _commentFlowQuery($contact, $t0, $limit) {
-        // XXX review tokens
+        // XXX review tokens, multiple reviews
         $q = "select straight_join PaperComment.*,\n"
             . $this->_flowQueryRest()
             . "\t\tfrom PaperComment

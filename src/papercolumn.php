@@ -704,7 +704,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
         if ($x || ($ranal && $ranal->round)) {
             $c = ["pl_revtype"];
             $t && ($c[] = "hasrev");
-            $x && ($c[] = "haslead");
+            ($flags & (self::F_LEAD | self::F_SHEPHERD)) && ($c[] = "haslead");
             $ranal && $ranal->round && ($c[] = "hasround");
             $t && ($x[] = $t);
             return '<div class="' . join(" ", $c) . '">' . join('&nbsp;', $x) . '</div>';
