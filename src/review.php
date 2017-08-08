@@ -1922,30 +1922,30 @@ $blind\n";
     }
 
 
-    function reviewFlowEntry(Contact $contact, $rrow) {
+    function unparse_flow_entry(PaperInfo $prow, ReviewInfo $rrow, Contact $contact) {
         // See also CommentInfo::unparse_flow_entry
         $barsep = ' <span class="barsep">·</span> ';
-        $a = '<a href="' . hoturl("paper", "p=$rrow->paperId#r" . unparseReviewOrdinal($rrow)) . '"';
+        $a = '<a href="' . hoturl("paper", "p=$prow->paperId#r" . unparseReviewOrdinal($rrow)) . '"';
         $t = '<tr class="pl"><td class="pl_activityicon">' . $a . '>'
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_activityid pl_rowclick">'
-            . $a . ' class="pnum">#' . $rrow->paperId . '</a></td>'
+            . $a . ' class="pnum">#' . $prow->paperId . '</a></td>'
             . '<td class="pl_activitymain pl_rowclick"><small>'
             . $a . ' class="ptitle">'
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($rrow->title, 80))
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($prow->title, 80))
             . "</a>";
         if ($rrow->reviewModified > 1) {
-            if ($contact->can_view_review_time($rrow, $rrow))
+            if ($contact->can_view_review_time($prow, $rrow))
                 $time = $this->conf->parseableTime($rrow->reviewModified, false);
             else
                 $time = $this->conf->unparse_time_obscure($this->conf->obscure_time($rrow->reviewModified));
             $t .= $barsep . $time;
         }
-        if ($contact->can_view_review_identity($rrow, $rrow, false))
-            $t .= $barsep . "<span class='hint'>review by</span> " . Text::user_html($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
+        if ($contact->can_view_review_identity($prow, $rrow, false))
+            $t .= $barsep . "<span class='hint'>review by</span> " . $contact->reviewer_html_for($rrow);
         $t .= "</small><br />";
 
-        $revViewScore = $contact->view_score_bound($rrow, $rrow);
+        $revViewScore = $contact->view_score_bound($prow, $rrow);
         if ($rrow->reviewSubmitted) {
             $t .= "Review #" . unparseReviewOrdinal($rrow) . " submitted";
             $xbarsep = $barsep;

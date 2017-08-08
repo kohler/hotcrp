@@ -2270,7 +2270,6 @@ class Conf {
         //   "assignments"
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
 
-        $reviewerQuery = isset($options["myReviews"]) || isset($options["myOutstandingReviews"]);
         $contactId = $contact ? $contact->contactId : 0;
         $myPaperReview = null;
         if ($contactId && !get($options, "author"))
@@ -2319,8 +2318,7 @@ class Conf {
         // my review
         $reviewjoin = "PaperReview.contactId=$contactId";
         $tokens = false;
-        if ($contact && ($reviewerQuery || $myPaperReview)
-            && ($tokens = $contact->review_tokens()))
+        if ($contact && ($tokens = $contact->review_tokens()))
             $reviewjoin = "($reviewjoin or reviewToken in (" . join(",", $tokens) . "))";
         if (get($options, "myReviews"))
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
@@ -2397,6 +2395,11 @@ class Conf {
             $cols[] = "AllConflict.allConflictType";
         }
 
+        if (get($options, "watch") && $contactId) {
+            $joins[] = "left join PaperWatch on (PaperWatch.paperId=Paper.paperId and PaperWatch.contactId=$contactId)";
+            $cols[] = "PaperWatch.watch";
+        }
+
         if (get($options, "foldall"))
             $cols[] = "1 as folded";
 
@@ -2422,6 +2425,16 @@ class Conf {
             $where[] = "managerContactId=$contactId";
         if (get($options, "myReviewRequests"))
             $where[] = "exists (select * from PaperReview where paperId=Paper.paperId and requestedBy=$contactId and reviewType=" . REVIEW_EXTERNAL . ")";
+        if (get($options, "myWatching") && $contact) {
+            $owhere = ["PaperReview.reviewType>0"];
+            if ($this->has_any_lead_or_shepherd())
+                $owhere[] = "leadContactId=$contactId";
+            if ($this->has_any_manager() && $contact->is_explicit_manager())
+                $owhere[] = "managerContactId=$contactId";
+            if ($contact->privChair || ($contact->isPC && $this->setting("pc_seeallrev") > 0))
+                $owhere[] = "(watch&" . (WATCHTYPE_REVIEW << WATCHSHIFT_ON) . ")!=0";
+            $where[] = "(" . join(" or ", $owhere) . ")";
+        }
         if (get($options, "myConflicts"))
             $where[] = "PaperConflict.conflictType>0";
 
@@ -2474,25 +2487,6 @@ class Conf {
     function paper_result(Contact $user = null, $options = []) {
         return $this->qe_raw($this->paperQuery($user, $options));
     }
-
-    function review_rows($q, $contact) {
-        $result = $this->qe_raw($q);
-        $rrows = array();
-        while (($rrow = PaperInfo::fetch($result, $contact, $this)))
-            $rrows[$rrow->reviewId] = $rrow;
-        Dbl::free($result);
-        return $rrows;
-    }
-
-    function comment_rows($q, $contact) {
-        $result = $this->qe_raw($q);
-        $crows = array();
-        while (($row = PaperInfo::fetch($result, $contact)))
-            $crows[$row->commentId] = $row;
-        Dbl::free($result);
-        return $crows;
-    }
-
 
     function reviewRow($selector, &$whyNot = null) {
         $whyNot = array();
@@ -2598,163 +2592,6 @@ class Conf {
         if ($extra)
             $q .= " " . $extra;
         return $q;
-    }
-
-
-    // Activity
-
-    private static function _flowQueryWheres(&$where, $table, $t0) {
-        $time = $table . ($table == "PaperReview" ? ".reviewSubmitted" : ".timeModified");
-        if (is_array($t0))
-            $where[] = "($time<$t0[0] or ($time=$t0[0] and $table.contactId>$t0[1]) or ($time=$t0[0] and $table.contactId=$t0[1] and $table.paperId>$t0[2]))";
-        else if ($t0)
-            $where[] = "$time<$t0";
-    }
-
-    private function _flowQueryRest() {
-        return "title, timeSubmitted, timeWithdrawn, Paper.blind paperBlind,
-                outcome, managerContactId, leadContactId,
-                ContactInfo.firstName as reviewFirstName,
-                ContactInfo.lastName as reviewLastName,
-                ContactInfo.email as reviewEmail,
-                PaperConflict.conflictType,
-                MyPaperReview.reviewType as myReviewType,
-                MyPaperReview.reviewSubmitted as myReviewSubmitted,
-                MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit\n";
-    }
-
-    private function _commentFlowQuery($contact, $t0, $limit) {
-        // XXX review tokens, multiple reviews
-        $q = "select straight_join PaperComment.*,\n"
-            . $this->_flowQueryRest()
-            . "\t\tfrom PaperComment
-                join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
-                left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=$contact->contactId)
-                left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperComment.paperId and MyPaperReview.contactId=$contact->contactId)
-                join Paper on (Paper.paperId=PaperComment.paperId)\n";
-        $where = $contact->canViewCommentReviewWheres();
-        self::_flowQueryWheres($where, "PaperComment", $t0);
-        if (count($where))
-            $q .= " where " . join(" and ", $where);
-        $q .= " order by PaperComment.timeModified desc, PaperComment.contactId asc, PaperComment.paperId asc";
-        if ($limit)
-            $q .= " limit $limit";
-        return $q;
-    }
-
-    private function _reviewFlowQuery($contact, $t0, $limit) {
-        // XXX review tokens
-        $q = "select straight_join PaperReview.*,\n"
-            . $this->_flowQueryRest()
-            . "\t\tfrom PaperReview
-                join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
-                left join PaperConflict on (PaperConflict.paperId=PaperReview.paperId and PaperConflict.contactId=$contact->contactId)
-                left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperReview.paperId and MyPaperReview.contactId=$contact->contactId)
-                join Paper on (Paper.paperId=PaperReview.paperId)\n";
-        $where = $contact->canViewCommentReviewWheres();
-        self::_flowQueryWheres($where, "PaperReview", $t0);
-        $where[] = "PaperReview.reviewSubmitted>0";
-        $q .= " where " . join(" and ", $where);
-        $q .= " order by PaperReview.reviewSubmitted desc, PaperReview.contactId asc, PaperReview.paperId asc";
-        if ($limit)
-            $q .= " limit $limit";
-        return $q;
-    }
-
-    static function _activity_compar($a, $b) {
-        if (!$a || !$b)
-            return !$a && !$b ? 0 : ($a ? -1 : 1);
-        $at = isset($a->timeModified) ? $a->timeModified : $a->reviewSubmitted;
-        $bt = isset($b->timeModified) ? $b->timeModified : $b->reviewSubmitted;
-        if ($at != $bt)
-            return $at > $bt ? -1 : 1;
-        else if ($a->contactId != $b->contactId)
-            return $a->contactId < $b->contactId ? -1 : 1;
-        else if ($a->paperId != $b->paperId)
-            return $a->paperId < $b->paperId ? -1 : 1;
-        else
-            return 0;
-    }
-
-    function reviewerActivity($contact, $t0, $limit) {
-        // Return the $limit most recent pieces of activity on or before $t0.
-        // Requires some care, since comments and reviews are loaded from
-        // different queries, and we want to return the results sorted.  So we
-        // load $limit comments and $limit reviews -- but if the comments run
-        // out before the $limit is reached (because some comments cannot be
-        // seen by the current user), we load additional comments & try again,
-        // and the same for reviews.
-
-        if ($t0 && preg_match('/\A(\d+)\.(\d+)\.(\d+)\z/', $t0, $m))
-            $ct0 = $rt0 = array($m[1], $m[2], $m[3]);
-        else
-            $ct0 = $rt0 = $t0;
-        $activity = array();
-
-        $crows = $rrows = array(); // comment/review rows being worked through
-        $curcr = $currr = null;    // current comment/review row
-        $last_time = INF;
-        // We read new comment/review rows when the current set is empty.
-
-        while (1) {
-            // load $curcr with most recent viewable comment
-            if ($curcr)
-                /* do nothing */;
-            else if (($curcr = array_pop($crows))) {
-                if (!$contact->can_view_comment($curcr, $curcr, false)) {
-                    $curcr = null;
-                    continue;
-                }
-            } else if ($ct0) {
-                $crows = array_reverse($this->comment_rows(self::_commentFlowQuery($contact, $ct0, $limit), $contact));
-                if (count($crows) == $limit)
-                    $ct0 = array($crows[0]->timeModified, $crows[0]->contactId, $crows[0]->paperId);
-                else
-                    $ct0 = null;
-                continue;
-            }
-
-            // load $currr with most recent viewable review
-            if ($currr)
-                /* do nothing */;
-            else if (($currr = array_pop($rrows))) {
-                if (!$contact->can_view_review($currr, $currr, false)) {
-                    $currr = null;
-                    continue;
-                }
-            } else if ($rt0) {
-                $rrows = array_reverse($this->review_rows(self::_reviewFlowQuery($contact, $rt0, $limit), $contact));
-                if (count($rrows) == $limit)
-                    $rt0 = array($rrows[0]->reviewSubmitted, $rrows[0]->contactId, $rrows[0]->paperId);
-                else
-                    $rt0 = null;
-                continue;
-            }
-
-            // if neither, ran out of activity
-            if (!$curcr && !$currr)
-                break;
-            // if above limit, ran out of activity
-            if (count($activity) >= $limit
-                && (!$curcr || $curcr->timeModified < $last_time)
-                && (!$currr || $currr->reviewSubmitted < $last_time))
-                break;
-
-            // otherwise, choose the later one first
-            if (self::_activity_compar($curcr, $currr) < 0) {
-                $curcr->isComment = true;
-                $activity[] = $curcr;
-                $last_time = $curcr->timeModified;
-                $curcr = null;
-            } else {
-                $currr->isComment = false;
-                $activity[] = $currr;
-                $last_time = $currr->reviewSubmitted;
-                $currr = null;
-            }
-        }
-
-        return $activity;
     }
 
 

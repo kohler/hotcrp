@@ -279,7 +279,7 @@ class CommentInfo {
         return $cj;
     }
 
-    function unparse_text($contact, $no_title = false) {
+    function unparse_text(Contact $contact, $no_title = false) {
         $x = "===========================================================================\n";
         if (!($this->commentType & COMMENTTYPE_RESPONSE))
             $n = "Comment";
@@ -304,28 +304,27 @@ class CommentInfo {
         return $x . "\n";
     }
 
-    static function unparse_flow_entry(Contact $contact, $crow) {
+    function unparse_flow_entry(Contact $contact) {
         // See also ReviewForm::reviewFlowEntry
-        global $Conf;
-        $a = "<a href=\"" . hoturl("paper", "p=$crow->paperId#" . self::unparse_html_id($crow)) . "\"";
+        $a = "<a href=\"" . hoturl("paper", "p=$this->paperId#" . self::unparse_html_id($this)) . "\"";
         $t = '<tr class="pl"><td class="pl_activityicon">' . $a . ">"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_activityid pl_rowclick">'
-            . $a . ' class="pnum">#' . $crow->paperId . '</a></td>'
+            . $a . ' class="pnum">#' . $this->paperId . '</a></td>'
             . '<td class="pl_activitymain pl_rowclick"><small>'
             . $a . ' class="ptitle">'
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($crow->title, 80))
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->prow->title, 80))
             . "</a>";
-        $idable = $contact->can_view_comment_identity($crow, $crow, false);
-        if ($idable || $contact->can_view_comment_time($crow, $crow))
-            $time = $Conf->parseableTime($crow->timeModified, false);
+        $idable = $contact->can_view_comment_identity($this->prow, $this, false);
+        if ($idable || $contact->can_view_comment_time($this->prow, $this))
+            $time = $this->conf->parseableTime($this->timeModified, false);
         else
-            $time = $Conf->unparse_time_obscure($Conf->obscure_time($crow->timeModified));
+            $time = $this->conf->unparse_time_obscure($this->conf->obscure_time($this->timeModified));
         $t .= ' <span class="barsep">·</span> ' . $time;
         if ($idable)
-            $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . Text::user_html(self::_user($crow));
+            $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . $contact->reviewer_html_for($this->contactId);
         return $t . "</small><br />"
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($crow->commentOverflow ? : $crow->comment, 300))
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->commentOverflow ? : $this->comment, 300))
             . "</td></tr>";
     }
 

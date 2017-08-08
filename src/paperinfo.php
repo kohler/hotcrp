@@ -1775,6 +1775,13 @@ class PaperInfo {
     }
 
 
+    function watching($notifytype, Contact $user) {
+        if ($this->watch & ($notifytype << WATCHSHIFT_ISSET))
+            return ($this->watch & ($notifytype << WATCHSHIFT_ON)) != 0;
+        else
+            return ($user->defaultWatch & ($notifytype << WATCHSHIFT_ALLON)) != 0;
+    }
+
     function notify($notifytype, $callback, $contact) {
         $wonflag = ($notifytype << WATCHSHIFT_ON) | ($notifytype << WATCHSHIFT_ALLON);
         $wsetflag = $wonflag | ($notifytype << WATCHSHIFT_ISSET);

@@ -171,6 +171,7 @@ src/messages.csv
 src/multiconference.php
 src/paperapi.php
 src/papercolumn.php
+src/paperevents.php
 src/paperinfo.php
 src/paperlist.php
 src/paperoption.php
