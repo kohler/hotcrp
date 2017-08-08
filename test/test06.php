@@ -57,7 +57,7 @@ assert_search_papers($user_chair, "-cre:mgbaker", "1-30");
 
 assert_search_papers($user_chair, "ovemer:5", "");
 
-save_review(1, $user_mgbaker, ["overAllMerit" => 5, "ready" => true]);
+save_review(1, $user_mgbaker, ["overAllMerit" => 5, "reviewerQualification" => 1, "ready" => true]);
 
 assert_search_papers($user_chair, "re:3", "1-18");
 assert_search_papers($user_chair, "-re:3", "19-30");
