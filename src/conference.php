@@ -1315,6 +1315,14 @@ class Conf {
         return $acct;
     }
 
+    function cached_user_by_id($id) {
+        if ($this->_pc_members_cache
+            && isset($this->_pc_members_and_admins_cache[$id]))
+            return $this->_pc_members_and_admins_cache[$id];
+        else
+            return $this->user_by_id($id);
+    }
+
     function user_by_email($email) {
         $acct = null;
         if (($email = trim((string) $email)) !== "") {

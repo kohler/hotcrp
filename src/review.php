@@ -689,15 +689,7 @@ class ReviewForm {
         return $wc;
     }
 
-    private function contact_by_id($cid) {
-        $pc = $this->conf->pc_members();
-        if (isset($pc[$cid]))
-            return $pc[$cid];
-        else
-            return $this->conf->user_by_id($cid);
-    }
-
-    private function review_needs_approval($rrow) {
+    function review_needs_approval($rrow) {
         return $rrow && !$rrow->reviewSubmitted
             && $rrow->reviewType == REVIEW_EXTERNAL
             && $rrow->requestedBy
@@ -913,7 +905,7 @@ class ReviewForm {
         $this->_mailer_preps = [];
         $submitter = $contact;
         if ($contactId != $submitter->contactId)
-            $submitter = $this->contact_by_id($contactId);
+            $submitter = $this->conf->cached_user_by_id($contactId);
         if ($submit || $approval_requested || ($rrow && $rrow->timeApprovalRequested))
             $rrow = $prow->fresh_review_of_id($reviewId);
         $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
@@ -934,7 +926,7 @@ class ReviewForm {
             $this->_mailer_info["rrow_unsubmitted"] = true;
             if ($this->conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
-            if ($rrow->requestedBy && ($requester = $this->contact_by_id($rrow->requestedBy))) {
+            if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy))) {
                 $this->review_watch_callback($prow, $requester);
                 $this->review_watch_callback($prow, $submitter);
             }
@@ -1629,7 +1621,7 @@ $blind\n";
     . Ht::submit("Decline review", ["class" => "btn"])
     . Ht::js_button("Cancel", "popup(null,'ref',1)", ["class" => "btn"])
     . "</div></div></form></div>", "declinereviewform");
-            if ($rrow->requestedBy && ($requester = $this->contact_by_id($rrow->requestedBy)))
+            if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy)))
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
             else
                 $req = 'Please take a moment to accept or decline our review request.';
