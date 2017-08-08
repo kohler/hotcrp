@@ -536,8 +536,8 @@ class Contact {
     }
 
     private function calculate_name_for($pfx, $user) {
-        if ($pfx === "o")
-            return (object) ["firstName" => $user->firstName, "lastName" => $user->lastName, "email" => $user->email, "contactTags" => get($user, "contactTags")];
+        if ($pfx === "u")
+            return $user;
         if ($pfx === "t")
             return Text::name_text($user);
         $n = Text::name_html($user);
@@ -559,11 +559,11 @@ class Contact {
             $x = $pc;
 
         if (!(is_object($x) && isset($x->firstName) && isset($x->lastName) && isset($x->email))) {
-            if ($pfx === "o") {
+            if ($pfx === "u") {
                 $x = $this->conf->user_by_id($cid);
                 $this->contact_sorter_map_[$cid] = $x->sorter;
             } else
-                $x = $this->name_for("o", $x);
+                $x = $this->name_for("u", $x);
         }
 
         return ($this->name_for_map_[$key] = $this->calculate_name_for($pfx, $x));
@@ -578,7 +578,7 @@ class Contact {
     }
 
     function name_object_for($x) {
-        return $this->name_for("o", $x);
+        return $this->name_for("u", $x);
     }
 
     function reviewer_html_for($x) {
