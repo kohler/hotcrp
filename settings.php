@@ -9,6 +9,7 @@ if (!$Me->privChair)
 
 require_once("src/settingvalues.php");
 $Sv = SettingValues::make_request($Me, $_POST, $_FILES);
+$Sv->session_highlight();
 
 function choose_setting_group() {
     global $Conf;

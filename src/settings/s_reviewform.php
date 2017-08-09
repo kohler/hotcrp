@@ -5,15 +5,11 @@
 
 class ReviewForm_SettingParser extends SettingParser {
     private $nrfj;
+    private $option_error;
 
     public static $setting_prefixes = ["shortName_", "description_", "order_", "authorView_", "options_", "option_class_prefix_"];
 
-    private function check_options($sv, $fid, $fj) {
-        if (!isset($sv->req["options_$fid"])) {
-            $fj->options = array();
-            return get($fj, "position") ? false : true;
-        }
-
+    private function check_options(SettingValues $sv, $fid, $fj) {
         $text = cleannl($sv->req["options_$fid"]);
         $letters = ($text && ord($text[0]) >= 65 && ord($text[0]) <= 90);
         $expect = ($letters ? "[A-Z]" : "[1-9]");
@@ -41,9 +37,6 @@ class ReviewForm_SettingParser extends SettingParser {
         // numeric options must start from 1
         if (!$letters && count($opts) > 0 && $lowonum != 1)
             return false;
-        // must have at least 2 options, but off-form fields don't count
-        if (count($opts) < 2 && get($fj, "position"))
-            return false;
 
         $text = "";
         $seqopts = array();
@@ -53,6 +46,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $seqopts[] = $opts[$onum];
         }
 
+        unset($fj->option_letter, $fj->allow_empty);
         if ($letters) {
             $seqopts = array_reverse($seqopts, true);
             $fj->option_letter = chr($lowonum);
@@ -63,67 +57,90 @@ class ReviewForm_SettingParser extends SettingParser {
         return true;
     }
 
+    private function populate_field($fj, ReviewField $f, SettingValues $sv, $fid) {
+        $sn = simplify_whitespace($sv->req["shortName_$fid"]);
+        if ($sn === "<None>" || $sn === "<New field>" || $sn === "Field name")
+            $sn = "";
+
+        if (isset($sv->req["order_$fid"]))
+            $pos = cvtint(get($sv->req, "order_$fid"));
+        else
+            $pos = get($fj, "position", -1);
+        if ($pos > 0 && $sn == ""
+            && isset($sv->req["description_$fid"])
+            && trim($sv->req["description_$fid"]) === ""
+            && (!$f->has_options
+                || (isset($sv->req["options_$fid"])
+                    ? trim($sv->req["options_$fid"]) === ""
+                    : empty($fj->options))))
+            $pos = -1;
+
+        if ($sn !== "")
+            $fj->name = $sn;
+        else if ($pos > 0)
+            $sv->error_at("shortName_$fid", "Missing review field name.");
+
+        if (isset($sv->req["authorView_$fid"]))
+            $fj->visibility = $sv->req["authorView_$fid"];
+
+        if (isset($sv->req["description_$fid"])) {
+            $x = CleanHTML::basic_clean($sv->req["description_$fid"], $err);
+            if ($x !== false) {
+                $fj->description = trim($x);
+                if ($fj->description === "")
+                    unset($fj->description);
+            } else if ($pos > 0)
+                $sv->error_at("description_$fid", htmlspecialchars($sn) . " description: " . $err);
+        }
+
+        if ($pos > 0)
+            $fj->position = $pos;
+        else
+            unset($fj->position);
+
+        if ($f->has_options) {
+            $ok = true;
+            if (isset($sv->req["options_$fid"]))
+                $ok = $this->check_options($sv, $fid, $fj);
+            if ((!$ok || count($fj->options) < 2) && $pos > 0) {
+                $sv->error_at("options_$fid", htmlspecialchars($sn) . ": Invalid options.");
+                if ($this->option_error)
+                    $sv->error_at(null, $this->option_error);
+                $this->option_error = false;
+            }
+            if (isset($sv->req["option_class_prefix_$fid"])) {
+                $prefixes = ["sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr"];
+                $pindex = array_search($sv->req["option_class_prefix_$fid"], $prefixes) ? : 0;
+                if (get($sv->req, "option_class_prefix_flipped_$fid"))
+                    $pindex ^= 1;
+                $fj->option_class_prefix = $prefixes[$pindex];
+            }
+        }
+
+        if (isset($sv->req["round_list_$fid"])) {
+            $fj->round_mask = 0;
+            foreach (explode(" ", trim($sv->req["round_list_$fid"])) as $round_name)
+                if ($round_name !== "")
+                    $fj->round_mask |= 1 << $sv->conf->round_number($round_name, false);
+        }
+    }
+
     function parse(SettingValues $sv, Si $si) {
         $this->nrfj = (object) array();
-        $option_error = "Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
+        $this->option_error = "Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>";
 
         $rf = $sv->conf->review_form();
         foreach ($rf->fmap as $fid => $f) {
-            $fj = (object) array();
-
-            $sn = simplify_whitespace(defval($sv->req, "shortName_$fid", ""));
-            if ($sn == "<None>" || $sn == "<New field>" || $sn == "Field name")
-                $sn = "";
-            $pos = cvtint(get($sv->req, "order_$fid"));
-            if ($pos > 0 && $sn == ""
-                && trim(defval($sv->req, "description_$fid", "")) == ""
-                && trim(defval($sv->req, "options_$fid", "")) == "")
-                $pos = -1;
-            if ($sn != "")
-                $fj->name = $sn;
-            else if ($pos > 0)
-                $sv->error_at("shortName_$fid", "Missing review field name.");
-
-            $fj->visibility = get($sv->req, "authorView_$fid");
-
-            $x = CleanHTML::basic_clean(defval($sv->req, "description_$fid", ""), $err);
-            if ($x === false) {
-                if (get($f, "description"))
-                    $fj->description = $f->description;
-                if ($pos > 0)
-                    $sv->error_at("description_$fid", htmlspecialchars($sn) . " description: " . $err);
-            } else if (($x = trim($x)) != "")
-                $fj->description = $x;
-
-            if ($pos > 0)
-                $fj->position = $pos;
-
-            if ($f->has_options) {
-                $fj->options = array_values($f->options); // default
-                if (!$this->check_options($sv, $fid, $fj) && $pos > 0) {
-                    $sv->error_at("options_$fid", "Invalid options.");
-                    if ($option_error)
-                        $sv->error_at(null, $option_error);
-                    $option_error = false;
-                }
-                $prefixes = array("sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr");
-                $class_prefix = defval($sv->req, "option_class_prefix_$fid", "sv");
-                $prefix_index = array_search($class_prefix, $prefixes) ? : 0;
-                if (get($sv->req, "option_class_prefix_flipped_$fid"))
-                    $prefix_index ^= 1;
-                $fj->option_class_prefix = $prefixes[$prefix_index];
+            $fj = $f->unparse_json(true);
+            if (isset($sv->req["shortName_$fid"])) {
+                $this->populate_field($fj, $f, $sv, $fid);
+                $xf = clone $f;
+                $xf->assign($fj);
+                $fj = $xf->unparse_json(true);
             }
-
-            $fj->round_mask = 0;
-            if (($rlist = get($sv->req, "round_list_$fid")))
-                foreach (explode(" ", trim($rlist)) as $round_name)
-                    $fj->round_mask |= 1 << $sv->conf->round_number($round_name, false);
-
-            $xf = clone $f;
-            $xf->assign($fj);
-            $this->nrfj->$fid = $xf->unparse_json(true);
+            $this->nrfj->$fid = $fj;
         }
 
         $sv->need_lock["PaperReview"] = true;

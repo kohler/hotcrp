@@ -300,9 +300,6 @@ class SettingValues extends MessageSet {
     }
     static function make_request(Contact $user, $post, $files = []) {
         $sv = new SettingValues($user);
-        foreach ($user->conf->session("settings_highlight", []) as $f => $v)
-            $sv->msg($f, null, $v);
-        $user->conf->save_session("settings_highlight", null);
         $got = [];
         foreach ($post as $k => $v) {
             $sv->req[$k] = $v;
@@ -321,6 +318,11 @@ class SettingValues extends MessageSet {
                     $sv->req_files[$f] = $finfo;
             }
         return $sv;
+    }
+    function session_highlight() {
+        foreach ($this->conf->session("settings_highlight", []) as $f => $v)
+            $this->msg($f, null, $v);
+        $this->conf->save_session("settings_highlight", null);
     }
 
 
@@ -959,6 +961,10 @@ class SettingValues extends MessageSet {
 
         $this->error_at($si, $err);
         return null;
+    }
+
+    function changes() {
+        return $this->changes;
     }
 }
 
