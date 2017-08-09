@@ -29,6 +29,7 @@ class PaperContactInfo {
     public $vsreviews_array = null;
     public $vsreviews_cid_array = null;
     public $vsreviews_force_show = null;
+    public $vsreviews_version = null;
 
     static function make_empty(PaperInfo $prow, $cid, $full = false) {
         $ci = new PaperContactInfo;
@@ -573,6 +574,7 @@ class PaperInfo {
     private $_conflict_array = null;
     private $_conflict_array_email;
     private $_review_array = null;
+    private $_review_array_version = 0;
     private $_reviews_have = [];
     private $_full_reviews_of = null;
     private $_comment_array = null;
@@ -661,6 +663,7 @@ class PaperInfo {
             if ($this->_rights_version) {
                 $this->_contact_info = $this->_reviews_have = [];
                 $this->_review_array = $this->_conflict_array = null;
+                ++$this->_review_array_version;
                 unset($this->reviewSignatures, $this->allConflictType);
             }
             $this->_rights_version = Contact::$rights_version;
@@ -1416,6 +1419,8 @@ class PaperInfo {
     }
 
     function load_reviews($always = false) {
+        ++$this->_review_array_version;
+
         if (property_exists($this, "reviewSignatures")
             && $this->_review_array === null
             && !$always) {
@@ -1552,14 +1557,16 @@ class PaperInfo {
     function viewable_submitted_reviews_by_display(Contact $contact, $forceShow) {
         $cinfo = $this->contact_info($contact);
         if ($cinfo->vsreviews_array === null
+            || $cinfo->vsreviews_version !== $this->_review_array_version
             || $forceShow !== $cinfo->vsreviews_force_show) {
             $cinfo->vsreviews_array = [];
-            $cinfo->vsreviews_cid_array = null;
-            $cinfo->vsreviews_force_show = $forceShow;
             foreach ($this->reviews_by_display() as $id => $rrow)
                 if ($rrow->reviewSubmitted > 0
                     && $contact->can_view_review($this, $rrow, $forceShow))
                     $cinfo->vsreviews_array[$id] = $rrow;
+            $cinfo->vsreviews_cid_array = null;
+            $cinfo->vsreviews_force_show = $forceShow;
+            $cinfo->vsreviews_version = $this->_review_array_version;
         }
         return $cinfo->vsreviews_array;
     }
@@ -1567,6 +1574,7 @@ class PaperInfo {
     function viewable_submitted_reviews_by_user(Contact $contact, $forceShow) {
         $cinfo = $this->contact_info($contact);
         if ($cinfo->vsreviews_cid_array === null
+            || $cinfo->vsreviews_version !== $this->_review_array_version
             || $forceShow !== $cinfo->vsreviews_force_show) {
             $rrows = $this->viewable_submitted_reviews_by_display($contact, $forceShow);
             $cinfo->vsreviews_cid_array = [];
