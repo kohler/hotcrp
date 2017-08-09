@@ -1161,7 +1161,7 @@ class Review_SearchTerm extends SearchTerm {
         if (count($f) == 1 && $f[0] instanceof ReviewField)
             return (object) [
                 "name" => $keyword, "parser" => "Review_SearchTerm::parse_review_field",
-                "review_field" => $f[0], "has" => ">0"
+                "review_field" => $f[0], "has" => "any"
             ];
         else
             return null;
