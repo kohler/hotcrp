@@ -172,9 +172,9 @@ function render(SettingValues $sv) {
     echo '</tr></tbody></table>';
 
     echo "<div class='g'></div>\n";
-    $t = expandMailTemplate("requestreview", false);
+    $t = SettingParser::expand_mail_template("requestreview", false);
     echo "<table id='foldmailbody_requestreview' class='",
-        ($t == expandMailTemplate("requestreview", true) ? "foldc" : "foldo"),
+        ($t == SettingParser::expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
         "'><tr><td>", foldbutton("mailbody_requestreview"), "</td>",
         "<td><a href='#' onclick='return fold(\"mailbody_requestreview\")' class='q'>Mail template for external review requests</a>",
         " <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed; set to empty for default)<br /></span>
