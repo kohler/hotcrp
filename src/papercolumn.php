@@ -1518,7 +1518,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $row->ensure_review_score($this->form_field);
         $scores = [];
         foreach ($row->viewable_submitted_reviews_by_user($pl->contact, $forceShow) as $rrow)
-            if ($rrow->$fid)
+            if (isset($rrow->$fid) && $rrow->$fid)
                 $scores[$rrow->contactId] = $rrow->$fid;
         return $scores;
     }

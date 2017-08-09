@@ -13,12 +13,14 @@ class ReviewFieldInfo {
     public $short_id;
     public $has_options;
     public $main_storage;
+    public $json_storage;
 
-    function __construct($id, $short_id, $has_options, $main_storage) {
+    function __construct($id, $short_id, $has_options, $main_storage, $json_storage) {
         $this->id = $id;
         $this->short_id = $short_id;
         $this->has_options = $has_options;
         $this->main_storage = $main_storage;
+        $this->json_storage = $json_storage;
     }
 }
 
@@ -46,6 +48,7 @@ class ReviewField implements Abbreviatable, JsonSerializable {
     public $round_mask = 0;
     public $allow_empty = false;
     public $main_storage;
+    public $json_storage;
     private $_typical_score = false;
 
     static private $view_score_map = [
@@ -69,11 +72,12 @@ class ReviewField implements Abbreviatable, JsonSerializable {
         $this->short_id = $finfo->short_id;
         $this->has_options = $finfo->has_options;
         $this->main_storage = $finfo->main_storage;
+        $this->json_storage = $finfo->json_storage;
         $this->conf = $conf;
     }
     static function make_template($has_options, Conf $conf) {
         $id = $has_options ? "s00" : "t00";
-        return new ReviewField(new ReviewFieldInfo($id, $id, $has_options, null), $conf);
+        return new ReviewField(new ReviewFieldInfo($id, $id, $has_options, null, null), $conf);
     }
 
     function assign($j) {
@@ -416,9 +420,9 @@ class ReviewForm implements JsonSerializable {
   "options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},
 "reviewerQualification":{"name":"Reviewer expertise","position":2,"visibility":"au",
   "options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},
-"paperSummary":{"name":"Paper summary","position":3,"display_space":5,"visibility":"au"},
-"commentsToAuthor":{"name":"Comments to authors","position":4,"visibility":"au"},
-"commentsToPC":{"name":"Comments to PC","position":5,"visibility":"pc"}}');
+"t01":{"name":"Paper summary","position":3,"display_space":5,"visibility":"au"},
+"t02":{"name":"Comments to authors","position":4,"visibility":"au"},
+"t03":{"name":"Comments to PC","position":5,"visibility":"pc"}}');
 
         foreach ($rfj as $fid => $j)
             if (($finfo = ReviewInfo::field_info($fid))) {
@@ -520,7 +524,7 @@ class ReviewForm implements JsonSerializable {
             if ($rvalues && isset($rvalues->req[$fid]))
                 $fval = $rvalues->req[$fid];
             else if ($rrow)
-                $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
+                $fval = $f->unparse_value(get($rrow, $fid), ReviewField::VALUE_STRING);
 
             echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="revet';
             if ($rvalues && $rvalues->has_problem_at($fid))
@@ -561,7 +565,7 @@ class ReviewForm implements JsonSerializable {
                 echo "</tbody></table>";
             } else {
                 echo $format_description;
-                echo Ht::textarea($fid, $fval,
+                echo Ht::textarea($fid, (string) $fval,
                         array("class" => "reviewtext need-autogrow", "rows" => $f->display_space,
                               "cols" => 60, "onchange" => "hiliter(this)",
                               "spellcheck" => "true"));
@@ -1749,6 +1753,7 @@ class ReviewValues extends MessageSet {
         }
 
         $qf = $qv = [];
+        $tfields = $sfields = null;
         $diff_view_score = VIEWSCORE_FALSE;
         $wc = 0;
         foreach ($this->rf->forder as $fid => $f)
@@ -1761,9 +1766,10 @@ class ReviewValues extends MessageSet {
                         $fval = 0;
                     else if (!($fval = $f->parse_value($fval, false)))
                         continue;
+                    $old_fval = $rrow ? (int) get($rrow, $fid, 0) : 0;
                     if ($fval === 0 && $rrow && !$f->allow_empty)
-                        $fval = $rrow->$fid;
-                    $fval_diffs = $fval != ($rrow ? $rrow->$fid : 0);
+                        $fval = $old_fval;
+                    $fval_diffs = $fval !== $old_fval;
                 } else {
                     $fval = rtrim($fval);
                     if ($fval !== "")
@@ -1772,10 +1778,9 @@ class ReviewValues extends MessageSet {
                     $fval = convert_to_utf8($fval);
                     if ($f->include_word_count())
                         $wc += count_words($fval);
-                    $fval_diffs = $rrow
-                        ? strcmp($rrow->$fid, $fval) != 0
-                          && strcmp(cleannl($rrow->$fid), cleannl($fval)) != 0
-                        : $fval !== "";
+                    $old_fval = $rrow ? get($rrow, $fid, "") : "";
+                    $fval_diffs = $fval !== $old_fval
+                        && cleannl($fval) !== cleannl($old_fval);
                 }
                 if ($fval_diffs)
                     $diff_view_score = max($diff_view_score, $f->view_score);
@@ -1784,8 +1789,22 @@ class ReviewValues extends MessageSet {
                         $qf[] = "{$f->main_storage}=?";
                         $qv[] = $fval;
                     }
+                    if ($f->json_storage) {
+                        if ($f->has_options && $fval != 0)
+                            $sfields[$f->json_storage] = $fval;
+                        else if (!$f->has_options && $fval !== "")
+                            $tfields[$f->json_storage] = $fval;
+                    }
                 }
             }
+        if ($sfields !== null) {
+            $qf[] = "sfields=?";
+            $qv[] = json_encode_db($sfields);
+        }
+        if ($tfields !== null) {
+            $qf[] = "tfields=?";
+            $qv[] = json_encode_db($tfields);
+        }
 
         // get the current time
         $now = time();

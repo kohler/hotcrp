@@ -464,6 +464,24 @@ class Dbl {
         return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_APPLY | self::F_ERROR);
     }
 
+    static function make_multi_query_stager($dblink, $flags) {
+        return function (&$q, &$qv, $finish = false) use ($dblink, $flags) {
+            if (($finish && !empty($q)) || count($q) >= 50) {
+                $mresult = Dbl::do_multi_query([$dblink, join("; ", $q), $qv], self::F_MULTI | self::F_APPLY | $flags);
+                $mresult->free_all();
+                $q = $qv = [];
+            }
+        };
+    }
+
+    static function make_multi_ql_stager($dblink = null) {
+        return self::make_multi_query_stager($dblink ? : self::$defualt_dblink, self::F_LOG);
+    }
+
+    static function make_multi_qe_stager($dblink = null) {
+        return self::make_multi_query_stager($dblink ? : self::$defualt_dblink, self::F_ERROR);
+    }
+
     static function free($result) {
         if ($result && $result instanceof mysqli_result)
             $result->close();

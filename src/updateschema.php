@@ -242,6 +242,26 @@ function update_schema_mimetype_extensions($conf) {
     return empty($qv) || $conf->ql("insert into Mimetype (mimetypeid, mimetype, extension) values ?v on duplicate key update extension=values(extension)", $qv);
 }
 
+function update_schema_paper_review_tfields(Conf $conf) {
+    if (!$conf->ql("alter table PaperReview add `tfields` longblob")
+        || !$conf->ql("alter table PaperReview add `sfields` varbinary(2048) DEFAULT NULL"))
+        return false;
+    $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
+    $result = $conf->ql("select * from PaperReview");
+    $q = $qv = [];
+    while (($row = ReviewInfo::fetch($result, $conf))) {
+        $data = $row->unparse_tfields();
+        if ($data !== null) {
+            $q[] = "update PaperReview set `tfields`=? where paperId=? and reviewId=?";
+            array_push($qv, $data, $row->paperId, $row->reviewId);
+            $cleanf($q, $qv);
+        }
+    }
+    Dbl::free($result);
+    $cleanf($q, $qv, true);
+    return true;
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1204,6 +1224,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table DeletedContactInfo add `unaccentedName` varchar(120) NOT NULL DEFAULT ''")
         && $conf->ql("alter table DeletedContactInfo change `unaccentedName` `unaccentedName` varchar(120) NOT NULL"))
         $conf->update_schema_version(173);
+    if ($conf->sversion == 173
+        && update_schema_paper_review_tfields($conf))
+        $conf->update_schema_version(174);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

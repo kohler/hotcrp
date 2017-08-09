@@ -1188,12 +1188,11 @@ class Review_SearchTerm extends SearchTerm {
             return self::parse_score_field($rsm, $word, $f, $srch);
         else {
             if ($word === "any" && !$sword->quoted)
-                $value = "{$f->id}!=''";
+                return $rsm->make_field_term($f, true);
             else if ($word === "none" && !$sword->quoted)
-                $value = "{$f->id}=''";
-            else // XXX
-                $value = "{$f->id} like " . Dbl::utf8ci("'%" . sqlq_for_like($word) . "%'");
-            return $rsm->make_field_term($value);
+                return $rsm->make_field_term($f, false);
+            else
+                return $rsm->make_field_term($f, Text::star_text_pregexes($word));
         }
     }
     private static function impossible_score_match(ReviewField $f) {
@@ -1205,9 +1204,9 @@ class Review_SearchTerm extends SearchTerm {
     }
     private static function parse_score_field(ReviewSearchMatcher $rsm, $word, ReviewField $f, PaperSearch $srch, $noswitch = false) {
         if ($word === "any")
-            $value = "{$f->id}>0";
+            $valexpr = ">0";
         else if ($word === "none")
-            $value = "{$f->id}=0";
+            $valexpr = "=0";
         else if (preg_match('/\A(\d*?)([=!<>]=?|≠|≤|≥)?\s*([A-Za-z]|\d+)\z/s', $word, $m)) {
             if ($m[1] === "")
                 $m[1] = 1;
@@ -1233,7 +1232,7 @@ class Review_SearchTerm extends SearchTerm {
                 || ($score > count($f->options) && ($m[2][0] === ">" || $m[2] === "=")))
                 return self::impossible_score_match($f);
             $rsm->set_countexpr((int) $m[1] ? ">=" . $m[1] : "=0");
-            $value = $f->id . $m[2] . $score;
+            $valexpr = $m[2] . $score;
         } else if ($f->option_letter
                    ? preg_match('/\A\s*([A-Za-z])\s*(-?|\.\.\.?)\s*([A-Za-z])\s*\z/s', $word, $m)
                    : preg_match('/\A\s*(\d+)\s*(-|\.\.\.?)\s*(\d+)\s*\z/s', $word, $m)) {
@@ -1251,8 +1250,8 @@ class Review_SearchTerm extends SearchTerm {
                 $qo[] = SearchTerm::make_not($t);
             return SearchTerm::make_op("and", $qo);
         } else              // XXX
-            $value = "{$f->id}=-1";
-        return $rsm->make_field_term($value);
+            return new False_SearchTerm;
+        return $rsm->make_field_term($f, $valexpr);
     }
 
 
@@ -1306,21 +1305,20 @@ class Review_SearchTerm extends SearchTerm {
         $q[] = "coalesce($thistab.count,0)" . $this->rsm->conservative_nonnegative_countexpr();
         return "(" . join(" and ", $q) . ")";
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
-        if (!$this->_check_flags($row, $srch))
+    function exec(PaperInfo $prow, PaperSearch $srch) {
+        if (!$this->_check_flags($prow, $srch))
             return false;
         if ($this->fieldname)
-            $rids = explode(",", $row->{$this->fieldname . "_reviewIds"});
+            $rids = explode(",", $prow->{$this->fieldname . "_reviewIds"});
         else
-            $rids = array_keys($row->reviews_by_id());
+            $rids = array_keys($prow->reviews_by_id());
         $n = 0;
         if (!empty($rids) && $rids[0] !== "") {
-            if ($this->rsm->wordcountexpr)
-                $row->ensure_review_word_counts();
+            $this->rsm->prepare_reviews($prow);
             foreach ($rids as $rid) {
-                $rrow = $row->review_of_id($rid);
+                $rrow = $prow->review_of_id($rid);
                 assert($rrow !== null);
-                $n += $this->rsm->test_review($srch->user, $row, $rrow, $srch);
+                $n += $this->rsm->test_review($srch->user, $prow, $rrow, $srch);
             }
         }
         return $this->rsm->test($n);
@@ -1491,7 +1489,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         return $sqi->negated ? "false" : "true";
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
+    function exec(PaperInfo $prow, PaperSearch $srch) {
         return true;
     }
 }
@@ -2163,6 +2161,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     public $rate = null;
     public $tokens = null;
     public $wordcountexpr = null;
+    private $rfield = null;
+    private $rfield_score;
+    private $rfield_text;
 
     function __construct($countexpr = null, $contacts = null) {
         parent::__construct($countexpr, $contacts);
@@ -2205,10 +2206,32 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         } else
             return false;
     }
-    function make_field_term($fieldsql) {
+    function make_field_term(ReviewField $field, $value) {
+        assert(!$this->rfield && !$this->fieldsql);
         if (!$this->completeness)
             $this->completeness = self::COMPLETE;
-        $this->fieldsql = $fieldsql;
+        if ($field->has_options) {
+            if ($field->main_storage)
+                $this->fieldsql = $field->main_storage . $value;
+            else {
+                $this->rfield = $field;
+                $this->rfield_score = new CountMatcher($value);
+                if (!$this->rfield_score->test(0))
+                    $this->fieldsql = "sfields is not null";
+            }
+        } else {
+            if ($field->main_storage && is_bool($value)) {
+                if ($value)
+                    $this->fieldsql = $field->main_storage . "!=''";
+                else
+                    $this->fieldsql = "coalesce(" . $field->main_storage . ",'')=''";
+            } else {
+                $this->rfield = $field;
+                $this->rfield_text = $value;
+                if ($value)
+                    $this->fieldsql = "tfields is not null";
+            }
+        }
         return new Review_SearchTerm($this);
     }
     function simple_name() {
@@ -2233,6 +2256,16 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             && !$this->fieldsql
             && $this->rate === null;
     }
+    function prepare_reviews(PaperInfo $prow) {
+        if ($this->wordcountexpr)
+            $prow->ensure_review_word_counts();
+        if ($this->rfield) {
+            if ($this->rfield->has_options)
+                $prow->ensure_review_score($this->rfield);
+            else
+                $prow->ensure_full_reviews();
+        }
+    }
     function test_review(Contact $user, PaperInfo $prow, ReviewInfo $rrow, PaperSearch $srch) {
         if ($this->review_type && $this->review_type !== $rrow->reviewType)
             return false;
@@ -2251,7 +2284,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
         if ($this->round !== null && !in_array($rrow->reviewRound, $this->round))
             return false;
-        if ($this->fieldsql
+        if ($this->fieldsql || $this->rfield
             ? !$user->can_view_review($prow, $rrow, true)
             : !$user->can_view_review_assignment($prow, $rrow, true))
             return false;
@@ -2270,6 +2303,23 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if (isset($this->view_score)
             && $this->view_score <= $user->view_score_bound($prow, $rrow))
             return false;
+        if ($this->rfield) {
+            $fid = $this->rfield->id;
+            if ($this->rfield->has_options) {
+                if (!$this->rfield_score->test((int) get($rrow, $fid, 0)))
+                    return false;
+            } else {
+                if ($this->rfield_text === false) {
+                    if (isset($rrow->$fid) && $rrow->$fid !== "")
+                        return false;
+                } else if (!isset($rrow->$fid) || $rrow->$fid === "") {
+                    return false;
+                } else if ($this->rfield_text !== true) {
+                    if (!$rrow->field_match_pregexes($this->rfield_text, $fid))
+                        return false;
+                }
+            }
+        }
         return true;
     }
 }
@@ -2342,8 +2392,10 @@ class SearchQueryInfo {
     }
     function add_score_columns($fid) {
         $this->add_review_signature_columns();
-        if (!isset($this->columns["{$fid}Signature"])) {
-            $this->tables["R_sigs"][1] = str_replace(" from PaperReview", ", group_concat($fid order by reviewId) {$fid}Signature from PaperReview", $this->tables["R_sigs"][1]);
+        if (!isset($this->columns["{$fid}Signature"])
+            && ($f = $this->conf->review_field($fid))
+            && $f->main_storage) {
+            $this->tables["R_sigs"][1] = str_replace(" from PaperReview", ", group_concat({$f->main_storage} order by reviewId) {$fid}Signature from PaperReview", $this->tables["R_sigs"][1]);
             $this->add_column("{$fid}Signature", "R_sigs.{$fid}Signature");
         }
     }

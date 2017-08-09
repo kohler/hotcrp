@@ -1680,11 +1680,11 @@ class PaperInfo {
         Dbl::free($result);
     }
 
-    function ensure_review_score($fid) {
-        $fid = is_object($fid) ? $fid->id : $fid;
+    function ensure_review_score($field) {
+        $fid = is_object($field) ? $field->id : $field;
         if (!isset($this->_reviews_have[$fid])
             && !isset($this->_reviews_have["full"])) {
-            $rfi = ReviewInfo::field_info($fid);
+            $rfi = is_object($field) ? $field : ReviewInfo::field_info($fid);
             if (!$rfi)
                 $this->_reviews_have[$fid] = false;
             else if (!$rfi->main_storage)

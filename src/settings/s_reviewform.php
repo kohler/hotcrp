@@ -127,12 +127,26 @@ class ReviewForm_SettingParser extends SettingParser {
 
     static function requested_fields(SettingValues $sv) {
         $fs = [];
-        foreach ($sv->conf->review_form()->fmap as $fid => $f)
+        $max_fields = ["s" => "s00", "t" => "t00"];
+        foreach ($sv->conf->review_form()->fmap as $fid => $f) {
             $fs[$f->short_id] = true;
-        for ($i = 1; isset($sv->req[sprintf("shortName_s%02d", $i)]); ++$i)
-            $fs[sprintf("s%02d", $i)] = true;
-        for ($i = 1; isset($sv->req[sprintf("shortName_t%02d", $i)]); ++$i)
-            $fs[sprintf("t%02d", $i)] = true;
+            if (strcmp($f->short_id, $max_fields[$f->short_id[0]]) > 0)
+                $max_fields[$f->short_id[0]] = $f->short_id;
+        }
+        for ($i = 1; ; ++$i) {
+            $fid = sprintf("s%02d", $i);
+            if (isset($sv->req["shortName_$fid"]))
+                $fs[$fid] = true;
+            else if (strcmp($fid, $max_fields["s"]) > 0)
+                break;
+        }
+        for ($i = 1; ; ++$i) {
+            $fid = sprintf("t%02d", $i);
+            if (isset($sv->req["shortName_$fid"]))
+                $fs[$fid] = true;
+            else if (strcmp($fid, $max_fields["t"]) > 0)
+                break;
+        }
         return $fs;
     }
 
@@ -170,6 +184,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     private function clear_existing_fields($fields, Conf $conf) {
         // clear fields from main storage
+        $clear_sfields = $clear_tfields = [];
         foreach ($fields as $f) {
             if ($f->main_storage) {
                 if ($f->has_options)
@@ -177,20 +192,81 @@ class ReviewForm_SettingParser extends SettingParser {
                 else
                     $result = $conf->qe("update PaperReview set {$f->main_storage}=null");
             }
+            if ($f->json_storage) {
+                if ($f->has_options)
+                    $clear_sfields[] = $f;
+                else
+                    $clear_tfields[] = $f;
+            }
         }
+        if (!$clear_sfields && !$clear_tfields)
+            return;
+
+        // clear fields from json storage
+        $clearf = Dbl::make_multi_qe_stager($conf->dblink);
+        $result = $conf->qe("select * from PaperReview where sfields is not null or tfields is not null");
+        $q = $qv = [];
+        while (($rrow = ReviewInfo::fetch($result, $conf))) {
+            $cleared = false;
+            foreach ($clear_sfields as $f)
+                if (isset($rrow->{$f->id})) {
+                    unset($rrow->{$f->id}, $rrow->{$f->short_id});
+                    $cleared = true;
+                }
+            if ($cleared) {
+                $q[] = "update PaperReview set sfields=? where paperId=? and reviewId=?";
+                array_push($qv, $rrow->unparse_sfields(), $rrow->paperId, $rrow->reviewId);
+            }
+            $cleared = false;
+            foreach ($clear_tfields as $f)
+                if (isset($rrow->{$f->id})) {
+                    unset($rrow->{$f->id}, $rrow->{$f->short_id});
+                    $cleared = true;
+                }
+            if ($cleared) {
+                $q[] = "update PaperReview set tfields=? where paperId=? and reviewId=?";
+                array_push($qv, $rrow->unparse_tfields(), $rrow->paperId, $rrow->reviewId);
+            }
+            $clearf($q, $qv);
+        }
+        $clearf($q, $qv, true);
     }
 
     private function clear_nonexisting_options($fields, Conf $conf) {
         $updates = [];
 
         // clear options from main storage
+        $clear_sfields = [];
         foreach ($fields as $f) {
             if ($f->main_storage) {
                 $result = $conf->qe("update PaperReview set {$f->main_storage}=0 where {$f->main_storage}>" . count($f->options));
                 if ($result && $result->affected_rows > 0)
                     $updates[$f->name] = true;
             }
+            if ($f->json_storage)
+                $clear_sfields[] = $f;
         }
+        if (!$clear_sfields)
+            return array_keys($updates);
+
+        // clear options from json storage
+        $clearf = Dbl::make_multi_qe_stager($conf->dblink);
+        $result = $conf->qe("select * from PaperReview where sfields is not null");
+        $q = $qv = [];
+        while (($rrow = ReviewInfo::fetch($result, $conf))) {
+            $cleared = false;
+            foreach ($clear_sfields as $f)
+                if (isset($rrow->{$f->id}) && $rrow->{$f->id} > count($f->options)) {
+                    unset($rrow->{$f->id}, $rrow->{$f->short_id});
+                    $cleared = $updates[$f->name] = true;
+                }
+            if ($cleared) {
+                $q[] = "update PaperReview set sfields=? where paperId=? and reviewId=?";
+                array_push($qv, $rrow->unparse_sfields(), $rrow->paperId, $rrow->reviewId);
+            }
+            $clearf($q, $qv);
+        }
+        $clearf($q, $qv, true);
         return array_keys($updates);
     }
 
@@ -207,7 +283,7 @@ class ReviewForm_SettingParser extends SettingParser {
             if ($nf->displayed && (!$of || !$of->displayed))
                 $clear_fields[] = $nf;
             else if ($nf->displayed && $nf->has_options
-                     && count($nf->options) != count($of->options))
+                     && count($nf->options) < count($of->options))
                 $clear_options[] = $nf;
             if ($of && $of->include_word_count() != $nf->include_word_count())
                 $reset_wordcount = true;
@@ -294,7 +370,12 @@ submitted. Add a line “<code>0. No entry</code>” to make the score optional.
         $fj = $rfj[$f->short_id];
         $fj->internal_id = $f->id;
         $fj->has_any_nonempty = false;
-        if ($f->main_storage) {
+        if ($f->json_storage) {
+            if ($f->has_options)
+                $where[0] = "sfields is not null";
+            else
+                $where[1] = "tfields is not null";
+        } else {
             if ($f->has_options)
                 $where[] = "{$f->main_storage}!=0";
             else

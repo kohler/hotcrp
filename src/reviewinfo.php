@@ -64,6 +64,17 @@ class ReviewInfo {
         foreach (["reviewModified", "reviewSubmitted", "reviewAuthorSeen"] as $k)
             if (isset($this->$k))
                 $this->$k = (int) $this->$k;
+        if (isset($this->tfields) && ($x = json_decode($this->tfields, true))) {
+            foreach ($x as $k => $v)
+                $this->$k = $v;
+        }
+        if (isset($this->sfields) && ($x = json_decode($this->sfields, true))) {
+            foreach ($x as $k => $v)
+                $this->$k = $v;
+        }
+        foreach (self::$text_field_map as $kin => $kout)
+            if (isset($this->$kin) && !isset($this->$kout))
+                $this->$kout = $this->$kin;
     }
     static function fetch($result, Conf $conf = null) {
         $rrow = $result ? $result->fetch_object("ReviewInfo") : null;
@@ -93,27 +104,62 @@ class ReviewInfo {
         if (strlen($id) === 3 && ctype_digit(substr($id, 1))) {
             $n = intval(substr($id, 1), 10);
             if ($id[0] === "t") {
-                if (isset(self::$new_text_fields[$n])) {
-                    $fid = self::$new_text_fields[$n];
-                    return new ReviewFieldInfo($fid, $id, false, $fid);
-                } else
-                    return false;
+                if (isset(self::$new_text_fields[$n]))
+                    return new ReviewFieldInfo($id, $id, false, self::$new_text_fields[$n], $id);
+                else
+                    return new ReviewFieldInfo($id, $id, false, null, $id);
             } else if ($id[0] === "s") {
                 if (isset(self::$new_score_fields[$n])) {
                     $fid = self::$new_score_fields[$n];
-                    return new ReviewFieldInfo($fid, $id, true, $fid);
+                    return new ReviewFieldInfo($fid, $id, true, $fid, null);
                 } else
-                    return false;
+                    return new ReviewFieldInfo($id, $id, true, null, $id);
             } else
                 return false;
         } else if (isset(self::$text_field_map[$id])) {
             $short_id = self::$text_field_map[$id];
-            return new ReviewFieldInfo($id, $short_id, false, $id);
+            return new ReviewFieldInfo($short_id, $short_id, false, $id, $short_id);
         } else if (isset(self::$score_field_map[$id])) {
             $short_id = self::$score_field_map[$id];
-            return new ReviewFieldInfo($id, $short_id, true, $id);
+            return new ReviewFieldInfo($id, $short_id, true, $id, null);
         } else
             return false;
+    }
+
+    function field_match_pregexes($reg, $field) {
+        $data = $this->$field;
+        $field_deaccent = $field . "_deaccent";
+        if (!isset($this->$field_deaccent)) {
+            if (preg_match('/[\x80-\xFF]/', $data))
+                $this->$field_deaccent = UnicodeHelper::deaccent($data);
+            else
+                $this->$field_deaccent = false;
+        }
+        return Text::match_pregexes($reg, $data, $this->$field_deaccent);
+    }
+
+    function unparse_sfields() {
+        $data = null;
+        foreach (get_object_vars($this) as $k => $v)
+            if (strlen($k) === 3 && $k[0] === "s" && (int) $v !== 0
+                && ($n = cvtint(substr($k, 1))) >= self::MIN_SFIELD)
+                $data[$k] = (int) $v;
+        if ($data === null)
+            return null;
+        return json_encode_db($data);
+    }
+    function unparse_tfields() {
+        global $Conf;
+        $data = null;
+        foreach (get_object_vars($this) as $k => $v)
+            if (strlen($k) === 3 && $k[0] === "t" && $v !== null && $v !== "")
+                $data[$k] = $v;
+        if ($data === null)
+            return null;
+        $json = json_encode_db($data);
+        if ($json === null)
+            error_log(($Conf ? "{$Conf->dbname}: " : "") . "review #{$this->paperId}/{$this->reviewId}: text fields cannot be converted to JSON");
+        return $json;
     }
 
     static function compare($a, $b) {

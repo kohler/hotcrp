@@ -174,7 +174,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 173) {
+        if ($this->sversion < 174) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -2340,10 +2340,11 @@ class Conf {
             || get($options, "reviewWordCounts")) {
             $cols[] = "R_alls.reviewSignatures";
             $j = "";
-            foreach (get($options, "scores", []) as $fid) {
-                $cols[] = "R_alls.{$fid}Signature";
-                $j .= ", group_concat($fid order by reviewId) {$fid}Signature";
-            }
+            foreach (get($options, "scores", []) as $fid)
+                if (($f = $this->review_field($fid)) && $f->main_storage) {
+                    $cols[] = "R_alls.{$fid}Signature";
+                    $j .= ", group_concat({$f->main_storage} order by reviewId) {$fid}Signature";
+                }
             if (get($options, "reviewWordCounts")) {
                 $cols[] = "R_alls.reviewWordCountSignature";
                 $j .= ", group_concat(coalesce(reviewWordCount,'.') order by reviewId) reviewWordCountSignature";

@@ -39,11 +39,11 @@ Ready
 
 ==+== C. Paper summary
 
-This is a summary.
+
 
 ==+== D. Comments for author
 
-Comments for the authors.
+
 
 ==+== E. Comments for PC
 ==-== Hidden from authors.
