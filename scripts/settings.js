@@ -134,7 +134,7 @@ return {init: init, add: add, kill: kill};
 
 
 window.review_form_settings = (function () {
-var field_has_options, fieldorder, original, samples,
+var fieldorder, original, samples, stemplate, ttemplate,
     colors = ["sv", "Red to green", "svr", "Green to red",
               "sv-blpu", "Blue to purple", "sv-publ", "Purple to blue",
               "sv-viridis", "Purple to yellow", "sv-viridisr", "Yellow to purple"];
@@ -430,7 +430,7 @@ function append_field(fid, pos) {
 
     $f = $(revfield_template.replace(/\$/g, fid));
 
-    if (field_has_options[fid]) {
+    if (fid.charAt(0) === "s") {
         $j = $f.find(".reviewfield_option_class_prefix");
         for (i = 0; i < colors.length; i += 2)
             $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
@@ -468,11 +468,12 @@ function append_field(fid, pos) {
     $f.find(".need-tooltip").each(add_tooltip);
 }
 
-function rfs(field_has_optionsj, originalj, samplesj, errf, request) {
+function rfs(data) {
     var i, fid, $j;
-    field_has_options = field_has_optionsj;
-    original = originalj;
-    samples = samplesj;
+    original = data.fields;
+    samples = data.samples;
+    stemplate = data.stemplate;
+    ttemplate = data.ttemplate;
 
     fieldorder = [];
     for (fid in original)
@@ -495,17 +496,17 @@ function rfs(field_has_optionsj, originalj, samplesj, errf, request) {
     });
 
     // highlight errors, apply request
-    for (i in request || {}) {
+    for (i in data.req || {}) {
         if (!$("#" + i).length)
             rfs.add(false, i.replace(/^.*_/, ""));
         $j = $("#" + i);
-        if (!text_eq($j.val(), request[i])) {
-            $j.val(request[i]);
+        if (!text_eq($j.val(), data.req[i])) {
+            $j.val(data.req[i]);
             hiliter("reviewform_container");
             foldup($j[0], null, {n: 2, f: false});
         }
     }
-    for (i in errf || {}) {
+    for (i in data.errf || {}) {
         $j = $(".errloc_" + i);
         $j.addClass("error");
         foldup($j[0], null, {n: 2, f: false});
@@ -523,7 +524,7 @@ function add_field(fid) {
 }
 
 function add_dialog(fid, focus) {
-    var $d, template = 0, has_options = field_has_options[fid];
+    var $d, template = 0, has_options = fid.charAt(0) === "s";
     function render_template() {
         var $dtn = $d.find(".newreviewfield-template-name"),
             $dt = $d.find(".newreviewfield-template"),
@@ -616,15 +617,28 @@ rfs.add = function (has_options, fid) {
     for (var $n = $("#reviewform_removedcontainer")[0].firstChild;
          $n && $n.hasAttribute("data-revfield"); $n = $n.nextSibling) {
         x.push([$n.getAttribute("data-revfield"), i]);
+        ++i;
+    }
     // otherwise prefer fields that have ever been defined
-    for (fid in field_has_options)
-        if ($.inArray(fid, fieldorder) < 0)
-            x.push([fid, ++i + (original[fid].name && original[fid].name != "Field name" ? 0 : 1000)]);
+    for (fid in original)
+        if ($.inArray(fid, fieldorder) < 0) {
+            x.push([fid, i + (original[fid].name && original[fid].name !== "Field name" ? 0 : 1000)]);
+            ++i;
+        }
+    // find a field
     x.sort(function (a, b) { return a[1] - b[1]; });
     for (i = 0; i != x.length; ++i)
-        if (!field_has_options[x[i][0]] == !has_options)
+        if (!has_options === (x[i][0].charAt(0) === "t"))
             return add_dialog(x[i][0]);
-    alert("You’ve reached the maximum number of " + (has_options ? "score fields." : "text fields."));
+    // no field found, so add one
+    var ffmt = has_options ? "s%02d" : "t%02d";
+    for (i = 1; ; ++i) {
+        fid = sprintf(ffmt, i);
+        if ($.inArray(fid, fieldorder) < 0)
+            break;
+    }
+    original[fid] = has_options ? stemplate : ttemplate;
+    return add_dialog(fid);
 };
 
 return rfs;

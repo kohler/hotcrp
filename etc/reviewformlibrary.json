@@ -2,7 +2,7 @@
     {
         "selector": "Overall merit (1–5, percentage rankings)",
         "name": "Overall merit",
-        "preferred_id": "overAllMerit",
+        "preferred_id": "s01",
         "options": [
             "Bottom 50% of submitted papers",
             "Top 50% but not top 25% of submitted papers",
@@ -15,7 +15,7 @@
     {
         "selector": "Overall merit (1–5, Reject through Strong Accept)",
         "name": "Overall merit",
-        "preferred_id": "overAllMerit",
+        "preferred_id": "s01",
         "options": [
             "Reject",
             "Weak reject",
@@ -28,7 +28,7 @@
     {
         "selector": "Overall merit (A–D, Identify the Champion)",
         "name": "Overall merit",
-        "preferred_id": "overAllMerit",
+        "preferred_id": "s01",
         "options": [
             "Reject",
             "Weak paper, though I will not fight strongly against it",
@@ -41,7 +41,7 @@
     {
         "selector": "Reviewer confidence (1–3, Low through High)",
         "name": "Reviewer confidence",
-        "preferred_id": "reviewerQualification",
+        "preferred_id": "s02",
         "options": [
             "Low",
             "Medium",
@@ -52,7 +52,7 @@
     {
         "selector": "Reviewer expertise (1–5)",
         "name": "Reviewer expertise",
-        "preferred_id": "reviewerQualification",
+        "preferred_id": "s02",
         "options": [
              "I know nothing about this area",
              "I have passing familiarity with this area",
@@ -65,7 +65,7 @@
     {
         "selector": "Confidence (X–Z, Identify the Champion)",
         "name": "Confidence",
-        "preferred_id": "reviewerQualification",
+        "preferred_id": "s02",
         "options": [
             "I am not an expert; my evaluation is that of an informed outsider",
             "I am knowledgeable in this area, but not an expert",
@@ -77,7 +77,7 @@
     {
         "selector": "Novelty (1–4)",
         "name": "Novelty",
-        "preferred_id": "novelty",
+        "preferred_id": "s03",
         "options": [
              "Published before or openly commercialized",
              "Incremental improvement",
@@ -89,7 +89,7 @@
     {
         "selector": "Writing quality (1–5)",
         "name": "Writing quality",
-        "preferred_id": "grammar",
+        "preferred_id": "s07",
         "options": [
              "Unacceptable",
              "Needs improvement",
@@ -102,7 +102,7 @@
     {
         "selector": "Experimental methodology (1–5)",
         "name": "Experimental methodology",
-        "preferred_id": "technicalMerit",
+        "preferred_id": "s04",
         "options": [
              "Unacceptable",
              "Poor",
@@ -116,40 +116,40 @@
     {
         "selector": "Paper summary",
         "name": "Paper summary",
-        "preferred_id": "paperSummary",
+        "preferred_id": "t01",
         "description": "Please summarize the paper briefly in your own words.",
         "visibility": "au"
     },
     {
         "selector": "Strengths",
         "name": "Strengths",
-        "preferred_id": "strengthOfPaper",
+        "preferred_id": "t06",
         "description": "What are the paper’s strengths? Just a couple sentences, please.",
         "visibility": "au"
     },
     {
         "selector": "Weaknesses",
         "name": "Weaknesses",
-        "preferred_id": "weaknessOfPaper",
+        "preferred_id": "t05",
         "description": "What are the paper’s weaknesses? Just a couple sentences, please.",
         "visibility": "au"
     },
     {
         "selector": "Comments to authors",
         "name": "Comments to authors",
-        "preferred_id": "commentsToAuthor",
+        "preferred_id": "t02",
         "visibility": "au"
     },
     {
         "selector": "Comments to PC",
         "name": "Comments to PC",
-        "preferred_id": "commentsToPC",
+        "preferred_id": "t03",
         "visibility": "pc"
     },
     {
         "selector": "Response questions",
         "name": "Questions for authors’ response",
-        "preferred_id": "commentsToAddress",
+        "preferred_id": "t04",
         "description": "Specific questions that could affect your accept/reject decision. Remember that the authors have limited space and must respond to all reviewers.",
         "visibility": "au"
     }

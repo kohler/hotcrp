@@ -122,6 +122,7 @@ class SiteLoader {
         "PaperOptionList" => "src/paperoption.php",
         "Review_Assigner" => "src/assigners.php",
         "ReviewField" => "src/review.php",
+        "ReviewFieldInfo" => "src/review.php",
         "ReviewForm" => "src/review.php",
         "ReviewSearchMatcher" => "src/papersearch.php",
         "ReviewValues" => "src/review.php",

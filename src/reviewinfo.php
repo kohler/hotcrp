@@ -29,6 +29,31 @@ class ReviewInfo {
     //public $reviewWordCount;
     //public $reviewFormat;
 
+    static public $text_field_map = [
+        "paperSummary" => "t01", "commentsToAuthor" => "t02",
+        "commentsToPC" => "t03", "commentsToAddress" => "t04",
+        "weaknessOfPaper" => "t05", "strengthOfPaper" => "t06",
+        "textField7" => "t07", "textField8" => "t08"
+    ];
+    static private $new_text_fields = [
+        null, "paperSummary", "commentsToAuthor", "commentsToPC",
+        "commentsToAddress", "weaknessOfPaper", "strengthOfPaper",
+        "textField7", "textField8"
+    ];
+    static private $score_field_map = [
+        "overAllMerit" => "s01", "reviewerQualification" => "s02",
+        "novelty" => "s03", "technicalMerit" => "s04",
+        "interestToCommunity" => "s05", "longevity" => "s06", "grammar" => "s07",
+        "likelyPresentation" => "s08", "suitableForShort" => "s09",
+        "potential" => "s10", "fixability" => "s11"
+    ];
+    static private $new_score_fields = [
+        null, "overAllMerit", "reviewerQualification", "novelty",
+        "technicalMerit", "interestToCommunity", "longevity", "grammar",
+        "likelyPresentation", "suitableForShort", "potential", "fixability"
+    ];
+    const MIN_SFIELD = 12;
+
     private function merge() {
         foreach (["paperId", "reviewId", "contactId", "reviewType",
                   "reviewRound", "requestedBy", "reviewBlind",
@@ -62,6 +87,33 @@ class ReviewInfo {
             = explode(" ", $signature);
         $rrow->merge();
         return $rrow;
+    }
+
+    static function field_info($id) {
+        if (strlen($id) === 3 && ctype_digit(substr($id, 1))) {
+            $n = intval(substr($id, 1), 10);
+            if ($id[0] === "t") {
+                if (isset(self::$new_text_fields[$n])) {
+                    $fid = self::$new_text_fields[$n];
+                    return new ReviewFieldInfo($fid, $id, false, $fid);
+                } else
+                    return false;
+            } else if ($id[0] === "s") {
+                if (isset(self::$new_score_fields[$n])) {
+                    $fid = self::$new_score_fields[$n];
+                    return new ReviewFieldInfo($fid, $id, true, $fid);
+                } else
+                    return false;
+            } else
+                return false;
+        } else if (isset(self::$text_field_map[$id])) {
+            $short_id = self::$text_field_map[$id];
+            return new ReviewFieldInfo($id, $short_id, false, $id);
+        } else if (isset(self::$score_field_map[$id])) {
+            $short_id = self::$score_field_map[$id];
+            return new ReviewFieldInfo($id, $short_id, true, $id);
+        } else
+            return false;
     }
 
     static function compare($a, $b) {

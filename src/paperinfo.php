@@ -1676,13 +1676,20 @@ class PaperInfo {
         $fid = is_object($fid) ? $fid->id : $fid;
         if (!isset($this->_reviews_have[$fid])
             && !isset($this->_reviews_have["full"])) {
-            $this->_reviews_have[$fid] = true;
-            $k = $fid . "Signature";
-            if (!property_exists($this, $k))
-                $this->load_review_fields($fid);
-            $x = explode(",", $this->$k);
-            foreach ($this->reviews_by_id_order() as $i => $rrow)
-                $rrow->$fid = (int) $x[$i];
+            $rfi = ReviewInfo::field_info($fid);
+            if (!$rfi)
+                $this->_reviews_have[$fid] = false;
+            else if (!$rfi->main_storage)
+                $this->ensure_full_reviews();
+            else {
+                $this->_reviews_have[$fid] = true;
+                $k = $rfi->main_storage . "Signature";
+                if (!property_exists($this, $k))
+                    $this->load_review_fields($rfi->main_storage);
+                $x = explode(",", $this->$k);
+                foreach ($this->reviews_by_id_order() as $i => $rrow)
+                    $rrow->$fid = (int) $x[$i];
+            }
         }
     }
 

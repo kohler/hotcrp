@@ -8,6 +8,20 @@
 //         "display_space":ROWS,"visibility":VISIBILITY,
 //         "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}}
 
+class ReviewFieldInfo {
+    public $id;
+    public $short_id;
+    public $has_options;
+    public $main_storage;
+
+    function __construct($id, $short_id, $has_options, $main_storage) {
+        $this->id = $id;
+        $this->short_id = $short_id;
+        $this->has_options = $has_options;
+        $this->main_storage = $main_storage;
+    }
+}
+
 class ReviewField implements Abbreviatable, JsonSerializable {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
@@ -15,6 +29,7 @@ class ReviewField implements Abbreviatable, JsonSerializable {
     const VALUE_STRING = 4;
 
     public $id;
+    public $short_id;
     public $conf;
     public $name;
     public $name_html;
@@ -30,6 +45,7 @@ class ReviewField implements Abbreviatable, JsonSerializable {
     public $option_class_prefix = "sv";
     public $round_mask = 0;
     public $allow_empty = false;
+    public $main_storage;
     private $_typical_score = false;
 
     static private $view_score_map = [
@@ -48,10 +64,16 @@ class ReviewField implements Abbreviatable, JsonSerializable {
         VIEWSCORE_AUTHOR => "au"
     ];
 
-    function __construct($id, $has_options, $conf) {
-        $this->id = $id;
-        $this->has_options = $has_options;
+    function __construct(ReviewFieldInfo $finfo, Conf $conf) {
+        $this->id = $finfo->id;
+        $this->short_id = $finfo->short_id;
+        $this->has_options = $finfo->has_options;
+        $this->main_storage = $finfo->main_storage;
         $this->conf = $conf;
+    }
+    static function make_template($has_options, Conf $conf) {
+        $id = $has_options ? "s00" : "t00";
+        return new ReviewField(new ReviewFieldInfo($id, $id, $has_options, null), $conf);
     }
 
     function assign($j) {
@@ -352,7 +374,7 @@ class ReviewField implements Abbreviatable, JsonSerializable {
     }
 }
 
-class ReviewForm {
+class ReviewForm implements JsonSerializable {
     const NOTIFICATION_DELAY = 10800;
 
     public $conf;
@@ -387,17 +409,6 @@ class ReviewForm {
     function __construct($rfj, Conf $conf) {
         $this->conf = $conf;
 
-        // prototype fields
-        foreach (array("paperSummary", "commentsToAuthor", "commentsToPC",
-                       "commentsToAddress", "weaknessOfPaper",
-                       "strengthOfPaper", "textField7", "textField8") as $fid)
-            $this->fmap[$fid] = new ReviewField($fid, false, $this->conf);
-        foreach (array("potential", "fixability", "overAllMerit",
-                       "reviewerQualification", "novelty", "technicalMerit",
-                       "interestToCommunity", "longevity", "grammar",
-                       "likelyPresentation", "suitableForShort") as $fid)
-            $this->fmap[$fid] = new ReviewField($fid, true, $this->conf);
-
         // parse JSON
         if (!$rfj)
             $rfj = json_decode('{
@@ -409,9 +420,12 @@ class ReviewForm {
 "commentsToAuthor":{"name":"Comments to authors","position":4,"visibility":"au"},
 "commentsToPC":{"name":"Comments to PC","position":5,"visibility":"pc"}}');
 
-        foreach ($rfj as $fname => $j)
-            if (($f = get($this->fmap, $fname)))
+        foreach ($rfj as $fid => $j)
+            if (($finfo = ReviewInfo::field_info($fid))) {
+                $f = new ReviewField($finfo, $conf);
+                $this->fmap[$f->id] = $f;
                 $f->assign($j);
+            }
 
         // assign field order
         uasort($this->fmap, "ReviewForm::fmap_compare");
@@ -460,13 +474,12 @@ class ReviewForm {
         return $f && $f->displayed ? " " . $f->abbreviation() . " " : " ";
     }
 
-    function unparse_full_json() {
-        $fmap = array();
+    function jsonSerialize() {
+        $fmap = [];
         foreach ($this->fmap as $f)
-            $fmap[$f->id] = $f->unparse_json();
+            $fmap[$f->id] = $f->unparse_json(true);
         return $fmap;
     }
-
     function unparse_json($round_mask, $view_score_bound) {
         $fmap = array();
         foreach ($this->fmap as $f)
@@ -1767,8 +1780,10 @@ class ReviewValues extends MessageSet {
                 if ($fval_diffs)
                     $diff_view_score = max($diff_view_score, $f->view_score);
                 if ($fval_diffs || !$rrow) {
-                    $qf[] = "$fid=?";
-                    $qv[] = $fval;
+                    if ($f->main_storage) {
+                        $qf[] = "{$f->main_storage}=?";
+                        $qv[] = $fval;
+                    }
                 }
             }
 

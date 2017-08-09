@@ -146,8 +146,8 @@ xassert(!$tf->has_problem_at("reviewerEmail"));
 // Add “no entry”
 $sv = SettingValues::make_request($user_chair, [
     "has_review_form" => 1,
-    "shortName_overAllMerit" => "Overall merit",
-    "options_overAllMerit" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\nNo entry\n"
+    "shortName_s01" => "Overall merit",
+    "options_s01" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\nNo entry\n"
 ]);
 xassert($sv->execute());
 xassert_eqq(join(" ", $sv->changes()), "review_form");
@@ -175,13 +175,39 @@ assert_search_papers($user_chair, "ovemer:4", "1");
 // “4” is no longer a valid overall-merit score
 $sv = SettingValues::make_request($user_chair, [
     "has_review_form" => 1,
-    "shortName_overAllMerit" => "Overall merit",
-    "options_overAllMerit" => "1. Reject\n2. Weak reject\n3. Weak accept\nNo entry\n"
+    "shortName_s01" => "Overall merit",
+    "options_s01" => "1. Reject\n2. Weak reject\n3. Weak accept\nNo entry\n"
 ]);
 xassert($sv->execute());
 xassert_eqq(join(" ", $sv->changes()), "review_form");
 
 // So the 4 score has been removed
 assert_search_papers($user_chair, "ovemer:4", "");
+
+// revexp has not
+assert_search_papers($user_chair, "revexp:2", "1");
+assert_search_papers($user_chair, "has:revexp", "1");
+
+// Stop displaying reviewer expertise
+$sv = SettingValues::make_request($user_chair, [
+    "has_review_form" => 1,
+    "shortName_s02" => "Reviewer expertise",
+    "order_s02" => 0
+]);
+xassert($sv->execute());
+xassert_eqq(join(" ", $sv->changes()), "review_form");
+
+// Add reviewer expertise back
+$sv = SettingValues::make_request($user_chair, [
+    "has_review_form" => 1,
+    "shortName_s02" => "Reviewer expertise",
+    "options_s02" => "1. No familiarity\n2. Some familiarity\n3. Knowledgeable\n4. Expert",
+    "order_s02" => 1.5
+]);
+xassert($sv->execute());
+xassert_eqq(join(" ", $sv->changes()), "review_form");
+
+// It has been removed from the review
+assert_search_papers($user_chair, "has:revexp", "");
 
 xassert_exit();
