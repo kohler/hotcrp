@@ -242,7 +242,7 @@ class ReviewField implements Abbreviatable, JsonSerializable {
 
     function unparse_value($value, $flags = 0, $real_format = null) {
         if (is_object($value))
-            $value = defval($value, $this->id);
+            $value = get($value, $this->id);
         if (!$this->has_options)
             return $value;
         if (!$value)
@@ -275,7 +275,7 @@ class ReviewField implements Abbreviatable, JsonSerializable {
 
     function value_description($value) {
         if (is_object($value))
-            $value = defval($value, $this->id);
+            $value = get($value, $this->id);
         if (!$this->has_options)
             return null;
         else if (!$value)
@@ -1657,9 +1657,9 @@ class ReviewValues extends MessageSet {
             if ($f->has_options) {
                 $fval = trim($fval);
                 if ($f->parse_is_empty($fval)) {
-                    if ($submit
-                        && $f->view_score >= VIEWSCORE_PC
-                        && !$f->allow_empty) {
+                    if ($f->allow_empty)
+                        ++$nokfields;
+                    else if ($submit && $f->view_score >= VIEWSCORE_PC) {
                         $this->warning_at($fid, $this->conf->_("You must provide a value for %s in order to submit your review.", $f->name_html));
                         $unready = true;
                     }
@@ -1680,7 +1680,7 @@ class ReviewValues extends MessageSet {
                 || !isset($this->req["reviewerLast"])
                 || strcasecmp($this->req["reviewerFirst"], $rrow->firstName) != 0
                 || strcasecmp($this->req["reviewerLast"], $rrow->lastName) != 0)) {
-            $msg = $this->conf->_("The review form was meant for %s, but this review belongs to %s. If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", Text::user_html(["name" => get($this->req, "reviewerName"), "email" => $this->req["reviewerEmail"]]), Text::user_html($rrow));
+            $msg = $this->conf->_("The review form was meant for %s, but this review belongs to %s. If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", Text::user_html(["firstName" => get($this->req, "reviewerFirst"), "lastName" => get($this->req, "reviewerLast"), "email" => $this->req["reviewerEmail"]]), Text::user_html($rrow));
             $this->error_at("reviewerEmail", $msg);
         } else if ($rrow
                    && $rrow->reviewEditVersion > get($this->req, "version", 0)
@@ -1743,10 +1743,13 @@ class ReviewValues extends MessageSet {
                 && (!$f->round_mask || $f->is_round_visible($rrow))) {
                 $fval = $this->req[$fid];
                 if ($f->has_options) {
+                    $fval = trim($fval);
                     if ($f->parse_is_empty($fval))
                         $fval = 0;
                     else if (!($fval = $f->parse_value($fval, false)))
                         continue;
+                    if ($fval === 0 && $rrow && !$f->allow_empty)
+                        $fval = $rrow->$fid;
                     $fval_diffs = $fval != ($rrow ? $rrow->$fid : 0);
                 } else {
                     $fval = rtrim($fval);
@@ -2045,5 +2048,19 @@ class ReviewValues extends MessageSet {
                 $hdr . $m);
         }
         $this->finished = 3;
+    }
+
+    function json_report() {
+        $j = [];
+        foreach (["newlySubmitted" => "submitted",
+            "updated" => "updated",
+            "approvalRequested" => "approval_requested",
+            "savedDraft" => "saved_draft",
+            "authorNotified" => "author_notified",
+            "unchanged" => "unchanged",
+            "ignoredBlank" => "blank"] as $k => $jk)
+            if ($this->$k)
+                $j[$jk] = $this->$k;
+        return $j;
     }
 }
