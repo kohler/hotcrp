@@ -250,18 +250,23 @@ function fill_order() {
         $(n).find(".revfield_order").val(0);
 }
 
+function fill_field1(sel, value, order) {
+    var $j = $(sel).val(value);
+    order && $j.attr("data-default-value", value);
+}
+
 function fill_field(fid, fieldj, order) {
     fieldj = fieldj || original[fid] || {};
-    $("#shortName_" + fid).val(fieldj.name || "");
-    order && $("#order_" + fid).val(fieldj.position || 0);
-    $("#description_" + fid).val(fieldj.description || "");
-    $("#authorView_" + fid).val(fieldj.visibility || "pc");
-    $("#options_" + fid).val(options_to_text(fieldj));
-    $("#option_class_prefix_flipped_" + fid).val(fieldj.option_letter ? "1" : "");
-    $("#option_class_prefix_" + fid).val(option_class_prefix(fieldj));
+    fill_field1("#shortName_" + fid, fieldj.name || "", order);
+    order && fill_field1("#order_" + fid, fieldj.position || 0, order);
+    fill_field1("#description_" + fid, fieldj.description || "", order);
+    fill_field1("#authorView_" + fid, fieldj.visibility || "pc", order);
+    fill_field1("#options_" + fid, options_to_text(fieldj), order);
+    fill_field1("#option_class_prefix_flipped_" + fid, fieldj.option_letter ? "1" : "", order);
+    fill_field1("#option_class_prefix_" + fid, option_class_prefix(fieldj), order);
+    fill_field1("#round_list_" + fid, (fieldj.round_list || []).join(" "), order);
     $("#revfield_" + fid + " textarea").trigger("change");
     $("#revfieldview_" + fid).html("").append(create_field_view(fid, fieldj));
-    $("#round_list_" + fid).val((fieldj.round_list || []).join(" "));
     $("#remove_" + fid).html(fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
     check_change(fid);
     return false;
@@ -277,7 +282,10 @@ function remove() {
     fill_order();
 }
 
-var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain fold2c errloc_$" data-revfield="$" data-fold="true">\
+var revfield_template = '<table id="revfield_$" class="settings_revfield f-contain fold2c errloc_$" data-revfield="$" data-fold="true"><tbody>\
+<tr><td class="nw"><a href="#" class="q revfield-folder">\
+<span class="expander"><span class="in0 fx2">▼</span><span class="in1 fn2 need-tooltip" data-tooltip="Edit field" data-tooltip-dir="r">▶</span></span>\
+</a></td><td>\
 <div id="revfieldview_$" class="settings_revfieldview fn2"></div>\
 <div id="revfieldedit_$" class="settings_revfieldedit fx2">\
   <div class="f-i errloc_shortName_$">\
@@ -306,11 +314,11 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
   </div>\
   <div class="f-i errloc_description_$">\
     <div class="f-c">Description</div>\
-    <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="6" data-tooltip-content-selector="#review_form_caption_description" data-tooltip-dir="l" data-tooltip-type="focus"></textarea>\
+    <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="6" data-tooltip-content-selector="#review_form_caption_description" data-tooltip-dir="h" data-tooltip-type="focus"></textarea>\
   </div>\
   <div class="f-i errloc_options_$ reviewrow_options">\
     <div class="f-c">Options</div>\
-    <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-content-selector="#review_form_caption_options" data-tooltip-dir="l" data-tooltip-type="focus"></textarea>\
+    <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-content-selector="#review_form_caption_options" data-tooltip-dir="h" data-tooltip-type="focus"></textarea>\
   </div>\
   <div class="f-i">\
     <button id="moveup_$" class="btn revfield_moveup" type="button">Move up</button><span class="sep"></span>\
@@ -318,13 +326,13 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
 <button id="remove_$" class="btn revfield_remove" type="button">Delete from form</button><span class="sep"></span>\
 <input type="hidden" name="order_$" id="order_$" class="revfield_order" value="0" />\
   </div>\
-</div><hr class="c" /></div>';
+</div><hr class="c" />\
+</td></tr></tbody></table>';
 
-var revfieldview_template = '<div>\
+var revfieldview_template = '<div style="line-height:1.35">\
 <span class="settings_revfn"></span>\
 <span class="settings_revrounds"></span>\
 <span class="settings_revvis"></span>\
-<span class="settings_reveditor"><button type="button" class="btn">Edit</button></span>\
 <div class="settings_revdata"></div>\
 </div>';
 
@@ -349,11 +357,15 @@ function option_value_html(fieldj, value) {
 }
 
 function view_unfold(event) {
-    foldup(this, event, {n: 2, f: false});
-    var $f = $(this).closest(".settings_revfield");
-    $f.find("textarea").css("height", "auto").autogrow();
-    $f.find("input[type=text]").autogrow();
-    $f.find("input[placeholder]").each(mktemptext);
+    var $f = $(event.target).closest(".settings_revfield");
+    if ($f.hasClass("fold2c")) {
+        foldup(event.target, event, {n: 2, f: false});
+        $f.find("textarea").css("height", "auto").autogrow();
+        $f.find("input[type=text]").autogrow();
+        $f.find("input[placeholder]").each(mktemptext);
+    } else if (!form_differs($f))
+        foldup(event.target, event, {n: 2, f: true});
+    return false;
 }
 
 function field_visibility_text(visibility) {
@@ -393,7 +405,6 @@ function create_field_view(fid, fieldj) {
         x = ["Text field"];
     $f.find(".settings_revdata").html(x.join(" … "));
 
-    $f.find("button").click(view_unfold);
     return $f;
 }
 
@@ -479,6 +490,7 @@ function rfs(field_has_optionsj, originalj, samplesj, errf, request) {
     // construct form
     for (i = 0; i != fieldorder.length; ++i)
         append_field(fieldorder[i], i + 1);
+    $("#reviewform_container").on("click", "a.revfield-folder", view_unfold);
 
     // highlight errors, apply request
     for (i in request || {}) {

@@ -1856,8 +1856,8 @@ function input_default_value(elt) {
 
 function form_differs(form) {
     var same = true, $f = $(form).find("input, select, textarea");
-    if (!$f.length && (form.tagName === "INPUT" || form.tagName === "SELECT" || form.tagName === "TEXTAREA"))
-        $f = $(form);
+    if (!$f.length)
+        $f = $(form).filter("input, select, textarea");
     $f.each(function () {
         var $me = $(this);
         if ($me.hasClass("ignore-diff"))
