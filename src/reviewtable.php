@@ -56,7 +56,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
     $want_scores = $mode !== "assign" && $mode !== "edit" && $mode !== "re";
     $want_requested_by = false;
     $want_retract = false;
-    $score_header = array();
+    $score_header = array_map(function ($x) { return ""; }, $conf->review_form()->forder);
 
     // actual rows
     foreach ($rrows as $rr) {
@@ -177,20 +177,16 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         $scores = array();
         if ($want_my_scores && $canView) {
             $view_score = $Me->view_score_bound($prow, $rr);
-            $rf = $conf->review_form();
-            foreach ($rf->forder as $fid => $f) {
-                if (!$f->has_options || $f->view_score <= $view_score
-                    || ($f->round_mask && !$f->is_round_visible($rr)))
-                    /* do nothing */;
-                else if ($rr->$fid) {
-                    if (!get($score_header, $fid))
+            foreach ($conf->review_form()->forder as $fid => $f)
+                if ($f->has_options && $f->view_score > $view_score
+                    && (!$f->round_mask || $f->is_round_visible($rr))
+                    && isset($rr->$fid) && $rr->$fid) {
+                    if ($score_header[$fid] === "")
                         $score_header[$fid] = "<th>" . $f->web_abbreviation() . "</th>";
                     $scores[$fid] = '<td class="revscore" data-rf="' . $f->uid() . '">'
                         . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
-                } else if (get($score_header, $fid) === null)
-                    $score_header[$fid] = "";
-            }
+                }
         }
 
         // affix
@@ -276,7 +272,10 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         if ($score_header_text)
             $t .= " reviewers_scores";
         $t .= "\">\n";
+        $nscores = 0;
         if ($score_header_text) {
+            foreach ($score_header as $x)
+                $nscores += $x !== "" ? 1 : 0;
             $t .= '<tr><td class="empty" colspan="2"></td>';
             if ($mode === "assign" && !$want_requested_by)
                 $t .= '<td class="empty"></td>';
@@ -286,12 +285,12 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
             $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
             if (get($r, 2)) {
                 foreach ($score_header as $fid => $header_needed)
-                    if ($header_needed) {
+                    if ($header_needed !== "") {
                         $x = get($r[2], $fid);
                         $t .= $x ? : "<td class=\"revscore rs_$fid\"></td>";
                     }
-            } else if (count($score_header))
-                $t .= '<td colspan="' . count($score_header) . '"></td>';
+            } else if ($nscores > 0)
+                $t .= '<td colspan="' . $nscores . '"></td>';
             $t .= "</tr>\n";
         }
         if ($score_header_text)
