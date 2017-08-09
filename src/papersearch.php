@@ -1223,16 +1223,17 @@ class Review_SearchTerm extends SearchTerm {
                     else if ($m[2][0] === ">")
                         $m[2] = "<" . substr($m[2], 1);
                 }
-                $score = strtoupper($score);
-                $m[3] = $f->option_letter - ord($score);
+                if (ctype_alpha($score))
+                    $score = $f->option_letter - ord(strtoupper($score));
             }
-            if (($m[3] < 1 && ($m[2][0] === "<" || $m[2] === "="))
-                || ($m[3] == 1 && $m[2] === "<")
-                || ($m[3] == count($f->options) && $m[2] === ">")
-                || ($m[3] > count($f->options) && ($m[2][0] === ">" || $m[2] === "=")))
+            $min = $f->allow_empty ? 0 : 1;
+            if (($score < $min && ($m[2][0] === "<" || $m[2] === "="))
+                || ($score == $min && $m[2] === "<")
+                || ($score == count($f->options) && $m[2] === ">")
+                || ($score > count($f->options) && ($m[2][0] === ">" || $m[2] === "=")))
                 return self::impossible_score_match($f);
             $rsm->set_countexpr((int) $m[1] ? ">=" . $m[1] : "=0");
-            $value = $f->id . $m[2] . $m[3];
+            $value = $f->id . $m[2] . $score;
         } else if ($f->option_letter
                    ? preg_match('/\A\s*([A-Za-z])\s*(-?|\.\.\.?)\s*([A-Za-z])\s*\z/s', $word, $m)
                    : preg_match('/\A\s*(\d+)\s*(-|\.\.\.?)\s*(\d+)\s*\z/s', $word, $m)) {
