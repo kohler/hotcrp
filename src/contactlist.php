@@ -387,7 +387,8 @@ class ContactList {
                 && ($tags = $row->viewable_tags($this->contact))) {
                 $x = [];
                 foreach (TagInfo::split($tags) as $t)
-                    $x[] = '<a class="qq nw" href="' . hoturl("users", "t=%23" . TagInfo::base($t)) . '">' . $this->tagger->unparse_hashed($t) . '</a>';
+                    if ($t !== "pc#0")
+                        $x[] = '<a class="qq nw" href="' . hoturl("users", "t=%23" . TagInfo::base($t)) . '">' . $this->tagger->unparse_hashed($t) . '</a>';
                 return join(" ", $x);
             }
             return "";
