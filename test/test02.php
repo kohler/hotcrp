@@ -524,6 +524,25 @@ xassert_eqq($am->find("elange"), [6]);
 xassert_eqq($am->find("elan*"), [1, 5, 6]);
 xassert_eqq($am->find("e*e"), [6]);
 
+xassert(AbbreviationMatcher::is_camel_word("9b"));
+xassert(!AbbreviationMatcher::is_camel_word("99"));
+xassert(AbbreviationMatcher::is_camel_word("OveMer"));
+xassert(!AbbreviationMatcher::is_camel_word("Ovemer"));
+xassert(!AbbreviationMatcher::is_camel_word("ovemer"));
+xassert(!AbbreviationMatcher::is_camel_word("ove mer"));
+xassert(AbbreviationMatcher::is_camel_word("ove-mer"));
+
+$am->add("99 Problems", 7);
+xassert_eqq($am->find("99p"), [7]);
+
+$am = new AbbreviationMatcher;
+$am->add("Overall merit", 1);
+$am->add("Overall merit 2", 2);
+$am->add("Overall merit 3", 3);
+$am->add("Overall merit 4", 4);
+xassert_eqq($am->find("OveMer"), [1]);
+xassert_eqq($am->find("merit overall"), []);
+
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
 xassert_eqq(Filer::docstore_fixed_prefix(false), false);
