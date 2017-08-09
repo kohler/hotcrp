@@ -358,13 +358,8 @@ function option_value_html(fieldj, value) {
 
 function view_unfold(event) {
     var $f = $(event.target).closest(".settings_revfield");
-    if ($f.hasClass("fold2c")) {
-        foldup(event.target, event, {n: 2, f: false});
-        $f.find("textarea").css("height", "auto").autogrow();
-        $f.find("input[type=text]").autogrow();
-        $f.find("input[placeholder]").each(mktemptext);
-    } else if (!form_differs($f))
-        foldup(event.target, event, {n: 2, f: true});
+    if ($f.hasClass("fold2c") || !form_differs($f))
+        foldup(event.target, event, {n: 2});
     return false;
 }
 
@@ -491,6 +486,13 @@ function rfs(field_has_optionsj, originalj, samplesj, errf, request) {
     for (i = 0; i != fieldorder.length; ++i)
         append_field(fieldorder[i], i + 1);
     $("#reviewform_container").on("click", "a.revfield-folder", view_unfold);
+    $("#reviewform_container").on("fold", ".settings_revfield", function (evt, opts) {
+        if (!opts.f) {
+            $(this).find("textarea").css("height", "auto").autogrow();
+            $(this).find("input[type=text]").autogrow();
+            $(this).find("input[placeholder]").each(mktemptext);
+        }
+    });
 
     // highlight errors, apply request
     for (i in request || {}) {
@@ -515,7 +517,7 @@ function add_field(fid) {
     original[fid] = original[fid] || {};
     original[fid].position = fieldorder.length;
     append_field(fid, fieldorder.length);
-    $("#revfieldview_" + fid).find("button").click();
+    foldup($("#revfield_" + fid)[0], null, {n: 2, f: false});
     hiliter("reviewform_container");
     return true;
 }
@@ -610,8 +612,9 @@ rfs.add = function (has_options, fid) {
     if (fid)
         return add_field(fid);
     // prefer recently removed fields
-    var $c = $("#reviewform_removedcontainer")[0], $n, x = [], i;
-    for (i = 0, $n = $c.firstChild; $n; ++i, $n = $n.nextSibling)
+    var i = 0, x = [];
+    for (var $n = $("#reviewform_removedcontainer")[0].firstChild;
+         $n && $n.hasAttribute("data-revfield"); $n = $n.nextSibling) {
         x.push([$n.getAttribute("data-revfield"), i]);
     // otherwise prefer fields that have ever been defined
     for (fid in field_has_options)
