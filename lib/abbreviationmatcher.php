@@ -49,7 +49,7 @@ class AbbreviationMatchClass {
         // assert($pattern whitespace is simplified)
         $pwords = explode(" ", $pattern);
         $swords = preg_split('{\s+}', $subject);
-        $ppos = $spos = $nfull = 0;
+        $ppos = $spos = $demerits = 0;
         $pword = null;
         $pword_pos = -1;
         $pword_star = false;
@@ -65,17 +65,15 @@ class AbbreviationMatchClass {
             }
             if (preg_match($pword, $swords[$spos], $m)) {
                 ++$ppos;
-                $nfull += ($m[1] === "" && !$pword_star ? 1 : 0);
-            }
+                $demerits += ($m[1] !== "" || $pword_star ? 1 : 0);
+            } else
+                $demerits += 1;
             ++$spos;
         }
-        // matching a full word is worth 1/64 point;
-        // not matching a word is worth -1/64 point
+        // missed words cost 1/64 point, partial words cost 1/64 point
         if (!isset($pwords[$ppos])) {
-            $score = $nfull - (count($swords) - $ppos);
-            if ($score)
-                $score = 0.15625 * max(min($score, 63), -63);
-            return 1.5 + $score;
+            $demerits += count($swords) - $spos;
+            return 1 - 0.015625 * max(min($demerits, 63), 1);
         } else
             return 0;
     }
@@ -91,10 +89,11 @@ class AbbreviationMatchClass {
             }
         }
         $swords = preg_split('{\s+}', $subject);
-        $ppos = $spos = $nmatch = $nfull = 0;
+        $ppos = $spos = $demerits = 0;
         while (isset($this->camelwords[$ppos]) && isset($swords[$spos])) {
             $pword = $this->camelwords[$ppos];
             $sword = $swords[$spos];
+            $ppos1 = $ppos;
             $sidx = 0;
             while ($sidx + strlen($pword) <= strlen($sword)
                    && strcasecmp($pword, substr($sword, $sidx, strlen($pword))) === 0) {
@@ -104,17 +103,12 @@ class AbbreviationMatchClass {
                     break;
                 $pword = $this->camelwords[$ppos];
             }
-            if ($sidx !== 0)
-                ++$nmatch;
-            if ($sidx === strlen($sword))
-                ++$nfull;
+            $demerits += ($sidx < strlen($sword) ? 1 : 0);
             ++$spos;
         }
         if (!isset($this->camelwords[$ppos])) {
-            $score = $nfull - (count($swords) - $nmatch);
-            if ($score)
-                $score = 0.015625 * max(min($score, 63), -63);
-            return 1.5 + $score;
+            $demerits += count($swords) - $spos;
+            return 1 - 0.015625 * max(min($demerits, 63), 1);
         } else
             return 0;
     }
@@ -142,7 +136,7 @@ class AbbreviationMatchClass {
             if ($mclass < 7) {
                 $s = $this->wmatch_score($this->dpattern, $dsubject, "iu");
                 if ($s)
-                    return 5 + $s;
+                    return 6 + $s;
             }
         }
 
@@ -166,13 +160,13 @@ class AbbreviationMatchClass {
         if ($mclass < 3) {
             $s = $this->wmatch_score($this->dupattern, $dusubject, "i");
             if ($s)
-                return 1 + $s;
+                return 2 + $s;
         }
 
         if ($mclass < 2 && $this->is_camel_word) {
             $s = $this->camel_wmatch_score($dusubject);
             if ($s)
-                return $s;
+                return 1 + $s;
         }
 
         return 0;

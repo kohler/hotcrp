@@ -543,6 +543,15 @@ $am->add("Overall merit 4", 4);
 xassert_eqq($am->find("OveMer"), [1]);
 xassert_eqq($am->find("merit overall"), []);
 
+$am->add("PC Person", 5);
+$am->add("PC Person 2", 6);
+$am->add("P. C. Person 3", 7);
+$am->add("P. C. Person 20", 8);
+xassert_eqq($am->find("PCPer"), [5]);
+xassert_eqq($am->find("PCPer2"), [6]);
+xassert_eqq($am->find("PCPer3"), [7]);
+xassert_eqq($am->find("PCPer20"), [8]);
+
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
 xassert_eqq(Filer::docstore_fixed_prefix(false), false);
