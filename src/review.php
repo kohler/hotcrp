@@ -1381,10 +1381,10 @@ class ReviewValues extends MessageSet {
                     if ($nfields > 0)
                         break;
                     $field = "paperNumber";
-                    $this->fieldLineno[$field] = $lineno;
+                    $this->fieldLineno[$field] = $this->lineno;
                     $mode = 1;
                     $this->req["blind"] = 1;
-                    $this->firstLineno = $lineno;
+                    $this->firstLineno = $this->lineno;
                 } else if (preg_match('/^==\+== Submit Review\s*$/i', $line)
                            || preg_match('/^==\+== Review Ready\s*$/i', $line)) {
                     $this->req["ready"] = true;
