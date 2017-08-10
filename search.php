@@ -77,8 +77,11 @@ if ($Qreq->scoresort)
 if (!$Conf->session("scoresort"))
     $Conf->save_session("scoresort", ListSorter::default_score_sort($Conf));
 if ($Qreq->redisplay) {
-    $forceShow = $Qreq->forceShow || $Qreq->showforce;
-    SelfHref::redirect($Qreq, ["anchor" => "display", "forceShow" => $forceShow ? : null]);
+    if (isset($Qreq->forceShow) && !$Qreq->forceShow && $Qreq->showforce)
+        $forceShow = 0;
+    else
+        $forceShow = $Qreq->forceShow || $Qreq->showforce ? 1 : null;
+    SelfHref::redirect($Qreq, ["anchor" => "display", "forceShow" => $forceShow]);
 }
 
 
@@ -257,8 +260,11 @@ if ($Qreq->ajax)
 
 // set display options, including forceShow if chair
 $pldisplay = $Conf->session("pldisplay");
-if ($Me->privChair)
-    $Me->set_forceShow(strpos($pldisplay, " force ") !== false);
+if ($Me->is_manager()) {
+    if (!isset($Qreq->forceShow))
+        $Qreq->forceShow = strpos($pldisplay, " force ") !== false ? 1 : null;
+    $Me->set_forceShow($Qreq->forceShow);
+}
 
 
 // search
@@ -610,7 +616,7 @@ if ($pl && $pl->count > 0) {
         echo "<td class='padlb'>",
             Ht::checkbox("showforce", 1, !!$Qreq->forceShow,
                           array("id" => "showforce",
-                                "onchange" => "fold('pl',!this.checked,5,'force');$('#forceShow').val(this.checked?1:0)")),
+                                "onchange" => "plinfo.fold_override('pl',this)")),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     echo "<td class='padlb'>";

@@ -5770,6 +5770,22 @@ plinfo.on_set_tags = function (f) {
     set_tags_callbacks.push(f);
 };
 
+plinfo.fold_override = function (selector, checkbox) {
+    $(function () {
+        var on = checkbox.checked;
+        fold(selector, !on, 5, "force");
+        $("#forceShow").val(on ? 1 : 0);
+        // show the color classes appropriate to this conflict state
+        $("#fold" + selector + " .colorconflict").each(function () {
+            var pl = this;
+            while (pl.nodeType !== 1 || /^plx/.test(pl.className))
+                pl = pl.previousSibling;
+            var a = pl.getAttribute("data-color-classes" + (on ? "" : "-conflicted")) || "";
+            this.className = this.className.replace(/ *\S*tag(?= |$)/g, "").trim() + " " + a;
+        });
+    });
+};
+
 return plinfo;
 })();
 
@@ -5888,7 +5904,6 @@ return function (classes, class_prefix) {
         t = 'background-image: url(data:image/svg+xml;base64,' + btoa(t) + ');'
         x = "." + tags.join(".") + (class_prefix ? $.trim("." + class_prefix) : "");
         style.insertRule(x + " { " + t + " }", 0);
-        style.insertRule(".fold5c " + x + ".conflictmark { background-image: none; }", 0);
         style.insertRule(x + ".psc { " + t + " }", 0);
     }
     fmap[index] = fmap[canonical_index] = "url(#" + id + ")";

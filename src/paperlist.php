@@ -157,7 +157,7 @@ class PaperList {
             $this->sorters[] = PaperSearch::parse_sorter("");
 
         $this->foldable = $this->sortable || !!get($args, "foldable")
-            || $this->contact->privChair /* “Override conflicts” fold */;
+            || $this->contact->is_manager() /* “Override conflicts” fold */;
 
         $this->_paper_link_page = "";
         if ($qreq->linkto === "paper" || $qreq->linkto === "review" || $qreq->linkto === "assign")
@@ -176,7 +176,7 @@ class PaperList {
         $this->atab = $qreq->atab;
 
         $this->tagger = new Tagger($this->contact);
-        $this->scoresOk = $this->contact->privChair
+        $this->scoresOk = $this->contact->is_manager()
             || $this->contact->is_reviewer()
             || $this->conf->timeAuthorViewReviews();
 
@@ -350,15 +350,6 @@ class PaperList {
             return $text;
         else if ($this->contact->allow_administer($row))
             return self::wrapChairConflict($text);
-        else
-            return "";
-    }
-
-    function maybe_conflict_nooverride($row, $text, $visible) {
-        if ($visible)
-            return $text;
-        else if ($this->contact->allow_administer($row))
-            return '<span class="fx5">' . $text . '</span>';
         else
             return "";
     }
@@ -645,24 +636,36 @@ class PaperList {
             $this->_has["abstract"] = true;
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
+        $this->row_attr = [];
 
-        $trclass = "k" . $rstate->colorindex;
-        if (get($row, "paperTags")
-            && ($viewable = $row->viewable_tags($this->contact, true))
-            && ($m = $row->conf->tags()->color_classes($viewable))) {
-            if (TagInfo::classes_have_colors($m)) {
-                $rstate->hascolors = true;
-                $trclass = $m;
-            } else
-                $trclass .= " " . $m;
-            if ($row->conflictType > 0 && !$row->viewable_tags($this->contact, false))
-                $trclass .= " conflictmark";
+        $trclass = [];
+        $cc = "";
+        if (get($row, "paperTags")) {
+            if ($row->conflictType > 0 && $this->contact->allow_administer($row)) {
+                if (($vto = $row->viewable_tags($this->contact, true))
+                    && ($cco = $row->conf->tags()->color_classes($vto))) {
+                    $vtx = $row->viewable_tags($this->contact, false);
+                    $ccx = $row->conf->tags()->color_classes($vtx);
+                    if ($cco !== $ccx) {
+                        $this->row_attr["data-color-classes"] = $cco;
+                        $this->row_attr["data-color-classes-conflicted"] = $ccx;
+                        $trclass[] = "colorconflict";
+                    }
+                    $cc = $this->qreq->forceShow ? $cco : $ccx;
+                }
+            } else if (($vt = $row->viewable_tags($this->contact)))
+                $cc = $row->conf->tags()->color_classes($vt);
         }
+        if ($cc) {
+            $trclass[] = $cc;
+            $rstate->hascolors = $rstate->hascolors || TagInfo::classes_have_colors($cc);
+        } else
+            $trclass[] = "k" . $rstate->colorindex;
         if (($highlightclass = get($this->search->highlightmap, $row->paperId)))
-            $trclass .= " {$highlightclass[0]}highlightmark";
+            $trclass[] = $highlightclass[0] . "highlightmark";
+        $trclass = join(" ", $trclass);
         $rstate->colorindex = 1 - $rstate->colorindex;
         $rstate->last_trclass = $trclass;
-        $this->row_attr = [];
 
         // main columns
         $tm = "";
@@ -839,7 +842,7 @@ class PaperList {
             $classes[] = "fold3c";
         if ($has_sel)
             $classes[] = "fold6" . ($this->is_folded("rownum") ? "c" : "o");
-        if ($this->contact->privChair)
+        if ($this->contact->is_manager())
             $classes[] = "fold5" . ($this->qreq->forceShow ? "o" : "c");
         $classes[] = "fold7" . ($this->is_folded("statistics") ? "c" : "o");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");

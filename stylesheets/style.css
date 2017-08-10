@@ -1936,14 +1936,8 @@ tr.plx {
 .boldtag.taghl, .boldtag .taghl {
 	font-weight: bold;
 }
-.fold5c .boldtag.conflictmark.taghl, .fold5c .boldtag.conflictmark .taghl {
-	font-weight: inherit;
-}
 .italictag.taghl, .italictag .taghl {
 	font-style: italic;
-}
-.fold5c .italictag.conflictmark.taghl, .fold5c .italictag.conflictmark .taghl {
-	font-style: inherit;
 }
 .underlinetag.taghl, .underlinetag .taghl {
 	text-decoration: underline;
@@ -1951,29 +1945,14 @@ tr.plx {
 .strikethroughtag.taghl, .strikethroughtag .taghl {
 	text-decoration: line-through;
 }
-.fold5c .underlinetag.conflictmark.taghl, .fold5c .underlinetag.conflictmark .taghl,
-.fold5c .strikethroughtag.conflictmark.taghl, .fold5c .strikethroughtag.conflictmark .taghl {
-	text-decoration: inherit;
-}
-.fold5c .underlinetag.conflictmark a.taghl,
-.fold5c .strikethroughtag.conflictmark a.taghl {
-	text-decoration: underline;
-}
 .bigtag.taghl, .bigtag .taghl {
 	font-size: 140%;
 }
 .smalltag.taghl, .smalltag .taghl {
 	font-size: 80%;
 }
-.fold5c .bigtag.conflictmark.taghl, .fold5c .bigtag.conflictmark .taghl,
-.fold5c .smalltag.conflictmark.taghl, .fold5c .smalltag.conflictmark .taghl {
-	font-size: inherit;
-}
 .dimtag.taghl, .dimtag .taghl {
 	color: gray;
-}
-.fold5c .dimtag.conflictmark.taghl, .fold5c .dimtag.conflictmark .taghl {
-	color: inherit;
 }
 .highlightmark.taghl, .highlightmark .taghl,
 .yellowhighlightmark.taghl, .yellowhighlightmark .taghl {
@@ -1991,26 +1970,6 @@ tr.plx {
 .bluehighlightmark.taghl, .bluehighlightmark .taghl {
 	background-color: #c4d2ff;
 	box-shadow: -0.2em 0 0 #c4d2ff, 0.2em 0 0 0 #c4d2ff;
-}
-.fold5c .highlightmark.conflictmark.taghl, .fold5c .highlightmark.conflictmark .taghl,
-.fold5c .pinkhighlightmark.conflictmark.taghl, .fold5c .pinkhighlightmark.conflictmark .taghl,
-.fold5c .yellowhighlightmark.conflictmark.taghl, .fold5c .yellowhighlightmark.conflictmark .taghl,
-.fold5c .greenhighlightmark.conflictmark.taghl, .fold5c .greenhighlightmark.conflictmark .taghl,
-.fold5c .bluehighlightmark.conflictmark.taghl, .fold5c .bluehighlightmark.conflictmark .taghl {
-	background-color: inherit;
-	box-shadow: none;
-}
-
-.fold5c .redtag.conflictmark,
-.fold5c .orangetag.conflictmark,
-.fold5c .yellowtag.conflictmark,
-.fold5c .greentag.conflictmark,
-.fold5c .bluetag.conflictmark,
-.fold5c .purpletag.conflictmark,
-.fold5c .graytag.conflictmark,
-.fold5c .whitetag.conflictmark {
-	background-image: none;
-	background-color: inherit;
 }
 
 .badge {

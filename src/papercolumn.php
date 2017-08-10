@@ -336,10 +336,22 @@ class TitlePaperColumn extends PaperColumn {
         $t .= '" tabindex="5">' . $highlight_text . '</a>'
             . $pl->_contentDownload($row);
 
-        if ($this->has_decoration && (string) $row->paperTags !== ""
-            && ($tags = $row->viewable_tags($pl->contact)) !== ""
-            && ($tags = $pl->tagger->unparse_decoration_html($tags)) !== "")
-            $t .= $pl->maybe_conflict_nooverride($row, $tags, $pl->contact->can_view_tags($row, false));
+        if ($this->has_decoration && (string) $row->paperTags !== "") {
+            if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
+                if (($vto = $row->viewable_tags($pl->contact, true))
+                    && ($deco = $pl->tagger->unparse_decoration_html($vto))) {
+                    $vtx = $row->viewable_tags($pl->contact, false);
+                    $decx = $pl->tagger->unparse_decoration_html($vtx);
+                    if ($deco !== $decx) {
+                        if ($decx)
+                            $t .= '<span class="fn5">' . $decx . '</span>';
+                        $t .= '<span class="fx5">' . $deco . '</span>';
+                    } else
+                        $t .= $deco;
+                }
+            } else if (($vt = $row->viewable_tags($pl->contact)))
+                $t .= $pl->tagger->unparse_decoration_html($vt);
+        }
 
         return $t;
     }
@@ -1254,7 +1266,7 @@ class TagList_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         if ($row->paperTags && $row->conflictType > 0 && $pl->contact->allow_administer($row)) {
             $viewable = trim($row->viewable_tags($pl->contact, true));
-            $pl->row_attr["data-tags-conflicted"] = trim($row->viewable_tags($pl->contact));
+            $pl->row_attr["data-tags-conflicted"] = trim($row->viewable_tags($pl->contact, false));
         } else
             $viewable = trim($row->viewable_tags($pl->contact));
         $pl->row_attr["data-tags"] = $viewable;
