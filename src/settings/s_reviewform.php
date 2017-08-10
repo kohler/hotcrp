@@ -158,7 +158,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
         $rf = $sv->conf->review_form();
         foreach (self::requested_fields($sv) as $fid => $x) {
-            $finfo = ReviewInfo::field_info($fid);
+            $finfo = ReviewInfo::field_info($fid, $sv->conf);
             if (!$finfo) {
                 if (isset($sv->req["order_$fid"]) && $sv->req["order_$fid"] > 0)
                     $sv->error_at("shortName_$fid", htmlspecialchars($sv->req["shortName_$fid"]) . ": Too many review fields. You must delete some other fields before adding this one.");

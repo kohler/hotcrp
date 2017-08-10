@@ -100,7 +100,7 @@ class ReviewInfo {
         return $rrow;
     }
 
-    static function field_info($id) {
+    static function field_info($id, Conf $conf) {
         if (strlen($id) === 3 && ctype_digit(substr($id, 1))) {
             $n = intval(substr($id, 1), 10);
             if ($id[0] === "t") {

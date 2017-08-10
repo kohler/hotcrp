@@ -425,7 +425,7 @@ class ReviewForm implements JsonSerializable {
 "t03":{"name":"Comments to PC","position":5,"visibility":"pc"}}');
 
         foreach ($rfj as $fid => $j)
-            if (($finfo = ReviewInfo::field_info($fid))) {
+            if (($finfo = ReviewInfo::field_info($fid, $conf))) {
                 $f = new ReviewField($finfo, $conf);
                 $this->fmap[$f->id] = $f;
                 $f->assign($j);
