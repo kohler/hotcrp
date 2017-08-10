@@ -1213,6 +1213,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table ActionLog add `destContactId` int(11) NOT NULL DEFAULT '0'"))
         $conf->update_schema_version(171);
     if ($conf->sversion == 171
+        && $conf->ql("DROP TABLE IF EXISTS `DeletedContactInfo`")
         && $conf->ql("CREATE TABLE `DeletedContactInfo` (
   `contactId` int(11) NOT NULL,
   `firstName` varchar(60) NOT NULL,

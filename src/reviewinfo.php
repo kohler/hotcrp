@@ -103,22 +103,28 @@ class ReviewInfo {
     static function field_info($id, Conf $conf) {
         if (strlen($id) === 3 && ctype_digit(substr($id, 1))) {
             $n = intval(substr($id, 1), 10);
+            $json_storage = $conf->sversion >= 174 ? $id : null;
             if ($id[0] === "t") {
                 if (isset(self::$new_text_fields[$n]))
-                    return new ReviewFieldInfo($id, $id, false, self::$new_text_fields[$n], $id);
+                    return new ReviewFieldInfo($id, $id, false, self::$new_text_fields[$n], $json_storage);
+                else if ($json_storage)
+                    return new ReviewFieldInfo($id, $id, false, null, $json_storage);
                 else
-                    return new ReviewFieldInfo($id, $id, false, null, $id);
+                    return false;
             } else if ($id[0] === "s") {
                 if (isset(self::$new_score_fields[$n])) {
                     $fid = self::$new_score_fields[$n];
                     return new ReviewFieldInfo($fid, $id, true, $fid, null);
-                } else
-                    return new ReviewFieldInfo($id, $id, true, null, $id);
+                } else if ($json_storage)
+                    return new ReviewFieldInfo($id, $id, true, null, $json_storage);
+                else
+                    return false;
             } else
                 return false;
         } else if (isset(self::$text_field_map[$id])) {
             $short_id = self::$text_field_map[$id];
-            return new ReviewFieldInfo($short_id, $short_id, false, $id, $short_id);
+            $json_storage = $conf->sversion >= 174 ? $short_id : null;
+            return new ReviewFieldInfo($short_id, $short_id, false, $id, $json_storage);
         } else if (isset(self::$score_field_map[$id])) {
             $short_id = self::$score_field_map[$id];
             return new ReviewFieldInfo($id, $short_id, true, $id, null);
