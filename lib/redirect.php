@@ -55,7 +55,8 @@ function ensure_session() {
     session_name($sn);
     session_cache_limiter("");
     if (isset($_COOKIE[$sn]) && !preg_match(';\A[-a-zA-Z0-9,]{1,128}\z;', $_COOKIE[$sn])) {
-        error_log("unexpected session ID <" . $_COOKIE[$sn] . ">");
+        if (!preg_match('; (?:and|order) ;', $_COOKIE[$sn]))
+            error_log("unexpected session ID <" . $_COOKIE[$sn] . ">");
         unset($_COOKIE[$sn]);
     }
     session_start();
