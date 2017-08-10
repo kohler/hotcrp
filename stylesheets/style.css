@@ -1581,7 +1581,7 @@ table.pltable {
 	position: relative;
 }
 
-.plsplit_col {
+div.plsplit_col { /* NOT td */
 	padding-right: 1.5em;
 }
 .plsplit_col_ctr {
