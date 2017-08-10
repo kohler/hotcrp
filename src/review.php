@@ -1844,7 +1844,7 @@ class ReviewValues extends MessageSet {
             Dbl::free($result);
             $newordinal = true;
         }
-        if ($newsubmit || $newordinal || ($submit && !$rrow->timeDisplayed)) {
+        if ($newsubmit || $newordinal) {
             $qf[] = "timeDisplayed=?";
             $qv[] = $now;
         }
