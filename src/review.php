@@ -1753,7 +1753,7 @@ class ReviewValues extends MessageSet {
         }
 
         $qf = $qv = [];
-        $tfields = $sfields = null;
+        $tfields = $sfields = $set_fields = null;
         $diff_view_score = VIEWSCORE_FALSE;
         $wc = 0;
         foreach ($this->rf->forder as $fid => $f)
@@ -1795,8 +1795,24 @@ class ReviewValues extends MessageSet {
                         else if (!$f->has_options && $fval !== "")
                             $tfields[$f->json_storage] = $fval;
                     }
+                    $set_fields[$fid] = true;
                 }
             }
+        // complete `sfields` and `tfields` with existing fields
+        if ($rrow) {
+            foreach ($this->rf->forder as $fid => $f)
+                if ($f->json_storage && !isset($set_fields[$fid])) {
+                    if ($f->has_options && $sfields) {
+                        $fval = (int) get($rrow, $fid, 0);
+                        if ($fval !== 0)
+                            $sfields[$f->json_storage] = $fval;
+                    } else if (!$f->has_options && $tfields) {
+                        $fval = get($rrow, $fid, "");
+                        if ($fval !== "")
+                            $tfields[$f->json_storage] = $fval;
+                    }
+                }
+        }
         if ($sfields !== null) {
             $qf[] = "sfields=?";
             $qv[] = json_encode_db($sfields);
