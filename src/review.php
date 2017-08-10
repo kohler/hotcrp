@@ -1753,7 +1753,7 @@ class ReviewValues extends MessageSet {
         }
 
         $qf = $qv = [];
-        $tfields = $sfields = $set_fields = null;
+        $tfields = $sfields = $set_sfields = $set_tfields = null;
         $diff_view_score = VIEWSCORE_FALSE;
         $wc = 0;
         foreach ($this->rf->forder as $fid => $f)
@@ -1790,36 +1790,40 @@ class ReviewValues extends MessageSet {
                         $qv[] = $fval;
                     }
                     if ($f->json_storage) {
-                        if ($f->has_options && $fval != 0)
-                            $sfields[$f->json_storage] = $fval;
-                        else if (!$f->has_options && $fval !== "")
-                            $tfields[$f->json_storage] = $fval;
+                        if ($f->has_options) {
+                            if ($fval != 0)
+                                $sfields[$f->json_storage] = $fval;
+                            $set_sfields[$fid] = true;
+                        } else {
+                            if ($fval !== "")
+                                $tfields[$f->json_storage] = $fval;
+                            $set_tfields[$fid] = true;
+                        }
                     }
-                    $set_fields[$fid] = true;
                 }
             }
         // complete `sfields` and `tfields` with existing fields
         if ($rrow) {
             foreach ($this->rf->forder as $fid => $f)
-                if ($f->json_storage && !isset($set_fields[$fid])) {
-                    if ($f->has_options && $sfields) {
+                if ($f->json_storage) {
+                    if ($f->has_options && $set_sfields && !isset($set_sfields[$fid])) {
                         $fval = (int) get($rrow, $fid, 0);
                         if ($fval !== 0)
                             $sfields[$f->json_storage] = $fval;
-                    } else if (!$f->has_options && $tfields) {
+                    } else if (!$f->has_options && $set_tfields && !isset($set_tfields[$fid])) {
                         $fval = get($rrow, $fid, "");
                         if ($fval !== "")
                             $tfields[$f->json_storage] = $fval;
                     }
                 }
         }
-        if ($sfields !== null) {
+        if ($set_sfields !== null) {
             $qf[] = "sfields=?";
-            $qv[] = json_encode_db($sfields);
+            $qv[] = $sfields ? json_encode_db($sfields) : null;
         }
-        if ($tfields !== null) {
+        if ($set_tfields !== null) {
             $qf[] = "tfields=?";
-            $qv[] = json_encode_db($tfields);
+            $qv[] = $tfields ? json_encode_db($tfields) : null;
         }
 
         // get the current time

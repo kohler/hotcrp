@@ -378,4 +378,116 @@ assert_search_papers($user_chair, "tex9:tremolo", "1");
 assert_search_papers($user_chair, "tex10:none", "1");
 assert_search_papers($user_chair, "tex11:none", "1");
 
+// check handling of sfields and tfields: don't lose unchanged fields
+save_review(1, $user_mgbaker, [
+    "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
+    "comaut" => "Comments for äuthor", "compc" => "Comments for PC",
+    "sco11" => 2, "sco16" => 1, "tex11" => "butt",
+    "ready" => true
+]);
+
+assert_search_papers($user_chair, "sco3:1", "1");
+assert_search_papers($user_chair, "sco4:2", "1");
+assert_search_papers($user_chair, "sco5:3", "1");
+assert_search_papers($user_chair, "sco6:0", "1");
+assert_search_papers($user_chair, "sco7:1", "1");
+assert_search_papers($user_chair, "sco8:2", "1");
+assert_search_papers($user_chair, "sco9:3", "1");
+assert_search_papers($user_chair, "sco10:0", "1");
+assert_search_papers($user_chair, "sco11:2", "1");
+assert_search_papers($user_chair, "sco12:2", "1");
+assert_search_papers($user_chair, "sco13:3", "1");
+assert_search_papers($user_chair, "sco14:0", "1");
+assert_search_papers($user_chair, "sco15:0", "1");
+assert_search_papers($user_chair, "sco16:1", "1");
+assert_search_papers($user_chair, "tex4:bobcat", "1");
+assert_search_papers($user_chair, "tex5:none", "1");
+assert_search_papers($user_chair, "tex6:fisher*", "1");
+assert_search_papers($user_chair, "tex7:tiger", "1");
+assert_search_papers($user_chair, "tex8:leopard", "1");
+assert_search_papers($user_chair, "tex9:tremolo", "1");
+assert_search_papers($user_chair, "tex10:none", "1");
+assert_search_papers($user_chair, "tex11:butt", "1");
+
+// check handling of sfields and tfields: no changes at all
+save_review(1, $user_mgbaker, [
+    "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
+    "comaut" => "Comments for äuthor", "compc" => "Comments for PC",
+    "sco13" => 3, "sco14" => 0, "sco15" => 0, "sco16" => 1,
+    "tex4" => "bobcat", "tex5" => "", "tex6" => "fishercat", "tex7" => "tiger",
+    "tex8" => "leopard", "tex9" => "tremolo", "tex10" => "", "tex11" => "butt",
+    "ready" => true
+]);
+
+assert_search_papers($user_chair, "sco3:1", "1");
+assert_search_papers($user_chair, "sco4:2", "1");
+assert_search_papers($user_chair, "sco5:3", "1");
+assert_search_papers($user_chair, "sco6:0", "1");
+assert_search_papers($user_chair, "sco7:1", "1");
+assert_search_papers($user_chair, "sco8:2", "1");
+assert_search_papers($user_chair, "sco9:3", "1");
+assert_search_papers($user_chair, "sco10:0", "1");
+assert_search_papers($user_chair, "sco11:2", "1");
+assert_search_papers($user_chair, "sco12:2", "1");
+assert_search_papers($user_chair, "sco13:3", "1");
+assert_search_papers($user_chair, "sco14:0", "1");
+assert_search_papers($user_chair, "sco15:0", "1");
+assert_search_papers($user_chair, "sco16:1", "1");
+assert_search_papers($user_chair, "tex4:bobcat", "1");
+assert_search_papers($user_chair, "tex5:none", "1");
+assert_search_papers($user_chair, "tex6:fisher*", "1");
+assert_search_papers($user_chair, "tex7:tiger", "1");
+assert_search_papers($user_chair, "tex8:leopard", "1");
+assert_search_papers($user_chair, "tex9:tremolo", "1");
+assert_search_papers($user_chair, "tex10:none", "1");
+assert_search_papers($user_chair, "tex11:butt", "1");
+
+// check handling of sfields and tfields: clear extension fields
+save_review(1, $user_mgbaker, [
+    "ovemer" => 2, "revexp" => 1, "papsum" => "",
+    "comaut" => "", "compc" => "", "sco12" => 0,
+    "sco13" => 0, "sco14" => 0, "sco15" => 0, "sco16" => 0,
+    "tex4" => "", "tex5" => "", "tex6" => "", "tex7" => "",
+    "tex8" => "", "tex9" => "", "tex10" => "", "tex11" => "",
+    "ready" => true
+]);
+
+$rrow = fetch_review($paper1, $user_mgbaker);
+xassert(!$rrow->sfields);
+xassert(!$rrow->tfields);
+
+save_review(1, $user_mgbaker, [
+    "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
+    "comaut" => "Comments for äuthor", "compc" => "Comments for PC",
+    "sco3" => 1, "sco4" => 2, "sco5" => 3, "sco6" => 0, "sco7" => 1,
+    "sco8" => 2, "sco9" => 3, "sco10" => 0, "sco11" => 2,
+    "sco12" => 2, "sco13" => 3, "sco14" => 0, "sco15" => 0, "sco16" => 1,
+    "tex4" => "bobcat", "tex5" => "", "tex6" => "fishercat", "tex7" => "tiger",
+    "tex8" => "leopard", "tex9" => "tremolo", "tex10" => "", "tex11" => "butt",
+    "ready" => true
+]);
+
+assert_search_papers($user_chair, "sco3:1", "1");
+assert_search_papers($user_chair, "sco4:2", "1");
+assert_search_papers($user_chair, "sco5:3", "1");
+assert_search_papers($user_chair, "sco6:0", "1");
+assert_search_papers($user_chair, "sco7:1", "1");
+assert_search_papers($user_chair, "sco8:2", "1");
+assert_search_papers($user_chair, "sco9:3", "1");
+assert_search_papers($user_chair, "sco10:0", "1");
+assert_search_papers($user_chair, "sco11:2", "1");
+assert_search_papers($user_chair, "sco12:2", "1");
+assert_search_papers($user_chair, "sco13:3", "1");
+assert_search_papers($user_chair, "sco14:0", "1");
+assert_search_papers($user_chair, "sco15:0", "1");
+assert_search_papers($user_chair, "sco16:1", "1");
+assert_search_papers($user_chair, "tex4:bobcat", "1");
+assert_search_papers($user_chair, "tex5:none", "1");
+assert_search_papers($user_chair, "tex6:fisher*", "1");
+assert_search_papers($user_chair, "tex7:tiger", "1");
+assert_search_papers($user_chair, "tex8:leopard", "1");
+assert_search_papers($user_chair, "tex9:tremolo", "1");
+assert_search_papers($user_chair, "tex10:none", "1");
+assert_search_papers($user_chair, "tex11:butt", "1");
+
 xassert_exit();
