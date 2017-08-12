@@ -117,10 +117,13 @@ class SearchAction {
 
 
     static function pcassignments_csv_data(Contact $user, $selection) {
+        require_once("assigners.php");
         $pcm = $user->conf->pc_members();
+        $token_users = [];
+
         $round_list = $user->conf->round_list();
-        $reviewnames = array(REVIEW_PC => "pcreview", REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary");
-        $any_round = false;
+        $any_round = $any_token = false;
+
         $texts = array();
         $result = $user->paper_result(["paperId" => $selection, "reviewSignatures" => 1]);
         while (($prow = PaperInfo::fetch($result, $user)))
@@ -136,21 +139,34 @@ class SearchAction {
                                  "email" => "#pc",
                                  "round" => "any",
                                  "title" => $prow->title);
-                foreach ($rrows as $rrow)
-                    if ($rrow->reviewType >= REVIEW_PC
-                        && ($pc = get($pcm, $rrow->contactId))) {
-                        $round = $rrow->reviewRound;
-                        $round_name = $round ? $round_list[$round] : "none";
-                        $any_round = $any_round || $round != 0;
-                        $texts[] = array("paper" => $prow->paperId,
-                                         "action" => $reviewnames[$rrow->reviewType],
-                                         "email" => $pc->email,
-                                         "round" => $round_name);
-                    }
+                foreach ($rrows as $rrow) {
+                    if ($rrow->reviewToken) {
+                        if (!array_key_exists($rrow->contactId, $token_users))
+                            $token_users[$rrow->contactId] = $user->conf->user_by_id($rrow->contactId);
+                        $u = $token_users[$rrow->contactId];
+                    } else if ($rrow->reviewType >= REVIEW_PC)
+                        $u = get($pcm, $rrow->contactId);
+                    else
+                        $u = null;
+                    if (!$u)
+                        continue;
+
+                    $round = $rrow->reviewRound;
+                    $d = ["paper" => $prow->paperId,
+                          "action" => ReviewAssigner_Data::unparse_type($rrow->reviewType),
+                          "email" => $u->email,
+                          "round" => $round ? $round_list[$round] : "none"];
+                    if ($rrow->reviewToken)
+                        $d["review_token"] = $any_token = encode_token((int) $rrow->reviewToken);
+                    $texts[] = $d;
+                    $any_round = $any_round || $round != 0;
+                }
             }
         $header = array("paper", "action", "email");
         if ($any_round)
             $header[] = "round";
+        if ($any_token)
+            $header[] = "review_token";
         $header[] = "title";
         return [$header, $texts];
     }

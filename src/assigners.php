@@ -567,12 +567,17 @@ class ReviewAssigner_Data {
     public $newtype = null;
     public $creator = true;
     public $error = false;
-    static public $type_map = [
-        "meta" => REVIEW_META, "metareview" => REVIEW_META,
+    static private $type_map = [
+        "meta" => REVIEW_META,
         "primary" => REVIEW_PRIMARY, "pri" => REVIEW_PRIMARY,
         "secondary" => REVIEW_SECONDARY, "sec" => REVIEW_SECONDARY,
         "optional" => REVIEW_PC, "opt" => REVIEW_PC, "pc" => REVIEW_PC,
         "external" => REVIEW_EXTERNAL, "ext" => REVIEW_EXTERNAL
+    ];
+    static private $type_revmap = [
+        REVIEW_EXTERNAL => "review", REVIEW_PC => "pcreview",
+        REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary",
+        REVIEW_META => "metareview"
     ];
     static function parse_type($str) {
         $str = strtolower($str);
@@ -582,6 +587,9 @@ class ReviewAssigner_Data {
         if (str_ends_with($str, "review"))
             $str = substr($str, 0, -6);
         return get(self::$type_map, $str, false);
+    }
+    static function unparse_type($rtype) {
+        return get(self::$type_revmap, $rtype, "clearreview");
     }
     static function separate($key, $req, $state, $rtype) {
         $a0 = $a1 = trim(get_s($req, $key));
@@ -653,7 +661,7 @@ class Review_AssignmentParser extends AssignmentParser {
     function __construct($aj) {
         parent::__construct($aj->name);
         if ($aj->review_type)
-            $this->rtype = get(ReviewAssigner_Data::$type_map, $aj->review_type, 0);
+            $this->rtype = (int) ReviewAssigner_Data::parse_type($aj->review_type);
         else
             $this->rtype = -1;
     }
