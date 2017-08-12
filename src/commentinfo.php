@@ -208,6 +208,17 @@ class CommentInfo {
             return null;
     }
 
+    function viewable_nonresponse_tags(Contact $user, $forceShow = null) {
+        if ($this->commentTags
+            && $user->can_view_comment_tags($this->prow, $this, null)) {
+            $tags = Tagger::strip_nonviewable($this->commentTags, $user);
+            if ($this->commentType & COMMENTTYPE_RESPONSE)
+                $tags = trim(preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", " $tags "));
+            return $tags;
+        } else
+            return null;
+    }
+
     function unparse_json($contact, $include_displayed_at = false) {
         if ($this->commentId && !$contact->can_view_comment($this->prow, $this, null))
             return false;
@@ -292,7 +303,7 @@ class CommentInfo {
         $x .= center_word_wrap($n);
         if (!$no_title)
             $x .= $this->prow->pretty_text_title();
-        if (($tags = $this->viewable_tags($contact))) {
+        if (($tags = $this->viewable_nonresponse_tags($contact))) {
             $tagger = new Tagger($contact);
             $x .= center_word_wrap($tagger->unparse_hashed($tags));
         }
