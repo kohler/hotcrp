@@ -70,7 +70,7 @@ function retractRequest($email, $prow, $confirm = true) {
     // NB caller unlocks tables
 
     // check for outstanding review
-    $contact_fields = "firstName, lastName, ContactInfo.email, password, roles, preferredEmail";
+    $contact_fields = "firstName, lastName, ContactInfo.email, password, roles, preferredEmail, disabled";
     $result = $Conf->qe("select reviewId, reviewType, reviewModified, reviewSubmitted, reviewToken, requestedBy, $contact_fields
                 from ContactInfo
                 join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
