@@ -478,16 +478,18 @@ if (count($tOpt) > 1)
     echo Ht::select("t", $tOpt, $Qreq->t);
 else
     echo join("", $tOpt);
-echo " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery", "class" => "btn btn-alertable"]);
+echo " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery", "class" => "btn"]);
 if (isset($Qreq->requery) || isset($Qreq->haspap)) {
-    echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>
-<div class='g'></div>";
-
     $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q,
                                          "urlbase" => hoturl_site_relative_raw("autoassign")));
     $plist = new PaperList($search);
     $plist->display .= " reviewers ";
     $plist->set_selection($SSel);
+
+    if ($search->paperList())
+        echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>";
+
+    echo '<div class="g"></div>';
     echo $plist->table_html("reviewersSel", ["nofooter" => true]),
         Ht::hidden("prevt", $Qreq->t), Ht::hidden("prevq", $Qreq->q),
         Ht::hidden("haspap", 1);
