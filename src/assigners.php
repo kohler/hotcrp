@@ -844,7 +844,7 @@ class Review_Assigner extends Assigner {
         $x = ["pid" => $this->pid, "action" => "{$rname}review",
               "email" => $this->contact->email, "name" => $this->contact->name_text()];
         if (($round = $this->item["_round"]))
-            $x["round"] = $this->round;
+            $x["round"] = $this->item["_round"];
         $acsv->add($x);
         if ($this->unsubmit)
             $acsv->add(["action" => "unsubmitreview", "pid" => $this->pid,
