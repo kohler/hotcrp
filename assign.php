@@ -101,7 +101,7 @@ function retractRequest($email, $prow, $confirm = true) {
     if ($row2)
         $Conf->qe("delete from ReviewRequest where paperId=? and email=?", $prow->paperId, $email);
 
-    if (defval($row, "reviewToken", 0) != 0)
+    if (get($row, "reviewToken", 0) != 0)
         $Conf->settings["rev_tokens"] = -1;
     // send confirmation email, if the review site is open
     if ($Conf->time_review_open() && $row) {
@@ -313,41 +313,16 @@ function proposeReview($email, $round) {
 }
 
 function createAnonymousReview() {
-    global $Conf, $Me, $Now, $prow, $rrows;
-
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write, PaperConflict read, ActionLog write");
-
-    // find an unassigned anonymous review contact
-    $n = "";
-    while (1) {
-        $contactemail = "anonymous$n";
-        if (!$Conf->fetch_ivalue("select exists (select * from PaperReview join ContactInfo using (contactId) where paperId=? and email=?)", $prow->paperId, $contactemail))
-            break;
-        $n = ($n === "" ? 2 : $n + 1);
-    }
-    $result = $Conf->qe("select contactId from ContactInfo where email=?", $contactemail);
-    if (edb_nrows($result) == 1) {
-        $row = edb_row($result);
-        $reqId = $row[0];
-    } else {
-        $result = Dbl::qe("insert into ContactInfo set firstName='Jane Q.', lastName='Public', unaccentedName='Jane Q. Public', email=?, affiliation='Unaffiliated', password='', disabled=1, creationTime=$Now", $contactemail);
-        if (!$result)
-            return $result;
-        $reqId = $result->insert_id;
-    }
-
-    // store the review request
-    $reviewId = $Me->assign_review($prow->paperId, $reqId, REVIEW_EXTERNAL,
-                                   array("mark_notify" => true, "token" => true));
-    if ($reviewId) {
-        $result = Dbl::ql("select reviewToken from PaperReview where paperId=? and reviewId=?", $prow->paperId, $reviewId);
-        $row = edb_row($result);
-        $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId. The review token is " . encode_token((int) $row[0]) . ".");
-    }
-
-    Dbl::qx_raw("unlock tables");
-    $Conf->update_rev_tokens_setting(true);
-    return true;
+    global $Conf, $Me, $prow;
+    $aset = new AssignmentSet($Me, true);
+    $aset->enable_papers($prow);
+    $aset->parse("paper,action,user\n{$prow->paperId},review,newanonymous\n");
+    if ($aset->execute()) {
+        $aset_csv = $aset->unparse_csv();
+        assert(count($aset_csv->data) === 1);
+        $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId. The review token is " . $aset_csv->data[0]["review_token"] . ".");
+    } else
+        $Conf->errorMsg(join("<br />", $aset->errors_html()));
 }
 
 if (isset($_REQUEST["add"]) && check_post()) {

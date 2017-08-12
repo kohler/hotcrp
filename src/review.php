@@ -1168,7 +1168,7 @@ $blind\n";
             $rj["reviewer_email"] = $rrow->email;
         }
         if ($showtoken)
-            $rj["reviewer_token"] = encode_token((int) $rrow->reviewToken);
+            $rj["review_token"] = encode_token((int) $rrow->reviewToken);
         $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
         if ($time > 1) {
             $rj["modified_at"] = (int) $time;

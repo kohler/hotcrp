@@ -2877,8 +2877,8 @@ function add_review(rrow) {
         if (rrow.round)
             rtype_text += '&nbsp;<span class="revround">' + escape_entities(rrow.round) + '</span>';
     }
-    if (rrow.reviewer_token)
-        revinfo.push('Review token ' + rrow.reviewer_token + rtype_text);
+    if (rrow.review_token)
+        revinfo.push('Review token ' + rrow.review_token + rtype_text);
     else if (rrow.reviewer && rrow.blind)
         revinfo.push('[' + rrow.reviewer + ']' + rtype_text);
     else if (rrow.reviewer)

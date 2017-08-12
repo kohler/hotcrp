@@ -775,7 +775,7 @@ class Review_Assigner extends Assigner {
     private $rtype;
     private $notify = false;
     private $unsubmit = false;
-    private $anonymous = false;
+    private $token = false;
     static public $prefinfo = null;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
@@ -845,6 +845,8 @@ class Review_Assigner extends Assigner {
               "email" => $this->contact->email, "name" => $this->contact->name_text()];
         if (($round = $this->item["_round"]))
             $x["round"] = $this->item["_round"];
+        if ($this->token)
+            $x["review_token"] = encode_token($this->token);
         $acsv->add($x);
         if ($this->unsubmit)
             $acsv->add(["action" => "unsubmitreview", "pid" => $this->pid,
@@ -880,6 +882,8 @@ class Review_Assigner extends Assigner {
         $reviewId = $aset->contact->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId)
             $aset->contact->unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
+        if (get($extra, "token") && $reviewId)
+            $this->token = $aset->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=? and reviewId=?", $this->pid, $reviewId);
     }
     function cleanup(AssignmentSet $aset) {
         if ($this->notify) {
@@ -1916,7 +1920,7 @@ class AssignmentSet {
             return "missing";
         else if ($special === "none")
             return [$this->astate->none_user()];
-        else if (preg_match('/\A(?:new-)?anonymous(?:\d*|-?new)\z/', $special))
+        else if (preg_match('/\A(?:new-?)?anonymous(?:\d*|-?new)\z/', $special))
             return $special;
         if ($special && !$first && (!$lemail || !$last)) {
             $ret = ContactSearch::make_special($special, $this->astate->contact, $this->astate->reviewer);
@@ -2112,7 +2116,7 @@ class AssignmentSet {
                 $this->astate->error("User required.");
                 return false;
             }
-        } else if (preg_match('/\A(?:new-)?anonymous/', $user))
+        } else if (preg_match('/\A(?:new-?)?anonymous/', $user))
             $u = $aparser->expand_anonymous_user($prow, $req, $user, $this->astate);
         else
             $u = false;
@@ -2462,7 +2466,6 @@ class AssignmentSet {
         if (!empty($this->cleanup_notify_tracker)
             && $this->conf->opt("trackerCometSite"))
             MeetingTracker::contact_tracker_comet($this->conf, array_keys($this->cleanup_notify_tracker));
-        $this->conf->update_rev_tokens_setting(false);
 
         return true;
     }
