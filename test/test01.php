@@ -910,6 +910,39 @@ ReviewForm::update_review_author_seen();
 $review2b = fetch_review($paper2, $user_pdruschel);
 xassert(!!$review2b->reviewAuthorSeen);
 
+// check token assignment
+assert_search_papers($user_chair, "re:any 19", "");
+xassert_assign($user_chair, "paper,action,user\n19,review,anonymous\n");
+assert_search_papers($user_chair, "re:any 19", "19");
+assert_search_papers($user_chair, "re:1 19", "19");
+
+// check rev_tokens setting
+$Conf->check_invariants();
+xassert_assign($user_chair, "paper,action,user\n19,clearreview,anonymous\n");
+assert_search_papers($user_chair, "re:any 19", "");
+$Conf->check_invariants();
+xassert_assign($user_chair, "paper,action,user\n19,review,anonymous\n");
+
+xassert_assign($user_chair, "paper,action,user\n19,review,anonymous\n");
+assert_search_papers($user_chair, "re:1 19", "19");
+assert_search_papers($user_chair, "re:2 19", "");
+xassert_assign($user_chair, "paper,action,user\n19,review,new-anonymous\n");
+assert_search_papers($user_chair, "re:1 19", "");
+assert_search_papers($user_chair, "re:2 19", "19");
+xassert_assign($user_chair, "paper,action,user\n19,review,new-anonymous\n19,review,new-anonymous\n");
+assert_search_papers($user_chair, "re:1 19", "");
+assert_search_papers($user_chair, "re:4 19", "19");
+
+// check that there actually are tokens
+$paper19 = fetch_paper(19, $user_chair);
+xassert_eqq(count($paper19->reviews_by_id()), 4);
+$revs = $paper19->reviews_by_id_order();
+for ($i = 0; $i < 4; ++$i) {
+    xassert($revs[$i]->reviewToken);
+    for ($j = $i + 1; $j < 4; ++$j)
+        xassert($revs[$i]->reviewToken != $revs[$j]->reviewToken);
+}
+
 
 $Conf->check_invariants();
 

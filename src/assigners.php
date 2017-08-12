@@ -226,8 +226,8 @@ class AssignmentState {
     function users_by_id($cids) {
         return array_map(function ($cid) { return $this->user_by_id($cid); }, $cids);
     }
-    function user_by_email($email, $create = false) {
-        return $this->cmap->user_by_email($email, $create);
+    function user_by_email($email, $create = false, $req = null) {
+        return $this->cmap->user_by_email($email, $create, $req);
     }
     function none_user() {
         return $this->cmap->none_user();
@@ -303,7 +303,7 @@ class AssignerContacts {
         Dbl::free($result);
         return $this->store($c);
     }
-    function user_by_email($email, $create = false) {
+    function user_by_email($email, $create = false, $req = null) {
         if (!$email)
             return $this->none_user();
         $lemail = strtolower($email);
@@ -316,7 +316,19 @@ class AssignerContacts {
         $c = Contact::fetch($result, $this->conf);
         Dbl::free($result);
         if (!$c && $create) {
-            $c = new Contact(["contactId" => self::$next_fake_id, "roles" => 0, "email" => $email, "sorter" => $email], $this->conf);
+            assert(validate_email($email) || preg_match('/\Aanonymous\d*\z/', $email));
+            $cargs = ["contactId" => self::$next_fake_id, "roles" => 0, "email" => $email];
+            foreach (["firstName", "lastName", "affiliation"] as $k)
+                if ($req && get($req, $k))
+                    $cargs[$k] = $req[$k];
+            if (preg_match('/\Aanonymous\d*\z/', $email)) {
+                $cargs["firstName"] = "Jane Q.";
+                $cargs["lastName"] = "Public";
+                $cargs["affiliation"] = "Unaffiliated";
+                $cargs["password"] = "";
+                $cargs["disabled"] = 1;
+            }
+            $c = new Contact($cargs, $this->conf);
             self::$next_fake_id -= 1;
         }
         return $c ? $this->store($c) : null;
@@ -340,7 +352,13 @@ class AssignerContacts {
         $cx = $this->by_lemail[strtolower($c->email)];
         if ($cx === $c) {
             // XXX assume that never fails:
-            $cx = Contact::create($this->conf, ["email" => $c->email, "firstName" => $c->firstName, "lastName" => $c->lastName]);
+            $cargs = [];
+            foreach (["email", "firstName", "lastName", "affiliation", "password", "disabled"] as $k)
+                if ($c->$k !== null)
+                    $cargs[$k] = $c->$k;
+            if ($cx->is_anonymous_user())
+                $cargs["no_validate_email"] = true;
+            $cx = Contact::create($this->conf, $cargs);
             $cx = $this->store($cx);
         }
         return $cx;
@@ -467,6 +485,9 @@ class AssignmentParser {
         return false;
     }
     function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+        return false;
+    }
+    function expand_anonymous_user(PaperInfo $prow, &$req, $user, AssignmentState $state) {
         return false;
     }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
@@ -682,6 +703,21 @@ class Review_AssignmentParser extends AssignmentParser {
     function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
     }
+    function expand_anonymous_user(PaperInfo $prow, &$req, $user, AssignmentState $state) {
+        if (preg_match('/\A(?:new-?anonymous|anonymous-?new)\z/', $user)) {
+            $suf = "";
+            while (($u = $state->user_by_email("anonymous" . $suf))
+                   && $state->query(["type" => "review", "pid" => $prow->paperId,
+                                     "cid" => $u->contactId]))
+                $suf = $suf === "" ? 2 : $suf + 1;
+            $user = "anonymous" . $suf;
+        }
+        if (preg_match('/\Aanonymous\d*\z/', $user)
+            && $c = $state->user_by_email($user, true, []))
+            return [$c];
+        else
+            return false;
+    }
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         // User “none” is never allowed
         if (!$contact->contactId)
@@ -737,15 +773,18 @@ class Review_AssignmentParser extends AssignmentParser {
 
 class Review_Assigner extends Assigner {
     private $rtype;
-    private $notify = null;
+    private $notify = false;
     private $unsubmit = false;
+    private $anonymous = false;
     static public $prefinfo = null;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
         $this->rtype = $item->get(false, "_rtype");
         $this->unsubmit = $item->get(true, "_rsubmitted") && !$item->get(false, "_rsubmitted");
-        if (!$item->existed() && $this->rtype == REVIEW_EXTERNAL)
-            $this->notify = get($state->defaults, "extrev_notify");
+        if (!$item->existed() && $this->rtype == REVIEW_EXTERNAL
+            && get($state->defaults, "extrev_notify")
+            && !$this->contact->is_anonymous_user())
+            $this->notify = true;
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
         return new Review_Assigner($item, $state);
@@ -831,6 +870,13 @@ class Review_Assigner extends Assigner {
         $round = $this->item->get(false, "_round");
         if ($round !== null && $this->rtype)
             $extra["round_number"] = $aset->conf->round_number($round, true);
+        if ($this->contact->is_anonymous_user()
+            && (!$this->item->existed() || $this->item->deleted())) {
+            $extra["token"] = true;
+            $aset->cleanup_callback("rev_token", function ($aset) {
+                $aset->conf->update_rev_tokens_setting(true);
+            });
+        }
         $reviewId = $aset->contact->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId)
             $aset->contact->unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
@@ -1870,6 +1916,8 @@ class AssignmentSet {
             return "missing";
         else if ($special === "none")
             return [$this->astate->none_user()];
+        else if (preg_match('/\A(?:new-)?anonymous(?:\d*|-?new)\z/', $special))
+            return $special;
         if ($special && !$first && (!$lemail || !$last)) {
             $ret = ContactSearch::make_special($special, $this->astate->contact, $this->astate->reviewer);
             if ($ret->ids !== false)
@@ -1918,17 +1966,13 @@ class AssignmentSet {
 
         // create contact
         if (!$email)
-            return $this->error("Missing email address");
-        $contact = $this->astate->user_by_email($email, true);
-        if ($contact->contactId < 0) {
-            if (!validate_email($email))
-                return $this->error("Email address “" . htmlspecialchars($email) . "” is invalid.");
-            if (!isset($contact->firstName) && get($req, "firstName"))
-                $contact->firstName = $req["firstName"];
-            if (!isset($contact->lastName) && get($req, "lastName"))
-                $contact->lastName = $req["lastName"];
-        }
-        return array($contact);
+            return $this->error("Missing email address.");
+        else if (!validate_email($email))
+            return $this->error("Email address “" . htmlspecialchars($email) . "” is invalid.");
+        else if (($u = $this->astate->user_by_email($email, true, $req)))
+            return [$u];
+        else
+            return $this->error("Could not create user.");
     }
 
     static private function is_csv_header($req) {
@@ -2058,6 +2102,25 @@ class AssignmentSet {
         return $this->conf->assignment_parser($action);
     }
 
+    private function expand_special_user($user, AssignmentParser $aparser, PaperInfo $prow, $req) {
+        global $Now;
+        if ($user === "any")
+            $u = $aparser->expand_any_user($prow, $req, $this->astate);
+        else if ($user === "missing") {
+            $u = $aparser->expand_missing_user($prow, $req, $this->astate);
+            if ($u === false || $u === null) {
+                $this->astate->error("User required.");
+                return false;
+            }
+        } else if (preg_match('/\A(?:new-)?anonymous/', $user))
+            $u = $aparser->expand_anonymous_user($prow, $req, $user, $this->astate);
+        else
+            $u = false;
+        if ($u === false || $u === null)
+            $this->astate->error("User “" . htmlspecialchars($user) . "” is not allowed here.");
+        return $u;
+    }
+
     private function apply($aparser, $req) {
         // parse paper
         $pids = [];
@@ -2119,25 +2182,17 @@ class AssignmentSet {
 
             // expand “all” and “missing”
             $pusers = $contacts;
-            if ($pusers === "any") {
-                $pusers = $aparser->expand_any_user($prow, $req, $this->astate);
-                if ($pusers === false || $pusers === null) {
-                    $this->astate->error("User “any” is not allowed here.");
+            if (!is_array($pusers)) {
+                $pusers = $this->expand_special_user($pusers, $aparser, $prow, $req);
+                if ($pusers === false || $pusers === null)
                     break;
-                }
-            } else if ($pusers === "missing") {
-                $pusers = $aparser->expand_missing_user($prow, $req, $this->astate);
-                if ($pusers === false || $pusers === null) {
-                    $this->astate->error("User required.");
-                    break;
-                }
             }
 
             foreach ($pusers as $contact) {
                 $err = $aparser->allow_contact($prow, $contact, $req, $this->astate);
                 if ($err === false) {
                     if (!$contact->contactId) {
-                        $this->astate->error("User “none” is not allowed here.");
+                        $this->astate->error("User “none” is not allowed here. [{$contact->email}]");
                         break 2;
                     } else if ($prow->has_conflict($contact))
                         $err = Text::user_html_nolink($contact) . " has a conflict with #$p.";
@@ -2371,8 +2426,8 @@ class AssignmentSet {
         $locks = array("ContactInfo" => "read", "Paper" => "read", "PaperConflict" => "read");
         $this->conf->save_logs(true);
         foreach ($this->assigners as $assigner) {
-            if ($assigner->contact && $assigner->contact->contactId < 0) {
-                $assigner->contact = $this->astate->register_user($assigner->contact);
+            if (($u = $assigner->contact) && $u->contactId < 0) {
+                $assigner->contact = $this->astate->register_user($u);
                 $assigner->cid = $assigner->contact->contactId;
             }
             $assigner->add_locks($this, $locks);

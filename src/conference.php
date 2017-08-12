@@ -1519,7 +1519,7 @@ class Conf {
 
     function update_rev_tokens_setting($always) {
         if ($always || get($this->settings, "rev_tokens", 0) < 0) {
-            $this->qe_raw("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)");
+            $this->qe_raw("insert into Settings (name, value) select 'rev_tokens', exists (select * from PaperReview where reviewToken!=0) on duplicate key update value=values(value)");
             $this->settings["rev_tokens"] = $this->fetch_ivalue("select value from Settings where name='rev_tokens'");
         }
     }
