@@ -1532,9 +1532,6 @@ img.bm {
 td.pl_lastvisit, td.pl_time {
 	font-size: smaller;
 }
-.pl_name {
-	white-space: nowrap;
-}
 .pl_uscores {
 	line-height: 1;
 	padding-left: 0.2em;
