@@ -358,7 +358,7 @@ function render(SettingValues $sv) {
 
     echo "<h3 class=\"settings\">Conflicts and collaborators</h3>\n",
         "<table id=\"foldpcconf\" class=\"fold",
-        ($sv->curv("sub_pcconf") ? "o" : "c"), "\">\n";
+        ($sv->curv("sub_pcconf") ? "o" : "c"), " g\">\n";
     $sv->echo_checkbox_row("sub_pcconf", "Collect authors’ PC conflicts",
                            "void fold('pcconf',!this.checked)");
     echo "<tr class='fx'><td></td><td>";
@@ -370,6 +370,8 @@ function render(SettingValues $sv) {
     echo "</td></tr>\n";
     $sv->echo_checkbox_row("sub_collab", "Collect authors’ other collaborators as text");
     echo "</table>\n";
+
+    $sv->echo_message_minor("msg.conflictdef", "Definition of conflict of interest");
 
     echo '<div class="g">', $sv->label("sub_pcconfhide", "When can reviewers see conflict information?"),
         '&nbsp; ',
