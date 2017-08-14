@@ -711,7 +711,7 @@ class PaperStatus extends MessageSet {
             if (is_object($result) && $result instanceof PaperOptionUpdateSet) {
                 foreach ($result->clear as $oid)
                     $pj->parsed_options[$oid] = [];
-                foreach ($result->updates as $ox)
+                foreach ($result->add as $ox)
                     $pj->parsed_options[$ox[0]] = [$ox[1], $ox[2]];
             } else {
                 if (!is_array($result))
