@@ -371,6 +371,8 @@ class PaperOption {
             $disp = "prominent";
         if ($disp === null)
             $disp = "topics";
+        if ($disp === false)
+            $disp = "none";
         $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
         $this->form_priority = get_i($args, "form_priority");
         $this->require_setting = get($args, "require_setting");
