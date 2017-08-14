@@ -34,7 +34,7 @@ if ($users || $papers) {
 
 if ($users) {
     // read current cdb roles
-    $result = Dbl::ql($Conf->dblink, "select Roles.*, email, password
+    $result = Dbl::ql(Contact::contactdb(), "select Roles.*, email, password
         from Roles
         join ContactInfo using (contactDbId)
         where confid=?", $confid);
@@ -44,13 +44,14 @@ if ($users) {
     Dbl::free($result);
 
     // read current db roles
+    Contact::$allow_nonexistent_properties = true;
     $result = Dbl::ql($Conf->dblink, "select ContactInfo.contactId, email, firstName, lastName, unaccentedName, disabled, roles, password, passwordTime, passwordUseTime,
         exists (select * from PaperConflict where contactId=ContactInfo.contactId and conflictType>=" . CONFLICT_AUTHOR . ") __isAuthor__,
         exists (select * from PaperReview where contactId=ContactInfo.contactId) __isReviewer__
         from ContactInfo");
     $cdbids = [];
     $qv = [];
-    while (($contact = ContactInfo::fetch($result, $Conf))) {
+    while (($contact = Contact::fetch($result, $Conf))) {
         $cdbu = get($cdb_users, $contact->email);
         $cdbid = $cdbu ? (int) $cdbu->contactDbId : 0;
         if ($cdbu

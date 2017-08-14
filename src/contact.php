@@ -210,7 +210,7 @@ class Contact {
         if (isset($this->__isAuthor__))
             $this->is_author_ = (int) $this->__isAuthor__ > 0;
         if (isset($this->__isReviewer__))
-            $this->is_reviewer_ = (int) $this->__isReviewer__ > 0;
+            $this->has_review_ = (int) $this->__isReviewer__ > 0;
         if (!$this->isPC && $this->conf->opt("disableNonPC"))
             $this->disabled = true;
     }
