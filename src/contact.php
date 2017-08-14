@@ -444,7 +444,7 @@ class Contact {
             $update_passwordTime = $this->passwordTime;
         }
 
-        $idquery = Dbl::format_query($cdb, "select ContactInfo.contactDbId, Conferences.confid, roles, password
+        $idquery = Dbl::format_query($cdb, "select ContactInfo.contactDbId, Conferences.confid, roles, password, Roles.disabled
             from ContactInfo
             left join Conferences on (Conferences.`dbname`=?)
             left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
@@ -459,8 +459,8 @@ class Contact {
         if ($row && $row[3] === null && $update_password)
             Dbl::ql($cdb, "update ContactInfo set password=?, passwordTime=? where contactDbId=? and password is null", $update_password, $update_passwordTime, $row[0]);
 
-        if ($row && $row[1] && (int) $row[2] != $this->all_roles()) {
-            $result = Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, updated_at=? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
+        if ($row && $row[1] && ((int) $row[2] != $this->all_roles() || (int) $row[4] !== (int) $this->disabled)) {
+            $result = Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, disabled=?, updated_at=? on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), (int) $this->disabled, $Now);
             return !!$result;
         } else
             return false;
