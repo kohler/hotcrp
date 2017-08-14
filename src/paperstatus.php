@@ -708,18 +708,11 @@ class PaperStatus extends MessageSet {
                 $result = $o->parse_json($oj, $this);
             if ($result === null || $result === false)
                 $result = [];
-            if (is_object($result) && $result instanceof PaperOptionUpdateSet) {
-                foreach ($result->clear as $oid)
-                    $pj->parsed_options[$oid] = [];
-                foreach ($result->add as $ox)
-                    $pj->parsed_options[$ox[0]] = [$ox[1], $ox[2]];
-            } else {
-                if (!is_array($result))
-                    $result = [[$result]];
-                else if (count($result) == 2 && is_string($result[1]))
-                    $result = [$result];
-                $pj->parsed_options[$o->id] = $result;
-            }
+            if (!is_array($result))
+                $result = [[$result]];
+            else if (count($result) == 2 && is_string($result[1]))
+                $result = [$result];
+            $pj->parsed_options[$o->id] = $result;
         }
         ksort($pj->parsed_options);
     }
