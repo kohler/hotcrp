@@ -4,6 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Mimetype {
+    const TXT_TYPE = "text/plain";
     const BIN_TYPE = "application/octet-stream";
     const PDF_TYPE = "application/pdf";
     const PS_TYPE = "application/postscript";
@@ -25,7 +26,7 @@ class Mimetype {
     private static $tmap = [];
 
     private static $tinfo = [
-        "text/plain" =>       [1, 1, ".txt", "text"],
+        self::TXT_TYPE =>     [1, 1, ".txt", "text"],
         self::PDF_TYPE =>     [2, 1, ".pdf", "PDF"],
         self::PS_TYPE =>      [3, 0, ".ps", "PostScript"],
         self::PPT_TYPE =>     [4, 0, ".ppt", "PowerPoint", "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
