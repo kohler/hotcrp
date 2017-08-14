@@ -296,6 +296,18 @@ class PaperOptionList {
     }
 }
 
+class PaperOptionUpdateSet {
+    public $clear = [];
+    public $updates = [];
+    function clear(PaperOption $opt) {
+        $this->clear[] = $opt->id;
+    }
+    function add(PaperOption $opt, $value, $string = null) {
+        assert($value !== null);
+        $this->updates[] = [$opt->id, $value, $string];
+    }
+}
+
 class PaperOption {
     const MINFIXEDID = 1000000;
 
