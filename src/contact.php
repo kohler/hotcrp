@@ -207,6 +207,10 @@ class Contact {
             $this->data = array_to_object_recursive($this->data);
         if (isset($this->roles))
             $this->assign_roles((int) $this->roles);
+        if (isset($this->__isAuthor__))
+            $this->is_author_ = (int) $this->__isAuthor__ > 0;
+        if (isset($this->__isReviewer__))
+            $this->is_reviewer_ = (int) $this->__isReviewer__ > 0;
         if (!$this->isPC && $this->conf->opt("disableNonPC"))
             $this->disabled = true;
     }
@@ -455,15 +459,16 @@ class Contact {
             $row = Dbl::fetch_first_row(Dbl::ql_raw($cdb, $idquery));
             $this->contactdb_user_ = false;
         }
+        if (!$row)
+            return false;
 
-        if ($row && $row[3] === null && $update_password)
+        if ($row[3] === null && $update_password)
             Dbl::ql($cdb, "update ContactInfo set password=?, passwordTime=? where contactDbId=? and password is null", $update_password, $update_passwordTime, $row[0]);
 
-        if ($row && $row[1] && ((int) $row[2] != $this->all_roles() || (int) $row[4] !== (int) $this->disabled)) {
-            $result = Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, disabled=?, updated_at=? on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), (int) $this->disabled, $Now);
-            return !!$result;
-        } else
-            return false;
+        if ($row[1] && ((int) $row[2] != $this->all_roles() || (int) $row[4] !== (int) $this->disabled))
+            Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, disabled=?, updated_at=? on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), (int) $this->disabled, $Now);
+
+        return (int) $row[0];
     }
 
     function is_actas_user() {
@@ -1511,7 +1516,7 @@ class Contact {
         // Load from database
         $result = null;
         if ($this->contactId > 0) {
-            $qs = ["(select max(conflictType) from PaperConflict where contactId=?)"];
+            $qs = ["exists (select * from PaperConflict where contactId=? and conflictType>=" . CONFLICT_AUTHOR . ")"];
             $qv = [$this->contactId];
             if ($this->review_tokens_) {
                 $qs[] = "exists (select * from PaperReview where contactId=? or reviewToken?a)";
@@ -1529,7 +1534,7 @@ class Contact {
             $result = $this->conf->qe_apply("select " . join(", ", $qs), $qv);
         }
         $row = edb_row($result);
-        $this->is_author_ = $row && $row[0] >= CONFLICT_AUTHOR;
+        $this->is_author_ = $row && $row[0] > 0;
         $this->has_review_ = $row && $row[1] > 0;
         if ($this->isPC)
             $this->is_requester_ = $row && $row[2] > 0;

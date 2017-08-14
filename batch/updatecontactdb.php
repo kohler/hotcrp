@@ -22,39 +22,72 @@ $collaborators = isset($arg["collaborators"]);
 if (!$users && !$papers && !$collaborators)
     $users = $papers = true;
 
-if ($users) {
-    $result = Dbl::ql($Conf->dblink, "select ContactInfo.contactId, email from ContactInfo
-        left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")
-        left join PaperReview on (PaperReview.contactId=ContactInfo.contactId)
-        where roles!=0 or PaperConflict.conflictType is not null
-            or PaperReview.reviewId is not null
-        group by ContactInfo.contactId");
-    while (($row = edb_row($result))) {
-        $contact = $Conf->user_by_id($row[0]);
-        $contact->contactdb_update();
-    }
-    Dbl::free($result);
-}
-
-if ($papers) {
+if ($users || $papers) {
     $result = Dbl::ql(Contact::contactdb(), "select confid from Conferences where `dbname`=?", $Conf->dbname);
     $row = Dbl::fetch_first_row($result);
     if (!$row) {
         fwrite(STDERR, "Conference is not recorded in contactdb\n");
         exit(1);
     }
-    $confid = $row[0];
+    $confid = (int) $row[0];
+}
 
-    $result = Dbl::ql($Conf->dblink, "select paperId, title from Paper");
-    $q = array();
-    while (($row = edb_row($result)))
-        $q[] = "(" . $confid . "," . $row[0] . ",'" . sqlq($row[1]) . "')";
+if ($users) {
+    // read current cdb roles
+    $result = Dbl::ql($Conf->dblink, "select Roles.*, email, password
+        from Roles
+        join ContactInfo using (contactDbId)
+        where confid=?", $confid);
+    $cdb_users = [];
+    while ($result && ($user = $result->fetch_object()))
+        $cdb_users[$user->email] = $user;
     Dbl::free($result);
 
-    for ($i = 0; $i < count($q); $i += 25) {
-        $xq = array_slice($q, $i, 25);
-        Dbl::ql_raw(Contact::contactdb(), "insert into ConferencePapers (confid,paperId,title) values " . join(",", $xq) . " on duplicate key update title=values(title)");
+    // read current db roles
+    $result = Dbl::ql($Conf->dblink, "select ContactInfo.contactId, email, firstName, lastName, unaccentedName, disabled, roles, password, passwordTime, passwordUseTime,
+        exists (select * from PaperConflict where contactId=ContactInfo.contactId and conflictType>=" . CONFLICT_AUTHOR . ") __isAuthor__,
+        exists (select * from PaperReview where contactId=ContactInfo.contactId) __isReviewer__
+        from ContactInfo");
+    $cdbids = [];
+    $qv = [];
+    while (($contact = ContactInfo::fetch($result, $Conf))) {
+        $cdbu = get($cdb_users, $contact->email);
+        $cdbid = $cdbu ? (int) $cdbu->contactDbId : 0;
+        if ($cdbu
+            && ((int) $cdbu->disabled > 0) == $contact->disabled
+            && (int) $cdbu->roles === $contact->all_roles())
+            /* skip */;
+        else if ($cdbu && $cdbu->password !== null)
+            $qv[] = [$cdbid, $confid, $contact->all_roles(),
+                     (int) $contact->disabled, $Now];
+        else
+            $cdbid = $contact->contactdb_update();
+        if ($cdbid)
+            $cdbids[] = $cdbid;
     }
+    Dbl::free($result);
+
+    // perform role updates
+    if (!empty($qv))
+        Dbl::ql(Contact::contactdb(), "insert into Roles (contactDbId,confid,roles,disabled,updated_at) values ?v on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $qv);
+
+    // remove old roles
+    Dbl::ql(Contact::contactdb(), "delete from Roles where confid=? and contactDbId?A", $confid, $cdbids);
+}
+
+if ($papers) {
+    $result = Dbl::ql($Conf->dblink, "select paperId, title from Paper");
+    $pids = [];
+    $qv = [];
+    while (($row = edb_row($result))) {
+        $qv[] = [$confid, $row[0], $row[1]];
+        $pids[] = $row[0];
+    }
+    Dbl::free($result);
+
+    if (!empty($qv))
+        Dbl::ql(Contact::contactdb(), "insert into ConferencePapers (confid,paperId,title) values ?v on duplicate key update title=values(title)", $qv);
+    Dbl::ql(Contact::contactdb(), "delete from ConferencePapers where confid=? and paperId?A", $confid, $pids);
 }
 
 if ($collaborators) {
