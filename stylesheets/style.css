@@ -2709,7 +2709,7 @@ body#offline .revcard {
 	background: linear-gradient(to bottom, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 51%, transparent 51%),
 		linear-gradient(to top, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 51%, transparent 51%);
 }
-.pedcard_body .xmsg, .revcard_body .xmsg {
+.papcard_body .xmsg, .pedcard_body .xmsg, .revcard_body .xmsg {
 	margin: 8px -12px;
 	padding: 0;
 	border-left: 0 none;
@@ -2718,16 +2718,17 @@ body#offline .revcard {
 .pedcard_body > .xmsg:first-child, .revcard_body > .xmsg:first-child {
 	margin-top: 0;
 }
-.pedcard_body .xinfo {
+.papcard_body .xinfo, .pedcard_body .xinfo {
 	background: #f8f4ff;
 	border: 0 none;
 }
+.papcard_body .xinfo > .xmsg0, .papcard_body .xinfo > .xmsg1,
 .pedcard_body .xinfo > .xmsg0, .pedcard_body .xinfo > .xmsg1 {
 	height: 2px;
 	background: #cec1ff;
 	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNjZWMxZmYiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTEuNzkyOTcsNSwzLjIwNzAzLDAsNSwwLC0wLDUiIGZpbGw9IiM5OTk5YmYiIC8+PHBvbHlsaW5lIHBvaW50cz0iMy4yMDcwMyw1LDguMjA3MDMsMCwxMCwwLDUsNSIgZmlsbD0iIzk5OTliZiIgLz48L3N2Zz4=)
 }
-.pedcard_body .xwarning {
+.papcard_body .xwarning, .pedcard_body .xwarning, .revcard_body .xwarning {
 	background: #ffffdd;
 	border: 0 none;
 }
@@ -2741,7 +2742,7 @@ body#offline .revcard {
 	background: #ffff00;
 	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwMCIgLz48cG9seWxpbmUgcG9pbnRzPSItNiwxMiw2LDAsMTIsMCwwLDEyIiBmaWxsPSIjNDAwMDAwIiAvPjxwb2x5bGluZSBwb2ludHM9IjYsMTIsMTgsMCwyNCwwLDEyLDEyIiBmaWxsPSIjNDAwMDAwIiAvPjwvc3ZnPg==);
 }
-.pedcard_body .xmsgc, .revcard_body .xmsgc {
+.papcard_body .xmsgc, .pedcard_body .xmsgc, .revcard_body .xmsgc {
 	padding: 8px 12px;
 	font-size: 90%;
 }

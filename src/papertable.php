@@ -1631,7 +1631,7 @@ class PaperTable {
     }
     private function _forceShow_message() {
         if (!$this->admin && $this->allow_admin)
-            return " " . Ht::link("(Override your conflict)", selfHref(["forceShow" => 1]));
+            return " " . Ht::link("(Override your conflict)", selfHref(["forceShow" => 1]), ["class" => "nw"]);
         else
             return "";
     }
