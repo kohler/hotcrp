@@ -377,10 +377,18 @@ if ($paperTable->can_view_reviews() || $paperTable->mode == "re") {
 
 // prepare paper table
 if ($paperTable->mode == "edit") {
-    $editable = $newPaper || $Me->can_update_paper($prow, true);
-    if ($prow && $prow->outcome > 0 && $Conf->collectFinalPapers()
-        && ($Me->allow_administer($prow) || $Me->can_submit_final_paper($prow)))
-        $editable = "f";
+    if ($newPaper)
+        $editable = true;
+    else {
+        $is_forceShow = null;
+        if ($Me->is_admin_force()
+            || ($Me->allow_administer($prow) && !$prow->has_conflict($Me)))
+            $is_forceShow = true;
+        $editable = $Me->can_update_paper($prow, $is_forceShow);
+        if ($prow->outcome > 0 && $Conf->collectFinalPapers()
+            && $Me->can_submit_final_paper($prow, $is_forceShow))
+            $editable = "f";
+    }
 } else
     $editable = false;
 
