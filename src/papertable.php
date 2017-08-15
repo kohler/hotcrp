@@ -417,8 +417,6 @@ class PaperTable {
 
         // download
         if ($Me->can_view_pdf($prow)) {
-            $pdfs = array();
-
             $dprefix = "";
             $dtype = $prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
             if (($doc = $prow->document($dtype)) && $doc->paperStorageId > 1) {
@@ -430,7 +428,7 @@ class PaperTable {
                     $dname = $this->conf->_c("paper_pdf_name", "Submission");
                 else
                     $dname = $this->conf->_c("paper_pdf_name", "Draft submission");
-                $pdfs[] = $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps;
+                $out[] = '<p class="xd">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
             }
 
             foreach ($prow ? $prow->options() : [] as $id => $ov)
@@ -441,15 +439,12 @@ class PaperTable {
                         $name = '<span class="pavfn">' . htmlspecialchars($ov->option->name) . '</span>';
                         if ($ov->option->has_attachments())
                             $name .= "/" . htmlspecialchars($d->unique_filename);
-                        $pdfs[] = $d->link_html($name);
+                        $out[] = '<p class="xd">' . $d->link_html($name) . '</p>';
                     }
                 }
 
             if ($prow->finalPaperStorageId > 1 && $prow->paperStorageId > 1)
-                $pdfs[] = "<small>" . $prow->document(DTYPE_SUBMISSION)->link_html("Submission version", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small>";
-
-            foreach ($pdfs as $p)
-                $out[] = '<p class="xd">' . $p . '</p>';
+                $out[] = '<p class="xd"><small>' . $prow->document(DTYPE_SUBMISSION)->link_html("Submission version", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small></p>";
         }
 
         // conflicts
