@@ -2222,7 +2222,8 @@ class Conf {
             $doc->filename = HotCRPDocument::filename($doc);
         $downloadname = false;
         if (count($docs) > 1) {
-            $name = HotCRPDocument::unparse_dtype($docs[0]->documentType);
+            $o = $this->paper_opts->find_document($docs[0]->documentType);
+            $name = $o->abbreviation();
             if ($docs[0]->documentType <= 0)
                 $name = pluralize($name);
             $downloadname = $this->download_prefix . "$name.zip";

@@ -27,12 +27,6 @@ class HotCRPDocument extends Filer {
         $this->no_filestore = true;
     }
 
-    static function unparse_dtype($dtype) {
-        global $Conf;
-        $o = $Conf->paper_opts->find_document($dtype);
-        return $o && $o->is_document() ? $o->abbreviation() : null;
-    }
-
     static function parse_dtype($dname) {
         global $Conf;
         if (preg_match('/\A-?\d+\z/', $dname))
