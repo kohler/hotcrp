@@ -5113,8 +5113,8 @@ return plinfo_tags;
 
 
 // archive expansion
-function expand_archive() {
-    var $j = $(this).closest(".archive");
+function expand_archive(evt) {
+    var $j = $(evt ? evt.target : this).closest(".archive");
     fold($j[0]);
     if (!$j.find(".archiveexpansion").length) {
         $j.append('<span class="archiveexpansion fx"></span>');

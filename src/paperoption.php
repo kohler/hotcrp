@@ -1080,8 +1080,8 @@ class AttachmentsPaperOption extends PaperOption {
             $link = $d->link_html(htmlspecialchars($d->unique_filename), $flags);
             if ($d->docclass->is_archive($d)) {
                 $link = '<' . $tag . ' class="archive foldc"><a href="#" class="expandarchive qq">' . expander(null, 0) . "</a>&nbsp;" . $link . "</$tag>";
-                Ht::stash_script('$(function(){$(".expandarchive").click(expand_archive)})', "expand_archive");
-            } else if ($tag == "div")
+                Ht::stash_script('$(function(){$(document.body).on("click", ".expandarchive", expand_archive)})', "expand_archive");
+            } else if ($tag === "div")
                 $link = "<div>$link</div>";
             if ($docs !== "" && $tag == "span")
                 $docs .= ";&nbsp; ";
