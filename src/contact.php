@@ -2230,15 +2230,16 @@ class Contact {
         if ($opt->final
             && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
             return false;
-        return $rights->act_author_view
-            || (($rights->allow_administer
-                 || $rights->review_status != 0
-                 || $rights->allow_pc_broad)
-                && (($oview == "admin" && $rights->allow_administer)
-                    || !$oview
-                    || $oview == "rev"
-                    || ($oview == "nonblind"
-                        && $this->can_view_authors($prow, $forceShow))));
+        if ($rights->allow_administer)
+            return $oview !== "nonblind" || $this->can_view_authors($prow, $forceShow);
+        else
+            return $rights->act_author_view
+                || (($rights->review_status != 0
+                     || $rights->allow_pc_broad)
+                    && (!$oview
+                        || $oview == "rev"
+                        || ($oview == "nonblind"
+                            && $this->can_view_authors($prow, $forceShow))));
     }
 
     function user_option_list() {
@@ -2258,15 +2259,16 @@ class Contact {
         $whyNot = $prow->initial_whynot();
         $rights = $this->rights($prow, $forceShow);
         $oview = $opt->visibility;
-        if (!$rights->act_author_view
-            && (($oview == "admin"
-                && !$rights->allow_administer)
-                || ((!$oview || $oview == "rev")
-                    && !$rights->allow_administer
-                    && !$rights->review_status
-                    && !$rights->allow_pc_broad)
-                || ($oview == "nonblind"
-                    && !$this->can_view_authors($prow, $forceShow))))
+        if ($rights->allow_administer
+            ? $oview === "nonblind"
+              && !$this->can_view_authors($prow, $forceShow)
+            : !$rights->act_author_view
+              && ($oview === "admin"
+                  || ((!$oview || $oview == "rev")
+                      && !$rights->review_status
+                      && !$rights->allow_pc_broad)
+                  || ($oview == "nonblind"
+                      && !$this->can_view_authors($prow, $forceShow))))
             $whyNot["optionPermission"] = $opt;
         else if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
             $whyNot["optionNotAccepted"] = $opt;
