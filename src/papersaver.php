@@ -208,19 +208,35 @@ class Default_PaperSaver extends PaperSaver {
             $diffs["submission"] = true;
         if (json_encode(get($pj1, "final")) !== json_encode(get($pj2, "final")))
             $diffs["final"] = true;
+
+        if (self::contact_emails($pj1) !== self::contact_emails($pj2))
+            $diffs["contacts"] = true;
     }
 
-    private function same_authors($pj, $opj) {
-        $pj_ct = count(get($pj, "authors"));
-        $opj_ct = count(get($opj, "authors"));
-        if ($pj_ct != $opj_ct)
+    private function same_authors($pj1, $pj2) {
+        $ct1 = count(get($pj1, "authors", []));
+        if ($ct1 != count(get($pj2, "authors", [])))
             return false;
-        for ($i = 0; $i != $pj_ct; ++$i)
-            if (get($pj->authors[$i], "email") !== get($opj->authors[$i], "email")
-                || get_s($pj->authors[$i], "affiliation") !== get_s($opj->authors[$i], "affiliation")
-                || Text::name_text($pj->authors[$i]) !== Text::name_text($opj->authors[$i]))
+        for ($i = 0; $i != $ct1; ++$i) {
+            $au1 = $pj1->authors[$i];
+            $au2 = $pj2->authors[$i];
+            if (strcasecmp(get_s($au1, "email"), get_s($au2, "email")) !== 0
+                || get_s($au1, "affiliation") !== get_s($au2, "affiliation")
+                || Text::name_text($au1) !== Text::name_text($au2))
                 return false;
+        }
         return true;
+    }
+
+    private function contact_emails($pj) {
+        $c = [];
+        foreach (get($pj, "contacts", []) as $v)
+            $c[strtolower(is_string($v) ? $v : $v->email)] = true;
+        foreach (get($pj, "authors", []) as $au)
+            if (get($au, "contact"))
+                $c[strtolower($au->email)] = true;
+        ksort($c);
+        return array_keys($c);
     }
 }
 
