@@ -1479,6 +1479,12 @@ table.setreviewform th, table.auedittable th {
 	text-align: left;
 	padding-right: 1em;
 }
+.pl_name {
+	min-width: 11em;
+}
+.pl_ip {
+	min-width: 4em;
+}
 .pl_activityicon {
 	padding: 0.2ex 0 0.3ex 0.3em;
 	vertical-align: top;
