@@ -156,12 +156,16 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     // note differences in contacts
     $contacts = $ocontacts = [];
     foreach (get($pj, "contacts", []) as $v)
-        $contacts[] = strtolower(is_string($v) ? $v : $v->email);
-    if ($opj && get($opj, "contacts"))
-        foreach ($opj->contacts as $v)
-            $ocontacts[] = strtolower($v->email);
-    sort($contacts);
-    sort($ocontacts);
+        $contacts[strtolower(is_string($v) ? $v : $v->email)] = true;
+    if ($opj) {
+        foreach (get($opj, "contacts", []) as $v)
+            $ocontacts[strtolower($v->email)] = true;
+        foreach (get($opj, "authors", []) as $au)
+            if (get($au, "contact"))
+                $ocontacts[strtolower($au->email)] = true;
+    }
+    ksort($contacts);
+    ksort($ocontacts);
     if (json_encode($contacts) !== json_encode($ocontacts))
         $diffs["contacts"] = true;
 
@@ -178,8 +182,6 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     $wasSubmitted = $opj && get($opj, "submitted");
     if (get($pj, "submitted") || $Conf->can_pc_see_all_submissions())
         $Conf->update_papersub_setting(1);
-    if ($wasSubmitted != get($pj, "submitted"))
-        $diffs["submission"] = 1;
 
     // confirmation message
     if ($action == "final") {
@@ -236,6 +238,8 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     if (count($ps->messages()))
         $webnotes .= " <ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>";
 
+    if ($wasSubmitted != get($pj, "submitted"))
+        $diffs["ready"] = true;
     if (empty($diffs)) {
         $Conf->warnMsg("There were no changes to submission #$prow->paperId. " . $notes . $webnotes);
         return true;

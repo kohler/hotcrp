@@ -541,7 +541,7 @@ class PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
     }
 
-    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         return null;
     }
 
@@ -604,7 +604,7 @@ class CheckboxPaperOption extends PaperOption {
         Ht::stash_script("jQuery('#opt{$this->id}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
 
-    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         return $qreq["opt$this->id"] > 0;
     }
 
@@ -684,9 +684,14 @@ class SelectorPaperOption extends PaperOption {
         echo "</div></div>\n\n";
     }
 
-    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         $v = trim((string) $qreq["opt$this->id"]);
-        return $v !== "" && ctype_digit($v) ? (int) $v : $v;
+        if ($v !== "" && ctype_digit($v)) {
+            $iv = intval($v);
+            if (isset($this->selector[$iv]))
+                return $this->selector[$iv];
+        }
+        return $v;
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
@@ -760,7 +765,7 @@ class DocumentPaperOption extends PaperOption {
         echo "</div>\n\n";
     }
 
-    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         if ($qreq->has_file("opt$this->id"))
             return DocumentInfo::make_file_upload($pj->pid, $this->id, $qreq->file("opt$this->id"));
         else if ($qreq["remove_opt$this->id"])
@@ -866,10 +871,14 @@ class NumericPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
-    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         $v = trim((string) $qreq["opt$this->id"]);
-        $iv = intval($v);
-        return $v !== "" && $iv == $v ? $iv : $v;
+        if ($v !== "" && is_numeric($v)) {
+            $iv = intval($v);
+            if ((float) $iv === floatval($v))
+                return $iv;
+        }
+        return $v;
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
@@ -935,7 +944,7 @@ class TextPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
-    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         return trim((string) $qreq["opt$this->id"]);
     }
 
@@ -1050,7 +1059,7 @@ class AttachmentsPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
-    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         $attachments = $opt_pj ? : [];
         $opfx = "opt{$this->id}_";
         foreach ($qreq->files() as $k => $v)
@@ -1062,7 +1071,7 @@ class AttachmentsPaperOption extends PaperOption {
                 array_splice($attachments, $i, 1);
                 --$i;
             }
-        return empty($attachments) ? null : $attachments;
+        return empty($attachments) ? false : $attachments;
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {

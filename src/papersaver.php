@@ -23,16 +23,23 @@ class PaperSaver {
             $fn[2]->apply($user, $pj, $prow, $opj, $qreq, $action);
         return $pj;
     }
-    static function diffs_all(Contact $user, $pj, $opj) {
+    static function diffs_all(Contact $user, $pj1, $pj2) {
         $diffs = [];
         foreach (self::$list as $fn)
-            $fn[2]->diffs($diffs, $user, $pj, $opj);
+            $fn[2]->diffs($diffs, $user, $pj1, $pj2);
         return $diffs;
     }
 
     function apply(Contact $user, $pj, $prow, $opj, Qrequest $qreq, $action) {
     }
-    function diffs(&$diffs, Contact $user, $pj, $opj) {
+    function diffs(&$diffs, Contact $user, $pj1, $pj2) {
+    }
+
+    static function json_encode_nonempty($j) {
+        $j = json_encode_db($j);
+        if ($j === "{}")
+            $j = "null";
+        return $j;
     }
 
     static function replace_contacts($pj, $qreq) {
@@ -158,39 +165,49 @@ class Default_PaperSaver extends PaperSaver {
         }
     }
 
-    function diffs(&$diffs, Contact $user, $pj, $opj) {
-        if (!$opj) {
+    function diffs(&$diffs, Contact $user, $pj1, $pj2) {
+        if (!$pj2) {
             $diffs["new"] = true;
             return;
         }
 
         foreach (array("title", "abstract", "collaborators") as $k)
-            if (get_s($pj, $k) !== get_s($opj, $k))
+            if (get_s($pj1, $k) !== get_s($pj2, $k))
                 $diffs[$k] = true;
-        if (!$this->same_authors($pj, $opj))
+
+        if (!$this->same_authors($pj1, $pj2))
             $diffs["authors"] = true;
-        if (json_encode(get($pj, "topics") ? : (object) array())
-            !== json_encode(get($opj, "topics") ? : (object) array()))
+
+        if (self::json_encode_nonempty(get($pj1, "topics"))
+            !== self::json_encode_nonempty(get($pj2, "topics")))
             $diffs["topics"] = true;
-        $pjopt = get($pj, "options", (object) []);
-        $opjopt = get($opj, "options", (object) []);
+
+        $opt1 = get($pj1, "options", (object) []);
+        $opt2 = get($pj2, "options", (object) []);
         foreach ($user->conf->paper_opts->option_list() as $o) {
             $oabbr = $o->abbreviation();
-            if (!get($pjopt, $oabbr) != !get($opjopt, $oabbr)
-                || (get($pjopt, $oabbr)
-                    && json_encode($pjopt->$oabbr) !== json_encode($opjopt->$oabbr))) {
-                $diffs["options"] = true;
-                break;
-            }
+            if (isset($opt1->$oabbr)) {
+                $same = isset($opt2->$oabbr)
+                    && json_encode_db($opt1->$oabbr) === json_encode_db($opt2->$oabbr);
+            } else
+                $same = !isset($opt2->$oabbr);
+            if (!$same)
+                $diffs[$oabbr] = true;
         }
-        if ($user->conf->subBlindOptional() && !get($pj, "nonblind") !== !get($opj, "nonblind"))
-            $diffs["anonymity"] = true;
-        if (json_encode(get($pj, "pc_conflicts")) !== json_encode(get($opj, "pc_conflicts")))
-            $diffs["PC conflicts"] = true;
-        if (json_encode(get($pj, "submission")) !== json_encode(get($opj, "submission")))
+
+        if ($user->conf->subBlindOptional()
+            && !get($pj1, "nonblind") !== !get($pj2, "nonblind"))
+            $diffs["nonblind"] = true;
+
+        $pcc1 = self::json_encode_nonempty(get($pj1, "pc_conflicts"));
+        $pcc2 = self::json_encode_nonempty(get($pj2, "pc_conflicts"));
+        if ($pcc1 !== $pcc2)
+            $diffs["pc_conflicts"] = true;
+
+        if (json_encode(get($pj1, "submission")) !== json_encode(get($pj2, "submission")))
             $diffs["submission"] = true;
-        if (json_encode(get($pj, "final")) !== json_encode(get($opj, "final")))
-            $diffs["final copy"] = true;
+        if (json_encode(get($pj1, "final")) !== json_encode(get($pj2, "final")))
+            $diffs["final"] = true;
     }
 
     private function same_authors($pj, $opj) {
