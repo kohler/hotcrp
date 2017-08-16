@@ -431,17 +431,16 @@ class PaperTable {
                 $out[] = '<p class="xd">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
             }
 
-            foreach ($prow ? $prow->options() : [] as $id => $ov)
-                if ($ov->option->display() === PaperOption::DISP_SUBMISSION
-                    && $ov->option->has_document()
-                    && $Me->can_view_paper_option($prow, $ov->option)) {
-                    foreach ($ov->documents() as $d) {
-                        $name = '<span class="pavfn">' . htmlspecialchars($ov->option->name) . '</span>';
-                        if ($ov->option->has_attachments())
-                            $name .= "/" . htmlspecialchars($d->unique_filename);
-                        $out[] = '<p class="xd">' . $d->link_html($name) . '</p>';
-                    }
+            $force = $this->get_option_force($prow);
+            foreach ($prow ? $prow->options() : [] as $ov) {
+                $o = $ov->option;
+                if ($o->display() === PaperOption::DISP_SUBMISSION
+                    && $Me->can_view_paper_option($prow, $o, $force)
+                    && ($oh = $this->unparse_option_html($ov, $force))) {
+                    $aufold = $force && !$Me->can_view_paper_option($prow, $o, false);
+                    $out = array_merge($out, $oh);
                 }
+            }
 
             if ($prow->finalPaperStorageId > 1 && $prow->paperStorageId > 1)
                 $out[] = '<p class="xd"><small>' . $prow->document(DTYPE_SUBMISSION)->link_html("Submission version", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small></p>";
@@ -864,70 +863,113 @@ class PaperTable {
         }
     }
 
-    private function paptabTopicsOptions($showAllOptions) {
+    private function get_option_force(PaperInfo $prow) {
+        global $Me;
+        if ($Me->allow_administer($prow)
+            && !$Me->can_view_authors($prow, false))
+            return true;
+        else
+            return null;
+    }
+
+    private function unparse_option_html(PaperOptionValue $ov, $force) {
+        global $Me;
+        $o = $ov->option;
+        $phtml = $o->unparse_page_html($this->prow, $ov);
+        if (!$phtml || count($phtml) <= 1)
+            return [];
+        $phtype = array_shift($phtml);
+        $aufold = $force && !$Me->can_view_paper_option($this->prow, $o, false);
+
+        $ts = [];
+        if ($o->display() === PaperOption::DISP_SUBMISSION) {
+            $div = $aufold ? '<div class="xd fx8">' : '<div class="xd">';
+            if ($phtype === PaperOption::PAGE_HTML_NAME) {
+                foreach ($phtml as $p)
+                    $ts[] = $div . '<span class="pavfn">' . $p . "</span></div>\n";
+            } else if ($phtype === PaperOption::PAGE_HTML_FULL) {
+                foreach ($phtml as $p)
+                    $ts[] = $div . $p . "</div>\n";
+            } else {
+                $x = $div . '<span class="pavfn">' . htmlspecialchars($o->name) . '</span>';
+                foreach ($phtml as $p)
+                    $x .= '<div class="pavb">' . $p . '</div>';
+                $ts[] = $x . "</div>\n";
+            }
+        } else if ($o->display() !== PaperOption::DISP_TOPICS) {
+            $div = $aufold ? '<div class="pgsm fx8">' : '<div class="pgsm">';
+            if ($phtype === PaperOption::PAGE_HTML_NAME) {
+                foreach ($phtml as $p)
+                    $ts[] = $div . '<div class="pavt"><span class="pavfn">' . $p . "</span></div></div>\n";
+            } else if ($phtype === PaperOption::PAGE_HTML_FULL) {
+                foreach ($phtml as $p)
+                    $ts[] = $div . $p . "</div>\n";
+            } else {
+                $x = $div . '<div class="pavt"><span class="pavfn">' . htmlspecialchars($o->name) . '</span></div>';
+                foreach ($phtml as $p)
+                    $x .= '<div class="pavb">' . $p . '</div>';
+                $ts[] = $x . "</div>\n";
+            }
+        } else {
+            $div = $aufold ? '<div class="fx8">' : '<div>';
+            if ($phtype === PaperOption::PAGE_HTML_NAME) {
+                foreach ($phtml as $p)
+                    $ts[] = $div . '<span class="papon">' . $p . "</span></div>\n";
+            } else if ($phtype === PaperOption::PAGE_HTML_FULL) {
+                foreach ($phtml as $p)
+                    $ts[] = $div . $p . "</div>\n";
+            } else {
+                foreach ($phtml as $p) {
+                    if (!empty($ts)
+                        || $p === ""
+                        || $p[0] !== "<"
+                        || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $p, $cm))
+                        $cm = [null, "", $p];
+                    $ts[] = $div . $cm[1] . '<span class="papon">' . htmlspecialchars($o->name) . ':</span> ' . $cm[2] . "</div>\n";
+                }
+            }
+        }
+        return $ts;
+    }
+
+    private function paptabTopicsOptions() {
         global $Me;
         $topicdata = $this->prow->unparse_topics_html(false, $Me);
-        $xoptionhtml = array();
-        $optionhtml = array();
-        $ndocuments = 0;
-        $nfolded = 0;
+        $optt = $optp = [];
+        $optp_nfold = $optt_ndoc = $optt_nfold = 0;
+        $force = $this->get_option_force($this->prow);
 
-        foreach ($this->prow->options() as $oa) {
-            $o = $oa->option;
-            if (($o->display() === PaperOption::DISP_SUBMISSION
-                 && $o->has_document()
-                 && $Me->can_view_paper_option($this->prow, $o))
-                || (!$showAllOptions
-                    && !$Me->can_view_paper_option($this->prow, $o))
-                || $o->display() < 0)
-                continue;
-
-            // create option display value
-            $ox = $o->unparse_page_html($this->prow, $oa);
-            if (!is_array($ox))
-                $ox = [$ox, false];
-            if ($ox[0] === null || $ox[0] === "")
-                continue;
-
-            // display it
-            $on = htmlspecialchars($o->name);
-            $folded = $showAllOptions && !$Me->can_view_paper_option($this->prow, $o, false);
-            if ($o->display() !== PaperOption::DISP_TOPICS) {
-                $x = '<div class="pgsm' . ($folded ? " fx8" : "") . '">'
-                    . '<div class="pavt"><span class="pavfn">'
-                    . ($ox[1] ? $ox[0] : $on) . "</span>"
-                    . '</div>';
-                if (!$ox[1])
-                    $x .= '<div class="pavb">' . $ox[0] . "</div>";
-                $xoptionhtml[] = $x . "</div>\n";
-            } else {
-                if ($ox[1])
-                    $x = '<div>' . $ox[0] . '</div>';
-                else {
-                    if ($ox[0][0] !== "<"
-                        || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $ox[0], $cm))
-                        $cm = [null, "", $ox[0]];
-                    $x = '<div class="papov">' . $cm[1] . '<span class="papon">'
-                        . $on . ':</span> ' . $cm[2] . '</div>';
+        foreach ($this->prow->options() as $ov) {
+            $o = $ov->option;
+            if ($o->display() !== PaperOption::DISP_SUBMISSION
+                && $o->display() >= 0
+                && $Me->can_view_paper_option($this->prow, $o, $force)
+                && ($oh = $this->unparse_option_html($ov, $force))) {
+                $aufold = $force && !$Me->can_view_paper_option($this->prow, $o, false);
+                if ($o->display() === PaperOption::DISP_TOPICS) {
+                    $optt = array_merge($optt, $oh);
+                    if ($aufold)
+                        $optt_nfold += count($oh);
+                    if ($o->has_document())
+                        $optt_ndoc += count($oh);
+                } else {
+                    $optp = array_merge($optp, $oh);
+                    if ($aufold)
+                        $optp_nfold += count($oh);
                 }
-                if ($folded) {
-                    $x = "<span class='fx8'>" . $x . "</span>";
-                    ++$nfolded;
-                }
-                $optionhtml[] = $x . "\n";
-                if ($o->has_document())
-                    ++$ndocuments;
             }
         }
 
-        if (!empty($xoptionhtml))
-            echo '<div class="pg">', join("", $xoptionhtml), "</div>\n";
+        if (!empty($optp)) {
+            $div = count($optp) === $optp_nfold ? '<div class="pg fx8">' : '<div class="pg">';
+            echo $div, join("", $optp), "</div>\n";
+        }
 
-        if ($topicdata !== "" || count($optionhtml)) {
+        if ($topicdata !== "" || !empty($optt)) {
             $infotypes = array();
-            if ($ndocuments > 0)
+            if ($optt_ndoc > 0)
                 $infotypes[] = "Attachments";
-            if (count($optionhtml) != $ndocuments)
+            if (count($optt) !== $optt_ndoc)
                 $infotypes[] = "Options";
             $options_name = commajoin($infotypes);
             if ($topicdata !== "")
@@ -952,11 +994,11 @@ class PaperTable {
                 $tanda = $options_name;
             }
 
-            if (!empty($optionhtml)) {
-                echo "<div class='pg", ($extra ? "" : $eclass),
-                    ($nfolded == count($optionhtml) ? " fx8" : ""), "'>",
+            if (!empty($optt)) {
+                echo '<div class="pg', ($extra ? "" : $eclass),
+                    (count($optt) === $optt_nfold ? " fx8" : ""), '">',
                     $this->papt("options", array($options_name, $tanda), $extra),
-                    "<div class=\"pavb$eclass\">", join("", $optionhtml), "</div></div>\n\n";
+                    "<div class=\"pavb$eclass\">", join("", $optt), "</div></div>\n\n";
             }
         }
     }
@@ -2059,7 +2101,7 @@ class PaperTable {
             echo '<div class="paperinfo-c', ($has_abstract ? "r" : "b"), '">';
             $this->paptabAuthors(!$this->editable && $this->mode === "edit"
                                  && $prow->timeSubmitted > 0);
-            $this->paptabTopicsOptions($Me->can_administer($prow));
+            $this->paptabTopicsOptions();
             echo '</div></div></div>';
         }
         $this->echoDivExit();
