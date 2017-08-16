@@ -511,7 +511,7 @@ foreach ($visible_rows as $row) {
         }
     } else
         $at = "";
-    if (preg_match('/\A(.*) \(papers ([\d, ]+)\)?\z/', $act, $m)) {
+    if (preg_match('/\A(.* |)\(papers ([\d, ]+)\)?\z/', $act, $m)) {
         $at .= htmlspecialchars($m[1])
             . " (<a href=\"" . hoturl("search", "t=all&amp;q=" . preg_replace('/[\s,]+/', "+", $m[2]))
             . "\">papers</a> "
