@@ -692,21 +692,18 @@ class SelectorPaperOption extends PaperOption {
     function list_display($isrow) {
         return true;
     }
+    private function unparse_value(PaperOptionValue $ov = null) {
+        return $ov ? get($this->selector, $ov->value, "") : "";
+    }
     function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
-        $ov = $row->option($this->id);
-        return $ov ? $this->unparse_page_html($row, $ov) : "";
+        return htmlspecialchars($this->unparse_value($row->option($this->id)));
     }
     function unparse_list_text(PaperList $pl, PaperInfo $row) {
-        $ov = $row->option($this->id);
-        if ($ov && isset($this->selector[$ov->value]))
-            return $this->selector[$ov->value];
-        return "";
+        return $this->unparse_value($row->option($this->id));
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {
-        if (isset($this->selector[$ov->value]))
-            return htmlspecialchars($this->selector[$ov->value]);
-        return "";
+        return htmlspecialchars($this->unparse_value($ov));
     }
 }
 

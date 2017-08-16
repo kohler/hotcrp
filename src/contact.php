@@ -2227,7 +2227,8 @@ class Contact {
             return false;
         $rights = $this->rights($prow, $forceShow);
         $oview = $opt->visibility;
-        if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
+        if ($opt->final
+            && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
             return false;
         return $rights->act_author_view
             || (($rights->allow_administer
