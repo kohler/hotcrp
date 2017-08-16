@@ -165,7 +165,6 @@ function document_download() {
 
     if ($dr->dtype === null
         || !($o = $Conf->paper_opts->find_document($dr->dtype))
-        || ($dr->attachment && !$o->has_attachments())
         || $o->nonpaper !== ($dr->paperId < 0))
         document_error("404 Not Found", "No such document “" . htmlspecialchars($dr->req_filename) . "”.");
 
@@ -187,12 +186,7 @@ function document_download() {
 
     // history
     if (isset($_GET["fn"]) && $_GET["fn"] === "history") {
-        $docs = [];
-        if ($o->has_attachments()) {
-            if (($oa = $prow->option($dr->dtype)))
-                $docs = $oa->documents($prow);
-        } else if (($doc = $prow->document($dr->dtype, 0, true)))
-            $docs = [$doc];
+        $docs = $prow->documents($dr->dtype);
 
         $pjs = $actives = [];
         foreach ($docs as $doc) {
@@ -223,13 +217,9 @@ function document_download() {
             $request_docid = $want_docid;
     }
 
-    $doc = null;
-    if ($dr->attachment) {
-        $oa = $prow->option($dr->dtype);
-        foreach ($oa ? $oa->documents($prow) : array() as $xdoc)
-            if ($xdoc->unique_filename == $dr->attachment)
-                $doc = $xdoc;
-    } else
+    if ($dr->attachment && !$request_docid)
+        $doc = $prow->attachment($dr->dtype, $dr->attachment);
+    else
         $doc = $prow->document($dr->dtype, $request_docid);
     if ($want_docid !== 0 && (!$doc || $doc->paperStorageId != $want_docid))
         document_error("404 Not Found", "No such version.");

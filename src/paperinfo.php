@@ -1387,7 +1387,7 @@ class PaperInfo {
             if ($this->finalPaperStorageId > 0)
                 $x[] = $this->finalPaperStorageId;
             foreach ($this->options() as $oa)
-                if ($oa->option->has_document_storage())
+                if ($oa->option->has_document())
                     $x = array_merge($x, $oa->unsorted_values());
             if ($did > 0)
                 $x[] = $did;
@@ -1404,6 +1404,20 @@ class PaperInfo {
                  && $doc->documentType == DTYPE_SUBMISSION)
                 || ($doc->paperStorageId == $this->finalPaperStorageId
                     && $doc->documentType == DTYPE_FINAL));
+    }
+    function documents($dtype) {
+        if ($dtype <= 0) {
+            $doc = $this->document($dtype, 0, true);
+            return $doc ? [$doc] : [];
+        } else if (($oa = $this->option($dtype)) && $oa->has_document())
+            return $oa->documents();
+        else
+            return [];
+    }
+
+    function attachment($dtype, $name) {
+        $oa = $this->option($dtype);
+        return $oa ? $oa->attachment($name) : null;
     }
 
     function npages() {

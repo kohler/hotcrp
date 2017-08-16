@@ -37,7 +37,7 @@ class PaperOptionValue {
     }
     function documents() {
         assert($this->prow || empty($this->_values));
-        assert($this->option->has_document_storage());
+        assert($this->option->has_document());
         if ($this->_documents === null) {
             $this->_documents = $by_unique_filename = array();
             $docclass = null;
@@ -74,6 +74,9 @@ class PaperOptionValue {
             if ($doc->paperStorageId == $docid)
                 return $doc;
         return null;
+    }
+    function attachment($name) {
+        return $this->option->attachment($this, $name);
     }
     function value_count() {
         return count($this->_values);
@@ -459,10 +462,6 @@ class PaperOption {
         return false;
     }
 
-    function has_document_storage() {
-        return $this->has_document();
-    }
-
     function has_attachments() {
         return false;
     }
@@ -471,14 +470,18 @@ class PaperOption {
         return false;
     }
 
+    function refresh_documents(PaperOptionValue $ov) {
+    }
+
+    function attachment(PaperOptionValue $ov, $name) {
+        return null;
+    }
+
     static function list_subform_options(&$options, PaperOption $o = null) {
     }
 
     static function factory_classes() {
         return array_values(array_unique(self::$factory_class_map));
-    }
-
-    function refresh_documents(PaperOptionValue $ov) {
     }
 
     function expand_values(&$values, &$data_array) {
@@ -996,6 +999,13 @@ class AttachmentsPaperOption extends PaperOption {
 
     function takes_multiple() {
         return true;
+    }
+
+    function attachment(PaperOptionValue $ov, $name) {
+        foreach ($ov->documents() as $xdoc)
+            if ($xdoc->unique_filename == $name)
+                return $xdoc;
+        return null;
     }
 
     function expand_values(&$values, &$data_array) {
