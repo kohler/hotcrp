@@ -11,7 +11,7 @@ $Conf->header("Log", "actionlog", actionBar());
 global $Qreq;
 $Qreq = make_qreq();
 $Eclass = [];
-$nlinks = 4;
+$nlinks = 6;
 
 $page = $Qreq["page"];
 if ($page === "earliest")
@@ -491,7 +491,7 @@ foreach ($visible_rows as $row) {
 
     if (substr($act, 0, 6) === "Review"
         && preg_match('/\AReview (\d+)(.*)\z/s', $act, $m)) {
-        $at = "<a href=\"" . hoturl("review", "r=$m[1]") . "\">Review " . $m[1] . "</a>";
+        $at = "<a href=\"" . hoturl("review", ["p" => $row->paperId, "r" => $m[1]]) . "\">Review " . $m[1] . "</a>";
         $act = $m[2];
     } else if (substr($act, 0, 7) === "Comment"
                && preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {
