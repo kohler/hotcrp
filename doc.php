@@ -7,6 +7,11 @@ require_once("src/initweb.php");
 
 function document_error($status, $msg) {
     global $Conf, $Me;
+    if (str_starts_with($status, "403") && $Me->is_empty()) {
+        $Me->escape();
+        exit;
+    }
+
     $navpath = Navigation::path();
     error_log($Conf->dbname . ": bad doc $status $msg " . json_encode(make_qreq()) . ($navpath ? " @$navpath" : "") . ($Me ? " {$Me->email}" : ""));
     header("HTTP/1.1 $status");
