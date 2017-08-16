@@ -53,7 +53,7 @@ function document_download() {
             if (preg_match(',\A([^/]+)\.[^/]+\z,', $m[2], $mm))
                 $dtname = $mm[1];
             else if (preg_match(',\A([^/]+)/+(.*)\z,', $m[2], $mm))
-                list($dtname, $attachment_filename) = array($m[1], $m[2]);
+                list($dtname, $attachment_filename) = array($mm[1], $mm[2]);
         } else if (preg_match(',\A(p|paper|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^/]+|/+(.*))\z,', $s, $m)) {
             list($paperId, $dtname, $attachment_filename) = [intval($m[2]), $m[3], get($m, 4)];
             if ($m[1] === "final")
