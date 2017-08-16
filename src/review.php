@@ -1754,6 +1754,7 @@ class ReviewValues extends MessageSet {
 
         $qf = $qv = [];
         $tfields = $sfields = $set_sfields = $set_tfields = null;
+        $diff_fields = [];
         $diff_view_score = VIEWSCORE_FALSE;
         $wc = 0;
         foreach ($this->rf->forder as $fid => $f)
@@ -1782,8 +1783,11 @@ class ReviewValues extends MessageSet {
                     $fval_diffs = $fval !== $old_fval
                         && cleannl($fval) !== cleannl($old_fval);
                 }
-                if ($fval_diffs)
+                if ($fval_diffs) {
                     $diff_view_score = max($diff_view_score, $f->view_score);
+                    if ($rrow)
+                        $diff_fields[] = $f->abbreviation();
+                }
                 if ($fval_diffs || !$rrow) {
                     if ($f->main_storage) {
                         $qf[] = "{$f->main_storage}=?";
@@ -1987,8 +1991,9 @@ class ReviewValues extends MessageSet {
         // log updates -- but not if review token is used
         if (!$usedReviewToken && $diff_view_score > VIEWSCORE_FALSE) {
             $text = "Review $reviewId "
-                . ($newsubmit ? "submitted" : ($submit ? "updated" : "saved draft"));
-            $user->log_activity_for($rrow->contactId, $text, $prow);
+                . ($newsubmit ? "submitted" : ($submit ? "updated" : "updated draft"))
+                . ($diff_fields ? " " . join(", ", $diff_fields) : "");
+            $user->log_activity_for($rrow ? $rrow->contactId : $user->contactId, $text, $prow);
         }
 
         // potentially email chair, reviewers, and authors
