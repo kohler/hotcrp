@@ -6,9 +6,9 @@
 require_once("src/initweb.php");
 
 function document_error($status, $msg) {
-    global $Conf;
+    global $Conf, $Me;
     $navpath = Navigation::path();
-    error_log($Conf->dbname . ": bad doc $status $msg " . json_encode(make_qreq()) . ($navpath ? " @$navpath" : ""));
+    error_log($Conf->dbname . ": bad doc $status $msg " . json_encode(make_qreq()) . ($navpath ? " @$navpath" : "") . ($Me ? " {$Me->email}" : ""));
     header("HTTP/1.1 $status");
     if (isset($_GET["fn"]))
         json_exit(["ok" => false, "error" => $msg ? : "Internal error."]);
