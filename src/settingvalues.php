@@ -354,8 +354,10 @@ class SettingValues extends MessageSet {
     function info_near($field, $html)  {
         $this->near_msgs->info_at($field, $html);
     }
-    function report() {
+    function report($is_update = false) {
         $msgs = array();
+        if ($is_update && $this->has_error())
+            $msgs[] = "Your changes were not saved. Please fix these errors and try again.";
         foreach ($this->messages(true) as $mx)
             $msgs[] = ($mx[2] == MessageSet::WARNING ? "Warning: " : "") . $mx[1];
         $mt = '<div class="multimessage"><div class="mmm">' . join('</div><div class="mmm">', $msgs) . '</div></div>';

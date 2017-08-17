@@ -82,7 +82,7 @@ echo '<div class="aahc">';
 doActionArea(true);
 
 echo "<div>";
-$Sv->report();
+$Sv->report(isset($_REQUEST["update"]) && check_post());
 $Sv->interesting_groups[$Group] = true;
 SettingGroup::$all[$Group]->render($Sv);
 echo "</div>";
