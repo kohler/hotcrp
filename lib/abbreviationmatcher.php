@@ -177,10 +177,15 @@ class AbbreviationMatcher {
     private $data = [];
     private $nanal = 0;
     private $matches = [];
+    private $abbreviators = [];
 
     function add($name, $data, $tflags = 0, $prio = 0) {
         $this->data[] = [$name, null, $data, $tflags, $prio];
         $this->matches = [];
+    }
+
+    function set_abbreviator($tflags, Abbreviator $abbreviator) {
+        $this->abbreviators[$tflags] = $abbreviator;
     }
 
     static function dedash($text) {
@@ -206,7 +211,7 @@ class AbbreviationMatcher {
     private function _find($pattern) {
         if (empty($this->matches))
             $this->_analyze();
-        // A call to Abbreviatable::abbreviation() might call back in
+        // A call to Abbreviator::abbreviation_for() might call back in
         // to AbbreviationMatcher::find(). Short-circuit that call.
         $this->matches[$pattern] = [];
 
@@ -237,13 +242,19 @@ class AbbreviationMatcher {
         }
 
         if (empty($matches)) {
-            foreach ($this->data as $i => $d)
-                if ($d[2] instanceof Abbreviatable
-                    && ($abbrs = $d[2]->abbreviation())) {
+            foreach ($this->data as $i => $d) {
+                if ($d[2] instanceof Abbreviator)
+                    $abbreviator = $d[2];
+                else if (isset($this->abbreviators[$d[3]]))
+                    $abbreviator = $this->abbreviators[$d[3]];
+                else
+                    continue;
+                if (($abbrs = $abbreviator->abbreviations_for($d[0], $d[2]))) {
                     foreach (is_string($abbrs) ? [$abbrs] : $abbrs as $abbr)
                         if (strcasecmp($abbr, $spat) === 0)
                             $matches[] = $i;
                 }
+            }
         }
 
         if (count($matches) > 1) {

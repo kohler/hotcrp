@@ -24,7 +24,7 @@ class ReviewFieldInfo {
     }
 }
 
-class ReviewField implements Abbreviatable, JsonSerializable {
+class ReviewField implements Abbreviator, JsonSerializable {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
@@ -221,6 +221,11 @@ class ReviewField implements Abbreviatable, JsonSerializable {
         $f = $this->option_letter ? count($this->options) : 1;
         $l = $this->option_letter ? 1 : count($this->options);
         return [$this->unparse_value($f), $this->unparse_value($l)];
+    }
+
+    function abbreviations_for($name, $data) {
+        assert($this === $data);
+        return $this->abbreviation();
     }
 
     function abbreviation() {

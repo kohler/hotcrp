@@ -140,8 +140,8 @@ function friendly_boolean($x) {
         return null;
 }
 
-interface Abbreviatable {
-    public function abbreviation();
+interface Abbreviator {
+    public function abbreviations_for($name, $data);
 }
 
 
