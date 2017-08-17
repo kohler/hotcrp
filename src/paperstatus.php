@@ -492,7 +492,7 @@ class PaperStatus extends MessageSet {
         // canonicalize option values to use IDs, not abbreviations
         $pj->options = (object) array();
         foreach ($options as $id => $oj) {
-            $omatches = $this->conf->paper_opts->search($id);
+            $omatches = $this->conf->paper_opts->find_all($id);
             if (count($omatches) != 1)
                 $pj->bad_options[$id] = true;
             else {

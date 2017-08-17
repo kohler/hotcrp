@@ -225,7 +225,7 @@ class PaperOptionList {
         return count($this->option_json_list());
     }
 
-    function search($name) {
+    function find_all($name) {
         $iname = strtolower($name);
         if ($iname === (string) DTYPE_SUBMISSION
             || $iname === "paper"
@@ -259,24 +259,23 @@ class PaperOptionList {
 
         // new style
         $omap = [];
-        foreach ($this->conf->field_search($name, Conf::FSRCH_OPTION) as $o)
-            if (!$o->nonpaper)
-                $omap[$o->id] = $o;
+        foreach ($this->conf->find_all_fields($name, Conf::FSRCH_OPTION) as $o)
+            $omap[$o->id] = $o;
 
         // check equivalence
-        if ($omap1 != $omap)
+        if ($omap1 != $omap && $omap1)
             error_log("{$this->conf->dbname}: different option search for $name, " . join(",", array_keys($omap1)) . " vs. " . join(",", array_keys($omap)));
 
         return $omap;
     }
 
     function find1($name) {
-        $omap = $this->search($name);
+        $omap = $this->find_all($name);
         reset($omap);
         return count($omap) == 1 ? current($omap) : null;
     }
 
-    function search_nonpaper($name) {
+    function find_all_nonpaper($name) {
         // old style
         $iname = strtolower($name);
         $oabbr = array();
@@ -304,18 +303,18 @@ class PaperOptionList {
                 }
         }
         $omap = [];
-        foreach ($this->nonpaper_am->search($name) as $o)
+        foreach ($this->nonpaper_am->find_all($name) as $o)
             $omap[$o->id] = $o;
 
         // check equivalence
-        if ($omap1 != $omap)
+        if ($omap1 != $omap && $omap1)
             error_log("{$this->conf->dbname}: different option search for $name, " . join(",", array_keys($omap1)) . " vs. " . join(",", array_keys($omap)));
 
         return $omap;
     }
 
     function find1_nonpaper($name) {
-        $omap = $this->search_nonpaper($name);
+        $omap = $this->find_all_nonpaper($name);
         reset($omap);
         return count($omap) == 1 ? current($omap) : null;
     }

@@ -810,7 +810,7 @@ class Conf {
         return $this->_defined_formulas;
     }
 
-    function named_formula_search($text) {
+    function find_named_formula($text) {
         return $this->abbrev_matcher()->find1($text, self::FSRCH_FORMULA);
     }
 
@@ -948,8 +948,8 @@ class Conf {
         return $this->_abbrev_matcher;
     }
 
-    function field_search($text, $tflags = 0) {
-        return $this->abbrev_matcher()->search($text, $tflags);
+    function find_all_fields($text, $tflags = 0) {
+        return $this->abbrev_matcher()->find_all($text, $tflags);
     }
 
 

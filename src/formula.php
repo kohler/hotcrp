@@ -1567,7 +1567,7 @@ class Formula {
             if (($quoted = $field[0] === "\""))
                 $field = substr($field, 1, strlen($field) - 2);
             while (1) {
-                $fs = $this->conf->field_search($field);
+                $fs = $this->conf->find_all_fields($field);
                 if (count($fs) === 1) {
                     $f = $fs[0];
                     if ($f instanceof PaperOption)

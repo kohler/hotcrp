@@ -1157,7 +1157,7 @@ class Review_SearchTerm extends SearchTerm {
     }
 
     static function review_field_factory($keyword, Conf $conf, $kwfj, $m) {
-        $f = $conf->field_search($keyword);
+        $f = $conf->find_all_fields($keyword);
         if (count($f) == 1 && $f[0] instanceof ReviewField)
             return (object) [
                 "name" => $keyword, "parser" => "Review_SearchTerm::parse_review_field",
@@ -1743,7 +1743,7 @@ class Option_SearchTerm extends SearchTerm {
         $this->om = $om;
     }
     static function parse_factory($keyword, Conf $conf, $kwfj, $m) {
-        $f = $conf->field_search($keyword);
+        $f = $conf->find_all_fields($keyword);
         if (count($f) == 1 && $f[0] instanceof PaperOption)
             return (object) [
                 "name" => $keyword, "parser" => "Option_SearchTerm::parse",
@@ -2745,7 +2745,7 @@ class PaperSearch {
         if (strcasecmp($oname, "none") === 0 || strcasecmp($oname, "any") === 0)
             $omatches = $conf->paper_opts->option_list();
         else
-            $omatches = $conf->field_search($oname, Conf::FSRCH_OPTION);
+            $omatches = $conf->find_all_fields($oname, Conf::FSRCH_OPTION);
         // Conf::msg_debugt(var_export($omatches, true));
         if (!empty($omatches)) {
             foreach ($omatches as $o) {

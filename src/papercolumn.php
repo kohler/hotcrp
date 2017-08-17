@@ -1731,12 +1731,11 @@ class Option_PaperColumnFactory extends PaperColumnFactory {
         } else if (strpos($name, ":") !== false)
             return null;
         $isrow = false;
-        $opts = $user->conf->paper_opts->search($name);
-        if (empty($opts) && str_ends_with($name, "-row")) {
+        if (str_ends_with($name, "-row")
+            && ($opts = $user->conf->paper_opts->find_all(substr($name, 0, -4))))
             $isrow = true;
-            $name = substr($name, 0, strlen($name) - 4);
-            $opts = $user->conf->paper_opts->search($name);
-        }
+        else
+            $opts = $user->conf->paper_opts->find_all($name);
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
@@ -1909,7 +1908,7 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
     function instantiate(Contact $user, $name, $errors) {
         if ($name === "formulas")
             return $this->all($user);
-        $ff = $user->conf->named_formula_search($name);
+        $ff = $user->conf->find_named_formula($name);
         if (!$ff && str_starts_with($name, "formula"))
             $ff = get($user->conf->named_formulas(), substr($name, 7));
         $ff = $ff ? : new Formula($name);

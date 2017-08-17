@@ -27,7 +27,7 @@ class Get_SearchAction extends SearchAction {
         }
     }
     function run(Contact $user, $qreq, $ssel) {
-        if (($opts = $user->conf->paper_opts->search($qreq->getfn))
+        if (($opts = $user->conf->paper_opts->find_all($qreq->getfn))
             && count($opts) == 1
             && ($o = current($opts))
             && $user->can_view_some_paper_option($o)) {
