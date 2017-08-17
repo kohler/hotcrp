@@ -147,7 +147,7 @@ class DocumentRequest {
         }
 
         if (!$want_path) {
-            $dtype_name = $conf->paper_opts->find($this->dtype)->dtype_name();
+            $dtype_name = $conf->paper_opts->find1($this->dtype)->dtype_name();
             if ($this->paperId < 0)
                 $this->req_filename = "[$dtype_name";
             else if ($this->dtype === DTYPE_SUBMISSION)

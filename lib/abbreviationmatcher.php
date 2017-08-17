@@ -224,11 +224,11 @@ class AbbreviationMatcher {
         }
     }
 
-    private function _find($pattern) {
+    private function _search($pattern) {
         if (empty($this->matches))
             $this->_analyze();
         // A call to Abbreviator::abbreviation_for() might call back in
-        // to AbbreviationMatcher::find(). Short-circuit that call.
+        // to AbbreviationMatcher::search(). Short-circuit that call.
         $this->matches[$pattern] = [];
 
         $spat = $upat = simplify_whitespace($pattern);
@@ -290,9 +290,9 @@ class AbbreviationMatcher {
         $this->matches[$pattern] = $matches;
     }
 
-    function find($pattern, $tflags = 0) {
+    function search($pattern, $tflags = 0) {
         if (!array_key_exists($pattern, $this->matches))
-            $this->_find($pattern);
+            $this->_search($pattern);
         $results = [];
         $last = $prio = false;
         foreach ($this->matches[$pattern] as $i) {
@@ -310,7 +310,7 @@ class AbbreviationMatcher {
     }
 
     function find1($pattern, $tflags = 0) {
-        $a = $this->find($pattern, $tflags);
+        $a = $this->search($pattern, $tflags);
         if (empty($a))
             return false;
         else if (count($a) == 1)
@@ -329,7 +329,7 @@ class AbbreviationMatcher {
             if ($last === $x)
                 continue;
             $last = $x;
-            $a = $this->find($x);
+            $a = $this->search($x);
             if (count($a) === 1 && $a[0] === $data)
                 return $x;
         }

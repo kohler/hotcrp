@@ -36,7 +36,7 @@ class HotCRPDocument extends Filer {
             return DTYPE_SUBMISSION;
         else if ($dname === "final")
             return DTYPE_FINAL;
-        else if (($o = $Conf->paper_opts->match($dname)))
+        else if (($o = $Conf->paper_opts->find1($dname)))
             return $o->id;
         else
             return null;

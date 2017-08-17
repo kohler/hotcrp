@@ -1589,7 +1589,7 @@ class Formula {
                     }
                     break;
                 }
-                $f = $this->conf->review_field_search($field);
+                $f = $this->conf->find_review_field($field);
                 if ($f) {
                     if (!$f->has_options)
                         return null;

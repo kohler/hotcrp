@@ -270,13 +270,13 @@ class PaperOptionList {
         return $omap;
     }
 
-    function match($name) {
+    function find1($name) {
         $omap = $this->search($name);
         reset($omap);
         return count($omap) == 1 ? current($omap) : null;
     }
 
-    function find_nonpaper($name) {
+    function search_nonpaper($name) {
         // old style
         $iname = strtolower($name);
         $oabbr = array();
@@ -304,7 +304,7 @@ class PaperOptionList {
                 }
         }
         $omap = [];
-        foreach ($this->nonpaper_am->find($name) as $o)
+        foreach ($this->nonpaper_am->search($name) as $o)
             $omap[$o->id] = $o;
 
         // check equivalence
@@ -315,7 +315,7 @@ class PaperOptionList {
     }
 
     function find1_nonpaper($name) {
-        $omap = $this->find_nonpaper($name);
+        $omap = $this->search_nonpaper($name);
         reset($omap);
         return count($omap) == 1 ? current($omap) : null;
     }

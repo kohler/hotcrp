@@ -949,7 +949,7 @@ class Conf {
     }
 
     function field_search($text, $tflags = 0) {
-        return $this->abbrev_matcher()->find($text, $tflags);
+        return $this->abbrev_matcher()->search($text, $tflags);
     }
 
 
@@ -974,7 +974,7 @@ class Conf {
         return $this->review_form()->field($fid);
     }
 
-    function review_field_search($text) {
+    function find_review_field($text) {
         return $this->abbrev_matcher()->find1($text, self::FSRCH_REVIEW);
     }
 

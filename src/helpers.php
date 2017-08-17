@@ -1085,7 +1085,7 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
         if ($val)
             $x .= "$var ";
         if (($sessionvar === "pldisplay" || $sessionvar === "pfdisplay")
-            && ($f = $Conf->review_field_search($var))
+            && ($f = $Conf->find_review_field($var))
             && $var !== $f->id)
             $x = str_replace(" {$f->id} ", " ", $x);
     }

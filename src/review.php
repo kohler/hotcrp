@@ -1519,7 +1519,7 @@ class ReviewValues extends MessageSet {
             } else if ($k === "version") {
                 if (is_int($v))
                     $this->req["version"] = $v;
-            } else if (($f = $this->conf->review_field_search($k))) {
+            } else if (($f = $this->conf->find_review_field($k))) {
                 if ((is_string($v) || is_int($v) || $v === null)
                     && !isset($this->req[$f->id]))
                     $this->req[$f->id] = $v;
@@ -1553,7 +1553,7 @@ class ReviewValues extends MessageSet {
                 $this->req["reviewFormat"] = cvtint($v);
             else if (isset($this->rf->fmap[$k]))
                 $this->req[$k] = $v;
-            else if (($f = $this->conf->review_field_search($k))
+            else if (($f = $this->conf->find_review_field($k))
                      && !isset($this->req[$f->id]))
                 $this->req[$f->id] = $v;
         }

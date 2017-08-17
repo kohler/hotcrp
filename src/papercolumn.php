@@ -1556,7 +1556,7 @@ class Score_PaperColumnFactory extends PaperColumnFactory {
             $fs = $user->conf->all_review_fields();
             $errors && ($errors->allow_empty = true);
         } else
-            $fs = [$user->conf->review_field_search($name)];
+            $fs = [$user->conf->find_review_field($name)];
         $fs = array_filter($fs, function ($f) { return $f && $f->has_options && $f->displayed; });
         return array_map(function ($f) { return new Score_PaperColumn($this->cj, $f); }, $fs);
     }
