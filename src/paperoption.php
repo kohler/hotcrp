@@ -123,7 +123,7 @@ class PaperOptionList {
     function _add_json($oj, $fixed) {
         if (is_string($oj->id) && is_numeric($oj->id))
             $oj->id = intval($oj->id);
-        if (is_int($oj->id) && !isset($this->jlist[$oj->id])
+        if (is_int($oj->id) && $oj->id > 0 && !isset($this->jlist[$oj->id])
             && ($oj->id >= PaperOption::MINFIXEDID) === $fixed
             && isset($oj->name) && is_string($oj->name)) {
             // ignore option if require_setting not satisfied
@@ -138,7 +138,7 @@ class PaperOptionList {
             return false;
     }
 
-    function option_json_list() {
+    private function option_json_list() {
         if ($this->jlist === null) {
             $this->jlist = $this->jmap = [];
             if (($olist = $this->conf->setting_json("options")))
@@ -219,10 +219,6 @@ class PaperOptionList {
 
     function count_option_list() {
         return count($this->option_json_list());
-    }
-
-    function get_document($id) {
-        return $this->get($id);
     }
 
     function search($name) {
