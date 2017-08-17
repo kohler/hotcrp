@@ -2737,12 +2737,12 @@ class PaperSearch {
             $ocompar = "=";
             $oval = "";
         }
-        $oname = strtolower(simplify_whitespace($oname));
+        $oname = simplify_whitespace($oname);
 
         // match all options
         $qo = $warn = array();
         $option_failure = false;
-        if ($oname === "none" || $oname === "any")
+        if (strcasecmp($oname, "none") === 0 || strcasecmp($oname, "any") === 0)
             $omatches = $conf->paper_opts->option_list();
         else
             $omatches = $conf->field_search($oname, Conf::FSRCH_OPTION);
@@ -2800,7 +2800,7 @@ class PaperSearch {
 
         if (empty($qo) && empty($warn))
             $warn[] = "“" . htmlspecialchars($word) . "” doesn’t match a submission option.";
-        return (object) array("os" => $qo, "warn" => $warn, "negate" => $oname === "none", "value_word" => $oval);
+        return (object) array("os" => $qo, "warn" => $warn, "negate" => strcasecmp($oname, "none") === 0, "value_word" => $oval);
     }
 
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {
