@@ -541,6 +541,10 @@ class PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
     }
 
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return null;
+    }
+
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         return null;
     }
@@ -549,8 +553,8 @@ class PaperOption {
         return true;
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return null;
+    function store_json($pj, PaperStatus $ps) {
+        return $this->parse_json($pj, $ps);
     }
 
     function parse_json($pj, PaperStatus $ps) {
@@ -604,16 +608,16 @@ class CheckboxPaperOption extends PaperOption {
         Ht::stash_script("jQuery('#opt{$this->id}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
-        return $qreq["opt$this->id"] > 0;
-    }
-
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
         return $ov->value ? true : false;
     }
 
-    function parse_json($pj, PaperStatus $ps) {
-        if (is_bool($pj))
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
+        return $qreq["opt$this->id"] > 0;
+    }
+
+    function store_json($pj, PaperStatus $ps) {
+        if (is_bool($pj) || $pj === null)
             return $pj ? 1 : null;
         $ps->error_at_option($this, "Option should be “true” or “false”.");
     }
@@ -684,9 +688,15 @@ class SelectorPaperOption extends PaperOption {
         echo "</div></div>\n\n";
     }
 
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return get($this->selector, $ov->value, null);
+    }
+
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         $v = trim((string) $qreq["opt$this->id"]);
-        if ($v !== "" && ctype_digit($v)) {
+        if ($v === "")
+            return null;
+        else if (ctype_digit($v)) {
             $iv = intval($v);
             if (isset($this->selector[$iv]))
                 return $this->selector[$iv];
@@ -694,15 +704,11 @@ class SelectorPaperOption extends PaperOption {
         return $v;
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return get($this->selector, $ov->value, null);
-    }
-
-    function parse_json($pj, PaperStatus $ps) {
+    function store_json($pj, PaperStatus $ps) {
         if (is_string($pj)
             && ($v = array_search($pj, $this->selector)) !== false)
             $pj = $v;
-        if (is_int($pj) && isset($this->selector[$pj]))
+        if ((is_int($pj) && isset($this->selector[$pj])) || $pj === null)
             return $pj;
         $ps->error_at_option($this, "Option doesn’t match any of the selectors.");
     }
@@ -765,6 +771,15 @@ class DocumentPaperOption extends PaperOption {
         echo "</div>\n\n";
     }
 
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        if (!$ov->value)
+            return null;
+        else if (($doc = $ps->document_to_json($this->id, $ov->value)))
+            return $doc;
+        else
+            return false;
+    }
+
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         if ($qreq->has_file("opt$this->id"))
             return DocumentInfo::make_file_upload($pj->pid, $this->id, $qreq->file("opt$this->id"));
@@ -787,21 +802,12 @@ class DocumentPaperOption extends PaperOption {
         return false;
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        if (!$ov->value)
-            return false;
-        else if (($doc = $ps->document_to_json($this->id, $ov->value)))
-            return $doc;
-        else
-            return null;
-    }
-
-    function parse_json($pj, PaperStatus $ps) {
+    function store_json($pj, PaperStatus $ps) {
         if (is_object($pj)) {
             $ps->upload_document($pj, $this);
             return $pj->docid;
-        }
-        $ps->error_at_option($this, "Option should be a document.");
+        } else if ($pj !== null)
+            $ps->error_at_option($this, "Option should be a document.");
     }
 
     function list_display($isrow) {
@@ -871,9 +877,15 @@ class NumericPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return $ov->value;
+    }
+
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         $v = trim((string) $qreq["opt$this->id"]);
-        if ($v !== "" && is_numeric($v)) {
+        if ($v === "")
+            return null;
+        else if (is_numeric($v)) {
             $iv = intval($v);
             if ((float) $iv === floatval($v))
                 return $iv;
@@ -881,14 +893,10 @@ class NumericPaperOption extends PaperOption {
         return $v;
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return $ov->value ? : false;
-    }
-
-    function parse_json($pj, PaperStatus $ps) {
+    function store_json($pj, PaperStatus $ps) {
         if (is_int($pj))
             return $pj;
-        else if ($pj === "" || $pj === null)
+        else if ($pj === null || $pj === false)
             return null;
         $ps->error_at_option($this, "Option should be an integer.");
     }
@@ -944,19 +952,21 @@ class TextPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
-        return trim((string) $qreq["opt$this->id"]);
-    }
-
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        $d = $ov->data();
-        return $d != "" ? $d : false;
+        $x = $ov->data();
+        return $x !== "" ? $x : null;
     }
 
-    function parse_json($pj, PaperStatus $ps) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
+        $x = trim((string) $qreq["opt$this->id"]);
+        return $x !== "" ? $x : null;
+    }
+
+    function store_json($pj, PaperStatus $ps) {
         if (is_string($pj))
-            return trim($pj) === "" ? null : [1, $pj];
-        $ps->error_at_option($this, "Option should be a string.");
+            return $pj === "" ? null : [1, $pj];
+        else if ($pj !== null)
+            $ps->error_at_option($this, "Option should be a string.");
     }
 
     private function unparse_html(PaperInfo $row, PaperOptionValue $ov, PaperList $pl = null) {
@@ -1059,6 +1069,14 @@ class AttachmentsPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        $attachments = array();
+        foreach ($ov->documents() as $doc)
+            if (($doc = $ps->document_to_json($this->id, $doc)))
+                $attachments[] = $doc;
+        return empty($attachments) ? null : $attachments;
+    }
+
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         $attachments = $opt_pj ? : [];
         $opfx = "opt{$this->id}_";
@@ -1071,18 +1089,10 @@ class AttachmentsPaperOption extends PaperOption {
                 array_splice($attachments, $i, 1);
                 --$i;
             }
-        return empty($attachments) ? false : $attachments;
+        return empty($attachments) ? null : $attachments;
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        $attachments = array();
-        foreach ($ov->documents() as $doc)
-            if (($doc = $ps->document_to_json($this->id, $doc)))
-                $attachments[] = $doc;
-        return empty($attachments) ? false : $attachments;
-    }
-
-    function parse_json($pj, PaperStatus $ps) {
+    function store_json($pj, PaperStatus $ps) {
         if (is_object($pj))
             $pj = [$pj];
         $result = [];

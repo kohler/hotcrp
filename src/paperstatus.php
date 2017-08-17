@@ -704,8 +704,8 @@ class PaperStatus extends MessageSet {
         foreach ($pj->options as $oid => $oj) {
             $o = $this->conf->paper_opts->find($oid);
             $result = null;
-            if ($oj !== null && $oj !== false)
-                $result = $o->parse_json($oj, $this);
+            if ($oj !== null)
+                $result = $o->store_json($oj, $this);
             if ($result === null || $result === false)
                 $result = [];
             if (!is_array($result))
