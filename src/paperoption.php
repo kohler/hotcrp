@@ -276,7 +276,7 @@ class PaperOptionList {
         return count($omap) == 1 ? current($omap) : null;
     }
 
-    function search_nonpaper($name) {
+    function find_nonpaper($name) {
         // old style
         $iname = strtolower($name);
         $oabbr = array();
@@ -314,8 +314,8 @@ class PaperOptionList {
         return $omap;
     }
 
-    function match_nonpaper($name) {
-        $omap = $this->search_nonpaper($name);
+    function find1_nonpaper($name) {
+        $omap = $this->find_nonpaper($name);
         reset($omap);
         return count($omap) == 1 ? current($omap) : null;
     }
