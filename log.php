@@ -489,6 +489,7 @@ foreach ($visible_rows as $row) {
     // } else
     //     $t .= "[None]";
 
+    $at = "";
     if (substr($act, 0, 6) === "Review"
         && preg_match('/\AReview (\d+)(.*)\z/s', $act, $m)) {
         $at = "<a href=\"" . hoturl("review", ["p" => $row->paperId, "r" => $m[1]]) . "\">Review " . $m[1] . "</a>";
@@ -510,13 +511,12 @@ foreach ($visible_rows as $row) {
             $act = $m[4];
         }
     } else if ($row->paperId > 0
-               && (substr($act, 0, 8) === "Updated " || substr($act, 0, 10) === "Submitted ")) {
+               && (substr($act, 0, 8) === "Updated " || substr($act, 0, 10) === "Submitted " || substr($act, 0, 11) === "Registered ")) {
         if (preg_match('/\A(\S+(?: final)?.* )(final|submission)(.*)\z/', $act, $m)) {
             $at = $m[1] . "<a href=\"" . hoturl("doc", "p={$row->paperId}&amp;dt={$m[2]}&amp;at={$row->timestamp}") . "\">{$m[2]}</a>";
             $act = $m[3];
         }
-    } else
-        $at = "";
+    }
     if (preg_match('/\A(.* |)\(papers ([\d, ]+)\)?\z/', $act, $m)) {
         $at .= htmlspecialchars($m[1])
             . " (<a href=\"" . hoturl("search", "t=all&amp;q=" . preg_replace('/[\s,]+/', "+", $m[2]))

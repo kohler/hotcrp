@@ -181,7 +181,10 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
         $actiontext = "Updated";
         $template = "@updatepaper";
     }
-    $difftext = $opj ? join(", ", array_keys($diffs)) : "";
+    if ($opj)
+        $difftext = join(", ", array_keys($diffs));
+    else // only mark submission
+        $difftext = join(", ", array_keys(array_intersect_keys($diffs, ["submission" => true, "final" => true])));
 
     // additional information
     $notes = array();

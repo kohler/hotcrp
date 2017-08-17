@@ -178,7 +178,7 @@ function document_history(PaperInfo $prow, $dtype) {
     }
 
     if ($Me->can_view_document_history($prow)) {
-        $result = $Conf->qe("select paperStorageId, paperId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $prow->paperId, $dtype);
+        $result = $prow->conf->qe("select paperStorageId, paperId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $prow->paperId, $dtype);
         while (($doc = DocumentInfo::fetch($result, $prow->conf, $prow))) {
             if (!get($actives, $doc->paperStorageId))
                 $pjs[] = document_history_element($doc);
@@ -186,7 +186,7 @@ function document_history(PaperInfo $prow, $dtype) {
         Dbl::free($result);
     }
 
-    return $pj;
+    return $pjs;
 }
 
 function document_download() {
@@ -226,7 +226,7 @@ function document_download() {
         $_GET["version"] = $_GET["hash"];
 
     // time
-    if (isset($_GET["at"])) {
+    if (isset($_GET["at"]) && !isset($_GET["version"])) {
         if (ctype_digit($_GET["at"]))
             $time = intval($_GET["at"]);
         else if (!($time = $Conf->parse_time($_GET["at"])))
