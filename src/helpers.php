@@ -647,7 +647,7 @@ function pluralize($what) {
         return "are";
     else if (str_ends_with($what, ")") && preg_match('/\A(.*?)(\s*\([^)]*\))\z/', $what, $m))
         return pluralize($m[1]) . $m[2];
-    else if (preg_match('/\A.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz][oy])\z/', $what)) {
+    else if (preg_match('/\A.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz]y)\z/', $what)) {
         if (substr($what, -1) == "y")
             return substr($what, 0, -1) . "ies";
         else
