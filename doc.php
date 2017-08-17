@@ -25,15 +25,6 @@ function document_error($status, $msg) {
     }
 }
 
-function make_document_history(DocumentInfo $doc) {
-    $pj = ["hash" => $doc->text_hash(), "at" => $doc->timestamp, "mimetype" => $doc->mimetype];
-    if ($doc->size)
-        $pj["size"] = $doc->size;
-    if ($doc->filename)
-        $pj["filename"] = $doc->filename;
-    return $pj;
-}
-
 // Determine the intended paper
 class DocumentRequest {
     public $paperId;
@@ -165,6 +156,39 @@ class DocumentRequest {
     }
 }
 
+function document_history_element(DocumentInfo $doc) {
+    $pj = ["hash" => $doc->text_hash(), "at" => $doc->timestamp, "mimetype" => $doc->mimetype];
+    if ($doc->size)
+        $pj["size"] = $doc->size;
+    if ($doc->filename)
+        $pj["filename"] = $doc->filename;
+    return (object) $pj;
+}
+
+function document_history(PaperInfo $prow, $dtype) {
+    global $Me;
+    $docs = $prow->documents($dtype);
+
+    $pjs = $actives = [];
+    foreach ($docs as $doc) {
+        $pj = document_history_element($doc);
+        $pj->active = true;
+        $actives[$doc->paperStorageId] = true;
+        $pjs[] = $pj;
+    }
+
+    if ($Me->can_view_document_history($prow)) {
+        $result = $Conf->qe("select paperStorageId, paperId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $prow->paperId, $dtype);
+        while (($doc = DocumentInfo::fetch($result, $prow->conf, $prow))) {
+            if (!get($actives, $doc->paperStorageId))
+                $pjs[] = document_history_element($doc);
+        }
+        Dbl::free($result);
+    }
+
+    return $pj;
+}
+
 function document_download() {
     global $Conf, $Me;
 
@@ -195,28 +219,30 @@ function document_download() {
     }
 
     // history
-    if (isset($_GET["fn"]) && $_GET["fn"] === "history") {
-        $docs = $prow->documents($dr->dtype);
+    if (isset($_GET["fn"]) && $_GET["fn"] === "history")
+        json_exit(["ok" => true, "result" => document_history($prow, $dr->dtype)]);
 
-        $pjs = $actives = [];
-        foreach ($docs as $doc) {
-            $pj = make_document_history($doc);
-            $pj["active"] = true;
-            $actives[$doc->paperStorageId] = true;
-            $pjs[] = $pj;
+    if (!isset($_GET["version"]) && isset($_GET["hash"]))
+        $_GET["version"] = $_GET["hash"];
+
+    // time
+    if (isset($_GET["at"])) {
+        if (ctype_digit($_GET["at"]))
+            $time = intval($_GET["at"]);
+        else if (!($time = $Conf->parse_time($_GET["at"])))
+            $time = $Now;
+        $want_pj = null;
+        foreach (document_history($prow, $dr->dtype) as $pj) {
+            if ($want_pj && $want_pj->at <= $time && $pj->at < $want_pj->at)
+                break;
+            else
+                $want_pj = $pj;
         }
-
-        if ($Me->can_view_document_history($prow)) {
-            $result = $Conf->qe("select paperStorageId, paperId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $dr->paperId, $dr->dtype);
-            while (($doc = DocumentInfo::fetch($result, $Conf, $prow))) {
-                if (!get($actives, $doc->paperStorageId))
-                    $pjs[] = make_document_history($doc);
-            }
-        }
-
-        json_exit(["ok" => true, "result" => $pjs]);
+        if ($want_pj)
+            $_GET["version"] = $want_pj->hash;
     }
 
+    // version
     $want_docid = $request_docid = 0;
     if (isset($_GET["version"])) {
         $version_hash = Filer::hash_as_binary(trim($_GET["version"]));

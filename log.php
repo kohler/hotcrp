@@ -509,6 +509,12 @@ foreach ($visible_rows as $row) {
                 . htmlspecialchars($m[2]) . "</a>" . htmlspecialchars($m[3]);
             $act = $m[4];
         }
+    } else if ($row->paperId > 0
+               && (substr($act, 0, 8) === "Updated " || substr($act, 0, 10) === "Submitted ")) {
+        if (preg_match('/\A(\S+(?: final)?.* )(final|submission)(.*)\z/', $act, $m)) {
+            $at = $m[1] . "<a href=\"" . hoturl("doc", "p={$row->paperId}&amp;dt={$m[2]}&amp;at={$row->timestamp}") . "\">{$m[2]}</a>";
+            $act = $m[3];
+        }
     } else
         $at = "";
     if (preg_match('/\A(.* |)\(papers ([\d, ]+)\)?\z/', $act, $m)) {
