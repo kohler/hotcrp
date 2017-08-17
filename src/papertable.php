@@ -593,9 +593,9 @@ class PaperTable {
         if (!$this->prow || $this->prow->size == 0)
             $flags |= PaperTable::ENABLESUBMIT;
         if ($this->canUploadFinal)
-            $this->echo_editable_document($this->conf->paper_opts->find_document(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
+            $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
         else
-            $this->echo_editable_document($this->conf->paper_opts->find_document(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0, $flags);
+            $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0, $flags);
         echo "</div>\n\n";
     }
 

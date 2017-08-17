@@ -1173,8 +1173,8 @@ class PaperList {
 
         // create render state
         $rstate = new PaperListRenderState($ncol, $titlecol, $skipcallout);
-        $this->_any_option_checks = [$this->conf->paper_opts->find_document(DTYPE_SUBMISSION),
-                                     $this->conf->paper_opts->find_document(DTYPE_FINAL)];
+        $this->_any_option_checks = [$this->conf->paper_opts->get(DTYPE_SUBMISSION),
+                                     $this->conf->paper_opts->get(DTYPE_FINAL)];
         foreach ($this->contact->user_option_list() as $o)
             if ($o->is_document())
                 $this->_any_option_checks[] = $o;

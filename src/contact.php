@@ -2221,7 +2221,7 @@ class Contact {
     }
 
     function can_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
-        if (!is_object($opt) && !($opt = $this->conf->paper_opts->find($opt)))
+        if (!is_object($opt) && !($opt = $this->conf->paper_opts->get($opt)))
             return false;
         if (!$this->can_view_paper($prow, $opt->has_document()))
             return false;
@@ -2252,7 +2252,7 @@ class Contact {
     function perm_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
         if ($this->can_view_paper_option($prow, $opt, $forceShow))
             return null;
-        if (!is_object($opt) && !($opt = $this->conf->paper_opts->find($opt)))
+        if (!is_object($opt) && !($opt = $this->conf->paper_opts->get($opt)))
             return $prow->initial_whynot();
         if (($whyNot = $this->perm_view_paper($prow, $opt->has_document())))
             return $whyNot;

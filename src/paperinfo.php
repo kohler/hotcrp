@@ -1284,7 +1284,7 @@ class PaperInfo {
         $paper_opts = $this->conf->paper_opts;
         $option_array = [];
         foreach ($this->_option_values as $oid => $ovalues)
-            if (($o = $paper_opts->find($oid, $all)))
+            if (($o = $paper_opts->get($oid, $all)))
                 $option_array[$oid] = new PaperOptionValue($this, $o, $ovalues, get($this->_option_data, $oid));
         uasort($option_array, function ($a, $b) {
             if ($a->option && $b->option)

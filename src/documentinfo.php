@@ -221,7 +221,7 @@ class DocumentInfo implements JsonSerializable {
         $small = ($flags & self::L_SMALL) != 0;
 
         if ($this->documentType == DTYPE_FINAL
-            || ($this->documentType > 0 && ($o = $this->conf->paper_opts->find($this->documentType)) && $o->final))
+            || ($this->documentType > 0 && ($o = $this->conf->paper_opts->get($this->documentType)) && $o->final))
             $suffix = "f";
         if ($this->documentType == DTYPE_FINAL && ($flags & self::L_FINALTITLE))
             $title = "Final version";

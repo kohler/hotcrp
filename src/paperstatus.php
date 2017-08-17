@@ -498,7 +498,8 @@ class PaperStatus extends MessageSet {
             else {
                 $o = current($omatches);
                 // XXX setting decision in JSON?
-                if ($o->final && (!$this->prow || $this->prow->outcome <= 0))
+                if (($o->final && (!$this->prow || $this->prow->outcome <= 0))
+                    || $o->id <= 0)
                     continue;
                 $oid = $o->id;
                 $pj->options->$oid = $oj;
@@ -702,7 +703,7 @@ class PaperStatus extends MessageSet {
     private function check_options($pj) {
         $pj->parsed_options = array();
         foreach ($pj->options as $oid => $oj) {
-            $o = $this->conf->paper_opts->find($oid);
+            $o = $this->conf->paper_opts->get($oid);
             $result = null;
             if ($oj !== null)
                 $result = $o->store_json($oj, $this);
@@ -895,9 +896,9 @@ class PaperStatus extends MessageSet {
 
         // store documents (options already stored)
         if (isset($pj->submission) && $pj->submission)
-            $this->upload_document($pj->submission, $this->conf->paper_opts->find_document(DTYPE_SUBMISSION));
+            $this->upload_document($pj->submission, $this->conf->paper_opts->get(DTYPE_SUBMISSION));
         if (isset($pj->final) && $pj->final)
-            $this->upload_document($pj->final, $this->conf->paper_opts->find_document(DTYPE_FINAL));
+            $this->upload_document($pj->final, $this->conf->paper_opts->get(DTYPE_FINAL));
 
         // create contacts
         foreach (self::contacts_array($pj) as $c) {

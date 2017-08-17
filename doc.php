@@ -66,7 +66,7 @@ class DocumentRequest {
             $this->dtype = DTYPE_FINAL;
         else
             $this->dtype = DTYPE_SUBMISSION;
-        $o = $conf->paper_opts->find_document($this->dtype);
+        $o = $conf->paper_opts->get($this->dtype);
 
         if (isset($req["attachment"]))
             $this->attachment = $req["attachment"];
@@ -169,7 +169,7 @@ function document_download() {
     $docid = null;
 
     if ($dr->dtype === null
-        || !($o = $Conf->paper_opts->find_document($dr->dtype))
+        || !($o = $Conf->paper_opts->get($dr->dtype))
         || $o->nonpaper !== ($dr->paperId < 0))
         document_error("404 Not Found", "No such document “" . htmlspecialchars($dr->req_filename) . "”.");
 

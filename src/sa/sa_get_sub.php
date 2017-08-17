@@ -49,7 +49,7 @@ class GetDocument_SearchAction extends SearchAction {
                 "Documents", $opt->id <= 0 ? pluralize($opt->name) : $opt->name];
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $opt = $user->conf->paper_opts->find_document($this->dt);
+        $opt = $user->conf->paper_opts->get($this->dt);
         if ($user->can_view_some_paper_option($opt) && $pl->has($opt->field_key()))
             $actions[] = self::make_option_action($opt);
     }
@@ -64,7 +64,7 @@ class GetDocument_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $downloads = $errors = [];
-        $opt = $user->conf->paper_opts->find_document($this->dt);
+        $opt = $user->conf->paper_opts->get($this->dt);
         foreach (PaperInfo::fetch_all($result, $user) as $row)
             if (($whyNot = $user->perm_view_paper_option($row, $opt, true)))
                 $errors[] = self::error_document($opt, $row, whyNotText($whyNot, "view"));

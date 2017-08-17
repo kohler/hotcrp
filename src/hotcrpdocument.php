@@ -16,7 +16,7 @@ class HotCRPDocument extends Filer {
         if ($this->dtype > 0 && $option)
             $this->option = $option;
         else
-            $this->option = $this->conf->paper_opts->find_document($dtype);
+            $this->option = $this->conf->paper_opts->get($dtype);
     }
 
     function set_no_database_storage() {
@@ -49,7 +49,7 @@ class HotCRPDocument extends Filer {
         else if ($doc->documentType == DTYPE_FINAL)
             $fn .= "final" . $doc->paperId;
         else {
-            $o = $doc->conf->paper_opts->find($doc->documentType);
+            $o = $doc->conf->paper_opts->get($doc->documentType);
             if ($o && $o->nonpaper && $doc->paperId < 0) {
                 $fn .= $o->dtype_name();
                 $oabbr = "";

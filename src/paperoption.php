@@ -105,19 +105,13 @@ class PaperOptionList {
     private $jmap = [];
     private $list = null;
     private $nonfixed_list = null;
-    private $docmap;
+    private $osubmission;
+    private $ofinal;
 
-    function __construct($conf) {
-        global $Conf;
-        $this->conf = $conf ? : $Conf;
-        $this->init_docmap();
-    }
-
-    private function init_docmap() {
-        $this->docmap = [
-            DTYPE_SUBMISSION => new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "message_name" => "submission", "abbr" => "paper", "type" => null, "position" => 0], $this->conf),
-            DTYPE_FINAL => new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "message_name" => "final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0], $this->conf)
-        ];
+    function __construct(Conf $conf) {
+        $this->conf = $conf;
+        $this->osubmission = new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "message_name" => "submission", "abbr" => "paper", "type" => null, "position" => 0], $this->conf);
+        $this->ofinal = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "message_name" => "final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
     }
 
     private function check_require_setting($require_setting) {
@@ -164,8 +158,15 @@ class PaperOptionList {
         return $m;
     }
 
-    function find($id, $force = false) {
-        if (array_key_exists($id, $this->jmap))
+    function get($id, $force = false) {
+        if ($id <= 0) {
+            if ($id == DTYPE_SUBMISSION)
+                return $this->osubmission;
+            else if ($id == DTYPE_FINAL)
+                return $this->ofinal;
+            else
+                return null;
+        } else if (array_key_exists($id, $this->jmap))
             $o = $this->jmap[$id];
         else {
             $o = null;
@@ -185,7 +186,7 @@ class PaperOptionList {
             $this->list = [];
             foreach ($this->option_json_list() as $id => $oj)
                 if (!get($oj, "nonpaper")
-                    && ($o = $this->find($id)) && !$o->nonpaper)
+                    && ($o = $this->get($id)) && !$o->nonpaper)
                     $this->list[$id] = $o;
         }
         return $this->list;
@@ -196,7 +197,7 @@ class PaperOptionList {
             $this->nonfixed_list = [];
             foreach ($this->option_json_list() as $id => $oj)
                 if ($id < PaperOption::MINFIXEDID && !get($oj, "nonpaper")
-                    && ($o = $this->find($id)) && !$o->nonpaper)
+                    && ($o = $this->get($id)) && !$o->nonpaper)
                     $this->nonfixed_list[$id] = $o;
         }
         return $this->nonfixed_list;
@@ -206,7 +207,7 @@ class PaperOptionList {
         $list = [];
         foreach ($this->option_json_list() as $id => $oj)
             if (!get($oj, "nonpaper") && !get($oj, "final")
-                && ($o = $this->find($id)) && !$o->nonpaper && !$o->final)
+                && ($o = $this->get($id)) && !$o->nonpaper && !$o->final)
                 $list[$id] = $o;
         return $list;
     }
@@ -214,17 +215,14 @@ class PaperOptionList {
     function invalidate_option_list() {
         $this->jlist = $this->list = $this->nonfixed_list = null;
         $this->jmap = [];
-        $this->init_docmap();
     }
 
     function count_option_list() {
         return count($this->option_json_list());
     }
 
-    function find_document($id) {
-        if (!array_key_exists($id, $this->docmap))
-            $this->docmap[$id] = $this->find($id);
-        return $this->docmap[$id];
+    function get_document($id) {
+        return $this->get($id);
     }
 
     function search($name) {
@@ -232,10 +230,10 @@ class PaperOptionList {
         if ($name === (string) DTYPE_SUBMISSION
             || $name === "paper"
             || $name === "submission")
-            return array(DTYPE_SUBMISSION => $this->find_document(DTYPE_SUBMISSION));
+            return array(DTYPE_SUBMISSION => $this->get(DTYPE_SUBMISSION));
         else if ($name === (string) DTYPE_FINAL
                  || $name === "final")
-            return array(DTYPE_FINAL => $this->find_document(DTYPE_FINAL));
+            return array(DTYPE_FINAL => $this->get(DTYPE_FINAL));
         if ($name === "" || $name === "none")
             return array();
         if ($name === "any")
@@ -252,7 +250,7 @@ class PaperOptionList {
         $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
         $omap = [];
         foreach ($oabbr as $id => $x)
-            if (($o = $this->find($id)) && !$o->nonpaper)
+            if (($o = $this->get($id)) && !$o->nonpaper)
                 $omap[$id] = $o;
         return $omap;
     }
@@ -275,7 +273,7 @@ class PaperOptionList {
         $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
         $omap = [];
         foreach ($oabbr as $id => $x)
-            if (($o = $this->find($id)) && $o->nonpaper)
+            if (($o = $this->get($id)) && $o->nonpaper)
                 $omap[$id] = $o;
         return $omap;
     }

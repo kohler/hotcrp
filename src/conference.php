@@ -607,7 +607,7 @@ class Conf {
 
     function format_spec($dtype) {
         if (!isset($this->_formatspec_cache[$dtype])) {
-            $o = $this->paper_opts->find_document($dtype);
+            $o = $this->paper_opts->get($dtype);
             $spec = $o ? $o->format_spec() : null;
             $this->_formatspec_cache[$dtype] = $spec ? : new FormatSpec;
         }
@@ -926,11 +926,11 @@ class Conf {
     function abbrev_matcher() {
         if (!$this->_abbrev_matcher) {
             $this->_abbrev_matcher = new AbbreviationMatcher;
-            $this->_abbrev_matcher->add("paper", $this->paper_opts->find_document(DTYPE_SUBMISSION), self::FSRCH_OPTION);
-            $this->_abbrev_matcher->add("submission", $this->paper_opts->find_document(DTYPE_SUBMISSION), self::FSRCH_OPTION);
+            $this->_abbrev_matcher->add("paper", $this->paper_opts->get(DTYPE_SUBMISSION), self::FSRCH_OPTION);
+            $this->_abbrev_matcher->add("submission", $this->paper_opts->get(DTYPE_SUBMISSION), self::FSRCH_OPTION);
             if ($this->has_any_accepts()) {
                 $ol = $this->paper_opts->option_list();
-                $this->_abbrev_matcher->add("final", $this->paper_opts->find_document(DTYPE_FINAL), self::FSRCH_OPTION);
+                $this->_abbrev_matcher->add("final", $this->paper_opts->get(DTYPE_FINAL), self::FSRCH_OPTION);
             } else
                 $ol = $this->paper_opts->nonfinal_option_list();
             // XXX exposes invisible paper options, review fields
@@ -2222,7 +2222,7 @@ class Conf {
             $doc->filename = HotCRPDocument::filename($doc);
         $downloadname = false;
         if (count($docs) > 1) {
-            $o = $this->paper_opts->find_document($docs[0]->documentType);
+            $o = $this->paper_opts->get($docs[0]->documentType);
             $name = $o->dtype_name();
             if ($docs[0]->documentType <= 0)
                 $name = pluralize($name);
