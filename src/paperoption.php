@@ -554,10 +554,6 @@ class PaperOption {
     }
 
     function store_json($pj, PaperStatus $ps) {
-        return $this->parse_json($pj, $ps);
-    }
-
-    function parse_json($pj, PaperStatus $ps) {
         return null;
     }
 
