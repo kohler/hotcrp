@@ -101,10 +101,11 @@ class PaperOptionValue {
 
 class PaperOptionList {
     private $conf;
-    private $jlist = null;
+    private $jlist;
     private $jmap = [];
-    private $list = null;
-    private $nonfixed_list = null;
+    private $list;
+    private $nonfinal_list;
+    private $nonpaper_am;
     private $osubmission;
     private $ofinal;
 
@@ -186,34 +187,37 @@ class PaperOptionList {
             $this->list = [];
             foreach ($this->option_json_list() as $id => $oj)
                 if (!get($oj, "nonpaper")
-                    && ($o = $this->get($id)) && !$o->nonpaper)
+                    && ($o = $this->get($id))) {
+                    assert(!$o->nonpaper);
                     $this->list[$id] = $o;
+                }
         }
         return $this->list;
     }
 
     function nonfixed_option_list() {
-        if ($this->nonfixed_list === null) {
-            $this->nonfixed_list = [];
-            foreach ($this->option_json_list() as $id => $oj)
-                if ($id < PaperOption::MINFIXEDID && !get($oj, "nonpaper")
-                    && ($o = $this->get($id)) && !$o->nonpaper)
-                    $this->nonfixed_list[$id] = $o;
-        }
-        return $this->nonfixed_list;
+        return array_filter($this->option_list(), function ($o) {
+            return $o->id < PaperOption::MINFIXEDID;
+        });
     }
 
     function nonfinal_option_list() {
-        $list = [];
-        foreach ($this->option_json_list() as $id => $oj)
-            if (!get($oj, "nonpaper") && !get($oj, "final")
-                && ($o = $this->get($id)) && !$o->nonpaper && !$o->final)
-                $list[$id] = $o;
-        return $list;
+        if ($this->nonfinal_list === null) {
+            $this->nonfinal_list = [];
+            foreach ($this->option_json_list() as $id => $oj)
+                if (!get($oj, "nonpaper")
+                    && !get($oj, "final")
+                    && ($o = $this->get($id))
+                    && !$o->final) {
+                    assert(!$o->nonpaper);
+                    $this->nonfinal_list[$id] = $o;
+                }
+        }
+        return $this->nonfinal_list;
     }
 
     function invalidate_option_list() {
-        $this->jlist = $this->list = $this->nonfixed_list = null;
+        $this->jlist = $this->list = $this->nonfinal_list = $this->nonpaper_am = null;
         $this->jmap = [];
     }
 
@@ -289,10 +293,19 @@ class PaperOptionList {
                 $omap1[$id] = $o;
 
         // new style
+        if (!$this->nonpaper_am) {
+            $this->nonpaper_am = new AbbreviationMatcher;
+            foreach ($this->option_json_list() as $id => $oj)
+                if (get($oj, "nonpaper")
+                    && ($o = $this->get($id))) {
+                    assert($o->nonpaper);
+                    $this->nonpaper_am->add($o->name, $o);
+                    $this->nonpaper_am->add("opt$o->id", $o, 0, 1);
+                }
+        }
         $omap = [];
-        foreach ($this->conf->field_search($name, Conf::FSRCH_OPTION) as $o)
-            if ($o->nonpaper)
-                $omap[$o->id] = $o;
+        foreach ($this->nonpaper_am->find($name) as $o)
+            $omap[$o->id] = $o;
 
         // check equivalence
         if ($omap1 != $omap)
