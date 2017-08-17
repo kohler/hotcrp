@@ -58,15 +58,12 @@ class DocumentRequest {
         else
             $want_path = true;
 
-        if (isset($req["dt"])) {
-            $this->dtype = HotCRPDocument::parse_dtype($req["dt"]);
-            if (!$this->dtype)
-                document_error("404 Not Found", "No such document [document type " . htmlspecialchars($req["dt"]) . "].");
-        } else if (isset($req["final"]))
-            $this->dtype = DTYPE_FINAL;
-        else
-            $this->dtype = DTYPE_SUBMISSION;
-        $o = $conf->paper_opts->get($this->dtype);
+        $dtname = null;
+        $base_dtname = "paper";
+        if (isset($req["dt"]))
+            $dtname = $req["dt"];
+        else if (isset($req["final"]))
+            $base_dtname = "final";
 
         if (isset($req["attachment"]))
             $this->attachment = $req["attachment"];
@@ -107,38 +104,50 @@ class DocumentRequest {
                     $this->attachment = $m[2];
             } else
                 document_error("404 Not Found", "No such document " . htmlspecialchars($this->req_filename) . ".");
+        }
 
-            $this->dtype = null;
-            if ((string) $dtname === "")
-                $dtname = $base_dtname;
-            while ((string) $dtname !== "" && $this->dtype === null) {
-                if ($this->paperId < 0)
-                    $this->dtype = $conf->paper_opts->match_nonpaper($dtname);
-                else
-                    $this->dtype = HotCRPDocument::parse_dtype($dtname);
-                if ($this->dtype !== null) {
-                    $dtname = "";
+        $this->dtype = null;
+        if ((string) $dtname === "")
+            $dtname = $base_dtname;
+        while ((string) $dtname !== "" && $this->dtype === null) {
+            if ($this->paperId < 0)
+                $this->dtype = $conf->paper_opts->match_nonpaper($dtname);
+            else
+                $this->dtype = HotCRPDocument::parse_dtype($dtname);
+            if ($this->dtype !== null) {
+                $dtname = "";
+                break;
+            }
+            $filter = null;
+            foreach (FileFilter::all_by_name() as $ff)
+                if (str_ends_with($dtname, "-" . $ff->name) || $dtname === $ff->name) {
+                    $filter = $ff;
                     break;
                 }
-                $filter = null;
-                foreach (FileFilter::all_by_name() as $ff)
-                    if (str_ends_with($dtname, "-" . $ff->name) || $dtname === $ff->name) {
-                        $filter = $ff;
-                        break;
-                    }
-                if (!$filter)
-                    break;
-                array_unshift($this->filters, $filter);
-                $dtname = substr($dtname, 0, strlen($dtname) - strlen($ff->name));
-                if (str_ends_with($dtname, "-"))
-                    $dtname = substr($dtname, 0, strlen($dtname) - 1);
-            }
-            if (is_object($this->dtype))
-                $this->dtype = $this->dtype->id;
-            if ((string) $dtname !== "")
-                document_error("404 Not Found", "No such document " . htmlspecialchars($this->req_filename) . " (parse error at " . htmlspecialchars($dtname) . ").");
-        } else {
-            $dtype_name = $o->dtype_name();
+            if (!$filter)
+                break;
+            array_unshift($this->filters, $filter);
+            $dtname = substr($dtname, 0, strlen($dtname) - strlen($ff->name));
+            if (str_ends_with($dtname, "-"))
+                $dtname = substr($dtname, 0, strlen($dtname) - 1);
+        }
+        if (is_object($this->dtype))
+            $this->dtype = $this->dtype->id;
+        if ((string) $dtname !== "")
+            document_error("404 Not Found", "No such document type “" . htmlspecialchars($dtname) . "”.");
+
+        if (isset($req["filter"])) {
+            foreach (explode(" ", $req["filter"]) as $filtername)
+                if ($filtername !== "") {
+                    if (($filter = FileFilter::find_by_name($filtername)))
+                        $this->filters[] = $filter;
+                    else
+                        document_error("404 Not Found", "No such filter “" . htmlspecialchars($filter) . "”.");
+                }
+        }
+
+        if (!$want_path) {
+            $dtype_name = $conf->paper_opts->find($this->dtype)->dtype_name();
             if ($this->paperId < 0)
                 $this->req_filename = "[$dtype_name";
             else if ($this->dtype === DTYPE_SUBMISSION)
@@ -150,16 +159,6 @@ class DocumentRequest {
             if ($this->attachment)
                 $this->req_filename .= " attachment " . $this->attachment;
             $this->req_filename .= "]";
-        }
-
-        if (isset($req["filter"])) {
-            foreach (explode(" ", $req["filter"]) as $filtername)
-                if ($filtername !== "") {
-                    if (($filter = FileFilter::find_by_name($filtername)))
-                        $this->filters[] = $filter;
-                    else
-                        document_error("404 Not Found", "No such document " . htmlspecialchars($this->req_filename) . " (no such filter " . htmlspecialchars($filter) . ").");
-                }
         }
 
         return true;
