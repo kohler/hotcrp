@@ -199,9 +199,7 @@ class Default_PaperSaver extends PaperSaver {
             && !get($pj1, "nonblind") !== !get($pj2, "nonblind"))
             $diffs["nonblind"] = true;
 
-        $pcc1 = self::json_encode_nonempty(get($pj1, "pc_conflicts"));
-        $pcc2 = self::json_encode_nonempty(get($pj2, "pc_conflicts"));
-        if ($pcc1 !== $pcc2)
+        if (self::pc_conflicts($pj1, $user) !== self::pc_conflicts($pj2, $user))
             $diffs["pc_conflicts"] = true;
 
         if (json_encode(get($pj1, "submission")) !== json_encode(get($pj2, "submission")))
@@ -237,6 +235,17 @@ class Default_PaperSaver extends PaperSaver {
                 $c[strtolower($au->email)] = true;
         ksort($c);
         return array_keys($c);
+    }
+
+    private function pc_conflicts($pj, Contact $user) {
+        $c = [];
+        foreach (get($pj, "pc_conflicts") as $e => $t)
+            $c[strtolower($e)] = $t;
+        foreach (self::contact_emails($pj) as $e)
+            if ($user->conf->pc_member_by_email($e))
+                $c[$e] = "author";
+        ksort($c);
+        return $c;
     }
 }
 
