@@ -239,7 +239,7 @@ class Default_PaperSaver extends PaperSaver {
 
     private function pc_conflicts($pj, Contact $user) {
         $c = [];
-        foreach (get($pj, "pc_conflicts") as $e => $t)
+        foreach (get($pj, "pc_conflicts", []) as $e => $t)
             $c[strtolower($e)] = $t;
         foreach (self::contact_emails($pj) as $e)
             if ($user->conf->pc_member_by_email($e))
