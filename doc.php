@@ -84,21 +84,27 @@ class DocumentRequest {
                 else if (preg_match(',\A([^/]+)/+(.*)\z,', $m[2], $mm)) {
                     $dtname = $mm[1];
                     $this->attachment = $mm[2];
-                }
+                } else if (isset($req["dt"]))
+                    $dtname = $req["dt"];
             } else if (preg_match(',\A(p|paper|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^/]+|/+(.*))\z,', $s, $m)) {
                 $this->paperId = intval($m[2]);
                 $dtname = $m[3];
-                $this->attachment = get($m, 4);
+                if ($dtname === "" && $m[1] === "" && isset($req["dt"]))
+                    $dtname = $req["dt"];
+                if (isset($m[4]))
+                    $this->attachment = $m[4];
                 if ($m[1] === "final")
                     $base_dtname = "final";
             } else if (preg_match(',\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^/]+|/+(.*))\z,', $s, $m)) {
                 $this->paperId = intval($m[2]);
                 $dtname = $m[1];
-                $this->attachment = get($m, 3);
+                if (isset($m[3]))
+                    $this->attachment = $m[3];
             } else if (preg_match(',\A([^/]+?)(?:|\.[^/]+|/+(.*)|)\z,', $s, $m)) {
                 $this->paperId = -2;
                 $dtname = $m[1];
-                $this->attachment = get($m, 2);
+                if (isset($m[2]))
+                    $this->attachment = $m[2];
             } else
                 document_error("404 Not Found", "No such document " . htmlspecialchars($this->req_filename) . ".");
 
