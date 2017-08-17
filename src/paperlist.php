@@ -93,7 +93,7 @@ class PaperList {
     public $conf;
     public $contact;
     public $sorters = [];
-    private $_columns_by_name = [];
+    private $_columns_by_name;
     public $scoresOk = false;
     public $search;
     public $tagger;
@@ -191,6 +191,8 @@ class PaperList {
             && get($this->_view_fields, "au")
             && get($this->_view_fields, "anonau") === null)
             $this->_view_fields["anonau"] = true;
+
+        $this->_columns_by_name = ["anonau" => null, "aufull" => null, "rownum" => null, "statistics" => null];
     }
 
     function set_table_id_class($table_id, $table_class, $row_id_pattern = null) {
