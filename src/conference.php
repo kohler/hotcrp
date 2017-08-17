@@ -2223,7 +2223,7 @@ class Conf {
         $downloadname = false;
         if (count($docs) > 1) {
             $o = $this->paper_opts->find_document($docs[0]->documentType);
-            $name = $o->abbreviation();
+            $name = $o->dtype_name();
             if ($docs[0]->documentType <= 0)
                 $name = pluralize($name);
             $downloadname = $this->download_prefix . "$name.zip";

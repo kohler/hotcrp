@@ -425,9 +425,11 @@ class PaperOption {
     function abbreviation() {
         return $this->abbr;
     }
-
     function field_key() {
         return $this->id <= 0 ? $this->abbr : "opt" . $this->id;
+    }
+    function dtype_name() {
+        return $this->abbr;
     }
 
     function display() {

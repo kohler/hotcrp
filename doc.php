@@ -132,7 +132,7 @@ class DocumentRequest {
             if ((string) $dtname !== "")
                 document_error("404 Not Found", "No such document " . htmlspecialchars($this->req_filename) . " (parse error at " . htmlspecialchars($dtname) . ").");
         } else {
-            $dtype_name = $o->abbreviation();
+            $dtype_name = $o->dtype_name();
             if ($this->paperId < 0)
                 $this->req_filename = "[$dtype_name";
             else if ($this->dtype === DTYPE_SUBMISSION)

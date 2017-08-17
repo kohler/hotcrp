@@ -51,11 +51,11 @@ class HotCRPDocument extends Filer {
         else {
             $o = $doc->conf->paper_opts->find($doc->documentType);
             if ($o && $o->nonpaper && $doc->paperId < 0) {
-                $fn .= $o->abbreviation();
+                $fn .= $o->dtype_name();
                 $oabbr = "";
             } else {
                 $fn .= "paper" . $doc->paperId;
-                $oabbr = $o ? "-" . $o->abbreviation() : "-unknown";
+                $oabbr = $o ? "-" . $o->dtype_name() : "-unknown";
             }
             if ($o && $o->has_attachments()
                 && ($afn = $doc->unique_filename ? : $doc->filename))

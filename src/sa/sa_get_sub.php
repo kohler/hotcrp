@@ -45,7 +45,7 @@ class GetDocument_SearchAction extends SearchAction {
     }
     static function make_option_action(PaperOption $opt) {
         return [$opt->position + ($opt->final ? 0 : 100),
-                $opt->abbreviation(),
+                $opt->dtype_name(),
                 "Documents", $opt->id <= 0 ? pluralize($opt->name) : $opt->name];
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
