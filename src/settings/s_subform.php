@@ -531,8 +531,8 @@ class Option_SettingParser extends SettingParser {
         $name = simplify_whitespace(get($sv->req, "optn_$xpos", ""));
         if ($name === "" || $name === "New option" || $name === "(Enter new option)")
             return null;
-        if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-: ]?\d+)\z/i', $name))
-            $sv->error_at("optn_$xpos", "Option name “" . htmlspecialchars($name) . "” is reserved.");
+        if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $name))
+            $sv->error_at("optn_$xpos", "Option name “" . htmlspecialchars($name) . "” is reserved. Please pick another name.");
 
         $id = cvtint(get($sv->req, "optid_$xpos", "new"));
         $is_new = $id < 0;
@@ -598,17 +598,6 @@ class Option_SettingParser extends SettingParser {
                 unset($new_opts[cvtint(get($sv->req, "optid_$i"))]);
             else if (($o = $this->option_request_to_json($sv, $i)))
                 $new_opts[$o->id] = $o;
-        }
-
-        // check abbreviations
-        $optabbrs = array();
-        foreach ($new_opts as $id => $o) {
-            if (preg_match('/\Aopt\d+\z/', $o->abbr))
-                $sv->error_at("optn_$o->req_xpos", "Option name “" . htmlspecialchars($o->name) . "” is reserved. Please pick another option name.");
-            else if (get($optabbrs, $o->abbr))
-                $sv->error_at("optn_$o->req_xpos", "Multiple options abbreviate to “{$o->abbr}”. Please pick option names that abbreviate uniquely.");
-            else
-                $optabbrs[$o->abbr] = $o;
         }
 
         if (!$sv->has_error()) {
