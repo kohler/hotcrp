@@ -18,7 +18,7 @@
 // matches take priority over deaccented matches (so subject “élan” is a higher
 // priority match for pattern “élan”).
 
-class AbbreviationMatchClass {
+class AbbreviationMatchTracker {
     private $isu;
     private $pattern;
     private $dpattern;
@@ -28,6 +28,8 @@ class AbbreviationMatchClass {
     private $is_camel_word;
     private $has_star;
     private $camelwords;
+    private $mclass = 1;
+    private $matches = [];
 
     function __construct($pattern, $isu = null) {
         if ($isu === null)
@@ -112,7 +114,7 @@ class AbbreviationMatchClass {
         } else
             return 0;
     }
-    function mclass($subject, $sisu = null, $mclass = 0) {
+    private function mclass($subject, $sisu = null) {
         if ($sisu === null)
             $sisu = !!preg_match('/[\x80-\xFF]/', $subject);
 
@@ -120,56 +122,70 @@ class AbbreviationMatchClass {
             if ($this->pattern === $subject)
                 return 9;
 
-            if ($mclass < 9) {
+            if ($this->mclass < 9) {
                 $dsubject = AbbreviationMatcher::dedash($subject);
                 if ($this->dpattern === $dsubject)
                     return 8;
             }
 
-            if ($mclass < 7) {
+            if ($this->mclass < 7) {
                 if (!$this->imatchre)
                     $this->imatchre = '{\A' . preg_quote($this->dpattern) . '\z}iu';
                 if (preg_match($this->imatchre, $dsubject))
                     return 7;
             }
 
-            if ($mclass < 7) {
+            if ($this->mclass < 7) {
                 $s = $this->wmatch_score($this->dpattern, $dsubject, "iu");
                 if ($s)
                     return 6 + $s;
             }
         }
 
-        if ($mclass < 6) {
+        if ($this->mclass < 6) {
             $usubject = $sisu ? UnicodeHelper::deaccent($subject) : $subject;
             if ($this->upattern === $usubject)
                 return 5;
         }
 
-        if ($mclass < 5) {
+        if ($this->mclass < 5) {
             $dusubject = AbbreviationMatcher::dedash($usubject);
             if ($this->dupattern === $dusubject)
                 return 4;
         }
 
-        if ($mclass < 4) {
+        if ($this->mclass < 4) {
             if (strcasecmp($this->dupattern, $dusubject) === 0)
                 return 3;
         }
 
-        if ($mclass < 3) {
+        if ($this->mclass < 3) {
             $s = $this->wmatch_score($this->dupattern, $dusubject, "i");
             if ($s)
                 return 2 + $s;
         }
 
-        if ($mclass < 2 && $this->is_camel_word) {
+        if ($this->mclass < 2 && $this->is_camel_word) {
             $s = $this->camel_wmatch_score($dusubject);
             if ($s)
                 return 1 + $s;
         }
 
         return 0;
+    }
+
+    function check($subject, $data, $sisu = null) {
+        $mclass = $this->mclass($subject, $sisu);
+        if ($mclass > $this->mclass) {
+            $this->mclass = $mclass;
+            $this->matches = [$data];
+        } else if ($mclass == $this->mclass
+                   && $this->matches[count($this->matches) - 1] !== $data)
+            $this->matches[] = $data;
+    }
+
+    function matches() {
+        return $this->matches;
     }
 }
 
@@ -241,7 +257,18 @@ class AbbreviationMatcher {
                 $matches[] = $i;
         }
 
+        if (count($matches) > 1) {
+            $amt = new AbbreviationMatchTracker($spat, $sisu);
+            foreach ($matches as $i) {
+                $d = $this->data[$i];
+                $amt->check($d[0], $i, strlen($d[0]) !== strlen($d[1]));
+            }
+            $matches = $amt->matches();
+        }
+
         if (empty($matches)) {
+            $last_abbreviator = $last_value = null;
+            $amt = new AbbreviationMatchTracker($spat, $sisu);
             foreach ($this->data as $i => $d) {
                 if ($d[2] instanceof Abbreviator)
                     $abbreviator = $d[2];
@@ -249,29 +276,15 @@ class AbbreviationMatcher {
                     $abbreviator = $this->abbreviators[$d[3]];
                 else
                     continue;
-                if (($abbrs = $abbreviator->abbreviations_for($d[0], $d[2]))) {
+                if ($last_abbreviator === $abbreviator && $last_value === $d[2])
+                    continue;
+                $last_abbreviator = $abbreviator;
+                $last_value = $d[2];
+                if (($abbrs = $abbreviator->abbreviations_for($d[0], $d[2])))
                     foreach (is_string($abbrs) ? [$abbrs] : $abbrs as $abbr)
-                        if (strcasecmp($abbr, $spat) === 0)
-                            $matches[] = $i;
-                }
+                        $amt->check($abbr, $i);
             }
-        }
-
-        if (count($matches) > 1) {
-            $xmatches = [];
-            $amc = new AbbreviationMatchClass($spat, $sisu);
-            $mclass = 1.0;
-            foreach ($matches as $i) {
-                $d = $this->data[$i];
-                $dclass = $amc->mclass($d[0], strlen($d[0]) !== strlen($d[1]),
-                                       $mclass);
-                if ($dclass > $mclass) {
-                    $xmatches = [$i];
-                    $mclass = $dclass;
-                } else if ($dclass >= $mclass)
-                    $xmatches[] = $i;
-            }
-            $matches = $xmatches;
+            $matches = $amt->matches();
         }
 
         $this->matches[$pattern] = $matches;
