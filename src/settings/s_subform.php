@@ -325,9 +325,9 @@ class SettingRenderer_SubForm extends SettingRenderer {
         }
 
         echo '<hr class="c" /><div class="f-i"><div class="f-e">',
-            Ht::button("Move up", ["class" => "settings_opt_moveup"]),
-            Ht::button("Move down", ["class" => "settings_opt_movedown", "style" => "margin-left: 1em"]),
-            Ht::button($delete_text, ["class" => "settings_opt_delete", "style" => "margin-left: 1em"]),
+            Ht::button("Move up", ["class" => "btn settings_opt_moveup"]),
+            Ht::button("Move down", ["class" => "btn settings_opt_movedown", "style" => "margin-left: 1em"]),
+            Ht::button($delete_text, ["class" => "btn settings_opt_delete", "style" => "margin-left: 1em"]),
             "</div></div>\n";
 
         echo '<hr class="c" /></div>';
@@ -531,6 +531,8 @@ class Option_SettingParser extends SettingParser {
         $name = simplify_whitespace(get($sv->req, "optn_$xpos", ""));
         if ($name === "" || $name === "New option" || $name === "(Enter new option)")
             return null;
+        if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-: ]?\d+)\z/i', $name))
+            $sv->error_at("optn_$xpos", "Option name “" . htmlspecialchars($name) . "” is reserved.");
 
         $id = cvtint(get($sv->req, "optid_$xpos", "new"));
         $is_new = $id < 0;
