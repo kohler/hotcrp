@@ -222,32 +222,47 @@ class PaperOptionList {
     }
 
     function search($name) {
-        $name = strtolower($name);
-        if ($name === (string) DTYPE_SUBMISSION
-            || $name === "paper"
-            || $name === "submission")
+        $iname = strtolower($name);
+        if ($iname === (string) DTYPE_SUBMISSION
+            || $iname === "paper"
+            || $iname === "submission")
             return array(DTYPE_SUBMISSION => $this->get(DTYPE_SUBMISSION));
-        else if ($name === (string) DTYPE_FINAL
-                 || $name === "final")
+        else if ($iname === (string) DTYPE_FINAL
+                 || $iname === "final")
             return array(DTYPE_FINAL => $this->get(DTYPE_FINAL));
-        if ($name === "" || $name === "none")
+        if ($iname === "" || $iname === "none")
             return array();
-        if ($name === "any")
+        if ($iname === "any")
             return $this->option_list();
-        if (substr($name, 0, 4) === "opt-")
+        if (substr($iname, 0, 4) === "opt-") {
+            $iname = substr($iname, 4);
             $name = substr($name, 4);
+        }
+
+        // old style
         $oabbr = array();
         foreach ($this->option_json_list() as $id => $oj)
-            if ($oj->abbr === $name) {
+            if ($oj->abbr === $iname) {
                 $oabbr = [$id => $oj->abbr];
                 break;
             } else
                 $oabbr[$id] = $oj->abbr;
-        $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
-        $omap = [];
+        $oabbr = Text::simple_search($iname, $oabbr, Text::SEARCH_CASE_SENSITIVE);
+        $omap1 = [];
         foreach ($oabbr as $id => $x)
             if (($o = $this->get($id)) && !$o->nonpaper)
-                $omap[$id] = $o;
+                $omap1[$id] = $o;
+
+        // new style
+        $omap = [];
+        foreach ($this->conf->field_search($name, Conf::FSRCH_OPTION) as $o)
+            if (!$o->nonpaper)
+                $omap[$o->id] = $o;
+
+        // check equivalence
+        if ($omap1 != $omap)
+            error_log("{$this->conf->dbname}: different option search for $name, " . join(",", array_keys($omap1)) . " vs. " . join(",", array_keys($omap)));
+
         return $omap;
     }
 
@@ -258,19 +273,31 @@ class PaperOptionList {
     }
 
     function search_nonpaper($name) {
-        $name = strtolower($name);
+        // old style
+        $iname = strtolower($name);
         $oabbr = array();
         foreach ($this->option_json_list() as $id => $oj)
-            if ($oj->abbr === $name) {
+            if ($oj->abbr === $iname) {
                 $oabbr = [$id => $oj->abbr];
                 break;
             } else
                 $oabbr[$id] = $oj->abbr;
-        $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
-        $omap = [];
+        $oabbr = Text::simple_search($iname, $oabbr, Text::SEARCH_CASE_SENSITIVE);
+        $omap1 = [];
         foreach ($oabbr as $id => $x)
             if (($o = $this->get($id)) && $o->nonpaper)
-                $omap[$id] = $o;
+                $omap1[$id] = $o;
+
+        // new style
+        $omap = [];
+        foreach ($this->conf->field_search($name, Conf::FSRCH_OPTION) as $o)
+            if ($o->nonpaper)
+                $omap[$o->id] = $o;
+
+        // check equivalence
+        if ($omap1 != $omap)
+            error_log("{$this->conf->dbname}: different option search for $name, " . join(",", array_keys($omap1)) . " vs. " . join(",", array_keys($omap)));
+
         return $omap;
     }
 
@@ -293,7 +320,7 @@ class PaperOptionList {
     }
 }
 
-class PaperOption {
+class PaperOption implements Abbreviator {
     const MINFIXEDID = 1000000;
 
     public $id;
@@ -303,6 +330,7 @@ class PaperOption {
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
     public $abbr;
+    private $_abbr;
     public $description;
     public $position;
     public $final;
@@ -344,9 +372,10 @@ class PaperOption {
         $this->name = $args["name"];
         $this->message_name = get($args, "message_name", $this->name);
         $this->type = $args["type"];
-        $this->abbr = get_s($args, "abbr");
-        if ($this->abbr == "")
-            $this->abbr = self::abbreviate($this->name, $this->id);
+        $abbr = get_s($args, "abbr");
+        $default_abbr = self::abbreviate($this->name, $this->id);
+        if ($abbr && $abbr !== self::abbreviate($this->name, $this->id))
+            $this->abbr = $this->_abbr = $abbr;
         $this->description = get_s($args, "description");
         $p = get($args, "position");
         if ((is_int($p) || is_float($p)) && ($this->id <= 0 || $p > 0))
@@ -416,14 +445,24 @@ class PaperOption {
         return $this->id >= self::MINFIXEDID;
     }
 
+    function abbreviations_for($name, $data) {
+        assert($this === $data);
+        return $this->abbreviation();
+    }
     function abbreviation() {
-        return $this->abbr;
+        if ($this->_abbr === null) {
+            $am = $this->conf->abbrev_matcher();
+            $this->_abbr = $am->unique_abbreviation($this->name, $this);
+            if (!$this->_abbr)
+                $this->_abbr = self::abbreviate($this->name, $this->id);
+        }
+        return $this->_abbr;
     }
     function field_key() {
         return $this->id <= 0 ? $this->abbr : "opt" . $this->id;
     }
     function dtype_name() {
-        return $this->abbr;
+        return $this->abbreviation();
     }
 
     function display() {
@@ -443,7 +482,7 @@ class PaperOption {
     }
 
     function search_keyword() {
-        return $this->abbr;
+        return $this->abbreviation();
     }
 
     function has_selector() {
@@ -492,9 +531,10 @@ class PaperOption {
     function unparse() {
         $j = (object) array("id" => (int) $this->id,
                             "name" => $this->name,
-                            "abbr" => $this->abbr,
                             "type" => $this->type,
                             "position" => (int) $this->position);
+        if ($this->abbr)
+            $j->abbr = $this->abbr;
         if ($this->description)
             $j->description = $this->description;
         if ($this->final)

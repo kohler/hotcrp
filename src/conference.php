@@ -926,16 +926,18 @@ class Conf {
     function abbrev_matcher() {
         if (!$this->_abbrev_matcher) {
             $this->_abbrev_matcher = new AbbreviationMatcher;
-            $this->_abbrev_matcher->add("paper", $this->paper_opts->get(DTYPE_SUBMISSION), self::FSRCH_OPTION);
-            $this->_abbrev_matcher->add("submission", $this->paper_opts->get(DTYPE_SUBMISSION), self::FSRCH_OPTION);
+            $this->_abbrev_matcher->add("paper", $this->paper_opts->get(DTYPE_SUBMISSION), self::FSRCH_OPTION, 1);
+            $this->_abbrev_matcher->add("submission", $this->paper_opts->get(DTYPE_SUBMISSION), self::FSRCH_OPTION, 1);
             if ($this->has_any_accepts()) {
                 $ol = $this->paper_opts->option_list();
-                $this->_abbrev_matcher->add("final", $this->paper_opts->get(DTYPE_FINAL), self::FSRCH_OPTION);
+                $this->_abbrev_matcher->add("final", $this->paper_opts->get(DTYPE_FINAL), self::FSRCH_OPTION, 1);
             } else
                 $ol = $this->paper_opts->nonfinal_option_list();
             // XXX exposes invisible paper options, review fields
-            foreach ($ol as $o)
+            foreach ($ol as $o) {
                 $this->_abbrev_matcher->add($o->name, $o, self::FSRCH_OPTION);
+                $this->_abbrev_matcher->add("opt" . $o->id, $o, self::FSRCH_OPTION, 1);
+            }
             foreach ($this->all_review_fields() as $f)
                 if ($f->displayed)
                     $this->_abbrev_matcher->add($f->name, $f, self::FSRCH_REVIEW);
