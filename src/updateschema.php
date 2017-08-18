@@ -277,6 +277,26 @@ function update_schema_paper_review_null_main_fields(Conf $conf) {
     return $conf->ql("update PaperReview set " . join(", ", $kf));
 }
 
+function update_schema_paper_review_drop_main_fields(Conf $conf) {
+    $rid = [];
+    $kf = array_map(function ($k) { return "$k is not null"; }, array_keys(ReviewInfo::$text_field_map));
+    if (!$conf->ql("lock tables PaperReview write"))
+        return false;
+    $result = $conf->ql("select * from PaperReview where " . join(" or ", $kf));
+    $rrow = ReviewInfo::fetch($result, $conf);
+    Dbl::free($result);
+    if ($rrow) {
+        error_log("{$conf->dbname}: #{$rrow->paperId}/{$rrow->reviewId}: nonnull main field cancels schema upgrade");
+        $ok = false;
+    } else {
+        $ok = true;
+        foreach (ReviewInfo::$text_field_map as $kmain => $kjson)
+            $ok = $ok && $conf->ql("alter table PaperReview drop column `$kmain`");
+    }
+    $conf->ql("unlock tables");
+    return $ok;
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1246,6 +1266,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 174
         && update_schema_paper_review_null_main_fields($conf))
         $conf->update_schema_version(175);
+    if ($conf->sversion == 175
+        && update_schema_paper_review_drop_main_fields($conf))
+        $conf->update_schema_version(176);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

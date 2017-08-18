@@ -224,9 +224,6 @@ save_review(1, $user_mgbaker, [
 $rrow = fetch_review($paper1, $user_mgbaker);
 xassert_eqq((string) $rrow->overAllMerit, "2");
 xassert_eqq((string) $rrow->reviewerQualification, "1");
-xassert_eqq((string) $rrow->paperSummary, "This is the summary\n");
-xassert_eqq((string) $rrow->commentsToAuthor, "Comments for äuthor\n");
-xassert_eqq((string) $rrow->commentsToPC, "Comments for PC\n");
 xassert_eqq((string) $rrow->t01, "This is the summary\n");
 xassert_eqq((string) $rrow->t02, "Comments for äuthor\n");
 xassert_eqq((string) $rrow->t03, "Comments for PC\n");

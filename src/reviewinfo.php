@@ -54,7 +54,7 @@ class ReviewInfo {
     ];
     const MIN_SFIELD = 12;
 
-    private function merge() {
+    private function merge(Conf $conf) {
         foreach (["paperId", "reviewId", "contactId", "reviewType",
                   "reviewRound", "requestedBy", "reviewBlind",
                   "reviewOrdinal", "reviewNeedsSubmit"] as $k) {
@@ -72,14 +72,16 @@ class ReviewInfo {
             foreach ($x as $k => $v)
                 $this->$k = $v;
         }
-        foreach (self::$text_field_map as $kin => $kout)
-            if (isset($this->$kin) && !isset($this->$kout))
-                $this->$kout = $this->$kin;
+        if ($conf->sversion < 176) {
+            foreach (self::$text_field_map as $kmain => $kjson)
+                if (isset($this->$kmain) && !isset($this->$kjson))
+                    $this->$kjson = $this->$kmain;
+        }
     }
-    static function fetch($result, Conf $conf = null) {
+    static function fetch($result, Conf $conf) {
         $rrow = $result ? $result->fetch_object("ReviewInfo") : null;
-        if ($rrow && !is_int($rrow->paperId))
-            $rrow->merge();
+        if ($rrow)
+            $rrow->merge($conf);
         return $rrow;
     }
     static function review_signature_sql() {
@@ -96,7 +98,7 @@ class ReviewInfo {
              $rrow->reviewSubmitted, $rrow->reviewAuthorSeen,
              $rrow->reviewOrdinal, $rrow->timeApprovalRequested, $rrow->reviewNeedsSubmit)
             = explode(" ", $signature);
-        $rrow->merge();
+        $rrow->merge($prow->conf);
         return $rrow;
     }
 
