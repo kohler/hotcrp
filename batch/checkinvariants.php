@@ -22,9 +22,9 @@ if ($Conf->sversion == 174 && (isset($arg["json-reviews"]) || isset($arg["fix-js
             $oldv = (string) $rrow->$kin;
             $newv = $tfields ? get($tfields, $kout, "") : "";
             if ($oldv !== $newv) {
-                error_log("{$Conf->dbname}: #{$rrow->paperId}/{$rrow->reviewId}: $kin ["
+                error_log("{$Conf->dbname}: #{$rrow->paperId}/{$rrow->reviewId}: {$kin} ["
                     . simplify_whitespace(UnicodeHelper::utf8_abbreviate($oldv === "" ? "EMPTY" : $oldv, 20))
-                    . "] differs from tf/$kout ["
+                    . "] != tf/{$kout} ["
                     . simplify_whitespace(UnicodeHelper::utf8_abbreviate($newv === "" ? "EMPTY" : $newv, 20))
                     . "]");
                 $need_fix = true;

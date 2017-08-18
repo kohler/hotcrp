@@ -253,6 +253,30 @@ function update_schema_paper_review_tfields(Conf $conf) {
     return true;
 }
 
+function update_schema_paper_review_null_main_fields(Conf $conf) {
+    $rid = [];
+    $result = $conf->ql("select * from PaperReview");
+    while (($rrow = ReviewInfo::fetch($result, $conf))) {
+        $tfields = $rrow->tfields ? json_decode($rrow->tfields, true) : [];
+        $any = false;
+        foreach (ReviewInfo::$text_field_map as $kmain => $kjson) {
+            $mainval = (string) get($rrow, $kmain);
+            $jsonval = (string) get($tfields, $kjson);
+            if ($mainval !== $jsonval) {
+                error_log("{$conf->dbname}: #{$rrow->paperId}/{$rrow->reviewId}: {$kmain} ["
+                    . simplify_whitespace(UnicodeHelper::utf8_abbreviate($mainval === "" ? "EMPTY" : $mainval, 20))
+                    . "] != tf/{$kjson} ["
+                    . simplify_whitespace(UnicodeHelper::utf8_abbreviate($jsonval === "" ? "EMPTY" : $jsonval, 20))
+                    . "]");
+                return false;
+            }
+        }
+    }
+    Dbl::free($result);
+    $kf = array_map(function ($k) { return "$k=null"; }, array_keys(ReviewInfo::$text_field_map));
+    return $conf->ql("update PaperReview set " . join(", ", $kf));
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1219,6 +1243,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 173
         && update_schema_paper_review_tfields($conf))
         $conf->update_schema_version(174);
+    if ($conf->sversion == 174
+        && update_schema_paper_review_null_main_fields($conf))
+        $conf->update_schema_version(175);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
