@@ -186,59 +186,70 @@ if (isset($_REQUEST["deletereview"]) && check_post()
 
 
 // download review form action
-function downloadView($prow, $rr, $editable) {
-    global $rf, $Me, $Conf;
-    if ($editable && (!$rr || $rr->contactId == $Me->contactId)
-        && $prow->review_type($Me) > 0)
-        return $rf->textForm($prow, $rr, $Me, $_REQUEST) . "\n";
-    else if ($editable)
-        return $rf->textForm($prow, $rr, $Me, null) . "\n";
-    else
-        return $rf->pretty_text($prow, $rr, $Me) . "\n";
-}
-
 function downloadForm($editable) {
     global $rf, $Conf, $Me, $prow, $paperTable;
-    $explicit = true;
-    if ($paperTable->rrow)
-        $rrows = array($paperTable->rrow);
-    else if ($editable)
-        $rrows = array();
-    else {
-        $rrows = $paperTable->viewable_rrows;
-        $explicit = false;
-    }
+    $rrow = $paperTable->rrow;
+    $use_request = (!$rrow || $rrow->contactId == $Me->contactId)
+        && $prow->review_type($Me) > 0;
+    $text = $rf->textFormHeader(false) . $rf->textForm($prow, $rrow, $Me, $use_request ? $_REQUEST : null);
+    $filename = "review-{$prow->paperId}";
+    if ($rrow && $rrow->reviewOrdinal)
+        $filename .= unparseReviewOrdinal($rrow->reviewOrdinal);
+    downloadText($text, $filename, false);
+}
+
+if (isset($_REQUEST["downloadForm"]))
+    downloadForm(true);
+
+
+function download_all_text_reviews() {
+    global $rf, $Conf, $Me, $prow, $paperTable;
+    $paperTable->resolveComments();
+    $rcs = $paperTable->reviews_and_comments();
+    $last_type = true;
     $text = "";
-    foreach ($rrows as $rr)
-        if ($rr->reviewSubmitted)
-            $text .= downloadView($prow, $rr, $editable);
-    foreach ($rrows as $rr)
-        if (!$rr->reviewSubmitted
-            && ($explicit || $rr->reviewModified))
-            $text .= downloadView($prow, $rr, $editable);
-    if (count($rrows) == 0 && $editable)
-        $text .= downloadView($prow, null, $editable);
-    if (!$explicit) {
-        $paperTable->resolveComments();
-        foreach ($paperTable->crows as $cr)
-            if ($Me->can_view_comment($prow, $cr, false))
-                $text .= $cr->unparse_text($Me, true) . "\n";
+    foreach ($paperTable->reviews_and_comments() as $rc) {
+        if (isset($rc->reviewId))
+            $type = "review";
+        else
+            $type = $rc->commentType & COMMENTTYPE_RESPONSE ? "response" : "comment";
+        if ($text !== "") {
+            if ($last_type !== "comment" || $type !== "comment")
+                $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
+            else
+                $text .= "\n";
+        }
+        $last_type = $type;
+        if (isset($rc->reviewId))
+            $text .= $rf->pretty_text($prow, $rc, $Me, false, true);
+        else
+            $text .= $rc->unparse_text($Me, true);
     }
-    if (!$text) {
+    if ($text === "") {
         $whyNot = $Me->perm_view_review($prow, null, null);
         return Conf::msg_error(whyNotText($whyNot ? : array("fail" => 1), "review"));
     }
-    if ($editable)
-        $text = $rf->textFormHeader(count($rrows) > 1) . $text;
-    $filename = (count($rrows) > 1 ? "reviews" : "review") . "-" . $prow->paperId;
-    if (count($rrows) == 1 && $rrows[0]->reviewOrdinal)
-        $filename .= unparseReviewOrdinal($rrows[0]->reviewOrdinal);
-    downloadText($text, $filename, !$editable);
+    $text = $Conf->short_name . " Paper #2 Reviews and Comments\n"
+        . str_repeat("=", 75) . "\n"
+        . prefix_word_wrap("", "Paper #{$prow->paperId} {$prow->title}", 0, 75)
+        . "\n\n" . $text;
+    downloadText($text, "reviews-{$prow->paperId}", true);
 }
-if (isset($_REQUEST["downloadForm"]))
-    downloadForm(true);
-else if (isset($_REQUEST["text"]))
-    downloadForm(false);
+
+function download_one_text_review(ReviewInfo $rrow) {
+    global $rf, $Conf, $Me, $prow, $paperTable;
+    $filename = "review-{$prow->paperId}";
+    if ($rrow->reviewOrdinal)
+        $filename .= unparseReviewOrdinal($rrow->reviewOrdinal);
+    downloadText($rf->pretty_text($prow, $rrow, $Me), $filename, true);
+}
+
+if (isset($_REQUEST["text"])) {
+    if ($paperTable->rrow)
+        download_one_text_review($paperTable->rrow);
+    else
+        download_all_text_reviews();
+}
 
 
 // refuse review action

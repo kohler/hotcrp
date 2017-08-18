@@ -2235,7 +2235,7 @@ class PaperTable {
             if ($rrow->reviewSubmitted || $rrow->reviewModified > 1)
                 $a[] = $rrow;
         if ($this->include_comments())
-            $a = array_merge($a, $this->mycrows);
+            $a = array_merge($a, $this->mycrows ? : []);
         usort($a, "PaperTable::sort_rc");
         return $a;
     }

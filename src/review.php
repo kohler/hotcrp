@@ -805,41 +805,29 @@ $blind\n";
         return $x . "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
     }
 
-    function pretty_text($prow, $rrow, $contact, $no_update_review_author_seen = false) {
+    function pretty_text(PaperInfo $prow, $rrow, Contact $contact,
+                         $no_update_review_author_seen = false,
+                         $no_title = false) {
         assert($prow !== null && $rrow !== null);
 
         $rrow_contactId = get($rrow, "reviewContactId") ? : (get($rrow, "contactId") ? : 0);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
-        $x = "===========================================================================\n";
-        $n = $this->conf->short_name . " Review";
+        $n = ($no_title ? "" : $this->conf->short_name . " ") . "Review";
         if (get($rrow, "reviewOrdinal"))
             $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
-        $x .= center_word_wrap($n);
-        $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
-        if ($time > 1) {
-            $n = "Updated " . $this->conf->printableTime($rrow->reviewModified);
-            $x .= center_word_wrap($n);
-        }
-        $x .= "---------------------------------------------------------------------------\n";
-        $x .= $prow->pretty_text_title();
-        if ($contact->can_view_review_identity($prow, $rrow, false)) {
-            if (isset($rrow->reviewFirstName))
-                $n = Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
-            else if (isset($rrow->lastName))
-                $n = Text::user_text($rrow);
-            else
-                $n = null;
-            if ($n)
-                $x .= prefix_word_wrap("Reviewer: ", $n, $prow->pretty_text_title_indent());
-        }
-        $x .= "---------------------------------------------------------------------------\n\n";
+        $x = $n . "\n" . str_repeat("=", 75) . "\n";
 
-        $i = 0;
-        $lastNumeric = null;
+        if (!$no_title)
+            $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2);
+        if ($contact->can_view_review_identity($prow, $rrow, false) && isset($rrow->lastName))
+            $x .= "* Reviewer: " . Text::user_text($rrow) . "\n";
+        $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
+        if ($time > 1)
+            $x .= "* Updated: " . $this->conf->printableTime($time) . "\n";
+
         foreach ($this->forder as $fid => $f) {
-            $i++;
             if ($f->view_score <= $revViewScore
                 || ($f->round_mask && !$f->is_round_visible($rrow)))
                 continue;
@@ -854,25 +842,14 @@ $blind\n";
             if ($fval == "")
                 continue;
 
+            $x .= "\n";
+            $x .= $f->name . "\n" . str_repeat("-", strlen($f->name)) . "\n";
+
             if ($f->has_options) {
-                $y = defval($f->options, $fval, "");
-                $sn = $f->name . ":";
-                /* "(1-" . count($f->options) . "):"; */
-                if ($lastNumeric === false)
-                    $x .= "\n";
-                if (strlen($sn) > 38 + strlen($fval))
-                    $x .= $sn . "\n" . prefix_word_wrap($fval . ". ", $y, 39 + strlen($fval));
-                else
-                    $x .= prefix_word_wrap($sn . " " . $fval . ". ", $y, 39 + strlen($fval));
-                $lastNumeric = true;
-            } else {
-                $n = "===== " . $f->name . " =====";
-                if ($lastNumeric !== null)
-                    $x .= "\n";
-                $x .= center_word_wrap($n);
-                $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
-                $lastNumeric = false;
-            }
+                $y = get($f->options, $fval, "");
+                $x .= prefix_word_wrap($fval . ". ", $y, strlen($fval) + 2);
+            } else
+                $x .= preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
         }
         return $x;
     }

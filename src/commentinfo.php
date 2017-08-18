@@ -288,28 +288,32 @@ class CommentInfo {
     }
 
     function unparse_text(Contact $contact, $no_title = false) {
-        $x = "===========================================================================\n";
-        if (!($this->commentType & COMMENTTYPE_RESPONSE))
-            $n = "Comment";
-        else if (($rname = $this->conf->resp_round_text($this->commentRound)))
-            $n = "$rname Response";
+        if (!($this->commentType & COMMENTTYPE_RESPONSE)) {
+            $ordinal = $this->unparse_ordinal();
+            if ($ordinal)
+                $x = $no_title ? "@$ordinal" : "Comment @$ordinal";
+            else
+                $x = "Comment";
+        } else if (($rname = $this->conf->resp_round_text($this->commentRound)))
+            $x = "$rname Response";
         else
-            $n = "Response";
+            $x = "Response";
         if ($contact->can_view_comment_identity($this->prow, $this, false))
-            $n .= " by " . Text::user_text($this->user());
-        $x .= center_word_wrap($n);
+            $x .= " by " . Text::user_text($this->user());
+        $x .= "\n" . str_repeat("-", 75) . "\n";
         if (!$no_title)
-            $x .= $this->prow->pretty_text_title();
+            $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2);
         if (($tags = $this->viewable_nonresponse_tags($contact))) {
             $tagger = new Tagger($contact);
-            $x .= center_word_wrap($tagger->unparse_hashed($tags));
+            $x .= prefix_word_wrap("* ", $tagger->unparse_hashed($tags), 2);
         }
-        $x .= "---------------------------------------------------------------------------\n";
+        if (!$no_title || $tags)
+            $x .= "\n";
         if ($this->commentOverflow)
             $x .= $this->commentOverflow;
         else
             $x .= $this->comment;
-        return $x . "\n";
+        return rtrim($x) . "\n";
     }
 
     function unparse_flow_entry(Contact $contact) {
