@@ -166,9 +166,14 @@ class Default_PaperSaver extends PaperSaver {
     }
 
     function diffs(&$diffs, Contact $user, $pj1, $pj2) {
-        if (!$pj2) {
-            $diffs["new"] = true;
+        if (!$pj1 && !$pj2)
             return;
+        else if (!$pj1) {
+            $diffs["deleted"] = true;
+            return;
+        } else if (!$pj2) {
+            $diffs["new"] = true;
+            $pj2 = (object) [];
         }
 
         foreach (array("title", "abstract", "collaborators") as $k)
