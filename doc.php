@@ -102,7 +102,7 @@ class DocumentRequest {
             $dtname = $base_dtname;
         while ((string) $dtname !== "" && $this->dtype === null) {
             if ($this->paperId < 0)
-                $this->dtype = $conf->paper_opts->find1_nonpaper($dtname);
+                $this->dtype = $conf->paper_opts->find_nonpaper($dtname);
             else
                 $this->dtype = HotCRPDocument::parse_dtype($dtname);
             if ($this->dtype !== null) {

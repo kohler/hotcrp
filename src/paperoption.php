@@ -313,7 +313,7 @@ class PaperOptionList {
         return $omap;
     }
 
-    function find1_nonpaper($name) {
+    function find_nonpaper($name) {
         $omap = $this->find_all_nonpaper($name);
         reset($omap);
         return count($omap) == 1 ? current($omap) : null;
