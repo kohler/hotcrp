@@ -238,16 +238,16 @@ class ReviewField implements Abbreviator, JsonSerializable {
         }
         return $this->abbreviation;
     }
-
+    function search_keyword() {
+        return $this->abbreviation();
+    }
     function abbreviation1() {
         return AbbreviationMatcher::make_abbreviation($this->name, 0, 1);
     }
-
     function web_abbreviation() {
         return '<span class="need-tooltip" data-tooltip="' . $this->name_html
             . '" data-tooltip-dir="b">' . htmlspecialchars($this->abbreviation()) . "</span>";
     }
-
     function uid() {
         return $this->abbreviation();
     }
@@ -480,7 +480,7 @@ class ReviewForm implements JsonSerializable {
             foreach ($this->forder as $f)
                 break;
         }
-        return $f && $f->displayed ? " " . $f->abbreviation() . " " : " ";
+        return $f && $f->displayed ? " " . $f->search_keyword() . " " : " ";
     }
 
     function jsonSerialize() {
@@ -1791,7 +1791,7 @@ class ReviewValues extends MessageSet {
                 if ($fval_diffs) {
                     $diff_view_score = max($diff_view_score, $f->view_score);
                     if ($rrow)
-                        $diff_fields[] = $f->abbreviation();
+                        $diff_fields[] = $f->search_keyword();
                 }
                 if ($fval_diffs || !$rrow) {
                     if ($f->main_storage) {

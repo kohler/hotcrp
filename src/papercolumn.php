@@ -1494,7 +1494,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     public $max_score;
     private $form_field;
     function __construct($cj, ReviewField $form_field) {
-        parent::__construct(["name" => $form_field->abbreviation()] + (array) $cj);
+        parent::__construct(["name" => $form_field->search_keyword()] + (array) $cj);
         $this->score = $form_field->id;
         $this->form_field = $form_field;
     }
@@ -1529,7 +1529,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
             parent::set_sort_fields($pl, $row, $sorter);
     }
     function header(PaperList $pl, $is_text) {
-        return $is_text ? $this->form_field->abbreviation() : $this->form_field->web_abbreviation();
+        return $is_text ? $this->form_field->search_keyword() : $this->form_field->web_abbreviation();
     }
     function alternate_display_name() {
         return $this->form_field->id;

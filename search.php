@@ -227,7 +227,7 @@ function savesearch() {
         if ($Me->privChair && !$Conf->subBlindNever())
             $acceptable["anonau"] = 1;
         foreach ($Conf->all_review_fields() as $f)
-            $acceptable[$f->id] = $acceptable[$f->abbreviation()] = 1;
+            $acceptable[$f->id] = $acceptable[$f->search_keyword()] = 1;
         foreach ($Conf->named_formulas() as $f)
             $acceptable["formula" . $f->formulaId] = 1;
         $display = array();
@@ -423,7 +423,7 @@ if ($pl) {
         $display_options->set_header(30, "<strong>Scores:</strong>");
         foreach ($rf->forder as $f)
             if ($f->view_score > $revViewScore && $f->has_options)
-                $display_options->checkbox_item(30, $f->abbreviation(), $f->name_html);
+                $display_options->checkbox_item(30, $f->search_keyword(), $f->name_html);
         if (!empty($display_options->items[30])) {
             $onchange = "hiliter(\"redisplay\")";
             if ($Me->privChair)
