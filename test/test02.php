@@ -544,6 +544,9 @@ $am->add("Overall merit 3", 3);
 $am->add("Overall merit 4", 4);
 xassert_eqq($am->find_all("OveMer"), [1]);
 xassert_eqq($am->find_all("merit overall"), []);
+xassert_eqq($am->find_all("OveMer2"), [2]);
+xassert_eqq($am->find_all("overall merit*"), [1, 2, 3, 4]);
+xassert_eqq($am->find_all("OveMer*"), [1, 2, 3, 4]);
 
 $am->add("PC Person", 5);
 $am->add("PC Person 2", 6);

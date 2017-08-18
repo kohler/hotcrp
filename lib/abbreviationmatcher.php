@@ -74,7 +74,8 @@ class AbbreviationMatchTracker {
         }
         // missed words cost 1/64 point, partial words cost 1/64 point
         if (!isset($pwords[$ppos])) {
-            $demerits += count($swords) - $spos;
+            if (!$this->has_star)
+                $demerits += count($swords) - $spos;
             return 1 - 0.015625 * max(min($demerits, 63), 1);
         } else
             return 0;
@@ -109,7 +110,8 @@ class AbbreviationMatchTracker {
             ++$spos;
         }
         if (!isset($this->camelwords[$ppos])) {
-            $demerits += count($swords) - $spos;
+            if (!$this->has_star)
+                $demerits += count($swords) - $spos;
             return 1 - 0.015625 * max(min($demerits, 63), 1);
         } else
             return 0;
@@ -230,7 +232,7 @@ class AbbreviationMatcher {
         return preg_replace('{(?:[-_.\s]|–|—)+}', " ", $text);
     }
     static function is_camel_word($text) {
-        return preg_match('{\A[-_.A-Za-z0-9]*(?:[A-Za-z](?=[-_.A-Z0-9])|[0-9](?=[-_.A-Za-z]))[-_.A-Za-z0-9]*\z}', $text);
+        return preg_match('{\A[-_.A-Za-z0-9]*(?:[A-Za-z](?=[-_.A-Z0-9])|[0-9](?=[-_.A-Za-z]))[-_.A-Za-z0-9]*\*?\z}', $text);
     }
 
     private function _analyze() {
