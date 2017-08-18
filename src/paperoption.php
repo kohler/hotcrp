@@ -571,8 +571,6 @@ class PaperOption implements Abbreviator {
                             "name" => $this->name,
                             "type" => $this->type,
                             "position" => (int) $this->position);
-        if ($this->abbr)
-            $j->abbr = $this->abbr;
         if ($this->description)
             $j->description = $this->description;
         if ($this->final)
