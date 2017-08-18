@@ -2151,32 +2151,36 @@ class PaperTable {
             . "</a>&nbsp;You have used administrator privileges to view and edit reviews for this submission. (" . $a . "Unprivileged view</a>)";
     }
 
-    public static function sort_rc_json($a, $b) {
+    static function analyze_rc($x) {
+        if (isset($x->commentId))
+            return [!!($x->commentType & COMMENTTYPE_DRAFT),
+                    (int) $x->timeDisplayed, true];
+        else
+            return [$x->reviewSubmitted && !$x->reviewOrdinal,
+                    (int) $x->timeDisplayed, false];
+    }
+    static function sort_rc($a, $b) {
+        list($a_draft, $a_displayed_at, $a_iscomment) = self::analyze_rc($a);
+        list($b_draft, $b_displayed_at, $b_iscomment) = self::analyze_rc($b);
         // drafts come last
-        if (isset($a->draft) != isset($b->draft)
-            && (isset($a->draft) ? !$a->displayed_at : !$b->displayed_at))
-            return isset($a->draft) ? 1 : -1;
+        if ($a_draft !== $b_draft
+            && ($a_draft ? !$a_displayed_at : !$b_displayed_at))
+            return $a_draft ? 1 : -1;
         // order by displayed_at
-        if ($a->displayed_at != $b->displayed_at)
-            return $a->displayed_at < $b->displayed_at ? -1 : 1;
+        if ($a_displayed_at !== $b_displayed_at)
+            return $a_displayed_at < $b_displayed_at ? -1 : 1;
         // reviews before comments
-        if (isset($a->rid) != isset($b->rid))
-            return isset($a->rid) ? -1 : 1;
-        if (isset($a->cid))
+        if ($a_iscomment !== $b_iscomment)
+            return !$a_iscomment ? -1 : 1;
+        if ($a_iscomment)
             // order by commentId (which generally agrees with ordinal)
-            return $a->cid < $b->cid ? -1 : 1;
+            return $a->commentId < $b->commentId ? -1 : 1;
         else {
-            // order by ordinal
-            if (isset($a->ordinal) && isset($b->ordinal)) {
-                $al = strlen($a->ordinal);
-                $bl = strlen($b->ordinal);
-                if ($al != $bl)
-                    return $al < $bl ? -1 : 1;
-                else
-                    return strcmp($a->ordinal, $b->ordinal);
-            }
-            // order by reviewId
-            return $a->rid < $b->rid ? -1 : 1;
+            // order by ordinal or reviewId
+            if ($a->reviewOrdinal && $b->reviewOrdinal)
+                return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
+            else
+                return $a->reviewId < $b->reviewId ? -1 : 1;
         }
     }
 
@@ -2222,16 +2226,18 @@ class PaperTable {
                 "&nbsp;<u>", ucfirst(join(" and ", $viewable)),
                 " in plain text</u></a></div></div>\n";
 
-        $rf = $this->conf->review_form();
+        $this->render_rc($this->reviews_and_comments());
+    }
 
-        $rcjs = [];
-        foreach ($this->viewable_rrows as $rr)
-            if ($rr->reviewSubmitted || $rr->reviewModified > 1)
-                $rcjs[] = $rf->unparse_review_json($prow, $rr, $Me, null, ReviewForm::RJ_DISPLAYED_AT);
+    function reviews_and_comments() {
+        $a = [];
+        foreach ($this->viewable_rrows as $rrow)
+            if ($rrow->reviewSubmitted || $rrow->reviewModified > 1)
+                $a[] = $rrow;
         if ($this->include_comments())
-            foreach ($this->mycrows as $cr)
-                $rcjs[] = $cr->unparse_json($Me, true);
-        $this->render_rcjs($rcjs);
+            $a = array_merge($a, $this->mycrows);
+        usort($a, "PaperTable::sort_rc");
+        return $a;
     }
 
     private function has_response($respround) {
@@ -2242,21 +2248,21 @@ class PaperTable {
         return false;
     }
 
-    private function render_rcjs($rcjs) {
+    private function render_rc($rcs) {
         global $Me;
-        usort($rcjs, "PaperTable::sort_rc_json");
 
         $s = "";
         $ncmt = 0;
-        foreach ($rcjs as $rcj) {
-            unset($rcj->displayed_at);
-            if (isset($rcj->rid))
+        $rf = $this->conf->review_form();
+        foreach ($rcs as $rc)
+            if (isset($rc->reviewId)) {
+                $rcj = $rf->unparse_review_json($this->prow, $rc, $Me);
                 $s .= "review_form.add_review(" . json_encode_browser($rcj) . ");\n";
-            else {
+            } else {
                 ++$ncmt;
+                $rcj = $rc->unparse_json($Me);
                 $s .= "papercomment.add(" . json_encode_browser($rcj) . ");\n";
             }
-        }
 
         if ($this->include_comments()) {
             if ($Me->can_comment($this->prow, null)) {
@@ -2282,12 +2288,8 @@ class PaperTable {
 
     function paptabComments() {
         global $Me;
-        if ($this->include_comments()) {
-            $rcjs = [];
-            foreach ($this->mycrows as $cr)
-                $rcjs[] = $cr->unparse_json($Me, true);
-            $this->render_rcjs($rcjs);
-        }
+        if ($this->include_comments())
+            $this->render_rc($this->mycrows);
     }
 
     function paptabEndWithReviewMessage() {

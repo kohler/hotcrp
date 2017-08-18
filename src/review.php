@@ -1135,7 +1135,6 @@ $blind\n";
         Ht::stash_script('hiliter_children(".editrevform")', "form_revcard");
     }
 
-    const RJ_DISPLAYED_AT = 1;
     const RJ_NO_EDITABLE = 2;
     const RJ_UNPARSE_RATINGS = 4;
     const RJ_ALL_RATINGS = 8;
@@ -1189,9 +1188,6 @@ $blind\n";
             $rj["modified_at"] = (int) $time;
             $rj["modified_at_text"] = $this->conf->printableTime($time);
         }
-        if ($flags & self::RJ_DISPLAYED_AT)
-            // XXX exposes information, should hide before export
-            $rj["displayed_at"] = (int) $rrow->timeDisplayed;
 
         // ratings
         if ((string) $rrow->allRatings !== ""

@@ -219,7 +219,7 @@ class CommentInfo {
             return null;
     }
 
-    function unparse_json($contact, $include_displayed_at = false) {
+    function unparse_json(Contact $contact) {
         if ($this->commentId && !$contact->can_view_comment($this->prow, $this, null))
             return false;
 
@@ -275,9 +275,6 @@ class CommentInfo {
             $cj->modified_at_text = $this->conf->unparse_time_obscure($cj->modified_at);
             $cj->modified_at_obscured = true;
         }
-        if ($include_displayed_at)
-            // XXX exposes information, should hide before export
-            $cj->displayed_at = (int) $this->timeDisplayed;
 
         // text
         $cj->text = $this->commentOverflow ? : $this->comment;
