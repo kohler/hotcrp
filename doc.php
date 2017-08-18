@@ -62,7 +62,6 @@ class DocumentRequest {
         if ($want_path) {
             $s = $this->req_filename = preg_replace(',\A/*,', "", $path);
             $dtname = null;
-            $base_dtname = "paper";
             if (str_starts_with($s, $conf->download_prefix))
                 $s = substr($s, strlen($conf->download_prefix));
             if (preg_match(',\A(?:p|paper|)(\d+)/+(.*)\z,', $s, $m)) {
@@ -81,8 +80,8 @@ class DocumentRequest {
                     $dtname = $req["dt"];
                 if (isset($m[4]))
                     $this->attachment = $m[4];
-                if ($m[1] === "final")
-                    $base_dtname = "final";
+                if ($m[1] !== "")
+                    $base_dtname = $m[1] === "final" ? "final" : "paper";
             } else if (preg_match(',\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^/]+|/+(.*))\z,', $s, $m)) {
                 $this->paperId = intval($m[2]);
                 $dtname = $m[1];
@@ -98,8 +97,6 @@ class DocumentRequest {
         }
 
         $this->dtype = null;
-        if ((string) $dtname === "")
-            $dtname = $base_dtname;
         while ((string) $dtname !== "" && $this->dtype === null) {
             if ($this->paperId < 0)
                 $this->dtype = $conf->paper_opts->find_nonpaper($dtname);
@@ -122,10 +119,12 @@ class DocumentRequest {
             if (str_ends_with($dtname, "-"))
                 $dtname = substr($dtname, 0, strlen($dtname) - 1);
         }
-        if (is_object($this->dtype))
-            $this->dtype = $this->dtype->id;
         if ((string) $dtname !== "")
             document_error("404 Not Found", "No such document type “" . htmlspecialchars($dtname) . "”.");
+        else if ($this->dtype === null)
+            $this->dtype = HotCRPDocument::parse_dtype($base_dtname);
+        if (is_object($this->dtype))
+            $this->dtype = $this->dtype->id;
 
         if (isset($req["filter"])) {
             foreach (explode(" ", $req["filter"]) as $filtername)
