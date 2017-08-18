@@ -3955,10 +3955,10 @@ class PaperSearch {
         }
         if ($this->conf->has_any_lead_or_shepherd() && $this->user->can_view_shepherd(null, true))
             $res[] = "has:shepherd";
-        if ($this->user->can_view_some_review())
-            array_push($res, "has:review", "has:creview", "has:ireview", "has:preview", "has:external", "has:comment", "has:aucomment");
         if ($this->user->is_reviewer())
-            array_push($res, "has:primary", "has:secondary", "has:external");
+            array_push($res, "has:review", "has:creview", "has:ireview", "has:preview", "has:primary", "has:secondary", "has:external", "has:comment", "has:aucomment");
+        else if ($this->user->can_view_some_review())
+            array_push($res, "has:review", "has:comment");
         if ($this->amPC && $this->conf->setting("extrev_approve") && $this->conf->setting("pcrev_editdelegate")
             && $this->user->is_requester())
             array_push($res, "has:approvable");
