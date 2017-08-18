@@ -1831,8 +1831,11 @@ class ReviewValues extends MessageSet {
                             $sfields[$f->json_storage] = $fval;
                     } else if (!$f->has_options && $set_tfields && !isset($set_tfields[$fid])) {
                         $fval = get($rrow, $fid, "");
-                        if ($fval !== "")
+                        if ($fval !== "") {
                             $tfields[$f->json_storage] = $fval;
+                            if ($f->include_word_count())
+                                $wc += count_words($fval);
+                        }
                     }
                 }
         }
