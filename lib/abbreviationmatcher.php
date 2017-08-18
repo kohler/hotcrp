@@ -189,6 +189,28 @@ class AbbreviationMatchTracker {
     }
 }
 
+class AbbreviationClass {
+    const TYPE_CAMELCASE = 0;
+    const TYPE_LOWERDASH = 1;
+    public $type = self::TYPE_CAMELCASE;
+    public $drop_parens = true;
+    public $nwords = 3;
+    public $stopwords = "";
+    public $tflags = 0;
+    public $index = 0;
+
+    function step() {
+        ++$this->index;
+        if ($this->index >= 1)
+            $this->drop_parens = false;
+        if ($this->index >= 2)
+            $this->stopwords = false;
+        if ($this->index > $this->nwords)
+            $this->nwords = $this->index;
+        return $this->index <= 5;
+    }
+}
+
 class AbbreviationMatcher {
     private $data = [];
     private $nanal = 0;
@@ -320,46 +342,44 @@ class AbbreviationMatcher {
     }
 
 
-    function unique_abbreviation($name, $data, $stopwords_callback = null) {
-        $last = $stopwords = null;
-        for ($detail = 0; $detail < 5; ++$detail) {
-            if ($detail && !$stopwords && $stopwords_callback)
-                $stopwords = call_user_func($stopwords_callback);
-            $x = self::make_abbreviation($name, $detail, 0, $stopwords);
-            if ($last === $x)
-                continue;
-            $last = $x;
-            $a = $this->find_all($x);
-            if (count($a) === 1 && $a[0] === $data)
-                return $x;
+    function unique_abbreviation($name, $data, AbbreviationClass $aclass) {
+        $last = $aclass_clone = null;
+        while (true) {
+            $x = self::make_abbreviation($name, $aclass);
+            if ($last !== $x) {
+                $last = $x;
+                $a = $this->find_all($x, $aclass->tflags);
+                if (count($a) === 1 && $a[0] === $data)
+                    return $x;
+            }
+            if (!$aclass_clone)
+                $aclass = $aclass_clone = clone $aclass;
+            if (!$aclass->step())
+                return null;
         }
-        return null;
     }
 
-    static function make_abbreviation($name, $abbrdetail, $abbrtype, $stopwords = "") {
+    static function make_abbreviation($name, AbbreviationClass $aclass) {
         $name = str_replace("'", "", $name);
-
         // try to filter out noninteresting words
-        if ($abbrdetail < 2) {
-            $stopwords = (string) $stopwords;
+        if ($aclass->stopwords !== false) {
+            $stopwords = (string) $aclass->stopwords;
             if ($stopwords !== "")
                 $stopwords .= "|";
             $xname = preg_replace('/\b(?:' . $stopwords . 'a|an|and|be|did|do|for|in|of|or|the|their|they|this|to|with|you)\b/i', '', $name);
             $name = $xname ? : $name;
         }
-
-        // only letters & digits
-        if ($abbrdetail == 0)
-            $name = preg_replace('/\(.*?\)/', ' ', $name);
-        $xname = preg_replace('/[-:\s+,.?!()\[\]\{\}_\/\'\"]+/', " ", " $name ");
+        // drop parenthetical remarks
+        if ($aclass->drop_parens)
+            $name = preg_replace('/\(.*?\)|\[.*?\]/', ' ', $name);
+        // drop unlikely punctuation
+        $xname = preg_replace('/[-:\s+,.?!()\[\]\{\}_\/\"]+/', " ", " $name ");
         // drop extraneous words
-        $xname = preg_replace('/\A(' . str_repeat(' \S+', max(3, $abbrdetail)) . ' ).*\z/', '$1', $xname);
-        if ($abbrtype == 1)
-            return strtolower(str_replace(" ", "-", trim($xname)));
-        else {
-            // drop lowercase letters from words
+        $xname = preg_replace('/\A(' . str_repeat(' \S+', $aclass->nwords) . ' ).*\z/', '$1', $xname);
+        if ($aclass->type === AbbreviationClass::TYPE_CAMELCASE) {
             $xname = str_replace(" ", "", ucwords($xname));
             return preg_replace('/([A-Z][a-z][a-z])[a-z]*/', '$1', $xname);
-        }
+        } else
+            return strtolower(str_replace(" ", "-", trim($xname)));
     }
 }

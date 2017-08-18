@@ -111,8 +111,8 @@ class PaperOptionList {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->osubmission = new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "message_name" => "submission", "abbr" => "paper", "type" => null, "position" => 0], $this->conf);
-        $this->ofinal = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "message_name" => "final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
+        $this->osubmission = new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "message_name" => "submission", "json_key" => "paper", "type" => null, "position" => 0], $this->conf);
+        $this->ofinal = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "message_name" => "final version", "json_key" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
     }
 
     private function check_require_setting($require_setting) {
@@ -275,6 +275,22 @@ class PaperOptionList {
         return count($omap) == 1 ? current($omap) : null;
     }
 
+    function nonpaper_abbrev_matcher() {
+        // Nonpaper options aren't stored in the main abbrevmatcher; put them
+        // in their own.
+        if (!$this->nonpaper_am) {
+            $this->nonpaper_am = new AbbreviationMatcher;
+            foreach ($this->option_json_list() as $id => $oj)
+                if (get($oj, "nonpaper")
+                    && ($o = $this->get($id))) {
+                    assert($o->nonpaper);
+                    $this->nonpaper_am->add($o->name, $o);
+                    $this->nonpaper_am->add("opt$o->id", $o);
+                }
+        }
+        return $this->nonpaper_am;
+    }
+
     function find_all_nonpaper($name) {
         // old style
         $iname = strtolower($name);
@@ -292,18 +308,8 @@ class PaperOptionList {
                 $omap1[$id] = $o;
 
         // new style
-        if (!$this->nonpaper_am) {
-            $this->nonpaper_am = new AbbreviationMatcher;
-            foreach ($this->option_json_list() as $id => $oj)
-                if (get($oj, "nonpaper")
-                    && ($o = $this->get($id))) {
-                    assert($o->nonpaper);
-                    $this->nonpaper_am->add($o->name, $o);
-                    $this->nonpaper_am->add("opt$o->id", $o, 0, 1);
-                }
-        }
         $omap = [];
-        foreach ($this->nonpaper_am->find_all($name) as $o)
+        foreach ($this->nonpaper_abbrev_matcher()->find_all($name) as $o)
             $omap[$o->id] = $o;
 
         // check equivalence
@@ -341,8 +347,8 @@ class PaperOption implements Abbreviator {
     public $message_name;
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
-    public $abbr;
-    private $_abbr;
+    private $_json_key;
+    private $_search_keyword;
     public $description;
     public $position;
     public $final;
@@ -384,10 +390,11 @@ class PaperOption implements Abbreviator {
         $this->name = $args["name"];
         $this->message_name = get($args, "message_name", $this->name);
         $this->type = $args["type"];
-        $abbr = get_s($args, "abbr");
-        $default_abbr = self::abbreviate($this->name, $this->id);
-        if ($abbr && $abbr !== self::abbreviate($this->name, $this->id))
-            $this->abbr = $this->_abbr = $abbr;
+
+        if (($x = get_s($args, "json_key")))
+            $this->_json_key = $this->_search_keyword = $x;
+        if (($x = get_s($args, "search_keyword")))
+            $this->_search_keyword = $x;
         $this->description = get_s($args, "description");
         $p = get($args, "position");
         if ((is_int($p) || is_float($p)) && ($this->id <= 0 || $p > 0))
@@ -457,30 +464,47 @@ class PaperOption implements Abbreviator {
         return $this->id >= self::MINFIXEDID;
     }
 
+    private function abbrev_matcher() {
+        if ($this->nonpaper)
+            return $this->conf->paper_opts->nonpaper_abbrev_matcher();
+        else
+            return $this->conf->abbrev_matcher();
+    }
     function abbreviations_for($name, $data) {
         assert($this === $data);
-        return $this->abbreviation();
-    }
-    function abbreviation() {
-        if ($this->_abbr === null) {
-            $am = $this->conf->abbrev_matcher();
-            $this->_abbr = $am->unique_abbreviation($this->name, $this);
-            if (!$this->_abbr)
-                $this->_abbr = self::abbreviate($this->name, $this->id);
-        }
-        return $this->_abbr;
+        return $this->search_keyword();
     }
     function search_keyword() {
-        return $this->abbreviation();
+        if ($this->_search_keyword === null) {
+            $am = $this->abbrev_matcher();
+            $aclass = new AbbreviationClass;
+            $this->_search_keyword = $am->unique_abbreviation($this->name, $this, $aclass);
+            if (!$this->_search_keyword) {
+                $aclass->type = AbbreviationClass::TYPE_LOWERDASH;
+                $this->_search_keyword = $am->unique_abbreviation($this->name, $this, $aclass);
+            }
+            if (!$this->_search_keyword)
+                $this->_search_keyword = "opt{$this->id}";
+        }
+        return $this->_search_keyword;
     }
     function field_key() {
-        return $this->id <= 0 ? $this->abbr : "opt" . $this->id;
-    }
-    function dtype_name() {
-        return $this->abbreviation();
+        return $this->id <= 0 ? $this->_json_key : "opt" . $this->id;
     }
     function json_key() {
-        return $this->abbreviation();
+        if ($this->_json_key === null) {
+            $am = $this->abbrev_matcher();
+            $aclass = new AbbreviationClass;
+            $aclass->type = AbbreviationClass::TYPE_LOWERDASH;
+            $aclass->nwords = 4;
+            $this->_json_key = $am->unique_abbreviation($this->name, $this, $aclass);
+            if (!$this->_json_key)
+                $this->_json_key = "opt{$this->id}";
+        }
+        return $this->_json_key;
+    }
+    function dtype_name() {
+        return $this->json_key();
     }
 
     function display() {

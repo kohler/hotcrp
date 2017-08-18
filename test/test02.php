@@ -173,12 +173,14 @@ foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
 }
 
 // AbbreviationMatcher::make_abbreviation tests
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty", 0, 0), "Nov");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an amazing", 0, 0), "NovIsAma");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an AWESOME", 0, 0), "NovIsAWESOME");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty isn't an AWESOME", 0, 0), "NovIsnAWESOME");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty isn't an AWESOME", 0, 1), "novelty-isnt-awesome");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("_format", 0, 1), "format");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty", new AbbreviationClass), "Nov");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an amazing", new AbbreviationClass), "NovIsAma");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an AWESOME", new AbbreviationClass), "NovIsAWESOME");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty isn't an AWESOME", new AbbreviationClass), "NovIsnAWESOME");
+$aclass = new AbbreviationClass;
+$aclass->type = AbbreviationClass::TYPE_LOWERDASH;
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty isn't an AWESOME", $aclass), "novelty-isnt-awesome");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("_format", $aclass), "format");
 
 // utf8_word_prefix, etc. tests
 xassert_eqq(UnicodeHelper::utf8_prefix("aaaaaaaa", 7), "aaaaaaa");
@@ -551,6 +553,23 @@ xassert_eqq($am->find_all("PCPer"), [5]);
 xassert_eqq($am->find_all("PCPer2"), [6]);
 xassert_eqq($am->find_all("PCPer3"), [7]);
 xassert_eqq($am->find_all("PCPer20"), [8]);
+
+// AbbreviationMatcher tests taken from old abbreviation styles
+$am = new AbbreviationMatcher;
+$am->add("Cover Letter", 1);
+$am->add("Other Artifact", 2);
+xassert_eqq($am->find_all("other-artifact"), [2]);
+xassert_eqq($am->find_all("cover-letter"), [1]);
+
+$am = new AbbreviationMatcher;
+$am->add("Second Round Paper", 1);
+$am->add("Second Round Response (PDF)", 2);
+xassert_eqq($am->find_all("second-round-paper"), [1]);
+xassert_eqq($am->find_all("second-round-response--pdf"), [2]);
+
+$am = new AbbreviationMatcher;
+$am->add("Paper is co-authored with at least one PC member", 1);
+xassert_eqq($am->find_all("paper-is-co-authored-with-at-least-one-pc-member"), [1]);
 
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);

@@ -58,15 +58,6 @@ function update_schema_create_options($conf) {
         $opj->id = $row->optionId;
         $opj->name = $row->optionName;
 
-        $abbr = PaperOption::abbreviate($opj->name, $opj->id);
-        if (!get($byabbr, $abbr)) {
-            $opj->abbr = $abbr;
-            $byabbr[$abbr] = $opj;
-        } else {
-            $opj->abbr = "opt$opj->id";
-            $byabbr[$abbr]->abbr = "opt" . $byabbr[$abbr]->id;
-        }
-
         if (trim($row->description) != "")
             $opj->description = trim($row->description);
 

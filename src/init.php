@@ -101,6 +101,7 @@ set_path_variables();
 // Load code
 class SiteLoader {
     static $map = [
+        "AbbreviationClass" => "lib/abbreviationmatcher.php",
         "AssignmentSet" => "src/assigners.php",
         "AutoassignerCosts" => "src/autoassigner.php",
         "BanalSettings" => "src/settings/s_subform.php",

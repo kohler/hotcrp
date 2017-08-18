@@ -225,31 +225,30 @@ class ReviewField implements Abbreviator, JsonSerializable {
 
     function abbreviations_for($name, $data) {
         assert($this === $data);
-        return $this->abbreviation();
+        return $this->search_keyword();
     }
-
-    function abbreviation() {
+    function search_keyword() {
         if ($this->abbreviation === null) {
-            $rf = $this->conf->review_form();
             $am = $this->conf->abbrev_matcher();
-            $this->abbreviation = $am->unique_abbreviation($this->name, $this, [$rf, "stopwords"]);
+            $aclass = new AbbreviationClass;
+            $aclass->stopwords = $this->conf->review_form()->stopwords();
+            $this->abbreviation = $am->unique_abbreviation($this->name, $this, $aclass);
             if (!$this->abbreviation)
                 $this->abbreviation = $this->name;
         }
         return $this->abbreviation;
     }
-    function search_keyword() {
-        return $this->abbreviation();
-    }
     function abbreviation1() {
-        return AbbreviationMatcher::make_abbreviation($this->name, 0, 1);
+        $aclass = new AbbreviationClass;
+        $aclass->type = AbbreviationClass::TYPE_LOWERDASH;
+        return AbbreviationMatcher::make_abbreviation($this->name, $aclass);
     }
     function web_abbreviation() {
         return '<span class="need-tooltip" data-tooltip="' . $this->name_html
-            . '" data-tooltip-dir="b">' . htmlspecialchars($this->abbreviation()) . "</span>";
+            . '" data-tooltip-dir="b">' . htmlspecialchars($this->search_keyword()) . "</span>";
     }
     function uid() {
-        return $this->abbreviation();
+        return $this->search_keyword();
     }
 
     static function unparse_letter($option_letter, $value) {
@@ -390,6 +389,7 @@ class ReviewForm implements JsonSerializable {
     public $fmap = array();
     public $forder;
     public $fieldName;
+    private $_stopwords;
 
     static public $revtype_names = [
         "None", "External", "PC", "Secondary", "Primary", "Meta"
@@ -453,20 +453,30 @@ class ReviewForm implements JsonSerializable {
     }
 
     function stopwords() {
-        $bits = [];
-        $bit = 1;
-        foreach ($this->fmap as $f) {
-            if (!$f->displayed)
-                continue;
-            foreach (preg_split('/[^A-Za-z0-9_.\']+/', strtolower(UnicodeHelper::deaccent($f->name))) as $w)
-                $bits[$w] = get($bits, $w, 0) | $bit;
-            $bit <<= 1;
+        // Produce a list of common words in review field names that should be
+        // avoided in abbreviations.
+        // For instance, if three review fields start with "Double-blind
+        // question:", we want to avoid those words.
+        if ($this->_stopwords === null) {
+            $bits = [];
+            $bit = 1;
+            foreach ($this->fmap as $f) {
+                if (!$f->displayed)
+                    continue;
+                $words = preg_split('/[^A-Za-z0-9_.\']+/', strtolower(UnicodeHelper::deaccent($f->name)));
+                if (count($words) <= 4) // Few words --> all of them meaningful
+                    continue;
+                foreach ($words as $w)
+                    $bits[$w] = get($bits, $w, 0) | $bit;
+                $bit <<= 1;
+            }
+            $stops = [];
+            foreach ($bits as $w => $v)
+                if ($v & ($v - 1))
+                    $stops[] = str_replace("'", "", $w);
+            $this->_stopwords = join("|", $stops);
         }
-        $stops = [];
-        foreach ($bits as $w => $v)
-            if ($v & ($v - 1))
-                $stops[] = str_replace("'", "", $w);
-        return join("|", $stops);
+        return $this->_stopwords;
     }
 
     function field($fid) {
