@@ -1571,7 +1571,7 @@ class Formula {
                 if (count($fs) === 1) {
                     $f = $fs[0];
                     if ($f instanceof PaperOption)
-                        $e = $this->_parse_option($f->abbreviation());
+                        $e = $this->_parse_option($f->search_keyword());
                     else if ($f instanceof ReviewField) {
                         if ($f->has_options)
                             $e = $this->_reviewer_decoration(new Score_Fexpr($f), $m[2]);

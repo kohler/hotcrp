@@ -1770,7 +1770,7 @@ class Option_SearchTerm extends SearchTerm {
 
     function debug_json() {
         $om = $this->om;
-        return [$this->type, $om->option->abbreviation(), $om->kind, $om->compar, $om->value];
+        return [$this->type, $om->option->search_keyword(), $om->kind, $om->compar, $om->value];
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Option_" . count($sqi->tables);

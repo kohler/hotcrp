@@ -1655,7 +1655,7 @@ class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
 class Option_PaperColumn extends PaperColumn {
     private $opt;
     function __construct(PaperOption $opt, $cj, $isrow) {
-        $name = $opt->abbreviation() . ($isrow ? "-row" : "");
+        $name = $opt->search_keyword() . ($isrow ? "-row" : "");
         $optcj = $opt->list_display($isrow);
         if ($optcj === true && $isrow)
             $optcj = ["row" => true];
@@ -1678,7 +1678,7 @@ class Option_PaperColumn extends PaperColumn {
         return $is_text ? $this->opt->name : htmlspecialchars($this->opt->name);
     }
     function completion_name() {
-        return $this->opt->abbreviation();
+        return $this->opt->search_keyword();
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->contact->can_view_paper_option($row, $this->opt, true);

@@ -470,10 +470,16 @@ class PaperOption implements Abbreviator {
         }
         return $this->_abbr;
     }
+    function search_keyword() {
+        return $this->abbreviation();
+    }
     function field_key() {
         return $this->id <= 0 ? $this->abbr : "opt" . $this->id;
     }
     function dtype_name() {
+        return $this->abbreviation();
+    }
+    function json_key() {
         return $this->abbreviation();
     }
 
@@ -491,10 +497,6 @@ class PaperOption implements Abbreviator {
             return 15000 + $this->position;
         else
             return 50000 + $this->position;
-    }
-
-    function search_keyword() {
-        return $this->abbreviation();
     }
 
     function has_selector() {

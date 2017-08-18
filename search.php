@@ -386,7 +386,7 @@ if ($pl) {
     // Options
     /*foreach ($Conf->paper_opts->option_list() as $ox)
         if ($pl->has("opt$ox->id") && $ox->list_display(null))
-            $display_options->checkbox_item(10, $ox->abbreviation(), $ox->name);*/
+            $display_options->checkbox_item(10, $ox->search_keyword(), $ox->name);*/
 
     // Reviewers group
     if ($Me->privChair) {
