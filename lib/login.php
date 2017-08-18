@@ -29,7 +29,7 @@ class LoginHelper {
 
     static function check_http_auth() {
         global $Conf, $Me;
-        assert($Conf->opt("httpAuthLogin"));
+        assert($Conf->opt("httpAuthLogin") !== null);
 
         // if user signed out of HTTP authentication, send a reauth request
         if (isset($_SESSION["reauth"])) {
