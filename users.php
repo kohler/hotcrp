@@ -116,7 +116,8 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     foreach ($users as $user) {
         $row = (object) ["first" => $user->firstName, "last" => $user->lastName,
             "email" => $user->email, "phone" => $user->voicePhoneNumber,
-            "disabled" => !!$user->disabled];
+            "disabled" => !!$user->disabled, "affiliation" => $user->affiliation,
+            "collaborators" => $user->collaborators];
         if ($user->preferredEmail && $user->preferredEmail !== $user->email)
             $row->preferred_email = $user->preferredEmail;
         if ($user->contactTags)
