@@ -29,6 +29,7 @@ function document_error($status, $msg) {
 class DocumentRequest {
     public $paperId;
     public $dtype;
+    public $opt;
     public $attachment;
     public $filters = [];
     public $req_filename;
@@ -96,13 +97,13 @@ class DocumentRequest {
                 document_error("404 Not Found", "No such document " . htmlspecialchars($this->req_filename) . ".");
         }
 
-        $this->dtype = null;
-        while ((string) $dtname !== "" && $this->dtype === null) {
-            if ($this->paperId < 0)
-                $this->dtype = $conf->paper_opts->find_nonpaper($dtname);
+        $this->opt = null;
+        while ((string) $dtname !== "" && $this->opt === null) {
+            if (($dtnum = cvtint($dtname, null)) !== null)
+                $this->opt = $conf->paper_opts->get($dtnum);
             else
-                $this->dtype = HotCRPDocument::parse_dtype($dtname);
-            if ($this->dtype !== null) {
+                $this->opt = $conf->paper_opts->find($dtname, $this->paperId < 0);
+            if ($this->opt !== null) {
                 $dtname = "";
                 break;
             }
@@ -121,10 +122,9 @@ class DocumentRequest {
         }
         if ((string) $dtname !== "")
             document_error("404 Not Found", "No such document type “" . htmlspecialchars($dtname) . "”.");
-        else if ($this->dtype === null)
-            $this->dtype = HotCRPDocument::parse_dtype($base_dtname);
-        if (is_object($this->dtype))
-            $this->dtype = $this->dtype->id;
+        else if ($this->opt === null)
+            $this->opt = $conf->paper_opts->find($base_dtname);
+        $this->dtype = $this->opt->id;
 
         if (isset($req["filter"])) {
             foreach (explode(" ", $req["filter"]) as $filtername)
@@ -137,7 +137,7 @@ class DocumentRequest {
         }
 
         if (!$want_path) {
-            $dtype_name = $conf->paper_opts->find1($this->dtype)->dtype_name();
+            $dtype_name = $this->opt->dtype_name();
             if ($this->paperId < 0)
                 $this->req_filename = "[$dtype_name";
             else if ($this->dtype === DTYPE_SUBMISSION)
@@ -197,14 +197,13 @@ function document_download() {
     $docid = null;
 
     if ($dr->dtype === null
-        || !($o = $Conf->paper_opts->get($dr->dtype))
-        || $o->nonpaper !== ($dr->paperId < 0))
+        || $dr->opt->nonpaper !== ($dr->paperId < 0))
         document_error("404 Not Found", "No such document “" . htmlspecialchars($dr->req_filename) . "”.");
 
-    if ($o->nonpaper) {
+    if ($dr->opt->nonpaper) {
         $prow = new PaperInfo(["paperId" => -2], null, $Conf);
-        if (($o->visibility === "admin" && !$Me->privChair)
-            || ($o->visibility !== "all" && !$Me->isPC))
+        if (($dr->opt->visibility === "admin" && !$Me->privChair)
+            || ($dr->opt->visibility !== "all" && !$Me->isPC))
             document_error("403 Forbidden", "You don’t have permission to view this document.");
     } else {
         $prow = $Conf->paperRow($dr->paperId, $Me, $whyNot);

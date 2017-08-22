@@ -27,21 +27,6 @@ class HotCRPDocument extends Filer {
         $this->no_filestore = true;
     }
 
-    static function parse_dtype($dname) {
-        global $Conf;
-        if (preg_match('/\A-?\d+\z/', $dname))
-            return (int) $dname;
-        $dname = strtolower($dname);
-        if ($dname === "paper" || $dname === "submission")
-            return DTYPE_SUBMISSION;
-        else if ($dname === "final")
-            return DTYPE_FINAL;
-        else if (($o = $Conf->paper_opts->find1($dname)))
-            return $o->id;
-        else
-            return null;
-    }
-
     static function filename(DocumentInfo $doc, $filters = null) {
         $fn = $doc->conf->download_prefix;
         if ($doc->documentType == DTYPE_SUBMISSION)
