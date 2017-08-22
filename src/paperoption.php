@@ -131,8 +131,6 @@ class PaperOptionList {
             if (isset($oj->require_setting) && is_string($oj->require_setting)
                 && !$this->check_require_setting($oj->require_setting))
                 return true;
-            if (!isset($oj->abbr) || $oj->abbr == "")
-                $oj->abbr = PaperOption::abbreviate($oj->name, $oj->id);
             $this->jlist[$oj->id] = $oj;
             return true;
         } else
@@ -238,34 +236,11 @@ class PaperOptionList {
             return array();
         if ($iname === "any")
             return $this->option_list();
-        if (substr($iname, 0, 4) === "opt-") {
-            $iname = substr($iname, 4);
+        if (substr($iname, 0, 4) === "opt-")
             $name = substr($name, 4);
-        }
-
-        // old style
-        $oabbr = array();
-        foreach ($this->option_json_list() as $id => $oj)
-            if ($oj->abbr === $iname) {
-                $oabbr = [$id => $oj->abbr];
-                break;
-            } else
-                $oabbr[$id] = $oj->abbr;
-        $oabbr = Text::simple_search($iname, $oabbr, Text::SEARCH_CASE_SENSITIVE);
-        $omap1 = [];
-        foreach ($oabbr as $id => $x)
-            if (($o = $this->get($id)) && !$o->nonpaper)
-                $omap1[$id] = $o;
-
-        // new style
         $omap = [];
         foreach ($this->conf->find_all_fields($name, Conf::FSRCH_OPTION) as $o)
             $omap[$o->id] = $o;
-
-        // check equivalence
-        if ($omap1 != $omap && $omap1)
-            error_log("{$this->conf->dbname}: different option search for $name, " . join(",", array_keys($omap1)) . " vs. " . join(",", array_keys($omap)));
-
         return $omap;
     }
 
@@ -296,30 +271,9 @@ class PaperOptionList {
     }
 
     function find_all_nonpaper($name) {
-        // old style
-        $iname = strtolower($name);
-        $oabbr = array();
-        foreach ($this->option_json_list() as $id => $oj)
-            if ($oj->abbr === $iname) {
-                $oabbr = [$id => $oj->abbr];
-                break;
-            } else
-                $oabbr[$id] = $oj->abbr;
-        $oabbr = Text::simple_search($iname, $oabbr, Text::SEARCH_CASE_SENSITIVE);
-        $omap1 = [];
-        foreach ($oabbr as $id => $x)
-            if (($o = $this->get($id)) && $o->nonpaper)
-                $omap1[$id] = $o;
-
-        // new style
         $omap = [];
         foreach ($this->nonpaper_abbrev_matcher()->find_all($name) as $o)
             $omap[$o->id] = $o;
-
-        // check equivalence
-        if ($omap1 != $omap && $omap1)
-            error_log("{$this->conf->dbname}: different option search for $name, " . join(",", array_keys($omap1)) . " vs. " . join(",", array_keys($omap)));
-
         return $omap;
     }
 
@@ -449,15 +403,6 @@ class PaperOption implements Abbreviator {
             return $ap < $bp ? -1 : 1;
         else
             return $a->id - $b->id;
-    }
-
-    static function abbreviate($name, $id) {
-        $abbr = strtolower(UnicodeHelper::deaccent($name));
-        $abbr = preg_replace('/[^a-z_0-9]+/', "-", $abbr);
-        $abbr = preg_replace('/^-+|-+$/', "", $abbr);
-        if (preg_match('/\A(?:|p(?:aper)?\d*|submission|final|opt\d*|\d.*)\z/', $abbr))
-            $abbr = "opt$id";
-        return $abbr;
     }
 
     static function type_has_selector($type) {
