@@ -204,26 +204,15 @@ if (isset($_REQUEST["downloadForm"]))
 
 function download_all_text_reviews() {
     global $rf, $Conf, $Me, $prow, $paperTable;
-    $paperTable->resolveComments();
-    $rcs = $paperTable->reviews_and_comments();
-    $last_type = true;
+    $lastrc = null;
     $text = "";
-    foreach ($paperTable->reviews_and_comments() as $rc) {
-        if (isset($rc->reviewId))
-            $type = "review";
-        else
-            $type = $rc->commentType & COMMENTTYPE_RESPONSE ? "response" : "comment";
-        if ($text !== "") {
-            if ($last_type !== "comment" || $type !== "comment")
-                $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
-            else
-                $text .= "\n";
-        }
-        $last_type = $type;
+    foreach ($prow->viewable_submitted_reviews_and_comments($Me, null) as $rc) {
+        $text .= PaperInfo::review_or_comment_text_separator($lastrc, $rc);
         if (isset($rc->reviewId))
             $text .= $rf->pretty_text($prow, $rc, $Me, false, true);
         else
             $text .= $rc->unparse_text($Me, true);
+        $lastrc = $rc;
     }
     if ($text === "") {
         $whyNot = $Me->perm_view_review($prow, null, null);

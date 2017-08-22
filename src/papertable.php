@@ -2151,39 +2151,6 @@ class PaperTable {
             . "</a>&nbsp;You have used administrator privileges to view and edit reviews for this submission. (" . $a . "Unprivileged view</a>)";
     }
 
-    static function analyze_rc($x) {
-        if (isset($x->commentId))
-            return [!!($x->commentType & COMMENTTYPE_DRAFT),
-                    (int) $x->timeDisplayed, true];
-        else
-            return [$x->reviewSubmitted && !$x->reviewOrdinal,
-                    (int) $x->timeDisplayed, false];
-    }
-    static function sort_rc($a, $b) {
-        list($a_draft, $a_displayed_at, $a_iscomment) = self::analyze_rc($a);
-        list($b_draft, $b_displayed_at, $b_iscomment) = self::analyze_rc($b);
-        // drafts come last
-        if ($a_draft !== $b_draft
-            && ($a_draft ? !$a_displayed_at : !$b_displayed_at))
-            return $a_draft ? 1 : -1;
-        // order by displayed_at
-        if ($a_displayed_at !== $b_displayed_at)
-            return $a_displayed_at < $b_displayed_at ? -1 : 1;
-        // reviews before comments
-        if ($a_iscomment !== $b_iscomment)
-            return !$a_iscomment ? -1 : 1;
-        if ($a_iscomment)
-            // order by commentId (which generally agrees with ordinal)
-            return $a->commentId < $b->commentId ? -1 : 1;
-        else {
-            // order by ordinal or reviewId
-            if ($a->reviewOrdinal && $b->reviewOrdinal)
-                return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
-            else
-                return $a->reviewId < $b->reviewId ? -1 : 1;
-        }
-    }
-
     private function include_comments() {
         global $Me;
         return !$this->allreviewslink
@@ -2236,7 +2203,7 @@ class PaperTable {
                 $a[] = $rrow;
         if ($this->include_comments())
             $a = array_merge($a, $this->mycrows ? : []);
-        usort($a, "PaperTable::sort_rc");
+        usort($a, "PaperInfo::review_or_comment_compare");
         return $a;
     }
 

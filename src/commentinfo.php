@@ -290,19 +290,18 @@ class CommentInfo {
     function unparse_text(Contact $contact, $no_title = false) {
         if (!($this->commentType & COMMENTTYPE_RESPONSE)) {
             $ordinal = $this->unparse_ordinal();
-            if ($ordinal)
-                $x = $no_title ? "@$ordinal" : "Comment @$ordinal";
-            else
-                $x = "Comment";
+            $x = "Comment" . ($ordinal ? " @$ordinal" : "");
         } else if (($rname = $this->conf->resp_round_text($this->commentRound)))
             $x = "$rname Response";
         else
             $x = "Response";
         if ($contact->can_view_comment_identity($this->prow, $this, false))
             $x .= " by " . Text::user_text($this->user());
-        $x .= "\n" . str_repeat("-", 75) . "\n";
-        if (!$no_title)
+        $x .= "\n" . str_repeat("=", 75) . "\n";
+        if (!$no_title) {
+            $prow = $this->prow;
             $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2);
+        }
         if (($tags = $this->viewable_nonresponse_tags($contact))) {
             $tagger = new Tagger($contact);
             $x .= prefix_word_wrap("* ", $tagger->unparse_hashed($tags), 2);

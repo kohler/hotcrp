@@ -23,8 +23,7 @@ class GetReviewBase_SearchAction extends SearchAction {
         $this->isform = $isform;
         $this->iszip = $iszip;
     }
-    protected function finish(Contact $user, $ssel, $texts, $errors) {
-        $texts = $ssel->reorder($texts);
+    protected function finish(Contact $user, $texts, $errors) {
         uksort($errors, "strnatcmp");
 
         if (empty($texts)) {
@@ -118,7 +117,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
             }
         }
 
-        $this->finish($user, $ssel, $texts, $errors);
+        $this->finish($user, $ssel->reorder($texts), $errors);
     }
 }
 
@@ -142,18 +141,30 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
                 $errors["#$row->paperId: " . whyNotText($whyNot, "view")] = true;
                 continue;
             }
-            if (($whyNot = $user->perm_view_review($row, null, null)))
-                $errors["#$row->paperId: " . whyNotText($whyNot, "view review")] = true;
-            else {
-                $row->ensure_full_reviews();
-                $row->ensure_reviewer_names();
-                foreach ($row->viewable_submitted_reviews_by_display($user, null) as $rrow)
-                    defappend($texts[$row->paperId], $rf->pretty_text($row, $rrow, $user) . "\n");
+            $rctext = "";
+            $last_rc = null;
+            foreach ($row->viewable_submitted_reviews_and_comments($user, null) as $rc) {
+                $rctext .= PaperInfo::review_or_comment_text_separator($last_rc, $rc);
+                if (isset($rc->reviewId))
+                    $rctext .= $rf->pretty_text($row, $rc, $user, false, true);
+                else
+                    $rctext .= $rc->unparse_text($user, true);
+                $last_rc = $rc;
             }
-            foreach ($row->viewable_comments($user, null) as $crow)
-                defappend($texts[$row->paperId], $crow->unparse_text($user) . "\n");
+            if ($rctext !== "") {
+                $header = "{$user->conf->short_name} Paper #{$row->paperId} Reviews and Comments\n";
+                $texts[$row->paperId] = $header . str_repeat("=", 75) . "\n"
+                    . "* Paper #{$row->paperId} {$row->title}\n\n"
+                    . $rctext;
+            } else if (($whyNot = $user->perm_review($row, null, null)))
+                $errors["#$row->paperId: " . whyNotText($whyNot, "view review")] = true;
         }
-        $this->finish($user, $ssel, $texts, $errors);
+        $texts = array_values($ssel->reorder($texts));
+        foreach ($texts as $i => &$text)
+            if ($i > 0)
+                $text = "\n\n\n" . str_repeat("* ", 37) . "*\n\n\n\n" . $text;
+        unset($text);
+        $this->finish($user, $texts, $errors);
     }
 }
 

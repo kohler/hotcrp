@@ -1830,6 +1830,57 @@ class PaperInfo {
         return $crows;
     }
 
+    static function analyze_review_or_comment($x) {
+        if (isset($x->commentId))
+            return [!!($x->commentType & COMMENTTYPE_DRAFT),
+                    (int) $x->timeDisplayed, true];
+        else
+            return [$x->reviewSubmitted && !$x->reviewOrdinal,
+                    (int) $x->timeDisplayed, false];
+    }
+    static function review_or_comment_compare($a, $b) {
+        list($a_draft, $a_displayed_at, $a_iscomment) = self::analyze_review_or_comment($a);
+        list($b_draft, $b_displayed_at, $b_iscomment) = self::analyze_review_or_comment($b);
+        // drafts come last
+        if ($a_draft !== $b_draft
+            && ($a_draft ? !$a_displayed_at : !$b_displayed_at))
+            return $a_draft ? 1 : -1;
+        // order by displayed_at
+        if ($a_displayed_at !== $b_displayed_at)
+            return $a_displayed_at < $b_displayed_at ? -1 : 1;
+        // reviews before comments
+        if ($a_iscomment !== $b_iscomment)
+            return !$a_iscomment ? -1 : 1;
+        if ($a_iscomment)
+            // order by commentId (which generally agrees with ordinal)
+            return $a->commentId < $b->commentId ? -1 : 1;
+        else {
+            // order by ordinal or reviewId
+            if ($a->reviewOrdinal && $b->reviewOrdinal)
+                return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
+            else
+                return $a->reviewId < $b->reviewId ? -1 : 1;
+        }
+    }
+    function viewable_submitted_reviews_and_comments(Contact $user, $forceShow) {
+        $this->ensure_full_reviews();
+        $this->ensure_reviewer_names();
+        $rrows = $this->viewable_submitted_reviews_by_display($user, $forceShow);
+        $crows = $this->viewable_comments($user, $forceShow);
+        $rcs = array_merge(array_values($rrows), array_values($crows));
+        usort($rcs, "PaperInfo::review_or_comment_compare");
+        return $rcs;
+    }
+    static function review_or_comment_text_separator($a, $b) {
+        if (!$a || !$b)
+            return "";
+        else if (isset($a->reviewId) || isset($b->reviewId)
+                 || (($a->commentType | $b->commentType) & COMMENTTYPE_RESPONSE))
+            return "\n\n\n";
+        else
+            return "\n\n";
+    }
+
 
     function watching($notifytype, Contact $user) {
         if ($this->watch & ($notifytype << WATCHSHIFT_ISSET))
