@@ -279,10 +279,6 @@ class PaperOptionList {
         }
     }
 
-    function find1($name) {
-        return $this->find($name);
-    }
-
     function nonpaper_abbrev_matcher() {
         // Nonpaper options aren't stored in the main abbrevmatcher; put them
         // in their own.
