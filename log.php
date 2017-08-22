@@ -511,11 +511,11 @@ foreach ($visible_rows as $row) {
             $act = $m[4];
         }
     } else if ($row->paperId > 0
-               && (substr($act, 0, 8) === "Updated " || substr($act, 0, 10) === "Submitted " || substr($act, 0, 11) === "Registered ")) {
-        if (preg_match('/\A(\S+(?: final)?.* )(final|submission)(.*)\z/', $act, $m)) {
-            $at = $m[1] . "<a href=\"" . hoturl("doc", "p={$row->paperId}&amp;dt={$m[2]}&amp;at={$row->timestamp}") . "\">{$m[2]}</a>";
-            $act = $m[3];
-        }
+               && (substr($act, 0, 8) === "Updated " || substr($act, 0, 10) === "Submitted " || substr($act, 0, 11) === "Registered ")
+               && preg_match('/\A(\S+(?: final)?)(.*)\z/', $act, $m)
+               && preg_match('/\A(.* )(final|submission)((?:,| |\z).*)\z/', $m[2], $mm)) {
+        $at = $m[1] . $mm[1] . "<a href=\"" . hoturl("doc", "p={$row->paperId}&amp;dt={$mm[2]}&amp;at={$row->timestamp}") . "\">{$mm[2]}</a>";
+        $act = $mm[3];
     }
     if (preg_match('/\A(.* |)\(papers ([\d, ]+)\)?\z/', $act, $m)) {
         $at .= htmlspecialchars($m[1])
