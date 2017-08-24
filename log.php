@@ -8,12 +8,13 @@ if (!$Me->is_manager())
     $Me->escape();
 
 $Conf->header("Log", "actionlog", actionBar());
+unset($_GET["forceShow"], $_POST["forceShow"], $_REQUEST["forceShow"]);
 global $Qreq;
 $Qreq = make_qreq();
 $Eclass = [];
 $nlinks = 6;
 
-$page = $Qreq["page"];
+$page = $Qreq->page;
 if ($page === "earliest")
     $page = false;
 else {
@@ -547,7 +548,8 @@ if (!$Me->privChair || !empty($chair_conflict_pids)) {
         if ($Qreq->forceShow)
             $Conf->msg("xinfo", "Showing all entries. (" . Ht::link("Unprivileged view", selfHref($req + ["forceShow" => null])) . ")");
         else
-            $Conf->msg("xinfo", "Not showing entries for " . Ht::link("conflicted administered papers", hoturl("search", "q=" . join("+", array_keys($chair_conflict_pids)))) . ". (" . Ht::link("Override conflicts", selfHref($req + ["forceShow" => 1])) . ")");
+            $Conf->msg("xinfo", "Not showing entries for " . Ht::link("conflicted administered papers", hoturl("search", "q=" . join("+", array_keys($chair_conflict_pids)))) . ".");
+            //" (" . Ht::link("Override conflicts", selfHref($req + ["forceShow" => 1])) . ")");
     }
     echo '</div>';
 }
