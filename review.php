@@ -169,7 +169,7 @@ if (isset($_REQUEST["deletereview"]) && check_post()
             $Me->log_activity("$editRrowLogname deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
             if ($paperTable->editrrow->reviewToken != 0)
-                $Conf->update_rev_tokens_setting(true);
+                $Conf->update_rev_tokens_setting(-1);
 
             // perhaps a delegatee needs to redelegate
             if ($paperTable->editrrow->reviewType < REVIEW_SECONDARY && $paperTable->editrrow->requestedBy > 0)
@@ -276,7 +276,7 @@ function refuseReview() {
     // confirmation message
     $Conf->confirmMsg("The request that you review paper #$prow->paperId has been removed.  Mail was sent to the person who originally requested the review.");
     if ($hadToken)
-        $Conf->update_rev_tokens_setting(true);
+        $Conf->update_rev_tokens_setting(-1);
 
     $prow = null;
     confHeader();

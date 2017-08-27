@@ -119,7 +119,8 @@ function retractRequest($email, $prow, $confirm = true) {
 if (isset($_REQUEST["retract"]) && check_post()) {
     retractRequest($_REQUEST["retract"], $prow);
     $Conf->qe("unlock tables");
-    $Conf->update_rev_tokens_setting(false);
+    if ($Conf->setting("rev_tokens") === -1)
+        $Conf->update_rev_tokens_setting(0);
     redirectSelf();
     loadRows();
 }

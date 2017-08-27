@@ -883,9 +883,9 @@ class Review_Assigner extends Assigner {
         if ($this->contact->is_anonymous_user()
             && (!$this->item->existed() || $this->item->deleted())) {
             $extra["token"] = true;
-            $aset->cleanup_callback("rev_token", function ($aset) {
-                $aset->conf->update_rev_tokens_setting(true);
-            });
+            $aset->cleanup_callback("rev_token", function ($aset, $vals) {
+                $aset->conf->update_rev_tokens_setting(min($vals));
+            }, $this->item->existed() ? 0 : 1);
         }
         $reviewId = $aset->user->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId)

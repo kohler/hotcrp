@@ -106,7 +106,8 @@ function saveAssignments($qreq, $reviewer) {
     if ($del)
         $Conf->qe_raw("delete from PaperConflict where contactId={$reviewer->contactId} and (" . substr($del, 4) . ")");
 
-    $Conf->update_rev_tokens_setting(false);
+    if ($Conf->setting("rev_tokens") === -1)
+        $Conf->update_rev_tokens_setting(0);
 
     if ($Conf->setting("pcrev_assigntime") == $Now)
         $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
