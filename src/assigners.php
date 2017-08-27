@@ -1067,12 +1067,23 @@ class Lead_Assigner extends Assigner {
         $locks["Paper"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        $aset->user->assign_paper_pc($this->pid, $this->type,
-            $this->item->get(false, "_cid") ? : 0,
-            ["old_cid" => $this->item->get(true, "_cid")]);
-        $aset->cleanup_callback("lead", function ($aset) {
-            $aset->conf->update_paperlead_setting();
-        });
+        $new_cid = $this->item->get(false, "_cid") ? : 0;
+        $old_cid = $this->item->get(true, "_cid") ? : 0;
+        $aset->conf->qe("update Paper set {$this->type}ContactId=? where paperId=? and {$this->type}ContactId=?", $new_cid, $this->pid, $old_cid);
+        if ($new_cid)
+            $aset->user->log_activity_for($new_cid, "Set {$this->description}", $this->pid);
+        else
+            $aset->user->log_activity("Clear {$this->description}", $this->pid);
+        if ($this->type === "lead" || $this->type === "shepherd") {
+            $aset->cleanup_callback("lead", function ($aset, $vals) {
+                $aset->conf->update_paperlead_setting(min($vals));
+            }, $new_cid ? 1 : 0);
+        } else if ($this->type === "manager") {
+            $aset->cleanup_callback("manager", function ($aset, $vals) {
+                $aset->conf->update_papermanager_setting(min($vals));
+            }, $new_cid ? 1 : 0);
+        }
+        $aset->cleanup_update_rights();
     }
 }
 
@@ -1740,19 +1751,17 @@ class Decision_Assigner extends Assigner {
         if ($dec > 0) {
             // accepted papers are always submitted
             $prow = $aset->prow($this->pid);
-            $aset->cleanup_callback("paperacc", function ($aset) {
-                $aset->conf->update_paperacc_setting(1);
-            });
             if ($prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0) {
                 $aset->conf->qe("update Paper set timeSubmitted=$Now where paperId=?", $this->pid);
                 $aset->cleanup_callback("papersub", function ($aset) {
                     $aset->conf->update_papersub_setting(1);
                 });
             }
-        } else if ($this->item->get(true, "_decision") > 0)
-            $aset->cleanup_callback("paperacc-", function ($aset) {
-                $aset->conf->update_paperacc_setting(-1);
-            });
+        }
+        if ($dec > 0 || $this->item->get(true, "_decision") > 0)
+            $aset->cleanup_callback("paperacc", function ($aset, $vals) {
+                $aset->conf->update_paperacc_setting(min($vals));
+            }, $dec > 0 ? 1 : 0);
     }
 }
 
@@ -2470,7 +2479,7 @@ class AssignmentSet {
         foreach ($this->assigners as $assigner)
             $assigner->cleanup($this);
         foreach ($this->cleanup_callbacks as $cb)
-            call_user_func($cb, $this);
+            call_user_func($cb[0], $this, $cb[1]);
         if (!empty($this->cleanup_notify_tracker)
             && $this->conf->opt("trackerCometSite"))
             MeetingTracker::contact_tracker_comet($this->conf, array_keys($this->cleanup_notify_tracker));
@@ -2478,8 +2487,14 @@ class AssignmentSet {
         return true;
     }
 
-    function cleanup_callback($name, $func) {
-        $this->cleanup_callbacks[$name] = $func;
+    function cleanup_callback($name, $func, $arg = null) {
+        if (!isset($this->cleanup_callbacks[$name]))
+            $this->cleanup_callbacks[$name] = [$func, null];
+        if (func_num_args() > 2)
+            $this->cleanup_callbacks[$name][1][] = $arg;
+    }
+    function cleanup_update_rights() {
+        $this->cleanup_callback("update_rights", "Contact::update_rights");
     }
     function cleanup_notify_tracker($pid) {
         $this->cleanup_notify_tracker[$pid] = true;

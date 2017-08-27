@@ -1526,14 +1526,18 @@ class Conf {
         }
     }
 
-    function update_paperlead_setting() {
-        $this->qe_raw("insert into Settings (name, value) select 'paperlead', count(paperId) from Paper where leadContactId>0 or shepherdContactId>0 limit 1 on duplicate key update value=values(value)");
-        $this->settings["paperlead"] = $this->fetch_ivalue("select value from Settings where name='paperlead'");
+    function update_paperlead_setting($adding) {
+        if ($this->setting("paperlead", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
+            $this->qe_raw("insert into Settings (name, value) select 'paperlead', exists (select * from Paper where leadContactId>0 or shepherdContactId>0) on duplicate key update value=values(value)");
+            $this->settings["paperlead"] = $this->fetch_ivalue("select value from Settings where name='paperlead'");
+        }
     }
 
-    function update_papermanager_setting() {
-        $this->qe_raw("insert into Settings (name, value) select 'papermanager', count(paperId) from Paper where managerContactId>0 limit 1 on duplicate key update value=values(value)");
-        $this->settings["papermanager"] = $this->fetch_ivalue("select value from Settings where name='papermanager'");
+    function update_papermanager_setting($adding) {
+        if ($this->setting("papermanager", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
+            $this->qe_raw("insert into Settings (name, value) select 'papermanager', exists (select * from Paper where managerContactId>0) on duplicate key update value=values(value)");
+            $this->settings["papermanager"] = $this->fetch_ivalue("select value from Settings where name='papermanager'");
+        }
     }
 
     function update_metareviews_setting($adding) {
