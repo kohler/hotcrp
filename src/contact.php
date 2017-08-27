@@ -547,7 +547,7 @@ class Contact {
             return Text::name_text($user);
         $n = Text::name_html($user);
         if ($pfx === "r" && isset($user->contactTags)
-            && ($colors = $this->reviewer_color_classes_for($user)))
+            && ($colors = $this->user_span_color_classes_for($user)))
             $n = '<span class="' . $colors . '">' . $n . '</span>';
         return $n;
     }
@@ -594,8 +594,15 @@ class Contact {
         return $this->name_for("t", $x);
     }
 
-    function reviewer_color_classes_for(Contact $x) {
-        if ($this->isPC && ($colors = $x->viewable_color_classes($this))) {
+    function user_color_classes_for(Contact $x) {
+        if ($this->isPC && ($colors = $x->viewable_color_classes($this)))
+            return $colors;
+        else
+            return "";
+    }
+
+    function user_span_color_classes_for(Contact $x) {
+        if (($colors = $this->user_color_classes_for($x))) {
             if (TagInfo::classes_have_colors($colors))
                 $colors = "tagcolorspan " . $colors;
             return $colors;

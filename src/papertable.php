@@ -1350,7 +1350,6 @@ class PaperTable {
         if ($this->prow->$field == 0 && !$editable)
             return;
         $value = $this->prow->$field;
-        $pc = $this->conf->pc_members();
 
         if ($wholefold === null)
             $this->_papstripBegin($type, true);
@@ -1360,19 +1359,12 @@ class PaperTable {
         }
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             '<div class="psv">';
-        $colors = "";
-        $p = null;
-        if ($value && isset($pc[$value]))
-            $n = $Me->name_html_for($value);
-        else
-            $n = $value ? "Unknown!" : "";
+        $p = $this->conf->pc_member_by_id($value);
+        $n = $p ? $Me->name_html_for($p) : ($value ? "Unknown!" : "");
         $text = '<p class="fn odname">' . $n . '</p>';
-        if ($Me->can_view_reviewer_tags($this->prow)) {
-            $classes = "";
-            if ($p && $p->contactTags)
-                $classes = $p->viewable_color_classes($Me);
-            echo '<div class="pscopen taghl', rtrim(" $classes"), '">', $text, '</div>';
-        } else
+        if ($p && ($classes = $Me->user_color_classes_for($p)))
+            echo '<div class="pscopen taghl ', $classes, '">', $text, '</div>';
+        else
             echo $text;
 
         if ($editable) {
