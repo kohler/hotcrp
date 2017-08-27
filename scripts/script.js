@@ -6225,7 +6225,7 @@ function populate_pcselector() {
     var selected = this.getAttribute("data-pcselector-selected"), selindex = 0;
     for (; i < optids.length; ++i) {
         if (i < 0 || !+optids[i]) {
-            email = "0";
+            email = "none";
             name = "None";
         } else if ((x = hotcrp_pc[optids[i]])) {
             email = x.email;

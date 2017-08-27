@@ -18,27 +18,18 @@ class PaperApi {
     }
 
     private static function set_paper_pc_api(Contact $user, $qreq, $prow, $type) {
-        // canonicalize $value
-        $value = $qreq->$type;
-        $pc = null;
-        if ($value === "0" || $value === 0 || $value === "none")
-            $pc = 0;
-        else if (is_string($value))
-            $pc = $user->conf->pc_member_by_email($value);
-        if (!$pc && $pc !== 0)
-            return ["ok" => false, "error" => "No such PC member “" . htmlspecialchars($value) . "”."];
-
-        if ($type == "manager" ? $user->privChair : $user->can_administer($prow)) {
-            if (!$pc || ($pc->isPC && $pc->can_accept_review_assignment($prow))) {
-                $user->assign_paper_pc($prow, $type, $pc);
-                $j = ["ok" => true, "result" => $pc ? $user->name_html_for($pc) : "None"];
-                if ($user->can_view_reviewer_tags($prow))
-                    $j["color_classes"] = $pc ? $pc->viewable_color_classes($user) : "";
-                return $j;
-            } else
-                return ["ok" => false, "error" => Text::user_html($pc) . " can’t be the $type for paper #{$prow->paperId}."];
+        $aset = new AssignmentSet($user);
+        $aset->enable_papers($prow);
+        $aset->parse("paper,action,user\n{$prow->paperId},$type," . CsvGenerator::quote($qreq->$type));
+        if ($aset->execute()) {
+            $cid = $user->conf->fetch_ivalue("select {$type}ContactId from Paper where paperId=?", $prow->paperId);
+            $luser = $cid ? $user->conf->pc_member_by_id($cid) : null;
+            $j = ["ok" => true, "result" => $luser ? $user->name_html_for($luser) : "None"];
+            if ($user->can_view_reviewer_tags($prow))
+                $j["color_classes"] = $cid ? $user->user_color_classes_for($luser) : "";
+            return $j;
         } else
-            return ["ok" => false, "error" => "You don’t have permission to set the $type for paper #{$prow->paperId}."];
+            return ["ok" => false, "error" => join("<br />", $aset->errors_html())];
     }
 
     static function setlead_api(Contact $user, $qreq, $prow) {
