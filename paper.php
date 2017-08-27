@@ -346,6 +346,7 @@ if ($Qreq->delete && check_post()) {
         if (!$Me->privChair || $Qreq->doemail > 0)
             HotCRPMailer::send_contacts("@deletepaper", $prow, array("reason" => (string) $Qreq->emailNote, "infoNames" => 1));
         // XXX email self?
+        $rrows = $prow->reviews_by_id();
 
         $error = false;
         $tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewPreference', 'PaperTopic', 'PaperTag', "PaperOption");
@@ -358,6 +359,14 @@ if ($Qreq->delete && check_post()) {
             $Conf->update_papersub_setting(-1);
             if ($prow->outcome > 0)
                 $Conf->update_paperacc_setting(-1);
+            if ($prow->leadContactId > 0 || $prow->shepherdContactId > 0)
+                $Conf->update_paperlead_setting(-1);
+            if ($prow->managerContactId > 0)
+                $Conf->update_papermanager_setting(-1);
+            if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewToken > 0; }))
+                $Conf->update_rev_tokens_setting(-1);
+            if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewType == REVIEW_META; }))
+                $Conf->update_metareviews_setting(-1);
             $Me->log_activity("Deleted", $prow->paperId);
         }
 
