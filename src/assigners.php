@@ -57,7 +57,7 @@ class AssignmentState {
     private $types = array();
     private $realizers = [];
     public $conf;
-    public $contact;  // executor
+    public $user;     // executor
     public $reviewer; // default contact
     public $override;
     private $cmap;
@@ -69,9 +69,9 @@ class AssignmentState {
     public $paper_exact_match = true;
     public $errors = [];
 
-    function __construct(Contact $contact, $override) {
-        $this->conf = $contact->conf;
-        $this->contact = $this->reviewer = $contact;
+    function __construct(Contact $user, $override) {
+        $this->conf = $user->conf;
+        $this->user = $this->reviewer = $user;
         $this->override = $override;
         $this->cmap = new AssignerContacts($this->conf);
     }
@@ -213,8 +213,8 @@ class AssignmentState {
                 $fetch_pids[] = $p;
         assert($initial_load || empty($fetch_pids));
         if (!empty($fetch_pids)) {
-            $result = $this->contact->paper_result(["paperId" => $fetch_pids, "tags" => $this->conf->has_tracks()]);
-            while ($result && ($prow = PaperInfo::fetch($result, $this->contact)))
+            $result = $this->user->paper_result(["paperId" => $fetch_pids, "tags" => $this->conf->has_tracks()]);
+            while ($result && ($prow = PaperInfo::fetch($result, $this->user)))
                 $this->prows[$prow->paperId] = $prow;
             Dbl::free($result);
         }
@@ -460,8 +460,8 @@ class AssignmentParser {
         return false;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->contact->can_administer($prow, $state->override)
-            && !$state->contact->privChair)
+        if (!$state->user->can_administer($prow, $state->override)
+            && !$state->user->privChair)
             return "You can’t administer #{$prow->paperId}.";
         else if ($prow->timeWithdrawn > 0)
             return "#$prow->paperId has been withdrawn.";
@@ -803,7 +803,7 @@ class Review_Assigner extends Assigner {
     private function unparse_item(AssignmentSet $aset, $before) {
         if (!$this->item->get($before, "_rtype"))
             return "";
-        $t = $aset->contact->reviewer_html_for($this->contact) . ' '
+        $t = $aset->user->reviewer_html_for($this->contact) . ' '
             . review_type_icon($this->item->get($before, "_rtype"),
                                !$this->item->get($before, "_rsubmitted"));
         if (($round = $this->item->get($before, "_round")))
@@ -821,7 +821,7 @@ class Review_Assigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $aset->show_column("reviewers");
-        $t = $aset->contact->reviewer_html_for($this->contact);
+        $t = $aset->user->reviewer_html_for($this->contact);
         if ($this->item->deleted())
             $t = '<del>' . $t . '</del>';
         if ($this->item->differs("_rtype") || $this->item->differs("_rsubmitted")) {
@@ -887,9 +887,9 @@ class Review_Assigner extends Assigner {
                 $aset->conf->update_rev_tokens_setting(true);
             });
         }
-        $reviewId = $aset->contact->assign_review($this->pid, $this->cid, $this->rtype, $extra);
+        $reviewId = $aset->user->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId)
-            $aset->contact->unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
+            $aset->user->unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
         if (get($extra, "token") && $reviewId)
             $this->token = $aset->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=? and reviewId=?", $this->pid, $reviewId);
     }
@@ -963,7 +963,7 @@ class Lead_AssignmentParser extends AssignmentParser {
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($this->key === "manager")
-            return $state->contact->privChair ? true : "You can’t change paper administrators.";
+            return $state->user->privChair ? true : "You can’t change paper administrators.";
         else
             return parent::allow_paper($prow, $state);
     }
@@ -1032,9 +1032,9 @@ class Lead_Assigner extends Assigner {
             $aset->show_column("reviewers");
         $t = [];
         if ($this->item->existed())
-            $t[] = '<del>' . $aset->contact->reviewer_html_for($this->item->get(true, "_cid")) . " " . $this->icon() . '</del>';
+            $t[] = '<del>' . $aset->user->reviewer_html_for($this->item->get(true, "_cid")) . " " . $this->icon() . '</del>';
         if (!$this->item->deleted())
-            $t[] = '<ins>' . $aset->contact->reviewer_html_for($this->contact) . " " . $this->icon() . '</ins>';
+            $t[] = '<ins>' . $aset->user->reviewer_html_for($this->contact) . " " . $this->icon() . '</ins>';
         return join(" ", $t);
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
@@ -1067,7 +1067,7 @@ class Lead_Assigner extends Assigner {
         $locks["Paper"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        $aset->contact->assign_paper_pc($this->pid, $this->type,
+        $aset->user->assign_paper_pc($this->pid, $this->type,
             $this->item->get(false, "_cid") ? : 0,
             ["old_cid" => $this->item->get(true, "_cid")]);
         $aset->cleanup_callback("lead", function ($aset) {
@@ -1086,13 +1086,13 @@ class Conflict_AssignmentParser extends AssignmentParser {
         $this->iscontact = $aj->iscontact;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->contact->can_administer($prow, $state->override)
-            && !$state->contact->privChair
-            && !$state->contact->act_author_view($prow))
+        if (!$state->user->can_administer($prow, $state->override)
+            && !$state->user->privChair
+            && !$state->user->act_author_view($prow))
             return "You can’t administer #{$prow->paperId}.";
         else if (!$this->iscontact
-                 && !$state->contact->can_administer($prow, $state->override)
-                 && ($whyNot = $state->contact->perm_update_paper($prow, $state->override)))
+                 && !$state->user->can_administer($prow, $state->override)
+                 && ($whyNot = $state->user->perm_update_paper($prow, $state->override)))
             return whyNotText($whyNot, "edit");
         else
             return true;
@@ -1118,7 +1118,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         $res = $state->remove(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId]);
-        $admin = $state->contact->can_administer($prow, $state->override);
+        $admin = $state->user->can_administer($prow, $state->override);
         if ($this->remove)
             $ct = 0;
         else if ($this->iscontact)
@@ -1184,7 +1184,7 @@ class Conflict_Assigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $aset->show_column("pcconf");
-        $t = $aset->contact->reviewer_html_for($this->contact);
+        $t = $aset->user->reviewer_html_for($this->contact);
         if ($this->item->deleted())
             $t = '<del>' . $t . ' ' . $this->icon(true) . '</del>';
         else if (!$this->item->existed())
@@ -1271,7 +1271,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         return $this->isnext ? "ALL" : false;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (($whyNot = $state->contact->perm_change_some_tag($prow, $state->override)))
+        if (($whyNot = $state->user->perm_change_some_tag($prow, $state->override)))
             return whyNotText($whyNot, "change tag");
         else
             return true;
@@ -1285,7 +1285,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         Dbl::free($result);
     }
     private function cannot_view_error(PaperInfo $prow, $tag, AssignmentState $state) {
-        if ($prow->conflict_type($state->contact))
+        if ($prow->conflict_type($state->user))
             $state->paper_error("You have a conflict with #{$prow->paperId}.");
         else
             $state->paper_error("You can’t view that tag for #{$prow->paperId}.");
@@ -1328,7 +1328,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         else
             list($m[1], $m[2]) = array($xm[1], $xm[2]);
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
-            $m[1] = ($contact->contactId ? : $state->contact->contactId) . "~";
+            $m[1] = ($contact->contactId ? : $state->user->contactId) . "~";
         // ignore attempts to change vote tags
         if (!$m[1] && $state->conf->tags()->is_votish($m[2]))
             return false;
@@ -1343,7 +1343,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->contact, $state->reviewer)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->user, $state->reviewer)->ids;
             if (empty($twiddlecids))
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) > 1)
@@ -1366,7 +1366,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
         // if you can't view the tag, you can't set the tag
         // (information exposure)
-        if (!$state->contact->can_view_tag($prow, $tag, $state->override))
+        if (!$state->user->can_view_tag($prow, $tag, $state->override))
             return $this->cannot_view_error($prow, $tag, $state);
 
         // save assignment
@@ -1397,7 +1397,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->contact, $state->reviewer)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->user, $state->reviewer)->ids;
             if (empty($twiddlecids))
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) == 1)
@@ -1411,12 +1411,12 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         if (strcasecmp($m[2], "none") == 0)
             return;
         else if (strcasecmp($m[2], "any") == 0 || strcasecmp($m[2], "all") == 0) {
-            $cid = $state->contact->contactId;
-            if ($state->contact->privChair)
+            $cid = $state->user->contactId;
+            if ($state->user->privChair)
                 $cid = $state->reviewer->contactId;
             if ($m[1])
                 $m[2] = "[^~]*";
-            else if ($state->contact->privChair && $state->reviewer->privChair)
+            else if ($state->user->privChair && $state->reviewer->privChair)
                 $m[2] = "(?:~~|{$cid}~|)[^~]*";
             else
                 $m[2] = "(?:{$cid}~|)[^~]*";
@@ -1437,7 +1437,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
         // if you can't view the tag, you can't clear the tag
         // (information exposure)
-        if ($search_ltag && !$state->contact->can_view_tag($prow, $search_ltag, $state->override))
+        if ($search_ltag && !$state->user->can_view_tag($prow, $search_ltag, $state->override))
             return $this->cannot_view_error($prow, $search_ltag, $state);
 
         // query
@@ -1448,7 +1448,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             if (preg_match($tag_re, $x["ltag"])
                 && (!$m[3] || CountMatcher::compare($x["_index"], $m[3], $m[4]))
                 && ($search_ltag
-                    || $state->contact->can_change_tag($prow, $x["ltag"], $x["_index"], null, $state->override))) {
+                    || $state->user->can_change_tag($prow, $x["ltag"], $x["_index"], null, $state->override))) {
                 $state->remove($x);
                 if (($v = $state->conf->tags()->votish_base($x["ltag"])))
                     $vote_adjustments[$v] = true;
@@ -1483,7 +1483,7 @@ class Tag_Assigner extends Assigner {
         $prow = $state->prow($item["pid"]);
         // check permissions
         if (!$item["_vote"]) {
-            $whyNot = $state->contact->perm_change_tag($prow, $item["ltag"],
+            $whyNot = $state->user->perm_change_tag($prow, $item["ltag"],
                 $item->get(true, "_index"), $item->get(false, "_index"),
                 $item->override);
             if ($whyNot) {
@@ -1535,7 +1535,7 @@ class Tag_Assigner extends Assigner {
         if ($this->index !== null && str_ends_with($this->tag, ':')
             && !$aset->conf->setting("has_colontag"))
             $aset->conf->save_setting("has_colontag", 1);
-        $aset->contact->log_activity("Tag: " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);
+        $aset->user->log_activity("Tag: " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);
         $aset->cleanup_notify_tracker($this->pid);
     }
 }
@@ -1571,11 +1571,11 @@ class Preference_AssignmentParser extends AssignmentParser {
     function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         if (!$contact->contactId)
             return false;
-        else if ($contact->contactId !== $state->contact->contactId
-                 && !$state->contact->can_administer($prow, $state->override))
+        else if ($contact->contactId !== $state->user->contactId
+                 && !$state->user->can_administer($prow, $state->override))
             return "Can’t change other users’ preferences for #{$prow->paperId}.";
         else if (!$contact->can_become_reviewer_ignore_conflict($prow)) {
-            if ($contact->contactId !== $state->contact->contactId)
+            if ($contact->contactId !== $state->user->contactId)
                 return Text::user_html_nolink($contact) . " can’t enter preferences for #{$prow->paperId}.";
             else
                 return "Can’t enter preferences for #{$prow->paperId}.";
@@ -1632,7 +1632,7 @@ class Preference_Assigner extends Assigner {
     function unparse_display(AssignmentSet $aset) {
         if (!$this->cid)
             return "remove all preferences";
-        $t = $aset->contact->reviewer_html_for($this->contact);
+        $t = $aset->user->reviewer_html_for($this->contact);
         if (($p = $this->preference_data(true)))
             $t .= " <del>" . unparse_preference_span($p, true) . "</del>";
         if (($p = $this->preference_data(false)))
@@ -1668,7 +1668,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         $this->remove = $aj->remove;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->contact->can_set_decision($prow, $state->override))
+        if (!$state->user->can_set_decision($prow, $state->override))
             return "You can’t change the decision for #{$prow->paperId}.";
         else
             return true;
@@ -1760,7 +1760,7 @@ class Decision_Assigner extends Assigner {
 
 class AssignmentSet {
     public $conf;
-    public $contact;
+    public $user;
     public $filename;
     private $assigners = array();
     private $enabled_pids = null;
@@ -1776,12 +1776,12 @@ class AssignmentSet {
     private $cleanup_callbacks;
     private $cleanup_notify_tracker;
 
-    function __construct(Contact $contact, $override = null) {
-        $this->conf = $contact->conf;
-        $this->contact = $contact;
+    function __construct(Contact $user, $override = null) {
+        $this->conf = $user->conf;
+        $this->user = $user;
         if ($override === null)
-            $override = $this->contact->is_admin_force();
-        $this->astate = new AssignmentState($contact, $override);
+            $override = $this->user->is_admin_force();
+        $this->astate = new AssignmentState($user, $override);
     }
 
     function set_reviewer(Contact $reviewer) {
@@ -1811,7 +1811,7 @@ class AssignmentSet {
 
     function set_override($override) {
         if ($override === null)
-            $override = $this->contact->is_admin_force();
+            $override = $this->user->is_admin_force();
         $this->astate->override = $override;
     }
 
@@ -1887,7 +1887,7 @@ class AssignmentSet {
 
     private function set_my_conflicts() {
         $this->my_conflicts = array();
-        $result = $this->conf->qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=?", $this->contact->contactId);
+        $result = $this->conf->qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=?", $this->user->contactId);
         while (($row = edb_row($result)))
             $this->my_conflicts[$row[0]] = ($row[1] ? $row[1] : true);
         Dbl::free($result);
@@ -1931,7 +1931,7 @@ class AssignmentSet {
         else if (preg_match('/\A(?:new-?)?anonymous(?:\d*|-?new)\z/', $special))
             return $special;
         if ($special && !$first && (!$lemail || !$last)) {
-            $ret = ContactSearch::make_special($special, $this->astate->contact, $this->astate->reviewer);
+            $ret = ContactSearch::make_special($special, $this->astate->user, $this->astate->reviewer);
             if ($ret->ids !== false)
                 return $ret->contacts();
         }
@@ -1966,7 +1966,7 @@ class AssignmentSet {
                 $text = "$last$first";
             if ($email)
                 $text .= " <$email>";
-            $ret = ContactSearch::make_cset($text, $this->astate->contact, $this->astate->reviewer, $cset);
+            $ret = ContactSearch::make_cset($text, $this->astate->user, $this->astate->reviewer, $cset);
             if (count($ret->ids) == 1)
                 return $ret->contacts();
             else if (empty($ret->ids))
@@ -2080,7 +2080,7 @@ class AssignmentSet {
             $val = 2;
         } else if ($pfield !== "") {
             if (!isset($this->searches[$pfield])) {
-                $search = new PaperSearch($this->contact, $pfield, $this->astate->reviewer);
+                $search = new PaperSearch($this->user, $pfield, $this->astate->reviewer);
                 $this->searches[$pfield] = $search->paperList();
                 if ($report_error)
                     foreach ($search->warnings as $w)
@@ -2374,7 +2374,7 @@ class AssignmentSet {
             if ($v)
                 $query_order .= " show:$k";
         $query_order .= " show:autoassignment";
-        $search = new PaperSearch($this->contact, ["t" => get($_REQUEST, "t", "s"), "q" => $query_order], $this->astate->reviewer);
+        $search = new PaperSearch($this->user, ["t" => get($_REQUEST, "t", "s"), "q" => $query_order], $this->astate->reviewer);
         $plist = new PaperList($search);
         $plist->set_table_id_class("foldpl", "pltable_full");
         echo $plist->table_html("reviewers", ["nofooter" => 1]);
@@ -2384,7 +2384,7 @@ class AssignmentSet {
             $assigner->account($deltarev);
         if (count(array_intersect_key($deltarev->bypc, $this->conf->pc_members()))) {
             $summary = [];
-            $tagger = new Tagger($this->contact);
+            $tagger = new Tagger($this->user);
             $nrev = new AssignmentCountSet($this->conf);
             $deltarev->rev && $nrev->load_rev();
             $deltarev->lead && $nrev->load_lead();
@@ -2392,9 +2392,9 @@ class AssignmentSet {
             foreach ($this->conf->pc_members() as $p)
                 if ($deltarev->get($p->contactId)->ass) {
                     $t = '<div class="ctelt"><div class="ctelti';
-                    if (($k = $p->viewable_color_classes($this->contact)))
+                    if (($k = $p->viewable_color_classes($this->user)))
                         $t .= ' ' . $k;
-                    $t .= '"><span class="taghl">' . $this->contact->name_html_for($p) . "</span>: "
+                    $t .= '"><span class="taghl">' . $this->user->name_html_for($p) . "</span>: "
                         . plural($deltarev->get($p->contactId)->ass, "assignment")
                         . self::review_count_report($nrev, $deltarev, $p, "After assignment:&nbsp;")
                         . "<hr class=\"c\" /></div></div>";
@@ -2432,7 +2432,7 @@ class AssignmentSet {
         }
 
         // mark activity now to avoid DB errors later
-        $this->contact->mark_activity();
+        $this->user->mark_activity();
 
         // create new contacts outside the lock
         $locks = array("ContactInfo" => "read", "Paper" => "read", "PaperConflict" => "read");
