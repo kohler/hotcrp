@@ -3152,6 +3152,7 @@ class Conf {
             "settaganno" => "0 PaperApi::settaganno_api",
             "settags" => "0 PaperApi::settags_api",
             "taganno" => "1 PaperApi::taganno_api",
+            "tagreport" => "3 PaperApi::tagreport_api",
             "trackerstatus" => "1 MeetingTracker::trackerstatus_api", // hotcrp-comet entrypoint
             "votereport" => "3 PaperApi::votereport_api",
             "whoami" => "1 PaperApi::whoami_api"
