@@ -2292,11 +2292,18 @@ class PaperTable {
         } else if ($whyNot && isset($whyNot["reviewNotComplete"])
                    && ($Me->isPC || $this->conf->setting("extrev_view"))) {
             $nother = 0;
-            foreach ($this->all_rrows as $rr)
-                if (!$Me->is_my_review($rr) && $rr->reviewSubmitted)
-                    $nother++;
-            if ($nother > 0)
-                $msgs[] = "You’ll be able to see " . plural($nother, "other review") . " once you complete your own.";
+            $myrrow = null;
+            foreach ($this->all_rrows as $rrow)
+                if ($Me->is_my_review($rrow))
+                    $myrrow = $rrow;
+                else if ($rrow->reviewSubmitted)
+                    ++$nother;
+            if ($nother > 0) {
+                if ($myrrow && $myrrow->timeApprovalRequested > 0)
+                    $msgs[] = $this->conf->_("You’ll be able to see %d other reviews once yours is approved.", $nother);
+                else
+                    $msgs[] = $this->conf->_("You’ll be able to see %d other reviews once you complete your own.", $nother);
+            }
         }
         if (count($msgs) > 0)
             $this->_paptabSepContaining(join("<br />\n", $msgs));

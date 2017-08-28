@@ -17,6 +17,9 @@
 
     ["paper_edit_field", "Authors", "Author", ["$1=1"]],
 
+    ["You’ll be able to see %d other reviews once you complete your own.", "You’ll be able to see %d other review once you complete your own.", ["$1=1"]],
+    ["You’ll be able to see %d other reviews once yours is approved.", "You’ll be able to see %d other review once yours is approved.", ["$1=1"]],
+
     ["Reviews %2$s submitted.", "Review %2$s submitted.", ["$1=1"]],
     ["Reviews %2$s submitted.", "Review submitted.", ["$3"]],
     ["Reviews %2$s updated.", "Review %2$s updated.", ["$1=1"]],
