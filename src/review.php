@@ -2067,7 +2067,7 @@ class ReviewValues extends MessageSet {
         if ($this->updated)
             $confirm = $this->_confirm_message("Reviews %2\$s updated.", $this->updated);
         if ($this->approvalRequested)
-            $confirm = $this->_confirm_message("Reviews %2\$s submitted for approval.", $this->newlySubmitted);
+            $confirm = $this->_confirm_message("Reviews %2\$s submitted for approval.", $this->approvalRequested);
         if ($this->savedDraft)
             $confirm = $this->_confirm_message("Draft reviews for papers %2\$s saved.", $this->savedDraft);
         if ($this->authorNotified)
