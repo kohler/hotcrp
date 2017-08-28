@@ -2298,13 +2298,9 @@ class Contact {
     function is_my_review($rrow) {
         if (!$rrow)
             return false;
-        if (!isset($rrow->reviewContactId) && !isset($rrow->contactId))
+        if (!isset($rrow->contactId)) // XXX backwards compat
             error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        if (isset($rrow->reviewContactId))
-            $rrow_cid = $rrow->reviewContactId;
-        else
-            $rrow_cid = $rrow->contactId;
-        return $rrow_cid == $this->contactId
+        return $rrow->contactId == $this->contactId
             || ($this->review_tokens_
                 && array_search($rrow->reviewToken, $this->review_tokens_) !== false)
             || ($rrow->requestedBy == $this->contactId
@@ -2584,10 +2580,7 @@ class Contact {
         $rrow_cid = 0;
         if ($rrow) {
             $my_review = $rights->can_administer || $this->is_my_review($rrow);
-            if (isset($rrow->reviewContactId))
-                $rrow_cid = $rrow->reviewContactId;
-            else
-                $rrow_cid = $rrow->contactId;
+            $rrow_cid = $rrow->contactId;
         } else
             $my_review = $rights->reviewType > 0;
         return array($rights, $my_review, $rrow_cid);
@@ -2629,11 +2622,7 @@ class Contact {
         if ($this->can_review($prow, $rrow, $submit))
             return null;
         $rights = $this->rights($prow);
-        $rrow_cid = 0;
-        if ($rrow && isset($rrow->reviewContactId))
-            $rrow_cid = $rrow->reviewContactId;
-        else if ($rrow)
-            $rrow_cid = $rrow->contactId;
+        $rrow_cid = $rrow ? $rrow->contactId : 0;
         // The "reviewNotAssigned" and "deadline" failure reasons are special.
         // If either is set, the system will still allow review form download.
         $whyNot = $prow->initial_whynot();

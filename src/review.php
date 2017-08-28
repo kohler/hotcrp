@@ -682,18 +682,14 @@ class ReviewForm implements JsonSerializable {
     }
 
     function textForm($prow, $rrow, $contact, $req = null) {
-        $rrow_contactId = 0;
-        if (isset($rrow) && isset($rrow->reviewContactId))
-            $rrow_contactId = $rrow->reviewContactId;
-        else if (isset($rrow) && isset($rrow->contactId))
-            $rrow_contactId = $rrow->contactId;
+        $rrow_contactId = $rrow ? $rrow->contactId : 0;
         $myReview = !$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId;
         $revViewScore = $prow ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
         self::check_review_author_seen($prow, $rrow, $contact);
         $viewable_identity = !$prow || $contact->can_view_review_identity($prow, $rrow, true);
 
         $x = "==+== =====================================================================\n";
-        //$x .= "$prow->paperId:$myReview:$revViewScore:$rrow->contactId:$rrow->reviewContactId;;$prow->conflictType;;$prow->reviewType\n";
+        //$x .= "$prow->paperId:$myReview:$revViewScore:$rrow->contactId;;$prow->conflictType;;$prow->reviewType\n";
 
         $x .= "==+== Begin Review";
         if ($req && isset($req['reviewOrdinal']))
@@ -810,7 +806,6 @@ $blind\n";
                          $no_title = false) {
         assert($prow !== null && $rrow !== null);
 
-        $rrow_contactId = get($rrow, "reviewContactId") ? : (get($rrow, "contactId") ? : 0);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
