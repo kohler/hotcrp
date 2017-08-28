@@ -250,9 +250,11 @@ class JsonResultException extends Exception {
     }
 }
 
-function json_exit($json, $div = false) {
+function json_exit($json, $arg2 = null) {
     global $Conf;
-    if (!is_object($json) || !($json instanceof JsonResult))
+    if (is_int($json))
+        $json = new JsonResult($json, $arg2);
+    else if (!is_object($json) || !($json instanceof JsonResult))
         $json = new JsonResult($json);
     if (!$json->has_messages && $Conf)
         $json->transfer_messages($Conf);
