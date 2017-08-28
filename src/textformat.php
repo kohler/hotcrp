@@ -29,7 +29,7 @@ class TextFormat {
             $d[] = htmlspecialchars($this->description_text);
         if ($this->has_preview)
             $d[] = '<a href="#" class="togglepreview" data-format="'
-                . $this->format . '">Preview</a>';
+                . $this->format . '" tabindex="-1">Preview</a>';
         if ($d)
             return '<div class="formatdescription">'
                 . join(' <span class="barsep">·</span> ', $d) . '</div>';
