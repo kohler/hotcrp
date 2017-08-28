@@ -913,8 +913,11 @@ $blind\n";
         $submitted = $rrow && $rrow->reviewSubmitted;
         $disabled = !$Me->can_clickthrough("review");
         $submit_text = "Submit review";
-        if ($this->review_needs_approval($rrow)) {
-            if ($Me->contactId == $rrow->contactId) /* XXX */
+        $my_review = !$rrow || $Me->is_my_review($rrow);
+        if ($rrow && $this->review_needs_approval($rrow)) {
+            if ($my_review && $rrow->timeApprovalRequested)
+                $submit_text = "Resubmit for approval";
+            else if ($my_review)
                 $submit_text = "Submit for approval";
             else if ($rrow->timeApprovalRequested)
                 $submit_text = "Approve review";
@@ -930,7 +933,9 @@ $blind\n";
         } else if (!$submitted) {
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
             $buttons[] = Ht::submit("submitreview", $submit_text, ["class" => "btn btn-default", "disabled" => $disabled]);
-            $buttons[] = Ht::submit("savedraft", "Save as draft", ["class" => "btn", "disabled" => $disabled]);
+            if (!$rrow || !$my_review || !$rrow->timeApprovalRequested
+                || !$this->review_needs_approval($rrow))
+                $buttons[] = Ht::submit("savedraft", "Save as draft", ["class" => "btn", "disabled" => $disabled]);
         } else
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
             $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn btn-default", "disabled" => $disabled]);
