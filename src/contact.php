@@ -2575,17 +2575,6 @@ class Contact {
                 || $this->conf->check_tracks($prow, $this, Track::ASSREV));
     }
 
-    private function review_rights(PaperInfo $prow, $rrow) {
-        $rights = $this->rights($prow);
-        $rrow_cid = 0;
-        if ($rrow) {
-            $my_review = $rights->can_administer || $this->is_my_review($rrow);
-            $rrow_cid = $rrow->contactId;
-        } else
-            $my_review = $rights->reviewType > 0;
-        return array($rights, $my_review, $rrow_cid);
-    }
-
     private function rights_my_review($rights, $rrow) {
         if ($rrow)
             return $rights->can_administer || $this->is_my_review($rrow);
