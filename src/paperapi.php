@@ -304,33 +304,45 @@ class PaperApi {
         json_exit(["ok" => true, "tags" => $tags]);
     }
 
-    static function get_reviewer(Contact $user, $qreq, $prow) {
-        $reviewer = $user;
-        if ($qreq->reviewer) {
-            if (ctype_digit($qreq->reviewer))
-                $reviewer = $user->conf->user_by_id($qreq->reviewer);
+    static function get_reviewer(Contact $user, $qreq, $prow, $forceShow) {
+        $u = $user;
+        if (isset($qreq->u) || isset($qreq->reviewer)) {
+            $x = isset($qreq->u) ? $qreq->u : $qreq->reviewer;
+            if ($x && ($x == $user->contactId || strcasecmp($x, $user->email) == 0))
+                $u = $user;
+            else if (ctype_digit($x))
+                $u = $user->conf->cached_user_by_id($x);
             else
-                $reviewer = $user->conf->user_by_email($qreq->reviewer);
-            if (!$reviewer)
-                json_exit(["ok" => false, "error" => "No such user."]);
-            else if ($reviewer->contactId !== $user->contactId
-                     && ($prow ? !$user->can_administer($prow, $qreq->forceShow) : !$user->privChair))
-                json_exit(["ok" => false, "error" => "Permission error."]);
+                $u = $user->conf->cached_user_by_email($x);
+            if (!$u)
+                json_exit(403, "No such user.");
+            else if ($u->contactId !== $user->contactId
+                     && ($prow ? !$user->can_administer($prow, $forceShow) : !$user->privChair))
+                json_exit(403, "Permission error.");
         }
-        return $reviewer;
+        return $u;
     }
 
-    static function setpref_api(Contact $user, $qreq, $prow) {
-        $aset = new AssignmentSet($user, true);
-        $aset->enable_papers($prow);
-        $reviewer = $qreq->reviewer ? : $user->email;
-        if (ctype_digit($reviewer) && ($u = $user->conf->user_by_id($reviewer)))
-            $reviewer = $u->email;
-        $aset->parse("paper,user,preference\n{$prow->paperId},$reviewer," . CsvGenerator::quote($qreq->pref, true));
-        if ($aset->execute())
-            return ["ok" => true, "response" => "Saved", "value" => unparse_preference($qreq->pref)];
-        else
-            return ["ok" => false, "error" => join("<br />", $aset->errors_html())];
+    static function pref_api(Contact $user, $qreq, $prow) {
+        $u = self::get_reviewer($user, $qreq, $prow, true);
+        if ($qreq->method() !== "GET") {
+            $aset = new AssignmentSet($user, true);
+            $aset->enable_papers($prow);
+            $aset->parse("paper,user,preference\n{$prow->paperId}," . CsvGenerator::quote($u->email) . "," . CsvGenerator::quote($qreq->pref, true));
+            if (!$aset->execute())
+                return $aset->json_result();
+            $prow->load_reviewer_preferences();
+        }
+        if ($u !== $user && !$user->allow_administer($prow))
+            json_exit(403, "Permission error.");
+        $pref = $prow->reviewer_preference($u, true);
+        $value = unparse_preference($pref[0], $pref[1]);
+        $jr = new JsonResult(["ok" => true, "value" => $value === "0" ? "" : $value, "pref" => $pref[0]]);
+        if ($pref[1] !== null)
+            $jr->content["prefexp"] = unparse_expertise($pref[1]);
+        if ($user->conf->has_topics())
+            $jr->content["topic_score"] = $pref[2];
+        return $jr;
     }
 
     static function checkformat_api(Contact $user, $qreq, $prow) {
@@ -375,7 +387,7 @@ class PaperApi {
     }
 
     static function follow_api(Contact $user, $qreq, $prow) {
-        $reviewer = self::get_reviewer($user, $qreq, $prow);
+        $reviewer = self::get_reviewer($user, $qreq, $prow, $qreq->forceShow);
         $following = friendly_boolean($qreq->following);
         if ($following === null)
             return ["ok" => false, "error" => "Bad 'following'."];

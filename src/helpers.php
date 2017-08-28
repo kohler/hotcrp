@@ -218,6 +218,11 @@ class JsonResult {
         else if (is_object($values)) {
             assert(!($values instanceof JsonResult));
             $this->content = get_object_vars($values);
+        } else if (is_string($values)) {
+            if ($this->status && $this->status > 299)
+                $this->content = ["ok" => false, "error" => $values];
+            else
+                $this->content = ["ok" => true, "response" => $values];
         } else
             $this->content = $values;
     }

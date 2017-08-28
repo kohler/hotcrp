@@ -1318,8 +1318,11 @@ class Conf {
     }
 
     function cached_user_by_id($id) {
-        if ($this->_pc_members_cache
-            && isset($this->_pc_members_and_admins_cache[$id]))
+        global $Me;
+        if ($id && $Me && $Me->contactId == $id)
+            return $Me;
+        else if ($this->_pc_members_cache
+                 && isset($this->_pc_members_and_admins_cache[$id]))
             return $this->_pc_members_and_admins_cache[$id];
         else
             return $this->user_by_id($id);
@@ -1340,6 +1343,16 @@ class Conf {
         $row = edb_row($result);
         Dbl::free($result);
         return $row ? (int) $row[0] : false;
+    }
+
+    function cached_user_by_email($email) {
+        global $Me;
+        if ($email && $Me && strcasecmp($Me->email, $email) == 0)
+            return $Me;
+        else if (($u = $this->pc_member_by_email($email)))
+            return $u;
+        else
+            return $this->user_by_email($email);
     }
 
     function pc_members() {
@@ -3145,12 +3158,13 @@ class Conf {
             "lead" => "3 PaperApi::lead_api",
             "manager" => "3 PaperApi::manager_api",
             "mentioncompletion" => "1 PaperApi::mentioncompletion_api",
+            "pref" => "3 PaperApi::pref_api", // XXX backwards compat
             "reviewround" => "2 PaperApi::reviewround_api",
             "search" => "1 PaperApi::search_api",
             "setdecision" => "2 PaperApi::setdecision_api",
             "setlead" => "2 PaperApi::lead_api", // XXX backwards compat
             "setmanager" => "2 PaperApi::manager_api", // XXX backwards compat
-            "setpref" => "2 PaperApi::setpref_api",
+            "setpref" => "2 PaperApi::pref_api", // XXX backwards compat
             "setshepherd" => "2 PaperApi::shepherd_api", // XXX backwards compat
             "settaganno" => "0 PaperApi::settaganno_api",
             "settags" => "0 PaperApi::settags_api",

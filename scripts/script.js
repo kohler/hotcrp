@@ -4165,12 +4165,12 @@ var add_revpref_ajax = (function () {
             pid = pid.substr(0, pos);
         }
         ++outstanding;
-        $.ajax(hoturl_post("api/setpref", {p: pid}), {
-            method: "POST", data: {pref: self.value, reviewer: cid},
+        $.ajax(hoturl_post("api/pref", {p: pid}), {
+            method: "POST", data: {pref: self.value, u: cid},
             success: function (rv) {
                 setajaxcheck(self, rv);
                 if (rv.ok && rv.value != null)
-                    self.value = rv.value;
+                    self.value = rv.value === "0" ? "" : rv.value;
             },
             complete: function (xhr, status) {
                 hiliter(self);
