@@ -210,8 +210,10 @@ function json_exit($json, $div = false) {
     global $Conf;
     if (JsonResultException::$capturing)
         throw new JsonResultException($json);
-    else
-        $Conf->ajaxExit($json, $div);
+    else {
+        $Conf->output_ajax($json, $div);
+        exit;
+    }
 }
 
 function foldbutton($foldtype, $foldnum = 0, $content = "") {

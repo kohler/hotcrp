@@ -824,9 +824,9 @@ class Contact {
     function escape() {
         if (req("ajax")) {
             if ($this->is_empty())
-                $this->conf->ajaxExit(["ok" => false, "error" => "You have been logged out.", "loggedout" => true]);
+                json_exit(["ok" => false, "error" => "You have been logged out.", "loggedout" => true]);
             else
-                $this->conf->ajaxExit(["ok" => false, "error" => "You don’t have permission to access that page."]);
+                json_exit(["ok" => false, "error" => "You don’t have permission to access that page."]);
         }
 
         if ($this->is_empty()) {

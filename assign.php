@@ -180,10 +180,8 @@ function pcAssignments() {
 
 if (isset($_REQUEST["update"]) && $Me->allow_administer($prow) && check_post())
     pcAssignments();
-else if (isset($_REQUEST["update"]) && defval($_REQUEST, "ajax")) {
-    Conf::msg_error("Only administrators can assign papers.");
-    $Conf->ajaxExit(array("ok" => 0));
-}
+else if (isset($_REQUEST["update"]) && defval($_REQUEST, "ajax"))
+    json_exit(["ok" => false, "error" => "Only administrators can assign papers."]);
 
 
 // add review requests

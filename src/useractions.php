@@ -78,7 +78,7 @@ class UserActions {
         } else if ($qreq->clickthrough_decline)
             Conf::msg_error("You can’t continue until you accept these terms.");
         if ($qreq->ajax)
-            $user->conf->ajaxExit(["ok" => $confirmed]);
+            json_exit(["ok" => $confirmed]);
         SelfHref::redirect($qreq);
     }
 }

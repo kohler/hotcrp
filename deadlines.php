@@ -11,7 +11,7 @@ require_once("src/initweb.php");
 $dl = $Me->my_deadlines();
 if (req("ajax")) {
     $dl->ok = true;
-    $Conf->ajaxExit($dl);
+    json_exit($dl);
 }
 
 

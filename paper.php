@@ -44,7 +44,7 @@ function errorMsgExit($msg) {
     global $Conf;
     if (req("ajax")) {
         Conf::msg_error($msg);
-        $Conf->ajaxExit(array("ok" => false));
+        json_exit(["ok" => false]);
     } else {
         confHeader();
         Ht::stash_script("shortcut().add()");

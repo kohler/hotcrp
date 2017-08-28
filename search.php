@@ -100,7 +100,7 @@ if (isset($Qreq->savedisplayoptions) && $Me->privChair) {
     else
         Dbl::qe_raw("delete from Settings where name='scoresort_default'");
     if (!Dbl::has_error() && $Qreq->ajax)
-        $Conf->ajaxExit(array("ok" => true));
+        json_exit(["ok" => true]);
     else if (!Dbl::has_error())
         $Conf->confirmMsg("Display options saved.");
 }
@@ -255,7 +255,7 @@ if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && check_post($Qreq)
 
 // exit early if Ajax
 if ($Qreq->ajax)
-    $Conf->ajaxExit(array("response" => ""));
+    json_exit(["response" => ""]);
 
 
 // set display options, including forceShow if chair

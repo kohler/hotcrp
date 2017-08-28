@@ -129,7 +129,7 @@ if ($qreq->fn === "events" && $Me->is_reviewer()) {
 
 if ($qreq->fn === "searchcompletion") {
     $s = new PaperSearch($Me, "");
-    $Conf->ajaxExit(array("ok" => true, "searchcompletion" => $s->search_completion()));
+    json_exit(["ok" => true, "searchcompletion" => $s->search_completion()]);
 }
 
 
@@ -158,4 +158,4 @@ if (count((array) $pj))
     $j->p = [$Conf->paper->paperId => $pj];
 
 $j->ok = true;
-$Conf->ajaxExit($j);
+json_exit($j);

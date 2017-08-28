@@ -2991,11 +2991,6 @@ class Conf {
         echo json_encode_browser($values);
     }
 
-    function ajaxExit($values = null, $div = false) {
-        $this->output_ajax($values, $div);
-        exit;
-    }
-
 
     //
     // Action recording

@@ -39,7 +39,7 @@ function loadRows() {
         /* following are obsolete */
         && $cid != "response" && $cid != "newresponse") {
         Conf::msg_error("No such comment.");
-        $Conf->ajaxExit(array("ok" => false));
+        json_exit(["ok" => false]);
     }
     if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
         $Error = array();
@@ -114,7 +114,7 @@ function save_comment($text, $is_response, $roundnum) {
         $j["cmt"] = $cinfo->unparse_json($Me);
     if ($confirm)
         $j["msg"] = $confirm;
-    $Conf->ajaxExit($j);
+    json_exit($j);
 }
 
 function handle_response() {
@@ -152,7 +152,7 @@ if (!check_post())
 else if (req("submitcomment") && req("response")) {
     handle_response();
     if (req("ajax"))
-        $Conf->ajaxExit(array("ok" => false));
+        json_exit(["ok" => false]);
 } else if (req("submitcomment")) {
     $text = rtrim((string) req("comment"));
     if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
@@ -162,14 +162,14 @@ else if (req("submitcomment") && req("response")) {
     else
         save_comment($text, false, 0);
     if (req("ajax"))
-        $Conf->ajaxExit(array("ok" => false));
+        json_exit(["ok" => false]);
 } else if ((req("deletecomment") || req("deleteresponse")) && $crow) {
     if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
         Conf::msg_error(whyNotText($whyNot, "comment on"));
     else
         save_comment("", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0, $crow->commentRound);
     if (req("ajax"))
-        $Conf->ajaxExit(array("ok" => false));
+        json_exit(["ok" => false]);
 } else if (req("cancel") && $crow)
     $_REQUEST["noedit"] = $_GET["noedit"] = $_POST["noedit"] = 1;
 

@@ -114,7 +114,7 @@ class Tag_SearchAction extends SearchAction {
 
         assert(!$user->conf->headerPrinted);
         if (!$user->conf->headerPrinted && $qreq->ajax)
-            $user->conf->ajaxExit(array("ok" => $success));
+            json_exit(["ok" => $success]);
         else if (!$user->conf->headerPrinted && $success) {
             if (!$errors)
                 $user->conf->confirmMsg("Tags saved.");
