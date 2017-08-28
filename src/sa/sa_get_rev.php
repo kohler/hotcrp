@@ -189,7 +189,6 @@ class GetScores_SearchAction extends SearchAction {
                 $errors[] = "#$row->paperId: " . whyNotText($whyNot, "view review");
             else {
                 $row->ensure_full_reviews();
-                $row->ensure_reviewer_names();
                 $a = ["paper" => $row->paperId, "title" => $row->title];
                 if ($row->outcome && $user->can_view_decision($row, true))
                     $a["decision"] = $any_decision = $user->conf->decision_name($row->outcome);

@@ -102,6 +102,12 @@ class ReviewInfo {
         return $rrow;
     }
 
+    function assign_name($c) {
+        $this->firstName = $c->firstName;
+        $this->lastName = $c->lastName;
+        $this->email = $c->email;
+    }
+
     static function field_info($id, Conf $conf) {
         $sversion = $conf->sversion;
         if (strlen($id) === 3 && ctype_digit(substr($id, 1))) {

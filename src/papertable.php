@@ -2460,7 +2460,6 @@ class PaperTable {
         global $Me;
 
         $this->prow->ensure_full_reviews();
-        $this->prow->ensure_reviewer_names();
         $this->all_rrows = $this->prow->reviews_by_display();
 
         $this->viewable_rrows = array();

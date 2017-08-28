@@ -1465,8 +1465,7 @@ class PaperInfo {
         }
         Dbl::free($result);
 
-        if (get($had, "names"))
-            $this->ensure_reviewer_names();
+        $this->ensure_reviewer_names();
         if (get($had, "lastLogin"))
             $this->ensure_reviewer_last_login();
     }
@@ -1638,21 +1637,16 @@ class PaperInfo {
             foreach ($row_set->all() as $prow) {
                 $prow->_reviews_have["names"] = true;
                 foreach ($prow->reviews_by_id() as $rrow)
-                    if (($c = get($pcm, $rrow->contactId))) {
-                        $rrow->firstName = $c->firstName;
-                        $rrow->lastName = $c->lastName;
-                        $rrow->email = $c->email;
-                    } else
+                    if (($c = get($pcm, $rrow->contactId)))
+                        $rrow->assign_name($c);
+                    else
                         $missing[$rrow->contactId][] = $rrow;
             }
             if (!empty($missing)) {
                 $result = $this->conf->qe("select contactId, firstName, lastName, email from ContactInfo where contactId?a", array_keys($missing));
                 while ($result && ($c = $result->fetch_object()))
-                    foreach (get($missing, $c->contactId, []) as $rrow) {
-                        $rrow->firstName = $c->firstName;
-                        $rrow->lastName = $c->lastName;
-                        $rrow->email = $c->email;
-                    }
+                    foreach (get($missing, $c->contactId, []) as $rrow)
+                        $rrow->assign_name($c);
                 Dbl::free($result);
             }
         }
@@ -1750,10 +1744,6 @@ class PaperInfo {
             if (!empty($bad_ids))
                 $this->_update_review_word_counts($bad_ids);
         }
-    }
-
-    function ensure_review_ratings() {
-        $this->ensure_full_reviews();
     }
 
     static function fetch_comment_query() {

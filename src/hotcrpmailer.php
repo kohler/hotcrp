@@ -101,7 +101,6 @@ class HotCRPMailer extends Mailer {
             $rrows = array($this->rrow);
         else {
             $this->row->ensure_full_reviews();
-            $this->row->ensure_reviewer_names();
             $rrows = $this->row->reviews_by_display();
         }
 

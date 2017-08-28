@@ -1595,7 +1595,6 @@ class ReviewValues extends MessageSet {
         if (!$rrow)
             $rrow = $prow->fresh_review_of_user($reviewer);
         if (!$rrow && $user->review_tokens()) {
-            $prow->ensure_reviewer_names();
             $prow->ensure_full_reviews();
             foreach ($prow->reviews_by_id() as $xrrow)
                 if ($xrrow->reviewToken
