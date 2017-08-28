@@ -2308,7 +2308,7 @@ class PaperTable {
         $opt = array("edit" => $this->mode === "re");
 
         if ($this->editrrow
-            && ($Me->is_my_review($this->editrrow) || $actChair)
+            && ($Me->is_owned_review($this->editrrow) || $actChair)
             && !$this->conf->time_review($this->editrrow, $act_pc, true)) {
             if ($actChair)
                 $override = " As an administrator, you can override this deadline.";

@@ -63,7 +63,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         $highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
         $foundRrow += $highlight;
         $want_my_scores = $want_scores;
-        if ($Me->is_my_review($rr) && $mode === "re") {
+        if ($Me->is_owned_review($rr) && $mode === "re") {
             $want_my_scores = true;
             $foundMyReview++;
         }

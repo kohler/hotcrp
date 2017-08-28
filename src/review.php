@@ -1054,8 +1054,12 @@ $blind\n";
 
         // administrator?
         $admin = $Me->allow_administer($prow);
-        if ($rrow && !$Me->is_my_review($rrow) && $admin)
-            echo Ht::xmsg("info", "This isn’t your review, but as an administrator you can still make changes.");
+        if ($rrow && !$Me->is_my_review($rrow)) {
+            if ($Me->is_owned_review($rrow))
+                echo Ht::xmsg("info", "This isn’t your review, but you can make changes since you requested it.");
+            else if ($admin)
+                echo Ht::xmsg("info", "This isn’t your review, but as an administrator you can still make changes.");
+        }
 
         // delegate?
         if ($rrow && !$rrow->reviewSubmitted

@@ -2296,16 +2296,22 @@ class Contact {
     }
 
     function is_my_review($rrow) {
-        if (!$rrow)
-            return false;
-        if (!isset($rrow->contactId)) // XXX backwards compat
+        if ($rrow && !isset($rrow->contactId)) // XXX backwards compat
             error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        return $rrow->contactId == $this->contactId
-            || ($this->review_tokens_
-                && array_search($rrow->reviewToken, $this->review_tokens_) !== false)
-            || ($rrow->requestedBy == $this->contactId
-                && $rrow->reviewType == REVIEW_EXTERNAL
-                && $this->conf->setting("pcrev_editdelegate"));
+        return $rrow
+            && ($rrow->contactId == $this->contactId
+                || ($this->review_tokens_
+                    && array_search($rrow->reviewToken, $this->review_tokens_) !== false));
+    }
+
+    function is_owned_review($rrow) {
+        return $rrow
+            && ($rrow->contactId == $this->contactId
+                || ($this->review_tokens_
+                    && array_search($rrow->reviewToken, $this->review_tokens_) !== false)
+                || ($rrow->requestedBy == $this->contactId
+                    && $rrow->reviewType == REVIEW_EXTERNAL
+                    && $this->conf->setting("pcrev_editdelegate")));
     }
 
     function can_view_review_assignment(PaperInfo $prow, $rrow, $forceShow) {
@@ -2348,7 +2354,7 @@ class Contact {
         if ($rights->can_administer
             || $rights->reviewType == REVIEW_META
             || ($rrow
-                && $this->is_my_review($rrow)
+                && $this->is_owned_review($rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY))
             return true;
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
@@ -2432,7 +2438,7 @@ class Contact {
         return $rights->can_administer
             || $rights->reviewType == REVIEW_META
             || ($rrow
-                && ($this->is_my_review($rrow)
+                && ($this->is_owned_review($rrow)
                     || ($rights->allow_pc
                         && $rrow->requestedBy == $this->contactId)))
             || ($rights->allow_pc
@@ -2530,7 +2536,7 @@ class Contact {
         $rights = $this->rights($prow);
         if ($rights->reviewType > 0
             || ($rrow
-                && $this->is_my_review($rrow))
+                && $this->is_owned_review($rrow))
             || ($rrow
                 && $rrow->contactId != $this->contactId
                 && $rights->allow_administer))
@@ -2575,9 +2581,9 @@ class Contact {
                 || $this->conf->check_tracks($prow, $this, Track::ASSREV));
     }
 
-    private function rights_my_review($rights, $rrow) {
+    private function rights_owned_review($rights, $rrow) {
         if ($rrow)
-            return $rights->can_administer || $this->is_my_review($rrow);
+            return $rights->can_administer || $this->is_owned_review($rrow);
         else
             return $rights->reviewType > 0;
     }
@@ -2587,7 +2593,7 @@ class Contact {
         $rights = $this->rights($prow);
         if ($submit && !$this->can_clickthrough("review"))
             return false;
-        return ($this->rights_my_review($rights, $rrow)
+        return ($this->rights_owned_review($rights, $rrow)
                 && $this->conf->time_review($rrow, $rights->allow_pc, true))
             || (!$rrow
                 && $prow->timeSubmitted > 0
@@ -2618,7 +2624,7 @@ class Contact {
         if ($rrow && $rrow_cid != $this->contactId
             && !$rights->allow_administer)
             $whyNot["differentReviewer"] = 1;
-        else if (!$rights->allow_pc && !$this->rights_my_review($rights, $rrow))
+        else if (!$rights->allow_pc && !$this->rights_owned_review($rights, $rrow))
             $whyNot["permission"] = 1;
         else if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
@@ -2627,7 +2633,7 @@ class Contact {
         else {
             if ($rights->conflictType && !$rights->can_administer)
                 $whyNot["conflict"] = 1;
-            else if ($rights->allow_review && !$this->rights_my_review($rights, $rrow)
+            else if ($rights->allow_review && !$this->rights_owned_review($rights, $rrow)
                      && (!$rrow || $rrow_cid == $this->contactId))
                 $whyNot["reviewNotAssigned"] = 1;
             else if ($this->can_review($prow, $rrow, false)
@@ -2926,7 +2932,7 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         if ($rights->can_administer)
             return VIEWSCORE_ADMINONLY - 1;
-        else if ($rrow ? $this->is_my_review($rrow) : $rights->allow_review)
+        else if ($rrow ? $this->is_owned_review($rrow) : $rights->allow_review)
             return VIEWSCORE_REVIEWERONLY - 1;
         else if (!$this->can_view_review($prow, $rrow, $forceShow))
             return VIEWSCORE_MAX + 1;
