@@ -623,14 +623,14 @@ function hoturl_find(x, page_component) {
     return null;
 }
 
-function hoturl_clean(x, page_component) {
+function hoturl_clean(x, page_component, allow_fail) {
     if (x.last !== false && x.v.length) {
         var im = hoturl_find(x, page_component);
         if (im) {
             x.last = im[1];
             x.t += "/" + im[1];
             x.v.splice(im[0], 1);
-        } else
+        } else if (!allow_fail)
             x.last = false;
     }
 }
@@ -682,6 +682,7 @@ function hoturl(page, options) {
             x.t = "api" + siteurl_suffix;
             x.v.push("fn=" + page.substr(4));
         }
+        hoturl_clean(x, /^p=(\d+)$/, true);
         hoturl_clean(x, /^fn=(\w+)$/);
         want_forceShow = true;
     } else if (page === "doc")
