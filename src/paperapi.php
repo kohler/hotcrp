@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperApi {
-    static function setdecision_api(Contact $user, $qreq, $prow) {
+    static function setdecision_api(Contact $user, Qrequest $qreq, $prow) {
         $aset = new AssignmentSet($user, true);
         $aset->enable_papers($prow);
         if (is_numeric($qreq->decision))
@@ -17,7 +17,7 @@ class PaperApi {
             return ["ok" => false, "error" => join("<br />", $aset->errors_html())];
     }
 
-    private static function paper_pc_api(Contact $user, $qreq, $prow, $type) {
+    private static function paper_pc_api(Contact $user, Qrequest $qreq, $prow, $type) {
         if ($qreq->method() !== "GET") {
             if (!isset($qreq->$type))
                 return new JsonResult(400, ["ok" => false, "error" => "Missing parameter."]);
@@ -41,15 +41,15 @@ class PaperApi {
         return $j;
     }
 
-    static function lead_api(Contact $user, $qreq, $prow) {
+    static function lead_api(Contact $user, Qrequest $qreq, $prow) {
         return self::paper_pc_api($user, $qreq, $prow, "lead");
     }
 
-    static function shepherd_api(Contact $user, $qreq, $prow) {
+    static function shepherd_api(Contact $user, Qrequest $qreq, $prow) {
         return self::paper_pc_api($user, $qreq, $prow, "shepherd");
     }
 
-    static function manager_api(Contact $user, $qreq, $prow) {
+    static function manager_api(Contact $user, Qrequest $qreq, $prow) {
         return self::paper_pc_api($user, $qreq, $prow, "manager");
     }
 
@@ -304,7 +304,7 @@ class PaperApi {
         json_exit(["ok" => true, "tags" => $tags]);
     }
 
-    static function get_reviewer(Contact $user, $qreq, $prow, $forceShow) {
+    static function get_user(Contact $user, Qrequest $qreq, $forceShow = null) {
         $u = $user;
         if (isset($qreq->u) || isset($qreq->reviewer)) {
             $x = isset($qreq->u) ? $qreq->u : $qreq->reviewer;
@@ -315,11 +315,16 @@ class PaperApi {
             else
                 $u = $user->conf->cached_user_by_email($x);
             if (!$u)
-                json_exit(403, "No such user.");
-            else if ($u->contactId !== $user->contactId
-                     && ($prow ? !$user->can_administer($prow, $forceShow) : !$user->privChair))
-                json_exit(403, "Permission error.");
+                json_exit(403, $user->isPC ? "No such user." : "Permission error.");
         }
+        return $u;
+    }
+
+    static function get_reviewer(Contact $user, $qreq, $prow, $forceShow = null) {
+        $u = self::get_user($user, $qreq, $forceShow);
+        if ($u->contactId !== $user->contactId
+            && ($prow ? !$user->can_administer($prow, $forceShow) : !$user->privChair))
+            json_exit(403, "Permission error.");
         return $u;
     }
 
@@ -387,7 +392,7 @@ class PaperApi {
     }
 
     static function follow_api(Contact $user, $qreq, $prow) {
-        $reviewer = self::get_reviewer($user, $qreq, $prow, $qreq->forceShow);
+        $reviewer = self::get_reviewer($user, $qreq, $prow);
         $following = friendly_boolean($qreq->following);
         if ($following === null)
             return ["ok" => false, "error" => "Bad 'following'."];
@@ -434,7 +439,7 @@ class PaperApi {
     static function search_api(Contact $user, Qrequest $qreq, $prow) {
         $topt = PaperSearch::search_types($user, $qreq->t);
         if (empty($topt) || ($qreq->t && !isset($topt[$qreq->t])))
-            return ["ok" => false, "error" => "Permission error."];
+            return new JsonResult(403, "Permission error.");
         $t = $qreq->t ? : key($topt);
 
         $q = $qreq->q;
@@ -445,7 +450,7 @@ class PaperApi {
         } else if (isset($qreq->qa) || isset($qreq->qo) || isset($qreq->qx))
             $q = PaperSearch::canonical_query((string) $qreq->qa, (string) $qreq->qo, (string) $qreq->qx, $user->conf);
         else
-            $q = "";
+            return new JsonResult(400, "Missing parameter.");
 
         $sarg = ["t" => $t, "q" => $q];
         if ($qreq->qt)
@@ -458,5 +463,37 @@ class PaperApi {
         $ih = $pl->ids_and_groups();
         return ["ok" => true, "ids" => $ih[0], "groups" => $ih[1],
                 "hotlist_info" => $pl->session_list_object()->info_string()];
+    }
+
+    static function review_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
+        if (!$user->can_view_review($prow, null, null))
+            return new JsonResult(403, "Permission error.");
+        if (isset($qreq->r)) {
+            if (ctype_digit($qreq->r))
+                $rrow = $prow->full_review_of_id(intval($qreq->r));
+            else if (preg_match('/\A(?:|' . $prow->paperId . ')([A-Z]+)\z/', $qreq->r, $m))
+                $rrow = $prow->full_review_of_ordinal(parseReviewOrdinal($m[1]));
+            else
+                return new JsonResult(400, "Parameter error.");
+            $rrows = $rrow ? [$rrow] : [];
+        } else if (isset($qreq->u)) {
+            $u = self::get_user($user, $qreq);
+            $rrow = $prow->full_review_of_user($u);
+            if (!$user->can_view_review_identity($prow, $rrow))
+                return new JsonResult(403, "Permission error.");
+            $rrows = $rrow ? [$rrow] : [];
+        } else {
+            $prow->ensure_full_reviews();
+            $rrows = $prow->viewable_submitted_reviews_by_display($user, null);
+        }
+        $vrrows = [];
+        $rf = $user->conf->review_form();
+        foreach ($rrows as $rrow)
+            if ($user->can_view_review($prow, $rrow, null))
+                $vrrows[] = $rf->unparse_review_json($prow, $rrow, $user);
+        if (!$vrrows && $rrows)
+            return new JsonResult(403, "Permission error.");
+        else
+            return new JsonResult(["ok" => true, "reviews" => $vrrows]);
     }
 }

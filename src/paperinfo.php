@@ -576,7 +576,8 @@ class PaperInfo {
     private $_review_array = null;
     private $_review_array_version = 0;
     private $_reviews_have = [];
-    private $_full_reviews_of = null;
+    private $_full_review = null;
+    private $_full_review_id = null;
     private $_comment_array = null;
     private $_comment_skeleton_array = null;
     public $_row_set;
@@ -1498,24 +1499,67 @@ class PaperInfo {
         return null;
     }
 
+    function review_of_ordinal($ordinal) {
+        foreach ($this->reviews_by_id() as $rrow)
+            if ($rrow->reviewOrdinal == $ordinal)
+                return $rrow;
+        return null;
+    }
+
+    private function ensure_full_review_name() {
+        if ($this->_full_review
+            && ($u = $this->conf->cached_user_by_id($this->_full_review->contactId)))
+            $this->_full_review->assign_name($u);
+    }
+
+    function full_review_of_id($id) {
+        if ($this->_full_review_id === null && !isset($this->_reviews_have["full"])) {
+            $this->_full_review_id = "r$id";
+            $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId=? and reviewId=?", $this->paperId, $id);
+            $this->_full_review = ReviewInfo::fetch($result, $this->conf);
+            Dbl::free($result);
+            $this->ensure_full_review_name();
+        }
+        if ($this->_full_review_id === "r$id")
+            return $this->_full_review;
+        $this->ensure_full_reviews();
+        return $this->review_of_id($id);
+    }
+
     function full_review_of_user($contact) {
         $cid = self::contact_to_cid($contact);
-        if ($this->_full_reviews_of === null && !isset($this->_reviews_have["full"])) {
+        if ($this->_full_review_id === null && !isset($this->_reviews_have["full"])) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
-            foreach ($row_set as $prow)
-                $prow->_full_reviews_of = [$cid => null];
+            foreach ($row_set as $prow) {
+                $prow->_full_review = null;
+                $prow->_full_review_id = "u$cid";
+            }
             $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId?a and contactId=? order by paperId, reviewId", $row_set->paper_ids(), $cid);
             while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
                 $prow = $row_set->get($rrow->paperId);
-                $prow->_full_reviews_of[$cid] = $rrow;
+                $prow->_full_review = $rrow;
             }
             Dbl::free($result);
+            $this->ensure_full_review_name();
         }
-        if ($this->_full_reviews_of !== null
-            && array_key_exists($cid, $this->_full_reviews_of))
-            return $this->_full_reviews_of[$cid];
+        if ($this->_full_review_id === "u$cid")
+            return $this->_full_review;
         $this->ensure_full_reviews();
         return $this->review_of_user($contact);
+    }
+
+    function full_review_of_ordinal($ordinal) {
+        if ($this->_full_review_id === null && !isset($this->_reviews_have["full"])) {
+            $this->_full_review_id = "o$ordinal";
+            $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId=? and reviewOrdinal=?", $this->paperId, $ordinal);
+            $this->_full_review = ReviewInfo::fetch($result, $this->conf);
+            Dbl::free($result);
+            $this->ensure_full_review_name();
+        }
+        if ($this->_full_review_id === "o$ordinal")
+            return $this->_full_review;
+        $this->ensure_full_reviews();
+        return $this->review_of_ordinal($ordinal);
     }
 
     private function fresh_review_of($key, $value) {
@@ -1854,7 +1898,6 @@ class PaperInfo {
     }
     function viewable_submitted_reviews_and_comments(Contact $user, $forceShow) {
         $this->ensure_full_reviews();
-        $this->ensure_reviewer_names();
         $rrows = $this->viewable_submitted_reviews_by_display($user, $forceShow);
         $crows = $this->viewable_comments($user, $forceShow);
         $rcs = array_merge(array_values($rrows), array_values($crows));

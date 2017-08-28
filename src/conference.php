@@ -3159,6 +3159,7 @@ class Conf {
             "manager" => "3 PaperApi::manager_api",
             "mentioncompletion" => "1 PaperApi::mentioncompletion_api",
             "pref" => "3 PaperApi::pref_api", // XXX backwards compat
+            "review" => "3 PaperApi::review_api",
             "reviewround" => "2 PaperApi::reviewround_api",
             "search" => "1 PaperApi::search_api",
             "setdecision" => "2 PaperApi::setdecision_api",

@@ -59,8 +59,10 @@ if ($qreq->p && ctype_digit($qreq->p)) {
 }
 
 // requests
-if ($Conf->has_api($qreq->fn))
+if ($Conf->has_api($qreq->fn)) {
+    $Me->set_forceShow($qreq->forceShow);
     $Conf->call_api_exit($qreq->fn, $Me, $qreq, $Conf->paper);
+}
 
 if ($qreq->fn === "jserror") {
     $url = $qreq->url;
