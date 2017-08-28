@@ -1890,6 +1890,15 @@ class AssignmentSet {
             Conf::msg_warning('Assignment warnings: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div>');
     }
 
+    function json_result($linenos = false) {
+        if ($this->has_error)
+            return new JsonResult(403, ["ok" => false, "error" => '<div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html($linenos)) . '</p></div>']);
+        else if (!empty($this->msgs))
+            return new JsonResult(["ok" => true, "response" => '<div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html($linenos)) . '</p></div>']);
+        else
+            return new JsonResult(["ok" => true]);
+    }
+
     private static function req_user_html($req) {
         return Text::user_html_nolink(get($req, "firstName"), get($req, "lastName"), get($req, "email"));
     }

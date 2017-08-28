@@ -3137,20 +3137,24 @@ class Conf {
         // 0: POST, optional paper; 1: GET, optional paper;
         // 2: POST, mandatory paper; 3: GET, mandatory paper
         $this->_api_map = [
+            "administrator" => "3 PaperApi::manager_api",
             "alltags" => "1 PaperApi::alltags_api",
             "checkformat" => "3 PaperApi::checkformat_api",
             "fieldhtml" => "1 PaperApi::fieldhtml_api",
             "follow" => "2 PaperApi::follow_api",
+            "lead" => "3 PaperApi::lead_api",
+            "manager" => "3 PaperApi::manager_api",
             "mentioncompletion" => "1 PaperApi::mentioncompletion_api",
             "reviewround" => "2 PaperApi::reviewround_api",
             "search" => "1 PaperApi::search_api",
             "setdecision" => "2 PaperApi::setdecision_api",
-            "setlead" => "2 PaperApi::setlead_api",
-            "setmanager" => "2 PaperApi::setmanager_api",
+            "setlead" => "2 PaperApi::lead_api", // XXX backwards compat
+            "setmanager" => "2 PaperApi::manager_api", // XXX backwards compat
             "setpref" => "2 PaperApi::setpref_api",
-            "setshepherd" => "2 PaperApi::setshepherd_api",
+            "setshepherd" => "2 PaperApi::shepherd_api", // XXX backwards compat
             "settaganno" => "0 PaperApi::settaganno_api",
             "settags" => "0 PaperApi::settags_api",
+            "shepherd" => "3 PaperApi::shepherd_api",
             "taganno" => "1 PaperApi::taganno_api",
             "tagreport" => "3 PaperApi::tagreport_api",
             "trackerstatus" => "1 MeetingTracker::trackerstatus_api", // hotcrp-comet entrypoint

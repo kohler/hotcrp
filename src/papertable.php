@@ -1378,7 +1378,7 @@ class PaperTable {
             echo '<form class="fx"><div>',
                 Ht::select($type, [], 0, ["class" => "psc-select need-pcselector want-focus", "style" => "width:99%", "data-pcselector-options" => join(" ", $selopt), "data-pcselector-selected" => $value]),
                 '</div></form>';
-            Ht::stash_script('make_pseditor("' . $type . '",{p:' . $this->prow->paperId . ',fn:"set' . $type . '"})');
+            Ht::stash_script('make_pseditor("' . $type . '",{p:' . $this->prow->paperId . ',fn:"' . $type . '"})');
         }
 
         if ($wholefold === null)
