@@ -84,7 +84,9 @@ class PaperApi {
             $response .= Ht::xmsg("warning", join("<br>", $treport->warnings));
         if (!empty($treport->messages))
             $response .= Ht::xmsg("info", join("<br>", $treport->messages));
-        json_exit(["ok" => $treport->ok, "response" => $response], true);
+        $jr = new JsonResult(["ok" => $treport->ok, "response" => $response]);
+        $jr->transfer_messages($user->conf, true);
+        return $jr;
     }
 
     static function settags_api(Contact $user, $qreq, $prow) {
@@ -129,7 +131,7 @@ class PaperApi {
                 $user->conf->warnMsg(join("<br>", $treport->warnings));
             $taginfo = (object) ["ok" => true, "pid" => $prow->paperId];
             $prow->add_tag_info_json($taginfo, $user);
-            json_exit($taginfo, true);
+            $jr = new JsonResult($taginfo);
         } else if ($ok) {
             $p = [];
             if ($pids) {
@@ -140,9 +142,11 @@ class PaperApi {
                 }
                 Dbl::free($result);
             }
-            json_exit(["ok" => true, "p" => (object) $p]);
+            $jr = new JsonResult(["ok" => true, "p" => (object) $p]);
         } else
-            json_exit(["ok" => false, "error" => $error], true);
+            $jr = new JsonResult(false);
+        $jr->transfer_messages($user->conf, true);
+        return $jr;
     }
 
     static function taganno_api(Contact $user, $qreq, $prow) {

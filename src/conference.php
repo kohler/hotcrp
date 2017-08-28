@@ -2959,39 +2959,6 @@ class Conf {
     }
 
 
-    function output_ajax($values = null, $div = false) {
-        if ($values === false || $values === true)
-            $values = array("ok" => $values);
-        else if ($values === null)
-            $values = array();
-        else if (is_object($values))
-            $values = get_object_vars($values);
-        $t = "";
-        if (session_id() !== ""
-            && ($msgs = $this->session("msgs", array()))) {
-            $this->save_session("msgs", null);
-            foreach ($msgs as $msg) {
-                if (($msg[0] === "merror" || $msg[0] === "xmerror")
-                    && !isset($values["error"]))
-                    $values["error"] = $msg[1];
-                if ($div)
-                    $t .= Ht::xmsg($msg[0], $msg[1]);
-                else
-                    $t .= "<span class=\"$msg[0]\">$msg[1]</span>";
-            }
-        }
-        if ($t !== "")
-            $values["response"] = $t . get_s($values, "response");
-        if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])
-            header("Content-Type: text/plain");
-        else
-            header("Content-Type: application/json");
-        if (check_post())
-            header("Access-Control-Allow-Origin: *");
-        echo json_encode_browser($values);
-    }
-
-
     //
     // Action recording
     //

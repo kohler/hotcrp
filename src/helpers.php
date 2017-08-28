@@ -198,6 +198,50 @@ function redirectSelf($params = []) {
     SelfHref::redirect(null, $params);
 }
 
+class JsonResult {
+    public $status;
+    public $content;
+    public $has_messages = false;
+
+    function __construct($values = null) {
+        if (is_int($values)) {
+            $this->status = $values;
+            if (func_num_args() === 2)
+                $values = func_get_arg(1);
+            else
+                $values = null;
+        }
+        if ($values === true || $values === false)
+            $this->content = ["ok" => $values];
+        else if ($values === null)
+            $this->content = [];
+        else if (is_object($values)) {
+            assert(!($values instanceof JsonResult));
+            $this->content = get_object_vars($values);
+        } else
+            $this->content = $values;
+    }
+    function transfer_messages(Conf $conf, $div = false) {
+        if (session_id() !== ""
+            && ($msgs = $conf->session("msgs", []))) {
+            $conf->save_session("msgs", null);
+            $t = "";
+            foreach ($msgs as $msg) {
+                if (($msg[0] === "merror" || $msg[0] === "xmerror")
+                    && !isset($this->status["error"]))
+                    $this->status["error"] = $msg[1];
+                if ($div)
+                    $t .= Ht::xmsg($msg[0], $msg[1]);
+                else
+                    $t .= "<span class=\"$msg[0]\">$msg[1]</span>";
+            }
+            if ($t !== "")
+                $this->content["response"] = $t . get_s($this->content, "response");
+            $this->has_messages = true;
+        }
+    }
+}
+
 class JsonResultException extends Exception {
     public $result;
     static public $capturing = false;
@@ -208,10 +252,22 @@ class JsonResultException extends Exception {
 
 function json_exit($json, $div = false) {
     global $Conf;
+    if (!is_object($json) || !($json instanceof JsonResult))
+        $json = new JsonResult($json);
+    if (!$json->has_messages && $Conf)
+        $json->transfer_messages($Conf);
     if (JsonResultException::$capturing)
         throw new JsonResultException($json);
     else {
-        $Conf->output_ajax($json, $div);
+        if ($json->status)
+            http_response_code($json->status);
+        if (isset($_GET["jsontext"]) && $_GET["jsontext"])
+            header("Content-Type: text/plain");
+        else
+            header("Content-Type: application/json");
+        if (check_post())
+            header("Access-Control-Allow-Origin: *");
+        echo json_encode_browser($json->content);
         exit;
     }
 }
