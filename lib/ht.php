@@ -22,11 +22,9 @@ class Ht {
                                        "disabled" => self::ATTR_BOOL,
                                        "enctype" => self::ATTR_SKIP,
                                        "method" => self::ATTR_SKIP,
-                                       "name" => self::ATTR_SKIP,
                                        "optionstyles" => self::ATTR_SKIP,
                                        "spellcheck" => self::ATTR_BOOLTEXT,
-                                       "type" => self::ATTR_SKIP,
-                                       "value" => self::ATTR_SKIP);
+                                       "type" => self::ATTR_SKIP);
 
     static function extra($js) {
         $x = "";
@@ -200,58 +198,59 @@ class Ht {
         return '<label for="' . $id . '"' . self::extra($js) . '>' . $html . "</label>";
     }
 
-    static function button($name, $html, $js = null) {
-        if (!$js && is_array($html)) {
+    static function button($html, $js = null) {
+        if ($js === null && is_array($html)) {
             $js = $html;
             $html = null;
-        } else if (!$js)
+        } else if ($js === null)
             $js = array();
         if (!isset($js["class"]) && self::$default_button_class)
             $js["class"] = self::$default_button_class;
         $type = isset($js["type"]) ? $js["type"] : "button";
-        if ($name && !$html) {
-            $html = $name;
-            $name = "";
-        } else
-            $name = $name ? " name=\"$name\"" : "";
-        if ($type === "button" || preg_match("_[<>]_", $html) || isset($js["value"]))
-            return "<button type=\"$type\"$name value=\""
-                . get($js, "value", 1) . "\"" . self::extra($js)
+        if ($type === "button" || preg_match("_[<>]_", $html) || isset($js["value"])) {
+            if (!isset($js["value"]))
+                $js["value"] = 1;
+            return "<button type=\"$type\"" . self::extra($js)
                 . ">" . $html . "</button>";
-        else
-            return "<input type=\"$type\"$name value=\"$html\""
-                . self::extra($js) . " />";
+        } else {
+            $js["value"] = $html;
+            return "<input type=\"$type\"" . self::extra($js) . " />";
+        }
     }
 
     static function submit($name, $html = null, $js = null) {
-        if (!$js && is_array($html)) {
+        if ($js === null && is_array($html)) {
             $js = $html;
             $html = null;
-        } else if (!$js)
+        } else if ($js === null)
             $js = array();
         $js["type"] = "submit";
-        return self::button($html ? $name : "", $html ? : $name, $js);
+        if ($html === null)
+            $html = $name;
+        else if ((string) $name !== "")
+            $js["name"] = $name;
+        return self::button($html, $js);
     }
 
     static function js_button($html, $onclick, $js = null) {
-        if (!$js && is_array($onclick)) {
+        if ($js === null && is_array($onclick)) {
             $js = $onclick;
             $onclick = null;
-        } else if (!$js)
+        } else if ($js === null)
             $js = array();
         if ($onclick)
             $js["onclick"] = $onclick;
-        return self::button("", $html, $js);
+        return self::button($html, $js);
     }
 
-    static function hidden_default_submit($name, $text = null, $js = null) {
-        if (!$js && is_array($text)) {
-            $js = $text;
-            $text = null;
-        } else if (!$js)
+    static function hidden_default_submit($name, $value = null, $js = null) {
+        if ($js === null && is_array($value)) {
+            $js = $value;
+            $value = null;
+        } else if ($js === null)
             $js = array();
         $js["class"] = trim(get_s($js, "class") . " hidden");
-        return self::submit($name, $text, $js);
+        return self::submit($name, $value, $js);
     }
 
     private static function apply_placeholder(&$value, &$js) {
@@ -352,7 +351,7 @@ class Ht {
     }
 
     static private function make_link($html, $href, $onclick, $js) {
-        if (!$js)
+        if ($js === null)
             $js = [];
         if ($href && !isset($js["href"]))
             $js["href"] = $href;
@@ -366,21 +365,21 @@ class Ht {
     }
 
     static function link($html, $href, $js = null) {
-        if (!$js && is_array($href))
+        if ($js === null && is_array($href))
             return self::make_link($html, null, null, $href);
         else
             return self::make_link($html, $href, null, $js);
     }
 
     static function js_link($html, $onclick, $js = null) {
-        if (!$js && is_array($onclick))
+        if ($js === null && is_array($onclick))
             return self::make_link($html, null, null, $onclick);
         else
             return self::make_link($html, null, $onclick, $js);
     }
 
     static function auto_link($html, $dest, $js = null) {
-        if (!$js && is_array($dest))
+        if ($js === null && is_array($dest))
             return self::make_link($html, null, null, $dest);
         else if ($dest && strcspn($dest, " ({") < strlen($dest))
             return self::make_link($html, null, $dest, $js);
