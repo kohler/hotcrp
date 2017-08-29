@@ -1711,15 +1711,23 @@ td.plgreen {
 	font-weight: normal;
 }
 
-div.pl_abstract, div.pl_textoption {
+.pl_longtext, .pl_shorttext {
+	margin-top: 4px;
+	margin-bottom: 4px;
+}
+.pl_longtext {
 	-webkit-columns: 300px 3;
 	-moz-columns: 300px 3;
 	columns: 300px 3;
 	-webkit-column-gap: 18px;
 	-moz-column-gap: 18px;
 	column-gap: 18px;
-	margin-top: 4px;
-	margin-bottom: 4px;
+}
+.pl_longtext > p:first-child, .pl_shorttext > p:first-child {
+	margin-top: 0;
+}
+.pl_longtext > p:last-child, .pl_shorttext > p:last-child {
+	margin-bottom: 0;
 }
 
 span.pl_rownum {
@@ -2334,6 +2342,7 @@ div.pst span.hint {
 /* paper */
 .paperinfo {
 	display: table;
+	table-layout: fixed;
 	width: 100%;
 }
 .paperinfo-row {
@@ -2349,6 +2358,7 @@ div.pst span.hint {
 }
 .paperinfo-abstract {
 	word-wrap: break-word;
+	overflow-wrap: break-word;
 	position: relative;
 }
 .fold6c .paperinfo-cl {
@@ -2754,6 +2764,14 @@ body#offline .revcard {
 }
 .pavb, .revtext, .cmttext {
 	line-height: 1.35;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+.pavb > p:first-child {
+	margin-top: 0;
+}
+.pavb > p:last-child {
+	margin-bottom: 0;
 }
 .revtext, .cmttext {
 	position: relative;
@@ -2787,10 +2805,6 @@ body#offline .revcard {
 .overlong-content {
 	position: relative;
 	z-index: 1;
-}
-.format0 {
-	max-width: 640px;
-	white-space: pre-wrap;
 }
 .cmtnumhead {
 	display: inline-block;

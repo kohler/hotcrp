@@ -392,6 +392,11 @@ class Ht {
                             '<a href="$1" rel="noreferrer">$1</a>$2', $html);
     }
 
+    static function format0($html_text) {
+        $html_text = self::link_urls(Text::single_line_paragraphs($html_text));
+        return preg_replace('/(?:\r\n?){2,}|\n{2,}/', "</p>\n<p>", "<p>$html_text</p>");
+    }
+
     static function check_stash($uniqueid) {
         return get(self::$_stash_map, $uniqueid, false);
     }

@@ -990,14 +990,20 @@ class TextPaperOption extends PaperOption {
         $d = $ov->data();
         if ($d === null || $d === "")
             return "";
+        $klass = "";
+        if ($pl)
+            $klass = strlen($d) > 190 ? "pl_longtext " : "pl_shorttext ";
         if (($format = $row->format_of($d))) {
             if ($pl)
                 $pl->need_render = true;
             Ht::stash_script('$(render_text.on_page)', 'render_on_page');
-            return '<div class="need-format" data-format="' . $format
-                . ($pl ? '.plx' : '.abs') . '">' . htmlspecialchars($d) . '</div>';
-        } else
-            return '<div class="format0">' . Ht::link_urls(htmlspecialchars($d)) . '</div>';
+            return '<div class="' . $klass . 'need-format" data-format="'
+                . $format . ($pl ? '.plx' : '.abs') . '">'
+                . htmlspecialchars($d) . '</div>';
+        } else if ($pl)
+            return '<div class="' . rtrim($klass) . '">' . Ht::format0($d) . '</div>';
+        else
+            return Ht::format0($d);
     }
 
     function list_display($isrow) {

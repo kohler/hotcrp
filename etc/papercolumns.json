@@ -133,7 +133,7 @@
     },
     {
         "name": "abstract",
-        "row": true, "fold": true, "completion": true, "factory_class": "AbstractPaperColumn",
+        "row": true, "fold": true, "completion": true, "factory_class": "Abstract_PaperColumn",
         "priority": 140
     },
     {

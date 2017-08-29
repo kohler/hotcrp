@@ -574,7 +574,7 @@ class CollabPaperColumn extends PaperColumn {
     }
 }
 
-class AbstractPaperColumn extends PaperColumn {
+class Abstract_PaperColumn extends PaperColumn {
     function __construct($cj) {
         parent::__construct($cj);
     }
@@ -586,13 +586,13 @@ class AbstractPaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $t = Text::highlight($row->abstract, $pl->search->field_highlighter("abstract"), $highlight_count);
+        $klass = strlen($t) > 190 ? "pl_longtext" : "pl_shorttext";
         if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
             $pl->need_render = true;
-            $t = '<div class="need-format" data-format="' . $format . '.abs.plx">' . $t . '</div>';
-        } else {
-            $t = Ht::link_urls(Text::single_line_paragraphs($t));
-            $t = preg_replace('/(?:\r\n?){2,}|\n{2,}/', " ¶ ", $t);
-        }
+            $t = '<div class="' . $klass . ' need-format" data-format="'
+                . $format . '.abs.plx">' . $t . '</div>';
+        } else
+            $t = '<div class="' . $klass . '">' . Ht::format0($t) . '</div>';
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
