@@ -930,6 +930,13 @@ $blind\n";
                 $buttons[] = Ht::submit("submitreview", "Approve review", ["class" => "btn btn-highlight", "disabled" => $disabled]);
             if (!$my_review || !$rrow->timeApprovalRequested)
                 $buttons[] = Ht::submit("savedraft", "Save changes", ["class" => "btn", "disabled" => $disabled]);
+            if (!$my_review && $rrow->requestedBy == $Me->contactId) {
+                $my_rrow = $prow->review_of_user($Me);
+                if ($my_rrow->reviewModified <= 1)
+                    $buttons[] = Ht::submit("adoptreview", "Adopt as your review", ["class" => "btn", "disabled" => $disabled]);
+                else if (!$my_rrow->reviewSubmitted)
+                    $buttons[] = Ht::js_button("Adopt as your review", "override_deadlines(this)", ["class" => "btn", "data-override-text" => "Are you sure you want to replace your current draft review?", "data-override-submit" => "adoptreview", "disabled" => $disabled]);
+            }
         } else if (!$submitted) {
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
             $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn btn-default", "disabled" => $disabled]);
@@ -1559,6 +1566,11 @@ class ReviewValues extends MessageSet {
             return true;
         } else
             return false;
+    }
+
+    function unset_ready() {
+        $this->req["ready"] = 0;
+        return true;
     }
 
     private function reviewer_error($msg) {

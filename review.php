@@ -158,6 +158,26 @@ if (isset($_REQUEST["update"]) && check_post()) {
 }
 
 
+// adopt review action
+if (isset($_REQUEST["adoptreview"]) && check_post()) {
+    $tf = new ReviewValues($rf);
+    $tf->paperId = $prow->paperId;
+    $my_rrow = $prow->review_of_user($Me);
+    if (($whyNot = $Me->perm_submit_review($prow, $my_rrow)))
+        $tf->msg(null, whyNotText($whyNot, "review"), MessageSet::ERROR);
+    else if ($tf->parse_web(make_qreq(), req("forceShow"))
+             && $tf->unset_ready()
+             && $tf->check_and_save($Me, $prow, $my_rrow)
+             && !$tf->has_problem_at("ready"))
+        $tf->report();
+    if (($my_rrow = $prow->fresh_review_of_user($Me))) {
+        unset($_REQUEST["r"], $_GET["r"], $_POST["r"]);
+        $_REQUEST["r"] = $_GET["r"] = $my_rrow->reviewId;
+    }
+    redirectSelf(); // normally does not return
+}
+
+
 // delete review action
 if (isset($_REQUEST["deletereview"]) && check_post()
     && $Me->can_administer($prow))
