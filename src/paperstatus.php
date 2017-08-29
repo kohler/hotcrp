@@ -122,6 +122,16 @@ class PaperStatus extends MessageSet {
         $pj->pid = (int) $prow->paperId;
         $pj->title = $prow->title;
 
+        $submitted_status = "submitted";
+        if ($prow->outcome != 0 && $contact->can_view_decision($prow, $this->forceShow)) {
+            $pj->decision = $this->conf->decision_name($prow->outcome);
+            if ($pj->decision === false) {
+                $pj->decision = (int) $prow->outcome;
+                $submitted_status = $pj->decision > 0 ? "accepted" : "rejected";
+            } else
+                $submitted_status = $pj->decision;
+        }
+
         if ($prow->timeWithdrawn > 0) {
             $pj->status = "withdrawn";
             $pj->withdrawn = true;
@@ -129,7 +139,7 @@ class PaperStatus extends MessageSet {
             if (get($prow, "withdrawReason"))
                 $pj->withdrawn_reason = $prow->withdrawReason;
         } else if ($prow->timeSubmitted > 0) {
-            $pj->status = "submitted";
+            $pj->status = $submitted_status;
             $pj->submitted = true;
         } else {
             $pj->status = "inprogress";
