@@ -308,7 +308,10 @@ class PaperApi {
         $u = $user;
         if (isset($qreq->u) || isset($qreq->reviewer)) {
             $x = isset($qreq->u) ? $qreq->u : $qreq->reviewer;
-            if ($x && ($x == $user->contactId || strcasecmp($x, $user->email) == 0))
+            if ($x === ""
+                || strcasecmp($x, "me") == 0
+                || ($user->contactId > 0 && $x == $user->contactId)
+                || strcasecmp($x, $user->email) == 0)
                 $u = $user;
             else if (ctype_digit($x))
                 $u = $user->conf->cached_user_by_id($x);
@@ -338,7 +341,7 @@ class PaperApi {
                 return $aset->json_result();
             $prow->load_reviewer_preferences();
         }
-        if ($u !== $user && !$user->allow_administer($prow))
+        if ($u->contactId !== $user->contactId && !$user->allow_administer($prow))
             json_exit(403, "Permission error.");
         $pref = $prow->reviewer_preference($u, true);
         $value = unparse_preference($pref[0], $pref[1]);
