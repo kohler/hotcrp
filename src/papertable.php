@@ -1774,7 +1774,7 @@ class PaperTable {
             if ($revivable)
                 $b = Ht::submit("revive", "Revive submission", ["class" => "btn"]);
             else {
-                $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn submissions has passed.";
+                $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn submissions has passed. Are you sure you want to override it?";
                 if ($this->admin)
                     $b = array(Ht::js_button("Revive submission", "override_deadlines(this)", ["class" => "btn", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
             }
@@ -1804,9 +1804,11 @@ class PaperTable {
             $save_name = $this->is_ready() ? "Save and resubmit" : "Save draft";
             if (!$whyNot)
                 $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn btn-default btn-savepaper"]), "");
-            else if ($this->admin)
-                $buttons[] = array(Ht::js_button($save_name, "override_deadlines(this)", ["class" => "btn btn-default btn-savepaper", "data-override-text" => whyNotText($whyNot, $prow ? "update" : "register"), "data-override-submit" => $updater]), "(admin only)");
-            else if ($prow && $prow->timeSubmitted > 0)
+            else if ($this->admin) {
+                $x = whyNotText($whyNot, $prow ? "update" : "register")
+                    . " Are you sure you want to override the deadline?";
+                $buttons[] = array(Ht::js_button($save_name, "override_deadlines(this)", ["class" => "btn btn-default btn-savepaper", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
+            } else if ($prow && $prow->timeSubmitted > 0)
                 $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", ["class" => "btn"]), "");
             else if ($this->conf->timeFinalizePaper($prow))
                 $buttons[] = array(Ht::submit("update", $save_name, ["class" => "btn btn-savepaper"]));

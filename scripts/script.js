@@ -5231,16 +5231,17 @@ function popup_render(hc) {
 function override_deadlines(elt, callback) {
     var ejq = jQuery(elt);
     var djq = jQuery('<div class="popupbg"><div class="popupo"><p>'
-                     + (ejq.attr("data-override-text") || "")
-                     + " Are you sure you want to override the deadline?</p>"
-                     + '<form><div class="popup-actions">'
-                     + '<button type="button" name="bsubmit" class="btn btn-default">Save changes</button>'
+                     + (ejq.attr("data-override-text") || "Are you sure you want to override the deadline?")
+                     + '</p><form><div class="popup-actions">'
+                     + '<button type="button" name="bsubmit" class="btn btn-default"></button>'
                      + '<button type="button" name="cancel" class="btn">Cancel</button>'
                      + '</div></form></div></div>');
     djq.find("button[name=cancel]").on("click", function () {
         djq.remove();
     });
-    djq.find("button[name=bsubmit]").on("click", function () {
+    djq.find("button[name=bsubmit]")
+        .html(ejq.html() || ejq.attr("value") || "Save changes")
+        .on("click", function () {
         if (callback)
             callback();
         else {

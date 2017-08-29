@@ -915,7 +915,7 @@ $blind\n";
         $my_review = !$rrow || $Me->is_my_review($rrow);
         if (!$this->conf->time_review($rrow, $Me->act_pc($prow, true), true)) {
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
-            $override_text = whyNotText($whyNot, "review");
+            $override_text = whyNotText($whyNot, "review") . " Are you sure you want to override the deadline?";
             if (!$submitted) {
                 $buttons[] = array(Ht::js_button("Submit review", "override_deadlines(this)", ["class" => "btn btn-default", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
                 $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", ["class" => "btn", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
