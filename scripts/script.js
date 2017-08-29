@@ -28,6 +28,9 @@ function serialize_object(x) {
         return "";
 }
 
+if (!window.JSON || !window.JSON.parse)
+    window.JSON = {parse: $.parseJSON};
+
 
 // callback combination
 function add_callback(cb1, cb2) {
@@ -601,7 +604,7 @@ try {
 }
 wstorage.json = function (is_session, key) {
     var x = wstorage(is_session, key);
-    return x ? jQuery.parseJSON(x) : false;
+    return x ? JSON.parse(x) : false;
 };
 
 
@@ -1630,7 +1633,7 @@ var comet_store = (function () {
         return "hotcrp-comet " + hoturl_absolute_base();
     }
     function make_site_value(v) {
-        var x = v && $.parseJSON(v);
+        var x = v && JSON.parse(v);
         if (!x || typeof x !== "object")
             x = {};
         if (!x.updated_at || x.updated_at + 10 < now_sec()
@@ -4437,7 +4440,7 @@ $(document).on("collectState", function (event, state) {
         return;
     var groups = $(tbl).data("groups");
     if (groups && typeof groups === "string")
-        groups = $.parseJSON(groups);
+        groups = JSON.parse(groups);
     var data = state.sortpl = {
         ids: table_ids(tbl), groups: groups,
         hotlist_info: tbl.getAttribute("data-hotlist")
@@ -6155,7 +6158,7 @@ function hotlist_search_params(x, ids) {
     if (x instanceof HTMLElement)
         x = x.getAttribute("data-hotlist");
     if (x && typeof x === "string")
-        x = $.parseJSON(x);
+        x = JSON.parse(x);
     var m;
     if (!x || !x.ids || !(m = x.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/)))
         return false;

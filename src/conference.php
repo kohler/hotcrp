@@ -2632,6 +2632,21 @@ class Conf {
         return Ht::script_file($url, ["crossorigin" => "anonymous", "integrity" => $integrity]);
     }
 
+    private function make_jquery_script_file($jqueryVersion) {
+        $integrity = null;
+        if ($this->opt("jqueryCdn")) {
+            if ($jqueryVersion === "1.12.4")
+                $integrity = "sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=";
+            else if ($jqueryVersion === "3.1.1")
+                $integrity = "sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=";
+            else if ($jqueryVersion === "3.2.1")
+                $integrity = "sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=";
+            $jquery = "//code.jquery.com/jquery-{$jqueryVersion}.min.js";
+        } else
+            $jquery = "scripts/jquery-{$jqueryVersion}.min.js";
+        return $this->make_script_file($jquery, true, $integrity);
+    }
+
     private function header_head($title) {
         global $Me, $ConfSitePATH;
         // load session list and clear its cookie
@@ -2688,21 +2703,18 @@ class Conf {
 
         // jQuery
         $stash = Ht::unstash();
-        $jqueryVersion = get($this->opt, "jqueryVersion", "1.12.4");
-        $integrity = null;
         if (isset($this->opt["jqueryUrl"]))
-            $jquery = $this->opt["jqueryUrl"];
-        else if ($this->opt("jqueryCdn")) {
-            $jquery = "//code.jquery.com/jquery-{$jqueryVersion}.min.js";
-            if ($jqueryVersion === "1.12.4")
-                $integrity = "sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=";
-            else if ($jqueryVersion === "3.1.1")
-                $integrity = "sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=";
-        } else
-            $jquery = "scripts/jquery-{$jqueryVersion}.min.js";
-        Ht::stash_html($this->make_script_file($jquery, true, $integrity) . "\n");
+            Ht::stash_html($this->make_script_file($this->opt["jqueryUrl"], true) . "\n");
+        else {
+            $jqueryVersion = get($this->opt, "jqueryVersion", "1.12.4");
+            if ($jqueryVersion[0] === "3") {
+                Ht::stash_html("<!--[if lt IE 9]>" . $this->make_jquery_script_file("1.12.4") . "<![endif]-->\n");
+                Ht::stash_html("<![if !IE|gte IE 9]>" . $this->make_jquery_script_file($jqueryVersion) . "<![endif]>\n");
+            } else
+                Ht::stash_html($this->make_jquery_script_file($jqueryVersion) . "\n");
+        }
         if ($this->opt("jqueryMigrate"))
-            Ht::stash_html($this->make_script_file("//code.jquery.com/jquery-migrate-3.0.0.min.js", true));
+            Ht::stash_html($this->make_script_file("//code.jquery.com/jquery-migrate-3.0.0.js", true));
 
         // Javascript settings to set before script.js
         Ht::stash_script("siteurl=" . json_encode_browser(Navigation::siteurl()) . ";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
