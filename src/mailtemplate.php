@@ -327,6 +327,23 @@ Contact %ADMIN% with any questions or concerns.
 
 %REVIEWS%\n"),
 
+     "reviewpreapprovaledit" =>
+     array("subject" => "[%CONFSHORTNAME%] Review edited for paper #%NUMBER% %TITLEHINT%",
+           "body" => "Greetings,
+
+%REVIEWAUTHOR%'s review for %CONFNAME% paper #%NUMBER% has been edited by its requester. The review has not yet been approved.
+
+ Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+   Review by: %OPT(REVIEWAUTHOR)%
+
+Contact %ADMIN% with any questions or concerns.
+
+%SIGNATURE%
+
+%REVIEWS%\n"),
+
      "acceptnotify" =>
      array("mailtool_name" => "Accept notification",
            "mailtool_priority" => 10,
