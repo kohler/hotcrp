@@ -317,8 +317,10 @@ class PaperApi {
                 $u = $user->conf->cached_user_by_id($x);
             else
                 $u = $user->conf->cached_user_by_email($x);
-            if (!$u)
+            if (!$u) {
+                error_log("PaperApi::get_user: rejecting user {$x}, requested by {$user->email}");
                 json_exit(403, $user->isPC ? "No such user." : "Permission error.");
+            }
         }
         return $u;
     }
@@ -326,8 +328,10 @@ class PaperApi {
     static function get_reviewer(Contact $user, $qreq, $prow, $forceShow = null) {
         $u = self::get_user($user, $qreq, $forceShow);
         if ($u->contactId !== $user->contactId
-            && ($prow ? !$user->can_administer($prow, $forceShow) : !$user->privChair))
+            && ($prow ? !$user->can_administer($prow, $forceShow) : !$user->privChair)) {
+            error_log("PaperApi::get_reviewer: rejecting user {$u->contactId}/{$u->email}, requested by {$user->contactId}/{$user->email}");
             json_exit(403, "Permission error.");
+        }
         return $u;
     }
 
@@ -341,8 +345,10 @@ class PaperApi {
                 return $aset->json_result();
             $prow->load_reviewer_preferences();
         }
-        if ($u->contactId !== $user->contactId && !$user->allow_administer($prow))
+        if ($u->contactId !== $user->contactId && !$user->allow_administer($prow)) {
+            error_log("PaperApi::pref_api: rejecting user {$u->contactId}/{$u->email}, requested by {$user->contactId}/{$user->email}");
             json_exit(403, "Permission error.");
+        }
         $pref = $prow->reviewer_preference($u, true);
         $value = unparse_preference($pref[0], $pref[1]);
         $jr = new JsonResult(["ok" => true, "value" => $value === "0" ? "" : $value, "pref" => $pref[0]]);
