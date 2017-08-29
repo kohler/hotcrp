@@ -123,7 +123,8 @@ class PaperStatus extends MessageSet {
         $pj->title = $prow->title;
 
         $submitted_status = "submitted";
-        if ($prow->outcome != 0 && $contact->can_view_decision($prow, $this->forceShow)) {
+        if ($prow->outcome != 0
+            && (!$contact || $contact->can_view_decision($prow, $this->forceShow))) {
             $pj->decision = $this->conf->decision_name($prow->outcome);
             if ($pj->decision === false) {
                 $pj->decision = (int) $prow->outcome;
