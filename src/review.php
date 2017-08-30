@@ -1938,7 +1938,7 @@ class ReviewValues extends MessageSet {
         if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome != 0
             && $prow->can_author_view_decision())
             $diff_view_score = VIEWSCORE_AUTHOR;
-        if (!$rrow || !$rrow->reviewModified || $diff_view_score > VIEWSCORE_FALSE) {
+        if ($diff_view_score > VIEWSCORE_FALSE) {
             $qf[] = "reviewModified=?";
             $qv[] = $now;
         }
