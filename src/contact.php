@@ -61,11 +61,11 @@ class Contact {
     const ROLE_PCLIKE = 15;
     const ROLE_AUTHOR = 16;
     const ROLE_REVIEWER = 32;
-    private $is_author_;
-    private $has_review_;
-    private $has_outstanding_review_ = null;
+    const ROLE_REQUESTER = 64;
+    private $db_roles_;
+    private $active_roles_;
+    private $has_outstanding_review_;
     private $is_metareviewer_;
-    private $is_requester_;
     private $is_lead_;
     private $is_explicit_manager_;
     public $is_site_contact = false;
@@ -208,9 +208,8 @@ class Contact {
         if (isset($this->roles))
             $this->assign_roles((int) $this->roles);
         if (isset($this->__isAuthor__))
-            $this->is_author_ = (int) $this->__isAuthor__ > 0;
-        if (isset($this->__isReviewer__))
-            $this->has_review_ = (int) $this->__isReviewer__ > 0;
+            $this->db_roles_ = ((int) $this->__isAuthor__ > 0 ? self::ROLE_AUTHOR : 0)
+                | ((int) $this->__hasReview__ > 0 ? self::ROLE_REVIEWER : 0);
         if (!$this->isPC && $this->conf->opt("disableNonPC"))
             $this->disabled = true;
     }
@@ -1523,58 +1522,56 @@ class Contact {
         // Load from database
         $result = null;
         if ($this->contactId > 0) {
-            $qs = ["exists (select * from PaperConflict where contactId=? and conflictType>=" . CONFLICT_AUTHOR . ")"];
-            $qv = [$this->contactId];
-            if ($this->review_tokens_) {
-                $qs[] = "exists (select * from PaperReview where contactId=? or reviewToken?a)";
-                $qv[] = $this->contactId;
-                $qv[] = $this->review_tokens_;
-            } else {
-                $qs[] = "exists (select * from PaperReview where contactId=?)";
-                $qv[] = $this->contactId;
-            }
+            $qs = ["exists (select * from PaperConflict where contactId=? and conflictType>=" . CONFLICT_AUTHOR . ")",
+                   "exists (select * from PaperReview where contactId=?)"];
+            $qv = [$this->contactId, $this->contactId];
             if ($this->isPC) {
                 $qs[] = "exists (select * from PaperReview where requestedBy=? and contactId!=?)";
-                $qv[] = $this->contactId;
-                $qv[] = $this->contactId;
-            }
+                array_push($qv, $this->contactId, $this->contactId);
+            } else
+                $qs[] = "0";
+            if ($this->review_tokens_) {
+                $qs[] = "exists (select * from PaperReview where reviewToken?a)";
+                $qv[] = $this->review_tokens_;
+            } else
+                $qs[] = "0";
             $result = $this->conf->qe_apply("select " . join(", ", $qs), $qv);
         }
         $row = edb_row($result);
-        $this->is_author_ = $row && $row[0] > 0;
-        $this->has_review_ = $row && $row[1] > 0;
-        if ($this->isPC)
-            $this->is_requester_ = $row && $row[2] > 0;
+        $this->db_roles_ = ($row && $row[0] > 0 ? self::ROLE_AUTHOR : 0)
+            | ($row && $row[1] > 0 ? self::ROLE_REVIEWER : 0)
+            | ($row && $row[2] > 0 ? self::ROLE_REQUESTER : 0);
+        $this->active_roles_ = $this->db_roles_
+            | ($row && $row[3] > 0 ? self::ROLE_REVIEWER : 0);
         Dbl::free($result);
 
         // Update contact information from capabilities
         if ($this->capabilities)
             foreach ($this->capabilities as $pid => $cap)
                 if ($cap & self::CAP_AUTHORVIEW)
-                    $this->is_author_ = true;
+                    $this->active_roles_ |= self::ROLE_AUTHOR;
     }
 
     private function check_rights_version() {
         if ($this->rights_version_ !== self::$rights_version) {
-            $this->is_author_ = $this->has_review_ = $this->has_outstanding_review_ =
-                $this->is_requester_ = $this->is_lead_ = $this->is_explicit_manager_ =
-                $this->is_metareviewer_ = null;
+            $this->db_roles_ = $this->active_roles_ = $this->has_outstanding_review_ =
+                $this->is_lead_ = $this->is_explicit_manager_ = $this->is_metareviewer_ = null;
             $this->rights_version_ = self::$rights_version;
         }
     }
 
     function is_author() {
         $this->check_rights_version();
-        if (!isset($this->is_author_))
+        if (!isset($this->active_roles_))
             $this->load_author_reviewer_status();
-        return $this->is_author_;
+        return ($this->active_roles_ & self::ROLE_AUTHOR) !== 0;
     }
 
     function has_review() {
         $this->check_rights_version();
-        if (!isset($this->has_review_))
+        if (!isset($this->active_roles_))
             $this->load_author_reviewer_status();
-        return $this->has_review_;
+        return ($this->active_roles_ & self::ROLE_REVIEWER) !== 0;
     }
 
     function is_reviewer() {
@@ -1622,15 +1619,9 @@ class Contact {
 
     function is_requester() {
         $this->check_rights_version();
-        if (!isset($this->is_requester_)) {
-            $result = null;
-            if ($this->contactId > 0)
-                $result = $this->conf->qe("select requestedBy from PaperReview where requestedBy=? and contactId!=? limit 1", $this->contactId, $this->contactId);
-            $row = edb_row($result);
-            $this->is_requester_ = $row && $row[0] > 0;
-            Dbl::free($result);
-        }
-        return $this->is_requester_;
+        if (!isset($this->active_roles_))
+            $this->load_author_reviewer_status();
+        return ($this->active_roles_ & self::ROLE_REQUESTER) !== 0;
     }
 
     function is_discussion_lead() {

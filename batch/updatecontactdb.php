@@ -47,7 +47,7 @@ if ($users) {
     Contact::$allow_nonexistent_properties = true;
     $result = Dbl::ql($Conf->dblink, "select ContactInfo.contactId, email, firstName, lastName, unaccentedName, disabled, roles, password, passwordTime, passwordUseTime,
         exists (select * from PaperConflict where contactId=ContactInfo.contactId and conflictType>=" . CONFLICT_AUTHOR . ") __isAuthor__,
-        exists (select * from PaperReview where contactId=ContactInfo.contactId) __isReviewer__
+        exists (select * from PaperReview where contactId=ContactInfo.contactId) __hasReview__
         from ContactInfo");
     $cdbids = [];
     $qv = [];
