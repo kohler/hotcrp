@@ -13,7 +13,7 @@ if (Navigation::page() !== "index") {
         include("$page.php");
         exit;
     } else if ($page == "images" || $page == "scripts" || $page == "stylesheets") {
-        $_REQUEST["file"] = $page . Navigation::path();
+        $_GET["file"] = $page . Navigation::path();
         include("cacheable.php");
         exit;
     } else
