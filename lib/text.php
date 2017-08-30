@@ -339,15 +339,17 @@ class Text {
         else
             $reg = (object) ["value" => $word];
 
-        $word = preg_quote(preg_replace('/\s+/', " ", $reg->value));
-        if (strpos($word, "*") !== false) {
-            $word = str_replace('\*', '\S*', $word);
-            $word = str_replace('\\\\\S*', '\*', $word);
-        }
-
+        $word = preg_replace('/\s+/', " ", $reg->value);
         if (!preg_match("/[\x80-\xFF]/", $word))
             $reg->preg_raw = Text::word_regex($word);
         $reg->preg_utf8 = Text::utf8_word_regex($word);
+
+        if (strpos($word, "*") !== false) {
+            if ($reg->preg_raw)
+                $reg->preg_raw = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_raw));
+            $reg->preg_utf8 = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_utf8));
+        }
+
         return $reg;
     }
 
