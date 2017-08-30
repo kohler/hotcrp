@@ -152,11 +152,11 @@ xassert($j === "\"\xE2\x80\xA8\"" || $j === "\"\\u2028\"");;
 xassert_eqq(json_encode_browser("\xE2\x80\xA8"), "\"\\u2028\"");
 xassert_eqq(json_encode_db("å"), "\"å\"");
 $j = json_encode_browser("å");
-xassert($j === "\"\\u00C5\"" || $j === "\"å\"");;
+xassert($j === "\"\\u00c5\"" || $j === "\"å\"");;
 $j = json_encode_db("å\xE2\x80\xA8");
 xassert($j === "\"å\xE2\x80\xA8\"" || $j === "\"å\\u2028\"");
 $j = json_encode_browser("å\xE2\x80\xA8");
-xassert($j === "\"\\u00C5\\u2028\"" || $j === "\"å\\u2028\"");;
+xassert($j === "\"\\u00c5\\u2028\"" || $j === "\"å\\u2028\"");;
 
 // SessionList tests
 xassert_eqq(json_encode(SessionList::decode_ids("[1-2]")), "[1,2]");
