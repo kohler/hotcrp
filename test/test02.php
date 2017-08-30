@@ -269,6 +269,31 @@ xassert_eqq(Text::highlight("Is foo bar føo bar fóó bar highlit right? foö",
             "Is <span class=\"match\">foo</span> bar <span class=\"match\">føo</span> bar <span class=\"match\">fóó</span> bar highlit right? <span class=\"match\">foö</span>");
 xassert_eqq(UnicodeHelper::remove_f_ligatures("Héllo ﬀ,ﬁ:fi;ﬂ,ﬃ:ﬄ-ﬅ"), "Héllo ff,fi:fi;fl,ffi:ffl-ﬅ");
 
+// match_pregexes tests
+$pregex = Text::star_text_pregexes("foo");
+xassert(Text::match_pregexes($pregex, "foo", false));
+xassert(Text::match_pregexes($pregex, "foo", "foo"));
+xassert(Text::match_pregexes($pregex, "fóo", "foo"));
+xassert(!Text::match_pregexes($pregex, "foobar", false));
+xassert(!Text::match_pregexes($pregex, "foobar", "foobar"));
+xassert(!Text::match_pregexes($pregex, "fóobar", "foobar"));
+
+$pregex = Text::star_text_pregexes("foo*");
+xassert(Text::match_pregexes($pregex, "foo", false));
+xassert(Text::match_pregexes($pregex, "foo", "foo"));
+xassert(Text::match_pregexes($pregex, "fóo", "foo"));
+xassert(Text::match_pregexes($pregex, "foobar", false));
+xassert(Text::match_pregexes($pregex, "foobar", "foobar"));
+xassert(Text::match_pregexes($pregex, "fóobar", "foobar"));
+xassert(!Text::match_pregexes($pregex, "ffoobar", false));
+xassert(!Text::match_pregexes($pregex, "ffoobar", "ffoobar"));
+xassert(!Text::match_pregexes($pregex, "ffóobar", "ffoobar"));
+
+$pregex = Text::star_text_pregexes("foo@butt.com");
+xassert(Text::match_pregexes($pregex, "it's foo@butt.com and friends", false));
+xassert(Text::match_pregexes($pregex, "it's foo@butt.com and friends", "it's foo@butt.com and friends"));
+xassert(Text::match_pregexes($pregex, "it's fóo@butt.com and friends", "it's foo@butt.com and friends"));
+
 // Qrequest tests
 $q = new Qrequest("GET", ["a" => 1, "b" => 2]);
 xassert_eqq($q->a, 1);

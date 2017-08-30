@@ -371,7 +371,7 @@ class Text {
             return false;
         else if (!isset($reg->preg_raw))
             return !!preg_match('{' . $reg->preg_utf8 . '}ui', $text);
-        else if ($deaccented_text)
+        else if ($deaccented_text && $deaccented_text !== $text)
             return !!preg_match('{' . $reg->preg_utf8 . '}ui', $deaccented_text);
         else
             return !!preg_match('{' . $reg->preg_raw . '}i', $text);
