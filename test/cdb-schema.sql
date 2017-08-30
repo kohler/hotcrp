@@ -14,8 +14,21 @@ CREATE TABLE `Capability` (
   PRIMARY KEY (`capabilityId`),
   UNIQUE KEY `capabilityId` (`capabilityId`),
   UNIQUE KEY `salt` (`salt`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+
+
+--
+-- Table structure for table `Conferences`
+--
+
+DROP TABLE IF EXISTS `Conferences`;
+CREATE TABLE `Conferences` (
+  `confid` int(11) NOT NULL AUTO_INCREMENT,
+  `dbname` varbinary(64) DEFAULT NULL,
+  PRIMARY KEY (`confid`),
+  UNIQUE KEY `dbname` (`dbname`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -43,4 +56,18 @@ CREATE TABLE `ContactInfo` (
   UNIQUE KEY `contactDbId` (`contactDbId`),
   UNIQUE KEY `contactId` (`contactDbId`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `Roles`
+--
+
+DROP TABLE IF EXISTS `Roles`;
+CREATE TABLE `Roles` (
+  `contactDbId` int(11) NOT NULL,
+  `confid` int(11) NOT NULL,
+  `roles` tinyint(1) NOT NULL DEFAULT '0',
+  `disabled` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`contactDbId`,`confid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

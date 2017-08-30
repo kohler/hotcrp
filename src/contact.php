@@ -5,12 +5,12 @@
 
 class Contact_Update {
     public $qv = [];
-    public $cdb_uqv = [];
-    public $different_email;
-    function __construct($inserting, $different_email) {
+    public $cdb_qf = [];
+    public $changing_email;
+    function __construct($inserting, $changing_email) {
         if ($inserting)
             $this->qv["firstName"] = $this->qv["lastName"] = "";
-        $this->different_email = $different_email;
+        $this->changing_email = $changing_email;
     }
 }
 
@@ -354,9 +354,9 @@ class Contact {
 
         // Maybe set up the shared contacts database
         if ($this->conf->opt("contactdb_dsn") && $this->has_database_account()
-            && $this->conf->session("contactdb_roles", 0) != $this->all_roles()) {
+            && $this->conf->session("contactdb_roles", 0) != $this->contactdb_roles()) {
             if ($this->contactdb_update())
-                $this->conf->save_session("contactdb_roles", $this->all_roles());
+                $this->conf->save_session("contactdb_roles", $this->contactdb_roles());
         }
 
         // Check forceShow
@@ -433,10 +433,22 @@ class Contact {
         return $this->contactdb_user_;
     }
 
-    function contactdb_update() {
+    private function contactdb_user_with_roles() {
+        return Dbl::fetch_first_object(self::contactdb(),
+            "select ContactInfo.contactDbId, firstName, lastName, email,
+            affiliation, password, passwordTime, updateTime, country,
+            collaborators, Conferences.confid, roles, Roles.disabled
+            from ContactInfo
+            left join Conferences on (Conferences.`dbname`=?)
+            left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
+            where email=?", $this->conf->opt("dbName"), $this->email);
+    }
+
+    function contactdb_update($update_keys = null, $only_update_empty = false) {
         global $Now;
         if (!($cdb = self::contactdb()) || !$this->has_database_account())
             return false;
+
         $update_password = null;
         $update_passwordTime = 0;
         if (!$this->disabled
@@ -447,27 +459,42 @@ class Contact {
             $update_passwordTime = $this->passwordTime;
         }
 
-        $idquery = Dbl::format_query($cdb, "select ContactInfo.contactDbId, Conferences.confid, roles, password, Roles.disabled
-            from ContactInfo
-            left join Conferences on (Conferences.`dbname`=?)
-            left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
-            where email=?", $this->conf->opt("dbName"), $this->email);
-        $row = Dbl::fetch_first_row(Dbl::ql_raw($cdb, $idquery));
-        if (!$row) {
+        $cdbur = $this->contactdb_user_with_roles();
+        if (!$cdbur) {
             Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?, password=?, passwordTime=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators, $update_password, $update_passwordTime);
-            $row = Dbl::fetch_first_row(Dbl::ql_raw($cdb, $idquery));
+            $cdbur = $this->contactdb_user_with_roles();
             $this->contactdb_user_ = false;
+        } else {
+            $qf = $qv = [];
+            foreach ($update_keys ? : [] as $k)
+                if ((string) $this->$k !== (string) $cdbur->$k
+                    && (!$only_update_empty || (string) $cdbur->$k === "")) {
+                    if ($only_update_empty)
+                        $qf[] = "$k=if(coalesce($k,'')='',?,$k)";
+                    else
+                        $qf[] = "$k=?";
+                    $qv[] = $this->$k;
+                }
+            if ($update_password && $update_passwordTime > $cdbur->passwordTime
+                && (!$only_update_empty || (string) $cdbur->password === "")) {
+                $qf[] = "password=?, passwordTime=?";
+                array_push($qv, $update_password, $update_passwordTime);
+            }
+            if (!empty($qf)) {
+                array_push($qv, $Now, $cdbur->contactDbId);
+                Dbl::ql_apply($cdb, "update ContactInfo set " . join(", ", $qf) . ", updateTime=? where contactDbId=?", $qv);
+                $cdbur = $this->contactdb_user_with_roles();
+                $this->contactdb_user_ = false;
+            }
         }
-        if (!$row)
+        if (!$cdbur)
             return false;
 
-        if ($row[3] === null && $update_password)
-            Dbl::ql($cdb, "update ContactInfo set password=?, passwordTime=? where contactDbId=? and password is null", $update_password, $update_passwordTime, $row[0]);
+        if ($cdbur->confid && ((int) $cdbur->roles !== $this->contactdb_roles()
+                               || (int) $cdbur->disabled !== (int) $this->disabled))
+            Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, disabled=?, updated_at=? on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $cdbur->contactDbId, $cdbur->confid, $this->contactdb_roles(), (int) $this->disabled, $Now);
 
-        if ($row[1] && ((int) $row[2] != $this->all_roles() || (int) $row[4] !== (int) $this->disabled))
-            Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, disabled=?, updated_at=? on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), (int) $this->disabled, $Now);
-
-        return (int) $row[0];
+        return (int) $cdbur->contactDbId;
     }
 
     function is_actas_user() {
@@ -856,14 +883,13 @@ class Contact {
             $v = trim($v);
         else if ($fieldtype & 8)
             $v = self::clean_collaborator_lines($v);
-        // check CDB version first (in case $this === $cdbu)
-        $cdbu = $this->contactDbId ? $this : $this->contactdb_user_;
-        if (($fieldtype & 4)
-            && (!$cdbu || $cu->different_email || $cdbu->$k !== $v))
-            $cu->cdb_uqv[$k] = $v;
+        // change contactdb
+        if (($fieldtype & 4) && ($this->$k !== $v || $cu->changing_email))
+            $cu->cdb_qf[] = $k;
         // change local version
         if ($this->$k !== $v || !$this->contactId)
-            $cu->qv[$k] = $this->$k = $v;
+            $cu->qv[$k] = $v;
+        $this->$k = $v;
     }
 
     static function parse_roles_json($j) {
@@ -882,11 +908,12 @@ class Contact {
         $inserting = !$this->contactId;
         $old_roles = $this->roles;
         $old_email = $this->email;
-        $different_email = strtolower($cj->email) !== strtolower((string) $old_email);
-        $cu = new Contact_Update($inserting, $different_email);
+        $old_disabled = $this->disabled ? 1 : 0;
+        $changing_email = strtolower($cj->email) !== strtolower((string) $old_email);
+        $cu = new Contact_Update($inserting, $changing_email);
 
         $aupapers = null;
-        if ($different_email)
+        if ($changing_email)
             $aupapers = self::email_authored_papers($this->conf, $cj->email, $cj);
 
         // check whether this user is changing themselves
@@ -908,10 +935,10 @@ class Contact {
         self::set_sorter($this, $this->conf);
 
         // Disabled
-        $disabled = $this->disabled ? 1 : 0;
+        $disabled = $old_disabled;
         if (isset($cj->disabled))
             $disabled = $cj->disabled ? 1 : 0;
-        if (($this->disabled ? 1 : 0) !== $disabled || !$this->contactId)
+        if ($disabled !== $old_disabled || !$this->contactId)
             $cu->qv["disabled"] = $this->disabled = $disabled;
 
         // Data
@@ -929,7 +956,7 @@ class Contact {
             $cu->qv["data"] = $datastr;
 
         // Changes to the above fields also change the updateTime.
-        if (count($cu->qv))
+        if (!empty($cu->qv))
             $cu->qv["updateTime"] = $this->updateTime = $Now;
 
         // Follow
@@ -989,7 +1016,7 @@ class Contact {
         }
 
         // Roles
-        $roles = 0;
+        $roles = $old_roles;
         if (isset($cj->roles)) {
             $roles = self::parse_roles_json($cj->roles);
             if ($roles !== $old_roles)
@@ -1000,38 +1027,14 @@ class Contact {
         if ($aupapers)
             $this->save_authored_papers($aupapers);
 
-        // Update contact database
-        $cdbu = $this->contactDbId ? $this : $this->contactdb_user_;
-        if ($different_email)
-            $cdbu = null;
-        if (($cdb = self::contactdb()) && (!$cdbu || count($cu->cdb_uqv))) {
-            $qv = [];
-            if (!$cdbu) {
-                $q = "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?";
-                $qv = array($this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators);
-                if ($this->password !== ""
-                    && ($this->password[0] !== " " || $this->password[1] === "\$")) {
-                    $q .= ", password=?";
-                    $qv[] = $this->password;
-                }
-                $q .= " on duplicate key update ";
-            } else
-                $q = "update ContactInfo set ";
-            if (count($cu->cdb_uqv) && $changing_other)
-                $q .= join(", ", array_map(function ($k) { return "$k=if(coalesce($k,'')='',?,$k)"; }, array_keys($cu->cdb_uqv)));
-            else if (count($cu->cdb_uqv))
-                $q .= join("=?, ", array_keys($cu->cdb_uqv)) . "=?";
-            else
-                $q .= "firstName=firstName";
-            if (count($cu->cdb_uqv))
-                $q .= ", updateTime=$Now";
-            $qv = array_merge($qv, array_values($cu->cdb_uqv));
-            if ($cdbu)
-                $q .= " where contactDbId=" . $cdbu->contactDbId;
-            $result = Dbl::ql_apply($cdb, $q, $qv);
-            Dbl::free($result);
+        // Contact DB (must precede password)
+        $cdb = self::contactdb();
+        if ($changing_email) {
+            $this->contactDbId = 0;
             $this->contactdb_user_ = false;
         }
+        if ($cdb && (!empty($cu->cdb_qf) || $roles !== $old_roles || $disabled !== $old_disabled))
+            $this->contactdb_update($cu->cdb_qf, $changing_other);
 
         // Password
         if (isset($cj->new_password))
@@ -1588,13 +1591,9 @@ class Contact {
         return $this->is_metareviewer_;
     }
 
-    function all_roles() {
-        $r = $this->roles;
-        if ($this->is_author())
-            $r |= self::ROLE_AUTHOR;
-        if ($this->is_reviewer())
-            $r |= self::ROLE_REVIEWER;
-        return $r;
+    function contactdb_roles() {
+        $this->is_author(); // load db_roles_
+        return $this->roles | ($this->db_roles_ & (self::ROLE_AUTHOR | self::ROLE_REVIEWER));
     }
 
     function has_outstanding_review() {
