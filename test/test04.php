@@ -31,6 +31,12 @@ function save_password($email, $encoded_password, $iscdb = false) {
     ++$Now;
 }
 
+if (!Contact::contactdb()) {
+    error_log("! Error: The test contactdb has not been initialized.");
+    error_log("! You may need to run `lib/createdb.sh -c test/cdb-options.php --no-dbuser --batch`.");
+    exit(1);
+}
+
 $user_chair = $Conf->user_by_email("chair@_.com");
 $marina = "marina@poema.ru";
 
