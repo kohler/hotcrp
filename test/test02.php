@@ -314,7 +314,7 @@ xassert_eqq($ns->make_absolute("?confusion=20"), "http://butt.com/fart/barf/?con
 // other helpers
 xassert_eqq(ini_get_bytes(null, "1"), 1);
 xassert_eqq(ini_get_bytes(null, "1 M"), 1 * (1 << 20));
-xassert_eqq(ini_get_bytes(null, "1.2k"), 1.2 * (1 << 10));
+xassert_eqq(ini_get_bytes(null, "1.2k"), 1229);
 xassert_eqq(ini_get_bytes(null, "20G"), 20 * (1 << 30));
 
 // name splitting
