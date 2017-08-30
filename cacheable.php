@@ -16,18 +16,19 @@ if ($zlib_output_compression) {
     header("Vary: Accept-Encoding", false);
 }
 
-function fail() {
+function fail($file) {
     global $zlib_output_compression;
     header("Content-Type: text/plain; charset=utf-8");
+    $result = "Go away ($file).\r\n";
     if (!$zlib_output_compression)
-        header("Content-Length: 10");
-    echo "Go away.\r\n";
+        header("Content-Length: " . strlen($result));
+    echo $result;
     exit;
 }
 
 $file = isset($_GET["file"]) ? $_GET["file"] : null;
 if (!$file)
-    fail();
+    fail("no file");
 
 $mtime = @filemtime($file);
 $prefix = "";
@@ -51,10 +52,10 @@ if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
     else if ($s === ".mp3")
         header("Content-Type: audio/mpeg");
     else
-        fail();
+        fail($file);
     header("Access-Control-Allow-Origin: *");
 } else
-    fail();
+    fail($file);
 
 $last_modified = gmdate("D, d M Y H:i:s", $mtime) . " GMT";
 $etag = '"' . md5($last_modified) . '"';
