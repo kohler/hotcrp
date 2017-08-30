@@ -147,6 +147,17 @@ xassert_eqq(json_encode(json_object_replace((object) ["a" => 1], ["a" => 2])), '
 xassert_eqq(json_encode(json_object_replace((object) ["a" => 1], ["a" => null])), '{}');
 xassert_eqq(json_encode(json_object_replace((object) ["a" => 1], ["a" => null], true)), 'null');
 
+$j = json_encode_db("\xE2\x80\xA8");
+xassert($j === "\"\xE2\x80\xA8\"" || $j === "\"\\u2028\"");;
+xassert_eqq(json_encode_browser("\xE2\x80\xA8"), "\"\\u2028\"");
+xassert_eqq(json_encode_db("å"), "\"å\"");
+$j = json_encode_browser("å");
+xassert($j === "\"\\u00C5\"" || $j === "\"å\"");;
+$j = json_encode_db("å\xE2\x80\xA8");
+xassert($j === "\"å\xE2\x80\xA8\"" || $j === "\"å\\u2028\"");
+$j = json_encode_browser("å\xE2\x80\xA8");
+xassert($j === "\"\\u00C5\\u2028\"" || $j === "\"å\\u2028\"");;
+
 // SessionList tests
 xassert_eqq(json_encode(SessionList::decode_ids("[1-2]")), "[1,2]");
 xassert_eqq(json_encode(SessionList::decode_ids("[1,2,3-4,5,6-10,11]")), "[1,2,3,4,5,6,7,8,9,10,11]");
