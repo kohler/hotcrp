@@ -143,6 +143,13 @@ assert_search_papers($user_shenker, "au:berkeley fountain)", "24");
 // sorting works
 assert_search_papers($user_shenker, "au:berkeley sort:title", "24 15 13 1 6");
 
+// more complex author searches
+assert_search_papers($user_shenker, "au:estrin@usc.edu", "1");
+assert_search_papers($user_shenker, "au:usc.edu", "1");
+assert_search_papers($user_shenker, "au:stanford.edu", "3 18 19");
+assert_search_papers($user_shenker, "au:*@*.stanford.edu", "3 18 19");
+assert_search_papers($user_shenker, "au:n*@*u", "3 10");
+
 // correct conflict information returned
 $pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18", $user_mgbaker));
 $j = $pl->text_json("id selconf");
