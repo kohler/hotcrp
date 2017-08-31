@@ -311,7 +311,7 @@ class Text {
         list($aw, $zw) = array(ctype_alnum($word[0]),
                                ctype_alnum($word[strlen($word) - 1]));
         return ($aw ? '\b' : '')
-            . str_replace(" ", '\s+', $word)
+            . str_replace(" ", '\s+', preg_quote($word))
             . ($zw ? '\b' : '');
     }
 
