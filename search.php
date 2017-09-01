@@ -112,16 +112,27 @@ function saveformulas() {
     $formula_by_id = [];
     foreach ($Conf->named_formulas() as $f)
         $formula_by_id[$f->formulaId] = $f;
-    $errors = $by_name = [];
 
-    $q = $qv = [];
+    $ids_used = [];
+    for ($fidx = 1; isset($Qreq["formulaid_$fidx"]); ++$fidx) {
+        $id = $Qreq["formulaid_$fidx"];
+        if ($id !== "new" && isset($formula_by_id[$id]))
+            $ids_used[$id] = true;
+    }
+
+    $lnames_used = [];
+    foreach ($Conf->named_formulas() as $f)
+        if (!isset($ids_used[$f->formulaId]))
+            $lnames_used[strtolower($f->name)] = true;
+
+    $q = $qv = $errors = [];
     for ($fidx = 1; isset($Qreq["formulaid_$fidx"]); ++$fidx) {
         $name = simplify_whitespace((string) $Qreq["formulaname_$fidx"]);
+        $lname = strtolower($name);
         $expr = simplify_whitespace((string) $Qreq["formulaexpression_$fidx"]);
         $id = $Qreq["formulaid_$fidx"];
         $deleted = $Qreq["formuladeleted_$fidx"];
 
-        $fdef = null;
         if ($id === "new") {
             if (($name === "" && $expr === "") || $deleted)
                 continue;
@@ -141,18 +152,19 @@ function saveformulas() {
             continue;
         }
 
-        if ($name === "") {
-            $errors[] = "Missing formula name.";
-            continue;
-        } else if ($expr === "") {
+        if ($expr === "") {
             $errors[] = "Missing formula expression.";
             continue;
         }
 
-        $lname = strtolower($name);
-        if (isset($by_name[$lname]) && ($by_name[$lname] || $fdef->name !== $name))
-            $errors[] = "You have two formulas named “" . htmlspecialchars($name) . "”; please change one of the names.";
-        $by_name[$lname] = $fdef->name !== $name;
+        if ($lname === "")
+            $errors[] = "Missing formula name.";
+        else if (preg_match('/\A(?:formula\d+|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d*)?|none|any|all|unknown)\z/', $lname))
+            $errors[] = "Formula name “" . htmlspecialchars($name) . "” is reserved; please pick another name.";
+        else if (isset($lnames_used[$lname]))
+            $errors[] = "You have two formulas named “" . htmlspecialchars($name) . "”. All formula names must be distinct.";
+        else
+            $lnames_used[$lname] = true;
 
         $f = new Formula($expr);
         if ($f->check($Me)) {
