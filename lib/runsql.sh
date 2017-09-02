@@ -54,6 +54,8 @@ while [ $# -gt 0 ]; do
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
         parse_common_argument "$@";;
+    --no-password-f|--no-password-fi|--no-password-fil|--no-password-file)
+        parse_common_argument "$@";;
     --help) usage 0;;
     -*)
         if [ "$mode" = cmdlinequery ]; then

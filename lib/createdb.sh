@@ -82,6 +82,7 @@ quiet=false
 verbose=false
 qecho=echo
 qecho_n=echo_n
+no_password_file=false
 setup_phase=cat
 while [ $# -gt 0 ]; do
     shift=1
@@ -104,6 +105,8 @@ while [ $# -gt 0 ]; do
         set_dbuserpass "`echo "$1" | sed 's/^[^=]*=//'`";;
     --no-dbuser)
         dbuser_existing=true;;
+    --no-password-f|--no-password-fi|--no-password-fil|--no-password-file)
+        no_password_file=true;;
     --he|--hel|--help)
         help;;
     --force)
@@ -559,4 +562,4 @@ if test -n "$current_options"; then
     fi
 fi
 
-test -n "$PASSWORDFILE" && rm -f "$PASSWORDFILE"
+if test -n "$PASSWORDFILE"; then rm -f "$PASSWORDFILE"; fi

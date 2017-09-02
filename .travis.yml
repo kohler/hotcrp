@@ -1,7 +1,8 @@
 language: php
+sudo: false
 before_script:
-  - lib/createdb.sh -u root -c test/options.php --batch
-  - lib/createdb.sh -u root -c test/cdb-options.php --no-dbuser --batch
+  - lib/createdb.sh -u root -c test/options.php --batch --no-password-file
+  - lib/createdb.sh -u root -c test/cdb-options.php --no-dbuser --batch --no-password-file
 php:
   - 5.5
   - 5.6

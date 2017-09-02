@@ -26,6 +26,8 @@ while [ $# -gt 0 ]; do
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
         parse_common_argument "$@";;
+    --no-password-f|--no-password-fi|--no-password-fil|--no-password-file)
+        parse_common_argument "$@";;
     --max_allowed_packet=*)
         max_allowed_packet="`echo "$1" | sed 's/^[^=]*=//'`";;
     -*) FLAGS="$FLAGS $1";;

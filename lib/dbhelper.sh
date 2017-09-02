@@ -125,7 +125,7 @@ sql_quote () {
 }
 
 check_mysqlish () {
-    m="`eval echo '$'$1`"
+    local m="`eval echo '$'$1`"
     if test -n "$m"; then :;
     elif $2 --version >/dev/null 2>&1; then m=$2;
     elif ${2}5 --version >/dev/null 2>&1; then m=${2}5;
@@ -143,21 +143,27 @@ check_mysqlish () {
 set_myargs () {
     myargs=""
     if test -n "$1"; then myargs=" -u$1"; fi
-    if test -n "$2"; then
+    local password="$2"
+    if expr "$2" : "'" >/dev/null 2>&1; then :; else password="'$password'"; fi
+    if test "$password" = "''"; then
+        myargs_redacted="$myargs"
+    else
         myargs_redacted="$myargs -p<REDACTED>"
-        PASSWORDFILE="`mktemp -q /tmp/hotcrptmp.XXXXXX`"
+        if test "$no_password_file" = true; then
+            PASSWORDFILE=
+        else
+            PASSWORDFILE="`mktemp -q /tmp/hotcrptmp.XXXXXX`"
+        fi
         if test -n "$PASSWORDFILE"; then
             echo "[client]" > "$PASSWORDFILE"
             chmod 600 "$PASSWORDFILE" # should be redundant
-            echo "password = $2" >> "$PASSWORDFILE"
+            echo "password=$password" >> "$PASSWORDFILE"
             myargs=" --defaults-extra-file=$PASSWORDFILE$myargs"
             trap "rm -f $PASSWORDFILE" EXIT 2>/dev/null
         else
             PASSWORDFILE=""
-            myargs="$myargs -p'$2'"
+            myargs="$myargs -p$password"
         fi
-    else
-        myargs_redacted="$myargs"
     fi
 }
 
@@ -205,6 +211,8 @@ parse_common_argument () {
     --n=*|--na=*|--nam=*|--name=*)
         test -z "$CONFNAME" || usage
         CONFNAME="`echo "$1" | sed 's/^-n//'`"; shift=1;;
+    --no-password-f|--no-password-fi|--no-password-fil|--no-password-file)
+        no_password_file=true; shift=1;;
     *)
         shift=0;;
     esac
