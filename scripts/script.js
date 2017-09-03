@@ -157,7 +157,21 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
         return;
     var f = options.success;
     function onerror(jqxhr, status, errormsg) {
-        f && f({ok: false, error: jqxhr_error_message(jqxhr, status, errormsg)}, jqxhr, status);
+        if (f) {
+            var rjson;
+            if (/application\/json/.test(jqxhr.getResponseHeader("Content-Type") || "")
+                && jqxhr.responseText) {
+                try {
+                    rjson = JSON.parse(jqxhr.responseText);
+                } catch (e) {
+                }
+            }
+            if (typeof rjson !== "object"
+                || rjson.ok !== false
+                || typeof rjson.error !== "string")
+                rjson = {ok: false, error: jqxhr_error_message(jqxhr, status, errormsg)};
+            f(rjson, jqxhr, status);
+        }
     }
     if (!options.error)
         options.error = onerror;
