@@ -115,23 +115,14 @@ class PaperOptionList {
         $this->ofinal = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "message_name" => "final version", "json_key" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
     }
 
-    private function check_require_setting($require_setting) {
-        return str_starts_with($require_setting, "opt.")
-            ? !!$this->conf->opt(substr($require_setting, 4))
-            : !!$this->conf->setting($require_setting);
-    }
-
     function _add_json($oj, $fixed) {
         if (is_string($oj->id) && is_numeric($oj->id))
             $oj->id = intval($oj->id);
         if (is_int($oj->id) && $oj->id > 0 && !isset($this->jlist[$oj->id])
             && ($oj->id >= PaperOption::MINFIXEDID) === $fixed
             && isset($oj->name) && is_string($oj->name)) {
-            // ignore option if require_setting not satisfied
-            if (isset($oj->require_setting) && is_string($oj->require_setting)
-                && !$this->check_require_setting($oj->require_setting))
-                return true;
-            $this->jlist[$oj->id] = $oj;
+            if (!isset($oj->enable_if) || $this->conf->xt_enabled($oj, null))
+                $this->jlist[$oj->id] = $oj;
             return true;
         } else
             return false;
@@ -171,7 +162,7 @@ class PaperOptionList {
             $o = null;
             if (($oj = get($this->option_json_list(), $id)))
                 $o = PaperOption::make($oj, $this->conf);
-            if ($o && $o->require_setting && !$this->check_require_setting($o->require_setting))
+            if ($o && isset($o->enable_if) && !$this->conf->xt_enabled($o))
                 $o = null;
             $this->jmap[$id] = $o;
         }
@@ -316,7 +307,7 @@ class PaperOption implements Abbreviator {
     public $display_space;
     public $selector;
     private $form_priority;
-    public $require_setting; // public for PaperOptionList
+    public $enable_if; // public for PaperOptionList
 
     const DISP_TOPICS = 0;
     const DISP_PROMINENT = 1;
@@ -378,7 +369,7 @@ class PaperOption implements Abbreviator {
             $disp = "none";
         $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
         $this->form_priority = get_i($args, "form_priority");
-        $this->require_setting = get($args, "require_setting");
+        $this->enable_if = get($args, "enable_if");
 
         if (($x = get($args, "display_space")))
             $this->display_space = (int) $x;

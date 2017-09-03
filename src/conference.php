@@ -672,7 +672,7 @@ class Conf {
             $xt->__require_resolved = true;
         }
     }
-    static function xt_enabled($xt, Contact $user = null) {
+    function xt_enabled($xt, Contact $user = null) {
         if ($xt && isset($xt->enable_if)) {
             if (is_bool($xt->enable_if))
                 return $xt->enable_if;
@@ -683,18 +683,23 @@ class Conf {
                 if (!$user)
                     $b = true;
                 else if ($e === "manager")
-                    $b = $user->is_manager();
+                    $b = !$user || $user->is_manager();
                 else if ($e === "pc")
-                    $b = $user->isPC;
+                    $b = !$user || $user->isPC;
                 else if ($e === "reviewer")
-                    $b = $user->is_reviewer();
+                    $b = !$user || $user->is_reviewer();
                 else if ($e === "view_review")
-                    $b = $user->can_view_some_review();
+                    $b = !$user || $user->can_view_some_review();
                 else if (strpos($e, "::") !== false) {
                     self::xt_resolve_require($xt);
                     $b = call_user_func($e, $xt, $user);
-                } else
-                    $b = false;
+                } else {
+                    // check if setting exists
+                    if (str_starts_with($e, "opt."))
+                        $b = !!$this->opt(substr($e, 4));
+                    else
+                        $b = !!$this->setting($e);
+                }
                 if ($not ? $b : !$b)
                     return false;
             }
@@ -727,11 +732,11 @@ class Conf {
             $this->make_search_keyword_map();
         $kwj = null;
         foreach (get($this->_search_keyword_base, $keyword, []) as $xt)
-            if (self::xt_priority_ge($xt, $kwj) && self::xt_enabled($xt, $user))
+            if (self::xt_priority_ge($xt, $kwj) && $this->xt_enabled($xt, $user))
                 $kwj = $xt;
         $this->_search_keywords[$keyword] = $kwj;
         foreach ($this->_search_keyword_factories as $fxt) {
-            if (self::xt_priority_ge($fxt, $kwj) && self::xt_enabled($fxt, $user)
+            if (self::xt_priority_ge($fxt, $kwj) && $this->xt_enabled($fxt, $user)
                 && preg_match("\1\\A(?:" . $fxt->match . ")\\z\1", $keyword, $m)) {
                 self::xt_resolve_require($fxt);
                 $xt = call_user_func($fxt->factory, $keyword, $this, $fxt, $m);
@@ -790,7 +795,7 @@ class Conf {
         }
         $ff = null;
         foreach (get($this->_formula_functions, $fname, []) as $xt)
-            if (self::xt_priority_ge($xt, $ff) && self::xt_enabled($xt, $user))
+            if (self::xt_priority_ge($xt, $ff) && $this->xt_enabled($xt, $user))
                 $ff = $xt;
         self::xt_resolve_require($ff);
         return $ff;
