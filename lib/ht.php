@@ -138,7 +138,7 @@ class Ht {
                 } else
                     $optgroup = "";
             } else {
-                $x .= '<option value="' . $value . '"';
+                $x .= '<option value="' . htmlspecialchars($value) . '"';
                 if (strcmp($value, $selected) == 0)
                     $x .= ' selected="selected"';
                 if (get($info, "disabled"))

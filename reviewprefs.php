@@ -265,11 +265,11 @@ if ($Me->privChair) {
     $revopt = pc_members_selector_options(false);
     foreach ($Conf->pc_members() as $pcm)
         if (!get($prefcount, $pcm->contactId))
-            $revopt[htmlspecialchars($pcm->email)] .= " (no preferences)";
-    if (!isset($revopt[htmlspecialchars($reviewer->email)]))
-        $revopt[htmlspecialchars($reviewer->email)] = Text::name_html($Me) . " (not on PC)";
+            $revopt[$pcm->email] .= " (no preferences)";
+    if (!isset($revopt[$reviewer->email]))
+        $revopt[$reviewer->email] = Text::name_html($Me) . " (not on PC)";
 
-    echo Ht::select("reviewer", $revopt, htmlspecialchars($reviewer->email),
+    echo Ht::select("reviewer", $revopt, $reviewer->email,
                     array("onchange" => "\$\$(\"redisplayform\").submit()")),
         "<div class='g'></div></td></tr>\n";
 }

@@ -1096,7 +1096,7 @@ function pc_members_selector_options($include_none) {
         $sel["0"] = is_string($include_none) ? $include_none : "None";
     $textarg = array("lastFirst" => $Conf->opt("sortByLastName"));
     foreach ($Conf->pc_members() as $p)
-        $sel[htmlspecialchars($p->email)] = Text::name_html($p, $textarg);
+        $sel[$p->email] = Text::name_html($p, $textarg);
     return $sel;
 }
 
