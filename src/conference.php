@@ -82,7 +82,6 @@ class Conf {
     private $_formula_functions = null;
     private $_search_keyword_base = null;
     private $_search_keyword_factories = null;
-    private $_search_keywords = null;
     private $_defined_formulas = null;
     private $_assignment_parsers = null;
     private $_emoji_codes = null;
@@ -723,22 +722,21 @@ class Conf {
             return false;
     }
     private function make_search_keyword_map() {
-        $this->_search_keyword_base = $this->_search_keyword_factories =
-            $this->_search_keywords = [];
+        $this->_search_keyword_base = $this->_search_keyword_factories = [];
         expand_json_includes_callback(["etc/searchkeywords.json"], [$this, "_add_search_keyword_json"]);
         if (($olist = $this->opt("searchKeywords")))
             expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
     }
     function search_keyword($keyword, Contact $user = null) {
-        if ($this->_search_keywords === null)
+        if ($this->_search_keyword_base === null)
             $this->make_search_keyword_map();
         $kwj = null;
         foreach (get($this->_search_keyword_base, $keyword, []) as $xt)
             if (self::xt_priority_ge($xt, $kwj) && $this->xt_enabled($xt, $user))
                 $kwj = $xt;
-        $this->_search_keywords[$keyword] = $kwj;
         foreach ($this->_search_keyword_factories as $fxt) {
-            if (self::xt_priority_ge($fxt, $kwj) && $this->xt_enabled($fxt, $user)
+            if (self::xt_priority_ge($fxt, $kwj)
+                && $this->xt_enabled($fxt, $user)
                 && preg_match("\1\\A(?:" . $fxt->match . ")\\z\1", $keyword, $m)) {
                 self::xt_resolve_require($fxt);
                 $xt = call_user_func($fxt->factory, $keyword, $this, $fxt, $m);
@@ -748,7 +746,7 @@ class Conf {
                     if (!isset($xt->priority) && isset($fxt->priority))
                         $xt->priority = $fxt->priority;
                     if (self::xt_priority_ge($xt, $kwj))
-                        $kwj = $this->_search_keywords[$keyword] = $xt;
+                        $kwj = $xt;
                 }
             }
         }
