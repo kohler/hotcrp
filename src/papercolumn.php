@@ -995,7 +995,8 @@ class PreferencePaperColumn extends PaperColumn {
         $has_cflt = $row->has_conflict($this->contact);
         $pv = $this->preference_values($row);
         $ptext = unparse_preference($pv);
-        if (!$this->editable)
+        $editable = $this->editable && $this->contact->can_become_reviewer_ignore_conflict($row);
+        if (!$editable)
             $ptext = str_replace("-", "−" /* U+2122 */, $ptext);
         $conflict_wrap = $this->not_me && !$pl->contact->can_administer($row, false);
         if ($this->row) {
@@ -1004,7 +1005,7 @@ class PreferencePaperColumn extends PaperColumn {
             return $pl->maybeConflict($row, $ptext, !$conflict_wrap);
         } else if ($has_cflt && !$pl->contact->allow_administer($row))
             return $this->show_conflict ? review_type_icon(-1) : "";
-        else if ($this->editable) {
+        else if ($editable) {
             $iname = "revpref" . $row->paperId;
             if ($this->not_me)
                 $iname .= "u" . $this->contact->contactId;
