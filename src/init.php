@@ -277,7 +277,7 @@ function expand_json_includes_callback($includelist, $callback, $extra_arg = nul
             }
         }
         if (is_object($entry) && !$no_validate
-            && !isset($entry->id) && !isset($entry->factory) && !isset($entry->factory_class) && !isset($entry->callback))
+            && !isset($entry->id) && !isset($entry->name) && !isset($entry->match) && !isset($entry->factory) && !isset($entry->factory_class))
             $entry = get_object_vars($entry);
         foreach (is_array($entry) ? $entry : [$entry] as $key => $obj) {
             $arg = $extra_arg === null ? $key : $extra_arg;
