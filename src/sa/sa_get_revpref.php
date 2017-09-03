@@ -50,7 +50,7 @@ class GetRevpref_SearchAction extends SearchAction {
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
             if ($not_me)
                 $item["email"] = $Rev->email;
-            if ($prow->conflictType > 0)
+            if ($not_me ? $prow->has_conflict($Rev) : $prow->conflictType > 0)
                 $item["preference"] = "conflict";
             else
                 $item["preference"] = unparse_preference($prow->reviewer_preference($Rev));
