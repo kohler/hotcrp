@@ -77,10 +77,7 @@ class GetReviewBase_SearchAction extends SearchAction {
 
 class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
     function __construct($fj) {
-        if (is_bool($fj))
-            parent::__construct(true, $fj);
-        else
-            parent::__construct(true, $fj->name === "get/revformz");
+        parent::__construct(true, $fj->name === "get/revformz");
     }
     function allow(Contact $user) {
         return $user->is_reviewer();
@@ -120,10 +117,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
 
 class GetReviews_SearchAction extends GetReviewBase_SearchAction {
     function __construct($fj) {
-        if (is_bool($fj))
-            parent::__construct(false, $fj);
-        else
-            parent::__construct(false, $fj->name === "get/revz");
+        parent::__construct(false, $fj->name === "get/revz");
     }
     function allow(Contact $user) {
         return $user->can_view_some_review();
@@ -289,10 +283,7 @@ class GetRank_SearchAction extends SearchAction {
 class GetLead_SearchAction extends SearchAction {
     private $islead;
     function __construct($fj) {
-        if (is_bool($fj))
-            $this->islead = $fj;
-        else
-            $this->islead = $fj->name === "get/lead";
+        $this->islead = $fj->name === "get/lead";
     }
     function allow(Contact $user) {
         return $user->isPC;

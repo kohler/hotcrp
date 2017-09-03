@@ -52,10 +52,7 @@ class Get_SearchAction extends SearchAction {
 class GetDocument_SearchAction extends SearchAction {
     private $dt;
     function __construct($fj) {
-        if (is_int($fj))
-            $this->dt = $fj;
-        else
-            $this->dt = $fj->dtype;
+        $this->dt = $fj->dtype;
     }
     static function make_list_action(PaperOption $opt) {
         $fj = (object) [

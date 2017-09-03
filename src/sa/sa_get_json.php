@@ -7,10 +7,7 @@ class GetJson_SearchAction extends SearchAction {
     private $iszip;
     private $zipdoc;
     function __construct($fj) {
-        if (is_bool($fj))
-            $this->iszip = $fj;
-        else
-            $this->iszip = $fj->name === "get/jsonattach";
+        $this->iszip = $fj->name === "get/jsonattach";
     }
     function document_callback($dj, DocumentInfo $doc, $dtype, PaperStatus $pstatus) {
         if ($doc->docclass->load($doc, true)) {

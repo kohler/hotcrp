@@ -6,10 +6,7 @@
 class GetRevpref_SearchAction extends SearchAction {
     private $extended;
     function __construct($fj) {
-        if (is_bool($fj))
-            $this->extended = $fj;
-        else
-            $this->extended = $fj->name === "get/revprefx";
+        $this->extended = $fj->name === "get/revprefx";
     }
     function allow(Contact $user) {
         return $user->isPC;
