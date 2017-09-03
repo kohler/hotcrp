@@ -26,93 +26,57 @@ class SearchAction {
     public $subname;
     const ENOENT = "No such search action.";
     const EPERM = "Permission error.";
-    public function allow(Contact $user) {
+    function allow(Contact $user) {
         return true;
     }
-    public function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-    }
-    public function run(Contact $user, $qreq, $selection) {
+    function run(Contact $user, $qreq, $selection) {
         return "Unsupported.";
     }
 
 
-    static private $loaded = false;
-    static private $byname = [];
-
     static function load() {
-        global $Conf;
-        if (!self::$loaded) {
-            self::$loaded = true;
-            foreach (expand_includes("src/sa/*.php") as $f)
-                include $f;
-            if (($includes = $Conf->opt("searchaction_include")))
-                read_included_options($includes);
-        }
     }
-
     static function register($name, $subname, $flags, SearchAction $fn) {
-        if (!isset(self::$byname[$name]))
-            self::$byname[$name] = [];
-        assert(!isset(self::$byname[$name][(string) $subname]));
-        self::$byname[$name][(string) $subname] = [$fn, $flags];
-        $fn->subname = $subname;
     }
 
-    static function has_function($name, $subname = null, $only_explicit = false) {
-        if (isset(self::$byname[$name])) {
-            $ufm = self::$byname[$name];
-            return isset($ufm[(string) $subname])
-                || (!$only_explicit && isset($ufm[""]));
-        } else
-            return false;
-    }
-
-    static function call($name, $subname, Contact $user, $qreq, $selection) {
-        $uf = null;
-        if (isset(self::$byname[$name])) {
-            $ufm = self::$byname[$name];
-            if ((string) $subname !== "" && isset($ufm[$subname]))
-                $uf = $ufm[$subname];
-            else if (isset($ufm[""]))
-                $uf = $ufm[""];
+    static private function do_call($name, Contact $user, Qrequest $qreq, $selection) {
+        if ($qreq->method() !== "GET" && $qreq->method() !== "HEAD" && !check_post($qreq))
+            return new JsonResult(403, ["ok" => false, "error" => "Missing credentials."]);
+        $uf = $user->conf->list_action($name, $user, $qreq);
+        if (!$uf) {
+            if ($user->conf->has_list_action($name, $user, null))
+                return new JsonResult(405, ["ok" => false, "error" => "Method not supported."]);
+            else if ($user->conf->has_list_action($name, null, $qreq->method()))
+                return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
+            else
+                return new JsonResult(404, ["ok" => false, "error" => "Function not found."]);
         }
         if (is_array($selection))
             $selection = new SearchSelection($selection);
-        if (!$uf)
-            $res = "No such search action.";
-        else if (!($uf[1] & SiteLoader::API_GET) && !check_post($qreq))
-            $res = "Missing credentials.";
-        else if (($uf[1] & SiteLoader::API_PAPER) && $selection->is_empty())
-            $res = "No papers selected.";
-        else if (!$uf[0]->allow($user))
-            $res = "Permission error.";
+        if (get($uf, "paper") && $selection->is_empty())
+            return new JsonResult(400, ["ok" => false, "error" => "No papers selected."]);
+        if (isset($uf->factory_class)) {
+            $fc = $uf->factory_class;
+            $action = new $fc($uf, $user->conf);
+        } else
+            $action = call_user_func($uf->factory, $uf, $user->conf);
+        if (!$action->allow($user))
+            return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
         else
-            $res = $uf[0]->run($user, $qreq, $selection);
-        if (is_string($res) && $qreq->ajax)
-            json_exit(["ok" => false, "error" => $res]);
-        else if (is_string($res))
-            Conf::msg_error($res);
-        else if ($res instanceof Csv_SearchResult)
+            return $action->run($user, $qreq, $selection);
+    }
+
+    static function call($name, Contact $user, Qrequest $qreq, $selection) {
+        $res = self::do_call($name, $user, $qreq, $selection);
+        if (is_string($res))
+            $res = new JsonResult(400, ["ok" => false, "error" => $res]);
+        if ($res instanceof JsonResult) {
+            if ($res->status >= 300 && !$qreq->ajax)
+                Conf::msg_error($res->content["error"]);
+            else
+                json_exit($res);
+        } else if ($res instanceof Csv_SearchResult)
             downloadCSV($res->items, $res->header, $res->name, $res->options);
-        return $res;
-    }
-
-    static function list_all_actions(Contact $user, $qreq, PaperList $pl) {
-        self::load();
-        $actions = [];
-        foreach (self::$byname as $ufm)
-            if (isset($ufm[""]) && $ufm[""][0]->allow($user))
-                $ufm[""][0]->list_actions($user, $qreq, $pl, $actions);
-        return $actions;
-    }
-
-    static function list_subactions($name, Contact $user, $qreq, PaperList $pl) {
-        $actions = [];
-        if (isset(self::$byname[$name]))
-            foreach (self::$byname[$name] as $subname => $uf)
-                if ($subname !== "" && $uf[0]->allow($user))
-                    $uf[0]->list_actions($user, $qreq, $pl, $actions);
-        return $actions;
     }
 
 

@@ -6,10 +6,13 @@
 class GetJson_SearchAction extends SearchAction {
     private $iszip;
     private $zipdoc;
-    public function __construct($iszip) {
-        $this->iszip = $iszip;
+    function __construct($fj) {
+        if (is_bool($fj))
+            $this->iszip = $fj;
+        else
+            $this->iszip = $fj->name === "get/jsonattach";
     }
-    public function document_callback($dj, DocumentInfo $doc, $dtype, PaperStatus $pstatus) {
+    function document_callback($dj, DocumentInfo $doc, $dtype, PaperStatus $pstatus) {
         if ($doc->docclass->load($doc, true)) {
             $dj->content_file = HotCRPDocument::filename($doc);
             $this->zipdoc->add_as($doc, $dj->content_file);
@@ -17,9 +20,6 @@ class GetJson_SearchAction extends SearchAction {
     }
     function allow(Contact $user) {
         return $user->is_manager();
-    }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [1090 + $this->iszip, $this->subname, "Paper information", $this->iszip ? "JSON with attachments" : "JSON"];
     }
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
@@ -59,9 +59,6 @@ class GetJsonRQC_SearchAction extends SearchAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [1092, $this->subname, "Paper information", "JSON for reviewqualitycollector.org"];
-    }
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
         $results = ["hotcrp_version" => HOTCRP_VERSION];
@@ -87,7 +84,3 @@ class GetJsonRQC_SearchAction extends SearchAction {
         exit;
     }
 }
-
-SearchAction::register("get", "json", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJson_SearchAction(false));
-SearchAction::register("get", "jsonattach", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJson_SearchAction(true));
-SearchAction::register("get", "jsonrqc", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetJsonRQC_SearchAction);

@@ -89,6 +89,9 @@ class Conf {
     private $_ims = null;
     private $_api_map = null;
     private $_format_info = null;
+    private $_list_action_map = null;
+    private $_list_action_renderers = null;
+    private $_list_action_factories = null;
 
     public $paper = null; // current paper row
 
@@ -471,6 +474,7 @@ class Conf {
             $this->invalidate_caches("pc");
         $this->sort_by_last = $sort_by_last;
         $this->_api_map = null;
+        $this->_list_action_map = $this->_list_action_renderers = $this->_list_action_factories = null;
     }
 
     function has_setting($name) {
@@ -671,44 +675,52 @@ class Conf {
             $xt->__require_resolved = true;
         }
     }
-    function xt_enabled($xt, Contact $user = null) {
-        if ($xt && isset($xt->enable_if)) {
-            if (is_bool($xt->enable_if))
-                return $xt->enable_if;
-            $es = is_string($xt->enable_if) ? [$xt->enable_if] : $xt->enable_if;
-            foreach ($es as $e) {
-                if (($not = str_starts_with($e, "!")))
-                    $e = substr($e, 1);
-                if (!$user)
-                    $b = true;
-                else if ($e === "chair")
-                    $b = !$user || $user->privChair;
-                else if ($e === "manager")
-                    $b = !$user || $user->is_manager();
-                else if ($e === "pc")
-                    $b = !$user || $user->isPC;
-                else if ($e === "reviewer")
-                    $b = !$user || $user->is_reviewer();
-                else if ($e === "view_review")
-                    $b = !$user || $user->can_view_some_review();
-                else if (strpos($e, "::") !== false) {
-                    self::xt_resolve_require($xt);
-                    $b = call_user_func($e, $xt, $user);
-                } else {
-                    // check if setting exists
-                    if (str_starts_with($e, "opt."))
-                        $b = !!$this->opt(substr($e, 4));
-                    else
-                        $b = !!$this->setting($e);
-                }
-                if ($not ? $b : !$b)
-                    return false;
+    function xt_check($expr, $xt, Contact $user = null) {
+        $es = is_array($expr) ? $expr : [$expr];
+        foreach ($es as $e) {
+            $not = false;
+            if (is_string($e) && ($not = str_starts_with($e, "!")))
+                $e = substr($e, 1);
+            if (!is_string($e))
+                $b = $e;
+            else if ($e === "chair")
+                $b = !$user || $user->privChair;
+            else if ($e === "manager")
+                $b = !$user || $user->is_manager();
+            else if ($e === "pc")
+                $b = !$user || $user->isPC;
+            else if ($e === "reviewer")
+                $b = !$user || $user->is_reviewer();
+            else if ($e === "view_review")
+                $b = !$user || $user->can_view_some_review();
+            else if ($e === "lead" || $e === "shepherd")
+                $b = $this->has_any_lead_or_shepherd();
+            else if (strpos($e, "::") !== false) {
+                self::xt_resolve_require($xt);
+                $b = call_user_func($e, $xt, $user, $this);
+            } else {
+                // check if setting exists
+                if (str_starts_with($e, "opt."))
+                    $b = !!$this->opt(substr($e, 4));
+                else
+                    $b = !!$this->setting($e);
             }
+            if ($not ? $b : !$b)
+                return false;
         }
         return true;
     }
+    function xt_enabled($xt, Contact $user = null) {
+        return !$xt || !isset($xt->enable_if)
+            || $this->xt_check($xt->enable_if, $xt, $user);
+    }
     static function xt_priority_ge($xta, $xtb) {
         return $xta && (!$xtb || get($xta, "priority", 0) >= get($xtb, "priority", 0));
+    }
+    static function xt_position_compare($xta, $xtb) {
+        $ap = get($xta, "position", 0);
+        $bp = get($xtb, "position", 0);
+        return $ap < $bp ? -1 : ($ap == $bp ? 0 : 1);
     }
 
 
@@ -3221,5 +3233,90 @@ class Conf {
             $j = $this->call_api($fn, $uf, $user, $qreq, $prow);
             json_exit($j);
         }
+    }
+
+
+    // List API
+    function _add_list_action_json($fj) {
+        if (isset($fj->renderer))
+            $this->_list_action_renderers[] = $fj;
+        if (isset($fj->name) && is_string($fj->name))
+            return self::xt_add($this->_list_action_map, $fj->name, $fj);
+        else if (isset($fj->match) && is_string($fj->match)
+                 && isset($fj->factory) && is_string($fj->factory)) {
+            $this->_list_action_factories[] = $fj;
+            return true;
+        } else
+            return isset($fj->renderer);
+    }
+    private function list_action_map() {
+        if ($this->_list_action_map === null) {
+            $this->_list_action_map = $this->_list_action_renderers = [];
+            expand_json_includes_callback(["etc/listactions.json"], [$this, "_add_list_action_json"]);
+            if (($olist = $this->opt("listActions")))
+                expand_json_includes_callback($olist, [$this, "_add_list_action_json"]);
+        }
+        return $this->_list_action_map;
+    }
+    function displayable_list_action_renderers(PaperList $pl) {
+        $this->list_action_map();
+        $la = [];
+        foreach ($this->_list_action_renderers as $fj)
+            if ($this->xt_enabled($fj, $pl->user)
+                && $pl->action_xt_displayed($fj)) {
+                $name = isset($fj->name) ? $fj->name : count($la);
+                if (self::xt_priority_ge($fj, get($la, $name))) {
+                    self::xt_resolve_require($fj);
+                    $la[$name] = $fj;
+                }
+            }
+        usort($la, "Conf::xt_position_compare");
+        return $la;
+    }
+    function displayable_list_actions($prefix, PaperList $pl) {
+        $la = [];
+        foreach ($this->list_action_map() as $name => $fjs) {
+            if (!str_starts_with($name, $prefix))
+                continue;
+            foreach ($fjs as $fj)
+                if ($this->xt_enabled($fj, $pl->user)
+                    && $pl->action_xt_displayed($fj)
+                    && self::xt_priority_ge($fj, get($la, $name))) {
+                    self::xt_resolve_require($fj);
+                    $la[$name] = $fj;
+                }
+        }
+        return $la;
+    }
+    function has_list_action($name, Contact $user = null, $method = null) {
+        return !!$this->list_action($name, $user, $method);
+    }
+    function list_action($name, Contact $user = null, $method = null) {
+        $aj = null;
+        foreach (get($this->list_action_map(), $name, []) as $fj)
+            if ($this->check_api_json($fj, $user, $method)
+                && self::xt_priority_ge($fj, $aj))
+                $aj = $fj;
+        if (($s = strpos($name, "/")) !== false) {
+            foreach (get($this->list_action_map(), substr($name, 0, $s), []) as $fj)
+                if ($this->check_api_json($fj, $user, $method)
+                    && self::xt_priority_ge($fj, $aj))
+                    $aj = $fj;
+        }
+        foreach ($this->_list_action_factories as $exj)
+            if (self::xt_priority_ge($exj, $aj)
+                && preg_match("\1\\A(?:" . $exj->match . ")\\z\1", $name, $m)) {
+                self::xt_resolve_require($exj);
+                $xt = call_user_func($exj->factory, $name, $this, $exj, $m);
+                foreach ($xt ? : [] as $fj) {
+                    if (!isset($fj->priority) && isset($exj->priority))
+                        $fj->priority = $exj->priority;
+                    if ($this->check_api_json($fj, $user, $method)
+                        && self::xt_priority_ge($fj, $aj))
+                        $aj = $fj;
+                }
+            }
+        self::xt_resolve_require($aj);
+        return $aj;
     }
 }

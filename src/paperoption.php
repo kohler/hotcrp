@@ -475,6 +475,10 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
+    function mimetypes() {
+        return null;
+    }
+
     function has_attachments() {
         return false;
     }

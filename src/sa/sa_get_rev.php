@@ -7,9 +7,6 @@ class GetPcassignments_SearchAction extends SearchAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [2099, $this->subname, "Review assignments", "PC assignments"];
-    }
     function run(Contact $user, $qreq, $ssel) {
         list($header, $items) = SearchAction::pcassignments_csv_data($user, $ssel->selection());
         return new Csv_SearchResult("pcassignments", $header, $items, true);
@@ -19,7 +16,7 @@ class GetPcassignments_SearchAction extends SearchAction {
 class GetReviewBase_SearchAction extends SearchAction {
     protected $isform;
     protected $iszip;
-    public function __construct($isform, $iszip) {
+    function __construct($isform, $iszip) {
         $this->isform = $isform;
         $this->iszip = $iszip;
     }
@@ -79,14 +76,14 @@ class GetReviewBase_SearchAction extends SearchAction {
 }
 
 class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
-    public function __construct($iszip) {
-        parent::__construct(true, $iszip);
+    function __construct($fj) {
+        if (is_bool($fj))
+            parent::__construct(true, $fj);
+        else
+            parent::__construct(true, $fj->name === "get/revformz");
     }
     function allow(Contact $user) {
         return $user->is_reviewer();
-    }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [2000 + $this->iszip, $this->subname, "Review assignments", "Review forms" . ($this->iszip ? " (zip)" : "")];
     }
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
@@ -122,14 +119,14 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
 }
 
 class GetReviews_SearchAction extends GetReviewBase_SearchAction {
-    public function __construct($iszip) {
-        parent::__construct(false, $iszip);
+    function __construct($fj) {
+        if (is_bool($fj))
+            parent::__construct(false, $fj);
+        else
+            parent::__construct(false, $fj->name === "get/revz");
     }
     function allow(Contact $user) {
         return $user->can_view_some_review();
-    }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [3060 + $this->iszip, $this->subname, "Reviews", "Reviews" . ($this->iszip ? " (zip)" : "")];
     }
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
@@ -171,9 +168,6 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
 class GetScores_SearchAction extends SearchAction {
     function allow(Contact $user) {
         return $user->can_view_some_review();
-    }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [3070, $this->subname, "Reviews", "Scores"];
     }
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
@@ -294,15 +288,14 @@ class GetRank_SearchAction extends SearchAction {
 
 class GetLead_SearchAction extends SearchAction {
     private $islead;
-    public function __construct($islead) {
-        $this->islead = $islead;
+    function __construct($fj) {
+        if (is_bool($fj))
+            $this->islead = $fj;
+        else
+            $this->islead = $fj->name === "get/lead";
     }
     function allow(Contact $user) {
         return $user->isPC;
-    }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        if ($user->conf->has_any_lead_or_shepherd())
-            $actions[] = [3091 - $this->islead, $this->subname, "Reviews", $this->islead ? "Discussion leads" : "Shepherds"];
     }
     function run(Contact $user, $qreq, $ssel) {
         $type = $this->islead ? "lead" : "shepherd";
@@ -318,15 +311,3 @@ class GetLead_SearchAction extends SearchAction {
         return new Csv_SearchResult("{$type}s", ["paper", "title", "first", "last", "{$type}email"], $ssel->reorder($texts));
     }
 }
-
-
-SearchAction::register("get", "pcassignments", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetPcassignments_SearchAction);
-SearchAction::register("get", "revform", SiteLoader::API_GET, new GetReviewForm_SearchAction(false));
-SearchAction::register("get", "revformz", SiteLoader::API_GET, new GetReviewForm_SearchAction(true));
-SearchAction::register("get", "rev", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetReviews_SearchAction(false));
-SearchAction::register("get", "revz", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetReviews_SearchAction(true));
-SearchAction::register("get", "scores", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetScores_SearchAction);
-SearchAction::register("get", "votes", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetVotes_SearchAction);
-SearchAction::register("get", "rank", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetRank_SearchAction);
-SearchAction::register("get", "lead", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetLead_SearchAction(true));
-SearchAction::register("get", "shepherd", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetLead_SearchAction(false));

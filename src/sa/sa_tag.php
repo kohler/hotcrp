@@ -4,17 +4,11 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Tag_SearchAction extends SearchAction {
-    function allow(Contact $user) {
-        return $user->can_change_some_tag();
-    }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        if (!$user->isPC || Navigation::page() === "reviewprefs")
-            return;
-
+    static function render(PaperList $pl) {
         // tagtype cell
         $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
         $tagextra = array("id" => "placttagtype");
-        if ($user->privChair) {
+        if ($pl->user->privChair) {
             $tagopt["xxxb"] = null;
             $tagopt["da"] = "Clear twiddle";
             $tagopt["cr"] = "Calculate rank";
@@ -24,29 +18,32 @@ class Tag_SearchAction extends SearchAction {
 
         // tag name cell
         $t = "";
-        if ($user->privChair) {
+        if ($pl->user->privChair) {
             $t .= '<span class="fx99"><a class="q" href="#" onclick="return fold(\'placttags\')">'
                 . expander(null, 0) . "</a></span>";
         }
         $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
-            . Ht::entry("tag", $qreq->tag,
+            . Ht::entry("tag", $pl->qreq->tag,
                         ["size" => 15, "onfocus" => "suggest(this,taghelp_tset);autosub('tag',this)", "class" => "want-focus"])
             . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "onclick" => "return plist_submit.call(this)"]);
-        if ($user->privChair) {
+        if ($pl->user->privChair) {
             $t .= "<div class='fx'><div style='margin:2px 0'>"
-                . Ht::checkbox("tagcr_gapless", 1, !!$qreq->tagcr_gapless, array("style" => "margin-left:0"))
+                . Ht::checkbox("tagcr_gapless", 1, !!$pl->qreq->tagcr_gapless, array("style" => "margin-left:0"))
                 . "&nbsp;" . Ht::label("Gapless order") . "</div>"
                 . "<div style='margin:2px 0'>Using: &nbsp;"
-                . Ht::select("tagcr_method", PaperRank::methods(), $qreq->tagcr_method)
+                . Ht::select("tagcr_method", PaperRank::methods(), $pl->qreq->tagcr_method)
                 . "</div>"
                 . "<div style='margin:2px 0'>Source tag: &nbsp;~"
-                . Ht::entry("tagcr_source", $qreq->tagcr_source, array("size" => 15))
+                . Ht::entry("tagcr_source", $pl->qreq->tagcr_source, array("size" => 15))
                 . "</div></div>";
         }
 
-        $actions[] = [500, "tag", "Tag", "<b>:</b> &nbsp;"
-            . Ht::select("tagfn", $tagopt, $qreq->tagfn, $tagextra) . " &nbsp;",
+        return [500, "tag", "Tag", "<b>:</b> &nbsp;"
+            . Ht::select("tagfn", $tagopt, $pl->qreq->tagfn, $tagextra) . " &nbsp;",
             ["id" => "foldplacttags", "class" => "foldc fold99c", "content" => $t]];
+    }
+    function allow(Contact $user) {
+        return $user->can_change_some_tag();
     }
     function run(Contact $user, $qreq, $ssel) {
         $papers = $ssel->selection();
@@ -126,5 +123,3 @@ class Tag_SearchAction extends SearchAction {
         }
     }
 }
-
-SearchAction::register("tag", null, SiteLoader::API_POST | SiteLoader::API_PAPER, new Tag_SearchAction);

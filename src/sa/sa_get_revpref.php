@@ -5,15 +5,24 @@
 
 class GetRevpref_SearchAction extends SearchAction {
     private $extended;
-    public function __construct($extended) {
-        $this->extended = $extended;
+    function __construct($fj) {
+        if (is_bool($fj))
+            $this->extended = $fj;
+        else
+            $this->extended = $fj->name === "get/revprefx";
     }
     function allow(Contact $user) {
         return $user->isPC;
     }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        if (Navigation::page() === "reviewprefs")
-            $actions[] = [$this->extended ? -99 : -100, $this->subname, null, $this->extended ? "Preference file with abstracts" : "Preference file"];
+    static function render_upload(PaperList $pl) {
+        return [100, "uploadpref", "Upload", "<b>&nbsp;preference file:</b> &nbsp;"
+                . "<input class=\"want-focus\" type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"uploadpref\",this)' />&nbsp; "
+                . Ht::submit("fn", "Go", ["value" => "uploadpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
+    }
+    static function render_set(PaperList $pl) {
+        return [200, "setpref", "Set preferences", "<b>:</b> &nbsp;"
+                . Ht::entry("pref", "", array("class" => "want-focus", "size" => 4, "tabindex" => 6, "onfocus" => 'autosub("setpref",this)'))
+                . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "setpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)"])];
     }
     function run(Contact $user, $qreq, $ssel) {
         // maybe download preferences for someone else
@@ -68,9 +77,6 @@ class GetAllRevpref_SearchAction extends SearchAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [2060, $this->subname, "Review assignments", "PC review preferences"];
-    }
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]);
         $texts = array();
@@ -107,7 +113,3 @@ class GetAllRevpref_SearchAction extends SearchAction {
         return new Csv_SearchResult("allprefs", $headers, $ssel->reorder($texts), true);
     }
 }
-
-SearchAction::register("get", "revpref", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetRevpref_SearchAction(false));
-SearchAction::register("get", "revprefx", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetRevpref_SearchAction(true));
-SearchAction::register("get", "allrevpref", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAllRevpref_SearchAction);

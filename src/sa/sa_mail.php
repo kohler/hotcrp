@@ -7,9 +7,9 @@ class Mail_SearchAction extends SearchAction {
     function allow(Contact $user) {
         return $user->is_manager() && Navigation::page() !== "reviewprefs";
     }
-    function list_actions(Contact $user, $qreq, PaperList $plist, &$actions) {
-        $actions[] = [1000, "mail", "Mail", "<b>:</b> &nbsp;"
-            . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $qreq->recipients, ["class" => "want-focus"])
+    static function render(PaperList $pl) {
+        return [1000, "mail", "Mail", "<b>:</b> &nbsp;"
+            . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $pl->qreq->recipients, ["class" => "want-focus"])
             . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "mail", "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -21,5 +21,3 @@ class Mail_SearchAction extends SearchAction {
         go(hoturl("mail", $x . "&t=" . urlencode($qreq->t) . "&recipients=$r"));
     }
 }
-
-SearchAction::register("mail", null, SiteLoader::API_GET | SiteLoader::API_PAPER, new Mail_SearchAction);

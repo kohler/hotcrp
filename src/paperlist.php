@@ -91,6 +91,8 @@ class PaperList {
 
     // columns access
     public $conf;
+    public $user;
+    public $qreq;
     public $contact;
     public $sorters = [];
     private $_columns_by_name;
@@ -114,7 +116,6 @@ class PaperList {
     private $_view_row_numbers = false;
     private $_view_fields = [];
     private $atab;
-    private $qreq;
 
     private $_table_id;
     private $_table_class;
@@ -143,7 +144,7 @@ class PaperList {
     function __construct($search, $args = array(), $qreq = null) {
         $this->search = $search;
         $this->conf = $this->search->conf;
-        $this->contact = $this->search->contact;
+        $this->user = $this->contact = $this->search->user;
         if (!$qreq || !($qreq instanceof Qrequest))
             $qreq = new Qrequest("GET", $qreq);
         $this->qreq = $qreq;
@@ -157,7 +158,7 @@ class PaperList {
             $this->sorters[] = PaperSearch::parse_sorter("");
 
         $this->foldable = $this->sortable || !!get($args, "foldable")
-            || $this->contact->is_manager() /* “Override conflicts” fold */;
+            || $this->user->is_manager() /* “Override conflicts” fold */;
 
         $this->_paper_link_page = "";
         if ($qreq->linkto === "paper" || $qreq->linkto === "review" || $qreq->linkto === "assign")
@@ -175,9 +176,9 @@ class PaperList {
         }
         $this->atab = $qreq->atab;
 
-        $this->tagger = new Tagger($this->contact);
-        $this->scoresOk = $this->contact->is_manager()
-            || $this->contact->is_reviewer()
+        $this->tagger = new Tagger($this->user);
+        $this->scoresOk = $this->user->is_manager()
+            || $this->user->is_reviewer()
             || $this->conf->timeAuthorViewReviews();
 
         $this->qopts = ["scores" => [], "options" => true];
@@ -240,7 +241,7 @@ class PaperList {
 
 
     private function find_columns($name, $errors = null) {
-        $col = PaperColumn::lookup($this->contact, $name, $errors);
+        $col = PaperColumn::lookup($this->user, $name, $errors);
         if (!is_array($col))
             $col = $col ? [$col] : [];
         $ocol = [];
@@ -304,7 +305,7 @@ class PaperList {
 
 
     function _contentDownload($row) {
-        if ($row->size == 0 || !$this->contact->can_view_pdf($row))
+        if ($row->size == 0 || !$this->user->can_view_pdf($row))
             return "";
         $dtype = $row->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
         if ($dtype == DTYPE_FINAL)
@@ -317,7 +318,7 @@ class PaperList {
         $pt = $this->_paper_link_page ? : "paper";
         $rrow = null;
         if ($pt === "review" || $pt === "finishreview") {
-            $rrow = $row->review_status($this->contact);
+            $rrow = $row->review_status($this->user);
             if (!$rrow)
                 $pt = "paper";
             if ($pt === "finishreview")
@@ -350,7 +351,7 @@ class PaperList {
     function maybeConflict($row, $text, $visible) {
         if ($visible)
             return $text;
-        else if ($this->contact->allow_administer($row))
+        else if ($this->user->allow_administer($row))
             return self::wrapChairConflict($text);
         else
             return "";
@@ -359,43 +360,50 @@ class PaperList {
     function _contentPC($row, $contactId, $visible) {
         $pcm = $this->conf->pc_members();
         if (isset($pcm[$contactId]))
-            return $this->maybeConflict($row, $this->contact->reviewer_html_for($pcm[$contactId]), $visible);
+            return $this->maybeConflict($row, $this->user->reviewer_html_for($pcm[$contactId]), $visible);
         return "";
     }
 
     function _textPC($row, $contactId, $visible) {
         $pcm = $this->conf->pc_members();
         if (isset($pcm[$contactId]))
-            return $visible ? $this->contact->reviewer_text_for($pcm[$contactId]) : "";
+            return $visible ? $this->user->reviewer_text_for($pcm[$contactId]) : "";
         return "";
+    }
+
+    function action_xt_displayed($fj) {
+        if (isset($fj->table_type)
+            && (str_starts_with($fj->table_type, "!")
+                ? $this->table_type === substr($fj->table_type, 1)
+                : $this->table_type !== $fj->table_type))
+            return false;
+        if (isset($fj->display_if)
+            && !$this->conf->xt_check($fj->display_if, $fj, $this->user))
+            return false;
+        if (isset($fj->display_if_list)) {
+            $ifl = $fj->display_if_list;
+            foreach (is_array($ifl) ? $ifl : [$ifl] as $h) {
+                if (!is_bool($h))
+                    $h = $this->has($h);
+                if (!$h)
+                    return false;
+            }
+        }
+        return true;
     }
 
     private function _footer($ncol, $extra) {
         if ($this->count == 0)
             return "";
 
-        $revpref = $this->table_type == "editpref";
-        $lllgroups = SearchAction::list_all_actions($this->contact, $this->qreq, $this);
-
-        // Upload preferences (review preferences only)
-        if ($revpref) {
-            $lllgroups[] = [100, "uploadpref", "Upload", "<b>&nbsp;preference file:</b> &nbsp;"
-                . "<input class=\"want-focus\" type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"uploadpref\",this)' />&nbsp; "
-                . Ht::submit("fn", "Go", ["value" => "uploadpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
-        }
-
-        // Set preferences (review preferences only)
-        if ($revpref) {
-            $lllgroups[] = [200, "setpref", "Set preferences", "<b>:</b> &nbsp;"
-                . Ht::entry("pref", "", array("class" => "want-focus", "size" => 4, "tabindex" => 6, "onfocus" => 'autosub("setpref",this)'))
-                . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "setpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)"])];
-        }
-
-        usort($lllgroups, function ($a, $b) { return $a[0] - $b[0]; });
+        $lllgroups = [];
         $whichlll = 1;
-        foreach ($lllgroups as $i => $lllg)
-            if ($this->qreq->fn == $lllg[1] || $this->atab == $lllg[1])
-                $whichlll = $i + 1;
+        foreach ($this->conf->displayable_list_action_renderers($this) as $rf)
+            if (($lllg = call_user_func($rf->renderer, $this))) {
+                $lllgroups[] = $lllg;
+                if ($this->qreq->fn == $lllg[1] || $this->atab == $lllg[1])
+                    $whichlll = count($lllgroups);
+            }
 
         // Linelinks container
         $foot = "  <tr class=\"pl_footrow\">";
@@ -526,11 +534,11 @@ class PaperList {
         $this->qopts["scores"] = array_keys($this->qopts["scores"]);
         if (empty($this->qopts["scores"]))
             unset($this->qopts["scores"]);
-        $result = $this->contact->paper_result($this->qopts);
+        $result = $this->user->paper_result($this->qopts);
         if (!$result)
             return null;
         $rowset = new PaperInfoSet;
-        while (($row = PaperInfo::fetch($result, $this->contact)))
+        while (($row = PaperInfo::fetch($result, $this->user)))
             if (!$this->_only_selected || $this->is_selected($row->paperId)) {
                 assert(!$rowset->get($row->paperId));
                 $rowset->add($row);
@@ -551,7 +559,7 @@ class PaperList {
             foreach ($rows as $prow) {
                 foreach ($prow->options() as $o)
                     if (!$this->has("opt$o->id")
-                        && $this->contact->can_view_paper_option($prow, $o->option)) {
+                        && $this->user->can_view_paper_option($prow, $o->option)) {
                         $this->_has["opt$o->id"] = true;
                         --$nopts;
                     }
@@ -625,7 +633,7 @@ class PaperList {
                 $got = $row->finalPaperStorageId > 1;
             else
                 $got = ($ov = $row->option($opt->id)) && $ov->value > 1;
-            if ($got && $this->contact->can_view_paper_option($row, $opt)) {
+            if ($got && $this->user->can_view_paper_option($row, $opt)) {
                 $this->_has[$opt->field_key()] = true;
                 array_splice($this->_any_option_checks, $i, 1);
             } else
@@ -643,10 +651,10 @@ class PaperList {
         $trclass = [];
         $cc = "";
         if (get($row, "paperTags")) {
-            if ($row->conflictType > 0 && $this->contact->allow_administer($row)) {
-                if (($vto = $row->viewable_tags($this->contact, true))
+            if ($row->conflictType > 0 && $this->user->allow_administer($row)) {
+                if (($vto = $row->viewable_tags($this->user, true))
                     && ($cco = $row->conf->tags()->color_classes($vto))) {
-                    $vtx = $row->viewable_tags($this->contact, false);
+                    $vtx = $row->viewable_tags($this->user, false);
                     $ccx = $row->conf->tags()->color_classes($vtx);
                     if ($cco !== $ccx) {
                         $this->row_attr["data-color-classes"] = $cco;
@@ -655,7 +663,7 @@ class PaperList {
                     }
                     $cc = $this->qreq->forceShow ? $cco : $ccx;
                 }
-            } else if (($vt = $row->viewable_tags($this->contact)))
+            } else if (($vt = $row->viewable_tags($this->user)))
                 $cc = $row->conf->tags()->color_classes($vt);
         }
         if ($cc) {
@@ -844,7 +852,7 @@ class PaperList {
             $classes[] = "fold3c";
         if ($has_sel)
             $classes[] = "fold6" . ($this->is_folded("rownum") ? "c" : "o");
-        if ($this->contact->is_manager())
+        if ($this->user->is_manager())
             $classes[] = "fold5" . ($this->qreq->forceShow ? "o" : "c");
         $classes[] = "fold7" . ($this->is_folded("statistics") ? "c" : "o");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
@@ -861,9 +869,9 @@ class PaperList {
             $titleextra .= "<span class='sep'></span>";
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER)
                 $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
-            else if ($this->contact->is_manager() && !$this->has("openau"))
+            else if ($this->user->is_manager() && !$this->has("openau"))
                 $titleextra .= '<a class="fn1 fn2" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',false)">Show authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
-            else if ($this->contact->is_manager() && $this->has("anonau"))
+            else if ($this->user->is_manager() && $this->has("anonau"))
                 $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',true)">Show non-anonymous authors</a><a class="fx1 fn2" href="#" onclick="return plinfo(\'anonau\',false)">Show all authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
             else
                 $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show non-anonymous authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
@@ -973,8 +981,8 @@ class PaperList {
                     && $field->sort)
                     $sorter->field = $field->realize($this);
                 else if ($sorter->type) {
-                    if ($this->contact->can_view_tags(null)
-                        && ($tagger = new Tagger($this->contact))
+                    if ($this->user->can_view_tags(null)
+                        && ($tagger = new Tagger($this->user))
                         && ($tag = $tagger->check($sorter->type))
                         && ($result = $this->conf->qe("select paperId from PaperTag where tag=? limit 1", $tag))
                         && edb_nrows($result))
@@ -1116,7 +1124,7 @@ class PaperList {
         if (!$this->_prepare())
             return null;
         // need tags for row coloring
-        if ($this->contact->can_view_tags(null))
+        if ($this->user->can_view_tags(null))
             $this->qopts["tags"] = 1;
         $this->table_type = $listname;
 
@@ -1177,7 +1185,7 @@ class PaperList {
         $rstate = new PaperListRenderState($ncol, $titlecol, $skipcallout);
         $this->_any_option_checks = [$this->conf->paper_opts->get(DTYPE_SUBMISSION),
                                      $this->conf->paper_opts->get(DTYPE_FINAL)];
-        foreach ($this->contact->user_option_list() as $o)
+        foreach ($this->user->user_option_list() as $o)
             if ($o->is_document())
                 $this->_any_option_checks[] = $o;
 
@@ -1207,13 +1215,13 @@ class PaperList {
             if ($fdef->has_content)
                 $this->_has[$fdef->name] = true;
         if (isset($this->_has["authors"])) {
-            if (!$this->contact->is_manager())
+            if (!$this->user->is_manager())
                 $this->_has["openau"] = true;
             else {
                 foreach ($rows as $row)
-                    if ($this->contact->can_view_authors($row, false))
+                    if ($this->user->can_view_authors($row, false))
                         $this->_has["openau"] = true;
-                    else if ($this->contact->can_view_authors($row, true))
+                    else if ($this->user->can_view_authors($row, true))
                         $this->_has["anonau"] = true;
             }
         }

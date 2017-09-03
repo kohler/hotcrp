@@ -209,12 +209,9 @@ $Qreq->t = "editpref";
 $Qreq->display = displayOptionsSet("pfdisplay");
 
 // Search actions
-if ($Qreq->fn === "get" && $SSel && !$SSel->is_empty()) {
-    SearchAction::load();
-    $subfn = $Qreq[$Qreq->fn . "fn"];
-    if (SearchAction::has_function($Qreq->fn, $subfn))
-        SearchAction::call($Qreq->fn, $subfn, $Me, $Qreq, $SSel);
-}
+if ($Qreq->fn === "get" && $SSel && !$SSel->is_empty()
+    && $Conf->list_action("get/{$Qreq->getfn}", $Me, $Qreq->method()))
+    SearchAction::call("get/{$Qreq->getfn}", $Me, $Qreq, $SSel);
 
 
 // set options to view

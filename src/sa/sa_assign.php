@@ -7,10 +7,10 @@ class Assign_SearchAction extends SearchAction {
     function allow(Contact $user) {
         return $user->privChair && Navigation::page() !== "reviewprefs";
     }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+    static function render(PaperList $pl) {
         Ht::stash_script("plactions_dofold()", "plactions_dofold");
-        $user->conf->stash_hotcrp_pc($user);
-        $actions[] = [700, "assign", "Assign", "<b>:</b> &nbsp;"
+        $pl->conf->stash_hotcrp_pc($pl->user);
+        return [700, "assign", "Assign", "<b>:</b> &nbsp;"
             . Ht::select("assignfn",
                           array("auto" => "Automatic assignments",
                                 "zzz1" => null,
@@ -24,10 +24,10 @@ class Assign_SearchAction extends SearchAction {
                                 "zzz3" => null,
                                 "lead" => "Discussion lead",
                                 "shepherd" => "Shepherd"),
-                          $qreq->assignfn,
+                          $pl->qreq->assignfn,
                           ["class" => "want-focus", "onchange" => "plactions_dofold()"])
             . '<span class="fx"> &nbsp;<span id="atab_assign_for">for</span> &nbsp;'
-            . Ht::select("markpc", [], 0, ["id" => "markpc", "class" => "need-pcselector", "data-pcselector-selected" => $qreq->markpc])
+            . Ht::select("markpc", [], 0, ["id" => "markpc", "class" => "need-pcselector", "data-pcselector-selected" => $pl->qreq->markpc])
             . "</span> &nbsp;" . Ht::submit("fn", "Go", ["value" => "assign", "onclick" => "return plist_submit.call(this)"])];
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -63,5 +63,3 @@ class Assign_SearchAction extends SearchAction {
         return $assignset->execute(true);
     }
 }
-
-SearchAction::register("assign", null, SiteLoader::API_POST | SiteLoader::API_PAPER, new Assign_SearchAction);

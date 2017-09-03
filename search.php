@@ -50,10 +50,11 @@ if (!$SSel) { /* we might be included by reviewprefs.php */
 
 // look for search action
 if ($Qreq->fn) {
-    SearchAction::load();
-    $subfn = $Qreq[$Qreq->fn . "fn"];
-    if (SearchAction::has_function($Qreq->fn, $subfn))
-        SearchAction::call($Qreq->fn, $subfn, $Me, $Qreq, $SSel);
+    $fn = $Qreq->fn;
+    if (strpos($fn, "/") === false && isset($Qreq[$Qreq->fn . "fn"]))
+        $fn .= "/" . $Qreq[$Qreq->fn . "fn"];
+    error_log($fn);
+    SearchAction::call($fn, $Me, $Qreq, $SSel);
 }
 
 

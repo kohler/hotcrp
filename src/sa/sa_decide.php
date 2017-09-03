@@ -7,9 +7,9 @@ class Decide_SearchAction extends SearchAction {
     function allow(Contact $user) {
         return $user->can_set_some_decision(true) && Navigation::page() !== "reviewprefs";
     }
-    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [900, "decide", "Decide", "<b>:</b> Set to &nbsp;"
-                . decisionSelector($qreq->decision, null, " class=\"want-focus\"")
+    static function render(PaperList $pl) {
+        return [900, "decide", "Decide", "<b>:</b> Set to &nbsp;"
+                . decisionSelector($pl->qreq->decision, null, " class=\"want-focus\"")
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide", "onclick" => "return plist_submit.call(this)"])];
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -24,5 +24,3 @@ class Decide_SearchAction extends SearchAction {
             Conf::msg_error(join("<br />", $aset->errors_html()));
     }
 }
-
-SearchAction::register("decide", null, SiteLoader::API_POST | SiteLoader::API_PAPER, new Decide_SearchAction);
