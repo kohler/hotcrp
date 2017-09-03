@@ -401,7 +401,7 @@ class PaperList {
         foreach ($this->conf->displayable_list_action_renderers($this) as $rf)
             if (($lllg = call_user_func($rf->renderer, $this))) {
                 $lllgroups[] = $lllg;
-                if ($this->qreq->fn == $lllg[1] || $this->atab == $lllg[1])
+                if ($this->qreq->fn == $lllg[0] || $this->atab == $lllg[0])
                     $whichlll = count($lllgroups);
             }
 
@@ -420,8 +420,8 @@ class PaperList {
         foreach ($lllgroups as $i => $lllg) {
             $x = $i + 1;
             $foot .= "<table><tbody><tr>\n"
-                . "    <td class=\"pl_footer_desc lll$x\"><a class=\"lla$x\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[1]]) . "#plact\" onclick=\"return focus_fold.call(this)\">" . $lllg[2] . "</a></td>\n";
-            for ($j = 3; $j < count($lllg); ++$j) {
+                . "    <td class=\"pl_footer_desc lll$x\"><a class=\"lla$x\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[0]]) . "#plact\" onclick=\"return focus_fold.call(this)\">" . $lllg[1] . "</a></td>\n";
+            for ($j = 2; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
                 $class = isset($cell["class"]) ? "lld$x " . $cell["class"] : "lld$x";
                 $foot .= "    <td class=\"$class\"";

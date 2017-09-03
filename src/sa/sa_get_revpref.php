@@ -12,12 +12,12 @@ class GetRevpref_SearchAction extends SearchAction {
         return $user->isPC;
     }
     static function render_upload(PaperList $pl) {
-        return [100, "uploadpref", "Upload", "<b>&nbsp;preference file:</b> &nbsp;"
+        return ["uploadpref", "Upload", "<b>&nbsp;preference file:</b> &nbsp;"
                 . "<input class=\"want-focus\" type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"uploadpref\",this)' />&nbsp; "
                 . Ht::submit("fn", "Go", ["value" => "uploadpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
     }
     static function render_set(PaperList $pl) {
-        return [200, "setpref", "Set preferences", "<b>:</b> &nbsp;"
+        return ["setpref", "Set preferences", "<b>:</b> &nbsp;"
                 . Ht::entry("pref", "", array("class" => "want-focus", "size" => 4, "tabindex" => 6, "onfocus" => 'autosub("setpref",this)'))
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "setpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)"])];
     }

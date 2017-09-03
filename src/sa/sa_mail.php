@@ -8,7 +8,7 @@ class Mail_SearchAction extends SearchAction {
         return $user->is_manager() && Navigation::page() !== "reviewprefs";
     }
     static function render(PaperList $pl) {
-        return [1000, "mail", "Mail", "<b>:</b> &nbsp;"
+        return ["mail", "Mail", "<b>:</b> &nbsp;"
             . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $pl->qreq->recipients, ["class" => "want-focus"])
             . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "mail", "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
     }

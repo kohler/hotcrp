@@ -8,7 +8,7 @@ class Decide_SearchAction extends SearchAction {
         return $user->can_set_some_decision(true) && Navigation::page() !== "reviewprefs";
     }
     static function render(PaperList $pl) {
-        return [900, "decide", "Decide", "<b>:</b> Set to &nbsp;"
+        return ["decide", "Decide", "<b>:</b> Set to &nbsp;"
                 . decisionSelector($pl->qreq->decision, null, " class=\"want-focus\"")
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide", "onclick" => "return plist_submit.call(this)"])];
     }

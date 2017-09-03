@@ -10,7 +10,7 @@ class Assign_SearchAction extends SearchAction {
     static function render(PaperList $pl) {
         Ht::stash_script("plactions_dofold()", "plactions_dofold");
         $pl->conf->stash_hotcrp_pc($pl->user);
-        return [700, "assign", "Assign", "<b>:</b> &nbsp;"
+        return ["assign", "Assign", "<b>:</b> &nbsp;"
             . Ht::select("assignfn",
                           array("auto" => "Automatic assignments",
                                 "zzz1" => null,
