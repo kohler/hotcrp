@@ -1,0 +1,93 @@
+[
+    {
+        "name": "administrator", "paper": true, "get": true, "post": true,
+        "function": "PaperApi::manager_api",
+        "synonym": ["manager"]
+    },
+    {
+        "name": "alltags", "get": true, "function": "PaperApi::alltags_api"
+    },
+    {
+        "name": "checkformat", "paper": true, "get": true, "post": true,
+        "function": "PaperApi::checkformat_api"
+    },
+    {
+        "name": "fieldhtml", "get": true, "function": "PaperApi::fieldhtml_api"
+    },
+    {
+        "name": "follow", "paper": true, "post": true, "xxx": true,
+        "function": "PaperApi::follow_api"
+    },
+    {
+        "name": "lead", "paper": true, "get": true, "post": true,
+        "function": "PaperApi::lead_api"
+    },
+    {
+        "name": "mentioncompletion", "get": true, "post": true,
+        "function": "PaperApi::mentioncompletion_api"
+    },
+    {
+        "name": "review", "paper": true, "get": true, "post": true,
+        "function": "PaperApi::review_api"
+    },
+    {
+        "name": "reviewround", "paper": true, "post": true, "xxx": true,
+        "function": "PaperApi::reviewround_api"
+    },
+    {
+        "name": "revpref", "paper": true, "get": true, "post": true,
+        "function": "PaperApi::pref_api",
+        "synonym": ["pref"]
+    },
+    {
+        "name": "search", "paper": true, "get": true, "post": true,
+        "function": "PaperApi::search_api"
+    },
+    {
+        "name": "setdecision", "paper": true, "post": true,
+        "function": "PaperApi::setdecision_api"
+    },
+    {
+        "name": "settaganno", "post": true,
+        "function": "PaperApi::settaganno_api"
+    },
+    {
+        "name": "settags", "post": true,
+        "function": "PaperApi::settags_api"
+    },
+    {
+        "name": "shepherd", "paper": true, "get": true, "post": true,
+        "function": "PaperApi::shepherd_api"
+    },
+    {
+        "name": "taganno", "get": true, "function": "PaperApi::taganno_api"
+    },
+    {
+        "name": "tagreport", "paper": true, "get": true,
+        "function": "PaperApi::tagreport_api"
+    },
+    {
+        "name": "trackerstatus", "get": true, "post": true,
+        "function": "MeetingTracker::trackerstatus_api"
+    },
+    {
+        "name": "votereport", "paper": true, "get": true, "post": true,
+        "function": "PaperApi::votereport_api"
+    },
+    {
+        "name": "whoami", "get": true, "function": "PaperApi::whoami_api"
+    },
+
+    {
+        "name": "setlead", "paper": true, "post": true, "function": "PaperApi::lead_api"
+    },
+    {
+        "name": "setmanager", "paper": true, "post": true, "function": "PaperApi::manager_api"
+    },
+    {
+        "name": "setpref", "paper": true, "post": true, "function": "PaperApi::pref_api"
+    },
+    {
+        "name": "setshepherd", "paper": true, "post": true, "function": "PaperApi::shepherd_api"
+    }
+]

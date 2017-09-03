@@ -4168,7 +4168,7 @@ var add_revpref_ajax = (function () {
             pid = pid.substr(0, pos);
         }
         ++outstanding;
-        $.ajax(hoturl_post("api/pref", {p: pid}), {
+        $.ajax(hoturl_post("api/revpref", {p: pid}), {
             method: "POST", data: {pref: self.value, u: cid},
             success: function (rv) {
                 setajaxcheck(self, rv);

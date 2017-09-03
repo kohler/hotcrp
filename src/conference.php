@@ -682,6 +682,8 @@ class Conf {
                     $e = substr($e, 1);
                 if (!$user)
                     $b = true;
+                else if ($e === "chair")
+                    $b = !$user || $user->privChair;
                 else if ($e === "manager")
                     $b = !$user || $user->is_manager();
                 else if ($e === "pc")
@@ -3144,86 +3146,69 @@ class Conf {
 
 
     // API
-
-    private function call_api($uf, Contact $user, Qrequest $qreq, $prow) {
-        if (!$uf)
-            return ["ok" => false, "error" => "API function not found."];
-        if (!get($uf, "get") && !check_post($qreq))
-            return ["ok" => false, "error" => "Missing credentials."];
-        if (!$prow && get($uf, "paper"))
-            return ["ok" => false, "error" => "Missing paper."];
-        return call_user_func($uf->callback, $user, $qreq, $prow, $uf);
-    }
     function _add_api_json($fj) {
-        // XXX priority
-        if (is_string($fj->fn) && !isset($this->_api_map[$fj->fn])
-            && isset($fj->callback)) {
-            $this->_api_map[$fj->fn] = $fj;
-            return true;
-        } else
+        if (isset($fj->name) && is_string($fj->name)
+            && isset($fj->function) && is_string($fj->function))
+            return self::xt_add($this->_api_map, $fj->name, $fj);
+        else
             return false;
     }
-    private function fill_api_map() {
-        // 0: POST, optional paper; 1: GET, optional paper;
-        // 2: POST, mandatory paper; 3: GET, mandatory paper
-        $this->_api_map = [
-            "administrator" => "3 PaperApi::manager_api",
-            "alltags" => "1 PaperApi::alltags_api",
-            "checkformat" => "3 PaperApi::checkformat_api",
-            "fieldhtml" => "1 PaperApi::fieldhtml_api",
-            "follow" => "2 PaperApi::follow_api",
-            "lead" => "3 PaperApi::lead_api",
-            "manager" => "3 PaperApi::manager_api",
-            "mentioncompletion" => "1 PaperApi::mentioncompletion_api",
-            "pref" => "3 PaperApi::pref_api", // XXX backwards compat
-            "review" => "3 PaperApi::review_api",
-            "reviewround" => "2 PaperApi::reviewround_api",
-            "search" => "1 PaperApi::search_api",
-            "setdecision" => "2 PaperApi::setdecision_api",
-            "setlead" => "2 PaperApi::lead_api", // XXX backwards compat
-            "setmanager" => "2 PaperApi::manager_api", // XXX backwards compat
-            "setpref" => "2 PaperApi::pref_api", // XXX backwards compat
-            "setshepherd" => "2 PaperApi::shepherd_api", // XXX backwards compat
-            "settaganno" => "0 PaperApi::settaganno_api",
-            "settags" => "0 PaperApi::settags_api",
-            "shepherd" => "3 PaperApi::shepherd_api",
-            "taganno" => "1 PaperApi::taganno_api",
-            "tagreport" => "3 PaperApi::tagreport_api",
-            "trackerstatus" => "1 MeetingTracker::trackerstatus_api", // hotcrp-comet entrypoint
-            "votereport" => "3 PaperApi::votereport_api",
-            "whoami" => "1 PaperApi::whoami_api"
-        ];
-        if (($olist = $this->opt("apiFunctions")))
-            expand_json_includes_callback($olist, [$this, "_add_api_json"]);
-    }
-    function has_api($fn) {
-        if ($this->_api_map === null)
-            $this->fill_api_map();
-        return isset($this->_api_map[$fn]);
-    }
-    function api($fn) {
-        if ($this->_api_map === null)
-            $this->fill_api_map();
-        $uf = get($this->_api_map, $fn);
-        if ($uf && is_string($uf)) {
-            $space = strpos($uf, " ");
-            $flags = (int) substr($uf, 0, $space);
-            $uf = $this->_api_map[$fn] = (object) ["callback" => substr($uf, $space + 1)];
-            if ($flags & 1)
-                $uf->get = true;
-            if ($flags & 2)
-                $uf->paper = true;
+    private function api_map() {
+        if ($this->_api_map === null) {
+            $this->_api_map = [];
+            expand_json_includes_callback(["etc/apifunctions.json"], [$this, "_add_api_json"]);
+            if (($olist = $this->opt("apiFunctions")))
+                expand_json_includes_callback($olist, [$this, "_add_api_json"]);
         }
+        return $this->_api_map;
+    }
+    private function check_api_json($fj, Contact $user = null, $method) {
+        if ((isset($fj->enable_if) && !$this->xt_enabled($fj, $user))
+            || ($method === "GET" && !get($fj, "get"))
+            || ($method === "POST" && !get($fj, "post")))
+            return false;
+        else
+            return true;
+    }
+    function has_api($fn, Contact $user = null, $method = null) {
+        foreach (get($this->api_map(), $fn, []) as $fj)
+            if ($this->check_api_json($fj, $user, $method))
+                return true;
+        return false;
+    }
+    function api($fn, Contact $user = null, $method = null) {
+        $uf = null;
+        foreach (get($this->api_map(), $fn, []) as $fj) {
+            if ($this->check_api_json($fj, $user, $method)
+                && self::xt_priority_ge($fj, $uf))
+                $uf = $fj;
+        }
+        self::xt_resolve_require($uf);
         return $uf;
+    }
+    private function call_api($fn, $uf, Contact $user, Qrequest $qreq, $prow) {
+        if ($qreq->method() !== "GET" && $qreq->method() !== "HEAD" && !check_post($qreq))
+            return new JsonResult(403, ["ok" => false, "error" => "Missing credentials."]);
+        if (!$uf) {
+            if ($this->has_api($fn, $user, null))
+                return new JsonResult(405, ["ok" => false, "error" => "Method not supported."]);
+            else if ($this->has_api($fn, null, $qreq->method()))
+                return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
+            else
+                return new JsonResult(404, ["ok" => false, "error" => "Function not found."]);
+        }
+        if (!$prow && get($uf, "paper"))
+            return new JsonResult(400, ["ok" => false, "error" => "No paper specified."]);
+        return call_user_func($uf->function, $user, $qreq, $prow, $uf);
     }
     function call_api_exit($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         // XXX precondition: $user->can_view_paper($prow) || !$prow
-        $uf = $this->api($fn);
+        $uf = $this->api($fn, $user, $qreq->method());
         if ($uf && get($uf, "redirect") && $qreq->redirect
             && preg_match('@\A(?![a-z]+:|/).+@', $qreq->redirect)) {
             try {
                 JsonResultException::$capturing = true;
-                $j = $this->call_api($uf, $user, $qreq, $prow);
+                $j = $this->call_api($fn, $uf, $user, $qreq, $prow);
             } catch (JsonResultException $ex) {
                 $j = $ex->result;
             }
@@ -3235,7 +3220,7 @@ class Conf {
                 Conf::msg_error($x);
             Navigation::redirect_site($qreq->redirect);
         } else {
-            $j = $this->call_api($uf, $user, $qreq, $prow);
+            $j = $this->call_api($fn, $uf, $user, $qreq, $prow);
             json_exit($j);
         }
     }
