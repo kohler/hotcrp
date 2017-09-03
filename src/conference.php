@@ -3175,7 +3175,7 @@ class Conf {
     private function check_api_json($fj, Contact $user = null, $method) {
         if ((isset($fj->enable_if) && !$this->xt_enabled($fj, $user))
             || ($method === "GET" && !get($fj, "get"))
-            || ($method === "POST" && !get($fj, "post")))
+            || ($method === "POST" && get($fj, "post") === false))
             return false;
         else
             return true;
