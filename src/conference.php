@@ -662,9 +662,15 @@ class Conf {
 
 
     static function xt_priority_compare($xta, $xtb) {
-        $pa = $xta ? get($xta, "priority", 0) : PHP_INT_MIN;
-        $pb = $xtb ? get($xtb, "priority", 0) : PHP_INT_MIN;
-        return $pa < $pb ? -1 : ($pa == $pb ? 0 : 1);
+        if (!$xta && !$xtb)
+            return 0;
+        else if (!$xta || !$xtb)
+            return $xta ? 1 : -1;
+        else {
+            $pa = get($xta, "priority", 0);
+            $pb = get($xtb, "priority", 0);
+            return $pa < $pb ? -1 : ($pa == $pb ? 0 : 1);
+        }
     }
     static private function xt_add(&$a, $name, $xt) {
         $a[$name][] = $xt;
