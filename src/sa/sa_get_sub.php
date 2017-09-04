@@ -5,7 +5,7 @@
 
 class Get_SearchAction extends SearchAction {
     static function render(PaperList $pl) {
-        $actions = array_values($pl->conf->displayable_list_actions("get/", $pl));
+        $actions = array_values($pl->displayable_list_actions("get/"));
         foreach ($pl->user->user_option_list() as $o)
             if ($pl->user->can_view_some_paper_option($o)
                 && $o->is_document()
@@ -30,10 +30,9 @@ class Get_SearchAction extends SearchAction {
             }
         }
         if (!empty($sel_opt)) {
-            return ["get", "Download", "<b>:</b> &nbsp;"
-                . Ht::select("getfn", $sel_opt, $pl->qreq->getfn,
-                             ["tabindex" => 6, "class" => "want-focus", "style" => "max-width:10em"])
-                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
+            return Ht::select("getfn", $sel_opt, $pl->qreq->getfn,
+                              ["tabindex" => 6, "class" => "want-focus", "style" => "max-width:10em"])
+                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1]);
         } else
             return null;
     }
@@ -60,7 +59,7 @@ class GetDocument_SearchAction extends SearchAction {
             "dtype" => $opt->id,
             "selector" => "Documents/" . ($opt->id <= 0 ? pluralize($opt->name) : $opt->name),
             "position" => $opt->position + ($opt->final ? 0 : 100),
-            "display_if_has" => $opt->field_key(),
+            "display_if_list_has" => $opt->field_key(),
             "factory_class" => "GetDocument_SearchAction"
         ];
         return $fj;

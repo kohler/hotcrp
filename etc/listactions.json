@@ -1,7 +1,13 @@
 [
     {
+        "name": "get",
+        "renderer": "Get_SearchAction::render", "title": "Download",
+        "position": 0,
+        "require": "src/sa/sa_get_sub.php"
+    },
+    {
         "name": "assign", "post": true,
-        "renderer": "Assign_SearchAction::render",
+        "renderer": "Assign_SearchAction::render", "title": "Assign",
         "position": 700,
         "enable_if": "manager", "table_type": "!editpref",
         "require": "src/sa/sa_assign.php",
@@ -9,15 +15,11 @@
     },
     {
         "name": "decide", "post": true,
-        "renderer": "Decide_SearchAction::render",
+        "renderer": "Decide_SearchAction::render", "title": "Decide",
         "position": 900,
         "enable_if": "manager", "table_type": "!editpref",
         "require": "src/sa/sa_decide.php",
         "factory_class": "Decide_SearchAction"
-    },
-    {
-        "renderer": "Get_SearchAction::render",
-        "require": "src/sa/sa_get_sub.php"
     },
     {
         "match": "get/.*", "paper": true, "get": true,
@@ -158,7 +160,7 @@
     {
         "name": "get/final", "get": true,
         "selector": "Documents/Final versions",
-        "position": 0, "display_if_list": "final",
+        "position": 0, "display_if_list_has": "final",
         "require": "src/sa/sa_get_sub.php",
         "factory_class": "GetDocument_SearchAction",
         "dtype": -1
@@ -166,7 +168,7 @@
     {
         "name": "get/checkformat", "get": true,
         "selector": "Documents/Format check",
-        "position": 999, "display_if_list": "paper",
+        "position": 999, "display_if_list_has": "paper",
         "enable_if": "manager",
         "require": "src/sa/sa_get_sub.php",
         "factory_class": "GetCheckFormat_SearchAction"
@@ -174,14 +176,14 @@
     {
         "name": "get/abstract", "get": true,
         "selector": "Paper information/Abstracts",
-        "position": 1000, "display_if_list": "abstract",
+        "position": 1000, "display_if_list_has": "abstract",
         "require": "src/sa/sa_get_sub.php",
         "factory_class": "GetAbstract_SearchAction"
     },
     {
         "name": "get/authors", "get": true,
         "selector": "Paper information/Authors",
-        "position": 1001, "display_if_list": "authors",
+        "position": 1001, "display_if_list_has": "authors",
         "require": "src/sa/sa_get_sub.php",
         "factory_class": "GetAuthors_SearchAction"
     },
@@ -213,7 +215,7 @@
     },
     {
         "name": "mail", "get": true,
-        "renderer": "Mail_SearchAction::render",
+        "renderer": "Mail_SearchAction::render", "title": "Mail",
         "position": 1000,
         "enable_if": "manager", "table_type": "!editpref",
         "factory_class": "Mail_SearchAction",
@@ -221,20 +223,24 @@
     },
     {
         "name": "tag", "post": true,
-        "renderer": "Tag_SearchAction::render",
+        "renderer": "Tag_SearchAction::render", "title": "Tag",
         "position": 500,
         "enable_if": "pc", "table_type": "!editpref",
         "factory_class": "Tag_SearchAction",
         "require": "src/sa/sa_tag.php"
     },
     {
-        "renderer": "GetRevpref_SearchAction::render_upload",
+        "name": "uploadpref",
+        "renderer": "GetRevpref_SearchAction::render_upload", "title": "Upload",
         "enable_if": "pc", "table_type": "editpref",
+        "require": "src/sa/sa_get_revpref.php",
         "position": 100
     },
     {
-        "renderer": "GetRevpref_SearchAction::render_set",
+        "name": "setpref",
+        "renderer": "GetRevpref_SearchAction::render_set", "title": "Set preferences",
         "enable_if": "pc", "table_type": "editpref",
+        "require": "src/sa/sa_get_revpref.php",
         "position": 200
     }
 ]

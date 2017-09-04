@@ -38,8 +38,7 @@ class Tag_SearchAction extends SearchAction {
                 . "</div></div>";
         }
 
-        return ["tag", "Tag", "<b>:</b> &nbsp;"
-            . Ht::select("tagfn", $tagopt, $pl->qreq->tagfn, $tagextra) . " &nbsp;",
+        return [Ht::select("tagfn", $tagopt, $pl->qreq->tagfn, $tagextra) . " &nbsp;",
             ["id" => "foldplacttags", "class" => "foldc fold99c", "content" => $t]];
     }
     function allow(Contact $user) {

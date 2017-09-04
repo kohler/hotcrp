@@ -371,6 +371,22 @@ class PaperList {
         return "";
     }
 
+    function displayable_list_actions($prefix) {
+        $la = [];
+        foreach ($this->conf->list_action_map() as $name => $fjs)
+            if (str_starts_with($name, $prefix)) {
+                $uf = null;
+                foreach ($fjs as $fj)
+                    if (Conf::xt_priority_compare($fj, $uf) >= 0
+                        && $this->conf->xt_enabled($fj, $this->user)
+                        && $this->action_xt_displayed($fj))
+                        $uf = $fj;
+                if ($uf)
+                    $la[$name] = $uf;
+            }
+        return $la;
+    }
+
     function action_xt_displayed($fj) {
         if (isset($fj->table_type)
             && (str_starts_with($fj->table_type, "!")
@@ -380,8 +396,8 @@ class PaperList {
         if (isset($fj->display_if)
             && !$this->conf->xt_check($fj->display_if, $fj, $this->user))
             return false;
-        if (isset($fj->display_if_list)) {
-            $ifl = $fj->display_if_list;
+        if (isset($fj->display_if_list_has)) {
+            $ifl = $fj->display_if_list_has;
             foreach (is_array($ifl) ? $ifl : [$ifl] as $h) {
                 if (!is_bool($h))
                     $h = $this->has($h);
@@ -396,12 +412,30 @@ class PaperList {
         if ($this->count == 0)
             return "";
 
+        $renderers = [];
+        foreach ($this->conf->list_action_renderers() as $name => $fjs) {
+            $rf = null;
+            foreach ($fjs as $fj)
+                if (Conf::xt_priority_compare($fj, $rf) >= 0
+                    && $this->conf->xt_enabled($fj, $this->user)
+                    && $this->action_xt_displayed($fj))
+                    $rf = $fj;
+            if ($rf) {
+                Conf::xt_resolve_require($rf);
+                $renderers[] = $rf;
+            }
+        }
+        usort($renderers, "Conf::xt_position_compare");
+
         $lllgroups = [];
-        $whichlll = 1;
-        foreach ($this->conf->displayable_list_action_renderers($this) as $rf)
+        $whichlll = 0;
+        foreach ($renderers as $rf)
             if (($lllg = call_user_func($rf->renderer, $this))) {
+                if (is_string($lllg))
+                    $lllg = [$lllg];
+                array_unshift($lllg, $rf->name, $rf->title);
                 $lllgroups[] = $lllg;
-                if ($this->qreq->fn == $lllg[0] || $this->atab == $lllg[0])
+                if ($this->qreq->fn == $rf->name || $this->atab == $rf->name)
                     $whichlll = count($lllgroups);
             }
 
@@ -427,7 +461,10 @@ class PaperList {
                 $foot .= "    <td class=\"$class\"";
                 if (isset($cell["id"]))
                     $foot .= " id=\"" . $cell["id"] . "\"";
-                $foot .= ">" . $cell["content"] . "</td>\n";
+                $foot .= ">";
+                if ($j === 2 && !str_starts_with($cell["content"], "<b>"))
+                    $foot .= "<b>:&nbsp;</b> ";
+                $foot .= $cell["content"] . "</td>\n";
             }
             if ($i < count($lllgroups) - 1)
                 $foot .= "    <td>&nbsp;<span class='barsep'>·</span>&nbsp;</td>\n";
