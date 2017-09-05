@@ -5046,9 +5046,9 @@ function edit_anno(locator) {
             add_anno(hc, {});
             var $row = $(hc.render());
             $row.appendTo($d.find(".tagannos"));
-            $row.find("input[name='heading_n" + last_newannoid + "']").focus();
             $d.find(".popup-bottom").scrollIntoView();
             popup_near($d, window);
+            $row.find("input[name='heading_n" + last_newannoid + "']").focus();
         } else {
             var anno = [];
             for (var i = 0; i < annos.length; ++i) {
