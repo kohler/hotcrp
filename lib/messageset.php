@@ -108,7 +108,7 @@ class MessageSet {
 
     static private function filter_msgs($ms, $include_fields) {
         if ($include_fields || empty($ms))
-            return $ms;
+            return $ms ? : [];
         else
             return array_map(function ($mx) { return $mx[1]; }, $ms);
     }

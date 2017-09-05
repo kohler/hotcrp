@@ -183,7 +183,7 @@ foreach ($jp as &$j) {
         $rform = $Conf->review_form();
         $tf = new ReviewValues($rform);
         $prow = $Conf->paperRow(["paperId" => $pid], $site_contact);
-        foreach ($j->reviews as $reviewindex => $reviewj)
+        foreach ($j->reviews as $reviewindex => $reviewj) {
             if ($tf->parse_json($reviewj)
                 && isset($tf->req["reviewerEmail"])
                 && validate_email($tf->req["reviewerEmail"])) {
@@ -194,6 +194,7 @@ foreach ($jp as &$j) {
                 $tf->check_and_save($site_contact, $prow, null);
             } else
                 $tf->msg(null, "invalid review @$reviewindex", MessageSet::ERROR);
+        }
         foreach ($tf->messages() as $te)
             fwrite(STDERR, $prefix . htmlspecialchars_decode($te) . "\n");
     }
