@@ -233,8 +233,8 @@ class JsonResult {
             $t = "";
             foreach ($msgs as $msg) {
                 if (($msg[0] === "merror" || $msg[0] === "xmerror")
-                    && !isset($this->status["error"]))
-                    $this->status["error"] = $msg[1];
+                    && !isset($this->content["error"]))
+                    $this->content["error"] = $msg[1];
                 if ($div)
                     $t .= Ht::xmsg($msg[0], $msg[1]);
                 else
