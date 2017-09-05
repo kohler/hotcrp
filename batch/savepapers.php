@@ -148,9 +148,10 @@ foreach ($jp as &$j) {
     }
 
     if (!$quiet) {
-        if (isset($j->title) && is_string($j->title))
-            fwrite(STDERR, $pidtext . " (" . UnicodeHelper::utf8_abbreviate($j->title, 40) . "): ");
-        else
+        if (isset($j->title) && is_string($j->title)) {
+            $title = simplify_whitespace($j->title);
+            fwrite(STDERR, $pidtext . " (" . UnicodeHelper::utf8_abbreviate($title, 40) . "): ");
+        } else
             fwrite(STDERR, $pidtext . ": ");
     }
     $ps = new PaperStatus($Conf, null, ["no_email" => true,
