@@ -79,6 +79,7 @@ class Contact {
     private $capabilities = null;
     private $review_tokens_ = null;
     private $activated_ = false;
+    private $overrides_ = 0;
     private $_aucollab_matchers = null;
     private $_aucollab_general_pregexes = null;
 
@@ -360,19 +361,36 @@ class Contact {
         }
 
         // Check forceShow
-        self::$active_forceShow = $this->privChair && req("forceShow");
+        $this->overrides_ = 0;
+        if ($this->privChair && req("forceShow"))
+            $this->overrides_ |= 1;
+        if (req("override"))
+            $this->overrides_ |= 2;
+        self::$active_forceShow = ($this->overrides_ & 1) !== 0;
 
         return $this;
     }
 
     function set_forceShow($on) {
         global $Me;
-        if ($this->contactId == $Me->contactId) {
-            self::$active_forceShow = $this->privChair && $on;
+        $this->overrides_ = ($this->overrides_ & ~1) | ($this->privChair && $on ? 1 : 0);
+        if ($Me && $this->contactId == $Me->contactId) {
+            self::$active_forceShow = ($this->overrides_ & 1) !== 0;
             if (self::$active_forceShow)
                 $_GET["forceShow"] = $_POST["forceShow"] = $_REQUEST["forceShow"] = 1;
             else
                 unset($_GET["forceShow"], $_POST["forceShow"], $_REQUEST["forceShow"]);
+        }
+    }
+
+    function set_override_deadlines($on) {
+        global $Me;
+        $this->overrides_ = ($this->overrides_ & ~2) | ($on ? 2 : 0);
+        if ($Me && $this->contactId == $Me->contactId) {
+            if ($this->overrides_ & 2)
+                $_GET["override"] = $_POST["override"] = $_REQUEST["override"] = 1;
+            else
+                unset($_GET["override"], $_POST["override"], $_REQUEST["override"]);
         }
     }
 
@@ -500,7 +518,7 @@ class Contact {
     function is_actas_user() {
         return $this->activated_
             && ($trueuser = get($_SESSION, "trueuser"))
-            && strcasecmp($trueuser->email, $this->email) != 0;
+            && strcasecmp($trueuser->email, $this->email) !== 0;
     }
 
     function update_trueuser($always) {
@@ -684,8 +702,7 @@ class Contact {
     }
 
     function is_admin_force() {
-        global $Me;
-        return self::$active_forceShow && $this->contactId == $Me->contactId;
+        return ($this->activated_ & 1) !== 0;
     }
 
     function is_pc_member() {
@@ -1765,8 +1782,10 @@ class Contact {
         }
 
         // correct $forceShow
-        if ($forceShow === null && $Me && $this->contactId == $Me->contactId)
-            $forceShow = self::$active_forceShow;
+        if ($forceShow === null && $Me && $this->contactId == $Me->contactId);
+            assert((($this->overrides_ & 1) !== 0) === self::$active_forceShow);
+        if ($forceShow === null)
+            $forceShow = ($this->overrides_ & 1) !== 0;
         else if (!$ci->allow_administer || $forceShow === null)
             $forceShow = false;
         else if ($forceShow === "any")
@@ -1854,7 +1873,7 @@ class Contact {
         else if ($override !== null)
             return !!$override;
         else
-            return isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
+            return ($this->overrides_ & 2) !== 0;
     }
 
     function allow_administer(PaperInfo $prow = null) {

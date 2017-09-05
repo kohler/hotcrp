@@ -1631,7 +1631,7 @@ class ReviewValues extends MessageSet {
         if (!$rrow && $user !== $reviewer) {
             if (($whyNot = $user->perm_create_review_from($prow, $reviewer))) {
                 $this->reviewer_error(null);
-                $this->reviewer_error(whyNotText($whyNot, "create review"));
+                $this->reviewer_error(whyNotText($whyNot, "review"));
                 return false;
             }
             $extra = [];
