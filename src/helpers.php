@@ -775,6 +775,8 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
         $ms[] = $conf->_("No such review #%s.", $reviewId);
     if (isset($whyNot["dbError"]))
         $ms[] = $whyNot["dbError"];
+    if (isset($whyNot["administer"]))
+        $ms[] = $conf->_("You can’t administer submission #%d.", $paperId);
     if (isset($whyNot["permission"]))
         $ms[] = $conf->_("You don’t have permission to $action submission #%d.", $paperId);
     if (isset($whyNot["pdfPermission"]))
@@ -861,6 +863,8 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
         $ms[] = $conf->_("External reviewers cannot view other reviews.");
     if (isset($whyNot["differentReviewer"]))
         $ms[] = $conf->_("You didn’t write this review, so you can’t change it.");
+    if (isset($whyNot["unacceptableReviewer"]))
+        $ms[] = $conf->_("That user can’t be assigned to review #%d.", $paperId);
     if (isset($whyNot["reviewToken"]))
         $ms[] = $conf->_("If you know a valid review token, enter it above to edit that review.");
     if (isset($whyNot["clickthrough"]))

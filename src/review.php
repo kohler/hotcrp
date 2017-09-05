@@ -1577,7 +1577,6 @@ class ReviewValues extends MessageSet {
         if (!$msg)
             $msg = $this->conf->_("Can’t submit a review for %s.", htmlspecialchars($this->req["reviewerEmail"]));
         $this->rmsg("reviewerEmail", $msg, self::ERROR);
-        $this->rmsg("reviewerEmail", $this->conf->_("(You may be mistakenly submitting a review form intended for someone else.)"), self::INFO);
     }
 
     function check_and_save(Contact $user, PaperInfo $prow = null, ReviewInfo $rrow = null) {
@@ -1630,8 +1629,9 @@ class ReviewValues extends MessageSet {
         // maybe create review
         $new_rrid = false;
         if (!$rrow && $user !== $reviewer) {
-            if (!$user->can_create_review_from($prow, $reviewer)) {
+            if (($whyNot = $user->perm_create_review_from($prow, $reviewer))) {
                 $this->reviewer_error(null);
+                $this->reviewer_error(whyNotText($whyNot, "create review"));
                 return false;
             }
             $extra = [];

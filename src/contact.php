@@ -2595,14 +2595,6 @@ class Contact {
                 && (!$submit || $this->override_deadlines($rights)));
     }
 
-    function can_create_review_from(PaperInfo $prow, Contact $user) {
-        $rights = $this->rights($prow);
-        return $rights->can_administer
-            && ($prow->timeSubmitted > 0 || $rights->rights_forced)
-            && (!$user->isPC || $user->can_accept_review_assignment($prow))
-            && ($this->conf->time_review(null, true, true) || $this->override_deadlines($rights));
-    }
-
     function perm_review(PaperInfo $prow, $rrow, $submit = false) {
         if ($this->can_review($prow, $rrow, $submit))
             return null;
@@ -2642,6 +2634,39 @@ class Contact {
 
     function perm_submit_review(PaperInfo $prow, $rrow) {
         return $this->perm_review($prow, $rrow, true);
+    }
+
+    function can_create_review_from(PaperInfo $prow, Contact $user) {
+        $rights = $this->rights($prow);
+        return $rights->can_administer
+            && ($prow->timeSubmitted > 0 || $rights->rights_forced)
+            && (!$user->isPC || $user->can_accept_review_assignment($prow))
+            && ($this->conf->time_review(null, true, true) || $this->override_deadlines($rights));
+    }
+
+    function perm_create_review_from(PaperInfo $prow, Contact $user) {
+        if ($this->can_create_review_from($prow, $user))
+            return null;
+        $rights = $this->rights($prow);
+        $whyNot = $prow->initial_whynot();
+        if (!$rights->allow_administer)
+            $whyNot["administer"] = 1;
+        else if ($prow->timeWithdrawn > 0)
+            $whyNot["withdrawn"] = 1;
+        else if ($prow->timeSubmitted <= 0)
+            $whyNot["notSubmitted"] = 1;
+        else {
+            if ($user->isPC && !$user->can_accept_review_assignment($prow))
+                $whyNot["unacceptableReviewer"] = 1;
+            if (!$this->conf->time_review(null, true, true))
+                $whyNot["deadline"] = ($user->isPC ? "pcrev_hard" : "extrev_hard");
+            if ($rights->allow_administer
+                && ($rights->conflictType || $prow->timeSubmitted <= 0))
+                $whyNot["chairMode"] = 1;
+            if ($rights->allow_administer && isset($whyNot["deadline"]))
+                $whyNot["override"] = 1;
+        }
+        return $whyNot;
     }
 
     function can_clickthrough($ctype) {
