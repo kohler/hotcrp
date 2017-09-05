@@ -976,6 +976,7 @@ class PaperStatus extends MessageSet {
                 $pj_draft = true;
         }
 
+        $submitted = false;
         if ($pj_withdrawn !== null || $pj_submitted !== null || $pj_draft !== null) {
             if ($pj_submitted !== null)
                 $submitted = $pj_submitted;
@@ -983,8 +984,6 @@ class PaperStatus extends MessageSet {
                 $submitted = !$pj_draft;
             else if ($old_pj)
                 $submitted = get($old_pj, "submitted_at") > 0;
-            else
-                $submitted = false;
             if ($pj_withdrawn) {
                 if (!$old_pj || !get($old_pj, "withdrawn")) {
                     $this->addf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now);
@@ -1069,7 +1068,7 @@ class PaperStatus extends MessageSet {
             }
 
             // maybe update `papersub` settings
-            $is_submitted = !get($pj, "withdrawn") && get($pj, "submitted");
+            $is_submitted = !$pj_withdrawn && $submitted;
             $was_submitted = $old_pj && !get($old_pj, "withdrawn") && get($old_pj, "submitted");
             if ($is_submitted != $was_submitted)
                 $this->conf->update_papersub_setting($is_submitted ? 1 : -1);
