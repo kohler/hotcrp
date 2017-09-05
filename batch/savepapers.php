@@ -29,6 +29,7 @@ $match_title = isset($arg["match-title"]);
 $ignore_pid = isset($arg["ignore-pid"]);
 $ignore_errors = isset($arg["ignore-errors"]);
 $site_contact = $Conf->site_contact();
+$site_contact->set_override_deadlines(true);
 
 if ($file === "-") {
     $content = stream_get_contents(STDIN);
