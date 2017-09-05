@@ -524,7 +524,8 @@ class Topic_SettingParser extends SettingParser {
 
 
 class Option_SettingParser extends SettingParser {
-    private $next_optionid = false;
+    private $next_optionid;
+    private $has_next_optionid = false;
     private $stashed_options = false;
 
     function option_request_to_json(SettingValues $sv, $xpos) {
@@ -537,8 +538,10 @@ class Option_SettingParser extends SettingParser {
         $id = cvtint(get($sv->req, "optid_$xpos", "new"));
         $is_new = $id < 0;
         if ($is_new) {
-            if (!$this->next_optionid)
-                $this->next_optionid = $sv->conf->fetch_ivalue("select coalesce(max(optionId),0) + 1 from PaperOption where optionId<" . PaperOption::MINFIXEDID);
+            if (!$this->has_next_optionid) {
+                $oid = $sv->conf->fetch_ivalue("select coalesce(max(optionId),0) + 1 from PaperOption where optionId<" . PaperOption::MINFIXEDID);
+                $this->next_optionid = max($oid, $this->next_optionid);
+            }
             assert($this->next_optionid > 0 && $this->next_optionid < PaperOption::MINFIXEDID);
             $id = $this->next_optionid++;
         }
@@ -591,8 +594,16 @@ class Option_SettingParser extends SettingParser {
     }
 
     function parse(SettingValues $sv, Si $si) {
-        // convert request to JSON
+        $this->next_optionid = 1;
+        for ($i = 1; isset($sv->req["optid_$i"]); ++$i) {
+            $id = intval($sv->req["optid_$i"]);
+            $this->next_optionid = max($id + 1, $this->next_optionid);
+        }
         $new_opts = $sv->conf->paper_opts->nonfixed_option_list();
+        foreach ($new_opts as $o)
+            $this->next_optionid = max($o->id + 1, $this->next_optionid);
+
+        // convert request to JSON
         for ($i = 1; isset($sv->req["optid_$i"]); ++$i) {
             if (get($sv->req, "optfp_$i") === "deleted")
                 unset($new_opts[cvtint(get($sv->req, "optid_$i"))]);
