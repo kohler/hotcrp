@@ -40,11 +40,11 @@
         "synonym": ["pref"]
     },
     {
-        "name": "search", "paper": true, "get": true, "post": true,
+        "name": "search", "get": true,
         "function": "PaperApi::search_api"
     },
     {
-        "name": "setdecision", "paper": true, "post": true,
+        "name": "setdecision", "paper": true, "post": true, "xxx": true,
         "function": "PaperApi::setdecision_api"
     },
     {
