@@ -186,7 +186,7 @@ foreach ($jp as &$j) {
                 && isset($tf->req["reviewerEmail"])
                 && validate_email($tf->req["reviewerEmail"])) {
                 $tf->paperId = $pid;
-                $user_req = Text::analyze_name(["name" => get($tf->req, "reviewerName"), "email" => $rf->req["reviewerEmail"], "affiliation" => get($tf->req, "reviewerAffiliation")]);
+                $user_req = Text::analyze_name(["name" => get($tf->req, "reviewerName"), "email" => $tf->req["reviewerEmail"], "affiliation" => get($tf->req, "reviewerAffiliation")]);
                 $user = Contact::create($Conf, $user_req);
                 $tf->check_and_save($site_contact, $prow, null);
             } else
