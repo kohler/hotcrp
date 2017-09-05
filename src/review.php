@@ -1160,6 +1160,8 @@ $blind\n";
             $rj["submitted"] = true;
         else if (!$rrow->reviewOrdinal)
             $rj["draft"] = true;
+        else
+            $rj["ready"] = false;
         if (!$rrow->reviewSubmitted && $rrow->timeApprovalRequested)
             $rj["needs_approval"] = true;
         if ($contact->can_review($prow, $rrow) && $editable)
@@ -1493,7 +1495,7 @@ class ReviewValues extends MessageSet {
             } else if ($k === "blind") {
                 if (is_bool($v))
                     $this->req["blind"] = $v ? 1 : 0;
-            } else if ($k === "submitted") {
+            } else if ($k === "submitted" || $k === "ready") {
                 if (is_bool($v))
                     $this->req["ready"] = $v ? 1 : 0;
             } else if ($k === "draft") {
@@ -1526,7 +1528,7 @@ class ReviewValues extends MessageSet {
                     $this->req[$f->id] = $v;
             }
         }
-        if (!empty($this->req) && isset($this->req["ready"]))
+        if (!empty($this->req) && !isset($this->req["ready"]))
             $this->req["ready"] = 1;
 
         return !empty($this->req);
