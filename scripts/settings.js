@@ -440,7 +440,7 @@ function append_field(fid, pos) {
     var rnames = [];
     for (i in hotcrp_status.revs || {})
         rnames.push(i);
-    if (hotcrp_status.rev && rnames.length > 1) {
+    if (rnames.length > 1) {
         var v, j, text;
         $j = $f.find(".reviewfield_round_list");
         for (i = 0; i < (1 << rnames.length) - 1;

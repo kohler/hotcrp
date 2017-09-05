@@ -3279,10 +3279,12 @@ class Contact {
 
         // reviewer deadlines
         $revtypes = array();
-        if ($this->is_reviewer()
-            && ($rev_open = +$this->conf->setting("rev_open")) > 0
-            && $rev_open <= $Now)
+        $rev_open = +$this->conf->setting("rev_open");
+        $rev_open = $rev_open > 0 && $rev_open <= $Now;
+        if ($this->is_reviewer() && $rev_open)
             $dl->rev = (object) ["open" => true];
+        else if ($this->privChair)
+            $dl->rev = (object) [];
         if (get($dl, "rev")) {
             $dl->revs = [];
             $k = $this->isPC ? "pcrev" : "extrev";
@@ -3290,7 +3292,9 @@ class Contact {
                 $isuf = $i ? "_$i" : "";
                 $s = +$this->conf->setting("{$k}_soft$isuf");
                 $h = +$this->conf->setting("{$k}_hard$isuf");
-                $dl->revs[$round_name] = $dlround = (object) ["open" => true];
+                $dl->revs[$round_name] = $dlround = (object) [];
+                if ($rev_open)
+                    $dlround->open = true;
                 if ($h && ($h < $Now || $s < $Now)) {
                     $dlround->done = $h;
                     $dlround->ishard = true;
