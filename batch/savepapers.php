@@ -187,6 +187,7 @@ foreach ($jp as &$j) {
             if ($tf->parse_json($reviewj)
                 && isset($tf->req["reviewerEmail"])
                 && validate_email($tf->req["reviewerEmail"])) {
+                $tf->req["override"] = true;
                 $tf->paperId = $pid;
                 $user_req = Text::analyze_name(["name" => get($tf->req, "reviewerName"), "email" => $tf->req["reviewerEmail"], "affiliation" => get($tf->req, "reviewerAffiliation")]);
                 $user = Contact::create($Conf, $user_req);
