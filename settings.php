@@ -90,5 +90,5 @@ echo "</div>";
 doActionArea(false);
 echo "</div></div></div></div></form>\n";
 
-Ht::stash_script("hiliter_children('#settingsform');jQuery('textarea').autogrow()");
+Ht::stash_script("hiliter_children('#settingsform')");
 $Conf->footer();

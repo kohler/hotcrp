@@ -178,7 +178,7 @@ function render(SettingValues $sv) {
         "'><tr><td>", foldbutton("mailbody_requestreview"), "</td>",
         "<td><a href='#' onclick='return fold(\"mailbody_requestreview\")' class='q'>Mail template for external review requests</a>",
         " <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed; set to empty for default)<br /></span>
-<textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea>",
+<textarea class='tt fx need-autogrow' name='mailbody_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea>",
         "</td></tr></table>\n";
 
     echo "<div class='g'></div>";

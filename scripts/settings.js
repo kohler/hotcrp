@@ -48,6 +48,7 @@ function settings_option_move() {
         h = h.replace(/_0/g, "_" + next);
         odiv = $(h).appendTo("#settings_opts");
         odiv.find("input[placeholder]").each(mktemptext);
+        odiv.find("textarea").autogrow();
         $("#optn_" + next)[0].focus();
     }
     settings_option_move_enable();

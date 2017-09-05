@@ -240,7 +240,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
             '</div></div><div class="f-i"><div class="f-c">',
             $sv->label("optd_$xpos", "Description"),
             '</div><div class="f-e">',
-            Ht::textarea("optd_$xpos", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd_$xpos")),
+            Ht::textarea("optd_$xpos", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd_$xpos", "class" => "need-autogrow")),
             "</div></div></div>\n";
 
         if ($o->id && ($examples = $o->example_searches())) {
@@ -310,7 +310,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
             $value = "";
         echo '<div class="f-ix fx4 c">',
             '<div class="hint" style="margin-top:1ex">Enter choices one per line.  The first choice will be the default.</div>',
-            Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", array("rows" => $rows, "cols" => 50, "id" => "optv_$xpos"))),
+            Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", array("rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "need-autogrow"))),
             "</div>\n";
 
         $delete_text = "Delete from form";
@@ -443,7 +443,7 @@ function render(SettingValues $sv) {
         $td1 = "<td></td>";
     }
     echo '<tr><td class="lcaption top">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
-        Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em", "class" => $sv->has_problem_at("topnew") ? "setting_error" : null)),
+        Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em", "class" => ($sv->has_problem_at("topnew") ? "setting_error " : "") . "need-autogrow")),
         '</td></tr></table>';
 }
     function crosscheck(SettingValues $sv) {

@@ -22,7 +22,7 @@ class Si {
     public $disabled = false;
     public $invalid_value = null;
     public $default_value = null;
-    public $autogrow = false;
+    public $autogrow = null;
     public $ifnonempty;
     public $message_default;
     public $date_backup;
@@ -648,7 +648,7 @@ class SettingValues extends MessageSet {
                 $rows = $si->size;
             if ($si->placeholder)
                 $js["placeholder"] = $si->placeholder;
-            if ($si->autogrow)
+            if ($si->autogrow || $si->autogrow === null)
                 $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
             if ($si->parser)
                 $t = Ht::hidden("has_$name", 1);
