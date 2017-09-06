@@ -788,7 +788,7 @@ class Conf {
             return self::xt_add($this->_assignment_parsers, $uf->name, $uf);
         return false;
     }
-    function assignment_parser($keyword) {
+    function assignment_parser($keyword, Contact $user = null) {
         require_once("assigners.php");
         if ($this->_assignment_parsers === null) {
             $this->_assignment_parsers = [];
@@ -798,7 +798,8 @@ class Conf {
         }
         $uf = null;
         foreach (get($this->_assignment_parsers, $keyword, []) as $xt)
-            if (self::xt_priority_compare($xt, $uf) >= 0)
+            if (self::xt_priority_compare($xt, $uf) >= 0
+                && $this->xt_enabled($xt, $user))
                 $uf = $xt;
         if ($uf && !isset($uf->__parser)) {
             self::xt_resolve_require($uf);

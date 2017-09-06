@@ -1802,7 +1802,7 @@ class AssignmentSet {
         if ($this->enabled_actions === null)
             $this->enabled_actions = [];
         foreach (is_array($action) ? $action : [$action] as $a)
-            if (($aparser = $this->conf->assignment_parser($a)))
+            if (($aparser = $this->conf->assignment_parser($a, $this->user)))
                 $this->enabled_actions[$aparser->type] = true;
     }
 
@@ -2129,7 +2129,7 @@ class AssignmentSet {
             && ($action = get($req, "type")) === null)
             $action = $this->astate->defaults["action"];
         $action = strtolower(trim($action));
-        return $this->conf->assignment_parser($action);
+        return $this->conf->assignment_parser($action, $this->user);
     }
 
     private function expand_special_user($user, AssignmentParser $aparser, PaperInfo $prow, $req) {
