@@ -689,11 +689,14 @@ class Conf {
         return $xt1;
     }
     static function xt_resolve_require($xt) {
+        if ($xt && isset($xt->disabled) && $xt->disabled)
+            $xt = null;
         if ($xt && isset($xt->require) && !isset($xt->__require_resolved)) {
             foreach (expand_includes($xt->require) as $f)
                 require_once($f);
             $xt->__require_resolved = true;
         }
+        return $xt;
     }
     function xt_check($expr, $xt, Contact $user = null) {
         $es = is_array($expr) ? $expr : [$expr];
@@ -778,8 +781,7 @@ class Conf {
                 }
             }
         }
-        self::xt_resolve_require($kwj);
-        return $kwj;
+        return self::xt_resolve_require($kwj);
     }
 
 
@@ -801,8 +803,8 @@ class Conf {
             if (self::xt_priority_compare($xt, $uf) >= 0
                 && $this->xt_enabled($xt, $user))
                 $uf = $xt;
+        $uf = self::xt_resolve_require($uf);
         if ($uf && !isset($uf->__parser)) {
-            self::xt_resolve_require($uf);
             $p = $uf->parser_class;
             $uf->__parser = new $p($uf, $this);
         }
@@ -827,8 +829,7 @@ class Conf {
             if (self::xt_priority_compare($xt, $ff) >= 0
                 && $this->xt_enabled($xt, $user))
                 $ff = $xt;
-        self::xt_resolve_require($ff);
-        return $ff;
+        return self::xt_resolve_require($ff);
     }
 
 
@@ -3199,10 +3200,7 @@ class Conf {
             return true;
     }
     function has_api($fn, Contact $user = null, $method = null) {
-        foreach (get($this->api_map(), $fn, []) as $fj)
-            if ($this->check_api_json($fj, $user, $method))
-                return true;
-        return false;
+        return !!$this->api($fn, $user, $method);
     }
     function api($fn, Contact $user = null, $method = null) {
         $uf = null;
@@ -3210,8 +3208,7 @@ class Conf {
             if (self::xt_priority_compare($fj, $uf) >= 0
                 && $this->check_api_json($fj, $user, $method))
                 $uf = $fj;
-        self::xt_resolve_require($uf);
-        return $uf;
+        return self::xt_resolve_require($uf);
     }
     private function call_api($fn, $uf, Contact $user, Qrequest $qreq, $prow) {
         if ($qreq->method() !== "GET" && $qreq->method() !== "HEAD" && !check_post($qreq))
@@ -3311,7 +3308,6 @@ class Conf {
                         $uf = $fj;
                 }
             }
-        self::xt_resolve_require($uf);
-        return $uf;
+        return self::xt_resolve_require($uf);
     }
 }
