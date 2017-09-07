@@ -45,6 +45,14 @@
         "has_attachments": true
     },
     {
+        "name": "get/jsonrqc", "get": true,
+        "selector": "Paper information/JSON for reviewqualitycollector.org",
+        "position": 1092,
+        "enable_if": "manager",
+        "require": "src/sa/sa_get_json.php",
+        "factory_class": "GetJsonRQC_SearchAction"
+    },
+    {
         "name": "get/pcassignments", "get": true,
         "selector": "Review assignments/PC assignments",
         "position": 2099,
