@@ -702,7 +702,7 @@ class Contact {
     }
 
     function is_admin_force() {
-        return ($this->activated_ & 1) !== 0;
+        return ($this->overrides_ & 1) !== 0;
     }
 
     function is_pc_member() {
