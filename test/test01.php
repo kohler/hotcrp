@@ -428,8 +428,8 @@ xassert($ct && $ct->chair && $ct->approval);
 // round searches
 assert_search_papers($user_chair, "re:huitema", "8 10 13");
 assert_search_papers($user_chair, "re:huitema round:R1", "13");
-assert_search_papers($user_chair, "round:R1", "12 13");
-assert_search_papers($user_chair, "round:R1 re:any", "12 13");
+assert_search_papers($user_chair, "round:R1", "12 13 17");
+assert_search_papers($user_chair, "round:R1 re:any", "12 13 17");
 assert_search_papers($user_chair, "round:R1 re:>=0", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 
 xassert_assign($Admin, "action,paper,user,round\nclearreview,all,huitema,R1\n", true);
@@ -610,18 +610,18 @@ xassert_assign($user_chair, $old_pcassignments);
 xassert_eqq(get_pcassignment_csv(), $old_pcassignments);
 
 // `any` assignments
-assert_search_papers($user_chair, "re:R1", "12 13");
-assert_search_papers($user_chair, "re:R2", "13");
+assert_search_papers($user_chair, "re:R1", "12 13 17");
+assert_search_papers($user_chair, "re:R2", "13 17");
 assert_search_papers($user_chair, "re:R3", "12");
-assert_search_papers($user_chair, "round:none", "1 2 3 4 5 6 7 8 9 10 11 14 15 16 17 18");
+assert_search_papers($user_chair, "round:none", "1 2 3 4 5 6 7 8 9 10 11 14 15 16 18");
 xassert_assign($user_chair, "action,paper,email,round\nreview,all,all,R1:none\n");
 assert_search_papers($user_chair, "re:R1", "");
-assert_search_papers($user_chair, "re:R2", "13");
+assert_search_papers($user_chair, "re:R2", "13 17");
 assert_search_papers($user_chair, "re:R3", "12");
 assert_search_papers($user_chair, "round:none", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18");
 xassert_assign($user_chair, "action,paper,email,round\nreview,1-5,all,none:R1");
 assert_search_papers($user_chair, "re:R1", "1 2 3 4 5");
-assert_search_papers($user_chair, "re:R2", "13");
+assert_search_papers($user_chair, "re:R2", "13 17");
 assert_search_papers($user_chair, "re:R3", "12");
 assert_search_papers($user_chair, "round:none", "6 7 8 9 10 11 12 13 14 15 16 17 18");
 

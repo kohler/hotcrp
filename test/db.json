@@ -436,9 +436,9 @@
     "16,primary,chair@_.com",
     "16,primary,floyd@ee.lbl.gov",
     "16,primary,jon@cs.ucl.ac.uk",
-    "17,primary,lixia@cs.ucla.edu",
-    "17,primary,mgbaker@cs.stanford.edu",
-    "17,primary,pdruschel@cs.rice.edu",
+    "17,primary,lixia@cs.ucla.edu,R1",
+    "17,primary,mgbaker@cs.stanford.edu,R2",
+    "17,primary,pdruschel@cs.rice.edu,R1",
     "18,primary,christophe.diot@sophia.inria.fr",
     "18,primary,estrin@usc.edu",
     "18,primary,pdruschel@cs.rice.edu"
