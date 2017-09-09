@@ -58,7 +58,7 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     private function populate_field($fj, ReviewField $f, SettingValues $sv, $fid) {
-        $sn = simplify_whitespace($sv->req["shortName_$fid"]);
+        $sn = simplify_whitespace(get($sv->req, "shortName_$fid", ""));
         if ($sn === "<None>" || $sn === "<New field>" || $sn === "Field name")
             $sn = "";
 
@@ -135,14 +135,14 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         for ($i = 1; ; ++$i) {
             $fid = sprintf("s%02d", $i);
-            if (isset($sv->req["shortName_$fid"]))
+            if (isset($sv->req["shortName_$fid"]) || isset($sv->req["order_$fid"]))
                 $fs[$fid] = true;
             else if (strcmp($fid, $max_fields["s"]) > 0)
                 break;
         }
         for ($i = 1; ; ++$i) {
             $fid = sprintf("t%02d", $i);
-            if (isset($sv->req["shortName_$fid"]))
+            if (isset($sv->req["shortName_$fid"]) || isset($sv->req["order_$fid"]))
                 $fs[$fid] = true;
             else if (strcmp($fid, $max_fields["t"]) > 0)
                 break;
