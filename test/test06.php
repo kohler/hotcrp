@@ -515,4 +515,22 @@ xassert_eqq($rrow13->t02, "No comments\n");
 xassert_eqq($rrow13->reviewOrdinal, 1);
 xassert($rrow13->reviewSubmitted > 0);
 
+// check some review visibility policies
+$user_external = Contact::create($Conf, ["email" => "external@_.com", "name" => "External Reviewer"]);
+$user_mgbaker->assign_review(13, $user_external->contactId, REVIEW_EXTERNAL);
+xassert(!$user_external->can_view_review($paper13, $rrow13, null));
+xassert(!$user_external->can_view_review_identity($paper13, $rrow13, null));
+$Conf->save_setting("extrev_view", 0);
+save_review(13, $user_external, [
+    "ovemer" => 2, "revexp" => 1, "papsum" => "Hi", "comaut" => "Bye", "ready" => true
+]);
+xassert(!$user_external->can_view_review($paper13, $rrow13, null));
+xassert(!$user_external->can_view_review_identity($paper13, $rrow13, null));
+$Conf->save_setting("extrev_view", 1);
+xassert($user_external->can_view_review($paper13, $rrow13, null));
+xassert(!$user_external->can_view_review_identity($paper13, $rrow13, null));
+$Conf->save_setting("extrev_view", 2);
+xassert($user_external->can_view_review($paper13, $rrow13, null));
+xassert($user_external->can_view_review_identity($paper13, $rrow13, null));
+
 xassert_exit();
