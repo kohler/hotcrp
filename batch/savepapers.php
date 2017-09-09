@@ -175,7 +175,8 @@ foreach ($jp as &$j) {
             $j = call_user_func($f, $j, $Conf);
     }
     if (!$j) {
-        fwrite(STDERR, )
+        fwrite(STDERR, $pidtext . $titletext . "filtered out\n");
+        continue;
     }
 
     if (!$quiet)
