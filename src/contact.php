@@ -2352,6 +2352,31 @@ class Contact {
             || ($this->is_author() && $this->conf->au_seerev != 0);
     }
 
+    private function seerev_setting(PaperInfo $prow, $rrow, $rights) {
+        if ($rights->allow_pc) {
+            if ($this->conf->check_tracks($prow, $this, Track::VIEWREV))
+                return $this->conf->setting("pc_seeallrev");
+        } else {
+            if ($this->conf->setting("extrev_view"))
+                return 0;
+        }
+        return -1;
+    }
+
+    private function seerevid_setting(PaperInfo $prow, $rrow, $rights) {
+        if ($rights->allow_pc) {
+            if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
+                $s = $this->conf->setting("pc_seeblindrev");
+                if ($s >= 0)
+                    return $s ? 0 : Conf::PCSEEREV_YES;
+            }
+        } else {
+            if ($this->conf->setting("extrev_view") == 2)
+                return 0;
+        }
+        return -1;
+    }
+
     function can_view_review(PaperInfo $prow, $rrow, $forceShow, $viewscore = null) {
         if (is_int($rrow)) {
             $viewscore = $rrow;
@@ -2366,9 +2391,8 @@ class Contact {
                 && $this->is_owned_review($rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY))
             return true;
-        $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
-        $pc_seeallrev = $this->conf->setting("pc_seeallrev");
-        $pc_trackok = $rights->allow_pc && $this->conf->check_tracks($prow, $this, Track::VIEWREV);
+        $rrowSubmitted = !$rrow || $rrow->reviewSubmitted > 0;
+        $seerev = $this->seerev_setting($prow, $rrow, $rights);
         // See also PaperInfo::can_view_review_identity_of.
         return ($rights->act_author_view
                 && $rrowSubmitted
@@ -2381,25 +2405,23 @@ class Contact {
             || ($rights->allow_pc
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
-                && $pc_seeallrev > 0
-                && ($pc_seeallrev != Conf::PCSEEREV_UNLESSANYINCOMPLETE
+                && $seerev > 0
+                && ($seerev != Conf::PCSEEREV_UNLESSANYINCOMPLETE
                     || !$this->has_outstanding_review())
-                && ($pc_seeallrev != Conf::PCSEEREV_UNLESSINCOMPLETE
-                    || !$rights->review_status)
-                && $pc_trackok)
+                && ($seerev != Conf::PCSEEREV_UNLESSINCOMPLETE
+                    || !$rights->review_status))
             || ($rights->review_status != 0
                 && !$rights->view_conflict_type
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
-                && ($prow->review_not_incomplete($this)
-                    && ($this->conf->setting("extrev_view") >= 1 || $pc_trackok)));
+                && $prow->review_not_incomplete($this)
+                && $seerev >= 0);
     }
 
     function perm_view_review(PaperInfo $prow, $rrow, $forceShow, $viewscore = null) {
         if ($this->can_view_review($prow, $rrow, $forceShow, $viewscore))
             return null;
-        $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
-        $pc_seeallrev = $this->conf->setting("pc_seeallrev");
+        $rrowSubmitted = !$rrow || $rrow->reviewSubmitted > 0;
         $rights = $this->rights($prow, $forceShow);
         $whyNot = $prow->initial_whynot();
         if ($prow->timeWithdrawn > 0)
@@ -2428,7 +2450,7 @@ class Contact {
         else if (!$rrowSubmitted)
             $whyNot["reviewNotSubmitted"] = 1;
         else if ($rights->allow_pc
-                 && $pc_seeallrev == Conf::PCSEEREV_UNLESSANYINCOMPLETE
+                 && $this->seerev_setting($prow, $rrow, $rights) == Conf::PCSEEREV_UNLESSANYINCOMPLETE
                  && $this->has_outstanding_review())
             $whyNot["reviewsOutstanding"] = 1;
         else if (!$this->conf->time_review_open())
@@ -2451,14 +2473,10 @@ class Contact {
                     || ($rights->allow_pc
                         && $rrow->requestedBy == $this->contactId)))
             || ($rights->allow_pc
-                && (!($pc_seeblindrev = $this->conf->setting("pc_seeblindrev"))
-                    || ($pc_seeblindrev == 2
-                        && $this->can_view_review($prow, $rrow, $forceShow)))
-                && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))
+                && $this->seerevid_setting($prow, $rrow, $rights) == Conf::PCSEEREV_YES)
             || ($rights->allow_review
                 && $prow->review_not_incomplete($this)
-                && ($rights->allow_pc
-                    || $this->conf->setting("extrev_view") >= 2))
+                && $this->seerevid_setting($prow, $rrow, $rights) >= 0)
             || !$this->conf->is_review_blind($rrow);
     }
 

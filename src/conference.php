@@ -1991,7 +1991,7 @@ class Conf {
         return !$this->missed_review_deadline($round, $isPC, $hard);
     }
     function timePCReviewPreferences() {
-        return defval($this->settings, "papersub") > 0;
+        return get($this->settings, "papersub") > 0;
     }
     function timePCViewDecision($conflicted) {
         $s = $this->setting("seedec");
