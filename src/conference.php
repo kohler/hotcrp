@@ -59,6 +59,7 @@ class Conf {
 
     private $rounds = null;
     private $_defined_rounds = null;
+    private $_round_settings = null;
     private $tracks = null;
     private $_taginfo = null;
     private $_track_tags = null;
@@ -255,12 +256,15 @@ class Conf {
         }
 
         // rounds
-        $this->rounds = array("");
+        $this->rounds = [""];
         if (isset($this->settingTexts["tag_rounds"])) {
             foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)
                 if ($r != "")
                     $this->rounds[] = $r;
         }
+        $this->_round_settings = null;
+        if (isset($this->settingTexts["round_settings"]))
+            $this->_round_settings = json_decode($this->settingTexts["round_settings"]);
 
         // review times
         foreach ($this->rounds as $i => $rname) {
@@ -1236,6 +1240,16 @@ class Conf {
         if ($crname && !get($opt, $crname))
             $opt[$crname] = $crname;
         return $opt;
+    }
+
+    function round_setting($name, $round, $defval = null) {
+        if ($round !== null
+            && $this->_round_settings !== null
+            && isset($this->_round_settings[$round])
+            && isset($this->_round_settings[$round]->$name))
+            return $this->_round_settings[$round]->$name;
+        else
+            return get($this->settings, $name, $defval);
     }
 
 

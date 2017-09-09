@@ -499,38 +499,138 @@ xassert($sv->execute());
 xassert_eqq(join(" ", $sv->changes()), "review_form");
 
 // saving a JSON review defaults to ready
-$paper13 = fetch_paper(13, $user_mgbaker);
-$rrow13 = fetch_review($paper13, $user_mgbaker);
-xassert(!$rrow13->reviewModified);
+$paper17 = fetch_paper(17, $user_mgbaker);
+$rrow17m = fetch_review($paper17, $user_mgbaker);
+xassert(!$rrow17m->reviewModified);
 
 $tf = new ReviewValues($Conf->review_form());
 xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary", "comaut" => "No comments"]));
-xassert($tf->check_and_save($user_mgbaker, $paper13));
+xassert($tf->check_and_save($user_mgbaker, $paper17));
 
-$rrow13 = fetch_review($paper13, $user_mgbaker);
-xassert_eq($rrow13->overAllMerit, 2);
-xassert_eq($rrow13->reviewerQualification, 1);
-xassert_eqq($rrow13->t01, "No summary\n");
-xassert_eqq($rrow13->t02, "No comments\n");
-xassert_eqq($rrow13->reviewOrdinal, 1);
-xassert($rrow13->reviewSubmitted > 0);
+$rrow17m = fetch_review($paper17, $user_mgbaker);
+xassert_eq($rrow17m->overAllMerit, 2);
+xassert_eq($rrow17m->reviewerQualification, 1);
+xassert_eqq($rrow17m->t01, "No summary\n");
+xassert_eqq($rrow17m->t02, "No comments\n");
+xassert_eqq($rrow17m->reviewOrdinal, 1);
+xassert($rrow17m->reviewSubmitted > 0);
 
 // check some review visibility policies
 $user_external = Contact::create($Conf, ["email" => "external@_.com", "name" => "External Reviewer"]);
-$user_mgbaker->assign_review(13, $user_external->contactId, REVIEW_EXTERNAL);
-xassert(!$user_external->can_view_review($paper13, $rrow13, null));
-xassert(!$user_external->can_view_review_identity($paper13, $rrow13, null));
+$user_mgbaker->assign_review(17, $user_external->contactId, REVIEW_EXTERNAL,
+    ["round_number" => 3]);
+xassert(!$user_external->can_view_review($paper17, $rrow17m, null));
+xassert(!$user_external->can_view_review_identity($paper17, $rrow17m, null));
 $Conf->save_setting("extrev_view", 0);
-save_review(13, $user_external, [
+save_review(17, $user_external, [
     "ovemer" => 2, "revexp" => 1, "papsum" => "Hi", "comaut" => "Bye", "ready" => true
 ]);
-xassert(!$user_external->can_view_review($paper13, $rrow13, null));
-xassert(!$user_external->can_view_review_identity($paper13, $rrow13, null));
+xassert(!$user_external->can_view_review($paper17, $rrow17m, null));
+xassert(!$user_external->can_view_review_identity($paper17, $rrow17m, null));
 $Conf->save_setting("extrev_view", 1);
-xassert($user_external->can_view_review($paper13, $rrow13, null));
-xassert(!$user_external->can_view_review_identity($paper13, $rrow13, null));
+xassert($user_external->can_view_review($paper17, $rrow17m, null));
+xassert(!$user_external->can_view_review_identity($paper17, $rrow17m, null));
 $Conf->save_setting("extrev_view", 2);
-xassert($user_external->can_view_review($paper13, $rrow13, null));
-xassert($user_external->can_view_review_identity($paper13, $rrow13, null));
+xassert($user_external->can_view_review($paper17, $rrow17m, null));
+xassert($user_external->can_view_review_identity($paper17, $rrow17m, null));
+
+// per-round review visibility
+$user_lixia = $Conf->user_by_email("lixia@cs.ucla.edu");
+$tf = new ReviewValues($Conf->review_form());
+xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "Radical", "comaut" => "Nonradical"]));
+xassert($tf->check_and_save($user_lixia, $paper17));
+$rrow17h = fetch_review($paper17, $user_lixia);
+$rrow17x = fetch_review($paper17, $user_external);
+xassert_eqq($rrow17m->reviewRound, 3);
+xassert_eqq($rrow17h->reviewRound, 1);
+xassert_eqq($rrow17x->reviewRound, 3);
+Contact::update_rights();
+
+xassert($user_mgbaker->can_view_review($paper17, $rrow17m, null));
+xassert($user_mgbaker->can_view_review($paper17, $rrow17h, null));
+xassert($user_mgbaker->can_view_review($paper17, $rrow17x, null));
+xassert($user_lixia->can_view_review($paper17, $rrow17m, null));
+xassert($user_lixia->can_view_review($paper17, $rrow17h, null));
+xassert($user_lixia->can_view_review($paper17, $rrow17x, null));
+xassert($user_external->can_view_review($paper17, $rrow17m, null));
+xassert($user_external->can_view_review($paper17, $rrow17h, null));
+xassert($user_external->can_view_review($paper17, $rrow17x, null));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17m));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17h));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17x));
+xassert($user_lixia->can_view_review_identity($paper17, $rrow17m));
+xassert($user_lixia->can_view_review_identity($paper17, $rrow17h));
+xassert($user_lixia->can_view_review_identity($paper17, $rrow17x));
+xassert($user_external->can_view_review_identity($paper17, $rrow17m));
+xassert($user_external->can_view_review_identity($paper17, $rrow17h));
+xassert($user_external->can_view_review_identity($paper17, $rrow17x));
+
+$Conf->save_setting("round_settings", 1, '[null,{"extrev_view":0}]');
+Contact::update_rights();
+
+xassert($user_mgbaker->can_view_review($paper17, $rrow17m, null));
+xassert($user_mgbaker->can_view_review($paper17, $rrow17h, null));
+xassert($user_mgbaker->can_view_review($paper17, $rrow17x, null));
+xassert($user_lixia->can_view_review($paper17, $rrow17m, null));
+xassert($user_lixia->can_view_review($paper17, $rrow17h, null));
+xassert($user_lixia->can_view_review($paper17, $rrow17x, null));
+xassert($user_external->can_view_review($paper17, $rrow17m, null));
+xassert(!$user_external->can_view_review($paper17, $rrow17h, null));
+xassert($user_external->can_view_review($paper17, $rrow17x, null));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17m));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17h));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17x));
+xassert($user_lixia->can_view_review_identity($paper17, $rrow17m));
+xassert($user_lixia->can_view_review_identity($paper17, $rrow17h));
+xassert($user_lixia->can_view_review_identity($paper17, $rrow17x));
+xassert($user_external->can_view_review_identity($paper17, $rrow17m));
+xassert(!$user_external->can_view_review_identity($paper17, $rrow17h));
+xassert($user_external->can_view_review_identity($paper17, $rrow17x));
+
+// Extrev cannot view R1; PC cannot view R2
+$Conf->save_setting("round_settings", 1, '[null,{"extrev_view":0},null,{"pc_seeallrev":-1}]');
+Contact::update_rights();
+
+xassert($user_mgbaker->can_view_review($paper17, $rrow17m, null));
+xassert($user_mgbaker->can_view_review($paper17, $rrow17h, null));
+xassert(!$user_mgbaker->can_view_review($paper17, $rrow17x, null));
+xassert(!$user_lixia->can_view_review($paper17, $rrow17m, null));
+xassert($user_lixia->can_view_review($paper17, $rrow17h, null));
+xassert(!$user_lixia->can_view_review($paper17, $rrow17x, null));
+xassert($user_external->can_view_review($paper17, $rrow17m, null));
+xassert(!$user_external->can_view_review($paper17, $rrow17h, null));
+xassert($user_external->can_view_review($paper17, $rrow17x, null));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17m));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17h));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17x));
+xassert($user_lixia->can_view_review_identity($paper17, $rrow17m));
+xassert($user_lixia->can_view_review_identity($paper17, $rrow17h));
+xassert($user_lixia->can_view_review_identity($paper17, $rrow17x));
+xassert($user_external->can_view_review_identity($paper17, $rrow17m));
+xassert(!$user_external->can_view_review_identity($paper17, $rrow17h));
+xassert($user_external->can_view_review_identity($paper17, $rrow17x));
+
+// Extrev cannot view R1; PC cannot view R2 identity
+$Conf->save_setting("round_settings", 1, '[null,{"extrev_view":0},null,{"pc_seeblindrev":-1}]');
+Contact::update_rights();
+
+xassert($user_mgbaker->can_view_review($paper17, $rrow17m, null));
+xassert($user_mgbaker->can_view_review($paper17, $rrow17h, null));
+xassert($user_mgbaker->can_view_review($paper17, $rrow17x, null));
+xassert($user_lixia->can_view_review($paper17, $rrow17m, null));
+xassert($user_lixia->can_view_review($paper17, $rrow17h, null));
+xassert($user_lixia->can_view_review($paper17, $rrow17x, null));
+xassert($user_external->can_view_review($paper17, $rrow17m, null));
+xassert(!$user_external->can_view_review($paper17, $rrow17h, null));
+xassert($user_external->can_view_review($paper17, $rrow17x, null));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17m));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17h));
+xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17x));
+xassert(!$user_lixia->can_view_review_identity($paper17, $rrow17m));
+xassert($user_lixia->can_view_review_identity($paper17, $rrow17h));
+xassert(!$user_lixia->can_view_review_identity($paper17, $rrow17x));
+xassert($user_external->can_view_review_identity($paper17, $rrow17m));
+xassert(!$user_external->can_view_review_identity($paper17, $rrow17h));
+xassert($user_external->can_view_review_identity($paper17, $rrow17x));
 
 xassert_exit();

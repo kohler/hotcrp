@@ -2353,25 +2353,27 @@ class Contact {
     }
 
     private function seerev_setting(PaperInfo $prow, $rrow, $rights) {
+        $round = $rrow ? $rrow->reviewRound : null;
         if ($rights->allow_pc) {
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREV))
-                return $this->conf->setting("pc_seeallrev");
+                return $this->conf->round_setting("pc_seeallrev", $round);
         } else {
-            if ($this->conf->setting("extrev_view"))
+            if ($this->conf->round_setting("extrev_view", $round))
                 return 0;
         }
         return -1;
     }
 
     private function seerevid_setting(PaperInfo $prow, $rrow, $rights) {
+        $round = $rrow ? $rrow->reviewRound : null;
         if ($rights->allow_pc) {
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
-                $s = $this->conf->setting("pc_seeblindrev");
+                $s = $this->conf->round_setting("pc_seeblindrev", $round);
                 if ($s >= 0)
                     return $s ? 0 : Conf::PCSEEREV_YES;
             }
         } else {
-            if ($this->conf->setting("extrev_view") == 2)
+            if ($this->conf->round_setting("extrev_view", $round) == 2)
                 return 0;
         }
         return -1;
