@@ -490,4 +490,29 @@ assert_search_papers($user_chair, "tex9:tremolo", "1");
 assert_search_papers($user_chair, "tex10:none", "1");
 assert_search_papers($user_chair, "tex11:butt", "1");
 
+// simplify review form
+$sv = ["has_review_form" => 1];
+for ($i = 2; $i <= 16; ++$i)
+    $sv[sprintf("order_s%02d", $i)] = $sv[sprintf("order_t%02d", $i)] = -1;
+$sv = SettingValues::make_request($user_chair, $sv);
+xassert($sv->execute());
+xassert_eqq(join(" ", $sv->changes()), "review_form");
+
+// saving a JSON review defaults to ready
+$paper13 = fetch_paper(13, $user_mgbaker);
+$rrow13 = fetch_review($paper13, $user_mgbaker);
+xassert(!$rrow13->reviewModified);
+
+$tf = new ReviewValues($Conf->review_form());
+xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary", "comaut" => "No comments"]));
+xassert($tf->check_and_save($user_mgbaker, $paper13));
+
+$rrow13 = fetch_review($paper13, $user_mgbaker);
+xassert_eq($rrow13->overAllMerit, 2);
+xassert_eq($rrow13->reviewerQualification, 1);
+xassert_eqq($rrow13->t01, "No summary\n");
+xassert_eqq($rrow13->t02, "No comments\n");
+xassert_eqq($rrow13->reviewOrdinal, 1);
+xassert($rrow13->reviewSubmitted > 0);
+
 xassert_exit();
