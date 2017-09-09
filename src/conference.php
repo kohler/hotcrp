@@ -1141,7 +1141,7 @@ class Conf {
                     $i && ($r[$i] = $rname);
                 }
             if (!$dl[0]) {
-                $result = $this->qe("select reviewId from PaperReview where reviewRound=0 limit 1");
+                $result = $this->qe("select exists (select * from PaperReview where reviewRound=0)");
                 if (!$result || !$result->num_rows)
                     unset($dl[0]);
                 Dbl::free($result);
