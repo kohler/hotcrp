@@ -2,20 +2,22 @@
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 
 require_once("$ConfSitePATH/lib/getopt.php");
-$arg = getopt_rest($argv, "hn:qr", ["help", "name:", "quiet", "disable", "disable-users",
-                                    "reviews", "match-title", "ignore-pid", "ignore-errors"]);
+$arg = getopt_rest($argv, "hn:qrf:",
+    ["help", "name:", "filter=f:", "quiet", "disable", "disable-users",
+     "reviews", "match-title", "ignore-pid", "ignore-errors"]);
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
     fwrite(STDOUT, "Usage: php batch/savepapers.php [-n CONFID] [OPTIONS] FILE
 
 Options include:
-  --quiet          Don't print progress information.
-  --ignore-errors  Do not exit after first error.
-  --disable-users  Newly created users are disabled.
-  --match-title    Match papers by title if no `pid`.
-  --ignore-pid     Ignore `pid` elements in JSON.
-  --reviews        Save JSON reviews.\n");
+  --quiet                Don't print progress information.
+  --ignore-errors        Do not exit after first error.
+  --disable-users        Newly created users are disabled.
+  --match-title          Match papers by title if no `pid`.
+  --ignore-pid           Ignore `pid` elements in JSON.
+  --reviews              Save JSON reviews.
+  -f, --filter FUNCTION  Pass through FUNCTION.\n");
     exit(0);
 }
 
@@ -42,6 +44,20 @@ if ($content === false) {
     fwrite(STDERR, "{$filepfx}Read error\n");
     exit(1);
 }
+
+if (!isset($arg["f"]))
+    $arg["f"] = [];
+else if (!is_array($arg["f"]))
+    $arg["f"] = [$arg["f"]];
+foreach ($arg["f"] as &$f) {
+    if (($colon = strpos($f, ":")) !== false
+        && $colon + 1 < strlen($f)
+        && $f[$colon + 1] !== ":") {
+        require_once(substr($f, 0, $colon));
+        $f = substr($f, $colon + 1);
+    }
+}
+unset($f);
 
 // allow uploading a whole zip archive
 global $ziparchive;
@@ -133,6 +149,7 @@ foreach ($jp as &$j) {
         if (count($pids) == 1)
             $j->pid = (int) $pids[0];
     }
+
     if (isset($j->pid) && is_int($j->pid) && $j->pid > 0)
         $pidtext = "#$j->pid";
     else if (!isset($j->pid) && isset($j->id) && is_int($j->id) && $j->id > 0)
@@ -147,14 +164,22 @@ foreach ($jp as &$j) {
         else
             continue;
     }
+    $title = $titletext = "";
+    if (isset($j->title) && is_string($j->title))
+        $title = simplify_whitespace($j->title);
+    if ($title !== "")
+        $titletext = " (" . UnicodeHelper::utf8_abbreviate($title, 40) . ")";
 
-    if (!$quiet) {
-        if (isset($j->title) && is_string($j->title)) {
-            $title = simplify_whitespace($j->title);
-            fwrite(STDERR, $pidtext . " (" . UnicodeHelper::utf8_abbreviate($title, 40) . "): ");
-        } else
-            fwrite(STDERR, $pidtext . ": ");
+    foreach ($arg["f"] as $f) {
+        if ($j)
+            $j = call_user_func($f, $j, $Conf);
     }
+    if (!$j) {
+        fwrite(STDERR, )
+    }
+
+    if (!$quiet)
+        fwrite(STDERR, $pidtext . $titletext . ": ");
     $ps = new PaperStatus($Conf, null, ["no_email" => true,
                                         "disable_users" => $disable_users]);
     $ps->allow_error_at("topics", true);

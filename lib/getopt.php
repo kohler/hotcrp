@@ -3,7 +3,24 @@
 // HotCRP is Copyright (c) 2009-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-function getopt_rest($argv, $options, $longopts = array()) {
+function getopt_rest($argv, $options, $longopts = []) {
+    $plongopts = [];
+    foreach ($longopts as $n) {
+        $l = strlen($n);
+        if ($l > 1 && $n[$l - 1] === ":") {
+            $type = ($l > 2 && $n[$l - 2] === ":" ? 2 : 1);
+            $n = substr($n, 0, $l - $type);
+        } else
+            $type = 0;
+        if (($eq = strpos($n, "=")) !== false) {
+            $n = substr($n, 0, $eq);
+            $v = substr($n, $eq + 1);
+        } else
+            $v = $n;
+        if ($n !== "" && $v !== "")
+            $plongopts[$n] = [$v, $type];
+    }
+
     $res = array();
     for ($i = 1; $i < count($argv); ++$i) {
         $arg = $argv[$i];
@@ -15,14 +32,9 @@ function getopt_rest($argv, $options, $longopts = array()) {
         else if ($arg[1] === "-") {
             $eq = strpos($arg, "=");
             $name = substr($arg, 2, ($eq ? $eq : strlen($arg)) - 2);
-            if (array_search($name, $longopts, true) !== false)
-                $type = 0;
-            else if (array_search($name . ":", $longopts, true) !== false)
-                $type = 1;
-            else if (array_search($name . "::", $longopts, true) !== false)
-                $type = 2;
-            else
+            if (!isset($plongopts[$name]))
                 break;
+            $type = $plongopts[$name][1];
             if (($eq !== false && $type === 0)
                 || ($eq === false && $i === count($argv) - 1 && $type === 1))
                 break;
@@ -33,6 +45,7 @@ function getopt_rest($argv, $options, $longopts = array()) {
                 ++$i;
             } else
                 $value = false;
+            $name = $plongopts[$name][0];
         } else if (ctype_alnum($arg[1])) {
             $opos = strpos($options, $arg[1]);
             if ($opos === false)
