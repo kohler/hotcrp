@@ -586,6 +586,8 @@ xassert($user_lixia->can_view_review_identity($paper17, $rrow17x));
 xassert($user_external->can_view_review_identity($paper17, $rrow17m));
 xassert(!$user_external->can_view_review_identity($paper17, $rrow17h));
 xassert($user_external->can_view_review_identity($paper17, $rrow17x));
+assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
+assert_search_papers($user_lixia, "re:mgbaker", "1 13 17");
 
 // Extrev cannot view R1; PC cannot view R2
 $Conf->save_setting("round_settings", 1, '[null,{"extrev_view":0},null,{"pc_seeallrev":-1}]');
@@ -609,6 +611,8 @@ xassert($user_lixia->can_view_review_identity($paper17, $rrow17x));
 xassert($user_external->can_view_review_identity($paper17, $rrow17m));
 xassert(!$user_external->can_view_review_identity($paper17, $rrow17h));
 xassert($user_external->can_view_review_identity($paper17, $rrow17x));
+assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
+assert_search_papers($user_lixia, "re:mgbaker", "1 13 17");
 
 // Extrev cannot view R1; PC cannot view R2 identity
 $Conf->save_setting("round_settings", 1, '[null,{"extrev_view":0},null,{"pc_seeblindrev":-1}]');
@@ -632,5 +636,7 @@ xassert(!$user_lixia->can_view_review_identity($paper17, $rrow17x));
 xassert($user_external->can_view_review_identity($paper17, $rrow17m));
 xassert(!$user_external->can_view_review_identity($paper17, $rrow17h));
 xassert($user_external->can_view_review_identity($paper17, $rrow17x));
+assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
+assert_search_papers($user_lixia, "re:mgbaker", "1");
 
 xassert_exit();
