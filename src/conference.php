@@ -1993,13 +1993,6 @@ class Conf {
     function timePCReviewPreferences() {
         return defval($this->settings, "papersub") > 0;
     }
-    function timePCViewAllReviews($myReviewNeedsSubmit = false, $reviewsOutstanding = false) {
-        return ($this->settingsAfter("pc_seeallrev")
-                && (!$myReviewNeedsSubmit
-                    || $this->settings["pc_seeallrev"] != self::PCSEEREV_UNLESSINCOMPLETE)
-                && (!$reviewsOutstanding
-                    || $this->settings["pc_seeallrev"] != self::PCSEEREV_UNLESSANYINCOMPLETE));
-    }
     function timePCViewDecision($conflicted) {
         $s = $this->setting("seedec");
         if ($conflicted)

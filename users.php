@@ -23,7 +23,7 @@ if ($Me->isPC && count($pctags = $Conf->pc_tags())) {
 }
 if ($Me->isPC)
     $tOpt["admin"] = "System administrators";
-if ($Me->privChair || ($Me->isPC && $Conf->timePCViewAllReviews())) {
+if ($Me->privChair || ($Me->isPC && $Conf->setting("pc_seeallrev"))) {
     $tOpt["re"] = "All reviewers";
     $tOpt["ext"] = "External reviewers";
     $tOpt["extsub"] = "External reviewers who completed a review";

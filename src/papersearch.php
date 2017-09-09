@@ -3250,7 +3250,7 @@ class PaperSearch {
     // QUERY EVALUATION makes it precise.
 
     static function unusableRatings(Contact $user) {
-        if ($user->privChair || $user->conf->timePCViewAllReviews())
+        if ($user->privChair || $user->conf->setting("pc_seeallrev"))
             return array();
         $noratings = array();
         $rateset = $user->conf->setting("rev_rating");

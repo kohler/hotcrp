@@ -2381,7 +2381,7 @@ class Contact {
             || ($rights->allow_pc
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
-                && $pc_seeallrev > 0 // see also timePCViewAllReviews()
+                && $pc_seeallrev > 0
                 && ($pc_seeallrev != Conf::PCSEEREV_UNLESSANYINCOMPLETE
                     || !$this->has_outstanding_review())
                 && ($pc_seeallrev != Conf::PCSEEREV_UNLESSINCOMPLETE
@@ -2711,7 +2711,7 @@ class Contact {
             || $override_self
             || $rrow->contactId != $this->contactId
             || $this->can_administer($prow)
-            || $this->conf->timePCViewAllReviews()
+            || $this->conf->setting("pc_seeallrev")
             || (isset($rrow->allRatings) && strpos($rrow->allRatings, ",") !== false))
             return true;
         // Do not show rating counts if rater identity is unambiguous.
