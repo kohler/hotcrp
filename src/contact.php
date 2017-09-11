@@ -388,6 +388,13 @@ class Contact {
         if (!empty($this->override_stack_))
             $this->overrides_ = array_pop($this->override_stack_);
     }
+    function call_with_overrides($overrides, $method /* arguments */) {
+        $saved = $this->overrides_;
+        $this->set_overrides($overrides);
+        $result = call_user_func_array([$this, $method], array_slice(func_get_args(), 2));
+        $this->overrides_ = $saved;
+        return $result;
+    }
 
     function activate_database_account() {
         assert($this->has_email());
@@ -1933,14 +1940,14 @@ class Contact {
             return $only_if_complex ? false : $m[0];
     }
 
-    function can_start_paper($override = null) {
+    function can_start_paper() {
         return $this->email
             && ($this->conf->timeStartPaper()
-                || $this->override_deadlines(null, $override));
+                || $this->override_deadlines(null));
     }
 
-    function perm_start_paper($override = null) {
-        if ($this->can_start_paper($override))
+    function perm_start_paper() {
+        if ($this->can_start_paper())
             return null;
         return array("deadline" => "sub_reg", "override" => $this->privChair);
     }
@@ -2007,15 +2014,15 @@ class Contact {
         return $whyNot;
     }
 
-    function can_withdraw_paper(PaperInfo $prow, $override = null) {
+    function can_withdraw_paper(PaperInfo $prow) {
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
-            && ($prow->outcome == 0 || $this->override_deadlines($rights, $override));
+            && ($prow->outcome == 0 || $this->override_deadlines($rights));
     }
 
-    function perm_withdraw_paper(PaperInfo $prow, $override = null) {
-        if ($this->can_withdraw_paper($prow, $override))
+    function perm_withdraw_paper(PaperInfo $prow) {
+        if ($this->can_withdraw_paper($prow))
             return null;
         $rights = $this->rights($prow, "any");
         $whyNot = $prow->initial_whynot();
@@ -2025,7 +2032,7 @@ class Contact {
             $whyNot["signin"] = 1;
         else if (!$rights->allow_author)
             $whyNot["author"] = 1;
-        else if ($prow->outcome != 0 && !$this->override_deadlines($rights, $override))
+        else if ($prow->outcome != 0 && !$this->override_deadlines($rights))
             $whyNot["decided"] = 1;
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
@@ -2057,19 +2064,19 @@ class Contact {
         return $whyNot;
     }
 
-    function can_submit_final_paper(PaperInfo $prow, $override = null) {
+    function can_submit_final_paper(PaperInfo $prow) {
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
             && $prow->outcome > 0
             && $this->conf->collectFinalPapers()
-            && $this->can_view_decision($prow, $override)
+            && $this->can_view_decision($prow)
             && ($this->conf->time_submit_final_version()
-                || $this->override_deadlines($rights, $override));
+                || $this->override_deadlines($rights));
     }
 
-    function perm_submit_final_paper(PaperInfo $prow, $override = null) {
-        if ($this->can_submit_final_paper($prow, $override))
+    function perm_submit_final_paper(PaperInfo $prow) {
+        if ($this->can_submit_final_paper($prow))
             return null;
         $rights = $this->rights($prow, "any");
         $whyNot = $prow->initial_whynot();
@@ -2086,7 +2093,7 @@ class Contact {
         else if (!$this->conf->collectFinalPapers())
             $whyNot["deadline"] = "final_open";
         else if (!$this->conf->time_submit_final_version()
-                 && !$this->override_deadlines($rights, $override))
+                 && !$this->override_deadlines($rights))
             $whyNot["deadline"] = "final_done";
         if ($rights->allow_administer)
             $whyNot["override"] = 1;

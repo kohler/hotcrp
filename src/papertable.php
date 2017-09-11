@@ -1786,16 +1786,18 @@ class PaperTable {
 
         if ($this->mode === "edit") {
             // check whether we can save
+            $Me->push_overrides(0);
             if ($this->canUploadFinal) {
                 $updater = "submitfinal";
-                $whyNot = $Me->perm_submit_final_paper($prow, false);
+                $whyNot = $Me->perm_submit_final_paper($prow);
             } else if ($prow) {
                 $updater = "update";
-                $whyNot = $Me->perm_update_paper($prow, false);
+                $whyNot = $Me->perm_update_paper($prow);
             } else {
                 $updater = "update";
-                $whyNot = $Me->perm_start_paper(false);
+                $whyNot = $Me->perm_start_paper();
             }
+            $Me->pop_overrides();
             // pay attention only to the deadline
             if ($whyNot && (get($whyNot, "deadline") || get($whyNot, "rejected")))
                 $whyNot = array_merge($prow ? $prow->initial_whynot() : [], ["deadline" => get($whyNot, "deadline"), "rejected" => get($whyNot, "rejected")]);
@@ -1816,7 +1818,7 @@ class PaperTable {
         }
 
         // withdraw button
-        if (!$prow || !$Me->can_withdraw_paper($prow, true))
+        if (!$prow || !$Me->call_with_overrides(Contact::OVERRIDE_TIME, "can_withdraw_paper", $prow))
             $b = null;
         else if ($prow->timeSubmitted <= 0)
             $b = Ht::submit("withdraw", "Withdraw");
@@ -1997,11 +1999,10 @@ class PaperTable {
     private function _echo_editable_body($form) {
         global $Me;
         $prow = $this->prow;
+        $this->canUploadFinal = $prow && $prow->outcome > 0
+            && $Me->call_with_overrides(Contact::OVERRIDE_TIME, "can_submit_final_paper", $prow);
 
         echo $form, "<div class='aahc'>";
-        $this->canUploadFinal = $prow && $prow->outcome > 0
-            && (!($whyNot = $Me->perm_submit_final_paper($prow, true))
-                || get($whyNot, "deadline") === "final_done");
 
         if (($m = $this->editMessage()))
             echo $m, '<div class="g"></div>';

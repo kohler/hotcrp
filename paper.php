@@ -390,14 +390,11 @@ if ($paperTable->mode == "edit") {
     if ($newPaper)
         $editable = true;
     else {
-        $is_forceShow = null;
-        if ($Me->is_admin_force()
-            || ($Me->allow_administer($prow) && !$prow->has_conflict($Me)))
-            $is_forceShow = true;
-        $editable = $Me->can_update_paper($prow, $is_forceShow);
-        if ($prow->outcome > 0 && $Conf->collectFinalPapers()
-            && $Me->can_submit_final_paper($prow, $is_forceShow))
+        $Me->push_overrides($Me->overrides() | Contact::OVERRIDE_TIME);
+        $editable = $Me->can_update_paper($prow);
+        if ($prow->outcome > 0 && $Conf->collectFinalPapers() && $Me->can_submit_final_paper($prow))
             $editable = "f";
+        $Me->pop_overrides();
     }
 } else
     $editable = false;
