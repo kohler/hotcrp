@@ -76,8 +76,6 @@ define("TAG_INDEXBOUND", 2147483646);
 define("CAPTYPE_RESETPASSWORD", 1);
 define("CAPTYPE_CHANGEEMAIL", 2);
 
-define("ALWAYS_OVERRIDE", 9999);
-
 global $Now, $ConfSitePATH;
 $Now = time();
 $ConfSitePATH = null;

@@ -1786,7 +1786,7 @@ class PaperTable {
 
         if ($this->mode === "edit") {
             // check whether we can save
-            $Me->push_overrides(0);
+            $old_overrides = $Me->set_overrides(0);
             if ($this->canUploadFinal) {
                 $updater = "submitfinal";
                 $whyNot = $Me->perm_submit_final_paper($prow);
@@ -1797,7 +1797,7 @@ class PaperTable {
                 $updater = "update";
                 $whyNot = $Me->perm_start_paper();
             }
-            $Me->pop_overrides();
+            $Me->set_overrides($old_overrides);
             // pay attention only to the deadline
             if ($whyNot && (get($whyNot, "deadline") || get($whyNot, "rejected")))
                 $whyNot = array_merge($prow ? $prow->initial_whynot() : [], ["deadline" => get($whyNot, "deadline"), "rejected" => get($whyNot, "rejected")]);

@@ -81,8 +81,8 @@ class Contact {
     private $activated_ = false;
     const OVERRIDE_CONFLICT = 1;
     const OVERRIDE_TIME = 2;
+    const OVERRIDE_TAG_CHECKS = 4;
     private $overrides_ = 0;
-    private $override_stack_ = null;
     private $_aucollab_matchers = null;
     private $_aucollab_general_pregexes = null;
 
@@ -376,23 +376,16 @@ class Contact {
         return $this->overrides_;
     }
     function set_overrides($overrides) {
+        $old_overrides = $this->overrides_;
         if (!$this->privChair)
             $overrides &= ~self::OVERRIDE_CONFLICT;
         $this->overrides_ = $overrides;
-    }
-    function push_overrides($overrides) {
-        $this->override_stack_[] = $this->overrides_;
-        $this->set_overrides($overrides);
-    }
-    function pop_overrides() {
-        if (!empty($this->override_stack_))
-            $this->overrides_ = array_pop($this->override_stack_);
+        return $old_overrides;
     }
     function call_with_overrides($overrides, $method /* arguments */) {
-        $saved = $this->overrides_;
-        $this->set_overrides($overrides);
+        $old_overrides = $this->set_overrides($overrides);
         $result = call_user_func_array([$this, $method], array_slice(func_get_args(), 2));
-        $this->overrides_ = $saved;
+        $this->overrides_ = $old_overrides;
         return $result;
     }
 
@@ -3056,7 +3049,7 @@ class Contact {
     }
 
     function can_view_tag(PaperInfo $prow, $tag, $forceShow = null) {
-        if ($forceShow === ALWAYS_OVERRIDE)
+        if ($forceShow !== false && ($this->overrides_ & self::OVERRIDE_TAG_CHECKS))
             return true;
         $rights = $this->rights($prow, $forceShow);
         $tag = TagInfo::base($tag);
@@ -3123,7 +3116,7 @@ class Contact {
     }
 
     function can_change_tag(PaperInfo $prow, $tag, $previndex, $index, $forceShow = null) {
-        if ($forceShow === ALWAYS_OVERRIDE)
+        if ($forceShow !== false && ($this->overrides_ & self::OVERRIDE_TAG_CHECKS))
             return true;
         $rights = $this->rights($prow, $forceShow);
         if (!($rights->allow_pc

@@ -74,7 +74,7 @@ class Tag_SearchAction extends SearchAction {
         else
             $action = null;
 
-        $assignset = new AssignmentSet($user, $user->privChair);
+        $assignset = new AssignmentSet($user, Contact::OVERRIDE_CONFLICT);
         if (count($papers) && $action) {
             foreach ($papers as $p) {
                 foreach ($tags as $t)
@@ -91,7 +91,7 @@ class Tag_SearchAction extends SearchAction {
                 $r = new PaperRank($source_tag, $tagreq, $papers, $qreq->tagcr_gapless,
                                    "Search", "search");
                 $r->run($qreq->tagcr_method);
-                $assignset->set_override(ALWAYS_OVERRIDE);
+                $assignset->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TAG_CHECKS);
                 $assignset->parse($r->unparse_assignment());
                 if ($qreq->q === "")
                     $qreq->q = "order:$tagreq";

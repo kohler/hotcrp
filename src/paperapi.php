@@ -127,7 +127,7 @@ class PaperApi {
                     $pids[$pid] = true;
                 }
         }
-        $assigner = new AssignmentSet($user, $user->is_admin_force());
+        $assigner = new AssignmentSet($user);
         $assigner->parse(join("\n", $x));
         $error = join("<br />", $assigner->errors_html());
         $ok = $assigner->execute();

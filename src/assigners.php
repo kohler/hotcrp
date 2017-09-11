@@ -7,7 +7,6 @@ class AssignmentItem implements ArrayAccess {
     public $before;
     public $after = null;
     public $lineno = null;
-    public $override = null;
     function __construct($before) {
         $this->before = $before;
     }
@@ -59,7 +58,7 @@ class AssignmentState {
     public $conf;
     public $user;     // executor
     public $reviewer; // default contact
-    public $override;
+    public $overrides = 0;
     private $cmap;
     private $reviewer_users = null;
     public $lineno = null;
@@ -69,10 +68,9 @@ class AssignmentState {
     public $paper_exact_match = true;
     public $errors = [];
 
-    function __construct(Contact $user, $override) {
+    function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->user = $this->reviewer = $user;
-        $this->override = $override;
         $this->cmap = new AssignerContacts($this->conf);
     }
 
@@ -164,7 +162,6 @@ class AssignmentState {
             $res[] = $item->after ? : $item->before;
             $item->after = false;
             $item->lineno = $this->lineno;
-            $item->override = $this->override;
         }
         return $res;
     }
@@ -176,7 +173,6 @@ class AssignmentState {
             $item = $st->items[$k] = new AssignmentItem(false);
         $item->after = $x;
         $item->lineno = $this->lineno;
-        $item->override = $this->override;
         return $item;
     }
 
@@ -460,7 +456,7 @@ class AssignmentParser {
         return false;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->user->can_administer($prow, $state->override)
+        if (!$state->user->can_administer($prow)
             && !$state->user->privChair)
             return "You can’t administer #{$prow->paperId}.";
         else if ($prow->timeWithdrawn > 0)
@@ -476,7 +472,8 @@ class AssignmentParser {
         return "pc";
     }
     static function unconflicted(PaperInfo $prow, Contact $contact, AssignmentState $state) {
-        return $state->override || !$prow->has_conflict($contact);
+        return ($state->overrides & Contact::OVERRIDE_CONFLICT)
+            || !$prow->has_conflict($contact);
     }
     function paper_filter($contact, &$req, AssignmentState $state) {
         return false;
@@ -1097,13 +1094,13 @@ class Conflict_AssignmentParser extends AssignmentParser {
         $this->iscontact = $aj->iscontact;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->user->can_administer($prow, $state->override)
+        if (!$state->user->can_administer($prow)
             && !$state->user->privChair
             && !$state->user->act_author_view($prow))
             return "You can’t administer #{$prow->paperId}.";
         else if (!$this->iscontact
-                 && !$state->user->can_administer($prow, $state->override)
-                 && ($whyNot = $state->user->perm_update_paper($prow, $state->override)))
+                 && !$state->user->can_administer($prow)
+                 && ($whyNot = $state->user->perm_update_paper($prow)))
             return whyNotText($whyNot, "edit");
         else
             return true;
@@ -1129,7 +1126,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         $res = $state->remove(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId]);
-        $admin = $state->user->can_administer($prow, $state->override);
+        $admin = $state->user->can_administer($prow);
         if ($this->remove)
             $ct = 0;
         else if ($this->iscontact)
@@ -1257,12 +1254,11 @@ class NextTagAssigner {
         foreach ($this->pidindex as $pid => $index)
             if ($index >= $this->first_index && $index < $this->next_index) {
                 $x = $state->query_unmodified(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
-                if (!empty($x)) {
+                if (!empty($x))
                     $item = $state->add(["type" => "tag", "pid" => $pid, "ltag" => $ltag,
                                          "_tag" => $this->tag,
-                                         "_index" => $this->next_index($this->isseq)]);
-                    $item->override = ALWAYS_OVERRIDE;
-                }
+                                         "_index" => $this->next_index($this->isseq),
+                                         "_override" => true]);
             }
     }
 }
@@ -1282,7 +1278,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         return $this->isnext ? "ALL" : false;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (($whyNot = $state->user->perm_change_some_tag($prow, $state->override)))
+        if (($whyNot = $state->user->perm_change_some_tag($prow)))
             return whyNotText($whyNot, "change tag");
         else
             return true;
@@ -1377,7 +1373,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
         // if you can't view the tag, you can't set the tag
         // (information exposure)
-        if (!$state->user->can_view_tag($prow, $tag, $state->override))
+        if (!$state->user->can_view_tag($prow, $tag))
             return $this->cannot_view_error($prow, $tag, $state);
 
         // save assignment
@@ -1448,7 +1444,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
         // if you can't view the tag, you can't clear the tag
         // (information exposure)
-        if ($search_ltag && !$state->user->can_view_tag($prow, $search_ltag, $state->override))
+        if ($search_ltag && !$state->user->can_view_tag($prow, $search_ltag))
             return $this->cannot_view_error($prow, $search_ltag, $state);
 
         // query
@@ -1459,7 +1455,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             if (preg_match($tag_re, $x["ltag"])
                 && (!$m[3] || CountMatcher::compare($x["_index"], $m[3], $m[4]))
                 && ($search_ltag
-                    || $state->user->can_change_tag($prow, $x["ltag"], $x["_index"], null, $state->override))) {
+                    || $state->user->can_change_tag($prow, $x["ltag"], $x["_index"], null))) {
                 $state->remove($x);
                 if (($v = $state->conf->tags()->votish_base($x["ltag"])))
                     $vote_adjustments[$v] = true;
@@ -1493,10 +1489,9 @@ class Tag_Assigner extends Assigner {
     static function make(AssignmentItem $item, AssignmentState $state) {
         $prow = $state->prow($item["pid"]);
         // check permissions
-        if (!$item["_vote"]) {
+        if (!$item["_vote"] && !$item["_override"]) {
             $whyNot = $state->user->perm_change_tag($prow, $item["ltag"],
-                $item->get(true, "_index"), $item->get(false, "_index"),
-                $item->override);
+                $item->get(true, "_index"), $item->get(false, "_index"));
             if ($whyNot) {
                 if (get($whyNot, "otherTwiddleTag"))
                     return null;
@@ -1583,7 +1578,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         if (!$contact->contactId)
             return false;
         else if ($contact->contactId !== $state->user->contactId
-                 && !$state->user->can_administer($prow, $state->override))
+                 && !$state->user->can_administer($prow))
             return "Can’t change other users’ preferences for #{$prow->paperId}.";
         else if (!$contact->can_become_reviewer_ignore_conflict($prow)) {
             if ($contact->contactId !== $state->user->contactId)
@@ -1679,7 +1674,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         $this->remove = $aj->remove;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->user->can_set_decision($prow, $state->override))
+        if (!$state->user->can_set_decision($prow))
             return "You can’t change the decision for #{$prow->paperId}.";
         else
             return true;
@@ -1785,12 +1780,11 @@ class AssignmentSet {
     private $cleanup_callbacks;
     private $cleanup_notify_tracker;
 
-    function __construct(Contact $user, $override = null) {
+    function __construct(Contact $user, $overrides = null) {
         $this->conf = $user->conf;
         $this->user = $user;
-        if ($override === null)
-            $override = $this->user->is_admin_force();
-        $this->astate = new AssignmentState($user, $override);
+        $this->astate = new AssignmentState($user);
+        $this->set_overrides($overrides);
     }
 
     function set_reviewer(Contact $reviewer) {
@@ -1818,10 +1812,14 @@ class AssignmentSet {
                 $this->enabled_pids[] = (int) $p;
     }
 
-    function set_override($override) {
-        if ($override === null)
-            $override = $this->user->is_admin_force();
-        $this->astate->override = $override;
+    function set_overrides($overrides) {
+        if ($overrides === null)
+            $overrides = $this->user->overrides();
+        else if ($overrides === true)
+            $overrides = $this->user->overrides() | Contact::OVERRIDE_CONFLICT;
+        if (!$this->user->privChair)
+            $overrides &= ~Contact::OVERRIDE_CONFLICT;
+        $this->astate->overrides = (int) $overrides;
     }
 
     function is_empty() {
@@ -2264,6 +2262,8 @@ class AssignmentSet {
         if (!$this->install_csv_header($csv, $req))
             return false;
 
+        $old_overrides = $this->user->set_overrides($this->astate->overrides);
+
         // parse file, load papers all at once
         $lines = $pids = [];
         while (($req = $csv->next()) !== false) {
@@ -2306,6 +2306,8 @@ class AssignmentSet {
                     $this->error($item->lineno, $e->getMessage());
                 }
             }
+
+        $this->user->set_overrides($old_overrides);
     }
 
     function types_and_papers($compress_pids = false) {
