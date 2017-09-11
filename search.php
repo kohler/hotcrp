@@ -272,10 +272,9 @@ if ($Qreq->ajax)
 
 // set display options, including forceShow if chair
 $pldisplay = $Conf->session("pldisplay");
-if ($Me->is_manager()) {
-    if (!isset($Qreq->forceShow))
-        $Qreq->forceShow = strpos($pldisplay, " force ") !== false ? 1 : null;
-    $Me->set_forceShow($Qreq->forceShow);
+if ($Me->privChair && !isset($Qreq->forceShow) && strpos($pldisplay, " force ") !== false) {
+    $Qreq->forceShow = 1;
+    $Me->set_overrides($Me->overrides() | Contact::OVERRIDE_CONFLICT);
 }
 
 

@@ -79,7 +79,10 @@ class Contact {
     private $capabilities = null;
     private $review_tokens_ = null;
     private $activated_ = false;
+    const OVERRIDE_CONFLICT = 1;
+    const OVERRIDE_TIME = 2;
     private $overrides_ = 0;
+    private $override_stack_ = null;
     private $_aucollab_matchers = null;
     private $_aucollab_general_pregexes = null;
 
@@ -363,35 +366,29 @@ class Contact {
         // Check forceShow
         $this->overrides_ = 0;
         if ($this->privChair && req("forceShow"))
-            $this->overrides_ |= 1;
+            $this->overrides_ |= self::OVERRIDE_CONFLICT;
         if (req("override"))
-            $this->overrides_ |= 2;
-        self::$active_forceShow = ($this->overrides_ & 1) !== 0;
+            $this->overrides_ |= self::OVERRIDE_TIME;
+        self::$active_forceShow = ($this->overrides_ & self::OVERRIDE_CONFLICT) !== 0;
 
         return $this;
     }
 
-    function set_forceShow($on) {
-        global $Me;
-        $this->overrides_ = ($this->overrides_ & ~1) | ($this->privChair && $on ? 1 : 0);
-        if ($Me && $this->contactId == $Me->contactId) {
-            self::$active_forceShow = ($this->overrides_ & 1) !== 0;
-            if (self::$active_forceShow)
-                $_GET["forceShow"] = $_POST["forceShow"] = $_REQUEST["forceShow"] = 1;
-            else
-                unset($_GET["forceShow"], $_POST["forceShow"], $_REQUEST["forceShow"]);
-        }
+    function overrides() {
+        return $this->overrides_;
     }
-
-    function set_override_deadlines($on) {
-        global $Me;
-        $this->overrides_ = ($this->overrides_ & ~2) | ($on ? 2 : 0);
-        if ($Me && $this->contactId == $Me->contactId) {
-            if ($this->overrides_ & 2)
-                $_GET["override"] = $_POST["override"] = $_REQUEST["override"] = 1;
-            else
-                unset($_GET["override"], $_POST["override"], $_REQUEST["override"]);
-        }
+    function set_overrides($overrides) {
+        if (!$this->privChair)
+            $overrides &= ~self::OVERRIDE_CONFLICT;
+        $this->overrides_ = $overrides;
+    }
+    function push_overrides($overrides) {
+        $this->override_stack_[] = $this->overrides_;
+        $this->set_overrides($overrides);
+    }
+    function pop_overrides() {
+        if (!empty($this->override_stack_))
+            $this->overrides_ = array_pop($this->override_stack_);
     }
 
     function activate_database_account() {
@@ -702,7 +699,7 @@ class Contact {
     }
 
     function is_admin_force() {
-        return ($this->overrides_ & 1) !== 0;
+        return ($this->overrides_ & self::OVERRIDE_CONFLICT) !== 0;
     }
 
     function is_pc_member() {
@@ -1783,9 +1780,9 @@ class Contact {
 
         // correct $forceShow
         if ($forceShow === null && $Me && $this->contactId == $Me->contactId);
-            assert((($this->overrides_ & 1) !== 0) === self::$active_forceShow);
+            assert((($this->overrides_ & self::OVERRIDE_CONFLICT) !== 0) === self::$active_forceShow);
         if ($forceShow === null)
-            $forceShow = ($this->overrides_ & 1) !== 0;
+            $forceShow = ($this->overrides_ & self::OVERRIDE_CONFLICT) !== 0;
         else if (!$ci->allow_administer || $forceShow === null)
             $forceShow = false;
         else if ($forceShow === "any")
@@ -1873,7 +1870,7 @@ class Contact {
         else if ($override !== null)
             return !!$override;
         else
-            return ($this->overrides_ & 2) !== 0;
+            return ($this->overrides_ & self::OVERRIDE_TIME) !== 0;
     }
 
     function allow_administer(PaperInfo $prow = null) {

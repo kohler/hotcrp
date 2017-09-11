@@ -31,7 +31,7 @@ $match_title = isset($arg["match-title"]);
 $ignore_pid = isset($arg["ignore-pid"]);
 $ignore_errors = isset($arg["ignore-errors"]);
 $site_contact = $Conf->site_contact();
-$site_contact->set_override_deadlines(true);
+$site_contact->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TIME);
 
 if ($file === "-") {
     $content = stream_get_contents(STDIN);

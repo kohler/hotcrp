@@ -124,7 +124,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
-        $user->set_forceShow(true);
+        $user->set_overrides($user->overrides() | Contact::OVERRIDE_CONFLICT);
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $errors = $texts = [];
         foreach (PaperInfo::fetch_all($result, $user) as $row) {
@@ -165,7 +165,7 @@ class GetScores_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
-        $user->set_forceShow(true);
+        $user->set_overrides($user->overrides() | Contact::OVERRIDE_CONFLICT);
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         // compose scores; NB chair is always forceShow
         $errors = $texts = $any_scores = array();

@@ -8,7 +8,7 @@ require_once("src/papertable.php");
 require_once("src/reviewtable.php");
 if (!$Me->email)
     $Me->escape();
-$Me->set_forceShow(true);
+$Me->set_overrides($Me->overrides() | Contact::OVERRIDE_CONFLICT);
 $Error = array();
 // ensure site contact exists before locking tables
 $Conf->site_contact();
