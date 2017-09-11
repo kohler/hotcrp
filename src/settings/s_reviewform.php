@@ -121,7 +121,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $fj->round_mask = 0;
             foreach (explode(" ", trim($sv->req["round_list_$fid"])) as $round_name)
                 if ($round_name !== "")
-                    $fj->round_mask |= 1 << $sv->conf->round_number($round_name, false);
+                    $fj->round_mask |= 1 << (int) $sv->conf->round_number($round_name, false);
         }
     }
 

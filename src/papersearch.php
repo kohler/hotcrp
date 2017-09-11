@@ -2200,7 +2200,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     }
     function apply_round($word, Conf $conf) {
         $round = $conf->round_number($word, false);
-        if ($round || strcasecmp($word, "unnamed") == 0) {
+        if ($round !== false) {
             $this->round[] = $round;
             return true;
         } else

@@ -229,7 +229,7 @@ function requestReview($email) {
     $round = null;
     if (isset($_REQUEST["round"]) && $_REQUEST["round"] != ""
         && ($rname = $Conf->sanitize_round_name($_REQUEST["round"])) !== false)
-        $round = $Conf->round_number($rname, false);
+        $round = (int) $Conf->round_number($rname, false);
 
     // look up the requester
     $Requester = $Me;

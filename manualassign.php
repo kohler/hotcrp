@@ -95,7 +95,7 @@ function saveAssignments($qreq, $reviewer) {
         if ($qreq->kind == "a" && $type != $row->review_type($reviewer)
             && ($type <= 0 || $reviewer->can_accept_review_assignment_ignore_conflict($row))) {
             if ($type > 0 && $round_number === null)
-                $round_number = $Conf->round_number($qreq->rev_round, true);
+                $round_number = (int) $Conf->round_number($qreq->rev_round, true);
             $Me->assign_review($row->paperId, $reviewer->contactId, $type,
                                array("round_number" => $round_number));
         }

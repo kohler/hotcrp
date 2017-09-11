@@ -1638,7 +1638,7 @@ class ReviewValues extends MessageSet {
             }
             $extra = [];
             if (isset($this->req["round"]))
-                $extra["round_number"] = $this->conf->round_number($this->req["round"], false);
+                $extra["round_number"] = (int) $this->conf->round_number($this->req["round"], false);
             $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, $extra);
             if (!$new_rrid) {
                 $this->rmsg(null, "Internal error while creating review.", self::ERROR);

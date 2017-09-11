@@ -876,7 +876,7 @@ class Review_Assigner extends Assigner {
         $extra = array();
         $round = $this->item->get(false, "_round");
         if ($round !== null && $this->rtype)
-            $extra["round_number"] = $aset->conf->round_number($round, true);
+            $extra["round_number"] = (int) $aset->conf->round_number($round, true);
         if ($this->contact->is_anonymous_user()
             && (!$this->item->existed() || $this->item->deleted())) {
             $extra["token"] = true;

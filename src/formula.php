@@ -305,8 +305,7 @@ class ConstantFexpr extends Fexpr {
                  && ($x = $format->parse_value($letter, true)))
             $this->x = $x;
         else if ($format === self::FROUND
-                 && (($round = $conf->round_number($this->x, false))
-                     || $this->x === "unnamed"))
+                 && ($round = $conf->round_number($this->x, false)) !== false)
             $this->x = $round;
         else if ($format === self::FREVTYPE && $this->_check_revtype())
             /* OK */;

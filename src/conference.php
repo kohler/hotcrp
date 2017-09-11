@@ -1217,19 +1217,19 @@ class Conf {
         return $this->round_number($this->assignment_round_name($external), false);
     }
 
-    function round_number($name, $add) {
-        if (!$name || !strcasecmp($name, "unnamed"))
+    function round_number($rname, $add) {
+        if (!$rname || !strcasecmp($rname, "none") || !strcasecmp($rname, "unnamed"))
             return 0;
         for ($i = 1; $i != count($this->rounds); ++$i)
-            if (!strcasecmp($this->rounds[$i], $name))
+            if (!strcasecmp($this->rounds[$i], $rname))
                 return $i;
-        if ($add) {
+        if ($add && !self::round_name_error($rname)) {
             $rtext = $this->setting_data("tag_rounds", "");
-            $rtext = ($rtext ? "$rtext$name " : " $name ");
+            $rtext = ($rtext ? "$rtext$rname " : " $rname ");
             $this->save_setting("tag_rounds", 1, $rtext);
-            return $this->round_number($name, false);
+            return $this->round_number($rname, false);
         } else
-            return 0;
+            return false;
     }
 
     function round_selector_options() {
