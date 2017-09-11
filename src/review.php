@@ -1291,23 +1291,31 @@ class ReviewValues extends MessageSet {
     private $unchanged_draft_approval;
     private $ignoredBlank;
 
+    private $no_notify = false;
     private $_mailer_template;
     private $_mailer_always_combine;
     private $_mailer_diff_view_score;
     private $_mailer_info;
     private $_mailer_preps;
 
-    function __construct(ReviewForm $rf) {
+    function __construct(ReviewForm $rf, $options = []) {
         $this->rf = $rf;
         $this->conf = $rf->conf;
+        foreach (["no_notify"] as $k)
+            if (array_key_exists($k, $options))
+                $this->$k = $options[$k];
     }
 
     static function make_text(ReviewForm $rf, $text, $filename = null) {
         $rv = new ReviewValues($rf);
-        $rv->text = $text;
-        $rv->lineno = 0;
-        $rv->filename = $filename;
+        $rv->set_text($text, $filename);
         return $rv;
+    }
+
+    function set_text($text, $filename = null) {
+        $this->text = $text;
+        $this->lineno = 0;
+        $this->filename = $filename;
     }
 
     function rmsg($field, $msg, $status) {
@@ -1954,7 +1962,7 @@ class ReviewValues extends MessageSet {
                 $qv[] = $rrow->reviewModified;
             }
             // do not notify on updates within 3 hours
-            if ($submit && $diff_view_score > VIEWSCORE_ADMINONLY) {
+            if ($submit && $diff_view_score > VIEWSCORE_ADMINONLY && !$this->no_notify) {
                 if (!$rrow || !$rrow->reviewNotified
                     || $rrow->reviewNotified < $notification_bound) {
                     $qf[] = "reviewNotified=?";
@@ -2023,7 +2031,7 @@ class ReviewValues extends MessageSet {
                                "check_function" => "HotCRPMailer::check_can_view_review"];
         if ($submit && $rrow->reviewOrdinal)
             $this->_mailer_info["reviewNumber"] = $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
-        if ($submit && ($notify || $notify_author) && $rrow) {
+        if ($rrow && $submit && ($notify || $notify_author)) {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $this->_mailer_always_combine = false;
             $this->_mailer_diff_view_score = $diff_view_score;
@@ -2033,7 +2041,8 @@ class ReviewValues extends MessageSet {
         } else if ($rrow && !$submit && $diff_fields
                    && $rrow->timeApprovalRequested
                    && $rrow->requestedBy
-                   && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy))) {
+                   && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy))
+                   && !$this->no_notify) {
             if ($requester->contactId == $user->contactId)
                 $this->_mailer_template = "@reviewpreapprovaledit";
             else if ($approval_requested)

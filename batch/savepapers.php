@@ -32,6 +32,7 @@ $ignore_pid = isset($arg["ignore-pid"]);
 $ignore_errors = isset($arg["ignore-errors"]);
 $site_contact = $Conf->site_contact();
 $site_contact->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TIME);
+$tf = new ReviewValues($Conf->review_form(), ["no_notify" => true]);
 
 if ($file === "-") {
     $content = stream_get_contents(STDIN);
@@ -206,8 +207,6 @@ foreach ($jp as &$j) {
 
     // XXX more validation here
     if ($pid && isset($j->reviews) && is_array($j->reviews) && $reviews) {
-        $rform = $Conf->review_form();
-        $tf = new ReviewValues($rform);
         $prow = $Conf->paperRow(["paperId" => $pid], $site_contact);
         foreach ($j->reviews as $reviewindex => $reviewj) {
             if ($tf->parse_json($reviewj)
