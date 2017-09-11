@@ -2623,8 +2623,8 @@ class Contact {
                 && $this->conf->setting("pcrev_any") > 0
                 && $this->conf->time_review(null, true, true))
             || ($rights->can_administer
-                && ($prow->timeSubmitted > 0 || $rights->rights_forced)
-                && (!$submit || $this->override_deadlines($rights)));
+                && (($prow->timeSubmitted > 0 && !$submit)
+                    || $this->override_deadlines($rights)));
     }
 
     function perm_review(PaperInfo $prow, $rrow, $submit = false) {
@@ -2671,7 +2671,7 @@ class Contact {
     function can_create_review_from(PaperInfo $prow, Contact $user) {
         $rights = $this->rights($prow);
         return $rights->can_administer
-            && ($prow->timeSubmitted > 0 || $rights->rights_forced)
+            && ($prow->timeSubmitted > 0 || $this->override_deadlines($rights))
             && (!$user->isPC || $user->can_accept_review_assignment($prow))
             && ($this->conf->time_review(null, true, true) || $this->override_deadlines($rights));
     }
