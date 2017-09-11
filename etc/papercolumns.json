@@ -69,8 +69,11 @@
     },
     {
         "name": "revstat",
-        "column": true, "sort": true, "completion": true, "factory_class": "ReviewStatusPaperColumn",
+        "column": true, "sort": true, "completion": true, "className": "pl_revstat", "factory_class": "ReviewStatus_PaperColumn",
         "priority": 830
+    },
+    {
+        "prefix": "revstat:", "factory_class": "ReviewStatus_PaperColumnFactory"
     },
     {
         "name": "assrev",

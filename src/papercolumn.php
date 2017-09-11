@@ -402,24 +402,41 @@ class StatusPaperColumn extends PaperColumn {
     }
 }
 
-class ReviewStatusPaperColumn extends PaperColumn {
+class ReviewStatus_PaperColumn extends PaperColumn {
+    private $round;
     function __construct($cj) {
         parent::__construct($cj);
+        $this->round = get($cj, "round", null);
     }
     function prepare(PaperList $pl, $visible) {
-        if ($pl->contact->privChair || $pl->contact->is_reviewer() || $pl->conf->timeAuthorViewReviews()) {
+        if ($pl->user->privChair || $pl->user->is_reviewer() || $pl->conf->timeAuthorViewReviews()) {
             $pl->qopts["reviewSignatures"] = true;
             return true;
         } else
             return false;
     }
+    private function data(PaperInfo $row, Contact $user) {
+        $want_assigned = $user->privChair || !$row->conflict_type($user);
+        $done = $started = 0;
+        foreach ($row->reviews_by_id() as $rrow)
+            if ($user->can_view_review_assignment($row, $rrow, null)
+                && ($this->round === null || $this->round === $rrow->reviewRound)) {
+                if ($rrow->reviewSubmitted > 0) {
+                    ++$done;
+                    ++$started;
+                } else if ($want_assigned ? $rrow->reviewNeedsSubmit > 0 : $rrow->reviewModified > 0)
+                    ++$started;
+            }
+        return [$done, $started];
+    }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         foreach ($rows as $row) {
-            if (!$pl->contact->can_view_review_assignment($row, null, null))
+            if (!$pl->user->can_view_review_assignment($row, null, null))
                 $row->_review_status_sort_info = -2147483647;
-            else
-                $row->_review_status_sort_info = $row->num_reviews_submitted($pl->contact)
-                    + $row->num_reviews_started($pl->contact) / 1000.0;
+            else {
+                list($done, $started) = $this->data($row, $pl->user);
+                $row->_review_status_sort_info = $done + $started / 1000.0;
+            }
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
@@ -428,23 +445,46 @@ class ReviewStatusPaperColumn extends PaperColumn {
         return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
     }
     function header(PaperList $pl, $is_text) {
+        $round_name = "";
+        if ($this->round !== null)
+            $round_name = ($pl->conf->round_name($this->round) ? : "unnamed") . " ";
         if ($is_text)
-            return "# Reviews";
+            return "# {$round_name}Reviews";
         else
-            return '<span class="need-tooltip" data-tooltip="# completed reviews / # assigned reviews" data-tooltip-dir="b">#&nbsp;Reviews</span>';
+            return '<span class="need-tooltip" data-tooltip="# completed reviews / # assigned reviews" data-tooltip-dir="b">#&nbsp;' . $round_name . 'Reviews</span>';
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->contact->can_view_review_assignment($row, null, null);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $done = $row->num_reviews_submitted($pl->contact);
-        $started = $row->num_reviews_started($pl->contact);
+        list($done, $started) = $this->data($row, $pl->user);
         return "<b>$done</b>" . ($done == $started ? "" : "/$started");
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $done = $row->num_reviews_submitted($pl->contact);
-        $started = $row->num_reviews_started($pl->contact);
+        list($done, $started) = $this->data($row, $pl->user);
         return $done . ($done == $started ? "" : "/$started");
+    }
+}
+
+class ReviewStatus_PaperColumnFactory extends PaperColumnFactory {
+    function __construct($cj) {
+        parent::__construct($cj);
+    }
+    function instantiate(Contact $user, $name, $errors) {
+        if (!$user->is_reviewer())
+            return null;
+        $colon = strpos($name, ":");
+        $rname = substr($name, $colon + 1);
+        $revstat = (array) PaperColumn::lookup_json("revstat");
+        if (preg_match('/\A(?:any|all)\z/i', $rname))
+            return [new ReviewStatus_PaperColumn($revstat)];
+        $round = $user->conf->round_number($rname, false);
+        if ($round === false) {
+            self::instantiate_error($errors, "No review round matches “" . htmlspecialchars($rname) . "”.", 2);
+            return null;
+        }
+        $fname = substr($name, 0, $colon + 1) . ($user->conf->round_name($round) ? : "unnamed");
+        return [new ReviewStatus_PaperColumn(["name" => $fname, "round" => $round] + $revstat)];
     }
 }
 
