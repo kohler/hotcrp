@@ -1858,15 +1858,12 @@ class Contact {
         return $ci;
     }
 
-    function override_deadlines($rights, $override = null) {
+    function override_deadlines($rights) {
+        if (!($this->overrides_ & self::OVERRIDE_TIME))
+            return false;
         if ($rights && $rights instanceof PaperInfo)
             $rights = $this->rights($rights);
-        if ($rights ? !$rights->allow_administer : !$this->privChair)
-            return false;
-        else if ($override !== null)
-            return !!$override;
-        else
-            return ($this->overrides_ & self::OVERRIDE_TIME) !== 0;
+        return $rights ? $rights->allow_administer : $this->privChair;
     }
 
     function allow_administer(PaperInfo $prow = null) {
@@ -1950,16 +1947,16 @@ class Contact {
         return $rights->allow_administer || $prow->has_author($this);
     }
 
-    function can_update_paper(PaperInfo $prow, $override = null) {
+    function can_update_paper(PaperInfo $prow) {
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
             && (($prow->outcome >= 0 && $this->conf->timeUpdatePaper($prow))
-                || $this->override_deadlines($rights, $override));
+                || $this->override_deadlines($rights));
     }
 
-    function perm_update_paper(PaperInfo $prow, $override = null) {
-        if ($this->can_update_paper($prow, $override))
+    function perm_update_paper(PaperInfo $prow) {
+        if ($this->can_update_paper($prow))
             return null;
         $rights = $this->rights($prow, "any");
         $whyNot = $prow->initial_whynot();
@@ -1969,11 +1966,11 @@ class Contact {
             $whyNot["author"] = 1;
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
-        if ($prow->outcome < 0 && $this->can_view_decision($prow, $override))
+        if ($prow->outcome < 0 && $this->can_view_decision($prow))
             $whyNot["rejected"] = 1;
         if ($prow->timeSubmitted > 0 && $this->conf->setting("sub_freeze") > 0)
             $whyNot["updateSubmitted"] = 1;
-        if (!$this->conf->timeUpdatePaper($prow) && !$this->override_deadlines($rights, $override))
+        if (!$this->conf->timeUpdatePaper($prow) && !$this->override_deadlines($rights))
             $whyNot["deadline"] = "sub_update";
         if ($rights->allow_administer)
             $whyNot["override"] = 1;

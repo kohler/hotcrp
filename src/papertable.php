@@ -1756,7 +1756,8 @@ class PaperTable {
             $m .= Ht::xmsg("info", "The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.");
         else
             $m .= Ht::xmsg("info", "You aren’t a contact for this submission, but as an administrator you can still make changes.");
-        if ($Me->can_update_paper($prow, true) && ($v = $this->conf->message_html("submit")))
+        if ($Me->call_with_overrides(Contact::OVERRIDE_TIME, "can_update_paper", $prow)
+            && ($v = $this->conf->message_html("submit")))
             $m .= Ht::xmsg("info", $v);
         if ($this->edit_status && $this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable))
