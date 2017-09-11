@@ -95,7 +95,6 @@ class Contact {
 
     static private $status_info_cache = array();
     static private $contactdb_dblink = false;
-    static private $active_forceShow = false;
 
 
     function __construct($trueuser = null, Conf $conf = null) {
@@ -369,7 +368,6 @@ class Contact {
             $this->overrides_ |= self::OVERRIDE_CONFLICT;
         if (req("override"))
             $this->overrides_ |= self::OVERRIDE_TIME;
-        self::$active_forceShow = ($this->overrides_ & self::OVERRIDE_CONFLICT) !== 0;
 
         return $this;
     }
@@ -1779,8 +1777,6 @@ class Contact {
         }
 
         // correct $forceShow
-        if ($forceShow === null && $Me && $this->contactId == $Me->contactId);
-            assert((($this->overrides_ & self::OVERRIDE_CONFLICT) !== 0) === self::$active_forceShow);
         if ($forceShow === null)
             $forceShow = ($this->overrides_ & self::OVERRIDE_CONFLICT) !== 0;
         else if (!$ci->allow_administer || $forceShow === null)
