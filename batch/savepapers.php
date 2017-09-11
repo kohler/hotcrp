@@ -216,6 +216,7 @@ foreach ($jp as &$j) {
                 $tf->req["override"] = true;
                 $tf->paperId = $pid;
                 $user_req = Text::analyze_name(["name" => get($tf->req, "reviewerName"), "email" => $tf->req["reviewerEmail"], "affiliation" => get($tf->req, "reviewerAffiliation")]);
+                $user_req->disabled = $disable_users;
                 $user = Contact::create($Conf, $user_req);
                 $tf->check_and_save($site_contact, $prow, null);
             } else
