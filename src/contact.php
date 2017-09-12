@@ -1185,7 +1185,7 @@ class Contact {
 
         $cj = (object) array();
         foreach (array("firstName", "lastName", "email", "affiliation",
-                       "collaborators", "preferredEmail") as $k)
+                       "collaborators", "preferredEmail", "country") as $k)
             if (($v = $cdbu && $cdbu->$k ? $cdbu->$k : get($reg, $k)))
                 $cj->$k = $v;
         if (($v = $cdbu && $cdbu->voicePhoneNumber ? $cdbu->voicePhoneNumber : get($reg, "voicePhoneNumber")))
