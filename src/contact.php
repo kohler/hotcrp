@@ -1172,9 +1172,21 @@ class Contact {
         $email = trim($reg->email);
         assert($email !== "");
 
-        // look up account first
-        if (($acct = $conf->user_by_email($email)))
+        // look up account first; if found, update name/affiliation
+        if (($acct = $conf->user_by_email($email))) {
+            $cj = [];
+            if ($acct->firstName === "" && $acct->lastName === ""
+                && (isset($reg->firstName) || isset($reg->lastName))) {
+                $cj["firstName"] = (string) get($reg, "firstName");
+                $cj["lastName"] = (string) get($reg, "lastName");
+            }
+            foreach (["affiliation", "collaborators", "country"] as $k)
+                if ((string) $acct->$x === "" && ($x = get($reg, $k)))
+                    $cj[$k] = $x;
+            if (!empty($cj))
+                $acct->save_json((object) $cj, null, false);
             return $acct;
+        }
 
         // validate email, check contactdb
         if (!get($reg, "no_validate_email") && !validate_email($email))
