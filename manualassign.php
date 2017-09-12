@@ -7,6 +7,7 @@ require_once("src/initweb.php");
 require_once("src/papersearch.php");
 if (!$Me->is_manager())
     $Me->escape();
+$Me->set_overrides($Me->overrides() | Contact::OVERRIDE_CONFLICT);
 
 // request cleaning
 $qreq = make_qreq();
@@ -256,10 +257,7 @@ if ($reviewer) {
                               $reviewer);
     if (!empty($hlsearch))
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
-    $paperList = new PaperList($search, ["sort" => true], make_qreq());
-    $paperList->display .= " topics ";
-    if ($qreq->kind != "c")
-        $paperList->display .= "reviewers ";
+    $paperList = new PaperList($search, ["sort" => true, "display" => ($qreq->kind == "c" ? "show:topics" : "show:topics show:reviewers")], make_qreq());
     echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "kind" => $qreq->kind, "sort" => $qreq->sort]),
         "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
         Ht::hidden("t", $qreq->t),

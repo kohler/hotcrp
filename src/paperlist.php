@@ -87,7 +87,6 @@ class PaperListReviewAnalysis {
 class PaperList {
     // creator can set to change behavior
     public $papersel = null;
-    public $display;
 
     // columns access
     public $conf;
@@ -167,13 +166,6 @@ class PaperList {
             $this->_paper_link_page = "paper";
             $this->_paper_link_mode = "edit";
         }
-
-        if (is_string(get($args, "display")))
-            $this->display = " " . $args["display"] . " ";
-        else {
-            $svar = get($args, "foldtype", "pl") . "display";
-            $this->display = $this->conf->session($svar, "");
-        }
         $this->atab = $qreq->atab;
 
         $this->tagger = new Tagger($this->user);
@@ -186,6 +178,10 @@ class PaperList {
             $this->qopts["paperId"] = $this->search->paperList();
         // NB that actually processed the search, setting PaperSearch::viewmap
 
+        if (($foldtype = get($args, "foldtype")))
+            $this->set_view_display($this->conf->session("{$foldtype}display", ""));
+        if (is_string(get($args, "display")))
+            $this->set_view_display($args["display"]);
         foreach ($this->search->viewmap ? : [] as $k => $v)
             $this->set_view($k, $v);
         if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL
@@ -202,12 +198,27 @@ class PaperList {
         $this->_row_id_pattern = $row_id_pattern;
     }
 
+    function set_view_display($str) {
+        preg_match_all('/\b(show:|hide:|sort:|)(\".*?\"|[^"\s]+)/', $str, $mm, PREG_SET_ORDER);
+        $has_sorters = !!array_filter($this->search->sorters ? : [], function ($s) {
+            return $s->thenmap === null;
+        });
+        foreach ($mm as $m) {
+            if ($m[1] === "sort:") {
+                if (!$has_sorters)
+                    $this->search->sorters[] = PaperSearch::parse_sorter($m[2]);
+            } else if ($m[1] === "hide:")
+                $this->set_view($m[2], false);
+            else
+                $this->set_view($m[2], true);
+        }
+    }
     function set_view($k, $v) {
         if (in_array($k, ["compact", "cc", "compactcolumn", "ccol", "compactcolumns"]))
             $this->_view_compact_columns = $this->_view_columns = $v;
         else if (in_array($k, ["columns", "column", "col"]))
             $this->_view_columns = $v;
-        else if (in_array($k, ["statistics", "stat", "stats", "totals"]))
+        else if (in_array($k, ["statistics", "stat", "stats", "totals", "force"]))
             /* skip */;
         else if (in_array($k, ["rownum", "rownumbers"]))
             $this->_view_row_numbers = $v;
@@ -652,13 +663,10 @@ class PaperList {
         if (!$fname || $this->_unfold_all || $this->qreq["show$fname"])
             return false;
         $x = get($this->_view_fields, $fname);
-        if ($x === null) {
-            $x = strpos($this->display, " $fname ");
-            if ($x === false && is_object($field)
-                && ($fname = $field->alternate_display_name()))
-                $x = strpos($this->display, " $fname ");
-        }
-        return $x === false;
+        if ($x === null && is_object($field)
+            && ($fname = $field->alternate_display_name()))
+            $x = get($this->_view_fields, $fname);
+        return !$x;
     }
 
     private function _check_option_presence(PaperInfo $row) {
@@ -698,7 +706,7 @@ class PaperList {
                         $this->row_attr["data-color-classes-conflicted"] = $ccx;
                         $trclass[] = "colorconflict";
                     }
-                    $cc = $this->qreq->forceShow ? $cco : $ccx;
+                    $cc = $this->user->is_admin_force() ? $cco : $ccx;
                 }
             } else if (($vt = $row->viewable_tags($this->user)))
                 $cc = $row->conf->tags()->color_classes($vt);
@@ -889,8 +897,8 @@ class PaperList {
             $classes[] = "fold3c";
         if ($has_sel)
             $classes[] = "fold6" . ($this->is_folded("rownum") ? "c" : "o");
-        if ($this->user->is_manager())
-            $classes[] = "fold5" . ($this->qreq->forceShow ? "o" : "c");
+        if ($this->user->privChair)
+            $classes[] = "fold5" . ($this->user->is_admin_force() ? "o" : "c");
         $classes[] = "fold7" . ($this->is_folded("statistics") ? "c" : "o");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
         if ($this->_table_id)

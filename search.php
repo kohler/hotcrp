@@ -272,7 +272,8 @@ if ($Qreq->ajax)
 
 // set display options, including forceShow if chair
 $pldisplay = $Conf->session("pldisplay");
-if ($Me->privChair && !isset($Qreq->forceShow) && strpos($pldisplay, " force ") !== false) {
+if ($Me->privChair && !isset($Qreq->forceShow)
+    && preg_match('/\b(show:|)force\b/', $pldisplay)) {
     $Qreq->forceShow = 1;
     $Me->set_overrides($Me->overrides() | Contact::OVERRIDE_CONFLICT);
 }
@@ -281,16 +282,18 @@ if ($Me->privChair && !isset($Qreq->forceShow) && strpos($pldisplay, " force ") 
 // search
 $Conf->header("Search", "search", actionBar());
 echo Ht::unstash(); // need the JS right away
-$Search = new PaperSearch($Me, $Qreq);
+if (isset($Qreq->q))
+    $Search = new PaperSearch($Me, $Qreq);
+else
+    $Search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => "NONE"]);
+$pl = new PaperList($Search, ["sort" => true, "foldtype" => "pl", "display" => $Qreq->display], $Qreq);
 if (isset($Qreq->q)) {
-    $pl = new PaperList($Search, ["sort" => true, "display" => $Qreq->display], $Qreq);
     $pl->set_table_id_class("foldpl", "pltable_full", "p#");
     $pl->set_selection($SSel);
     $pl_text = $pl->table_html($Search->limitName, ["attributes" => ["data-fold-session" => 'pldisplay.$'], "list" => true]);
-    $pldisplay = $pl->display;
     unset($Qreq->atab);
 } else
-    $pl = null;
+    $pl_text = null;
 
 
 // set up the search form
@@ -301,7 +304,7 @@ else if (isset($Qreq->qa) || defval($Qreq, "qt", "n") != "n")
 else
     $activetab = 1;
 $searchform_formulas = "c";
-if ($activetab == 3 && (!$pl || $pl->count == 0))
+if ($activetab == 3 && $pl->count == 0)
     $activetab = 1;
 
 $tselect = PaperSearch::searchTypeSelector($tOpt, $Qreq->t, 1);
@@ -313,11 +316,8 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $Qreq->t, 1);
 $display_options_extra = "";
 
 function display_option_checked($type) {
-    global $pl, $pldisplay, $Qreq;
-    if ($pl)
-        return !$pl->is_folded($type);
-    else
-        return $Qreq["show$type"] || strpos($pldisplay, " $type ") !== false;
+    global $pl;
+    return !$pl->is_folded($type);
 }
 
 class Search_DisplayOptions {
@@ -351,7 +351,7 @@ $display_options = new Search_DisplayOptions;
 
 // Create checkboxes
 
-if ($pl) {
+if ($pl_text) {
     // Abstract
     if ($pl->has("abstract"))
         $display_options->checkbox_item(1, "abstract", "Abstracts");
@@ -371,7 +371,7 @@ if ($pl) {
                                    "onchange" => "plinfo('anonau',this)",
                                    "style" => "display:none"));
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
-        $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl || !$pl->has("anonau")]);
+        $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl->has("anonau")]);
         $display_options_extra .=
             Ht::checkbox("showau", 1, display_option_checked("anonau"),
                          array("id" => "showau_hidden",
@@ -382,7 +382,7 @@ if ($pl) {
         $display_options->checkbox_item(1, "aufull", "Full author info", ["id" => "showaufull", "indent" => true]);
     if ($Me->privChair && !$Conf->subBlindNever()
         && (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors))
-        $display_options->checkbox_item(1, "anonau", "Deblinded authors", ["disabled" => !$pl || !$pl->has("anonau"), "indent" => true]);
+        $display_options->checkbox_item(1, "anonau", "Deblinded authors", ["disabled" => !$pl->has("anonau"), "indent" => true]);
     if ($pl->has("collab"))
         $display_options->checkbox_item(1, "collab", "Collaborators", ["indent" => true]);
 
@@ -541,13 +541,13 @@ echo Ht::select("qt", $qtOpt, $Qreq->get("qt", "n"), array("tabindex" => 1)),
 echo "</div>";
 
 function echo_request_as_hidden_inputs($specialscore = false) {
-    global $pl, $Qreq;
+    global $pl, $pl_text, $Qreq;
     foreach (array("q", "qa", "qo", "qx", "qt", "t", "sort") as $x)
         if (isset($Qreq[$x])
             && ($x != "q" || !isset($Qreq->qa))
-            && ($x != "sort" || !$specialscore || !$pl))
+            && ($x != "sort" || !$specialscore || !$pl_text))
             echo Ht::hidden($x, $Qreq[$x]);
-    if ($specialscore && $pl)
+    if ($specialscore && $pl_text)
         echo Ht::hidden("sort", $pl->sortdef(true));
 }
 
@@ -555,7 +555,7 @@ function echo_request_as_hidden_inputs($specialscore = false) {
 $ss = array();
 if ($Me->isPC || $Me->privChair) {
     $ss = $Conf->saved_searches();
-    if (count($ss) > 0 || $pl) {
+    if (count($ss) > 0 || $pl_text) {
         echo "<div class='tld4' style='padding-bottom:1ex'>";
         ksort($ss);
         if (count($ss)) {
@@ -600,7 +600,7 @@ if ($Me->isPC || $Me->privChair) {
 }
 
 // Display options
-if ($pl && $pl->count > 0) {
+if ($pl->count > 0) {
     echo "<div class='tld3' style='padding-bottom:1ex'>";
 
     echo Ht::form_div(hoturl_post("search", "redisplay=1"), array("id" => "foldredisplay", "class" => "fn3 fold5c"));
@@ -665,16 +665,16 @@ echo '<div class="tllx"><table><tr>',
   <td><div class='tll2'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#advanced\">Advanced search</a></div></td>\n";
 if ($ss)
     echo "  <td><div class='tll4'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#savedsearches\">Saved searches</a></div></td>\n";
-if ($pl && $pl->count > 0)
+if ($pl->count > 0)
     echo "  <td><div class='tll3'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#display\">Display options</a></div></td>\n";
 echo "</tr></table></div></div>\n\n";
-if (!$pl || $pl->count == 0)
+if ($pl->count == 0)
     Ht::stash_script("focus_fold.call(\$(\"#searchform .tll$activetab\")[0])");
 Ht::stash_script("focus_fold.hash()");
 echo Ht::unstash();
 
 
-if ($pl) {
+if ($pl_text) {
     if (count($Search->warnings) || count($pl->error_html)) {
         echo "<div class='maintabsep'></div>\n";
         $Conf->warnMsg(join("<br />\n", array_merge($Search->warnings, $pl->error_html)));
