@@ -22,15 +22,15 @@ $collaborators = isset($arg["collaborators"]);
 if (!$users && !$papers && !$collaborators)
     $users = $papers = true;
 
-if ($users || $papers) {
-    $result = Dbl::ql(Contact::contactdb(), "select confid from Conferences where `dbname`=?", $Conf->dbname);
-    $row = Dbl::fetch_first_row($result);
-    if (!$row) {
-        fwrite(STDERR, "Conference is not recorded in contactdb\n");
-        exit(1);
-    }
-    $confid = (int) $row[0];
+$result = Dbl::ql(Contact::contactdb(), "select * from Conferences where `dbname`=?", $Conf->dbname);
+$row = Dbl::fetch_first_object($result);
+if (!$row) {
+    fwrite(STDERR, "Conference is not recorded in contactdb\n");
+    exit(1);
 }
+$confid = (int) $row->confid;
+if ($row->shortName !== $Conf->short_name || $row->longName !== $Conf->long_name)
+    Dbl::ql(Contact::contactdb(), "update Conferences set shortName=?, longName=? where confid=?", $Conf->short_name ? : $row->shortName, $Conf->long_name ? : $row->longName, $confid);
 
 if ($users) {
     // read current cdb roles
