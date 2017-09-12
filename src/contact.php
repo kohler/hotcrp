@@ -1181,7 +1181,7 @@ class Contact {
                 $cj["lastName"] = (string) get($reg, "lastName");
             }
             foreach (["affiliation", "collaborators", "country"] as $k)
-                if ((string) $acct->$x === "" && ($x = get($reg, $k)))
+                if ((string) $acct->$k === "" && ($x = get($reg, $k)))
                     $cj[$k] = $x;
             if (!empty($cj))
                 $acct->save_json((object) $cj, null, false);
