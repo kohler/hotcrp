@@ -921,7 +921,7 @@ class Contact {
         $old_roles = $this->roles;
         $old_email = $this->email;
         $old_disabled = $this->disabled ? 1 : 0;
-        $changing_email = strtolower($cj->email) !== strtolower((string) $old_email);
+        $changing_email = isset($cj->email) && strtolower($cj->email) !== strtolower((string) $old_email);
         $cu = new Contact_Update($inserting, $changing_email);
 
         $aupapers = null;
