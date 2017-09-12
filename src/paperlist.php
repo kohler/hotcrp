@@ -1520,4 +1520,29 @@ class PaperList {
 
         return [$header, $body];
     }
+
+
+    static function change_display(Conf $conf, $base, $var = null, $val = null) {
+        if (($x = $conf->session("{$base}display")) !== null)
+            /* use session value */;
+        else if ($base === "pl")
+            $x = $conf->setting_data("pldisplay_default", "");
+        else
+            $x = "";
+        if ((string) $x === "" && $base === "pl")
+            $x = $conf->review_form()->default_display();
+
+        // set $var to $val in list
+        if ($var) {
+            $x = preg_replace('{\b(show:|hide:|)' . preg_quote($var) . '(?=\s|\z)}', $x);
+            if (($f = $Conf->find_review_field($var)))
+                $x = preg_replace('{\b(show:|hide:|)' . preg_quote($f->id) . '(?=\s|\z)}', $x);
+            if ($val)
+                $x = trim($x) . " show:$var";
+        }
+
+        // store list in $_SESSION
+        $conf->save_session("{$base}display", $x);
+        return $x;
+    }
 }

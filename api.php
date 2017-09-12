@@ -105,7 +105,10 @@ if ($qreq->fn === "setsession") {
         $val = $qreq->val;
         if ($m[2]) {
             $on = !($val !== null && intval($val) > 0);
-            displayOptionsSet($m[1], substr($m[2], 1), $on);
+            if ($m[1] === "pldisplay" || $m[1] === "pfdisplay")
+                PaperList::change_display($Conf, substr($m[1], 0, 2), substr($m[2], 1), $on);
+            else
+                displayOptionsSet($m[1], substr($m[2], 1), $on);
         } else
             $Conf->save_session($m[1], $val !== null ? intval($val) : null);
         json_exit(["ok" => true]);

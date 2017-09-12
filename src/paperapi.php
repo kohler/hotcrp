@@ -382,7 +382,7 @@ class PaperApi {
             return ["ok" => false, "error" => "No such field."];
         if ($qreq->f == "authors") {
             $full = (int) $qreq->aufull;
-            displayOptionsSet("pldisplay", "aufull", $full);
+            PaperList::change_display($user->conf, "pl", "aufull", $full);
         }
         if (!isset($qreq->q) && $prow) {
             $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
