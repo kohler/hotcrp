@@ -1534,11 +1534,12 @@ class PaperList {
 
         // set $var to $val in list
         if ($var) {
-            $x = preg_replace('{\b(show:|hide:|)' . preg_quote($var) . '(?=\s|\z)}', $x);
-            if (($f = $Conf->find_review_field($var)))
-                $x = preg_replace('{\b(show:|hide:|)' . preg_quote($f->id) . '(?=\s|\z)}', $x);
+            $x = preg_replace('{\b(show:|hide:|)' . preg_quote($var) . '(?=\s|\z)}', " ", $x);
+            if (($f = $conf->find_review_field($var)))
+                $x = preg_replace('{\b(show:|hide:|)' . preg_quote($f->id) . '(?=\s|\z)}', " ", $x);
             if ($val)
                 $x = trim($x) . " show:$var";
+            $x = simplify_whitespace($x);
         }
 
         // store list in $_SESSION
