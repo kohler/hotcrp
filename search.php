@@ -303,7 +303,6 @@ else if (isset($Qreq->qa) || defval($Qreq, "qt", "n") != "n")
     $activetab = 2;
 else
     $activetab = 1;
-$searchform_formulas = "c";
 if ($activetab == 3 && $pl->count == 0)
     $activetab = 1;
 
@@ -468,7 +467,7 @@ if ($pl_text) {
 }
 
 
-echo '<div id="searchform" class="tablinks', $activetab, ' fold3', $searchform_formulas, ' clearfix">',
+echo '<div id="searchform" class="tablinks', $activetab, ' clearfix">',
     '<div class="tlx"><div class="tld1">';
 
 // Basic search
