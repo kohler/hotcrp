@@ -1160,9 +1160,9 @@ class PaperList {
         return $idh ? $idh[0] : null;
     }
 
-    function session_list_object($listname = null) {
+    function session_list_object() {
         assert($this->ids !== null);
-        return $this->search->create_session_list_object($this->ids, self::_listDescription($listname), $this->sortdef());
+        return $this->search->create_session_list_object($this->ids, self::_listDescription($this->table_type), $this->sortdef());
     }
 
     function table_html($listname, $options = array()) {
