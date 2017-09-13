@@ -117,7 +117,7 @@ class PaperList {
 
     private $_table_id;
     private $_table_class;
-    private $table_type;
+    private $list_type;
     private $_row_id_pattern;
     private $_selection;
     private $_only_selected;
@@ -201,11 +201,11 @@ class PaperList {
         $this->_row_id_pattern = $row_id_pattern;
     }
 
-    function table_type() {
-        return $this->table_type;
+    function list_type() {
+        return $this->list_type;
     }
-    function set_table_type($table_type) {
-        $this->table_type = $table_type;
+    function set_list_type($list_type) {
+        $this->list_type = $list_type;
     }
 
     function set_view($k, $v) {
@@ -410,10 +410,10 @@ class PaperList {
     }
 
     function action_xt_displayed($fj) {
-        if (isset($fj->display_if_table)
-            && (str_starts_with($fj->display_if_table, "!")
-                ? $this->table_type === substr($fj->display_if_table, 1)
-                : $this->table_type !== $fj->display_if_table))
+        if (isset($fj->display_if_list)
+            && (str_starts_with($fj->display_if_list, "!")
+                ? $this->list_type === substr($fj->display_if_list, 1)
+                : $this->list_type !== $fj->display_if_list))
             return false;
         if (isset($fj->display_if)
             && !$this->conf->xt_check($fj->display_if, $fj, $this->user))
@@ -1167,7 +1167,7 @@ class PaperList {
 
     function session_list_object() {
         assert($this->ids !== null);
-        return $this->search->create_session_list_object($this->ids, self::_listDescription($this->table_type), $this->sortdef());
+        return $this->search->create_session_list_object($this->ids, self::_listDescription($this->list_type), $this->sortdef());
     }
 
     function table_html($listname, $options = array()) {
@@ -1176,8 +1176,8 @@ class PaperList {
         // need tags for row coloring
         if ($this->user->can_view_tags(null))
             $this->qopts["tags"] = 1;
-        if (!$this->table_type)
-            $this->table_type = $listname;
+        if (!$this->list_type)
+            $this->list_type = $listname;
 
         // get column list, check sort
         if (isset($options["field_list"]))

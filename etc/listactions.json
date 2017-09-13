@@ -9,7 +9,7 @@
         "name": "assign", "post": true,
         "renderer": "Assign_SearchAction::render", "title": "Assign",
         "position": 700,
-        "enable_if": "manager", "display_if_table": "!editpref",
+        "enable_if": "manager", "display_if_list": "!editpref",
         "require": "src/sa/sa_assign.php",
         "factory_class": "Assign_SearchAction"
     },
@@ -17,7 +17,7 @@
         "name": "decide", "post": true,
         "renderer": "Decide_SearchAction::render", "title": "Decide",
         "position": 900,
-        "enable_if": "manager", "display_if_table": "!editpref",
+        "enable_if": "manager", "display_if_list": "!editpref",
         "require": "src/sa/sa_decide.php",
         "factory_class": "Decide_SearchAction"
     },
@@ -135,7 +135,7 @@
         "name": "get/revpref", "get": true,
         "selector": "Preference file",
         "position": -100,
-        "enable_if": "pc", "display_if_table": "editpref",
+        "enable_if": "pc", "display_if_list": "editpref",
         "require": "src/sa/sa_get_revpref.php",
         "factory_class": "GetRevpref_SearchAction",
         "abstracts": false
@@ -144,7 +144,7 @@
         "name": "get/revprefx", "get": true,
         "selector": "Preference file with abstracts",
         "position": -99,
-        "enable_if": "pc", "display_if_table": "editpref",
+        "enable_if": "pc", "display_if_list": "editpref",
         "require": "src/sa/sa_get_revpref.php",
         "factory_class": "GetRevpref_SearchAction",
         "abstracts": true
@@ -225,7 +225,7 @@
         "name": "mail", "get": true,
         "renderer": "Mail_SearchAction::render", "title": "Mail",
         "position": 1000,
-        "enable_if": "manager", "display_if_table": "!editpref",
+        "enable_if": "manager", "display_if_list": "!editpref",
         "factory_class": "Mail_SearchAction",
         "require": "src/sa/sa_mail.php"
     },
@@ -233,21 +233,21 @@
         "name": "tag", "post": true,
         "renderer": "Tag_SearchAction::render", "title": "Tag",
         "position": 500,
-        "enable_if": "pc", "display_if_table": "!editpref",
+        "enable_if": "pc", "display_if_list": "!editpref",
         "factory_class": "Tag_SearchAction",
         "require": "src/sa/sa_tag.php"
     },
     {
         "name": "uploadpref",
         "renderer": "GetRevpref_SearchAction::render_upload", "title": "Upload",
-        "enable_if": "pc", "display_if_table": "editpref",
+        "enable_if": "pc", "display_if_list": "editpref",
         "require": "src/sa/sa_get_revpref.php",
         "position": 100
     },
     {
         "name": "setpref",
         "renderer": "GetRevpref_SearchAction::render_set", "title": "Set preferences",
-        "enable_if": "pc", "display_if_table": "editpref",
+        "enable_if": "pc", "display_if_list": "editpref",
         "require": "src/sa/sa_get_revpref.php",
         "position": 200
     }
