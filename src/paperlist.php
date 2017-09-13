@@ -192,27 +192,15 @@ class PaperList {
         $this->_columns_by_name = ["anonau" => null, "aufull" => null, "rownum" => null, "statistics" => null];
     }
 
+    function table_id() {
+        return $this->_table_id;
+    }
     function set_table_id_class($table_id, $table_class, $row_id_pattern = null) {
         $this->_table_id = $table_id;
         $this->_table_class = $table_class;
         $this->_row_id_pattern = $row_id_pattern;
     }
 
-    function set_view_display($str) {
-        preg_match_all('/\b(show:|hide:|sort:|)(\".*?\"|[^"\s]+)/', $str, $mm, PREG_SET_ORDER);
-        $has_sorters = !!array_filter($this->search->sorters ? : [], function ($s) {
-            return $s->thenmap === null;
-        });
-        foreach ($mm as $m) {
-            if ($m[1] === "sort:") {
-                if (!$has_sorters)
-                    $this->search->sorters[] = PaperSearch::parse_sorter($m[2]);
-            } else if ($m[1] === "hide:")
-                $this->set_view($m[2], false);
-            else
-                $this->set_view($m[2], true);
-        }
-    }
     function set_view($k, $v) {
         if (in_array($k, ["compact", "cc", "compactcolumn", "ccol", "compactcolumns"]))
             $this->_view_compact_columns = $this->_view_columns = $v;
@@ -228,24 +216,39 @@ class PaperList {
         else
             $this->_view_fields[$k] = $v;
     }
-
-    function unfold_all() {
-        $this->_unfold_all = true;
+    function set_view_display($str) {
+        preg_match_all('/\b(show:|hide:|sort:|edit:)(\".*?\"|[^"\s]+)/', $str, $mm, PREG_SET_ORDER);
+        $has_sorters = !!array_filter($this->search->sorters ? : [], function ($s) {
+            return $s->thenmap === null;
+        });
+        foreach ($mm as $m) {
+            if ($m[1] === "sort:") {
+                if (!$has_sorters)
+                    $this->search->sorters[] = PaperSearch::parse_sorter($m[2]);
+            } else if ($m[1] === "hide:")
+                $this->set_view($m[2], false);
+            else if ($m[1] === "edit:")
+                $this->set_view($m[2], "edit");
+            else
+                $this->set_view($m[2], true);
+        }
     }
 
     function set_selection(SearchSelection $ssel, $only_selected = false) {
         $this->_selection = $ssel;
         $this->_only_selected = $only_selected;
     }
-
     function is_selected($paperId, $default = false) {
         return $this->_selection ? $this->_selection->is_selected($paperId) : $default;
+    }
+
+    function unfold_all() {
+        $this->_unfold_all = true;
     }
 
     function has($key) {
         return isset($this->_has[$key]);
     }
-
     function mark_has($key) {
         $this->_has[$key] = true;
     }
@@ -1058,10 +1061,6 @@ class PaperList {
             }
         assert(empty($this->row_attr));
         return $field_list2;
-    }
-
-    function table_id() {
-        return $this->_table_id;
     }
 
     function make_review_analysis($xrow, PaperInfo $row) {
