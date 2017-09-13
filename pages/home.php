@@ -457,6 +457,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
 
     if ($Me->has_review()) {
         $plist = new PaperList(new PaperSearch($Me, ["q" => "re:me"]));
+        $plist->set_table_id_class(null, "pltable_reviewerhome");
         $ptext = $plist->table_html("reviewerHome", ["list" => true]);
         if ($plist->count > 0)
             echo "<div class='fx'><div class='g'></div>", $ptext, "</div>";

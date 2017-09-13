@@ -485,22 +485,6 @@ class PaperList {
         return $foot;
     }
 
-    static function _listDescription($listname) {
-        switch ($listname) {
-          case "reviewAssignment":
-            return "Review assignments";
-          case "conflict":
-            return "Potential conflicts";
-          case "editpref":
-            return "Review preferences";
-          case "reviewers":
-          case "reviewersSel":
-            return "Proposed assignments";
-          default:
-            return null;
-        }
-    }
-
     private function _default_linkto($page) {
         if (!$this->_paper_link_page)
             $this->_paper_link_page = $page;
@@ -1160,6 +1144,22 @@ class PaperList {
         return $idh ? $idh[0] : null;
     }
 
+    static private function _listDescription($listname) {
+        switch ($listname) {
+          case "reviewAssignment":
+            return "Review assignments";
+          case "conflict":
+            return "Potential conflicts";
+          case "editpref":
+            return "Review preferences";
+          case "reviewers":
+          case "reviewersSel":
+            return "Proposed assignments";
+          default:
+            return null;
+        }
+    }
+
     function session_list_object() {
         assert($this->ids !== null);
         return $this->search->create_session_list_object($this->ids, self::_listDescription($this->table_type), $this->sortdef());
@@ -1314,7 +1314,7 @@ class PaperList {
         $foldclasses = array();
         if ($this->foldable)
             $foldclasses = $this->_analyze_folds($rstate, $fieldDef);
-        $enter = "<table class=\"pltable plt_" . htmlspecialchars($listname);
+        $enter = "<table class=\"pltable";
         if ($this->_table_class)
             $enter .= " " . $this->_table_class;
         if (get($options, "list"))

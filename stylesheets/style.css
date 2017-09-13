@@ -1768,7 +1768,7 @@ tr.pl_footrow > td {
 	border-top: 1px solid #cccccc;
 	padding-top: 3px;
 }
-table.plt_reviewerHome tr.pl_headrow th {
+table.pltable_reviewerhome > thead > tr.pl_headrow > th {
 	border-bottom: none;
 }
 span.dragtaghandle {
