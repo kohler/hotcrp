@@ -306,7 +306,7 @@ class PaperOption implements Abbreviator {
     private $display;
     public $display_space;
     public $selector;
-    private $form_priority;
+    private $form_position;
     public $enable_if; // public for PaperOptionList
 
     const DISP_TOPICS = 0;
@@ -368,7 +368,7 @@ class PaperOption implements Abbreviator {
         if ($disp === false)
             $disp = "none";
         $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
-        $this->form_priority = get_i($args, "form_priority");
+        $this->form_position = get_i($args, "form_position", get_i($args, "form_priority"));
         $this->enable_if = get($args, "enable_if");
 
         if (($x = get($args, "display_space")))
@@ -454,9 +454,9 @@ class PaperOption implements Abbreviator {
             return $this->display;
     }
 
-    function form_priority() {
-        if ($this->form_priority)
-            return $this->form_priority;
+    function form_position() {
+        if ($this->form_position)
+            return $this->form_position;
         else if ($this->display == self::DISP_SUBMISSION)
             return 15000 + $this->position;
         else

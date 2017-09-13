@@ -2034,7 +2034,7 @@ class PaperTable {
         }
         foreach ($this->canUploadFinal ? $this->conf->paper_opts->option_list() : $this->conf->paper_opts->nonfinal_option_list() as $opt)
             if (!$this->prow || $Me->can_view_paper_option($this->prow, $opt, true))
-                $this->add_edit_field($opt->form_priority(), $this->make_echo_editable_option($opt), $opt);
+                $this->add_edit_field($opt->form_position(), $this->make_echo_editable_option($opt), $opt);
         usort($this->edit_fields, function ($a, $b) {
             return $a[0] - $b[0] ? : $a[1] - $b[1];
         });
