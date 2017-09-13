@@ -2391,14 +2391,14 @@ class PaperTable {
         if ($_REQUEST["paperId"] === "(All)")
             $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = "";
         $search = new PaperSearch($Me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
-        $pl = $search->paperList();
-        if (count($pl) == 1) {
-            $pl = $search->session_list_object();
+        $ps = $search->paperList();
+        if (count($ps) == 1) {
+            $slo = $search->session_list_object();
             $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] =
-                $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = $pl->ids[0];
+                $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = $slo->ids[0];
             // DISABLED: check if the paper is in the current list
             unset($_REQUEST["ls"], $_GET["ls"], $_POST["ls"]);
-            $pl->set_cookie();
+            $slo->set_cookie();
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
             return true;
