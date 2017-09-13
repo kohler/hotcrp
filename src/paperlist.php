@@ -101,7 +101,6 @@ class PaperList {
     public $check_format;
     public $tbody_attr;
     public $row_attr;
-    public $table_type;
     public $need_render;
     public $has_editable_tags = false;
 
@@ -118,6 +117,7 @@ class PaperList {
 
     private $_table_id;
     private $_table_class;
+    private $table_type;
     private $_row_id_pattern;
     private $_selection;
     private $_only_selected;
@@ -199,6 +199,13 @@ class PaperList {
         $this->_table_id = $table_id;
         $this->_table_class = $table_class;
         $this->_row_id_pattern = $row_id_pattern;
+    }
+
+    function table_type() {
+        return $this->table_type;
+    }
+    function set_table_type($table_type) {
+        $this->table_type = $table_type;
     }
 
     function set_view($k, $v) {
@@ -403,10 +410,10 @@ class PaperList {
     }
 
     function action_xt_displayed($fj) {
-        if (isset($fj->table_type)
-            && (str_starts_with($fj->table_type, "!")
-                ? $this->table_type === substr($fj->table_type, 1)
-                : $this->table_type !== $fj->table_type))
+        if (isset($fj->display_if_table)
+            && (str_starts_with($fj->display_if_table, "!")
+                ? $this->table_type === substr($fj->display_if_table, 1)
+                : $this->table_type !== $fj->display_if_table))
             return false;
         if (isset($fj->display_if)
             && !$this->conf->xt_check($fj->display_if, $fj, $this->user))
@@ -954,7 +961,6 @@ class PaperList {
     private function _prepare() {
         $this->_has = [];
         $this->count = 0;
-        $this->table_type = false;
         $this->need_render = false;
         return true;
     }
@@ -1170,7 +1176,8 @@ class PaperList {
         // need tags for row coloring
         if ($this->user->can_view_tags(null))
             $this->qopts["tags"] = 1;
-        $this->table_type = $listname;
+        if (!$this->table_type)
+            $this->table_type = $listname;
 
         // get column list, check sort
         if (isset($options["field_list"]))
