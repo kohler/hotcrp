@@ -18,7 +18,7 @@ class PaperApi {
         if (!$user->can_view_decision($prow))
             json_exit(403, "Permission error.");
         $dname = $prow->conf->decision_name($prow->outcome);
-        $jr = new JsonResult(["ok" => true, "value" => $dname, "result" => htmlspecialchars($dname ? : "?")]);
+        $jr = new JsonResult(["ok" => true, "value" => (int) $prow->outcome, "result" => htmlspecialchars($dname ? : "?")]);
         if ($user->can_set_decision($prow))
             $jr->content["editable"] = true;
         return $jr;
