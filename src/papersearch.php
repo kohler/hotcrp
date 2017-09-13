@@ -2995,7 +2995,7 @@ class PaperSearch {
         return SearchTerm::make_op("or", $qt);
     }
 
-    static public function pop_word(&$str, Conf $conf) {
+    static function shift_word(&$str, Conf $conf) {
         $wordre = '/\A\s*([-_.a-zA-Z0-9]+:|"[^"]+":|)\s*((?:"[^"]*(?:"|\z)|[^"\s()]*)*)/s';
 
         if (!preg_match($wordre, $str, $m))
@@ -3013,7 +3013,7 @@ class PaperSearch {
         // elide colon
         if ($word === "HEADING") {
             $str = $word . ":" . ltrim($str);
-            return self::pop_word($str, $conf);
+            return self::shift_word($str, $conf);
         }
 
         // some keywords may be followed by a parenthesized expression
@@ -3085,7 +3085,7 @@ class PaperSearch {
 
             if ($opstr === null) {
                 $prevstr = $nextstr;
-                $word = self::pop_word($nextstr, $this->conf);
+                $word = self::shift_word($nextstr, $this->conf);
                 // Bare any-case "all", "any", "none" are treated as keywords.
                 if (!$curqe
                     && (empty($stack) || $stack[count($stack) - 1]->op->precedence <= 2)
@@ -3187,7 +3187,7 @@ class PaperSearch {
             }
 
             if ($opstr === null) {
-                $curqe = self::pop_word($nextstr, $conf);
+                $curqe = self::shift_word($nextstr, $conf);
             } else if ($opstr === ")") {
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->op !== "(")

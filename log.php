@@ -63,7 +63,7 @@ if ($Qreq->p !== "") {
 if ($Qreq->acct !== "") {
     $ids = array();
     $accts = $Qreq->acct;
-    while (($word = PaperSearch::pop_word($accts, $Conf))) {
+    while (($word = PaperSearch::shift_word($accts, $Conf))) {
         $flags = ContactSearch::F_TAG | ContactSearch::F_USER | ContactSearch::F_ALLOW_DELETED;
         if (substr($word, 0, 1) === "\"") {
             $flags |= ContactSearch::F_QUOTED;
