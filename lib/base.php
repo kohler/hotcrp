@@ -249,6 +249,10 @@ function get_i($var, $idx, $default = null) {
     return (int) get($var, $idx, $default);
 }
 
+function get_f($var, $idx, $default = null) {
+    return (float) get($var, $idx, $default);
+}
+
 function opt($idx, $default = null) {
     global $Conf, $Opt;
     return get($Conf ? $Conf->opt : $Opt, $idx, $default);

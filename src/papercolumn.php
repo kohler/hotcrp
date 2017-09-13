@@ -66,7 +66,7 @@ class PaperColumn extends Column {
         usort(self::$factories, function ($a, $b) {
             $ldiff = strlen($b[0]) - strlen($a[0]);
             if (!$ldiff)
-                $ldiff = $a[1]->factory_priority - $b[1]->factory_priority;
+                $ldiff = $a[1]->priority - $b[1]->priority;
             return $ldiff < 0 ? -1 : ($ldiff > 0 ? 1 : 0);
         });
     }
@@ -197,9 +197,9 @@ class PaperColumn extends Column {
 }
 
 class PaperColumnFactory {
-    public $factory_priority;
+    public $priority;
     function __construct($cj = null) {
-        $this->factory_priority = get($cj, "factory_priority", 0);
+        $this->priority = get_f($cj, "priority");
     }
     function instantiate(Contact $user, $name, $errors) {
     }

@@ -368,7 +368,7 @@ class PaperOption implements Abbreviator {
         if ($disp === false)
             $disp = "none";
         $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
-        $this->form_position = get_i($args, "form_position");
+        $this->form_position = get_f($args, "form_position");
         $this->enable_if = get($args, "enable_if");
 
         if (($x = get($args, "display_space")))
