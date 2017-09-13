@@ -1016,8 +1016,7 @@ class PaperList {
                     if ($this->user->can_view_tags(null)
                         && ($tagger = new Tagger($this->user))
                         && ($tag = $tagger->check($sorter->type))
-                        && ($result = $this->conf->qe("select paperId from PaperTag where tag=? limit 1", $tag))
-                        && edb_nrows($result))
+                        && $this->conf->fetch_ivalue("select exists (select * from PaperTag where tag=?)", $tag))
                         $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”. Did you mean “sort:#" . htmlspecialchars($sorter->type) . "”?");
                     else
                         $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”.");
