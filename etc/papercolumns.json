@@ -2,53 +2,53 @@
     {
         "name": "sel",
         "column": true, "minimal": true, "factory_class": "SelectorPaperColumn",
-        "priority": 10
+        "position": 10
     },
     {
         "name": "selon",
         "column": true, "minimal": true, "className": "pl_sel", "factory_class": "SelectorPaperColumn",
-        "priority": 10
+        "position": 10
     },
     {
         "name": "selconf",
         "column": true, "minimal": true, "className": "pl_confsel", "factory_class": "ConflictSelector_PaperColumn",
-        "priority": 10
+        "position": 10
     },
     {
         "name": "id",
         "column": true, "sort": true, "minimal": true, "completion": true, "factory_class": "IdPaperColumn",
-        "priority": 100
+        "position": 100
     },
     {
         "name": "title",
         "column": true, "sort": true, "minimal": true, "completion": true, "factory_class": "TitlePaperColumn",
-        "priority": 120
+        "position": 120
     },
     {
         "prefix": "",
         "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_option",
         "factory_class": "Option_PaperColumnFactory", "factory_priority": 1000,
-        "priority": 200
+        "position": 200
     },
     {
         "name": "topicscore",
         "column": true, "sort": true, "completion": true, "factory_class": "TopicScorePaperColumn",
-        "priority": 400
+        "position": 400
     },
     {
         "name": "desirability",
         "column": true, "sort": true, "completion": true, "factory_class": "Desirability_PaperColumn",
-        "priority": 410
+        "position": 410
     },
     {
         "name": "pref",
         "column": true, "sort": true, "completion": true, "className": "pl_revpref", "factory_class": "PreferencePaperColumn",
-        "priority": 500, "synonym": ["revpref", "preference"]
+        "position": 500, "synonym": ["revpref", "preference"]
     },
     {
         "name": "editpref",
         "column": true, "edit": true, "sort": true, "className": "pl_editrevpref", "factory_class": "PreferencePaperColumn",
-        "priority": 500, "synonym": ["editrevpref"]
+        "position": 500, "synonym": ["editrevpref"]
     },
     {
         "prefix": "pref:", "factory_class": "Preference_PaperColumnFactory",
@@ -57,12 +57,12 @@
     {
         "name": "revdelegation",
         "row": true, "className": "pl_text", "factory_class": "ReviewDelegation_PaperColumn",
-        "priority": 800
+        "position": 800
     },
     {
         "name": "revtype",
         "column": true, "sort": true, "completion": true, "className": "pl_revtype", "factory_class": "ReviewerTypePaperColumn",
-        "priority": 820
+        "position": 820
     },
     {
         "prefix": "revtype:", "factory_class": "ReviewerType_PaperColumnFactory"
@@ -70,7 +70,7 @@
     {
         "name": "revstat",
         "column": true, "sort": true, "completion": true, "className": "pl_revstat", "factory_class": "ReviewStatus_PaperColumn",
-        "priority": 830
+        "position": 830
     },
     {
         "prefix": "revstat:", "factory_class": "ReviewStatus_PaperColumnFactory"
@@ -78,147 +78,147 @@
     {
         "name": "assrev",
         "column": true, "sort": true, "completion": true, "factory_class": "AssignReviewPaperColumn",
-        "priority": 840
+        "position": 840
     },
     {
         "name": "status",
         "column": true, "sort": true, "completion": true, "factory_class": "StatusPaperColumn",
-        "priority": 900
+        "position": 900
     },
     {
         "name": "statusfull",
         "column": true, "sort": true, "completion": true, "className": "pl_status", "factory_class": "StatusPaperColumn",
-        "priority": 910
+        "position": 910
     },
     {
         "name": "timestamp",
         "column": true, "sort": true, "completion": true, "factory_class": "TimestampPaperColumn",
-        "priority": 920
+        "position": 920
     },
     {
         "name": "pagecount",
         "column": true, "sort": true, "fold": true, "completion": true, "minimal": true, "className": "plr", "factory_class": "PageCount_PaperColumn",
-        "priority": 1000, "synonym": ["pages"]
+        "position": 1000, "synonym": ["pages"]
     },
     {
         "prefix": "",
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true,
         "className": "pl_score",
         "factory_class": "Score_PaperColumnFactory", "factory_priority": 500,
-        "priority": 1100
+        "position": 1100
     },
     {
         "prefix": "g",
         "column": true, "fold": true, "sort": true, "minimal": true, "className": "pl_score",
         "factory_class": "FormulaGraph_PaperColumnFactory",
-        "priority": 1200
+        "position": 1200
     },
     {
         "prefix": "",
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_formula",
         "factory_class": "Formula_PaperColumnFactory", "factory_priority": 2000,
-        "priority": 1300
+        "position": 1300
     },
     {
         "prefix": "tag:", "tagvalue": false,
         "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
-        "priority": 1400
+        "position": 1400
     },
     {
         "prefix": "tagval:", "tagvalue": true,
         "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
-        "priority": 1400
+        "position": 1400
     },
     {
         "prefix": "#", "tagvalue": null,
         "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
-        "priority": 1400
+        "position": 1400
     },
     {
         "name": "abstract",
         "row": true, "fold": true, "completion": true, "factory_class": "Abstract_PaperColumn",
-        "priority": 140
+        "position": 140
     },
     {
         "name": "authors",
         "row": true, "fold": 1, "completion": true, "factory_class": "AuthorsPaperColumn",
-        "synonym": "au", "priority": 150
+        "synonym": "au", "position": 150
     },
     {
         "name": "authorsmatch",
         "row": true, "factory_class": "ConflictMatchPaperColumn",
-        "priority": 151
+        "position": 151
     },
     {
         "name": "collab",
         "row": true, "fold": true, "completion": true, "factory_class": "CollabPaperColumn",
         "synonym": ["collaborators", "co"],
-        "priority": 160
+        "position": 160
     },
     {
         "name": "collabmatch",
         "row": true, "factory_class": "ConflictMatchPaperColumn",
-        "priority": 161
+        "position": 161
     },
     {
         "name": "topics",
         "row": true, "fold": true, "completion": true, "factory_class": "TopicListPaperColumn",
-        "priority": 420
+        "position": 420
     },
     {
         "name": "pcconf",
         "row": true, "fold": true, "completion": "pcconflicts", "factory_class": "PCConflictListPaperColumn",
         "synonym": ["conflicts", "pcconflicts", "pc-conflicts"],
-        "priority": 450
+        "position": 450
     },
     {
         "name": "allpref",
         "row": true, "fold": true, "completion": true, "factory_class": "PreferenceList_PaperColumn",
         "synonym": ["allrevpref"],
-        "priority": 550
+        "position": 550
     },
     {
         "name": "alltopicpref",
         "row": true, "fold": true, "completion": true, "factory_class": "PreferenceList_PaperColumn",
         "topics": true, "synonym": ["alltopicrevpref"],
-        "priority": 550
+        "position": 550
     },
     {
         "name": "reviewers",
         "row": true, "fold": true, "completion": true, "factory_class": "ReviewerList_PaperColumn",
-        "priority": 850
+        "position": 850
     },
     {
         "name": "tags",
         "row": true, "fold": true, "completion": true, "factory_class": "TagList_PaperColumn",
-        "priority": 1410
+        "position": 1410
     },
     {
         "prefix": "tagrep:",
         "row": true, "fold": true, "className": "pl_tagrep", "factory_class": "TagReport_PaperColumnFactory",
         "synonym": ["tagreport:", "tagreports"],
-        "priority": 1420
+        "position": 1420
     },
     {
         "name": "administrator",
         "row": true, "fold": true, "factory_class": "Administrator_PaperColumn",
         "synonym": ["admin"],
-        "priority": 1500
+        "position": 1500
     },
     {
         "name": "lead",
         "row": true, "fold": true, "completion": true, "factory_class": "Lead_PaperColumn",
-        "priority": 1600
+        "position": 1600
     },
     {
         "name": "shepherd",
         "row": true, "fold": true, "completion": true, "factory_class": "Shepherd_PaperColumn",
-        "priority": 1700
+        "position": 1700
     },
     {
         "name": "commenters",
         "row": true, "fold": true, "completion": true, "factory_class": "Commenters_PaperColumn",
-        "priority": 2000
+        "position": 2000
     },
     {
         "name": "foldall", "factory_class": "FoldAll_PaperColumn"

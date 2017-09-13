@@ -259,11 +259,12 @@ class PaperList {
         if (!is_array($col))
             $col = $col ? [$col] : [];
         $ocol = [];
-        foreach ($col as $colx)
+        foreach ($col as $colx) {
             if (isset($this->_columns_by_name[$colx->name]))
                 $ocol[] = $this->_columns_by_name[$colx->name];
             else
                 $ocol[] = $this->_columns_by_name[$colx->name] = $colx;
+        }
         return $ocol;
     }
     private function find_column($name, $errors = null) {
@@ -848,7 +849,7 @@ class PaperList {
         foreach ($fieldDef as $fdef) {
             $j = ["name" => $fdef->name,
                   "title" => $fdef->header($this, false),
-                  "priority" => $fdef->priority];
+                  "position" => $fdef->position];
             if ($fdef->className != "pl_" . $fdef->name)
                 $j["className"] = $fdef->className;
             if ($fdef->viewable_column()) {
