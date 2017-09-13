@@ -1478,6 +1478,10 @@ class ScoreGraph_PaperColumn extends PaperColumn {
     function __construct($cj) {
         parent::__construct($cj);
     }
+    function sort_name($score_sort) {
+        $score_sort = ListSorter::canonical_long_score_sort($score_sort);
+        return $this->name . ($score_sort ? " $score_sort" : "");
+    }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $pl->context_user();
         $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
@@ -1538,10 +1542,6 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         parent::__construct(["name" => $form_field->search_keyword()] + (array) $cj);
         $this->score = $form_field->id;
         $this->form_field = $form_field;
-    }
-    function sort_name($score_sort) {
-        $score_sort = ListSorter::canonical_long_score_sort($score_sort);
-        return $this->name . ($score_sort ? " $score_sort" : "");
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
