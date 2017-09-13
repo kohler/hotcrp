@@ -1477,7 +1477,7 @@ class PaperTable {
             '</div></form><p class="fn odname">',
             htmlspecialchars($this->conf->decision_name($this->prow->outcome)),
             "</p></div></div>\n";
-        Ht::stash_script('make_pseditor("decision",{p:' . $this->prow->paperId . ',fn:"setdecision"})');
+        Ht::stash_script('make_pseditor("decision",{p:' . $this->prow->paperId . ',fn:"decision"})');
     }
 
     function papstripReviewPreference() {

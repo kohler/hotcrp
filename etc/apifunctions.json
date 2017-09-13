@@ -12,6 +12,10 @@
         "function": "PaperApi::checkformat_api"
     },
     {
+        "name": "decision", "paper": true, "get": true, "post": true,
+        "function": "PaperApi::decision_api"
+    },
+    {
         "name": "fieldhtml", "get": true, "function": "PaperApi::fieldhtml_api"
     },
     {
