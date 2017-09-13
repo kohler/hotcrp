@@ -973,20 +973,20 @@ class SettingValues extends MessageSet {
 class SettingGroup {
     public $name;
     public $description;
-    public $priority;
+    public $position;
     private $render = array();
 
     static public $all;
     static public $map;
     static private $sorted = false;
 
-    function __construct($name, $description, $priority) {
+    function __construct($name, $description, $position) {
         $this->name = $name;
         $this->description = $description;
-        $this->priority = $priority;
+        $this->position = $position;
     }
-    function add_renderer($priority, SettingRenderer $renderer) {
-        $x = [$priority, count($this->render), $renderer];
+    function add_renderer($position, SettingRenderer $renderer) {
+        $x = [$position, count($this->render), $renderer];
         $this->render[] = $x;
         self::$sorted = false;
     }
@@ -1004,14 +1004,14 @@ class SettingGroup {
         }
     }
 
-    static function register($name, $description, $priority, SettingRenderer $renderer) {
+    static function register($name, $description, $position, SettingRenderer $renderer) {
         if (isset(self::$map[$name]))
             $name = self::$map[$name];
         if (!isset(self::$all[$name]))
-            self::$all[$name] = new SettingGroup($name, $description, $priority);
+            self::$all[$name] = new SettingGroup($name, $description, $position);
         if ($description && !self::$all[$name]->description)
             self::$all[$name]->description = $description;
-        self::$all[$name]->add_renderer($priority, $renderer);
+        self::$all[$name]->add_renderer($position, $renderer);
     }
     static function register_synonym($new_name, $old_name) {
         assert(isset(self::$all[$old_name]) && !isset(self::$map[$old_name]));
@@ -1027,8 +1027,8 @@ class SettingGroup {
         if (self::$sorted)
             return;
         uasort(self::$all, function ($a, $b) {
-            if ($a->priority != $b->priority)
-                return $a->priority < $b->priority ? -1 : 1;
+            if ($a->position != $b->position)
+                return $a->position < $b->position ? -1 : 1;
             else
                 return strcasecmp($a->name, $b->name);
         });
