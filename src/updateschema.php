@@ -1269,6 +1269,13 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 175
         && update_schema_paper_review_drop_main_fields($conf))
         $conf->update_schema_version(176);
+    if ($conf->sversion == 176) {
+        if (($x = $conf->setting_data("scoresort_default"))) {
+            $conf->save_setting("scoresort_default", null);
+            $conf->save_setting("opt.defaultScoreSort", 1, $x);
+        }
+        $conf->update_schema_version(177);
+    }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

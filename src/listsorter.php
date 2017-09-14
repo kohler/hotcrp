@@ -61,8 +61,6 @@ class ListSorter {
     static function default_score_sort(Conf $conf, $nosession = false) {
         if (!$nosession && ($x = $conf->session("scoresort")))
             return $x;
-        else if (($x = $conf->setting_data("scoresort_default")))
-            return $x;
         else
             return $conf->opt("defaultScoreSort", "C");
     }
