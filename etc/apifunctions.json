@@ -27,6 +27,10 @@
         "function": "PaperApi::lead_api"
     },
     {
+        "name": "listreport", "get": true,
+        "function": "PaperApi::listreport_api"
+    },
+    {
         "name": "mentioncompletion", "get": true, "post": true,
         "function": "PaperApi::mentioncompletion_api"
     },

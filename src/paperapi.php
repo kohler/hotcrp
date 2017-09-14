@@ -525,4 +525,13 @@ class PaperApi {
         else
             return new JsonResult(["ok" => true, "reviews" => $vrrows]);
     }
+
+    static function listreport_api(Contact $user, Qrequest $qreq, $prow) {
+        $s1 = new PaperSearch($user, get($qreq, "q", "NONE"));
+        $s2 = new PaperSearch($user, "NONE");
+        $report = get($qreq, "report", "pl");
+        $l1 = new PaperList($s1, ["sort" => get($qreq, "sort", true), "foldtype" => $report]);
+        $l2 = new PaperList($s2, ["sort" => true, "foldtype" => $report]);
+        return new JsonResult(["ok" => true, "report" => $report, "display_current" => $l1->display("s"), "display_default" => $l2->display("s")]);
+    }
 }
