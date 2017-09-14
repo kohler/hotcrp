@@ -412,10 +412,10 @@ class PaperList {
     }
 
     function action_xt_displayed($fj) {
-        if (isset($fj->display_if_list)
-            && (str_starts_with($fj->display_if_list, "!")
-                ? $this->report_id === substr($fj->display_if_list, 1)
-                : $this->report_id !== $fj->display_if_list))
+        if (isset($fj->display_if_report)
+            && (str_starts_with($fj->display_if_report, "!")
+                ? $this->report_id === substr($fj->display_if_report, 1)
+                : $this->report_id !== $fj->display_if_report))
             return false;
         if (isset($fj->display_if)
             && !$this->conf->xt_check($fj->display_if, $fj, $this->user))
