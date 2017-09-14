@@ -206,7 +206,7 @@ else if ($Qreq->fn === "uploadpref")
 $Qreq->urlbase = hoturl_site_relative_raw("reviewprefs", prefs_hoturl_args());
 $Qreq->q = get($Qreq, "q", "");
 $Qreq->t = "editpref";
-$Qreq->display = PaperList::change_display($Conf, "pf");
+$Qreq->display = PaperList::change_display($Me, "pf");
 
 // Search actions
 if ($Qreq->fn === "get" && $SSel && !$SSel->is_empty()

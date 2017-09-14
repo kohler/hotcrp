@@ -65,7 +65,7 @@ if ($Qreq->redisplay) {
             $pld .= substr($k, 4) . " ";
     $Conf->save_session("pldisplay", $pld);
 }
-PaperList::change_display($Conf, "pl");
+PaperList::change_display($Me, "pl");
 if ($Qreq->scoresort)
     $Qreq->scoresort = ListSorter::canonical_short_score_sort($Qreq->scoresort);
 else if ($Qreq->sort

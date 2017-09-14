@@ -112,6 +112,7 @@ class PaperList {
     private $_view_columns = false;
     private $_view_compact_columns = false;
     private $_view_row_numbers = false;
+    private $_view_force = false;
     private $_view_fields = [];
     private $atab;
 
@@ -219,7 +220,9 @@ class PaperList {
             $this->_view_compact_columns = $this->_view_columns = $v;
         else if (in_array($k, ["columns", "column", "col"]))
             $this->_view_columns = $v;
-        else if (in_array($k, ["statistics", "stat", "stats", "totals", "force"]))
+        else if ($k === "force")
+            $this->_view_force = $v;
+        else if (in_array($k, ["statistics", "stat", "stats", "totals"]))
             /* skip */;
         else if (in_array($k, ["rownum", "rownumbers"]))
             $this->_view_row_numbers = $v;
@@ -1525,28 +1528,39 @@ class PaperList {
     }
 
 
-    static function change_display(Conf $conf, $base, $var = null, $val = null) {
-        if (($x = $conf->session("{$base}display")) !== null)
-            /* use session value */;
-        else if ($base === "pl")
-            $x = $conf->setting_data("pldisplay_default", "");
-        else
-            $x = "";
-        if ((string) $x === "" && $base === "pl")
-            $x = $conf->review_form()->default_display();
-
-        // set $var to $val in list
-        if ($var) {
-            $x = preg_replace('{\b(show:|hide:|)' . preg_quote($var) . '(?=\s|\z)}', " ", $x);
-            if (($f = $conf->find_review_field($var)))
-                $x = preg_replace('{\b(show:|hide:|)' . preg_quote($f->id) . '(?=\s|\z)}', " ", $x);
-            if ($val)
-                $x = trim($x) . " show:$var";
-            $x = simplify_whitespace($x);
+    function display($report_id) {
+        if (!($this->_prepare($report_id)
+              && ($field_list = $this->_list_columns())))
+            return false;
+        $field_list = $this->_columns($field_list, false);
+        $res = [];
+        if ($this->_view_force)
+            $res[] = "show:force";
+        if ($this->_view_compact_columns)
+            $res[] = "show:ccol";
+        else if ($this->_view_columns)
+            $res[] = "show:col";
+        if ($this->_view_row_numbers)
+            $res[] = "show:rownum";
+        foreach ($this->_view_fields as $k => $v) {
+            if (($col = $this->find_column($k))
+                && ($v === "edit"
+                    || ($v && ($col->fold || !$col->is_visible))
+                    || (!$v && !$col->fold && $col->is_visible))) {
+                if ($v !== "edit")
+                    $v = $v ? "show" : "hide";
+                $res[] = $v . ":" . PaperSearch::escape_word($k);
+            }
         }
-
-        // store list in $_SESSION
-        $conf->save_session("{$base}display", $x);
-        return $x;
+        foreach ($this->sorters as $s) {
+            $res[] = "sort:" . ($s->reverse ? "-" : "") . PaperSearch::escape_word($s->field->sort_name($s->score));
+        }
+        return join(" ", $res);
+    }
+    static function change_display(Contact $user, $base, $var = null, $val = null) {
+        $pl = new PaperList(new PaperSearch($user, "NONE"), ["foldtype" => $base, "sort" => true]);
+        if ($var)
+            $pl->set_view($var, $val);
+        $user->conf->save_session("{$base}display", $pl->display("s"));
     }
 }
