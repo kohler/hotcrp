@@ -226,11 +226,14 @@ class PaperList {
             /* skip */;
         else if (in_array($k, ["rownum", "rownumbers"]))
             $this->_view_row_numbers = $v;
-        else if (in_array($k, ["authors", "aufull", "anonau"]) && $v
+        else if (in_array($k, ["aufull", "anonau"]) && $v
                  && !isset($this->_view_fields["au"]))
             $this->_view_fields[$k] = $this->_view_fields["au"] = $v;
-        else
+        else {
+            if ($k === "authors")
+                $k = "au";
             $this->_view_fields[$k] = $v;
+        }
     }
     function set_view_display($str) {
         $has_sorters = !!array_filter($this->sorters, function ($s) {
