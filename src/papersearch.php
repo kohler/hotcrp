@@ -3036,6 +3036,14 @@ class PaperSearch {
         return $word;
     }
 
+    static function escape_word($str) {
+        $pos = self::find_end_balanced_parens($str);
+        if ($pos === strlen($str))
+            return $str;
+        else
+            return "\"" . str_replace("\"", "\\\"", $str) . "\"";
+    }
+
     static function _searchPopKeyword($str) {
         if (preg_match('/\A([-+!()]|(?:AND|and|OR|or|NOT|not|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $str, $m))
             return array(strtoupper($m[1]), ltrim(substr($str, strlen($m[0]))));
