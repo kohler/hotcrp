@@ -232,7 +232,7 @@ $Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 // search
 $search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q], $reviewer);
-$pl = new PaperList($search, ["sort" => true, "foldtype" => "pf"], $Qreq);
+$pl = new PaperList($search, ["sort" => true, "report" => "pf"], $Qreq);
 $pl->set_table_id_class("foldpl", "pltable_full", "p#");
 $pl_text = $pl->table_html("editpref",
                 array("attributes" => array("data-fold-session" => "pfdisplay.$"),

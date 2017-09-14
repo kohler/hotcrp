@@ -179,11 +179,13 @@ class PaperList {
         else if ($this->sortable && $qreq->sort)
             array_unshift($this->sorters, PaperSearch::parse_sorter($qreq->sort));
 
-        if (($foldtype = get($args, "foldtype"))) {
-            $display = $this->conf->session("{$foldtype}display", null);
+        if (($report = get($args, "report"))) {
+            $display = null;
+            if (!get($args, "no_session_display"))
+                $display = $this->conf->session("{$report}display", null);
             if ($display === null)
-                $display = $this->conf->setting_data("{$foldtype}display_default", null);
-            if ($display === null && $foldtype === "pl")
+                $display = $this->conf->setting_data("{$report}display_default", null);
+            if ($display === null && $report === "pl")
                 $display = $this->conf->review_form()->default_display();
             $this->set_view_display($display);
         }
@@ -1538,13 +1540,14 @@ class PaperList {
         $field_list = $this->_columns($field_list, false);
         $res = [];
         if ($this->_view_force)
-            $res[] = "show:force";
+            $res["-2 force"] = "show:force";
         if ($this->_view_compact_columns)
-            $res[] = "show:ccol";
+            $res["-1 ccol"] = "show:ccol";
         else if ($this->_view_columns)
-            $res[] = "show:col";
+            $res["-1 col"] = "show:col";
         if ($this->_view_row_numbers)
-            $res[] = "show:rownum";
+            $res["rownum"] = "show:rownum";
+        $x = [];
         foreach ($this->_view_fields as $k => $v) {
             if (($col = $this->find_column($k))
                 && ($v === "edit"
@@ -1552,18 +1555,21 @@ class PaperList {
                     || (!$v && !$col->fold && $col->is_visible))) {
                 if ($v !== "edit")
                     $v = $v ? "show" : "hide";
-                $res[] = $v . ":" . PaperSearch::escape_word($k);
+                $key = ($col->position ? : 0) . " " . $col->name;
+                $res[$key] = $v . ":" . PaperSearch::escape_word($col->name);
             }
         }
+        ksort($res, SORT_NATURAL);
+        $res = array_values($res);
         foreach ($this->sorters as $s) {
             $res[] = "sort:" . ($s->reverse ? "-" : "") . PaperSearch::escape_word($s->field->sort_name($s->score));
         }
         return join(" ", $res);
     }
-    static function change_display(Contact $user, $base, $var = null, $val = null) {
-        $pl = new PaperList(new PaperSearch($user, "NONE"), ["foldtype" => $base, "sort" => true]);
+    static function change_display(Contact $user, $report, $var = null, $val = null) {
+        $pl = new PaperList(new PaperSearch($user, "NONE"), ["report" => $report, "sort" => true]);
         if ($var)
             $pl->set_view($var, $val);
-        $user->conf->save_session("{$base}display", $pl->display("s"));
+        $user->conf->save_session("{$report}display", $pl->display("s"));
     }
 }

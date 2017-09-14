@@ -5824,23 +5824,23 @@ function edit_formulas() {
             hc.push(escape_entities(f.name));
         hc.push('</div></div><div class="f-i"><div class="f-c">Expression</div><div class="f-e">');
         if (f.editable)
-            hc.push('<textarea class="editformulas-expression" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:calc(99%)">' + escape_entities(f.expression) + '</textarea>')
+            hc.push('<textarea class="editformulas-expression" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(f.expression) + '</textarea>')
                 .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '" />');
         else
             hc.push(escape_entities(f.expression));
         hc.push_pop('</div></div>');
     }
     function onclick() {
-        if (this.name == "cancel")
+        if (this.name === "cancel")
             popup_close($d);
-        else if (this.name == "add") {
+        else if (this.name === "add") {
             var hc = new HtmlCollector;
             push_formula(hc, {name: "", expression: "", editable: true, id: "new"});
             var $f = $(hc.render()).appendTo($d.find(".editformulas"));
             $f.find("textarea").autogrow();
             focus_at($f.find(".editformulas-name"));
             $d.find(".popup-bottom").scrollIntoView();
-        } else if (this.name == "save")
+        } else if (this.name === "save")
             return true;
     }
     function ondelete() {
@@ -5866,6 +5866,48 @@ function edit_formulas() {
         $d.find("form").attr({action: hoturl_add(window.location.href, "saveformulas=1&post=" + siteurl_postvalue), method: "post"});
     }
     create();
+}
+
+
+/* list report options */
+function edit_report_display() {
+    var $d;
+    function onclick() {
+        if (this.name === "cancel")
+            popup_close($d);
+    }
+    function onsubmit() {
+        $.ajax(hoturl_post("api/listreport"), {
+            method: "POST", data: $(this).serialize(),
+            success: function (data) {
+                if (data.ok)
+                    popup_close($d);
+            }
+        });
+        return false;
+    }
+    function create(display_default, display_current) {
+        var hc = popup_skeleton();
+        hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
+        hc.push('<h2>Display options</h2>');
+        hc.push('<div class="f-i"><div class="f-c">Default display options</div><div class="f-e">', '</div></div>');
+        hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "") + '</div>');
+        hc.pop();
+        hc.push('<div class="f-i"><div class="f-c">Current display options</div><div class="f-e">', '</div></div>');
+        hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(display_current || "") + '</textarea>');
+        hc.pop();
+        hc.push_actions(['<button name="save" type="submit" tabindex="1000" class="btn btn-default popup-btn">Save current options as default</button>', '<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button>']);
+        $d = popup_render(hc);
+        $d.on("click", "button", onclick);
+        $d.on("submit", "form", onsubmit);
+    }
+    $.ajax(hoturl_post("api/listreport", {q: $("#searchform input[name=q]").val()}), {
+        success: function (data) {
+            if (data.ok)
+                create(data.display_default, data.display_current);
+        }
+    });
+    return false;
 }
 
 
@@ -5930,18 +5972,6 @@ return function (classes, class_prefix) {
 };
 })();
 
-
-function savedisplayoptions() {
-    $$("scoresortsave").value = $$("scoresort").value;
-    $.post(hoturl_post("search", "savedisplayoptions=1&ajax=1"),
-           $(this).closest("form").serialize(),
-           function (rv) {
-               if (rv.ok)
-                   $$("savedisplayoptionsbutton").disabled = true;
-               else
-                   alert("Unable to save current display options as default.");
-           });
-}
 
 function docheckformat(dt) {    // NB must return void
     var $j = $("#foldcheckformat" + dt);

@@ -85,27 +85,6 @@ if ($Qreq->redisplay) {
 }
 
 
-// save display options
-if (isset($Qreq->savedisplayoptions) && $Me->privChair) {
-    if ($Conf->session("pldisplay") !== " overAllMerit ") {
-        $pldisplay = explode(" ", trim($Conf->session("pldisplay")));
-        sort($pldisplay);
-        $pldisplay = " " . simplify_whitespace(join(" ", $pldisplay)) . " ";
-        $Conf->save_session("pldisplay", $pldisplay);
-        Dbl::qe_raw("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($pldisplay) . "') on duplicate key update data=values(data)");
-    } else
-        Dbl::qe_raw("delete from Settings where name='pldisplay_default'");
-    if ($Conf->session("scoresort") != "C")
-        Dbl::qe_raw("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($Conf->session("scoresort")) . "') on duplicate key update data=values(data)");
-    else
-        Dbl::qe_raw("delete from Settings where name='scoresort_default'");
-    if (!Dbl::has_error() && $Qreq->ajax)
-        json_exit(["ok" => true]);
-    else if (!Dbl::has_error())
-        $Conf->confirmMsg("Display options saved.");
-}
-
-
 // save formula
 function saveformulas() {
     global $Conf, $Me, $Now, $Qreq;
@@ -286,7 +265,7 @@ if (isset($Qreq->q))
     $Search = new PaperSearch($Me, $Qreq);
 else
     $Search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => "NONE"]);
-$pl = new PaperList($Search, ["sort" => true, "foldtype" => "pl", "display" => $Qreq->display], $Qreq);
+$pl = new PaperList($Search, ["sort" => true, "report" => "pl", "display" => $Qreq->display], $Qreq);
 if (isset($Qreq->q)) {
     $pl->set_table_id_class("foldpl", "pltable_full", "p#");
     $pl->set_selection($SSel);
@@ -436,8 +415,6 @@ if ($pl_text) {
                 $display_options->checkbox_item(30, $f->search_keyword(), $f->name_html);
         if (!empty($display_options->items[30])) {
             $onchange = "hiliter(\"redisplay\")";
-            if ($Me->privChair)
-                $onchange .= ";plinfo.extra()";
             $sortitem = '<div class="dispopt-item" style="margin-top:1ex">Sort by: &nbsp;'
                 . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
                              ListSorter::canonical_long_score_sort($Conf->session("scoresort")),
@@ -630,25 +607,11 @@ if ($pl->count > 0) {
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     echo "<td class='padlb'>";
-    // "Set default display"
-    if ($Me->privChair) {
-        echo Ht::js_button("Make default", "savedisplayoptions()",
-                           array("id" => "savedisplayoptionsbutton",
-                                 "disabled" => true)), "&nbsp; ";
-        Ht::stash_html("<form id='savedisplayoptionsform' method='post' action='" . hoturl_post("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
-                          . "<div>" . Ht::hidden("scoresort", $Conf->session("scoresort"), array("id" => "scoresortsave")) . "</div></form>");
-        Ht::stash_script("plinfo.extra=function(){\$\$('savedisplayoptionsbutton').disabled=false};");
-        // strings might be in different orders, so sort before comparing
-        $pld = explode(" ", trim($Conf->setting_data("pldisplay_default", " overAllMerit ")));
-        sort($pld);
-        if ($Conf->session("pldisplay") != " " . ltrim(join(" ", $pld) . " ")
-            || $Conf->session("scoresort") != ListSorter::default_score_sort($Conf, true))
-            Ht::stash_script("plinfo.extra()");
-    }
+    if ($Me->privChair)
+        echo Ht::js_button("Change default display", "edit_report_display()"), "&nbsp; ";
+    echo Ht::submit("Redisplay", array("id" => "redisplay"));
 
-    echo Ht::submit("Redisplay", array("id" => "redisplay")), "</td>";
-
-    echo "</tr></table>", $display_options_extra, "</div>";
+    echo "</td></tr></table>", $display_options_extra, "</div>";
 
     // Done
     echo "</div></form>";

@@ -527,11 +527,25 @@ class PaperApi {
     }
 
     static function listreport_api(Contact $user, Qrequest $qreq, $prow) {
-        $s1 = new PaperSearch($user, get($qreq, "q", "NONE"));
-        $s2 = new PaperSearch($user, "NONE");
         $report = get($qreq, "report", "pl");
-        $l1 = new PaperList($s1, ["sort" => get($qreq, "sort", true), "foldtype" => $report]);
-        $l2 = new PaperList($s2, ["sort" => true, "foldtype" => $report]);
+        if ($report !== "pl" && $report !== "pf")
+            return new JsonResult(400, "Parameter error.");
+        if ($qreq->method() !== "GET" && $user->privChair) {
+            if (!isset($qreq->display))
+                return new JsonResult(400, "Parameter error.");
+            $base_display = "";
+            if ($report === "pl")
+                $base_display = $user->conf->review_form()->default_display();
+            $display = simplify_whitespace($qreq->display);
+            if ($display === $base_display)
+                $user->conf->save_setting("{$report}display_default", null);
+            else
+                $user->conf->save_setting("{$report}display_default", 1, $display);
+        }
+        $s1 = new PaperSearch($user, get($qreq, "q", "NONE"));
+        $l1 = new PaperList($s1, ["sort" => get($qreq, "sort", true), "report" => $report]);
+        $s2 = new PaperSearch($user, "NONE");
+        $l2 = new PaperList($s2, ["sort" => true, "report" => $report, "no_session_display" => true]);
         return new JsonResult(["ok" => true, "report" => $report, "display_current" => $l1->display("s"), "display_default" => $l2->display("s")]);
     }
 }

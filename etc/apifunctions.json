@@ -27,7 +27,7 @@
         "function": "PaperApi::lead_api"
     },
     {
-        "name": "listreport", "get": true,
+        "name": "listreport", "get": true, "post": true,
         "function": "PaperApi::listreport_api"
     },
     {
