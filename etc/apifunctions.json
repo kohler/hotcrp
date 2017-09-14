@@ -80,18 +80,5 @@
     },
     {
         "name": "whoami", "get": true, "function": "PaperApi::whoami_api"
-    },
-
-    {
-        "name": "setlead", "paper": true, "post": true, "function": "PaperApi::lead_api"
-    },
-    {
-        "name": "setmanager", "paper": true, "post": true, "function": "PaperApi::manager_api"
-    },
-    {
-        "name": "setpref", "paper": true, "post": true, "function": "PaperApi::pref_api"
-    },
-    {
-        "name": "setshepherd", "paper": true, "post": true, "function": "PaperApi::shepherd_api"
     }
 ]
