@@ -1004,10 +1004,11 @@ class PaperList {
         // in compactcolumns view, remove non-minimal columns
         $minimal = $this->_view_compact_columns;
         $field_list2 = array();
-        foreach ($field_list as $fdef)
-            if (($v = get($this->_view_fields, $fdef->name)) !== false
-                && (!$minimal || $fdef->minimal || $v))
+        foreach ($field_list as $fdef) {
+            $v = get($this->_view_fields, $fdef->name);
+            if ($v || $fdef->fold || ($v !== false && (!$minimal || $fdef->minimal)))
                 $field_list2[] = $fdef;
+        }
         return $field_list2;
     }
 
