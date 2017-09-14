@@ -450,7 +450,7 @@ if ($pl_text) {
     // Formulas group
     $named_formulas = $Conf->viewable_named_formulas($Me, $Qreq->t == "a");
     foreach ($named_formulas as $formula)
-        $display_options->checkbox_item(40, "formula{$formula->formulaId}", htmlspecialchars($formula->name));
+        $display_options->checkbox_item(40, $formula->name, htmlspecialchars($formula->name));
     if ($named_formulas)
         $display_options->set_header(40, "<strong>Formulas:</strong>");
     if ($Me->isPC && $Qreq->t != "a") {

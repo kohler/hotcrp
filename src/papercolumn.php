@@ -1936,7 +1936,7 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
     }
     private function make(Formula $f) {
         if ($f->formulaId)
-            $name = "formula" . $f->formulaId;
+            $name = $f->name;
         else
             $name = "formula:" . $f->expression;
         return new Formula_PaperColumn(["name" => $name] + $this->cj, $f);
