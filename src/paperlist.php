@@ -148,14 +148,6 @@ class PaperList {
             $qreq = new Qrequest("GET", $qreq);
         $this->qreq = $qreq;
 
-        $this->sortable = isset($args["sort"]) && $args["sort"];
-        if ($this->sortable && is_string($args["sort"]))
-            $this->sorters[] = PaperSearch::parse_sorter($args["sort"]);
-        else if ($this->sortable && $qreq->sort)
-            $this->sorters[] = PaperSearch::parse_sorter($qreq->sort);
-        else
-            $this->sorters[] = PaperSearch::parse_sorter("");
-
         $this->foldable = $this->sortable || !!get($args, "foldable")
             || $this->user->is_manager() /* “Override conflicts” fold */;
 
@@ -178,8 +170,22 @@ class PaperList {
             $this->qopts["paperId"] = $this->search->paperList();
         // NB that actually processed the search, setting PaperSearch::viewmap
 
-        if (($foldtype = get($args, "foldtype")))
-            $this->set_view_display($this->conf->session("{$foldtype}display", ""));
+        $this->sortable = isset($args["sort"]) && $args["sort"];
+        foreach ($this->search->sorters ? : [] as $sorter)
+            ListSorter::push($this->sorters, $sorter);
+        if ($this->sortable && is_string($args["sort"]))
+            array_unshift($this->sorters, PaperSearch::parse_sorter($args["sort"]));
+        else if ($this->sortable && $qreq->sort)
+            array_unshift($this->sorters, PaperSearch::parse_sorter($qreq->sort));
+
+        if (($foldtype = get($args, "foldtype"))) {
+            $display = $this->conf->session("{$foldtype}display", null);
+            if ($display === null)
+                $display = $this->conf->setting_data("{$foldtype}display_default", null);
+            if ($display === null && $foldtype === "pl")
+                $display = $this->conf->review_form()->default_display();
+            $this->set_view_display($display);
+        }
         if (is_string(get($args, "display")))
             $this->set_view_display($args["display"]);
         foreach ($this->search->viewmap ? : [] as $k => $v)
@@ -224,7 +230,7 @@ class PaperList {
             $this->_view_fields[$k] = $v;
     }
     function set_view_display($str) {
-        $has_sorters = !!array_filter($this->search->sorters ? : [], function ($s) {
+        $has_sorters = !!array_filter($this->sorters, function ($s) {
             return $s->thenmap === null;
         });
         while (($w = PaperSearch::shift_word($str, $this->conf))) {
@@ -235,7 +241,7 @@ class PaperList {
                 $action = "show";
             if ($action === "sort") {
                 if (!$has_sorters)
-                    $this->search->sorters[] = PaperSearch::parse_sorter($w);
+                    ListSorter::push($this->sorters, PaperSearch::parse_sorter($w));
             } else if ($action === "edit")
                 $this->set_view($w, "edit");
             else
@@ -1013,42 +1019,31 @@ class PaperList {
     }
 
     private function _prepare_sort() {
-        if (!empty($this->sorters))
-            $this->sorters[0]->field = null;
-
-        if ($this->search->sorters) {
-            foreach ($this->search->sorters as $sorter) {
-                if ($sorter->type
-                    && ($field = $this->find_column($sorter->type))
-                    && $field->prepare($this, PaperColumn::PREP_SORT)
-                    && $field->sort)
+        $sorters = [];
+        foreach ($this->sorters as $sorter) {
+            if ($sorter->type
+                && ($field = $this->find_column($sorter->type))) {
+                if ($field->prepare($this, PaperColumn::PREP_SORT)
+                    && $field->sort) {
                     $sorter->field = $field->realize($this);
-                else if ($sorter->type) {
-                    if ($this->user->can_view_tags(null)
-                        && ($tagger = new Tagger($this->user))
-                        && ($tag = $tagger->check($sorter->type))
-                        && $this->conf->fetch_ivalue("select exists (select * from PaperTag where tag=?)", $tag))
-                        $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”. Did you mean “sort:#" . htmlspecialchars($sorter->type) . "”?");
-                    else
-                        $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”.");
-                    continue;
+                    $sorter->name = $field->name;
+                    $sorters[] = $sorter;
                 }
-                ListSorter::push($this->sorters, $sorter);
+            } else if ($sorter->type) {
+                if ($this->user->can_view_tags(null)
+                    && ($tagger = new Tagger($this->user))
+                    && ($tag = $tagger->check($sorter->type))
+                    && $this->conf->fetch_ivalue("select exists (select * from PaperTag where tag=?)", $tag))
+                    $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”. Did you mean “sort:#" . htmlspecialchars($sorter->type) . "”?");
+                else
+                    $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”.");
             }
-            if (count($this->sorters) > 1 && $this->sorters[0]->empty)
-                array_shift($this->sorters);
         }
-
-        if (empty($this->sorters) || $this->sorters[0]->field)
-            /* all set */;
-        else if ($this->sorters[0]->type
-                 && ($c = $this->find_column($this->sorters[0]->type))
-                 && $c->prepare($this, PaperColumn::PREP_SORT))
-            $this->sorters[0]->field = $c->realize($this);
-        else
-            $this->sorters[0]->field = $this->find_column("id");
-        if (!empty($this->sorters))
-            $this->sorters[0]->type = $this->sorters[0]->field->name;
+        if (empty($sorters)) {
+            $sorters[] = PaperSearch::parse_sorter("id");
+            $sorters[0]->field = $this->find_column("id");
+        }
+        $sorters = $this->sorters;
 
         // set defaults
         foreach ($this->sorters as $s) {
@@ -1394,7 +1389,7 @@ class PaperList {
         $fname = $fdef->name;
         $this->set_view($fname, true);
         assert(!$this->is_folded($fdef));
-        $this->sorters = array();
+        $this->sorters = [];
 
         // get rows
         $field_list = $this->_columns($fname, false);
