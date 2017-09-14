@@ -117,7 +117,7 @@ class PaperList {
 
     private $_table_id;
     private $_table_class;
-    private $list_type;
+    private $report_id;
     private $_row_id_pattern;
     private $_selection;
     private $_only_selected;
@@ -140,7 +140,7 @@ class PaperList {
     static public $magic_sort_info; // accessed by sort function during _sort
     static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P];
 
-    function __construct($search, $args = array(), $qreq = null) {
+    function __construct(PaperSearch $search, $args = array(), $qreq = null) {
         $this->search = $search;
         $this->conf = $this->search->conf;
         $this->user = $this->contact = $this->search->user;
@@ -201,11 +201,11 @@ class PaperList {
         $this->_row_id_pattern = $row_id_pattern;
     }
 
-    function list_type() {
-        return $this->list_type;
+    function report_id() {
+        return $this->report_id;
     }
-    function set_list_type($list_type) {
-        $this->list_type = $list_type;
+    function set_report($report) {
+        $this->report_id = $report;
     }
 
     function set_view($k, $v) {
@@ -224,20 +224,22 @@ class PaperList {
             $this->_view_fields[$k] = $v;
     }
     function set_view_display($str) {
-        preg_match_all('/\b(show:|hide:|sort:|edit:)(\".*?\"|[^"\s]+)/', $str, $mm, PREG_SET_ORDER);
         $has_sorters = !!array_filter($this->search->sorters ? : [], function ($s) {
             return $s->thenmap === null;
         });
-        foreach ($mm as $m) {
-            if ($m[1] === "sort:") {
+        while (($w = PaperSearch::shift_word($str, $this->conf))) {
+            if (($colon = strpos($w, ":")) !== false) {
+                $action = substr($w, 0, $colon);
+                $w = substr($w, $colon + 1);
+            } else
+                $action = "show";
+            if ($action === "sort") {
                 if (!$has_sorters)
-                    $this->search->sorters[] = PaperSearch::parse_sorter($m[2]);
-            } else if ($m[1] === "hide:")
-                $this->set_view($m[2], false);
-            else if ($m[1] === "edit:")
-                $this->set_view($m[2], "edit");
+                    $this->search->sorters[] = PaperSearch::parse_sorter($w);
+            } else if ($action === "edit")
+                $this->set_view($w, "edit");
             else
-                $this->set_view($m[2], true);
+                $this->set_view($w, $action !== "hide");
         }
     }
 
@@ -412,8 +414,8 @@ class PaperList {
     function action_xt_displayed($fj) {
         if (isset($fj->display_if_list)
             && (str_starts_with($fj->display_if_list, "!")
-                ? $this->list_type === substr($fj->display_if_list, 1)
-                : $this->list_type !== $fj->display_if_list))
+                ? $this->report_id === substr($fj->display_if_list, 1)
+                : $this->report_id !== $fj->display_if_list))
             return false;
         if (isset($fj->display_if)
             && !$this->conf->xt_check($fj->display_if, $fj, $this->user))
@@ -501,8 +503,8 @@ class PaperList {
             $this->_paper_link_page = $page;
     }
 
-    private function _list_columns($listname) {
-        switch ($listname) {
+    private function _list_columns() {
+        switch ($this->report_id) {
         case "a":
             return "id title revstat statusfull authors collab abstract topics reviewers shepherd scores formulas";
         case "authorHome":
@@ -519,7 +521,7 @@ class PaperList {
         case "r":
         case "lead":
         case "manager":
-            if ($listname == "r")
+            if ($this->report_id == "r")
                 $this->_default_linkto("finishreview");
             return "sel id title revtype revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
         case "rout":
@@ -958,10 +960,11 @@ class PaperList {
         return true;
     }
 
-    private function _prepare() {
+    private function _prepare($report_id = null) {
         $this->_has = [];
         $this->count = 0;
         $this->need_render = false;
+        $this->report_id = $this->report_id ? : $report_id;
         return true;
     }
 
@@ -1149,43 +1152,41 @@ class PaperList {
         return $idh ? $idh[0] : null;
     }
 
-    static private function _listDescription($listname) {
-        switch ($listname) {
-          case "reviewAssignment":
+    private function _listDescription() {
+        switch ($this->report_id) {
+        case "reviewAssignment":
             return "Review assignments";
-          case "conflict":
+        case "conflict":
             return "Potential conflicts";
-          case "editpref":
+        case "editpref":
             return "Review preferences";
-          case "reviewers":
-          case "reviewersSel":
+        case "reviewers":
+        case "reviewersSel":
             return "Proposed assignments";
-          default:
+        default:
             return null;
         }
     }
 
     function session_list_object() {
         assert($this->ids !== null);
-        return $this->search->create_session_list_object($this->ids, self::_listDescription($this->list_type), $this->sortdef());
+        return $this->search->create_session_list_object($this->ids, $this->_listDescription(), $this->sortdef());
     }
 
-    function table_html($listname, $options = array()) {
-        if (!$this->_prepare())
+    function table_html($report_id, $options = array()) {
+        if (!$this->_prepare($report_id))
             return null;
         // need tags for row coloring
         if ($this->user->can_view_tags(null))
             $this->qopts["tags"] = 1;
-        if (!$this->list_type)
-            $this->list_type = $listname;
 
         // get column list, check sort
         if (isset($options["field_list"]))
             $field_list = $options["field_list"];
         else
-            $field_list = $this->_list_columns($listname);
+            $field_list = $this->_list_columns();
         if (!$field_list) {
-            Conf::msg_error("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
+            Conf::msg_error("There is no paper list query named “" . htmlspecialchars($this->report_id) . "”.");
             return null;
         }
         $field_list = $this->_columns($field_list, true);
@@ -1484,15 +1485,15 @@ class PaperList {
         return $grouppos;
     }
 
-    function text_csv($listname, $options = array()) {
-        if (!$this->_prepare())
+    function text_csv($report_id, $options = array()) {
+        if (!$this->_prepare($report_id))
             return null;
 
         // get column list, check sort
         if (isset($options["field_list"]))
             $field_list = $options["field_list"];
         else
-            $field_list = $this->_list_columns($listname);
+            $field_list = $this->_list_columns();
         if (!$field_list)
             return null;
         $field_list = $this->_columns($field_list, true);
