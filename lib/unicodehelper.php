@@ -287,7 +287,7 @@ class UnicodeHelper {
         $t = "";
         while ($str !== "" && $str !== false) {
             if (preg_match('/\A[\x00-\x7f]+/', $str, $m)
-                || preg_match('/\A(?:[\x00-\x7f]|[\xc0-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf][\x80-\xbf]|[\xf0-\xf7][\x80-\xbf][\x80-\xbf][\x80-\xbf])+/', $str, $m)) {
+                || preg_match('/\A(?:[\x00-\x7f]|[\xc2-\xdf][\x80-\xbf]|\xe0[\xa0-\xbf][\x80-\xbf]|[\xe1-\xec\xee\xef][\x80-\xbf][\x80-\xbf]|\xed[\x80-\x9f][\x80-\xbf]|\xf0[\x90-\xbf][\x80-\xbf][\x80-\xbf]|[\xf1-\xf3][\x80-\xbf][\x80-\xbf][\x80-\xbf]|\xf4[\x80-\x8f][\x80-\xbf][\x80-\xbf])+/', $str, $m)) {
                 $t .= $m[0];
                 $str = substr($str, strlen($m[0]));
             } else {
