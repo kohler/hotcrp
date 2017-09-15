@@ -208,27 +208,6 @@ function savesearch() {
     else
         $arr["owner"] = $Me->contactId;
 
-    // clean display settings
-    if ($Conf->session("pldisplay")) {
-        $acceptable = array("abstract" => 1, "topics" => 1, "tags" => 1,
-                            "rownum" => 1, "reviewers" => 1,
-                            "pcconf" => 1, "lead" => 1, "shepherd" => 1);
-        if (!$Conf->subBlindAlways() || $Me->privChair)
-            $acceptable["au"] = $acceptable["aufull"] = $acceptable["collab"] = 1;
-        if ($Me->privChair && !$Conf->subBlindNever())
-            $acceptable["anonau"] = 1;
-        foreach ($Conf->all_review_fields() as $f)
-            $acceptable[$f->id] = $acceptable[$f->search_keyword()] = 1;
-        foreach ($Conf->named_formulas() as $f)
-            $acceptable["formula" . $f->formulaId] = 1;
-        $display = array();
-        foreach (preg_split('/\s+/', $Conf->session("pldisplay")) as $x)
-            if (isset($acceptable[$x]))
-                $display[$x] = true;
-        ksort($display);
-        $arr["display"] = trim(join(" ", array_keys($display)));
-    }
-
     if ($Qreq->deletesearch) {
         Dbl::qe_raw("delete from Settings where name='ss:" . sqlq($name) . "'");
         SelfHref::redirect($Qreq);
@@ -541,7 +520,7 @@ if ($Me->isPC || $Me->privChair) {
                     foldbutton("ssearch$n"),
                     "</td><td>";
                 $arest = "";
-                foreach (array("qt", "t", "sort", "display") as $k)
+                foreach (array("qt", "t", "sort") as $k)
                     if (isset($sv->$k))
                         $arest .= "&amp;" . $k . "=" . urlencode($sv->$k);
                 echo "<a href=\"", hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), "</a><div class='fx' style='padding-bottom:0.5ex;font-size:smaller'>",
