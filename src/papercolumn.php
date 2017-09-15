@@ -112,10 +112,6 @@ class PaperColumn extends Column {
                && !isset(self::$by_name[$lname]) && !isset(self::$synonyms[$lname]));
         self::$synonyms[$lname] = $lold;
     }
-    static function register_factory($prefix, PaperColumnFactory $f) {
-        self::$factories[] = array(strtolower($prefix), $f);
-        self::_sort_factories();
-    }
 
     static function lookup_all() {
         if (self::$j_by_name === null)

@@ -883,7 +883,7 @@ function scoresort() {
 
     _subhead("", "
 <p>Some paper search results include columns with score graphs. Click on a score
-column heading to sort the paper list using that score. Search &gt; Display
+column heading to sort the paper list using that score. Search &gt; View
 options changes how scores are sorted.  There are five choices:</p>
 
 <dl>
@@ -946,7 +946,7 @@ updates the main tag to reflect the total.
 <p>
 To see the current voting status, search by
 <a href=\"" . hoturl("search", "q=rorder:" . _singleVoteTag() . "") . "\">
-rorder:". _singleVoteTag() . "</a>. Use the display options to show tags
+rorder:". _singleVoteTag() . "</a>. Use view options to show tags
 in the search results (or set up a
 <a href='" . hoturl("help", "t=formulas") . "'>formula</a>).
 </p>
@@ -1065,7 +1065,7 @@ To search for a formula, use a search term such as “<a href=\""
              . hoturl("search", "q=formula%3avar%28OveMer%29%3e0.5") . "\">formula:var(OveMer)>0.5</a>”
 (select papers with variance in Overall merit greater than 0.5).
 Or save formulas using <a
-href=\"" . hoturl("search", "q=&amp;tab=formulas") . "\">Search &gt; Display options
+href=\"" . hoturl("search", "q=&amp;tab=formulas") . "\">Search &gt; View options
 &gt; Edit formulas</a>.</p>
 
 <p>Formulas use a familiar expression language.

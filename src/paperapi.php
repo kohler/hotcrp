@@ -400,10 +400,8 @@ class PaperApi {
             $fdef = count($fdef) == 1 ? $fdef[0] : null;
         if (!$fdef || !$fdef->fold)
             return ["ok" => false, "error" => "No such field."];
-        if ($qreq->f == "authors") {
-            $full = (int) $qreq->aufull;
-            PaperList::change_display($user, "pl", "aufull", $full);
-        }
+        if ($qreq->f == "au" || $qreq->f == "authors")
+            PaperList::change_display($user, "pl", "aufull", (int) $qreq->aufull);
         if (!isset($qreq->q) && $prow) {
             $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
             $qreq->q = $prow->paperId;
@@ -414,8 +412,8 @@ class PaperApi {
             $reviewer = $user->conf->user_by_email($qreq->reviewer);
         unset($qreq->reviewer);
         $search = new PaperSearch($user, $qreq, $reviewer);
-        $pl = new PaperList($search);
-        $response = $pl->ajaxColumn($qreq->f);
+        $pl = new PaperList($search, ["report" => "pl"]);
+        $response = $pl->column_json($qreq->f);
         $response["ok"] = !empty($response);
         return $response;
     }

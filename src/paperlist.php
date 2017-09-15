@@ -228,12 +228,11 @@ class PaperList {
             /* skip */;
         else if (in_array($k, ["rownum", "rownumbers"]))
             $this->_view_row_numbers = $v;
-        else if (in_array($k, ["aufull", "anonau"]) && $v
-                 && !isset($this->_view_fields["au"]))
-            $this->_view_fields[$k] = $this->_view_fields["au"] = $v;
         else {
             if ($k === "authors")
                 $k = "au";
+            if ($v && in_array($k, ["aufull", "anonau"]) && !isset($this->_view_fields["au"]))
+                $this->_view_fields["au"] = $v;
             $this->_view_fields[$k] = $v;
         }
     }
@@ -982,22 +981,30 @@ class PaperList {
         return true;
     }
 
+    private function _expand_view_column($k, $report) {
+        if (in_array($k, ["anonau", "aufull"]))
+            return [];
+        $err = $report ? new ColumnErrors : null;
+        $f = $this->find_columns($k, $err);
+        if (!$f) {
+            if (!$this->search->viewmap || !isset($this->search->viewmap[$k])) {
+                if (($rfinfo = ReviewInfo::field_info($k, $this->conf))
+                    && ($rfield = $this->conf->review_field($rfinfo->id)))
+                    $f = $this->find_columns($rfield->name, $err);
+            } else if ($err && !empty($err->error_html)) {
+                $err->error_html[0] = "Can’t show “" . htmlspecialchars($k) . "”: " . $err->error_html[0];
+                $this->error_html = array_merge($this->error_html, $err->error_html);
+            } else if ($err && !$err->allow_empty)
+                $this->error_html[] = "No such column “" . htmlspecialchars($k) . "”.";
+        }
+        return $f;
+    }
+
     private function _view_columns($field_list) {
         // add explicitly requested columns
         $viewmap_add = [];
         foreach ($this->_view_fields as $k => $v) {
-            if (in_array($k, ["au", "anonau", "aufull"]))
-                continue;
-            $err = new ColumnErrors;
-            $f = $this->find_columns($k, $err);
-            if (!$f) {
-                if ($v && !empty($err->error_html)) {
-                    $err->error_html[0] = "Can’t show “" . htmlspecialchars($k) . "”: " . $err->error_html[0];
-                    $this->error_html = array_merge($this->error_html, $err->error_html);
-                } else if ($v && !$err->allow_empty)
-                    $this->error_html[] = "No such column “" . htmlspecialchars($k) . "”.";
-                continue;
-            }
+            $f = $this->_expand_view_column($k, !!$v);
             foreach ($f as $fx) {
                 $viewmap_add[$fx->name] = $v;
                 foreach ($field_list as $ff)
@@ -1388,7 +1395,7 @@ class PaperList {
         return $enter . join("", $body) . " </tbody>\n" . $exit;
     }
 
-    function ajaxColumn($fieldId) {
+    function column_json($fieldId) {
         if (!$this->_prepare()
             || !($fdef = $this->find_column($fieldId)))
             return null;
@@ -1549,16 +1556,25 @@ class PaperList {
             $res["rownum"] = "show:rownum";
         $x = [];
         foreach ($this->_view_fields as $k => $v) {
-            if (($col = $this->find_column($k))
-                && ($v === "edit"
+            $f = $this->_expand_view_column($k, false);
+            foreach ($f as $col)
+                if ($v === "edit"
                     || ($v && ($col->fold || !$col->is_visible))
-                    || (!$v && !$col->fold && $col->is_visible))) {
-                if ($v !== "edit")
-                    $v = $v ? "show" : "hide";
-                $key = ($col->position ? : 0) . " " . $col->name;
-                $res[$key] = $v . ":" . PaperSearch::escape_word($col->name);
-            }
+                    || (!$v && !$col->fold && $col->is_visible)) {
+                    if ($v !== "edit")
+                        $v = $v ? "show" : "hide";
+                    $key = ($col->position ? : 0) . " " . $col->name;
+                    $res[$key] = $v . ":" . PaperSearch::escape_word($col->name);
+                }
         }
+        $anonau = get($this->_view_fields, "anonau") && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL;
+        $aufull = get($this->_view_fields, "aufull");
+        if (($anonau || $aufull) && !get($this->_view_fields, "au"))
+            $res["150 authors"] = "hide:authors";
+        if ($anonau)
+            $res["151 anonau"] = "show:anonau";
+        if ($aufull)
+            $res["151 aufull"] = "show:aufull";
         ksort($res, SORT_NATURAL);
         $res = array_values($res);
         foreach ($this->sorters as $s) {

@@ -147,7 +147,7 @@
     {
         "name": "authorsmatch",
         "row": true, "factory_class": "ConflictMatchPaperColumn",
-        "position": 151
+        "position": 155
     },
     {
         "name": "collab",

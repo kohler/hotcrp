@@ -2001,7 +2001,7 @@ function fold(elt, dofold, foldnum, foldsessiontype) {
         // check for session
         if ((opentxt = elt.getAttribute("data-fold-session"))
             && foldsessiontype !== false)
-            $.post(hoturl("api/setsession"), {var: opentxt.replace("$", foldsessiontype || foldnum), val: (isopen ? 1 : 0)});
+            $.post(hoturl("api/setsession", {var: opentxt.replace("$", foldsessiontype || foldnum), val: (isopen ? 1 : 0)}));
     }
 
     return false;
@@ -5668,14 +5668,13 @@ function make_callback(dofold, type) {
             render_statistics();
     }
     return function (rv) {
-        if (type == "aufull")
+        if (type === "aufull")
             aufull[!!dofold] = rv;
         f.loadable = false;
         if (rv.ok) {
             values = rv;
             $(render_start);
         }
-        fold(self, dofold, foldmap(type), f.name);
     };
 }
 
@@ -5699,29 +5698,32 @@ function plinfo(type, dofold) {
         dofold = !dofold.checked;
 
     // fold
-    fold(self, dofold, foldmap(type), type);
-    if ((type == "aufull" || type == "anonau") && !dofold
-        && (elt = $$("showau")) && !elt.checked)
+    if ((type === "aufull" || type === "anonau") && !dofold
+        && (elt = $$("showau"))
+        && !elt.checked)
         elt.click();
-    if ((type == "au" || type == "anonau")
+    if ((type === "au" || type === "anonau")
         && (elt = $$("showau_hidden"))
         && elt.checked != $$("showau").checked)
         elt.click();
+    if (type !== "aufull")
+        fold(self, dofold, foldmap(type), type);
     if (plinfo.extra)
         plinfo.extra(type, dofold);
 
     // may need to load information by ajax
-    if (type == "aufull" && aufull[!!dofold])
+    if (type == "aufull" && aufull[!!dofold]) {
         make_callback(dofold, type)(aufull[!!dofold]);
-    else if ((!dofold && f.loadable) || type == "aufull") {
+        $.post(hoturl("api/setsession", {var: self.getAttribute("data-fold-session").replace("$", type), val: (dofold ? 1 : 0)}));
+    } else if ((!dofold && f.loadable) || type === "aufull") {
         // set up "loading" display
         setTimeout(show_loading(f), 750);
 
         // initiate load
         var loadargs = $.extend({fn: "fieldhtml", f: type}, hotlist_search_params(self, true));
-        if (type == "aufull" || type == "au" || type == "anonau") {
+        if (type === "au" || type === "aufull") {
             loadargs.f = "authors";
-            if (type == "aufull" ? !dofold : (elt = $$("showaufull")) && elt.checked)
+            if (type === "aufull" ? !dofold : (elt = $$("showaufull")) && elt.checked)
                 loadargs.aufull = 1;
         }
         $.get(hoturl_post("api", loadargs), make_callback(dofold, type));
@@ -5889,11 +5891,11 @@ function edit_report_display() {
     function create(display_default, display_current) {
         var hc = popup_skeleton();
         hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
-        hc.push('<h2>Display options</h2>');
-        hc.push('<div class="f-i"><div class="f-c">Default display options</div><div class="f-e">', '</div></div>');
+        hc.push('<h2>View options</h2>');
+        hc.push('<div class="f-i"><div class="f-c">Default view options</div><div class="f-e">', '</div></div>');
         hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "") + '</div>');
         hc.pop();
-        hc.push('<div class="f-i"><div class="f-c">Current display options</div><div class="f-e">', '</div></div>');
+        hc.push('<div class="f-i"><div class="f-c">Current view options</div><div class="f-e">', '</div></div>');
         hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(display_current || "") + '</textarea>');
         hc.pop();
         hc.push_actions(['<button name="save" type="submit" tabindex="1000" class="btn btn-default popup-btn">Save current options as default</button>', '<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button>']);
