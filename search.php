@@ -81,7 +81,7 @@ if ($Qreq->redisplay) {
         $forceShow = 0;
     else
         $forceShow = $Qreq->forceShow || $Qreq->showforce ? 1 : null;
-    SelfHref::redirect($Qreq, ["anchor" => "display", "forceShow" => $forceShow]);
+    SelfHref::redirect($Qreq, ["anchor" => "view", "forceShow" => $forceShow]);
 }
 
 
@@ -608,7 +608,7 @@ if ($pl->count > 0) {
 
     echo "<td class='padlb'>";
     if ($Me->privChair)
-        echo Ht::js_button("Change default display", "edit_report_display()"), "&nbsp; ";
+        echo Ht::js_button("Change default view", "edit_report_display()"), "&nbsp; ";
     echo Ht::submit("Redisplay", array("id" => "redisplay"));
 
     echo "</td></tr></table>", $display_options_extra, "</div>";
@@ -628,7 +628,7 @@ echo '<div class="tllx"><table><tr>',
 if ($ss)
     echo "  <td><div class='tll4'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#savedsearches\">Saved searches</a></div></td>\n";
 if ($pl->count > 0)
-    echo "  <td><div class='tll3'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#display\">Display options</a></div></td>\n";
+    echo "  <td><div class='tll3'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#view\">View</a></div></td>\n";
 echo "</tr></table></div></div>\n\n";
 if ($pl->count == 0)
     Ht::stash_script("focus_fold.call(\$(\"#searchform .tll$activetab\")[0])");
