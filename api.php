@@ -63,7 +63,7 @@ if ($Conf->has_api($qreq->fn))
     $Conf->call_api_exit($qreq->fn, $Me, $qreq, $Conf->paper);
 
 if ($qreq->fn === "jserror") {
-    $url = $qreq->url;
+    $url = (string) $qreq->url;
     if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
         $url = $m[1];
     if (($n = $qreq->lineno))

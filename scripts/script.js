@@ -148,8 +148,12 @@ function jqxhr_error_message(jqxhr, status, errormsg) {
 }
 
 $(document).ajaxError(function (event, jqxhr, settings, httperror) {
-    if (jqxhr.readyState == 4)
-        log_jserror(settings.url + " API failure: status " + jqxhr.status + ", " + httperror);
+    if (jqxhr.readyState == 4) {
+        var msg = url_absolute(settings.url) + " API failure: status " + jqxhr.status + ", " + httperror;
+        if (jqxhr.responseText)
+            msg += ", " + jqxhr.responseText.substr(0, 100);
+        log_jserror(msg);
+    }
 });
 
 $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
