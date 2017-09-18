@@ -665,16 +665,13 @@ class Conf {
     }
 
 
+    static function xt_priority($xt) {
+        return $xt ? get($xt, "priority", 0) : -PHP_INT_MAX;
+    }
     static function xt_priority_compare($xta, $xtb) {
-        if (!$xta && !$xtb)
-            return 0;
-        else if (!$xta || !$xtb)
-            return $xta ? -1 : 1;
-        else {
-            $pa = get($xta, "priority", 0);
-            $pb = get($xtb, "priority", 0);
-            return $pa < $pb ? 1 : ($pa == $pb ? 0 : -1);
-        }
+        $pa = self::xt_priority($xta);
+        $pb = self::xt_priority($xtb);
+        return $pa < $pb ? 1 : ($pa == $pb ? 0 : -1);
     }
     static private function xt_add(&$a, $name, $xt) {
         $a[$name][] = $xt;
@@ -684,13 +681,10 @@ class Conf {
         return true;
     }
     static private function xt_combine($xt1, $xt2) {
-        if (is_array($xt1))
-            $xt1 = (object) $xt1;
         foreach (get_object_vars($xt2) as $k => $v)
             if (!property_exists($xt1, $k)
                 && !in_array($k, ["match", "factory", "factory_class"]))
                 $xt1->$k = $v;
-        return $xt1;
     }
     static function xt_resolve_require($xt) {
         if ($xt && isset($xt->disabled) && $xt->disabled)
@@ -746,6 +740,40 @@ class Conf {
         $bp = get($xtb, "position", 0);
         return $ap < $bp ? -1 : ($ap == $bp ? 0 : 1);
     }
+    function xt_search_name($map, $name, $checkf, $found = null) {
+        foreach (get($map, $name, []) as $xt)
+            if (self::xt_priority_compare($xt, $found) <= 0
+                && call_user_func($checkf, $xt))
+                $found = $xt;
+        return $found;
+    }
+    function xt_search_factories($factories, $name, $checkf, $found = null) {
+        $xts = [];
+        foreach ($factories as $fxt) {
+            if (self::xt_priority_compare($fxt, $found) >= 0)
+                break;
+            if ($fxt->match === ".*")
+                $m = [$name];
+            else if (!preg_match("\1\\A(?:{$fxt->match})\\z\1", $name, $m))
+                continue;
+            if (!call_user_func($checkf, $fxt))
+                continue;
+            self::xt_resolve_require($fxt);
+            $r = call_user_func($fxt->factory, $name, $this, $fxt, $m);
+            if (is_object($r))
+                $r = [$r];
+            foreach ($r ? : [] as $xt) {
+                self::xt_combine($xt, $fxt);
+                $prio = self::xt_priority_compare($fxt, $found);
+                if ($prio <= 0 && call_user_func($checkf, $xt)) {
+                    if ($prio < 0)
+                        $xts = [];
+                    $xts[] = $found = $xt;
+                }
+            }
+        }
+        return $xts;
+    }
 
 
     function _add_search_keyword_json($kwj) {
@@ -762,30 +790,16 @@ class Conf {
         expand_json_includes_callback(["etc/searchkeywords.json"], [$this, "_add_search_keyword_json"]);
         if (($olist = $this->opt("searchKeywords")))
             expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
+        usort($this->_search_keyword_factories, "Conf::xt_priority_compare");
     }
     function search_keyword($keyword, Contact $user = null) {
         if ($this->_search_keyword_base === null)
             $this->make_search_keyword_map();
-        $kwj = null;
-        foreach (get($this->_search_keyword_base, $keyword, []) as $xt)
-            if (self::xt_priority_compare($xt, $kwj) <= 0
-                && $this->xt_enabled($xt, $user))
-                $kwj = $xt;
-        foreach ($this->_search_keyword_factories as $fxt) {
-            if (self::xt_priority_compare($fxt, $kwj) <= 0
-                && preg_match("\1\\A(?:" . $fxt->match . ")\\z\1", $keyword, $m)) {
-                self::xt_resolve_require($fxt);
-                $xt = call_user_func($fxt->factory, $keyword, $this, $fxt, $m);
-                if ($xt && (is_object($xt) || is_array($xt))) {
-                    $xt = self::xt_combine($xt, $fxt);
-                    assert($xt->name === $keyword);
-                    if (self::xt_priority_compare($xt, $kwj) <= 0
-                        && $this->xt_enabled($xt, $user))
-                        $kwj = $xt;
-                }
-            }
-        }
-        return self::xt_resolve_require($kwj);
+        $checkf = function ($xt) use ($user) { return $this->xt_enabled($xt, $user); };
+        $uf = $this->xt_search_name($this->_search_keyword_base, $keyword, $checkf);
+        if (($expansions = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $checkf, $uf)))
+            $uf = $expansions[0];
+        return self::xt_resolve_require($uf);
     }
 
 
@@ -802,11 +816,8 @@ class Conf {
             if (($olist = $this->opt("assignmentParsers")))
                 expand_json_includes_callback($olist, [$this, "_add_assignment_parser_json"]);
         }
-        $uf = null;
-        foreach (get($this->_assignment_parsers, $keyword, []) as $xt)
-            if (self::xt_priority_compare($xt, $uf) <= 0
-                && $this->xt_enabled($xt, $user))
-                $uf = $xt;
+        $checkf = function ($xt) use ($user) { return $this->xt_enabled($xt, $user); };
+        $uf = $this->xt_search_name($this->_assignment_parsers, $keyword, $checkf);
         $uf = self::xt_resolve_require($uf);
         if ($uf && !isset($uf->__parser)) {
             $p = $uf->parser_class;
@@ -828,12 +839,9 @@ class Conf {
             if (($olist = $this->opt("formulaFunctions")))
                 expand_json_includes_callback($olist, [$this, "_add_formula_function_json"]);
         }
-        $ff = null;
-        foreach (get($this->_formula_functions, $fname, []) as $xt)
-            if (self::xt_priority_compare($xt, $ff) <= 0
-                && $this->xt_enabled($xt, $user))
-                $ff = $xt;
-        return self::xt_resolve_require($ff);
+        $checkf = function ($xt) use ($user) { return $this->xt_enabled($xt, $user); };
+        $uf = $this->xt_search_name($this->_formula_functions, $fname, $checkf);
+        return self::xt_resolve_require($uf);
     }
 
 
@@ -3210,11 +3218,10 @@ class Conf {
         return !!$this->api($fn, $user, $method);
     }
     function api($fn, Contact $user = null, $method = null) {
-        $uf = null;
-        foreach (get($this->api_map(), $fn, []) as $fj)
-            if (self::xt_priority_compare($fj, $uf) <= 0
-                && $this->check_api_json($fj, $user, $method))
-                $uf = $fj;
+        $checkf = function ($xt) use ($user, $method) {
+            return $this->check_api_json($xt, $user, $method);
+        };
+        $uf = $this->xt_search_name($this->api_map(), $fn, $checkf);
         return self::xt_resolve_require($uf);
     }
     private function call_api($fn, $uf, Contact $user, Qrequest $qreq, $prow) {
@@ -3280,6 +3287,7 @@ class Conf {
             expand_json_includes_callback(["etc/listactions.json"], [$this, "_add_list_action_json"]);
             if (($olist = $this->opt("listActions")))
                 expand_json_includes_callback($olist, [$this, "_add_list_action_json"]);
+            usort($this->_list_action_factories, "Conf::xt_priority_compare");
         }
         return $this->_list_action_map;
     }
@@ -3291,30 +3299,14 @@ class Conf {
         return !!$this->list_action($name, $user, $method);
     }
     function list_action($name, Contact $user = null, $method = null) {
-        $uf = null;
-        foreach (get($this->list_action_map(), $name, []) as $fj)
-            if (self::xt_priority_compare($fj, $uf) <= 0
-                && $this->check_api_json($fj, $user, $method))
-                $uf = $fj;
-        if (($s = strpos($name, "/")) !== false) {
-            foreach (get($this->list_action_map(), substr($name, 0, $s), []) as $fj) {
-                if (self::xt_priority_compare($fj, $uf) <= 0
-                    && $this->check_api_json($fj, $user, $method))
-                    $uf = $fj;
-            }
-        }
-        foreach ($this->_list_action_factories as $exj)
-            if (self::xt_priority_compare($exj, $uf) <= 0
-                && preg_match("\1\\A(?:" . $exj->match . ")\\z\1", $name, $m)) {
-                self::xt_resolve_require($exj);
-                $xt = call_user_func($exj->factory, $name, $this, $exj, $m);
-                foreach ($xt ? : [] as $fj) {
-                    $fj = self::xt_combine($fj, $exj);
-                    if (self::xt_priority_compare($fj, $uf) <= 0
-                        && $this->check_api_json($fj, $user, $method))
-                        $uf = $fj;
-                }
-            }
+        $checkf = function ($xt) use ($user, $method) {
+            return $this->check_api_json($xt, $user, $method);
+        };
+        $uf = $this->xt_search_name($this->list_action_map(), $name, $checkf);
+        if (($s = strpos($name, "/")) !== false)
+            $uf = $this->xt_search_name($this->list_action_map(), substr($name, 0, $s), $checkf, $uf);
+        if (($expansions = $this->xt_search_factories($this->_list_action_factories, $name, $checkf, $uf)))
+            $uf = $expansions[0];
         return self::xt_resolve_require($uf);
     }
 }
