@@ -414,7 +414,7 @@ class PaperList {
             if (str_starts_with($name, $prefix)) {
                 $uf = null;
                 foreach ($fjs as $fj)
-                    if (Conf::xt_priority_compare($fj, $uf) >= 0
+                    if (Conf::xt_priority_compare($fj, $uf) <= 0
                         && $this->conf->xt_enabled($fj, $this->user)
                         && $this->action_xt_displayed($fj))
                         $uf = $fj;
@@ -453,7 +453,7 @@ class PaperList {
         foreach ($this->conf->list_action_renderers() as $name => $fjs) {
             $rf = null;
             foreach ($fjs as $fj)
-                if (Conf::xt_priority_compare($fj, $rf) >= 0
+                if (Conf::xt_priority_compare($fj, $rf) <= 0
                     && $this->conf->xt_enabled($fj, $this->user)
                     && $this->action_xt_displayed($fj))
                     $rf = $fj;

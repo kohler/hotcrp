@@ -669,11 +669,11 @@ class Conf {
         if (!$xta && !$xtb)
             return 0;
         else if (!$xta || !$xtb)
-            return $xta ? 1 : -1;
+            return $xta ? -1 : 1;
         else {
             $pa = get($xta, "priority", 0);
             $pb = get($xtb, "priority", 0);
-            return $pa < $pb ? -1 : ($pa == $pb ? 0 : 1);
+            return $pa < $pb ? 1 : ($pa == $pb ? 0 : -1);
         }
     }
     static private function xt_add(&$a, $name, $xt) {
@@ -768,18 +768,18 @@ class Conf {
             $this->make_search_keyword_map();
         $kwj = null;
         foreach (get($this->_search_keyword_base, $keyword, []) as $xt)
-            if (self::xt_priority_compare($xt, $kwj) >= 0
+            if (self::xt_priority_compare($xt, $kwj) <= 0
                 && $this->xt_enabled($xt, $user))
                 $kwj = $xt;
         foreach ($this->_search_keyword_factories as $fxt) {
-            if (self::xt_priority_compare($fxt, $kwj) >= 0
+            if (self::xt_priority_compare($fxt, $kwj) <= 0
                 && preg_match("\1\\A(?:" . $fxt->match . ")\\z\1", $keyword, $m)) {
                 self::xt_resolve_require($fxt);
                 $xt = call_user_func($fxt->factory, $keyword, $this, $fxt, $m);
                 if ($xt && (is_object($xt) || is_array($xt))) {
                     $xt = self::xt_combine($xt, $fxt);
                     assert($xt->name === $keyword);
-                    if (self::xt_priority_compare($xt, $kwj) >= 0
+                    if (self::xt_priority_compare($xt, $kwj) <= 0
                         && $this->xt_enabled($xt, $user))
                         $kwj = $xt;
                 }
@@ -804,7 +804,7 @@ class Conf {
         }
         $uf = null;
         foreach (get($this->_assignment_parsers, $keyword, []) as $xt)
-            if (self::xt_priority_compare($xt, $uf) >= 0
+            if (self::xt_priority_compare($xt, $uf) <= 0
                 && $this->xt_enabled($xt, $user))
                 $uf = $xt;
         $uf = self::xt_resolve_require($uf);
@@ -830,7 +830,7 @@ class Conf {
         }
         $ff = null;
         foreach (get($this->_formula_functions, $fname, []) as $xt)
-            if (self::xt_priority_compare($xt, $ff) >= 0
+            if (self::xt_priority_compare($xt, $ff) <= 0
                 && $this->xt_enabled($xt, $user))
                 $ff = $xt;
         return self::xt_resolve_require($ff);
@@ -3212,7 +3212,7 @@ class Conf {
     function api($fn, Contact $user = null, $method = null) {
         $uf = null;
         foreach (get($this->api_map(), $fn, []) as $fj)
-            if (self::xt_priority_compare($fj, $uf) >= 0
+            if (self::xt_priority_compare($fj, $uf) <= 0
                 && $this->check_api_json($fj, $user, $method))
                 $uf = $fj;
         return self::xt_resolve_require($uf);
@@ -3293,24 +3293,24 @@ class Conf {
     function list_action($name, Contact $user = null, $method = null) {
         $uf = null;
         foreach (get($this->list_action_map(), $name, []) as $fj)
-            if (self::xt_priority_compare($fj, $uf) >= 0
+            if (self::xt_priority_compare($fj, $uf) <= 0
                 && $this->check_api_json($fj, $user, $method))
                 $uf = $fj;
         if (($s = strpos($name, "/")) !== false) {
             foreach (get($this->list_action_map(), substr($name, 0, $s), []) as $fj) {
-                if (self::xt_priority_compare($fj, $uf) >= 0
+                if (self::xt_priority_compare($fj, $uf) <= 0
                     && $this->check_api_json($fj, $user, $method))
                     $uf = $fj;
             }
         }
         foreach ($this->_list_action_factories as $exj)
-            if (self::xt_priority_compare($exj, $uf) >= 0
+            if (self::xt_priority_compare($exj, $uf) <= 0
                 && preg_match("\1\\A(?:" . $exj->match . ")\\z\1", $name, $m)) {
                 self::xt_resolve_require($exj);
                 $xt = call_user_func($exj->factory, $name, $this, $exj, $m);
                 foreach ($xt ? : [] as $fj) {
                     $fj = self::xt_combine($fj, $exj);
-                    if (self::xt_priority_compare($fj, $uf) >= 0
+                    if (self::xt_priority_compare($fj, $uf) <= 0
                         && $this->check_api_json($fj, $user, $method))
                         $uf = $fj;
                 }

@@ -26,8 +26,9 @@
     },
     {
         "prefix": "",
+        "match": ".*", "priority": -2000,
         "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_option",
-        "factory_class": "Option_PaperColumnFactory", "priority": 1000,
+        "factory_class": "Option_PaperColumnFactory",
         "position": 200
     },
     {
@@ -51,7 +52,9 @@
         "position": 500, "synonym": ["editrevpref"]
     },
     {
-        "prefix": "pref:", "factory_class": "Preference_PaperColumnFactory",
+        "prefix": "pref:",
+        "match": "(?:rev)?pref:.*", "priority": -1,
+        "factory_class": "Preference_PaperColumnFactory",
         "synonym": ["revpref:", "preference:"]
     },
     {
@@ -65,7 +68,9 @@
         "position": 820
     },
     {
-        "prefix": "revtype:", "factory_class": "ReviewerType_PaperColumnFactory"
+        "prefix": "revtype:",
+        "match": "revtype:.*", "priority": -1,
+        "factory_class": "ReviewerType_PaperColumnFactory"
     },
     {
         "name": "revstat",
@@ -73,7 +78,9 @@
         "position": 830
     },
     {
-        "prefix": "revstat:", "factory_class": "ReviewStatus_PaperColumnFactory"
+        "prefix": "revstat:",
+        "match": "revstat:.*", "priority": -1,
+        "factory_class": "ReviewStatus_PaperColumnFactory"
     },
     {
         "name": "assrev",
@@ -102,35 +109,44 @@
     },
     {
         "prefix": "",
+        "match": ".*", "priority": -3000,
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true,
         "className": "pl_score",
-        "factory_class": "Score_PaperColumnFactory", "priority": 500,
+        "factory_class": "Score_PaperColumnFactory",
         "position": 1100
     },
     {
         "prefix": "g",
+        "match": "g.*", "priority": -1,
         "column": true, "fold": true, "sort": true, "minimal": true, "className": "pl_score",
         "factory_class": "FormulaGraph_PaperColumnFactory",
         "position": 1200
     },
     {
         "prefix": "",
+        "match": ".*", "priority": -1000,
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_formula",
-        "factory_class": "Formula_PaperColumnFactory", "priority": 2000,
+        "factory_class": "Formula_PaperColumnFactory",
         "position": 1300
     },
     {
-        "prefix": "tag:", "tagvalue": false,
+        "prefix": "tag:",
+        "match": "tag:.*", "priority": -1,
+        "tagvalue": false,
         "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
         "position": 1400
     },
     {
-        "prefix": "tagval:", "tagvalue": true,
+        "prefix": "tagval:",
+        "match": "tagval:.*", "priority": -1,
+        "tagvalue": true,
         "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
         "position": 1400
     },
     {
-        "prefix": "#", "tagvalue": null,
+        "prefix": "#",
+        "match": "#.*", "priority": -1,
+        "tagvalue": null,
         "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
         "position": 1400
     },
@@ -195,6 +211,7 @@
     },
     {
         "prefix": "tagrep:",
+        "match": "tagrep:.*", "priority": -1,
         "row": true, "fold": true, "className": "pl_tagrep", "factory_class": "TagReport_PaperColumnFactory",
         "synonym": ["tagreport:", "tagreports"],
         "position": 1420

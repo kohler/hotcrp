@@ -184,9 +184,8 @@
         "factory": "Comment_SearchTerm::response_factory"
     },
     {
-        "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+",
-        "factory": "Review_SearchTerm::review_field_factory",
-        "priority": -1
+        "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
+        "factory": "Review_SearchTerm::review_field_factory"
     },
     {
         "name": "option",
@@ -194,9 +193,8 @@
         "has": "any", "synonym": "opt"
     },
     {
-        "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+",
-        "factory": "Option_SearchTerm::parse_factory",
-        "priority": -1
+        "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
+        "factory": "Option_SearchTerm::parse_factory"
     },
     {
         "name": "show",
