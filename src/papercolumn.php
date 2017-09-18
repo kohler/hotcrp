@@ -18,12 +18,6 @@ class PaperColumn extends Column {
         parent::__construct($cj);
     }
 
-    static function lookup_local($name) {
-        $lname = strtolower($name);
-        if (isset(self::$synonyms[$lname]))
-            $lname = self::$synonyms[$lname];
-        return get(self::$by_name, $lname, null);
-    }
     static function lookup_json($name) {
         $lname = strtolower($name);
         if (isset(self::$synonyms[$lname]))
