@@ -2470,17 +2470,19 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
-        return $rights->can_administer
+        if ($rights->can_administer
             || $rights->reviewType == REVIEW_META
             || ($rrow
                 && ($this->is_owned_review($rrow)
                     || ($rights->allow_pc
-                        && $rrow->requestedBy == $this->contactId)))
-            || ($rights->allow_pc
-                && $this->seerevid_setting($prow, $rrow, $rights) == Conf::PCSEEREV_YES)
+                        && $rrow->requestedBy == $this->contactId))))
+            return true;
+        $seerevid_setting = $this->seerevid_setting($prow, $rrow, $rights);
+        return ($rights->allow_pc
+                && $seerevid_setting == Conf::PCSEEREV_YES)
             || ($rights->allow_review
                 && $prow->review_not_incomplete($this)
-                && $this->seerevid_setting($prow, $rrow, $rights) >= 0)
+                && $seerevid_setting >= 0)
             || !$this->conf->is_review_blind($rrow);
     }
 
