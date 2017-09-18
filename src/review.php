@@ -1746,7 +1746,8 @@ class ReviewValues extends MessageSet {
                    && $this->text !== null) {
             $this->rmsg($this->firstLineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
         } else if ($unready) {
-            $this->warning_at("ready", null);
+            if ($anydiff)
+                $this->warning_at("ready", null);
             $this->req["ready"] = 0;
         }
 
