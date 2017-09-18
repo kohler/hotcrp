@@ -1547,20 +1547,24 @@ class Comment_SearchTerm extends SearchTerm {
     }
     static function comment_factory($keyword, Conf $conf, $kwfj, $m) {
         $tword = str_replace("-", "", $m[1]);
-        return ["name" => $keyword, "parser" => "Comment_SearchTerm::parse",
-                "response" => $tword === "any", "comment" => true,
-                "round" => null, "draft" => false,
-                "only_author" => $tword === "au" || $tword === "author",
-                "has" => ">0"];
+        return (object) [
+            "name" => $keyword, "parser" => "Comment_SearchTerm::parse",
+            "response" => $tword === "any", "comment" => true,
+            "round" => null, "draft" => false,
+            "only_author" => $tword === "au" || $tword === "author",
+            "has" => ">0"
+        ];
     }
     static function response_factory($keyword, Conf $conf, $kwfj, $m) {
         $round = $conf->resp_round_number($m[2]);
         if ($round === false || ($m[1] && $m[3]))
             return null;
-        return ["name" => $keyword, "parser" => "Comment_SearchTerm::parse",
-                "response" => true, "comment" => false,
-                "round" => $round, "draft" => ($m[1] || $m[3]),
-                "only_author" => false, "has" => ">0"];
+        return (object) [
+            "name" => $keyword, "parser" => "Comment_SearchTerm::parse",
+            "response" => true, "comment" => false,
+            "round" => $round, "draft" => ($m[1] || $m[3]),
+            "only_author" => false, "has" => ">0"
+        ];
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $m = PaperSearch::unpack_comparison($word, $sword->quoted);
