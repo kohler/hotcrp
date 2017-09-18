@@ -14,7 +14,7 @@ if (check_post() && !$Me->has_database_account()) {
     else
         $Me->escape();
 }
-$useRequest = isset($_REQUEST["after_login"]);
+$useRequest = isset($_REQUEST["after_login"]) && isset($_REQUEST["title"]);
 foreach (array("emailNote", "reason") as $x)
     if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")
         unset($_REQUEST[$x], $_GET[$x], $_POST[$x]);
