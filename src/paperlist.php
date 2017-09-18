@@ -149,9 +149,6 @@ class PaperList {
             $qreq = new Qrequest("GET", $qreq);
         $this->qreq = $qreq;
 
-        $this->foldable = $this->sortable || !!get($args, "foldable")
-            || $this->user->is_manager() /* “Override conflicts” fold */;
-
         $this->_paper_link_page = "";
         if ($qreq->linkto === "paper" || $qreq->linkto === "review" || $qreq->linkto === "assign")
             $this->_paper_link_page = $qreq->linkto;
@@ -178,6 +175,9 @@ class PaperList {
             array_unshift($this->sorters, PaperSearch::parse_sorter($args["sort"]));
         else if ($this->sortable && $qreq->sort)
             array_unshift($this->sorters, PaperSearch::parse_sorter($qreq->sort));
+
+        $this->foldable = $this->sortable || !!get($args, "foldable")
+            || $this->user->is_manager() /* “Override conflicts” fold */;
 
         if (($report = get($args, "report"))) {
             $display = null;
