@@ -1675,41 +1675,62 @@ class ReviewValues extends MessageSet {
         }
     }
 
+    private function fvalues(ReviewField $f, ReviewInfo $rrow = null) {
+        $fid = $f->id;
+        $oldval = $rrow && isset($rrow->$fid) ? $rrow->$fid : "";
+        if ($f->has_options)
+            $oldval = (int) $oldval;
+        $newval = $oldval;
+        if (isset($this->req[$fid])) {
+            $newval = trim($this->req[$fid]);
+            if ($f->has_options) {
+                if ($f->parse_is_empty($newval))
+                    $newval = 0;
+                else
+                    $newval = $f->parse_value($newval, false) ? : false;
+            } else {
+                if ($newval !== "")
+                    $newval .= "\n";
+            }
+        }
+        return [$oldval, $newval];
+    }
+
     private function check(ReviewInfo $rrow = null) {
         $submit = get($this->req, "ready");
         $before_nerrors = $this->nerrors();
         $nokfields = 0;
-        $unready = false;
+        $missingfields = null;
+        $unready = $anydiff = false;
+
         foreach ($this->rf->forder as $fid => $f) {
-            if (isset($this->req[$fid]))
-                $fval = $this->req[$fid];
-            else if ($submit
-                     && (!$f->round_mask || $f->is_round_visible($rrow))) {
-                if ($rrow && isset($rrow->$fid))
-                    $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
-                else
-                    $fval = "";
-            } else
+            if (!isset($this->req[$fid])
+                && !($submit
+                     && (!$f->round_mask || $f->is_round_visible($rrow))))
                 continue;
-            if ($f->has_options) {
-                $fval = trim($fval);
-                if ($f->parse_is_empty($fval)) {
-                    if ($f->allow_empty)
-                        ++$nokfields;
-                    else if ($submit && $f->view_score >= VIEWSCORE_PC) {
-                        $this->warning_at($fid, $this->conf->_("You must provide a value for %s in order to submit your review.", $f->name_html));
-                        $unready = true;
+            list($old_fval, $fval) = $this->fvalues($f, $rrow);
+            if ($fval === false) {
+                $this->warning_at($fid, $this->conf->_("Bad %s value “%s”.", $f->name_html, htmlspecialchars(UnicodeHelper::utf8_abbreviate($fval, 100))));
+                unset($this->req[$fid]);
+                $unready = true;
+            } else {
+                if (!$anydiff && $old_fval !== $fval
+                    && ($f->has_options || cleannl($old_fval) !== cleannl($fval)))
+                    $anydiff = true;
+                if ($f->has_options && $fval === 0 && !$f->allow_empty) {
+                    if ($f->view_score >= VIEWSCORE_PC) {
+                        $missingfields[] = $f;
+                        $unready = $unready || $submit;
                     }
-                } else if ($f->parse_value($fval, false))
+                } else if ($fval !== "")
                     ++$nokfields;
-                else {
-                    $this->warning_at($fid, $this->conf->_("Bad %s value “%s”.", $f->name_html, htmlspecialchars(UnicodeHelper::utf8_abbreviate($fval, 100))));
-                    unset($this->req[$fid]);
-                    $unready = true;
-                }
-            } else if (trim($fval) !== "")
-                ++$nokfields;
+            }
         }
+        if ($missingfields && $submit && $anydiff) {
+            foreach ($missingfields as $f)
+                $this->warning_at($f->id, $this->conf->_("You must provide a value for %s in order to submit your review.", $f->name_html));
+        }
+
         if ($rrow
             && isset($this->req["reviewerEmail"])
             && strcasecmp($rrow->email, $this->req["reviewerEmail"]) != 0
@@ -1728,6 +1749,7 @@ class ReviewValues extends MessageSet {
             $this->warning_at("ready", null);
             $this->req["ready"] = 0;
         }
+
         if ($this->nerrors() !== $before_nerrors)
             return false;
         else if ($nokfields > 0)
@@ -1780,28 +1802,19 @@ class ReviewValues extends MessageSet {
         foreach ($this->rf->forder as $fid => $f)
             if (isset($this->req[$fid])
                 && (!$f->round_mask || $f->is_round_visible($rrow))) {
-                $fval = $this->req[$fid];
+                list($old_fval, $fval) = $this->fvalues($f, $rrow);
+                if ($fval === false)
+                    continue;
                 if ($f->has_options) {
-                    $fval = trim($fval);
-                    if ($f->parse_is_empty($fval))
-                        $fval = 0;
-                    else if (!($fval = $f->parse_value($fval, false)))
-                        continue;
-                    $old_fval = $rrow ? (int) get($rrow, $fid, 0) : 0;
                     if ($fval === 0 && $rrow && !$f->allow_empty)
                         $fval = $old_fval;
                     $fval_diffs = $fval !== $old_fval;
                 } else {
-                    $fval = rtrim($fval);
-                    if ($fval !== "")
-                        $fval .= "\n";
                     // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
                     $fval = convert_to_utf8($fval);
                     if ($f->include_word_count())
                         $wc += count_words($fval);
-                    $old_fval = $rrow ? get($rrow, $fid, "") : "";
-                    $fval_diffs = $fval !== $old_fval
-                        && cleannl($fval) !== cleannl($old_fval);
+                    $fval_diffs = $fval !== $old_fval && cleannl($fval) !== cleannl($old_fval);
                 }
                 if ($fval_diffs) {
                     $diff_view_score = max($diff_view_score, $f->view_score);
