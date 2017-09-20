@@ -810,8 +810,11 @@ $blind\n";
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
         $n = ($no_title ? "" : $this->conf->short_name . " ") . "Review";
-        if (get($rrow, "reviewOrdinal"))
+        if ($rrow->reviewOrdinal)
             $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
+        if ($rrow->reviewRound
+            && $contact->can_view_review_round($prow, $rrow))
+            $n .= " [" . $prow->conf->round_name($rrow->reviewRound) . "]";
         $x = $n . "\n" . str_repeat("=", 75) . "\n";
 
         if (!$no_title)
