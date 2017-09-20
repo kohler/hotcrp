@@ -183,8 +183,15 @@
     },
     {
         "name": "get/abstract", "get": true,
-        "selector": "Paper information/Abstracts",
-        "position": 1000, "display_if_list_has": "abstract",
+        "selector": "Paper information/Text with abstracts", "display_if_list_has": "abstract",
+        "position": 1000,
+        "require": "src/sa/sa_get_sub.php",
+        "factory_class": "GetAbstract_SearchAction"
+    },
+    {
+        "name": "get/abstract", "get": true,
+        "selector": "Paper information/Text", "display_if_list_has": "!abstract",
+        "position": 1000,
         "require": "src/sa/sa_get_sub.php",
         "factory_class": "GetAbstract_SearchAction"
     },

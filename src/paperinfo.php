@@ -1056,6 +1056,16 @@ class PaperInfo {
         return $t;
     }
 
+    function named_topic_map() {
+        $tarr = $this->topic_map();
+        if ($tarr) {
+            $tmap = $this->conf->topic_map();
+            foreach ($tarr as $tid => &$x)
+                $x = $tmap[$tid];
+        }
+        return $tarr;
+    }
+
     function unparse_topics_text() {
         $tarr = $this->topics();
         if (!$tarr)

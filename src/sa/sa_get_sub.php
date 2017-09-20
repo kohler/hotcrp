@@ -134,6 +134,70 @@ class GetCheckFormat_SearchAction extends SearchAction {
 }
 
 class GetAbstract_SearchAction extends SearchAction {
+    const WIDTH = 96;
+    private function render_option(PaperOption $o, $otxt) {
+        $dtype = array_shift($otxt);
+        if ($dtype === PaperOption::PAGE_HTML_NAME)
+            $n = join(" ", $otxt);
+        else
+            $n = $o->name;
+        $text = prefix_word_wrap("", $n, 0, self::WIDTH);
+        $text .= str_repeat("-", min(self::WIDTH, strlen($text) - 1)) . "\n";
+        if ($dtype === PaperOption::PAGE_HTML_DATA && !empty($otxt)) {
+            if (count($otxt) === 1)
+                $text .= rtrim($otxt[0]);
+            else
+                $text .= join("", array_map(function ($t) { return "* " . rtrim($t) . "\n"; }, $otxt));
+            $text .= "\n";
+        }
+        return $text . "\n";
+    }
+    function render_displayed_options(PaperInfo $prow, Contact $user, $display) {
+        $text = "";
+        foreach ($prow->options() as $ov) {
+            if ($ov->option->display() === $display
+                && $user->can_view_paper_option($prow, $ov->option, null)
+                && ($otxt = $ov->option->unparse_page_text($prow, $ov)))
+                $text .= $this->render_option($ov->option, $otxt);
+        }
+        return $text;
+    }
+    function render(PaperInfo $prow, Contact $user) {
+        $n = prefix_word_wrap("", "Submission #{$prow->paperId}: {$prow->title}", 0, self::WIDTH);
+        $text = $n . str_repeat("=", min(self::WIDTH, strlen($n) - 1)) . "\n\n";
+
+        $text .= $this->render_displayed_options($prow, $user, PaperOption::DISP_SUBMISSION);
+
+        if ($user->can_view_authors($prow) && ($alist = $prow->author_list())) {
+            if (count($alist) == 1)
+                $text .= "Author\n------\n"
+                    . prefix_word_wrap("", $alist[0]->name_email_aff_text(), 0, self::WIDTH);
+            else {
+                $text .= "Authors\n-------\n";
+                foreach ($alist as $i => $au) {
+                    $marker = ($i + 1) . ". ";
+                    $text .= prefix_word_wrap($marker, $au->name_email_aff_text(), strlen($marker), self::WIDTH);
+                }
+                $text .= "\n";
+            }
+        }
+
+        if ($prow->abstract)
+            $text .= "Abstract\n--------\n" . rtrim($prow->abstract) . "\n\n";
+
+        $text .= $this->render_displayed_options($prow, $user, PaperOption::DISP_PROMINENT);
+
+        if (($tlist = $prow->named_topic_map())) {
+            $text .= "Topics\n------\n";
+            foreach ($tlist as $t)
+                $text .= prefix_word_wrap("* ", $t, 2, self::WIDTH);
+            $text .= "\n";
+        }
+
+        $text .= $this->render_displayed_options($prow, $user, PaperOption::DISP_TOPICS);
+
+        return $text . "\n";
+    }
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => 1]);
         $texts = array();
@@ -141,25 +205,10 @@ class GetAbstract_SearchAction extends SearchAction {
             if (($whyNot = $user->perm_view_paper($prow)))
                 Conf::msg_error(whyNotText($whyNot, "view"));
             else {
-                $text = "===========================================================================\n";
-                $n = "Paper #" . $prow->paperId . ": ";
-                $l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
-                $text .= prefix_word_wrap($n, $prow->title, $l);
-                $text .= "---------------------------------------------------------------------------\n";
-                $l = strlen($text);
-                if ($user->can_view_authors($prow, $qreq->t == "a"))
-                    $text .= prefix_word_wrap("Authors: ", $prow->pretty_text_author_list(), 14);
-                if ($prow->topicIds != ""
-                    && ($tt = $prow->unparse_topics_text()))
-                    $text .= prefix_word_wrap("Topics: ", $tt, 14);
-                if ($l != strlen($text))
-                    $text .= "---------------------------------------------------------------------------\n";
-                $text .= rtrim($prow->abstract) . "\n\n";
-                defappend($texts[$prow->paperId], $text);
+                defappend($texts[$prow->paperId], $this->render($prow, $user));
                 $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");
             }
         }
-
         if (count($texts))
             downloadText(join("", $ssel->reorder($texts)), "abstract$rfSuffix");
     }

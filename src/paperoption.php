@@ -593,6 +593,13 @@ class PaperOption implements Abbreviator {
     function unparse_page_html_data(PaperInfo $row, PaperOptionValue $ov) {
         return "";
     }
+    function unparse_page_text(PaperInfo $row, PaperOptionValue $ov) {
+        $x = $this->unparse_page_text_data($row, $ov);
+        return (string) $x !== "" ? [self::PAGE_HTML_DATA, $x] : false;
+    }
+    function unparse_page_text_data(PaperInfo $row, PaperOptionValue $ov) {
+        return "";
+    }
 
     function format_spec() {
         return false;
@@ -651,6 +658,9 @@ class CheckboxPaperOption extends PaperOption {
             return [self::PAGE_HTML_NAME, "✓&nbsp;" . htmlspecialchars($this->name)];
         else
             return false;
+    }
+    function unparse_page_text_data(PaperInfo $row, PaperOptionValue $ov) {
+        return $ov->value ? "Yes" : "";
     }
 }
 
@@ -740,6 +750,9 @@ class SelectorPaperOption extends PaperOption {
 
     function unparse_page_html_data(PaperInfo $row, PaperOptionValue $ov) {
         return htmlspecialchars($this->unparse_value($ov));
+    }
+    function unparse_page_text_data(PaperInfo $row, PaperOptionValue $ov) {
+        return $this->unparse_value($ov);
     }
 }
 
@@ -928,6 +941,9 @@ class NumericPaperOption extends PaperOption {
     function unparse_page_html_data(PaperInfo $row, PaperOptionValue $ov) {
         return $this->unparse_value($ov);
     }
+    function unparse_page_text_data(PaperInfo $row, PaperOptionValue $ov) {
+        return $this->unparse_value($ov);
+    }
 }
 
 class TextPaperOption extends PaperOption {
@@ -1014,6 +1030,9 @@ class TextPaperOption extends PaperOption {
     }
     function unparse_page_html_data(PaperInfo $row, PaperOptionValue $ov) {
         return $this->unparse_html($row, $ov, null);
+    }
+    function unparse_page_text_data(PaperInfo $row, PaperOptionValue $ov) {
+        return (string) $ov->data();
     }
 }
 

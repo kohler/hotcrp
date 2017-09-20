@@ -436,8 +436,12 @@ class PaperList {
         if (isset($fj->display_if_list_has)) {
             $ifl = $fj->display_if_list_has;
             foreach (is_array($ifl) ? $ifl : [$ifl] as $h) {
-                if (!is_bool($h))
-                    $h = $this->has($h);
+                if (!is_bool($h)) {
+                    if (str_starts_with($h, "!"))
+                        $h = !$this->has(substr($h, 1));
+                    else
+                        $h = $this->has($h);
+                }
                 if (!$h)
                     return false;
             }
