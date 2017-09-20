@@ -160,7 +160,7 @@
     {
         "name": "get/paper", "get": true,
         "selector": "Documents/Submissions",
-        "position": 100,
+        "position": 100, "display_if_list_has": "paper",
         "require": "src/sa/sa_get_sub.php",
         "factory_class": "GetDocument_SearchAction",
         "dtype": 0
