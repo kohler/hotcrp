@@ -2866,8 +2866,10 @@ class PaperSearch {
         // separate text into words
         $words = array();
         $bypos = false;
-        while ($text !== "") {
-            preg_match(',\A([^\s\(]*)(.*)\z,s', $text, $m);
+        while (true) {
+            preg_match('{\A[,\s]*([^\s\(,]*)(.*)\z}s', $text, $m);
+            if ($m[1] === "" && $m[2] === "")
+                break;
             if (substr($m[2], 0, 1) === "(") {
                 $pos = self::find_end_balanced_parens($m[2]);
                 $m[1] .= substr($m[2], 0, $pos);
