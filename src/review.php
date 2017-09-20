@@ -852,35 +852,6 @@ $blind\n";
         return $x;
     }
 
-    function webGuidanceRows($revViewScore, $extraclass="") {
-        $x = '';
-
-        foreach ($this->forder as $fid => $f) {
-            if ($f->view_score <= $revViewScore
-                || (!$f->description && !$f->has_options))
-                continue;
-
-            $x .= "<tr class='rev_$fid'>\n";
-            $x .= "  <td class='caption rev_$fid$extraclass'>";
-            $x .= $f->name_html . "</td>\n";
-
-            $x .= "  <td class='entry rev_$fid$extraclass'>";
-            if ($f->description)
-                $x .= "<div class='rev_description'>" . $f->description . "</div>";
-            if ($f->has_options) {
-                $x .= "<div class='rev_options'>Choices are:";
-                foreach ($f->options as $num => $val)
-                    $x .= "<br />\n" . $f->unparse_value($num, ReviewField::VALUE_REV_NUM) . " " . htmlspecialchars($val);
-                $x .= "</div>";
-            }
-
-            $x .= "</td>\n</tr>\n";
-            $extraclass = "";
-        }
-
-        return $x;
-    }
-
     private function _echo_accept_decline($prow, $rrow, $reviewPostLink) {
         if ($rrow && !$rrow->reviewModified && $rrow->reviewType < REVIEW_SECONDARY) {
             $buttons = [];

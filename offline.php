@@ -227,14 +227,4 @@ if ($Conf->setting("tag_rank") && $Me->is_reviewer()) {
 echo "</table>\n";
 
 
-if (($text = $rf->webGuidanceRows($Me->permissive_view_score_bound())))
-    echo "<div class='g'></div>
-
-<table class='review'>
-<thead><tr class='id'><td></td><td class='entry'><h3>Review form information</h3></td></tr></thead>
-<tbody>", $text, "<tr class='last'>
-  <td class='caption'></td>
-  <td class='entry'></td>
-</tr></tbody></table>\n";
-
 $Conf->footer();
