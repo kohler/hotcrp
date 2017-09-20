@@ -346,8 +346,8 @@ class PaperList {
             return "";
         $dtype = $row->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
         if ($dtype == DTYPE_FINAL)
-            $this->_has["final"] = true;
-        $this->_has["paper"] = true;
+            $this->mark_has("final");
+        $this->mark_has("paper");
         return "&nbsp;" . $row->document($dtype)->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
     }
 
@@ -618,7 +618,7 @@ class PaperList {
                 foreach ($prow->options() as $o)
                     if (!$this->has("opt$o->id")
                         && $this->user->can_view_paper_option($prow, $o->option)) {
-                        $this->_has["opt$o->id"] = true;
+                        $this->mark_has("opt$o->id");
                         --$nopts;
                     }
                 if (!$nopts)
@@ -689,7 +689,7 @@ class PaperList {
             else
                 $got = ($ov = $row->option($opt->id)) && $ov->value > 1;
             if ($got && $this->user->can_view_paper_option($row, $opt)) {
-                $this->_has[$opt->field_key()] = true;
+                $this->mark_has($opt->field_key());
                 array_splice($this->_any_option_checks, $i, 1);
             } else
                 ++$i;
@@ -698,7 +698,7 @@ class PaperList {
 
     private function _row_text($rstate, PaperInfo $row, $fieldDef) {
         if ((string) $row->abstract !== "")
-            $this->_has["abstract"] = true;
+            $this->mark_has("abstract");
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
         $this->row_attr = [];
@@ -1276,16 +1276,16 @@ class PaperList {
         // analyze `has`, including authors
         foreach ($fieldDef as $fdef)
             if ($fdef->has_content)
-                $this->_has[$fdef->name] = true;
-        if (isset($this->_has["authors"])) {
+                $this->mark_has($fdef->name);
+        if ($this->has("authors")) {
             if (!$this->user->is_manager())
-                $this->_has["openau"] = true;
+                $this->mark_has("openau");
             else {
                 foreach ($rows as $row)
                     if ($this->user->can_view_authors($row, false))
-                        $this->_has["openau"] = true;
+                        $this->mark_has("openau");
                     else if ($this->user->can_view_authors($row, true))
-                        $this->_has["anonau"] = true;
+                        $this->mark_has("anonau");
             }
         }
 
@@ -1442,7 +1442,7 @@ class PaperList {
         }
 
         if ($fdef->has_content)
-            $this->_has[$fname] = true;
+            $this->mark_has($fname);
         return $data;
     }
 
@@ -1472,7 +1472,7 @@ class PaperList {
 
     private function _row_text_csv_data(PaperInfo $row, $fieldDef) {
         if ((string) $row->abstract !== "")
-            $this->_has["abstract"] = true;
+            $this->mark_has("abstract");
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
         $csv = [];
