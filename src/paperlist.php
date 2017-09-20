@@ -1058,7 +1058,7 @@ class PaperList {
             $sorters[] = PaperSearch::parse_sorter("id");
             $sorters[0]->field = $this->find_column("id");
         }
-        $sorters = $this->sorters;
+        $this->sorters = $sorters;
 
         // set defaults
         foreach ($this->sorters as $s) {
