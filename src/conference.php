@@ -263,8 +263,19 @@ class Conf {
                     $this->rounds[] = $r;
         }
         $this->_round_settings = null;
-        if (isset($this->settingTexts["round_settings"]))
+        if (isset($this->settingTexts["round_settings"])) {
             $this->_round_settings = json_decode($this->settingTexts["round_settings"]);
+            $max_rs = [];
+            foreach ($this->_round_settings as $rs) {
+                if ($rs && isset($rs->pc_seeallrev)
+                    && self::pcseerev_compare($rs->pc_seeallrev, get($max_rs, "pc_seeallrev", 0)) > 0)
+                    $max_rs["pc_seeallrev"] = $rs->pc_seeallrev;
+                if ($rs && isset($rs->extrev_view)
+                    && $rs->extrev_view > get($max_rs, "extrev_view", 0))
+                    $max_rs["extrev_view"] = $rs->extrev_view;
+            }
+            $this->_round_settings["max"] = (object) $max_rs;
+        }
 
         // review times
         foreach ($this->rounds as $i => $rname) {
@@ -519,6 +530,16 @@ class Conf {
                 $this->_opt_timestamp = max($this->_opt_timestamp, +@filemtime($fn));
         }
         return $this->_opt_timestamp;
+    }
+
+
+    static function pcseerev_compare($sr1, $sr2) {
+        if ($sr1 == $sr2)
+            return 0;
+        else if ($sr1 == self::PCSEEREV_YES || $sr2 == self::PCSEEREV_YES)
+            return $sr1 == self::PCSEEREV_YES ? 1 : -1;
+        else
+            return $sr1 > $sr2 ? 1 : -1;
     }
 
 
@@ -1251,8 +1272,8 @@ class Conf {
     }
 
     function round_setting($name, $round, $defval = null) {
-        if ($round !== null
-            && $this->_round_settings !== null
+        if ($this->_round_settings !== null
+            && $round !== null
             && isset($this->_round_settings[$round])
             && isset($this->_round_settings[$round]->$name))
             return $this->_round_settings[$round]->$name;

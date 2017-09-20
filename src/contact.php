@@ -2355,7 +2355,7 @@ class Contact {
     }
 
     private function seerev_setting(PaperInfo $prow, $rrow, $rights) {
-        $round = $rrow ? $rrow->reviewRound : null;
+        $round = $rrow ? $rrow->reviewRound : "max";
         if ($rights->allow_pc) {
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREV))
                 return $this->conf->round_setting("pc_seeallrev", $round);
@@ -2367,7 +2367,7 @@ class Contact {
     }
 
     private function seerevid_setting(PaperInfo $prow, $rrow, $rights) {
-        $round = $rrow ? $rrow->reviewRound : null;
+        $round = $rrow ? $rrow->reviewRound : "max";
         if ($rights->allow_pc) {
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
                 $s = $this->conf->round_setting("pc_seeblindrev", $round);
