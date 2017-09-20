@@ -178,8 +178,8 @@ class GetAbstract_SearchAction extends SearchAction {
                     $marker = ($i + 1) . ". ";
                     $text .= prefix_word_wrap($marker, $au->name_email_aff_text(), strlen($marker), self::WIDTH);
                 }
-                $text .= "\n";
             }
+            $text .= "\n";
         }
 
         if ($prow->abstract)
