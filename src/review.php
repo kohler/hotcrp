@@ -178,6 +178,8 @@ class ReviewField implements Abbreviator, JsonSerializable {
         if (!$this->round_mask)
             return true;
         // NB missing $rrow is only possible for PC reviews
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $round = $rrow ? $rrow->reviewRound : $this->conf->assignment_round(false);
         return $round === null
             || ($this->round_mask & (1 << $round))
@@ -524,7 +526,7 @@ class ReviewForm implements JsonSerializable {
         return $format ? $this->conf->format_info($format) : null;
     }
 
-    private function webFormRows($contact, $prow, $rrow, ReviewValues $rvalues = null) {
+    private function webFormRows(Contact $contact, $prow, $rrow, ReviewValues $rvalues = null) {
         $format_description = "";
         if (($fi = $this->format_info($rrow)))
             $format_description = $fi->description_preview_html();
@@ -591,6 +593,8 @@ class ReviewForm implements JsonSerializable {
     }
 
     function author_nonempty($rrow) {
+        if (!($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         foreach ($this->forder as $fid => $f)
             if (isset($rrow->$fid)
                 && (!$f->round_mask || $f->is_round_visible($rrow))
@@ -601,6 +605,8 @@ class ReviewForm implements JsonSerializable {
     }
 
     function word_count($rrow) {
+        if (!($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $wc = 0;
         foreach ($this->forder as $fid => $f)
             if (isset($rrow->$fid)
@@ -612,6 +618,8 @@ class ReviewForm implements JsonSerializable {
     }
 
     function review_needs_approval($rrow) {
+        if (!($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $rrow && !$rrow->reviewSubmitted
             && $rrow->reviewType == REVIEW_EXTERNAL
             && $rrow->requestedBy
@@ -681,7 +689,9 @@ class ReviewForm implements JsonSerializable {
         return $x;
     }
 
-    function textForm($prow, $rrow, $contact, $req = null) {
+    function textForm($prow, $rrow, Contact $contact, $req = null) {
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $rrow_contactId = $rrow ? $rrow->contactId : 0;
         $myReview = !$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId;
         $revViewScore = $prow ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
@@ -805,6 +815,8 @@ $blind\n";
                          $no_update_review_author_seen = false,
                          $no_title = false) {
         assert($prow !== null && $rrow !== null);
+        if (!($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
 
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
@@ -939,6 +951,8 @@ $blind\n";
 
     function show(PaperInfo $prow, $rrow, &$options, ReviewValues $rvalues = null) {
         global $Me;
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
 
         if (!$options)
             $options = array();
@@ -1116,6 +1130,8 @@ $blind\n";
 
     function unparse_review_json(PaperInfo $prow, $rrow, Contact $contact,
                                  $forceShow = null, $flags = 0) {
+        if (!($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         self::check_review_author_seen($prow, $rrow, $contact);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         $editable = !($flags & self::RJ_NO_EDITABLE);
