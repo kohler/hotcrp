@@ -2549,13 +2549,19 @@ class PaperTable {
             && !$Me->can_view_review($prow, $this->rrow, null))
             $this->rrow = $this->editrrow = null;
         if ($this->mode === "p" && !$this->rrow && !$this->editrrow
-            && !$Me->can_view_review($prow, $this->rrow, null)
-            && $Me->can_review($prow, $this->rrow, false))  {
-            $this->mode = "re";
-            foreach ($this->all_rrows as $rr)
-                if ($rr->contactId == $Me->contactId
-                    || (!$this->editrrow && $Me->is_my_review($rr)))
-                    $this->editrrow = $rr;
+            && $Me->can_review($prow, null, false)) {
+            $viewable_rrow = $my_rrow = null;
+            foreach ($this->all_rrows as $rrow) {
+                if ($Me->can_view_review($prow, $rrow, null))
+                    $viewable_rrow = $rrow;
+                if ($rrow->contactId == $Me->contactId
+                    || (!$my_rrow && $Me->is_my_review($rrow)))
+                    $my_rrow = $rrow;
+            }
+            if (!$viewable_rrow) {
+                $this->mode = "re";
+                $this->editrrow = $my_rrow;
+            }
         }
         if ($this->mode === "p" && $prow && empty($this->viewable_rrows)
             && empty($this->mycrows)
