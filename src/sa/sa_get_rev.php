@@ -116,8 +116,11 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
 }
 
 class GetReviews_SearchAction extends GetReviewBase_SearchAction {
+    private $include_paper;
     function __construct($fj) {
-        parent::__construct(false, $fj->name === "get/revz");
+        parent::__construct(false, !!get($fj, "zip"));
+        $this->include_paper = !!get($fj, "abstract");
+        require_once("sa_get_sub.php");
     }
     function allow(Contact $user) {
         return $user->can_view_some_review();
@@ -127,28 +130,32 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
         $user->set_overrides($user->overrides() | Contact::OVERRIDE_CONFLICT);
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $errors = $texts = [];
-        foreach (PaperInfo::fetch_all($result, $user) as $row) {
-            if (($whyNot = $user->perm_view_paper($row))) {
-                $errors["#$row->paperId: " . whyNotText($whyNot, "view")] = true;
+        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
+            if (($whyNot = $user->perm_view_paper($prow))) {
+                $errors["#$prow->paperId: " . whyNotText($whyNot, "view")] = true;
                 continue;
             }
             $rctext = "";
+            if ($this->include_paper)
+                $rctext = GetAbstract_SearchAction::render($prow, $user);
             $last_rc = null;
-            foreach ($row->viewable_submitted_reviews_and_comments($user, null) as $rc) {
+            foreach ($prow->viewable_submitted_reviews_and_comments($user, null) as $rc) {
                 $rctext .= PaperInfo::review_or_comment_text_separator($last_rc, $rc);
                 if (isset($rc->reviewId))
-                    $rctext .= $rf->pretty_text($row, $rc, $user, false, true);
+                    $rctext .= $rf->pretty_text($prow, $rc, $user, false, true);
                 else
                     $rctext .= $rc->unparse_text($user, true);
                 $last_rc = $rc;
             }
             if ($rctext !== "") {
-                $header = "{$user->conf->short_name} Paper #{$row->paperId} Reviews and Comments\n";
-                $texts[$row->paperId] = $header . str_repeat("=", 75) . "\n"
-                    . "* Paper #{$row->paperId} {$row->title}\n\n"
-                    . $rctext;
-            } else if (($whyNot = $user->perm_review($row, null, null)))
-                $errors["#$row->paperId: " . whyNotText($whyNot, "view review")] = true;
+                if (!$this->include_paper) {
+                    $header = "{$user->conf->short_name} Paper #{$prow->paperId} Reviews and Comments\n";
+                    $rctext = $header . str_repeat("=", 75) . "\n"
+                        . "* Paper #{$prow->paperId} {$prow->title}\n\n";
+                }
+                $texts[$prow->paperId] = $rctext;
+            } else if (($whyNot = $user->perm_review($prow, null, null)))
+                $errors["#$prow->paperId: " . whyNotText($whyNot, "view review")] = true;
         }
         $texts = array_values($ssel->reorder($texts));
         foreach ($texts as $i => &$text)

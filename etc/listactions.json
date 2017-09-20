@@ -97,6 +97,15 @@
         "zip": true
     },
     {
+        "name": "get/revt", "get": true,
+        "selector": "Reviews/Text with reviews",
+        "position": 3062,
+        "enable_if": "view_review",
+        "require": "src/sa/sa_get_rev.php",
+        "factory_class": "GetReviews_SearchAction",
+        "zip": false, "abstract": true
+    },
+    {
         "name": "get/scores", "get": true,
         "selector": "Reviews/Scores",
         "position": 3070,

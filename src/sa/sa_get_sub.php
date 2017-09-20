@@ -135,7 +135,7 @@ class GetCheckFormat_SearchAction extends SearchAction {
 
 class GetAbstract_SearchAction extends SearchAction {
     const WIDTH = 96;
-    private function render_option(PaperOption $o, $otxt) {
+    static private function render_option(PaperOption $o, $otxt) {
         $dtype = array_shift($otxt);
         if ($dtype === PaperOption::PAGE_HTML_NAME)
             $n = join(" ", $otxt);
@@ -152,21 +152,21 @@ class GetAbstract_SearchAction extends SearchAction {
         }
         return $text . "\n";
     }
-    function render_displayed_options(PaperInfo $prow, Contact $user, $display) {
+    static function render_displayed_options(PaperInfo $prow, Contact $user, $display) {
         $text = "";
         foreach ($prow->options() as $ov) {
             if ($ov->option->display() === $display
                 && $user->can_view_paper_option($prow, $ov->option, null)
                 && ($otxt = $ov->option->unparse_page_text($prow, $ov)))
-                $text .= $this->render_option($ov->option, $otxt);
+                $text .= self::render_option($ov->option, $otxt);
         }
         return $text;
     }
-    function render(PaperInfo $prow, Contact $user) {
+    static function render(PaperInfo $prow, Contact $user) {
         $n = prefix_word_wrap("", "Submission #{$prow->paperId}: {$prow->title}", 0, self::WIDTH);
         $text = $n . str_repeat("=", min(self::WIDTH, strlen($n) - 1)) . "\n\n";
 
-        $text .= $this->render_displayed_options($prow, $user, PaperOption::DISP_SUBMISSION);
+        $text .= self::render_displayed_options($prow, $user, PaperOption::DISP_SUBMISSION);
 
         if ($user->can_view_authors($prow) && ($alist = $prow->author_list())) {
             if (count($alist) == 1)
@@ -185,7 +185,7 @@ class GetAbstract_SearchAction extends SearchAction {
         if ($prow->abstract)
             $text .= "Abstract\n--------\n" . rtrim($prow->abstract) . "\n\n";
 
-        $text .= $this->render_displayed_options($prow, $user, PaperOption::DISP_PROMINENT);
+        $text .= self::render_displayed_options($prow, $user, PaperOption::DISP_PROMINENT);
 
         if (($tlist = $prow->named_topic_map())) {
             $text .= "Topics\n------\n";
@@ -194,7 +194,7 @@ class GetAbstract_SearchAction extends SearchAction {
             $text .= "\n";
         }
 
-        $text .= $this->render_displayed_options($prow, $user, PaperOption::DISP_TOPICS);
+        $text .= self::render_displayed_options($prow, $user, PaperOption::DISP_TOPICS);
 
         return $text . "\n";
     }
