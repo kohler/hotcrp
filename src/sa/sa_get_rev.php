@@ -151,7 +151,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
                 if (!$this->include_paper) {
                     $header = "{$user->conf->short_name} Paper #{$prow->paperId} Reviews and Comments\n";
                     $rctext = $header . str_repeat("=", 75) . "\n"
-                        . "* Paper #{$prow->paperId} {$prow->title}\n\n";
+                        . "* Paper #{$prow->paperId} {$prow->title}\n\n" . $rctext;
                 }
                 $texts[$prow->paperId] = $rctext;
             } else if (($whyNot = $user->perm_review($prow, null, null)))
