@@ -157,10 +157,13 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
             } else if (($whyNot = $user->perm_review($prow, null, null)))
                 $errors["#$prow->paperId: " . whyNotText($whyNot, "view review")] = true;
         }
-        $texts = array_values($ssel->reorder($texts));
-        foreach ($texts as $i => &$text)
-            if ($i > 0)
+        $texts = $ssel->reorder($texts);
+        $first = true;
+        foreach ($texts as &$text) {
+            if (!$first)
                 $text = "\n\n\n" . str_repeat("* ", 37) . "*\n\n\n\n" . $text;
+            $first = false;
+        }
         unset($text);
         $this->finish($user, $texts, $errors);
     }
