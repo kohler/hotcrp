@@ -138,23 +138,6 @@ CREATE TABLE `MailLog` (
 
 
 --
--- Table structure for table `Mimetype`
---
-
-DROP TABLE IF EXISTS `Mimetype`;
-CREATE TABLE `Mimetype` (
-  `mimetypeid` int(11) NOT NULL,
-  `mimetype` varbinary(200) NOT NULL,
-  `extension` varbinary(10) DEFAULT NULL,
-  `description` varbinary(200) DEFAULT NULL,
-  `inline` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`mimetypeid`),
-  UNIQUE KEY `mimetype` (`mimetype`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
---
 -- Table structure for table `Paper`
 --
 
@@ -354,7 +337,6 @@ CREATE TABLE `PaperStorage` (
   `paperStorageId` int(11) NOT NULL AUTO_INCREMENT,
   `timestamp` bigint(11) NOT NULL,
   `mimetype` varbinary(80) NOT NULL DEFAULT '',
-  `mimetypeid` int(11) NOT NULL DEFAULT '0',
   `paper` longblob,
   `compression` tinyint(1) NOT NULL DEFAULT '0',
   `sha1` varbinary(64) NOT NULL DEFAULT '',
@@ -505,7 +487,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 177);
+insert into Settings (name, value) values ('allowPaperOption', 178);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
@@ -522,16 +504,5 @@ insert into Settings (name, value, data) values ('review_form',1,'{"overAllMerit
 
 insert ignore into PaperStorage set
     paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain',
-    mimetypeid=1, paper='', sha1=x'da39a3ee5e6b4b0d3255bfef95601890afd80709',
+    paper='', sha1=x'da39a3ee5e6b4b0d3255bfef95601890afd80709',
     documentType=0, size=0;
-insert ignore into Mimetype (mimetypeid, mimetype, extension, description, inline)
-    values (1, 'text/plain', '.txt', 'text', 1),
-           (2, 'application/pdf', '.pdf', 'PDF', 1),
-           (3, 'application/postscript', '.ps', 'PostScript', 0),
-           (4, 'application/vnd.ms-powerpoint', '.ppt', 'PowerPoint', 0),
-           (5, 'application/vnd.openxmlformats-officedocument.presentationml.presentation', '.pptx', 'PowerPoint', 0),
-           (6, 'video/mp4', '.mp4', null, 0),
-           (7, 'video/x-msvideo', '.avi', null, 0),
-           (8, 'application/json', '.json', 'JSON', 0),
-           (9, 'image/jpeg', '.jpg', 'JPEG', 0),
-           (10, 'image/png', '.png', 'PNG', 0);
