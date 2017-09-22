@@ -1688,7 +1688,9 @@ class Contact {
         return $this->review_tokens_ ? $this->review_tokens_ : array();
     }
 
-    function review_token_cid($prow, $rrow = null) {
+    function review_token_cid(PaperInfo $prow, $rrow = null) {
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         if (!$this->review_tokens_)
             return 0;
         if (!$rrow) {
@@ -2307,8 +2309,8 @@ class Contact {
     }
 
     function is_my_review($rrow) {
-        if ($rrow && !isset($rrow->contactId)) // XXX backwards compat
-            error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $rrow
             && ($rrow->contactId == $this->contactId
                 || ($this->review_tokens_
@@ -2316,6 +2318,8 @@ class Contact {
     }
 
     function is_owned_review($rrow) {
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $rrow
             && ($rrow->contactId == $this->contactId
                 || ($this->review_tokens_
@@ -2387,6 +2391,8 @@ class Contact {
             $rrow = null;
         } else if ($viewscore === null)
             $viewscore = VIEWSCORE_AUTHOR;
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         assert(!$rrow || $prow->paperId == $rrow->paperId);
         $rights = $this->rights($prow, $forceShow);
         if ($rights->can_administer
@@ -2467,6 +2473,8 @@ class Contact {
     }
 
     function can_view_review_identity(PaperInfo $prow, $rrow, $forceShow = null) {
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $rights = $this->rights($prow, $forceShow);
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
@@ -2514,6 +2522,8 @@ class Contact {
     }
 
     function can_view_review_round(PaperInfo $prow, $rrow, $forceShow = null) {
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $rights = $this->rights($prow, $forceShow);
         return $rights->can_administer
             || $rights->allow_pc
@@ -2521,6 +2531,8 @@ class Contact {
     }
 
     function can_view_review_time(PaperInfo $prow, $rrow, $forceShow = null) {
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $rights = $this->rights($prow, $forceShow);
         return !$rights->act_author_view
             || ($rrow && $rrow->reviewAuthorSeen
@@ -2566,6 +2578,8 @@ class Contact {
     }
 
     function timeReview(PaperInfo $prow, $rrow) {
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $rights = $this->rights($prow);
         if ($rights->reviewType > 0
             || ($rrow
@@ -2622,6 +2636,8 @@ class Contact {
     }
 
     function can_review(PaperInfo $prow, $rrow, $submit = false) {
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         assert(!$rrow || $rrow->paperId == $prow->paperId);
         $rights = $this->rights($prow);
         if ($submit && !$this->can_clickthrough("review"))
@@ -2722,6 +2738,8 @@ class Contact {
     }
 
     function can_view_review_ratings(PaperInfo $prow = null, $rrow = null, $override_self = false) {
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $rs = $this->conf->setting("rev_ratings");
         if ($rs != REV_RATINGS_PC && $rs != REV_RATINGS_PC_EXTERNAL)
             return false;
@@ -2978,6 +2996,8 @@ class Contact {
 
     // A review field is visible only if its view_score > view_score_bound.
     function view_score_bound(PaperInfo $prow, $rrow, $forceShow = null) {
+        if ($rrow && !($rrow instanceof ReviewInfo))
+            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         // Returns the maximum view_score for an invisible review
         // field. Values are:
         //   VIEWSCORE_ADMINONLY     admin can view
