@@ -753,18 +753,6 @@ class SettingValues extends MessageSet {
                 }
             }
 
-        // update 'papersub'
-        if ($this->has_savedv("pc_seeall")) {
-            // see also conference.php
-            if ($this->savedv("pc_seeall") <= 0)
-                $x = "timeSubmitted>0";
-            else
-                $x = "timeWithdrawn<=0";
-            $num = $this->conf->fetch_ivalue("select paperId from Paper where $x limit 1") ? 1 : 0;
-            if ($num != $this->conf->setting("papersub"))
-                $this->save("papersub", $num);
-        }
-
         // Setting relationships
         if ($this->has_savedv("sub_open")
             && $this->newv("sub_open", 1) <= 0
@@ -840,6 +828,8 @@ class SettingValues extends MessageSet {
             // contactdb may need to hear about changes to shortName
             if ($this->has_savedv("opt.shortName") && ($cdb = Contact::contactdb()))
                 Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $this->conf->short_name, $this->conf->dbname);
+            if ($this->has_savedv("pc_seeall"))
+                $this->conf->update_papersub_setting(0);
         }
         return !$this->has_error();
     }
