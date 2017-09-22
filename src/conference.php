@@ -177,7 +177,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 178) {
+        if ($this->sversion < 179) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -1592,9 +1592,10 @@ class Conf {
 
     // update the 'papersub' setting: are there any submitted papers?
     function update_papersub_setting($adding) {
-        if ($this->setting("papersub", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
-            $this->qe_raw("insert into Settings (name, value) select 'papersub', exists (select * from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . ") on duplicate key update value=values(value)");
-            $this->settings["papersub"] = $this->fetch_ivalue("select value from Settings where name='papersub'");
+        if ($this->setting("no_papersub", 0) > 0 ? $adding >= 0 : $adding <= 0) {
+            $this->qe("delete from Settings where name='no_papersub'");
+            $this->qe("insert into Settings (name, value) select 'no_papersub', 1 from dual where exists (select * from Paper where timeSubmitted>0) = 0");
+            $this->settings["no_papersub"] = $this->fetch_ivalue("select value from Settings where name='no_papersub'");
         }
     }
 
@@ -1649,9 +1650,9 @@ class Conf {
     }
 
     function check_invariants() {
-        $any = $this->invariantq("select paperId from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . " limit 1");
-        if ($any !== !!get($this->settings, "papersub"))
-            trigger_error("$this->dbname invariant error: papersub");
+        $any = $this->invariantq("select paperId from Paper where timeSubmitted>0 limit 1");
+        if ($any !== !get($this->settings, "no_papersub"))
+            trigger_error("$this->dbname invariant error: no_papersub");
 
         $any = $this->invariantq("select paperId from Paper where outcome>0 and timeSubmitted>0 limit 1");
         if ($any !== !!get($this->settings, "paperacc"))
@@ -2057,11 +2058,6 @@ class Conf {
         else
             return !$pdf && $this->can_pc_see_all_submissions();
     }
-    function timePCViewSomePaper($pdf) {
-        return $this->setting("papersub")
-            ? !$pdf || $this->_pc_see_pdf
-            : !$pdf || $this->can_pc_see_all_submissions();
-    }
     function timeEmailChairAboutReview() {
         return get($this->settings, "rev_notifychair") > 0;
     }
@@ -2097,7 +2093,10 @@ class Conf {
     }
 
     function has_any_submitted() {
-        return !!get($this->settings, "papersub");
+        return !get($this->settings, "no_papersub");
+    }
+    function has_any_pc_visible_pdf() {
+        return $this->has_any_submitted() && $this->_pc_see_pdf;
     }
     function has_any_accepted() {
         return !!get($this->settings, "paperacc");

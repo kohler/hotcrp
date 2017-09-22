@@ -487,8 +487,10 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 178);
+insert into Settings (name, value) values ('allowPaperOption', 179);
 insert into Settings (name, value) values ('setupPhase', 1);
+-- there are no submissions yet
+insert into Settings (name, value) values ('no_papersub', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

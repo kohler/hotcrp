@@ -1280,6 +1280,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperStorage drop `mimetypeid`")
         && $conf->ql("drop table if exists `Mimetype`"))
         $conf->update_schema_version(178);
+    if ($conf->sversion == 178
+        && $conf->ql("delete from Settings where name='papersub'")
+        && $conf->ql("insert into Settings (name, value) select 'no_papersub', 1 from dual where exists (select * from Paper where timeSubmitted>0) = 0"))
+        $conf->update_schema_version(179);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

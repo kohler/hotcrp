@@ -2153,7 +2153,7 @@ class Contact {
         return $this->privChair
             || $this->is_author()
             || $this->has_review()
-            || ($this->isPC && $this->conf->timePCViewSomePaper(true));
+            || ($this->isPC && $this->conf->has_any_pc_visible_pdf());
     }
 
     function can_view_document_history(PaperInfo $prow) {

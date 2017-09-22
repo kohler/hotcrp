@@ -155,9 +155,6 @@
     "outcome_map": {
         "internal": true, "type": "string"
     },
-    "papersub": {
-        "internal": true
-    },
     "pc_seeall": {
         "name": "PC can see all papers",
         "type": "checkbox"

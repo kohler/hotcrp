@@ -828,8 +828,6 @@ class SettingValues extends MessageSet {
             // contactdb may need to hear about changes to shortName
             if ($this->has_savedv("opt.shortName") && ($cdb = Contact::contactdb()))
                 Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $this->conf->short_name, $this->conf->dbname);
-            if ($this->has_savedv("pc_seeall"))
-                $this->conf->update_papersub_setting(0);
         }
         return !$this->has_error();
     }
