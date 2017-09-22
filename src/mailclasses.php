@@ -32,7 +32,7 @@ class MailRecipients {
         $any_newpcrev = $any_lead = $any_shepherd = 0;
 
         if ($contact->is_manager()) {
-            $hide = !$this->conf->setting("papersub");
+            $hide = !$this->conf->has_any_submitted();
             $this->defsel("s", "Contact authors of submitted papers", $hide ? self::F_HIDE : 0);
             $this->defsel("unsub", "Contact authors of unsubmitted papers");
             $this->defsel("au", "All contact authors");

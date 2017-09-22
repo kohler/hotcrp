@@ -2034,7 +2034,7 @@ class Conf {
         return !$this->missed_review_deadline($round, $isPC, $hard);
     }
     function timePCReviewPreferences() {
-        return get($this->settings, "papersub") > 0;
+        return $this->can_pc_see_all_submissions() || $this->has_any_submitted();
     }
     function timePCViewDecision($conflicted) {
         $s = $this->setting("seedec");
@@ -2096,6 +2096,9 @@ class Conf {
         return $this->settings["rev_blind"];
     }
 
+    function has_any_submitted() {
+        return !!get($this->settings, "papersub");
+    }
     function has_any_accepts() {
         return !!get($this->settings, "paperacc");
     }

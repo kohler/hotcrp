@@ -243,7 +243,7 @@ jQuery(\"#homeacct input[name='action']\").on('click',login_type);jQuery(login_t
 
 
 // Submissions
-$papersub = $Conf->setting("papersub");
+$papersub = $Conf->has_any_submitted();
 $homelist = ($Me->privChair || ($Me->isPC && $papersub) || ($Me->is_reviewer() && $papersub));
 $home_hr = "<hr class=\"home\" />\n";
 $nhome_hr = 0;
