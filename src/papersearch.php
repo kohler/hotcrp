@@ -3861,7 +3861,7 @@ class PaperSearch {
             if ($user->conf->can_pc_see_all_submissions())
                 $ts[] = "act";
             $ts[] = "s";
-            if ($user->conf->timePCViewDecision(false) && $user->conf->has_any_accepts())
+            if ($user->conf->timePCViewDecision(false) && $user->conf->has_any_accepted())
                 $ts[] = "acc";
         }
         if ($user->privChair) {

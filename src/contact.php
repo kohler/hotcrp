@@ -2263,7 +2263,7 @@ class Contact {
     }
 
     function user_option_list() {
-        if ($this->conf->has_any_accepts() && $this->can_view_some_decision())
+        if ($this->conf->has_any_accepted() && $this->can_view_some_decision())
             return $this->conf->paper_opts->option_list();
         else
             return $this->conf->paper_opts->nonfinal_option_list();

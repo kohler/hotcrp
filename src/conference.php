@@ -997,7 +997,7 @@ class Conf {
             $this->_abbrev_matcher = new AbbreviationMatcher;
             $this->_abbrev_matcher->add("paper", $this->paper_opts->get(DTYPE_SUBMISSION), self::FSRCH_OPTION, 1);
             $this->_abbrev_matcher->add("submission", $this->paper_opts->get(DTYPE_SUBMISSION), self::FSRCH_OPTION, 1);
-            if ($this->has_any_accepts()) {
+            if ($this->has_any_accepted()) {
                 $ol = $this->paper_opts->option_list();
                 $this->_abbrev_matcher->add("final", $this->paper_opts->get(DTYPE_FINAL), self::FSRCH_OPTION, 1);
             } else
@@ -2099,7 +2099,7 @@ class Conf {
     function has_any_submitted() {
         return !!get($this->settings, "papersub");
     }
-    function has_any_accepts() {
+    function has_any_accepted() {
         return !!get($this->settings, "paperacc");
     }
 
