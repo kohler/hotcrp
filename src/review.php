@@ -907,7 +907,7 @@ $blind\n";
                 $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", ["class" => "btn", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
             } else
                 $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", ["class" => "btn btn-default", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
-        } else if (!$submitted && $this->review_needs_approval($rrow)) {
+        } else if (!$submitted && $rrow && $this->review_needs_approval($rrow)) {
             if ($my_review && !$rrow->timeApprovalRequested)
                 $buttons[] = Ht::submit("submitreview", "Submit for approval", ["class" => "btn btn-default", "disabled" => $disabled]);
             else if ($my_review)
@@ -1771,7 +1771,8 @@ class ReviewValues extends MessageSet {
         $newsubmit = $approval_requested = false;
         if (get($this->req, "ready")
             && (!$rrow || !$rrow->reviewSubmitted)) {
-            if (!$user->isPC && $this->rf->review_needs_approval($rrow))
+            if (!$user->isPC && $rrow
+                && $this->rf->review_needs_approval($rrow))
                 $approval_requested = true;
             else
                 $newsubmit = true;
