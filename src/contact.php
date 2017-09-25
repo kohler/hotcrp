@@ -1652,7 +1652,7 @@ class Contact {
         if (!isset($this->is_lead_)) {
             $result = null;
             if ($this->contactId > 0)
-                $result = $this->conf->qe("select paperId from Paper where leadContactId=? limit 1", $this->contactId);
+                $result = $this->conf->qe("select exists (select * from Paper where leadContactId=?)", $this->contactId);
             $this->is_lead_ = edb_nrows($result) > 0;
             Dbl::free($result);
         }
@@ -1667,7 +1667,7 @@ class Contact {
                 && $this->isPC
                 && ($this->conf->check_any_admin_tracks($this)
                     || ($this->conf->has_any_manager()
-                        && $this->conf->fetch_value("select paperId from Paper where managerContactId=? limit 1", $this->contactId) > 0)))
+                        && $this->conf->fetch_value("select exists (select * from Paper where managerContactId=?)", $this->contactId) > 0)))
                 $this->is_explicit_manager_ = true;
         }
         return $this->is_explicit_manager_;
