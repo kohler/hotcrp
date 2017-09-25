@@ -3655,19 +3655,19 @@ class PaperSearch {
         return true;
     }
 
-    function complexSearch(&$queryOptions) {
+    function simple_search_options() {
         $limit = $this->limitName;
         if ($limit === "editpref")
             $limit = "rable";
         if (($limit === "s" || $limit === "act") && $this->q === "re:me")
             $limit = "r";
         else if ($this->q !== "")
-            return true;
+            return false;
         if (!$this->privChair && $this->reviewer_user() !== $this->user)
-            return true;
+            return false;
         if ($this->conf->has_tracks()) {
             if (!$this->privChair || $limit === "rable")
-                return true;
+                return false;
         }
         if ($limit === "rable") {
             if ($this->reviewer_user()->isPC)
@@ -3675,6 +3675,7 @@ class PaperSearch {
             else
                 $limit = "r";
         }
+        $queryOptions = [];
         if ($limit === "s" || $limit === "revs")
             $queryOptions["finalized"] = 1;
         else if ($limit === "unsub") {
@@ -3685,7 +3686,7 @@ class PaperSearch {
                 $queryOptions["accepted"] = 1;
                 $queryOptions["finalized"] = 1;
             } else
-                return true;
+                return false;
         } else if ($limit === "und") {
             $queryOptions["undecided"] = 1;
             $queryOptions["finalized"] = 1;
@@ -3696,7 +3697,7 @@ class PaperSearch {
         else if ($limit === "a") {
             // If complex author SQL, always do search the long way
             if ($this->user->actAuthorSql("%", true))
-                return true;
+                return false;
             $queryOptions["author"] = 1;
         } else if ($limit === "req" || $limit === "reqrevs")
             $queryOptions["myReviewRequests"] = 1;
@@ -3706,11 +3707,9 @@ class PaperSearch {
             $queryOptions["myLead"] = 1;
         else if ($limit === "unm")
             $queryOptions["finalized"] = $queryOptions["unmanaged"] = 1;
-        else if ($limit === "all")
-            /* no limit */;
-        else
-            return true; /* don't understand limit */
-        return false;
+        else if ($limit !== "all")
+            return false; /* don't understand limit */
+        return $queryOptions;
     }
 
     function alternate_query() {

@@ -167,9 +167,11 @@ class PaperList {
             || $this->user->is_reviewer()
             || $this->conf->timeAuthorViewReviews();
 
-        $this->qopts = ["scores" => [], "options" => true];
-        if ($this->search->complexSearch($this->qopts))
-            $this->qopts["paperId"] = $this->search->paperList();
+        $this->qopts = $this->search->simple_search_options();
+        if ($this->qopts === false)
+            $this->qopts = ["paperId" => $this->search->paperList()];
+        $this->qopts["scores"] = [];
+        $this->qopts["options"] = true;
         // NB that actually processed the search, setting PaperSearch::viewmap
 
         foreach ($this->search->sorters ? : [] as $sorter)
