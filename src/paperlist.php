@@ -526,15 +526,14 @@ class PaperList {
             return "id title revstat statusfull authors collab abstract topics reviewers shepherd scores formulas";
         case "authorHome":
             return "id title statusfull";
-        case "s":
-        case "acc":
-            return "sel id title revtype revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
         case "all":
         case "act":
             return "sel id title revtype revstat statusfull authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reviewerHome":
             $this->_default_linkto("finishreview");
             return "id title revtype status";
+        case "s":
+        case "acc":
         case "r":
         case "lead":
         case "manager":

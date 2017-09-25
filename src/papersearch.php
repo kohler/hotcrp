@@ -2451,7 +2451,7 @@ class PaperSearch {
     public $warnings = array();
     private $_quiet_count = 0;
 
-    var $q;
+    public $q;
     private $_qe;
 
     public $regex = [];
@@ -3436,12 +3436,16 @@ class PaperSearch {
             else if (!$limitcontact->isPC)
                 $limit = "r";
         }
-        if ($limit === "s" || $limit === "req"
-            || $limit === "acc" || $limit === "und"
+        if ($limit === "s"
+            || $limit === "req"
+            || $limit === "acc"
+            || $limit === "und"
             || $limit === "unm"
             || ($limit === "rable" && !$this->conf->can_pc_see_all_submissions()))
             $filters[] = "Paper.timeSubmitted>0";
-        else if ($limit === "act" || $limit === "r" || $limit === "rable")
+        else if ($limit === "act"
+                 || $limit === "r"
+                 || $limit === "rable")
             $filters[] = "Paper.timeWithdrawn<=0";
         else if ($limit === "unsub")
             $filters[] = "(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)";
@@ -3555,7 +3559,7 @@ class PaperSearch {
                 $q .= "\n    " . $value[0] . " " . $value[1] . " as " . $tabname
                     . " on (" . join("\n        and ", $joiners) . ")";
             }
-        if (count($filters))
+        if (!empty($filters))
             $q .= "\n    where " . join("\n        and ", $filters);
         $q .= "\n    group by Paper.paperId";
 

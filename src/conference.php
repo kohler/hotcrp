@@ -2392,7 +2392,7 @@ class Conf {
         if (count($paperset) > 1)
             $paperset = array(call_user_func_array("array_intersect", $paperset));
         $papersel = "";
-        if (count($paperset))
+        if (!empty($paperset))
             $papersel = "paperId" . sql_in_numeric_set($paperset[0]) . " and ";
 
         // prepare query: basic tables
@@ -2501,7 +2501,7 @@ class Conf {
             $cols[] = "1 as folded";
 
         // conditions
-        if (count($paperset))
+        if (!empty($paperset))
             $where[] = "Paper.paperId" . sql_in_numeric_set($paperset[0]);
         if (get($options, "finalized"))
             $where[] = "timeSubmitted>0";
@@ -2511,7 +2511,8 @@ class Conf {
             $where[] = "outcome>0";
         if (get($options, "undecided"))
             $where[] = "outcome=0";
-        if (get($options, "active") || get($options, "myReviews")
+        if (get($options, "active")
+            || get($options, "myReviews")
             || get($options, "myReviewRequests"))
             $where[] = "timeWithdrawn<=0";
         if (get($options, "myLead"))
@@ -2537,7 +2538,7 @@ class Conf {
 
         $pq = "select " . join(",\n    ", $cols)
             . "\nfrom " . join("\n    ", $joins);
-        if (count($where))
+        if (!empty($where))
             $pq .= "\nwhere " . join("\n    and ", $where);
 
         // grouping and ordering
