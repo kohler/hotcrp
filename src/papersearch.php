@@ -3662,14 +3662,16 @@ class PaperSearch {
         $limit = $this->limitName;
         if ($limit === "editpref")
             $limit = "rable";
-        if (($limit === "s" || $limit === "act") && $this->q === "re:me")
-            $limit = "r";
-        else if ($this->q !== "")
+        $xlimit = $limit;
+        if ($this->q === "re:me" && ($xlimit === "s" || $xlimit === "act" || $xlimit === "rout" || $xlimit === "rable"))
+            $xlimit = "r";
+        if ($this->q !== "" && ($this->q !== "re:me" || $xlimit !== "r"))
             return false;
         if (!$this->privChair && $this->reviewer_user() !== $this->user)
             return false;
         if ($this->conf->has_tracks()) {
-            if (!$this->privChair || $limit === "rable")
+            if ((!$this->privChair && $xlimit !== "a" && $xlimit !== "r" && $xlimit !== "ar")
+                || $limit === "rable")
                 return false;
         }
         if ($limit === "rable") {
@@ -3712,6 +3714,8 @@ class PaperSearch {
             $queryOptions["finalized"] = $queryOptions["unmanaged"] = 1;
         else if ($limit !== "all")
             return false; /* don't understand limit */
+        if ($this->q === "re:me" && $limit !== "rout")
+            $queryOptions["myReviews"] = 1;
         return $queryOptions;
     }
 
@@ -3790,11 +3794,11 @@ class PaperSearch {
             $lx = $this->conf->_($listname);
         else {
             $limit = $this->limitName;
-            if ($this->limitName === "s" && $this->q === "re:me")
+            if ($this->q === "re:me" && ($limit === "s" || $limit === "act"))
                 $limit = "r";
             $lx = $this->conf->_c("search_types", get(self::$search_type_names, $limit, "Papers"));
         }
-        if ($this->q === "" || ($this->limitName === "s" && $this->q === "re:me"))
+        if ($this->q === "" || ($this->q === "re:me" && ($this->limitName === "s" || $this->limitName === "act")))
             return $lx;
         else if (($td = $this->_tag_description()))
             return "$td in $lx";
