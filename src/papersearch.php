@@ -3467,24 +3467,24 @@ class PaperSearch {
             $filters[] = "Paper.outcome=0";
 
         // other search limiters
-        if ($limit === "a") {
+        if ($limit === "a")
             $filters[] = $this->user->actAuthorSql("PaperConflict");
-            $sqi->needflags |= self::F_AUTHOR;
-        } else if ($limit === "r") {
+        else if ($limit === "r")
             $filters[] = "MyReview.reviewType is not null";
-            $sqi->needflags |= self::F_REVIEWER;
-        } else if ($limit === "ar") {
+        else if ($limit === "ar")
             $filters[] = "(" . $this->user->actAuthorSql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and MyReview.reviewType is not null))";
-            $sqi->needflags |= self::F_AUTHOR | self::F_REVIEWER;
-        } else if ($limit === "rout") {
+        else if ($limit === "rout")
             $filters[] = "MyReview.reviewNeedsSubmit!=0";
-            $sqi->needflags |= self::F_REVIEWER;
-        } else if ($limit === "revs")
+        else if ($limit === "revs")
             $sqi->add_table("Limiter", array("join", "PaperReview"));
         else if ($limit === "req")
             $sqi->add_table("Limiter", array("join", "PaperReview", "Limiter.requestedBy=$this->cid and Limiter.reviewType=" . REVIEW_EXTERNAL));
         else if ($limit === "unm")
             $filters[] = "Paper.managerContactId=0";
+        if ($limit === "a" || $limit === "ar")
+            $sqi->needflags |= self::F_AUTHOR;
+        if ($limit === "r" || $limit === "ar" || $limit === "rout")
+            $sqi->needflags |= self::F_REVIEWER;
 
         // add common tables: conflicts, my own review, paper blindness
         if ($sqi->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR))
