@@ -3481,9 +3481,12 @@ class PaperSearch {
             $sqi->add_table("Limiter", array("join", "PaperReview", "Limiter.requestedBy=$this->cid and Limiter.reviewType=" . REVIEW_EXTERNAL));
         else if ($limit === "unm")
             $filters[] = "Paper.managerContactId=0";
+        else if ($this->q === "re:me")
+            $filters[] = "MyReview.reviewType is not null";
+
         if ($limit === "a" || $limit === "ar")
             $sqi->needflags |= self::F_AUTHOR;
-        if ($limit === "r" || $limit === "ar" || $limit === "rout")
+        if ($limit === "r" || $limit === "ar" || $limit === "rout" || $this->q === "re:me")
             $sqi->needflags |= self::F_REVIEWER;
 
         // add common tables: conflicts, my own review, paper blindness
