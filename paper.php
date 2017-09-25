@@ -79,7 +79,7 @@ if (!$newPaper)
 
 // paper actions
 if ($prow && isset($_GET["m"]) && $_GET["m"] === "api"
-    && isset($_GET["fn"]) && $conf->has_api($_GET["fn"])) {
+    && isset($_GET["fn"]) && $Conf->has_api($_GET["fn"])) {
     $Qreq = make_qreq();
     $Conf->call_api_exit($Qreq->fn, $Me, $Qreq, $prow);
 }
