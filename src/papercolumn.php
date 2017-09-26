@@ -1316,7 +1316,6 @@ class Tag_PaperColumn extends PaperColumn {
     protected $ctag;
     protected $editable = false;
     protected $emoji = false;
-    static private $sortf_ctr = 0;
     function __construct($cj, $tag) {
         parent::__construct($cj);
         $this->dtag = $tag;
@@ -1353,22 +1352,20 @@ class Tag_PaperColumn extends PaperColumn {
         return "#$this->dtag";
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
-        $sorter->sortf = $sortf = "_tag_sort_info." . self::$sortf_ctr;
-        ++self::$sortf_ctr;
+        $k = $sorter->uid;
         $careful = !$pl->contact->privChair && !$pl->conf->tag_seeall;
         $unviewable = $empty = $sorter->reverse ? -(TAG_INDEXBOUND - 1) : TAG_INDEXBOUND - 1;
         if ($this->editable)
             $empty = $sorter->reverse ? -TAG_INDEXBOUND : TAG_INDEXBOUND;
         foreach ($rows as $row)
             if ($careful && !$pl->contact->can_view_tag($row, $this->xtag, true))
-                $row->$sortf = $unviewable;
-            else if (($row->$sortf = $row->tag_value($this->xtag)) === false)
-                $row->$sortf = $empty;
+                $row->$k = $unviewable;
+            else if (($row->$k = $row->tag_value($this->xtag)) === false)
+                $row->$k = $empty;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $sortf = $sorter->sortf;
-        return $a->$sortf < $b->$sortf ? -1 :
-            ($a->$sortf == $b->$sortf ? 0 : 1);
+        $k = $sorter->uid;
+        return $a->$k < $b->$k ? -1 : ($a->$k == $b->$k ? 0 : 1);
     }
     function header(PaperList $pl, $is_text) {
         return "#$this->dtag";
@@ -1458,8 +1455,6 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
 class ScoreGraph_PaperColumn extends PaperColumn {
     protected $contact;
     protected $not_me;
-    protected $_sortinfo;
-    protected $_avginfo;
     function __construct($cj) {
         parent::__construct($cj);
     }
@@ -1477,9 +1472,9 @@ class ScoreGraph_PaperColumn extends PaperColumn {
     function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
         return null;
     }
-    protected function set_sort_fields(PaperList $pl, PaperInfo $row, $sorter) {
-        $sortinfo = $this->_sortinfo;
-        $avginfo = $this->_avginfo;
+    protected function set_sort_fields(PaperList $pl, PaperInfo $row, ListSorter $sorter) {
+        $k = $sorter->uid;
+        $avgk = $k . "avg";
         $s = $this->score_values($pl, $row, null);
         if ($s !== null) {
             $scoreinfo = new ScoreInfo($s, true);
@@ -1487,16 +1482,20 @@ class ScoreGraph_PaperColumn extends PaperColumn {
             if ($this->not_me
                 && !$row->can_view_review_identity_of($cid, $pl->contact))
                 $cid = 0;
-            $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $cid);
-            $row->$avginfo = $scoreinfo->mean();
+            $row->$k = $scoreinfo->sort_data($sorter->score, $cid);
+            $row->$avgk = $scoreinfo->mean();
         } else
-            $row->$sortinfo = $row->$avginfo = null;
+            $row->$k = $row->$avgk = null;
+    }
+    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+        foreach ($rows as $row)
+            self::set_sort_fields($pl, $row, $sorter);
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $sortinfo = $this->_sortinfo;
-        if (!($x = ScoreInfo::compare($b->$sortinfo, $a->$sortinfo, -1))) {
-            $avginfo = $this->_avginfo;
-            $x = ScoreInfo::compare($b->$avginfo, $a->$avginfo);
+        $k = $sorter->uid;
+        if (!($x = ScoreInfo::compare($b->$k, $a->$k, -1))) {
+            $k .= "avg";
+            $x = ScoreInfo::compare($b->$k, $a->$k);
         }
         return $x;
     }
@@ -1547,12 +1546,6 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
             if (isset($rrow->$fid) && $rrow->$fid)
                 $scores[$rrow->contactId] = $rrow->$fid;
         return $scores;
-    }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
-        $this->_sortinfo = "_score_sortinfo." . $this->score . $sorter->score;
-        $this->_avginfo = "_score_avginfo." . $this->score;
-        foreach ($rows as $row)
-            parent::set_sort_fields($pl, $row, $sorter);
     }
     function header(PaperList $pl, $is_text) {
         return $is_text ? $this->form_field->search_keyword() : $this->form_field->web_abbreviation();
@@ -1627,12 +1620,6 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
             if (($v = $formulaf($row, $i, $pl->contact, $forceShow)) !== null)
                 $vs[$i] = $v;
         return $vs;
-    }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
-        $this->_sortinfo = $sortinfo = "_formulagraph_sortinfo." . $this->name;
-        $this->_avginfo = $avginfo = "_formulagraph_avginfo." . $this->name;
-        foreach ($rows as $row)
-            parent::set_sort_fields($pl, $row, $sorter);
     }
     function header(PaperList $pl, $is_text) {
         $x = $this->formula->column_header();
@@ -1818,14 +1805,14 @@ class Formula_PaperColumn extends PaperColumn {
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         $formulaf = $this->formula->compile_sortable_function();
-        $this->formula_sorter = $sorter = "_formula_sort_info." . $this->formula->name;
+        $k = $sorter->uid;
         foreach ($rows as $row)
-            $row->$sorter = $formulaf($row, null, $pl->contact);
+            $row->$k = $formulaf($row, null, $pl->contact);
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $sorter = $this->formula_sorter;
-        $as = $a->$sorter;
-        $bs = $b->$sorter;
+        $k = $sorter->uid;
+        $as = $a->$k;
+        $bs = $b->$k;
         if ($as === null || $bs === null)
             return $as === $bs ? 0 : ($as === null ? -1 : 1);
         else
