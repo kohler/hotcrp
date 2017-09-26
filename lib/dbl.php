@@ -605,11 +605,15 @@ class Dbl {
             $self = Navigation::self();
             $i = 1;
             $n = count(self::$query_log);
+            $t = [0, 0];
             foreach (self::$query_log as $where => $what) {
                 $a = [$what[0], $what[1], $what[2], $where];
                 error_log("query_log: $self #$i/$n: " . json_encode($a));
                 ++$i;
+                $t[0] += $what[0];
+                $t[1] += $what[1];
             }
+            error_log("query_log: total: " . json_encode($t));
         }
         self::$query_log = false;
     }
