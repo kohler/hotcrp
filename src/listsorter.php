@@ -10,6 +10,9 @@ class ListSorter {
     public $empty = false;
     public $thenmap = null;
     public $field = null;
+    public $uid = null;
+
+    static private $next_uid = 1;
 
     function __construct($type) {
         $this->type = $type;
@@ -26,6 +29,11 @@ class ListSorter {
         $l = new ListSorter(null);
         $l->field = $field;
         return $l;
+    }
+
+    function assign_uid() {
+        $this->uid = "__sortf__" . self::$next_uid;
+        ++self::$next_uid;
     }
 
 

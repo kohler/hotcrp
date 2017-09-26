@@ -677,28 +677,46 @@ class ReviewerTypePaperColumn extends PaperColumn {
         $this->self = $this->contact->contactId === $pl->contact->contactId;
         return true;
     }
+    const F_CONFLICT = 1;
+    const F_LEAD = 2;
+    const F_SHEPHERD = 4;
+    private function analysis(PaperList $pl, PaperInfo $row, $forceShow = null) {
+        $rrow = $row->review_status($this->contact);
+        $ranal = null;
+        if ($rrow->reviewType
+            && ($this->self || $pl->contact->can_view_review_identity($row, $rrow, $forceShow)))
+            $ranal = $pl->make_review_analysis($rrow, $row);
+        if ($ranal && !$ranal->rrow->reviewSubmitted)
+            $pl->mark_has("need_review");
+        $flags = 0;
+        if ($rrow->conflictType
+            && ($this->self || $pl->contact->can_view_conflicts($row, $forceShow)))
+            $flags |= self::F_CONFLICT;
+        if ($row->leadContactId == $this->contact->contactId
+            && ($this->self || $pl->contact->can_view_lead($row, $forceShow)))
+            $flags |= self::F_LEAD;
+        if ($row->shepherdContactId == $this->contact->contactId
+            && ($this->self || $pl->contact->can_view_shepherd($row, $forceShow)))
+            $flags |= self::F_SHEPHERD;
+        return [$ranal, $flags];
+    }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+        $k = $sorter->uid;
         foreach ($rows as $row) {
-            $rstatus = $row->review_status($this->contact);
-            $rtype = $rsubmitted = $ctype = 0;
-            if ($this->self || $pl->contact->can_view_review_identity($row, $rstatus, true)) {
-                $rtype = $rstatus->reviewType;
-                $rsubmitted = $rstatus->reviewSubmitted;
-            }
-            if ($this->self || $pl->contact->can_view_conflicts($row, true))
-                $ctype = $rstatus->conflictType;
-            if ($rtype && $rsubmitted)
-                $row->_reviewer_type_sort_info = 2 * $rtype;
-            else if ($rtype)
-                $row->_reviewer_type_sort_info = 2 * $rtype + 1;
-            else if ($ctype)
-                $row->_reviewer_type_sort_info = -1;
-            else
-                $row->_reviewer_type_sort_info = 0;
+            list($ranal, $flags) = $this->analysis($pl, $row, true);
+            if ($ranal && $ranal->rrow->reviewType) {
+                $row->$k = 16 * $ranal->rrow->reviewType;
+                if ($ranal->rrow->reviewSubmitted)
+                    $row->$k += 8;
+            } else
+                $row->$k = ($flags & self::F_CONFLICT ? -16 : 0);
+            if ($flags & self::F_LEAD)
+                $row->$k += 4;
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        return $b->_reviewer_type_sort_info - $a->_reviewer_type_sort_info;
+        $k = $sorter->uid;
+        return $b->$k - $a->$k;
     }
     function header(PaperList $pl, $is_text) {
         if ($this->self)
@@ -707,29 +725,6 @@ class ReviewerTypePaperColumn extends PaperColumn {
             return $pl->contact->name_text_for($this->contact) . " review";
         else
             return $pl->contact->name_html_for($this->contact) . "<br />review";
-    }
-    const F_CONFLICT = 1;
-    const F_LEAD = 2;
-    const F_SHEPHERD = 4;
-    private function analysis(PaperList $pl, PaperInfo $row) {
-        $rrow = $row->review_status($this->contact);
-        $ranal = null;
-        if ($rrow->reviewType
-            && ($this->self || $pl->contact->can_view_review_identity($row, $rrow)))
-            $ranal = $pl->make_review_analysis($rrow, $row);
-        if ($ranal && !$ranal->rrow->reviewSubmitted)
-            $pl->mark_has("need_review");
-        $flags = 0;
-        if ($rrow->conflictType
-            && ($this->self || $pl->contact->can_view_conflicts($row)))
-            $flags |= self::F_CONFLICT;
-        if ($row->leadContactId == $this->contact->contactId
-            && ($this->self || $pl->contact->can_view_lead($row)))
-            $flags |= self::F_LEAD;
-        if ($row->shepherdContactId == $this->contact->contactId
-            && ($this->self || $pl->contact->can_view_shepherd($row)))
-            $flags |= self::F_SHEPHERD;
-        return [$ranal, $flags];
     }
     function content(PaperList $pl, PaperInfo $row) {
         list($ranal, $flags) = $this->analysis($pl, $row);

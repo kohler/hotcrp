@@ -307,6 +307,8 @@ class PaperList {
         }
 
         self::$magic_sort_info = $this->sorters;
+        foreach ($this->sorters as $s)
+            $s->assign_uid();
         foreach ($this->sorters as $i => $s) {
             $s->field->analyze_sort($this, $rows, $s);
             $rev = ($s->reverse ? "-" : "");
