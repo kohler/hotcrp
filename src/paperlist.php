@@ -359,11 +359,11 @@ class PaperList {
         $pt = $this->_paper_link_page ? : "paper";
         $rrow = null;
         if ($pt === "review" || $pt === "finishreview") {
-            $rrow = $row->review_status($this->user);
-            if (!$rrow)
+            $rrow = $row->review_of_user($this->user);
+            if (!$rrow || ($pt === "finishreview" && !$rrow->reviewNeedsSubmit))
                 $pt = "paper";
-            if ($pt === "finishreview")
-                $pt = $rrow->reviewNeedsSubmit ? "review" : "paper";
+            else
+                $pt = "review";
         }
         $pl = "p=" . $row->paperId;
         if ($pt === "paper" && $this->_paper_link_mode)

@@ -701,10 +701,6 @@ class PaperInfo {
         return $this->_contact_info[$cid];
     }
 
-    function review_status($contact) {
-        return $this->contact_info($contact, true);
-    }
-
     function replace_contact_info_map($cimap) {
         $old_cimap = $this->_contact_info;
         $this->_contact_info = $cimap;
@@ -1656,10 +1652,7 @@ class PaperInfo {
             || $cid == $contact->contactId)
             return true;
         else {
-            if (array_key_exists($cid, $this->_contact_info))
-                $rrow = $this->review_status($cid);
-            else
-                $rrow = $this->review_of_user($cid);
+            $rrow = $this->review_of_user($cid);
             return $rrow
                 && $contact->can_view_review_identity($this, $rrow, $forceShow);
         }

@@ -681,15 +681,15 @@ class ReviewerTypePaperColumn extends PaperColumn {
     const F_LEAD = 2;
     const F_SHEPHERD = 4;
     private function analysis(PaperList $pl, PaperInfo $row, $forceShow = null) {
-        $rrow = $row->review_status($this->contact);
-        $ranal = null;
-        if ($rrow->reviewType
-            && ($this->self || $pl->contact->can_view_review_identity($row, $rrow, $forceShow)))
+        $rrow = $row->review_of_user($this->contact);
+        if ($rrow && ($this->self || $pl->contact->can_view_review_identity($row, $rrow, $forceShow)))
             $ranal = $pl->make_review_analysis($rrow, $row);
+        else
+            $ranal = null;
         if ($ranal && !$ranal->rrow->reviewSubmitted)
             $pl->mark_has("need_review");
         $flags = 0;
-        if ($rrow->conflictType
+        if ($row->conflict_type($this->contact)
             && ($this->self || $pl->contact->can_view_conflicts($row, $forceShow)))
             $flags |= self::F_CONFLICT;
         if ($row->leadContactId == $this->contact->contactId
