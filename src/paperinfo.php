@@ -13,15 +13,14 @@ class PaperContactInfo {
     public $review_status = 0;
     public $review_token_cid = 0;
 
-    public $is_full = false;
-    public $reviewId;
-    public $reviewToken;
-    public $reviewModified;
-    public $reviewOrdinal;
-    public $reviewBlind;
-    public $requestedBy;
-    public $timeApprovalRequested;
-    public $reviewRound;
+    //public $reviewId;
+    //public $reviewToken;
+    //public $reviewModified;
+    //public $reviewOrdinal;
+    //public $reviewBlind;
+    //public $requestedBy;
+    //public $timeApprovalRequested;
+    //public $reviewRound;
 
     public $rights_forced = null;
     public $forced_rights_link = null;
@@ -31,11 +30,10 @@ class PaperContactInfo {
     public $vsreviews_force_show = null;
     public $vsreviews_version = null;
 
-    static function make_empty(PaperInfo $prow, $cid, $full = false) {
+    static function make_empty(PaperInfo $prow, $cid) {
         $ci = new PaperContactInfo;
         $ci->paperId = $prow->paperId;
         $ci->contactId = $cid;
-        $ci->is_full = $full;
         if ($cid > 0 && isset($prow->leadContactId) && $prow->leadContactId == $cid)
             $ci->review_status = 1;
         return $ci;
@@ -65,20 +63,21 @@ class PaperContactInfo {
     }
 
     function merge_review(ReviewInfo $rrow) {
-        foreach (["reviewId", "reviewToken", "reviewType", "reviewRound",
+        foreach (["reviewType", "reviewSubmitted", "reviewNeedsSubmit"] as $k)
+            $this->$k = $rrow->$k;
+        /*foreach (["reviewId", "reviewToken", "reviewType", "reviewRound",
                   "requestedBy", "reviewBlind", "reviewModified",
                   "reviewSubmitted", "reviewOrdinal", "timeApprovalRequested",
                   "reviewNeedsSubmit"] as $k)
-            $this->$k = $rrow->$k;
+            $this->$k = $rrow->$k;*/
         if ($rrow->contactId == $this->contactId)
             $this->review_token_cid = 0;
         else
             $this->review_token_cid = $rrow->contactId;
         $this->update_review_status();
-        $this->is_full = true;
     }
 
-    private function merge($full) {
+    private function merge() {
         if (isset($this->paperId))
             $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
@@ -93,22 +92,14 @@ class PaperContactInfo {
         if ($this->review_token_cid == $this->contactId)
             $this->review_token_cid = 0;
         $this->update_review_status();
-        $this->is_full = $full;
-        if ($full && $this->reviewType)
-            foreach (["reviewId", "reviewToken", "reviewModified", "reviewOrdinal",
-                      "reviewBlind", "requestedBy", "timeApprovalRequested",
-                      "reviewRound"] as $k)
-                $this->$k = (int) $this->$k;
     }
 
-    static function load_into(PaperInfo $prow, $cid, $rev_tokens, $full) {
+    static function load_into(PaperInfo $prow, $cid, $rev_tokens) {
         global $Me;
         $conf = $prow->conf;
         $pid = $prow->paperId;
         $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit,
                 PaperReview.contactId as review_token_cid";
-        if ($full)
-            $q .= ", reviewId, reviewToken, reviewModified, reviewOrdinal, reviewBlind, requestedBy, timeApprovalRequested, reviewRound";
         if ($cid && !$rev_tokens
             && $prow->_row_set && $prow->_row_set->size() > 1) {
             $result = $conf->qe("$q, Paper.paperId paperId, $cid contactId
@@ -119,7 +110,7 @@ class PaperContactInfo {
             $found = false;
             $map = [];
             while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
-                $ci->merge($full);
+                $ci->merge();
                 $map[$ci->paperId] = $ci;
             }
             Dbl::free($result);
@@ -154,13 +145,13 @@ class PaperContactInfo {
                 $result = null;
         }
         while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
-            $ci->merge($full);
+            $ci->merge();
             $prow->_add_contact_info($ci);
         }
         Dbl::free($result);
         foreach ($cids as $cid)
             if (!$prow->_get_contact_info($cid))
-                $prow->_add_contact_info(PaperContactInfo::make_empty($prow, $cid, $full));
+                $prow->_add_contact_info(PaperContactInfo::make_empty($prow, $cid));
     }
 }
 
@@ -671,7 +662,7 @@ class PaperInfo {
         }
     }
 
-    function contact_info($contact = null, $full = false) {
+    function contact_info($contact = null) {
         global $Me;
         $this->update_rights_version();
         $rev_tokens = null;
@@ -680,10 +671,9 @@ class PaperInfo {
             $rev_tokens = $contact->review_tokens();
         }
         $cid = self::contact_to_cid($contact);
-        if (!array_key_exists($cid, $this->_contact_info)
-            || ($full && !$this->_contact_info[$cid]->is_full)) {
+        if (!array_key_exists($cid, $this->_contact_info)) {
             if ($this->_review_array || property_exists($this, "reviewSignatures")) {
-                $ci = PaperContactInfo::make_empty($this, $cid, true);
+                $ci = PaperContactInfo::make_empty($this, $cid);
                 if (($c = get($this->conflicts(), $cid)))
                     $ci->conflictType = $c->conflictType;
                 $have_rrow = null;
@@ -696,7 +686,7 @@ class PaperInfo {
                     $ci->merge_review($have_rrow);
                 $this->_contact_info[$cid] = $ci;
             } else
-                PaperContactInfo::load_into($this, $cid, $rev_tokens, $full);
+                PaperContactInfo::load_into($this, $cid, $rev_tokens);
         }
         return $this->_contact_info[$cid];
     }
