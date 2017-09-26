@@ -763,7 +763,7 @@ $blind\n";
                 if ($f->has_options)
                     $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
                 else
-                    $fval = rtrim(str_replace("\r\n", "\n", $rrow->$fid));
+                    $fval = rtrim(cleannl($rrow->$fid));
             }
             if ($f->has_options && isset($f->options[$fval]))
                 $fval = "$fval. " . $f->options[$fval];
@@ -847,7 +847,7 @@ $blind\n";
                 if ($f->has_options)
                     $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
                 else
-                    $fval = rtrim(str_replace("\r\n", "\n", $rrow->$fid));
+                    $fval = rtrim(cleannl($rrow->$fid));
             }
             if ($fval == "")
                 continue;
