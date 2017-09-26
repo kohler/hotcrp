@@ -99,6 +99,8 @@ xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_mgbaker));
 
 assert_search_papers($user_chair, "ovemer:4", "1");
+$rrow = fetch_review($paper1, $user_mgbaker);
+xassert_eqq($rrow->t03, "  This is a test of leading whitespace\n\n  It should be preserved\nAnd defended\n");
 
 // Catch different-conference form
 $tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/Testconf I/', 'Testconf IIII', $review1A), "review1A-1.txt");
@@ -213,7 +215,6 @@ assert_search_papers($user_chair, "has:revexp", "");
 // Text fields not there yet
 assert_search_papers($user_chair, "has:papsum", "");
 assert_search_papers($user_chair, "has:comaut", "");
-assert_search_papers($user_chair, "has:compc", "");
 
 // Check text field representation
 save_review(1, $user_mgbaker, [

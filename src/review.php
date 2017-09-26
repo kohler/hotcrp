@@ -1672,13 +1672,15 @@ class ReviewValues extends MessageSet {
             $oldval = (int) $oldval;
         $newval = $oldval;
         if (isset($this->req[$fid])) {
-            $newval = trim($this->req[$fid]);
+            $newval = $this->req[$fid];
             if ($f->has_options) {
+                $newval = trim($newval);
                 if ($f->parse_is_empty($newval))
                     $newval = 0;
                 else
                     $newval = $f->parse_value($newval, false) ? : false;
             } else {
+                $newval = rtrim($newval);
                 if ($newval !== "")
                     $newval .= "\n";
             }

@@ -50,6 +50,12 @@ Ready
 
 
 
+
+  This is a test of leading whitespace
+
+  It should be preserved
+And defended
+
 ==+== Scratchpad (for unsaved private notes)
 
 ==+== End Review
