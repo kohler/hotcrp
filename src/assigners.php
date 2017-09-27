@@ -215,9 +215,8 @@ class AssignmentState {
         assert($initial_load || empty($fetch_pids));
         if (!empty($fetch_pids)) {
             $result = $this->user->paper_result(["paperId" => $fetch_pids, "tags" => $this->conf->has_tracks()]);
-            while ($result && ($prow = PaperInfo::fetch($result, $this->user)))
+            foreach (PaperInfo::fetch_all($result, $this->user) as $prow)
                 $this->prows[$prow->paperId] = $prow;
-            Dbl::free($result);
             foreach ($fetch_pids as $pid)
                 if (!isset($this->prows[$pid]))
                     $this->pid_attempts[$pid] = true;
