@@ -63,7 +63,8 @@ class AssignmentState {
     private $reviewer_users = null;
     public $lineno = null;
     public $defaults = array();
-    public $prows = array();
+    private $prows = array();
+    private $pid_attempts = array();
     public $finishers = array();
     public $paper_exact_match = true;
     public $errors = [];
@@ -192,11 +193,15 @@ class AssignmentState {
         return array_keys($this->prows);
     }
     function prow($pid) {
-        if (!($p = get($this->prows, $pid))) {
+        $p = get($this->prows, $pid);
+        if (!$p && !isset($this->pid_attempts[$pid])) {
             $this->fetch_prows($pid);
-            $p = $this->prows[$pid];
+            $p = get($this->prows, $pid);
         }
         return $p;
+    }
+    function add_prow(PaperInfo $prow) {
+        $this->prows[$prow->paperId] = $prow;
     }
     function prows() {
         return $this->prows;
@@ -205,7 +210,7 @@ class AssignmentState {
         $pids = is_array($pids) ? $pids : array($pids);
         $fetch_pids = array();
         foreach ($pids as $p)
-            if (!isset($this->prows[$p]))
+            if (!isset($this->prows[$p]) && !isset($this->pid_attempts[$p]))
                 $fetch_pids[] = $p;
         assert($initial_load || empty($fetch_pids));
         if (!empty($fetch_pids)) {
@@ -213,6 +218,9 @@ class AssignmentState {
             while ($result && ($prow = PaperInfo::fetch($result, $this->user)))
                 $this->prows[$prow->paperId] = $prow;
             Dbl::free($result);
+            foreach ($fetch_pids as $pid)
+                if (!isset($this->prows[$pid]))
+                    $this->pid_attempts[$pid] = true;
         }
     }
 
@@ -1803,7 +1811,7 @@ class AssignmentSet {
             $this->enabled_pids = [];
         foreach (is_array($paper) ? $paper : [$paper] as $p)
             if ($p instanceof PaperInfo) {
-                $this->astate->prows[$p->paperId] = $p;
+                $this->astate->add_prow($p);
                 $this->enabled_pids[] = $p->paperId;
             } else
                 $this->enabled_pids[] = (int) $p;
@@ -2190,7 +2198,7 @@ class AssignmentSet {
         $any_success = false;
         foreach ($pids as $p) {
             assert(is_int($p));
-            $prow = get($this->astate->prows, $p);
+            $prow = $this->astate->prow($p);
             if (!$prow) {
                 $this->astate->error("Submission #$p does not exist.");
                 continue;
