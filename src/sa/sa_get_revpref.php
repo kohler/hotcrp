@@ -38,6 +38,7 @@ class GetRevpref_SearchAction extends SearchAction {
             return self::EPERM;
 
         $not_me = $user->contactId !== $Rev->contactId;
+        $has_conflict = false;
         $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => 1, "reviewerPreference" => 1]);
         $texts = array();
         foreach (PaperInfo::fetch_all($result, $user) as $prow) {
@@ -46,10 +47,11 @@ class GetRevpref_SearchAction extends SearchAction {
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
             if ($not_me)
                 $item["email"] = $Rev->email;
-            if ($not_me ? $prow->has_conflict($Rev) : $prow->conflictType > 0)
-                $item["preference"] = "conflict";
-            else
-                $item["preference"] = unparse_preference($prow->reviewer_preference($Rev));
+            $item["preference"] = unparse_preference($prow->reviewer_preference($Rev));
+            if ($prow->has_conflict($Rev)) {
+                $item["notes"] = "conflict";
+                $has_conflict = true;
+            }
             if ($this->extended) {
                 $x = "";
                 if ($Rev->can_view_authors($prow, false))
@@ -61,7 +63,7 @@ class GetRevpref_SearchAction extends SearchAction {
             }
             $texts[$prow->paperId][] = $item;
         }
-        $fields = array_merge(["paper", "title"], $not_me ? ["email"] : [], ["preference"]);
+        $fields = array_merge(["paper", "title"], $not_me ? ["email"] : [], ["preference"], $has_conflict ? ["notes"] : []);
         $title = "revprefs";
         if ($not_me)
             $title .= "-" . (preg_replace('/@.*|[^\w@.]/', "", $Rev->email) ? : "user");
