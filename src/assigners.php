@@ -1552,10 +1552,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         parent::__construct("pref");
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($prow->timeWithdrawn > 0)
-            return "#$prow->paperId has been withdrawn.";
-        else
-            return true;
+        return true;
     }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("pref", ["pid", "cid"], "Preference_Assigner::make"))
