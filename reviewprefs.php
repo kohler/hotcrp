@@ -162,13 +162,12 @@ function parseUploadedPreferences($text, $filename, $apply) {
     $assignset = new AssignmentSet($Me, true);
     $assignset->set_reviewer($reviewer);
     $assignset->enable_actions("pref");
-    $assignset->show_column("pref:" . $reviewer->email . ":row", true);
     if ($apply)
         $assignset->enable_papers($SSel->selection());
     $assignset->parse($csv, $filename);
     if ($assignset->has_error())
         $assignset->report_errors();
-    else if ($assignset->is_empty())
+    if ($assignset->is_empty())
         $Conf->warnMsg("That assignment file makes no changes.");
     else if ($apply) {
         if ($assignset->execute(true))
@@ -186,7 +185,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
             '<div class="aahc"><div class="aa">',
             Ht::submit("Apply changes"),
             ' &nbsp;', Ht::submit("cancel", "Cancel"),
-            Ht::hidden("file", $text),
+            Ht::hidden("file", $assignset->unparse_csv()->unparse()),
             Ht::hidden("filename", $filename),
             '</div></div></div></form>', "\n";
         $Conf->footer();
