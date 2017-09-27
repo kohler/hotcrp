@@ -133,6 +133,14 @@ if ($Qreq->fn === "setpref" && $SSel && !$SSel->is_empty() && check_post()) {
 
 
 // Parse paper preferences
+function pref_xmsgc($msg) {
+    global $Conf;
+    if (!$Conf->headerPrinted)
+        $Conf->warnMsg($msg);
+    else
+        echo '<div class="xmsgs-atbody">', Ht::xmsg(1, $msg), '</div>';
+}
+
 function parseUploadedPreferences($text, $filename, $apply) {
     global $Conf, $Me, $Qreq, $SSel, $reviewer;
 
@@ -165,25 +173,27 @@ function parseUploadedPreferences($text, $filename, $apply) {
     if ($apply)
         $assignset->enable_papers($SSel->selection());
     $assignset->parse($csv, $filename);
-    if ($assignset->has_error())
-        $assignset->report_errors();
-    if ($assignset->is_empty())
-        $Conf->warnMsg("That assignment file makes no changes.");
-    else if ($apply) {
+    if ($assignset->is_empty()) {
+        if ($assignset->has_error())
+            pref_xmsgc("Preferences unchanged, but you may want to fix these errors and try again:\n" . $assignset->errors_div_html(true));
+        else
+            pref_xmsgc("Preferences unchanged.\n" . $assignset->errors_div_html(true));
+    } else if ($apply) {
         if ($assignset->execute(true))
             redirectSelf();
     } else {
         $Conf->header("Review preferences", "revpref", actionBar());
-        echo '<h3>Proposed preference assignment</h3>';
-        $Conf->infoMsg("Select “Apply changes” if this looks OK. (You can always alter your preferences afterwards.)");
+        if ($assignset->has_error())
+            pref_xmsgc($assignset->errors_div_html(true));
 
+        echo '<h3>Proposed preference assignment</h3>';
         echo Ht::form_div(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]));
 
         $assignset->echo_unparse_display();
 
         echo '<div class="g"></div>',
             '<div class="aahc"><div class="aa">',
-            Ht::submit("Apply changes"),
+            Ht::submit("Save changes"),
             ' &nbsp;', Ht::submit("cancel", "Cancel"),
             Ht::hidden("file", $assignset->unparse_csv()->unparse()),
             Ht::hidden("filename", $filename),
