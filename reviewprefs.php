@@ -186,18 +186,22 @@ function parseUploadedPreferences($text, $filename, $apply) {
         if ($assignset->has_error())
             pref_xmsgc($assignset->errors_div_html(true));
 
-        echo '<h3>Proposed preference assignment</h3>';
         echo Ht::form_div(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]));
 
+        $actions = '<div class="aab aabr aabig">'
+            . '<div class="aabut">' . Ht::submit("Save changes", ["class" => "btn btn-default"]) . '</div>'
+            . '<div class="aabut">' . Ht::submit("cancel", "Cancel") . '</div>'
+            . '<hr class="c" /></div>';
+        if (count($assignset->assigned_pids()) >= 4)
+            echo $actions;
+
+        echo '<h3>Proposed preference assignment</h3>';
         $assignset->echo_unparse_display();
 
-        echo '<div class="g"></div>',
-            '<div class="aahc"><div class="aa">',
-            Ht::submit("Save changes"),
-            ' &nbsp;', Ht::submit("cancel", "Cancel"),
+        echo '<div class="g"></div>', $actions,
             Ht::hidden("file", $assignset->unparse_csv()->unparse()),
             Ht::hidden("filename", $filename),
-            '</div></div></div></form>', "\n";
+            '</div></form>', "\n";
         $Conf->footer();
         exit;
     }
