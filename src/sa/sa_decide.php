@@ -21,6 +21,6 @@ class Decide_SearchAction extends SearchAction {
         if ($aset->execute())
             redirectSelf(["atab" => "decide", "decision" => $qreq->decision]);
         else
-            Conf::msg_error(join("<br />", $aset->errors_html()));
+            Conf::msg_error($aset->errors_div_html());
     }
 }

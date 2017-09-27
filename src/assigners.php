@@ -1872,6 +1872,12 @@ class AssignmentSet {
         }
         return $es;
     }
+    function errors_div_html($linenos = false) {
+        if (($es = $this->errors_html($linenos)))
+            return '<div class="parseerr"><p>' . join("</p>\n<p>", $es) . '</p></div>';
+        else
+            return "";
+    }
 
     function errors_text($linenos = false) {
         $es = array();
@@ -1887,16 +1893,16 @@ class AssignmentSet {
 
     function report_errors() {
         if (!empty($this->msgs) && $this->has_error)
-            Conf::msg_error('Assignment errors: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div> Please correct these errors and try again.');
+            Conf::msg_error('Assignment errors: ' . $this->errors_div_html(true) . ' Please correct these errors and try again.');
         else if (!empty($this->msgs))
-            Conf::msg_warning('Assignment warnings: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div>');
+            Conf::msg_warning('Assignment warnings: ' . $this->errors_div_html(true));
     }
 
     function json_result($linenos = false) {
         if ($this->has_error)
-            return new JsonResult(403, ["ok" => false, "error" => '<div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html($linenos)) . '</p></div>']);
+            return new JsonResult(403, ["ok" => false, "error" => $this->errors_div_html($linenos)]);
         else if (!empty($this->msgs))
-            return new JsonResult(["ok" => true, "response" => '<div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html($linenos)) . '</p></div>']);
+            return new JsonResult(["ok" => true, "response" => $this->errors_div_html($linenos)]);
         else
             return new JsonResult(["ok" => true]);
     }

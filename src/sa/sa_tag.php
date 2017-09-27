@@ -98,11 +98,11 @@ class Tag_SearchAction extends SearchAction {
             } else
                 $assignset->error($tagger->error_html);
         }
-        if (($errors = join("<br />\n", $assignset->errors_html()))) {
+        if (($errors = $assignset->errors_div_html())) {
             if ($assignset->is_empty())
                 Conf::msg_error($errors);
             else {
-                Conf::msg_warning("Some tag assignments were ignored:<br />\n$errors");
+                Conf::msg_warning("Some tag assignments were ignored:\n$errors");
                 $assignset->clear_errors();
             }
         }
