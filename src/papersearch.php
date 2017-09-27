@@ -905,7 +905,7 @@ class Author_SearchTerm extends SearchTerm {
                 $n = 0;
                 $can_view = $srch->user->can_view_authors($row, true);
                 foreach ($this->csm->contact_set() as $cid)
-                    if (($cid === $srch->user->contactId || $can_view)
+                    if (($cid === $srch->cid || $can_view)
                         && $row->has_author($cid))
                         ++$n;
                 return $this->csm->test($n);
@@ -975,7 +975,7 @@ class Conflict_SearchTerm extends SearchTerm {
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return ($row->conflictType > 0
-                && $this->csm->test_contact($srch->user->contactId)
+                && $this->csm->test_contact($srch->cid)
                 && $this->csm->test(1))
             || ($srch->user->can_view_conflicts($row, true)
                 && $this->csm->test((int) $row->{$this->fieldname}));
@@ -1434,9 +1434,9 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     function promote(PaperSearch $srch) {
         $rsm = new ReviewSearchMatcher(">0");
         if ($srch->limitName === "r" || $srch->limitName === "rout")
-            $rsm->add_contact($srch->user->contactId);
+            $rsm->add_contact($srch->cid);
         else if ($srch->limitName === "req" || $srch->limitName === "reqrevs")
-            $rsm->fieldsql = "requestedBy=" . $srch->user->contactId . " and reviewType=" . REVIEW_EXTERNAL;
+            $rsm->fieldsql = "requestedBy=" . $srch->cid . " and reviewType=" . REVIEW_EXTERNAL;
         if ($this->round !== null)
             $rsm->round = $this->round;
         if ($this->rate !== null)
@@ -1884,7 +1884,7 @@ class Tag_SearchTerm extends SearchTerm {
             }
             $tagword = substr($tagword, $twiddle);
         } else if ($twiddle === 0 && ($tagword === "~" || $tagword[1] !== "~"))
-            $ret[0] = $srch->user->contactId;
+            $ret[0] = $srch->cid;
 
         $tagger = new Tagger($srch->user);
         $flags = Tagger::NOVALUE;
@@ -2435,9 +2435,8 @@ class PaperSearch {
 
     public $conf;
     public $user;
-    public $contact;
+    private $contact;
     public $cid;
-    private $contactId;         // for backward compatibility
     public $privChair;
     private $amPC;
 
@@ -2505,7 +2504,6 @@ class PaperSearch {
         // contact facts
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->contact = $user;
         $this->privChair = $user->privChair;
         $this->amPC = $user->isPC;
         $this->cid = $user->contactId;
@@ -2591,6 +2589,11 @@ class PaperSearch {
             error_log("PaperSearch::\$reviewer set: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
 
         $this->_allow_deleted = defval($options, "allow_deleted", false);
+    }
+
+    function __get($name) {
+        error_log("PaperSearch::$name " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        return $name === "contact" ? $this->user : null;
     }
 
     function warn($text) {
@@ -3764,7 +3767,7 @@ class PaperSearch {
             if ($cid && $this->_context_user && $this->_context_user->contactId == $cid)
                 /* have correct reviewer */;
             else if ($cid && $this->_context_user === false) {
-                if ($this->user->contactId == $cid)
+                if ($this->cid == $cid)
                     $this->_context_user = $this->user;
                 else
                     $this->_context_user = $this->conf->user_by_id($cid);
@@ -3808,7 +3811,7 @@ class PaperSearch {
 
     function listid($sort = "") {
         $rest = [];
-        if ($this->_reviewer_user && $this->_reviewer_user->contactId !== $this->user->contactId)
+        if ($this->_reviewer_user && $this->_reviewer_user->contactId !== $this->cid)
             $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
         if ($sort !== "")
             $rest[] = "sort=" . urlencode($sort);

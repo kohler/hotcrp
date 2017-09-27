@@ -256,7 +256,7 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $pl->reviewer_user();
-        if (!$pl->contact->is_manager())
+        if (!$pl->user->is_manager())
             return false;
         if (($tid = $pl->table_id()))
             $pl->add_header_script("add_assrev_ajax(" . json_encode_browser("#$tid") . ")");
@@ -270,9 +270,9 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $disabled = $row->conflict_type($this->contact) >= CONFLICT_AUTHOR;
-        if (!$pl->contact->allow_administer($row)) {
+        if (!$pl->user->allow_administer($row)) {
             $disabled = true;
-            if (!$pl->contact->can_view_conflicts($row))
+            if (!$pl->user->can_view_conflicts($row))
                 return "";
         }
         $pl->mark_has("sel");
@@ -296,7 +296,7 @@ class TitlePaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        $this->has_decoration = $pl->contact->can_view_tags(null)
+        $this->has_decoration = $pl->user->can_view_tags(null)
             && $pl->conf->tags()->has_decoration;
         if ($this->has_decoration)
             $pl->qopts["tags"] = 1;
@@ -327,10 +327,10 @@ class TitlePaperColumn extends PaperColumn {
             . $pl->_contentDownload($row);
 
         if ($this->has_decoration && (string) $row->paperTags !== "") {
-            if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
-                if (($vto = $row->viewable_tags($pl->contact, true))
+            if ($row->conflictType > 0 && $pl->user->allow_administer($row)) {
+                if (($vto = $row->viewable_tags($pl->user, true))
                     && ($deco = $pl->tagger->unparse_decoration_html($vto))) {
-                    $vtx = $row->viewable_tags($pl->contact, false);
+                    $vtx = $row->viewable_tags($pl->user, false);
                     $decx = $pl->tagger->unparse_decoration_html($vtx);
                     if ($deco !== $decx) {
                         if ($decx)
@@ -339,7 +339,7 @@ class TitlePaperColumn extends PaperColumn {
                     } else
                         $t .= $deco;
                 }
-            } else if (($vt = $row->viewable_tags($pl->contact)))
+            } else if (($vt = $row->viewable_tags($pl->user)))
                 $t .= $pl->tagger->unparse_decoration_html($vt);
         }
 
@@ -357,9 +357,9 @@ class StatusPaperColumn extends PaperColumn {
         $this->is_long = $cj->name === "statusfull";
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
-        $force = $pl->search->limitName != "a" && $pl->contact->privChair;
+        $force = $pl->search->limitName != "a" && $pl->user->privChair;
         foreach ($rows as $row)
-            if ($row->outcome && $pl->contact->can_view_decision($row, $force))
+            if ($row->outcome && $pl->user->can_view_decision($row, $force))
                 $row->_status_sort_info = $row->outcome;
             else
                 $row->_status_sort_info = -10000;
@@ -376,18 +376,18 @@ class StatusPaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
             $pl->mark_has("need_submit");
-        if ($row->outcome > 0 && $pl->contact->can_view_decision($row))
+        if ($row->outcome > 0 && $pl->user->can_view_decision($row))
             $pl->mark_has("accepted");
         if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
-            && $pl->contact->can_view_decision($row))
+            && $pl->user->can_view_decision($row))
             $pl->mark_has("need_final");
-        $status_info = $pl->contact->paper_status_info($row, $pl->search->limitName != "a" && $pl->contact->allow_administer($row));
+        $status_info = $pl->user->paper_status_info($row, $pl->search->limitName != "a" && $pl->user->allow_administer($row));
         if (!$this->is_long && $status_info[0] == "pstat_sub")
             return "";
         return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $status_info = $pl->contact->paper_status_info($row, $pl->search->limitName != "a" && $pl->contact->allow_administer($row));
+        $status_info = $pl->user->paper_status_info($row, $pl->search->limitName != "a" && $pl->user->allow_administer($row));
         return $status_info[1];
     }
 }
@@ -444,7 +444,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
             return '<span class="need-tooltip" data-tooltip="# completed reviews / # assigned reviews" data-tooltip-dir="b">#&nbsp;' . $round_name . 'Reviews</span>';
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->can_view_review_assignment($row, null, null);
+        return !$pl->user->can_view_review_assignment($row, null, null);
     }
     function content(PaperList $pl, PaperInfo $row) {
         list($done, $started) = $this->data($row, $pl->user);
@@ -493,8 +493,8 @@ class AuthorsPaperColumn extends PaperColumn {
         $this->aufull = !$pl->is_folded("aufull");
         $this->anonau = !$pl->is_folded("anonau");
         $this->highlight = $pl->search->field_highlighter("authorInformation");
-        $this->forceable = $pl->contact->is_manager() ? true : null;
-        return $pl->contact->can_view_some_authors();
+        $this->forceable = $pl->user->is_manager() ? true : null;
+        return $pl->user->can_view_some_authors();
     }
     private function affiliation_map($row) {
         $nonempty_count = 0;
@@ -513,7 +513,7 @@ class AuthorsPaperColumn extends PaperColumn {
         return $aff;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->can_view_authors($row, $this->forceable);
+        return !$pl->user->can_view_authors($row, $this->forceable);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $out = [];
@@ -547,12 +547,12 @@ class AuthorsPaperColumn extends PaperColumn {
             }
             $t = join($any_affhl || $this->aufull ? "; " : ", ", $out);
         }
-        if ($this->forceable && !$pl->contact->can_view_authors($row, false))
+        if ($this->forceable && !$pl->user->can_view_authors($row, false))
             $t = '<div class="fx2">' . $t . '</div>';
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (!$pl->contact->can_view_authors($row) && !$this->anonau)
+        if (!$pl->user->can_view_authors($row) && !$this->anonau)
             return "";
         $out = [];
         if (!$this->aufull) {
@@ -580,7 +580,7 @@ class CollabPaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        return !!$pl->conf->setting("sub_collab") && $pl->contact->can_view_some_authors();
+        return !!$pl->conf->setting("sub_collab") && $pl->user->can_view_some_authors();
     }
     function header(PaperList $pl, $is_text) {
         return "Collaborators";
@@ -588,7 +588,7 @@ class CollabPaperColumn extends PaperColumn {
     function content_empty(PaperList $pl, PaperInfo $row) {
         return ($row->collaborators == ""
                 || strcasecmp($row->collaborators, "None") == 0
-                || !$pl->contact->can_view_authors($row, true));
+                || !$pl->user->can_view_authors($row, true));
     }
     function content(PaperList $pl, PaperInfo $row) {
         $x = "";
@@ -642,8 +642,8 @@ class TopicListPaperColumn extends PaperColumn {
             $pl->qopts["topics"] = 1;
         // only managers can see other users’ topic interests
         $this->interest_contact = $pl->reviewer_user();
-        if ($this->interest_contact->contactId !== $pl->contact->contactId
-            && !$pl->contact->is_manager())
+        if ($this->interest_contact->contactId !== $pl->user->contactId
+            && !$pl->user->is_manager())
             $this->interest_contact = null;
         return true;
     }
@@ -674,7 +674,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ? : $pl->context_user();
-        $this->self = $this->contact->contactId === $pl->contact->contactId;
+        $this->self = $this->contact->contactId === $pl->user->contactId;
         return true;
     }
     const F_CONFLICT = 1;
@@ -682,7 +682,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
     const F_SHEPHERD = 4;
     private function analysis(PaperList $pl, PaperInfo $row, $forceShow = null) {
         $rrow = $row->review_of_user($this->contact);
-        if ($rrow && ($this->self || $pl->contact->can_view_review_identity($row, $rrow, $forceShow)))
+        if ($rrow && ($this->self || $pl->user->can_view_review_identity($row, $rrow, $forceShow)))
             $ranal = $pl->make_review_analysis($rrow, $row);
         else
             $ranal = null;
@@ -690,13 +690,13 @@ class ReviewerTypePaperColumn extends PaperColumn {
             $pl->mark_has("need_review");
         $flags = 0;
         if ($row->conflict_type($this->contact)
-            && ($this->self || $pl->contact->can_view_conflicts($row, $forceShow)))
+            && ($this->self || $pl->user->can_view_conflicts($row, $forceShow)))
             $flags |= self::F_CONFLICT;
         if ($row->leadContactId == $this->contact->contactId
-            && ($this->self || $pl->contact->can_view_lead($row, $forceShow)))
+            && ($this->self || $pl->user->can_view_lead($row, $forceShow)))
             $flags |= self::F_LEAD;
         if ($row->shepherdContactId == $this->contact->contactId
-            && ($this->self || $pl->contact->can_view_shepherd($row, $forceShow)))
+            && ($this->self || $pl->user->can_view_shepherd($row, $forceShow)))
             $flags |= self::F_SHEPHERD;
         return [$ranal, $flags];
     }
@@ -722,9 +722,9 @@ class ReviewerTypePaperColumn extends PaperColumn {
         if ($this->self)
             return "Review";
         else if ($is_text)
-            return $pl->contact->name_text_for($this->contact) . " review";
+            return $pl->user->name_text_for($this->contact) . " review";
         else
-            return $pl->contact->name_html_for($this->contact) . "<br />review";
+            return $pl->user->name_html_for($this->contact) . "<br />review";
     }
     function content(PaperList $pl, PaperInfo $row) {
         list($ranal, $flags) = $this->analysis($pl, $row);
@@ -789,7 +789,7 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->isPC)
+        if (!$pl->user->isPC)
             return false;
         $pl->qopts["reviewSignatures"] = true;
         $this->requester = $pl->reviewer_user();
@@ -805,10 +805,10 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
         foreach ($row->reviews_by_display() as $rrow) {
             if ($rrow->reviewType == REVIEW_EXTERNAL
                 && $rrow->requestedBy == $this->requester->contactId) {
-                if (!$pl->contact->can_view_review($row, $rrow, true))
+                if (!$pl->user->can_view_review($row, $rrow, true))
                     continue;
-                if ($pl->contact->can_view_review_identity($row, $rrow, true))
-                    $t = $pl->contact->reviewer_html_for($rrow);
+                if ($pl->user->can_view_review_identity($row, $rrow, true))
+                    $t = $pl->user->reviewer_html_for($rrow);
                 else
                     $t = "review";
                 $ranal = $pl->make_review_analysis($rrow, $row);
@@ -842,7 +842,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ? : $pl->reviewer_user();
-        if (!$pl->contact->is_manager())
+        if (!$pl->user->is_manager())
             return false;
         if ($visible > 0 && ($tid = $pl->table_id()))
             $pl->add_header_script("add_assrev_ajax(" . json_encode_browser("#$tid") . ")");
@@ -852,7 +852,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         return "Assignment";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->allow_administer($row);
+        return !$pl->user->allow_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $ci = $row->contact_info($this->contact);
@@ -882,7 +882,7 @@ class Desirability_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->privChair)
+        if (!$pl->user->privChair)
             return false;
         if ($visible)
             $pl->qopts["desirability"] = 1;
@@ -910,9 +910,9 @@ class TopicScorePaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         $this->contact = $pl->reviewer_user();
         if (!$pl->conf->has_topics()
-            || !$pl->contact->isPC
-            || ($this->contact->contactId !== $pl->contact->contactId
-                && !$pl->contact->is_manager()))
+            || !$pl->user->isPC
+            || ($this->contact->contactId !== $pl->user->contactId
+                && !$pl->user->is_manager()))
             return false;
         if ($visible)
             $pl->qopts["topics"] = 1;
@@ -948,13 +948,13 @@ class PreferencePaperColumn extends PaperColumn {
         return new PreferencePaperColumn(["name" => $this->name] + (array) self::lookup_json("editpref"), $this->contact);
     }
     function prepare(PaperList $pl, $visible) {
-        $this->viewer_contact = $pl->contact;
+        $this->viewer_contact = $pl->user;
         $reviewer = $pl->reviewer_user();
         $this->contact = $this->contact ? : $reviewer;
-        $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
-        if (!$pl->contact->isPC
+        $this->not_me = $this->contact->contactId !== $pl->user->contactId;
+        if (!$pl->user->isPC
             || (($this->not_me || !$this->name /* user factory */)
-                && !$pl->contact->is_manager()))
+                && !$pl->user->is_manager()))
             return false;
         if ($visible)
             $pl->qopts["topics"] = 1;
@@ -962,7 +962,7 @@ class PreferencePaperColumn extends PaperColumn {
             $pl->add_header_script("add_revpref_ajax(" . json_encode_browser("#$tid") . ")", "revpref_ajax_$tid");
         $this->prefix =  "";
         if ($this->row)
-            $this->prefix = $pl->contact->reviewer_html_for($this->contact);
+            $this->prefix = $pl->user->reviewer_html_for($this->contact);
         return true;
     }
     function completion_name() {
@@ -1009,12 +1009,12 @@ class PreferencePaperColumn extends PaperColumn {
         if (!$this->not_me || $this->row)
             return "Preference";
         else if ($is_text)
-            return $pl->contact->name_text_for($this->contact) . " preference";
+            return $pl->user->name_text_for($this->contact) . " preference";
         else
-            return $pl->contact->name_html_for($this->contact) . "<br />preference";
+            return $pl->user->name_html_for($this->contact) . "<br />preference";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $this->not_me && !$pl->contact->allow_administer($row);
+        return $this->not_me && !$pl->user->allow_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $has_cflt = $row->has_conflict($this->contact);
@@ -1023,12 +1023,12 @@ class PreferencePaperColumn extends PaperColumn {
         $editable = $this->editable && $this->contact->can_become_reviewer_ignore_conflict($row);
         if (!$editable)
             $ptext = str_replace("-", "−" /* U+2122 */, $ptext);
-        $conflict_wrap = $this->not_me && !$pl->contact->can_administer($row, false);
+        $conflict_wrap = $this->not_me && !$pl->user->can_administer($row, false);
         if ($this->row) {
             if ($ptext !== "")
                 $ptext = $this->prefix . " <span class=\"asspref" . ($pv[0] < 0 ? "-1" : "1") . "\">P" . $ptext . "</span>";
             return $pl->maybeConflict($row, $ptext, !$conflict_wrap);
-        } else if ($has_cflt && !$pl->contact->allow_administer($row))
+        } else if ($has_cflt && !$pl->user->allow_administer($row))
             return $this->show_conflict ? review_type_icon(-1) : "";
         else if ($editable) {
             $iname = "revpref" . $row->paperId;
@@ -1081,21 +1081,21 @@ class PreferenceList_PaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         if ($this->topics && !$pl->conf->has_topics())
             $this->topics = false;
-        if (!$pl->contact->is_manager())
+        if (!$pl->user->is_manager())
             return false;
         if ($visible) {
             $pl->qopts["allReviewerPreference"] = $pl->qopts["allConflictType"] = 1;
             if ($this->topics)
                 $pl->qopts["topics"] = 1;
         }
-        $pl->conf->stash_hotcrp_pc($pl->contact);
+        $pl->conf->stash_hotcrp_pc($pl->user);
         return true;
     }
     function header(PaperList $pl, $is_text) {
         return "Preferences";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->allow_administer($row);
+        return !$pl->user->allow_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $prefs = $row->reviewer_preferences();
@@ -1128,11 +1128,11 @@ class ReviewerList_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->can_view_some_review_identity(null))
+        if (!$pl->user->can_view_some_review_identity(null))
             return false;
         $this->topics = $pl->conf->has_topics();
         $pl->qopts["reviewSignatures"] = true;
-        if ($visible && $pl->contact->privChair)
+        if ($visible && $pl->user->privChair)
             $pl->qopts["allReviewerPreference"] = $pl->qopts["topics"] = true;
         return true;
     }
@@ -1151,10 +1151,10 @@ class ReviewerList_PaperColumn extends PaperColumn {
         // see also search.php > getaction == "reviewers"
         $x = [];
         foreach ($this->reviews_with_names($row) as $xrow)
-            if ($pl->contact->can_view_review_identity($row, $xrow, true)) {
+            if ($pl->user->can_view_review_identity($row, $xrow, true)) {
                 $ranal = $pl->make_review_analysis($xrow, $row);
-                $n = $pl->contact->reviewer_html_for($xrow) . "&nbsp;" . $ranal->icon_html(false);
-                if ($pl->contact->privChair) {
+                $n = $pl->user->reviewer_html_for($xrow) . "&nbsp;" . $ranal->icon_html(false);
+                if ($pl->user->privChair) {
                     $pref = $row->reviewer_preference((int) $xrow->contactId);
                     if ($this->topics && $row->has_topics())
                         $pref[2] = $row->topic_interest_score((int) $xrow->contactId);
@@ -1165,15 +1165,15 @@ class ReviewerList_PaperColumn extends PaperColumn {
         if (empty($x))
             return "";
         else
-            return $pl->maybeConflict($row, join(", ", $x), $pl->contact->can_view_review_identity($row, null, false));
+            return $pl->maybeConflict($row, join(", ", $x), $pl->user->can_view_review_identity($row, null, false));
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (!$pl->contact->can_view_review_identity($row, null))
+        if (!$pl->user->can_view_review_identity($row, null))
             return "";
         $x = [];
         foreach ($this->reviews_with_names($row) as $xrow)
-            if ($pl->contact->can_view_review_identity($row, $xrow))
-                $x[] = $pl->contact->name_text_for($xrow);
+            if ($pl->user->can_view_review_identity($row, $xrow))
+                $x[] = $pl->user->name_text_for($xrow);
         return join("; ", $x);
     }
 }
@@ -1183,7 +1183,7 @@ class PCConflictListPaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->privChair)
+        if (!$pl->user->privChair)
             return false;
         if ($visible)
             $pl->qopts["allConflictType"] = 1;
@@ -1197,7 +1197,7 @@ class PCConflictListPaperColumn extends PaperColumn {
         $pcm = $row->conf->pc_members();
         foreach ($row->conflicts() as $id => $type)
             if (($pc = get($pcm, $id)))
-                $y[$pc->sort_position] = $pl->contact->reviewer_html_for($pc);
+                $y[$pc->sort_position] = $pl->user->reviewer_html_for($pc);
         ksort($y);
         return join(", ", $y);
     }
@@ -1206,7 +1206,7 @@ class PCConflictListPaperColumn extends PaperColumn {
         $pcm = $row->conf->pc_members();
         foreach ($row->conflicts() as $id => $type)
             if (($pc = get($pcm, $id)))
-                $y[$pc->sort_position] = $pl->contact->name_text_for($pc);
+                $y[$pc->sort_position] = $pl->user->name_text_for($pc);
         ksort($y);
         return join("; ", $y);
     }
@@ -1226,7 +1226,7 @@ class ConflictMatchPaperColumn extends PaperColumn {
         $this->contact = $pl->reviewer_user();
         $this->highlight = $pl->search->field_highlighter($this->field);
         $general_pregexes = $this->contact->aucollab_general_pregexes();
-        return $pl->contact->is_manager() && !empty($general_pregexes);
+        return $pl->user->is_manager() && !empty($general_pregexes);
     }
     function header(PaperList $pl, $is_text) {
         $what = $this->field == "authorInformation" ? "authors" : "collaborators";
@@ -1236,7 +1236,7 @@ class ConflictMatchPaperColumn extends PaperColumn {
             return "<strong>Potential conflict in $what</strong>";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->allow_administer($row);
+        return !$pl->user->allow_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $field = $this->field;
@@ -1268,7 +1268,7 @@ class TagList_PaperColumn extends PaperColumn {
         return new TagList_PaperColumn($this->column_json(), true);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->can_view_tags(null))
+        if (!$pl->user->can_view_tags(null))
             return false;
         if ($visible)
             $pl->qopts["tags"] = 1;
@@ -1287,14 +1287,14 @@ class TagList_PaperColumn extends PaperColumn {
         return "Tags";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->can_view_tags($row, true);
+        return !$pl->user->can_view_tags($row, true);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($row->paperTags && $row->conflictType > 0 && $pl->contact->allow_administer($row)) {
-            $viewable = trim($row->viewable_tags($pl->contact, true));
-            $pl->row_attr["data-tags-conflicted"] = trim($row->viewable_tags($pl->contact, false));
+        if ($row->paperTags && $row->conflictType > 0 && $pl->user->allow_administer($row)) {
+            $viewable = trim($row->viewable_tags($pl->user, true));
+            $pl->row_attr["data-tags-conflicted"] = trim($row->viewable_tags($pl->user, false));
         } else
-            $viewable = trim($row->viewable_tags($pl->contact));
+            $viewable = trim($row->viewable_tags($pl->user));
         $pl->row_attr["data-tags"] = $viewable;
         if ($this->editable)
             $pl->row_attr["data-tags-editable"] = 1;
@@ -1305,7 +1305,7 @@ class TagList_PaperColumn extends PaperColumn {
             return "";
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $pl->tagger->unparse_hashed($row->viewable_tags($pl->contact));
+        return $pl->tagger->unparse_hashed($row->viewable_tags($pl->user));
     }
 }
 
@@ -1329,9 +1329,9 @@ class Tag_PaperColumn extends PaperColumn {
         return strcasecmp(Tagger::check_tag_keyword($sorter->type, $user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID), $this->xtag) == 0;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->can_view_tags(null))
+        if (!$pl->user->can_view_tags(null))
             return false;
-        $tagger = new Tagger($pl->contact);
+        $tagger = new Tagger($pl->user);
         if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID)))
             return false;
         $this->xtag = strtolower($ctag);
@@ -1340,7 +1340,7 @@ class Tag_PaperColumn extends PaperColumn {
             $pl->qopts["tags"] = 1;
         $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
         if ($this->dtag[0] == ":" && !$this->is_value
-            && ($dt = $pl->contact->conf->tags()->check($this->dtag))
+            && ($dt = $pl->user->conf->tags()->check($this->dtag))
             && count($dt->emoji) == 1)
             $this->emoji = $dt->emoji[0];
         return true;
@@ -1353,12 +1353,12 @@ class Tag_PaperColumn extends PaperColumn {
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         $k = $sorter->uid;
-        $careful = !$pl->contact->privChair && !$pl->conf->tag_seeall;
+        $careful = !$pl->user->privChair && !$pl->conf->tag_seeall;
         $unviewable = $empty = $sorter->reverse ? -(TAG_INDEXBOUND - 1) : TAG_INDEXBOUND - 1;
         if ($this->editable)
             $empty = $sorter->reverse ? -TAG_INDEXBOUND : TAG_INDEXBOUND;
         foreach ($rows as $row)
-            if ($careful && !$pl->contact->can_view_tag($row, $this->xtag, true))
+            if ($careful && !$pl->user->can_view_tag($row, $this->xtag, true))
                 $row->$k = $unviewable;
             else if (($row->$k = $row->tag_value($this->xtag)) === false)
                 $row->$k = $empty;
@@ -1371,7 +1371,7 @@ class Tag_PaperColumn extends PaperColumn {
         return "#$this->dtag";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->can_view_tag($row, $this->xtag, true);
+        return !$pl->user->can_view_tag($row, $this->xtag, true);
     }
     function content(PaperList $pl, PaperInfo $row) {
         if (($v = $row->tag_value($this->xtag)) === false)
@@ -1420,7 +1420,7 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
             return false;
         if ($visible > 0 && ($tid = $pl->table_id())) {
             $sorter = get($pl->sorters, 0);
-            if ($this->sorts_my_tag($sorter, $pl->contact)
+            if ($this->sorts_my_tag($sorter, $pl->user)
                 && !$sorter->reverse
                 && (!$pl->search->thenmap || $pl->search->is_order_anno)
                 && $this->is_value) {
@@ -1437,7 +1437,7 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
         $v = $row->tag_value($this->xtag);
         if ($this->editsort && !isset($pl->row_attr["data-tags"]))
             $pl->row_attr["data-tags"] = $this->dtag . "#" . $v;
-        if (!$pl->contact->can_change_tag($row, $this->dtag, 0, 0, true))
+        if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0, true))
             return $this->is_value ? (string) $v : ($v === false ? "" : "&#x2713;");
         if (!$this->is_value)
             return '<input type="checkbox" class="cb edittag" name="tag:' . "$this->dtag $row->paperId" . '" value="x" tabindex="6"'
@@ -1464,9 +1464,9 @@ class ScoreGraph_PaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $pl->context_user();
-        $this->not_me = $this->contact->contactId !== $pl->contact->contactId;
+        $this->not_me = $this->contact->contactId !== $pl->user->contactId;
         if ($visible && $this->not_me
-            && (!$pl->contact->privChair || $pl->conf->has_any_manager()))
+            && (!$pl->user->privChair || $pl->conf->has_any_manager()))
             $pl->qopts["reviewSignatures"] = true;
     }
     function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
@@ -1480,7 +1480,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
             $scoreinfo = new ScoreInfo($s, true);
             $cid = $this->contact->contactId;
             if ($this->not_me
-                && !$row->can_view_review_identity_of($cid, $pl->contact))
+                && !$row->can_view_review_identity_of($cid, $pl->user))
                 $cid = 0;
             $row->$k = $scoreinfo->sort_data($sorter->score, $cid);
             $row->$avgk = $scoreinfo->mean();
@@ -1503,7 +1503,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         $values = $this->score_values($pl, $row, false);
         $wrap_conflict = false;
         if (empty($values) && $row->conflictType > 0
-            && $pl->contact->allow_administer($row)) {
+            && $pl->user->allow_administer($row)) {
             $values = $this->score_values($pl, $row, true);
             $wrap_conflict = true;
         }
@@ -1511,7 +1511,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
             return "";
         $pl->need_render = true;
         $cid = $this->contact->contactId;
-        if ($this->not_me && !$row->can_view_review_identity_of($cid, $pl->contact))
+        if ($this->not_me && !$row->can_view_review_identity_of($cid, $pl->user))
             $cid = 0;
         $t = $field->unparse_graph($values, 1, get($values, $cid));
         return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
@@ -1529,7 +1529,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
-            || $this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
+            || $this->form_field->view_score <= $pl->user->permissive_view_score_bound())
             return false;
         if ($visible) {
             $pl->qopts["scores"][$this->score] = true;
@@ -1542,7 +1542,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $fid = $this->form_field->id;
         $row->ensure_review_score($this->form_field);
         $scores = [];
-        foreach ($row->viewable_submitted_reviews_by_user($pl->contact, $forceShow) as $rrow)
+        foreach ($row->viewable_submitted_reviews_by_user($pl->user, $forceShow) as $rrow)
             if (isset($rrow->$fid) && $rrow->$fid)
                 $scores[$rrow->contactId] = $rrow->$fid;
         return $scores;
@@ -1557,7 +1557,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         // Do not use score_values to determine content emptiness, since
         // that would load the scores from the DB -- even for folded score
         // columns.
-        return !$row->may_have_viewable_scores($this->form_field, $pl->contact, true);
+        return !$row->may_have_viewable_scores($this->form_field, $pl->user, true);
     }
     function content(PaperList $pl, PaperInfo $row) {
         return parent::field_content($pl, $this->form_field, $row);
@@ -1598,14 +1598,14 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
-            || !$this->formula->check($pl->contact)
+            || !$this->formula->check($pl->user)
             || !($this->formula->result_format() instanceof ReviewField)
-            || !$pl->contact->can_view_formula($this->formula, $pl->search->limitName == "a"))
+            || !$pl->user->can_view_formula($this->formula, $pl->search->limitName == "a"))
             return false;
         $this->formula_function = $this->formula->compile_sortable_function();
         $this->indexes_function = null;
         if ($this->formula->is_indexed())
-            $this->indexes_function = Formula::compile_indexes_function($pl->contact, $this->formula->datatypes());
+            $this->indexes_function = Formula::compile_indexes_function($pl->user, $this->formula->datatypes());
         if ($visible)
             $this->formula->add_query_options($pl->qopts);
         parent::prepare($pl, $visible);
@@ -1613,11 +1613,11 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
     function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
         $indexesf = $this->indexes_function;
-        $indexes = $indexesf ? $indexesf($row, $pl->contact, $forceShow) : [null];
+        $indexes = $indexesf ? $indexesf($row, $pl->user, $forceShow) : [null];
         $formulaf = $this->formula_function;
         $vs = [];
         foreach ($indexes as $i)
-            if (($v = $formulaf($row, $i, $pl->contact, $forceShow)) !== null)
+            if (($v = $formulaf($row, $i, $pl->user, $forceShow)) !== null)
                 $vs[$i] = $v;
         return $vs;
     }
@@ -1678,7 +1678,7 @@ class Option_PaperColumn extends PaperColumn {
         $this->opt = $opt;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->can_view_some_paper_option($this->opt))
+        if (!$pl->user->can_view_some_paper_option($this->opt))
             return false;
         $pl->qopts["options"] = true;
         return true;
@@ -1694,13 +1694,13 @@ class Option_PaperColumn extends PaperColumn {
         return $this->opt->search_keyword();
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->can_view_paper_option($row, $this->opt, true);
+        return !$pl->user->can_view_paper_option($row, $this->opt, true);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $t = "";
-        if (($ok = $pl->contact->can_view_paper_option($row, $this->opt, false))
-            || ($pl->contact->allow_administer($row)
-                && $pl->contact->can_view_paper_option($row, $this->opt, true))) {
+        if (($ok = $pl->user->can_view_paper_option($row, $this->opt, false))
+            || ($pl->user->allow_administer($row)
+                && $pl->user->can_view_paper_option($row, $this->opt, true))) {
             $isrow = $this->viewable_row();
             $t = $this->opt->unparse_list_html($pl, $row, $isrow);
             if (!$ok && $t !== "") {
@@ -1713,7 +1713,7 @@ class Option_PaperColumn extends PaperColumn {
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if ($pl->contact->can_view_paper_option($row, $this->opt))
+        if ($pl->user->can_view_paper_option($row, $this->opt))
             return $this->opt->unparse_list_text($pl, $row);
         return "";
     }
@@ -1790,8 +1790,8 @@ class Formula_PaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
-            || !$this->formula->check($pl->contact)
-            || !$pl->contact->can_view_formula($this->formula, $pl->search->limitName == "a"))
+            || !$this->formula->check($pl->user)
+            || !$pl->user->can_view_formula($this->formula, $pl->search->limitName == "a"))
             return false;
         $this->formula_function = $this->formula->compile_function();
         if ($visible)
@@ -1807,7 +1807,7 @@ class Formula_PaperColumn extends PaperColumn {
         $formulaf = $this->formula->compile_sortable_function();
         $k = $sorter->uid;
         foreach ($rows as $row)
-            $row->$k = $formulaf($row, null, $pl->contact);
+            $row->$k = $formulaf($row, null, $pl->user);
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $k = $sorter->uid;
@@ -1835,13 +1835,13 @@ class Formula_PaperColumn extends PaperColumn {
         $this->real_format = null;
         $isreal = $this->formula->result_format_is_real();
         foreach ($rows as $row) {
-            $v = $formulaf($row, null, $pl->contact);
+            $v = $formulaf($row, null, $pl->user);
             $this->results[$row->paperId] = $v;
             if ($isreal && !$this->real_format && is_float($v)
                 && round($v * 100) % 100 != 0)
                 $this->real_format = "%.2f";
-            if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
-                $vv = $formulaf($row, null, $pl->contact, true);
+            if ($row->conflictType > 0 && $pl->user->allow_administer($row)) {
+                $vv = $formulaf($row, null, $pl->user, true);
                 if ($vv !== $v) {
                     $this->override_results[$row->paperId] = $vv;
                     if ($isreal && !$this->real_format && is_float($vv)
@@ -1948,7 +1948,7 @@ class TagReport_PaperColumn extends PaperColumn {
         $this->tag = $tag;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->can_view_any_peruser_tags($this->tag))
+        if (!$pl->user->can_view_any_peruser_tags($this->tag))
             return false;
         if ($visible)
             $pl->qopts["tags"] = 1;
@@ -1963,7 +1963,7 @@ class TagReport_PaperColumn extends PaperColumn {
         return "#~" . $this->tag . " reports";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->can_view_peruser_tags($row, $this->tag, true);
+        return !$pl->user->can_view_peruser_tags($row, $this->tag, true);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $a = [];
@@ -1971,16 +1971,16 @@ class TagReport_PaperColumn extends PaperColumn {
         for ($i = 0; $i != count($m[0]); ++$i) {
             if ($this->viewtype == 2 && $m[2][$i] <= 0)
                 continue;
-            $n = $pl->contact->name_html_for($m[1][$i]);
+            $n = $pl->user->name_html_for($m[1][$i]);
             if ($this->viewtype != 1)
                 $n .= " (" . $m[2][$i] . ")";
             $a[$m[1][$i]] = $n;
         }
         if (empty($a))
             return "";
-        $pl->contact->ksort_cid_array($a);
+        $pl->user->ksort_cid_array($a);
         $str = '<span class="nb">' . join(',</span> <span class="nb">', $a) . '</span>';
-        return $pl->maybeConflict($row, $str, $row->conflictType <= 0 || $pl->contact->can_view_peruser_tags($row, $this->tag, false));
+        return $pl->maybeConflict($row, $str, $row->conflictType <= 0 || $pl->user->can_view_peruser_tags($row, $this->tag, false));
     }
 }
 
@@ -2051,7 +2051,7 @@ class Lead_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        return $pl->contact->can_view_lead(null, true)
+        return $pl->user->can_view_lead(null, true)
             && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
     function header(PaperList $pl, $is_text) {
@@ -2059,14 +2059,14 @@ class Lead_PaperColumn extends PaperColumn {
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$row->leadContactId
-            || !$pl->contact->can_view_lead($row, true);
+            || !$pl->user->can_view_lead($row, true);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->contact->can_view_lead($row, null);
+        $viewable = $pl->user->can_view_lead($row, null);
         return $pl->_contentPC($row, $row->leadContactId, $viewable);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->contact->can_view_lead($row, null);
+        $viewable = $pl->user->can_view_lead($row, null);
         return $pl->_textPC($row, $row->leadContactId, $viewable);
     }
 }
@@ -2076,7 +2076,7 @@ class Shepherd_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        return $pl->contact->can_view_shepherd(null, true)
+        return $pl->user->can_view_shepherd(null, true)
             && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
     function header(PaperList $pl, $is_text) {
@@ -2084,16 +2084,16 @@ class Shepherd_PaperColumn extends PaperColumn {
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$row->shepherdContactId
-            || !$pl->contact->can_view_shepherd($row, true);
+            || !$pl->user->can_view_shepherd($row, true);
         // XXX external reviewer can view shepherd even if external reviewer
         // cannot view reviewer identities? WHO GIVES A SHIT
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->contact->can_view_shepherd($row, null);
+        $viewable = $pl->user->can_view_shepherd($row, null);
         return $pl->_contentPC($row, $row->shepherdContactId, $viewable);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->contact->can_view_shepherd($row, null);
+        $viewable = $pl->user->can_view_shepherd($row, null);
         return $pl->_textPC($row, $row->shepherdContactId, $viewable);
     }
 }
@@ -2103,14 +2103,14 @@ class Administrator_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        return $pl->contact->can_view_manager(null);
+        return $pl->user->can_view_manager(null);
     }
     function header(PaperList $pl, $is_text) {
         return "Administrator";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$row->managerContactId
-            || !$pl->contact->can_view_manager($row);
+            || !$pl->user->can_view_manager($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         return $pl->_contentPC($row, $row->managerContactId, true);
@@ -2135,7 +2135,7 @@ class PageCount_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        return $pl->contact->can_view_some_pdf();
+        return $pl->user->can_view_some_pdf();
     }
     function page_count(Contact $user, PaperInfo $row) {
         if (!$user->can_view_pdf($row))
@@ -2149,7 +2149,7 @@ class PageCount_PaperColumn extends PaperColumn {
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         foreach ($rows as $row)
-            $row->_page_count_sort_info = $this->page_count($pl->contact, $row);
+            $row->_page_count_sort_info = $this->page_count($pl->user, $row);
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $ac = $a->_page_count_sort_info;
@@ -2163,13 +2163,13 @@ class PageCount_PaperColumn extends PaperColumn {
         return "Page count";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->contact->can_view_pdf($row);
+        return !$pl->user->can_view_pdf($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return (string) $this->page_count($pl->contact, $row);
+        return (string) $this->page_count($pl->user, $row);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return (string) $this->page_count($pl->contact, $row);
+        return (string) $this->page_count($pl->user, $row);
     }
 }
 
@@ -2181,13 +2181,13 @@ class Commenters_PaperColumn extends PaperColumn {
         return "Commenters";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$row->viewable_comments($pl->contact, null);
+        return !$row->viewable_comments($pl->user, null);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $crows = $row->viewable_comments($pl->contact, null);
+        $crows = $row->viewable_comments($pl->user, null);
         $cnames = array_map(function ($cx) use ($pl) {
-            $n = $t = $cx[0]->unparse_user_html($pl->contact, null);
-            if (($tags = $cx[0]->viewable_tags($pl->contact, null))
+            $n = $t = $cx[0]->unparse_user_html($pl->user, null);
+            if (($tags = $cx[0]->viewable_tags($pl->user, null))
                 && ($color = $cx[0]->conf->tags()->color_classes($tags))) {
                 $t = '<span class="cmtlink';
                 if (TagInfo::classes_have_colors($color))
@@ -2197,17 +2197,17 @@ class Commenters_PaperColumn extends PaperColumn {
             if ($cx[1] > 1)
                 $t .= " ({$cx[1]})";
             return $t . $cx[2];
-        }, CommentInfo::group_by_identity($crows, $pl->contact, true));
+        }, CommentInfo::group_by_identity($crows, $pl->user, true));
         return join(" ", $cnames);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $crows = $row->viewable_comments($pl->contact, null);
+        $crows = $row->viewable_comments($pl->user, null);
         $cnames = array_map(function ($cx) use ($pl) {
-            $t = $cx[0]->unparse_user_text($pl->contact, null);
+            $t = $cx[0]->unparse_user_text($pl->user, null);
             if ($cx[1] > 1)
                 $t .= " ({$cx[1]})";
             return $t . $cx[2];
-        }, CommentInfo::group_by_identity($crows, $pl->contact, false));
+        }, CommentInfo::group_by_identity($crows, $pl->user, false));
         return join(" ", $cnames);
     }
 }

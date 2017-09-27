@@ -92,7 +92,7 @@ class PaperList {
     public $conf;
     public $user;
     public $qreq;
-    public $contact;
+    private $contact;
     public $sorters = [];
     private $_columns_by_name;
     public $scoresOk = false;
@@ -144,7 +144,7 @@ class PaperList {
     function __construct(PaperSearch $search, $args = array(), $qreq = null) {
         $this->search = $search;
         $this->conf = $this->search->conf;
-        $this->user = $this->contact = $this->search->user;
+        $this->user = $this->search->user;
         if (!$qreq || !($qreq instanceof Qrequest))
             $qreq = new Qrequest("GET", $qreq);
         $this->qreq = $qreq;
@@ -201,6 +201,12 @@ class PaperList {
             $this->_view_fields["anonau"] = true;
 
         $this->_columns_by_name = ["anonau" => null, "aufull" => null, "rownum" => null, "statistics" => null];
+    }
+
+    // begin changing contactId to cid
+    function __get($name) {
+        error_log("PaperList::$name " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        return $name === "contact" ? $this->user : null;
     }
 
     function table_id() {
