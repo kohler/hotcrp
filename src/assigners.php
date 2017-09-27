@@ -2320,18 +2320,21 @@ class AssignmentSet {
         $this->user->set_overrides($old_overrides);
     }
 
-    function types_and_papers($compress_pids = false) {
+    function assigned_types() {
         $types = array();
-        $pids = array();
-        foreach ($this->assigners as $assigner) {
+        foreach ($this->assigners as $assigner)
             $types[$assigner->type] = true;
+        ksort($types);
+        return array_keys($types);
+    }
+    function assigned_pids($compress = false) {
+        $pids = array();
+        foreach ($this->assigners as $assigner)
             if ($assigner->pid)
                 $pids[$assigner->pid] = true;
-        }
-        ksort($types);
         ksort($pids, SORT_NUMERIC);
         $pids = array_keys($pids);
-        if ($compress_pids) {
+        if ($compress) {
             $xpids = array();
             $lpid = $rpid = -1;
             foreach ($pids as $pid) {
@@ -2345,7 +2348,7 @@ class AssignmentSet {
                 $xpids[] = $lpid == $rpid ? $lpid : "$lpid-$rpid";
             $pids = $xpids;
         }
-        return array(array_keys($types), $pids);
+        return $pids;
     }
 
     function type_description() {

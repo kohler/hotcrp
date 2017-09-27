@@ -246,7 +246,8 @@ class AutoassignerInterface {
         $assignset = new AssignmentSet($this->user, true);
         $assignset->parse(join("\n", $assignments));
 
-        list($atypes, $apids) = $assignset->types_and_papers(true);
+        $atypes = $assignset->assigned_types();
+        $apids = $assignset->assigned_pids(true);
         $badpairs_inputs = $badpairs_arg = array();
         for ($i = 1; isset($this->qreq["bpa$i"]); ++$i)
             if ($this->qreq["bpa$i"] && $this->qreq["bpb$i"]) {

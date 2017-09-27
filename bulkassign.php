@@ -151,7 +151,8 @@ if (isset($_GET["upload"]) && check_post()
             echo '<h3>Proposed ', $atype ? $atype . " " : "", 'assignment</h3>';
             $Conf->infoMsg("Select “Apply changes” if this looks OK. (You can always alter the assignment afterwards.)");
 
-            list($atypes, $apids) = $assignset->types_and_papers(true);
+            $atypes = $assignset->assigned_types();
+            $apids = $assignset->assigned_pids(true);
             echo Ht::form_div(hoturl_post("bulkassign",
                                           ["saveassignment" => 1,
                                            "assigntypes" => join(" ", $atypes),
