@@ -13,7 +13,6 @@ class ContactSearch {
     public $conf;
     public $type;
     public $text;
-    public $reviewer;
     private $user;
     private $cset = null;
     public $ids = false;
@@ -21,11 +20,10 @@ class ContactSearch {
     private $contacts = false;
     public $warn_html = false;
 
-    function __construct($type, $text, Contact $user, Contact $reviewer = null, $cset = null) {
+    function __construct($type, $text, Contact $user, $cset = null) {
         $this->conf = $user->conf;
         $this->type = $type;
         $this->text = $text;
-        $this->reviewer = $reviewer ? : $user;
         $this->user = $user;
         $this->cset = $cset;
         if ($this->ids === false
@@ -40,22 +38,20 @@ class ContactSearch {
             && ($this->type & self::F_USER))
             $this->ids = $this->check_user();
     }
-    static function make_pc($text, Contact $user, Contact $reviewer = null) {
-        return new ContactSearch(self::F_PC | self::F_TAG | self::F_USER, $text, $user, $reviewer);
+    static function make_pc($text, Contact $user) {
+        return new ContactSearch(self::F_PC | self::F_TAG | self::F_USER, $text, $user);
     }
-    static function make_special($text, Contact $user, Contact $reviewer = null) {
-        return new ContactSearch(self::F_PC | self::F_TAG, $text, $user, $reviewer);
+    static function make_special($text, Contact $user) {
+        return new ContactSearch(self::F_PC | self::F_TAG, $text, $user);
     }
-    static function make_cset($text, Contact $user, Contact $reviewer, $cset) {
-        return new ContactSearch(self::F_USER, $text, $user, $reviewer, $cset);
+    static function make_cset($text, Contact $user, $cset) {
+        return new ContactSearch(self::F_USER, $text, $user, $cset);
     }
     private function check_simple() {
         if (strcasecmp($this->text, "me") == 0
-            && (!($this->type & self::F_PC) || ($this->reviewer->roles & Contact::ROLE_PC))) {
-            if ($this->reviewer !== $this->user)
-                error_log("ContactSearch: me with reviewer: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            return [$this->reviewer->contactId];
-        }
+            && (!($this->type & self::F_PC)
+                || ($this->user->roles & Contact::ROLE_PC)))
+            return [$this->user->contactId];
         if ($this->user->isPC || !$this->conf->opt("privatePC")) {
             if ($this->text === ""
                 || strcasecmp($this->text, "pc") == 0

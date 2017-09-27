@@ -1357,7 +1357,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->user, $state->reviewer)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->user)->ids;
             if (empty($twiddlecids))
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) > 1)
@@ -1411,7 +1411,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->user, $state->reviewer)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->user)->ids;
             if (empty($twiddlecids))
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) == 1)
@@ -1957,7 +1957,7 @@ class AssignmentSet {
         else if (preg_match('/\A(?:new-?)?anonymous(?:\d*|-?new)\z/', $special))
             return $special;
         if ($special && !$first && (!$lemail || !$last)) {
-            $ret = ContactSearch::make_special($special, $this->astate->user, $this->astate->reviewer);
+            $ret = ContactSearch::make_special($special, $this->astate->user);
             if ($ret->ids !== false)
                 return $ret->contacts();
         }
@@ -1992,7 +1992,7 @@ class AssignmentSet {
                 $text = "$last$first";
             if ($email)
                 $text .= " <$email>";
-            $ret = ContactSearch::make_cset($text, $this->astate->user, $this->astate->reviewer, $cset);
+            $ret = ContactSearch::make_cset($text, $this->astate->user, $cset);
             if (count($ret->ids) == 1)
                 return $ret->contacts();
             else if (empty($ret->ids))

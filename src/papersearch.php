@@ -2634,11 +2634,10 @@ class PaperSearch {
     }
 
     private function make_contact_match($type, $text) {
-        $reviewer = $this->reviewer_user();
         foreach ($this->contact_match as $i => $cm)
-            if ($cm->type === $type && $cm->text === $text && $cm->reviewer === $reviewer)
+            if ($cm->type === $type && $cm->text === $text)
                 return $cm;
-        return $this->contact_match[] = new ContactSearch($type, $text, $this->user, $reviewer);
+        return $this->contact_match[] = new ContactSearch($type, $text, $this->user);
     }
 
     function matching_reviewers($word, $quoted, $pc_only) {
