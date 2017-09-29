@@ -2062,11 +2062,11 @@ class Lead_PaperColumn extends PaperColumn {
             || !$pl->user->can_view_lead($row, true);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->user->can_view_lead($row, null);
+        $viewable = $pl->user->can_view_lead($row);
         return $pl->_contentPC($row, $row->leadContactId, $viewable);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->user->can_view_lead($row, null);
+        $viewable = $pl->user->can_view_lead($row);
         return $pl->_textPC($row, $row->leadContactId, $viewable);
     }
 }
@@ -2089,11 +2089,11 @@ class Shepherd_PaperColumn extends PaperColumn {
         // cannot view reviewer identities? WHO GIVES A SHIT
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->user->can_view_shepherd($row, null);
+        $viewable = $pl->user->can_view_shepherd($row);
         return $pl->_contentPC($row, $row->shepherdContactId, $viewable);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->user->can_view_shepherd($row, null);
+        $viewable = $pl->user->can_view_shepherd($row);
         return $pl->_textPC($row, $row->shepherdContactId, $viewable);
     }
 }
