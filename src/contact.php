@@ -71,8 +71,8 @@ class Contact {
     public $is_site_contact = false;
     private $rights_version_ = 0;
     public $roles = 0;
-    var $isPC = false;
-    var $privChair = false;
+    public $isPC = false;
+    public $privChair = false;
     public $contactTags = null;
     public $tracker_kiosk_state = false;
     const CAP_AUTHORVIEW = 1;
@@ -83,6 +83,7 @@ class Contact {
     const OVERRIDE_TIME = 2;
     const OVERRIDE_TAG_CHECKS = 4;
     private $overrides_ = 0;
+    public $hidden_papers = null;
     private $_aucollab_matchers = null;
     private $_aucollab_general_pregexes = null;
 
@@ -279,6 +280,46 @@ class Contact {
 
     // initialization
 
+    private function actas_user($x, $trueuser) {
+        // translate to email
+        if (is_numeric($x)) {
+            $acct = $this->conf->user_by_id($x);
+            $email = $acct ? $acct->email : null;
+        } else if ($x === "admin")
+            $email = $trueuser->email;
+        else
+            $email = $x;
+        if (!$email || strcasecmp($email, $this->email) == 0)
+            return $this;
+
+        // can always turn back into baseuser
+        $baseuser = $this;
+        if (strcasecmp($this->email, $trueuser->email) != 0
+            && ($u = $this->conf->user_by_email($trueuser->email)))
+            $baseuser = $u;
+        if (strcasecmp($email, $baseuser->email) == 0)
+            return $baseuser;
+
+        // cannot actas unless chair
+        if (!$this->privChair && !$baseuser->privChair)
+            return $this;
+
+        // new account must exist
+        if (!($u = $this->conf->user_by_email($email)))
+            return $this;
+
+        // cannot turn into a manager of conflicted papers
+        if ($this->conf->setting("papermanager")) {
+            $result = $this->conf->qe("select paperId from Paper join PaperConflict using (paperId) where managerContactId!=0 and managerContactId!=? and PaperConflict.contactId=? and conflictType>0", $this->contactId, $this->contactId);
+            while (($row = $result->fetch_row()))
+                $u->hidden_papers[(int) $row[0]] = true;
+            Dbl::free($result);
+        }
+
+        // otherwise ok
+        return $u;
+    }
+
     function activate() {
         global $Now;
         $this->activated_ = true;
@@ -288,26 +329,14 @@ class Contact {
         // Handle actas requests
         $actas = req("actas");
         if ($actas && $trueuser) {
-            if (is_numeric($actas)) {
-                $acct = $this->conf->user_by_id($actas);
-                $actasemail = $acct ? $acct->email : null;
-            } else if ($actas === "admin")
-                $actasemail = $trueuser->email;
-            else
-                $actasemail = $actas;
             unset($_GET["actas"], $_POST["actas"], $_REQUEST["actas"]);
-            if ($actasemail
-                && strcasecmp($actasemail, $this->email) != 0
-                && (strcasecmp($actasemail, $trueuser->email) == 0
-                    || $this->privChair
-                    || (($truecontact = $this->conf->user_by_email($trueuser->email))
-                        && $truecontact->privChair))
-                && ($actascontact = $this->conf->user_by_email($actasemail))) {
+            $actascontact = $this->actas_user($actas, $trueuser);
+            if ($actascontact !== $this) {
                 if ($actascontact->email !== $trueuser->email) {
                     hoturl_defaults(array("actas" => $actascontact->email));
                     $_SESSION["last_actas"] = $actascontact->email;
                 }
-                if ($this->privChair || ($truecontact && $truecontact->privChair))
+                if ($this->privChair)
                     self::$trueuser_privChair = $actascontact;
                 return $actascontact->activate();
             }
@@ -351,7 +380,7 @@ class Contact {
             && $this->conf->session("trueuser_author_check", 0) + 600 < $Now) {
             $this->conf->save_session("trueuser_author_check", $Now);
             $aupapers = self::email_authored_papers($this->conf, $trueuser->email, $trueuser);
-            if (count($aupapers))
+            if (!empty($aupapers))
                 return $this->activate_database_account();
         }
 
@@ -2105,6 +2134,11 @@ class Contact {
     }
 
     function can_view_paper(PaperInfo $prow, $pdf = false) {
+        // hidden_papers is set when a chair with a conflicted, managed
+        // paper “becomes” a user
+        if ($this->hidden_papers !== null
+            && isset($this->hidden_papers[$prow->paperId]))
+            return false;
         if ($this->privChair)
             return true;
         $rights = $this->rights($prow, "any");

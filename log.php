@@ -356,12 +356,12 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
 
 $lrg = new LogRowGenerator($Conf, $wheres, $count);
 
-$chair_conflict_pids = [];
+$exclude_pids = $Me->hidden_papers ? : [];
 if ($Me->privChair && $Conf->has_any_manager()) {
     $result = $Conf->paper_result($Me, ["myConflicts" => true]);
     foreach (PaperInfo::fetch_all($result, $Me) as $prow)
         if (!$Me->allow_administer($prow))
-            $chair_conflict_pids[$prow->paperId] = true;
+            $exclude_pids[$prow->paperId] = true;
 }
 
 if (!$Me->privChair) {
