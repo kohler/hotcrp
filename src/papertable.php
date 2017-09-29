@@ -56,7 +56,7 @@ class PaperTable {
         }
 
         $ms = array();
-        if ($Me->can_view_review($prow, null, null)
+        if ($Me->can_view_review($prow, null)
             || $prow->review_submitted($Me))
             $this->can_view_reviews = $ms["p"] = true;
         else if ($prow->timeWithdrawn > 0 && !$this->conf->timeUpdatePaper($prow))
@@ -2265,7 +2265,7 @@ class PaperTable {
 
         $m = array();
         if ($this->all_rrows
-            && ($whyNot = $Me->perm_view_review($this->prow, null, null)))
+            && ($whyNot = $Me->perm_view_review($this->prow, null)))
             $m[] = "You can’t see the reviews for this submission. " . whyNotText($whyNot, "review");
         if ($this->prow
             && !$this->conf->time_review_open()
@@ -2456,7 +2456,7 @@ class PaperTable {
             $rrow = $prow->review_of_id($sel["reviewId"]);
         if (($whyNot = $Me->perm_view_paper($prow))
             || (!isset($_REQUEST["paperId"])
-                && !$Me->can_view_review($prow, $rrow, null)
+                && !$Me->can_view_review($prow, $rrow)
                 && !$Me->privChair)) {
             // Don't allow querier to probe review/comment<->paper mapping
             if (!isset($_REQUEST["paperId"]))
@@ -2478,7 +2478,7 @@ class PaperTable {
         $round_mask = 0;
         $min_view_score = VIEWSCORE_MAX;
         foreach ($this->all_rrows as $rrow)
-            if ($Me->can_view_review($this->prow, $rrow, null)) {
+            if ($Me->can_view_review($this->prow, $rrow)) {
                 $this->viewable_rrows[] = $rrow;
                 if ($rrow->reviewRound !== null)
                     $round_mask |= 1 << (int) $rrow->reviewRound;
@@ -2546,13 +2546,13 @@ class PaperTable {
                 || $this->rrow->reviewSubmitted))
             $this->mode = "p";
         if ($this->mode === "p" && $this->rrow
-            && !$Me->can_view_review($prow, $this->rrow, null))
+            && !$Me->can_view_review($prow, $this->rrow))
             $this->rrow = $this->editrrow = null;
         if ($this->mode === "p" && !$this->rrow && !$this->editrrow
             && $Me->can_review($prow, null, false)) {
             $viewable_rrow = $my_rrow = null;
             foreach ($this->all_rrows as $rrow) {
-                if ($Me->can_view_review($prow, $rrow, null))
+                if ($Me->can_view_review($prow, $rrow))
                     $viewable_rrow = $rrow;
                 if ($rrow->contactId == $Me->contactId
                     || (!$my_rrow && $Me->is_my_review($rrow)))

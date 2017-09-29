@@ -258,7 +258,7 @@ class CommentInfo {
         }
 
         // identity and time
-        $idable = $contact->can_view_comment_identity($this->prow, $this, null);
+        $idable = $contact->can_view_comment_identity($this->prow, $this);
         $idable_override = $idable || $contact->can_view_comment_identity($this->prow, $this, true);
         if ($idable || $idable_override) {
             $user = $this->user();

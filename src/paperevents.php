@@ -99,7 +99,7 @@ class PaperEvents {
             $prow = $this->prows->get($rrow->paperId);
             if (!$this->user->act_author_view($prow)
                 && (!$this->watch || $prow->watching(WATCHTYPE_REVIEW, $this->user))
-                && $this->user->can_view_review($prow, $rrow, null)) {
+                && $this->user->can_view_review($prow, $rrow)) {
                 $rrow->eventTime = (int) $rrow->eventTime;
                 return $rrow;
             }

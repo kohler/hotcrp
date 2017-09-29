@@ -2363,7 +2363,7 @@ class Contact {
                     && $this->conf->setting("pcrev_editdelegate")));
     }
 
-    function can_view_review_assignment(PaperInfo $prow, $rrow, $forceShow) {
+    function can_view_review_assignment(PaperInfo $prow, $rrow, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_administer
             || $rights->allow_pc
@@ -2419,7 +2419,7 @@ class Contact {
         return -1;
     }
 
-    function can_view_review(PaperInfo $prow, $rrow, $forceShow, $viewscore = null) {
+    function can_view_review(PaperInfo $prow, $rrow, $forceShow = null, $viewscore = null) {
         if (is_int($rrow)) {
             $viewscore = $rrow;
             $rrow = null;
@@ -2462,7 +2462,7 @@ class Contact {
                 && $seerev >= 0);
     }
 
-    function perm_view_review(PaperInfo $prow, $rrow, $forceShow, $viewscore = null) {
+    function perm_view_review(PaperInfo $prow, $rrow, $forceShow = null, $viewscore = null) {
         if ($this->can_view_review($prow, $rrow, $forceShow, $viewscore))
             return null;
         $rrowSubmitted = !$rrow || $rrow->reviewSubmitted > 0;
@@ -2528,7 +2528,7 @@ class Contact {
             || !$this->conf->is_review_blind($rrow);
     }
 
-    function can_view_some_review_identity($forceShow = null) {
+    function can_view_some_review_identity() {
         $tags = "";
         if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID)))
             $tags = " $t#0 ";
@@ -2545,7 +2545,7 @@ class Contact {
             "paperBlind" => false, "outcome" => 1,
             "paperTags" => $tags
         ], $this);
-        return $this->can_view_review_identity($prow, null, $forceShow);
+        return $this->can_view_review_identity($prow, null);
     }
 
     function can_view_aggregated_review_identity() {
@@ -2964,7 +2964,7 @@ class Contact {
                          . " or MyPaperReview.reviewId is not null)");
     }
 
-    function can_view_comment_identity(PaperInfo $prow, $crow, $forceShow) {
+    function can_view_comment_identity(PaperInfo $prow, $crow, $forceShow = null) {
         if ($crow && ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR)))
             return $this->can_view_authors($prow, $forceShow);
         $rights = $this->rights($prow, $forceShow);

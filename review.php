@@ -119,7 +119,7 @@ if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
 // review rating action
 if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
     if (!$Me->can_rate_review($prow, $paperTable->rrow)
-        || !$Me->can_view_review($prow, $paperTable->rrow, null))
+        || !$Me->can_view_review($prow, $paperTable->rrow))
         Conf::msg_error("You can’t rate that review.");
     else if (!isset(ReviewForm::$rating_types[$_REQUEST["rating"]]))
         Conf::msg_error("Invalid rating.");
@@ -235,7 +235,7 @@ function download_all_text_reviews() {
         $lastrc = $rc;
     }
     if ($text === "") {
-        $whyNot = $Me->perm_view_review($prow, null, null);
+        $whyNot = $Me->perm_view_review($prow, null);
         return Conf::msg_error(whyNotText($whyNot ? : array("fail" => 1), "review"));
     }
     $text = $Conf->short_name . " Paper #2 Reviews and Comments\n"
@@ -341,7 +341,7 @@ if (isset($_REQUEST["accept"])) {
 
 
 // can we view/edit reviews?
-$viewAny = $Me->can_view_review($prow, null, null);
+$viewAny = $Me->can_view_review($prow, null);
 $editAny = $Me->can_review($prow, null);
 
 
@@ -351,7 +351,7 @@ if (!$viewAny && !$editAny) {
         errorMsgExit(whyNotText($whyNotPaper, "view", true));
     if (req("reviewId") === null) {
         Conf::msg_error("You can’t see the reviews for this paper. "
-                        . whyNotText($Me->perm_view_review($prow, null, null), "review"));
+                        . whyNotText($Me->perm_view_review($prow, null), "review"));
         go(hoturl("paper", "p=$prow->paperId"));
     }
 }
@@ -372,7 +372,7 @@ $paperTable->resolveComments();
 
 if (!$viewAny && !$editAny
     && (!$paperTable->rrow
-        || !$Me->can_view_review($prow, $paperTable->rrow, null)))
+        || !$Me->can_view_review($prow, $paperTable->rrow)))
     $paperTable->paptabEndWithReviewMessage();
 else {
     if ($paperTable->mode === "re") {

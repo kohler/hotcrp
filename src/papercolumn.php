@@ -409,7 +409,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         $want_assigned = $user->privChair || !$row->conflict_type($user);
         $done = $started = 0;
         foreach ($row->reviews_by_id() as $rrow)
-            if ($user->can_view_review_assignment($row, $rrow, null)
+            if ($user->can_view_review_assignment($row, $rrow)
                 && ($this->round === null || $this->round === $rrow->reviewRound)) {
                 if ($rrow->reviewSubmitted > 0) {
                     ++$done;
@@ -421,7 +421,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         foreach ($rows as $row) {
-            if (!$pl->user->can_view_review_assignment($row, null, null))
+            if (!$pl->user->can_view_review_assignment($row, null))
                 $row->_review_status_sort_info = -2147483647;
             else {
                 list($done, $started) = $this->data($row, $pl->user);
@@ -444,7 +444,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
             return '<span class="need-tooltip" data-tooltip="# completed reviews / # assigned reviews" data-tooltip-dir="b">#&nbsp;' . $round_name . 'Reviews</span>';
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_review_assignment($row, null, null);
+        return !$pl->user->can_view_review_assignment($row, null);
     }
     function content(PaperList $pl, PaperInfo $row) {
         list($done, $started) = $this->data($row, $pl->user);
@@ -1128,7 +1128,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->user->can_view_some_review_identity(null))
+        if (!$pl->user->can_view_some_review_identity())
             return false;
         $this->topics = $pl->conf->has_topics();
         $pl->qopts["reviewSignatures"] = true;

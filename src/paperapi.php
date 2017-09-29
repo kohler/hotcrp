@@ -493,7 +493,7 @@ class PaperApi {
     }
 
     static function review_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
-        if (!$user->can_view_review($prow, null, null))
+        if (!$user->can_view_review($prow, null))
             return new JsonResult(403, "Permission error.");
         if (isset($qreq->r)) {
             if (ctype_digit($qreq->r))
@@ -516,7 +516,7 @@ class PaperApi {
         $vrrows = [];
         $rf = $user->conf->review_form();
         foreach ($rrows as $rrow)
-            if ($user->can_view_review($prow, $rrow, null))
+            if ($user->can_view_review($prow, $rrow))
                 $vrrows[] = $rf->unparse_review_json($prow, $rrow, $user);
         if (!$vrrows && $rrows)
             return new JsonResult(403, "Permission error.");
