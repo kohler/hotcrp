@@ -245,33 +245,6 @@ class LogRowGenerator {
         return array_slice($this->rows, $offset - $this->rows_offset, $this->page_size);
     }
 
-    static function row_pid_filter($row, $pidset, $want_in, $include_pids, $no_papers_result) {
-        if (preg_match('/\A(.*) \(papers ([\d, ]+)\)?\z/', $row->action, $m)) {
-            preg_match_all('/\d+/', $m[2], $mm);
-            $pids = [];
-            foreach ($mm[0] as $pid)
-                if (isset($pidset[$pid]) === $want_in)
-                    $pids[] = $pid;
-            if (empty($pids))
-                return false;
-            if ($include_pids) {
-                $ok = false;
-                foreach ($pids as $pid)
-                    if (isset($include_pids[$pid]))
-                        $ok = true;
-                if (!$ok)
-                    return false;
-            }
-            if (count($pids) === 1) {
-                $row->action = $m[1];
-                $row->paperId = $pids[0];
-            } else
-                $row->action = $m[1] . " (papers " . join(", ", $pids) . ")";
-            return true;
-        } else
-            return $no_papers_result;
-    }
-
     function set_log_url_base($url) {
         $this->log_url_base = $url;
     }
@@ -364,29 +337,62 @@ if ($Me->privChair && $Conf->has_any_manager()) {
             $exclude_pids[$prow->paperId] = true;
 }
 
+class LogRowFilter {
+    private $user;
+    private $pidset;
+    private $want;
+    private $includes;
+
+    function __construct(Contact $user, $pidset, $want, $includes) {
+        $this->user = $user;
+        $this->pidset = $pidset;
+        $this->want = $want;
+        $this->includes = $includes;
+    }
+    private function test_pidset($row, $pidset, $want, $includes) {
+        if ($row->paperId) {
+            return isset($pidset[$row->paperId]) === $want
+                && (!$includes || isset($includes[$row->paperId]));
+        } else if (preg_match('/\A(.*) \(papers ([\d, ]+)\)?\z/', $row->action, $m)) {
+            preg_match_all('/\d+/', $m[2], $mm);
+            $pids = [];
+            $included = !$includes;
+            foreach ($mm[0] as $pid)
+                if (isset($pidset[$pid]) === $want) {
+                    $pids[] = $pid;
+                    $included = $included || isset($includes[$pid]);
+                }
+            if (empty($pids) || !$included)
+                return false;
+            else if (count($pids) === 1) {
+                $row->action = $m[1];
+                $row->paperId = $pids[0];
+            } else
+                $row->action = $m[1] . " (papers " . join(", ", $pids) . ")";
+            return true;
+        } else
+            return $this->user->privChair;
+    }
+    function __invoke($row) {
+        if ($this->user->hidden_papers
+            && !$this->test_pidset($row, $this->user->hidden_papers, false, null))
+            return false;
+        else if ($row->contactId === $this->user->contactId)
+            return true;
+        else
+            return $this->test_pidset($row, $this->pidset, $this->want, $this->includes);
+    }
+}
+
 if (!$Me->privChair) {
     $result = $Conf->paper_result($Me, $Conf->check_any_admin_tracks($Me) ? [] : ["myManaged" => true]);
     $good_pids = [];
     foreach (PaperInfo::fetch_all($result, $Me) as $prow)
         if ($Me->allow_administer($prow))
             $good_pids[$prow->paperId] = true;
-    $lrg->set_filter(function ($row) use ($good_pids, $include_pids, $Me) {
-        if ($row->contactId === $Me->contactId)
-            return true;
-        else if ($row->paperId)
-            return isset($good_pids[$row->paperId]);
-        else
-            return LogRowGenerator::row_pid_filter($row, $good_pids, true, $include_pids, false);
-    });
-} else if ($Conf->has_any_manager() && !$Qreq->forceShow && !empty($chair_conflict_pids)) {
-    $lrg->set_filter(function ($row) use ($chair_conflict_pids, $include_pids, $Me) {
-        if ($row->contactId === $Me->contactId)
-            return true;
-        else if ($row->paperId)
-            return !isset($chair_conflict_pids[$row->paperId]);
-        else
-            return LogRowGenerator::row_pid_filter($row, $chair_conflict_pids, false, $include_pids, true);
-    });
+    $lrg->set_filter(new LogRowFilter($Me, $good_pids, true, $include_pids));
+} else if (!$Qreq->forceShow && !empty($exclude_pids)) {
+    $lrg->set_filter(new LogRowFilter($Me, $exclude_pids, false, $include_pids));
 }
 
 if ($first_timestamp) {
@@ -532,12 +538,13 @@ foreach ($visible_rows as $row) {
     $trs[] = '    <tr class="k' . (count($trs) % 2) . '">' . join("", $t) . "</tr>\n";
 }
 
-if (!$Me->privChair || !empty($chair_conflict_pids)) {
+if (!$Me->privChair || !empty($exclude_pids)) {
     echo '<div class="xmsgs-atbody">';
     if (!$Me->privChair)
         $Conf->msg("xinfo", "Only showing your actions and entries for papers you administer.");
-    else if (!empty($chair_conflict_pids)
-             && (!$include_pids || array_intersect_key($include_pids, $chair_conflict_pids))) {
+    else if (!empty($exclude_pids)
+             && (!$include_pids || array_intersect_key($include_pids, $exclude_pids))
+             && $exclude_pids != $Me->hidden_papers) {
         $req = [];
         foreach (["q", "p", "acct", "n"] as $k)
             if ($Qreq->$k !== "")
@@ -548,7 +555,7 @@ if (!$Me->privChair || !empty($chair_conflict_pids)) {
         if ($Qreq->forceShow)
             $Conf->msg("xinfo", "Showing all entries. (" . Ht::link("Unprivileged view", selfHref($req + ["forceShow" => null])) . ")");
         else
-            $Conf->msg("xinfo", "Not showing entries for " . Ht::link("conflicted administered papers", hoturl("search", "q=" . join("+", array_keys($chair_conflict_pids)))) . ".");
+            $Conf->msg("xinfo", "Not showing entries for " . Ht::link("conflicted administered papers", hoturl("search", "q=" . join("+", array_keys($exclude_pids)))) . ".");
             //" (" . Ht::link("Override conflicts", selfHref($req + ["forceShow" => 1])) . ")");
     }
     echo '</div>';
