@@ -174,12 +174,10 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return self::unparse_visibility_value($this->view_score);
     }
 
-    function is_round_visible($rrow) {
+    function is_round_visible(ReviewInfo $rrow = null) {
         if (!$this->round_mask)
             return true;
         // NB missing $rrow is only possible for PC reviews
-        if ($rrow && !($rrow instanceof ReviewInfo))
-            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $round = $rrow ? $rrow->reviewRound : $this->conf->assignment_round(false);
         return $round === null
             || ($this->round_mask & (1 << $round))
@@ -592,9 +590,7 @@ class ReviewForm implements JsonSerializable {
         echo "</div>\n";
     }
 
-    function author_nonempty($rrow) {
-        if (!($rrow instanceof ReviewInfo))
-            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    function author_nonempty(ReviewInfo $rrow) {
         foreach ($this->forder as $fid => $f)
             if (isset($rrow->$fid)
                 && (!$f->round_mask || $f->is_round_visible($rrow))
@@ -604,9 +600,7 @@ class ReviewForm implements JsonSerializable {
         return false;
     }
 
-    function word_count($rrow) {
-        if (!($rrow instanceof ReviewInfo))
-            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    function word_count(ReviewInfo $rrow) {
         $wc = 0;
         foreach ($this->forder as $fid => $f)
             if (isset($rrow->$fid)
@@ -617,10 +611,8 @@ class ReviewForm implements JsonSerializable {
         return $wc;
     }
 
-    function review_needs_approval($rrow) {
-        if (!($rrow instanceof ReviewInfo))
-            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        return $rrow && !$rrow->reviewSubmitted
+    function review_needs_approval(ReviewInfo $rrow) {
+        return !$rrow->reviewSubmitted
             && $rrow->reviewType == REVIEW_EXTERNAL
             && $rrow->requestedBy
             && $this->conf->setting("extrev_approve")
@@ -681,7 +673,7 @@ class ReviewForm implements JsonSerializable {
             return $rrow->reviewModified;
     }
 
-    function textFormHeader($type) {
+    function eHeader($type) {
         $x = "==+== " . $this->conf->short_name . " Paper Review Form" . ($type === true ? "s" : "") . "\n";
         $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
 ==-== For further guidance, or to upload this file when you are done, go to:
@@ -689,9 +681,7 @@ class ReviewForm implements JsonSerializable {
         return $x;
     }
 
-    function textForm($prow, $rrow, Contact $contact, $req = null) {
-        if ($rrow && !($rrow instanceof ReviewInfo))
-            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    function textForm(PaperInfo $prow = null, ReviewInfo $rrow = null, Contact $contact, $req = null) {
         $rrow_contactId = $rrow ? $rrow->contactId : 0;
         $myReview = !$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId;
         $revViewScore = $prow ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
@@ -811,13 +801,9 @@ $blind\n";
         return $x . "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
     }
 
-    function pretty_text(PaperInfo $prow, $rrow, Contact $contact,
+    function pretty_text(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
                          $no_update_review_author_seen = false,
                          $no_title = false) {
-        assert($prow !== null && $rrow !== null);
-        if (!($rrow instanceof ReviewInfo))
-            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
@@ -949,10 +935,8 @@ $blind\n";
         echo Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-$type:0"]);
     }
 
-    function show(PaperInfo $prow, $rrow, &$options, ReviewValues $rvalues = null) {
+    function show(PaperInfo $prow, ReviewInfo $rrow = null, &$options, ReviewValues $rvalues = null) {
         global $Me;
-        if ($rrow && !($rrow instanceof ReviewInfo))
-            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
 
         if (!$options)
             $options = array();
@@ -1128,10 +1112,8 @@ $blind\n";
             return $rating;
     }
 
-    function unparse_review_json(PaperInfo $prow, $rrow, Contact $contact,
+    function unparse_review_json(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
                                  $forceShow = null, $flags = 0) {
-        if (!($rrow instanceof ReviewInfo))
-            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         self::check_review_author_seen($prow, $rrow, $contact);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         $editable = !($flags & self::RJ_NO_EDITABLE);
