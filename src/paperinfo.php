@@ -1648,7 +1648,7 @@ class PaperInfo {
         }
     }
 
-    function may_have_viewable_scores($field, Contact $contact, $forceShow) {
+    function may_have_viewable_scores($field, Contact $contact, $forceShow = null) {
         $field = is_object($field) ? $field : $this->conf->review_field($field);
         return $contact->can_view_review($this, $field->view_score, $forceShow)
             || $this->review_type($contact);

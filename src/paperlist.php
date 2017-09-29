@@ -101,6 +101,7 @@ class PaperList {
     public $check_format;
     public $tbody_attr;
     public $row_attr;
+    public $row_overridable;
     public $need_render;
     public $has_editable_tags = false;
 
@@ -395,27 +396,14 @@ class PaperList {
         return $this->search->context_user();
     }
 
-    function maybeConflict($row, $text, $visible) {
-        if ($visible)
-            return $text;
-        else if ($this->user->allow_administer($row))
-            return self::wrapChairConflict($text);
-        else
-            return "";
+    function _content_pc($contactId, $visible) {
+        $pc = $this->conf->pc_member_by_id($contactId);
+        return $pc ? $this->user->reviewer_html_for($pc) : "";
     }
 
-    function _contentPC($row, $contactId, $visible) {
-        $pcm = $this->conf->pc_members();
-        if (isset($pcm[$contactId]))
-            return $this->maybeConflict($row, $this->user->reviewer_html_for($pcm[$contactId]), $visible);
-        return "";
-    }
-
-    function _textPC($row, $contactId, $visible) {
-        $pcm = $this->conf->pc_members();
-        if (isset($pcm[$contactId]))
-            return $visible ? $this->user->reviewer_text_for($pcm[$contactId]) : "";
-        return "";
+    function _text_pc($contactId) {
+        $pc = $this->conf->pc_member_by_id($contactId);
+        return $pc ? $this->user->reviewer_text_for($pc) : "";
     }
 
     function displayable_list_actions($prefix) {
@@ -709,12 +697,62 @@ class PaperList {
         }
     }
 
-    private function _row_text($rstate, PaperInfo $row, $fieldDef) {
+    private function _wrap_conflict($main_content, $override_content, PaperColumn $fdef) {
+        if ($main_content === $override_content)
+            return $main_content;
+        $tag = $fdef->viewable_row() ? "div" : "span";
+        if ((string) $main_content !== "")
+            $main_content = "<$tag class=\"fn5\">$main_content</$tag>";
+        if ((string) $override_content !== "")
+            $override_content = "<$tag class=\"fx5\">$override_content</$tag>";
+        return $main_content . $override_content;
+    }
+
+    private function _row_field_content(PaperColumn $fdef, PaperInfo $row) {
+        $content = "";
+        if ($this->row_overridable && $fdef->override === PaperColumn::OVERRIDE_FOLD) {
+            $empty = $fdef->content_empty($this, $row);
+            if ($empty) {
+                $overrides = $this->user->set_overrides($this->user->overrides() | Contact::OVERRIDE_CONFLICT);
+                $empty = $fdef->content_empty($this, $row);
+                if (!$empty && $fdef->is_visible)
+                    $content = $this->_wrap_conflict("", $fdef->content($this, $row), $fdef);
+                $this->user->set_overrides($overrides);
+            } else if ($fdef->is_visible)
+                $content = $fdef->content($this, $row);
+        } else if ($this->row_overridable && $fdef->override === PaperColumn::OVERRIDE_FOLD_BOTH) {
+            $content1 = $content2 = "";
+            $empty1 = $fdef->content_empty($this, $row);
+            if (!$empty1 && $fdef->is_visible)
+                $content1 = $fdef->content($this, $row);
+            $overrides = $this->user->set_overrides($this->user->overrides() | Contact::OVERRIDE_CONFLICT);
+            $empty2 = $fdef->content_empty($this, $row);
+            if (!$empty2 && $fdef->is_visible)
+                $content2 = $fdef->content($this, $row);
+            $this->user->set_overrides($overrides);
+            $empty = $empty1 && $empty2;
+            $content = $this->_wrap_conflict($content1, $content2, $fdef);
+        } else if ($this->row_overridable && $fdef->override === PaperColumn::OVERRIDE_ALWAYS) {
+            $overrides = $this->user->set_overrides($this->user->overrides() | Contact::OVERRIDE_CONFLICT);
+            $empty = $fdef->content_empty($this, $row);
+            if (!$empty && $fdef->is_visible)
+                $content = $fdef->content($this, $row);
+            $this->user->set_overrides($overrides);
+        } else {
+            $empty = $fdef->content_empty($this, $row);
+            if (!$empty && $fdef->is_visible)
+                $content = $fdef->content($this, $row);
+        }
+        return [$empty, $content];
+    }
+
+    private function _row_content($rstate, PaperInfo $row, $fieldDef) {
         if ((string) $row->abstract !== "")
             $this->mark_has("abstract");
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
         $this->row_attr = [];
+        $this->row_overridable = $row->conflictType > 0 && $this->user->allow_administer($row);
 
         $trclass = [];
         $cc = "";
@@ -751,17 +789,15 @@ class PaperList {
             if (!$fdef->viewable_column()
                 || (!$fdef->is_visible && $fdef->has_content))
                 continue;
-            $empty = $fdef->content_empty($this, $row);
+            list($empty, $content) = $this->_row_field_content($fdef, $row);
             if ($fdef->is_visible) {
-                $c = $empty ? "" : $fdef->content($this, $row);
-                if ($c !== "")
-                    $fdef->has_content = true;
                 $tm .= "<td class=\"pl " . $fdef->className;
                 if ($fdef->fold)
                     $tm .= " fx$fdef->fold";
-                $tm .= "\">" . $c . "</td>";
-            } else
-                $fdef->has_content = !$empty;
+                $tm .= "\">" . $content . "</td>";
+            }
+            if ($fdef->is_visible ? $content !== "" : !$empty)
+                $fdef->has_content = true;
         }
 
         // extension columns
@@ -770,23 +806,20 @@ class PaperList {
             if (!$fdef->viewable_row()
                 || (!$fdef->is_visible && $fdef->has_content))
                 continue;
-            $empty = $fdef->content_empty($this, $row);
+            list($empty, $content) = $this->_row_field_content($fdef, $row);
             if ($fdef->is_visible) {
-                $c = $empty ? "" : $fdef->content($this, $row);
-                if ($c !== "") {
-                    $fdef->has_content = true;
-                    if (($ch = $fdef->header($this, false))) {
-                        if ($c[0] !== "<"
-                            || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $c, $cm))
-                            $cm = [null, "", $c];
-                        $c = $cm[1] . '<em class="plx">' . $ch . ':</em> ' . $cm[2];
-                    }
+                if ($content !== "" && ($ch = $fdef->header($this, false))) {
+                    if ($content[0] !== "<"
+                        || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $content, $cm))
+                        $cm = [null, "", $content];
+                    $content = $cm[1] . '<em class="plx">' . $ch . ':</em> ' . $cm[2];
                 }
                 $tt .= "<div class=\"" . $fdef->className;
                 if ($fdef->fold)
                     $tt .= " fx" . $fdef->fold;
-                $tt .= "\">" . $c . "</div>";
-            } else
+                $tt .= "\">" . $content . "</div>";
+            }
+            if ($fdef->is_visible ? $content !== "" : !$empty)
                 $fdef->has_content = !$empty;
         }
 
@@ -1265,6 +1298,9 @@ class PaperList {
             if ($o->is_document())
                 $this->_any_option_checks[] = $o;
 
+        // turn off forceShow
+        $overrides = $this->user->set_overrides($this->user->overrides() & ~Contact::OVERRIDE_CONFLICT);
+
         // collect row data
         $body = array();
         $grouppos = empty($this->groups) ? -1 : 0;
@@ -1273,7 +1309,7 @@ class PaperList {
             ++$this->count;
             if ($grouppos >= 0)
                 $grouppos = $this->_groups_for($grouppos, $rstate, $body, false);
-            $body[] = $this->_row_text($rstate, $row, $fieldDef);
+            $body[] = $this->_row_content($rstate, $row, $fieldDef);
             if ($this->need_render && !$need_render) {
                 Ht::stash_script('$(plinfo.render_needed)', 'plist_render_needed');
                 $need_render = true;
@@ -1295,12 +1331,20 @@ class PaperList {
                 $this->mark_has("openau");
             else {
                 foreach ($rows as $row)
-                    if ($this->user->can_view_authors($row, false))
+                    if ($this->user->can_view_authors($row))
                         $this->mark_has("openau");
                     else if ($this->user->allow_view_authors($row))
                         $this->mark_has("anonau");
             }
         }
+
+        // statistics rows
+        $statistics_rows = "";
+        if (!$this->_view_columns)
+            $statistics_rows = $this->_statistics_rows($rstate, $fieldDef);
+
+        // restore forceShow
+        $this->user->set_overrides($overrides);
 
         // header cells
         $colhead = "";
@@ -1388,11 +1432,9 @@ class PaperList {
         }
 
         // footer
-        $foot = "";
-        if (!$this->_view_columns)
-            $foot .= $this->_statistics_rows($rstate, $fieldDef);
+        $foot = $statistics_rows;
         if ($fieldDef[0] instanceof SelectorPaperColumn
-            && !defval($options, "nofooter"))
+            && !get($options, "nofooter"))
             $foot .= $this->_footer($ncol, get_s($options, "footer_extra"));
         if ($foot)
             $enter .= ' <tfoot' . ($rstate->hascolors ? ' class="pltable_colored"' : "")
@@ -1426,6 +1468,9 @@ class PaperList {
             return null;
         $fdef = $field_list[0];
 
+        // turn off forceShow
+        $overrides = $this->user->set_overrides($this->user->overrides() & ~Contact::OVERRIDE_CONFLICT);
+
         // output field data
         $data = array();
         if (($x = $fdef->header($this, false)))
@@ -1434,10 +1479,9 @@ class PaperList {
         foreach ($rows as $row) {
             ++$this->count;
             $this->row_attr = [];
-            if ($fdef->content_empty($this, $row))
-                $m[$row->paperId] = "";
-            else
-                $m[$row->paperId] = $fdef->content($this, $row);
+            $this->row_overridable = $row->conflictType > 0 && $this->user->allow_administer($row);
+            list($empty, $content) = $this->_row_field_content($fdef, $row);
+            $m[$row->paperId] = $content;
             foreach ($this->row_attr as $k => $v) {
                 if (!isset($data["attr.$k"]))
                     $data["attr.$k"] = [];
@@ -1453,6 +1497,9 @@ class PaperList {
                 $m[ScoreInfo::$stat_keys[$stat]] = $fdef->statistic($this, $stat);
             $data["$fname.stat.html"] = $m;
         }
+
+        // restore forceShow
+        $this->user->set_overrides($overrides);
 
         if ($fdef->has_content)
             $this->mark_has($fname);
@@ -1472,11 +1519,14 @@ class PaperList {
         $x = array();
         foreach ($rows as $row) {
             $p = array("id" => $row->paperId);
-            foreach ($field_list as $fdef)
+            ++$this->count;
+            $this->row_overridable = $row->conflictType > 0 && $this->user->allow_administer($row);
+            foreach ($field_list as $fdef) {
                 if ($fdef->viewable()
                     && !$fdef->content_empty($this, $row)
                     && ($text = $fdef->text($this, $row)) !== "")
                     $p[$fdef->name] = $text;
+            }
             $x[$row->paperId] = (object) $p;
         }
 
@@ -1484,10 +1534,12 @@ class PaperList {
     }
 
     private function _row_text_csv_data(PaperInfo $row, $fieldDef) {
+        ++$this->count;
         if ((string) $row->abstract !== "")
             $this->mark_has("abstract");
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
+        $this->row_overridable = $row->conflictType > 0 && $this->user->allow_administer($row);
         $csv = [];
         foreach ($fieldDef as $fdef) {
             $empty = $fdef->content_empty($this, $row);
@@ -1536,7 +1588,6 @@ class PaperList {
         $body = array();
         $grouppos = empty($this->groups) ? -1 : 0;
         foreach ($rows as $row) {
-            ++$this->count;
             $csv = $this->_row_text_csv_data($row, $fieldDef);
             if ($grouppos >= 0)
                 $grouppos = $this->_groups_for_csv($grouppos, $csv);

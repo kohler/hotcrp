@@ -10,6 +10,12 @@ class PaperColumn extends Column {
     static private $j_by_name = null;
     static private $j_factories = null;
 
+    const OVERRIDE_NONE = 0;
+    const OVERRIDE_FOLD = 1;
+    const OVERRIDE_FOLD_BOTH = 2;
+    const OVERRIDE_ALWAYS = 3;
+    public $override = 0;
+
     const PREP_SORT = -1;
     const PREP_FOLDED = 0; // value matters
     const PREP_VISIBLE = 1; // value matters
@@ -327,7 +333,7 @@ class TitlePaperColumn extends PaperColumn {
             . $pl->_contentDownload($row);
 
         if ($this->has_decoration && (string) $row->paperTags !== "") {
-            if ($row->conflictType > 0 && $pl->user->allow_administer($row)) {
+            if ($pl->row_overridable) {
                 if (($vto = $row->viewable_tags($pl->user, true))
                     && ($deco = $pl->tagger->unparse_decoration_html($vto))) {
                     $vtx = $row->viewable_tags($pl->user, false);
@@ -396,6 +402,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     private $round;
     function __construct($cj) {
         parent::__construct($cj);
+        $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
         $this->round = get($cj, "round", null);
     }
     function prepare(PaperList $pl, $visible) {
@@ -406,7 +413,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
             return false;
     }
     private function data(PaperInfo $row, Contact $user) {
-        $want_assigned = $user->privChair || !$row->conflict_type($user);
+        $want_assigned = !$row->conflict_type($user) || $user->can_administer($row);
         $done = $started = 0;
         foreach ($row->reviews_by_id() as $rrow)
             if ($user->can_view_review_assignment($row, $rrow)
@@ -482,7 +489,6 @@ class AuthorsPaperColumn extends PaperColumn {
     private $aufull;
     private $anonau;
     private $highlight;
-    private $forceable;
     function __construct($cj) {
         parent::__construct($cj);
     }
@@ -493,7 +499,6 @@ class AuthorsPaperColumn extends PaperColumn {
         $this->aufull = !$pl->is_folded("aufull");
         $this->anonau = !$pl->is_folded("anonau");
         $this->highlight = $pl->search->field_highlighter("authorInformation");
-        $this->forceable = $pl->user->is_manager() ? true : null;
         return $pl->user->can_view_some_authors();
     }
     private function affiliation_map($row) {
@@ -579,6 +584,7 @@ class AuthorsPaperColumn extends PaperColumn {
 class CollabPaperColumn extends PaperColumn {
     function __construct($cj) {
         parent::__construct($cj);
+        $this->override = PaperColumn::OVERRIDE_FOLD;
     }
     function prepare(PaperList $pl, $visible) {
         return !!$pl->conf->setting("sub_collab") && $pl->user->can_view_some_authors();
@@ -587,9 +593,9 @@ class CollabPaperColumn extends PaperColumn {
         return "Collaborators";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return ($row->collaborators == ""
-                || strcasecmp($row->collaborators, "None") == 0
-                || !$pl->user->can_view_authors($row, true));
+        return $row->collaborators == ""
+            || strcasecmp($row->collaborators, "None") == 0
+            || !$pl->user->allow_view_authors($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $x = "";
@@ -942,6 +948,7 @@ class PreferencePaperColumn extends PaperColumn {
     private $prefix;
     function __construct($cj, $contact = null) {
         parent::__construct($cj);
+        $this->override = PaperColumn::OVERRIDE_FOLD;
         $this->editable = !!get($cj, "edit");
         $this->contact = $contact;
     }
@@ -1015,7 +1022,7 @@ class PreferencePaperColumn extends PaperColumn {
             return $pl->user->name_html_for($this->contact) . "<br />preference";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $this->not_me && !$pl->user->allow_administer($row);
+        return $this->not_me && !$pl->user->can_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $has_cflt = $row->has_conflict($this->contact);
@@ -1024,23 +1031,19 @@ class PreferencePaperColumn extends PaperColumn {
         $editable = $this->editable && $this->contact->can_become_reviewer_ignore_conflict($row);
         if (!$editable)
             $ptext = str_replace("-", "−" /* U+2122 */, $ptext);
-        $conflict_wrap = $this->not_me && !$pl->user->can_administer($row, false);
         if ($this->row) {
             if ($ptext !== "")
                 $ptext = $this->prefix . " <span class=\"asspref" . ($pv[0] < 0 ? "-1" : "1") . "\">P" . $ptext . "</span>";
-            return $pl->maybeConflict($row, $ptext, !$conflict_wrap);
-        } else if ($has_cflt && !$pl->user->allow_administer($row))
+            return $ptext;
+        } else if ($has_cflt && ($editable ? !$pl->user->allow_administer($row) : $ptext === "0"))
             return $this->show_conflict ? review_type_icon(-1) : "";
         else if ($editable) {
             $iname = "revpref" . $row->paperId;
             if ($this->not_me)
                 $iname .= "u" . $this->contact->contactId;
             return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($this->show_conflict && $has_cflt ? "&nbsp;" . review_type_icon(-1) : "");
-        } else {
-            if ($conflict_wrap)
-                $ptext = '<span class="fx5">' . $ptext . '</span><span class="fn5">?</span>';
+        } else
             return $ptext;
-        }
     }
     function text(PaperList $pl, PaperInfo $row) {
         return unparse_preference($this->preference_values($row));
@@ -1135,6 +1138,10 @@ class ReviewerList_PaperColumn extends PaperColumn {
         $pl->qopts["reviewSignatures"] = true;
         if ($visible && $pl->user->privChair)
             $pl->qopts["allReviewerPreference"] = $pl->qopts["topics"] = true;
+        if ($pl->conf->review_blindness() === Conf::BLIND_OPTIONAL)
+            $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
+        else
+            $this->override = PaperColumn::OVERRIDE_FOLD;
         return true;
     }
     function header(PaperList $pl, $is_text) {
@@ -1148,11 +1155,14 @@ class ReviewerList_PaperColumn extends PaperColumn {
         usort($rrows, "Contact::compare");
         return $rrows;
     }
+    function content_empty(PaperList $pl, PaperInfo $row) {
+        return !$pl->user->can_view_review_identity($row, null);
+    }
     function content(PaperList $pl, PaperInfo $row) {
         // see also search.php > getaction == "reviewers"
         $x = [];
         foreach ($this->reviews_with_names($row) as $xrow)
-            if ($pl->user->can_view_review_identity($row, $xrow, true)) {
+            if ($pl->user->can_view_review_identity($row, $xrow)) {
                 $ranal = $pl->make_review_analysis($xrow, $row);
                 $n = $pl->user->reviewer_html_for($xrow) . "&nbsp;" . $ranal->icon_html(false);
                 if ($pl->user->privChair) {
@@ -1163,14 +1173,9 @@ class ReviewerList_PaperColumn extends PaperColumn {
                 }
                 $x[] = '<span class="nw">' . $n . '</span>';
             }
-        if (empty($x))
-            return "";
-        else
-            return $pl->maybeConflict($row, join(", ", $x), $pl->user->can_view_review_identity($row, null, false));
+        return join(", ", $x);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (!$pl->user->can_view_review_identity($row, null))
-            return "";
         $x = [];
         foreach ($this->reviews_with_names($row) as $xrow)
             if ($pl->user->can_view_review_identity($row, $xrow))
@@ -1263,6 +1268,7 @@ class TagList_PaperColumn extends PaperColumn {
     private $editable;
     function __construct($cj, $editable = false) {
         parent::__construct($cj);
+        $this->override = PaperColumn::OVERRIDE_ALWAYS;
         $this->editable = $editable;
     }
     function make_editable() {
@@ -1288,10 +1294,10 @@ class TagList_PaperColumn extends PaperColumn {
         return "Tags";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_tags($row, true);
+        return !$pl->user->can_view_tags($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($row->paperTags && $row->conflictType > 0 && $pl->user->allow_administer($row)) {
+        if ($row->paperTags && $pl->row_overridable) {
             $viewable = trim($row->viewable_tags($pl->user, true));
             $pl->row_attr["data-tags-conflicted"] = trim($row->viewable_tags($pl->user, false));
         } else
@@ -1319,6 +1325,7 @@ class Tag_PaperColumn extends PaperColumn {
     protected $emoji = false;
     function __construct($cj, $tag) {
         parent::__construct($cj);
+        $this->override = PaperColumn::OVERRIDE_FOLD;
         $this->dtag = $tag;
         $this->is_value = get($cj, "tagvalue");
     }
@@ -1372,7 +1379,7 @@ class Tag_PaperColumn extends PaperColumn {
         return "#$this->dtag";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_tag($row, $this->xtag, true);
+        return !$pl->user->can_view_tag($row, $this->xtag);
     }
     function content(PaperList $pl, PaperInfo $row) {
         if (($v = $row->tag_value($this->xtag)) === false)
@@ -1503,8 +1510,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
     function field_content(PaperList $pl, ReviewField $field, PaperInfo $row) {
         $values = $this->score_values($pl, $row, false);
         $wrap_conflict = false;
-        if (empty($values) && $row->conflictType > 0
-            && $pl->user->allow_administer($row)) {
+        if (empty($values) && $pl->row_overridable) {
             $values = $this->score_values($pl, $row, true);
             $wrap_conflict = true;
         }
@@ -1525,6 +1531,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     private $form_field;
     function __construct($cj, ReviewField $form_field) {
         parent::__construct(["name" => $form_field->search_keyword()] + (array) $cj);
+        $this->override = PaperColumn::OVERRIDE_FOLD;
         $this->score = $form_field->id;
         $this->form_field = $form_field;
     }
@@ -1558,7 +1565,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         // Do not use score_values to determine content emptiness, since
         // that would load the scores from the DB -- even for folded score
         // columns.
-        return !$row->may_have_viewable_scores($this->form_field, $pl->user, true);
+        return !$row->may_have_viewable_scores($this->form_field, $pl->user);
     }
     function content(PaperList $pl, PaperInfo $row) {
         return parent::field_content($pl, $this->form_field, $row);
@@ -1676,6 +1683,7 @@ class Option_PaperColumn extends PaperColumn {
         else if ($optcj === true)
             $optcj = ["column" => true, "className" => "pl_option"];
         parent::__construct(["name" => $name] + ($optcj ? : []) + $cj);
+        $this->override = PaperColumn::OVERRIDE_FOLD;
         $this->opt = $opt;
     }
     function prepare(PaperList $pl, $visible) {
@@ -1695,28 +1703,13 @@ class Option_PaperColumn extends PaperColumn {
         return $this->opt->search_keyword();
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_paper_option($row, $this->opt, true);
+        return !$pl->user->can_view_paper_option($row, $this->opt);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $t = "";
-        if (($ok = $pl->user->can_view_paper_option($row, $this->opt, false))
-            || ($pl->user->allow_administer($row)
-                && $pl->user->can_view_paper_option($row, $this->opt, true))) {
-            $isrow = $this->viewable_row();
-            $t = $this->opt->unparse_list_html($pl, $row, $isrow);
-            if (!$ok && $t !== "") {
-                if ($isrow)
-                    $t = '<div class="fx5">' . $t . '</div>';
-                else
-                    $t = '<span class="fx5">' . $t . '</div>';
-            }
-        }
-        return $t;
+        return $this->opt->unparse_list_html($pl, $row, $this->viewable_row());
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if ($pl->user->can_view_paper_option($row, $this->opt))
-            return $this->opt->unparse_list_text($pl, $row);
-        return "";
+        return $this->opt->unparse_list_text($pl, $row);
     }
 }
 
@@ -1946,6 +1939,7 @@ class TagReport_PaperColumn extends PaperColumn {
     private $viewtype;
     function __construct($tag, $cj) {
         parent::__construct(["name" => "tagrep:" . strtolower($tag)] + $cj);
+        $this->override = PaperColumn::OVERRIDE_FOLD;
         $this->tag = $tag;
     }
     function prepare(PaperList $pl, $visible) {
@@ -1964,7 +1958,7 @@ class TagReport_PaperColumn extends PaperColumn {
         return "#~" . $this->tag . " reports";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_peruser_tags($row, $this->tag, true);
+        return !$pl->user->can_view_peruser_tags($row, $this->tag);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $a = [];
@@ -1980,8 +1974,7 @@ class TagReport_PaperColumn extends PaperColumn {
         if (empty($a))
             return "";
         $pl->user->ksort_cid_array($a);
-        $str = '<span class="nb">' . join(',</span> <span class="nb">', $a) . '</span>';
-        return $pl->maybeConflict($row, $str, $row->conflictType <= 0 || $pl->user->can_view_peruser_tags($row, $this->tag, false));
+        return '<span class="nb">' . join(',</span> <span class="nb">', $a) . '</span>';
     }
 }
 
@@ -2050,6 +2043,7 @@ class NumericOrderPaperColumn extends PaperColumn {
 class Lead_PaperColumn extends PaperColumn {
     function __construct($cj) {
         parent::__construct($cj);
+        $this->override = PaperColumn::OVERRIDE_FOLD;
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->user->can_view_lead(null, true)
@@ -2060,21 +2054,20 @@ class Lead_PaperColumn extends PaperColumn {
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$row->leadContactId
-            || !$pl->user->can_view_lead($row, true);
+            || !$pl->user->can_view_lead($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->user->can_view_lead($row);
-        return $pl->_contentPC($row, $row->leadContactId, $viewable);
+        return $pl->_content_pc($row->leadContactId);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->user->can_view_lead($row);
-        return $pl->_textPC($row, $row->leadContactId, $viewable);
+        return $pl->_text_pc($row->leadContactId);
     }
 }
 
 class Shepherd_PaperColumn extends PaperColumn {
     function __construct($cj) {
         parent::__construct($cj);
+        $this->override = PaperColumn::OVERRIDE_FOLD;
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->user->can_view_shepherd(null, true)
@@ -2085,17 +2078,15 @@ class Shepherd_PaperColumn extends PaperColumn {
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$row->shepherdContactId
-            || !$pl->user->can_view_shepherd($row, true);
+            || !$pl->user->can_view_shepherd($row);
         // XXX external reviewer can view shepherd even if external reviewer
         // cannot view reviewer identities? WHO GIVES A SHIT
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->user->can_view_shepherd($row);
-        return $pl->_contentPC($row, $row->shepherdContactId, $viewable);
+        return $pl->_content_pc($row->shepherdContactId);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $viewable = $pl->user->can_view_shepherd($row);
-        return $pl->_textPC($row, $row->shepherdContactId, $viewable);
+        return $pl->_text_pc($row->shepherdContactId);
     }
 }
 
@@ -2114,10 +2105,10 @@ class Administrator_PaperColumn extends PaperColumn {
             || !$pl->user->can_view_manager($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $pl->_contentPC($row, $row->managerContactId, true);
+        return $pl->_content_pc($row->managerContactId);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $pl->_textPC($row, $row->managerContactId, true);
+        return $pl->_text_pc($row->managerContactId);
     }
 }
 
