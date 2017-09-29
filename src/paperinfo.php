@@ -1750,7 +1750,7 @@ class PaperInfo {
         $rf = $this->conf->review_form();
         $result = $this->conf->qe("select * from PaperReview where paperId=$this->paperId and reviewId?a", $rids);
         $qs = [];
-        while ($result && ($rrow = $result->fetch_object())) {
+        while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
             if ($rrow->reviewWordCount === null) {
                 $rrow->reviewWordCount = $rf->word_count($rrow);
                 $qs[] = "update PaperReview set reviewWordCount={$rrow->reviewWordCount} where paperId={$this->paperId} and reviewId={$rrow->reviewId}";
