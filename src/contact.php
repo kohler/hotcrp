@@ -3371,7 +3371,7 @@ class Contact {
         $dl->sub->sub = +$sub_sub;
         if ($dl->sub->open)
             $graces[] = [$dl->sub, "sub_grace"];
-        if ($sub_reg && $sub_reg < $sub_update)
+        if ($sub_reg && (!$sub_update || $sub_reg < $sub_update))
             $dl->sub->reg = $sub_reg;
         if ($sub_update && $sub_update != $sub_sub)
             $dl->sub->update = $sub_update;
