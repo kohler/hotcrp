@@ -2252,6 +2252,20 @@ class Contact {
                 : $rights->act_author_view);
     }
 
+    function allow_view_authors(PaperInfo $prow) {
+        $rights = $this->rights($prow);
+        return $rights->allow_administer
+            || $rights->act_author_view
+            || ($rights->nonblind
+                && $prow->timeSubmitted != 0
+                && ($rights->allow_pc_broad
+                    || $rights->review_status != 0))
+            || ($rights->nonblind
+                && $prow->timeWithdrawn <= 0
+                && $rights->allow_pc_broad
+                && $this->conf->can_pc_see_all_submissions());
+    }
+
     function can_view_some_authors() {
         return $this->is_manager()
             || $this->is_author()

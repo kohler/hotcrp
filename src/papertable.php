@@ -224,7 +224,7 @@ class PaperTable {
         // collect folders
         $folders = array("clearfix");
         if ($this->prow) {
-            $ever_viewable = $Me->can_view_authors($this->prow, true);
+            $ever_viewable = $Me->allow_view_authors($this->prow);
             $viewable = $ever_viewable && $Me->can_view_authors($this->prow, false);
             if ($ever_viewable && !$viewable)
                 $folders[] = $folds["a"] ? "fold8c" : "fold8o";
@@ -797,7 +797,7 @@ class PaperTable {
         global $Me;
 
         $viewable = $Me->can_view_authors($this->prow, false);
-        if (!$viewable && !$Me->can_view_authors($this->prow, true)) {
+        if (!$viewable && !$Me->allow_view_authors($this->prow)) {
             echo '<div class="pg">',
                 $this->papt("authorInformation", "Authors"),
                 '<div class="pavb"><i>Hidden for blind review</i></div>',
@@ -1911,7 +1911,7 @@ class PaperTable {
         $this->papstripWatch();
         if ($Me->can_view_conflicts($prow) && !$this->editable)
             $this->papstripPCConflicts();
-        if ($Me->can_view_authors($prow, true) && !$this->editable)
+        if ($Me->allow_view_authors($prow) && !$this->editable)
             $this->papstripCollaborators();
 
         $foldShepherd = $Me->can_set_decision($prow) && $prow->outcome <= 0

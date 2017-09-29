@@ -1297,7 +1297,7 @@ class PaperList {
                 foreach ($rows as $row)
                     if ($this->user->can_view_authors($row, false))
                         $this->mark_has("openau");
-                    else if ($this->user->can_view_authors($row, true))
+                    else if ($this->user->allow_view_authors($row))
                         $this->mark_has("anonau");
             }
         }

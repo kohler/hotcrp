@@ -27,7 +27,7 @@ class GetJson_SearchAction extends SearchAction {
             $ps->on_document_export([$this, "document_callback"]);
         }
         foreach (PaperInfo::fetch_all($result, $user) as $prow)
-            if ($user->can_administer($prow, true))
+            if ($user->allow_administer($prow))
                 $pj[$prow->paperId] = $ps->paper_json($prow);
             else {
                 $pj[$prow->paperId] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
@@ -66,7 +66,7 @@ class GetJsonRQC_SearchAction extends SearchAction {
         $pj = [];
         $ps = new PaperStatus($user->conf, $user, ["forceShow" => true, "hide_docids" => true]);
         foreach (PaperInfo::fetch_all($result, $user) as $prow)
-            if ($user->can_administer($prow, true)) {
+            if ($user->allow_administer($prow)) {
                 $pj[$prow->paperId] = $j = $ps->paper_json($prow);
                 $prow->ensure_full_reviews();
                 foreach ($prow->viewable_submitted_reviews_by_display($user, true) as $rrow)

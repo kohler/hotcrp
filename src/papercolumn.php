@@ -513,7 +513,7 @@ class AuthorsPaperColumn extends PaperColumn {
         return $aff;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_authors($row, $this->forceable);
+        return !$pl->user->allow_view_authors($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $out = [];
@@ -547,7 +547,8 @@ class AuthorsPaperColumn extends PaperColumn {
             }
             $t = join($any_affhl || $this->aufull ? "; " : ", ", $out);
         }
-        if ($this->forceable && !$pl->user->can_view_authors($row, false))
+        if ($pl->conf->submission_blindness() !== Conf::BLIND_NEVER
+            && !$pl->user->can_view_authors($row))
             $t = '<div class="fx2">' . $t . '</div>';
         return $t;
     }

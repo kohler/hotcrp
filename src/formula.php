@@ -593,7 +593,7 @@ class Author_Fexpr extends Sub_Fexpr {
             return '($prow->has_author(' . $this->matchtype . ') ? 1 : 0)';
         else
             $v = 'Author_Fexpr::count_matches($prow, ' . $this->matchidx . ')';
-        return '($contact->can_view_authors($prow, true) ? ' . $v . ' : null)';
+        return '($contact->allow_view_authors($prow) ? ' . $v . ' : null)';
     }
     static function count_matches(PaperInfo $prow, $matchidx) {
         $mf = self::$matchers[$matchidx];

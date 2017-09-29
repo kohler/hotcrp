@@ -171,7 +171,7 @@ class SearchTerm {
     protected function _check_flags(PaperInfo $row, PaperSearch $srch) {
         $flags = $this->flags;
         if (($flags & PaperSearch::F_MANAGER)
-            && !$srch->user->can_administer($row, true))
+            && !$srch->user->allow_administer($row))
             return false;
         if (($flags & PaperSearch::F_AUTHOR)
             && !$srch->user->act_author_view($row))
@@ -573,7 +573,7 @@ class TextMatch_SearchTerm extends SearchTerm {
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $data = $row->{$this->field};
-        if ($this->authorish && !$srch->user->can_view_authors($row, true))
+        if ($this->authorish && !$srch->user->allow_view_authors($row))
             $data = "";
         if ($data === "")
             return $this->trivial === false;
@@ -616,7 +616,7 @@ class AuthorMatch_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         $field = $this->field;
         if ($row->$field === ""
-            || !$srch->user->can_view_authors($row, true))
+            || !$srch->user->allow_view_authors($row))
             return false;
         if (!$row->field_match_pregexes($this->matcher->general_pregexes, $field))
             return false;
@@ -900,10 +900,10 @@ class Author_SearchTerm extends SearchTerm {
         if ($this->csm->has_contacts()) {
             if ($this->fieldname)
                 return (int) $row->{$this->fieldname}
-                    && $srch->user->can_view_authors($row, true);
+                    && $srch->user->allow_view_authors($row);
             else {
                 $n = 0;
-                $can_view = $srch->user->can_view_authors($row, true);
+                $can_view = $srch->user->allow_view_authors($row);
                 foreach ($this->csm->contact_set() as $cid)
                     if (($cid === $srch->cid || $can_view)
                         && $row->has_author($cid))
@@ -912,7 +912,7 @@ class Author_SearchTerm extends SearchTerm {
             }
         } else {
             $n = 0;
-            if ($srch->user->can_view_authors($row, true)) {
+            if ($srch->user->allow_view_authors($row)) {
                 foreach ($row->author_list() as $au) {
                     if ($this->regex) {
                         $text = $au->name_email_aff_text();
@@ -3598,7 +3598,7 @@ class PaperSearch {
                     || ($limit === "rable"
                         && !$limitcontact->can_accept_review_assignment_ignore_conflict($row))
                     || ($limit === "manager"
-                        && !$this->user->can_administer($row, true)))
+                        && !$this->user->allow_administer($row)))
                     $x = false;
                 else if ($need_then) {
                     $x = false;

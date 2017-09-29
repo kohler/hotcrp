@@ -233,9 +233,9 @@ class GetAuthors_SearchAction extends SearchAction {
         $texts = array();
         $want_contacttype = false;
         foreach (PaperInfo::fetch_all($result, $user) as $prow) {
-            if (!$user->can_view_authors($prow, true))
+            if (!$user->allow_view_authors($prow))
                 continue;
-            $admin = $user->can_administer($prow, true);
+            $admin = $user->allow_administer($prow);
             $contact_emails = [];
             if ($admin) {
                 $want_contacttype = true;
@@ -273,7 +273,7 @@ class GetContacts_SearchAction extends SearchAction {
         $contact_map = GetAuthors_SearchAction::contact_map($user->conf, $ssel);
         $result = $user->paper_result(["paperId" => $ssel->selection(), "allConflictType" => 1]);
         foreach (PaperInfo::fetch_all($result, $user) as $prow)
-            if ($user->can_administer($prow, true))
+            if ($user->allow_administer($prow))
                 foreach ($prow->contacts() as $cid => $c) {
                     $a = $contact_map[$cid];
                     $aa = $prow->author_by_email($a->email) ? : $a;

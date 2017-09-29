@@ -450,7 +450,7 @@ if ($Me->can_administer($prow)) {
 
     echo '<div class="pc_ctable">';
     $tagger = new Tagger($Me);
-    $show_possible_conflicts = $Me->can_view_authors($prow, true);
+    $show_possible_conflicts = $Me->allow_view_authors($prow);
     foreach ($Conf->full_pc_members() as $pc) {
         $p = $pcx[$pc->contactId];
         if (!$pc->can_accept_review_assignment_ignore_conflict($prow))

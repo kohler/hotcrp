@@ -81,7 +81,7 @@ class GetAllRevpref_SearchAction extends SearchAction {
         $pcm = $user->conf->pc_members();
         $has_conflict = $has_expertise = $has_topic_score = false;
         foreach (PaperInfo::fetch_all($result, $user) as $prow) {
-            if (!$user->can_administer($prow, true))
+            if (!$user->allow_administer($prow))
                 continue;
             $conflicts = $prow->conflicts();
             foreach ($pcm as $cid => $p) {
