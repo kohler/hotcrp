@@ -391,24 +391,27 @@ class SessionList {
             return null;
     }
     function full_site_relative_url() {
+        $args = Conf::$hoturl_defaults ? : [];
         if ($this->url)
-            return $this->url;
+            $url = $this->url;
         else if ($this->urlbase) {
             $url = $this->urlbase;
             if (preg_match(',\Ap/[^/]*/([^/]*)(?:|/([^/]*))\z,', $this->listid, $m)) {
                 if ($m[1] !== "" || str_starts_with($url, "search"))
                     $url .= (strpos($url, "?") ? "&" : "?") . "q=" . $m[1];
-                if (isset($m[2]) && $m[2] !== "") {
+                if (isset($m[2]) && $m[2] !== "")
                     foreach (explode("&", $m[2]) as $kv) {
                         $eq = strpos($kv, "=");
-                        if (!preg_match('/[?&]' . preg_quote(substr($kv, 0, $eq)) . '=/', $url))
-                            $url .= (strpos($url, "?") ? "&" : "?") . $kv;
+                        $args[substr($kv, 0, $eq)] = substr($kv, $eq + 1);
                     }
-                }
             }
-            return $url;
         } else
             return null;
+        foreach ($args as $k => $v) {
+            if (!preg_match('{\A[&?]' . preg_quote($k) . '=}', $url))
+                $url .= (strpos($url, "?") ? "&" : "?") . $k . "=" . $v;
+        }
+        return $url;
     }
     function info_string($minimal = false) {
         $j = ["ids" => self::encode_ids($this->ids)];
