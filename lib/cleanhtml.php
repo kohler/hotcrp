@@ -12,7 +12,7 @@ class CleanHTML {
 
     static private $g;
 
-    public function __construct($flags = 0, $goodtags = null, $emptytags = null) {
+    function __construct($flags = 0, $goodtags = null, $emptytags = null) {
         if ($goodtags === null)
             $goodtags = ["a", "abbr", "acronym", "address", "area", "b", "bdi", "bdo", "big", "blockquote", "br", "button", "caption", "center", "cite", "code", "col", "colgroup", "dd", "del", "details", "dir", "div", "dfn", "dl", "dt", "em", "figcaption", "figure", "font", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "ins", "kbd", "label", "legend", "li", "link", "map", "mark", "menu", "menuitem", "meter", "noscript", "ol", "optgroup", "option", "p", "pre", "q", "rp", "rt", "ruby", "s", "samp", "section", "select", "small", "span", "strike", "strong", "sub", "summary", "sup", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "time", "title", "tr", "tt", "u", "ul", "var", "wbr"];
         if ($emptytags === null)
@@ -33,7 +33,7 @@ class CleanHTML {
         return self::$g;
     }
 
-    public function clean($t, &$err) {
+    function clean($t, &$err) {
         $tagstack = array();
 
         $x = "";

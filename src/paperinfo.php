@@ -852,7 +852,7 @@ class PaperInfo {
             . ' data-tooltip="' . str_replace('"', '&quot;', $messages)
             . '">Possible conflict'
             . (empty($authors) ? "" : " with " . pluralx($authors, "author") . " " . numrangejoin($authors))
-            . '</div>';
+            . '…</div>';
     }
 
     function field_match_pregexes($reg, $field) {
