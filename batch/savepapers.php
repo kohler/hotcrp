@@ -4,7 +4,7 @@ $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/lib/getopt.php");
 $arg = getopt_rest($argv, "hn:qrf:",
     ["help", "name:", "filter=f:", "quiet", "disable", "disable-users",
-     "reviews", "match-title", "ignore-pid", "ignore-errors"]);
+     "reviews", "match-title", "ignore-pid", "ignore-errors", "add-topics"]);
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
@@ -17,6 +17,7 @@ Options include:
   --match-title          Match papers by title if no `pid`.
   --ignore-pid           Ignore `pid` elements in JSON.
   --reviews              Save JSON reviews.
+  --add-topics           Add undefined topics to conference.
   -f, --filter FUNCTION  Pass through FUNCTION.\n");
     exit(0);
 }
@@ -30,6 +31,7 @@ $reviews = isset($arg["r"]) || isset($arg["reviews"]);
 $match_title = isset($arg["match-title"]);
 $ignore_pid = isset($arg["ignore-pid"]);
 $ignore_errors = isset($arg["ignore-errors"]);
+$add_topics = isset($arg["add-topics"]);
 $site_contact = $Conf->site_contact();
 $site_contact->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TIME);
 $tf = new ReviewValues($Conf->review_form(), ["no_notify" => true]);
@@ -183,7 +185,8 @@ foreach ($jp as &$j) {
     if (!$quiet)
         fwrite(STDERR, $pidtext . $titletext . ": ");
     $ps = new PaperStatus($Conf, null, ["no_email" => true,
-                                        "disable_users" => $disable_users]);
+                                        "disable_users" => $disable_users,
+                                        "add_topics" => $add_topics]);
     $ps->allow_error_at("topics", true);
     $ps->allow_error_at("options", true);
     $ps->on_document_import("on_document_import");

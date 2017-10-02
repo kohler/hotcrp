@@ -14,6 +14,7 @@ class PaperStatus extends MessageSet {
     private $export_content = false;
     private $disable_users = false;
     private $allow_any_content_file = false;
+    private $add_topics = false;
     private $prow;
     private $paperid;
     private $_on_document_export = [];
@@ -26,7 +27,7 @@ class PaperStatus extends MessageSet {
         $this->contact = $contact;
         foreach (array("no_email", "forceShow", "export_ids", "hide_docids",
                        "export_content", "disable_users",
-                       "allow_any_content_file") as $k)
+                       "allow_any_content_file", "add_topics") as $k)
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
         $this->_on_document_import[] = [$this, "document_import_check_filename"];
@@ -482,11 +483,18 @@ class PaperStatus extends MessageSet {
                     $pj->topics->$k = true;
                 else {
                     $tid = array_search($k, $topic_map, true);
-                    if ($tid === false) {
+                    if ($tid === false && $k !== "" && !ctype_digit($k)) {
                         $tmatches = [];
                         foreach ($topic_map as $tid => $tname)
                             if (strcasecmp($k, $tname) == 0)
                                 $tmatches[] = $tid;
+                        if (empty($tmatches) && $this->add_topics) {
+                            $this->conf->qe("insert into TopicArea set topicName=?", $k);
+                            $this->conf->invalidate_topics();
+                            $topic_map = $this->topic_map();
+                            if (($tid = array_search($k, $topic_map, true)) !== false)
+                                $tmatches[] = $tid;
+                        }
                         $tid = (count($tmatches) == 1 ? $tmatches[0] : false);
                     }
                     if ($tid !== false)
