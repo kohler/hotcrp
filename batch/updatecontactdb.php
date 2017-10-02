@@ -24,7 +24,7 @@ if (!$users && !$papers && !$collaborators)
 
 $result = Dbl::ql(Contact::contactdb(), "select * from Conferences where `dbname`=?", $Conf->dbname);
 $confrow = Dbl::fetch_first_object($result);
-if (!$row) {
+if (!$confrow) {
     fwrite(STDERR, "Conference is not recorded in contactdb\n");
     exit(1);
 }
