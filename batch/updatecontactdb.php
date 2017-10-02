@@ -23,14 +23,14 @@ if (!$users && !$papers && !$collaborators)
     $users = $papers = true;
 
 $result = Dbl::ql(Contact::contactdb(), "select * from Conferences where `dbname`=?", $Conf->dbname);
-$row = Dbl::fetch_first_object($result);
+$confrow = Dbl::fetch_first_object($result);
 if (!$row) {
     fwrite(STDERR, "Conference is not recorded in contactdb\n");
     exit(1);
 }
-$confid = (int) $row->confid;
-if ($row->shortName !== $Conf->short_name || $row->longName !== $Conf->long_name)
-    Dbl::ql(Contact::contactdb(), "update Conferences set shortName=?, longName=? where confid=?", $Conf->short_name ? : $row->shortName, $Conf->long_name ? : $row->longName, $confid);
+$confid = (int) $confrow->confid;
+if ($confrow->shortName !== $Conf->short_name || $confrow->longName !== $Conf->long_name)
+    Dbl::ql(Contact::contactdb(), "update Conferences set shortName=?, longName=? where confid=?", $Conf->short_name ? : $confrow->shortName, $Conf->long_name ? : $confrow->longName, $confid);
 
 if ($users) {
     // read current cdb roles
@@ -77,18 +77,22 @@ if ($users) {
 }
 
 if ($papers) {
-    $result = Dbl::ql($Conf->dblink, "select paperId, title from Paper");
+    $result = Dbl::ql($Conf->dblink, "select paperId, title, timeSubmitted from Paper");
+    $max_submitted = 0;
     $pids = [];
     $qv = [];
     while (($row = edb_row($result))) {
         $qv[] = [$confid, $row[0], $row[1]];
         $pids[] = $row[0];
+        $max_submitted = max($max_submitted, (int) $row[2]);
     }
     Dbl::free($result);
 
     if (!empty($qv))
         Dbl::ql(Contact::contactdb(), "insert into ConferencePapers (confid,paperId,title) values ?v on duplicate key update title=values(title)", $qv);
     Dbl::ql(Contact::contactdb(), "delete from ConferencePapers where confid=? and paperId?A", $confid, $pids);
+    if ($confrow->last_submission_at != $max_submitted)
+        Dbl::ql(Contact::contactdb(), "update Conferences set last_submission_at=max(coalesce(last_submission_at,0), ?) where confid=?", $max_submitted, $confid);
 }
 
 if ($collaborators) {
