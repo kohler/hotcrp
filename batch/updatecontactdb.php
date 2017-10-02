@@ -92,7 +92,7 @@ if ($papers) {
         Dbl::ql(Contact::contactdb(), "insert into ConferencePapers (confid,paperId,title) values ?v on duplicate key update title=values(title)", $qv);
     Dbl::ql(Contact::contactdb(), "delete from ConferencePapers where confid=? and paperId?A", $confid, $pids);
     if ($confrow->last_submission_at != $max_submitted)
-        Dbl::ql(Contact::contactdb(), "update Conferences set last_submission_at=max(coalesce(last_submission_at,0), ?) where confid=?", $max_submitted, $confid);
+        Dbl::ql(Contact::contactdb(), "update Conferences set last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $max_submitted, $confid);
 }
 
 if ($collaborators) {
