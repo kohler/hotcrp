@@ -58,7 +58,7 @@ if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
     fail($file);
 
 $last_modified = gmdate("D, d M Y H:i:s", $mtime) . " GMT";
-$etag = '"' . md5($last_modified) . '"';
+$etag = '"' . md5("$file $last_modified") . '"';
 header("Last-Modified: $last_modified");
 header("ETag: $etag");
 
