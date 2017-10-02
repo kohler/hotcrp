@@ -116,5 +116,22 @@
     {
         "name": "cleardecision", "parser_class": "Decision_AssignmentParser",
         "remove": true
+    },
+    {
+        "name": "submit", "parser_class": "Status_AssignmentParser",
+        "type": "submit"
+    },
+    {
+        "name": "unsubmit", "parser_class": "Status_AssignmentParser",
+        "type": "unsubmit"
+    },
+    {
+        "name": "withdraw", "parser_class": "Status_AssignmentParser",
+        "type": "withdraw"
+    },
+    {
+        "name": "revive", "parser_class": "Status_AssignmentParser",
+        "synonym": ["unwithdraw"],
+        "type": "revive"
     }
 ]

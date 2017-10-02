@@ -22,6 +22,8 @@ class PaperStatus extends MessageSet {
     private $qf;
     private $qv;
 
+    const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
+
     function __construct(Conf $conf, Contact $contact = null, $options = array()) {
         $this->conf = $conf;
         $this->contact = $contact;
@@ -139,7 +141,7 @@ class PaperStatus extends MessageSet {
             $pj->withdrawn = true;
             $pj->withdrawn_at = (int) $prow->timeWithdrawn;
             if (get($prow, "withdrawReason"))
-                $pj->withdrawn_reason = $prow->withdrawReason;
+                $pj->withdraw_reason = $prow->withdrawReason;
         } else if ($prow->timeSubmitted > 0) {
             $pj->status = $submitted_status;
             $pj->submitted = true;
@@ -150,7 +152,9 @@ class PaperStatus extends MessageSet {
         if ($prow->timeSubmitted > 0)
             $pj->submitted_at = (int) $prow->timeSubmitted;
         else if ($prow->timeSubmitted == -100 && $prow->timeWithdrawn > 0)
-            $pj->submitted_at = 1000000000;
+            $pj->submitted_at = self::SUBMITTED_AT_FOR_WITHDRAWN;
+        else if ($prow->timeSubmitted < -100 && $prow->timeWithdrawn > 0)
+            $pj->submitted_at = -$prow->timeSubmitted;
 
         $can_view_authors = !$contact
             || $contact->can_view_authors($prow, $this->forceShow);
@@ -994,15 +998,25 @@ class PaperStatus extends MessageSet {
                 $submitted = !$pj_draft;
             else if ($old_pj)
                 $submitted = get($old_pj, "submitted_at") > 0;
+            $submitted_at = get($pj, "submitted_at", get($old_pj, "submitted_at", 0));
             if ($pj_withdrawn) {
+                if ($submitted && $submitted_at <= 0)
+                    $submitted_at = -100;
+                else if (!$submitted)
+                    $submitted_at = 0;
+                else
+                    $submitted_at = -$submitted_at;
                 if (!$old_pj || !get($old_pj, "withdrawn")) {
                     $this->addf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now);
-                    $this->addf("timeSubmitted", $submitted ? -100 : 0);
+                    $this->addf("timeSubmitted", $submitted_at);
                 } else if ((get($old_pj, "submitted_at") > 0) !== $submitted)
-                    $this->addf("timeSubmitted", $submitted ? -100 : 0);
+                    $this->addf("timeSubmitted", $submitted_at);
             } else if ($submitted) {
-                if (!$old_pj || !get($old_pj, "submitted"))
-                    $this->addf("timeSubmitted", get($pj, "submitted_at") ? : $Now);
+                if (!$old_pj || !get($old_pj, "submitted")) {
+                    if ($submitted_at <= 0 || $submitted_at === self::SUBMITTED_AT_FOR_WITHDRAWN)
+                        $submitted_at = $Now;
+                    $this->addf("timeSubmitted", $submitted_at);
+                }
                 if ($old_pj && get($old_pj, "withdrawn"))
                     $this->addf("timeWithdrawn", 0);
             } else if ($old_pj && (get($old_pj, "withdrawn") || get($old_pj, "submitted"))) {

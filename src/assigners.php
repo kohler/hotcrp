@@ -462,6 +462,8 @@ class AssignmentParser {
     function expand_papers(&$req, AssignmentState $state) {
         return false;
     }
+    function load_state(AssignmentState $state) {
+    }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->user->can_administer($prow)
             && !$state->user->privChair)
@@ -472,8 +474,6 @@ class AssignmentParser {
             return "#$prow->paperId is not submitted.";
         else
             return true;
-    }
-    function load_state(AssignmentState $state) {
     }
     function contact_set(&$req, AssignmentState $state) {
         return "pc";
@@ -965,12 +965,6 @@ class Lead_AssignmentParser extends AssignmentParser {
         $this->key = $aj->type;
         $this->remove = $aj->remove;
     }
-    function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($this->key === "manager")
-            return $state->user->privChair ? true : "You can’t change paper administrators.";
-        else
-            return parent::allow_paper($prow, $state);
-    }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type($this->key, ["pid"], "Lead_Assigner::make"))
             return;
@@ -979,6 +973,12 @@ class Lead_AssignmentParser extends AssignmentParser {
             if (($cid = +$prow->$k))
                 $state->load(["type" => $this->key, "pid" => $prow->paperId, "_cid" => $cid]);
         }
+    }
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        if ($this->key === "manager")
+            return $state->user->privChair ? true : "You can’t change paper administrators.";
+        else
+            return parent::allow_paper($prow, $state);
     }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         if ($this->remove) {
@@ -1100,6 +1100,14 @@ class Conflict_AssignmentParser extends AssignmentParser {
         $this->remove = $aj->remove;
         $this->iscontact = $aj->iscontact;
     }
+    function load_state(AssignmentState $state) {
+        if (!$state->mark_type("conflict", ["pid", "cid"], "Conflict_Assigner::make"))
+            return;
+        $result = $state->conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0 and paperId?a", $state->paper_ids());
+        while (($row = edb_row($result)))
+            $state->load(["type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]]);
+        Dbl::free($result);
+    }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->user->can_administer($prow)
             && !$state->user->privChair
@@ -1111,14 +1119,6 @@ class Conflict_AssignmentParser extends AssignmentParser {
             return whyNotText($whyNot, "edit");
         else
             return true;
-    }
-    function load_state(AssignmentState $state) {
-        if (!$state->mark_type("conflict", ["pid", "cid"], "Conflict_Assigner::make"))
-            return;
-        $result = $state->conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0 and paperId?a", $state->paper_ids());
-        while (($row = edb_row($result)))
-            $state->load(["type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]]);
-        Dbl::free($result);
     }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         if ($this->remove) {
@@ -1284,12 +1284,6 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     function expand_papers(&$req, AssignmentState $state) {
         return $this->isnext ? "ALL" : false;
     }
-    function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (($whyNot = $state->user->perm_change_some_tag($prow)))
-            return whyNotText($whyNot, "change tag");
-        else
-            return true;
-    }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("tag", ["pid", "ltag"], "Tag_Assigner::make"))
             return;
@@ -1297,6 +1291,12 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         while (($row = edb_row($result)))
             $state->load(["type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => (float) $row[2]]);
         Dbl::free($result);
+    }
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        if (($whyNot = $state->user->perm_change_some_tag($prow)))
+            return whyNotText($whyNot, "change tag");
+        else
+            return true;
     }
     private function cannot_view_error(PaperInfo $prow, $tag, AssignmentState $state) {
         if ($prow->conflict_type($state->user))
@@ -1558,9 +1558,6 @@ class Preference_AssignmentParser extends AssignmentParser {
     function __construct() {
         parent::__construct("pref");
     }
-    function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        return true;
-    }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("pref", ["pid", "cid"], "Preference_Assigner::make"))
             return;
@@ -1568,6 +1565,9 @@ class Preference_AssignmentParser extends AssignmentParser {
         while (($row = edb_row($result)))
             $state->load(["type" => "pref", "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])]);
         Dbl::free($result);
+    }
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        return true;
     }
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         return array_filter($state->pc_users(),
@@ -1677,17 +1677,17 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         parent::__construct("decision");
         $this->remove = $aj->remove;
     }
-    function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->user->can_set_decision($prow))
-            return "You can’t change the decision for #{$prow->paperId}.";
-        else
-            return true;
-    }
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("decision", ["pid"], "Decision_Assigner::make"))
             return;
         foreach ($state->prows() as $prow)
             $state->load(["type" => "decision", "pid" => $prow->paperId, "_decision" => +$prow->outcome]);
+    }
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        if (!$state->user->can_set_decision($prow))
+            return "You can’t change the decision for #{$prow->paperId}.";
+        else
+            return true;
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         if (!$this->remove) {
@@ -1752,9 +1752,9 @@ class Decision_Assigner extends Assigner {
             $prow = $aset->prow($this->pid);
             if ($prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0) {
                 $aset->conf->qe("update Paper set timeSubmitted=$Now where paperId=?", $this->pid);
-                $aset->cleanup_callback("papersub", function ($aset) {
-                    $aset->conf->update_papersub_setting(1);
-                });
+                $aset->cleanup_callback("papersub", function ($aset, $vals) {
+                    $aset->conf->update_papersub_setting(min($vals));
+                }, 1);
             }
         }
         if ($dec > 0 || $this->item->get(true, "_decision") > 0)
@@ -1764,6 +1764,107 @@ class Decision_Assigner extends Assigner {
     }
 }
 
+
+class Status_AssignmentParser extends UserlessAssignmentParser {
+    private $xtype;
+    function __construct($aj) {
+        parent::__construct("status");
+        $this->xtype = $aj->type;
+    }
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        // XXX allow contact to do stuff
+        // XXX check permissions
+        return $state->user->can_administer($prow);
+    }
+    function load_state(AssignmentState $state) {
+        if (!$state->mark_type("status", ["pid"], "Status_Assigner::make"))
+            return;
+        foreach ($state->prows() as $prow)
+            $state->load(["type" => "status", "pid" => $prow->paperId,
+                          "_submitted" => (int) $prow->timeSubmitted,
+                          "_withdrawn" => (int) $prow->timeWithdrawn,
+                          "_withdraw_reason" => $prow->withdrawReason]);
+    }
+    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        global $Now;
+        $m = $state->remove(["type" => "status", "pid" => $prow->paperId]);
+        $res = $m[0];
+        if ($this->xtype === "submit") {
+            if ($res["_submitted"] === 0)
+                $res["_submitted"] = ($res["_withdrawn"] > 0 ? -$Now : $Now);
+        } else if ($this->xtype === "unsubmit") {
+            if ($res["_submitted"] !== 0)
+                $res["_submitted"] = 0;
+        } else if ($this->xtype === "withdraw") {
+            if ($res["_withdrawn"] === 0) {
+                assert($res["_submitted"] >= 0);
+                $res["_withdrawn"] = $Now;
+                $res["_submitted"] = -$res["_submitted"];
+            }
+            $r = (string) get($req, "withdraw_reason", get($req, "reason", null));
+            if ($r !== "")
+                $res["_withdraw_reason"] = $r;
+        } else if ($this->xtype === "revive") {
+            if ($res["_withdrawn"] !== 0) {
+                assert($res["_submitted"] <= 0);
+                $res["_withdrawn"] = 0;
+                if ($res["_submitted"] === -100)
+                    $res["_submitted"] = $Now;
+                else
+                    $res["_submitted"] = -$res["_submitted"];
+                $res["_withdraw_reason"] = null;
+            }
+        }
+        $state->add($res);
+    }
+}
+
+class Status_Assigner extends Assigner {
+    function __construct(AssignmentItem $item, AssignmentState $state) {
+        parent::__construct($item, $state);
+    }
+    static function make(AssignmentItem $item, AssignmentState $state) {
+        return new Status_Assigner($item, $state);
+    }
+    private function status_html($type) {
+        if ($this->item->get($type, "_withdrawn"))
+            return "Withdrawn";
+        else if ($this->item->get($type, "_submitted"))
+            return "Submitted";
+        else
+            return "Not ready";
+    }
+    function unparse_display(AssignmentSet $aset) {
+        return '<del>' . $this->status_html(true) . '</del> '
+            . '<ins>' . $this->status_html(false) . '</ins>';
+    }
+    function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
+        $x = [];
+        if (($this->item->get(true, "_submitted") === 0) !== ($this->item["_submitted"] === 0))
+            $x[] = ["pid" => $this->pid, "action" => $this->item["_submitted"] === 0 ? "unsubmit" : "submit"];
+        if ($this->item->get(true, "_withdrawn") === 0 && $this->item["_withdrawn"] !== 0)
+            $x[] = ["pid" => $this->pid, "action" => "revive"];
+        else if ($this->item->get(true, "_withdrawn") !== 0 && $this->item["_withdrawn"] === 0) {
+            $y = ["pid" => $this->pid, "action" => "withdraw"];
+            if ((string) $this->item["_withdraw_reason"] !== "")
+                $y["withdraw_reason"] = $this->item["_withdraw_reason"];
+            $x[] = $y;
+        }
+        return $x;
+    }
+    function add_locks(AssignmentSet $aset, &$locks) {
+        $locks["Paper"] = "write";
+    }
+    function execute(AssignmentSet $aset) {
+        global $Now;
+        $submitted = $this->item["_submitted"];
+        $aset->conf->qe("update Paper set timeSubmitted=?, timeWithdrawn=?, withdrawReason=? where paperId=?", $submitted, $this->item["_withdrawn"], $this->item["_withdraw_reason"], $this->pid);
+        if (($submitted > 0) !== ($this->item->get(true, "_submitted") > 0))
+            $aset->cleanup_callback("papersub", function ($aset, $vals) {
+                $aset->conf->update_papersub_setting(min($vals));
+            }, $submitted > 0 ? 1 : 0);
+    }
+}
 
 
 class AssignmentSet {
@@ -2444,8 +2545,13 @@ class AssignmentSet {
         $this->set_my_conflicts();
         $acsv = new AssignmentCsv;
         foreach ($this->assigners as $assigner)
-            if (($row = $assigner->unparse_csv($this, $acsv)))
-                $acsv->add($row);
+            if (($x = $assigner->unparse_csv($this, $acsv))) {
+                if (isset($x[0])) {
+                    foreach ($x as $elt)
+                        $acsv->add($elt);
+                } else
+                    $acsv->add($x);
+            }
         $acsv->header = array_keys($acsv->header);
         return $acsv;
     }

@@ -91,7 +91,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         $reason = defval($_REQUEST, "reason", "");
         if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
             $reason = defval($_REQUEST, "emailNote", "");
-        Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-100,0), withdrawReason=? where paperId=$prow->paperId", $reason != "" ? $reason : null);
+        Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-timeSubmitted,0), withdrawReason=? where paperId=$prow->paperId", $reason != "" ? $reason : null);
         $Conf->update_papersub_setting(-1);
         loadRows();
 
@@ -119,7 +119,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 }
 if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
-        Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,0), withdrawReason=null where paperId=$prow->paperId");
+        Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,if(timeSubmitted<-100,-timeSubmitted,0)), withdrawReason=null where paperId=$prow->paperId");
         $Conf->update_papersub_setting(0);
         loadRows();
         $Me->log_activity("Revived", $prow->paperId);
