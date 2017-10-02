@@ -491,9 +491,11 @@ class PaperStatus extends MessageSet {
                         if (empty($tmatches) && $this->add_topics) {
                             $this->conf->qe("insert into TopicArea set topicName=?", $k);
                             $this->conf->invalidate_topics();
-                            $topic_map = $this->topic_map();
+                            $topic_map = $this->conf->topic_map();
                             if (($tid = array_search($k, $topic_map, true)) !== false)
                                 $tmatches[] = $tid;
+                            if (!$this->conf->has_topics())
+                                $this->conf->save_setting("has_topics", 1);
                         }
                         $tid = (count($tmatches) == 1 ? $tmatches[0] : false);
                     }
