@@ -2608,6 +2608,8 @@ class Conf {
 
     static function msg_on(Conf $conf = null, $type, $text) {
         if (PHP_SAPI == "cli") {
+            if (is_array($text))
+                $text = join("\n", $text);
             if ($type === "xmerror" || $type === "merror")
                 fwrite(STDERR, "$text\n");
             else if ($type === "xwarning" || $type === "warning"
@@ -2618,8 +2620,11 @@ class Conf {
             $_SESSION[$conf->dsn]["msgs"][] = [$type, $text];
         } else if ($type[0] == "x")
             echo Ht::xmsg($type, $text);
-        else
+        else {
+            if (is_array($text))
+                $text = '<div class="multimessage">' . join("", array_map(function ($x) { return '<div class="mmm">' . $x . '</div>'; }, $text)) . '</div>';
             echo "<div class=\"$type\">$text</div>";
+        }
     }
 
     function msg($type, $text) {

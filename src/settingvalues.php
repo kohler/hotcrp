@@ -360,11 +360,10 @@ class SettingValues extends MessageSet {
             $msgs[] = "Your changes were not saved. Please fix these errors and try again.";
         foreach ($this->messages(true) as $mx)
             $msgs[] = ($mx[2] == MessageSet::WARNING ? "Warning: " : "") . $mx[1];
-        $mt = '<div class="multimessage"><div class="mmm">' . join('</div><div class="mmm">', $msgs) . '</div></div>';
         if (!empty($msgs) && $this->has_error())
-            Conf::msg_error($mt, true);
+            Conf::msg_error($msgs, true);
         else if (!empty($msgs))
-            Conf::msg_warning($mt, true);
+            Conf::msg_warning($msgs, true);
     }
     function parser(Si $si) {
         if ($si->parser) {
@@ -544,9 +543,8 @@ class SettingValues extends MessageSet {
             $status = max($status, $mx[2]);
         }
         if (!empty($msgs)) {
-            $mt = '<div class="multimessage"><div class="mmm">' . join('</div><div class="mmm">', $msgs) . '</div></div>';
             $xtype = ["xinfo", "xwarning", "xmerror"];
-            $this->conf->msg($xtype[$status], $mt);
+            $this->conf->msg($xtype[$status], $msgs);
         }
     }
     function echo_checkbox_only($name, $onchange = null) {

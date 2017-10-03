@@ -3322,17 +3322,22 @@ function render_cmt(j, cj, editing, msg) {
     else if (cj.response && cj.draft && cj.text)
         hc.push('<div class="xmsg xwarning">This is a draft response. Reviewers won’t see it until you submit.</div>');
     hc.pop();
+    var msgx = [];
     if (cj.response && editing && resp_rounds[cj.response].instrux)
-        hc.push('<div class="xmsg xinfo">' + resp_rounds[cj.response].instrux + '</div>');
+        msgx.push('<div class="xmsgc">' + resp_rounds[cj.response].instrux + '</div>');
     if (cj.response && editing && papercomment.nonauthor)
-        hc.push('<div class="xmsg xinfo">Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>');
+        msgx.push('<div class="xmsgc">You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.</div>');
     else if (!cj.response && editing && cj.author_email && hotcrp_user.email
              && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase()) {
+        var msg;
         if (hotcrp_status.myperm && hotcrp_status.myperm.act_author)
-            hc.push('<div class="xmsg xinfo">You didn’t write this comment, but as a fellow author you can still make changes.</div>')
+            msg = "You didn’t write this comment, but you can edit it as a fellow author.";
         else
-            hc.push('<div class="xmsg xinfo">You didn’t write this comment, but as an administrator you can still make changes.</div>');
+            msg = "You didn’t write this comment, but you can edit it as an administrator.";
+        msgx.push('<div class="xmsgc">' + msg + '</div>');
     }
+    if (msgx.length)
+        hc.push('<div class="xmsg xinfo"><div class="xmsg0"></div>' + msgx.join("") + '<div class="xmsg1"></div></div>');
     if (editing)
         render_editing(hc, cj);
     else

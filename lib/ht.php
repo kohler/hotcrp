@@ -456,6 +456,8 @@ class Ht {
             $type = substr($type, 1);
         if ($type === "error")
             $type = "merror";
+        if (is_array($content))
+            $content = join('</div><div class="xmsgc">', $content);
         return '<div class="xmsg x' . $type . '"><div class="xmsg0"></div>'
             . '<div class="xmsgc">' . $content . '</div>'
             . '<div class="xmsg1"></div></div>';
