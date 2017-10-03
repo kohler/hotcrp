@@ -1136,11 +1136,11 @@ $blind\n";
             $rj["ready"] = false;
         if (!$rrow->reviewSubmitted && $rrow->timeApprovalRequested)
             $rj["needs_approval"] = true;
-        if ($contact->can_review($prow, $rrow) && $editable)
+        if ($editable && $contact->can_review($prow, $rrow))
             $rj["editable"] = true;
 
         // identity and time
-        $showtoken = $contact->review_token_cid($prow, $rrow) && $editable;
+        $showtoken = $editable && $contact->review_token_cid($prow, $rrow);
         if ($contact->can_view_review_identity($prow, $rrow, $forceShow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
             $rj["reviewer"] = Text::user_html($rrow);

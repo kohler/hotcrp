@@ -49,6 +49,9 @@ class PaperContactInfo {
             $ci->reviewSubmitted = (int) $object->myReviewSubmitted;
         if (property_exists($object, "myReviewNeedsSubmit"))
             $ci->reviewNeedsSubmit = (int) $object->myReviewNeedsSubmit;
+        if (property_exists($object, "myReviewContactId")
+            && $object->myReviewContactId != $cid)
+            $ci->review_token_cid = (int) $object->myReviewContactId;
         $ci->update_review_status();
         return $ci;
     }
@@ -679,7 +682,7 @@ class PaperInfo {
                 $have_rrow = null;
                 foreach ($this->reviews_by_id() as $rrow)
                     if ($rrow->contactId == $cid
-                        || ($rev_tokens && !$have_rrow
+                        || ($rev_tokens && !$have_rrow && $rrow->reviewToken
                             && in_array($rrow->reviewToken, $rev_tokens)))
                         $have_rrow = $rrow;
                 if ($have_rrow)
@@ -1498,6 +1501,15 @@ class PaperInfo {
     function review_of_ordinal($ordinal) {
         foreach ($this->reviews_by_id() as $rrow)
             if ($rrow->reviewOrdinal == $ordinal)
+                return $rrow;
+        return null;
+    }
+
+    function review_of_token($token) {
+        if (!is_int($token))
+            $token = decode_token($token, "V");
+        foreach ($this->reviews_by_id() as $rrow)
+            if ($rrow->reviewToken == $token)
                 return $rrow;
         return null;
     }

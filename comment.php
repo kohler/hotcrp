@@ -61,10 +61,11 @@ function save_comment($text, $is_response, $roundnum) {
 
     // If I have a review token for this paper, save under that anonymous user.
     $user = $Me;
-    if ((!$crow || $crow->contactId != $Me->contactId)
-        && ($cid = $Me->review_token_cid($prow))
-        && (!$crow || $crow->contactId == $cid))
-        $user = $Conf->user_by_id($cid);
+    if (($token = req("review_token"))
+        && ($token = decode_token($token, "V"))
+        && in_array($token, $Me->review_tokens())
+        && ($rrow = $prow->review_of_token($token)))
+        $user = $Conf->user_by_id($rrow->contactId);
 
     $req = array("visibility" => req("visibility"),
                  "submit" => $is_response && !req("draft"),

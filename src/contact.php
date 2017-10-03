@@ -1714,7 +1714,7 @@ class Contact {
     // review tokens
 
     function review_tokens() {
-        return $this->review_tokens_ ? $this->review_tokens_ : array();
+        return $this->review_tokens_ ? : [];
     }
 
     function review_token_cid(PaperInfo $prow, $rrow = null) {
@@ -1725,8 +1725,7 @@ class Contact {
         if (!$rrow) {
             $ci = $prow->contact_info($this);
             return $ci->review_token_cid;
-        } else if ($rrow->reviewToken
-                   && array_search($rrow->reviewToken, $this->review_tokens_) !== false)
+        } else if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->review_tokens_))
             return (int) $rrow->contactId;
         else
             return 0;
@@ -2361,8 +2360,7 @@ class Contact {
             error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $rrow
             && ($rrow->contactId == $this->contactId
-                || ($this->review_tokens_
-                    && array_search($rrow->reviewToken, $this->review_tokens_) !== false));
+                || ($this->review_tokens_ && $rrow->reviewToken && in_array($rrow->reviewToken, $this->review_tokens_)));
     }
 
     function is_owned_review($rrow) {
@@ -2370,8 +2368,7 @@ class Contact {
             error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $rrow
             && ($rrow->contactId == $this->contactId
-                || ($this->review_tokens_
-                    && array_search($rrow->reviewToken, $this->review_tokens_) !== false)
+                || ($this->review_tokens_ && $rrow->reviewToken && in_array($rrow->reviewToken, $this->review_tokens_))
                 || ($rrow->requestedBy == $this->contactId
                     && $rrow->reviewType == REVIEW_EXTERNAL
                     && $this->conf->setting("pcrev_editdelegate")));
@@ -2839,6 +2836,7 @@ class Contact {
                         || ($rights->allow_administer
                             && (!$submit || $this->override_deadlines($rights))))))
             && (!$crow
+                || !$crow->contactId
                 || $crow->contactId == $this->contactId
                 || $rights->allow_administer
                 || ($crow->contactId == $rights->review_token_cid
@@ -3498,7 +3496,7 @@ class Contact {
                     $perm->can_comment = true;
                 else if ($admin && $this->can_comment($prow, null, false))
                     $perm->can_comment = "override";
-                if (get($dl, "resps"))
+                if (get($dl, "resps")) {
                     foreach ($this->conf->resp_round_list() as $i => $rname) {
                         $crow = (object) array("commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i);
                         $v = false;
@@ -3511,8 +3509,18 @@ class Contact {
                         if ($v)
                             $perm->can_responds[$rname] = $v;
                     }
+                }
                 if (self::can_some_author_view_submitted_review($prow))
                     $perm->some_author_can_view_review = true;
+                if ($this->review_tokens_) {
+                    $tokens = [];
+                    foreach ($prow->reviews_by_id() as $rrow) {
+                        if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->review_tokens_))
+                            $tokens[$rrow->reviewToken] = true;
+                    }
+                    if (!empty($tokens))
+                        $perm->review_tokens = array_map("encode_token", array_keys($tokens));
+                }
             }
         }
 

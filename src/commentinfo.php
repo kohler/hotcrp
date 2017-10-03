@@ -232,6 +232,9 @@ class CommentInfo {
                 $cj->response = $this->conf->resp_round_name($this->commentRound);
             else if ($this->commentType & COMMENTTYPE_BYAUTHOR)
                 $cj->by_author = true;
+            else if (($token_cid = $contact->review_token_cid($this->prow))
+                     && ($rrow = $this->prow->review_of_user($token_cid)))
+                $cj->review_token = encode_token((int) $rrow->reviewToken);
             return $cj;
         }
 
@@ -266,6 +269,13 @@ class CommentInfo {
             $cj->author_email = $user->email;
             if (!$idable)
                 $cj->author_hidden = true;
+            if (Contact::is_anonymous_email($cj->author_email) && $contact->review_tokens()) {
+                foreach ($this->prow->reviews_by_id() as $rrow)
+                    if ($rrow->reviewToken && in_array($rrow->reviewToken, $contact->review_tokens())) {
+                        $cj->review_token = encode_token((int) $rrow->reviewToken);
+                        break;
+                    }
+            }
         }
         if ($this->timeModified > 0 && $idable_override) {
             $cj->modified_at = (int) $this->timeModified;

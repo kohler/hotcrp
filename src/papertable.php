@@ -2233,20 +2233,21 @@ class PaperTable {
             }
 
         if ($this->include_comments()) {
-            if ($Me->can_comment($this->prow, null)) {
-                ++$ncmt;
-                if ($Me->act_author_view($this->prow))
-                    $s .= "papercomment.add({is_new:true,editable:true,by_author:true});\n";
-                else
-                    $s .= "papercomment.add({is_new:true,editable:true});\n";
-            }
-            if ($this->prow->has_author($Me))
+            $cs = [];
+            if ($this->prow->has_author($Me)) {
+                if ($Me->can_comment($this->prow, null))
+                    $cs[] = ["commentType" => COMMENTTYPE_BYAUTHOR];
                 foreach ($this->conf->time_author_respond() as $i => $rname) {
-                    if (!$this->has_response($i)) {
-                        ++$ncmt;
-                        $s .= "papercomment.add({is_new:true,editable:true,response:" . json_encode_browser($rname) . "},true);\n";
-                    }
+                    if (!$this->has_response($i))
+                        $cs[] = ["commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i];
                 }
+            } else if ($Me->can_comment($this->prow, null))
+                $cs[] = [];
+            foreach ($cs as $csj) {
+                ++$ncmt;
+                $rc = new CommentInfo((object) $csj, $this->prow);
+                $s .= "papercomment.add(" . json_encode_browser($rc->unparse_json($Me)) . ");\n";
+            }
         }
 
         if ($ncmt)

@@ -2413,9 +2413,9 @@ class Conf {
 
         // my review
         $reviewjoin = "PaperReview.contactId=$contactId";
-        $tokens = false;
-        if ($contact && ($tokens = $contact->review_tokens()))
-            $reviewjoin = "($reviewjoin or reviewToken in (" . join(",", $tokens) . "))";
+        $review_tokens = $contact ? $contact->review_tokens() : false;
+        if ($review_tokens)
+            $reviewjoin = "($reviewjoin or reviewToken in (" . join(",", $review_tokens) . "))";
         if (get($options, "myReviews"))
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
         else if (get($options, "myOutstandingReviews"))
@@ -2441,11 +2441,13 @@ class Conf {
         }
 
         // fields
-        if ($myPaperReview)
+        if ($myPaperReview) {
             array_push($cols, "max($myPaperReview.reviewType) as myReviewType",
                        "max($myPaperReview.reviewSubmitted) as myReviewSubmitted",
                        "min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit");
-        else
+            if ($review_tokens)
+                $cols[] = "min($myPaperReview.contactId) as myReviewContactId";
+        } else
             $cols[] = "null myReviewType";
 
         if (get($options, "topics"))

@@ -1777,7 +1777,7 @@ function load(dlx, is_initial) {
         window.hotcrp_status = dl = dlx;
     dl.load = dl.load || now_sec();
     dl.perm = dl.perm || {};
-    dl.myperm = dl.perm[hotcrp_paperid];
+    dl.myperm = dl.perm[hotcrp_paperid] || {};
     dl.rev = dl.rev || {};
     dl.tracker_status = dl.tracker_status || "off";
     has_tracker = !!dl.tracker;
@@ -3054,9 +3054,7 @@ function comment_identity_time(cj) {
 
 function edit_allowed(cj) {
     var p = hotcrp_status.myperm;
-    if (!p)
-        return true;
-    else if (cj.response)
+    if (cj.response)
         return p.can_responds && p.can_responds[cj.response] === true;
     else
         return p.can_comment === true;
@@ -3064,10 +3062,33 @@ function edit_allowed(cj) {
 
 function render_editing(hc, cj) {
     var bnote = "", i, x, actions = [];
+
+    var msgx = [];
+    if (cj.response && resp_rounds[cj.response].instrux)
+        msgx.push('<div class="xmsgc">' + resp_rounds[cj.response].instrux + '</div>');
+    if (cj.response && papercomment.nonauthor)
+        msgx.push('<div class="xmsgc">You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.</div>');
+    else if (cj.review_token && hotcrp_status.myperm.review_tokens
+             && hotcrp_status.myperm.review_tokens.indexOf(cj.review_token) >= 0)
+        msgx.push('<div class="xmsgc">You have a review token for this paper, so your comment will be anonymous.</div>');
+    else if (!cj.response && cj.author_email && hotcrp_user.email
+             && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase()) {
+        var msg;
+        if (hotcrp_status.myperm.act_author)
+            msg = "You didn’t write this comment, but you can edit it as a fellow author.";
+        else
+            msg = "You didn’t write this comment, but you can edit it as an administrator.";
+        msgx.push('<div class="xmsgc">' + msg + '</div>');
+    }
+    if (msgx.length)
+        hc.push('<div class="xmsg xinfo"><div class="xmsg0"></div>' + msgx.join("") + '<div class="xmsg1"></div></div>');
+
     ++idctr;
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form class="shortcutok"><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
+    if (cj.review_token)
+        hc.push('<input type="hidden" name="review_token" value="' + escape_entities(cj.review_token) + '" />');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
     if (fmt.has_preview)
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="#" class="togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
@@ -3090,8 +3111,7 @@ function render_editing(hc, cj) {
         hc.push('<div class="fx2 hint">', '</div>');
         if (hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true)
             hc.push('<input type="checkbox" name="blind" value="1" tabindex="1" id="htctlcb' + idctr + '" />&nbsp;<label for="htctlcb' + idctr + '">Anonymous to authors</label><br />\n');
-        if (hotcrp_status.myperm
-            && hotcrp_status.myperm.some_author_can_view_review)
+        if (hotcrp_status.myperm.some_author_can_view_review)
             hc.push('Authors will be notified immediately.');
         else
             hc.push('Authors cannot view comments at the moment.');
@@ -3121,7 +3141,7 @@ function render_editing(hc, cj) {
     }
     if (cj.response && resp_rounds[cj.response].words > 0)
         actions.push("", '<div class="words"></div>');
-    hc.push('<div class="aab aabr" style="margin-bottom:0">', '</div>');
+    hc.push('<div class="aabig aab aabr" style="margin-bottom:0">', '</div>');
     for (i = 0; i < actions.length; ++i)
         if (actions[i] !== "")
             hc.push('<div class="aabut' + (actions[i+1] === "" ? " aabutsp" : "") + '">' + actions[i] + '</div>');
@@ -3322,22 +3342,6 @@ function render_cmt(j, cj, editing, msg) {
     else if (cj.response && cj.draft && cj.text)
         hc.push('<div class="xmsg xwarning">This is a draft response. Reviewers won’t see it until you submit.</div>');
     hc.pop();
-    var msgx = [];
-    if (cj.response && editing && resp_rounds[cj.response].instrux)
-        msgx.push('<div class="xmsgc">' + resp_rounds[cj.response].instrux + '</div>');
-    if (cj.response && editing && papercomment.nonauthor)
-        msgx.push('<div class="xmsgc">You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.</div>');
-    else if (!cj.response && editing && cj.author_email && hotcrp_user.email
-             && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase()) {
-        var msg;
-        if (hotcrp_status.myperm && hotcrp_status.myperm.act_author)
-            msg = "You didn’t write this comment, but you can edit it as a fellow author.";
-        else
-            msg = "You didn’t write this comment, but you can edit it as an administrator.";
-        msgx.push('<div class="xmsgc">' + msg + '</div>');
-    }
-    if (msgx.length)
-        hc.push('<div class="xmsg xinfo"><div class="xmsg0"></div>' + msgx.join("") + '<div class="xmsg1"></div></div>');
     if (editing)
         render_editing(hc, cj);
     else
@@ -3446,7 +3450,8 @@ return {
     set_resp_round: function (rname, rinfo) { resp_rounds[rname] = rinfo; },
     edit: edit,
     edit_new: function () {
-        return edit({is_new: true, editable: true});
+        var tokens = hotcrp_status.myperm.review_tokens;
+        return edit({is_new: true, editable: true, review_token: tokens ? tokens[0] : null});
     },
     edit_response: function (respround) {
         return edit({is_new: true, response: respround, editable: true});
