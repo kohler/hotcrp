@@ -3449,12 +3449,9 @@ return {
     add: add,
     set_resp_round: function (rname, rinfo) { resp_rounds[rname] = rinfo; },
     edit: edit,
-    edit_new: function () {
-        var tokens = hotcrp_status.myperm.review_tokens;
-        return edit({is_new: true, editable: true, review_token: tokens ? tokens[0] : null});
-    },
-    edit_response: function (respround) {
-        return edit({is_new: true, response: respround, editable: true});
+    edit_id: function (cid) {
+        var cj = cmts[cid];
+        cj && edit(cj);
     }
 };
 })(jQuery);
@@ -3515,11 +3512,8 @@ function quicklink_shortcut(evt, key) {
 }
 
 function comment_shortcut() {
-    if ($$("cnew")) {
-        papercomment.edit_new();
-        return true;
-    } else
-        return false;
+    papercomment.edit_id("cnew");
+    return !!$$("cnew");
 }
 
 function nextprev_shortcut(evt, key) {

@@ -402,7 +402,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     // new comment
     $nocmt = preg_match('/\A(?:assign|contact|edit|re)\z/', $mode);
     if (!$allreviewslink && !$nocmt && $Me->can_comment($prow, null)) {
-        $x = '<a href="#cnew" onclick="return papercomment.edit_new()" class="xx">'
+        $x = '<a href="#cnew" onclick=\'return papercomment.edit_id("cnew")\' class="xx">'
             . Ht::img("comment48.png", "[Add comment]", $dlimgjs) . "&nbsp;<u>Add comment</u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
         $any_comments = true;
@@ -422,7 +422,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
                         if ($cr->commentType & COMMENTTYPE_DRAFT)
                             $what = "Edit draft";
                     }
-            $x = '<a href="#' . $cid . '" onclick=\'return papercomment.edit_response(' . json_encode_browser($rname) . ')\' class="xx">'
+            $x = '<a href="#' . $cid . '" onclick=\'return papercomment.edit_id("' . $cid . '")\' class="xx">'
                 . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
                 . ($cflttype >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
                 . $what . ($i ? " $rname" : "") . ' response</u></a>';
