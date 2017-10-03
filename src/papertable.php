@@ -138,7 +138,7 @@ class PaperTable {
         return $this->can_view_reviews;
     }
 
-    static public function do_header($paperTable, $id, $action_mode) {
+    static function do_header($paperTable, $id, $action_mode) {
         global $Conf, $Me;
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
@@ -242,7 +242,7 @@ class PaperTable {
         echo "</div>";
     }
 
-    public function has_problem_at($f) {
+    function has_problem_at($f) {
         if ($this->edit_status) {
             if (str_starts_with($f, "au")) {
                 if ($f === "authorInformation")
@@ -256,7 +256,7 @@ class PaperTable {
             return false;
     }
 
-    public function error_class($f) {
+    function error_class($f) {
         return $this->has_problem_at($f) ? " error" : "";
     }
 
@@ -377,7 +377,7 @@ class PaperTable {
             '<div class="papev">', $this->editable_textarea("title"), "</div></div>\n\n";
     }
 
-    static public function pdf_stamps_html($data, $options = null) {
+    static function pdf_stamps_html($data, $options = null) {
         global $Conf;
         $tooltip = !$options || !get($options, "notooltip");
 
@@ -488,7 +488,7 @@ class PaperTable {
         Ht::stash_script("$(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0);paperform_checkready()})");
     }
 
-    public function echo_editable_document(PaperOption $docx, $storageId, $flags) {
+    function echo_editable_document(PaperOption $docx, $storageId, $flags) {
         global $Me;
 
         $prow = $this->prow;
@@ -1228,7 +1228,7 @@ class PaperTable {
         echo "</div></div></div>\n\n";
     }
 
-    public function echo_editable_option_papt(PaperOption $o, $label = null) {
+    function echo_editable_option_papt(PaperOption $o, $label = null) {
         echo $this->editable_papt("opt$o->id", $label ? : $this->field_name(htmlspecialchars($o->name)),
                                   ["id" => "opt{$o->id}_div"]);
         echo $this->field_hint(htmlspecialchars($o->name), $o->description);
@@ -1987,7 +1987,7 @@ class PaperTable {
             Ht::actions($buttons, ["class" => "aab aabig aabr"]), "</div></form>";
     }
 
-    static public function echo_review_clickthrough() {
+    static function echo_review_clickthrough() {
         echo '<div class="revcard clickthrough"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">', Ht::xmsg("error", "You must agree to these terms before you can save reviews.");
         self::_echo_clickthrough("review");
         echo "</form></div></div>";
