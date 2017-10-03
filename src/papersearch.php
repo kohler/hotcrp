@@ -1234,8 +1234,8 @@ class Review_SearchTerm extends SearchTerm {
             $rsm->set_countexpr((int) $m[1] ? ">=" . $m[1] : "=0");
             $valexpr = $m[2] . $score;
         } else if ($f->option_letter
-                   ? preg_match('/\A\s*([A-Za-z])\s*(-?|\.\.\.?)\s*([A-Za-z])\s*\z/s', $word, $m)
-                   : preg_match('/\A\s*(\d+)\s*(-|\.\.\.?)\s*(\d+)\s*\z/s', $word, $m)) {
+                   ? preg_match('/\A\s*([A-Za-z])\s*(|-|–|—|\.\.\.?)\s*([A-Za-z])\s*\z/s', $word, $m)
+                   : preg_match('/\A\s*(\d+)\s*(-|–|—|\.\.\.?)\s*(\d+)\s*\z/s', $word, $m)) {
             $qo = array();
             if ($m[2] === "-" || $m[2] === "") {
                 $qo[] = self::parse_score_field(clone $rsm, $m[1], $f, $srch);
@@ -1975,7 +1975,7 @@ class Tag_SearchTerm extends SearchTerm {
         }
 
         $value = new TagSearchMatcher;
-        if (preg_match('/\A([^#=!<>\x80-\xFF]+)(?:#|=)(-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-)(-?(?:\.\d+|\d+\.?\d*))\z/', $word, $m)) {
+        if (preg_match('/\A([^#=!<>\x80-\xFF]+)(?:#|=)(-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-|–|—)(-?(?:\.\d+|\d+\.?\d*))\z/', $word, $m)) {
             $tagword = $m[1];
             $value->index1 = new CountMatcher(">=$m[2]");
             $value->index2 = new CountMatcher("<=$m[3]");
@@ -3008,7 +3008,7 @@ class PaperSearch {
 
     function _searchQueryWord($word) {
         // check for paper number or "#TAG"
-        if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
+        if (preg_match('/\A#?(\d+)(?:(?:-|–|—)#?(\d+))?\z/', $word, $m)) {
             $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
             return new PaperID_SearchTerm(range((int) $m[1], (int) $m[2]));
         } else if (substr($word, 0, 1) === "#") {
@@ -3063,7 +3063,7 @@ class PaperSearch {
         $word = ltrim($m[0]);
 
         // commas in paper number strings turn into separate words
-        if (preg_match('/\A(#?\d+(?:-#?\d+)?),((?:#?\d+(?:-#?\d+)?,?)*)\z/', $word, $mx)) {
+        if (preg_match('/\A(#?\d+(?:(?:-|–|—)#?\d+)?),((?:#?\d+(?:(?:-|–|—)#?\d+)?,?)*)\z/', $word, $mx)) {
             $word = $mx[1];
             if ($mx[2] !== "")
                 $str = $mx[2] . $str;
