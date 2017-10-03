@@ -1531,8 +1531,9 @@ class ReviewToken_SearchTerm extends SearchTerm {
         foreach ($prow->reviews_by_id() as $rrow)
             if ($srch->user->can_view_review_assignment($prow, $rrow, true)) {
                 ++$nr;
-                if ($srch->user->can_view_review_identity($prow, $rrow, true)
-                    && $rrow->reviewToken == $this->token)
+                if ($this->token
+                    ? $rrow->reviewToken == $this->token
+                    : !$rrow->reviewToken && $srch->user->can_view_review_identity($prow, $rrow, true))
                     ++$nt;
             }
         if ($this->any === false)
