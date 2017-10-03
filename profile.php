@@ -847,7 +847,9 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 }
 
 
-$buttons = array(Ht::submit("register", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-default"]));
+$buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-default"]),
+    Ht::submit("cancel", "Cancel", ["class" => "btn"])];
+
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
     $buttons[] = array(Ht::js_button("Delete user", "popup(this,'d',0)"), "(admin only)");

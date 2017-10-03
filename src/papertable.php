@@ -1816,6 +1816,10 @@ class PaperTable {
                 $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", ["class" => "btn"]), "");
             else if ($this->conf->timeFinalizePaper($prow))
                 $buttons[] = array(Ht::submit("update", $save_name, ["class" => "btn btn-savepaper"]));
+            if (!empty($buttons)) {
+                $buttons[] = [Ht::submit("cancel", "Cancel", ["class" => "btn"])];
+                $buttons[] = "";
+            }
         }
 
         // withdraw button
