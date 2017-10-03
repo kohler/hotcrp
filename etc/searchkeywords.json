@@ -163,6 +163,11 @@
         "retype": null, "recompleteness": null, "has": ">0"
     },
     {
+        "name": "token",
+        "parser": "ReviewToken_SearchTerm::parse",
+        "synonym": ["rtoken", "retoken", "reviewtoken"], "has": "any"
+    },
+    {
         "name": "approvable",
         "parser": "Review_SearchTerm::parse",
         "retype": null, "recompleteness": "approvable", "has": ">0"

@@ -350,6 +350,8 @@ function searchQuickref() {
     if ($roundname)
         _searchQuickrefRow("", "re:$roundname", "review in round “" . htmlspecialchars($roundname) . "”");
     _searchQuickrefRow("", "re:auwords<100", "has a review with less than 100 words in author-visible fields");
+    if ($Conf->setting("rev_tokens"))
+        _searchQuickrefRow("", "retoken:J88ADNAB", "has a review with token J88ADNAB");
     if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
         _searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
     _searchQuickrefRow("Comments", "has:cmt", "at least one visible reviewer comment (not including authors’ response)");
