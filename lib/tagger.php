@@ -319,36 +319,37 @@ class TagMap implements IteratorAggregate {
         return $this->color_re;
     }
 
-    function color_classes($tags, $color_type_bit = 1) {
+    function color_class_array($tags, $only_colors = false) {
         if (is_array($tags))
             $tags = join(" ", $tags);
-        if (!$tags || $tags === " ")
-            return "";
-        if (!preg_match_all($this->color_regex(), $tags, $m))
-            return false;
-        $classes = array();
+        if (!$tags || $tags === " " || !preg_match_all($this->color_regex(), $tags, $m))
+            return null;
+        $classes = null;
         foreach ($m[1] as $tag)
             if (($t = $this->check($tag)) && $t->colors) {
                 foreach ($t->colors as $k)
                     $classes[] = $k . "tag";
             } else
                 $classes[] = TagInfo::canonical_color($tag) . "tag";
-        if ($color_type_bit > 1)
+        if ($classes && $only_colors)
             $classes = array_filter($classes, "TagInfo::classes_have_colors");
-        if (count($classes) > 1) {
+        if ($classes && count($classes) > 1) {
             sort($classes);
             $classes = array_unique($classes);
         }
+        return empty($classes) ? null : $classes;
+    }
+
+    function color_classes($tags, $no_pattern_fill = false) {
+        $classes = $this->color_class_array($tags);
+        if (!$classes)
+            return "";
         $key = join(" ", $classes);
         // This seems out of place---it's redundant if we're going to
         // generate JSON, for example---but it is convenient.
-        if (count($classes) > 1) {
-            $m = (int) get(self::$multicolor_map, $key);
-            if (!($m & $color_type_bit)) {
-                if ($color_type_bit == 1)
-                    Ht::stash_script("make_pattern_fill(" . json_encode_browser($key) . ")");
-                self::$multicolor_map[$key] = $m | $color_type_bit;
-            }
+        if (!$no_pattern_fill && count($classes) > 1 && !isset(self::$multicolor_map[$key])) {
+            Ht::stash_script("make_pattern_fill(" . json_encode_browser($key) . ")");
+            self::$multicolor_map[$key] = true;
         }
         return $key;
     }

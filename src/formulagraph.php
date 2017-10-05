@@ -112,8 +112,43 @@ class FormulaGraph {
     }
 
     private function _cdf_data(PaperInfoSet $rowset) {
+        $qcolors = $this->query_styles;
+        $need_anal = array_fill(0, count($qcolors), false);
+        $nneed_anal = 0;
+        foreach ($qcolors as $qi => $q) {
+            if ($qcolors[$qi] === "" || $qcolors[$qi] === "plain") {
+                $qcolors[$qi] = null;
+                $need_anal[$qi] = true;
+                ++$nneed_anal;
+            }
+        }
+        foreach ($rowset->all() as $prow) {
+            if ($nneed_anal === 0)
+                break;
+            foreach (get($this->papermap, $prow->paperId) as $qi) {
+                if ($need_anal[$qi]) {
+                    $c = [];
+                    if ($prow->paperTags)
+                        $c = $this->conf->tags()->color_class_array($prow->viewable_tags($this->user), true);
+                    if ($qcolors[$qi] !== null)
+                        $c = array_values(array_intersect($qcolors[$qi], $c));
+                    if (empty($c)) {
+                        $qcolors[$qi] = "";
+                        $need_anal[$qi] = false;
+                        --$nneed_anal;
+                    } else
+                        $qcolors[$qi] = $c;
+                }
+            }
+        }
+        if ($nneed_anal !== 0) {
+            foreach ($need_anal as $qi => $na) {
+                if ($na)
+                    $qcolors[$qi] = join(" ", $qcolors[$qi]);
+            }
+        }
+
         $data = [];
-        $query_color_classes = [];
 
         $fxf = $this->fx->compile_function();
         $reviewf = null;
@@ -123,15 +158,6 @@ class FormulaGraph {
         foreach ($rowset->all() as $prow) {
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             $queries = get($this->papermap, $prow->paperId);
-            foreach ($queries as $q)
-                if (get($query_color_classes, $q) !== "") {
-                    $c = "";
-                    if ($prow->paperTags)
-                        $c = $this->conf->tags()->color_classes($prow->viewable_tags($this->user), 2);
-                    if ($c !== "" && (get($query_color_classes, $q) ? : $c) !== $c)
-                        $c = "";
-                    $query_color_classes[$q] = $c;
-                }
             foreach ($revs as $rcid)
                 if (($x = $fxf($prow, $rcid, $this->user)) !== null) {
                     if ($this->fx_type === self::X_QUERY) {
@@ -146,11 +172,9 @@ class FormulaGraph {
 
         foreach ($data as $q => &$d) {
             $d = (object) ["d" => $d];
-            $s = get($this->query_styles, $q);
+            $s = $qcolors[$q];
             if ($s && $s !== "plain")
                 $d->className = $s;
-            else if ($s && get($query_color_classes, $s))
-                $d->className = $query_color_classes[$s];
             if (get($this->queries, $q))
                 $d->label = $this->queries[$q];
         }
@@ -161,7 +185,7 @@ class FormulaGraph {
     private function _prepare_reviewer_color(Contact $user) {
         $this->reviewer_color = array();
         foreach ($this->conf->pc_members() as $p)
-            $this->reviewer_color[$p->contactId] = $this->conf->tags()->color_classes($p->viewable_tags($user));
+            $this->reviewer_color[$p->contactId] = $this->conf->tags()->color_classes($p->viewable_tags($user), true);
     }
 
     private function _paper_style(PaperInfo $prow) {
@@ -170,7 +194,7 @@ class FormulaGraph {
         if (!$s && $this->reviewer_color && $this->user->can_view_reviewer_tags($prow))
             return self::REVIEWER_COLOR;
         else if (!$s && $prow->paperTags && ($c = $prow->viewable_tags($this->user)))
-            return trim($prow->conf->tags()->color_classes($c));
+            return trim($prow->conf->tags()->color_classes($c), true);
         else if ($s === "plain")
             return "";
         else
