@@ -767,7 +767,10 @@ function hoturl_go(page, options) {
 }
 
 function hoturl_post_go(page, options) {
-    window.location = hoturl_post(page, options);
+    var $form = $('<form method="POST" enctype="multipart/form-data" accept-charset="UTF-8"></form>');
+    $form.action = hoturl_post(page, options);
+    $form.appendTo(document.body);
+    $form.submit();
 }
 
 
