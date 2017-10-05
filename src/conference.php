@@ -3281,6 +3281,8 @@ class Conf {
             } catch (JsonResultException $ex) {
                 $j = $ex->result;
             }
+            if (is_object($j) && $j instanceof JsonResult)
+                $j = $j->content;
             if (!get($j, "ok") && !get($j, "error"))
                 Conf::msg_error("Internal error.");
             else if (($x = get($j, "error")))

@@ -226,6 +226,15 @@ class JsonResult {
         } else
             $this->content = $values;
     }
+    static function make($json, Conf $conf = null, $arg2 = null) {
+        if (is_int($json))
+            $json = new JsonResult($json, $arg2);
+        else if (!is_object($json) || !($json instanceof JsonResult))
+            $json = new JsonResult($json);
+        if (!$json->has_messages && $conf)
+            $json->transfer_messages($conf);
+        return $json;
+    }
     function transfer_messages(Conf $conf, $div = false) {
         if (session_id() !== ""
             && ($msgs = $conf->session("msgs", []))) {
@@ -257,12 +266,7 @@ class JsonResultException extends Exception {
 
 function json_exit($json, $arg2 = null) {
     global $Conf;
-    if (is_int($json))
-        $json = new JsonResult($json, $arg2);
-    else if (!is_object($json) || !($json instanceof JsonResult))
-        $json = new JsonResult($json);
-    if (!$json->has_messages && $Conf)
-        $json->transfer_messages($Conf);
+    $json = JsonResult::make($json, $Conf, $arg2);
     if (JsonResultException::$capturing)
         throw new JsonResultException($json);
     else {
