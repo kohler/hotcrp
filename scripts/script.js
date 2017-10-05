@@ -768,7 +768,7 @@ function hoturl_go(page, options) {
 
 function hoturl_post_go(page, options) {
     var $form = $('<form method="POST" enctype="multipart/form-data" accept-charset="UTF-8"><div><input type="hidden" name="____empty____" value="1" /></div></form>');
-    $form.action = hoturl_post(page, options);
+    $form[0].action = hoturl_post(page, options);
     $form.appendTo(document.body);
     $form.submit();
 }
