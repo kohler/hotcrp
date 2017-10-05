@@ -1197,6 +1197,7 @@ class Formula {
     public $heading = "";
     public $headingTitle = "";
     public $expression = null;
+    private $expression_suffix = null;
     public $allowReview = false;
     private $needsReview = false;
     private $datatypes = 0;
@@ -1271,33 +1272,32 @@ class Formula {
         $this->user = $user;
     }
 
-    function check(Contact $user = null) {
-        if ($this->_parse !== null && (!$user || $user === $this->user))
-            return !!$this->_parse;
+    private function make_error_at($type, $pos1, $pos2) {
+        $elen = strlen($this->expression);
+        $h1 = htmlspecialchars(substr($this->expression, 0, $elen + $pos1));
+        $p2 = substr($this->expression, $elen + $pos1, $pos2 - $pos1);
+        $h2 = '<span class="error">☞<u>' . htmlspecialchars($p2) . '</u></span>';
+        $h3 = htmlspecialchars(substr($this->expression, $elen + $pos2));
+        if ($pos1 == 0)
+            return "$type in formula “{$h1}” at end";
+        else
+            return "$type in formula “{$h1}{$h2}{$h3}”";
+    }
+
+    private function parse_prefix(Contact $user = null, $allow_suffix) {
         if ($user)
             $this->set_user($user);
         assert($this->conf && $this->user);
-
         $t = $this->expression;
-        $expr_len = strlen($this->expression);
-        $e = $this->_parse_ternary($t, false);
-        if ((string) $this->expression === "")
+        if ((string) $t === "") {
             $this->_error_html[] = "Empty formula.";
-        else if ($t !== "" || !$e) {
-            $pfx = substr($this->expression, 0, $expr_len - strlen($t));
-            if (strlen($pfx) == $expr_len)
-                $this->_error_html[] = "Parse error in formula “" . htmlspecialchars($pfx) . "” at end.";
-            else
-                $this->_error_html[] = "Parse error in formula “" . htmlspecialchars($pfx) . '<span style="color:red;text-decoration:underline">☞' . htmlspecialchars(substr($this->expression, strlen($pfx))) . "</span>”.";
+            return false;
+        }
+        $e = $this->_parse_ternary($t, false);
+        if (!$e || ($t !== "" && !$allow_suffix)) {
+            $this->_error_html[] = $this->make_error_at("Parse error", -strlen($t), 0) . ".";
         } else if (($err = $e->typecheck($this->conf))) {
-            $xe = $err->expr;
-            $this->_error_html[] = "Type error in formula “"
-                . htmlspecialchars(substr($this->expression, 0, $expr_len + $xe->left_landmark))
-                . '<span style="color:red;text-decoration:underline">'
-                . htmlspecialchars(substr($this->expression, $expr_len + $xe->left_landmark, $xe->right_landmark - $xe->left_landmark))
-                . '</span>'
-                . htmlspecialchars(substr($this->expression, $expr_len + $xe->right_landmark))
-                . '”: ' . $err->error_html;
+            $this->_error_html[] = $this->make_error_at("Type error", $err->expr->left_landmark, $err->expr->right_landmark) . ': ' . $err->error_html;
         } else {
             $state = new FormulaCompiler($this->user);
             $e->compile($state);
@@ -1316,8 +1316,19 @@ class Formula {
                 $this->_tagrefs = $state->tagrefs;
             }
         }
-        $this->_parse = empty($this->_error_html) ? $e : false;
+        $this->expression_suffix = ltrim($t);
+        return empty($this->_error_html) ? $e : false;
+    }
+
+    function check(Contact $user = null) {
+        if ($this->_parse === null || ($user && $user !== $this->user))
+            $this->_parse = $this->parse_prefix($user, false);
         return !!$this->_parse;
+    }
+    function check_prefix(Contact $user = null) {
+        if ($this->_parse === null || ($user && $user !== $this->user))
+            $this->_parse = $this->parse_prefix($user, true);
+        return !!$this->_parse ? $this->expression_suffix : false;
     }
 
     function error_html() {

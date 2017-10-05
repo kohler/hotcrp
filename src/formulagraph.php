@@ -18,7 +18,8 @@ class FormulaGraph {
     public $conf;
     public $user;
     public $type = 0;
-    public $fx;
+    private $fx;
+    private $fxs;
     public $fy;
     public $fx_type = 0;
     private $queries = [];
@@ -36,17 +37,7 @@ class FormulaGraph {
         $this->conf = $user->conf;
         $this->user = $user;
 
-        $fx = simplify_whitespace($fx);
-        if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
-            $this->fx = new Formula("0", true);
-            $this->fx_type = self::X_QUERY;
-        } else if (strcasecmp($fx, "tag") == 0) {
-            $this->fx = new Formula("0", true);
-            $this->fx_type = self::X_TAG;
-        } else
-            $this->fx = new Formula($fx, true);
-        $this->fx->check($this->user);
-
+        // Y axis expression
         $fy = simplify_whitespace($fy);
         if (strcasecmp($fy, "cdf") == 0) {
             $this->type = self::CDF;
@@ -70,6 +61,7 @@ class FormulaGraph {
             }
             $this->fy = new Formula($fy, true);
         }
+
         $this->fy->check($this->user);
         if (!$this->type) {
             $this->type = self::SCATTER;
@@ -77,8 +69,35 @@ class FormulaGraph {
                 $this->type = self::BARCHART;
         }
 
-        if ($this->fx->error_html()) {
-            $this->error_html[] = "X axis formula: " . $this->fx->error_html();
+        // X axis expression(s)
+        $fx = simplify_whitespace($fx);
+        if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
+            $this->fx = new Formula("0", true);
+            $this->fx_type = self::X_QUERY;
+        } else if (strcasecmp($fx, "tag") == 0) {
+            $this->fx = new Formula("0", true);
+            $this->fx_type = self::X_TAG;
+        } else
+            $this->fx = new Formula($fx, true);
+
+        $fx = $this->fx;
+        if ($this->type !== self::CDF) {
+            $fx->check($this->user);
+        } else {
+            while (1) {
+                $rest = $fx->check_prefix($this->user);
+                if ($rest === false)
+                    break;
+                $this->fxs[] = $fx;
+                $rest = preg_replace('/\A\s*;*\s*/', '', $rest);
+                if ($rest === "")
+                    break;
+                $fx = new Formula($rest, true);
+            }
+        }
+
+        if ($fx->error_html()) {
+            $this->error_html[] = "X axis formula: " . $fx->error_html();
             $this->errf["fx"] = true;
         }
         if ($this->fy->error_html()) {
@@ -111,7 +130,46 @@ class FormulaGraph {
         }
     }
 
+    function fx_expression() {
+        return $this->fx->expression;
+    }
+
+    private function _cdf_data_one_fx($fx, $qcolors, PaperInfoSet $rowset) {
+        $data = [];
+
+        $fxf = $fx->compile_function();
+        $reviewf = null;
+        if ($fx->is_indexed())
+            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes());
+
+        foreach ($rowset->all() as $prow) {
+            $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
+            $queries = get($this->papermap, $prow->paperId);
+            foreach ($revs as $rcid)
+                if (($x = $fxf($prow, $rcid, $this->user)) !== null) {
+                    if ($this->fx_type === self::X_QUERY) {
+                        foreach ($queries as $q)
+                            $data[0][] = $q;
+                    } else {
+                        foreach ($queries as $q)
+                            $data[$q][] = $x;
+                    }
+                }
+        }
+
+        foreach ($data as $q => &$d) {
+            $d = (object) ["d" => $d];
+            $s = $qcolors[$q];
+            if ($s && $s !== "plain")
+                $d->className = $s;
+            if (get($this->queries, $q))
+                $d->label = $this->queries[$q];
+        }
+        unset($d);
+        return $data;
+    }
     private function _cdf_data(PaperInfoSet $rowset) {
+        // calculate query styles
         $qcolors = $this->query_styles;
         $need_anal = array_fill(0, count($qcolors), false);
         $nneed_anal = 0;
@@ -148,38 +206,10 @@ class FormulaGraph {
             }
         }
 
-        $data = [];
-
-        $fxf = $this->fx->compile_function();
-        $reviewf = null;
-        if ($this->fx->is_indexed())
-            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes());
-
-        foreach ($rowset->all() as $prow) {
-            $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
-            $queries = get($this->papermap, $prow->paperId);
-            foreach ($revs as $rcid)
-                if (($x = $fxf($prow, $rcid, $this->user)) !== null) {
-                    if ($this->fx_type === self::X_QUERY) {
-                        foreach ($queries as $q)
-                            $data[0][] = $q;
-                    } else {
-                        foreach ($queries as $q)
-                            $data[$q][] = $x;
-                    }
-                }
-        }
-
-        foreach ($data as $q => &$d) {
-            $d = (object) ["d" => $d];
-            $s = $qcolors[$q];
-            if ($s && $s !== "plain")
-                $d->className = $s;
-            if (get($this->queries, $q))
-                $d->label = $this->queries[$q];
-        }
-        unset($d);
-        $this->_data = $data;
+        // compute data
+        $this->_data = [];
+        foreach ($this->fxs as $fx)
+            $this->_data = array_merge($this->_data, $this->_cdf_data_one_fx($fx, $qcolors, $rowset));
     }
 
     private function _prepare_reviewer_color(Contact $user) {

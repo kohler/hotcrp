@@ -6,10 +6,11 @@
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
 
-$Graph = @$_REQUEST["g"];
+$Qreq = make_qreq();
+$Graph = $Qreq->g;
 if (!$Graph
     && preg_match(',\A/(\w+)(/|\z),', Navigation::path(), $m))
-    $Graph = $_REQUEST["g"] = $m[1];
+    $Graph = $Qreq->g = $m[1];
 
 // collect allowed graphs
 $Graphs = array();
@@ -59,7 +60,7 @@ function formulas_qrow($i, $q, $s, $errf) {
 
 if ($Graph == "formula") {
     // derive a sample graph
-    if (!isset($_REQUEST["fx"]) || !isset($_REQUEST["fy"])) {
+    if (!isset($Qreq->fx) || !isset($Qreq->fy)) {
         $all_review_fields = $Conf->all_review_fields();
         $field1 = get($all_review_fields, "overAllMerit");
         $field2 = null;
@@ -68,31 +69,31 @@ if ($Graph == "formula") {
                 $field1 = $f;
             else if ($f->has_options && !$field2 && $field1 != $f)
                 $field2 = $f;
-        unset($_REQUEST["fx"], $_REQUEST["fy"]);
+        unset($Qreq->fx, $Qreq->fy);
         if ($field1)
-            $_REQUEST["fy"] = "avg(" . $field1->search_keyword() . ")";
+            $Qreq->fy = "avg(" . $field1->search_keyword() . ")";
         if ($field1 && $field2)
-            $_REQUEST["fx"] = "avg(" . $field2->search_keyword() . ")";
+            $Qreq->fx = "avg(" . $field2->search_keyword() . ")";
         else
-            $_REQUEST["fx"] = "pid";
+            $Qreq->fx = "pid";
     }
 
     $fg = null;
-    if (@$_REQUEST["fx"] && @$_REQUEST["fy"]) {
-        $fg = new FormulaGraph($Me, $_REQUEST["fx"], $_REQUEST["fy"]);
+    if ($Qreq->fx && $Qreq->fy) {
+        $fg = new FormulaGraph($Me, $Qreq->fx, $Qreq->fy);
         if (count($fg->error_html))
             Conf::msg_error(join("<br/>", $fg->error_html));
     }
 
     $queries = $styles = array();
-    for ($i = 1; isset($_REQUEST["q$i"]); ++$i) {
-        $q = trim($_REQUEST["q$i"]);
+    for ($i = 1; isset($Qreq["q$i"]); ++$i) {
+        $q = trim($Qreq["q$i"]);
         $queries[] = $q === "" || $q === "(All)" ? "all" : $q;
-        $styles[] = trim((string) @$_REQUEST["s$i"]);
+        $styles[] = trim((string) $Qreq["s$i"]);
     }
     if (count($queries) == 0) {
         $queries[0] = "";
-        $styles[0] = trim((string) @$_REQUEST["s0"]);
+        $styles[0] = trim((string) $Qreq["s0"]);
     }
     while (count($queries) > 1 && $queries[count($queries) - 1] == $queries[count($queries) - 2]) {
         array_pop($queries);
@@ -107,7 +108,7 @@ if ($Graph == "formula") {
         if (count($fg->error_html) > $fgerr_begin)
             $Conf->warnMsg(join("<br/>", array_slice($fg->error_html, $fgerr_begin)));
 
-        $xhtml = htmlspecialchars($fg->fx->expression);
+        $xhtml = htmlspecialchars($fg->fx_expression());
         if ($fg->fx_type == FormulaGraph::X_TAG)
             $xhtml = "tag";
 
@@ -143,12 +144,12 @@ if ($Graph == "formula") {
     echo '<table>';
     // X axis
     echo '<tr><td class="lcaption"><label for="fx">X axis</label></td>',
-        '<td class="lentry">', Ht::entry("fx", (string) @$_REQUEST["fx"] !== "" ? $_REQUEST["fx"] : "", array("id" => "fx", "size" => 32, "class" => $fg && @$fg->errf["fx"] ? "setting_error" : "")),
+        '<td class="lentry">', Ht::entry("fx", (string) $Qreq->fx, array("id" => "fx", "size" => 32, "class" => $fg && get($fg->errf, "fx") ? "setting_error" : "")),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “search”</span>',
         '</td></tr>';
     // Y axis
     echo '<tr><td class="lcaption"><label for="fy">Y axis</label></td>',
-        '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("fy", (string) @$_REQUEST["fy"] !== "" ? $_REQUEST["fy"] : "", array("id" => "fy", "size" => 32, "class" => $fg && @$fg->errf["fy"] ? "setting_error" : "")),
+        '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("fy", (string) $Qreq->fy, array("id" => "fy", "size" => 32, "class" => $fg && get($fg->errf, "fy") ? "setting_error" : "")),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</span>',
         '</td></tr>';
     // Series
@@ -156,7 +157,7 @@ if ($Graph == "formula") {
         '<td class="lentry"><table><tbody id="qcontainer" data-row-template="',
         htmlspecialchars(formulas_qrow('$', "", "by-tag", false)), '">';
     for ($i = 0; $i < count($styles); ++$i)
-        echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fg && @$fg->errf["q$i"]);
+        echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fg && get($fg->errf, "q$i"));
     echo "</tbody></table>\n";
     echo '<tr><td></td><td class="lentry">',
         Ht::js_button("Add search", "hotcrp_graphs.formulas_add_qrow()"),
