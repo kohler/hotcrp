@@ -782,7 +782,7 @@ class ContactList {
             $ord = 0;
 
             if ($this->sortable && $url) {
-                $sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
+                $sortUrl = $url . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
                 $q = '<a class="pl_sort" rel="nofollow" href="' . $sortUrl;
                 foreach ($fieldDef as $fieldId => $fdef) {
                     if ($fdef[1] != 1)
