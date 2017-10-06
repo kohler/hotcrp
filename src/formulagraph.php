@@ -132,7 +132,7 @@ class FormulaGraph {
     }
 
     function fx_expression() {
-        return $this->fx->expression;
+        return $this->fx_expression;
     }
 
     private function _cdf_data_one_fx($fx, $qcolors, PaperInfoSet $rowset) {
