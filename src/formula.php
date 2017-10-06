@@ -1197,7 +1197,6 @@ class Formula {
     public $heading = "";
     public $headingTitle = "";
     public $expression = null;
-    private $expression_suffix = null;
     public $allowReview = false;
     private $needsReview = false;
     private $datatypes = 0;
@@ -1316,7 +1315,8 @@ class Formula {
                 $this->_tagrefs = $state->tagrefs;
             }
         }
-        $this->expression_suffix = ltrim($t);
+        if (($tlen = strlen($t)) > 0)
+            $this->expression = rtrim(substr($this->expression, 0, -$tlen));
         return empty($this->_error_html) ? $e : false;
     }
 
@@ -1326,9 +1326,13 @@ class Formula {
         return !!$this->_parse;
     }
     function check_prefix(Contact $user = null) {
-        if ($this->_parse === null || ($user && $user !== $this->user))
+        $suffix = "";
+        if ($this->_parse === null || ($user && $user !== $this->user)) {
+            $expr = $this->expression;
             $this->_parse = $this->parse_prefix($user, true);
-        return !!$this->_parse ? $this->expression_suffix : false;
+            $suffix = ltrim((string) substr($expr, strlen($this->expression)));
+        }
+        return $this->_parse ? $suffix : false;
     }
 
     function error_html() {

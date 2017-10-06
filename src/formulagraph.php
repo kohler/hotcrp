@@ -20,6 +20,7 @@ class FormulaGraph {
     public $type = 0;
     private $fx;
     private $fxs;
+    private $fx_expression;
     public $fy;
     public $fx_type = 0;
     private $queries = [];
@@ -70,7 +71,7 @@ class FormulaGraph {
         }
 
         // X axis expression(s)
-        $fx = simplify_whitespace($fx);
+        $this->fx_expression = $fx = simplify_whitespace($fx);
         if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
             $this->fx = new Formula("0", true);
             $this->fx_type = self::X_QUERY;
@@ -157,13 +158,17 @@ class FormulaGraph {
                 }
         }
 
+        $fxlabel = count($this->fxs) > 1 ? $fx->expression : "";
         foreach ($data as $q => &$d) {
             $d = (object) ["d" => $d];
             $s = $qcolors[$q];
             if ($s && $s !== "plain")
                 $d->className = $s;
-            if (get($this->queries, $q))
-                $d->label = $this->queries[$q];
+            $dlabel = "";
+            if (get($this->queries, $q) && count($this->queries) > 1)
+                $dlabel = $this->queries[$q];
+            if ($dlabel || $fxlabel)
+                $d->label = rtrim("$fxlabel $dlabel");
         }
         unset($d);
         return $data;
@@ -209,7 +214,8 @@ class FormulaGraph {
         // compute data
         $this->_data = [];
         foreach ($this->fxs as $fx)
-            $this->_data = array_merge($this->_data, $this->_cdf_data_one_fx($fx, $qcolors, $rowset));
+            $this->_data = array_merge($this->_data,
+                $this->_cdf_data_one_fx($fx, $qcolors, $rowset));
     }
 
     private function _prepare_reviewer_color(Contact $user) {
@@ -492,16 +498,25 @@ class FormulaGraph {
         $f = $isx ? $this->fx : $this->fy;
         $t = array();
         $counttype = $this->fx->is_indexed() ? "reviews" : "papers";
-        if (!$isx && $this->type == self::FBARCHART)
+        if ($isx)
+            $t[] = "label:" . json_encode_browser($this->fx_expression);
+        else if ($this->type == self::FBARCHART)
             $t[] = "label:\"fraction of $counttype\",fraction:true";
-        else if (!$isx && $this->type == self::BARCHART
+        else if ($this->type == self::BARCHART
                  && $f->expression === "sum(1)")
             $t[] = "label:\"# $counttype\"";
-        else if (!$isx && $this->type == self::CDF)
+        else if ($this->type == self::CDF)
             $t[] = "label:\"CDF of $counttype\"";
-        else if (!$isx || !$this->fx_type)
+        else if (!$this->fx_type)
             $t[] = "label:" . json_encode_browser($f->expression);
         $format = $f->result_format();
+        if ($isx && $this->fxs && $format) {
+            foreach ($this->fxs as $fx)
+                if ($fx->result_format() !== $format) {
+                    $format = 0;
+                    break;
+                }
+        }
         $rticks = (!$isx ? ",axis_setup:hotcrp_graphs.rotate_ticks(-90)" : "");
         if ($isx && $this->fx_type == self::X_QUERY) {
             $t[] = "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode_browser($this->queries) . ")";
