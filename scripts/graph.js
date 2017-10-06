@@ -506,10 +506,12 @@ function hotcrp_graphs_cdf(args) {
             klass += " " + series[i].className;
         if (d[d.length - 1][0] != xdomain[args.x.flip ? 0 : 1])
             d.push([xdomain[args.x.flip ? 0 : 1], d[d.length - 1][1]]);
-        svg.append("path").attr("data-index", i)
+        var p = svg.append("path").attr("data-index", i)
             .datum(d)
             .attr("class", klass)
             .attr("d", line);
+        if (series[i].dashpattern)
+            p.attr("stroke-dasharray", series[i].dashpattern.join(","));
     });
 
     svg.append("path").attr("class", "gcdf gcdf_hover0");

@@ -135,7 +135,7 @@ class FormulaGraph {
         return $this->fx_expression;
     }
 
-    private function _cdf_data_one_fx($fx, $qcolors, PaperInfoSet $rowset) {
+    private function _cdf_data_one_fx($fx, $qcolors, $dashp, PaperInfoSet $rowset) {
         $data = [];
 
         $fxf = $fx->compile_function();
@@ -169,6 +169,8 @@ class FormulaGraph {
                 $dlabel = $this->queries[$q];
             if ($dlabel || $fxlabel)
                 $d->label = rtrim("$fxlabel $dlabel");
+            if ($dashp)
+                $d->dashpattern = $dashp;
         }
         unset($d);
         return $data;
@@ -213,9 +215,12 @@ class FormulaGraph {
 
         // compute data
         $this->_data = [];
-        foreach ($this->fxs as $fx)
+        $dashps = [null, [10,5], [5,5], [1,1]];
+        foreach ($this->fxs as $i => $fx) {
+            $dashp = $dashps[$i % count($dashps)];
             $this->_data = array_merge($this->_data,
-                $this->_cdf_data_one_fx($fx, $qcolors, $rowset));
+                $this->_cdf_data_one_fx($fx, $qcolors, $dashp, $rowset));
+        }
     }
 
     private function _prepare_reviewer_color(Contact $user) {
