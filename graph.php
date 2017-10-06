@@ -125,10 +125,9 @@ if ($Graph == "formula") {
             echo "<h2>", htmlspecialchars($fg->fy->expression), " vs. $xhtml</h2>\n";
         echo_graph();
 
-        echo Ht::unstash();
-        echo '<script>hotgraph_info={data:', json_encode_browser($fg->data()), ",\n",
-            '  selector:"#hotgraph",', $fg->axis_info_settings("x"),
-            ',', $fg->axis_info_settings("y"), "};\n";
+        echo Ht::unstash(), '<script>hotgraph_info=',
+            json_encode_browser(["selector" => "#hotgraph"] + $fg->graph_json()),
+            ";\n";
         $gtype = "scatter";
         if ($fg->type & FormulaGraph::BARCHART)
             $gtype = "barchart";

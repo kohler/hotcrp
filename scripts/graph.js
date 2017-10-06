@@ -325,7 +325,7 @@ function make_axes(svg, xAxis, yAxis, args) {
         .call(xAxis)
         .attr("font-size", null)
         .attr("fill", null)
-        .call(args.x.axis_setup || function () {})
+        .call(make_rotate_ticks(args.x.rotate_ticks))
       .append("text")
         .attr("x", args.width).attr("y", 0).attr("dy", "-.5em")
         .call(axisLabelStyles)
@@ -336,7 +336,7 @@ function make_axes(svg, xAxis, yAxis, args) {
         .call(yAxis)
         .attr("font-size", null)
         .attr("fill", null)
-        .call(args.y.axis_setup || function () {})
+        .call(make_rotate_ticks(args.y.rotate_ticks))
       .append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", 6).attr("dy", ".71em")
@@ -396,7 +396,13 @@ function clicker_go(url) {
         window.location = url;
 }
 
-function make_axis(args) {
+function make_axis(ticks) {
+    if (ticks && ticks[0] === "named")
+        ticks = named_integer_ticks(ticks[1]);
+    else if (ticks && ticks[0] === "option_letter")
+        ticks = option_letter_ticks(ticks[1], ticks[2], ticks[3]);
+    else
+        ticks = {};
     return $.extend({
         ticks: function (extent) {},
         rewrite: function () {},
@@ -408,7 +414,7 @@ function make_axis(args) {
             return value.toFixed(dig);
         },
         search: function (value) { return null; }
-    }, args || {});
+    }, ticks);
 }
 
 function axis_domain(axis, argextent, e) {
@@ -1189,7 +1195,7 @@ hotcrp_graphs.formulas_add_qrow = function () {
     author_change($("#qcontainer > tr:last-child > td:first-child"), 1);
 };
 
-hotcrp_graphs.option_letter_ticks = function (n, c, sv) {
+function option_letter_ticks(n, c, sv) {
     var info = make_score_info(n, c, sv), split = 2;
     function format(extent) {
         var count = Math.floor(extent[1] * 2) - Math.ceil(extent[0] * 2) + 1;
@@ -1229,7 +1235,7 @@ function get_sample_tick_height(axis) {
     }), 0.5);
 }
 
-hotcrp_graphs.named_integer_ticks = function (map) {
+function named_integer_ticks(map) {
     function mtext(value) {
         var m = map[value];
         return m && typeof m === "object" ? m.text : m;
@@ -1310,13 +1316,16 @@ hotcrp_graphs.named_integer_ticks = function (map) {
              search: search };
 };
 
-hotcrp_graphs.rotate_ticks = function (angle) {
-    return function (axis) {
-        axis.selectAll("text")
-            .attr("x", 0).attr("y", 0).attr("dy", "-.71em")
-            .attr("transform", "rotate(" + angle + ")")
-            .style("text-anchor", "middle");
-    };
+function make_rotate_ticks(angle) {
+    if (!angle)
+        return function () {};
+    else
+        return function (axis) {
+            axis.selectAll("text")
+                .attr("x", 0).attr("y", 0).attr("dy", "-.71em")
+                .attr("transform", "rotate(" + angle + ")")
+                .style("text-anchor", "middle");
+        };
 };
 
 return hotcrp_graphs;

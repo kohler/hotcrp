@@ -493,22 +493,26 @@ class FormulaGraph {
         return $this->_data;
     }
 
-    function axis_info_settings($axis) {
+    function axis_json($axis) {
         $isx = $axis === "x";
         $f = $isx ? $this->fx : $this->fy;
-        $t = array();
+        $j = array();
+
         $counttype = $this->fx->is_indexed() ? "reviews" : "papers";
-        if ($isx)
-            $t[] = "label:" . json_encode_browser($this->fx_expression);
-        else if ($this->type == self::FBARCHART)
-            $t[] = "label:\"fraction of $counttype\",fraction:true";
-        else if ($this->type == self::BARCHART
-                 && $f->expression === "sum(1)")
-            $t[] = "label:\"# $counttype\"";
-        else if ($this->type == self::CDF)
-            $t[] = "label:\"CDF of $counttype\"";
-        else if (!$this->fx_type)
-            $t[] = "label:" . json_encode_browser($f->expression);
+        if ($isx) {
+            $j["label"] = $this->fx_expression;
+        } else if ($this->type == self::FBARCHART) {
+            $j["label"] = "fraction of $counttype";
+            $j["fraction"] = true;
+        } else if ($this->type == self::BARCHART
+                   && $f->expression === "sum(1)") {
+            $j["label"] = "# $counttype";
+        } else if ($this->type == self::CDF) {
+            $j["label"] = "CDF of $counttype";
+        } else if (!$this->fx_type) {
+            $j["label"] = $f->expression;
+        }
+
         $format = $f->result_format();
         if ($isx && $this->fxs && $format) {
             foreach ($this->fxs as $fx)
@@ -517,45 +521,50 @@ class FormulaGraph {
                     break;
                 }
         }
-        $rticks = (!$isx ? ",axis_setup:hotcrp_graphs.rotate_ticks(-90)" : "");
         if ($isx && $this->fx_type == self::X_QUERY) {
-            $t[] = "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode_browser($this->queries) . ")";
+            $j["ticks"] = ["named", $this->queries];
         } else if ($isx && $this->fx_type == self::X_TAG) {
             $tagger = new Tagger($this->user);
-            $tags = array_map(function ($t) use ($tagger) {
+            $j["ticks"] = ["named", array_map(function ($t) use ($tagger) {
                 return $tagger->unparse($t);
-            }, array_keys($this->tags));
-            $t[] = "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode_browser($tags) . ")";
+            }, array_keys($this->tags))];
         } else if ($format instanceof ReviewField) {
-            if ($format->option_letter)
-                $t[] = "flip:true";
             $n = count($format->options);
             $ol = $format->option_letter ? chr($format->option_letter - $n) : null;
-            $t[] = "ticks:hotcrp_graphs.option_letter_ticks("
-                    . $n . "," . json_encode_browser($ol) . "," . json_encode_browser($format->option_class_prefix) . ")";
-        } else if ($format === Fexpr::FREVIEWER) {
-            $x = [];
-            foreach ($this->reviewers as $r) {
-                $rd = ["text" => $this->user->name_text_for($r),
-                       "search" => "re:" . $r->email];
-                if ($this->user->can_view_reviewer_tags()
-                    && ($colors = $r->viewable_color_classes($this->user)))
-                    $rd["color_classes"] = $colors;
-                $x[$r->sort_position] = $rd;
+            $j["ticks"] = ["option_letter", $n, $ol, $format->option_class_prefix];
+            if ($format->option_letter)
+                $j["flip"] = true;
+        } else {
+            if ($format === Fexpr::FREVIEWER) {
+                $x = [];
+                foreach ($this->reviewers as $r) {
+                    $rd = ["text" => $this->user->name_text_for($r),
+                           "search" => "re:" . $r->email];
+                    if ($this->user->can_view_reviewer_tags()
+                        && ($colors = $r->viewable_color_classes($this->user)))
+                        $rd["color_classes"] = $colors;
+                    $x[$r->sort_position] = $rd;
+                }
+                $j["ticks"] = ["named", $x];
+            } else if ($format === Fexpr::FDECISION) {
+                $j["ticks"] = ["named", $this->conf->decision_map()];
+            } else if ($format === Fexpr::FBOOL) {
+                $j["ticks"] = ["named", ["no", "yes"]];
+            } else if ($format instanceof PaperOption && $format->has_selector()) {
+                $j["ticks"] = ["named", $format->selector];
+            } else if ($format === Fexpr::FROUND) {
+                $j["ticks"] = ["named", $this->remapped_rounds];
+            } else if ($format === Fexpr::FREVTYPE) {
+                $j["ticks"] = ["named", ReviewForm::$revtype_names];
             }
-            $t[] = "ticks:hotcrp_graphs.named_integer_ticks("
-                    . json_encode_browser($x) . ")" . $rticks;
-        } else if ($format === Fexpr::FDECISION)
-            $t[] = "ticks:hotcrp_graphs.named_integer_ticks("
-                    . json_encode_browser($this->conf->decision_map()) . ")" . $rticks;
-        else if ($format === Fexpr::FBOOL)
-            $t[] = "ticks:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
-        else if ($format instanceof PaperOption && $format->has_selector())
-            $t[] = "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode_browser($format->selector) . ")" . $rticks;
-        else if ($format === Fexpr::FROUND)
-            $t[] = "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode_browser($this->remapped_rounds) . ")" . $rticks;
-        else if ($format === Fexpr::FREVTYPE)
-            $t[] = "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode_browser(ReviewForm::$revtype_names) . ")" . $rticks;
-        return "\"{$axis}\":{" . join(",", $t) . "}";
+            if (!$isx && isset($j["ticks"]))
+                $j["rotate_ticks"] = -90;
+        }
+
+        return $j;
+    }
+
+    function graph_json() {
+        return ["data" => $this->data(), "x" => $this->axis_json("x"), "y" => $this->axis_json("y")];
     }
 }
