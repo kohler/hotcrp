@@ -506,13 +506,13 @@ class FormulaGraph {
         $counttype = $this->fx->is_indexed() ? "reviews" : "papers";
         if ($isx) {
             $j["label"] = $this->fx_expression;
-        } else if ($this->type == self::FBARCHART) {
+        } else if ($this->type === self::FBARCHART) {
             $j["label"] = "fraction of $counttype";
             $j["fraction"] = true;
-        } else if ($this->type == self::BARCHART
+        } else if ($this->type === self::BARCHART
                    && $f->expression === "sum(1)") {
             $j["label"] = "# $counttype";
-        } else if ($this->type == self::CDF) {
+        } else if ($this->type === self::CDF) {
             $j["label"] = "CDF of $counttype";
         } else if (!$this->fx_type) {
             $j["label"] = $f->expression;
@@ -570,6 +570,9 @@ class FormulaGraph {
     }
 
     function graph_json() {
-        return ["data" => $this->data(), "x" => $this->axis_json("x"), "y" => $this->axis_json("y")];
+        $j = ["data" => $this->data(), "x" => $this->axis_json("x"), "y" => $this->axis_json("y")];
+        if ($this->type === self::CDF)
+            $j["cdf_tooltip_position"] = true;
+        return $j;
     }
 }

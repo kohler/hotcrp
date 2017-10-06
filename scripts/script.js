@@ -6416,16 +6416,18 @@ function make_info(n, c, sv) {
         },
         unparse: unparse,
         unparse_html: function (val) {
-            if (val >= 1 && val <= n)
+            if (val >= 0.95 && val <= n + 0.05)
                 return '<span class="sv ' + sv + fm9(val) + '">' +
                     unparse(val) + '</span>';
-            return val;
+            else
+                return numeric_unparser(val);
         },
         unparse_revnum: function (val) {
             if (val >= 1 && val <= n)
                 return '<span class="rev_num sv ' + sv + fm9(val) + '">' +
                     unparse(val) + '.</span>';
-            return '(???)';
+            else
+                return '(???)';
         },
         parse: c ? make_letter_parser(n, c) : numeric_parser,
         value_order: function () { return make_value_order(n, c); },

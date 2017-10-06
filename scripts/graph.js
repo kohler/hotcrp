@@ -406,7 +406,7 @@ function make_axis(ticks) {
     return $.extend({
         ticks: function (extent) {},
         rewrite: function () {},
-        unparse_html: function (value) {
+        unparse_html: function (value, include_numeric) {
             if (value == Math.floor(value))
                 return value;
             var dom = this.scale().domain(),
@@ -437,10 +437,10 @@ function make_args(args) {
 }
 
 function position_label(axis, p, prefix) {
-    var t = '<span class="nw">' + (prefix || "");
-    if (axis.axis_args.label)
-        t += escape_entities(axis.axis_args.label) + " ";
-    return t + axis.axis_args.ticks.unparse_html.call(axis, p) + '</span>';
+    var aa = axis.axis_args, t = '<span class="nw">' + (prefix || "");
+    if (aa.label)
+        t += escape_entities(aa.label) + " ";
+    return t + aa.ticks.unparse_html.call(axis, p) + '</span>';
 }
 
 
@@ -533,7 +533,7 @@ function hotcrp_graphs_cdf(args) {
         m.clientX = d3.event.clientX;
         m.clientY = d3.event.clientY;
         for (var i in data)
-            if (series[i].label)
+            if (series[i].label || args.cdf_tooltip_position)
                 p = closestPoint(svg.select("[data-index='" + i + "']").node(), m, p);
         if (p.pathNode != hovered_path) {
             if (p.pathNode)
@@ -544,14 +544,23 @@ function hotcrp_graphs_cdf(args) {
             hovered_path = p.pathNode;
         }
         var u = p.pathNode ? series[p.pathNode.getAttribute("data-index")] : null;
-        if (u && u.label) {
+        if (u && (u.label || args.cdf_tooltip_position)) {
             hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
-            hubble.text(u.label)
-                .dir(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "r" : "b")
+            if (args.cdf_tooltip_position) {
+                var xp = x.invert(p[0]), yp = y.invert(p[1]);
+                var label = (u.label ? text_to_html(u.label) + " " : "") +
+                    args.x.ticks.unparse_html.call(xAxis, x.invert(p[0]), true) +
+                    ", " +
+                    args.y.ticks.unparse_html.call(yAxis, y.invert(p[1]), true);
+                hubble.html(label);
+            } else
+                hubble.text(u.label);
+            hubble.dir(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "r" : "b")
                 .at(p[0] + args.left, p[1], this);
-        } else if (hubble)
+        } else if (hubble) {
             hubble = hubble.remove() && null;
+        }
     }
 
     function mouseout() {
@@ -1213,8 +1222,14 @@ function option_letter_ticks(n, c, sv) {
             if (c)
                 d.text(info.unparse(value, split));
         });
-    };
-    return { ticks: format, rewrite: rewrite, unparse_html: info.unparse_html };
+    }
+    function unparse_html(value, include_numeric) {
+        var t = info.unparse_html(value);
+        if (include_numeric && t.charAt(0) === "<")
+            t += " (" + value.toFixed(2).replace(/\.00$/, "") + ")";
+        return t;
+    }
+    return { ticks: format, rewrite: rewrite, unparse_html: unparse_html };
 };
 
 function get_max_tick_width(axis) {
@@ -1250,13 +1265,20 @@ function named_integer_ticks(map) {
         var count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
         this.ticks(count).tickFormat(mtext);
     }
-    function unparse_html(value) {
-        return map[value] != null ? text_to_html(mtext(value)) : value;
-    };
+    function unparse_html(value, include_numeric) {
+        var fvalue = Math.round(value);
+        if (Math.abs(value - fvalue) <= 0.05 && map[fvalue]) {
+            var t = text_to_html(mtext(fvalue));
+            if (value !== fvalue && include_numeric)
+                t += " (" + value.toFixed(2) + ")";
+            return t;
+        } else
+            return value.toFixed(2);
+    }
     function search(value) {
         var m = map[value];
         return (m && typeof m === "object" && m.search) || null;
-    };
+    }
 
     var want_tilt, want_mclasses;
     function rewrite() {
