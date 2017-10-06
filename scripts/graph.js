@@ -1200,7 +1200,7 @@ hotcrp_graphs.option_letter_ticks = function (n, c, sv) {
     }
     function rewrite() {
         this.selectAll("g.tick text").each(function () {
-            var d = d3.select(this), value = d.text();
+            var d = d3.select(this), value = +d.text();
             d.style("fill", info.rgb(value));
             if (c)
                 d.text(info.unparse(value, split));
