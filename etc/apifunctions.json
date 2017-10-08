@@ -52,10 +52,6 @@
         "function": "PaperApi::search_api"
     },
     {
-        "name": "setdecision", "paper": true, "post": true, "xxx": true,
-        "function": "PaperApi::setdecision_api"
-    },
-    {
         "name": "settaganno", "post": true,
         "function": "PaperApi::settaganno_api"
     },

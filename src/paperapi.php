@@ -24,19 +24,6 @@ class PaperApi {
         return $jr;
     }
 
-    static function setdecision_api(Contact $user, Qrequest $qreq, $prow) {
-        $aset = new AssignmentSet($user, true);
-        $aset->enable_papers($prow);
-        if (is_numeric($qreq->decision))
-            $qreq->decision = get($user->conf->decision_map(), +$qreq->decision);
-        $aset->parse("paper,action,decision\n{$prow->paperId},decision," . CsvGenerator::quote($qreq->decision));
-        if ($aset->execute()) {
-            $dec = $user->conf->fetch_value("select outcome from Paper where paperId=?", $prow->paperId);
-            return ["ok" => true, "result" => htmlspecialchars(get($user->conf->decision_map(), +$dec))];
-        } else
-            return ["ok" => false, "error" => join("<br />", $aset->errors_html())];
-    }
-
     private static function paper_pc_api(Contact $user, Qrequest $qreq, $prow, $type) {
         if ($qreq->method() !== "GET") {
             if (!isset($qreq->$type))
