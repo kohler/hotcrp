@@ -725,7 +725,7 @@ class Option_Fexpr extends Sub_Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $id = $this->option->id;
-        $ovar = "\$opt$id";
+        $ovar = "\$opt" . ($id < 0 ? "m" . -$id : $id);
         if ($state->check_gvar($ovar)) {
             $state->queryOptions["options"] = true;
             $state->gstmt[] = "if (\$contact->can_view_paper_option(\$prow, $id, \$forceShow)) {";
