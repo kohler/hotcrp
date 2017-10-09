@@ -201,7 +201,7 @@ class PaperList {
             && get($this->_view_fields, "anonau") === null)
             $this->_view_fields["anonau"] = true;
 
-        $this->_columns_by_name = ["anonau" => null, "aufull" => null, "rownum" => null, "statistics" => null];
+        $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
     }
 
     // begin changing contactId to cid
@@ -286,23 +286,26 @@ class PaperList {
 
 
     private function find_columns($name, $errors = null) {
-        $col = PaperColumn::lookup($this->user, $name, $errors);
-        if (!is_array($col))
-            $col = $col ? [$col] : [];
-        $ocol = [];
-        foreach ($col as $colx) {
-            if (isset($this->_columns_by_name[$colx->name]))
-                $ocol[] = $this->_columns_by_name[$colx->name];
-            else
-                $ocol[] = $this->_columns_by_name[$colx->name] = $colx;
+        if (!array_key_exists($name, $this->_columns_by_name)) {
+            $fs = PaperColumn::lookup($this->user, $name, $errors);
+            if (!is_array($fs))
+                $fs = $fs ? [$fs] : [];
+            $nfs = [];
+            foreach ($fs as $fdef) {
+                if ($fdef->name === $name)
+                    $nfs[] = $fdef;
+                else {
+                    if (!array_key_exists($fdef->name, $this->_columns_by_name))
+                        $this->_columns_by_name[$fdef->name][] = $fdef;
+                    $nfs = array_merge($nfs, $this->_columns_by_name[$fdef->name]);
+                }
+            }
+            $this->_columns_by_name[$name] = $nfs;
         }
-        return $ocol;
+        return $this->_columns_by_name[$name];
     }
     private function find_column($name, $errors = null) {
-        if (array_key_exists($name, $this->_columns_by_name))
-            return $this->_columns_by_name[$name];
-        else
-            return get($this->find_columns($name, $errors), 0);
+        return get($this->find_columns($name, $errors), 0);
     }
 
     private function _sort($rows) {
@@ -576,8 +579,8 @@ class PaperList {
                 continue;
             if ($fid == "scores")
                 $this->scoresOk = "present";
-            foreach ($this->find_columns($fid) as $f)
-                $field_list[] = $f;
+            foreach ($this->find_columns($fid) as $fdef)
+                $field_list[] = $fdef;
         }
         if ($this->qreq->selectall > 0 && $field_list[0]->name == "sel")
             $field_list[0] = $this->find_column("selon");
@@ -665,17 +668,17 @@ class PaperList {
         }
     }
 
-    function is_folded($field) {
-        $fname = $field;
-        if (is_object($field) || ($field = $this->find_column($field)))
-            $fname = $field->fold ? $field->name : null;
+    function is_folded($fdef) {
+        $fname = $fdef;
+        if (is_object($fdef) || ($fdef = $this->find_column($fname)))
+            $fname = $fdef->fold ? $fdef->name : null;
         if ($fname === "authors")
             $fname = "au";
         if (!$fname || $this->_unfold_all || $this->qreq["show$fname"])
             return false;
         $x = get($this->_view_fields, $fname);
-        if ($x === null && is_object($field)
-            && ($fname = $field->alternate_display_name()))
+        if ($x === null && is_object($fdef)
+            && ($fname = $fdef->alternate_display_name()))
             $x = get($this->_view_fields, $fname);
         return !$x;
     }
@@ -1031,19 +1034,19 @@ class PaperList {
         if (in_array($k, ["anonau", "aufull"]))
             return [];
         $err = $report ? new ColumnErrors : null;
-        $f = $this->find_columns($k, $err);
-        if (!$f) {
+        $fs = $this->find_columns($k, $err);
+        if (!$fs) {
             if (!$this->search->viewmap || !isset($this->search->viewmap[$k])) {
                 if (($rfinfo = ReviewInfo::field_info($k, $this->conf))
                     && ($rfield = $this->conf->review_field($rfinfo->id)))
-                    $f = $this->find_columns($rfield->name, $err);
+                    $fs = $this->find_columns($rfield->name, $err);
             } else if ($err && !empty($err->error_html)) {
                 $err->error_html[0] = "Can’t show “" . htmlspecialchars($k) . "”: " . $err->error_html[0];
                 $this->error_html = array_merge($this->error_html, $err->error_html);
             } else if ($err && !$err->allow_empty)
                 $this->error_html[] = "No such column “" . htmlspecialchars($k) . "”.";
         }
-        return $f;
+        return $fs;
     }
 
     private function _view_columns($field_list) {
