@@ -2485,7 +2485,6 @@ class AssignmentSet {
 
         AutoassignmentPaperColumn::$header = "Assignment";
         $assinfo = array();
-        PaperColumn::register(new AutoassignmentPaperColumn);
         foreach ($bypaper as $pid => $list) {
             uasort($list, "Contact::compare");
             $t = "";
@@ -2515,6 +2514,7 @@ class AssignmentSet {
         $query_order .= " show:autoassignment";
         $search = new PaperSearch($this->user, ["t" => $this->search_type, "q" => $query_order], $this->astate->reviewer);
         $plist = new PaperList($search);
+        $plist->add_column("autoassignment", new AutoassignmentPaperColumn);
         $plist->set_table_id_class("foldpl", "pltable_full");
         echo $plist->table_html("reviewers", ["nofooter" => 1]);
 

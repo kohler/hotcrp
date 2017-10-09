@@ -226,6 +226,10 @@ class PaperList {
         $this->report_id = $report;
     }
 
+    function add_column($name, PaperColumn $col) {
+        $this->_columns_by_name[$name][] = $col;
+    }
+
     function set_view($k, $v) {
         if (in_array($k, ["compact", "cc", "compactcolumn", "ccol", "compactcolumns"]))
             $this->_view_compact_columns = $this->_view_columns = $v;
