@@ -1647,10 +1647,15 @@ class Formula {
                 return $e;
 
             $t = $tn;
-            $op = get(self::$_oprewrite, $op) ? : $op;
-            if (!($e2 = $this->_parse_expr($t, get(self::$_oprassoc, $op) ? $opprec : $opprec + 1, $in_qc)))
+            $opx = get(self::$_oprewrite, $op) ? : $op;
+            $opassoc = get(self::$_oprassoc, $opx) ? $opprec : $opprec + 1;
+            if (!($e2 = $this->_parse_expr($t, $opassoc, $in_qc)))
                 return null;
-            $e = new Fexpr($op, $e, $e2);
+            if ($op === ":" && !($e2 instanceof ConstantFexpr)) {
+                $t = ":" . $tn;
+                return $e;
+            }
+            $e = new Fexpr($opx, $e, $e2);
             $e->set_landmark($lpos, -strlen($t));
         }
     }
