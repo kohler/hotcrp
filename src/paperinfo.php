@@ -1470,6 +1470,17 @@ class PaperInfo {
             $this->ensure_reviewer_last_login();
     }
 
+    private function parse_textual_id($textid) {
+        if (ctype_digit($textid))
+            return intval($textid);
+        if (str_starts_with($textid, (string) $this->paperId))
+            $textid = (string) substr($textid, strlen($this->paperId));
+        if ($textid !== "" && ctype_upper($textid)
+            && ($n = parseReviewOrdinal($textid)) > 0)
+            return -$n;
+        return false;
+    }
+
     function reviews_by_id() {
         if ($this->_review_array === null)
             $this->load_reviews();
@@ -1512,6 +1523,15 @@ class PaperInfo {
             if ($rrow->reviewToken == $token)
                 return $rrow;
         return null;
+    }
+
+    function review_of_textual_id($textid) {
+        if (($n = $this->parse_textual_id($textid)) === false)
+            return false;
+        else if ($n < 0)
+            return $this->review_of_ordinal(-$n);
+        else
+            return $this->review_of_id($n);
     }
 
     private function ensure_full_review_name() {
@@ -1568,6 +1588,15 @@ class PaperInfo {
             return $this->_full_review;
         $this->ensure_full_reviews();
         return $this->review_of_ordinal($ordinal);
+    }
+
+    function full_review_of_textual_id($textid) {
+        if (($n = $this->parse_textual_id($textid)) === false)
+            return false;
+        else if ($n < 0)
+            return $this->full_review_of_ordinal(-$n);
+        else
+            return $this->full_review_of_id($n);
     }
 
     private function fresh_review_of($key, $value) {

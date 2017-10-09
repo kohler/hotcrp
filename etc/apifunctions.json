@@ -39,6 +39,10 @@
         "function": "PaperApi::review_api"
     },
     {
+        "name": "reviewrating", "paper": true, "get": true, "post": true,
+        "function": "PaperApi::reviewrating_api"
+    },
+    {
         "name": "reviewround", "paper": true, "post": true, "xxx": true,
         "function": "PaperApi::reviewround_api"
     },

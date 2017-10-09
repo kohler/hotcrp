@@ -404,6 +404,7 @@ class ReviewForm implements JsonSerializable {
                                         -4 => "too narrow",
                                         -2 => "not constructive",
                                         -3 => "not correct");
+
     static private $review_author_seen = null;
 
     static function fmap_compare($a, $b) {
@@ -511,7 +512,19 @@ class ReviewForm implements JsonSerializable {
         return $fmap;
     }
 
-    function unparse_ratings_json() {
+
+    static function parse_rating($rating) {
+        if (isset(self::$rating_types[$rating]))
+            return $rating === "n" ? null : intval($rating);
+        else if ($rating === null)
+            return $rating;
+        else if (($k = array_search($rating, self::$rating_types)) !== false)
+            return $k === "n" ? null : $k;
+        else
+            return false;
+    }
+
+    function unparse_rating_types_json() {
         $rt = self::$rating_types;
         $rt["order"] = array_keys(self::$rating_types);
         return $rt;
@@ -1106,10 +1119,22 @@ $blind\n";
 
     static private function unparse_rating($rating, $flags) {
         $rating = (int) $rating;
-        if (($flags & self::RJ_UNPARSE_RATINGS) && isset(self::$rating_types[$rating]))
-            return self::$rating_types[$rating];
+        if (($flags & self::RJ_UNPARSE_RATINGS)
+            && ($n = get(self::$rating_types, $rating ? : "n")) !== null)
+            return $n;
         else
-            return $rating;
+            return $rating ? : null;
+    }
+
+    static function unparse_ratings_json(ReviewInfo $rrow, $flags) {
+        $ratings = [];
+        if ((string) $rrow->allRatings !== "") {
+            foreach (explode(",", $rrow->allRatings) as $rx) {
+                list($cid, $rating) = explode(" ", $rx);
+                $ratings[] = self::unparse_rating($rating, $flags);
+            }
+        }
+        return $ratings;
     }
 
     function unparse_review_json(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
@@ -1157,21 +1182,10 @@ $blind\n";
 
         // ratings
         if ((string) $rrow->allRatings !== ""
-            && $contact->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0)) {
-            $ratings = [];
-            foreach (explode(",", $rrow->allRatings) as $rx) {
-                list($cid, $rating) = explode(" ", $rx);
-                $ratings[] = self::unparse_rating($rating, $flags);
-            }
-            $rj["ratings"] = $ratings;
-        }
-        if ($editable && $contact->can_rate_review($prow, $rrow)) {
-            if ((string) $rrow->allRatings !== ""
-                && preg_match('/(?:\A|,)' . $contact->contactId . ' (\d+)/', $rrow->allRatings, $m))
-                $rj["user_rating"] = self::unparse_rating($m[1], $flags);
-            else
-                $rj["user_rating"] = null;
-        }
+            && $contact->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0))
+            $rj["ratings"] = self::unparse_ratings_json($rrow, $flags);
+        if ($editable && $contact->can_rate_review($prow, $rrow))
+            $rj["user_rating"] = self::unparse_rating($rrow->rating_of_user($contact), $flags);
 
         // review text
         // (field UIDs always are uppercase so can't conflict)

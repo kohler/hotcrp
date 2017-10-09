@@ -205,4 +205,14 @@ class ReviewInfo {
             return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
         return 0;
     }
+
+    function rating_of_user($user) {
+        $cid = is_object($user) ? $user->contactId : $user;
+        $str = ",$cid ";
+        $pos = strpos("," . $this->allRatings, $str);
+        if ($pos !== false
+            && ($rating = intval(substr($this->allRatings, $pos + strlen($str) - 1))))
+            return $rating;
+        return null;
+    }
 }

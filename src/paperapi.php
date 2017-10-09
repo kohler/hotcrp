@@ -415,21 +415,6 @@ class PaperApi {
         return ["ok" => true, "following" => $following];
     }
 
-    static function reviewround_api(Contact $user, $qreq, $prow) {
-        if (!$qreq->r
-            || !($rr = $prow->review_of_id($qreq->r)))
-            return ["ok" => false, "error" => "No such review."];
-        if (!$user->can_administer($prow))
-            return ["ok" => false, "error" => "Permission error."];
-        $rname = trim((string) $qreq->round);
-        $round = $user->conf->sanitize_round_name($rname);
-        if ($round === false)
-            return ["ok" => false, "error" => Conf::round_name_error($rname)];
-        $rnum = (int) $user->conf->round_number($round, true);
-        $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rr->reviewId);
-        return ["ok" => true];
-    }
-
     static function mentioncompletion_api(Contact $user, $qreq, $prow) {
         $result = [];
         if ($user->isPC) {
@@ -483,11 +468,8 @@ class PaperApi {
         if (!$user->can_view_review($prow, null))
             return new JsonResult(403, "Permission error.");
         if (isset($qreq->r)) {
-            if (ctype_digit($qreq->r))
-                $rrow = $prow->full_review_of_id(intval($qreq->r));
-            else if (preg_match('/\A(?:|' . $prow->paperId . ')([A-Z]+)\z/', $qreq->r, $m))
-                $rrow = $prow->full_review_of_ordinal(parseReviewOrdinal($m[1]));
-            else
+            $rrow = $prow->full_review_of_textual_id($qreq->r);
+            if ($rrow === false)
                 return new JsonResult(400, "Parameter error.");
             $rrows = $rrow ? [$rrow] : [];
         } else if (isset($qreq->u)) {
@@ -509,6 +491,53 @@ class PaperApi {
             return new JsonResult(403, "Permission error.");
         else
             return new JsonResult(["ok" => true, "reviews" => $vrrows]);
+    }
+
+    static function reviewrating_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
+        if (!$qreq->r
+            || ($rrow = $prow->full_review_of_textual_id($qreq->r)) === false)
+            return new JsonResult(400, "Parameter error.");
+        else if (!$user->can_view_review($prow, $rrow))
+            return new JsonResult(403, "Permission error.");
+        else if (!$rrow)
+            return new JsonResult(404, "No such review.");
+        $editable = $user->can_rate_review($prow, $rrow);
+        if ($qreq->method() !== "GET") {
+            if (!isset($qreq->rating)
+                || ($rating = ReviewForm::parse_rating($qreq->rating)) === false)
+                return new JsonResult(400, "Parameter error.");
+            else if (!$editable)
+                return new JsonResult(403, "Permission error.");
+            if ($rating === null)
+                $user->conf->qe("delete from ReviewRating where paperId=? and reviewId=? and contactId=?", $prow->paperId, $rrow->reviewId, $user->contactId);
+            else
+                $user->conf->qe("insert into ReviewRating set paperId=?, reviewId=?, contactId=?, rating=? on duplicate key update rating=values(rating)", $prow->paperId, $rrow->reviewId, $user->contactId, $rating);
+            $rrow = $prow->fresh_review_of_id($rrow->reviewId);
+        }
+        $rating = $rrow->rating_of_user($user);
+        $jr = new JsonResult(["ok" => true, "rating" => $rating, "rating_html" => ReviewForm::$rating_types[$rating ? : "n"]]);
+        if ($editable)
+            $jr->content["editable"] = true;
+        if ($user->can_view_review_ratings($prow, $rrow))
+            $jr->content["ratings"] = ReviewForm::unparse_ratings_json($rrow, 0);
+        return $jr;
+    }
+
+    static function reviewround_api(Contact $user, $qreq, $prow) {
+        if (!$qreq->r
+            || ($rrow = $prow->full_review_of_textual_id($qreq->r)) === false)
+            return new JsonResult(400, "Parameter error.");
+        else if (!$user->can_administer($prow))
+            return new JsonResult(403, "Permission error.");
+        else if (!$rrow)
+            return new JsonResult(404, "No such review.");
+        $rname = trim((string) $qreq->round);
+        $round = $user->conf->sanitize_round_name($rname);
+        if ($round === false)
+            return ["ok" => false, "error" => Conf::round_name_error($rname)];
+        $rnum = (int) $user->conf->round_number($round, true);
+        $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rr->reviewId);
+        return ["ok" => true];
     }
 
     static function listreport_api(Contact $user, Qrequest $qreq, $prow) {

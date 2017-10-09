@@ -2493,7 +2493,7 @@ class PaperTable {
         $rf = $this->conf->review_form();
         Ht::stash_script("review_form.set_form(" . json_encode_browser($rf->unparse_json($round_mask, $min_view_score)) . ")");
         if ($Me->can_view_review_ratings())
-            Ht::stash_script("review_form.set_ratings(" . json_encode_browser($rf->unparse_ratings_json()) . ")");
+            Ht::stash_script("review_form.set_ratings(" . json_encode_browser($rf->unparse_rating_types_json()) . ")");
 
         $rrid = strtoupper(defval($_REQUEST, "reviewId", ""));
         while ($rrid !== "" && $rrid[0] === "0")

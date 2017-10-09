@@ -2856,17 +2856,35 @@ function render_review_body(rrow) {
     return t;
 }
 
+function unparse_ratings(ratings) {
+    var ratecount = {}, ratetext = [], i, ratekey;
+    for (i = 0; i < ratings.length; ++i) {
+        ratekey = ratings[i];
+        ratecount[ratekey] = (ratecount[ratekey] || 0) + 1;
+    }
+    for (i = 0; i < ratingsj.order.length; ++i) {
+        ratekey = ratingsj.order[i];
+        if (ratecount[ratekey])
+            ratetext.push(ratecount[ratekey] + " “" + ratingsj[ratekey] + "”");
+    }
+    return ratetext.join(", ");
+}
+
 function ratereviewform_change() {
-    var $form = $(this).closest("form");
-    $.post($form[0].action + "&ajax=1",
-           $form.serialize(),
-           function (data, status, jqxhr) {
-               var result = "Internal error, please try again later.";
-               if (data && data.result)
-                   result = data.result;
-               $form.find(".result").remove();
-               $form.find("div.inline").append('<span class="result"> &nbsp;<span class="barsep">·</span>&nbsp; ' + data.result + '</span>');
-           });
+    var $form = $(this).closest("form"), $card = $form.closest(".revcard");
+    $.post(hoturl_post("api", {p: $card.data("pid"), r: $card.data("rid"),
+                               fn: "reviewrating"}),
+        $form.serialize(),
+        function (data, status, jqxhr) {
+            var result = data && data.ok ? "Feedback saved." : (data && data.error ? data.error : "Internal error.");
+            $form.find(".result").remove();
+            $form.find("div.inline").append('<span class="result"> &nbsp;<span class="barsep">·</span>&nbsp; ' + result + '</span>');
+            if (data && data.ratings) {
+                var $p = $form.parent(), t = unparse_ratings(data.ratings);
+                $p.find(".rev_rating_data").html(t);
+                $p.find(".rev_rating_summary").toggle(!!data.ratings.length);
+            }
+        });
 }
 
 function add_review(rrow) {
@@ -2875,7 +2893,8 @@ function add_review(rrow) {
         rlink = "r=" + rid + (hotcrp_want_override_conflict ? "&forceShow=1" : ""),
         has_user_rating = false, i, ratekey, selected;
 
-    hc.push('<div class="revcard" id="r' + rid + '" data-rid="' + rrow.rid + '">', '</div>');
+    i = rrow.ordinal ? '" data-review-ordinal="' + rrow.ordinal : '';
+    hc.push('<div class="revcard" id="r' + rid + '" data-pid="' + rrow.pid + '" data-rid="' + rrow.rid + i + '">', '</div>');
 
     // HEADER
     hc.push('<div class="revcard_head">', '</div>');
@@ -2918,37 +2937,28 @@ function add_review(rrow) {
     // ratings
     has_user_rating = "user_rating" in rrow;
     var rateinfo = [];
-    if (rrow.ratings && rrow.ratings.length) {
-        var ratecount = {}, ratetext = [];
-        for (i = 0; i < rrow.ratings.length; ++i) {
-            ratekey = rrow.ratings[i];
-            ratecount[ratekey] = (ratecount[ratekey] || 0) + 1;
-        }
-        for (i = 0; i < ratingsj.order.length; ++i) {
-            ratekey = ratingsj.order[i];
-            if (ratecount[ratekey])
-                ratetext.push(ratecount[ratekey] + " “" + ratingsj[ratekey] + "”");
-        }
-        if (ratetext.length)
-            rateinfo.push('<span class="rev_rating_summary">Ratings: ' + ratetext.join(', ') + '</span>');
+    if ((rrow.ratings && rrow.ratings.length) || has_user_rating) {
+        var ratetext = unparse_ratings(rrow.ratings || []);
+        rateinfo.push('<span class="rev_rating_summary">Ratings: <span class="rev_rating_data">' + ratetext + '</span>' + (has_user_rating ? ' <span class="barsep">·</span> ' : '') + '</span>');
     }
     if (has_user_rating) {
         var rhc = new HtmlCollector;
-        rhc.push('<form method="post" action="' + hoturl_post_html("review", rlink) + '" class="ratereviewform"><div class="inline">', '</div></form>');
+        rhc.push('<form method="post" class="ratereviewform"><div class="inline">', '</div></form>');
         rhc.push('How helpful is this review? &nbsp;');
         rhc.push('<select name="rating">', '</select>');
-        for (i = 0; i != ratingsj.order.length; ++i) {
+        for (i = 0; i !== ratingsj.order.length; ++i) {
             ratekey = ratingsj.order[i];
             selected = rrow.user_rating === null ? ratekey === "n" : ratekey === rrow.user_rating;
             rhc.push('<option value="' + ratekey + '"' + (selected ? ' selected="selected"' : '') + '>' + ratingsj[ratekey] + '</option>');
         }
         rhc.pop_n(2);
+        rhc.push(' <span class="barsep">·</span> ');
+        rhc.push('<a href="' + hoturl_html("help", "t=revrate") + '">What is this?</a>');
         rateinfo.push(rhc.render());
-        rateinfo.push('<a href="' + hoturl_html("help", "t=revrate") + '">What is this?</a>');
     }
     if (rateinfo.length) {
         hc.push('<div class="rev_rating">', '</div>');
-        hc.push_pop(rateinfo.join(' <span class="barsep">·</span> '));
+        hc.push_pop(rateinfo.join(""));
     }
 
     if (rrow.message_html)
@@ -2962,8 +2972,12 @@ function add_review(rrow) {
 
     // complete render
     var $j = $(hc.render()).appendTo($("#body"));
-    if (has_user_rating)
+    if (has_user_rating) {
         $j.find(".ratereviewform select").change(ratereviewform_change);
+        $j.find(".ratereviewform").on("submit", ratereviewform_change);
+        if (!rrow.ratings || !rrow.ratings.length)
+            $j.find(".rev_rating_summary").hide();
+    }
     score_header_tooltips($j);
 }
 
