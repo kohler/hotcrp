@@ -1879,6 +1879,7 @@ class AssignmentSet {
     private $my_conflicts = null;
     private $astate;
     private $searches = array();
+    private $search_type = "s";
     private $unparse_search = false;
     private $unparse_columns = array();
     private $assignment_type = null;
@@ -1892,6 +1893,9 @@ class AssignmentSet {
         $this->set_overrides($overrides);
     }
 
+    function set_search_type($search_type) {
+        $this->search_type = $search_type;
+    }
     function set_reviewer(Contact $reviewer) {
         $this->astate->reviewer = $reviewer;
     }
@@ -2503,12 +2507,13 @@ class AssignmentSet {
         if ($this->unparse_search)
             $query_order = "(" . $this->unparse_search . ") THEN HEADING:none " . join(" ", array_keys($assinfo));
         else
-            $query_order = count($assinfo) ? join(" ", array_keys($assinfo)) : "NONE";
-        foreach ($this->unparse_columns as $k => $v)
+            $query_order = empty($assinfo) ? "NONE" : join(" ", array_keys($assinfo));
+        foreach ($this->unparse_columns as $k => $v) {
             if ($v)
                 $query_order .= " show:$k";
+        }
         $query_order .= " show:autoassignment";
-        $search = new PaperSearch($this->user, ["t" => get($_REQUEST, "t", "s"), "q" => $query_order], $this->astate->reviewer);
+        $search = new PaperSearch($this->user, ["t" => $this->search_type, "q" => $query_order], $this->astate->reviewer);
         $plist = new PaperList($search);
         $plist->set_table_id_class("foldpl", "pltable_full");
         echo $plist->table_html("reviewers", ["nofooter" => 1]);

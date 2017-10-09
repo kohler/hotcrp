@@ -168,6 +168,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
     }
 
     $assignset = new AssignmentSet($Me, true);
+    $assignset->set_search_type("editpref");
     $assignset->set_reviewer($reviewer);
     $assignset->enable_actions("pref");
     if ($apply)

@@ -244,6 +244,7 @@ class AutoassignerInterface {
         }
 
         $assignset = new AssignmentSet($this->user, true);
+        $assignset->set_search_type($this->qreq->t);
         $assignset->parse(join("\n", $assignments));
 
         $atypes = $assignset->assigned_types();
