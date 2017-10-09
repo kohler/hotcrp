@@ -29,6 +29,7 @@
         "match": ".*", "priority": -2000,
         "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_option",
         "factory_class": "Option_PaperColumnFactory",
+        "completion_function": "Option_PaperColumnFactory::completions",
         "position": 200
     },
     {
@@ -53,9 +54,10 @@
     },
     {
         "prefix": "pref:",
-        "match": "(?:rev)?pref:.*", "priority": -1,
+        "match": "(?:rev)?pref:.*", "priority": -1, "enable_if": "manager",
         "factory_class": "Preference_PaperColumnFactory",
-        "synonym": ["revpref:", "preference:"]
+        "synonym": ["revpref:", "preference:"],
+        "completion": "pref:<user>"
     },
     {
         "name": "revdelegation",
@@ -113,41 +115,44 @@
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true,
         "className": "pl_score",
         "factory_class": "Score_PaperColumnFactory",
-        "position": 1100
+        "position": 1100,
+        "completion_function": "Score_PaperColumnFactory::completions"
     },
     {
         "prefix": "g",
         "match": "g.*", "priority": -1,
         "column": true, "fold": true, "sort": true, "minimal": true, "className": "pl_score",
         "factory_class": "FormulaGraph_PaperColumnFactory",
-        "position": 1200
+        "position": 1200,
+        "completion": "graph(<formula>)"
     },
     {
         "prefix": "",
         "match": ".*", "priority": -1000,
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_formula",
         "factory_class": "Formula_PaperColumnFactory",
-        "position": 1300
+        "position": 1300,
+        "completion_function": "Formula_PaperColumnFactory::completions"
     },
     {
         "prefix": "tag:",
-        "match": "tag:.*", "priority": -1,
+        "match": "tag:.*", "priority": -1, "enable_if": "pc",
         "tagvalue": false,
-        "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
+        "column": true, "sort": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
         "position": 1400
     },
     {
         "prefix": "tagval:",
-        "match": "tagval:.*", "priority": -1,
+        "match": "tagval:.*", "priority": -1, "enable_if": "pc",
         "tagvalue": true,
-        "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
+        "column": true, "sort": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
         "position": 1400
     },
     {
         "prefix": "#",
-        "match": "#.*", "priority": -1,
+        "match": "#.*", "priority": -1, "enable_if": "pc",
         "tagvalue": null,
-        "column": true, "sort": true, "completion": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
+        "column": true, "sort": true, "completion": "#<tag>", "minimal": true, "factory_class": "Tag_PaperColumnFactory",
         "position": 1400
     },
     {

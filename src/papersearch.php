@@ -4085,12 +4085,15 @@ class PaperSearch {
                 if (($cat = $c->completion_name())
                     && $c->prepare($pl, 0))
                     $cats[$cat] = true;
-            foreach (PaperColumn::lookup_all_factories() as $f) {
-                foreach ($f[1]->completion_instances($this->user) as $c)
-                    if (($cat = $c->completion_name())
-                        && (!($c instanceof PaperColumn)
-                            || $c->prepare($pl, 0)))
-                        $cats[$cat] = true;
+            foreach (PaperColumn::factory_json_list() as $fxj) {
+                if (!$this->conf->xt_enabled($fxj, $this->user))
+                    continue;
+                if (isset($fxj->completion) && is_string($fxj->completion))
+                    $cats[$fxj->completion] = true;
+                else if (isset($fxj->completion_function)) {
+                    foreach (call_user_func($fxj->completion_function, $this->user, $fxj) as $c)
+                        $cats[$c] = true;
+                }
             }
             foreach (array_keys($cats) as $cat)
                 array_push($res, "show:$cat", "hide:$cat");

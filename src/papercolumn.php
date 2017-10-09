@@ -124,6 +124,11 @@ class PaperColumn extends Column {
         }
         return self::$factories;
     }
+    static function factory_json_list() {
+        if (self::$j_by_name === null)
+            self::_populate_json();
+        return self::$j_factories;
+    }
 
 
     function make_editable() {
@@ -191,12 +196,6 @@ class PaperColumnFactory {
         $this->priority = get_f($cj, "priority");
     }
     function instantiate(Contact $user, $name, $errors) {
-    }
-    function completion_instances(Contact $user) {
-        return [$this];
-    }
-    function completion_name() {
-        return false;
     }
     static function instantiate_error($errors, $ehtml, $eprio) {
         $errors && $errors->add($ehtml, $eprio);
@@ -1404,9 +1403,6 @@ class Tag_PaperColumnFactory extends PaperColumnFactory {
         $p = str_starts_with($name, "#") ? 0 : strpos($name, ":");
         return new Tag_PaperColumn(["name" => $name] + $this->cj, substr($name, $p + 1));
     }
-    function completion_name() {
-        return "#<tag>";
-    }
 }
 
 class EditTag_PaperColumn extends Tag_PaperColumn {
@@ -1580,11 +1576,18 @@ class Score_PaperColumnFactory extends PaperColumnFactory {
         $fs = array_filter($fs, function ($f) { return $f && $f->has_options && $f->displayed; });
         return array_map(function ($f) { return new Score_PaperColumn($this->cj, $f); }, $fs);
     }
-    function completion_instances(Contact $user) {
-        return array_merge([$this], $this->instantiate($user, "scores", null));
-    }
-    function completion_name() {
-        return "scores";
+    static function completions(Contact $user, $fxt) {
+        if (!$user->can_view_some_review())
+            return [];
+        $vsbound = $user->permissive_view_score_bound();
+        $cs = array_map(function ($f) {
+            return $f->search_keyword();
+        }, array_filter($user->conf->all_review_fields(), function ($f) use ($user, $vsbound) {
+            return $f->has_options && $f->displayed && $f->view_score > $vsbound;
+        }));
+        if (!empty($cs))
+            array_unshift($cs, "scores");
+        return $cs;
     }
 }
 
@@ -1660,9 +1663,6 @@ class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
         }
         ++self::$nregistered;
         return new FormulaGraph_PaperColumn(["name" => "scorex" . self::$nregistered] + $this->cj, $formula);
-    }
-    function completion_name() {
-        return "graph(<formula>)";
     }
 }
 
@@ -1746,11 +1746,15 @@ class Option_PaperColumnFactory extends PaperColumnFactory {
             self::instantiate_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
         return null;
     }
-    function completion_instances(Contact $user) {
-        return array_merge([$this], $this->all($user));
-    }
-    function completion_name() {
-        return "options";
+    static function completions(Contact $user, $fxt) {
+        $cs = array_map(function ($opt) {
+            return $opt->search_keyword();
+        }, array_filter($user->user_option_list(), function ($opt) {
+            return $opt->display() >= 0;
+        }));
+        if (!empty($cs))
+            array_unshift($cs, "options");
+        return $cs;
     }
 }
 
@@ -1919,11 +1923,13 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
         }
         return $this->make($ff);
     }
-    function completion_name() {
-        return "(<formula>)";
-    }
-    function completion_instances(Contact $user) {
-        return array_merge([$this], $this->all($user));
+    static function completions(Contact $user, $fxt) {
+        $cs = ["(<formula>)"];
+        $vsbound = $user->permissive_view_score_bound();
+        foreach ($user->conf->named_formulas() as $f)
+            if ($f->view_score($user) > $vsbound)
+                $cs[] = preg_match('/\A[-A-Za-z_0-9:]+\z/', $f->name) ? $f->name : "\"{$f->name}\"";
+        return $cs;
     }
 }
 
