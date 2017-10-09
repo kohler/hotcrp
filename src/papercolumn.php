@@ -664,9 +664,10 @@ class ReviewerTypePaperColumn extends PaperColumn {
     protected $contact;
     private $self;
     private $rrow_key;
-    function __construct($cj, $contact = null) {
+    function __construct($cj, Conf $conf = null) {
         parent::__construct($cj);
-        $this->contact = $contact;
+        if ($conf && isset($cj->user))
+            $this->contact = $conf->pc_member_by_email($cj->user);
     }
     function contact() {
         return $this->contact;
@@ -773,10 +774,12 @@ class ReviewerType_PaperColumnFactory extends PaperColumnFactory {
             self::instantiate_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $colon + 1)) . "”.", 2);
             return null;
         }
+        $fj = (array) PaperColumn::lookup_json("revtype");
         foreach ($x as &$cid) {
             $u = $user->conf->pc_member_by_id($cid);
-            $fname = substr($name, 0, $colon + 1) . $u->email;
-            $cid = new ReviewerTypePaperColumn(["name" => $fname] + (array) PaperColumn::lookup_json("revtype"), $u);
+            $fj["name"] = "revtype:" . $u->email;
+            $fj["user"] = $u->email;
+            $cid = new ReviewerTypePaperColumn((object) $fj, $user->conf);
         }
         return $x;
     }
@@ -938,11 +941,12 @@ class PreferencePaperColumn extends PaperColumn {
     private $not_me;
     private $show_conflict;
     private $prefix;
-    function __construct($cj, $contact = null) {
+    function __construct($cj, Conf $conf = null) {
         parent::__construct($cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
         $this->editable = !!get($cj, "edit");
-        $this->contact = $contact;
+        if ($conf && isset($cj->user))
+            $this->contact = $conf->pc_member_by_email($cj->user);
     }
     function make_editable() {
         return new PreferencePaperColumn(["name" => $this->name] + (array) self::lookup_json("editpref"), $this->contact);
@@ -1047,10 +1051,10 @@ class Preference_PaperColumnFactory extends PaperColumnFactory {
         parent::__construct($cj);
     }
     function instantiate(Contact $user, $name, $errors) {
-        $opts = (array) PaperColumn::lookup_json("pref");
+        $fj = (array) PaperColumn::lookup_json("pref");
         if (str_ends_with($name, ":row")) {
-            $opts["row"] = true;
-            $opts["column"] = false;
+            $fj["row"] = true;
+            $fj["column"] = false;
             $name = substr($name, 0, -4);
         }
         $colon = strpos($name, ":");
@@ -1061,8 +1065,9 @@ class Preference_PaperColumnFactory extends PaperColumnFactory {
         }
         foreach ($x as &$cid) {
             $u = $user->conf->pc_member_by_id($cid);
-            $fname = substr($name, 0, $colon + 1) . $u->email;
-            $cid = new PreferencePaperColumn(["name" => $fname] + $opts, $u);
+            $fj["name"] = "pref:" . $fname . (get($fj, "row") ? ":row" : "");
+            $fj["user"] = $u->email;
+            $cid = new PreferencePaperColumn((object) $fj, $user->conf);
         }
         return $x;
     }
@@ -1315,15 +1320,16 @@ class Tag_PaperColumn extends PaperColumn {
     protected $ctag;
     protected $editable = false;
     protected $emoji = false;
-    function __construct($cj, $tag) {
+    function __construct($cj) {
         parent::__construct($cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
-        $this->dtag = $tag;
+        $this->dtag = $cj->tag;
         $this->is_value = get($cj, "tagvalue");
     }
     function make_editable() {
         $is_value = $this->is_value || $this->is_value === null;
-        return new EditTag_PaperColumn($this->column_json() + ["tagvalue" => $is_value], $this->dtag);
+        $cj = $this->column_json() + ["tagvalue" => $is_value, "tag" => $this->dtag];
+        return new EditTag_PaperColumn((object) $cj);
     }
     function sorts_my_tag($sorter, Contact $user) {
         return strcasecmp(Tagger::check_tag_keyword($sorter->type, $user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID), $this->xtag) == 0;
@@ -1401,14 +1407,17 @@ class Tag_PaperColumnFactory extends PaperColumnFactory {
     }
     function instantiate(Contact $user, $name, $errors) {
         $p = str_starts_with($name, "#") ? 0 : strpos($name, ":");
-        return new Tag_PaperColumn(["name" => $name] + $this->cj, substr($name, $p + 1));
+        $cj = $this->cj;
+        $cj["name"] = $name;
+        $cj["tag"] = substr($name, $p + 1);
+        return new Tag_PaperColumn((object) $cj);
     }
 }
 
 class EditTag_PaperColumn extends Tag_PaperColumn {
     private $editsort;
-    function __construct($cj, $tag) {
-        parent::__construct($cj, $tag);
+    function __construct($cj) {
+        parent::__construct($cj);
         $this->editable = true;
     }
     function prepare(PaperList $pl, $visible) {
@@ -1518,11 +1527,11 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     public $score;
     public $max_score;
     private $form_field;
-    function __construct($cj, ReviewField $form_field) {
-        parent::__construct(["name" => $form_field->search_keyword()] + (array) $cj);
+    function __construct($cj, Conf $conf) {
+        parent::__construct($cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
-        $this->score = $form_field->id;
-        $this->form_field = $form_field;
+        $this->form_field = $conf->review_field($cj->review_field_id);
+        $this->score = $this->form_field->id;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
@@ -1574,7 +1583,12 @@ class Score_PaperColumnFactory extends PaperColumnFactory {
         } else
             $fs = [$user->conf->find_review_field($name)];
         $fs = array_filter($fs, function ($f) { return $f && $f->has_options && $f->displayed; });
-        return array_map(function ($f) { return new Score_PaperColumn($this->cj, $f); }, $fs);
+        return array_map(function ($f) use ($user) {
+            $cj = (array) $this->cj;
+            $cj["name"] = $f->search_keyword();
+            $cj["review_field_id"] = $f->id;
+            return new Score_PaperColumn((object) $cj, $user->conf);
+        }, $fs);
     }
     static function completions(Contact $user, $fxt) {
         if (!$user->can_view_some_review())
@@ -1596,9 +1610,9 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     private $indexes_function;
     private $formula_function;
     private $results;
-    function __construct($cj, Formula $formula) {
+    function __construct($cj) {
         parent::__construct($cj);
-        $this->formula = $formula;
+        $this->formula = $cj->formula;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk
@@ -1662,22 +1676,19 @@ class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
             return null;
         }
         ++self::$nregistered;
-        return new FormulaGraph_PaperColumn(["name" => "scorex" . self::$nregistered] + $this->cj, $formula);
+        $cj = (array) $this->cj;
+        $cj["name"] = "graphx" . self::$nregistered;
+        $cj["formula"] = $formula;
+        return new FormulaGraph_PaperColumn((object) $cj);
     }
 }
 
 class Option_PaperColumn extends PaperColumn {
     private $opt;
-    function __construct(PaperOption $opt, $cj, $isrow) {
-        $name = $opt->search_keyword() . ($isrow ? "-row" : "");
-        $optcj = $opt->list_display($isrow);
-        if ($optcj === true && $isrow)
-            $optcj = ["row" => true];
-        else if ($optcj === true)
-            $optcj = ["column" => true, "className" => "pl_option"];
-        parent::__construct(["name" => $name] + ($optcj ? : []) + $cj);
+    function __construct($cj, Conf $conf) {
+        parent::__construct($cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
-        $this->opt = $opt;
+        $this->opt = $conf->paper_opts->get($cj->option_id);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_some_paper_option($this->opt))
@@ -1712,35 +1723,51 @@ class Option_PaperColumnFactory extends PaperColumnFactory {
         parent::__construct($cj);
         $this->cj = (array) $cj;
     }
-    private function all(Contact $user) {
-        $x = [];
-        foreach ($user->user_option_list() as $opt)
-            if ($opt->display() >= 0)
-                $x[] = new Option_PaperColumn($opt, $this->cj, false);
-        return $x;
+    static private function option_json($xfj, PaperOption $opt, $isrow) {
+        $cj = (array) $xfj;
+        $cj["name"] = $opt->search_keyword() . ($isrow ? ":row" : "");
+        if ($isrow)
+            $cj["row"] = true;
+        $optcj = $opt->list_display($isrow);
+        if ($optcj === true && !$isrow)
+            $optcj = ["column" => true, "className" => "pl_option"];
+        $cj += $optcj;
+        $cj["option_id"] = $opt->id;
+        return (object) $cj;
     }
     function instantiate(Contact $user, $name, $errors) {
-        if ($name === "options") {
-            $errors && ($errors->allow_empty = true);
-            return $this->all($user);
-        }
         $has_colon = false;
         if (str_starts_with($name, "opt:")) {
             $name = substr($name, 4);
             $has_colon = true;
-        } else if (strpos($name, ":") !== false)
-            return null;
+        }
+
+        $oname = $name;
         $isrow = false;
-        if (str_ends_with($name, "-row")
-            && ($opts = $user->conf->paper_opts->find_all(substr($name, 0, -4))))
+        if (str_ends_with($name, ":row") || str_ends_with($name, "-row")) {
+            $oname = substr($name, 0, -4);
             $isrow = true;
-        else
+        }
+        if (strpos($oname, ":") !== false)
+            return null;
+
+        if ($oname === "options" && !$has_colon) {
+            $errors && ($errors->allow_empty = true);
+            $x = [];
+            foreach ($user->user_option_list() as $opt)
+                if ($opt->display() >= 0 && $opt->list_display($isrow))
+                    $x[] = new Option_PaperColumn(self::option_json($this->cj, $opt, $isrow), $user->conf);
+            return $x;
+        }
+
+        $opts = $user->conf->paper_opts->find_all($oname);
+        if (!$opts && $isrow)
             $opts = $user->conf->paper_opts->find_all($name);
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
-            if ($opt->list_display($isrow))
-                return new Option_PaperColumn($opt, $this->cj, $isrow);
+            if ($opt->display() >= 0 && $opt->list_display($isrow))
+                return new Option_PaperColumn(self::option_json($this->cj, $opt, $isrow), $user->conf);
             self::instantiate_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.", 1);
         } else if ($has_colon)
             self::instantiate_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
@@ -1766,9 +1793,9 @@ class Formula_PaperColumn extends PaperColumn {
     private $results;
     private $override_results;
     private $real_format;
-    function __construct($cj, Formula $formula) {
+    function __construct($cj) {
         parent::__construct($cj);
-        $this->formula = $formula;
+        $this->formula = $cj->formula;
     }
     function completion_name() {
         if (strpos($this->formula->name, " ") !== false)
@@ -1897,16 +1924,19 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
         parent::__construct($cj);
         $this->cj = (array) $cj;
     }
-    private function make(Formula $f) {
+    static function make($xfj, Formula $f) {
         if ($f->formulaId)
             $name = $f->name;
         else
             $name = "formula:" . $f->expression;
-        return new Formula_PaperColumn(["name" => $name] + $this->cj, $f);
+        $cj = (array) $xfj;
+        $cj["name"] = $name;
+        $cj["formula"] = $f;
+        return new Formula_PaperColumn((object) $cj);
     }
     private function all(Contact $user) {
         return array_map(function ($f) {
-            return $this->make($f);
+            return Formula_PaperColumnFactory::make($this->cj, $f);
         }, $user->conf->named_formulas());
     }
     function instantiate(Contact $user, $name, $errors) {
@@ -1942,10 +1972,10 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
 class TagReport_PaperColumn extends PaperColumn {
     private $tag;
     private $viewtype;
-    function __construct($tag, $cj) {
-        parent::__construct(["name" => "tagrep:" . strtolower($tag)] + $cj);
+    function __construct($cj) {
+        parent::__construct($cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
-        $this->tag = $tag;
+        $this->tag = $cj->tag;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_any_peruser_tags($this->tag))
@@ -1989,6 +2019,12 @@ class TagReport_PaperColumnFactory extends PaperColumnFactory {
         parent::__construct($cj);
         $this->cj = (array) $cj;
     }
+    static private function column_json($xfj, $tag) {
+        $cj = (array) $xfj;
+        $cj["name"] = "tagreport:" . strtolower($tag);
+        $cj["tag"] = $tag;
+        return (object) $cj;
+    }
     function instantiate(Contact $user, $name, $errors) {
         if (!$user->can_view_most_tags())
             return null;
@@ -1999,13 +2035,14 @@ class TagReport_PaperColumnFactory extends PaperColumnFactory {
             $tag = substr($name, 10);
         else if ($name === "tagreports") {
             $errors && ($errors->allow_empty = true);
-            return array_map(function ($t) { return new TagReport_PaperColumn($t->tag, $this->cj); },
-                             $tagset->filter_by(function ($t) { return $t->vote || $t->approval || $t->rank; }));
+            return array_map(function ($t) {
+                return new TagReport_PaperColumn(self::column_json($this->cj, $t->tag));
+            }, $tagset->filter_by(function ($t) { return $t->vote || $t->approval || $t->rank; }));
         } else
             return null;
         $t = $tagset->check($tag);
         if ($t && ($t->vote || $t->approval || $t->rank))
-            return new TagReport_PaperColumn($tag, $this->cj);
+            return new TagReport_PaperColumn(self::column_json($this->cj, $tag));
         return null;
     }
 }
