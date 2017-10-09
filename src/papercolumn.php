@@ -1915,7 +1915,13 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
         $ff = $user->conf->find_named_formula($name);
         if (!$ff && str_starts_with($name, "formula"))
             $ff = get($user->conf->named_formulas(), substr($name, 7));
-        $ff = $ff ? : new Formula($name);
+        if (!$ff) {
+            if (str_starts_with($name, "f:"))
+                $name = ltrim(substr($name, 2));
+            else if (str_starts_with($name, "formula:"))
+                $name = ltrim(substr($name, 8));
+            $ff = new Formula($name);
+        }
         if (!$ff->check($user)) {
             if ($errors && strpos($name, "(") !== false)
                 self::instantiate_error($errors, $ff->error_html(), 1);
