@@ -98,13 +98,6 @@ class PaperColumn extends Column {
         return null;
     }
 
-    static function register($fdef) {
-        $lname = strtolower($fdef->name);
-        assert(!isset(self::$by_name[$lname]) && !isset(self::$synonyms[$lname]));
-        self::$by_name[$lname] = $fdef;
-        assert(func_num_args() == 1); // XXX backwards compat
-        return $fdef;
-    }
     static function register_synonym($new_name, $old_name) {
         $lold = strtolower($old_name);
         $lname = strtolower($new_name);
