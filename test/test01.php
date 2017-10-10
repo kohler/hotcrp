@@ -425,6 +425,9 @@ $Conf->invalidate_caches(["taginfo" => true]);
 $ct = $Conf->tags()->check("chairtest0");
 xassert($ct && $ct->chair && $ct->approval);
 
+// numeric order sort
+assert_search_papers($user_chair, "13 10 8 9 12", "13 10 8 9 12");
+
 // round searches
 assert_search_papers($user_chair, "re:huitema", "8 10 13");
 assert_search_papers($user_chair, "re:huitema round:R1", "13");
