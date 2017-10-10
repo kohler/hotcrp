@@ -1589,7 +1589,8 @@ class Option_PaperColumnFactory {
         $optcj = $opt->list_display($isrow);
         if ($optcj === true && !$isrow)
             $optcj = ["column" => true, "className" => "pl_option"];
-        $cj += $optcj;
+        if (is_array($optcj))
+            $cj += $optcj;
         $cj["option_id"] = $opt->id;
         return (object) $cj;
     }
