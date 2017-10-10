@@ -40,17 +40,3 @@ class Column {
         return array_intersect_key(get_object_vars($this), self::$keys);
     }
 }
-
-class ColumnErrors {
-    public $error_html = array();
-    public $priority = null;
-    public $allow_empty = false;
-    function add($error_html, $priority) {
-        if ($this->priority === null || $this->priority < $priority) {
-            $this->error_html = array();
-            $this->priority = $priority;
-        }
-        if ($this->priority == $priority)
-            $this->error_html[] = $error_html;
-    }
-}
