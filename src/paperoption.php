@@ -121,7 +121,7 @@ class PaperOptionList {
         if (is_int($oj->id) && $oj->id > 0 && !isset($this->jlist[$oj->id])
             && ($oj->id >= PaperOption::MINFIXEDID) === $fixed
             && isset($oj->name) && is_string($oj->name)) {
-            if (!isset($oj->enable_if) || $this->conf->xt_enabled($oj, null))
+            if ($this->conf->xt_allowed($oj) && !Conf::xt_disabled($oj))
                 $this->jlist[$oj->id] = $oj;
             return true;
         } else
@@ -162,7 +162,7 @@ class PaperOptionList {
             $o = null;
             if (($oj = get($this->option_json_list(), $id)))
                 $o = PaperOption::make($oj, $this->conf);
-            if ($o && isset($o->enable_if) && !$this->conf->xt_enabled($o))
+            if (!$this->conf->xt_allowed($o) || Conf::xt_disabled($o))
                 $o = null;
             $this->jmap[$id] = $o;
         }
@@ -307,7 +307,7 @@ class PaperOption implements Abbreviator {
     public $display_space;
     public $selector;
     private $form_position;
-    public $enable_if; // public for PaperOptionList
+    public $allow_if; // public for PaperOptionList
 
     const DISP_TOPICS = 0;
     const DISP_PROMINENT = 1;
@@ -369,7 +369,7 @@ class PaperOption implements Abbreviator {
             $disp = "none";
         $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
         $this->form_position = get_f($args, "form_position");
-        $this->enable_if = get($args, "enable_if");
+        $this->allow_if = get($args, "allow_if");
 
         if (($x = get($args, "display_space")))
             $this->display_space = (int) $x;

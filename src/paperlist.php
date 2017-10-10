@@ -420,7 +420,7 @@ class PaperList {
                 $uf = null;
                 foreach ($fjs as $fj)
                     if (Conf::xt_priority_compare($fj, $uf) <= 0
-                        && $this->conf->xt_enabled($fj, $this->user)
+                        && $this->conf->xt_allowed($fj, $this->user)
                         && $this->action_xt_displayed($fj))
                         $uf = $fj;
                 if ($uf)
@@ -451,6 +451,8 @@ class PaperList {
                     return false;
             }
         }
+        if (isset($fj->disabled) && $fj->disabled)
+            return false;
         return true;
     }
 
@@ -463,7 +465,7 @@ class PaperList {
             $rf = null;
             foreach ($fjs as $fj)
                 if (Conf::xt_priority_compare($fj, $rf) <= 0
-                    && $this->conf->xt_enabled($fj, $this->user)
+                    && $this->conf->xt_allowed($fj, $this->user)
                     && $this->action_xt_displayed($fj))
                     $rf = $fj;
             if ($rf) {

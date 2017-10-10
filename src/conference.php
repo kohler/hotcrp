@@ -710,6 +710,9 @@ class Conf {
                 && !in_array($k, ["match", "expand_function"]))
                 $xt1->$k = $v;
     }
+    static function xt_disabled($xt) {
+        return !$xt || (isset($xt->disabled) && $xt->disabled);
+    }
     static function xt_resolve_require($xt) {
         if ($xt && isset($xt->disabled) && $xt->disabled)
             $xt = null;
@@ -755,9 +758,9 @@ class Conf {
         }
         return true;
     }
-    function xt_enabled($xt, Contact $user = null) {
-        return $xt && (!isset($xt->enable_if)
-                       || $this->xt_check($xt->enable_if, $xt, $user));
+    function xt_allowed($xt, Contact $user = null) {
+        return $xt && (!isset($xt->allow_if)
+                       || $this->xt_check($xt->allow_if, $xt, $user));
     }
     static function xt_position_compare($xta, $xtb) {
         $ap = get($xta, "position", 0);
@@ -819,7 +822,7 @@ class Conf {
     function search_keyword($keyword, Contact $user = null) {
         if ($this->_search_keyword_base === null)
             $this->make_search_keyword_map();
-        $checkf = function ($xt) use ($user) { return $this->xt_enabled($xt, $user); };
+        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
         $uf = $this->xt_search_name($this->_search_keyword_base, $keyword, $checkf);
         if (($expansions = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $checkf, $uf)))
             $uf = $expansions[0];
@@ -840,7 +843,7 @@ class Conf {
             if (($olist = $this->opt("assignmentParsers")))
                 expand_json_includes_callback($olist, [$this, "_add_assignment_parser_json"]);
         }
-        $checkf = function ($xt) use ($user) { return $this->xt_enabled($xt, $user); };
+        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
         $uf = $this->xt_search_name($this->_assignment_parsers, $keyword, $checkf);
         $uf = self::xt_resolve_require($uf);
         if ($uf && !isset($uf->__parser)) {
@@ -863,7 +866,7 @@ class Conf {
             if (($olist = $this->opt("formulaFunctions")))
                 expand_json_includes_callback($olist, [$this, "_add_formula_function_json"]);
         }
-        $checkf = function ($xt) use ($user) { return $this->xt_enabled($xt, $user); };
+        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
         $uf = $this->xt_search_name($this->_formula_functions, $fname, $checkf);
         return self::xt_resolve_require($uf);
     }
@@ -3241,7 +3244,7 @@ class Conf {
         return $this->_api_map;
     }
     private function check_api_json($fj, Contact $user = null, $method) {
-        if ((isset($fj->enable_if) && !$this->xt_enabled($fj, $user))
+        if ((isset($fj->allow_if) && !$this->xt_allowed($fj, $user))
             || ($method === "GET" && !get($fj, "get"))
             || ($method === "POST" && get($fj, "post") === false))
             return false;
