@@ -260,7 +260,7 @@ class PaperList {
             } else
                 $action = "show";
             if ($action === "sort") {
-                if (!$has_sorters)
+                if (!$has_sorters && $w !== "sort:id")
                     ListSorter::push($this->sorters, PaperSearch::parse_sorter($w));
             } else if ($action === "edit")
                 $this->set_view($w, "edit");
@@ -1651,7 +1651,9 @@ class PaperList {
         ksort($res, SORT_NATURAL);
         $res = array_values($res);
         foreach ($this->sorters as $s) {
-            $res[] = "sort:" . ($s->reverse ? "-" : "") . PaperSearch::escape_word($s->field->sort_name($s->score));
+            $w = "sort:" . ($s->reverse ? "-" : "") . PaperSearch::escape_word($s->field->sort_name($s->score));
+            if ($w !== "sort:id")
+                $res[] = $w;
         }
         return join(" ", $res);
     }
