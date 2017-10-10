@@ -174,23 +174,23 @@
     },
     {
         "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?)(|meta-?|pri-?|sec-?|ext-?|primary-?|secondary-?|external-?)(?:re|rev|review)",
-        "factory": "Review_SearchTerm::keyword_factory"
+        "expand_function": "Review_SearchTerm::keyword_factory"
     },
     {
         "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?)(meta|pri|sec|ext|primary|secondary|external)",
-        "factory": "Review_SearchTerm::keyword_factory"
+        "expand_function": "Review_SearchTerm::keyword_factory"
     },
     {
         "match": "(|au-?|author-?|any-?)(?:cmt|comment)",
-        "factory": "Comment_SearchTerm::comment_factory"
+        "expand_function": "Comment_SearchTerm::comment_factory"
     },
     {
         "match": "(|draft-?)(\\w*)resp(?:onse)(|-?draft)",
-        "factory": "Comment_SearchTerm::response_factory"
+        "expand_function": "Comment_SearchTerm::response_factory"
     },
     {
         "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
-        "factory": "Review_SearchTerm::review_field_factory"
+        "expand_function": "Review_SearchTerm::review_field_factory"
     },
     {
         "name": "option",
@@ -199,7 +199,7 @@
     },
     {
         "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
-        "factory": "Option_SearchTerm::parse_factory"
+        "expand_function": "Option_SearchTerm::parse_factory"
     },
     {
         "name": "show",

@@ -80,19 +80,22 @@ class Conf {
     private $_docclass_cache = [];
     private $_formatspec_cache = [];
     private $_docstore = false;
-    private $_formula_functions = null;
-    private $_search_keyword_base = null;
-    private $_search_keyword_factories = null;
     private $_defined_formulas = null;
-    private $_assignment_parsers = null;
     private $_emoji_codes = null;
     private $_s3_document = false;
     private $_ims = null;
-    private $_api_map = null;
     private $_format_info = null;
+
+    private $_formula_functions = null;
+    private $_search_keyword_base = null;
+    private $_search_keyword_factories = null;
+    private $_assignment_parsers = null;
+    private $_api_map = null;
     private $_list_action_map = null;
     private $_list_action_renderers = null;
     private $_list_action_factories = null;
+    private $_paper_column_map = null;
+    private $_paper_column_factories = null;
 
     public $paper = null; // current paper row
 
@@ -704,7 +707,7 @@ class Conf {
     static private function xt_combine($xt1, $xt2) {
         foreach (get_object_vars($xt2) as $k => $v)
             if (!property_exists($xt1, $k)
-                && !in_array($k, ["match", "factory", "factory_class"]))
+                && !in_array($k, ["match", "expand_function"]))
                 $xt1->$k = $v;
     }
     static function xt_resolve_require($xt) {
@@ -780,7 +783,7 @@ class Conf {
             if (!call_user_func($checkf, $fxt))
                 continue;
             self::xt_resolve_require($fxt);
-            $r = call_user_func($fxt->factory, $name, $this, $fxt, $m);
+            $r = call_user_func($fxt->expand_function, $name, $this, $fxt, $m);
             if (is_object($r))
                 $r = [$r];
             foreach ($r ? : [] as $xt) {
@@ -800,7 +803,7 @@ class Conf {
     function _add_search_keyword_json($kwj) {
         if (isset($kwj->name) && is_string($kwj->name))
             return self::xt_add($this->_search_keyword_base, $kwj->name, $kwj);
-        else if (is_string($kwj->match) && is_string($kwj->factory)) {
+        else if (is_string($kwj->match) && is_string($kwj->expand_function)) {
             $this->_search_keyword_factories[] = $kwj;
             return true;
         } else
@@ -3297,7 +3300,7 @@ class Conf {
     }
 
 
-    // List API
+    // List action API
     function _add_list_action_json($fj) {
         $ok = false;
         if (isset($fj->name) && is_string($fj->name)) {
@@ -3307,7 +3310,7 @@ class Conf {
                 || (isset($fj->factory_class) && is_string($fj->factory_class)))
                 $ok = self::xt_add($this->_list_action_map, $fj->name, $fj);
         } else if (isset($fj->match) && is_string($fj->match)) {
-            if (isset($fj->factory) && is_string($fj->factory)) {
+            if (isset($fj->expand_function) && is_string($fj->expand_function)) {
                 $this->_list_action_factories[] = $fj;
                 $ok = true;
             }

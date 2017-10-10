@@ -23,7 +23,7 @@
     },
     {
         "match": "get/.*", "paper": true, "get": true,
-        "factory": "GetDocument_SearchAction::expand",
+        "expand_function": "GetDocument_SearchAction::expand",
         "require": "src/sa/sa_get_sub.php"
     },
     {
