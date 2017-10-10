@@ -1088,8 +1088,11 @@ class PaperList {
     private function _prepare_sort() {
         $sorters = [];
         foreach ($this->sorters as $sorter) {
-            if ($sorter->type
-                && ($field = $this->find_column($sorter->type))) {
+            if ($sorter->field) {
+                // already prepared (e.g., NumericOrderPaperColumn)
+                $sorters[] = $sorter;
+            } else if ($sorter->type
+                       && ($field = $this->find_column($sorter->type))) {
                 if ($field->prepare($this, PaperColumn::PREP_SORT)
                     && $field->sort) {
                     $sorter->field = $field->realize($this);
