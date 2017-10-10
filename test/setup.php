@@ -261,6 +261,7 @@ function call_api($fn, $user, $qreq, $prow) {
         $qreq = new Qrequest("POST", $qreq);
     $uf = $user->conf->api($fn);
     xassert($uf);
+    Conf::xt_resolve_require($uf);
     JsonResultException::$capturing = true;
     $result = null;
     try {

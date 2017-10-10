@@ -25,10 +25,10 @@
         "position": 120
     },
     {
-        "prefix": "",
-        "match": ".*", "priority": -2000,
+        "match": "((?:opt:)?)(.*?)((?:[-:]row)?)", "priority": -2000,
         "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_option",
-        "factory_class": "Option_PaperColumnFactory",
+        "factory_class": "Option_PaperColumn",
+        "expand_function": "Option_PaperColumnFactory::expand",
         "completion_function": "Option_PaperColumnFactory::completions",
         "position": 200
     },
@@ -53,10 +53,8 @@
         "position": 500, "synonym": ["editrevpref"]
     },
     {
-        "prefix": "pref:",
-        "match": "(?:rev)?pref:.*", "priority": -1, "enable_if": "manager",
-        "factory_class": "Preference_PaperColumnFactory",
-        "synonym": ["revpref:", "preference:"],
+        "match": "(?:pref:|revpref:|preference:)(.+?)((?::row)?)", "priority": -1, "allow_if": "manager",
+        "expand_function": "Preference_PaperColumnFactory::expand",
         "completion": "pref:<user>"
     },
     {
@@ -70,19 +68,18 @@
         "position": 820
     },
     {
-        "prefix": "revtype:",
-        "match": "revtype:.*", "priority": -1,
-        "factory_class": "ReviewerType_PaperColumnFactory"
+        "match": "revtype:(.+)", "priority": -1,
+        "expand_function": "ReviewerType_PaperColumnFactory::expand"
     },
     {
         "name": "revstat",
-        "column": true, "sort": true, "completion": true, "className": "pl_revstat", "factory_class": "ReviewStatus_PaperColumn",
+        "column": true, "sort": true, "completion": true, "className": "pl_revstat",
+        "factory_class": "ReviewStatus_PaperColumn", "allow_if": "reviewer",
         "position": 830
     },
     {
-        "prefix": "revstat:",
-        "match": "revstat:.*", "priority": -1,
-        "factory_class": "ReviewStatus_PaperColumnFactory"
+        "match": "revstat:(.+)", "priority": -1, "allow_if": "reviewer",
+        "expand_function": "ReviewStatus_PaperColumnFactory::expand"
     },
     {
         "name": "assrev",
@@ -110,49 +107,52 @@
         "position": 1000, "synonym": ["pages"]
     },
     {
-        "prefix": "",
-        "match": ".*", "priority": -3000,
+        "match": ".*", "priority": -2100,
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true,
         "className": "pl_score",
-        "factory_class": "Score_PaperColumnFactory",
+        "factory_class": "Score_PaperColumn",
         "position": 1100,
+        "expand_function": "Score_PaperColumnFactory::expand",
         "completion_function": "Score_PaperColumnFactory::completions"
     },
     {
-        "prefix": "g",
-        "match": "g.*", "priority": -1,
+        "match": "(?:g|graph):?\\((.*)\\)", "priority": -1,
         "column": true, "fold": true, "sort": true, "minimal": true, "className": "pl_score",
-        "factory_class": "FormulaGraph_PaperColumnFactory",
+        "factory_class": "FormulaGraph_PaperColumn",
         "position": 1200,
+        "expand_function": "FormulaGraph_PaperColumnFactory::expand",
         "completion": "graph(<formula>)"
     },
     {
-        "prefix": "",
-        "match": ".*", "priority": -1000,
+        "match": ".*", "priority": -3000,
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_formula",
-        "factory_class": "Formula_PaperColumnFactory",
+        "factory_class": "Formula_PaperColumn",
         "position": 1300,
+        "expand_function": "Formula_PaperColumnFactory::expand",
         "completion_function": "Formula_PaperColumnFactory::completions"
     },
     {
-        "prefix": "tag:",
-        "match": "tag:.*", "priority": -1, "enable_if": "pc",
+        "match": "tag:(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": false,
-        "column": true, "sort": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
+        "column": true, "sort": true, "minimal": true,
+        "factory_class": "Tag_PaperColumn",
+        "expand_function": "Tag_PaperColumnFactory::expand",
         "position": 1400
     },
     {
-        "prefix": "tagval:",
-        "match": "tagval:.*", "priority": -1, "enable_if": "pc",
+        "match": "tagval:(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": true,
-        "column": true, "sort": true, "minimal": true, "factory_class": "Tag_PaperColumnFactory",
+        "column": true, "sort": true, "minimal": true,
+        "factory_class": "Tag_PaperColumn",
+        "expand_function": "Tag_PaperColumnFactory::expand",
         "position": 1400
     },
     {
-        "prefix": "#",
-        "match": "#.*", "priority": -1, "enable_if": "pc",
+        "match": "#(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": null,
-        "column": true, "sort": true, "completion": "#<tag>", "minimal": true, "factory_class": "Tag_PaperColumnFactory",
+        "column": true, "sort": true, "completion": "#<tag>", "minimal": true,
+        "factory_class": "Tag_PaperColumn",
+        "expand_function": "Tag_PaperColumnFactory::expand",
         "position": 1400
     },
     {
@@ -215,10 +215,10 @@
         "position": 1410
     },
     {
-        "prefix": "tagrep:",
-        "match": "tagrep:.*", "priority": -1,
-        "row": true, "fold": true, "className": "pl_tagrep", "factory_class": "TagReport_PaperColumnFactory",
-        "synonym": ["tagreport:", "tagreports"],
+        "match": "(?:tagreport:|tagrep:|tagreports\\z)(.*)", "priority": -1,
+        "row": true, "fold": true, "className": "pl_tagrep",
+        "factory_class": "TagReport_PaperColumn",
+        "expand_function": "TagReport_PaperColumnFactory::expand",
         "position": 1420
     },
     {

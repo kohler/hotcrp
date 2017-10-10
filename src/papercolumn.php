@@ -4,12 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperColumn extends Column {
-    static private $by_name = [];
-    static private $factories = [];
-    static private $synonyms = [];
-    static private $j_by_name = null;
-    static private $j_factories = null;
-
     const OVERRIDE_NONE = 0;
     const OVERRIDE_FOLD = 1;
     const OVERRIDE_FOLD_BOTH = 2;
@@ -24,110 +18,17 @@ class PaperColumn extends Column {
         parent::__construct($cj);
     }
 
-    static function lookup_json($name) {
-        $lname = strtolower($name);
-        if (isset(self::$synonyms[$lname]))
-            $lname = self::$synonyms[$lname];
-        return get(self::$j_by_name, $lname, null);
-    }
-
-    static function _add_json($cj) {
-        if (is_object($cj) && isset($cj->name) && is_string($cj->name)) {
-            self::$j_by_name[strtolower($cj->name)] = $cj;
-            if (($syn = get($cj, "synonym")))
-                foreach (is_string($syn) ? [$syn] : $syn as $x)
-                    self::register_synonym($x, $cj->name);
-            return true;
-        } else if (is_object($cj) && isset($cj->prefix) && is_string($cj->prefix)) {
-            self::$j_factories[] = $cj;
-            return true;
-        } else
-            return false;
-    }
-    private static function _expand_json($cj) {
-        $f = null;
-        if (($factory_class = get($cj, "factory_class")))
-            $f = new $factory_class($cj);
-        else if (($factory = get($cj, "factory")))
-            $f = call_user_func($factory, $cj);
-        else
-            return null;
-        if (isset($cj->name))
-            self::$by_name[strtolower($cj->name)] = $f;
-        else {
-            self::$factories[] = [strtolower($cj->prefix), $f];
-            if (($syn = get($cj, "synonym")))
-                foreach (is_string($syn) ? [$syn] : $syn as $x)
-                    self::$factories[] = [strtolower($x), $f];
+    static function make($cj, Conf $conf) {
+        if (!isset($cj->__column_renderer)) {
+            if (($factory_class = get($cj, "factory_class")))
+                $cx = new $factory_class($cj, $conf);
+            else if (($factory = get($cj, "factory")))
+                $cx = call_user_func($factory, $cj, $conf);
+            else
+                $cx = null;
+            $cj->__column_renderer = $cx;
         }
-        return $f;
-    }
-    private static function _sort_factories() {
-        usort(self::$factories, function ($a, $b) {
-            $ldiff = strlen($b[0]) - strlen($a[0]);
-            if (!$ldiff)
-                $ldiff = $a[1]->priority - $b[1]->priority;
-            return $ldiff < 0 ? -1 : ($ldiff > 0 ? 1 : 0);
-        });
-    }
-
-    private static function _populate_json() {
-        self::$j_by_name = self::$j_factories = [];
-        expand_json_includes_callback(["etc/papercolumns.json"], "PaperColumn::_add_json");
-        if (($jlist = opt("paperColumns")))
-            expand_json_includes_callback($jlist, "PaperColumn::_add_json");
-    }
-    static function lookup(Contact $user, $name, $errors = null) {
-        $lname = strtolower($name);
-        if (isset(self::$synonyms[$lname]))
-            $lname = self::$synonyms[$lname];
-
-        // columns by name
-        if (isset(self::$by_name[$lname]))
-            return self::$by_name[$lname];
-        if (self::$j_by_name === null)
-            self::_populate_json();
-        if (isset(self::$j_by_name[$lname]))
-            return self::_expand_json(self::$j_by_name[$lname]);
-
-        // columns by factory
-        foreach (self::lookup_all_factories() as $fax)
-            if (str_starts_with($lname, $fax[0])
-                && ($f = $fax[1]->instantiate($user, $name, $errors)))
-                return $f;
-        return null;
-    }
-
-    static function register_synonym($new_name, $old_name) {
-        $lold = strtolower($old_name);
-        $lname = strtolower($new_name);
-        assert((isset(self::$by_name[$lold]) || isset(self::$j_by_name[$lold]))
-               && !isset(self::$by_name[$lname]) && !isset(self::$synonyms[$lname]));
-        self::$synonyms[$lname] = $lold;
-    }
-
-    static function lookup_all() {
-        if (self::$j_by_name === null)
-            self::_populate_json();
-        foreach (self::$j_by_name as $name => $j)
-            if (!isset(self::$by_name[$name]))
-                self::_expand_json($j);
-        return self::$by_name;
-    }
-    static function lookup_all_factories() {
-        if (self::$j_by_name === null)
-            self::_populate_json();
-        if (self::$j_factories) {
-            while (($fj = array_shift(self::$j_factories)))
-                self::_expand_json($fj);
-            self::_sort_factories();
-        }
-        return self::$factories;
-    }
-    static function factory_json_list() {
-        if (self::$j_by_name === null)
-            self::_populate_json();
-        return self::$j_factories;
+        return $cj->__column_renderer;
     }
 
 
@@ -187,18 +88,6 @@ class PaperColumn extends Column {
 
     function has_statistics() {
         return false;
-    }
-}
-
-class PaperColumnFactory {
-    public $priority;
-    function __construct($cj = null) {
-        $this->priority = get_f($cj, "priority");
-    }
-    function instantiate(Contact $user, $name, $errors) {
-    }
-    static function instantiate_error($errors, $ehtml, $eprio) {
-        $errors && $errors->add($ehtml, $eprio);
     }
 }
 
@@ -455,25 +344,27 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     }
 }
 
-class ReviewStatus_PaperColumnFactory extends PaperColumnFactory {
-    function __construct($cj) {
-        parent::__construct($cj);
-    }
-    function instantiate(Contact $user, $name, $errors) {
-        if (!$user->is_reviewer())
+class ReviewStatus_PaperColumnFactory {
+    static function expand($name, Conf $conf, $xfj, $m) {
+        if (!($fj = (array) $conf->basic_paper_column("revstat", $conf->xt_user)))
             return null;
-        $colon = strpos($name, ":");
-        $rname = substr($name, $colon + 1);
-        $revstat = (array) PaperColumn::lookup_json("revstat");
-        if (preg_match('/\A(?:any|all)\z/i', $rname))
-            return [new ReviewStatus_PaperColumn($revstat)];
-        $round = $user->conf->round_number($rname, false);
-        if ($round === false) {
-            self::instantiate_error($errors, "No review round matches “" . htmlspecialchars($rname) . "”.", 2);
-            return null;
-        }
-        $fname = substr($name, 0, $colon + 1) . ($user->conf->round_name($round) ? : "unnamed");
-        return [new ReviewStatus_PaperColumn(["name" => $fname, "round" => $round] + $revstat)];
+        if (strcasecmp($m[1], "any") == 0)
+            return [(object) $fj];
+        unset($fj["__column_renderer"]);
+        $rs = [];
+        if (strcasecmp($m[1], "all") == 0) {
+            foreach ($conf->defined_round_list() as $i => $rname) {
+                $fj["name"] = "revstat:" . $rname;
+                $fj["round"] = $i;
+                $rs[] = (object) $fj;
+            }
+        } else if (($round = $conf->round_number($m[1], false)) !== false) {
+            $fj["name"] = "revstat:" . ($conf->round_name($round) ? : "unnamed");
+            $fj["round"] = $round;
+            $rs[] = (object) $fj;
+        } else
+            $conf->xt_factory_error("No review round matches “" . htmlspecialchars($m[1]) . "”.");
+        return $rs;
     }
 }
 
@@ -763,25 +654,21 @@ class ReviewerTypePaperColumn extends PaperColumn {
     }
 }
 
-class ReviewerType_PaperColumnFactory extends PaperColumnFactory {
-    function __construct($cj) {
-        parent::__construct($cj);
-    }
-    function instantiate(Contact $user, $name, $errors) {
-        $colon = strpos($name, ":");
-        $x = ContactSearch::make_pc(substr($name, $colon + 1), $user)->ids;
-        if (empty($x)) {
-            self::instantiate_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $colon + 1)) . "”.", 2);
+class ReviewerType_PaperColumnFactory {
+    static function expand($name, Conf $conf, $xfj, $m) {
+        if (!($fj = (array) $conf->basic_paper_column("revtype", $conf->xt_user)))
             return null;
-        }
-        $fj = (array) PaperColumn::lookup_json("revtype");
-        foreach ($x as &$cid) {
-            $u = $user->conf->pc_member_by_id($cid);
+        unset($fj["__column_renderer"]);
+        $rs = [];
+        foreach (ContactSearch::make_pc($m[1], $conf->xt_user)->ids as $cid) {
+            $u = $conf->pc_member_by_id($cid);
             $fj["name"] = "revtype:" . $u->email;
             $fj["user"] = $u->email;
-            $cid = new ReviewerTypePaperColumn((object) $fj, $user->conf);
+            $rs[] = (object) $fj;
         }
-        return $x;
+        if (empty($rs))
+            $conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[1]) . "”.");
+        return $rs;
     }
 }
 
@@ -1046,30 +933,25 @@ class PreferencePaperColumn extends PaperColumn {
     }
 }
 
-class Preference_PaperColumnFactory extends PaperColumnFactory {
-    function __construct($cj) {
-        parent::__construct($cj);
-    }
-    function instantiate(Contact $user, $name, $errors) {
-        $fj = (array) PaperColumn::lookup_json("pref");
-        if (str_ends_with($name, ":row")) {
+class Preference_PaperColumnFactory {
+    static function expand($name, Conf $conf, $xfj, $m) {
+        if (!($fj = (array) $conf->basic_paper_column("pref", $conf->xt_user)))
+            return null;
+        unset($fj["__column_renderer"]);
+        if ($m[2]) {
             $fj["row"] = true;
             $fj["column"] = false;
-            $name = substr($name, 0, -4);
         }
-        $colon = strpos($name, ":");
-        $x = ContactSearch::make_pc(substr($name, $colon + 1), $user)->ids;
-        if (empty($x)) {
-            self::instantiate_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $colon + 1)) . "”.", 2);
-            return null;
-        }
-        foreach ($x as &$cid) {
-            $u = $user->conf->pc_member_by_id($cid);
-            $fj["name"] = "pref:" . $fname . (get($fj, "row") ? ":row" : "");
+        $rs = [];
+        foreach (ContactSearch::make_pc($m[1], $conf->xt_user)->ids as $cid) {
+            $u = $conf->pc_member_by_id($cid);
+            $fj["name"] = "pref:" . $u->email . $m[2];
             $fj["user"] = $u->email;
-            $cid = new PreferencePaperColumn((object) $fj, $user->conf);
+            $rs[] = (object) $fj;
         }
-        return $x;
+        if (empty($rs))
+            $conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[1]) . "”.");
+        return $rs;
     }
 }
 
@@ -1399,18 +1281,12 @@ class Tag_PaperColumn extends PaperColumn {
     }
 }
 
-class Tag_PaperColumnFactory extends PaperColumnFactory {
-    private $cj;
-    function __construct($cj) {
-        parent::__construct($cj);
-        $this->cj = (array) $cj;
-    }
-    function instantiate(Contact $user, $name, $errors) {
-        $p = str_starts_with($name, "#") ? 0 : strpos($name, ":");
-        $cj = $this->cj;
-        $cj["name"] = $name;
-        $cj["tag"] = substr($name, $p + 1);
-        return new Tag_PaperColumn((object) $cj);
+class Tag_PaperColumnFactory {
+    static function expand($name, Conf $conf, $xfj, $m) {
+        $fj = (array) $xfj;
+        $fj["name"] = $name;
+        $fj["tag"] = $m[1];
+        return (object) $fj;
     }
 }
 
@@ -1570,25 +1446,22 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     }
 }
 
-class Score_PaperColumnFactory extends PaperColumnFactory {
-    private $cj;
-    function __construct($cj) {
-        parent::__construct($cj);
-        $this->cj = (array) $cj;
-    }
-    function instantiate(Contact $user, $name, $errors) {
+class Score_PaperColumnFactory {
+    static function expand($name, Conf $conf, $xfj, $m) {
         if ($name === "scores") {
-            $fs = $user->conf->all_review_fields();
-            $errors && ($errors->allow_empty = true);
+            $fs = $conf->all_review_fields();
+            $conf->xt_factory_mark_matched();
         } else
-            $fs = [$user->conf->find_review_field($name)];
-        $fs = array_filter($fs, function ($f) { return $f && $f->has_options && $f->displayed; });
-        return array_map(function ($f) use ($user) {
-            $cj = (array) $this->cj;
+            $fs = [$conf->find_review_field($name)];
+        $vsbound = $conf->xt_user->permissive_view_score_bound();
+        return array_map(function ($f) use ($xfj) {
+            $cj = (array) $xfj;
             $cj["name"] = $f->search_keyword();
             $cj["review_field_id"] = $f->id;
-            return new Score_PaperColumn((object) $cj, $user->conf);
-        }, $fs);
+            return (object) $cj;
+        }, array_filter($fs, function ($f) use ($vsbound) {
+            return $f && $f->has_options && $f->displayed && $f->view_score > $vsbound;
+        }));
     }
     static function completions(Contact $user, $fxt) {
         if (!$user->can_view_some_review())
@@ -1596,7 +1469,7 @@ class Score_PaperColumnFactory extends PaperColumnFactory {
         $vsbound = $user->permissive_view_score_bound();
         $cs = array_map(function ($f) {
             return $f->search_keyword();
-        }, array_filter($user->conf->all_review_fields(), function ($f) use ($user, $vsbound) {
+        }, array_filter($user->conf->all_review_fields(), function ($f) use ($vsbound) {
             return $f->has_options && $f->displayed && $f->view_score > $vsbound;
         }));
         if (!empty($cs))
@@ -1653,33 +1526,23 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
 }
 
-class FormulaGraph_PaperColumnFactory extends PaperColumnFactory {
-    private $cj;
-    static private $nregistered;
-    function __construct($cj) {
-        parent::__construct($cj);
-        $this->cj = (array) $cj;
-    }
-    function instantiate(Contact $user, $name, $errors) {
-        if (str_starts_with($name, "g("))
-            $name = substr($name, 1);
-        else if (str_starts_with($name, "graph("))
-            $name = substr($name, 5);
-        else
-            return null;
-        $formula = new Formula($name, true);
-        if (!$formula->check($user)) {
-            self::instantiate_error($errors, $formula->error_html(), 1);
+class FormulaGraph_PaperColumnFactory {
+    static private $nregistered = 0;
+    static function expand($name, Conf $conf, $xfj, $m) {
+        $formula = new Formula($m[1], true);
+        if (!$formula->check($conf->xt_user)) {
+            $conf->xt_factory_error($formula->error_html());
             return null;
         } else if (!($formula->result_format() instanceof ReviewField)) {
-            self::instantiate_error($errors, "Graphed formulas must return review fields.", 1);
+            $conf->xt_factory_error("Graphed formulas must return review fields.");
             return null;
+        } else {
+            ++self::$nregistered;
+            $cj = (array) $xfj;
+            $cj["name"] = "graphx" . self::$nregistered;
+            $cj["formula"] = $formula;
+            return [(object) $cj];
         }
-        ++self::$nregistered;
-        $cj = (array) $this->cj;
-        $cj["name"] = "graphx" . self::$nregistered;
-        $cj["formula"] = $formula;
-        return new FormulaGraph_PaperColumn((object) $cj);
     }
 }
 
@@ -1717,12 +1580,7 @@ class Option_PaperColumn extends PaperColumn {
     }
 }
 
-class Option_PaperColumnFactory extends PaperColumnFactory {
-    private $cj;
-    function __construct($cj) {
-        parent::__construct($cj);
-        $this->cj = (array) $cj;
-    }
+class Option_PaperColumnFactory {
     static private function option_json($xfj, PaperOption $opt, $isrow) {
         $cj = (array) $xfj;
         $cj["name"] = $opt->search_keyword() . ($isrow ? ":row" : "");
@@ -1735,42 +1593,29 @@ class Option_PaperColumnFactory extends PaperColumnFactory {
         $cj["option_id"] = $opt->id;
         return (object) $cj;
     }
-    function instantiate(Contact $user, $name, $errors) {
-        $has_colon = false;
-        if (str_starts_with($name, "opt:")) {
-            $name = substr($name, 4);
-            $has_colon = true;
-        }
-
-        $oname = $name;
-        $isrow = false;
-        if (str_ends_with($name, ":row") || str_ends_with($name, "-row")) {
-            $oname = substr($name, 0, -4);
-            $isrow = true;
-        }
-        if (strpos($oname, ":") !== false)
-            return null;
-
-        if ($oname === "options" && !$has_colon) {
-            $errors && ($errors->allow_empty = true);
+    static function expand($name, Conf $conf, $xfj, $m) {
+        list($ocolon, $oname, $isrow) = [$m[1], $m[2], !!$m[3]];
+        if (!$ocolon && $oname === "options") {
+            $conf->xt_factory_mark_matched();
             $x = [];
-            foreach ($user->user_option_list() as $opt)
+            foreach ($conf->xt_user->user_option_list() as $opt)
                 if ($opt->display() >= 0 && $opt->list_display($isrow))
-                    $x[] = new Option_PaperColumn(self::option_json($this->cj, $opt, $isrow), $user->conf);
+                    $x[] = self::option_json($xfj, $opt, $isrow);
             return $x;
         }
-
-        $opts = $user->conf->paper_opts->find_all($oname);
-        if (!$opts && $isrow)
-            $opts = $user->conf->paper_opts->find_all($name);
+        $opts = $conf->paper_opts->find_all($oname);
+        if (!$opts && $isrow) {
+            $oname .= $m[3];
+            $opts = $conf->paper_opts->find_all($oname);
+        }
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
             if ($opt->display() >= 0 && $opt->list_display($isrow))
-                return new Option_PaperColumn(self::option_json($this->cj, $opt, $isrow), $user->conf);
-            self::instantiate_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.", 1);
-        } else if ($has_colon)
-            self::instantiate_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
+                return self::option_json($xfj, $opt, $isrow);
+            $conf->xt_factory_error("Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
+        } else if ($ocolon)
+            $conf->xt_factory_error("No such option “" . htmlspecialchars($oname) . "”.");
         return null;
     }
     static function completions(Contact $user, $fxt) {
@@ -1918,12 +1763,7 @@ class Formula_PaperColumn extends PaperColumn {
     }
 }
 
-class Formula_PaperColumnFactory extends PaperColumnFactory {
-    private $cj;
-    function __construct($cj) {
-        parent::__construct($cj);
-        $this->cj = (array) $cj;
-    }
+class Formula_PaperColumnFactory {
     static function make($xfj, Formula $f) {
         if ($f->formulaId)
             $name = $f->name;
@@ -1934,17 +1774,19 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
         $cj["formula"] = $f;
         return new Formula_PaperColumn((object) $cj);
     }
-    private function all(Contact $user) {
-        return array_map(function ($f) {
-            return Formula_PaperColumnFactory::make($this->cj, $f);
-        }, $user->conf->named_formulas());
-    }
-    function instantiate(Contact $user, $name, $errors) {
-        if ($name === "formulas")
-            return $this->all($user);
-        $ff = $user->conf->find_named_formula($name);
+    static function expand($name, Conf $conf, $xfj, $m) {
+        $vsbound = $conf->xt_user->permissive_view_score_bound();
+        if ($name === "formulas") {
+            return array_map(function ($f) use ($xfj) {
+                return Formula_PaperColumnFactory::make($xfj, $f);
+            }, array_filter($conf->named_formulas(),
+                function ($f) use ($conf, $vsbound) {
+                    return $f->view_score($conf->xt_user) > $vsbound;
+                }));
+        }
+        $ff = $conf->find_named_formula($name);
         if (!$ff && str_starts_with($name, "formula"))
-            $ff = get($user->conf->named_formulas(), substr($name, 7));
+            $ff = get($conf->named_formulas(), substr($name, 7));
         if (!$ff) {
             if (str_starts_with($name, "f:"))
                 $name = ltrim(substr($name, 2));
@@ -1952,12 +1794,12 @@ class Formula_PaperColumnFactory extends PaperColumnFactory {
                 $name = ltrim(substr($name, 8));
             $ff = new Formula($name);
         }
-        if (!$ff->check($user)) {
-            if ($errors && strpos($name, "(") !== false)
-                self::instantiate_error($errors, $ff->error_html(), 1);
-            return null;
-        }
-        return $this->make($ff);
+        if ($ff->check($conf->xt_user)) {
+            if ($ff->view_score($conf->xt_user) > $vsbound)
+                return [Formula_PaperColumnFactory::make($xfj, $ff)];
+        } else if (strpos($name, "(") !== false)
+            $conf->xt_factory_error($ff->error_html());
+        return null;
     }
     static function completions(Contact $user, $fxt) {
         $cs = ["(<formula>)"];
@@ -2013,37 +1855,31 @@ class TagReport_PaperColumn extends PaperColumn {
     }
 }
 
-class TagReport_PaperColumnFactory extends PaperColumnFactory {
-    private $cj;
-    function __construct($cj) {
-        parent::__construct($cj);
-        $this->cj = (array) $cj;
-    }
+class TagReport_PaperColumnFactory {
     static private function column_json($xfj, $tag) {
         $cj = (array) $xfj;
         $cj["name"] = "tagreport:" . strtolower($tag);
         $cj["tag"] = $tag;
         return (object) $cj;
     }
-    function instantiate(Contact $user, $name, $errors) {
-        if (!$user->can_view_most_tags())
+    static function expand($name, Conf $conf, $xfj, $m) {
+        if (!$conf->xt_user->can_view_most_tags())
             return null;
-        $tagset = $user->conf->tags();
-        if (str_starts_with($name, "tagrep:"))
-            $tag = substr($name, 7);
-        else if (str_starts_with($name, "tagreport:"))
-            $tag = substr($name, 10);
-        else if ($name === "tagreports") {
-            $errors && ($errors->allow_empty = true);
-            return array_map(function ($t) {
-                return new TagReport_PaperColumn(self::column_json($this->cj, $t->tag));
-            }, $tagset->filter_by(function ($t) { return $t->vote || $t->approval || $t->rank; }));
-        } else
-            return null;
-        $t = $tagset->check($tag);
-        if ($t && ($t->vote || $t->approval || $t->rank))
-            return new TagReport_PaperColumn(self::column_json($this->cj, $tag));
-        return null;
+        $tagset = $conf->tags();
+        if ($name === "tagreports") {
+            $conf->xt_factory_mark_matched();
+            return array_map(function ($t) use ($xfj) {
+                return self::column_json($xfj, $t->tag);
+            }, $tagset->filter_by(function ($t) {
+                return $t->vote || $t->approval || $t->rank;
+            }));
+        } else {
+            $t = $tagset->check($m[1]);
+            if ($t && ($t->vote || $t->approval || $t->rank))
+                return self::column_json($xfj, $m[1]);
+            else
+                return null;
+        }
     }
 }
 

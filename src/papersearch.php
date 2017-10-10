@@ -4081,19 +4081,25 @@ class PaperSearch {
         if (!$category || $category === "show" || $category === "hide") {
             $cats = array();
             $pl = new PaperList($this);
-            foreach (PaperColumn::lookup_all() as $c)
-                if (($cat = $c->completion_name())
-                    && $c->prepare($pl, 0))
+            foreach ($this->conf->paper_column_map() as $cname => $cj) {
+                $cj = $this->conf->basic_paper_column($cname, $this->user);
+                if ($cj && isset($cj->completion) && $cj->completion
+                    && ($c = PaperColumn::make($cj, $this->conf))
+                    && ($cat = $c->completion_name())
+                    && $c->prepare($pl, 0)) {
                     $cats[$cat] = true;
-            foreach (PaperColumn::factory_json_list() as $fxj) {
-                if (!$this->conf->xt_enabled($fxj, $this->user))
+                }
+            }
+            foreach ($this->conf->paper_column_factories() as $fxj) {
+                if (!$this->conf->xt_allowed($fxj, $this->user)
+                    || Conf::xt_disabled($fxj))
                     continue;
-                if (isset($fxj->completion) && is_string($fxj->completion))
-                    $cats[$fxj->completion] = true;
-                else if (isset($fxj->completion_function)) {
+                if (isset($fxj->completion_function)) {
+                    Conf::xt_resolve_require($fxj);
                     foreach (call_user_func($fxj->completion_function, $this->user, $fxj) as $c)
                         $cats[$c] = true;
-                }
+                } else if (isset($fxj->completion) && is_string($fxj->completion))
+                    $cats[$fxj->completion] = true;
             }
             foreach (array_keys($cats) as $cat)
                 array_push($res, "show:$cat", "hide:$cat");

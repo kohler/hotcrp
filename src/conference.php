@@ -710,12 +710,13 @@ class Conf {
                 && !in_array($k, ["match", "expand_function"]))
                 $xt1->$k = $v;
     }
+    static function xt_enabled($xt) {
+        return $xt && (!isset($xt->disabled) || !$xt->disabled);
+    }
     static function xt_disabled($xt) {
         return !$xt || (isset($xt->disabled) && $xt->disabled);
     }
     static function xt_resolve_require($xt) {
-        if ($xt && isset($xt->disabled) && $xt->disabled)
-            $xt = null;
         if ($xt && isset($xt->require) && !isset($xt->__require_resolved)) {
             foreach (expand_includes($xt->require) as $f)
                 require_once($f);
@@ -774,14 +775,18 @@ class Conf {
                 $found = $xt;
         return $found;
     }
-    function xt_search_factories($factories, $name, $checkf, $found = null) {
+    function xt_search_factories($factories, $name, $checkf, $found,
+                                 Contact $user = null, $reflags = "") {
+        $this->xt_user = $user;
+        $this->_xt_factory_match = false;
+        $this->_xt_factory_error = null;
         $xts = [];
         foreach ($factories as $fxt) {
             if (self::xt_priority_compare($fxt, $found) >= 0)
                 break;
             if ($fxt->match === ".*")
                 $m = [$name];
-            else if (!preg_match("\1\\A(?:{$fxt->match})\\z\1", $name, $m))
+            else if (!preg_match("\1\\A(?:{$fxt->match})\\z\1{$reflags}", $name, $m))
                 continue;
             if (!call_user_func($checkf, $fxt))
                 continue;
@@ -799,7 +804,20 @@ class Conf {
                 }
             }
         }
+        $this->xt_user = null;
         return $xts;
+    }
+    function xt_factory_mark_matched() {
+        $this->_xt_factory_match = true;
+    }
+    function xt_factory_error($message) {
+        $this->_xt_factory_error[] = $message;
+    }
+    function xt_factory_matched() {
+        return $this->_xt_factory_match;
+    }
+    function xt_factory_errors() {
+        return $this->_xt_factory_error;
     }
 
 
@@ -824,8 +842,10 @@ class Conf {
             $this->make_search_keyword_map();
         $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
         $uf = $this->xt_search_name($this->_search_keyword_base, $keyword, $checkf);
-        if (($expansions = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $checkf, $uf)))
+        if (($expansions = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $checkf, $uf, $user)))
             $uf = $expansions[0];
+        if (self::xt_disabled($uf))
+            $uf = null;
         return self::xt_resolve_require($uf);
     }
 
@@ -845,8 +865,10 @@ class Conf {
         }
         $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
         $uf = $this->xt_search_name($this->_assignment_parsers, $keyword, $checkf);
-        $uf = self::xt_resolve_require($uf);
+        if (self::xt_disabled($uf))
+            $uf = null;
         if ($uf && !isset($uf->__parser)) {
+            self::xt_resolve_require($uf);
             $p = $uf->parser_class;
             $uf->__parser = new $p($uf, $this);
         }
@@ -868,6 +890,8 @@ class Conf {
         }
         $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
         $uf = $this->xt_search_name($this->_formula_functions, $fname, $checkf);
+        if (self::xt_disabled($uf))
+            $uf = null;
         return self::xt_resolve_require($uf);
     }
 
@@ -3259,7 +3283,7 @@ class Conf {
             return $this->check_api_json($xt, $user, $method);
         };
         $uf = $this->xt_search_name($this->api_map(), $fn, $checkf);
-        return self::xt_resolve_require($uf);
+        return self::xt_enabled($uf) ? $uf : null;
     }
     private function call_api($fn, $uf, Contact $user, Qrequest $qreq, $prow) {
         if ($qreq->method() !== "GET" && $qreq->method() !== "HEAD" && !check_post($qreq))
@@ -3274,6 +3298,7 @@ class Conf {
         }
         if (!$prow && get($uf, "paper"))
             return new JsonResult(400, ["ok" => false, "error" => "No paper specified."]);
+        self::xt_resolve_require($uf);
         return call_user_func($uf->function, $user, $qreq, $prow, $uf);
     }
     function call_api_exit($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
@@ -3344,8 +3369,49 @@ class Conf {
         $uf = $this->xt_search_name($this->list_action_map(), $name, $checkf);
         if (($s = strpos($name, "/")) !== false)
             $uf = $this->xt_search_name($this->list_action_map(), substr($name, 0, $s), $checkf, $uf);
-        if (($expansions = $this->xt_search_factories($this->_list_action_factories, $name, $checkf, $uf)))
+        if (($expansions = $this->xt_search_factories($this->_list_action_factories, $name, $checkf, $uf, $user)))
             $uf = $expansions[0];
+        if (self::xt_disabled($uf))
+            $uf = null;
         return self::xt_resolve_require($uf);
+    }
+
+
+    // Paper columns
+    static function _add_paper_column_json($fj) {
+        if (isset($fj->name) && is_string($fj->name))
+            return self::xt_add($this->_paper_column_map, $fj->name, $fj);
+        else if (isset($fj->match) && is_string($fj->match)
+                 && isset($fj->expand_function) && is_string($fj->expand_function)) {
+            $this->_paper_column_factories[] = $fj;
+            return true;
+        } else
+            return false;
+    }
+    function paper_column_map() {
+        if ($this->_paper_column_map === null) {
+            require_once("papercolumn.php");
+            $this->_paper_column_map = $this->_paper_column_factories = [];
+            expand_json_includes_callback(["etc/papercolumns.json"], [$this, "_add_paper_column_json"]);
+            if (($olist = $this->opt("paperColumns")))
+                expand_json_includes_callback($olist, [$this, "_add_paper_column_json"]);
+            usort($this->_paper_column_factories, "Conf::xt_priority_compare");
+        }
+        return $this->_paper_column_map;
+    }
+    function paper_column_factories() {
+        $this->paper_column_map();
+        return $this->_paper_column_factories;
+    }
+    function basic_paper_column($name, Contact $user = null) {
+        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
+        $uf = $this->xt_search_name($this->paper_column_map(), $name, $checkf);
+        return self::xt_enabled($uf) ? $uf : null;
+    }
+    function paper_columns($name, Contact $user = null) {
+        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
+        $uf = $this->xt_search_name($this->paper_column_map(), $name, $checkf);
+        $expansions = $this->xt_search_factories($this->_paper_column_factories, $name, $checkf, $uf, $user, "i");
+        return array_filter($expansions ? : [$uf], "Conf::xt_enabled");
     }
 }
