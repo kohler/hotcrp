@@ -3378,7 +3378,7 @@ class Conf {
 
 
     // Paper columns
-    static function _add_paper_column_json($fj) {
+    function _add_paper_column_json($fj) {
         if (isset($fj->name) && is_string($fj->name))
             return self::xt_add($this->_paper_column_map, $fj->name, $fj);
         else if (isset($fj->match) && is_string($fj->match)
