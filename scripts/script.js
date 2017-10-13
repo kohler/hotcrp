@@ -1542,7 +1542,7 @@ function tracker_html(mytracker) {
 function display_tracker() {
     var mne = $$("tracker"), mnspace = $$("trackerspace"),
         mytracker = is_my_tracker(),
-        body, t, tt, i, e, now = now_msec();
+        body, t, tt, i, e;
 
     // tracker button
     if ((e = $$("trackerconnectbtn"))) {
@@ -1558,7 +1558,7 @@ function display_tracker() {
     // tracker display management
     has_tracker = !!dl.tracker;
     if (has_tracker)
-        had_tracker_at = now;
+        had_tracker_at = now_sec();
     else if (tracker_window_state())
         wstorage(true, "hotcrp-tracking", null);
     if (!dl.tracker || dl.tracker_hidden) {
