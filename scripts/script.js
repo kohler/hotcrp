@@ -1653,7 +1653,7 @@ var comet_store = (function () {
     function site_key() {
         return "hotcrp-comet " + hoturl_absolute_base();
     }
-    function make_site_value(v) {
+    function make_site_status(v) {
         var x = v && JSON.parse(v);
         if (!x || typeof x !== "object")
             x = {};
@@ -1668,22 +1668,22 @@ var comet_store = (function () {
             x.same = true;
         return x;
     }
-    function site_value() {
-        return make_site_value(wstorage(false, site_key()));
+    function site_status() {
+        return make_site_status(wstorage(false, site_key()));
     }
-    function site_store() {
+    function store_current_status() {
         stored_at = dl.now;
         wstorage(false, site_key(), {at: stored_at, tracker_status: dl.tracker_status,
                                      updated_at: now_sec()});
         setTimeout(function () {
             if (comet_sent_at)
-                site_store();
+                store_current_status();
         }, 5000);
     }
     $(window).on("storage", function (e) {
         var x, ee = e.originalEvent;
         if (dl && dl.tracker_site && ee.key == site_key()) {
-            var x = make_site_value(ee.newValue);
+            var x = make_site_status(ee.newValue);
             if (x.expired || x.fresh)
                 reload();
         }
@@ -1693,9 +1693,9 @@ var comet_store = (function () {
             reload();
     }
     function s(action) {
-        var x = site_value();
+        var x = site_status();
         if (action > 0 && (x.expired || x.owned))
-            site_store();
+            store_current_status();
         if (!action) {
             clearTimeout(refresh_to);
             if (x.same) {
