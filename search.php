@@ -616,7 +616,9 @@ echo Ht::unstash();
 
 
 if ($pl_text) {
-    if (count($Search->warnings) || count($pl->error_html)) {
+    if ($Me->has_hidden_papers())
+        $pl->error_html[] = $Conf->_("Papers #%s are totally hidden when viewing the site as another user.", numrangejoin(array_keys($Me->hidden_papers)), count($Me->hidden_papers));
+    if (!empty($Search->warnings) || !empty($pl->error_html)) {
         echo '<div class="xmsgs-atbody">';
         $Conf->warnMsg(array_merge($Search->warnings, $pl->error_html), true);
         echo '</div>';

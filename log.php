@@ -374,7 +374,7 @@ class LogRowFilter {
             return $this->user->privChair;
     }
     function __invoke($row) {
-        if ($this->user->hidden_papers
+        if ($this->user->hidden_papers !== null
             && !$this->test_pidset($row, $this->user->hidden_papers, false, null))
             return false;
         else if ($row->contactId === $this->user->contactId)
@@ -544,7 +544,7 @@ if (!$Me->privChair || !empty($exclude_pids)) {
         $Conf->msg("xinfo", "Only showing your actions and entries for papers you administer.");
     else if (!empty($exclude_pids)
              && (!$include_pids || array_intersect_key($include_pids, $exclude_pids))
-             && $exclude_pids != $Me->hidden_papers) {
+             && array_keys($exclude_pids) != array_keys($Me->hidden_papers)) {
         $req = [];
         foreach (["q", "p", "acct", "n"] as $k)
             if ($Qreq->$k !== "")

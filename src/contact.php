@@ -312,7 +312,7 @@ class Contact {
         if ($this->conf->setting("papermanager")) {
             $result = $this->conf->qe("select paperId from Paper join PaperConflict using (paperId) where managerContactId!=0 and managerContactId!=? and PaperConflict.contactId=? and conflictType>0", $this->contactId, $this->contactId);
             while (($row = $result->fetch_row()))
-                $u->hidden_papers[(int) $row[0]] = true;
+                $u->hidden_papers[(int) $row[0]] = false;
             Dbl::free($result);
         }
 
@@ -2132,12 +2132,18 @@ class Contact {
         return $whyNot;
     }
 
+    function has_hidden_papers() {
+        return $this->hidden_papers !== null;
+    }
+
     function can_view_paper(PaperInfo $prow, $pdf = false) {
         // hidden_papers is set when a chair with a conflicted, managed
         // paper “becomes” a user
         if ($this->hidden_papers !== null
-            && isset($this->hidden_papers[$prow->paperId]))
+            && isset($this->hidden_papers[$prow->paperId])) {
+            $this->hidden_papers[$prow->paperId] = true;
             return false;
+        }
         if ($this->privChair)
             return true;
         $rights = $this->rights($prow, "any");

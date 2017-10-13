@@ -36,5 +36,7 @@
     ["Reviews %2$s unchanged.", "Draft review unchanged. The review will not be visible to others until it is submitted.", ["$3=2"]],
     ["Reviews %2$s unchanged.", "Review unchanged. The review will not be visible to others until it is approved.", ["$3=3"]],
     ["Ignored blank review forms %2$s.", "Ignored blank review form %2$s.", ["$1=1"]],
-    ["Ignored blank review forms %2$s.", "Ignored blank review form.", ["$3"]]
+    ["Ignored blank review forms %2$s.", "Ignored blank review form.", ["$3"]],
+
+    ["Papers #%s are totally hidden when viewing the site as another user.", "Paper #%s is totally hidden when viewing the site as another user.", ["$2=1"]]
 ]
