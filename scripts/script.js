@@ -1618,10 +1618,10 @@ function tracker(start) {
     if (!wstorage())
         return false;
     trackerstate = tracker_window_state();
-    if (trackerstate && trackerstate[0] != siteurl_absolute_base)
+    if (trackerstate && trackerstate[0] != hoturl_absolute_base())
         trackerstate = null;
     if (start && (!trackerstate || !is_my_tracker())) {
-        trackerstate = [siteurl_absolute_base, Math.floor(Math.random() * 100000), null, null];
+        trackerstate = [hoturl_absolute_base(), Math.floor(Math.random() * 100000), null, null];
         hotcrp_list && (trackerstate[3] = hotcrp_list.info);
     }
     if (trackerstate) {
