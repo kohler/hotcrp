@@ -1646,7 +1646,7 @@ var comet_sent_at, comet_stop_until, comet_nerrors = 0, comet_nsuccess = 0,
     comet_long_timeout = 260000;
 
 var comet_store = (function () {
-    var stored_at, refresh_to;
+    var stored_at, refresh_timeout, restore_status_timeout;
     if (!wstorage())
         return function () { return false; };
 
@@ -1675,10 +1675,13 @@ var comet_store = (function () {
         stored_at = dl.now;
         wstorage(false, site_key(), {at: stored_at, tracker_status: dl.tracker_status,
                                      updated_at: now_sec()});
-        setTimeout(function () {
-            if (comet_sent_at)
-                store_current_status();
-        }, 5000);
+        if (!restore_status_timeout)
+            restore_status_timeout = setTimeout(restore_current_status, 5000);
+    }
+    function restore_current_status() {
+        restore_status_timeout = null;
+        if (comet_sent_at)
+            store_current_status();
     }
     $(window).on("storage", function (e) {
         var x, ee = e.originalEvent;
@@ -1697,12 +1700,11 @@ var comet_store = (function () {
         if (action > 0 && (x.expired || x.owned))
             store_current_status();
         if (!action) {
-            clearTimeout(refresh_to);
-            if (x.same) {
-                refresh_to = setTimeout(refresh, 5000);
-                return true;
-            } else
-                return (refresh_to = false);
+            clearTimeout(refresh_timeout);
+            refresh_timeout = null;
+            if (x.same)
+                refresh_timeout = setTimeout(refresh, 5000);
+            return !!x.same;
         }
         if (action < 0 && x.owned)
             wstorage(false, site_key(), null);
