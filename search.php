@@ -617,8 +617,9 @@ echo Ht::unstash();
 
 if ($pl_text) {
     if (count($Search->warnings) || count($pl->error_html)) {
-        echo "<div class='maintabsep'></div>\n";
-        $Conf->warnMsg(join("<br />\n", array_merge($Search->warnings, $pl->error_html)));
+        echo '<div class="xmsgs-atbody">';
+        $Conf->warnMsg(array_merge($Search->warnings, $pl->error_html), true);
+        echo '</div>';
     }
 
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";

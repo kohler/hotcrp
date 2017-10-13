@@ -338,6 +338,9 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 .xmsgs-atbody > .xmsg > .xmsgc {
 	padding-left: 24px;
 	padding-right: 24px;
+	margin-left: 0;
+	margin-right: 0;
+	max-width: none;
 }
 .xinfo {
 	background: #f9f9fd;
