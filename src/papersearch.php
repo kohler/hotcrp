@@ -1898,15 +1898,18 @@ class OptionMatcher {
         } else if ($this->kind === "attachment-count")
             return CountMatcher::compare($ov ? $ov->value_count() : 0,
                                          $this->compar, $this->value);
-        else if ($this->kind === "attachment-name") {
-            if (!$this->pregexes)
-                $this->pregexes = Text::star_text_pregexes($this->value);
-            foreach ($ov ? $ov->documents() : [] as $doc)
+        if (!$ov)
+            return false;
+        if (!$this->pregexes)
+            $this->pregexes = Text::star_text_pregexes($this->value);
+        if ($this->kind === "text") {
+            return Text::match_pregexes($this->pregexes, (string) $ov->data(), false);
+        } else if ($this->kind === "attachment-name") {
+            foreach ($ov->documents() as $doc)
                 if (Text::match_pregexes($this->pregexes, $doc->filename, false))
                     return true;
-            return false;
-        } else
-            return false;
+        }
+        return false;
     }
 }
 
@@ -2838,6 +2841,8 @@ class PaperSearch {
                         $qo[] = new OptionMatcher($o, $ocompar, $m[1]);
                     else
                         $warn[] = "Submission option “" . htmlspecialchars($o->name) . "” takes integer values.";
+                } else if ($o->type === "text") {
+                    $qo[] = new OptionMatcher($o, "~=", $oval, "text");
                 } else if ($o->has_attachments()) {
                     if ($oval === "any")
                         $qo[] = new OptionMatcher($o, "!=", null);
