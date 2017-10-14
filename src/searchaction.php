@@ -33,12 +33,6 @@ class SearchAction {
         return "Unsupported.";
     }
 
-
-    static function load() {
-    }
-    static function register($name, $subname, $flags, SearchAction $fn) {
-    }
-
     static private function do_call($name, Contact $user, Qrequest $qreq, $selection) {
         if ($qreq->method() !== "GET" && $qreq->method() !== "HEAD" && !check_post($qreq))
             return new JsonResult(403, ["ok" => false, "error" => "Missing credentials."]);
