@@ -544,7 +544,7 @@ if (!$Me->privChair || !empty($exclude_pids)) {
         $Conf->msg("xinfo", "Only showing your actions and entries for papers you administer.");
     else if (!empty($exclude_pids)
              && (!$include_pids || array_intersect_key($include_pids, $exclude_pids))
-             && array_keys($exclude_pids) != array_keys($Me->hidden_papers)) {
+             && array_keys($exclude_pids) != array_keys($Me->hidden_papers ? : [])) {
         $req = [];
         foreach (["q", "p", "acct", "n"] as $k)
             if ($Qreq->$k !== "")
