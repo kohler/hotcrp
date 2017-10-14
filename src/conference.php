@@ -751,6 +751,8 @@ class Conf {
                 // check if setting exists
                 if (str_starts_with($e, "opt."))
                     $b = !!$this->opt(substr($e, 4));
+                else if (str_starts_with($e, "setting."))
+                    $b = !!$this->setting(substr($e, 8));
                 else
                     $b = !!$this->setting($e);
             }
