@@ -1012,10 +1012,17 @@ class PaperInfo {
     }
 
     private function load_topics() {
-        $result = $this->conf->qe_raw("select group_concat(topicId) from PaperTopic where paperId=$this->paperId");
-        $row = edb_row($result);
-        $this->topicIds = $row ? $row[0] : "";
-        Dbl::free($result);
+        $row_set = $this->_row_set ? : new PaperInfoSet($this);
+        foreach ($row_set as $prow)
+            $prow->topicIds = null;
+        if ($this->conf->has_topics()) {
+            $result = $this->conf->qe("select paperId, group_concat(topicId) from PaperTopic where paperId?a group by paperId", $row_set->paper_ids());
+            while ($result && ($row = $result->fetch_row())) {
+                $prow = $row_set->get($row[0]);
+                $prow->topicIds = (string) $row[1];
+            }
+            Dbl::free($result);
+        }
     }
 
     function has_topics() {
