@@ -1026,18 +1026,14 @@ class PaperInfo {
         if ($this->_topics_array === null) {
             if (!property_exists($this, "topicIds"))
                 $this->load_topics();
-            if (is_array($this->topicIds))
-                $this->_topics_array = $this->topicIds;
-            else {
-                $this->_topics_array = array();
-                if ($this->topicIds !== "" && $this->topicIds !== null) {
-                    foreach (explode(",", $this->topicIds) as $t)
-                        $this->_topics_array[] = (int) $t;
-                    $tomap = $this->conf->topic_order_map();
-                    usort($this->_topics_array, function ($a, $b) use ($tomap) {
-                        return $tomap[$a] - $tomap[$b];
-                    });
-                }
+            $this->_topics_array = array();
+            if ($this->topicIds !== "" && $this->topicIds !== null) {
+                foreach (explode(",", $this->topicIds) as $t)
+                    $this->_topics_array[] = (int) $t;
+                $tomap = $this->conf->topic_order_map();
+                usort($this->_topics_array, function ($a, $b) use ($tomap) {
+                    return $tomap[$a] - $tomap[$b];
+                });
             }
         }
         return $this->_topics_array;
