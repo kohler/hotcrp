@@ -776,8 +776,13 @@ class PaperInfo {
     }
 
     function conflict_type($contact = null) {
-        $ci = $this->contact_info($contact);
-        return $ci ? $ci->conflictType : 0;
+        $cid = self::contact_to_cid($contact);
+        if (array_key_exists($cid, $this->_contact_info))
+            return $this->_contact_info[$cid]->conflictType;
+        else if (($ci = get($this->conflicts(), $cid)))
+            return $ci->conflictType;
+        else
+            return 0;
     }
 
     function has_conflict($contact) {
