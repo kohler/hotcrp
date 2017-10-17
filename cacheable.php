@@ -33,7 +33,7 @@ if (!$file)
 $mtime = @filemtime($file);
 $prefix = "";
 if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
-    && preg_match(',.*([.][a-z]*)\z,', $file, $m)) {
+    && preg_match(',.*(\.[a-z0-9]*)\z,', $file, $m)) {
     $s = $m[1];
     if ($s === ".js") {
         header("Content-Type: text/javascript; charset=utf-8");
@@ -49,8 +49,20 @@ if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
         header("Content-Type: image/jpeg");
     else if ($s === ".png")
         header("Content-Type: image/png");
+    else if ($s === ".svg")
+        header("Content-Type: image/svg+xml");
     else if ($s === ".mp3")
         header("Content-Type: audio/mpeg");
+    else if ($s === ".woff")
+        header("Content-Type: application/font-woff");
+    else if ($s === ".woff2")
+        header("Content-Type: application/font-woff2");
+    else if ($s === ".ttf")
+        header("Content-Type: application/x-font-ttf");
+    else if ($s === ".otf")
+        header("Content-Type: font/opentype");
+    else if ($s === ".eot")
+        header("Content-Type: application/vnd.ms-fontobject");
     else
         fail($file);
     header("Access-Control-Allow-Origin: *");
