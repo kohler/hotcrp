@@ -5737,10 +5737,10 @@ function plinfo(type, dofold) {
         plinfo.extra(type, dofold);
 
     // may need to load information by ajax
-    if (type == "aufull" && aufull[!!dofold]) {
+    if (type === "aufull" && aufull[!!dofold]) {
         make_callback(dofold, type)(aufull[!!dofold]);
         $.post(hoturl("api/setsession", {var: self.getAttribute("data-fold-session").replace("$", type), val: (dofold ? 1 : 0)}));
-    } else if ((!dofold && f.loadable) || type === "aufull") {
+    } else if ((!dofold && f.loadable && type !== "anonau") || type === "aufull") {
         // set up "loading" display
         setTimeout(show_loading(f), 750);
 
