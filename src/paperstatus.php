@@ -206,7 +206,7 @@ class PaperStatus extends MessageSet {
             $pj->abstract = $prow->abstract;
 
         $topics = array();
-        foreach (array_intersect_key($this->conf->topic_map(), array_flip($prow->topics())) as $tid => $tname)
+        foreach ($prow->named_topic_map() as $tid => $tname)
             $topics[$this->export_ids ? $tid : $tname] = true;
         if (!empty($topics))
             $pj->topics = (object) $topics;

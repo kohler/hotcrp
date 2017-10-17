@@ -316,13 +316,12 @@ class GetTopics_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(array("paperId" => $ssel->selection(), "topics" => 1));
         $texts = array();
-        $tmap = $user->conf->topic_map();
         foreach (PaperInfo::fetch_all($result, $user) as $row)
             if ($user->can_view_paper($row)) {
                 $out = array();
-                foreach ($row->topics() as $t)
-                    $out[] = [$row->paperId, $row->title, $tmap[$t]];
-                if (!count($out))
+                foreach ($row->named_topic_map() as $t)
+                    $out[] = [$row->paperId, $row->title, $t];
+                if (empty($out))
                     $out[] = [$row->paperId, $row->title, "<none>"];
                 arrayappend($texts[$row->paperId], $out);
             }
