@@ -1019,15 +1019,17 @@ class PaperInfo {
     }
 
     function has_topics() {
-        return count($this->topics()) > 0;
+        if (!property_exists($this, "topicIds"))
+            $this->load_topics();
+        return $this->topicIds !== null && $this->topicIds !== "";
     }
 
-    function topics() {
+    function topic_list() {
         if ($this->_topics_array === null) {
             if (!property_exists($this, "topicIds"))
                 $this->load_topics();
-            $this->_topics_array = array();
-            if ($this->topicIds !== "" && $this->topicIds !== null) {
+            $this->_topics_array = [];
+            if ($this->topicIds !== null && $this->topicIds !== "") {
                 foreach (explode(",", $this->topicIds) as $t)
                     $this->_topics_array[] = (int) $t;
                 $tomap = $this->conf->topic_order_map();
@@ -1041,35 +1043,27 @@ class PaperInfo {
 
     function topic_map() {
         $t = [];
-        foreach ($this->topics() as $tid)
+        foreach ($this->topic_list() as $tid)
             $t[$tid] = true;
         return $t;
     }
 
     function named_topic_map() {
-        $tarr = $this->topic_map();
-        if ($tarr) {
-            $tmap = $this->conf->topic_map();
-            foreach ($tarr as $tid => &$x)
-                $x = $tmap[$tid];
+        $t = [];
+        foreach ($this->topic_list() as $tid) {
+            if (empty($t))
+                $tmap = $this->conf->topic_map();
+            $t[$tid] = $tmap[$tid];
         }
-        return $tarr;
+        return $t;
     }
 
     function unparse_topics_text() {
-        $tarr = $this->topics();
-        if (!$tarr)
-            return "";
-        $out = [];
-        $tmap = $this->conf->topic_map();
-        foreach ($tarr as $t)
-            $out[] = $tmap[$t];
-        return join("; ", $out);
+        return join("; ", $this->named_topic_map());
     }
 
-    private static function render_topic($t, $i, $tmap, &$long) {
+    private static function render_topic($tname, $i, &$long) {
         $s = '<span class="topicsp topic' . ($i ? : 0);
-        $tname = $tmap[$t];
         if (strlen($tname) <= 50)
             $s .= ' nw';
         else
@@ -1087,16 +1081,14 @@ class PaperInfo {
     }
 
     function unparse_topics_html($comma, Contact $interests_user = null) {
-        if (!($topics = $this->topics()))
+        if (!($tmap = $this->named_topic_map()))
             return "";
-        $out = array();
-        $tmap = $this->conf->topic_map();
-        $interests = [];
+        $out = $interests = [];
         if ($interests_user)
             $interests = $interests_user->topic_interest_map();
         $long = false;
-        foreach ($topics as $t)
-            $out[] = self::render_topic($t, get($interests, $t), $tmap, $long);
+        foreach ($tmap as $tid => $tname)
+            $out[] = self::render_topic($tname, get($interests, $tid), $long);
         return self::render_topic_list($this->conf, $out, $comma, $long);
     }
 
@@ -1108,7 +1100,7 @@ class PaperInfo {
         $tomap = $conf->topic_order_map();
         $long = false;
         foreach ($ti as $t => $i)
-            $out[$tomap[$t]] = self::render_topic($t, $i, $tmap, $long);
+            $out[$tomap[$t]] = self::render_topic($tmap[$t], $i, $long);
         ksort($out);
         return self::render_topic_list($conf, $out, $comma, $long);
     }
@@ -1126,7 +1118,7 @@ class PaperInfo {
                 $score = $this->_topic_interest_score_array[$contact->contactId];
             else {
                 $interests = $contact->topic_interest_map();
-                $topics = $this->topics();
+                $topics = $this->topic_list();
                 foreach ($topics as $t)
                     if (($j = get($interests, $t, 0))) {
                         if ($j >= -2 && $j <= 2)
@@ -1713,7 +1705,7 @@ class PaperInfo {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
             $pcm = $this->conf->pc_members();
             $missing = [];
-            foreach ($row_set->all() as $prow) {
+            foreach ($row_set as $prow) {
                 $prow->_reviews_have["names"] = true;
                 foreach ($prow->reviews_by_id() as $rrow)
                     if (($c = get($pcm, $rrow->contactId)))
@@ -1737,7 +1729,7 @@ class PaperInfo {
             && !isset($this->_reviews_have["lastLogin"])) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
             $users = [];
-            foreach ($row_set->all() as $prow) {
+            foreach ($row_set as $prow) {
                 $prow->_reviews_have["lastLogin"] = true;
                 foreach ($prow->reviews_by_id() as $rrow)
                     $users[$rrow->contactId] = true;
@@ -1745,7 +1737,7 @@ class PaperInfo {
             if (!empty($users)) {
                 $result = $this->conf->qe("select contactId, lastLogin from ContactInfo where contactId?a", array_keys($users));
                 $users = Dbl::fetch_iimap($result);
-                foreach ($row_set->all() as $prow) {
+                foreach ($row_set as $prow) {
                     foreach ($prow->reviews_by_id() as $rrow)
                         $rrow->reviewLastLogin = $users[$rrow->contactId];
                 }
@@ -1756,7 +1748,7 @@ class PaperInfo {
     private function load_review_fields($fid, $maybe_null = false) {
         $k = $fid . "Signature";
         $row_set = $this->_row_set ? : new PaperInfoSet($this);
-        foreach ($row_set->all() as $prow)
+        foreach ($row_set as $prow)
             $prow->$k = "";
         $select = $maybe_null ? "coalesce($fid,'.')" : $fid;
         $result = $this->conf->qe("select paperId, group_concat($select order by reviewId) from PaperReview where paperId?a group by paperId", $row_set->paper_ids());
@@ -1845,7 +1837,7 @@ class PaperInfo {
 
     function load_comments() {
         $row_set = $this->_row_set ? : new PaperInfoSet($this);
-        foreach ($row_set->all() as $prow)
+        foreach ($row_set as $prow)
             $prow->_comment_array = [];
         $result = $this->conf->qe(self::fetch_comment_query()
             . " where paperId?a order by paperId, commentId", $row_set->paper_ids());
