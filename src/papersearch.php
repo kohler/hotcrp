@@ -970,103 +970,83 @@ class Conflict_SearchTerm extends SearchTerm {
 
 class Revpref_SearchTerm extends SearchTerm {
     private $rpsm;
-    private $fieldname;
 
-    function __construct(RevprefSearchMatcher $rpsm, $flags = 0) {
-        parent::__construct("revpref", $flags);
+    function __construct(RevprefSearchMatcher $rpsm) {
+        parent::__construct("revpref");
         $this->rpsm = $rpsm;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if (!$srch->user->isPC) // PC only
             return null;
 
-        $contacts = null;
-        if (preg_match('/\A(.*?[^:=<>!]):?([=!<>]=?|≠|≤|≥|\z)(.*)\z/s', $word, $m)
+        if (preg_match('/\A((?:(?!≠|≤|≥)[^:=!<>])+)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
             $contacts = $srch->matching_reviewers($m[1], $sword->quoted, true);
-            $word = ($m[2] === ":" ? $m[3] : $m[2] . $m[3]);
+            $word = str_starts_with($m[2], ":") ? substr($m[2], 1) : $m[2];
             if ($word === "")
                 $word = "!=0";
+        } else
+            $contacts = array_keys($srch->conf->pc_members());
+        if (!$srch->user->is_manager())
+            $contacts = in_array($srch->cid, $contacts) ? [$srch->cid] : [];
+
+        $count = ">0";
+        if (preg_match('/\A:?\s*((?:[=!<>]|≠|≤|≥|)\s*\d+|any|none)\s*((?:[:=!<>]|≠|≤|≥).*)\z/si', $word, $m)) {
+            if (strcasecmp($m[1], "any") == 0)
+                $count = ">0";
+            else if (strcasecmp($m[1], "none") == 0)
+                $count = "=0";
+            else if (ctype_digit($m[1]))
+                $count = ">=$m[1]";
+            else
+                $count = $m[1];
+            $word = str_starts_with($m[2], ":") ? substr($m[2], 1) : $m[2];
         }
 
+        $value = new RevprefSearchMatcher($count, $contacts);
         if (strcasecmp($word, "any") == 0 || strcasecmp($word, "none") == 0)
-            $m = [null, "1", "=", "any", strcasecmp($word, "any") == 0];
-        else if (!preg_match(',\A(\d*)\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
-                 || ($m[1] === "" && $m[3] === "" && $m[4] === ""))
+            $value->is_any = true;
+        else if (preg_match(',\A\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
+                 && ($m[1] !== "" || $m[2] !== "" && $m[3] !== "")) {
+            if ($m[2] !== "")
+                $value->preference_match = new CountMatcher($m[1] . $m[2]);
+            if ($m[3] !== "")
+                $value->expertise_match = new CountMatcher(($m[2] === "" ? $m[1] : "") . (121 - ord(strtolower($m[3]))));
+        } else
             return new False_SearchTerm;
 
-        if ($m[1] !== "" && $m[2] === "")
-            $m = array($m[0], "1", "=", $m[1], "");
-        if ($m[1] === "")
-            $m[1] = "1";
-        if ($m[2] === "")
-            $m[2] = "=";
-
-        // PC members can only search their own preferences.
-        // Admins can search papers they administer.
-        $value = new RevprefSearchMatcher((int) $m[1] ? ">=" . $m[1] : "=0", $contacts);
-        if ($m[3] === "any")
-            $value->is_any = true;
-        else if ($m[3] !== "")
-            $value->preference_match = new CountMatcher($m[2] . $m[3]);
-        if ($m[3] !== "any" && $m[4] !== "")
-            $value->expertise_match = new CountMatcher($m[2] . (121 - ord(strtolower($m[4]))));
-        $qz = [];
-        if ($srch->user->privChair)
-            $qz[] = new Revpref_SearchTerm($value, 0);
-        else {
-            if ($srch->user->is_manager())
-                $qz[] = new Revpref_SearchTerm($value, self::F_MANAGER);
-            if ($value->test_contact($srch->cid)) {
-                $xvalue = clone $value;
-                $xvalue->set_contacts($srch->cid);
-                $qz[] = new Revpref_SearchTerm($xvalue, 0);
-            }
-        }
-        if (empty($qz))
-            $qz[] = new False_SearchTerm;
+        $qz = new Revpref_SearchTerm($value);
         if (strcasecmp($word, "none") == 0)
-            $qz = [SearchTerm::make_not(SearchTerm::make_op("or", $qz))];
+            $qz = SearchTerm::make_not($qz);
         return $qz;
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        $thistab = "Revpref_" . count($sqi->tables);
-        $this->fieldname = $thistab . "_matches";
-
         if ($this->rpsm->preference_match
             && $this->rpsm->preference_match->test(0)
-            && !$this->rpsm->expertise_match) {
-            $q = "select Paper.paperId, count(ContactInfo.contactId) as count"
-                . " from Paper join ContactInfo"
-                . " left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=ContactInfo.contactId)"
-                . " where coalesce(preference,0)" . $this->rpsm->preference_match->countexpr()
-                . " and " . ($this->rpsm->has_contacts() ? $this->rpsm->contact_match_sql("ContactInfo.contactId") : "roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0")
-                . " group by Paper.paperId";
-        } else {
-            $where = array();
-            if ($this->rpsm->has_contacts())
-                $where[] = $this->rpsm->contact_match_sql("contactId");
-            if (($match = $this->rpsm->preference_expertise_match()))
-                $where[] = $match;
-            $q = "select paperId, count(PaperReviewPreference.preference) as count"
-                . " from PaperReviewPreference";
-            if (count($where))
-                $q .= " where " . join(" and ", $where);
-            $q .= " group by paperId";
-        }
+            && !$this->rpsm->expertise_match)
+            return "true";
+        $where = [$this->rpsm->contact_match_sql("contactId")];
+        if (($match = $this->rpsm->preference_expertise_match()))
+            $where[] = $match;
+        $q = "select paperId, count(PaperReviewPreference.preference) as count"
+            . " from PaperReviewPreference";
+        if (count($where))
+            $q .= " where " . join(" and ", $where);
+        $q .= " group by paperId";
+        $thistab = "Revpref_" . count($sqi->tables);
         $sqi->add_table($thistab, array("left join", "($q)"));
-        $sqi->add_column($this->fieldname, "$thistab.count");
-
-        $q = array();
-        $this->_set_flags($q, $sqi);
-        $q[] = "coalesce($thistab.count,0)" . $this->rpsm->countexpr();
-        return self::andjoin_sqlexpr($q);
+        return "coalesce($thistab.count,0)" . $this->rpsm->countexpr();
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        // XXX relies on field set by sqlexpr()
-        return $this->_check_flags($row, $srch)
-            && $this->rpsm->test((int) $row->{$this->fieldname});
+        $can_view = $srch->user->allow_administer($row);
+        $n = 0;
+        foreach ($this->rpsm->contact_set() as $cid) {
+            if (($cid == $srch->cid || $can_view)
+                && $this->rpsm->test_preference($row->reviewer_preference($cid)))
+                ++$n;
+        }
+        return $this->rpsm->test($n);
     }
 }
 
@@ -2386,6 +2366,16 @@ class RevprefSearchMatcher extends ContactCountMatcher {
         if ($this->expertise_match)
             $where[] = "expertise" . $this->expertise_match->countexpr();
         return join(" and ", $where);
+    }
+    function test_preference($pref) {
+        if ($this->is_any)
+            return $pref[0] != 0 || $pref[1] !== null;
+        else
+            return (!$this->preference_match
+                    || $this->preference_match->test($pref[0]))
+                && (!$this->expertise_match
+                    || ($pref[1] !== null
+                        && $this->expertise_match->test($pref[1])));
     }
 }
 

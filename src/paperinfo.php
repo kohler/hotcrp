@@ -504,16 +504,20 @@ class PaperInfo_Conflict {
 class PaperInfoSet implements IteratorAggregate {
     private $prows = [];
     private $by_pid = [];
+    public $loaded_allprefs = 0;
     function __construct(PaperInfo $prow = null) {
         if ($prow)
-            $this->add($prow);
+            $this->add($prow, true);
     }
-    function add(PaperInfo $prow) {
-        assert(!$prow->_row_set);
+    function add(PaperInfo $prow, $copy = false) {
         $this->prows[] = $prow;
         if (!isset($this->by_pid[$prow->paperId]))
             $this->by_pid[$prow->paperId] = $prow;
-        $prow->_row_set = $this;
+        if (!$copy) {
+            assert(!$prow->_row_set);
+            if ($prow->_row_set) error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            $prow->_row_set = $this;
+        }
     }
     function all() {
         return $this->prows;
@@ -526,6 +530,13 @@ class PaperInfoSet implements IteratorAggregate {
     }
     function get($pid) {
         return get($this->by_pid, $pid);
+    }
+    function filter($func) {
+        $next_set = new PaperInfoSet;
+        foreach ($this as $prow)
+            if (call_user_func($func, $prow))
+                $next_set->add($prow, true);
+        return $next_set;
     }
     function getIterator() {
         return new ArrayIterator($this->prows);
@@ -1203,8 +1214,22 @@ class PaperInfo {
     }
 
     function load_reviewer_preferences() {
-        $this->allReviewerPreference = $this->conf->fetch_value("select " . $this->conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
-        $this->_prefs_array = $this->_prefs_cid = null;
+        if ($this->_row_set && ++$this->_row_set->loaded_allprefs >= 10)
+            $row_set = $this->_row_set->filter(function ($prow) {
+                return !property_exists($prow, "allReviewerPreference");
+            });
+        else
+            $row_set = new PaperInfoSet($this);
+        foreach ($row_set as $prow) {
+            $prow->allReviewerPreference = null;
+            $prow->_prefs_array = $prow->_prefs_cid = null;
+        }
+        $result = $this->conf->qe("select paperId, " . $this->conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId?a group by paperId", $row_set->paper_ids());
+        while ($result && ($row = $result->fetch_row())) {
+            $prow = $row_set->get($row[0]);
+            $prow->allReviewerPreference = $row[1];
+        }
+        Dbl::free($result);
     }
 
     function reviewer_preferences() {
@@ -1212,7 +1237,7 @@ class PaperInfo {
             $this->load_reviewer_preferences();
         if ($this->_prefs_array === null) {
             $x = array();
-            if ($this->allReviewerPreference !== "" && $this->allReviewerPreference !== null) {
+            if ($this->allReviewerPreference !== null && $this->allReviewerPreference !== "") {
                 $p = preg_split('/[ ,]/', $this->allReviewerPreference);
                 for ($i = 0; $i + 2 < count($p); $i += 3) {
                     if ($p[$i+1] != "0" || $p[$i+2] != ".")
@@ -1228,7 +1253,7 @@ class PaperInfo {
         $cid = is_int($contact) ? $contact : $contact->contactId;
         if ($this->_prefs_cid === null && $this->_prefs_array === null) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
-            foreach ($row_set->all() as $prow)
+            foreach ($row_set as $prow)
                 $prow->_prefs_cid = [$cid, null];
             $result = $this->conf->qe("select paperId, preference, expertise from PaperReviewPreference where paperId?a and contactId=?", $row_set->paper_ids(), $cid);
             while ($result && ($row = $result->fetch_row())) {
