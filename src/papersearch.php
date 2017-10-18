@@ -2262,7 +2262,6 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             && $this->review_type !== $rrow->reviewType)
             return false;
         if ($this->completeness) {
-            // NB APPROVABLE is assumed to be tested earlier; we limit
             if ((($this->completeness & self::COMPLETE)
                  && !$rrow->reviewSubmitted)
                 || (($this->completeness & self::INCOMPLETE)
@@ -2270,8 +2269,10 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 || (($this->completeness & self::INPROGRESS)
                     && ($rrow->reviewSubmitted || !$rrow->reviewModified))
                 || (($this->completeness & self::APPROVABLE)
-                    && $rrow->requestedBy != $user->contactId
-                    && !$user->allow_administer($prow)))
+                    && ($rrow->reviewSubmitted
+                        || $rrow->timeApprovalRequested <= 0
+                        || ($rrow->requestedBy != $user->contactId
+                            && !$user->allow_administer($prow)))))
                 return false;
         }
         if ($this->round !== null
