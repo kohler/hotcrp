@@ -1115,8 +1115,7 @@ class Review_SearchTerm extends SearchTerm {
         if ($wordcount && $rsm->completeness === 0)
             $rsm->apply_completeness("complete");
         if ($contacts) {
-            $rsm->set_contacts($srch->matching_reviewers($contacts, $quoted,
-                                            $rsm->review_type >= REVIEW_PC));
+            $rsm->set_contacts($srch->matching_reviewers($contacts, $quoted, $rsm->only_pc()));
             if (strcasecmp($contacts, "me") == 0)
                 $rsm->tokens = $srch->reviewer_user()->review_tokens();
         }
@@ -1403,8 +1402,10 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         $rsm = new ReviewSearchMatcher(">0");
         if ($srch->limitName === "r" || $srch->limitName === "rout")
             $rsm->add_contact($srch->cid);
-        else if ($srch->limitName === "req" || $srch->limitName === "reqrevs")
-            $rsm->fieldsql = "requestedBy=" . $srch->cid . " and reviewType=" . REVIEW_EXTERNAL;
+        else if ($srch->limitName === "req" || $srch->limitName === "reqrevs") {
+            $rsm->apply_requester($srch->cid);
+            $rsm->apply_review_type("external"); // XXX optional PC reviews?
+        }
         if ($this->round !== null)
             $rsm->round = $this->round;
         if ($this->rate !== null)
@@ -2178,7 +2179,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     const INPROGRESS = 4;
     const APPROVABLE = 8;
 
-    public $review_type = 0;
+    private $review_type = 0;
     public $completeness = 0;
     public $fieldsql = null;
     public $view_score = null;
@@ -2189,9 +2190,13 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     private $rfield = null;
     private $rfield_score;
     private $rfield_text;
+    private $requester;
 
     function __construct($countexpr = null, $contacts = null) {
         parent::__construct($countexpr, $contacts);
+    }
+    function only_pc() {
+        return $this->review_type >= REVIEW_PC;
     }
     function apply_review_type($word, $allow_pc = false) {
         if ($word === "meta")
@@ -2230,6 +2235,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             return true;
         } else
             return false;
+    }
+    function apply_requester($cid) {
+        $this->requester = $cid;
     }
     function make_field_term(ReviewField $field, $value) {
         assert(!$this->rfield && !$this->fieldsql);
@@ -2292,7 +2300,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
     }
     function test_review(Contact $user, PaperInfo $prow, ReviewInfo $rrow, PaperSearch $srch) {
-        if ($this->review_type && $this->review_type !== $rrow->reviewType)
+        if ($this->review_type
+            && $this->review_type !== $rrow->reviewType)
             return false;
         if ($this->completeness) {
             // NB APPROVABLE is assumed to be tested earlier; we limit
@@ -2303,13 +2312,14 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 || (($this->completeness & self::INPROGRESS)
                     && ($rrow->reviewSubmitted || !$rrow->reviewModified))
                 || (($this->completeness & self::APPROVABLE)
-                    && !$user->allow_administer($prow)
-                    && $rrow->requestedBy != $user->contactId))
+                    && $rrow->requestedBy != $user->contactId
+                    && !$user->allow_administer($prow)))
                 return false;
         }
-        if ($this->round !== null && !in_array($rrow->reviewRound, $this->round))
+        if ($this->round !== null
+            && !in_array($rrow->reviewRound, $this->round))
             return false;
-        if ($this->fieldsql || $this->rfield
+        if ($this->fieldsql || $this->rfield || $this->wordcountexpr
             ? !$user->can_view_review($prow, $rrow, true)
             : !$user->can_view_review_assignment($prow, $rrow, true))
             return false;
@@ -2325,7 +2335,11 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if ($this->wordcountexpr
             && !$this->wordcountexpr->test($rrow->reviewWordCount))
             return false;
-        if (isset($this->view_score)
+        if ($this->requester !== null
+            && ($rrow->requestedBy != $this->requester
+                || !$user->can_view_review_requester($prow, $rrow, true)))
+            return false;
+        if ($this->view_score !== null
             && $this->view_score <= $user->view_score_bound($prow, $rrow))
             return false;
         if ($this->rfield) {
