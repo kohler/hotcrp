@@ -161,7 +161,7 @@ class Contact {
         if (property_exists($user, "contactTags"))
             $this->contactTags = $user->contactTags;
         else
-            $this->contactTags = false;
+            $this->contactTags = $this->contactId ? false : null;
         if (isset($user->activity_at))
             $this->activity_at = (int) $user->activity_at;
         else if (isset($user->lastLogin))
