@@ -150,10 +150,11 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
 
         // requester
         if ($mode === "assign") {
-            if (($cflttype <= 0 || $admin)
-                && $rr->reviewType == REVIEW_EXTERNAL
+            if ($rr->reviewType < REVIEW_SECONDARY
                 && !$showtoken
-                && $rr->requestedBy) {
+                && $rr->requestedBy
+                && $rr->requestedBy != $rr->contactId
+                && $Me->can_view_review_requester($prow, $rr, null)) {
                 $t .= '<td style="font-size:smaller">';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
@@ -161,17 +162,13 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                     $t .= $Me->reviewer_html_for($rr->requestedBy);
                 $t .= '</td>';
                 $want_requested_by = true;
+
+                if ($rr->reviewModified <= 0
+                    && ($rr->requestedBy == $Me->contactId || $admin))
+                    $t .= '<td>' . _retract_review_request_form($prow, $rr) . '</td>';
             } else
                 $t .= '<td class="empty"></td>';
         }
-
-        // actions
-        if ($mode === "assign"
-            && ($cflttype <= 0 || $admin)
-            && $rr->reviewType == REVIEW_EXTERNAL
-            && $rr->reviewModified <= 0
-            && ($rr->requestedBy == $Me->contactId || $admin))
-            $t .= '<td>' . _retract_review_request_form($prow, $rr) . '</td>';
 
         // scores
         $scores = array();

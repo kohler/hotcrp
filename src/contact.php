@@ -2523,10 +2523,8 @@ class Contact {
         // See also ReviewerFexpr.
         if ($rights->can_administer
             || $rights->reviewType == REVIEW_META
-            || ($rrow
-                && ($this->is_owned_review($rrow)
-                    || ($rights->allow_pc
-                        && $rrow->requestedBy == $this->contactId))))
+            || ($rrow && $rrow->requestedBy == $this->contactId && $rights->allow_pc)
+            || ($rrow && $this->is_owned_review($rrow)))
             return true;
         $seerevid_setting = $this->seerevid_setting($prow, $rrow, $rights);
         return ($rights->allow_pc
@@ -2576,6 +2574,14 @@ class Contact {
         return !$rights->act_author_view
             || ($rrow && $rrow->reviewAuthorSeen
                 && $rrow->reviewAuthorSeen <= $rrow->reviewAuthorModified);
+    }
+
+    function can_view_review_requester(PaperInfo $prow, ReviewInfo $rrow = null, $forceShow = null) {
+        $rights = $this->rights($prow, $forceShow);
+        return $rights->can_administer
+            || ($rrow && $rrow->requestedBy == $this->contactId && $rights->allow_pc)
+            || ($rrow && $this->is_owned_review($rrow))
+            || ($rights->allow_pc && $this->can_view_review_identity($prow, $rrow, $forceShow));
     }
 
     function can_request_review(PaperInfo $prow, $check_time) {
