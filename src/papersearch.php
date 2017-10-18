@@ -1456,7 +1456,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        return $sqi->negated ? "false" : "true";
+        return "true";
     }
     function exec(PaperInfo $prow, PaperSearch $srch) {
         return true;
