@@ -1,4 +1,4 @@
-export VERSION=2.100
+export VERSION=2.101
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
@@ -88,6 +88,7 @@ batch/updatecontactdb.php
 
 conf/.htaccess
 
+etc/.htaccess
 etc/affiliationmatching.json
 etc/apifunctions.json
 etc/assignmentparsers.json
@@ -122,6 +123,7 @@ lib/login.php
 lib/mailer.php
 lib/message.php
 lib/messageset.php
+lib/mime.types
 lib/mimetype.php
 lib/mincostmaxflow.php
 lib/navigation.php

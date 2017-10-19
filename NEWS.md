@@ -1,25 +1,58 @@
 HotCRP NEWS
 ===========
 
-## Version 2.101
+## Version 2.101 - 18.Oct.2017
+
+* Support metareviewers.
+
+* Track administrators: PC users with a specific tag can be administrators for
+  papers with a specific tag.
 
 * Support delegated reviews that must be “approved” by the delegating PC
   members, for STOC-like workflow.
 
+* Large improvements to conflict handling and conflict matching UI. Warn
+  authors when they have likely conflicts; show that information to chairs.
+
+* Support indefinite numbers of review fields.
+
 * Support emoji tags like #:smile: and #:poop:.
+
+* Tag patterns: you can make a set of tags chair-only using syntax like
+  “chair:\*”.
+
+* Graphs: Support multiple CDFs, support graphs by tag.
+
+* Search: Support searches for textual and numeric option values, add
+  `revtype:USER` and some other generalizations.
+
+* Improve topic matching by scaling topic interest scores by sqrt(#topics).
 
 * Visually distinguish PDFs with serious formatting errors.
 
-* Internals: Make HotCRP much more extensible. Paper columns, paper
-  search keywords, formula functions, API functions, and some UI
-  messages are extensible using JSON.
+* Show archive listings for archive uploads.
 
-* Allow tag patterns: you can make a set of tags chair-only using syntax like
-  “chair:*”.
+* Improve printed page style.
+
+* Download > CSV.
+
+* Add `show:graph:FORMULA` support.
+
+* Bulk assignment: Add “contact” assignment type (change paper contacts),
+  and “submit”, “unsubmit”, “withdraw”, “revive”.
+
+* Internals: Make HotCRP much more extensible. Paper columns, paper search
+  keywords, formula functions, API functions, assignment instructions, and
+  some UI messages are extensible using JSON.
+
+* Internals: Readability refactoring, especially for PaperInfo; reduce
+  database load.
 
 * Default to SHA-256 checksums.
 
 * Many bug fixes.
+
+* Support PHP 7.1; stop supporting PHP 5.4.
 
 * Thanks for feature requests and bug reports to many users.
 
@@ -37,7 +70,7 @@ HotCRP NEWS
 
 * Graphs: `boxplot` graphs, better tooltips, more colors.
 
-* Styles: “Labels”! A tag can appear after the paper title in a wee lozenge. I
+* Styles: Badges! A tag can appear after the paper title in a wee lozenge. I
   like this, but I'm not sure anyone else cares.
 
 * Styles: If you tag a paper with multiple colors, you will get a **RAINBOW**,
