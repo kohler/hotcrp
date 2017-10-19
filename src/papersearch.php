@@ -54,12 +54,10 @@ class SearchOperator {
 
 class SearchTerm {
     public $type;
-    public $flags;
     public $float = [];
 
-    function __construct($type, $flags = 0) {
+    function __construct($type) {
         $this->type = $type;
-        $this->flags = $flags;
     }
     static function make_op($op, $terms) {
         $opstr = is_object($op) ? $op->op : $op;
@@ -525,7 +523,6 @@ class TextMatch_SearchTerm extends SearchTerm {
         return $this->trivial && !$this->authorish;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $sqi->needflags |= $this->flags;
         $sqi->add_column($this->field, "Paper.{$this->field}");
         if ($this->trivial && !$this->authorish)
             return "Paper.{$this->field}!=''";
@@ -2365,7 +2362,6 @@ class SearchQueryInfo {
     public $tables = array();
     public $columns = array();
     public $negated = false;
-    public $needflags = 0;
 
     function __construct(PaperSearch $srch) {
         $this->conf = $srch->conf;
@@ -2438,11 +2434,6 @@ class SearchQueryInfo {
 }
 
 class PaperSearch {
-    const F_MANAGER = 0x0001;
-    const F_NONCONFLICT = 0x0002;
-    const F_AUTHOR = 0x0004;
-    const F_REVIEWER = 0x0008;
-
     public $conf;
     public $user;
     private $contact;
@@ -3457,7 +3448,7 @@ class PaperSearch {
             else
                 $filters[] = "Paper.managerContactId=" . $this->cid;
             $filters[] = "Paper.timeSubmitted>0";
-            $sqi->needflags |= self::F_MANAGER;
+            $sqi->add_conflict_columns();
         }
 
         // decision limitation parts
@@ -3485,14 +3476,8 @@ class PaperSearch {
             $filters[] = "MyReview.reviewType is not null";
 
         if ($limit === "a" || $limit === "ar")
-            $sqi->needflags |= self::F_AUTHOR;
-        if ($limit === "r" || $limit === "ar" || $limit === "rout" || $this->q === "re:me")
-            $sqi->needflags |= self::F_REVIEWER;
-
-        // add common tables: conflicts, my own review, paper blindness
-        if ($sqi->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR))
             $sqi->add_conflict_columns();
-        if ($sqi->needflags & self::F_REVIEWER)
+        if ($limit === "r" || $limit === "ar" || $limit === "rout" || $this->q === "re:me")
             $sqi->add_reviewer_columns();
 
         // check for annotated order
