@@ -2778,15 +2778,12 @@ class Contact {
             return true;
     }
 
-    function can_view_review_ratings(PaperInfo $prow = null, ReviewInfo $rrow = null, $override_self = false) {
+    function can_view_review_ratings(PaperInfo $prow, ReviewInfo $rrow = null, $override_self = false) {
         $rs = $this->conf->setting("rev_ratings");
-        if ($rs != REV_RATINGS_PC && $rs != REV_RATINGS_PC_EXTERNAL)
-            return false;
-        if (!$prow)
-            return $this->is_reviewer();
         $rights = $this->rights($prow);
         if (!$this->can_view_review($prow, $rrow, null)
-            || (!$rights->allow_pc && !$rights->allow_review))
+            || (!$rights->allow_pc && !$rights->allow_review)
+            || ($rs != REV_RATINGS_PC && $rs != REV_RATINGS_PC_EXTERNAL))
             return false;
         if (!$rrow
             || $override_self
@@ -2805,6 +2802,11 @@ class Contact {
                     || ($rs == REV_RATINGS_PC && $rrow->reviewType > REVIEW_EXTERNAL)))
                 ++$nsubraters;
         return $nsubraters >= 2;
+    }
+
+    function can_view_some_review_ratings() {
+        $rs = $this->conf->setting("rev_ratings");
+        return $this->is_reviewer() && ($rs == REV_RATINGS_PC || $rs == REV_RATINGS_PC_EXTERNAL);
     }
 
     function can_rate_review(PaperInfo $prow, $rrow) {

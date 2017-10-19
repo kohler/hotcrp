@@ -353,7 +353,7 @@ function searchQuickref() {
     if ($Conf->setting("rev_tokens"))
         _searchQuickrefRow("", "retoken:J88ADNAB", "has a review with token J88ADNAB");
     if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
-        _searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
+        _searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:boring” also work; can combine with “re:”)");
     _searchQuickrefRow("Comments", "has:cmt", "at least one visible reviewer comment (not including authors’ response)");
     _searchQuickrefRow("", "cmt:>=3", "at least <em>three</em> visible reviewer comments");
     _searchQuickrefRow("", "has:aucmt", "at least one reviewer comment visible to authors");

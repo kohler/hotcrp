@@ -206,6 +206,17 @@ class ReviewInfo {
         return 0;
     }
 
+    function ratings() {
+        $ratings = [];
+        if ((string) $this->allRatings !== "") {
+            foreach (explode(",", $this->allRatings) as $rx) {
+                list($cid, $rating) = explode(" ", $rx);
+                $ratings[(int) $cid] = intval($rating);
+            }
+        }
+        return $ratings;
+    }
+
     function rating_of_user($user) {
         $cid = is_object($user) ? $user->contactId : $user;
         $str = ",$cid ";

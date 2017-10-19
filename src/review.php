@@ -1118,7 +1118,6 @@ $blind\n";
     const RJ_NO_REVIEWERONLY = 16;
 
     static private function unparse_rating($rating, $flags) {
-        $rating = (int) $rating;
         if (($flags & self::RJ_UNPARSE_RATINGS)
             && ($n = get(self::$rating_types, $rating ? : "n")) !== null)
             return $n;
@@ -1128,12 +1127,8 @@ $blind\n";
 
     static function unparse_ratings_json(ReviewInfo $rrow, $flags) {
         $ratings = [];
-        if ((string) $rrow->allRatings !== "") {
-            foreach (explode(",", $rrow->allRatings) as $rx) {
-                list($cid, $rating) = explode(" ", $rx);
-                $ratings[] = self::unparse_rating($rating, $flags);
-            }
-        }
+        foreach ($rrow->ratings() as $rating)
+            $ratings[] = self::unparse_rating($rating, $flags);
         return $ratings;
     }
 
