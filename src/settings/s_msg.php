@@ -3,8 +3,8 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Messages extends SettingRenderer{
-    function render(SettingValues $sv) {
+class SettingRenderer_Messages {
+    static function render(SettingValues $sv) {
         $sv->echo_message("msg.home", "Home page message");
         $sv->echo_message("msg.clickthrough_submit", "Clickthrough submission terms",
                    "<div class=\"hint fx\">Users must “accept” these terms to edit or submit a paper. Use HTML and include a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
@@ -16,5 +16,3 @@ class SettingRenderer_Messages extends SettingRenderer{
         $sv->echo_message("msg.revprefdescription", "Review preference instructions");
     }
 }
-
-SettingGroup::register("msg", "Messages", 200, new SettingRenderer_Messages);

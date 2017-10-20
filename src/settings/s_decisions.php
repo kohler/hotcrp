@@ -3,8 +3,8 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Decisions extends SettingRenderer {
-function render(SettingValues $sv) {
+class SettingRenderer_Decisions {
+static function render(SettingValues $sv) {
     echo "<h3 class=\"settings\">Review sharing and responses</h3>\n";
     echo "Can <b>authors see reviews and author-visible comments</b> for their papers?<br />";
     if ($sv->conf->setting("resp_active"))
@@ -158,7 +158,7 @@ function render(SettingValues $sv) {
     Ht::stash_script("foldup(\$\$('cbfinal_open'),null,{f:\"c\"})");
 }
 
-    function crosscheck(SettingValues $sv) {
+    static function crosscheck(SettingValues $sv) {
         global $Now;
 
         if ($sv->has_interest("final_open")
@@ -204,7 +204,7 @@ function render(SettingValues $sv) {
 
 
 class Decision_SettingParser extends SettingParser {
-    public function parse(SettingValues $sv, Si $si) {
+    function parse(SettingValues $sv, Si $si) {
         $dec_revmap = array();
         foreach ($sv->req as $k => &$dname)
             if (str_starts_with($k, "dec")
@@ -236,7 +236,7 @@ class Decision_SettingParser extends SettingParser {
         return true;
     }
 
-    public function save(SettingValues $sv, Si $si) {
+    function save(SettingValues $sv, Si $si) {
         // mark all used decisions
         $decs = $sv->conf->decision_map();
         $update = false;
@@ -322,7 +322,3 @@ class RespRound_SettingParser extends SettingParser {
         return false;
     }
 }
-
-
-SettingGroup::register("decisions", "Decisions", 800, new SettingRenderer_Decisions);
-SettingGroup::register_synonym("dec", "decisions");

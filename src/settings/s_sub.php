@@ -3,8 +3,8 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Submissions extends SettingRenderer {
-function render(SettingValues $sv) {
+class SettingRenderer_Submissions {
+static function render(SettingValues $sv) {
     $sv->echo_checkbox('sub_open', '<b>Open site for submissions</b>');
 
     echo "<div class='g'></div>\n";
@@ -33,7 +33,7 @@ function render(SettingValues $sv) {
     echo "</tbody></table>\n";
     Ht::stash_script("fold('pc_seeall',!$('#cbpc_seeall').is(':checked'))");
 }
-    function crosscheck(SettingValues $sv) {
+    static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("sub_open")
             && $sv->newv("sub_freeze", -1) == 0
             && $sv->newv("sub_open") > 0
@@ -41,5 +41,3 @@ function render(SettingValues $sv) {
             $sv->warning_at(null, "Authors can update their submissions until the deadline, but there is no deadline. This is sometimes unintentional. You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
     }
 }
-
-SettingGroup::register("sub", "Submissions", 300, new SettingRenderer_Submissions);

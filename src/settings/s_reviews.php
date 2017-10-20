@@ -3,8 +3,8 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Reviews extends SettingRenderer {
-    private function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
+class SettingRenderer_Reviews {
+    private static function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
         $rname = "roundname_$rnum";
         if ($sv->use_req() && $rnum !== '$')
             $nameval = (string) get($sv->req, $rname);
@@ -58,7 +58,7 @@ class SettingRenderer_Reviews extends SettingRenderer {
         echo '</table></div>', "\n";
     }
 
-function render(SettingValues $sv) {
+static function render(SettingValues $sv) {
     $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
     $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
 
@@ -115,11 +115,11 @@ function render(SettingValues $sv) {
     $num_printed = 0;
     for ($i = 0; $i < count($rounds); ++$i)
         if ($i ? $rounds[$i] !== ";" : $print_round0) {
-            $this->echo_round($sv, $i, $i ? $rounds[$i] : "", +get($round_map, $i), count($selector) !== 1);
+            self::echo_round($sv, $i, $i ? $rounds[$i] : "", +get($round_map, $i), count($selector) !== 1);
             ++$num_printed;
         }
     echo '</div><div id="newround" style="display:none">';
-    $this->echo_round($sv, '$', "", "", true);
+    self::echo_round($sv, '$', "", "", true);
     echo '</div><div class="g"></div>';
     echo Ht::js_button("Add round", "review_round_settings.add();hiliter(this)"),
         ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
@@ -193,7 +193,7 @@ function render(SettingValues $sv) {
     $sv->echo_radio_table("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
 }
 
-    function crosscheck(SettingValues $sv) {
+    static function crosscheck(SettingValues $sv) {
         global $Now;
         $errored = false;
         foreach ($sv->conf->round_list() as $i => $rname) {
@@ -342,8 +342,3 @@ class Round_SettingParser extends SettingParser {
             $sv->conf->qe_raw("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
     }
 }
-
-
-SettingGroup::register("reviews", "Reviews", 500, new SettingRenderer_Reviews);
-SettingGroup::register_synonym("rev", "reviews");
-SettingGroup::register_synonym("review", "reviews");

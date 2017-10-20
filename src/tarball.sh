@@ -100,6 +100,7 @@ etc/papercolumns.json
 etc/reviewformlibrary.json
 etc/searchkeywords.json
 etc/settings.json
+etc/settinggroups.json
 
 lib/.htaccess
 lib/abbreviationmatcher.php

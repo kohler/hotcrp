@@ -3,8 +3,8 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Tags extends SettingRenderer {
-    private function do_track_permission($sv, $type, $question, $tnum, $thistrack) {
+class SettingRenderer_Tags {
+    static private function do_track_permission($sv, $type, $question, $tnum, $thistrack) {
         $tclass = $ttag = "";
         if ($sv->use_req()) {
             $tclass = defval($sv->req, "${type}_track$tnum", "");
@@ -47,7 +47,7 @@ class SettingRenderer_Tags extends SettingRenderer {
             echo "<tr><td></td><td colspan=\"3\" style=\"padding-bottom:2px\">", $hint, "</td></tr>";
     }
 
-    private function do_track($sv, $trackname, $tnum) {
+    static private function do_track($sv, $trackname, $tnum) {
         echo "<div id=\"trackgroup$tnum\"",
             ($tnum ? "" : " style=\"display:none\""),
             "><table style=\"margin-bottom:0.5em\">";
@@ -61,22 +61,22 @@ class SettingRenderer_Tags extends SettingRenderer {
 
         $t = $sv->conf->setting_json("tracks");
         $t = $t && $trackname !== "" ? get($t, $trackname) : null;
-        $this->do_track_permission($sv, "view", "Who can see these papers?", $tnum, $t);
-        $this->do_track_permission($sv, "viewpdf", ["Who can see PDFs?", "Assigned reviewers can always see PDFs."], $tnum, $t);
-        $this->do_track_permission($sv, "viewrev", "Who can see reviews?", $tnum, $t);
+        self::do_track_permission($sv, "view", "Who can see these papers?", $tnum, $t);
+        self::do_track_permission($sv, "viewpdf", ["Who can see PDFs?", "Assigned reviewers can always see PDFs."], $tnum, $t);
+        self::do_track_permission($sv, "viewrev", "Who can see reviews?", $tnum, $t);
         $hint = "";
         if ($sv->conf->setting("pc_seeblindrev"))
             $hint = "Regardless of this setting, PC members can’t see reviewer names until they’ve completed a review for the same paper (<a href=\"" . hoturl("settings", "group=reviews") . "\">Settings &gt; Reviews &gt; Visibility</a>).";
-        $this->do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
-        $this->do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
-        $this->do_track_permission($sv, "unassrev", "Who can self-assign a review?", $tnum, $t);
-        $this->do_track_permission($sv, "admin", "Who can administer these papers?", $tnum, $t);
+        self::do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
+        self::do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
+        self::do_track_permission($sv, "unassrev", "Who can self-assign a review?", $tnum, $t);
+        self::do_track_permission($sv, "admin", "Who can administer these papers?", $tnum, $t);
         if ($trackname === "_")
-            $this->do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", $tnum, $t);
+            self::do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", $tnum, $t);
         echo "</table></div>\n\n";
     }
 
-    function render(SettingValues $sv) {
+    static function render(SettingValues $sv) {
         $dt_renderer = function ($tl) {
             return join(" ", array_map(function ($t) { return $t->tag; },
                                        array_filter($tl, function ($t) { return !$t->pattern_instance; })));
@@ -145,13 +145,13 @@ class SettingRenderer_Tags extends SettingRenderer {
         echo "<div class='hint'>Tracks control the PC members allowed to view or review different sets of papers. <span class='barsep'>·</span> <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
             Ht::hidden("has_tracks", 1),
             "<div class=\"smg\"></div>\n";
-        $this->do_track($sv, "", 0);
+        self::do_track($sv, "", 0);
         $tracknum = 2;
         $trackj = $sv->conf->setting_json("tracks") ? : (object) array();
         // existing tracks
         foreach ($trackj as $trackname => $x)
             if ($trackname !== "_") {
-                $this->do_track($sv, $trackname, $tracknum);
+                self::do_track($sv, $trackname, $tracknum);
                 ++$tracknum;
             }
         // new tracks (if error prevented saving)
@@ -159,18 +159,18 @@ class SettingRenderer_Tags extends SettingRenderer {
             for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
                 $trackname = trim($sv->req["name_track$i"]);
                 if (!isset($trackj->$trackname)) {
-                    $this->do_track($sv, $trackname, $tracknum);
+                    self::do_track($sv, $trackname, $tracknum);
                     ++$tracknum;
                 }
             }
         // catchall track
-        $this->do_track($sv, "_", 1);
+        self::do_track($sv, "_", 1);
         echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
 
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)');
     }
 
-    function crosscheck(SettingValues $sv) {
+    static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("tracks")
             && $sv->newv("tracks")) {
             $tracks = json_decode($sv->newv("tracks"), true);
@@ -382,7 +382,3 @@ class Track_SettingParser extends SettingParser {
         return false;
     }
 }
-
-
-SettingGroup::register("tags", "Tags &amp; tracks", 700, new SettingRenderer_Tags);
-SettingGroup::register_synonym("tracks", "tags");

@@ -330,8 +330,8 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 }
 
-class SettingRenderer_ReviewForm extends SettingRenderer {
-function render(SettingValues $sv) {
+class SettingRenderer_ReviewForm {
+static function render(SettingValues $sv) {
     global $ConfSitePATH;
 
     $samples = json_decode(file_get_contents("$ConfSitePATH/etc/reviewformlibrary.json"));
@@ -424,6 +424,3 @@ submitted. Add a line “<code>0. No entry</code>” to make the score optional.
         Ht::button("Add text field", array("onclick" => "review_form_settings.add(0)"));
 }
 }
-
-SettingGroup::register("reviewform", "Review form", 600, new SettingRenderer_ReviewForm);
-SettingGroup::register_synonym("rfo", "reviewform");

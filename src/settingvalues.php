@@ -141,11 +141,7 @@ class Si {
         }
         $groups = $this->group;
         foreach (is_string($groups) ? [$groups] : $groups as $g) {
-            if (isset(SettingGroup::$map[$g]))
-                $g = SettingGroup::$map[$g];
-            if (!isset(SettingGroup::$all[$g]))
-                error_log("$this->name: bad group $g");
-            else if ($sv->group_is_interesting($g))
+            if ($sv->group_is_interesting($g))
                 return true;
         }
         return false;
@@ -263,13 +259,6 @@ class SettingParser {
     }
 }
 
-class SettingRenderer {
-    function render(SettingValues $sv) {
-    }
-    function crosscheck(SettingValues $sv) {
-    }
-}
-
 class SettingValues extends MessageSet {
     public $conf;
     public $user;
@@ -287,6 +276,9 @@ class SettingValues extends MessageSet {
     private $hint_status = array();
     private $has_req = array();
     private $near_msgs = null;
+
+    private $_subgroups = null;
+    private $_groups = null;
 
     function __construct(Contact $user) {
         parent::__construct();
@@ -321,6 +313,100 @@ class SettingValues extends MessageSet {
         foreach ($this->conf->session("settings_highlight", []) as $f => $v)
             $this->msg($f, null, $v);
         $this->conf->save_session("settings_highlight", null);
+    }
+
+
+    public function _add_group_json($fj) {
+        if (isset($fj->name) && is_string($fj->name)) {
+            if (!isset($fj->group))
+                $fj->group = $fj->name;
+            if (!isset($fj->synonym))
+                $fj->synonym = [];
+            else if (is_string($fj->synonym))
+                $fj->synonym = [$fj->synonym];
+            $this->_subgroups[] = $fj;
+            return true;
+        } else
+            return false;
+    }
+    private function load_groups() {
+        if ($this->_groups !== null)
+            return;
+        $this->_subgroups = $this->_groups = [];
+        expand_json_includes_callback(["etc/settinggroups.json"], [$this, "_add_group_json"]);
+        if (($olist = $this->conf->opt("settingGroups")))
+            expand_json_includes_callback($olist, [$this, "_add_group_json"]);
+        usort($this->_subgroups, "Conf::xt_priority_compare");
+        $gs = $sgs = $known = [];
+        foreach ($this->_subgroups as $gj) {
+            if (isset($known[$gj->name]) || !$this->conf->xt_allowed($gj))
+                continue;
+            $known[$gj->name] = true;
+            foreach ($gj->synonym as $syn)
+                $known[$syn] = true;
+            if (Conf::xt_enabled($gj)) {
+                if ($gj->group === $gj->name)
+                    $gs[$gj->name] = $gj;
+                $sgs[$gj->name] = $gj;
+            }
+        }
+        $this->_groups = $gs;
+        uasort($this->_groups, "Conf::xt_position_compare");
+        $this->_subgroups = array_filter($sgs, function ($gj) {
+            return isset($this->_groups[$gj->group]);
+        });
+        uasort($this->_subgroups, function ($aj, $bj) {
+            if ($aj->group !== $bj->group)
+                return Conf::xt_position_compare($this->_groups[$aj->group], $this->_groups[$bj->group]);
+            else
+                return Conf::xt_position_compare($aj, $bj);
+        });
+    }
+    function canonicalize_group($g) {
+        $this->load_groups();
+        $g = strtolower($g);
+        if (isset($this->_subgroups[$g]))
+            return $this->_subgroups[$g]->group;
+        foreach ($this->_subgroups as $gj) {
+            if (in_array($g, $gj->synonym))
+                return $gj->group;
+        }
+        return false;
+    }
+    function group_titles() {
+        $this->load_groups();
+        $gs = [];
+        foreach ($this->_groups as $gj)
+            $gs[$gj->name] = $gj->title;
+        return $gs;
+    }
+    function mark_interesting_group($g) {
+        $g = $this->canonicalize_group($g);
+        foreach ($this->_subgroups as $gj) {
+            if ($g === $gj->group) {
+                $this->interesting_groups[$gj->name] = true;
+                foreach ($gj->synonym as $syn)
+                    $this->interesting_groups[$syn] = true;
+            }
+        }
+    }
+    function crosscheck() {
+        $this->load_groups();
+        foreach ($this->_subgroups as $gj) {
+            if (isset($gj->crosschecker)) {
+                Conf::xt_resolve_require($gj);
+                call_user_func($gj->crosschecker, $this);
+            }
+        }
+    }
+    function render_group($g) {
+        $g = $this->canonicalize_group($g);
+        foreach ($this->_subgroups as $gj) {
+            if ($g === $gj->group && isset($gj->renderer)) {
+                Conf::xt_resolve_require($gj);
+                call_user_func($gj->renderer, $this);
+            }
+        }
     }
 
 
@@ -951,80 +1037,6 @@ class SettingValues extends MessageSet {
 
     function changes() {
         return $this->changes;
-    }
-}
-
-class SettingGroup {
-    public $name;
-    public $description;
-    public $position;
-    private $render = array();
-
-    static public $all;
-    static public $map;
-    static private $sorted = false;
-
-    function __construct($name, $description, $position) {
-        $this->name = $name;
-        $this->description = $description;
-        $this->position = $position;
-    }
-    function add_renderer($position, SettingRenderer $renderer) {
-        $x = [$position, count($this->render), $renderer];
-        $this->render[] = $x;
-        self::$sorted = false;
-    }
-    function render(SettingValues $sv) {
-        self::sort();
-        foreach ($this->render as $r)
-            $r[2]->render($sv);
-    }
-    static function crosscheck(SettingValues $sv, $groupname) {
-        $sv->interesting_groups[$groupname] = true;
-        self::sort();
-        foreach (self::$all as $name => $group) {
-            foreach ($group->render as $r)
-                $r[2]->crosscheck($sv);
-        }
-    }
-
-    static function register($name, $description, $position, SettingRenderer $renderer) {
-        if (isset(self::$map[$name]))
-            $name = self::$map[$name];
-        if (!isset(self::$all[$name]))
-            self::$all[$name] = new SettingGroup($name, $description, $position);
-        if ($description && !self::$all[$name]->description)
-            self::$all[$name]->description = $description;
-        self::$all[$name]->add_renderer($position, $renderer);
-    }
-    static function register_synonym($new_name, $old_name) {
-        assert(isset(self::$all[$old_name]) && !isset(self::$map[$old_name]));
-        assert(!isset(self::$all[$new_name]) && !isset(self::$map[$new_name]));
-        self::$map[$new_name] = $old_name;
-    }
-    static function all() {
-        self::sort();
-        return self::$all;
-    }
-
-    static private function sort() {
-        if (self::$sorted)
-            return;
-        uasort(self::$all, function ($a, $b) {
-            if ($a->position != $b->position)
-                return $a->position < $b->position ? -1 : 1;
-            else
-                return strcasecmp($a->name, $b->name);
-        });
-        foreach (self::$all as $name => $group)
-            usort($group->render, function ($a, $b) {
-                if ($a[0] != $b[0])
-                    return $a[0] < $b[0] ? -1 : 1;
-                if ($a[1] != $b[1])
-                    return $a[1] < $b[1] ? -1 : 1;
-                return 0;
-            });
-        self::$sorted = true;
     }
 }
 

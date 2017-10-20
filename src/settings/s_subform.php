@@ -185,9 +185,9 @@ class BanalSettings {
     }
 }
 
-class SettingRenderer_SubForm extends SettingRenderer {
+class SettingRenderer_SubForm {
     private $have_options = null;
-    private function find_option_req(SettingValues $sv, PaperOption $o, $xpos) {
+    static private function find_option_req(SettingValues $sv, PaperOption $o, $xpos) {
         if ($o->id) {
             for ($i = 1; isset($sv->req["optid_$i"]); ++$i)
                 if ($sv->req["optid_$i"] == $o->id)
@@ -206,7 +206,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
         }
 
         if ($sv->use_req()) {
-            $oxpos = $this->find_option_req($sv, $o, $xpos);
+            $oxpos = self::find_option_req($sv, $o, $xpos);
             if (isset($sv->req["optn_$oxpos"])) {
                 $id = cvtint($sv->req["optid_$oxpos"]);
                 $o = PaperOption::make(array("id" => $id <= 0 ? 0 : $id,
@@ -333,7 +333,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
         echo '<hr class="c" /></div>';
     }
 
-function render(SettingValues $sv) {
+static function render(SettingValues $sv) {
     echo "<h3 class=\"settings\">Abstract and PDF</h3>\n";
 
     echo '<div id="foldpdfupload" class="fold2o fold3o">';
@@ -384,14 +384,15 @@ function render(SettingValues $sv) {
         Ht::hidden("has_options", 1), "\n\n";
     $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator
     echo '<div id="settings_opts" class="c">';
+    $self = new SettingRenderer_SubForm;
     $pos = 0;
     foreach ($all_options as $o)
-        $this->render_option($sv, $o, ++$pos);
+        $self->render_option($sv, $o, ++$pos);
     echo "</div>\n",
         '<div style="margin-top:2em">',
         Ht::js_button("Add option", "settings_option_move.call(this)", ["class" => "settings_opt_new btn"]),
         "</div>\n<div id=\"settings_newopt\" style=\"display:none\">";
-    $this->render_option($sv, null, 0);
+    $self->render_option($sv, null, 0);
     echo "</div>\n\n";
 
 
@@ -446,7 +447,7 @@ function render(SettingValues $sv) {
         Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em", "class" => ($sv->has_problem_at("topnew") ? "setting_error " : "") . "need-autogrow")),
         '</td></tr></table>';
 }
-    function crosscheck(SettingValues $sv) {
+    static function crosscheck(SettingValues $sv) {
         if (($sv->has_interest("options") || $sv->has_interest("sub_blind"))
             && $sv->newv("options")
             && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
@@ -657,7 +658,3 @@ class Banal_SettingParser extends SettingParser {
         }
     }
 }
-
-
-SettingGroup::register("subform", "Submission form", 400, new SettingRenderer_SubForm);
-SettingGroup::register_synonym("opt", "subform");

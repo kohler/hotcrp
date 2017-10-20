@@ -697,7 +697,12 @@ class Conf {
         $pb = self::xt_priority($xtb);
         return $pa < $pb ? 1 : ($pa == $pb ? 0 : -1);
     }
-    static private function xt_add(&$a, $name, $xt) {
+    static function xt_position_compare($xta, $xtb) {
+        $ap = get($xta, "position", 0);
+        $bp = get($xtb, "position", 0);
+        return $ap < $bp ? -1 : ($ap == $bp ? 0 : 1);
+    }
+    static function xt_add(&$a, $name, $xt) {
         $a[$name][] = $xt;
         if (($syn = get($xt, "synonym")))
             foreach (is_string($syn) ? [$syn] : $syn as $synname)
@@ -764,11 +769,6 @@ class Conf {
     function xt_allowed($xt, Contact $user = null) {
         return $xt && (!isset($xt->allow_if)
                        || $this->xt_check($xt->allow_if, $xt, $user));
-    }
-    static function xt_position_compare($xta, $xtb) {
-        $ap = get($xta, "position", 0);
-        $bp = get($xtb, "position", 0);
-        return $ap < $bp ? -1 : ($ap == $bp ? 0 : 1);
     }
     function xt_search_name($map, $name, $checkf, $found = null) {
         foreach (get($map, $name, []) as $xt)

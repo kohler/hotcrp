@@ -1,0 +1,61 @@
+[
+    {
+        "name": "basics", "synonym": ["info"], "position": 0,
+        "title": "Basics",
+        "require": "src/settings/s_basics.php",
+        "renderer": "SettingRenderer_Basics::render"
+    },
+    {
+        "name": "decisions", "synonym": ["dec"], "position": 800,
+        "title": "Decisions",
+        "require": "src/settings/s_decisions.php",
+        "crosschecker": "SettingRenderer_Decisions::crosscheck",
+        "renderer": "SettingRenderer_Decisions::render"
+    },
+    {
+        "name": "msg", "position": 200,
+        "title": "Messages",
+        "require": "src/settings/s_msg.php",
+        "renderer": "SettingRenderer_Messages::render"
+    },
+    {
+        "name": "reviewform", "synonym": ["rfo"], "position": 600,
+        "title": "Review form",
+        "require": "src/settings/s_reviewform.php",
+        "renderer": "SettingRenderer_ReviewForm::render"
+    },
+    {
+        "name": "reviews", "synonym": ["rev", "review"], "position": 500,
+        "title": "Reviews",
+        "require": "src/settings/s_reviews.php",
+        "crosschecker": "SettingRenderer_Reviews::crosscheck",
+        "renderer": "SettingRenderer_Reviews::render"
+    },
+    {
+        "name": "sub", "position": 300,
+        "title": "Submissions",
+        "require": "src/settings/s_sub.php",
+        "crosschecker": "SettingRenderer_Submissions::crosscheck",
+        "renderer": "SettingRenderer_Submissions::render"
+    },
+    {
+        "name": "subform", "synonym": ["opt"], "position": 400,
+        "title": "Submission form",
+        "require": "src/settings/s_subform.php",
+        "crosschecker": "SettingRenderer_SubForm::crosscheck",
+        "renderer": "SettingRenderer_SubForm::render"
+    },
+    {
+        "name": "tags", "synonym": ["tracks"], "position": 700,
+        "title": "Tags &amp; tracks",
+        "require": "src/settings/s_tags.php",
+        "crosschecker": "SettingRenderer_Tags::crosscheck",
+        "renderer": "SettingRenderer_Tags::render"
+    },
+    {
+        "name": "users", "position": 100,
+        "title": "Accounts",
+        "require": "src/settings/s_users.php",
+        "renderer": "SettingRenderer_Users::render"
+    }
+]
