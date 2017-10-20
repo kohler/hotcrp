@@ -1213,7 +1213,7 @@ class PaperList {
         return [$this->ids, $this->groups];
     }
 
-    function id_array() {
+    function paper_ids() {
         $idh = $this->ids_and_groups();
         return $idh ? $idh[0] : null;
     }

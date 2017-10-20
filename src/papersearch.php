@@ -3390,10 +3390,9 @@ class PaperSearch {
         return ($this->_qe = $qe);
     }
 
-    private function _search() {
-        if ($this->_matches === false)
-            return false;
-        assert($this->_matches === null);
+    private function _prepare() {
+        if ($this->_matches !== null)
+            return;
 
         if ($this->limitName === "x") {
             $this->_matches = array();
@@ -3559,7 +3558,7 @@ class PaperSearch {
         $result = $this->conf->qe_raw($q);
         if (!$result) {
             $this->_matches = false;
-            return false;
+            return;
         }
 
         // collect papers
@@ -3640,17 +3639,20 @@ class PaperSearch {
             $this->_assign_order_anno($order_anno_tag, $tag_order);
             $this->is_order_anno = $order_anno_tag->tag;
         }
-
-        return true;
     }
 
     function paper_ids() {
-        if ($this->_matches === null)
-            $this->_search();
+        $this->_prepare();
         return $this->_matches ? : array();
     }
-    function paperList() {
-        return $this->paper_ids();
+
+    function sorted_paper_ids($sort = null) {
+        $this->_prepare();
+        if ($sort || $this->sorters) {
+            $pl = new PaperList($this, ["sort" => $sort]);
+            return $pl->paper_ids();
+        } else
+            return $this->paper_ids();
     }
 
     function simple_search_options() {
@@ -3726,10 +3728,6 @@ class PaperSearch {
         return false;
     }
 
-    function has_sort() {
-        return $this->sorters;
-    }
-
     function url_site_relative_raw($q = null) {
         $url = $this->urlbase;
         if ($q === null)
@@ -3795,17 +3793,17 @@ class PaperSearch {
             return "$lx search";
     }
 
-    function listid($sort = "") {
+    function listid($sort = null) {
         $rest = [];
         if ($this->_reviewer_user && $this->_reviewer_user->contactId !== $this->cid)
             $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
-        if ($sort !== "")
+        if ((string) $sort !== "")
             $rest[] = "sort=" . urlencode($sort);
         return "p/" . $this->limitName . "/" . urlencode($this->q)
             . ($rest ? "/" . join("&", $rest) : "");
     }
 
-    function create_session_list_object($ids, $listname, $sort = "") {
+    function create_session_list_object($ids, $listname, $sort = null) {
         $l = SessionList::create($this->listid($sort), $ids,
                                  $this->description($listname),
                                  $this->urlbase);
@@ -3815,11 +3813,12 @@ class PaperSearch {
     }
 
     function session_list_object($sort = null) {
-        return $this->create_session_list_object($this->paper_ids(), null, $sort);
+        return $this->create_session_list_object($this->sorted_paper_ids($sort), null, $sort);
     }
 
     function highlight_tags() {
         if ($this->_highlight_tags === null) {
+            $this->_prepare();
             $this->_highlight_tags = array();
             foreach ($this->sorters ? : array() as $s)
                 if ($s->type[0] === "#")

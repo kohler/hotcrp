@@ -454,13 +454,7 @@ class SessionList {
                                 ($searchtype == "pc" ? "Program committee" : "Users"),
                                 hoturl_site_relative_raw("users", "t=$searchtype"));
         } else {
-            $search = new PaperSearch($Me, $opt);
-            $x = $search->session_list_object($sort);
-            if ($sort || $search->has_sort()) {
-                $pl = new PaperList($search, array("sort" => $sort));
-                $x->ids = $pl->id_array();
-            }
-            return $x;
+            return (new PaperSearch($Me, opt))->session_list_object($sort);
         }
     }
     function set_cookie() {

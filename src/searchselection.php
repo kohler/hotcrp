@@ -25,12 +25,7 @@ class SearchSelection {
         else if ($key === null && isset($qreq["pap"]))
             $ps = $qreq["pap"];
         if ($user && $ps === "all") {
-            $s = new PaperSearch($user, $qreq);
-            $ps = $s->paper_ids();
-            if ($s->has_sort()) {
-                $plist = new PaperList($s);
-                $ps = $plist->id_array();
-            }
+            $ps = (new PaperSearch($user, $qreq))->sorted_paper_ids();
         } else if ($ps === "all")
             $ps = null;
         if (is_string($ps))
