@@ -26,7 +26,7 @@ class SearchSelection {
             $ps = $qreq["pap"];
         if ($user && $ps === "all") {
             $s = new PaperSearch($user, $qreq);
-            $ps = $s->paperList();
+            $ps = $s->paper_ids();
             if ($s->has_sort()) {
                 $plist = new PaperList($s);
                 $ps = $plist->id_array();
@@ -85,7 +85,7 @@ class SearchSelection {
 
     function equals_search($search) {
         if ($search instanceof PaperSearch)
-            $search = $search->paperList();
+            $search = $search->paper_ids();
         if (count($search) !== count($this->sel))
             return false;
         sort($search);

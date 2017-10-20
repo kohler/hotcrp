@@ -170,7 +170,7 @@ class PaperList {
 
         $this->qopts = $this->search->simple_search_options();
         if ($this->qopts === false)
-            $this->qopts = ["paperId" => $this->search->paperList()];
+            $this->qopts = ["paperId" => $this->search->paper_ids()];
         $this->qopts["scores"] = [];
         $this->qopts["options"] = true;
         // NB that actually processed the search, setting PaperSearch::viewmap

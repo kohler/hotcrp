@@ -2212,7 +2212,7 @@ class AssignmentSet {
         } else if ($pfield !== "") {
             if (!isset($this->searches[$pfield])) {
                 $search = new PaperSearch($this->user, $pfield, $this->astate->reviewer);
-                $this->searches[$pfield] = $search->paperList();
+                $this->searches[$pfield] = $search->paper_ids();
                 if ($report_error)
                     foreach ($search->warnings as $w)
                         $this->error($w);

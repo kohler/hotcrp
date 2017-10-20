@@ -43,7 +43,7 @@ if ($Qreq->p !== "") {
     $Search = new PaperSearch($Me, array("t" => "all", "q" => $Qreq->p, "allow_deleted" => true));
     if (count($Search->warnings))
         $Conf->warnMsg(join("<br />\n", $Search->warnings));
-    $include_pids = $Search->paperList();
+    $include_pids = $Search->paper_ids();
     if (!empty($include_pids)) {
         $where = array();
         foreach ($include_pids as $p) {

@@ -262,7 +262,7 @@ if ($reviewer) {
         "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
         Ht::hidden("t", $qreq->t),
         Ht::hidden("q", $qreq->q),
-        Ht::hidden("papx", join(" ", $search->paperList())),
+        Ht::hidden("papx", join(" ", $search->paper_ids())),
         "<div class=\"aa\">",
         Ht::submit("update", "Save assignments");
     if ($qreq->kind != "c") {

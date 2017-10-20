@@ -2397,7 +2397,7 @@ class PaperTable {
         if ($_REQUEST["paperId"] === "(All)")
             $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = "";
         $search = new PaperSearch($Me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
-        $ps = $search->paperList();
+        $ps = $search->paper_ids();
         if (count($ps) == 1) {
             $slo = $search->session_list_object();
             $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] =

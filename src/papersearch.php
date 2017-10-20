@@ -3390,7 +3390,7 @@ class PaperSearch {
         return ($this->_qe = $qe);
     }
 
-    function _search() {
+    private function _search() {
         if ($this->_matches === false)
             return false;
         assert($this->_matches === null);
@@ -3644,6 +3644,15 @@ class PaperSearch {
         return true;
     }
 
+    function paper_ids() {
+        if ($this->_matches === null)
+            $this->_search();
+        return $this->_matches ? : array();
+    }
+    function paperList() {
+        return $this->paper_ids();
+    }
+
     function simple_search_options() {
         $limit = $this->limitName;
         if ($limit === "editpref")
@@ -3719,12 +3728,6 @@ class PaperSearch {
 
     function has_sort() {
         return $this->sorters;
-    }
-
-    function paperList() {
-        if ($this->_matches === null)
-            $this->_search();
-        return $this->_matches ? : array();
     }
 
     function url_site_relative_raw($q = null) {
@@ -3812,8 +3815,7 @@ class PaperSearch {
     }
 
     function session_list_object($sort = null) {
-        return $this->create_session_list_object($this->paperList(),
-                                                 null, $sort);
+        return $this->create_session_list_object($this->paper_ids(), null, $sort);
     }
 
     function highlight_tags() {

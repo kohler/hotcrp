@@ -122,7 +122,7 @@ class FormulaGraph {
             $style = "";
         $this->query_styles[] = $style;
         $psearch = new PaperSearch($this->user, array("q" => $q));
-        foreach ($psearch->paperList() as $pid)
+        foreach ($psearch->paper_ids() as $pid)
             $this->papermap[$pid][] = $qn;
         if (!empty($psearch->warnings)) {
             $this->error_html = array_merge($this->error_html, $psearch->warnings);

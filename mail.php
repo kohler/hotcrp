@@ -78,7 +78,7 @@ if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"])
     $_REQUEST["plimit"] = 1;
 } else if (isset($_REQUEST["plimit"])) {
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
-    $papersel = $search->paperList();
+    $papersel = $search->paper_ids();
     sort($papersel);
 } else
     $_REQUEST["q"] = "";

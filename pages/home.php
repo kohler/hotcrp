@@ -408,7 +408,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
     if ($Me->is_requester() && $Conf->setting("extrev_approve") && $Conf->setting("pcrev_editdelegate")) {
         $search = new PaperSearch($Me, "ext:approvable");
-        if ($search->paperList()) {
+        if ($search->paper_ids()) {
             echo $sep, '<a href="', hoturl("paper", ["m" => "rea", "p" => "ext:approvable"]), '"><strong>Approve external reviews</strong></a>';
             $sep = $xsep;
         }

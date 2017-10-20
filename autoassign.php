@@ -99,7 +99,7 @@ else {
         $SSel = SearchSelection::make($Qreq, $Me);
     if ($SSel->is_empty()) {
         $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q));
-        $SSel = new SearchSelection($search->paperList());
+        $SSel = new SearchSelection($search->paper_ids());
     }
 }
 $SSel->sort_selection();
@@ -487,7 +487,7 @@ if (isset($Qreq->requery) || isset($Qreq->haspap)) {
     $plist = new PaperList($search, ["display" => "show:reviewers"]);
     $plist->set_selection($SSel);
 
-    if ($search->paperList())
+    if ($search->paper_ids())
         echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>";
 
     echo '<div class="g"></div>';
