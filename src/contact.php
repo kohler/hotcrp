@@ -1958,7 +1958,7 @@ class Contact {
         return $rights->act_author_view;
     }
 
-    function actAuthorSql($table, $only_if_complex = false) {
+    function act_author_view_sql($table, $only_if_complex = false) {
         $m = array("$table.conflictType>=" . CONFLICT_AUTHOR);
         if (isset($this->capabilities) && !$this->isPC)
             foreach ($this->capabilities as $pid => $cap)
@@ -2968,7 +2968,7 @@ class Contact {
             || ($this->isPC && $this->conf->setting("pc_seeallrev") > 0))
             return array();
         else
-            return array("(" . $this->actAuthorSql("PaperConflict")
+            return array("(" . $this->act_author_view_sql("PaperConflict")
                          . " or MyPaperReview.reviewId is not null)");
     }
 

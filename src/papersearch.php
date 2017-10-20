@@ -1347,9 +1347,9 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     }
     function promote(PaperSearch $srch) {
         $rsm = new ReviewSearchMatcher(">0");
-        if ($srch->limitName === "r" || $srch->limitName === "rout")
+        if ($srch->limit() === "r" || $srch->limit() === "rout")
             $rsm->add_contact($srch->cid);
-        else if ($srch->limitName === "req" || $srch->limitName === "reqrevs") {
+        else if ($srch->limit() === "req") {
             $rsm->apply_requester($srch->cid);
             $rsm->apply_review_type("external"); // XXX optional PC reviews?
         }
@@ -2448,6 +2448,7 @@ class PaperSearch {
     private $fields;
     private $_reviewer_user = false;
     private $_context_user = false;
+    private $_active_limit;
     private $urlbase;
     public $warnings = array();
     private $_quiet_count = 0;
@@ -2525,7 +2526,7 @@ class PaperSearch {
             $this->limitName = "s";
         else if ($user->isPC && ($ptype === "und" || $ptype === "undec"))
             $this->limitName = "und";
-        else if ($user->isPC && ($ptype === "acc" || $ptype === "revs"
+        else if ($user->isPC && ($ptype === "acc"
                                  || $ptype === "reqrevs" || $ptype === "req"
                                  || $ptype === "lead" || $ptype === "rable"
                                  || $ptype === "manager" || $ptype === "editpref"))
@@ -2589,11 +2590,32 @@ class PaperSearch {
             error_log("PaperSearch::\$reviewer set: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
 
         $this->_allow_deleted = defval($options, "allow_deleted", false);
+
+        $this->_active_limit = $this->limitName;
+        if ($this->_active_limit === "editpref")
+            $this->_active_limit = "rable";
+        if ($this->_active_limit === "reqrevs")
+            $this->_active_limit = "req";
+        if ($this->_active_limit === "rable") {
+            $u = $this->reviewer_user();
+            if ($u->can_accept_review_assignment_ignore_conflict(null))
+                $this->_active_limit = $this->conf->can_pc_see_all_submissions() ? "act" : "s";
+            else if (!$u->isPC)
+                $this->_active_limit = "r";
+        }
     }
 
     function __get($name) {
         error_log("PaperSearch::$name " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $name === "contact" ? $this->user : null;
+    }
+
+    function limit() {
+        return $this->_active_limit;
+    }
+
+    function reviewer_user() {
+        return $this->_reviewer_user ? : $this->user;
     }
 
     function warn($text) {
@@ -3374,7 +3396,7 @@ class PaperSearch {
             $qe = new True_SearchTerm;
 
         // apply complex limiters (only current example: "acc" for non-chairs)
-        if ($this->limitName === "acc" && !$this->privChair)
+        if ($this->limit() === "acc" && !$this->privChair)
             $qe = SearchTerm::make_op("and", [$qe, $this->_searchQueryWord("dec:yes")]);
 
         // apply review rounds (top down, needs separate step)
@@ -3394,7 +3416,7 @@ class PaperSearch {
         if ($this->_matches !== null)
             return;
 
-        if ($this->limitName === "x") {
+        if ($this->limit() === "x") {
             $this->_matches = array();
             return true;
         }
@@ -3417,16 +3439,7 @@ class PaperSearch {
         //Conf::msg_debugt(var_export($filters, true));
 
         // status limitation parts
-        $limit = $this->limitName;
-        if ($limit === "editpref")
-            $limit = "rable";
-        if ($limit === "rable") {
-            $limitcontact = $this->reviewer_user();
-            if ($limitcontact->can_accept_review_assignment_ignore_conflict(null))
-                $limit = $this->conf->can_pc_see_all_submissions() ? "act" : "s";
-            else if (!$limitcontact->isPC)
-                $limit = "r";
-        }
+        $limit = $this->limit();
         if ($limit === "s"
             || $limit === "req"
             || $limit === "acc"
@@ -3459,15 +3472,13 @@ class PaperSearch {
 
         // other search limiters
         if ($limit === "a")
-            $filters[] = $this->user->actAuthorSql("PaperConflict");
+            $filters[] = $this->user->act_author_view_sql("PaperConflict");
         else if ($limit === "r")
             $filters[] = "MyReview.reviewType is not null";
         else if ($limit === "ar")
-            $filters[] = "(" . $this->user->actAuthorSql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and MyReview.reviewType is not null))";
+            $filters[] = "(" . $this->user->act_author_view_sql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and MyReview.reviewType is not null))";
         else if ($limit === "rout")
             $filters[] = "MyReview.reviewNeedsSubmit!=0";
-        else if ($limit === "revs")
-            $sqi->add_table("Limiter", array("join", "PaperReview"));
         else if ($limit === "req")
             $sqi->add_table("Limiter", array("join", "PaperReview", "Limiter.requestedBy=$this->cid and Limiter.reviewType=" . REVIEW_EXTERNAL));
         else if ($limit === "unm")
@@ -3577,11 +3588,7 @@ class PaperSearch {
         if ($need_filter) {
             $tag_order = [];
             foreach ($rowset->all() as $row) {
-                if (!$this->user->can_view_paper($row)
-                    || ($limit === "rable"
-                        && !$limitcontact->can_accept_review_assignment_ignore_conflict($row))
-                    || ($limit === "manager"
-                        && !$this->user->allow_administer($row)))
+                if (!$this->test_limit($row))
                     $x = false;
                 else if ($need_then) {
                     $x = false;
@@ -3655,11 +3662,72 @@ class PaperSearch {
             return $this->paper_ids();
     }
 
+    function test_limit(PaperInfo $prow) {
+        if (!$this->user->can_view_paper($prow))
+            return false;
+        switch ($this->limit()) {
+        case "s":
+            return $prow->timeSubmitted > 0;
+        case "acc":
+            return $prow->timeSubmitted > 0 && $prow->outcome > 0;
+        case "und":
+            return $prow->timeSubmitted > 0 && $prow->outcome == 0;
+        case "unm":
+            return $prow->timeSubmitted > 0 && $prow->managerContactId == 0;
+        case "rable":
+            $user = $this->reviewer_user();
+            if (!$user->can_accept_review_assignment_ignore_conflict($prow))
+                return false;
+            if ($this->conf->can_pc_see_all_submissions())
+                return $prow->timeWithdrawn <= 0;
+            else
+                return $prow->timeSubmitted > 0;
+        case "act":
+            return $prow->timeWithdrawn <= 0;
+        case "r":
+            return $prow->timeWithdrawn <= 0 && $prow->has_reviewer($this->user);
+        case "unsub":
+            return $prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0;
+        case "lead":
+            return $prow->leadContactId == $this->cid;
+        case "manager":
+            return $prow->timeSubmitted > 0 && $this->user->allow_administer($prow);
+        case "a":
+            return $this->user->act_author_view($prow);
+        case "ar":
+            return $this->user->act_author_view($prow)
+                || ($prow->timeWithdrawn <= 0 && $prow->has_reviewer($this->user));
+        case "rout":
+            $rrow = $prow->review_of_user($this->user);
+            if ($rrow && $rrow->reviewNeedsSubmit != 0)
+                return true;
+            foreach ($this->user->review_tokens() as $token) {
+                $rrow = $prow->review_of_token($token);
+                if ($rrow && $rrow->reviewNeedsSubmit != 0)
+                    return true;
+            }
+            return false;
+        case "req":
+            if ($prow->timeSubmitted <= 0)
+                return false;
+            foreach ($prow->reviews_by_id() as $rrow)
+                if ($rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy == $this->cid)
+                    return true;
+            return false;
+        case "all":
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    function test(PaperInfo $prow) {
+        $qe = $this->_make_qe();
+        return $this->test_limit($prow) && $qe->exec($prow, $this);
+    }
+
     function simple_search_options() {
-        $limit = $this->limitName;
-        if ($limit === "editpref")
-            $limit = "rable";
-        $xlimit = $limit;
+        $limit = $xlimit = $this->limit();
         if ($this->q === "re:me" && ($xlimit === "s" || $xlimit === "act" || $xlimit === "rout" || $xlimit === "rable"))
             $xlimit = "r";
         if ($this->q !== "" && ($this->q !== "re:me" || $xlimit !== "r"))
@@ -3678,7 +3746,7 @@ class PaperSearch {
                 $limit = "r";
         }
         $queryOptions = [];
-        if ($limit === "s" || $limit === "revs")
+        if ($limit === "s")
             $queryOptions["finalized"] = 1;
         else if ($limit === "unsub") {
             $queryOptions["unsub"] = 1;
@@ -3698,7 +3766,7 @@ class PaperSearch {
             $queryOptions["myOutstandingReviews"] = 1;
         else if ($limit === "a") {
             // If complex author SQL, always do search the long way
-            if ($this->user->actAuthorSql("%", true))
+            if ($this->user->act_author_view_sql("%", true))
                 return false;
             $queryOptions["author"] = 1;
         } else if ($limit === "req" || $limit === "reqrevs")
@@ -3736,10 +3804,6 @@ class PaperSearch {
             $url .= (strpos($url, "?") === false ? "?" : "&")
                 . "q=" . urlencode($q);
         return $url;
-    }
-
-    function reviewer_user() {
-        return $this->_reviewer_user ? : $this->user;
     }
 
     function context_user() {
@@ -3780,12 +3844,12 @@ class PaperSearch {
         if ($listname)
             $lx = $this->conf->_($listname);
         else {
-            $limit = $this->limitName;
+            $limit = $this->limit();
             if ($this->q === "re:me" && ($limit === "s" || $limit === "act"))
                 $limit = "r";
             $lx = $this->conf->_c("search_types", get(self::$search_type_names, $limit, "Papers"));
         }
-        if ($this->q === "" || ($this->q === "re:me" && ($this->limitName === "s" || $this->limitName === "act")))
+        if ($this->q === "" || ($this->q === "re:me" && ($this->limit() === "s" || $this->limit() === "act")))
             return $lx;
         else if (($td = $this->_tag_description()))
             return "$td in $lx";

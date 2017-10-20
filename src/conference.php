@@ -2436,7 +2436,7 @@ class Conf {
 
         $aujoinwhere = null;
         if (get($options, "author") && $contact
-            && ($aujoinwhere = $contact->actAuthorSql("PaperConflict", true)))
+            && ($aujoinwhere = $contact->act_author_view_sql("PaperConflict", true)))
             $where[] = $aujoinwhere;
         if (get($options, "author") && !$aujoinwhere)
             $joins[] = "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")";
