@@ -140,9 +140,7 @@ class Si {
             return false;
         }
         $groups = $this->group;
-        if (is_string($groups))
-            $groups = array($groups);
-        foreach ($groups as $g) {
+        foreach (is_string($groups) ? [$groups] : $groups as $g) {
             if (isset(SettingGroup::$map[$g]))
                 $g = SettingGroup::$map[$g];
             if (!isset(SettingGroup::$all[$g]))

@@ -330,7 +330,7 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 }
 
-class ReviewForm_SettingRenderer extends SettingRenderer {
+class SettingRenderer_ReviewForm extends SettingRenderer {
 function render(SettingValues $sv) {
     global $ConfSitePATH;
 
@@ -425,5 +425,5 @@ submitted. Add a line “<code>0. No entry</code>” to make the score optional.
 }
 }
 
-SettingGroup::register("reviewform", "Review form", 600, new ReviewForm_SettingRenderer);
+SettingGroup::register("reviewform", "Review form", 600, new SettingRenderer_ReviewForm);
 SettingGroup::register_synonym("rfo", "reviewform");

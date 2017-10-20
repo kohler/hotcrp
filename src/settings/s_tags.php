@@ -76,99 +76,99 @@ class SettingRenderer_Tags extends SettingRenderer {
         echo "</table></div>\n\n";
     }
 
-function render(SettingValues $sv) {
-    $dt_renderer = function ($tl) {
-        return join(" ", array_map(function ($t) { return $t->tag; },
-                                   array_filter($tl, function ($t) { return !$t->pattern_instance; })));
-    };
+    function render(SettingValues $sv) {
+        $dt_renderer = function ($tl) {
+            return join(" ", array_map(function ($t) { return $t->tag; },
+                                       array_filter($tl, function ($t) { return !$t->pattern_instance; })));
+        };
 
-    // Tags
-    $tagger = new Tagger;
-    $tagmap = $sv->conf->tags();
-    echo "<h3 class=\"settings\">Tags</h3>\n";
-    echo "<table><tbody class=\"secondary-settings\">";
-    $sv->set_oldv("tag_chair", $dt_renderer($tagmap->filter("chair")));
-    $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.", ["class" => "need-tagcompletion"]);
+        // Tags
+        $tagger = new Tagger;
+        $tagmap = $sv->conf->tags();
+        echo "<h3 class=\"settings\">Tags</h3>\n";
+        echo "<table><tbody class=\"secondary-settings\">";
+        $sv->set_oldv("tag_chair", $dt_renderer($tagmap->filter("chair")));
+        $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.", ["class" => "need-tagcompletion"]);
 
-    $sv->set_oldv("tag_sitewide", $dt_renderer($tagmap->filter("sitewide")));
-    if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
-        $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Administrators can view and change these tags for every paper.", ["class" => "need-tagcompletion"]);
+        $sv->set_oldv("tag_sitewide", $dt_renderer($tagmap->filter("sitewide")));
+        if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
+            $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Administrators can view and change these tags for every paper.", ["class" => "need-tagcompletion"]);
 
-    $sv->set_oldv("tag_approval", $dt_renderer($tagmap->filter("approval")));
-    $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-tagcompletion"]);
+        $sv->set_oldv("tag_approval", $dt_renderer($tagmap->filter("approval")));
+        $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-tagcompletion"]);
 
-    $x = [];
-    foreach ($tagmap->filter("vote") as $t)
-        $x[] = "{$t->tag}#{$t->vote}";
-    $sv->set_oldv("tag_vote", join(" ", $x));
-    $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. <span class=\"barsep\">·</span> <a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-tagcompletion"]);
+        $x = [];
+        foreach ($tagmap->filter("vote") as $t)
+            $x[] = "{$t->tag}#{$t->vote}";
+        $sv->set_oldv("tag_vote", join(" ", $x));
+        $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. <span class=\"barsep\">·</span> <a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-tagcompletion"]);
 
-    $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
-    $sv->echo_entry_row("tag_rank", "Ranking tag", "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='" . hoturl("help", "t=ranking") . "'>What is this?</a>");
-    echo "</tbody></table>";
+        $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
+        $sv->echo_entry_row("tag_rank", "Ranking tag", "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='" . hoturl("help", "t=ranking") . "'>What is this?</a>");
+        echo "</tbody></table>";
 
-    echo "<div class='g'></div>\n";
-    $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
+        echo "<div class='g'></div>\n";
+        $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
 
-    $tag_color_data = $sv->conf->setting_data("tag_color", "");
-    $tag_colors_rows = array();
-    foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
-        preg_match_all("{\\b(\\S+)=$k\\b}", $tag_color_data, $m);
-        $sv->set_oldv("tag_color_$k", join(" ", get($m, 1, [])));
-        $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"lxcaption\"></td>"
-            . "<td class=\"lxcaption taghl\">$k</td>"
-            . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-tagcompletion"]) . "</td></tr>";
-    }
-
-    $tag_badge_data = $sv->conf->setting_data("tag_badge", "");
-    foreach (["normal" => "black badge", "red" => "red badge",
-              "yellow" => "yellow badge", "green" => "green badge",
-              "blue" => "blue badge", "white" => "white badge",
-              "pink" => "pink badge", "gray" => "gray badge"]
-             as $k => $desc) {
-        preg_match_all("{\\b(\\S+)=$k\\b}", $tag_badge_data, $m);
-        $sv->set_oldv("tag_badge_$k", join(" ", get($m, 1, [])));
-        $tag_colors_rows[] = "<tr><td class=\"lxcaption\"></td>"
-            . "<td class=\"lxcaption\"><span class=\"badge {$k}badge\" style=\"margin:0\">$desc</span></td>"
-            . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_badge_$k", ["class" => "need-tagcompletion"]) . "</td></tr>";
-    }
-
-    echo Ht::hidden("has_tag_color", 1), Ht::hidden("has_tag_badge", 1),
-        '<h3 class="settings g">Styles and colors</h3>',
-        "<div class='hint'>Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</div>",
-        "<div class='smg'></div>",
-        "<table id='foldtag_color'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>",
-        join("", $tag_colors_rows), "</table>\n";
-
-
-    echo '<h3 class="settings g">Tracks</h3>', "\n";
-    echo "<div class='hint'>Tracks control the PC members allowed to view or review different sets of papers. <span class='barsep'>·</span> <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
-        Ht::hidden("has_tracks", 1),
-        "<div class=\"smg\"></div>\n";
-    $this->do_track($sv, "", 0);
-    $tracknum = 2;
-    $trackj = $sv->conf->setting_json("tracks") ? : (object) array();
-    // existing tracks
-    foreach ($trackj as $trackname => $x)
-        if ($trackname !== "_") {
-            $this->do_track($sv, $trackname, $tracknum);
-            ++$tracknum;
+        $tag_color_data = $sv->conf->setting_data("tag_color", "");
+        $tag_colors_rows = array();
+        foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
+            preg_match_all("{\\b(\\S+)=$k\\b}", $tag_color_data, $m);
+            $sv->set_oldv("tag_color_$k", join(" ", get($m, 1, [])));
+            $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"lxcaption\"></td>"
+                . "<td class=\"lxcaption taghl\">$k</td>"
+                . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-tagcompletion"]) . "</td></tr>";
         }
-    // new tracks (if error prevented saving)
-    if ($sv->use_req())
-        for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
-            $trackname = trim($sv->req["name_track$i"]);
-            if (!isset($trackj->$trackname)) {
+
+        $tag_badge_data = $sv->conf->setting_data("tag_badge", "");
+        foreach (["normal" => "black badge", "red" => "red badge",
+                  "yellow" => "yellow badge", "green" => "green badge",
+                  "blue" => "blue badge", "white" => "white badge",
+                  "pink" => "pink badge", "gray" => "gray badge"]
+                 as $k => $desc) {
+            preg_match_all("{\\b(\\S+)=$k\\b}", $tag_badge_data, $m);
+            $sv->set_oldv("tag_badge_$k", join(" ", get($m, 1, [])));
+            $tag_colors_rows[] = "<tr><td class=\"lxcaption\"></td>"
+                . "<td class=\"lxcaption\"><span class=\"badge {$k}badge\" style=\"margin:0\">$desc</span></td>"
+                . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_badge_$k", ["class" => "need-tagcompletion"]) . "</td></tr>";
+        }
+
+        echo Ht::hidden("has_tag_color", 1), Ht::hidden("has_tag_badge", 1),
+            '<h3 class="settings g">Styles and colors</h3>',
+            "<div class='hint'>Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</div>",
+            "<div class='smg'></div>",
+            "<table id='foldtag_color'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>",
+            join("", $tag_colors_rows), "</table>\n";
+
+
+        echo '<h3 class="settings g">Tracks</h3>', "\n";
+        echo "<div class='hint'>Tracks control the PC members allowed to view or review different sets of papers. <span class='barsep'>·</span> <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
+            Ht::hidden("has_tracks", 1),
+            "<div class=\"smg\"></div>\n";
+        $this->do_track($sv, "", 0);
+        $tracknum = 2;
+        $trackj = $sv->conf->setting_json("tracks") ? : (object) array();
+        // existing tracks
+        foreach ($trackj as $trackname => $x)
+            if ($trackname !== "_") {
                 $this->do_track($sv, $trackname, $tracknum);
                 ++$tracknum;
             }
-        }
-    // catchall track
-    $this->do_track($sv, "_", 1);
-    echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
+        // new tracks (if error prevented saving)
+        if ($sv->use_req())
+            for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
+                $trackname = trim($sv->req["name_track$i"]);
+                if (!isset($trackj->$trackname)) {
+                    $this->do_track($sv, $trackname, $tracknum);
+                    ++$tracknum;
+                }
+            }
+        // catchall track
+        $this->do_track($sv, "_", 1);
+        echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
 
-    Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)');
-}
+        Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)');
+    }
 
     function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("tracks")
