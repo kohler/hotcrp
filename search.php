@@ -315,7 +315,7 @@ if ($pl_text) {
 
     // Authors group
     $viewAcceptedAuthors =
-        $Me->is_reviewer() && $Conf->timeReviewerViewAcceptedAuthors();
+        $Me->is_reviewer() && $Conf->time_reviewer_view_accepted_authors();
     $viewAllAuthors = ($Qreq->t == "a"
                        || ($Qreq->t == "acc" && $viewAcceptedAuthors)
                        || $Conf->subBlindNever());
@@ -452,7 +452,7 @@ $qtOpt = array("ti" => "Title",
 if ($Me->privChair || $Conf->subBlindNever()) {
     $qtOpt["au"] = "Authors";
     $qtOpt["n"] = "Title, abstract, and authors";
-} else if ($Conf->subBlindAlways() && $Me->is_reviewer() && $Conf->timeReviewerViewAcceptedAuthors()) {
+} else if ($Conf->subBlindAlways() && $Me->is_reviewer() && $Conf->time_reviewer_view_accepted_authors()) {
     $qtOpt["au"] = "Accepted authors";
     $qtOpt["n"] = "Title and abstract, and accepted authors";
 } else if (!$Conf->subBlindAlways()) {

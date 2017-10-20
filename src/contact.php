@@ -1892,7 +1892,7 @@ class Contact {
                     && $ci->review_status > 0)
                 || ($prow->outcome > 0
                     && ($isPC || $ci->allow_review)
-                    && $this->conf->timeReviewerViewAcceptedAuthors());
+                    && $this->conf->time_reviewer_view_accepted_authors());
         }
 
         return $ci;
@@ -2274,7 +2274,7 @@ class Contact {
             || $this->is_author()
             || ($this->is_reviewer()
                 && ($this->conf->submission_blindness() != Conf::BLIND_ALWAYS
-                    || $this->conf->timeReviewerViewAcceptedAuthors()));
+                    || $this->conf->time_reviewer_view_accepted_authors()));
     }
 
     function can_view_conflicts(PaperInfo $prow, $forceShow = null) {
@@ -3006,14 +3006,14 @@ class Contact {
             || ($rights->allow_pc_broad
                 && $this->conf->timePCViewDecision($rights->view_conflict_type > 0))
             || ($rights->review_status > 0
-                && $this->conf->timeReviewerViewDecision());
+                && $this->conf->time_reviewer_view_decision());
     }
 
     function can_view_some_decision() {
         return $this->is_manager()
             || ($this->is_author() && $this->conf->can_some_author_view_decision())
             || ($this->isPC && $this->conf->timePCViewDecision(false))
-            || ($this->is_reviewer() && $this->conf->timeReviewerViewDecision());
+            || ($this->is_reviewer() && $this->conf->time_reviewer_view_decision());
     }
 
     function can_set_decision(PaperInfo $prow, $forceShow = null) {

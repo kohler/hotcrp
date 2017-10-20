@@ -2076,10 +2076,10 @@ class Conf {
         else
             return $s >= self::SEEDEC_REV;
     }
-    function timeReviewerViewDecision() {
+    function time_reviewer_view_decision() {
         return $this->setting("seedec") >= self::SEEDEC_REV;
     }
-    function timeReviewerViewAcceptedAuthors() {
+    function time_reviewer_view_accepted_authors() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
     function timePCViewPaper($prow, $pdf) {
