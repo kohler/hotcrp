@@ -209,6 +209,7 @@ src/settings/s_reviews.php
 src/settings/s_sub.php
 src/settings/s_subform.php
 src/settings/s_tags.php
+src/settings/s_tracks.php
 src/settings/s_users.php
 src/settingvalues.php
 src/textformat.php

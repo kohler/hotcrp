@@ -46,11 +46,16 @@
         "renderer": "SettingRenderer_SubForm::render"
     },
     {
-        "name": "tags", "synonym": ["tracks"], "position": 700,
+        "name": "tags", "position": 700,
         "title": "Tags &amp; tracks",
         "require": "src/settings/s_tags.php",
-        "crosschecker": "SettingRenderer_Tags::crosscheck",
         "renderer": "SettingRenderer_Tags::render"
+    },
+    {
+        "name": "tracks", "group": "tags", "position": 701,
+        "require": "src/settings/s_tracks.php",
+        "crosschecker": "SettingRenderer_Tracks::crosscheck",
+        "renderer": "SettingRenderer_Tracks::render"
     },
     {
         "name": "users", "position": 100,
