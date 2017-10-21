@@ -147,6 +147,7 @@
     },
     "options": {
         "parser": "Option_SettingParser", "group": "subform",
+        "require": "src/settings/s_options.php",
         "type": "string"
     },
     "options_nextid": {
@@ -392,7 +393,7 @@
         "type": "taglist", "parser": "Tag_SettingParser", "size": 50, "autogrow": true
     },
     "topics": {
-        "parser": "Topic_SettingParser"
+        "parser": "Topics_SettingParser", "require": "src/settings/s_topics.php"
     },
     "tracks": {
         "parser": "Track_SettingParser", "group": "tracks",

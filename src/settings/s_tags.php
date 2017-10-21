@@ -4,25 +4,25 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class SettingRenderer_Tags {
+    static function render_tags($tl) {
+        $tl = array_filter($tl, function ($t) {
+            return !$t->pattern_instance;
+        });
+        return join(" ", array_map(function ($t) { return $t->tag; }, $tl));
+    }
     static function render(SettingValues $sv) {
-        $dt_renderer = function ($tl) {
-            return join(" ", array_map(function ($t) { return $t->tag; },
-                                       array_filter($tl, function ($t) { return !$t->pattern_instance; })));
-        };
-
         // Tags
-        $tagger = new Tagger;
         $tagmap = $sv->conf->tags();
         echo "<h3 class=\"settings\">Tags</h3>\n";
         echo "<table><tbody class=\"secondary-settings\">";
-        $sv->set_oldv("tag_chair", $dt_renderer($tagmap->filter("chair")));
+        $sv->set_oldv("tag_chair", self::render_tags($tagmap->filter("chair")));
         $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.", ["class" => "need-tagcompletion"]);
 
-        $sv->set_oldv("tag_sitewide", $dt_renderer($tagmap->filter("sitewide")));
+        $sv->set_oldv("tag_sitewide", self::render_tags($tagmap->filter("sitewide")));
         if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
             $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Administrators can view and change these tags for every paper.", ["class" => "need-tagcompletion"]);
 
-        $sv->set_oldv("tag_approval", $dt_renderer($tagmap->filter("approval")));
+        $sv->set_oldv("tag_approval", self::render_tags($tagmap->filter("approval")));
         $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-tagcompletion"]);
 
         $x = [];
@@ -38,6 +38,9 @@ class SettingRenderer_Tags {
         echo "<div class='g'></div>\n";
         $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
 
+        Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
+    }
+    static function render_styles(SettingValues $sv) {
         $tag_color_data = $sv->conf->setting_data("tag_color", "");
         $tag_colors_rows = array();
         foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
@@ -63,8 +66,7 @@ class SettingRenderer_Tags {
 
         echo Ht::hidden("has_tag_color", 1), Ht::hidden("has_tag_badge", 1),
             '<h3 class="settings g">Styles and colors</h3>',
-            "<p>Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</p>",
-            "<div class='smg'></div>",
+            "<p class=\"settingtext\">Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</p>",
             "<table id='foldtag_color'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>",
             join("", $tag_colors_rows), "</table>\n";
 

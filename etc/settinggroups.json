@@ -39,11 +39,21 @@
         "renderer": "SettingRenderer_Submissions::render"
     },
     {
-        "name": "subform", "synonym": ["opt"], "position": 400,
+        "name": "subform", "position": 400,
         "title": "Submission form",
         "require": "src/settings/s_subform.php",
-        "crosschecker": "SettingRenderer_SubForm::crosscheck",
         "renderer": "SettingRenderer_SubForm::render"
+    },
+    {
+        "name": "options", "group": "subform", "synonym": ["opt"], "position": 440,
+        "require": "src/settings/s_options.php",
+        "crosschecker": "Options_SettingRenderer::crosscheck",
+        "renderer": "Options_SettingRenderer::render"
+    },
+    {
+        "name": "topics", "group": "subform", "position": 480,
+        "require": "src/settings/s_topics.php",
+        "renderer": "Topics_SettingRenderer::render"
     },
     {
         "name": "tags", "position": 700,
@@ -52,7 +62,12 @@
         "renderer": "SettingRenderer_Tags::render"
     },
     {
-        "name": "tracks", "group": "tags", "position": 701,
+        "name": "tagstyles", "group": "tags", "position": 720,
+        "require": "src/settings/s_tags.php",
+        "renderer": "SettingRenderer_Tags::render_styles"
+    },
+    {
+        "name": "tracks", "group": "tags", "position": 750,
         "require": "src/settings/s_tracks.php",
         "crosschecker": "SettingRenderer_Tracks::crosscheck",
         "renderer": "SettingRenderer_Tracks::render"
