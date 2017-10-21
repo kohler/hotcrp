@@ -878,6 +878,8 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
         $ms[] = $conf->_("The voting tag “#%s” shouldn’t be changed directly. To vote for this paper, change the “#~%1\$s” tag.", htmlspecialchars($whyNot["tag"]));
     if (isset($whyNot["voteTagNegative"]))
         $ms[] = $conf->_("Negative votes aren’t allowed.");
+    if (isset($whyNot["autosearchTag"]))
+        $ms[] = $conf->_("Tag “#%s” cannot be changed since the system sets it automatically.", htmlspecialchars($whyNot["tag"]));
     // finish it off
     if (isset($whyNot["chairMode"]))
         $ms[] = $conf->_("(<a class=\"nw\" href=\"%s\">" . ucfirst($action) . " anyway</a>)", selfHref(["forceShow" => 1]));

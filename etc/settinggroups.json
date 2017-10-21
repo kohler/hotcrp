@@ -67,6 +67,11 @@
         "renderer": "SettingRenderer_Tags::render_styles"
     },
     {
+        "name": "autosearch", "group": "tags", "position": 730,
+        "require": "src/settings/s_autosearch.php",
+        "renderer": "Autosearch_SettingRenderer::render"
+    },
+    {
         "name": "tracks", "group": "tags", "position": 750,
         "require": "src/settings/s_tracks.php",
         "crosschecker": "SettingRenderer_Tracks::crosscheck",

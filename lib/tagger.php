@@ -26,6 +26,7 @@ class TagMapItem {
     public $basic_color = false;
     public $badges = null;
     public $emoji = null;
+    public $autosearch = null;
     function __construct($tag, Conf $conf) {
         $this->conf = $conf;
         $this->set_tag($tag);
@@ -38,7 +39,7 @@ class TagMapItem {
         }
     }
     function merge(TagMapItem $t) {
-        foreach (["chair", "track", "votish", "vote", "approval", "sitewide", "rank"] as $property)
+        foreach (["chair", "track", "votish", "vote", "approval", "sitewide", "rank", "autosearch"] as $property)
             if ($t->$property)
                 $this->$property = $t->$property;
         foreach (["colors", "badges", "emoji"] as $property)
@@ -151,6 +152,7 @@ class TagMap implements IteratorAggregate {
     public $has_emoji = false;
     public $has_decoration = false;
     public $has_order_anno = false;
+    public $has_autosearch = false;
     private $storage = array();
     private $sorted = false;
     private $pattern_re = null;
@@ -434,7 +436,14 @@ class TagMap implements IteratorAggregate {
                     $map->add(substr($k, 0, $p))->emoji[] = substr($k, $p + 1);
                     $map->has_emoji = true;
                 }
-        if (($od = $conf->opt("definedTags")))
+        $tx = $conf->setting_data("tag_autosearch", "");
+        if ($tx !== "") {
+            foreach (json_decode($tx) ? : [] as $tag => $search) {
+                $map->add($tag)->autosearch = $search->q;
+                $map->has_autosearch = true;
+            }
+        }
+        if (($od = $conf->opt("definedTags"))) {
             foreach (is_string($od) ? [$od] : $od as $ods)
                 foreach (json_decode($ods) as $tag => $data) {
                     $t = $map->add($tag);
@@ -442,6 +451,10 @@ class TagMap implements IteratorAggregate {
                         $t->chair = $map->has_chair = true;
                     if (get($data, "sitewide"))
                         $t->sitewide = $map->has_sitewide = true;
+                    if (($x = get($data, "autosearch"))) {
+                        $t->autosearch = $x;
+                        $map->has_autosearch = true;
+                    }
                     if (($x = get($data, "color")))
                         foreach (is_string($x) ? [$x] : $x as $c) {
                             $t->colors[] = TagInfo::canonical_color($c);
@@ -458,6 +471,7 @@ class TagMap implements IteratorAggregate {
                             $map->has_emoji = true;
                         }
                 }
+        }
         if ($map->has_badges || $map->has_emoji || $conf->setting("has_colontag"))
             $map->has_decoration = true;
         return $map;

@@ -70,6 +70,26 @@ function settings_option_move_enable() {
 }
 
 
+function settings_tag_autosearch() {
+    var odiv = $(this).closest(".settings_tag_autosearch")[0];
+    if ($(this).hasClass("settings_tag_autosearch_delete")) {
+        $(odiv).find("input[name^=tag_autosearch_q_]").val("");
+        $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
+    } else if ($(this).hasClass("settings_tag_autosearch_new")) {
+        var h = $("#settings_newtag_autosearch").html();
+        var next = 1;
+        while ($("#tag_autosearch_t_" + next).length)
+            ++next;
+        h = h.replace(/_0/g, "_" + next);
+        odiv = $(h).appendTo("#settings_tag_autosearch");
+        odiv.find("input[placeholder]").each(mktemptext);
+        odiv.find("input[type=text]").autogrow();
+        $("#tag_autosearch_t_" + next)[0].focus();
+    }
+    return false;
+}
+
+
 function settings_add_track() {
     var i, h, j;
     for (i = 1; jQuery("#trackgroup" + i).length; ++i)

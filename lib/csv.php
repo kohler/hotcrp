@@ -25,7 +25,7 @@ class CsvParser {
     }
 
     function __construct($str, $type = self::TYPE_COMMA) {
-        $this->lines = self::split_lines($str);
+        $this->lines = is_array($str) ? $str : self::split_lines($str);
         $this->type = $type;
     }
 

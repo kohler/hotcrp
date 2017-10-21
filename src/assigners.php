@@ -2573,15 +2573,18 @@ class AssignmentSet {
         // mark activity now to avoid DB errors later
         $this->user->mark_activity();
 
-        // create new contacts outside the lock
+        // create new contacts, collect pids
         $locks = array("ContactInfo" => "read", "Paper" => "read", "PaperConflict" => "read");
         $this->conf->save_logs(true);
+        $pids = [];
         foreach ($this->assigners as $assigner) {
             if (($u = $assigner->contact) && $u->contactId < 0) {
                 $assigner->contact = $this->astate->register_user($u);
                 $assigner->cid = $assigner->contact->contactId;
             }
             $assigner->add_locks($this, $locks);
+            if ($assigner->pid > 0)
+                $pids[$assigner->pid] = true;
         }
 
         // execute assignments
@@ -2613,6 +2616,8 @@ class AssignmentSet {
         if (!empty($this->cleanup_notify_tracker)
             && $this->conf->opt("trackerCometSite"))
             MeetingTracker::contact_tracker_comet($this->conf, array_keys($this->cleanup_notify_tracker));
+        if (!empty($pids))
+            $this->conf->update_autosearch_tags(array_keys($pids));
 
         return true;
     }

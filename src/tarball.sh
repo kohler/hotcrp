@@ -214,6 +214,7 @@ src/search/st_tags.php
 src/search/st_topic.php
 src/searchaction.php
 src/searchselection.php
+src/settings/s_autosearch.php
 src/settings/s_basics.php
 src/settings/s_decisions.php
 src/settings/s_msg.php

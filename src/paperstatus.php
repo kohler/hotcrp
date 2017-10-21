@@ -1140,6 +1140,9 @@ class PaperStatus extends MessageSet {
                 $this->conf->qe_raw("insert into PaperConflict (paperId,contactId,conflictType) values " . join(",", $ins));
         }
 
+        // update autosearch
+        $this->conf->update_autosearch_tags($paperid);
+
         return $paperid;
     }
 }

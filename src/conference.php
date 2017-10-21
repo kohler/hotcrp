@@ -85,6 +85,7 @@ class Conf {
     private $_s3_document = false;
     private $_ims = null;
     private $_format_info = null;
+    private $_updating_autosearch_tags = false;
 
     private $_formula_functions = null;
     private $_search_keyword_base = null;
@@ -1666,6 +1667,39 @@ class Conf {
             $this->qe_raw("insert into Settings (name, value) select 'metareviews', exists (select * from PaperReview where reviewType=" . REVIEW_META . ") on duplicate key update value=values(value)");
             $this->settings["metareviews"] = $this->fetch_ivalue("select value from Settings where name='metareviews'");
         }
+    }
+
+    function update_autosearch_tags($paper = null) {
+        if ((!$this->setting("tag_autosearch") && !$this->opt("definedTags"))
+            || !$this->tags()->has_autosearch
+            || $this->_updating_autosearch_tags)
+            return;
+        $csv = ["paper,tag"];
+        if (!$paper) {
+            foreach ($this->tags()->filter("autosearch") as $dt) {
+                $csv[] = CsvGenerator::quote("#{$dt->tag}") . "," . CsvGenerator::quote("{$dt->tag}#clear");
+                $csv[] = CsvGenerator::quote($dt->autosearch) . "," . CsvGenerator::quote($dt->tag);
+            }
+        } else {
+            $prow = $this->paperRow(is_object($paper) ? $paper->paperId : $paper);
+            foreach ($this->tags()->filter("autosearch") as $dt) {
+                $search = new PaperSearch($this->site_contact(), ["q" => $dt->autosearch, "t" => "all"]);
+                $want = $search->test($prow);
+                if ($prow->has_tag($dt->tag) !== $want)
+                    $csv[] = "{$prow->paperId}," . CsvGenerator::quote($dt->tag . ($want ? "" : "#clear"));
+            }
+        }
+        if (count($csv) > 1)
+            $this->_update_autosearch_tags_csv($csv);
+    }
+
+    function _update_autosearch_tags_csv($csv) {
+        $this->_updating_autosearch_tags = true;
+        $aset = new AssignmentSet($this->site_contact(), true);
+        $aset->set_search_type("all");
+        $aset->parse($csv);
+        $aset->execute();
+        $this->_updating_autosearch_tags = false;
     }
 
 

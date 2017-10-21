@@ -3187,23 +3187,37 @@ class Contact {
     }
 
     function can_change_tag(PaperInfo $prow, $tag, $previndex, $index, $forceShow = null) {
-        if ($forceShow !== false && ($this->overrides_ & self::OVERRIDE_TAG_CHECKS))
+        if (($forceShow !== false && ($this->overrides_ & self::OVERRIDE_TAG_CHECKS))
+            || $this->is_site_contact)
             return true;
         $rights = $this->rights($prow, $forceShow);
+        $tagmap = $this->conf->tags();
         if (!($rights->allow_pc
               && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false)))) {
-            if ($this->privChair
-                && $this->conf->tags()->has_sitewide
-                && (!$tag || $this->conf->tags()->is_sitewide(TagInfo::base($tag))))
-                return true;
-            return false;
+            if ($this->privChair && $tagmap->has_sitewide) {
+                if (!$tag)
+                    return true;
+                else {
+                    $dt = $tagmap->check($tag);
+                    return $dt && $dt->sitewide && !$dt->autosearch;
+                }
+            } else
+                return false;
         }
         if (!$tag)
             return true;
         $tag = TagInfo::base($tag);
         $twiddle = strpos($tag, "~");
-        if ($twiddle === 0 && $tag[1] === "~")
-            return $rights->can_administer;
+        if ($twiddle === 0 && $tag[1] === "~") {
+            if (!$rights->can_administer)
+                return false;
+            else if (!$tagmap->has_autosearch)
+                return true;
+            else {
+                $dt = $tagmap->check($tag);
+                return !$dt || !$dt->autosearch;
+            }
+        }
         if ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId
             && !$rights->can_administer)
             return false;
@@ -3216,7 +3230,8 @@ class Contact {
                 return true;
             else if ($t->vote
                      || $t->approval
-                     || ($t->track && !$this->privChair))
+                     || ($t->track && !$this->privChair)
+                     || $t->autosearch)
                 return false;
             else
                 return $rights->can_administer
@@ -3254,6 +3269,8 @@ class Contact {
                 $t = $this->conf->tags()->check($tag);
                 if ($t && $t->vote)
                     $whyNot["voteTag"] = true;
+                else if ($t && $t->autosearch)
+                    $whyNot["autosearchTag"] = true;
                 else
                     $whyNot["chairTag"] = true;
             }

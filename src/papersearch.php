@@ -840,6 +840,7 @@ class SearchQueryInfo {
     public $tables = array();
     public $columns = array();
     public $negated = false;
+    private $_has_my_review = false;
 
     function __construct(PaperSearch $srch) {
         $this->conf = $srch->conf;
@@ -855,14 +856,25 @@ class SearchQueryInfo {
         $this->columns[$name] = $expr;
     }
     function add_conflict_columns() {
-        if (!isset($this->tables["PaperConflict"]))
-            $this->add_table("PaperConflict", array("left join", "PaperConflict", "PaperConflict.contactId={$this->user->contactId}"));
-        $this->columns["conflictType"] = "PaperConflict.conflictType";
+        if ($this->user->contactId) {
+            if (!isset($this->tables["PaperConflict"]))
+                $this->add_table("PaperConflict", array("left join", "PaperConflict", "PaperConflict.contactId={$this->user->contactId}"));
+            $this->columns["conflictType"] = "PaperConflict.conflictType";
+        } else
+            $this->columns["conflictType"] = "null";
     }
     function add_reviewer_columns() {
+        if ($this->_has_my_review)
+            return;
+        $this->_has_my_review = true;
         if ($this->user->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
             $this->columns["paperBlind"] = "Paper.blind";
-        if (!isset($this->tables["MyReview"])) {
+        $tokens = $this->user->review_tokens();
+        if (!$tokens && !$this->user->contactId) {
+            $this->add_column("myReviewType", "null");
+            $this->add_column("myReviewNeedsSubmit", "null");
+            $this->add_column("myReviewSubmitted", "null");
+        } else {
             if (($tokens = $this->user->review_tokens()))
                 $this->add_table("MyReview", ["left join", "(select paperId, max(reviewType) reviewType, max(reviewNeedsSubmit) reviewNeedsSubmit, max(reviewSubmitted) reviewSubmitted from PaperReview where contactId={$this->user->contactId} or reviewToken in (" . join(",", $tokens) . ") group by paperId)"]);
             else
@@ -1782,7 +1794,7 @@ class PaperSearch {
         }
     }
 
-    private function _make_qe() {
+    function prepare_term() {
         if ($this->_qe !== null)
             return $this->_qe;
 
@@ -1814,7 +1826,7 @@ class PaperSearch {
             return true;
         }
 
-        $qe = $this->_make_qe();
+        $qe = $this->prepare_term();
         //Conf::msg_debugt(json_encode($qe->debug_json()));
 
         // collect clauses into tables, columns, and filters
@@ -2129,7 +2141,7 @@ class PaperSearch {
     }
 
     function test(PaperInfo $prow) {
-        $qe = $this->_make_qe();
+        $qe = $this->prepare_term();
         return $this->test_limit($prow) && $qe->exec($prow, $this);
     }
 
@@ -2308,7 +2320,7 @@ class PaperSearch {
     function field_highlighters() {
         if ($this->_match_preg === null) {
             $this->_match_preg = [];
-            $this->_make_qe();
+            $this->prepare_term();
             if (!empty($this->regex)) {
                 foreach (TextMatch_SearchTerm::$map as $k => $v)
                     if (isset($this->regex[$k]) && !empty($this->regex[$k]))
