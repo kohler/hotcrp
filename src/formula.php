@@ -1459,7 +1459,7 @@ class Formula {
     }
 
     private function _parse_option($text) {
-        $os = PaperSearch::analyze_option_search($this->conf, $text);
+        $os = Option_SearchTerm::analyze($this->conf, $text);
         foreach ($os->warn as $w)
             $this->_error_html[] = $w;
         $e = null;
