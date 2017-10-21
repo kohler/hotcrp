@@ -994,13 +994,7 @@ class PaperInfo {
             $privChair = $user->allow_administer($this);
             $etags = array();
             foreach (explode(" ", $tags) as $tag)
-                if (!($tag === ""
-                      || (($t = $this->conf->tags()->check_base($tag))
-                          && ($t->vote
-                              || $t->approval
-                              || (!$privChair
-                                  && (!$user->privChair || !$t->sitewide)
-                                  && ($t->chair || $t->rank))))))
+                if ($tag !== "" && $user->can_change_tag($this, $tag, 0, 1, true))
                     $etags[] = $tag;
             $tags = join(" ", $etags);
         }
