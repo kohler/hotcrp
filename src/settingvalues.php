@@ -57,6 +57,8 @@ class Si {
         assert(!preg_match('/_(?:\$|n|m?\d+)\z/', $name));
         $this->name = $name;
         $this->store($name, "short_description", $j, "name", "is_string");
+        if (isset($j->title))
+            $this->store($name, "short_description", $j, "title", "is_string");
         foreach (["short_description", "type", "storage", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
             $this->store($name, $k, $j, $k, "is_string");
         foreach (["internal", "optional", "novalue", "disabled", "autogrow"] as $k)
