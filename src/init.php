@@ -133,10 +133,6 @@ class SiteLoader {
         "XlsxGenerator" => "lib/xlsx.php",
         "ZipDocument" => "lib/filer.php"
     ];
-    const API_POST = 0;
-    const API_GET = 1;
-    const API_PAPER = 2;
-    const API_GET_PAPER = 3 /* == API_GET | API_PAPER */;
 
     static function read_main_options() {
         global $ConfSitePATH, $Opt;
