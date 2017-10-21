@@ -26,7 +26,7 @@ class Author_SearchTerm extends SearchTerm {
             else if ($word === "none" && $count === ">0") {
                 $word = null;
                 $count = "=0";
-            } else
+            } else if (trim($word) !== "")
                 $cids = $srch->matching_special_contacts($word);
         }
         return new Author_SearchTerm($count, $cids, $word);
