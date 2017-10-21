@@ -160,8 +160,7 @@ class PaperApi {
             }
             $jr = new JsonResult(["ok" => true, "p" => (object) $p]);
         } else
-            $jr = new JsonResult(false);
-        $jr->transfer_messages($user->conf, true);
+            $jr = new JsonResult(["ok" => false, "error" => $error]);
         return $jr;
     }
 
