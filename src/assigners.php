@@ -2220,7 +2220,7 @@ class AssignmentSet {
             return 0;
         }
         if (empty($npids) && $report_error)
-            $this->error_here("No papers match “" . htmlspecialchars($pfield) . "”");
+            $this->msg($this->astate->lineno, "No papers match “" . htmlspecialchars($pfield) . "”", 1);
 
         // Implement paper restriction
         if ($this->enabled_pids !== null)
