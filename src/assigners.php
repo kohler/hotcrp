@@ -1899,6 +1899,15 @@ class AssignmentSet {
     function set_reviewer(Contact $reviewer) {
         $this->astate->reviewer = $reviewer;
     }
+    function set_overrides($overrides) {
+        if ($overrides === null)
+            $overrides = $this->user->overrides();
+        else if ($overrides === true)
+            $overrides = $this->user->overrides() | Contact::OVERRIDE_CONFLICT;
+        if (!$this->user->privChair)
+            $overrides &= ~Contact::OVERRIDE_CONFLICT;
+        $this->astate->overrides = (int) $overrides;
+    }
 
     function enable_actions($action) {
         assert(empty($this->assigners));
@@ -1921,16 +1930,6 @@ class AssignmentSet {
                 $this->enabled_pids[] = (int) $p;
     }
 
-    function set_overrides($overrides) {
-        if ($overrides === null)
-            $overrides = $this->user->overrides();
-        else if ($overrides === true)
-            $overrides = $this->user->overrides() | Contact::OVERRIDE_CONFLICT;
-        if (!$this->user->privChair)
-            $overrides &= ~Contact::OVERRIDE_CONFLICT;
-        $this->astate->overrides = (int) $overrides;
-    }
-
     function is_empty() {
         return empty($this->assigners);
     }
@@ -1945,7 +1944,7 @@ class AssignmentSet {
     }
 
     // error(message) OR error(lineno, message)
-    function lmsg($lineno, $msg, $status) {
+    function msg($lineno, $msg, $status) {
         $l = ($this->filename ? $this->filename . ":" : "line ") . $lineno;
         $n = count($this->msgs) - 1;
         if ($n >= 0 && $this->msgs[$n][0] == $l
@@ -1956,14 +1955,11 @@ class AssignmentSet {
         if ($status == 2)
             $this->has_error = true;
     }
-
-    function error($message, $message1 = null) {
-        if (is_int($message) && is_string($message1)) {
-            $lineno = $message;
-            $message = $message1;
-        } else
-            $lineno = $this->astate->lineno;
-        $this->lmsg($lineno, $message, 2);
+    function error_at($lineno, $message) {
+        $this->msg($lineno, $message, 2);
+    }
+    function error_here($message) {
+        $this->msg($this->astate->lineno, $message, 2);
     }
 
     function errors_html($linenos = false) {
@@ -1983,7 +1979,6 @@ class AssignmentSet {
         else
             return "";
     }
-
     function errors_text($linenos = false) {
         $es = array();
         foreach ($this->msgs as $e) {
@@ -2101,21 +2096,21 @@ class AssignmentSet {
             if (count($ret->ids) == 1)
                 return $ret->contacts();
             else if (empty($ret->ids))
-                $this->error("No $cset_text matches “" . self::req_user_html($req) . "”.");
+                $this->error_here("No $cset_text matches “" . self::req_user_html($req) . "”.");
             else
-                $this->error("“" . self::req_user_html($req) . "” matches more than one $cset_text, use a full email address to disambiguate.");
+                $this->error_here("“" . self::req_user_html($req) . "” matches more than one $cset_text, use a full email address to disambiguate.");
             return false;
         }
 
         // create contact
         if (!$email)
-            return $this->error("Missing email address.");
+            return $this->error_here("Missing email address.");
         else if (!validate_email($email))
-            return $this->error("Email address “" . htmlspecialchars($email) . "” is invalid.");
+            return $this->error_here("Email address “" . htmlspecialchars($email) . "” is invalid.");
         else if (($u = $this->astate->user_by_email($email, true, $req)))
             return [$u];
         else
-            return $this->error("Could not create user.");
+            return $this->error_here("Could not create user.");
     }
 
     static private function is_csv_header($req) {
@@ -2175,9 +2170,9 @@ class AssignmentSet {
         $csv->set_header($req);
 
         if (!$has_action && !get($this->astate->defaults, "action"))
-            return $this->error($csv->lineno(), "“assignment” column missing");
+            return $this->error_at($csv->lineno(), "“assignment” column missing");
         else if (array_search("paper", $req) === false)
-            return $this->error($csv->lineno(), "“paper” column missing");
+            return $this->error_at($csv->lineno(), "“paper” column missing");
         else {
             if (!isset($this->astate->defaults["action"]))
                 $this->astate->defaults["action"] = "<missing>";
@@ -2215,17 +2210,17 @@ class AssignmentSet {
                 $this->searches[$pfield] = $search->paper_ids();
                 if ($report_error)
                     foreach ($search->warnings as $w)
-                        $this->error($w);
+                        $this->error_here($w);
             }
             $npids = $this->searches[$pfield];
             $val = 1;
         } else {
             if ($report_error)
-                $this->error("Bad paper column");
+                $this->error_here("Bad paper column");
             return 0;
         }
         if (empty($npids) && $report_error)
-            $this->error("No papers match “" . htmlspecialchars($pfield) . "”");
+            $this->error_here("No papers match “" . htmlspecialchars($pfield) . "”");
 
         // Implement paper restriction
         if ($this->enabled_pids !== null)
@@ -2275,10 +2270,10 @@ class AssignmentSet {
 
         // check action
         if (!$aparser)
-            return $this->error("Unknown action.");
+            return $this->error_here("Unknown action.");
         if ($this->enabled_actions !== null
             && !isset($this->enabled_actions[$aparser->type]))
-            return $this->error("Action " . htmlspecialchars($aparser->type) . " disabled.");
+            return $this->error_here("Action " . htmlspecialchars($aparser->type) . " disabled.");
         $aparser->load_state($this->astate);
 
         // clean user parts
@@ -2310,7 +2305,7 @@ class AssignmentSet {
             assert(is_int($p));
             $prow = $this->astate->prow($p);
             if (!$prow) {
-                $this->astate->error("Submission #$p does not exist.");
+                $this->astate->error_here("Submission #$p does not exist.");
                 continue;
             }
 
@@ -2356,7 +2351,7 @@ class AssignmentSet {
         }
 
         foreach ($this->astate->errors as $e)
-            $this->lmsg($this->astate->lineno, $e[0], $e[1] || !$any_success ? 2 : 1);
+            $this->msg($this->astate->lineno, $e[0], $e[1] || !$any_success ? 2 : 1);
         return $any_success;
     }
 
@@ -2373,7 +2368,7 @@ class AssignmentSet {
             $csv->set_comment_function(array($this, "parse_csv_comment"));
         }
         if (!($req = $csv->header() ? : $csv->next()))
-            return $this->error($csv->lineno(), "empty file");
+            return $this->error_at($csv->lineno(), "empty file");
         if (!$this->install_csv_header($csv, $req))
             return false;
 
@@ -2418,7 +2413,7 @@ class AssignmentSet {
                     if (($a = $item->realize($this->astate)))
                         $this->assigners[] = $a;
                 } catch (Exception $e) {
-                    $this->error($item->lineno, $e->getMessage());
+                    $this->error_at($item->lineno, $e->getMessage());
                 }
             }
 
