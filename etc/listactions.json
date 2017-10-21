@@ -3,14 +3,14 @@
         "name": "get",
         "renderer": "Get_SearchAction::render", "title": "Download",
         "position": 0,
-        "require": "src/sa/sa_get_sub.php"
+        "require": "src/listactions/la_get_sub.php"
     },
     {
         "name": "assign", "post": true,
         "renderer": "Assign_SearchAction::render", "title": "Assign",
         "position": 700,
         "allow_if": "manager", "display_if_report": "!editpref",
-        "require": "src/sa/sa_assign.php",
+        "require": "src/listactions/la_assign.php",
         "factory_class": "Assign_SearchAction"
     },
     {
@@ -18,20 +18,20 @@
         "renderer": "Decide_SearchAction::render", "title": "Decide",
         "position": 900,
         "allow_if": "manager", "display_if_report": "!editpref",
-        "require": "src/sa/sa_decide.php",
+        "require": "src/listactions/la_decide.php",
         "factory_class": "Decide_SearchAction"
     },
     {
         "match": "get/.*", "paper": true, "get": true,
         "expand_function": "GetDocument_SearchAction::expand",
-        "require": "src/sa/sa_get_sub.php"
+        "require": "src/listactions/la_get_sub.php"
     },
     {
         "name": "get/json", "get": true,
         "selector": "Paper information/JSON",
         "position": 1090,
         "allow_if": "manager",
-        "require": "src/sa/sa_get_json.php",
+        "require": "src/listactions/la_get_json.php",
         "factory_class": "GetJson_SearchAction",
         "has_attachments": false
     },
@@ -40,7 +40,7 @@
         "selector": "Paper information/JSON with attachments",
         "position": 1091,
         "allow_if": "manager",
-        "require": "src/sa/sa_get_json.php",
+        "require": "src/listactions/la_get_json.php",
         "factory_class": "GetJson_SearchAction",
         "has_attachments": true
     },
@@ -49,7 +49,7 @@
         "selector": "Paper information/JSON for reviewqualitycollector.org",
         "position": 1092,
         "allow_if": "manager",
-        "require": "src/sa/sa_get_json.php",
+        "require": "src/listactions/la_get_json.php",
         "factory_class": "GetJsonRQC_SearchAction"
     },
     {
@@ -57,7 +57,7 @@
         "selector": "Review assignments/PC assignments",
         "position": 2099,
         "allow_if": "manager",
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetPcassignments_SearchAction"
     },
     {
@@ -65,7 +65,7 @@
         "selector": "Review assignments/Review forms",
         "position": 2000,
         "allow_if": "reviewer",
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetReviewForm_SearchAction",
         "zip": false
     },
@@ -74,7 +74,7 @@
         "selector": "Review assignments/Review forms (zip)",
         "position": 2001,
         "allow_if": "reviewer",
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetReviewForm_SearchAction",
         "zip": true
     },
@@ -83,7 +83,7 @@
         "selector": "Reviews/Reviews",
         "position": 3060,
         "allow_if": "view_review",
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetReviews_SearchAction",
         "zip": false
     },
@@ -92,7 +92,7 @@
         "selector": "Reviews/Reviews (zip)",
         "position": 3061,
         "allow_if": "view_review",
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetReviews_SearchAction",
         "zip": true
     },
@@ -101,7 +101,7 @@
         "selector": "Reviews/Text with reviews",
         "position": 3062,
         "allow_if": "view_review",
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetReviews_SearchAction",
         "zip": false, "abstract": true
     },
@@ -110,26 +110,26 @@
         "selector": "Reviews/Scores",
         "position": 3070,
         "allow_if": "view_review",
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetScores_SearchAction"
     },
     {
         "name": "get/votes", "get": true,
         "allow_if": "pc", "display_if": false,
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetVotes_SearchAction"
     },
     {
         "name": "get/rank", "get": true,
         "allow_if": ["tag_rank", "reviewer"], "display_if": false,
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetRank_SearchAction"
     },
     {
         "name": "get/lead", "get": true,
         "selector": "Reviews/Discussion leads", "position": 3090,
         "allow_if": "pc", "display_if": "lead",
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetLead_SearchAction",
         "type": "lead"
     },
@@ -137,7 +137,7 @@
         "name": "get/shepherd", "get": true,
         "selector": "Reviews/Shepherds", "position": 3091,
         "allow_if": "pc", "display_if": "shepherd",
-        "require": "src/sa/sa_get_rev.php",
+        "require": "src/listactions/la_get_rev.php",
         "factory_class": "GetShepherd_SearchAction"
     },
     {
@@ -145,7 +145,7 @@
         "selector": "Preference file",
         "position": -100,
         "allow_if": "pc", "display_if_report": "editpref",
-        "require": "src/sa/sa_get_revpref.php",
+        "require": "src/listactions/la_get_revpref.php",
         "factory_class": "GetRevpref_SearchAction",
         "abstracts": false
     },
@@ -154,7 +154,7 @@
         "selector": "Preference file with abstracts",
         "position": -99,
         "allow_if": "pc", "display_if_report": "editpref",
-        "require": "src/sa/sa_get_revpref.php",
+        "require": "src/listactions/la_get_revpref.php",
         "factory_class": "GetRevpref_SearchAction",
         "abstracts": true
     },
@@ -163,14 +163,14 @@
         "selector": "Review assignments/PC review preferences",
         "position": 2060,
         "allow_if": "manager",
-        "require": "src/sa/sa_get_revpref.php",
+        "require": "src/listactions/la_get_revpref.php",
         "factory_class": "GetRevpref_SearchAction"
     },
     {
         "name": "get/paper", "get": true,
         "selector": "Documents/Submissions",
         "position": 100, "display_if_list_has": "paper",
-        "require": "src/sa/sa_get_sub.php",
+        "require": "src/listactions/la_get_sub.php",
         "factory_class": "GetDocument_SearchAction",
         "dtype": 0
     },
@@ -178,7 +178,7 @@
         "name": "get/final", "get": true,
         "selector": "Documents/Final versions",
         "position": 0, "display_if_list_has": "final",
-        "require": "src/sa/sa_get_sub.php",
+        "require": "src/listactions/la_get_sub.php",
         "factory_class": "GetDocument_SearchAction",
         "dtype": -1
     },
@@ -187,54 +187,54 @@
         "selector": "Documents/Format check",
         "position": 999, "display_if_list_has": "paper",
         "allow_if": "manager",
-        "require": "src/sa/sa_get_sub.php",
+        "require": "src/listactions/la_get_sub.php",
         "factory_class": "GetCheckFormat_SearchAction"
     },
     {
         "name": "get/abstract", "get": true,
         "selector": "Paper information/Text with abstracts", "display_if_list_has": "abstract",
         "position": 1000,
-        "require": "src/sa/sa_get_sub.php",
+        "require": "src/listactions/la_get_sub.php",
         "factory_class": "GetAbstract_SearchAction"
     },
     {
         "name": "get/abstract", "get": true,
         "selector": "Paper information/Text", "display_if_list_has": "!abstract",
         "position": 1000,
-        "require": "src/sa/sa_get_sub.php",
+        "require": "src/listactions/la_get_sub.php",
         "factory_class": "GetAbstract_SearchAction"
     },
     {
         "name": "get/authors", "get": true,
         "selector": "Paper information/Authors",
         "position": 1001, "display_if_list_has": "authors",
-        "require": "src/sa/sa_get_sub.php",
+        "require": "src/listactions/la_get_sub.php",
         "factory_class": "GetAuthors_SearchAction"
     },
     {
         "name": "get/contact", "get": true,
-        "require": "src/sa/sa_get_sub.php", "display_if": false,
+        "require": "src/listactions/la_get_sub.php", "display_if": false,
         "factory_class": "GetContacts_SearchAction"
     },
     {
         "name": "get/topics", "get": true,
         "selector": "Paper information/Topics", "display_if": "has_topics",
         "position": 1050,
-        "require": "src/sa/sa_get_sub.php",
+        "require": "src/listactions/la_get_sub.php",
         "factory_class": "GetTopics_SearchAction"
     },
     {
         "name": "get/pcconf", "get": true,
         "selector": "Paper information/PC conflicts",
         "position": 1060,
-        "require": "src/sa/sa_get_sub.php",
+        "require": "src/listactions/la_get_sub.php",
         "factory_class": "GetPcconflicts_SearchAction"
     },
     {
         "name": "get/csv", "get": true,
         "selector": "Paper information/CSV",
         "position": 1089,
-        "require": "src/sa/sa_get_sub.php",
+        "require": "src/listactions/la_get_sub.php",
         "factory_class": "GetCSV_SearchAction"
     },
     {
@@ -243,7 +243,7 @@
         "position": 1000,
         "allow_if": "manager", "display_if_report": "!editpref",
         "factory_class": "Mail_SearchAction",
-        "require": "src/sa/sa_mail.php"
+        "require": "src/listactions/la_mail.php"
     },
     {
         "name": "tag", "post": true,
@@ -251,20 +251,20 @@
         "position": 500,
         "allow_if": "pc", "display_if_report": "!editpref",
         "factory_class": "Tag_SearchAction",
-        "require": "src/sa/sa_tag.php"
+        "require": "src/listactions/la_tag.php"
     },
     {
         "name": "uploadpref",
         "renderer": "GetRevpref_SearchAction::render_upload", "title": "Upload",
         "allow_if": "pc", "display_if_report": "editpref",
-        "require": "src/sa/sa_get_revpref.php",
+        "require": "src/listactions/la_get_revpref.php",
         "position": 100
     },
     {
         "name": "setpref",
         "renderer": "GetRevpref_SearchAction::render_set", "title": "Set preferences",
         "allow_if": "pc", "display_if_report": "editpref",
-        "require": "src/sa/sa_get_revpref.php",
+        "require": "src/listactions/la_get_revpref.php",
         "position": 200
     }
 ]
