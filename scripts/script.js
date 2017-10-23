@@ -3862,8 +3862,8 @@ function completion_split(elt) {
 function taghelp_tset(elt, options) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
-        n = x[1].match(/^([^#\s]*)/);
-        return alltags.then(make_suggestions(m[1], m[2], n[1], options));
+        n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
+        return alltags.then(make_suggestions(m[1], m[2], n[1], options, {postcompletion: n[2]}));
     } else
         return null;
 }
@@ -3890,16 +3890,27 @@ function comment_completion_q(elt, options) {
 }
 
 function make_suggestions(pfx, precaret, postcaret, options) {
-    var pfx_length = pfx.length;
-    var lprecaret = precaret.toLowerCase();
-    var precaret_length = precaret.length;
-    var lpostcaret = postcaret.toLowerCase();
-    var postcaret_length = postcaret.length;
+    if (arguments.length > 4) {
+        options = $.extend({}, options);
+        for (var i = 4; i < arguments.length; ++i)
+            $.extend(options, arguments[i]);
+    }
 
+    var case_sensitive = options && options.case_sensitive;
     var require_prefix = options && options.require_prefix;
     var drop_nonmatch = options && options.drop_nonmatch;
-    drop_nonmatch = Math.min(drop_nonmatch || 0, precaret_length);
     var decorate = options && options.decorate;
+
+    var pfx_length = pfx.length;
+    var lprecaret = case_sensitive ? precaret : precaret.toLowerCase();
+    var precaret_length = precaret.length;
+    var lpostcaret = case_sensitive ? postcaret : postcaret.toLowerCase();
+    var postcaret_length = precaret_length + postcaret.length;
+    var postcompletion_length = postcaret_length;
+    if (options && options.postcompletion)
+        postcompletion_length += options.postcompletion.length;
+
+    drop_nonmatch = Math.min(drop_nonmatch || 0, precaret_length);
 
     return function (tlist) {
         var res = [];
@@ -3909,7 +3920,7 @@ function make_suggestions(pfx, precaret, postcaret, options) {
         for (var i = 0; i < tlist.length; ++i) {
             var titem = completion_item(tlist[i]);
             var text = titem.s;
-            var ltext = titem.s.toLowerCase();
+            var ltext = case_sensitive ? text : text.toLowerCase();
 
             var h, pos = 0;
             if (require_prefix) {
@@ -3934,7 +3945,7 @@ function make_suggestions(pfx, precaret, postcaret, options) {
                 pos += precaret_length;
                 if (best_postcaret_index === null)
                     best_postcaret_index = res.length;
-                if (postcaret_length) {
+                if (postcaret_length > precaret_length) {
                     var common_postcaret = common_prefix(ltext.substr(pos), lpostcaret);
                     if (common_postcaret.length > best_postcaret.length) {
                         best_postcaret = common_postcaret;
@@ -3960,7 +3971,15 @@ function make_suggestions(pfx, precaret, postcaret, options) {
         if (res.length) {
             if (best_postcaret_index !== null)
                 res[best_postcaret_index] = res[best_postcaret_index].replace(/^<div class="suggestion/, '<div class="suggestion active');
-            return {list: res, offsets: [pfx_length, pfx_length + precaret_length, pfx_length + precaret_length + postcaret_length]};
+            return {
+                list: res,
+                offsets: [
+                    pfx_length,
+                    pfx_length + precaret_length,
+                    pfx_length + postcaret_length,
+                    pfx_length + postcompletion_length
+                ]
+            };
         } else
             return null;
     };
@@ -4042,11 +4061,16 @@ function suggest(elt, suggestions_promise, options) {
 
     function do_complete(text, smatch, done) {
         var poss = hintdiv.self().data("autocompletePos");
-        var startPos = poss[0], endPos = poss[0] + poss[1][2];
-        done && (text += " ");
-        var val = elt.value.substring(0, startPos) + text + elt.value.substring(endPos);
-        $(elt).val(val);
-        elt.selectionStart = elt.selectionEnd = startPos + text.length;
+        var val = elt.value;
+        var startPos = poss[0];
+        var endPos = startPos + poss[1][3];
+        if (poss[1][3] > poss[1][2])
+            text += val.substring(startPos + poss[1][2], endPos);
+        var outPos = startPos + text.length + (done ? 1 : 0);
+        if (done && (endPos == val.length || /\S/.test(val.charAt(endPos))))
+            text += " ";
+        $(elt).val(val.substring(0, startPos) + text + val.substring(endPos));
+        elt.selectionStart = elt.selectionEnd = outPos;
         done ? kill() : setTimeout(display, 1);
         return true;
     }
