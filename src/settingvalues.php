@@ -325,6 +325,10 @@ class SettingValues extends MessageSet {
     function canonical_group($g) {
         return $this->gxt()->canonical_group(strtolower($g));
     }
+    function is_titled_group($g) {
+        $gj = $this->gxt()->get($g);
+        return $gj && $gj->name == $gj->group && isset($gj->title);
+    }
     function group_titles() {
         return array_map(function ($gj) { return $gj->title; }, $this->gxt()->groups());
     }

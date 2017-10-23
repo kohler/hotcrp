@@ -701,6 +701,10 @@ class Conf {
     static function xt_position_compare($xta, $xtb) {
         $ap = get($xta, "position", 0);
         $bp = get($xtb, "position", 0);
+        if ($ap == $bp) {
+            $ap = get($xta, "__subposition", 0);
+            $bp = get($xtb, "__subposition", 0);
+        }
         return $ap < $bp ? -1 : ($ap == $bp ? 0 : 1);
     }
     static function xt_add(&$a, $name, $xt) {

@@ -8,12 +8,17 @@ class GroupedExtensions {
 
     function _add_json($fj) {
         if (isset($fj->name) && is_string($fj->name)) {
-            if (!isset($fj->group))
-                $fj->group = $fj->name;
+            if (!isset($fj->group)) {
+                if (($pos = strrpos($fj->name, "/")) !== false)
+                    $fj->group = substr($fj->name, 0, $pos);
+                else
+                    $fj->group = $fj->name;
+            }
             if (!isset($fj->synonym))
                 $fj->synonym = [];
             else if (is_string($fj->synonym))
                 $fj->synonym = [$fj->synonym];
+            $fj->__subposition = count($this->_subgroups);
             $this->_subgroups[] = $fj;
             return true;
         } else
@@ -26,27 +31,25 @@ class GroupedExtensions {
                 expand_json_includes_callback($arg, [$this, "_add_json"]);
         }
         usort($this->_subgroups, "Conf::xt_priority_compare");
-        $gs = $sgs = $known = [];
+        $sgs = $known = [];
         foreach ($this->_subgroups as $gj) {
             if (isset($known[$gj->name]) || !$user->conf->xt_allowed($gj, $user))
                 continue;
             $known[$gj->name] = true;
             foreach ($gj->synonym as $syn)
                 $known[$syn] = true;
-            if (Conf::xt_enabled($gj)) {
-                if ($gj->group === $gj->name)
-                    $gs[$gj->name] = $gj;
+            if (Conf::xt_enabled($gj))
                 $sgs[$gj->name] = $gj;
-            }
         }
-        $this->_subgroups = array_filter($sgs, function ($gj) use ($gs) {
-            return isset($gs[$gj->group]);
-        });
-        uasort($this->_subgroups, function ($aj, $bj) use ($gs) {
-            if ($aj->group !== $bj->group)
-                return Conf::xt_position_compare($gs[$aj->group], $gs[$bj->group]);
-            else
-                return Conf::xt_position_compare($aj, $bj);
+        $this->_subgroups = $sgs;
+        uasort($this->_subgroups, function ($aj, $bj) {
+            if ($aj->group !== $bj->group) {
+                if (isset($this->_subgroups[$aj->group]))
+                    $aj = $this->_subgroups[$aj->group];
+                if (isset($this->_subgroups[$bj->group]))
+                    $bj = $this->_subgroups[$bj->group];
+            }
+            return Conf::xt_position_compare($aj, $bj);
         });
     }
     function get($name) {
@@ -63,9 +66,10 @@ class GroupedExtensions {
         return $gj ? $gj->group : false;
     }
     function members($name) {
-        $name = $this->canonical_group($name);
+        if (($gj = $this->get($name)))
+            $name = $gj->name;
         return array_filter($this->_subgroups, function ($gj) use ($name) {
-            return $gj->group === $name;
+            return $gj->group === $name || $gj->name === $name;
         });
     }
     function all() {

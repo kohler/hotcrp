@@ -20,7 +20,7 @@ function choose_setting_group(SettingValues $sv) {
     if (!$want_group && isset($_SESSION["sg"])) // NB not conf-specific session, global
         $want_group = $_SESSION["sg"];
     $want_group = $sv->canonical_group($want_group);
-    if (!$want_group) {
+    if (!$want_group || !$sv->is_titled_group($want_group)) {
         if ($sv->conf->timeAuthorViewReviews())
             $want_group = $sv->canonical_group("decisions");
         else if ($sv->conf->deadlinesAfter("sub_sub") || $sv->conf->time_review_open())

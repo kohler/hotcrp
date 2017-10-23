@@ -20,8 +20,61 @@
     {
         "name": "tags", "title": "Tags",
         "description": "How to use tags to define paper sets and discussion orders.",
-        "function": "tags",
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_intro",
         "position": 3000
+    },
+    {
+        "name": "tags/finding",
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_finding",
+        "position": 3100
+    },
+    {
+        "name": "tags/changing",
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_changing",
+        "position": 3200
+    },
+    {
+        "name": "tags/values",
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_values",
+        "position": 3300
+    },
+    {
+        "name": "tags/colors",
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_colors",
+        "position": 3300
+    },
+    {
+        "name": "tags/examples",
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_examples",
+        "position": 3900
+    },
+    {
+        "name": "tagexamples/r1reject", "position": 100,
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_example_r1reject"
+    },
+    {
+        "name": "tagexamples/controversial", "position": 200,
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_example_controversial"
+    },
+    {
+        "name": "tagexamples/pcpaper", "position": 300,
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_example_pcpaper"
+    },
+    {
+        "name": "tagexamples/allotment", "position": 400,
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_example_allotment"
+    },
+    {
+        "name": "tagexamples/rank", "position": 500,
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_example_rank"
+    },
+    {
+        "name": "tagexamples/discuss", "position": 600,
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_example_discuss"
+    },
+    {
+        "name": "tagexamples/decisions", "position": 700,
+        "require": "src/help/h_tags.php", "factory_class": "HelpTopic_Tags", "method": "render_example_decisions"
     },
     {
         "name": "tracks", "title": "Tracks",
