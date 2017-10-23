@@ -2795,7 +2795,7 @@ class Conf {
         return $this->make_script_file($jquery, true, $integrity);
     }
 
-    private function header_head($title) {
+    function header_head($title) {
         global $Me, $ConfSitePATH;
         // load session list and clear its cookie
         $list = SessionList::active();
@@ -2845,7 +2845,7 @@ class Conf {
             $title = preg_replace(",(?: |&nbsp;|\302\240)+,", " ", $title);
             $title = str_replace("&#x2215;", "-", $title);
         }
-        if ($title)
+        if ($title && $title !== "Home")
             echo $title, " - ";
         echo htmlspecialchars($this->short_name), "</title>\n</head>\n";
 
@@ -2926,17 +2926,8 @@ class Conf {
         echo '</div>', $title_div, $actions_html;
     }
 
-    function header($title, $id, $actionBar, $title_div = null) {
+    function header_body($title, $id, $actionBar, $title_div = null) {
         global $ConfSitePATH, $Me, $Now;
-        if ($this->headerPrinted)
-            return;
-
-        // <head>
-        if ($title === "Home")
-            $title = "";
-        $this->header_head($title);
-
-        // <body>
         echo "<body";
         if ($id)
             echo ' id="', $id, '"';
@@ -3020,7 +3011,7 @@ class Conf {
                 $profile_html .= join(' <span class="barsep">·</span> ', $profile_parts);
         }
 
-        if (!$title_div && $title)
+        if (!$title_div && $title && $title !== "Home")
             $title_div = '<div id="header_page"><h1>' . $title . '</h1></div>';
         if (!$title_div && $actionBar)
             $title_div = '<hr class="c" />';
@@ -3079,6 +3070,14 @@ class Conf {
             }
             Ht::stash_script("check_version(\"$m\",\"$v\")");
             $_SESSION["updatecheck"] = $Now;
+        }
+    }
+
+    function header($title, $id, $actionBar, $title_div = null) {
+        global $ConfSitePATH, $Me, $Now;
+        if (!$this->headerPrinted) {
+            $this->header_head($title);
+            $this->header_body($title, $id, $actionBar, $title_div);
         }
     }
 

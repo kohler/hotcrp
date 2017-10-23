@@ -247,7 +247,7 @@ echo "</div></form>
 
 <hr style='margin-top:1em' />
 
-<div class='helppagetext'>
+<div class='settingstext'>
 <h3>Instructions</h3>
 
 <p>Upload a comma-separated value file to prepare an assignment of reviews,

@@ -945,7 +945,7 @@ table.setreviewform td.rxcaption {
 
 
 /* settings */
-h3.settings, h3.helppage, h3.profile, h4.helppage {
+h3.settings, h2.helppage, h3.helppage, h3.profile, h4.helppage {
 	color: #565d91;
 }
 h2.helppage {
@@ -953,6 +953,9 @@ h2.helppage {
 }
 h3.settings, h3.helppage, h3.profile {
 	margin: 2em 0 0.5em;
+}
+h3.helppage + p {
+	margin-top: 0.5em;
 }
 h3.settings:first-child {
 	margin-top: 0;
@@ -1035,21 +1038,37 @@ table#foldtag_color th {
 .leftmenu_body {
 	position: relative;
 }
-.leftmenu_body > *:first-child, .helppagetext > p:first-child {
+.leftmenu_body > *:first-child {
 	margin-top: 0;
 }
-.helppagetext, .profiletext, .settingstext {
+.profiletext, .settingstext {
 	max-width: 640px;
 	line-height: 1.35;
+}
+#helpcontent {
+	line-height: 1.35;
+}
+#helpcontent > p {
+	max-width: 640px;
+}
+#helpcontent > ul, #helpcontent > ol, #helpcontent li,
+#helpcontent > dl > dt, #helpcontent > dl > dd {
+	max-width: 612px;
+}
+#helpcontent > ul, #helpcontent > ol {
+	padding-left: 28px;
+}
+#helpcontent > dl > dd {
+	margin-left: 28px;
 }
 table.helppage {
 	margin: 0 -16px;
 }
-.helplist_item {
+.helplist-item {
 	margin: 0 -16px;
 	padding: 3px 16px;
 }
-.helplist_dt {
+.helplist-dt {
 	padding-right: 16px;
 }
 table.helppage > tbody > tr > td:first-child {

@@ -21,44 +21,84 @@ if ($want_topic !== $topic)
     redirectSelf(["t" => $want_topic]);
 $topicj = $help_topics->get($topic);
 
-if ($topic === "topics")
-    $Conf->header("Help", "help", actionBar());
-else
-    $Conf->header("Help &nbsp;&#x2215;&nbsp; <strong>" . $topicj->title . "</strong>", "help", actionBar());
+$Conf->header_head($topic === "topics" ? "Help" : "Help - {$topicj->title}");
+$Conf->header_body("Help", "help", actionBar());
 
-
-function _alternateRow($caption, $entry, $next = null) {
-    global $rowidx;
-    if ($caption) {
-        $below = "";
-        if (is_array($caption))
-            list($caption, $below) = $caption;
-        if (!preg_match('/<a/', $caption)) {
-            $anchor = strtolower(preg_replace('/\W+/', "_", $caption));
-            $caption = '<a class="qq" name="' . $anchor . '" href="#' . $anchor
-                . '">' . $caption . '</a>';
+class HtHead extends Ht {
+    public $conf;
+    public $user;
+    private $_tabletype;
+    private $_rowidx;
+    function __construct(Contact $user) {
+        $this->conf = $user->conf;
+        $this->user = $user;
+    }
+    static function subhead($title, $id = null) {
+        if ($id || $title)
+            return '<h3 class="helppage"' . ($id ? " id=\"{$id}\"" : "") . '>' . $title . "</h3>\n";
+        else
+            return "";
+    }
+    function table($tabletype = false) {
+        $this->_rowidx = 0;
+        $this->_tabletype = $tabletype;
+        return $this->_tabletype ? "" : '<table class="helppage"><tbody>';
+    }
+    function tgroup($title, $id = null) {
+        $this->_rowidx = 0;
+        if ($this->_tabletype)
+            return $this->subhead($title, $id);
+        else
+            return '<tr><td class="sentry nw" colspan="2"><h4 class="helppage"'
+                . ($id ? " id=\"{$id}\"" : "") . '>'
+                . $title . "</h4></td></tr>\n";
+    }
+    function trow($caption, $entry = null) {
+        if ($this->_tabletype) {
+            $t = "<div class=\"helplist-item k{$this->_rowidx}\">"
+                . "<table class=\"helppage\"><tbody><tr><td class=\"helplist-dt\">"
+                . $caption
+                . "</td><td class=\"helplist-dd\">"
+                . $entry . "</td></tr></tbody></table></div>\n";
+        } else {
+            $t = "<tr class=\"k{$this->_rowidx}\"><td class=\"sentry\"";
+            if ((string) $entry === "")
+                $t .= ' colspan="2">' . $caption;
+            else
+                $t .= '>' . $caption . '</td><td class="sentry">' . $entry;
+            $t .= "</td></tr>\n";
         }
-        echo '<tr><td class="sentry nw" colspan="2">',
-            '<h4 class="helppage">', $caption, '</h4>', $below, '</td></tr>', "\n";
-        $rowidx = null;
+        $this->_rowidx = 1 - $this->_rowidx;
+        return $t;
     }
-    if ($entry || $next) {
-        $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
-        echo '<tr class="k', ($rowidx % 2), '">',
-            '<td class="sentry"', ($next === null ? ' colspan="2">' : ">"),
-            $entry, "</td>";
-        if ($next !== null)
-            echo '<td class="sentry">', $next, "</td>";
-        echo "</tr>\n";
+    function end_table() {
+        return $this->_tabletype ? "" : "</tbody></table>\n";
+    }
+    function search_link($q, $html = null) {
+        if (is_string($q))
+            $q = ["q" => $q];
+        return '<a href="' . hoturl("search", $q) . '">'
+            . ($html ? : htmlspecialchars($q["q"])) . '</a>';
+    }
+    function search_form($q, $size = 20) {
+        if (is_string($q))
+            $q = ["q" => $q];
+        $t = Ht::form_div(hoturl("search"), ["method" => "get", "divclass" => "nw"])
+            . Ht::entry("q", $q["q"], ["size" => $size])
+            . " &nbsp;"
+            . Ht::submit("go", "Search");
+        foreach ($q as $k => $v) {
+            if ($k !== "q")
+                $t .= Ht::hidden($k, $v);
+        }
+        return $t . "</div></form>";
+    }
+    function search_trow($q, $entry) {
+        return $this->trow($this->search_form($q, 36), $entry);
     }
 }
 
-function _subhead($head, $entry, $id = false) {
-    if ($id || $head)
-        echo '<h3 class="helppage"', ($id ? ' id="' . $id . '"' : ''),
-            '>', $head, "</h3>\n";
-    echo '<div class="helppagetext">', $entry, "</div>\n";
-}
+$hth = new HtHead($Me);
 
 
 function show_help_topics() {
@@ -76,33 +116,13 @@ function show_help_topics() {
 }
 
 
-function _searchForm($forwhat, $other = null, $size = 20) {
-    $text = "";
-    if ($other && preg_match_all('/(\w+)=([^&]*)/', $other, $matches, PREG_SET_ORDER))
-        foreach ($matches as $m)
-            $text .= Ht::hidden($m[1], urldecode($m[2]));
-    return Ht::form_div(hoturl("search"), array("method" => "get", "divclass" => "nw"))
-        . "<input type='text' name='q' value=\""
-        . htmlspecialchars($forwhat) . "\" size='$size' /> &nbsp;"
-        . Ht::submit("go", "Search")
-        . $text . "</div></form>";
-}
-
-function _searchLink($q, $linkhtml = null) {
-    return '<a href="' . hoturl("search", ["q" => $q]) . '">'
-        . ($linkhtml ? : htmlspecialchars($q)) . '</a>';
-}
-
-function search() {
-    _subhead("", "
-<p>All HotCRP paper lists are obtained through search, search syntax is flexible,
-and it’s possible to download all matching papers and/or reviews at once.</p>
-
-<p>Some hints for PC members and chairs:</p>
+function search(Contact $user, $hth) {
+    echo "<p>All HotCRP paper lists are obtained through flexible
+search. Some hints for PC members and chairs:</p>
 
 <ul class='compact'>
-<li><div style='display:inline-block'>" . _searchForm("") . "</div>&nbsp; finds all papers.  (Leave the search field blank.)</li>
-<li><div style='display:inline-block'>" . _searchForm("12") . "</div>&nbsp; finds paper #12.  When entered from a
+<li><div style='display:inline-block'>", $hth->search_form(""), "</div>&nbsp; finds all papers.  (Leave the search field blank.)</li>
+<li><div style='display:inline-block'>", $hth->search_form("12"), "</div>&nbsp; finds paper #12.  When entered from a
  <a href='#quicklinks'>quicksearch</a> box, this search will jump to
  paper #12 directly.</li>
 <li><a href='" . hoturl("help", "t=keywords") . "'>Search keywords</a>
@@ -112,9 +132,10 @@ and it’s possible to download all matching papers and/or reviews at once.</p>
  from paper to paper.</li>
 <li>On search results pages, shift-click checkboxes to
  select paper ranges.</li>
-</ul>");
+</ul>";
 
-    _subhead("How to search", "
+    echo $hth->subhead("How to search");
+    echo "
 <p>The default search box returns papers that match
 <em>all</em> of the space-separated terms you enter.
 To search for words that <em>start</em> with
@@ -147,9 +168,10 @@ Also, <b>keywords</b> search specific characteristics such as titles,
 authors, reviewer names, and numbers of reviewers.  For example,
 “ti:foo” means “search for ‘foo’ in paper
 titles.”  Keywords are listed in the
-<a href='" . hoturl("help", "t=keywords") . "'>search keywords reference</a>.</p>");
+<a href='" . hoturl("help", "t=keywords") . "'>search keywords reference</a>.</p>";
 
-    _subhead("Search results", "
+    echo $hth->subhead("Search results");
+    echo "
 <p>Click on a paper number or title to jump to that paper.
 Search matches are <span class='match'>highlighted</span> on paper screens.
 Once on a paper screen use <a href='#quicklinks'>quicklinks</a>
@@ -177,9 +199,10 @@ You can:</p>
 the checkboxes, or use the “select all” link.
 The easiest way to tag a set of papers is
 to enter their numbers in the search box, search, “select all,” and add the
-tag.</p>");
+tag.</p>";
 
-    _subhead("<a name='quicklinks'>Quicksearch and quicklinks</a>", "
+    echo $hth->subhead("Quicksearch and quicklinks", "quicklinks");
+    echo "
 <p>Most screens have a quicksearch box in the upper right corner:<br />
 " . Ht::img("quicksearchex.png", "[Quicksearch box]") . "<br />
 This box supports the full search syntax.  Enter
@@ -190,89 +213,77 @@ one paper, to go directly to that paper.</p>
 " . Ht::img("pageresultsex.png", "[Quicklinks]") . "<br />
 Click on the search description (here, “Submitted papers search”) to return
 to the search results.  On many pages, you can press “<code>j</code>” or
-“<code>k</code>” to go to the previous or next paper in the list.</p>");
+“<code>k</code>” to go to the previous or next paper in the list.</p>";
 }
 
-function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
-    global $rowidx;
-    if ($caption) {
-        echo '<h3 class="helppage">', $caption, "</h3>\n";
-        $rowidx = null;
-    }
-    echo '<div class="helplist_item k' . ((int) @$rowidx % 2) . '">';
-    echo '<table class="helppage"><tbody><tr><td class="helplist_dt">',
-        _searchForm($search, $other, 36),
-        '</td><td class="helplist_dd">',
-        $explanation,
-        "</td></tr></tbody></table></div>\n";
-    $rowidx = +$rowidx + 1;
-}
-
-function meaningful_pc_tag() {
-    global $Me;
-    if ($Me->isPC)
-        foreach ($Me->conf->pc_tags() as $tag)
+function meaningful_pc_tag(Contact $user) {
+    if ($user->isPC)
+        foreach ($user->conf->pc_tags() as $tag)
             if ($tag !== "pc")
                 return $tag;
     return false;
 }
 
-function meaningful_round_name() {
-    global $Conf;
-    $rounds = $Conf->round_list();
+function meaningful_round_name(Contact $user) {
+    $rounds = $user->conf->round_list();
     for ($i = 1; $i < count($rounds); ++$i)
         if ($rounds[$i] !== ";")
             return $rounds[$i];
     return false;
 }
 
-function searchQuickref() {
-    global $rowidx, $Conf, $Me;
-
+function searchQuickref(Contact $user, $hth) {
     // how to report author searches?
-    if ($Conf->subBlindNever())
+    if ($user->conf->subBlindNever())
         $aunote = "";
-    else if (!$Conf->subBlindAlways())
+    else if (!$user->conf->subBlindAlways())
         $aunote = "<br /><span class='hint'>Search uses fields visible to the searcher. For example, PC member searches do not examine anonymous authors.</span>";
     else
         $aunote = "<br /><span class='hint'>Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</span>";
 
     // does a reviewer tag exist?
-    $retag = meaningful_pc_tag() ? : "";
+    $retag = meaningful_pc_tag($user) ? : "";
 
-    _searchQuickrefRow("Basics", "", "all papers in the search category");
-    _searchQuickrefRow("", "story", "“story” in title, abstract, authors$aunote");
-    _searchQuickrefRow("", "119", "paper #119");
-    _searchQuickrefRow("", "1 2 5 12-24 kernel", "papers in the numbered set with “kernel” in title, abstract, authors");
-    _searchQuickrefRow("", "\"802\"", "“802” in title, abstract, authors (not paper #802)");
-    _searchQuickrefRow("", "very new", "“very” <em>and</em> “new” in title, abstract, authors");
-    _searchQuickrefRow("", "very AND new", "the same");
-    _searchQuickrefRow("", "\"very new\"", "the phrase “very new” in title, abstract, authors");
-    _searchQuickrefRow("", "very OR new", "<em>either</em> “very” <em>or</em> “new” in title, abstract, authors");
-    _searchQuickrefRow("", "(very AND new) OR newest", "use parentheses to group");
-    _searchQuickrefRow("", "very -new", "“very” <em>but not</em> “new” in title, abstract, authors");
-    _searchQuickrefRow("", "very NOT new", "the same");
-    _searchQuickrefRow("", "ve*", "words that <em>start with</em> “ve” in title, abstract, authors");
-    _searchQuickrefRow("", "*me*", "words that <em>contain</em> “me” in title, abstract, authors");
-    _searchQuickrefRow("Title", "ti:flexible", "title contains “flexible”");
-    _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains “very novel”");
-    _searchQuickrefRow("Authors", "au:poletto", "author list contains “poletto”");
-    if ($Me->isPC)
-        _searchQuickrefRow("", "au:pc", "one or more authors are PC members (author email matches PC email)");
-    _searchQuickrefRow("", "au:>4", "more than four authors");
-    _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains “liskov”");
-    _searchQuickrefRow("Topics", "topic:link", "selected topics match “link”");
+    echo $hth->table(true);
+    echo $hth->tgroup("Basics");
+    echo $hth->search_trow("", "all papers in the search category");
+    echo $hth->search_trow("story", "“story” in title, abstract, authors$aunote");
+    echo $hth->search_trow("119", "paper #119");
+    echo $hth->search_trow("1 2 5 12-24 kernel", "papers in the numbered set with “kernel” in title, abstract, authors");
+    echo $hth->search_trow("\"802\"", "“802” in title, abstract, authors (not paper #802)");
+    echo $hth->search_trow("very new", "“very” <em>and</em> “new” in title, abstract, authors");
+    echo $hth->search_trow("very AND new", "the same");
+    echo $hth->search_trow("\"very new\"", "the phrase “very new” in title, abstract, authors");
+    echo $hth->search_trow("very OR new", "<em>either</em> “very” <em>or</em> “new” in title, abstract, authors");
+    echo $hth->search_trow("(very AND new) OR newest", "use parentheses to group");
+    echo $hth->search_trow("very -new", "“very” <em>but not</em> “new” in title, abstract, authors");
+    echo $hth->search_trow("very NOT new", "the same");
+    echo $hth->search_trow("ve*", "words that <em>start with</em> “ve” in title, abstract, authors");
+    echo $hth->search_trow("*me*", "words that <em>contain</em> “me” in title, abstract, authors");
+    echo $hth->tgroup("Title");
+    echo $hth->search_trow("ti:flexible", "title contains “flexible”");
+    echo $hth->tgroup("Abstract");
+    echo $hth->search_trow("ab:\"very novel\"", "abstract contains “very novel”");
+    echo $hth->tgroup("Authors");
+    echo $hth->search_trow("au:poletto", "author list contains “poletto”");
+    if ($user->isPC)
+        echo $hth->search_trow("au:pc", "one or more authors are PC members (author email matches PC email)");
+    echo $hth->search_trow("au:>4", "more than four authors");
+    echo $hth->tgroup("Collaborators");
+    echo $hth->search_trow("co:liskov", "collaborators contains “liskov”");
+    echo $hth->tgroup("Topics");
+    echo $hth->search_trow("topic:link", "selected topics match “link”");
 
     $oex = array();
-    foreach ($Conf->paper_opts->option_list() as $o)
+    foreach ($user->conf->paper_opts->option_list() as $o)
         $oex = array_merge($oex, $o->example_searches());
-    if (count($oex)) {
-        $section = "Options";
+    if (!empty($oex)) {
+        echo $hth->tgroup("Options");
         foreach ($oex as $extype => $oex) {
             if ($extype === "has") {
                 $desc = "paper has “" . htmlspecialchars($oex[1]->name) . "” submission option";
                 $oabbr = array();
-                foreach ($Conf->paper_opts->option_list() as $ox)
+                foreach ($user->conf->paper_opts->option_list() as $ox)
                     if ($ox !== $oex[1])
                         $oabbr[] = "“has:" . htmlspecialchars($ox->search_keyword()) . "”";
                 if (count($oabbr))
@@ -289,19 +300,19 @@ function searchQuickref() {
                 $desc = "paper has an “" . htmlspecialchars($oex[1]->name) . "” attachment with a .gif extension";
             else
                 continue;
-            _searchQuickrefRow($section, $oex[0], $desc);
-            $section = "";
+            echo $hth->search_trow($oex[0], $desc);
         }
     }
 
-    _searchQuickrefRow("<a href='" . hoturl("help", "t=tags") . "'>Tags</a>", "#discuss", "tagged “discuss” (“tag:discuss” also works)");
-    _searchQuickrefRow("", "-#discuss", "not tagged “discuss”");
-    _searchQuickrefRow("", "order:discuss", "tagged “discuss”, sort by tag order (“rorder:” for reverse order)");
-    _searchQuickrefRow("", "#disc*", "matches any tag that <em>starts with</em> “disc”");
+    echo $hth->tgroup("<a href=\"" . hoturl("help", "t=tags") . "\">Tags</a>");
+    echo $hth->search_trow("#discuss", "tagged “discuss” (“tag:discuss” also works)");
+    echo $hth->search_trow("-#discuss", "not tagged “discuss”");
+    echo $hth->search_trow("order:discuss", "tagged “discuss”, sort by tag order (“rorder:” for reverse order)");
+    echo $hth->search_trow("#disc*", "matches any tag that <em>starts with</em> “disc”");
 
     $cx = null;
     $cm = array();
-    foreach ($Conf->tags() as $t)
+    foreach ($user->conf->tags() as $t)
         foreach ($t->colors ? : array() as $c) {
             $cx = $cx ? : $c;
             if ($cx === $c)
@@ -309,88 +320,99 @@ function searchQuickref() {
         }
     if (!empty($cm)) {
         array_unshift($cm, "“{$cx}”");
-        _searchQuickrefRow("", "style:$cx", "tagged to appear $cx (tagged " . commajoin($cm, "or") . ")");
+        echo $hth->search_trow("style:$cx", "tagged to appear $cx (tagged " . commajoin($cm, "or") . ")");
     }
 
-    $roundname = meaningful_round_name();
+    $roundname = meaningful_round_name($user);
 
-    _searchQuickrefRow("Reviews", "re:me", "you are a reviewer");
-    _searchQuickrefRow("", "re:fdabek", "“fdabek” in reviewer name/email");
+    echo $hth->tgroup("Reviews");
+    echo $hth->search_trow("re:me", "you are a reviewer");
+    echo $hth->search_trow("re:fdabek", "“fdabek” in reviewer name/email");
     if ($retag)
-        _searchQuickrefRow("", "re:#$retag", "has a reviewer tagged “#" . $retag . "”");
-    _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
+        echo $hth->search_trow("re:#$retag", "has a reviewer tagged “#" . $retag . "”");
+    echo $hth->search_trow("re:4", "four reviewers (assigned and/or completed)");
     if ($retag)
-        _searchQuickrefRow("", "re:#$retag>1", "at least two reviewers (assigned and/or completed) tagged “#" . $retag . "”");
-    _searchQuickrefRow("", "re:complete<3", "less than three completed reviews<br /><span class=\"hint\">Use “cre:<3” for short.</span>");
-    _searchQuickrefRow("", "re:incomplete>0", "at least one incomplete review");
-    _searchQuickrefRow("", "re:inprogress", "at least one in-progress review (started, but not completed)");
-    _searchQuickrefRow("", "re:primary>=2", "at least two primary reviewers");
-    _searchQuickrefRow("", "re:secondary", "at least one secondary reviewer");
-    _searchQuickrefRow("", "re:external", "at least one external reviewer");
-    _searchQuickrefRow("", "re:primary:fdabek:complete", "“fdabek” has completed a primary review");
+        echo $hth->search_trow("re:#$retag>1", "at least two reviewers (assigned and/or completed) tagged “#" . $retag . "”");
+    echo $hth->search_trow("re:complete<3", "less than three completed reviews<br /><span class=\"hint\">Use “cre:<3” for short.</span>");
+    echo $hth->search_trow("re:incomplete>0", "at least one incomplete review");
+    echo $hth->search_trow("re:inprogress", "at least one in-progress review (started, but not completed)");
+    echo $hth->search_trow("re:primary>=2", "at least two primary reviewers");
+    echo $hth->search_trow("re:secondary", "at least one secondary reviewer");
+    echo $hth->search_trow("re:external", "at least one external reviewer");
+    echo $hth->search_trow("re:primary:fdabek:complete", "“fdabek” has completed a primary review");
     if ($roundname)
-        _searchQuickrefRow("", "re:$roundname", "review in round “" . htmlspecialchars($roundname) . "”");
-    _searchQuickrefRow("", "re:auwords<100", "has a review with less than 100 words in author-visible fields");
-    if ($Conf->setting("rev_tokens"))
-        _searchQuickrefRow("", "retoken:J88ADNAB", "has a review with token J88ADNAB");
-    if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
-        _searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:boring” also work; can combine with “re:”)");
-    _searchQuickrefRow("Comments", "has:cmt", "at least one visible reviewer comment (not including authors’ response)");
-    _searchQuickrefRow("", "cmt:>=3", "at least <em>three</em> visible reviewer comments");
-    _searchQuickrefRow("", "has:aucmt", "at least one reviewer comment visible to authors");
-    _searchQuickrefRow("", "cmt:sylvia", "“sylvia” (in name/email) wrote at least one visible comment; can combine with counts, use reviewer tags");
-    $rnames = $Conf->resp_round_list();
-    if (count($rnames) > 1) {
-        _searchQuickrefRow("", "has:response", "has an author’s response");
-        _searchQuickrefRow("", "has:{$rnames[1]}response", "has $rnames[1] response");
-    } else
-        _searchQuickrefRow("", "has:response", "has author’s response");
-    _searchQuickrefRow("", "anycmt:>1", "at least two visible comments, possibly <em>including</em> author’s response");
-    _searchQuickrefRow("Leads", "lead:fdabek", "“fdabek” (in name/email) is discussion lead");
-    _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
-    _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
-    _searchQuickrefRow("Shepherds", "shep:fdabek", "“fdabek” (in name/email) is shepherd (“none” and “any” also work)");
-    _searchQuickrefRow("Conflicts", "conflict:me", "you have a conflict with the paper");
-    _searchQuickrefRow("", "conflict:fdabek", "“fdabek” (in name/email) has a conflict with the paper<br /><span class='hint'>This search is only available to chairs and to PC members who can see the paper’s author list.</span>");
-    _searchQuickrefRow("", "conflict:pc", "some PC member has a conflict with the paper");
-    _searchQuickrefRow("", "conflict:pc>2", "at least three PC members have conflicts with the paper");
-    _searchQuickrefRow("", "reconflict:\"1 2 3\"", "a reviewer of paper 1, 2, or 3 has a conflict with the paper");
-    _searchQuickrefRow("Preferences", "pref:fdabek>0", "“fdabek” (in name/email) has preference &gt;&nbsp;0<br /><span class='hint'>PC members can search their own preferences; chairs can search anyone’s preferences.</span>");
-    _searchQuickrefRow("", "pref:X", "a PC member’s preference has expertise “X” (expert)");
-    _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
-    _searchQuickrefRow("", "status:unsub", "paper is neither submitted nor withdrawn", "t=all");
-    _searchQuickrefRow("", "status:withdrawn", "paper has been withdrawn", "t=all");
-    _searchQuickrefRow("", "has:final", "final copy uploaded");
+        echo $hth->search_trow("re:$roundname", "review in round “" . htmlspecialchars($roundname) . "”");
+    echo $hth->search_trow("re:auwords<100", "has a review with less than 100 words in author-visible fields");
+    if ($user->conf->setting("rev_tokens"))
+        echo $hth->search_trow("retoken:J88ADNAB", "has a review with token J88ADNAB");
+    if ($user->conf->setting("rev_ratings") != REV_RATINGS_NONE)
+        echo $hth->search_trow("rate:+", "review was rated positively (“rate:-” and “rate:boring” also work; can combine with “re:”)");
 
-    foreach ($Conf->decision_map() as $dnum => $dname)
+    echo $hth->tgroup("Comments");
+    echo $hth->search_trow("has:cmt", "at least one visible reviewer comment (not including authors’ response)");
+    echo $hth->search_trow("cmt:>=3", "at least <em>three</em> visible reviewer comments");
+    echo $hth->search_trow("has:aucmt", "at least one reviewer comment visible to authors");
+    echo $hth->search_trow("cmt:sylvia", "“sylvia” (in name/email) wrote at least one visible comment; can combine with counts, use reviewer tags");
+    $rnames = $user->conf->resp_round_list();
+    if (count($rnames) > 1) {
+        echo $hth->search_trow("has:response", "has an author’s response");
+        echo $hth->search_trow("has:{$rnames[1]}response", "has $rnames[1] response");
+    } else
+        echo $hth->search_trow("has:response", "has author’s response");
+    echo $hth->search_trow("anycmt:>1", "at least two visible comments, possibly <em>including</em> author’s response");
+
+    echo $hth->tgroup("Leads");
+    echo $hth->search_trow("lead:fdabek", "“fdabek” (in name/email) is discussion lead");
+    echo $hth->search_trow("lead:none", "no assigned discussion lead");
+    echo $hth->search_trow("lead:any", "some assigned discussion lead");
+    echo $hth->tgroup("Shepherds");
+    echo $hth->search_trow("shep:fdabek", "“fdabek” (in name/email) is shepherd (“none” and “any” also work)");
+    echo $hth->tgroup("Conflicts");
+    echo $hth->search_trow("conflict:me", "you have a conflict with the paper");
+    echo $hth->search_trow("conflict:fdabek", "“fdabek” (in name/email) has a conflict with the paper<br /><span class='hint'>This search is only available to chairs and to PC members who can see the paper’s author list.</span>");
+    echo $hth->search_trow("conflict:pc", "some PC member has a conflict with the paper");
+    echo $hth->search_trow("conflict:pc>2", "at least three PC members have conflicts with the paper");
+    echo $hth->search_trow("reconflict:\"1 2 3\"", "a reviewer of paper 1, 2, or 3 has a conflict with the paper");
+    echo $hth->tgroup("Preferences");
+    echo $hth->search_trow("pref:fdabek>0", "“fdabek” (in name/email) has preference &gt;&nbsp;0<br /><span class='hint'>PC members can search their own preferences; chairs can search anyone’s preferences.</span>");
+    echo $hth->search_trow("pref:X", "a PC member’s preference has expertise “X” (expert)");
+    echo $hth->tgroup("Status");
+    echo $hth->search_trow(["q" => "status:sub", "t" => "all"], "paper is submitted for review");
+    echo $hth->search_trow(["q" => "status:unsub", "t" => "all"], "paper is neither submitted nor withdrawn");
+    echo $hth->search_trow(["q" => "status:withdrawn", "t" => "all"], "paper has been withdrawn");
+    echo $hth->search_trow("has:final", "final copy uploaded");
+
+    foreach ($user->conf->decision_map() as $dnum => $dname)
         if ($dnum)
             break;
     $qdname = strtolower($dname);
     if (strpos($qdname, " ") !== false)
         $qdname = "\"$qdname\"";
-    _searchQuickrefRow("Decision", "dec:$qdname", "decision is “" . htmlspecialchars($dname) . "” (partial matches OK)");
-    _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
-    _searchQuickrefRow("", "dec:no", "one of the reject decisions");
-    _searchQuickrefRow("", "dec:any", "decision specified");
-    _searchQuickrefRow("", "dec:none", "decision unspecified");
+    echo $hth->tgroup("Decisions");
+    echo $hth->search_trow("dec:$qdname", "decision is “" . htmlspecialchars($dname) . "” (partial matches OK)");
+    echo $hth->search_trow("dec:yes", "one of the accept decisions");
+    echo $hth->search_trow("dec:no", "one of the reject decisions");
+    echo $hth->search_trow("dec:any", "decision specified");
+    echo $hth->search_trow("dec:none", "decision unspecified");
 
     // find names of review fields to demonstrate syntax
     $farr = array(array(), array());
-    foreach ($Conf->all_review_fields() as $f)
+    foreach ($user->conf->all_review_fields() as $f)
         $farr[$f->has_options ? 0 : 1][] = $f;
-    $t = "Review&nbsp;fields";
+    if (!empty($farr[0]) || !empty($farr[1]))
+        echo $hth->tgroup("Review fields");
     if (count($farr[0])) {
         $r = $farr[0][0];
-        _searchQuickrefRow($t, "{$r->abbreviation1()}:{$r->typical_score()}", "at least one completed review has $r->name_html score {$r->typical_score()}");
-        _searchQuickrefRow("", "{$r->search_keyword()}:{$r->typical_score()}", "other abbreviations accepted");
+        echo $hth->search_trow("{$r->abbreviation1()}:{$r->typical_score()}", "at least one completed review has $r->name_html score {$r->typical_score()}");
+        echo $hth->search_trow("{$r->search_keyword()}:{$r->typical_score()}", "other abbreviations accepted");
         if (count($farr[0]) > 1) {
             $r2 = $farr[0][1];
-            _searchQuickrefRow("", strtolower($r2->search_keyword()) . ":{$r2->typical_score()}", "other fields accepted (here, $r2->name_html)");
+            echo $hth->search_trow(strtolower($r2->search_keyword()) . ":{$r2->typical_score()}", "other fields accepted (here, $r2->name_html)");
         }
         if (($range = $r->typical_score_range())) {
-            _searchQuickrefRow("", "{$r->search_keyword()}:{$range[0]}..{$range[1]}", "completed reviews’ $r->name_html scores are in the {$range[0]}&ndash;{$range[1]} range<br /><small>(all scores between {$range[0]} and {$range[1]})</small>");
+            echo $hth->search_trow("{$r->search_keyword()}:{$range[0]}..{$range[1]}", "completed reviews’ $r->name_html scores are in the {$range[0]}&ndash;{$range[1]} range<br /><small>(all scores between {$range[0]} and {$range[1]})</small>");
             $rt = $range[0] . ($r->option_letter ? "" : "-") . $range[1];
-            _searchQuickrefRow("", "{$r->search_keyword()}:$rt", "completed reviews’ $r->name_html scores <em>fill</em> the {$range[0]}&ndash;{$range[1]} range<br /><small>(all scores between {$range[0]} and {$range[1]}, with at least one {$range[0]} and at least one {$range[1]})</small>");
+            echo $hth->search_trow("{$r->search_keyword()}:$rt", "completed reviews’ $r->name_html scores <em>fill</em> the {$range[0]}&ndash;{$range[1]} range<br /><small>(all scores between {$range[0]} and {$range[1]}, with at least one {$range[0]} and at least one {$range[1]})</small>");
         }
         if (!$r->option_letter)
             list($greater, $less, $hint) = array("greater", "less", "");
@@ -401,65 +423,64 @@ function searchQuickref() {
             else
                 list($greater, $less) = array("worse", "better");
         }
-        _searchQuickrefRow("", "{$r->search_keyword()}:>{$r->typical_score()}", "at least one completed review has $r->name_html score $greater than {$r->typical_score()}" . $hint);
-        _searchQuickrefRow("", "{$r->search_keyword()}:2<={$r->typical_score()}", "at least two completed reviews have $r->name_html score $less than or equal to {$r->typical_score()}");
+        echo $hth->search_trow("{$r->search_keyword()}:>{$r->typical_score()}", "at least one completed review has $r->name_html score $greater than {$r->typical_score()}" . $hint);
+        echo $hth->search_trow("{$r->search_keyword()}:2<={$r->typical_score()}", "at least two completed reviews have $r->name_html score $less than or equal to {$r->typical_score()}");
         if ($roundname)
-            _searchQuickrefRow("", "{$r->search_keyword()}:$roundname>{$r->typical_score()}", "at least one completed review in round " . htmlspecialchars($roundname) . " has $r->name_html score $greater than {$r->typical_score()}");
-        _searchQuickrefRow("", "{$r->search_keyword()}:ext>{$r->typical_score()}", "at least one completed external review has $r->name_html score $greater than {$r->typical_score()}");
-        _searchQuickrefRow("", "{$r->search_keyword()}:pc:2>{$r->typical_score()}", "at least two completed PC reviews have $r->name_html score $greater than {$r->typical_score()}");
-        _searchQuickrefRow("", "{$r->search_keyword()}:sylvia={$r->typical_score()}", "“sylvia” (reviewer name/email) gave $r->name_html score {$r->typical_score()}");
+            echo $hth->search_trow("{$r->search_keyword()}:$roundname>{$r->typical_score()}", "at least one completed review in round " . htmlspecialchars($roundname) . " has $r->name_html score $greater than {$r->typical_score()}");
+        echo $hth->search_trow("{$r->search_keyword()}:ext>{$r->typical_score()}", "at least one completed external review has $r->name_html score $greater than {$r->typical_score()}");
+        echo $hth->search_trow("{$r->search_keyword()}:pc:2>{$r->typical_score()}", "at least two completed PC reviews have $r->name_html score $greater than {$r->typical_score()}");
+        echo $hth->search_trow("{$r->search_keyword()}:sylvia={$r->typical_score()}", "“sylvia” (reviewer name/email) gave $r->name_html score {$r->typical_score()}");
         $t = "";
     }
     if (count($farr[1])) {
         $r = $farr[1][0];
-        _searchQuickrefRow($t, $r->abbreviation1() . ":finger", "at least one completed review has “finger” in the $r->name_html field");
-        _searchQuickrefRow($t, "{$r->search_keyword()}:finger", "other abbreviations accepted");
-        _searchQuickrefRow($t, "{$r->search_keyword()}:any", "at least one completed review has text in the $r->name_html field");
+        echo $hth->search_trow($r->abbreviation1() . ":finger", "at least one completed review has “finger” in the $r->name_html field");
+        echo $hth->search_trow("{$r->search_keyword()}:finger", "other abbreviations accepted");
+        echo $hth->search_trow("{$r->search_keyword()}:any", "at least one completed review has text in the $r->name_html field");
     }
 
     if (count($farr[0])) {
         $r = $farr[0][0];
-        _searchQuickrefRow("<a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a>",
-                           "formula:all({$r->search_keyword()}={$r->typical_score()})",
-                           "all reviews have $r->name_html score {$r->typical_score()}<br />"
-                           . "<span class='hint'><a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a> can express complex numerical queries across review scores and preferences.</span>");
-        _searchQuickrefRow("", "f:all({$r->search_keyword()}={$r->typical_score()})", "“f” is shorthand for “formula”");
-        _searchQuickrefRow("", "formula:var({$r->search_keyword()})>0.5", "variance in {$r->search_keyword()} is above 0.5");
-        _searchQuickrefRow("", "formula:any({$r->search_keyword()}={$r->typical_score()} && pref<0)", "at least one reviewer had $r->name_html score {$r->typical_score()} and review preference &lt; 0");
+        echo $hth->tgroup("<a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a>");
+        echo $hth->search_trow("formula:all({$r->search_keyword()}={$r->typical_score()})",
+            "all reviews have $r->name_html score {$r->typical_score()}<br />"
+            . "<span class='hint'><a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a> can express complex numerical queries across review scores and preferences.</span>");
+        echo $hth->search_trow("f:all({$r->search_keyword()}={$r->typical_score()})", "“f” is shorthand for “formula”");
+        echo $hth->search_trow("formula:var({$r->search_keyword()})>0.5", "variance in {$r->search_keyword()} is above 0.5");
+        echo $hth->search_trow("formula:any({$r->search_keyword()}={$r->typical_score()} && pref<0)", "at least one reviewer had $r->name_html score {$r->typical_score()} and review preference &lt; 0");
     }
 
-    _searchQuickrefRow("Display", "show:tags show:conflicts", "show tags and PC conflicts in the results");
-    _searchQuickrefRow("", "hide:title", "hide title in the results");
+    echo $hth->tgroup("Display");
+    echo $hth->search_trow("show:tags show:conflicts", "show tags and PC conflicts in the results");
+    echo $hth->search_trow("hide:title", "hide title in the results");
     if (count($farr[0])) {
         $r = $farr[0][0];
-        _searchQuickrefRow("", "show:max({$r->search_keyword()})", "show a <a href=\"" . hoturl("help", "t=formulas") . "\">formula</a>");
-        _searchQuickrefRow("", "sort:{$r->search_keyword()}", "sort by score");
-        _searchQuickrefRow("", "sort:\"{$r->search_keyword()} variance\"", "sort by score variance");
+        echo $hth->search_trow("show:max({$r->search_keyword()})", "show a <a href=\"" . hoturl("help", "t=formulas") . "\">formula</a>");
+        echo $hth->search_trow("sort:{$r->search_keyword()}", "sort by score");
+        echo $hth->search_trow("sort:\"{$r->search_keyword()} variance\"", "sort by score variance");
     }
-    _searchQuickrefRow("", "sort:-status", "sort by reverse status");
-    _searchQuickrefRow("", "edit:#discuss", "edit the values for tag “#discuss”");
-    _searchQuickrefRow("", "search1 THEN search2", "like “search1 OR search2”, but papers matching “search1” are grouped together and appear earlier in the sorting order");
-    _searchQuickrefRow("", "1-5 THEN 6-10 show:compact", "display searches in compact columns");
-    _searchQuickrefRow("", "search1 HIGHLIGHT search2", "search for “search1”, but <span class=\"taghl highlightmark\">highlight</span> papers in that list that match “search2” (also try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
+    echo $hth->search_trow("sort:-status", "sort by reverse status");
+    echo $hth->search_trow("edit:#discuss", "edit the values for tag “#discuss”");
+    echo $hth->search_trow("search1 THEN search2", "like “search1 OR search2”, but papers matching “search1” are grouped together and appear earlier in the sorting order");
+    echo $hth->search_trow("1-5 THEN 6-10 show:compact", "display searches in compact columns");
+    echo $hth->search_trow("search1 HIGHLIGHT search2", "search for “search1”, but <span class=\"taghl highlightmark\">highlight</span> papers in that list that match “search2” (also try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
+
+    echo $hth->end_table();
 }
 
-function _current_tag_list($property) {
-    global $Conf;
-    $ct = $Conf->tags()->filter($property);
+function _current_tag_list(Contact $user, $property) {
+    $ct = $user->conf->tags()->filter($property);
     return empty($ct) ? "" : " (currently "
             . join(", ", array_map(function ($t) { return "“" . Ht::link($t->tag, hoturl("search", "q=%23{$t->tag}")) . "”"; }, $ct))
             . ")";
 }
 
-function _singleVoteTag() {
-    global $Conf;
-    $vt = $Conf->tags()->filter("vote");
+function _singleVoteTag(Contact $user) {
+    $vt = $user->conf->tags()->filter("vote");
     return empty($vt) ? "vote" : current($vt)->tag;
 }
 
-function tags() {
-    global $Conf, $Me;
-
+function tags(Contact $user, $hth) {
     // get current tag settings
     $chairtags = "";
     $votetags = "";
@@ -469,15 +490,15 @@ function tags() {
     $conflictmsg3 = "";
     $setting = "";
 
-    if ($Me->isPC) {
-        $chairtags = _current_tag_list("chair");
-        $votetags = _current_tag_list("vote");
-        $votetag1 = _singleVoteTag();
+    if ($user->isPC) {
+        $chairtags = _current_tag_list($user, "chair");
+        $votetags = _current_tag_list($user, "vote");
+        $votetag1 = _singleVoteTag($user);
 
-        if ($Me->privChair)
+        if ($user->privChair)
             $setting = "  (<a href='" . hoturl("settings", "group=tags") . "'>Change this setting</a>)";
 
-        if ($Conf->tag_seeall) {
+        if ($user->conf->tag_seeall) {
             $conflictmsg3 = "Currently PC members can see tags for any paper, including conflicts.";
         } else {
             $conflictmsg1 = " and conflicted PC members";
@@ -486,7 +507,7 @@ function tags() {
         }
     }
 
-    _subhead("", "
+    echo "
 <p>PC members and administrators can attach tag names to papers.
 It’s easy to add and remove tags and to list all papers with a given tag,
 and <em>ordered</em> tags preserve a particular paper order.
@@ -495,9 +516,11 @@ Tags also affect color highlighting in paper lists.</p>
 <p>Tags are visible to the PC and hidden from authors$conflictmsg1.
 <em>Twiddle tags</em>, with names like “#~tag”, are visible only
 to their creators.  Tags with two twiddles, such as “#~~tag”, are
-visible only to PC chairs.</p>");
+visible only to PC chairs.</p>";
 
-    _subhead("Finding tags", "
+
+    echo $hth->subhead("Finding tags");
+    echo "
 <p>A paper’s tags are shown like this on the paper page:</p>
 
 <div class='pspcard_container' style='position:static'><div class='pspcard'><div class='pspcard_body'>
@@ -509,19 +532,21 @@ visible only to PC chairs.</p>");
 <div class='psv'><div class='taghl'>#earlyaccept</div></div></div>
 </div></div></div><hr class='c' />
 
-<p>To find all papers with tag “#discuss”:&nbsp; " . _searchForm("#discuss") . "</p>
+<p>To find all papers with tag “#discuss”:&nbsp; ", $hth->search_form("#discuss") . "</p>
 
-<p>You can also search with “" . _searchLink("show:tags") . "” to see each
-paper’s tags, or “" . _searchLink("show:#tagname") . "” to see a particular tag
+<p>You can also search with “" . $hth->search_link("show:tags") . "” to see each
+paper’s tags, or “" . $hth->search_link("show:#tagname") . "” to see a particular tag
 as a column.</p>
 
 <p>Tags are only shown to PC members and administrators.
 $conflictmsg3$setting
 Additionally, twiddle tags, which have names like “#~tag”, are
 visible only to their creators; each PC member has an independent set.
-Tags are not case sensitive.</p>");
+Tags are not case sensitive.</p>";
 
-    _subhead("<a name='changing'>Changing tags</a>", "
+
+    echo $hth->subhead("Changing tags", "changing");
+    echo "
 <ul>
 <li><p><strong>For one paper:</strong> Go to a paper page, select the Tags box’s
 “Edit” link, and enter tags separated by spaces.</p>
@@ -538,9 +563,9 @@ action removes a tag and all users’ matching twiddle tags.</p>
 <p>" . Ht::img("extagssearch.png", "[Setting tags on the search page]", ["width" => 510, "height" => 94]) . "</p></li>
 
 <li><p><strong>With search keywords:</strong> Search for “"
-. _searchLink("edit:tag:tagname") . "” to add tags with checkboxes;
-search for “" . _searchLink("edit:tagval:tagname") . "” to type in <a
-href='#values'>tag values</a>; or search for “" . _searchLink("edit:tags") . "”
+. $hth->search_link("edit:tag:tagname") . "” to add tags with checkboxes;
+search for “" . $hth->search_link("edit:tagval:tagname") . "” to type in <a
+href='#values'>tag values</a>; or search for “" . $hth->search_link("edit:tags") . "”
 to edit papers’ full tag lists.</p>
 
 <p>" . Ht::img("extagseditkw.png", "[Tag editing search keywords]", ["width" => 543, "height" => 133]) . "</p></li>
@@ -553,13 +578,15 @@ hoturl("bulkassign") . "'>bulk assignment</a>.</p></li>
 
 <p>Although any PC member can view or search
 most tags, certain tags may be changed only by administrators$chairtags.
-$setting</p>");
+$setting</p>";
 
-    _subhead("<a id='values'>Tag values and discussion orders</a>", "
+
+    echo $hth->subhead("Tag values and discussion orders", "values");
+    echo "
 <p>Tags have optional numeric values, which are displayed as
-“#tag#100”. Search for “" . _searchLink("order:tag") . "” to sort tagged
+“#tag#100”. Search for “" . $hth->search_link("order:tag") . "” to sort tagged
 papers by value. You can also search for specific values with search terms
-like “" . _searchLink("#discuss#2") . "” or “" . _searchLink("#discuss>1") .
+like “" . $hth->search_link("#discuss#2") . "” or “" . $hth->search_link("#discuss>1") .
 "”.</p>
 
 <p>It’s common to assign increasing tag values to a set of papers.  Do this
@@ -567,7 +594,7 @@ using the <a href='" . hoturl("search") . "'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select their checkboxes, and
 choose <b>Define order</b> in the tag action area.  If no sort gives what
 you want, search for the desired paper numbers in order—for instance,
-“" . _searchLink("4 1 12 9") . "”—then <b>Select all</b> and <b>Define
+“" . $hth->search_link("4 1 12 9") . "”—then <b>Select all</b> and <b>Define
 order</b>. To add new papers at the end of an existing discussion order, use
 <b>Add to order</b>. To insert papers into an existing order, use <b>Add to
 order</b> with a tag value; for example, to insert starting at value 5, use
@@ -575,7 +602,7 @@ order</b> with a tag value; for example, to insert starting at value 5, use
 accommodate the insertion.</p>
 
 <p>Even easier, you can <em>drag</em> papers into order using a search like “"
-. _searchLink("editsort:#tag") . "”.</p>
+. $hth->search_link("editsort:#tag") . "”.</p>
 
 <p><b>Define order</b> might assign values “#tag#1”,
 “#tag#3”, “#tag#6”, and “#tag#7”
@@ -588,10 +615,11 @@ strictly sequential values, like “#tag#1”,
 
 <p>The <a href=\"" . hoturl("autoassign", "a=discorder") . "\">autoassigner</a>
 has special support for creating discussion orders. It tries to group papers
-with similar PC conflicts, which can make the meeting run smoother.</p>");
+with similar PC conflicts, which can make the meeting run smoother.</p>";
 
-    _subhead("Tag colors, badges, and emoji", "
 
+    echo $hth->subhead("Tag colors, badges, and emoji", "colors");
+    echo "
 <p>Tags “red”, “orange”, “yellow”, “green”, “blue”, “purple”, “gray”, and
 “white” act as highlight colors. For example, papers tagged with “#red” will
 appear <span class=\"tagcolorspan redtag\">red</span> in paper lists (for people
@@ -599,7 +627,7 @@ who can see that tag).  Tag a paper “#~red” to make it red only on your disp
 Other styles are available; try “#bold”, “#italic”, “#big”, “#small”, and
 “#dim”. The <a href='" .
 hoturl("settings", "group=tags") . "'>settings page</a> can associate other tags
-with colors so that, for example, “" . _searchLink("#reject") . "” papers appear
+with colors so that, for example, “" . $hth->search_link("#reject") . "” papers appear
 gray.</p>
 
 <p>The " . Ht::link("settings page", hoturl("settings", "group=tags")) . " can
@@ -611,19 +639,19 @@ and “:confused:” can be used as tags. The corresponding emoji displays next 
 the paper title. <a href=\"#values\">Tag values</a> show multiple emoji,
 so “#:star:#5” shows five stars.</p>
 
-<p>" . Ht::img("extagcolors.png", "[Tag colors, badges, and emoji]", ["width" => 498, "height" => 151]) . "</p></li>
+<p>" . Ht::img("extagcolors.png", "[Tag colors, badges, and emoji]", ["width" => 498, "height" => 151]) . "</p></li>";
 
-", "colors");
 
-    _subhead("Using tags", "
+    echo $hth->subhead("Using tags");
+    echo "
 <p>Here are some example ways to use tags.</p>
 
 <ul>
 
 <li><strong>Skip low-ranked submissions at the PC meeting.</strong> Mark
 low-ranked submissions with tag “#nodiscuss”, then ask the PC to " .
-_searchLink("#nodiscuss", "search for “#nodiscuss”") . " (“" .
-_searchLink("tag:nodiscuss") . "” also works). PC members can check the list
+$hth->search_link("#nodiscuss", "search for “#nodiscuss”") . " (“" .
+$hth->search_link("tag:nodiscuss") . "” also works). PC members can check the list
 for papers they’d like to discuss anyway. They can email the chairs about
 such papers, or, even easier, add a “#discussanyway” tag. (You might make the
 “#nodiscuss” tag chair-only so an evil PC member couldn’t add it to a
@@ -661,22 +689,21 @@ high-ranked paper, but it’s usually better to trust the PC.)</li>
  using decision selectors or, perhaps, “#accept” and
  “#reject” tags.</li>
 
-</ul>");
+</ul>";
 }
 
 
-function tracks() {
-    global $Me;
-
-    _subhead("", "
+function tracks(Contact $user, $hth) {
+    echo "
 <p>Tracks give you fine-grained control over PC member rights. With tracks, PC
 members can have different rights to see and review papers, depending on the
 papers’ " . Ht::link("tags", hoturl("help", "t=tags")) . ".</p>
 
 <p>Set up tracks on the <a href=\"" . hoturl("settings", "group=tracks") . "\">Settings &gt;
-Tracks</a> page.</p>");
+Tracks</a> page.</p>";
 
-    _subhead("Example: External review committee", "
+    echo $hth->subhead("Example: External review committee");
+    echo "
 <p>An <em>external review committee</em> is a subset of the PC that may bid on
 papers to review, and may be assigned reviews (using, for example, the
 <a href=\"" . hoturl("autoassign") . "\">autoassignment tool</a>), but may not
@@ -688,9 +715,10 @@ reviewed. To set this up:</p>
 <li>On Settings &gt; Tracks, “For papers not on other
 tracks,” select “Who can see reviews? &gt; PC members without tag: erc”
 and “Who can self-assign a review? &gt; PC members without tag: erc”.</li>
-</ul>");
+</ul>";
 
-    _subhead("Example: PC-paper review committee", "
+    echo $hth->subhead("Example: PC-paper review committee");
+    echo "
 <p>A <em>PC-paper review committee</em> is a subset of the PC that reviews papers
 with PC coauthors. PC-paper review committees are kept separate from the main
 PC; they only bid on and review PC papers, while the main PC handles all other
@@ -706,9 +734,10 @@ papers. To set this up:</p>
 <li>For papers not on other tracks, select “Who can see these papers? &gt; PC
   members without tag: pcrc”.</li>
 
-</ul>");
+</ul>";
 
-    _subhead("Example: Track chair", "
+    echo $hth->subhead("Example: Track chair");
+    echo "
 <p>A <em>track chair</em> is a PC member with full administrative
 rights over a subset of papers. To set this up for, say, an “industrial”
 track:</p>
@@ -723,24 +752,22 @@ track:</p>
 
 <p>A track chair can run the autoassigner, make assignments, edit papers, and
 generally administer all papers on their tracks. Track chairs cannot modify
-site settings or change track tags, however.</p>");
+site settings or change track tags, however.</p>";
 
-    _subhead("Understanding permissions", "
-<p>Tracks restrict permissions.
+    echo $hth->subhead("Understanding permissions");
+    echo "<p>Tracks restrict permissions.
 For example, when
 the “PC members can review <strong>any</strong> submitted paper”
 setting is off, <em>no</em> PC member can enter an unassigned review,
 no matter what the track settings say.
 It can be useful to “act as” a member of the PC to check which permissions
-are actually in effect.</p>");
+are actually in effect.</p>";
 }
 
 
 
-function revround() {
-    global $Conf, $Me;
-
-    _subhead("", "
+function revround(Contact $user, $hth) {
+    echo "
 <p>Many conferences divide their review assignments into multiple <em>rounds</em>.
 Each round is given a name, such as “R1” or “lastround”
 (we suggest very short names like “R1”).
@@ -752,30 +779,31 @@ To list a PC member’s round “R1” review assignments, <a href='" . hoturl("
 <p>Different rounds usually share the same review form, but you can also
 mark review fields as appearing only in certain rounds. First configure
 rounds, then see
-<a href=\"" . hoturl("settings", "group=reviewform") . "\">Settings &gt; Review form</a>.</p>");
+<a href=\"" . hoturl("settings", "group=reviewform") . "\">Settings &gt; Review form</a>.</p>";
 
-    _subhead("Assigning rounds", "
+    echo $hth->subhead("Assigning rounds");
+    echo "
 <p>New assignments are marked by default with the round defined in
 <a href='" . hoturl("settings", "group=reviews#rounds") . "'>review settings</a>.
-The automatic and bulk assignment pages also let you set a review round.</p>");
+The automatic and bulk assignment pages also let you set a review round.</p>";
 
     // get current tag settings
-    if ($Me->isPC) {
+    if ($user->isPC) {
         $texts = array();
-        if (($rr = $Conf->assignment_round_name(false))) {
+        if (($rr = $user->conf->assignment_round_name(false))) {
             $texts[] = "The review round for new assignments is “<a href=\""
                 . hoturl("search", "q=round%3A" . urlencode($rr))
                 . "\">" . htmlspecialchars($rr) . "</a>”";
-            if ($Me->privChair)
+            if ($user->privChair)
                 $texts[0] .= " (use <a href=\"" . hoturl("settings", "group=reviews#rounds") . "\">Settings &gt; Reviews</a> to change this).";
             else
                 $texts[0] .= ".";
         }
         $rounds = array();
-        if ($Conf->has_rounds()) {
-            $result = $Conf->qe("select distinct reviewRound from PaperReview");
+        if ($user->conf->has_rounds()) {
+            $result = $user->conf->qe("select distinct reviewRound from PaperReview");
             while (($row = edb_row($result)))
-                if ($row[0] && ($rname = $Conf->round_name($row[0])))
+                if ($row[0] && ($rname = $user->conf->round_name($row[0])))
                     $rounds[] = "“<a href=\""
                         . hoturl("search", "q=round%3A" . urlencode($rname))
                         . "\">" . htmlspecialchars($rname) . "</a>”";
@@ -785,16 +813,14 @@ The automatic and bulk assignment pages also let you set a review round.</p>");
             $texts[] = "Review rounds currently in use: " . commajoin($rounds) . ".";
         else if (!count($texts))
             $texts[] = "So far no review rounds have been defined.";
-        _subhead("Round status", join(" ", $texts));
+        echo $hth->subhead("Round status");
+        echo "<p>", join(" ", $texts), "</p>\n";
     }
 }
 
 
-function revrate() {
-    global $Conf, $Me;
-
-    _subhead("", "
-<p>PC members and, optionally, external reviewers can rate one another’s
+function revrate(Contact $user, $hth) {
+    echo "<p>PC members and, optionally, external reviewers can rate one another’s
 reviews.  We hope this feedback will help reviewers improve the quality of
 their reviews.  The interface appears above each visible review:</p>
 
@@ -840,31 +866,29 @@ their reviews.  The interface appears above each visible review:</p>
 To find all reviews with positive ratings,
 <a href='" . hoturl("search", "q=re:any+rate:%2B") . "'>search for “re:any&nbsp;rate:+”</a>.
 You may also search for reviews with specific ratings; for instance,
-<a href='" . hoturl("search", "q=rate:helpful") . "'>search for “rate:helpful”</a>.</p>");
+<a href='" . hoturl("search", "q=rate:helpful") . "'>search for “rate:helpful”</a>.</p>";
 
-    if ($Conf->setting("rev_ratings") == REV_RATINGS_PC)
+    if ($user->conf->setting("rev_ratings") == REV_RATINGS_PC)
         $what = "only PC members";
-    else if ($Conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
+    else if ($user->conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
         $what = "PC members and external reviewers";
     else
         $what = "no one";
-    _subhead("Settings", "
-<p>Chairs set how ratings work on the <a href=\"" . hoturl("settings", "group=reviews") . "\">review settings
-page</a>.", ($Me->is_reviewer() ? " Currently, $what can rate reviews." : ""), "</p>");
+    echo $hth->subhead("Settings");
+    echo "<p>Chairs set how ratings work on the <a href=\"" . hoturl("settings", "group=reviews") . "\">review settings
+page</a>.", ($user->is_reviewer() ? " Currently, $what can rate reviews." : ""), "</p>";
 
-    _subhead("Visibility", "
-<p>A review’s ratings are visible to any unconflicted PC members who can see
+    echo $hth->subhead("Visibility");
+    echo "<p>A review’s ratings are visible to any unconflicted PC members who can see
 the review, but HotCRP tries to hide ratings from review authors if they
 could figure out who assigned the rating: if only one PC member could
 rate a review, then that PC member’s rating is hidden from the review
-author.</p>");
+author.</p>";
 }
 
 
-function scoresort() {
-    global $Conf, $Me;
-
-    _subhead("", "
+function scoresort(Contact $user, $hth) {
+    echo "
 <p>Some paper search results include columns with score graphs. Click on a score
 column heading to sort the paper list using that score. Search &gt; View
 options changes how scores are sorted.  There are five choices:</p>
@@ -895,15 +919,13 @@ measure of differences of opinion).</dd>
 <dd>Sort by your score.  In the score graphs, your score is highlighted with a
 darker colored square.</dd>
 
-</dl>");
+</dl>";
 }
 
 
-function showvotetags() {
-    global $Conf, $Me;
-
-    _subhead("", "
-<p>Some conferences have PC members vote for papers.
+function showvotetags(Contact $user, $hth) {
+    $votetag = _singleVoteTag($user);
+    echo "<p>Some conferences have PC members vote for papers.
 Each PC member is assigned a vote allotment, and can distribute that allotment
 arbitrarily among unconflicted papers.
 Alternately, each PC member can vote, once, for as many papers as they like (“approval voting”).
@@ -911,15 +933,15 @@ The PC’s aggregated vote totals might help determine
 which papers to discuss.</p>
 
 <p>HotCRP supports voting through the <a href='" . hoturl("help", "t=tags") . "'>tags system</a>.
-The chair can <a href='" . hoturl("settings", "group=tags") . "'>define a set of voting tags</a> and allotments" . _current_tag_list("vote") . ".
+The chair can <a href='" . hoturl("settings", "group=tags") . "'>define a set of voting tags</a> and allotments" . _current_tag_list($user, "vote") . ".
 PC members vote by assigning the corresponding twiddle tags;
 the aggregated PC vote is visible in the public tag.</p>
 
 <p>For example, assume that an administrator defines a voting tag
- “". _singleVoteTag() . "” with an allotment of 10.
+ “". $votetag . "” with an allotment of 10.
 To use two votes for a paper, a PC member tags the paper as
-“~". _singleVoteTag() . "#2”. The system
-automatically adds the tag “". _singleVoteTag() . "#2” to that
+“~". $votetag . "#2”. The system
+automatically adds the tag “". $votetag . "#2” to that
 paper (note the
 lack of the “~”), indicating that the paper has two total votes.
 As other PC members add their votes with their own “~” tags, the system
@@ -928,8 +950,8 @@ updates the main tag to reflect the total.
 
 <p>
 To see the current voting status, search by
-<a href=\"" . hoturl("search", "q=rorder:" . _singleVoteTag() . "") . "\">
-rorder:". _singleVoteTag() . "</a>. Use view options to show tags
+<a href=\"" . hoturl("search", "q=rorder:" . $votetag . "") . "\">
+rorder:". $votetag . "</a>. Use view options to show tags
 in the search results (or set up a
 <a href='" . hoturl("help", "t=formulas") . "'>formula</a>).
 </p>
@@ -937,15 +959,12 @@ in the search results (or set up a
 <p>
 Hover to learn how the PC voted:</p>
 
-<p>" . Ht::img("extagvotehover.png", "[Hovering over a voting tag]", ["width" => 390, "height" => 46]) . "</p>");
+<p>" . Ht::img("extagvotehover.png", "[Hovering over a voting tag]", ["width" => 390, "height" => 46]) . "</p>";
 }
 
 
-function showranking() {
-    global $Conf, $Me;
-
-    _subhead("", "
-<p>Paper ranking is a way to extract the PC’s preference order for
+function showranking(Contact $user, $hth) {
+    echo "<p>Paper ranking is a way to extract the PC’s preference order for
 submitted papers.  Each PC member ranks the submitted papers, and a voting
 algorithm, <a href='http://en.wikipedia.org/wiki/Schulze_method'>the Schulze
 method</a> by default, combines these rankings into a global preference order.</p>
@@ -1027,15 +1046,12 @@ X	11	Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
  Searching for “order:~rank” returns the user’s personal ranking;
  administrators can search for
  “order:<i>pcname</i>~rank” to see a PC member’s ranking.
- Once a global ranking is assigned, “order:rank” will show it.</p>");
+ Once a global ranking is assigned, “order:rank” will show it.</p>";
 }
 
 
-function showformulas() {
-    global $Conf, $Me, $rowidx;
-
-    _subhead("", "
-<p>Program committee members and administrators can search and display <em>formulas</em>
+function showformulas(Contact $user, $hth) {
+    echo "<p>Program committee members and administrators can search and display <em>formulas</em>
 that calculate properties of paper scores&mdash;for instance, the
 standard deviation of papers’ Overall merit scores, or average Overall
 merit among reviewers with high Reviewer expertise.</p>
@@ -1072,54 +1088,60 @@ reviewers with the “#heavy” tag:</p>
 scores too. HotCRP uses alphabetical order for letter scores, so the “min” of
 scores A, B, and D is A. For instance:</p>
 
-<blockquote>count(confidence=X)</blockquote>");
+<blockquote>count(confidence=X)</blockquote>";
 
-    _subhead("Expressions", "
-<p>Formula expressions are built from the following parts:</p>");
-    echo "<table class=\"helppage\">";
-    _alternateRow("Arithmetic", "2", "Numbers");
-    _alternateRow("", "true, false", "Booleans");
-    _alternateRow("", "<em>e</em> + <em>e</em>, <em>e</em> - <em>e</em>", "Addition, subtraction");
-    _alternateRow("", "<em>e</em> * <em>e</em>, <em>e</em> / <em>e</em>, <em>e</em> % <em>e</em>", "Multiplication, division, remainder");
-    _alternateRow("", "<em>e</em> ** <em>e</em>", "Exponentiation");
-    _alternateRow("", "<em>e</em> == <em>e</em>, <em>e</em> != <em>e</em>,<br /><em>e</em> &lt; <em>e</em>, <em>e</em> &gt; <em>e</em>, <em>e</em> &lt;= <em>e</em>, <em>e</em> &gt;= <em>e</em>", "Comparisons");
-    _alternateRow("", "!<em>e</em>", "Logical not");
-    _alternateRow("", "<em>e1</em> &amp;&amp; <em>e2</em>", "Logical and (returns <em>e1</em> if <em>e1</em> is false, otherwise returns <em>e2</em>)");
-    _alternateRow("", "<em>e1</em> || <em>e2</em>", "Logical or (returns <em>e1</em> if <em>e1</em> is true, otherwise returns <em>e2</em>)");
-    _alternateRow("", "<em>test</em> ? <em>iftrue</em> : <em>iffalse</em>", "If-then-else operator");
-    _alternateRow("", "(<em>e</em>)", "Parentheses");
-    _alternateRow("", "greatest(<em>e</em>, <em>e</em>, ...)", "Maximum");
-    _alternateRow("", "least(<em>e</em>, <em>e</em>, ...)", "Minimum");
-    _alternateRow("", "log(<em>e</em>)", "Natural logarithm");
-    _alternateRow("", "log(<em>e</em>, <em>b</em>)", "Log to the base <em>b</em>");
-    _alternateRow("", "round(<em>e</em>[, <em>m</em>])", "Round to the nearest multiple of <em>m</em>");
-    _alternateRow("", "null", "The null value");
-    _alternateRow("Submission properties", "pid", "Paper ID");
-    _alternateRow("", "au", "Number of authors");
-    _alternateRow("", "au:pc", "Number of PC authors");
-    _alternateRow("", "au:<em>text</em>", "Number of authors matching <em>text</em>");
-    _alternateRow("Tags", "#<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
-    _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");
-    _alternateRow("Scores", "overall-merit", "This review’s Overall merit score<div class=\"hint\">Only completed reviews are considered.</div>");
-    _alternateRow("", "OveMer", "Abbreviations also accepted");
-    _alternateRow("", "OveMer:external", "Overall merit for external reviews, null for other reviews");
-    _alternateRow("", "OveMer:R2", "Overall merit for round R2 reviews, null for other reviews");
-    _alternateRow("Submitted reviews", "re:type", "Review type");
-    _alternateRow("", "re:round", "Review round");
-    _alternateRow("", "re:auwords", "Review word count (author-visible fields only)");
-    _alternateRow("", "re:primary", "True for primary reviews");
-    _alternateRow("", "re:secondary", "True for secondary reviews");
-    _alternateRow("", "re:external", "True for external reviews");
-    _alternateRow("", "re:pc", "True for PC reviews");
-    _alternateRow("", "re:sylvia", "True if reviewer matches “sylvia”");
-    if (($retag = meaningful_pc_tag()))
-        _alternateRow("", "re:#$retag", "True if reviewer has tag “#{$retag}”");
-    _alternateRow("Review preferences", "pref", "Review preference");
-    _alternateRow("", "prefexp", "Predicted expertise");
-    echo "</table>\n";
+    echo $hth->subhead("Expressions");
+    echo "<p>Formula expressions are built from the following parts:</p>";
+    echo $hth->table();
+    echo $hth->tgroup("Arithmetic");
+    echo $hth->trow("2", "Numbers");
+    echo $hth->trow("true, false", "Booleans");
+    echo $hth->trow("<em>e</em> + <em>e</em>, <em>e</em> - <em>e</em>", "Addition, subtraction");
+    echo $hth->trow("<em>e</em> * <em>e</em>, <em>e</em> / <em>e</em>, <em>e</em> % <em>e</em>", "Multiplication, division, remainder");
+    echo $hth->trow("<em>e</em> ** <em>e</em>", "Exponentiation");
+    echo $hth->trow("<em>e</em> == <em>e</em>, <em>e</em> != <em>e</em>,<br /><em>e</em> &lt; <em>e</em>, <em>e</em> &gt; <em>e</em>, <em>e</em> &lt;= <em>e</em>, <em>e</em> &gt;= <em>e</em>", "Comparisons");
+    echo $hth->trow("!<em>e</em>", "Logical not");
+    echo $hth->trow("<em>e1</em> &amp;&amp; <em>e2</em>", "Logical and (returns <em>e1</em> if <em>e1</em> is false, otherwise returns <em>e2</em>)");
+    echo $hth->trow("<em>e1</em> || <em>e2</em>", "Logical or (returns <em>e1</em> if <em>e1</em> is true, otherwise returns <em>e2</em>)");
+    echo $hth->trow("<em>test</em> ? <em>iftrue</em> : <em>iffalse</em>", "If-then-else operator");
+    echo $hth->trow("(<em>e</em>)", "Parentheses");
+    echo $hth->trow("greatest(<em>e</em>, <em>e</em>, ...)", "Maximum");
+    echo $hth->trow("least(<em>e</em>, <em>e</em>, ...)", "Minimum");
+    echo $hth->trow("log(<em>e</em>)", "Natural logarithm");
+    echo $hth->trow("log(<em>e</em>, <em>b</em>)", "Log to the base <em>b</em>");
+    echo $hth->trow("round(<em>e</em>[, <em>m</em>])", "Round to the nearest multiple of <em>m</em>");
+    echo $hth->trow("null", "The null value");
+    echo $hth->tgroup("Submission properties");
+    echo $hth->trow("pid", "Paper ID");
+    echo $hth->trow("au", "Number of authors");
+    echo $hth->trow("au:pc", "Number of PC authors");
+    echo $hth->trow("au:<em>text</em>", "Number of authors matching <em>text</em>");
+    echo $hth->tgroup("Tags");
+    echo $hth->trow("#<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
+    echo $hth->trow("tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");
+    echo $hth->tgroup("Scores");
+    echo $hth->trow("overall-merit", "This review’s Overall merit score<div class=\"hint\">Only completed reviews are considered.</div>");
+    echo $hth->trow("OveMer", "Abbreviations also accepted");
+    echo $hth->trow("OveMer:external", "Overall merit for external reviews, null for other reviews");
+    echo $hth->trow("OveMer:R2", "Overall merit for round R2 reviews, null for other reviews");
+    echo $hth->tgroup("Submitted reviews");
+    echo $hth->trow("re:type", "Review type");
+    echo $hth->trow("re:round", "Review round");
+    echo $hth->trow("re:auwords", "Review word count (author-visible fields only)");
+    echo $hth->trow("re:primary", "True for primary reviews");
+    echo $hth->trow("re:secondary", "True for secondary reviews");
+    echo $hth->trow("re:external", "True for external reviews");
+    echo $hth->trow("re:pc", "True for PC reviews");
+    echo $hth->trow("re:sylvia", "True if reviewer matches “sylvia”");
+    if (($retag = meaningful_pc_tag($user)))
+        echo $hth->trow("re:#$retag", "True if reviewer has tag “#{$retag}”");
+    echo $hth->tgroup("Review preferences");
+    echo $hth->trow("pref", "Review preference");
+    echo $hth->trow("prefexp", "Predicted expertise");
+    echo $hth->end_table();
 
-    _subhead("Aggregate functions", "
-<p>Aggregate functions calculate a
+    echo $hth->subhead("Aggregate functions");
+    echo "<p>Aggregate functions calculate a
 value based on all of a paper’s submitted reviews and/or review preferences.
 For instance, “max(OveMer)” would return the maximum Overall merit score
 assigned to a paper.</p>
@@ -1133,32 +1155,32 @@ maximum reviewer expertise.</p>
 
 <p>The top-level value of a formula expression cannot be a raw review score
 or preference.
-Use an aggregate function to calculate a property over all review scores.</p>");
-    echo "<table class=\"helppage\">";
-    $rowidx = null;
-    _alternateRow("Aggregates", "max(<em>e</em>), min(<em>e</em>)", "Maximum, minimum");
-    _alternateRow("", "count(<em>e</em>)", "Number of reviews where <em>e</em> is not null or false");
-    _alternateRow("", "sum(<em>e</em>)", "Sum");
-    _alternateRow("", "avg(<em>e</em>)", "Average (mean)");
-    _alternateRow("", "wavg(<em>e</em>, <em>weight</em>)", "Weighted average; equals “sum(<em>e</em> * <em>weight</em>) / sum(<em>weight</em>)”");
-    _alternateRow("", "median(<em>e</em>)", "Median");
-    _alternateRow("", "quantile(<em>e</em>, <em>p</em>)", "Quantile; 0≤<em>p</em>≤1; 0 yields min, 0.5 median, 1 max");
-    _alternateRow("", "stddev(<em>e</em>)", "Population standard deviation");
-    _alternateRow("", "var(<em>e</em>)", "Population variance");
-    _alternateRow("", "stddev_samp(<em>e</em>), var_samp(<em>e</em>)", "Sample standard deviation, sample variance");
-    _alternateRow("", "any(<em>e</em>)", "True if any of the reviews have <em>e</em> true");
-    _alternateRow("", "all(<em>e</em>)", "True if all of the reviews have <em>e</em> true");
-    _alternateRow("", "argmin(<em>x</em>, <em>e</em>)", "Value of <em>x</em> when <em>e</em> is minimized");
-    _alternateRow("", "argmax(<em>x</em>, <em>e</em>)", "Value of <em>x</em> when <em>e</em> is maximized");
-    _alternateRow("", "my(<em>e</em>)", "Calculate <em>e</em> for your review");
-    echo "</table>\n";
+Use an aggregate function to calculate a property over all review scores.</p>";
+    echo $hth->table();
+    echo $hth->tgroup("Aggregates");
+    echo $hth->trow("max(<em>e</em>), min(<em>e</em>)", "Maximum, minimum");
+    echo $hth->trow("count(<em>e</em>)", "Number of reviews where <em>e</em> is not null or false");
+    echo $hth->trow("sum(<em>e</em>)", "Sum");
+    echo $hth->trow("avg(<em>e</em>)", "Average (mean)");
+    echo $hth->trow("wavg(<em>e</em>, <em>weight</em>)", "Weighted average; equals “sum(<em>e</em> * <em>weight</em>) / sum(<em>weight</em>)”");
+    echo $hth->trow("median(<em>e</em>)", "Median");
+    echo $hth->trow("quantile(<em>e</em>, <em>p</em>)", "Quantile; 0≤<em>p</em>≤1; 0 yields min, 0.5 median, 1 max");
+    echo $hth->trow("stddev(<em>e</em>)", "Population standard deviation");
+    echo $hth->trow("var(<em>e</em>)", "Population variance");
+    echo $hth->trow("stddev_samp(<em>e</em>), var_samp(<em>e</em>)", "Sample standard deviation, sample variance");
+    echo $hth->trow("any(<em>e</em>)", "True if any of the reviews have <em>e</em> true");
+    echo $hth->trow("all(<em>e</em>)", "True if all of the reviews have <em>e</em> true");
+    echo $hth->trow("argmin(<em>x</em>, <em>e</em>)", "Value of <em>x</em> when <em>e</em> is minimized");
+    echo $hth->trow("argmax(<em>x</em>, <em>e</em>)", "Value of <em>x</em> when <em>e</em> is maximized");
+    echo $hth->trow("my(<em>e</em>)", "Calculate <em>e</em> for your review");
+    echo $hth->end_table();
 
 }
 
 
-function chair() {
-    global $Conf;
-    _subhead("Submission time", "
+function chair(Contact $user, $hth) {
+    echo $hth->subhead("Submission time");
+    echo "
 <p>Follow these steps to prepare to accept paper submissions.</p>
 
 <ol>
@@ -1230,9 +1252,10 @@ function chair() {
   for submissions.</a></strong> Submissions will be accepted only until the
   listed deadline.</p></li>
 
-</ol>");
+</ol>";
 
-    _subhead("Assignments", "
+    echo $hth->subhead("Assignments");
+    echo "
 <p>After the submission deadline has passed:</p>
 
 <ol>
@@ -1315,9 +1338,11 @@ function chair() {
 <li><p><strong><a href='" . hoturl("settings", "group=reviews") . "'>Open the site
   for reviewing.</a></strong></p></li>
 
-</ol>");
+</ol>";
 
-    _subhead("Chair conflicts", "
+
+    echo $hth->subhead("Chair conflicts");
+    echo "
 <p>Chairs and system administrators can access any information stored in the
 conference system, including reviewer identities for conflicted papers.
 It is easiest to simply accept such conflicts as a fact of life. Chairs
@@ -1356,9 +1381,11 @@ database or its logs.
 For even more privacy, the paper administrator could collect
 offline review forms via email and upload them using
 review tokens; then even web server access logs store only the
-administrator’s identity.</p>");
+administrator’s identity.</p>";
 
-    _subhead("Before the meeting", "
+
+    echo $hth->subhead("Before the meeting");
+    echo "
 <ol>
 
 <li><p><strong><a href='" . hoturl("settings", "group=dec") . "'>Collect
@@ -1416,9 +1443,11 @@ administrator’s identity.</p>");
   Internet explodes and you can’t reach HotCRP from the meeting
   place.</p></li>
 
-</ol>");
+</ol>";
 
-    _subhead("At the meeting", "
+
+    echo $hth->subhead("At the meeting", "meeting");
+    echo "
 <ol>
 
 <li><p>The <b>meeting tracker</b> can keep the PC coordinated.
@@ -1447,14 +1476,15 @@ administrator’s identity.</p>");
   href='" . hoturl("paper") . "'>paper by paper</a> or <a
   href='" . hoturl("autoassign", "t=acc") . "'>automatically</a>.</p></li>
 
-</ol>", "meeting");
+</ol>";
 
-    if (!$Conf->setting("shepherd_hide"))
+    if (!$user->conf->setting("shepherd_hide"))
         $shepherd_visible = " This will also make shepherd names visible to authors.";
     else
         $shepherd_visible = "";
 
-    _subhead("After the meeting", "
+    echo $hth->subhead("After the meeting");
+    echo "
 <ol>
 
 <li><p><strong><a
@@ -1483,7 +1513,7 @@ administrator’s identity.</p>");
   all final versions as a <code>.zip</code> archive</a>.  (The submitted
   versions are archived for reference.)</p></li>
 
-</ol>");
+</ol>";
 }
 
 
@@ -1500,15 +1530,16 @@ foreach ($help_topics->all() as $gj) {
 }
 echo "</div></div>\n",
     '<div class="leftmenu_content_container"><div class="leftmenu_content">',
-    '<div class="leftmenu_body">';
+    '<div id="helpcontent" class="leftmenu_body">';
 Ht::stash_script("jQuery(\".leftmenu_item\").click(divclick)");
 
+echo '<h2 class="helppage">', $topicj->title, '</h2>';
 foreach ($help_topics->members($topic) as $gj) {
     Conf::xt_resolve_require($gj);
     if (isset($gj->function))
-        call_user_func($gj->function, $Conf);
+        call_user_func($gj->function, $Me, $hth);
     else if (isset($gj->renderer))
-        call_user_func($gj->renderer, $Conf);
+        call_user_func($gj->renderer, $Me, $hth);
 }
 
 echo "</div></div></div>\n";
