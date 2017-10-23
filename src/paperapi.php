@@ -536,7 +536,7 @@ class PaperApi {
         if ($round === false)
             return ["ok" => false, "error" => Conf::round_name_error($rname)];
         $rnum = (int) $user->conf->round_number($round, true);
-        $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rr->reviewId);
+        $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rrow->reviewId);
         return ["ok" => true];
     }
 
