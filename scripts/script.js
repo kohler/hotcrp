@@ -3865,7 +3865,7 @@ function taghelp_tset(elt, options) {
         n = x[1].match(/^([^#\s]*)/);
         return alltags.then(make_suggestions(m[1], m[2], n[1], options));
     } else
-        return new HPromise(null);
+        return null;
 }
 
 function taghelp_q(elt, options) {
@@ -3877,7 +3877,7 @@ function taghelp_q(elt, options) {
         n = x[1].match(/^([^\s()]*)/);
         return search_completion.then(make_suggestions(m[1], m[2], n[1], $.extend({require_prefix: true}, options)));
     } else
-        return new HPromise(null);
+        return null;
 }
 
 function comment_completion_q(elt, options) {
@@ -3886,7 +3886,7 @@ function comment_completion_q(elt, options) {
         n = x[1].match(/^([-\w_.]*)/);
         return allmentions.then(make_suggestions("@", m[1], n[1], options));
     } else
-        return new HPromise(null);
+        return null;
 }
 
 function make_suggestions(pfx, precaret, postcaret, options) {
@@ -4013,7 +4013,8 @@ function suggest(elt, suggestions_promise, options) {
             ++i;
             if (cinfo || i == suggdata.promises.length)
                 finish_display(cinfo);
-            suggdata.promises[i](elt, suggdata.options).then(next);
+            var promise = suggdata.promises[i](elt, suggdata.options);
+            (promise || new HPromise(null)).then(next);
         }
         next(null);
     }
