@@ -1975,6 +1975,18 @@ function focus_within(elt, subfocus_selector) {
     return $wf.length == 1;
 }
 
+function refocus_within(elt) {
+    var focused = document.activeElement;
+    if (focused && !$(focused).is(":visible")) {
+        while (focused && focused !== elt)
+            focused = focused.parentElement;
+        if (focused) {
+            var focusable = $(elt).find("input, select, textarea, a, button").filter(":visible").first();
+            focusable.length ? focusable.focus() : $(document.activeElement).blur();
+        }
+    }
+}
+
 function fold(elt, dofold, foldnum, foldsessiontype) {
     var i, foldname, selt, opentxt, closetxt, isopen, foldnumid;
 
@@ -1998,11 +2010,12 @@ function fold(elt, dofold, foldnum, foldsessiontype) {
     isopen = elt.className.indexOf(opentxt) >= 0;
     if (dofold == null || !dofold != isopen) {
         // perform fold
-        if (isopen)
+        if (isopen) {
             elt.className = elt.className.replace(opentxt, closetxt);
-        else {
+            refocus_within(elt);
+        } else {
             elt.className = elt.className.replace(closetxt, opentxt);
-            focus_within(elt);
+            focus_within(elt) || refocus_within(elt);
         }
 
         // check for session
