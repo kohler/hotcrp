@@ -19,14 +19,14 @@ function choose_setting_group(SettingValues $sv) {
     $want_group = $req_group;
     if (!$want_group && isset($_SESSION["sg"])) // NB not conf-specific session, global
         $want_group = $_SESSION["sg"];
-    $want_group = $sv->canonicalize_group($want_group);
+    $want_group = $sv->canonical_group($want_group);
     if (!$want_group) {
         if ($sv->conf->timeAuthorViewReviews())
-            $want_group = $sv->canonicalize_group("decisions");
+            $want_group = $sv->canonical_group("decisions");
         else if ($sv->conf->deadlinesAfter("sub_sub") || $sv->conf->time_review_open())
-            $want_group = $sv->canonicalize_group("reviews");
+            $want_group = $sv->canonical_group("reviews");
         else
-            $want_group = $sv->canonicalize_group("sub");
+            $want_group = $sv->canonical_group("sub");
     }
     if (!$want_group)
         $Me->escape();

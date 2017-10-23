@@ -162,6 +162,7 @@ src/filefilter.php
 src/formatspec.php
 src/formula.php
 src/formulagraph.php
+src/groupedextensions.php
 src/helpers.php
 src/hotcrpdocument.php
 src/hotcrpmailer.php

@@ -279,8 +279,7 @@ class SettingValues extends MessageSet {
     private $has_req = array();
     private $near_msgs = null;
 
-    private $_subgroups = null;
-    private $_groups = null;
+    private $_gxt = null;
 
     function __construct(Contact $user) {
         parent::__construct();
@@ -318,83 +317,26 @@ class SettingValues extends MessageSet {
     }
 
 
-    public function _add_group_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)) {
-            if (!isset($fj->group))
-                $fj->group = $fj->name;
-            if (!isset($fj->synonym))
-                $fj->synonym = [];
-            else if (is_string($fj->synonym))
-                $fj->synonym = [$fj->synonym];
-            $this->_subgroups[] = $fj;
-            return true;
-        } else
-            return false;
+    private function gxt() {
+        if ($this->_gxt === null)
+            $this->_gxt = new GroupedExtensions($this->user, ["etc/settinggroups.json"], $this->conf->opt("settingGroups"));
+        return $this->_gxt;
     }
-    private function load_groups() {
-        if ($this->_groups !== null)
-            return;
-        $this->_subgroups = $this->_groups = [];
-        expand_json_includes_callback(["etc/settinggroups.json"], [$this, "_add_group_json"]);
-        if (($olist = $this->conf->opt("settingGroups")))
-            expand_json_includes_callback($olist, [$this, "_add_group_json"]);
-        usort($this->_subgroups, "Conf::xt_priority_compare");
-        $gs = $sgs = $known = [];
-        foreach ($this->_subgroups as $gj) {
-            if (isset($known[$gj->name]) || !$this->conf->xt_allowed($gj))
-                continue;
-            $known[$gj->name] = true;
-            foreach ($gj->synonym as $syn)
-                $known[$syn] = true;
-            if (Conf::xt_enabled($gj)) {
-                if ($gj->group === $gj->name)
-                    $gs[$gj->name] = $gj;
-                $sgs[$gj->name] = $gj;
-            }
-        }
-        $this->_groups = $gs;
-        uasort($this->_groups, "Conf::xt_position_compare");
-        $this->_subgroups = array_filter($sgs, function ($gj) {
-            return isset($this->_groups[$gj->group]);
-        });
-        uasort($this->_subgroups, function ($aj, $bj) {
-            if ($aj->group !== $bj->group)
-                return Conf::xt_position_compare($this->_groups[$aj->group], $this->_groups[$bj->group]);
-            else
-                return Conf::xt_position_compare($aj, $bj);
-        });
-    }
-    function canonicalize_group($g) {
-        $this->load_groups();
-        $g = strtolower($g);
-        if (isset($this->_subgroups[$g]))
-            return $this->_subgroups[$g]->group;
-        foreach ($this->_subgroups as $gj) {
-            if (in_array($g, $gj->synonym))
-                return $gj->group;
-        }
-        return false;
+    function canonical_group($g) {
+        return $this->gxt()->canonical_group(strtolower($g));
     }
     function group_titles() {
-        $this->load_groups();
-        $gs = [];
-        foreach ($this->_groups as $gj)
-            $gs[$gj->name] = $gj->title;
-        return $gs;
+        return array_map(function ($gj) { return $gj->title; }, $this->gxt()->groups());
     }
     function mark_interesting_group($g) {
-        $g = $this->canonicalize_group($g);
-        foreach ($this->_subgroups as $gj) {
-            if ($g === $gj->group) {
-                $this->interesting_groups[$gj->name] = true;
-                foreach ($gj->synonym as $syn)
-                    $this->interesting_groups[$syn] = true;
-            }
+        foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+            $this->interesting_groups[$gj->name] = true;
+            foreach ($gj->synonym as $syn)
+                $this->interesting_groups[$syn] = true;
         }
     }
     function crosscheck() {
-        $this->load_groups();
-        foreach ($this->_subgroups as $gj) {
+        foreach ($this->gxt()->all() as $gj) {
             if (isset($gj->crosschecker)) {
                 Conf::xt_resolve_require($gj);
                 call_user_func($gj->crosschecker, $this);
@@ -402,8 +344,8 @@ class SettingValues extends MessageSet {
         }
     }
     function render_group($g) {
-        $g = $this->canonicalize_group($g);
-        foreach ($this->_subgroups as $gj) {
+        $g = $this->canonical_group($g);
+        foreach ($this->gxt()->all() as $gj) {
             if ($g === $gj->group && isset($gj->renderer)) {
                 Conf::xt_resolve_require($gj);
                 call_user_func($gj->renderer, $this);
