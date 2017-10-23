@@ -1,0 +1,68 @@
+[
+    {
+        "name": "chair", "title": "Chair’s guide",
+        "description": "How to run a conference using HotCRP.",
+        "function": "chair",
+        "position": 0
+    },
+    {
+        "name": "search", "title": "Search",
+        "description": "About paper searching.",
+        "function": "search",
+        "position": 1000
+    },
+    {
+        "name": "keywords", "title": "Search keywords", "synonym": ["syntax"],
+        "description": "Quick reference to search keywords and syntax.",
+        "function": "searchQuickref",
+        "position": 2000
+    },
+    {
+        "name": "tags", "title": "Tags",
+        "description": "How to use tags to define paper sets and discussion orders.",
+        "function": "tags",
+        "position": 3000
+    },
+    {
+        "name": "tracks", "title": "Tracks",
+        "description": "How tags can control PC access to papers.",
+        "function": "tracks",
+        "position": 4000
+    },
+    {
+        "name": "scoresort", "title": "Sorting scores",
+        "description": "How scores are sorted in paper lists.",
+        "function": "scoresort",
+        "position": 5000
+    },
+    {
+        "name": "revround", "title": "Review rounds",
+        "description": "Sets of reviews with different deadlines and forms.",
+        "function": "revround",
+        "position": 6000
+    },
+    {
+        "name": "reviewratings", "title": "Review ratings", "synonym": ["revrate"],
+        "description": "Rating the quality of reviews.",
+        "function": "revrate",
+        "position": 7000
+    },
+    {
+        "name": "votetags", "title": "Voting",
+        "description": "PC members can vote for papers using tags.",
+        "function": "showvotetags",
+        "position": 8000
+    },
+    {
+        "name": "ranking", "title": "Ranking",
+        "description": "PC members can rank papers using tags.",
+        "function": "showranking",
+        "position": 9000
+    },
+    {
+        "name": "formulas", "title": "Formulas",
+        "description": "Create and display formulas in search orders.",
+        "function": "showformulas",
+        "position": 10000
+    }
+]

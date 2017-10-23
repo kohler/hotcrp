@@ -5,50 +5,26 @@
 
 require_once("src/initweb.php");
 
-class HelpTopic {
-    public $id;
-    public $name;
-    public $description;
-    static public $list = array();
-    public function __construct($id, $name, $description = null) {
-        $this->id = $id;
-        $this->name = $name;
-        $this->description = $description;
-    }
-    static public function register($id, $name, $description = null) {
-        assert(!isset(self::$list[$id]));
-        self::$list[$id] = new HelpTopic($id, $name, $description);
-    }
-}
+$help_topics = new GroupedExtensions($Me, [
+    '{"name":"topics","title":"Help topics","position":-1000000,"priority":1000000,"function":"show_help_topics"}',
+    "etc/helptopics.json"
+], $Conf->opt("helpTopics"));
 
-HelpTopic::register("topics", "Help topics");
-HelpTopic::register("chair", "Chair’s guide", "How to run a conference using HotCRP.");
-HelpTopic::register("search", "Search", "About paper searching.");
-HelpTopic::register("keywords", "Search keywords", "Quick reference to search keywords and syntax.");
-HelpTopic::register("tags", "Tags", "How to use tags to define paper sets and discussion orders.");
-HelpTopic::register("tracks", "Tracks", "How tags can control PC access to papers.");
-HelpTopic::register("scoresort", "Sorting scores", "How scores are sorted in paper lists.");
-HelpTopic::register("revround", "Review rounds", "Review rounds are sets of reviews with different deadlines.");
-HelpTopic::register("reviewratings", "Review ratings", "Rating the quality of reviews.");
-HelpTopic::register("votetags", "Voting", "PC members can vote for papers using tags.");
-HelpTopic::register("ranking", "Ranking", "PC members can rank papers using tags.");
-HelpTopic::register("formulas", "Formulas", "Create and display formulas in search orders.");
-
-if (!isset($_REQUEST["t"])
-    && preg_match(',\A/(\w+)\z,i', Navigation::path()))
-    $_REQUEST["t"] = substr(Navigation::path(), 1);
-$topic = defval($_REQUEST, "t", "topics");
-if ($topic == "syntax")
-    $topic = "keywords";
-if ($topic == "revrate")
-    $topic = "reviewratings";
-if (!isset(HelpTopic::$list[$topic]))
-    $topic = "topics";
+$Qreq = make_qreq();
+if (!$Qreq->t && preg_match(',\A/(\w+)\z,i', Navigation::path()))
+    $Qreq->t = substr(Navigation::path(), 1);
+$topic = $Qreq->t ? : "topics";
+$want_topic = $help_topics->canonical_group($topic);
+if (!$want_topic)
+    $want_topic = "topics";
+if ($want_topic !== $topic)
+    redirectSelf(["t" => $want_topic]);
+$topicj = $help_topics->get($topic);
 
 if ($topic === "topics")
     $Conf->header("Help", "help", actionBar());
 else
-    $Conf->header("Help &nbsp;&#x2215;&nbsp; <strong>" . HelpTopic::$list[$topic]->name . "</strong>", "help", actionBar());
+    $Conf->header("Help &nbsp;&#x2215;&nbsp; <strong>" . $topicj->title . "</strong>", "help", actionBar());
 
 
 function _alternateRow($caption, $entry, $next = null) {
@@ -85,12 +61,17 @@ function _subhead($head, $entry, $id = false) {
 }
 
 
-function topics() {
+function show_help_topics() {
+    global $help_topics;
     echo "<dl>\n";
-    foreach (HelpTopic::$list as $ht)
-        if ($ht->id !== "topics")
-            echo '<dt><strong><a href="', hoturl("help", "t=$ht->id"), '">',
-                $ht->name, '</a></strong></dt><dd>', $ht->description, '</dd>', "\n";
+    foreach ($help_topics->all() as $ht) {
+        if ($ht->name !== "topics" && isset($ht->title)) {
+            echo '<dt><strong><a href="', hoturl("help", "t=$ht->name"), '">', $ht->title, '</a></strong></dt>';
+            if (isset($ht->description))
+                echo '<dd>', get($ht, "description", ""), '</dd>';
+            echo "\n";
+        }
+    }
     echo "</dl>\n";
 }
 
@@ -1508,13 +1489,13 @@ administrator’s identity.</p>");
 
 
 echo '<div class="leftmenu_menucontainer"><div class="leftmenu_list">';
-foreach (HelpTopic::$list as $ht) {
-    if ($ht->id === $topic)
-        echo '<div class="leftmenu_item_on">', $ht->name, '</div>';
+foreach ($help_topics->all() as $gj) {
+    if ($gj->name === $topic)
+        echo '<div class="leftmenu_item_on">', $gj->title, '</div>';
     else
         echo '<div class="leftmenu_item">',
-            '<a href="', hoturl("help", "t=$ht->id"), '">', $ht->name, '</a></div>';
-    if ($ht->id === "topics")
+            '<a href="', hoturl("help", "t=$gj->name"), '">', $gj->title, '</a></div>';
+    if ($gj->name === "topics")
         echo '<div class="c g"></div>';
 }
 echo "</div></div>\n",
@@ -1522,30 +1503,13 @@ echo "</div></div>\n",
     '<div class="leftmenu_body">';
 Ht::stash_script("jQuery(\".leftmenu_item\").click(divclick)");
 
-if ($topic == "topics")
-    topics();
-else if ($topic == "search")
-    search();
-else if ($topic == "keywords")
-    searchQuickref();
-else if ($topic == "tags")
-    tags();
-else if ($topic == "tracks")
-    tracks();
-else if ($topic == "revround")
-    revround();
-else if ($topic == "reviewratings")
-    revrate();
-else if ($topic == "votetags")
-    showvotetags();
-else if ($topic == "scoresort")
-    scoresort();
-else if ($topic == "ranking")
-    showranking();
-else if ($topic == "formulas")
-    showformulas();
-else if ($topic == "chair")
-    chair();
+foreach ($help_topics->members($topic) as $gj) {
+    Conf::xt_resolve_require($gj);
+    if (isset($gj->function))
+        call_user_func($gj->function, $Conf);
+    else if (isset($gj->renderer))
+        call_user_func($gj->renderer, $Conf);
+}
 
 echo "</div></div></div>\n";
 

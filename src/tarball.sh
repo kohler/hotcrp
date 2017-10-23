@@ -94,6 +94,7 @@ etc/apifunctions.json
 etc/assignmentparsers.json
 etc/emojicodes.json
 etc/formulafunctions.json
+etc/helptopics.json
 etc/listactions.json
 etc/msgs.json
 etc/papercolumns.json
