@@ -2254,7 +2254,7 @@ function make_onkey(key, f) {
         if (!event_modkey(evt) && event_key(evt) == key) {
             evt.preventDefault();
             evt.stopImmediatePropagation();
-            f.call(this);
+            f.call(this, evt);
             return false;
         } else
             return true;
@@ -4005,7 +4005,7 @@ function suggest(elt, suggestions_promise, options) {
         next(null);
     }
 
-    function maybe_complete($ac, ignore_empty_completion) {
+    function maybe_complete($ac) {
         var common = null, text, smatch = true;
         for (var i = 0; i != $ac.length; ++i) {
             if ($ac[i].firstChild.nodeType === Node.TEXT_NODE)
@@ -4019,21 +4019,16 @@ function suggest(elt, suggestions_promise, options) {
         if (common === null)
             return null;
         else if ($ac.length == 1)
-            return do_complete(common, smatch, true, ignore_empty_completion);
+            return do_complete(common, smatch, true);
         else {
             interacted = true;
-            return do_complete(common, smatch, false, ignore_empty_completion);
+            return do_complete(common, smatch, false);
         }
     }
 
-    function do_complete(text, smatch, done, ignore_empty_completion) {
+    function do_complete(text, smatch, done) {
         var poss = hintdiv.self().data("autocompletePos");
         var startPos = poss[0], endPos = poss[0] + poss[1][2];
-        if ((!smatch || text == elt.value.substring(startPos, endPos))
-            && ignore_empty_completion) {
-            done && kill();
-            return null; /* null == no completion occurred (false == failed) */
-        }
         done && (text += " ");
         var val = elt.value.substring(0, startPos) + text + elt.value.substring(endPos);
         $(elt).val(val);
@@ -4100,11 +4095,11 @@ function suggest(elt, suggestions_promise, options) {
             return true;
         }
         if ((k === "Tab" || k === "Enter") && !m && hintdiv)
-            completed = maybe_complete(hintdiv.self().find(".suggestion.active"), k === "Enter" && !interacted);
+            completed = maybe_complete(hintdiv.self().find(".suggestion.active"));
         if (completed || (!tabfail && completed !== null)) {
             tabfail = !completed;
             evt.preventDefault();
-            evt.stopPropagation();
+            evt.stopImmediatePropagation();
             return false;
         }
         if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
