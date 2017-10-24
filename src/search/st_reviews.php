@@ -326,9 +326,9 @@ class Review_SearchTerm extends SearchTerm {
             $valexpr = ">0";
         else if ($word === "none")
             $valexpr = "=0";
-        else if (preg_match('/\A(\d*?)([=!<>]=?|≠|≤|≥)?\s*([A-Za-z]|\d+)\z/s', $word, $m)) {
+        else if (preg_match('/\A(\d*?)\s*([=!<>]=?|≠|≤|≥)?\s*([A-Za-z]|\d+)\z/s', $word, $m)) {
             if ($m[1] === "")
-                $m[1] = 1;
+                $m[1] = "1";
             $m[2] = CountMatcher::canonical_comparator($m[2]);
             if ($f->option_letter != (ctype_digit($m[3]) === false))
                 return self::impossible_score_match($f);

@@ -62,7 +62,7 @@ class Revpref_SearchTerm extends SearchTerm {
             else if (strcasecmp($m[1], "none") == 0)
                 $count = "=0";
             else if (ctype_digit($m[1]))
-                $count = ">=$m[1]";
+                $count = (int) $m[1] ? ">=$m[1]" : "=0";
             else
                 $count = $m[1];
             $word = str_starts_with($m[2], ":") ? substr($m[2], 1) : $m[2];
