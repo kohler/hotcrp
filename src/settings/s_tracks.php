@@ -63,10 +63,13 @@ class SettingRenderer_Tracks {
         $t = $t && $trackname !== "" ? get($t, $trackname) : null;
         self::do_track_permission($sv, "view", "Who can see these papers?", $tnum, $t);
         self::do_track_permission($sv, "viewpdf", ["Who can see PDFs?", "Assigned reviewers can always see PDFs."], $tnum, $t);
-        self::do_track_permission($sv, "viewrev", "Who can see reviews?", $tnum, $t);
+        $hint = "";
+        if ($sv->conf->setting("pc_seeallrev") == 0)
+            $hint = "Regardless of this setting, PC members can’t see reviews until they’ve completed a review for the same paper (see " . Ht::link("Settings &gt; Reviews &gt; Visibility", hoturl("settings", "group=reviews")) . ").";
+        self::do_track_permission($sv, "viewrev", ["Who can see reviews?", $hint], $tnum, $t);
         $hint = "";
         if ($sv->conf->setting("pc_seeblindrev"))
-            $hint = "Regardless of this setting, PC members can’t see reviewer names until they’ve completed a review for the same paper (see <a href=\"" . hoturl("settings", "group=reviews") . "\">Settings &gt; Reviews &gt; Visibility</a>).";
+            $hint = "Regardless of this setting, PC members can’t see reviewer names until they’ve completed a review for the same paper (see " . Ht::link("Settings &gt; Reviews &gt; Visibility", hoturl("settings", "group=reviews")) . ").";
         self::do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
         self::do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
         self::do_track_permission($sv, "unassrev", "Who can self-assign a review?", $tnum, $t);
