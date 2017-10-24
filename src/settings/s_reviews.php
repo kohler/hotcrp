@@ -142,7 +142,7 @@ static function render(SettingValues $sv) {
 
 
     // PC reviews
-    echo "<h3 class=\"settings g\">PC reviews</h3>\n";
+    echo "<h3 class=\"settings g\" id=\"pcreviews\">PC reviews</h3>\n";
     $sv->echo_checkbox('pcrev_any', "PC members can review any submitted paper");
 
     echo "<div class=\"g\">Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
