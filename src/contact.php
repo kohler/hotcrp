@@ -2509,9 +2509,11 @@ class Contact {
             $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
             $whyNot["notSubmitted"] = 1;
-        else if (!$rights->act_author_view
-                 && !$rights->allow_pc
-                 && !$rights->review_status)
+        else if ((!$rights->act_author_view
+                  && !$rights->allow_pc
+                  && !$rights->review_status)
+                 || ($rights->allow_pc
+                     && !$this->conf->check_tracks($prow, $this, Track::VIEWREV)))
             $whyNot["permission"] = 1;
         else if ($rights->act_author_view
                  && $this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
