@@ -49,7 +49,7 @@ class Revpref_SearchTerm extends SearchTerm {
             $contacts = $srch->matching_reviewers($m[1], $sword->quoted, true);
             $word = str_starts_with($m[2], ":") ? substr($m[2], 1) : $m[2];
             if ($word === "")
-                $word = "!=0";
+                $word = "any";
         } else
             $contacts = array_keys($srch->conf->pc_members());
         if (!$srch->user->is_manager())
