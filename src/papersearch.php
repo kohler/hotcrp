@@ -1153,8 +1153,7 @@ class PaperSearch {
         return $this->contact_match[] = new ContactSearch($type, $text, $this->user);
     }
 
-    function matching_reviewers($word, $quoted, $pc_only) {
-        $type = ContactSearch::F_USER;
+    private function matching_contacts_base($type, $word, $quoted, $pc_only) {
         if ($pc_only)
             $type |= ContactSearch::F_PC;
         if ($quoted)
@@ -1164,20 +1163,13 @@ class PaperSearch {
         $scm = $this->make_contact_match($type, $word);
         if ($scm->warn_html)
             $this->warn($scm->warn_html);
-        if (!empty($scm->ids))
-            return $scm->ids;
-        else
-            return array(-1);
+        return empty($scm->ids) ? [-1] : $scm->ids;
     }
-
-    function matching_special_contacts($word) {
-        $scm = $this->make_contact_match(ContactSearch::F_TAG, $word);
-        if ($scm->warn_html)
-            $this->warn($scm->warn_html);
-        if (!empty($scm->ids))
-            return $scm->ids;
-        else
-            return $scm->ids === false ? null : [-1];
+    function matching_reviewers($word, $quoted, $pc_only) {
+        return $this->matching_contacts_base(ContactSearch::F_USER, $word, $quoted, $pc_only);
+    }
+    function matching_special_contacts($word, $quoted, $pc_only) {
+        return $this->matching_contacts_base(0, $word, $quoted, $pc_only);
     }
 
     static function decision_matchexpr(Conf $conf, $word, $quoted = null) {

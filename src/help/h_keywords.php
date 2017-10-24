@@ -146,8 +146,9 @@ class HelpTopic_Keywords {
         echo $hth->search_trow("conflict:pc>2", "at least three PC members have conflicts with the paper");
         echo $hth->search_trow("reconflict:\"1 2 3\"", "a reviewer of paper 1, 2, or 3 has a conflict with the paper");
         echo $hth->tgroup("Preferences");
-        echo $hth->search_trow("pref:fdabek>0", "“fdabek” (in name/email) has preference &gt;&nbsp;0<br /><span class='hint'>PC members can search their own preferences; chairs can search anyone’s preferences.</span>");
-        echo $hth->search_trow("pref:X", "a PC member’s preference has expertise “X” (expert)");
+        echo $hth->search_trow("pref:3", "you have preference 3");
+        echo $hth->search_trow("pref:pc:X", "a PC member’s preference has expertise “X” (expert)");
+        echo $hth->search_trow("pref:fdabek>0", "“fdabek” (in name/email) has preference &gt;&nbsp;0<br /><span class=\"hint\">Administrators can search preferences by name; PC members can only search preferences for the PC as a whole.</span>");
         echo $hth->tgroup("Status");
         echo $hth->search_trow(["q" => "status:sub", "t" => "all"], "paper is submitted for review");
         echo $hth->search_trow(["q" => "status:unsub", "t" => "all"], "paper is neither submitted nor withdrawn");

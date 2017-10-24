@@ -6,10 +6,12 @@
 class RevprefSearchMatcher extends ContactCountMatcher {
     public $preference_match = null;
     public $expertise_match = null;
+    public $safe_contacts;
     public $is_any = false;
 
-    function __construct($countexpr, $contacts) {
+    function __construct($countexpr, $contacts, $safe_contacts) {
         parent::__construct($countexpr, $contacts);
+        $this->safe_contacts = $safe_contacts;
     }
     function preference_expertise_match() {
         if ($this->is_any)
@@ -46,16 +48,25 @@ class Revpref_SearchTerm extends SearchTerm {
 
         if (preg_match('/\A((?:(?!≠|≤|≥)[^:=!<>])+)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
-            $contacts = $srch->matching_reviewers($m[1], $sword->quoted, true);
+            $contacts = $srch->matching_special_contacts($m[1], $sword->quoted, true);
+            if ($contacts != [-1])
+                $safe_contacts = 1;
+            else {
+                $safe_contacts = -1;
+                $contacts = $srch->matching_reviewers($m[1], $sword->quoted, true);
+            }
             $word = str_starts_with($m[2], ":") ? substr($m[2], 1) : $m[2];
             if ($word === "")
                 $word = "any";
-        } else
+        } else if ($srch->user->can_view_pc()) {
+            $safe_contacts = 0;
             $contacts = array_keys($srch->conf->pc_members());
-        if (!$srch->user->is_manager())
-            $contacts = in_array($srch->cid, $contacts) ? [$srch->cid] : [];
+        } else {
+            $safe_contacts = 1;
+            $contacts = [$srch->cid];
+        }
 
-        $count = ">0";
+        $count = "";
         if (preg_match('/\A:?\s*((?:[=!<>]=?|≠|≤|≥|)\s*\d+|any|none)\s*((?:[:=!<>]|≠|≤|≥).*)\z/si', $word, $m)) {
             if (strcasecmp($m[1], "any") == 0)
                 $count = ">0";
@@ -68,7 +79,15 @@ class Revpref_SearchTerm extends SearchTerm {
             $word = str_starts_with($m[2], ":") ? substr($m[2], 1) : $m[2];
         }
 
-        $value = new RevprefSearchMatcher($count, $contacts);
+        if ($count === "") {
+            if ($safe_contacts === 0) {
+                $contacts = [$srch->cid];
+                $safe_contacts = 1;
+            }
+            $count = ">0";
+        }
+
+        $value = new RevprefSearchMatcher($count, $contacts, $safe_contacts >= 0);
         if (strcasecmp($word, "any") == 0 || strcasecmp($word, "none") == 0)
             $value->is_any = true;
         else if (preg_match(',\A\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
@@ -104,7 +123,8 @@ class Revpref_SearchTerm extends SearchTerm {
         return "coalesce($thistab.count,0)" . $this->rpsm->countexpr();
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        $can_view = $srch->user->allow_administer($row);
+        $can_view = $srch->user->allow_administer($row)
+            || ($this->rpsm->safe_contacts && $srch->user->act_pc($row));
         $n = 0;
         foreach ($this->rpsm->contact_set() as $cid) {
             if (($cid == $srch->cid || $can_view)
