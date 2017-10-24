@@ -1959,15 +1959,22 @@ class Contact {
     }
 
     function act_author_view_sql($table, $only_if_complex = false) {
-        $m = array("$table.conflictType>=" . CONFLICT_AUTHOR);
-        if (isset($this->capabilities) && !$this->isPC)
+        $m = [];
+        if (isset($this->capabilities) && !$this->isPC) {
             foreach ($this->capabilities as $pid => $cap)
                 if ($cap & Contact::CAP_AUTHORVIEW)
                     $m[] = "Paper.paperId=$pid";
+        }
+        if (empty($m) && $this->contactId && $only_if_complex)
+            return false;
+        if ($this->contactId)
+            $m[] = "$table.conflictType>=" . CONFLICT_AUTHOR;
+        if (empty($m))
+            $m[] = "false";
         if (count($m) > 1)
             return "(" . join(" or ", $m) . ")";
         else
-            return $only_if_complex ? false : $m[0];
+            return $m[0];
     }
 
     function can_start_paper() {
