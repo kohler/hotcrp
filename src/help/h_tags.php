@@ -14,30 +14,6 @@ class HelpTopic_Tags {
         $this->hth = $hth;
     }
 
-    function _current_tag_list($property) {
-        $ct = [];
-        if ($this->user->isPC)
-            $ct = $this->conf->tags()->filter($property);
-        return empty($ct) ? "" : " (currently "
-            . join(", ", array_map(function ($t) {
-                return "“" . $this->hth->search_link("#{$t->tag}", $t->tag) . "”";
-            }, $ct)) . ")";
-    }
-
-    function _vote_tag() {
-        $vt = [];
-        if ($this->user->isPC)
-            $vt = $this->conf->tags()->filter("vote");
-        return empty($vt) ? "vote" : current($vt)->tag;
-    }
-
-    private function _change_this_setting() {
-        if ($this->user->privChair)
-            return " (" . $this->hth->link("Change this setting", hoturl("settings", "group=tags")) . ") ";
-        else
-            return "";
-    }
-
     function render_intro() {
         $conflictmsg = "";
         if ($this->user->isPC && !$this->conf->tag_seeall)
@@ -81,7 +57,7 @@ as a column.</p>
                 echo "Currently PC members can see tags for any paper, including conflicts.";
             else
                 echo "They are hidden from conflicted PC members; for instance, if a PC member searches for a tag, the result will never include their conflicts.";
-            echo $this->_change_this_setting();
+            echo $this->hth->settings_link("tags");
         }
         echo "Additionally, twiddle tags, which have names like “#~tag”, are
 visible only to their creators; each PC member has an independent set.
@@ -123,7 +99,7 @@ hoturl("bulkassign") . "'>bulk assignment</a>.</p></li>
 
 <p>Although any PC member can view or search
 most tags, certain tags may be changed only by administrators",
-    $this->_current_tag_list("chair"), ".", $this->_change_this_setting(), "</p>";
+    $this->hth->current_tag_list("chair"), ".", $this->hth->settings_link("tags"), "</p>";
     }
 
     function render_values() {
@@ -172,12 +148,11 @@ with similar PC conflicts, which can make the meeting run smoother.</p>";
 appear <span class=\"tagcolorspan redtag\">red</span> in paper lists (for people
 who can see that tag).  Tag a paper “#~red” to make it red only on your display.
 Other styles are available; try “#bold”, “#italic”, “#big”, “#small”, and
-“#dim”. The <a href='" .
-hoturl("settings", "group=tags") . "'>settings page</a> can associate other tags
+“#dim”. The ", $hth->settings_link("settings page", "tags"), " can associate other tags
 with colors so that, for example, “" . $hth->search_link("#reject") . "” papers appear
 gray.</p>
 
-<p>The " . Ht::link("settings page", hoturl("settings", "group=tags")) . " can
+<p>The ", $hth->settings_link("settings page", "tags"), " can
 declare certain tags as <span class=\"badge normalbadge\">badges</span>, which
 display near titles.</p>
 
@@ -198,7 +173,7 @@ so “#:star:#5” shows five stars.</p>
     function render_example_r1reject() {
         echo "<p><strong>Skip low-ranked submissions.</strong> Mark
 low-ranked submissions with tag “#r1reject”, then ask the PC to " .
-$this->hth->search_link("#r1reject", "search for “#r1reject”") . ". PC members can check the list
+$this->hth->search_link("search for “#r1reject”", "#r1reject") . ". PC members can check the list
 for papers they’d like to discuss anyway. They can email the chairs about
 such papers, or remove the tag themselves. (You might make the
 “#r1reject” tag chair-only so an evil PC member couldn’t add it to a
@@ -220,10 +195,10 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
     }
 
     function render_example_allotment() {
-        $vt = $this->_vote_tag();
+        $vt = $this->hth->example_tag("vote");
         echo "<p><strong>Vote for papers.</strong>
- The chair can define tags used for allotment voting", $this->_current_tag_list("vote"), ".",
-    $this->_change_this_setting(),
+ The chair can define tags used for allotment voting", $this->hth->current_tag_list("vote"), ".",
+    $this->hth->settings_link("tags"),
     " Each PC member is assigned an allotment of votes to distribute among papers.
  For instance, if “#{$vt}” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “#~{$vt}#5”.
  The system automatically sums PC members’ votes into the public “#{$vt}” tag.
@@ -242,17 +217,17 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
     function render_example_discuss() {
         echo "<p><strong>Define a discussion order.</strong>
 Publishing the order lets PC members prepare to discuss upcoming papers.
-Define an ordered tag such as “#discuss”, then ask the PC to ", $this->hth->search_link("order:discuss", "search for “order:discuss”"), ".
+Define an ordered tag such as “#discuss”, then ask the PC to ", $this->hth->search_link("search for “order:discuss”", "order:discuss"), ".
 The PC can now see the order and use quick links to go from paper to paper.";
         if ($this->user->isPC && !$this->conf->tag_seeall)
-            echo " However, since PC members can’t see tags for conflicted papers, each PC member might see a different list.", $this->_change_this_setting();
+            echo " However, since PC members can’t see tags for conflicted papers, each PC member might see a different list.", $this->hth->settings_link("tags");
         echo "</p>\n";
     }
 
     function render_example_decisions() {
         echo "<p><strong>Mark tentative decisions during the PC meeting</strong> using
 “#accept” and “#reject” tags, or mark more granular decisions with tags like “#revisit”
-or “#exciting” or “#boring”. After the meeting, use ", $this->hth->search_link("#accept", "Search"),
+or “#exciting” or “#boring”. After the meeting, use ", $this->hth->search_link("Search", "#accept"),
 " &gt; Decide to mark the final decisions. (Or just use the per-paper decision selectors.)</p>\n";
     }
 }

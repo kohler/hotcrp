@@ -1,20 +1,42 @@
 [
     {
-        "name": "chair", "title": "Chair’s guide",
-        "description": "How to run a conference using HotCRP.",
-        "function": "chair",
-        "position": 0
+        "name": "chair", "title": "Chair’s guide", "position": 0,
+        "description": "How to run a conference using HotCRP."
+    },
+    {
+        "name": "chair/presubmission", "position": 0,
+        "require": "src/help/h_chairsguide.php", "factory_class": "HelpTopic_ChairsGuide", "method": "render_presubmission"
+    },
+    {
+        "name": "chair/assignments", "position": 100,
+        "require": "src/help/h_chairsguide.php", "factory_class": "HelpTopic_ChairsGuide", "method": "render_assignments"
+    },
+    {
+        "name": "chair/chair_conflicts", "position": 200,
+        "require": "src/help/h_chairsguide.php", "factory_class": "HelpTopic_ChairsGuide", "method": "render_chair_conflicts"
+    },
+    {
+        "name": "chair/chair_premeeting", "position": 300,
+        "require": "src/help/h_chairsguide.php", "factory_class": "HelpTopic_ChairsGuide", "method": "render_premeeting"
+    },
+    {
+        "name": "chair/chair_atmeeting", "position": 400,
+        "require": "src/help/h_chairsguide.php", "factory_class": "HelpTopic_ChairsGuide", "method": "render_atmeeting"
+    },
+    {
+        "name": "chair/chair_postmeeting", "position": 500,
+        "require": "src/help/h_chairsguide.php", "factory_class": "HelpTopic_ChairsGuide", "method": "render_postmeeting"
     },
     {
         "name": "search", "title": "Search",
         "description": "About paper searching.",
-        "function": "search",
+        "require": "src/help/h_search.php", "function": "HelpTopic_Search::render",
         "position": 1000
     },
     {
         "name": "keywords", "title": "Search keywords", "synonym": ["syntax"],
         "description": "Quick reference to search keywords and syntax.",
-        "function": "searchQuickref",
+        "require": "src/help/h_keywords.php", "function": "HelpTopic_Keywords::render",
         "position": 2000
     },
     {
@@ -79,43 +101,43 @@
     {
         "name": "tracks", "title": "Tracks",
         "description": "How tags can control PC access to papers.",
-        "function": "tracks",
+        "require": "src/help/h_tracks.php", "function": "HelpTopic_Tracks::render",
         "position": 4000
     },
     {
         "name": "scoresort", "title": "Sorting scores",
         "description": "How scores are sorted in paper lists.",
-        "function": "scoresort",
+        "require": "src/help/h_scoresort.php", "function": "HelpTopic_ScoreSort::render",
         "position": 5000
     },
     {
         "name": "revround", "title": "Review rounds",
         "description": "Sets of reviews with different deadlines and forms.",
-        "function": "revround",
+        "require": "src/help/h_revround.php", "function": "HelpTopic_RevRound::render",
         "position": 6000
     },
     {
         "name": "reviewratings", "title": "Review ratings", "synonym": ["revrate"],
         "description": "Rating the quality of reviews.",
-        "function": "revrate",
+        "require": "src/help/h_revrate.php", "function": "HelpTopic_RevRate::render",
         "position": 7000
     },
     {
         "name": "votetags", "title": "Voting",
         "description": "PC members can vote for papers using tags.",
-        "function": "showvotetags",
+        "require": "src/help/h_votetags.php", "function": "HelpTopic_VoteTags::render",
         "position": 8000
     },
     {
         "name": "ranking", "title": "Ranking",
         "description": "PC members can rank papers using tags.",
-        "function": "showranking",
+        "require": "src/help/h_ranking.php", "function": "HelpTopic_Ranking::render",
         "position": 9000
     },
     {
         "name": "formulas", "title": "Formulas",
         "description": "Create and display formulas in search orders.",
-        "function": "showformulas",
+        "require": "src/help/h_formulas.php", "function": "HelpTopic_Formulas::render",
         "position": 10000
     }
 ]

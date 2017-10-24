@@ -164,7 +164,17 @@ src/formatspec.php
 src/formula.php
 src/formulagraph.php
 src/groupedextensions.php
+src/help/h_chairsgude.php
+src/help/h_formulas.php
+src/help/h_keywords.php
+src/help/h_ranking.php
+src/help/h_revrate.php
+src/help/h_revround.php
+src/help/h_scoresort.php
+src/help/h_search.php
 src/help/h_tags.php
+src/help/h_tracks.php
+src/help/h_votetags.php
 src/helpers.php
 src/hotcrpdocument.php
 src/hotcrpmailer.php
