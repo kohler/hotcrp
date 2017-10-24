@@ -454,7 +454,7 @@ class SessionList {
                                 ($searchtype == "pc" ? "Program committee" : "Users"),
                                 hoturl_site_relative_raw("users", "t=$searchtype"));
         } else {
-            return (new PaperSearch($Me, opt))->session_list_object($sort);
+            return (new PaperSearch($Me, $opt))->session_list_object($sort);
         }
     }
     function set_cookie() {
