@@ -1969,12 +1969,10 @@ class Contact {
             return false;
         if ($this->contactId)
             $m[] = "$table.conflictType>=" . CONFLICT_AUTHOR;
-        if (empty($m))
-            $m[] = "false";
         if (count($m) > 1)
             return "(" . join(" or ", $m) . ")";
         else
-            return $m[0];
+            return empty($m) ? "false" : $m[0];
     }
 
     function can_start_paper() {
