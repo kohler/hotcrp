@@ -15,7 +15,7 @@ class CountMatcher {
     static public $oparray = array(false, "<", "=", "<=", ">", "!=", ">=", false);
 
     function __construct($countexpr) {
-        if ($countexpr && !$this->set_countexpr($countexpr))
+        if ((string) $countexpr !== "" && !$this->set_countexpr($countexpr))
             error_log(caller_landmark() . ": bogus countexpr $countexpr");
     }
     function set_countexpr($countexpr) {
