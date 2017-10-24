@@ -219,13 +219,10 @@ administrator’s identity.</p>\n\n";
   "</strong>  Authors’ responses (also called rebuttals) let authors correct reviewer misconceptions
   before decisions are made.  Responses are entered
   into the system as comments.  On the ", $hth->settings_link("decision settings page", "dec"),
-  ", update “Can authors see reviews” and “Collect responses to the
-  reviews,” then <a href='" . hoturl("mail") . "'>send mail to
+  ", update “Collect responses to the reviews,” then <a href='" . hoturl("mail") . "'>send mail to
   authors</a> informing them of the response deadline.  PC members can still
   update their reviews up to the ", $hth->settings_link("review deadline", "reviews"),
-  "; authors are informed via email of any review changes.  At the end of the response
-  period you should generally ", $hth->settings_link("turn off “Authors can see
-  reviews”", "dec"), " so PC members can update their reviews in peace.</p></li>
+  "; authors are informed via email of any review changes.</p></li>
 
 <li><p>Set <strong>", $hth->settings_link("PC can see all reviews", "reviews"),
   "</strong> if you haven’t already, allowing the program
