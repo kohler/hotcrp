@@ -1,6 +1,5 @@
 <?php
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/src/init.php");
 require_once("$ConfSitePATH/lib/getopt.php");
 
 $arg = getopt_rest($argv, "hn:me:", array("help", "name:", "no-email", "modify", "expression:", "expr:"));
@@ -18,6 +17,8 @@ if (isset($arg["expr"]))
     $arg["e"] = $arg["expr"];
 else if (isset($arg["expression"]))
     $arg["e"] = $arg["expression"];
+
+require_once("$ConfSitePATH/src/init.php");
 
 $file = count($arg["_"]) ? $arg["_"][0] : "-";
 if (isset($arg["e"])) {
