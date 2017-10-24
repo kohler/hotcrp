@@ -151,26 +151,33 @@ class HtHead extends Ht {
         foreach ($this->_help_topics->members($topic) as $gj) {
             Conf::xt_resolve_require($gj);
             if (isset($gj->function))
-                call_user_func($gj->function, $this->user, $this);
+                call_user_func($gj->function, $this, $gj);
             else if (isset($gj->renderer))
-                call_user_func($gj->renderer, $this->user, $this);
-            else if (isset($gj->factory_class) && isset($gj->method)) {
-                $klass = $gj->factory_class;
+                call_user_func($gj->renderer, $this, $gj);
+            else if (isset($gj->method)) {
+                $method = $gj->method;
+                if (($colons = strpos($method, "::"))) {
+                    $klass = substr($method, 0, $colons);
+                    $method = substr($method, $colons + 2);
+                } else
+                    $klass = $gj->factory_class;
                 if (!isset($renderers[$klass]))
-                    $renderers[$klass] = new $klass($this->user, $this);
-                call_user_func([$renderers[$klass], $gj->method]);
+                    $renderers[$klass] = new $klass($this, $gj);
+                call_user_func([$renderers[$klass], $method], $gj);
             }
         }
+    }
+    function groups() {
+        return $this->_help_topics->groups();
     }
 }
 
 $hth = new HtHead($Me, $help_topics);
 
 
-function show_help_topics() {
-    global $help_topics;
+function show_help_topics($hth) {
     echo "<dl>\n";
-    foreach ($help_topics->groups() as $ht) {
+    foreach ($hth->groups() as $ht) {
         if ($ht->name !== "topics" && isset($ht->title)) {
             echo '<dt><strong><a href="', hoturl("help", "t=$ht->name"), '">', $ht->title, '</a></strong></dt>';
             if (isset($ht->description))

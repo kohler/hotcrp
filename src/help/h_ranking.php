@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class HelpTopic_Ranking {
-    static function render(Contact $user, $hth) {
+    static function render($hth) {
         echo "<p>Paper ranking is a way to extract the PC’s preference order for
 submitted papers.  Each PC member ranks the submitted papers, and a voting
 algorithm, <a href='http://en.wikipedia.org/wiki/Schulze_method'>the Schulze

@@ -4,17 +4,17 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class HelpTopic_Keywords {
-    static function render(Contact $user, $hth) {
+    static function render($hth) {
         // how to report author searches?
-        if ($user->conf->subBlindNever())
+        if ($hth->conf->subBlindNever())
             $aunote = "";
-        else if (!$user->conf->subBlindAlways())
+        else if (!$hth->conf->subBlindAlways())
             $aunote = "<br /><span class='hint'>Search uses fields visible to the searcher. For example, PC member searches do not examine anonymous authors.</span>";
         else
             $aunote = "<br /><span class='hint'>Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</span>";
 
         // does a reviewer tag exist?
-        $retag = meaningful_pc_tag($user) ? : "";
+        $retag = meaningful_pc_tag($hth->user) ? : "";
 
         echo $hth->table(true);
         echo $hth->tgroup("Basics");
@@ -38,7 +38,7 @@ class HelpTopic_Keywords {
         echo $hth->search_trow("ab:\"very novel\"", "abstract contains “very novel”");
         echo $hth->tgroup("Authors");
         echo $hth->search_trow("au:poletto", "author list contains “poletto”");
-        if ($user->isPC)
+        if ($hth->user->isPC)
             echo $hth->search_trow("au:pc", "one or more authors are PC members (author email matches PC email)");
         echo $hth->search_trow("au:>4", "more than four authors");
         echo $hth->tgroup("Collaborators");
@@ -47,7 +47,7 @@ class HelpTopic_Keywords {
         echo $hth->search_trow("topic:link", "selected topics match “link”");
 
         $oex = array();
-        foreach ($user->conf->paper_opts->option_list() as $o)
+        foreach ($hth->conf->paper_opts->option_list() as $o)
             $oex = array_merge($oex, $o->example_searches());
         if (!empty($oex)) {
             echo $hth->tgroup("Options");
@@ -55,7 +55,7 @@ class HelpTopic_Keywords {
                 if ($extype === "has") {
                     $desc = "paper has “" . htmlspecialchars($oex[1]->name) . "” submission option";
                     $oabbr = array();
-                    foreach ($user->conf->paper_opts->option_list() as $ox)
+                    foreach ($hth->conf->paper_opts->option_list() as $ox)
                         if ($ox !== $oex[1])
                             $oabbr[] = "“has:" . htmlspecialchars($ox->search_keyword()) . "”";
                     if (count($oabbr))
@@ -84,7 +84,7 @@ class HelpTopic_Keywords {
 
         $cx = null;
         $cm = array();
-        foreach ($user->conf->tags() as $t)
+        foreach ($hth->conf->tags() as $t)
             foreach ($t->colors ? : array() as $c) {
                 $cx = $cx ? : $c;
                 if ($cx === $c)
@@ -95,7 +95,7 @@ class HelpTopic_Keywords {
             echo $hth->search_trow("style:$cx", "tagged to appear $cx (tagged " . commajoin($cm, "or") . ")");
         }
 
-        $roundname = meaningful_round_name($user);
+        $roundname = meaningful_round_name($hth->user);
 
         echo $hth->tgroup("Reviews");
         echo $hth->search_trow("re:me", "you are a reviewer");
@@ -115,9 +115,9 @@ class HelpTopic_Keywords {
         if ($roundname)
             echo $hth->search_trow("re:$roundname", "review in round “" . htmlspecialchars($roundname) . "”");
         echo $hth->search_trow("re:auwords<100", "has a review with less than 100 words in author-visible fields");
-        if ($user->conf->setting("rev_tokens"))
+        if ($hth->conf->setting("rev_tokens"))
             echo $hth->search_trow("retoken:J88ADNAB", "has a review with token J88ADNAB");
-        if ($user->conf->setting("rev_ratings") != REV_RATINGS_NONE)
+        if ($hth->conf->setting("rev_ratings") != REV_RATINGS_NONE)
             echo $hth->search_trow("rate:+", "review was rated positively (“rate:-” and “rate:boring” also work; can combine with “re:”)");
 
         echo $hth->tgroup("Comments");
@@ -125,7 +125,7 @@ class HelpTopic_Keywords {
         echo $hth->search_trow("cmt:>=3", "at least <em>three</em> visible reviewer comments");
         echo $hth->search_trow("has:aucmt", "at least one reviewer comment visible to authors");
         echo $hth->search_trow("cmt:sylvia", "“sylvia” (in name/email) wrote at least one visible comment; can combine with counts, use reviewer tags");
-        $rnames = $user->conf->resp_round_list();
+        $rnames = $hth->conf->resp_round_list();
         if (count($rnames) > 1) {
             echo $hth->search_trow("has:response", "has an author’s response");
             echo $hth->search_trow("has:{$rnames[1]}response", "has $rnames[1] response");
@@ -155,7 +155,7 @@ class HelpTopic_Keywords {
         echo $hth->search_trow(["q" => "status:withdrawn", "t" => "all"], "paper has been withdrawn");
         echo $hth->search_trow("has:final", "final copy uploaded");
 
-        foreach ($user->conf->decision_map() as $dnum => $dname)
+        foreach ($hth->conf->decision_map() as $dnum => $dname)
             if ($dnum)
                 break;
         $qdname = strtolower($dname);
@@ -170,7 +170,7 @@ class HelpTopic_Keywords {
 
         // find names of review fields to demonstrate syntax
         $farr = array(array(), array());
-        foreach ($user->conf->all_review_fields() as $f)
+        foreach ($hth->conf->all_review_fields() as $f)
             $farr[$f->has_options ? 0 : 1][] = $f;
         if (!empty($farr[0]) || !empty($farr[1]))
             echo $hth->tgroup("Review fields");

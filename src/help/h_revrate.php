@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class HelpTopic_RevRate {
-    static function render(Contact $user, $hth) {
+    static function render($hth) {
         echo "<p>PC members and, optionally, external reviewers can rate one another’s
 reviews.  We hope this feedback will help reviewers improve the quality of
 their reviews.  The interface appears above each visible review:</p>
@@ -53,16 +53,16 @@ $hth->search_link("search for “re:any&nbsp;rate:+”", "re:any rate:+"), ".
 You may also search for reviews with specific ratings; for instance, ",
 $hth->search_link("search for “rate:helpful”", "rate:helpful"), ".</p>";
 
-        if ($user->conf->setting("rev_ratings") == REV_RATINGS_PC)
+        if ($hth->conf->setting("rev_ratings") == REV_RATINGS_PC)
             $what = "only PC members";
-        else if ($user->conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
+        else if ($hth->conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
             $what = "PC members and external reviewers";
         else
             $what = "no one";
         echo $hth->subhead("Settings");
         echo "<p>Chairs set how ratings work on the ",
             $hth->settings_link("review settings page", "reviews"), ".",
-            ($user->is_reviewer() ? " Currently, $what can rate reviews." : ""), "</p>";
+            ($hth->user->is_reviewer() ? " Currently, $what can rate reviews." : ""), "</p>";
 
         echo $hth->subhead("Visibility");
         echo "<p>A review’s ratings are visible to any unconflicted PC members who can see

@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class HelpTopic_RevRound {
-    static function render(Contact $user, $hth) {
+    static function render($hth) {
         echo "<p>Many conferences divide their review assignments into multiple <em>rounds</em>.
 Each round is given a name, such as “R1” or “lastround.”
 (We suggest very short names like “R1”.)
@@ -26,18 +26,18 @@ The automatic and bulk assignment pages also let you set a review round.</p>";
 
 
         // get current tag settings
-        if ($user->isPC) {
+        if ($hth->user->isPC) {
             $texts = array();
-            if (($rr = $user->conf->assignment_round_name(false))) {
+            if (($rr = $hth->conf->assignment_round_name(false))) {
                 $texts[] = "The review round for new assignments is “"
                     . $hth->search_link(htmlspecialchars($rr), "round:$rr") . "”."
                     . $hth->settings_link("reviews");
             }
             $rounds = array();
-            if ($user->conf->has_rounds()) {
-                $result = $user->conf->qe("select distinct reviewRound from PaperReview");
+            if ($hth->conf->has_rounds()) {
+                $result = $hth->conf->qe("select distinct reviewRound from PaperReview");
                 while (($row = edb_row($result)))
-                    if ($row[0] && ($rname = $user->conf->round_name($row[0])))
+                    if ($row[0] && ($rname = $hth->conf->round_name($row[0])))
                         $rounds[] = "“" . $hth->search_link(htmlspecialchars($rname), "round:$rname") . "”";
                 sort($rounds);
             }

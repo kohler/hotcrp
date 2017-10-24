@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class HelpTopic_Tracks {
-    static function render(Contact $user, $hth) {
+    static function render($hth) {
         echo "<p>Tracks give you fine-grained control over PC member rights. With tracks, PC
 members can have different rights to see and review papers, depending on the
 papers’ " . Ht::link("tags", hoturl("help", "t=tags")) . ".</p>

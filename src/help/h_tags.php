@@ -8,9 +8,9 @@ class HelpTopic_Tags {
     private $user;
     private $hth;
 
-    function __construct(Contact $user, $hth) {
-        $this->conf = $user->conf;
-        $this->user = $user;
+    function __construct($hth) {
+        $this->conf = $hth->conf;
+        $this->user = $hth->user;
         $this->hth = $hth;
     }
 

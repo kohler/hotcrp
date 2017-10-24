@@ -65,10 +65,12 @@ class GroupedExtensions {
         return $gj ? $gj->group : false;
     }
     function members($name) {
+        if (($subgroup = str_ends_with($name, "/*")))
+            $name = substr($name, 0, -2);
         if (($gj = $this->get($name)))
             $name = $gj->name;
-        return array_filter($this->_subgroups, function ($gj) use ($name) {
-            return $gj->group === $name || $gj->name === $name;
+        return array_filter($this->_subgroups, function ($gj) use ($name, $subgroup) {
+            return $gj->name === $name ? !$subgroup : $gj->group === $name;
         });
     }
     function all() {

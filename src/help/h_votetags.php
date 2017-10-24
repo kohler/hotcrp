@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class HelpTopic_VoteTags {
-    static function render(Contact $user, $hth) {
+    static function render($hth) {
         $votetag = $hth->example_tag("vote");
         echo "<p>Some conferences have PC members vote for papers.
 Each PC member is assigned a vote allotment, and can distribute that allotment

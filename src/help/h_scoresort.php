@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class HelpTopic_ScoreSort {
-    static function render(Contact $user, $hth) {
+    static function render($hth) {
         echo "
 <p>Some paper search results include columns with score graphs. Click on a score
 column heading to sort the paper list using that score. Search &gt; View

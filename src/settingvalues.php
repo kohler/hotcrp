@@ -343,16 +343,15 @@ class SettingValues extends MessageSet {
         foreach ($this->gxt()->all() as $gj) {
             if (isset($gj->crosschecker)) {
                 Conf::xt_resolve_require($gj);
-                call_user_func($gj->crosschecker, $this);
+                call_user_func($gj->crosschecker, $this, $gj);
             }
         }
     }
     function render_group($g) {
-        $g = $this->canonical_group($g);
-        foreach ($this->gxt()->all() as $gj) {
-            if ($g === $gj->group && isset($gj->renderer)) {
+        foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+            if (isset($gj->renderer)) {
                 Conf::xt_resolve_require($gj);
-                call_user_func($gj->renderer, $this);
+                call_user_func($gj->renderer, $this, $gj);
             }
         }
     }

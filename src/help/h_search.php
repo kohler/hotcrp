@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class HelpTopic_Search {
-    static function render(Contact $user, $hth) {
+    static function render($hth) {
         echo "<p>All HotCRP paper lists are obtained through flexible
 search. Some hints for PC members and chairs:</p>
 
