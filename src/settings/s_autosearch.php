@@ -50,7 +50,6 @@ class Autosearch_SettingParser extends SettingParser {
     }
     function parse(SettingValues $sv, Si $si) {
         $tagger = new Tagger;
-        error_log("!");
         $autosearch = json_decode($sv->oldv("tag_autosearch"), true) ? : [];
         $new_autosearch = [];
         for ($pos = 1; isset($sv->req["tag_autosearch_n_$pos"]); ++$pos) {
@@ -73,7 +72,6 @@ class Autosearch_SettingParser extends SettingParser {
                 $autosearch[$tagx] = ["q" => $searchq];
             }
         }
-        error_log(var_export($autosearch, true));
         $sv->update("tag_autosearch", empty($autosearch) ? null : json_encode($autosearch));
         $sv->need_lock["PaperTag"] = $sv->need_lock["Paper"] =
             $sv->need_lock["PaperConflict"] = $sv->need_lock["PaperReview"] = true;
@@ -91,13 +89,12 @@ class Autosearch_SettingParser extends SettingParser {
         }
         foreach ($autosearch as $k => $v) {
             $ok = self::findk($old_autosearch, $k);
-            if (!$ok || $old_autosearch[$nk]["q"] !== $v["q"]) {
+            if (!$ok || $old_autosearch[$ok]["q"] !== $v["q"]) {
                 $csv[] = "all," . CsvGenerator::quote("{$k}#clear");
                 $csv[] = CsvGenerator::quote($v["q"]) . "," . CsvGenerator::quote($k);
             }
         }
         if (count($csv) > 1) {
-            error_log(join("\n", $csv));
             $sv->conf->_update_autosearch_tags_csv($csv);
         }
         $sv->conf->invalidate_caches(["taginfo" => true]);
