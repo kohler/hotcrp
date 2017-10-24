@@ -56,7 +56,7 @@ class Revpref_SearchTerm extends SearchTerm {
             $contacts = in_array($srch->cid, $contacts) ? [$srch->cid] : [];
 
         $count = ">0";
-        if (preg_match('/\A:?\s*((?:[=!<>]|≠|≤|≥|)\s*\d+|any|none)\s*((?:[:=!<>]|≠|≤|≥).*)\z/si', $word, $m)) {
+        if (preg_match('/\A:?\s*((?:[=!<>]=?|≠|≤|≥|)\s*\d+|any|none)\s*((?:[:=!<>]|≠|≤|≥).*)\z/si', $word, $m)) {
             if (strcasecmp($m[1], "any") == 0)
                 $count = ">0";
             else if (strcasecmp($m[1], "none") == 0)
@@ -72,7 +72,7 @@ class Revpref_SearchTerm extends SearchTerm {
         if (strcasecmp($word, "any") == 0 || strcasecmp($word, "none") == 0)
             $value->is_any = true;
         else if (preg_match(',\A\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
-                 && ($m[1] !== "" || $m[2] !== "" && $m[3] !== "")) {
+                 && ($m[2] !== "" || $m[3] !== "")) {
             if ($m[2] !== "")
                 $value->preference_match = new CountMatcher($m[1] . $m[2]);
             if ($m[3] !== "")
