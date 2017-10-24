@@ -5547,7 +5547,7 @@ function render_row_tags(div) {
 }
 
 function edittags_link_onclick() {
-    $.get(hoturl_post("api/settags", {p: pidnear(this), forceShow: 1}), edittags_callback);
+    $.post(hoturl_post("api/settags", {p: pidnear(this), forceShow: 1}), edittags_callback);
     return false;
 }
 
