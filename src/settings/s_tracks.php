@@ -66,7 +66,7 @@ class SettingRenderer_Tracks {
         self::do_track_permission($sv, "viewrev", "Who can see reviews?", $tnum, $t);
         $hint = "";
         if ($sv->conf->setting("pc_seeblindrev"))
-            $hint = "Regardless of this setting, PC members can’t see reviewer names until they’ve completed a review for the same paper (<a href=\"" . hoturl("settings", "group=reviews") . "\">Settings &gt; Reviews &gt; Visibility</a>).";
+            $hint = "Regardless of this setting, PC members can’t see reviewer names until they’ve completed a review for the same paper (see <a href=\"" . hoturl("settings", "group=reviews") . "\">Settings &gt; Reviews &gt; Visibility</a>).";
         self::do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
         self::do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
         self::do_track_permission($sv, "unassrev", "Who can self-assign a review?", $tnum, $t);
