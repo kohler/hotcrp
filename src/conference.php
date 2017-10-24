@@ -102,6 +102,7 @@ class Conf {
 
     static public $g;
     static public $no_invalidate_caches = false;
+    static public $next_xt_subposition = 0;
 
     const BLIND_NEVER = 0;
     const BLIND_OPTIONAL = 1;
@@ -694,9 +695,13 @@ class Conf {
         return $xt ? get($xt, "priority", 0) : -PHP_INT_MAX;
     }
     static function xt_priority_compare($xta, $xtb) {
-        $pa = self::xt_priority($xta);
-        $pb = self::xt_priority($xtb);
-        return $pa < $pb ? 1 : ($pa == $pb ? 0 : -1);
+        $ap = self::xt_priority($xta);
+        $bp = self::xt_priority($xtb);
+        if ($ap == $bp) {
+            $ap = $xta ? get($xta, "__subposition", 0) : -PHP_INT_MAX;
+            $bp = $xtb ? get($xtb, "__subposition", 0) : -PHP_INT_MAX;
+        }
+        return $ap < $bp ? 1 : ($ap == $bp ? 0 : -1);
     }
     static function xt_position_compare($xta, $xtb) {
         $ap = get($xta, "position", 0);

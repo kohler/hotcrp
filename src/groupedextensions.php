@@ -18,7 +18,6 @@ class GroupedExtensions {
                 $fj->synonym = [];
             else if (is_string($fj->synonym))
                 $fj->synonym = [$fj->synonym];
-            $fj->__subposition = count($this->_subgroups);
             $this->_subgroups[] = $fj;
             return true;
         } else

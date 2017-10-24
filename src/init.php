@@ -276,6 +276,8 @@ function expand_json_includes_callback($includelist, $callback, $extra_arg = nul
             $entry = get_object_vars($entry);
         foreach (is_array($entry) ? $entry : [$entry] as $key => $obj) {
             $arg = $extra_arg === null ? $key : $extra_arg;
+            if (is_object($obj))
+                $obj->__subposition = ++Conf::$next_xt_subposition;
             if ((!is_object($obj) && !$no_validate)
                 || !call_user_func($callback, $obj, $arg))
                 error_log("$landmark: Invalid expansion " . json_encode($obj) . ".");
