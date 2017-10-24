@@ -24,7 +24,7 @@ class Conflict_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Conflict_" . count($sqi->tables);
-        $where = "$thistab.contactId in (" . join(",", $this->csm->contact_set()) . ")";
+        $where = $this->csm->contact_match_sql("$thistab.contactId");
 
         $compar = $this->csm->simplified_nonnegative_countexpr();
         if ($compar !== ">0" && $compar !== "=0") {

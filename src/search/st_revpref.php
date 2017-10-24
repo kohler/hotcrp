@@ -49,7 +49,7 @@ class Revpref_SearchTerm extends SearchTerm {
         if (preg_match('/\A((?:(?!≠|≤|≥)[^:=!<>])+)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
             $contacts = $srch->matching_special_contacts($m[1], $sword->quoted, true);
-            if ($contacts != [-1])
+            if ($contacts !== null)
                 $safe_contacts = 1;
             else {
                 $safe_contacts = -1;

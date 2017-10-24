@@ -696,7 +696,7 @@ function sqlq_for_like($value) {
 }
 
 function sql_in_numeric_set($set) {
-    if (count($set) == 0)
+    if (empty($set))
         return "=-1";
     else if (count($set) == 1)
         return "=" . $set[0];
