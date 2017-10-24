@@ -32,7 +32,7 @@ class ContactSearch {
         if ($this->ids === false
             && ($this->type & self::F_TAG)
             && !($this->type & self::F_QUOTED)
-            && $this->user->isPC)
+            && $this->user->can_view_contact_tags())
             $this->ids = $this->check_pc_tag();
         if ($this->ids === false
             && ($this->type & self::F_USER))
@@ -52,7 +52,7 @@ class ContactSearch {
             && (!($this->type & self::F_PC)
                 || ($this->user->roles & Contact::ROLE_PC)))
             return [$this->user->contactId];
-        if ($this->user->isPC || !$this->conf->opt("privatePC")) {
+        if ($this->user->can_view_pc()) {
             if ($this->text === ""
                 || strcasecmp($this->text, "pc") == 0
                 || (strcasecmp($this->text, "any") == 0 && ($this->type & self::F_PC)))

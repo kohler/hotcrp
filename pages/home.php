@@ -149,7 +149,7 @@ $links = [];
 $sep = "";
 if ($Me->has_reportable_deadline())
     $links[] = '<li><a href="' . hoturl("deadlines") . '">Deadlines</a></li>';
-if ($Me->isPC || !$Conf->opt("privatePC"))
+if ($Me->can_view_pc())
     $links[] = '<li><a href="' . hoturl("users", "t=pc") . '">Program committee</a></li>';
 if ($Conf->opt("conferenceSite")
     && $Conf->opt("conferenceSite") != $Conf->opt("paperSite"))

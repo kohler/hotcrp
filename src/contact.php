@@ -68,6 +68,7 @@ class Contact {
     private $is_metareviewer_;
     private $is_lead_;
     private $is_explicit_manager_;
+    private $can_view_pc_;
     public $is_site_contact = false;
     private $rights_version_ = 0;
     public $roles = 0;
@@ -787,7 +788,7 @@ class Contact {
     }
 
     function viewable_tags(Contact $user) {
-        if ($user->isPC) {
+        if ($user->can_view_contact_tags() || $user->contactId == $this->contactId) {
             $tags = $this->all_contact_tags();
             return Tagger::strip_nonviewable($tags, $user);
         } else
@@ -1611,7 +1612,8 @@ class Contact {
     private function check_rights_version() {
         if ($this->rights_version_ !== self::$rights_version) {
             $this->db_roles_ = $this->active_roles_ = $this->has_outstanding_review_ =
-                $this->is_lead_ = $this->is_explicit_manager_ = $this->is_metareviewer_ = null;
+                $this->is_lead_ = $this->is_explicit_manager_ = $this->is_metareviewer_ =
+                    $this->can_view_pc_ = null;
             $this->rights_version_ = self::$rights_version;
         }
     }
@@ -1937,6 +1939,25 @@ class Contact {
             return $rights->allow_pc;
         } else
             return $this->isPC;
+    }
+
+    function can_view_pc() {
+        if ($this->privChair)
+            return true;
+        $this->check_rights_version();
+        if ($this->can_view_pc_ === null) {
+            if ($this->isPC)
+                $this->can_view_pc_ = $this->conf->opt("secretPC") ? 0 : 2;
+            else
+                $this->can_view_pc_ = $this->conf->opt("privatePC") ? 0 : 1;
+        }
+        return $this->can_view_pc_ > 0;
+    }
+    function can_view_contact_tags() {
+        if ($this->privChair)
+            return true;
+        $this->can_view_pc();
+        return $this->can_view_pc_ > 1;
     }
 
     function can_view_tracker() {
