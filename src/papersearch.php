@@ -644,9 +644,11 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
             // resolve rating type
             if (strcasecmp($m[1], "any") == 0)
                 $rate = "any";
-            else if ($m[1] === "+" || strcasecmp($m[1], "good") == 0)
+            else if ($m[1] === "+" || strcasecmp($m[1], "good") == 0
+                     || strcasecmp($m[1], "yes") == 0)
                 $rate = "good";
             else if ($m[1] === "-" || strcasecmp($m[1], "bad") == 0
+                     || strcasecmp($m[1], "no") == 0
                      || $m[1] === "\xE2\x88\x92" /* unicode MINUS */)
                 $rate = "bad";
             else {
