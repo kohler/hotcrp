@@ -6071,11 +6071,6 @@ function doremovedocument(elt) {
 }
 
 function save_tags() {
-    function done(msg) {
-        $("#foldtags .xmerror").remove();
-        if (msg)
-            $("#papstriptagsedit").prepend('<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + msg + '</div><div class="xmsg1"></div></div>');
-    }
     $.ajax(hoturl_post("api/settags", {p: hotcrp_paperid}), {
         method: "POST", data: $("#tagform").serialize(), timeout: 4000,
         success: function (data) {
@@ -6083,9 +6078,12 @@ function save_tags() {
                 fold("tags", true);
                 save_tags.success(data);
             }
-            done(data.ok ? "" : data.error);
+            $("#foldtags .xmerror").remove();
+            if (!data.ok && data.error)
+                $("#papstriptagsedit").prepend('<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + data.error + '</div><div class="xmsg1"></div></div>');
         }
     });
+    $("#tagform input").prop("disabled", true);
     return false;
 }
 save_tags.success = function (data) {
@@ -6139,6 +6137,7 @@ save_tags.open = function (noload) {
             return fold("tags", 1);
         });
     }
+    $("#tagform input").prop("disabled", false);
     if (!noload)
         $.ajax(hoturl("api/tagreport", {p: hotcrp_paperid}), {
             method: "GET", success: function (data) {
