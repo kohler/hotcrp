@@ -417,7 +417,7 @@ class PaperApi {
 
     static function mentioncompletion_api(Contact $user, $qreq, $prow) {
         $result = [];
-        if ($user->isPC) {
+        if ($user->can_view_pc()) {
             $pcmap = $user->conf->pc_completion_map();
             foreach ($user->conf->pc_members_and_admins() as $pc)
                 if (!$pc->disabled
