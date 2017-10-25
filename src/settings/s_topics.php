@@ -58,7 +58,7 @@ class Topics_SettingRenderer {
     }
 }
 
-class Topic_SettingParser extends SettingParser {
+class Topics_SettingParser extends SettingParser {
     private $new_topics;
     private $deleted_topics;
     private $changed_topics;
