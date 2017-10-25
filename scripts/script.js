@@ -3986,12 +3986,12 @@ function make_suggestions(pfx, precaret, postcaret, options) {
 }
 
 function suggest(elt, suggestions_promise, options) {
-    var hintdiv, blurring, hiding = false, interacted, tabfail, suggdata;
+    var hintdiv, blurring, hiding = false, tabfail, suggdata;
 
     function kill() {
         hintdiv && hintdiv.remove();
         hintdiv = null;
-        blurring = hiding = interacted = tabfail = false;
+        blurring = hiding = tabfail = false;
     }
 
     function finish_display(cinfo) {
@@ -4053,10 +4053,8 @@ function suggest(elt, suggestions_promise, options) {
             return null;
         else if ($ac.length == 1)
             return do_complete(common, smatch, true);
-        else {
-            interacted = true;
+        else
             return do_complete(common, smatch, false);
-        }
     }
 
     function do_complete(text, smatch, done) {
@@ -4115,7 +4113,6 @@ function suggest(elt, suggestions_promise, options) {
                 return false;
         }
         $active.addClass("active");
-        interacted = true;
         return true;
     }
 
@@ -4152,7 +4149,6 @@ function suggest(elt, suggestions_promise, options) {
     function click(evt) {
         maybe_complete($(this));
         evt.stopPropagation();
-        interacted = true;
     }
 
     function hover(evt) {
