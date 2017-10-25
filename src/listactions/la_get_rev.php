@@ -120,7 +120,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
     function __construct($fj) {
         parent::__construct(false, !!get($fj, "zip"));
         $this->include_paper = !!get($fj, "abstract");
-        require_once("sa_get_sub.php");
+        require_once("la_get_sub.php");
     }
     function allow(Contact $user) {
         return $user->can_view_some_review();
