@@ -4031,12 +4031,12 @@ function suggest(elt, suggestions_promise, options) {
         next(null);
     }
 
-    function do_complete($ac) {
+    function do_complete(complete_elt) {
         var text;
-        if ($ac[0].firstChild.nodeType === Node.TEXT_NODE)
-            text = $ac[0].textContent;
+        if (complete_elt.firstChild.nodeType === Node.TEXT_NODE)
+            text = complete_elt.textContent;
         else
-            text = $ac[0].firstChild.textContent;
+            text = complete_elt.firstChild.textContent;
 
         var poss = hintdiv.self().data("autocompletePos");
         var val = elt.value;
@@ -4103,9 +4103,8 @@ function suggest(elt, suggestions_promise, options) {
             }
         } else if ((k === "Tab" || k === "Enter") && !m && hintdiv) {
             if (!(k === "Enter" && lastkey === "Backspace")) {
-                var active = hintdiv.self().find(".suggestion.active");
-                if (active.length)
-                    do_complete(active);
+                var $active = hintdiv.self().find(".suggestion.active");
+                $active.length && do_complete($active[0]);
             }
             kill();
             evt.preventDefault();
@@ -4121,7 +4120,8 @@ function suggest(elt, suggestions_promise, options) {
     }
 
     function click(evt) {
-        maybe_complete($(this));
+        do_complete(this);
+        kill();
         evt.stopPropagation();
     }
 
