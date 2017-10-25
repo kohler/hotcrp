@@ -6098,8 +6098,13 @@ save_tags.success = function (data) {
         $j.html(h);
     if (data.response)
         $j.prepend(data.response);
-    if (!$("#foldtags textarea").is(":visible"))
-        $("#foldtags textarea").val(data.tags_edit_text);
+    $j = $("#foldtags textarea");
+    if ($j.length && !$j.is(":visible")) {
+        if (!$j.hasClass("opened")
+            || ($j.val().split(/\s+/).sort().join(" ")
+                !== data.tags_edit_text.split(/\s+/).sort().join(" ")))
+            $j.val(data.tags_edit_text);
+    }
     $(".is-tag-index").each(function () {
         var j = $(this), res = "",
             t = j.attr("data-tag-base") + "#", i;
