@@ -3986,12 +3986,13 @@ function make_suggestions(pfx, precaret, postcaret, options) {
 }
 
 function suggest(elt, suggestions_promise, options) {
-    var hintdiv, blurring, hiding = false, tabfail, suggdata;
+    var hintdiv, blurring, hiding = false, keystate, suggdata;
 
     function kill() {
         hintdiv && hintdiv.remove();
         hintdiv = null;
-        blurring = hiding = tabfail = false;
+        blurring = hiding = false;
+        keystate = 0;
     }
 
     function finish_display(cinfo) {
@@ -4038,59 +4039,43 @@ function suggest(elt, suggestions_promise, options) {
         next(null);
     }
 
-    function maybe_complete($ac) {
-        var common = null, text, smatch = true;
-        for (var i = 0; i != $ac.length; ++i) {
-            if ($ac[i].firstChild.nodeType === Node.TEXT_NODE)
-                text = $ac[i].textContent;
-            else
-                text = $ac[i].firstChild.textContent;
-            common = common === null ? text : common_prefix(common, text);
-            if (smatch && !/smatch/.test($ac[i].className))
-                smatch = false;
-        }
-        if (common === null)
-            return null;
-        else if ($ac.length == 1)
-            return do_complete(common, smatch, true);
+    function do_complete($ac) {
+        var text;
+        if ($ac[0].firstChild.nodeType === Node.TEXT_NODE)
+            text = $ac[0].textContent;
         else
-            return do_complete(common, smatch, false);
-    }
+            text = $ac[0].firstChild.textContent;
+        var smatch = /smatch/.test($ac[0].className);
 
-    function do_complete(text, smatch, done) {
         var poss = hintdiv.self().data("autocompletePos");
         var val = elt.value;
         var startPos = poss[0];
         var endPos = startPos + poss[1][3];
         if (poss[1][3] > poss[1][2])
             text += val.substring(startPos + poss[1][2], endPos);
-        var outPos = startPos + text.length + (done ? 1 : 0);
-        if (done && (endPos == val.length || /\S/.test(val.charAt(endPos))))
+        var outPos = startPos + text.length + 1;
+        if (endPos == val.length || /\S/.test(val.charAt(endPos)))
             text += " ";
         $(elt).val(val.substring(0, startPos) + text + val.substring(endPos));
         elt.selectionStart = elt.selectionEnd = outPos;
-        done ? kill() : setTimeout(display, 1);
-        return true;
     }
 
     function move_active(k) {
-        var $sug = hintdiv.self().find(".suggestion"), pos,
-            $active = hintdiv.self().find(".suggestion.active").removeClass("active");
-        if (!$active.length /* should not happen */) {
-            pos = (k == "ArrowUp" || k == "ArrowLeft" ? $sug.length - 1 : 0);
-            $active = $($sug[pos]);
-        } else if (k == "ArrowUp" || k == "ArrowDown") {
+        var $sug = hintdiv.self().find(".suggestion"),
+            $active = hintdiv.self().find(".suggestion.active"), next = null;
+        if (k == "ArrowUp" || k == "ArrowDown") {
             var pos = 0;
-            while (pos != $sug.length && $sug[pos] !== $active[0])
-                ++pos;
-            if (pos == $sug.length)
-                pos -= (k == "ArrowDown");
+            if ($active.length) {
+                for (pos = 0; pos != $sug.length && $sug[pos] !== $active[0]; ++pos)
+                    /* nada */;
+                if (pos == $sug.length)
+                    pos -= (k == "ArrowDown");
+            }
             pos += (k == "ArrowDown" ? 1 : $sug.length - 1);
-            $active = $($sug[pos % $sug.length]);
-        } else if (k == "ArrowLeft" || k == "ArrowRight") {
-            if (elt.selectionEnd != elt.value.length)
-                return false;
-            var $activeg = $active.geometry(), next = null,
+            next = $($sug[pos % $sug.length]);
+            keystate = 1;
+        } else if ((k == "ArrowLeft" || k == "ArrowRight") && keystate) {
+            var $activeg = $active.geometry(),
                 nextadx = Infinity, nextady = Infinity,
                 isleft = (k == "ArrowLeft"),
                 side = (isleft ? "left" : "right");
@@ -4107,19 +4092,18 @@ function suggest(elt, suggestions_promise, options) {
                     nextady = ady;
                 }
             }
-            if (next)
-                $active = $(next);
-            else
-                return false;
         }
-        $active.addClass("active");
+        if (!next)
+            return false;
+        if (next !== $active[0]) {
+            $active.removeClass("active");
+            $(next).addClass("active");
+        }
         return true;
     }
 
     function kp(evt) {
         var k = event_key(evt), m = event_modkey(evt), completed = null;
-        if (k !== "Tab" || m)
-            tabfail = false;
         if (k === "Escape" && !m) {
             if (hintdiv) {
                 var poss = hintdiv.self().data("autocompletePos");
@@ -4128,20 +4112,20 @@ function suggest(elt, suggestions_promise, options) {
                 evt.stopImmediatePropagation();
             }
             return true;
-        }
-        if ((k === "Tab" || k === "Enter") && !m && hintdiv)
-            completed = maybe_complete(hintdiv.self().find(".suggestion.active"));
-        if (completed || (!tabfail && completed !== null)) {
-            tabfail = !completed;
+        } else if ((k === "Tab" || k === "Enter") && !m && hintdiv) {
+            var active = hintdiv.self().find(".suggestion.active");
+            if (active.length)
+                do_complete(active);
+            kill();
             evt.preventDefault();
             evt.stopImmediatePropagation();
             return false;
-        }
-        if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
+        } else if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
             evt.preventDefault();
             return false;
-        }
-        if (!tabfail && (hintdiv || event_key.printable(evt) || k === "Backspace"))
+        } else
+            keystate = 0;
+        if (hintdiv || event_key.printable(evt) || k === "Backspace")
             setTimeout(display, 1);
         return true;
     }
@@ -4154,6 +4138,7 @@ function suggest(elt, suggestions_promise, options) {
     function hover(evt) {
         hintdiv.self().find(".active").removeClass("active");
         $(this).addClass("active");
+        keystate = 1;
     }
 
     function blur() {
