@@ -3206,7 +3206,7 @@ function activate_editing(j, cj) {
         .on("hotcrp_renderPreview", render_preview)
         .autogrow();
     /*suggest(j.find("textarea")[0], comment_completion_q, {
-        drop_nonmatch: 1, decorate: true
+        filter_length: 1, decorate: true
     });*/
     for (i in cj.tags || [])
         tags.push(cj.tags[i].replace(detwiddle, "~"));
@@ -3825,7 +3825,7 @@ function completion_item(c) {
         return {s: c[0], description: c[1]};
     else {
         if (!("s" in c) && "sm1" in c)
-            c = $.extend({s: c.sm1, after_match: 1}, c);
+            c = $.extend({s: c.sm1, filter_length: 1}, c);
         return c;
     }
 }
@@ -3863,19 +3863,19 @@ function taghelp_tset(elt, options) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
-        return alltags.then(make_suggestions(m[1], m[2], n[1], options, {postcompletion: n[2]}));
+        return alltags.then(make_suggestions(m[2], n[1], options, {suffix: n[2]}));
     } else
         return null;
 }
 
 function taghelp_q(elt, options) {
     var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*#)([^#\s()]*)$/))) {
+    if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagvalue:))([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
-        return alltags.then(make_suggestions(m[1], m[2], n[1], options));
-    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):\s*)([^"\s()]*|"[^"]*)$/))) {
+        return alltags.then(make_suggestions(m[2], n[1], options));
+    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):)([^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
-        return search_completion.then(make_suggestions(m[1], m[2], n[1], $.extend({require_prefix: true}, options)));
+        return search_completion.then(make_suggestions(m[2], n[1], options, {prefix: m[1]}));
     } else
         return null;
 }
@@ -3884,122 +3884,114 @@ function comment_completion_q(elt, options) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[\s,;])@([-\w_.]*)$/))) {
         n = x[1].match(/^([-\w_.]*)/);
-        return allmentions.then(make_suggestions("@", m[1], n[1], options));
+        return allmentions.then(make_suggestions(m[1], n[1], options));
     } else
         return null;
 }
 
-function make_suggestions(pfx, precaret, postcaret, options) {
-    if (arguments.length > 4) {
+function make_suggestions(precaret, postcaret, options) {
+    // The region around the caret is divided into four parts:
+    //     ... options.prefix precaret ^ postcaret options.suffix ...
+    // * `options.prefix`: Ignore completion items that don't start with this.
+    // * `precaret`, `postcaret`: Only highlight completion items that start
+    //   with `prefix + precaret + postcaret`.
+    // * `options.suffix`: After successful completion, caret skips over this.
+    // `options.prefix + precaret + postcaret` is collectively called the match
+    // region.
+    //
+    // Other options:
+    // * `options.case_sensitive`: If truthy, match is case sensitive.
+    // * `options.decorate`: If truthy, use completion items’ descriptions.
+    // * `options.filter_length`: Integer. Ignore completion items that don’t
+    //    match the first `prefix.length + filter_length` characters of
+    //    the match region.
+    //
+    // Completion items:
+    // * `item.s`: Completion string -- mandatory.
+    // * `item.d`: Description text.
+    // * `item.dh`: Description HTML.
+    // * `item.filter_length`: Integer. Ignore this item if it doesn’t match
+    //   the first `item.filter_length` characters of the match region.
+    // Shorthand:
+    // * A string `item` sets `item.s`.
+    // * A two-element array `item` sets `item.s` and `item.d`, respectively.
+    // * A `item.sm1` component sets `item.s` and sets `item.filter_length = 1`.
+
+    if (arguments.length > 3) {
         options = $.extend({}, options);
-        for (var i = 4; i < arguments.length; ++i)
+        for (var i = 3; i < arguments.length; ++i)
             $.extend(options, arguments[i]);
     }
+    options = options || {};
 
-    var case_sensitive = options && options.case_sensitive;
-    var require_prefix = options && options.require_prefix;
-    var drop_nonmatch = options && options.drop_nonmatch;
-    var decorate = options && options.decorate;
-
-    var pfx_length = pfx.length;
-    var lprecaret = case_sensitive ? precaret : precaret.toLowerCase();
-    var precaret_length = precaret.length;
-    var lpostcaret = case_sensitive ? postcaret : postcaret.toLowerCase();
-    var postcaret_length = precaret_length + postcaret.length;
-    var postcompletion_length = postcaret_length;
-    if (options && options.postcompletion)
-        postcompletion_length += options.postcompletion.length;
-
-    drop_nonmatch = Math.min(drop_nonmatch || 0, precaret_length);
+    var case_sensitive = options.case_sensitive;
+    var decorate = options.decorate;
+    var prefix = options.prefix || "";
+    var lregion = prefix + precaret + postcaret;
+    lregion = case_sensitive ? lregion : lregion.toLowerCase();
+    var filter = null;
+    if ((prefix.length || options.filter_length) && lregion.length)
+        filter = lregion.substr(0, prefix.length + (options.filter_length || 0));
+    var lengths = [prefix.length + precaret.length, postcaret.length, (options.suffix || "").length];
 
     return function (tlist) {
         var res = [];
-        var best_postcaret = "";
-        var best_postcaret_index = null;
+        var best_index = null;
+        var can_highlight = lregion.length > prefix.length;
 
         for (var i = 0; i < tlist.length; ++i) {
             var titem = completion_item(tlist[i]);
             var text = titem.s;
             var ltext = case_sensitive ? text : text.toLowerCase();
 
-            var h, pos = 0;
-            if (require_prefix) {
-                if (ltext.substr(0, pfx_length) !== pfx)
-                    continue;
-                pos = pfx_length;
-                h = text;
-            } else
-                h = pfx + text;
-
-            if (titem.after_match
-                && (precaret_length < titem.after_match
-                    || ltext.substr(pos, titem.after_match) !== lprecaret.substr(0, titem.after_match)))
-                continue;
-            if (drop_nonmatch
-                && ltext.substr(pos, drop_nonmatch) !== lprecaret.substr(0, drop_nonmatch))
+            if ((filter !== null
+                 && ltext.substr(0, filter.length) !== filter)
+                || (titem.filter_length
+                    && (lregion.length < titem.filter_length
+                        || ltext.substr(0, titem.filter_length) !== lregion.substr(0, titem.filter_length))))
                 continue;
 
-            var className = "suggestion";
-            if (!precaret_length
-                || ltext.substr(pos, precaret_length) === lprecaret) {
-                pos += precaret_length;
-                if (best_postcaret_index === null)
-                    best_postcaret_index = res.length;
-                if (postcaret_length > precaret_length) {
-                    var common_postcaret = common_prefix(ltext.substr(pos), lpostcaret);
-                    if (common_postcaret.length > best_postcaret.length) {
-                        best_postcaret = common_postcaret;
-                        best_postcaret_index = res.length;
-                    }
-                } else if (text.length == pos)
-                    best_postcaret_index = res.length;
-                className = "suggestion smatch";
-            } else
-                className = "suggestion";
+            if (can_highlight && ltext.substr(0, lregion.length) === lregion) {
+                best_index = res.length;
+                can_highlight = false;
+            }
 
-            var t = '<div class="' + className + '">';
+            var t = '<div class="suggestion">';
             if (decorate) {
-                t += '<span class="suggestion-text">' + escape_entities(h) + '</span>';
+                t += '<span class="suggestion-text">' + escape_entities(text) + '</span>';
                 if (titem.description_html || titem.dh)
                     t += ' <span class="suggestion-description">' + (titem.description_html || titem.dh) + '</span>';
                 else if (titem.description || titem.d)
                     t += ' <span class="suggestion-description">' + escape_entities(titem.description || titem.d) + '</span>';
             } else
-                t += escape_entities(h);
+                t += escape_entities(text);
             res.push(t + '</div>');
         }
+
         if (res.length) {
-            if (best_postcaret_index !== null)
-                res[best_postcaret_index] = res[best_postcaret_index].replace(/^<div class="suggestion/, '<div class="suggestion active');
-            return {
-                list: res,
-                offsets: [
-                    pfx_length,
-                    pfx_length + precaret_length,
-                    pfx_length + postcaret_length,
-                    pfx_length + postcompletion_length
-                ]
-            };
+            if (best_index !== null) {
+                res[best_index] = res[best_index].replace(/^<div class="suggestion/, '<div class="suggestion active');
+            }
+            return {list: res, lengths: lengths};
         } else
             return null;
     };
 }
 
 function suggest(elt, suggestions_promise, options) {
-    var hintdiv, blurring, hiding = false, keystate, suggdata;
+    var hintdiv, blurring, hiding = false, lastkey = false, suggdata;
 
     function kill() {
         hintdiv && hintdiv.remove();
         hintdiv = null;
-        blurring = hiding = false;
-        keystate = 0;
+        blurring = hiding = lastkey = false;
     }
 
     function finish_display(cinfo) {
         if (!cinfo || !cinfo.list.length)
             return kill();
-        var matchpos = elt.selectionStart - cinfo.offsets[1];
-        if (hiding && hiding === elt.value.substring(matchpos, matchpos + cinfo.offsets[0]))
+        var caretpos = elt.selectionStart, precaretpos = caretpos - cinfo.lengths[0];
+        if (hiding && hiding === elt.value.substring(precaretpos, caretpos))
             return;
         hiding = false;
         if (!hintdiv) {
@@ -4017,13 +4009,13 @@ function suggest(elt, suggestions_promise, options) {
 
         var $elt = jQuery(elt),
             shadow = textarea_shadow($elt, elt.tagName == "INPUT" ? 2000 : 0);
-        shadow.text(elt.value.substring(0, matchpos))
+        shadow.text(elt.value.substring(0, precaretpos))
             .append("<span>&#x2060;</span>")
-            .append(document.createTextNode(elt.value.substring(matchpos)));
+            .append(document.createTextNode(elt.value.substring(precaretpos)));
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
         $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
         hintdiv.html(t).near($pos, elt);
-        hintdiv.self().data("autocompletePos", [matchpos, cinfo.offsets]);
+        hintdiv.self().data("autocompletePos", [precaretpos, cinfo.lengths]);
         shadow.remove();
     }
 
@@ -4045,14 +4037,13 @@ function suggest(elt, suggestions_promise, options) {
             text = $ac[0].textContent;
         else
             text = $ac[0].firstChild.textContent;
-        var smatch = /smatch/.test($ac[0].className);
 
         var poss = hintdiv.self().data("autocompletePos");
         var val = elt.value;
         var startPos = poss[0];
-        var endPos = startPos + poss[1][3];
-        if (poss[1][3] > poss[1][2])
-            text += val.substring(startPos + poss[1][2], endPos);
+        var endPos = startPos + poss[1][0] + poss[1][1] + poss[1][2];
+        if (poss[1][2])
+            text += val.substring(endPos - poss[1][2], endPos);
         var outPos = startPos + text.length + 1;
         if (endPos == val.length || /\S/.test(val.charAt(endPos)))
             text += " ";
@@ -4073,8 +4064,8 @@ function suggest(elt, suggestions_promise, options) {
             }
             pos += (k == "ArrowDown" ? 1 : $sug.length - 1);
             next = $($sug[pos % $sug.length]);
-            keystate = 1;
-        } else if ((k == "ArrowLeft" || k == "ArrowRight") && keystate) {
+        } else if ((k == "ArrowLeft" || k == "ArrowRight")
+                   && lastkey && /^Arrow/.test(lastkey)) {
             var $activeg = $active.geometry(),
                 nextadx = Infinity, nextady = Infinity,
                 isleft = (k == "ArrowLeft"),
@@ -4092,10 +4083,9 @@ function suggest(elt, suggestions_promise, options) {
                     nextady = ady;
                 }
             }
-        }
-        if (!next)
+        } else
             return false;
-        if (next !== $active[0]) {
+        if (next && next !== $active[0]) {
             $active.removeClass("active");
             $(next).addClass("active");
         }
@@ -4103,7 +4093,7 @@ function suggest(elt, suggestions_promise, options) {
     }
 
     function kp(evt) {
-        var k = event_key(evt), m = event_modkey(evt), completed = null;
+        var k = event_key(evt), m = event_modkey(evt), result = true;
         if (k === "Escape" && !m) {
             if (hintdiv) {
                 var poss = hintdiv.self().data("autocompletePos");
@@ -4111,23 +4101,23 @@ function suggest(elt, suggestions_promise, options) {
                 hiding = this.value.substring(poss[0], poss[0] + poss[1][0]);
                 evt.stopImmediatePropagation();
             }
-            return true;
         } else if ((k === "Tab" || k === "Enter") && !m && hintdiv) {
-            var active = hintdiv.self().find(".suggestion.active");
-            if (active.length)
-                do_complete(active);
+            if (!(k === "Enter" && lastkey === "Backspace")) {
+                var active = hintdiv.self().find(".suggestion.active");
+                if (active.length)
+                    do_complete(active);
+            }
             kill();
             evt.preventDefault();
             evt.stopImmediatePropagation();
-            return false;
+            result = false;
         } else if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
             evt.preventDefault();
-            return false;
-        } else
-            keystate = 0;
-        if (hintdiv || event_key.printable(evt) || k === "Backspace")
+            result = false;
+        } else if (hintdiv || event_key.printable(evt) || k === "Backspace")
             setTimeout(display, 1);
-        return true;
+        lastkey = k;
+        return result;
     }
 
     function click(evt) {
@@ -4138,7 +4128,7 @@ function suggest(elt, suggestions_promise, options) {
     function hover(evt) {
         hintdiv.self().find(".active").removeClass("active");
         $(this).addClass("active");
-        keystate = 1;
+        lastkey = "Arrow";
     }
 
     function blur() {
