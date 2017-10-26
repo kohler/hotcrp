@@ -525,6 +525,7 @@ class Assigner {
     public $pid;
     public $contact;
     public $cid;
+    public $next_index;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         $this->item = $item;
         $this->type = $item["type"];
@@ -1871,7 +1872,8 @@ class AssignmentSet {
     public $conf;
     public $user;
     public $filename;
-    private $assigners = array();
+    private $assigners = [];
+    private $assigners_pidhead = [];
     private $enabled_pids = null;
     private $enabled_actions = null;
     private $msgs = array();
@@ -2407,11 +2409,21 @@ class AssignmentSet {
             $fin->apply_finisher($this->astate);
 
         // create assigners for difference
+        $this->assigners_pidhead = $pidtail = [];
         foreach ($this->astate->diff() as $pid => $difflist)
             foreach ($difflist as $item) {
                 try {
-                    if (($a = $item->realize($this->astate)))
+                    if (($a = $item->realize($this->astate))) {
+                        if ($a->pid > 0) {
+                            $index = count($this->assigners);
+                            if (isset($pidtail[$a->pid]))
+                                $pidtail[$a->pid]->next_index = $index;
+                            else
+                                $this->assigners_pidhead[$a->pid] = $index;
+                            $pidtail[$a->pid] = $a;
+                        }
                         $this->assigners[] = $a;
+                    }
                 } catch (Exception $e) {
                     $this->error_at($item->lineno, $e->getMessage());
                 }
@@ -2428,12 +2440,8 @@ class AssignmentSet {
         return array_keys($types);
     }
     function assigned_pids($compress = false) {
-        $pids = array();
-        foreach ($this->assigners as $assigner)
-            if ($assigner->pid)
-                $pids[$assigner->pid] = true;
-        ksort($pids, SORT_NUMERIC);
-        $pids = array_keys($pids);
+        $pids = array_keys($this->assigners_pidhead);
+        sort($pids, SORT_NUMERIC);
         if ($compress) {
             $xpids = array();
             $lpid = $rpid = -1;
@@ -2464,44 +2472,47 @@ class AssignmentSet {
         return $this->assignment_type;
     }
 
+    function unparse_paper_assignment(PaperInfo $prow) {
+        $assigners = [];
+        for ($index = get($this->assigners_pidhead, $prow->paperId);
+             $index !== null;
+             $index = $assigner->next_index) {
+            $assigners[] = $assigner = $this->assigners[$index];
+            if ($assigner->contact && !isset($assigner->contact->sorter))
+                Contact::set_sorter($assigner->contact, $this->conf);
+        }
+        usort($assigners, function ($assigner1, $assigner2) {
+            $c1 = $assigner1->contact;
+            $c2 = $assigner2->contact;
+            if ($c1 && $c2)
+                return strnatcasecmp($c1->sorter, $c2->sorter);
+            else if ($c1 || $c2)
+                return $c1 ? -1 : 1;
+            else
+                return strcmp($c1->type, $c2->type);
+        });
+        $t = "";
+        foreach ($assigners as $assigner) {
+            if (($text = $assigner->unparse_display($this))) {
+                $t .= ($t ? ", " : "") . '<span class="nw">' . $text . '</span>';
+            }
+        }
+        if (isset($this->my_conflicts[$prow->paperId])) {
+            if ($this->my_conflicts[$prow->paperId] !== true)
+                $t = '<em>Hidden for conflict</em>';
+            else
+                $t = PaperList::wrapChairConflict($t);
+        }
+        return $t;
+    }
     function echo_unparse_display() {
         $this->set_my_conflicts();
 
-        $bypaper = array();
-        foreach ($this->assigners as $assigner)
-            if (($text = $assigner->unparse_display($this))) {
-                $c = $assigner->contact;
-                if ($c && !isset($c->sorter))
-                    Contact::set_sorter($c, $this->conf);
-                arrayappend($bypaper[$assigner->pid], (object)
-                            array("text" => $text,
-                                  "sorter" => $c ? $c->sorter : $text));
-            }
-
-        AutoassignmentPaperColumn::$header = "Assignment";
-        $assinfo = array();
-        foreach ($bypaper as $pid => $list) {
-            uasort($list, "Contact::compare");
-            $t = "";
-            foreach ($list as $x)
-                $t .= ($t ? ", " : "") . '<span class="nw">'
-                    . $x->text . '</span>';
-            if (isset($this->my_conflicts[$pid])) {
-                if ($this->my_conflicts[$pid] !== true)
-                    $t = '<em>Hidden for conflict</em>';
-                else
-                    $t = PaperList::wrapChairConflict($t);
-            }
-            $assinfo[$pid] = $t;
-        }
-
-        ksort($assinfo);
-        AutoassignmentPaperColumn::$info = $assinfo;
-
+        $query = $this->assigned_pids(true);
         if ($this->unparse_search)
-            $query_order = "(" . $this->unparse_search . ") THEN HEADING:none " . join(" ", array_keys($assinfo));
+            $query_order = "(" . $this->unparse_search . ") THEN HEADING:none " . join(" ", $query);
         else
-            $query_order = empty($assinfo) ? "NONE" : join(" ", array_keys($assinfo));
+            $query_order = empty($query) ? "NONE" : join(" ", $query);
         foreach ($this->unparse_columns as $k => $v) {
             if ($v)
                 $query_order .= " show:$k";
@@ -2509,7 +2520,7 @@ class AssignmentSet {
         $query_order .= " show:autoassignment";
         $search = new PaperSearch($this->user, ["t" => $this->search_type, "q" => $query_order], $this->astate->reviewer);
         $plist = new PaperList($search);
-        $plist->add_column("autoassignment", new AutoassignmentPaperColumn);
+        $plist->add_column("autoassignment", new AutoassignmentPaperColumn($this));
         $plist->set_table_id_class("foldpl", "pltable_full");
         echo $plist->table_html("reviewers", ["nofooter" => 1]);
 
@@ -2679,18 +2690,15 @@ class AssignmentSet {
 
 
 class AutoassignmentPaperColumn extends PaperColumn {
-    static $header;
-    static $info;
-    function __construct() {
+    private $aset;
+    function __construct(AssignmentSet $aset) {
         parent::__construct(["name" => "autoassignment", "row" => true, "className" => "pl_autoassignment"]);
+        $this->aset = $aset;
     }
     function header(PaperList $pl, $is_text) {
-        return self::$header;
-    }
-    function content_empty(PaperList $pl, PaperInfo $row) {
-        return !isset(self::$info[$row->paperId]);
+        return "Assignment";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return self::$info[$row->paperId];
+        return $this->aset->unparse_paper_assignment($row);
     }
 }
