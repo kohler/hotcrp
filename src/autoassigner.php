@@ -554,7 +554,7 @@ class Autoassigner {
                     $exp = $this->prefinfo[$cid][$pid][1];
                     if ($exp > 0)
                         $dst = "p{$pid}x";
-                    else if ($exp == 0)
+                    else if ($exp === 0)
                         $dst = "p{$pid}y";
                     else
                         $dst = "p$pid";
