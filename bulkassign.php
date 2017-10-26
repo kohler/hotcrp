@@ -21,8 +21,10 @@ $_GET["rev_round"] = $_POST["rev_round"] = $_REQUEST["rev_round"] =
 
 
 function assignment_defaults() {
-    $defaults = array("action" => req("default_action"),
-                      "round" => $_REQUEST["rev_round"]);
+    $defaults = [];
+    if (($action = req("default_action")) && $action !== "guess")
+        $defaults["action"] = $action;
+    $defaults["round"] = req("rev_round");
     if (req("requestreview_notify") && req("requestreview_body"))
         $defaults["extrev_notify"] = ["subject" => req("requestreview_subject"),
                                       "body" => req("requestreview_body")];
@@ -164,7 +166,7 @@ if (isset($_GET["upload"]) && check_post()
                 '<div class="aahc"><div class="aa">',
                 Ht::submit("Apply changes"),
                 ' &nbsp;', Ht::submit("cancel", "Cancel"),
-                Ht::hidden("default_action", $defaults["action"]),
+                Ht::hidden("default_action", get($defaults, "action", "guess")),
                 Ht::hidden("rev_round", $defaults["round"]),
                 Ht::hidden("file", $text),
                 Ht::hidden("assignment_size_estimate", $csv_lineno),
@@ -203,7 +205,8 @@ echo '<div class="g"><strong>OR</strong> &nbsp;',
 
 echo '<div id="foldoptions" class="lg foldc fold2o fold3c">',
     'By default, assign&nbsp; ',
-    Ht::select("default_action", array("primary" => "primary reviews",
+    Ht::select("default_action", array("guess" => "(guess action)",
+                                       "primary" => "primary reviews",
                                        "secondary" => "secondary reviews",
                                        "pcreview" => "optional PC reviews",
                                        "metareview" => "metareviews",
@@ -214,7 +217,7 @@ echo '<div id="foldoptions" class="lg foldc fold2o fold3c">',
                                        "tag" => "add tags",
                                        "settag" => "replace tags",
                                        "preference" => "reviewer preferences"),
-               defval($_REQUEST, "default_action", "primary"),
+               defval($_REQUEST, "default_action", "guess"),
                array("id" => "tsel", "onchange" => "fold(\"options\",this.value!=\"review\");fold(\"options\",!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),2)"));
 $rev_rounds = $Conf->round_selector_options();
 if (count($rev_rounds) > 1)
