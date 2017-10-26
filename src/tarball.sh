@@ -218,12 +218,12 @@ src/search/st_conflict.php
 src/search/st_decision.php
 src/search/st_formula.php
 src/search/st_paperpc.php
+src/search/st_paperstatus.php
 src/search/st_pdf.php
-src/search/st_reviews.php
+src/search/st_review.php
 src/search/st_reviewtoken.php
 src/search/st_revpref.php
-src/search/st_status.php
-src/search/st_tags.php
+src/search/st_tag.php
 src/search/st_topic.php
 src/searchaction.php
 src/searchselection.php

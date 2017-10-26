@@ -1,5 +1,5 @@
 <?php
-// search/st_reviews.php -- HotCRP helper class for searching for papers
+// search/st_review.php -- HotCRP helper class for searching for papers
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 

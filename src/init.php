@@ -123,7 +123,7 @@ class SiteLoader {
         "ReviewField" => "src/review.php",
         "ReviewFieldInfo" => "src/review.php",
         "ReviewForm" => "src/review.php",
-        "ReviewSearchMatcher" => "src/search/st_reviews.php",
+        "ReviewSearchMatcher" => "src/search/st_review.php",
         "ReviewValues" => "src/review.php",
         "SearchTerm" => "src/search.php",
         "TagAnno" => "lib/tagger.php",

@@ -11,7 +11,6 @@
     },
     {
         "name": "au",
-        "require": "src/search/st_author.php",
         "parser": "Author_SearchTerm::parse",
         "synonym": ["author", "auth"]
     },
@@ -34,13 +33,11 @@
     },
     {
         "name": "conf",
-        "require": "src/search/st_conflict.php",
         "parser": "Conflict_SearchTerm::parse",
         "synonym": "conflict", "pc_only": false, "has": "pc"
     },
     {
         "name": "pcconf",
-        "require": "src/search/st_conflict.php",
         "parser": "Conflict_SearchTerm::parse",
         "synonym": "pcconflict", "pc_only": true, "has": "any"
     },
@@ -51,7 +48,6 @@
     },
     {
         "name": "status",
-        "require": "src/search/st_status.php",
         "parser": "PaperStatus_SearchTerm::parse",
         "synonym": "is"
     },
@@ -94,146 +90,125 @@
     },
     {
         "name": "topic",
-        "require": "src/search/st_topic.php",
         "parser": "Topic_SearchTerm::parse",
         "has": "any"
     },
     {
         "name": "lead",
-        "require": "src/search/st_paperpc.php",
         "parser": "PaperPC_SearchTerm::parse", "pcfield": "lead",
         "has": "any"
     },
     {
         "name": "shepherd",
-        "require": "src/search/st_paperpc.php",
         "parser": "PaperPC_SearchTerm::parse", "pcfield": "shepherd",
         "synonym": ["shep"], "has": "any"
     },
     {
         "name": "admin",
-        "require": "src/search/st_paperpc.php",
         "parser": "PaperPC_SearchTerm::parse", "pcfield": "manager",
         "synonym": ["manager", "administrator"], "has": "any"
     },
     {
         "name": "dec",
-        "require": "src/search/st_decision.php",
         "parser": "Decision_SearchTerm::parse",
         "synonym": "decision", "has": "any"
     },
     {
         "name": "tag",
-        "require": "src/search/st_tags.php",
         "parser": "Tag_SearchTerm::parse",
         "negated": false, "sorting": false, "has": "any"
     },
     {
         "name": "notag",
-        "require": "src/search/st_tags.php",
         "parser": "Tag_SearchTerm::parse",
         "negated": true, "sorting": false, "has": "any"
     },
     {
         "name": "order",
-        "require": "src/search/st_tags.php",
         "parser": "Tag_SearchTerm::parse",
         "negated": false, "sorting": true, "revsort": false
     },
     {
         "name": "rorder",
-        "require": "src/search/st_tags.php",
         "parser": "Tag_SearchTerm::parse",
         "negated": false, "sorting": true, "revsort": true, "synonym": "revorder"
     },
     {
         "name": "color",
-        "require": "src/search/st_tags.php",
+        "require": "src/search/st_tag.php",
         "parser": "Color_SearchTerm::parse",
         "has": "color"
     },
     {
         "name": "style",
-        "require": "src/search/st_tags.php",
+        "require": "src/search/st_tag.php",
         "parser": "Color_SearchTerm::parse",
         "has": "any"
     },
     {
         "name": "badge",
-        "require": "src/search/st_tags.php",
+        "require": "src/search/st_tag.php",
         "parser": "Color_SearchTerm::parse_badge",
         "has": "any"
     },
     {
         "name": "emoji",
-        "require": "src/search/st_tags.php",
+        "require": "src/search/st_tag.php",
         "parser": "Color_SearchTerm::parse_emoji",
         "has": "any"
     },
     {
         "name": "formula",
-        "require": "src/search/st_formula.php",
         "parser": "Formula_SearchTerm::parse", "allow_parens": true,
         "synonym": "f"
     },
     {
         "name": "graph",
-        "require": "src/search/st_formula.php",
         "parser": "Formula_SearchTerm::parse_graph", "allow_parens": true,
         "synonym": "g"
     },
     {
         "name": "r",
-        "require": "src/search/st_reviews.php",
         "parser": "Review_SearchTerm::parse",
         "retype": null, "recompleteness": null, "has": ">0"
     },
     {
         "name": "token",
-        "require": "src/search/st_reviewtoken.php",
         "parser": "ReviewToken_SearchTerm::parse",
         "synonym": ["rtoken", "retoken", "reviewtoken"], "has": "any"
     },
     {
         "name": "approvable",
-        "require": "src/search/st_reviews.php",
         "parser": "Review_SearchTerm::parse",
         "retype": null, "recompleteness": "approvable", "has": ">0"
     },
     {
         "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?)(|meta-?|pri-?|sec-?|ext-?|primary-?|secondary-?|external-?)(?:re|rev|review)",
-        "require": "src/search/st_reviews.php",
         "expand_function": "Review_SearchTerm::keyword_factory"
     },
     {
         "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?)(meta|pri|sec|ext|primary|secondary|external)",
-        "require": "src/search/st_reviews.php",
         "expand_function": "Review_SearchTerm::keyword_factory"
     },
     {
         "match": "(|au-?|author-?|any-?)(?:cmt|comment)",
-        "require": "src/search/st_comment.php",
         "expand_function": "Comment_SearchTerm::comment_factory"
     },
     {
         "match": "(|draft-?)(\\w*)resp(?:onse)(|-?draft)",
-        "require": "src/search/st_comment.php",
         "expand_function": "Comment_SearchTerm::response_factory"
     },
     {
         "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
-        "require": "src/search/st_reviews.php",
         "expand_function": "Review_SearchTerm::review_field_factory"
     },
     {
         "name": "option",
-        "require": "src/search/st_option.php",
         "parser": "Option_SearchTerm::parse",
         "has": "any", "synonym": "opt"
     },
     {
         "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
-        "require": "src/search/st_option.php",
         "expand_function": "Option_SearchTerm::parse_factory"
     },
     {
