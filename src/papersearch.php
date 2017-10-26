@@ -1184,7 +1184,8 @@ class PaperSearch {
             else if ($lword === "no")
                 return "<0";
             else if ($lword === "?" || $lword === "none"
-                     || $lword === "unknown" || $lword === "unspecified")
+                     || $lword === "unknown" || $lword === "unspecified"
+                     || $lword === "undecided")
                 return [0];
             else if ($lword === "any")
                 return "!=0";
