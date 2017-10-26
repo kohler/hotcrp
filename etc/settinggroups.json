@@ -2,85 +2,71 @@
     {
         "name": "basics", "synonym": ["info"], "position": 0,
         "title": "Basics",
-        "require": "src/settings/s_basics.php",
-        "renderer": "SettingRenderer_Basics::render"
+        "renderer": "Basics_SettingRenderer::render"
     },
     {
         "name": "decisions", "synonym": ["dec"], "position": 800,
         "title": "Decisions",
-        "require": "src/settings/s_decisions.php",
-        "crosschecker": "SettingRenderer_Decisions::crosscheck",
-        "renderer": "SettingRenderer_Decisions::render"
+        "crosschecker": "Decisions_SettingRenderer::crosscheck",
+        "renderer": "Decisions_SettingRenderer::render"
     },
     {
         "name": "msg", "position": 200,
         "title": "Messages",
-        "require": "src/settings/s_msg.php",
-        "renderer": "SettingRenderer_Messages::render"
+        "renderer": "Messages_SettingRenderer::render"
     },
     {
         "name": "reviewform", "synonym": ["rfo"], "position": 600,
         "title": "Review form",
-        "require": "src/settings/s_reviewform.php",
-        "renderer": "SettingRenderer_ReviewForm::render"
+        "renderer": "ReviewForm_SettingRenderer::render"
     },
     {
         "name": "reviews", "synonym": ["rev", "review"], "position": 500,
         "title": "Reviews",
-        "require": "src/settings/s_reviews.php",
-        "crosschecker": "SettingRenderer_Reviews::crosscheck",
-        "renderer": "SettingRenderer_Reviews::render"
+        "crosschecker": "Reviews_SettingRenderer::crosscheck",
+        "renderer": "Reviews_SettingRenderer::render"
     },
     {
         "name": "sub", "position": 300,
         "title": "Submissions",
-        "require": "src/settings/s_sub.php",
-        "crosschecker": "SettingRenderer_Submissions::crosscheck",
-        "renderer": "SettingRenderer_Submissions::render"
+        "crosschecker": "Submissions_SettingRenderer::crosscheck",
+        "renderer": "Submissions_SettingRenderer::render"
     },
     {
         "name": "subform", "position": 400,
         "title": "Submission form",
-        "require": "src/settings/s_subform.php",
-        "renderer": "SettingRenderer_SubForm::render"
+        "renderer": "SubForm_SettingRenderer::render"
     },
     {
         "name": "options", "group": "subform", "synonym": ["opt"], "position": 440,
-        "require": "src/settings/s_options.php",
         "crosschecker": "Options_SettingRenderer::crosscheck",
         "renderer": "Options_SettingRenderer::render"
     },
     {
         "name": "topics", "group": "subform", "position": 480,
-        "require": "src/settings/s_topics.php",
         "renderer": "Topics_SettingRenderer::render"
     },
     {
         "name": "tags", "position": 700,
         "title": "Tags &amp; tracks",
-        "require": "src/settings/s_tags.php",
-        "renderer": "SettingRenderer_Tags::render"
+        "renderer": "Tags_SettingRenderer::render"
     },
     {
         "name": "tagstyles", "group": "tags", "position": 720,
-        "require": "src/settings/s_tags.php",
-        "renderer": "SettingRenderer_Tags::render_styles"
+        "renderer": "Tags_SettingRenderer::render_styles"
     },
     {
         "name": "autosearch", "group": "tags", "position": 730,
-        "require": "src/settings/s_autosearch.php",
         "renderer": "Autosearch_SettingRenderer::render"
     },
     {
         "name": "tracks", "group": "tags", "position": 750,
-        "require": "src/settings/s_tracks.php",
-        "crosschecker": "SettingRenderer_Tracks::crosscheck",
-        "renderer": "SettingRenderer_Tracks::render"
+        "crosschecker": "Tracks_SettingRenderer::crosscheck",
+        "renderer": "Tracks_SettingRenderer::render"
     },
     {
         "name": "users", "position": 100,
         "title": "Accounts",
-        "require": "src/settings/s_users.php",
-        "renderer": "SettingRenderer_Users::render"
+        "renderer": "Users_SettingRenderer::render"
     }
 ]

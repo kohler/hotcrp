@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class HelpTopic_ScoreSort {
+class ScoreSort_HelpTopic {
     static function render($hth) {
         echo "
 <p>Some paper search results include columns with score graphs. Click on a score

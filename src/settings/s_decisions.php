@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Decisions {
+class Decisions_SettingRenderer {
 static function render(SettingValues $sv) {
     echo "<h3 class=\"settings\">Review sharing and responses</h3>\n";
     echo "Can <b>authors see reviews and author-visible comments</b> for their papers?<br />";

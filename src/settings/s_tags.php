@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Tags {
+class Tags_SettingRenderer {
     static function render_tags($tl) {
         $tl = array_filter($tl, function ($t) {
             return !$t->pattern_instance;

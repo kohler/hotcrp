@@ -1,9 +1,9 @@
 <?php
-// src/settings/s_sub.php -- HotCRP settings > submissions page
+// src/settings/s_submissions.php -- HotCRP settings > submissions page
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Submissions {
+class Submissions_SettingRenderer {
 static function render(SettingValues $sv) {
     $sv->echo_checkbox('sub_open', '<b>Open site for submissions</b>');
 

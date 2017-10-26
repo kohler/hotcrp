@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class HelpTopic_Ranking {
+class Ranking_HelpTopic {
     static function render($hth) {
         echo "<p>Paper ranking is a way to extract the PC’s preference order for
 submitted papers.  Each PC member ranks the submitted papers, and a voting

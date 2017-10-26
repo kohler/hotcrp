@@ -182,7 +182,7 @@ class Options_SettingRenderer {
     }
 }
 
-class Option_SettingParser extends SettingParser {
+class Options_SettingParser extends SettingParser {
     private $next_optionid;
     private $has_next_optionid = false;
     private $stashed_options = false;

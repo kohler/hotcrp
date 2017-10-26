@@ -185,7 +185,7 @@ class BanalSettings {
     }
 }
 
-class SettingRenderer_SubForm {
+class SubForm_SettingRenderer {
     static function render(SettingValues $sv) {
         echo "<h3 class=\"settings\">Abstract and PDF</h3>\n";
 

@@ -83,8 +83,7 @@
     },
     "msg.conflictdef": {
         "title": "Definition of conflict of interest",
-        "type": "htmlstring", "size": 5, "message_default": "msg.conflictdef",
-        "require": "src/settings/s_msg.php"
+        "type": "htmlstring", "size": 5, "message_default": "msg.conflictdef"
     },
     "msg.finalsubmit": {
         "title": "Final paper submission message",
@@ -146,8 +145,7 @@
         "require": "src/settings/s_basics.php"
     },
     "options": {
-        "parser": "Option_SettingParser", "group": "subform",
-        "require": "src/settings/s_options.php",
+        "parser": "Options_SettingParser", "group": "subform",
         "type": "string"
     },
     "options_nextid": {
@@ -241,7 +239,7 @@
         "type": "tag", "parser": "Round_SettingParser"
     },
     "review_form": {
-        "parser": "ReviewForm_SettingParser", "require": "src/settings/s_reviewform.php",
+        "parser": "ReviewForm_SettingParser",
         "type": "string"
     },
     "roundname": {
@@ -325,7 +323,7 @@
     "sub_open": {
         "title": "Open site for submissions", "group": "sub",
         "type": "cdate",
-        "require": "src/settings/s_sub.php"
+        "require": "src/settings/s_submissions.php"
     },
     "sub_pcconf": {
         "title": "Collect PC conflicts",
@@ -412,7 +410,6 @@
     },
     "tracks": {
         "parser": "Track_SettingParser", "group": "tracks",
-        "require": "src/settings/s_tracks.php",
         "type": "string"
     }
 }

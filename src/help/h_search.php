@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class HelpTopic_Search {
+class Search_HelpTopic {
     static function render($hth) {
         echo "<p>All HotCRP paper lists are obtained through flexible
 search. Some hints for PC members and chairs:</p>

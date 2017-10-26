@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Basics {
+class Basics_SettingRenderer {
 static function render(SettingValues $sv) {
     echo '<div class="f-c">', $sv->label("opt.shortName", "Conference abbreviation"), "</div>\n";
     $sv->echo_entry("opt.shortName");

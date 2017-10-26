@@ -330,7 +330,7 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 }
 
-class SettingRenderer_ReviewForm {
+class ReviewForm_SettingRenderer {
 static function render(SettingValues $sv) {
     global $ConfSitePATH;
 

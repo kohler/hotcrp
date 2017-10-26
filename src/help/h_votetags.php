@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class HelpTopic_VoteTags {
+class VoteTags_HelpTopic {
     static function render($hth) {
         $votetag = $hth->example_tag("vote");
         echo "<p>Some conferences have PC members vote for papers.

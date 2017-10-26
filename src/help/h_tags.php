@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class HelpTopic_Tags {
+class Tags_HelpTopic {
     private $conf;
     private $user;
     private $hth;

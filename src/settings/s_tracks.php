@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Tracks {
+class Tracks_SettingRenderer {
     static private function do_track_permission($sv, $type, $question, $tnum, $thistrack) {
         $tclass = $ttag = "";
         if ($sv->use_req()) {

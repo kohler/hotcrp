@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class SettingRenderer_Reviews {
+class Reviews_SettingRenderer {
     private static function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
         $rname = "roundname_$rnum";
         if ($sv->use_req() && $rnum !== '$')
