@@ -134,6 +134,14 @@ class SiteLoader {
         "ZipDocument" => "lib/filer.php"
     ];
 
+    static $suffix_map = [
+        "_helptopic.php" => ["h_", "help"],
+        "_listaction.php" => ["la_", "listactions"],
+        "_searchterm.php" => ["st_", "search"],
+        "_settingrenderer.php" => ["s_", "settings"],
+        "_settingparser.php" => ["s_", "settings"]
+    ];
+
     static function read_main_options() {
         global $ConfSitePATH, $Opt;
         if (defined("HOTCRP_OPTIONS"))
@@ -173,6 +181,17 @@ setlocale(LC_CTYPE, "C");
 
 
 // Set up conference options (also used in mailer.php)
+function expand_includes_once($file, $includepath, $globby) {
+    foreach ($file[0] === "/" ? [""] : $includepath as $idir) {
+        $try = $idir . $file;
+        if (!$globby && is_readable($try))
+            return [$try];
+        else if ($globby && ($m = glob($try, GLOB_BRACE)))
+            return $m;
+    }
+    return [];
+}
+
 function expand_includes($files, $expansions = array()) {
     global $Opt, $ConfSitePATH;
     if (!is_array($files))
@@ -212,14 +231,13 @@ function expand_includes($files, $expansions = array()) {
         }
         if (preg_match(',[\[\]\*\?\{\}],', $f))
             $ignore_not_found = $globby = true;
-        foreach ($f[0] === "/" ? array("") : $includepath as $idir) {
-            $e = $idir . $f;
-            if ($globby)
-                $matches = glob($f, GLOB_BRACE);
-            else if (is_readable($e))
-                $matches = [$e];
-            if (!empty($matches))
-                break;
+        $matches = expand_includes_once($f, $includepath, $globby);
+        if (empty($matches)
+            && isset($expansions["autoload"])
+            && ($underscore = strpos($f, "_"))
+            && ($f2 = get(SiteLoader::$suffix_map, substr($f, $underscore)))) {
+            $xincludepath = array_merge($f2[1] ? ["{$ConfSitePATH}/src/{$f2[1]}/"] : [], $includepath);
+            $matches = expand_includes_once($f2[0] . substr($f, 0, $underscore) . ".php", $xincludepath, $globby);
         }
         $results = array_merge($results, $matches);
         if (empty($matches) && !$ignore_not_found)
