@@ -193,6 +193,11 @@ $aclass->type = AbbreviationClass::TYPE_LOWERDASH;
 xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty isn't an AWESOME", $aclass), "novelty-isnt-awesome");
 xassert_eqq(AbbreviationMatcher::make_abbreviation("_format", $aclass), "format");
 
+// simplify_whitespace
+xassert_eqq(simplify_whitespace("abc def GEH îjk"), "abc def GEH îjk");
+xassert_eqq(simplify_whitespace("\x7Fabc\x7Fdef       GEH îjk"), "abc def GEH îjk");
+xassert_eqq(simplify_whitespace("A.\n\n\x1DEEE MM\n\n\n\n"), "A. EEE MM");
+
 // utf8_word_prefix, etc. tests
 xassert_eqq(UnicodeHelper::utf8_prefix("aaaaaaaa", 7), "aaaaaaa");
 xassert_eqq(UnicodeHelper::utf8_prefix("aaaaaaaa", 8), "aaaaaaaa");
