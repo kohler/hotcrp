@@ -103,6 +103,7 @@ class Conf {
     static public $g;
     static public $no_invalidate_caches = false;
     static public $next_xt_subposition = 0;
+    static private $xt_require_resolved = [];
 
     const BLIND_NEVER = 0;
     const BLIND_OPTIONAL = 1;
@@ -732,10 +733,10 @@ class Conf {
         return !$xt || (isset($xt->disabled) && $xt->disabled);
     }
     static function xt_resolve_require($xt) {
-        if ($xt && isset($xt->require) && !isset($xt->__require_resolved)) {
-            foreach (expand_includes($xt->require) as $f)
+        if ($xt && isset($xt->require) && !isset(self::$xt_require_resolved[$xt->require])) {
+            foreach (expand_includes($xt->require, ["autoload" => true]) as $f)
                 require_once($f);
-            $xt->__require_resolved = true;
+            self::$xt_require_resolved[$xt->require] = true;
         }
         return $xt;
     }
