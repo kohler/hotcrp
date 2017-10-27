@@ -3,14 +3,14 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class Get_SearchAction extends SearchAction {
+class Get_ListAction extends SearchAction {
     static function render(PaperList $pl) {
         $actions = array_values($pl->displayable_list_actions("get/"));
         foreach ($pl->user->user_option_list() as $o)
             if ($pl->user->can_view_some_paper_option($o)
                 && $o->is_document()
                 && $pl->has($o->field_key()))
-                $actions[] = GetDocument_SearchAction::make_list_action($o);
+                $actions[] = GetDocument_ListAction::make_list_action($o);
         usort($actions, "Conf::xt_position_compare");
         $last_group = null;
         foreach ($actions as $fj) {
@@ -41,14 +41,14 @@ class Get_SearchAction extends SearchAction {
             && count($opts) == 1
             && ($o = current($opts))
             && $user->can_view_some_paper_option($o)) {
-            $ga = new GetDocument_SearchAction($o->id);
+            $ga = new GetDocument_ListAction($o->id);
             return $ga->run($user, $qreq, $ssel);
         } else
             return self::ENOENT;
     }
 }
 
-class GetDocument_SearchAction extends SearchAction {
+class GetDocument_ListAction extends SearchAction {
     private $dt;
     function __construct($fj) {
         $this->dt = $fj->dtype;
@@ -60,7 +60,7 @@ class GetDocument_SearchAction extends SearchAction {
             "selector" => "Documents/" . ($opt->id <= 0 ? pluralize($opt->name) : $opt->name),
             "position" => $opt->position + ($opt->final ? 0 : 100),
             "display_if_list_has" => $opt->field_key(),
-            "factory_class" => "GetDocument_SearchAction"
+            "factory_class" => "GetDocument_ListAction"
         ];
         return $fj;
     }
@@ -101,7 +101,7 @@ class GetDocument_SearchAction extends SearchAction {
     }
 }
 
-class GetCheckFormat_SearchAction extends SearchAction {
+class GetCheckFormat_ListAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $papers = [];
@@ -133,7 +133,7 @@ class GetCheckFormat_SearchAction extends SearchAction {
     }
 }
 
-class GetAbstract_SearchAction extends SearchAction {
+class GetAbstract_ListAction extends SearchAction {
     const WIDTH = 96;
     static private function render_option(PaperOption $o, $otxt) {
         $dtype = array_shift($otxt);
@@ -214,7 +214,7 @@ class GetAbstract_SearchAction extends SearchAction {
     }
 }
 
-class GetAuthors_SearchAction extends SearchAction {
+class GetAuthors_ListAction extends SearchAction {
     static function contact_map(Conf $conf, $ssel) {
         $result = $conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
         $contact_map = [];
@@ -265,12 +265,12 @@ class GetAuthors_SearchAction extends SearchAction {
 }
 
 /* NB this search action is actually unavailable via the UI */
-class GetContacts_SearchAction extends SearchAction {
+class GetContacts_ListAction extends SearchAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {
-        $contact_map = GetAuthors_SearchAction::contact_map($user->conf, $ssel);
+        $contact_map = GetAuthors_ListAction::contact_map($user->conf, $ssel);
         $result = $user->paper_result(["paperId" => $ssel->selection(), "allConflictType" => 1]);
         foreach (PaperInfo::fetch_all($result, $user) as $prow)
             if ($user->allow_administer($prow))
@@ -283,7 +283,7 @@ class GetContacts_SearchAction extends SearchAction {
     }
 }
 
-class GetPcconflicts_SearchAction extends SearchAction {
+class GetPcconflicts_ListAction extends SearchAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
@@ -312,7 +312,7 @@ class GetPcconflicts_SearchAction extends SearchAction {
     }
 }
 
-class GetTopics_SearchAction extends SearchAction {
+class GetTopics_ListAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(array("paperId" => $ssel->selection(), "topics" => 1));
         $texts = array();
@@ -329,7 +329,7 @@ class GetTopics_SearchAction extends SearchAction {
     }
 }
 
-class GetCSV_SearchAction extends SearchAction {
+class GetCSV_ListAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         $search = new PaperSearch($user, $qreq, $qreq->attachment("reviewer_contact"));
         $pl = new PaperList($search, ["sort" => true, "display" => $qreq->display], $qreq);

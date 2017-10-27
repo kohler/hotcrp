@@ -1,29 +1,27 @@
 [
     {
         "name": "get",
-        "renderer": "Get_SearchAction::render", "title": "Download",
+        "renderer": "Get_ListAction::render", "title": "Download",
         "position": 0,
         "require": "src/listactions/la_get_sub.php"
     },
     {
         "name": "assign", "post": true,
-        "renderer": "Assign_SearchAction::render", "title": "Assign",
+        "renderer": "Assign_ListAction::render", "title": "Assign",
         "position": 700,
         "allow_if": "manager", "display_if_report": "!editpref",
-        "require": "src/listactions/la_assign.php",
-        "factory_class": "Assign_SearchAction"
+        "factory_class": "Assign_ListAction"
     },
     {
         "name": "decide", "post": true,
-        "renderer": "Decide_SearchAction::render", "title": "Decide",
+        "renderer": "Decide_ListAction::render", "title": "Decide",
         "position": 900,
         "allow_if": "manager", "display_if_report": "!editpref",
-        "require": "src/listactions/la_decide.php",
-        "factory_class": "Decide_SearchAction"
+        "factory_class": "Decide_ListAction"
     },
     {
         "match": "get/.*", "paper": true, "get": true,
-        "expand_function": "GetDocument_SearchAction::expand",
+        "expand_function": "GetDocument_ListAction::expand",
         "require": "src/listactions/la_get_sub.php"
     },
     {
@@ -31,8 +29,7 @@
         "selector": "Paper information/JSON",
         "position": 1090,
         "allow_if": "manager",
-        "require": "src/listactions/la_get_json.php",
-        "factory_class": "GetJson_SearchAction",
+        "factory_class": "GetJson_ListAction",
         "has_attachments": false
     },
     {
@@ -40,8 +37,7 @@
         "selector": "Paper information/JSON with attachments",
         "position": 1091,
         "allow_if": "manager",
-        "require": "src/listactions/la_get_json.php",
-        "factory_class": "GetJson_SearchAction",
+        "factory_class": "GetJson_ListAction",
         "has_attachments": true
     },
     {
@@ -49,8 +45,7 @@
         "selector": "Paper information/JSON for reviewqualitycollector.org",
         "position": 1092,
         "allow_if": "manager",
-        "require": "src/listactions/la_get_json.php",
-        "factory_class": "GetJsonRQC_SearchAction"
+        "factory_class": "GetJsonRQC_ListAction"
     },
     {
         "name": "get/pcassignments", "get": true,
@@ -58,7 +53,7 @@
         "position": 2099,
         "allow_if": "manager",
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetPcassignments_SearchAction"
+        "factory_class": "GetPcassignments_ListAction"
     },
     {
         "name": "get/revform", "get": true, "paper_optional": true,
@@ -66,7 +61,7 @@
         "position": 2000,
         "allow_if": "reviewer",
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetReviewForm_SearchAction",
+        "factory_class": "GetReviewForm_ListAction",
         "zip": false
     },
     {
@@ -75,7 +70,7 @@
         "position": 2001,
         "allow_if": "reviewer",
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetReviewForm_SearchAction",
+        "factory_class": "GetReviewForm_ListAction",
         "zip": true
     },
     {
@@ -84,7 +79,7 @@
         "position": 3060,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetReviews_SearchAction",
+        "factory_class": "GetReviews_ListAction",
         "zip": false
     },
     {
@@ -93,7 +88,7 @@
         "position": 3061,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetReviews_SearchAction",
+        "factory_class": "GetReviews_ListAction",
         "zip": true
     },
     {
@@ -102,7 +97,7 @@
         "position": 3062,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetReviews_SearchAction",
+        "factory_class": "GetReviews_ListAction",
         "zip": false, "abstract": true
     },
     {
@@ -111,26 +106,26 @@
         "position": 3070,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetScores_SearchAction"
+        "factory_class": "GetScores_ListAction"
     },
     {
         "name": "get/votes", "get": true,
         "allow_if": "pc", "display_if": false,
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetVotes_SearchAction"
+        "factory_class": "GetVotes_ListAction"
     },
     {
         "name": "get/rank", "get": true,
         "allow_if": ["tag_rank", "reviewer"], "display_if": false,
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetRank_SearchAction"
+        "factory_class": "GetRank_ListAction"
     },
     {
         "name": "get/lead", "get": true,
         "selector": "Reviews/Discussion leads", "position": 3090,
         "allow_if": "pc", "display_if": "lead",
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetLead_SearchAction",
+        "factory_class": "GetLead_ListAction",
         "type": "lead"
     },
     {
@@ -138,15 +133,14 @@
         "selector": "Reviews/Shepherds", "position": 3091,
         "allow_if": "pc", "display_if": "shepherd",
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetShepherd_SearchAction"
+        "factory_class": "GetShepherd_ListAction"
     },
     {
         "name": "get/revpref", "get": true,
         "selector": "Preference file",
         "position": -100,
         "allow_if": "pc", "display_if_report": "editpref",
-        "require": "src/listactions/la_get_revpref.php",
-        "factory_class": "GetRevpref_SearchAction",
+        "factory_class": "GetRevpref_ListAction",
         "abstracts": false
     },
     {
@@ -154,8 +148,7 @@
         "selector": "Preference file with abstracts",
         "position": -99,
         "allow_if": "pc", "display_if_report": "editpref",
-        "require": "src/listactions/la_get_revpref.php",
-        "factory_class": "GetRevpref_SearchAction",
+        "factory_class": "GetRevpref_ListAction",
         "abstracts": true
     },
     {
@@ -163,15 +156,14 @@
         "selector": "Review assignments/PC review preferences",
         "position": 2060,
         "allow_if": "manager",
-        "require": "src/listactions/la_get_revpref.php",
-        "factory_class": "GetRevpref_SearchAction"
+        "factory_class": "GetAllRevpref_ListAction"
     },
     {
         "name": "get/paper", "get": true,
         "selector": "Documents/Submissions",
         "position": 100, "display_if_list_has": "paper",
         "require": "src/listactions/la_get_sub.php",
-        "factory_class": "GetDocument_SearchAction",
+        "factory_class": "GetDocument_ListAction",
         "dtype": 0
     },
     {
@@ -179,7 +171,7 @@
         "selector": "Documents/Final versions",
         "position": 0, "display_if_list_has": "final",
         "require": "src/listactions/la_get_sub.php",
-        "factory_class": "GetDocument_SearchAction",
+        "factory_class": "GetDocument_ListAction",
         "dtype": -1
     },
     {
@@ -188,83 +180,79 @@
         "position": 999, "display_if_list_has": "paper",
         "allow_if": "manager",
         "require": "src/listactions/la_get_sub.php",
-        "factory_class": "GetCheckFormat_SearchAction"
+        "factory_class": "GetCheckFormat_ListAction"
     },
     {
         "name": "get/abstract", "get": true,
         "selector": "Paper information/Text with abstracts", "display_if_list_has": "abstract",
         "position": 1000,
         "require": "src/listactions/la_get_sub.php",
-        "factory_class": "GetAbstract_SearchAction"
+        "factory_class": "GetAbstract_ListAction"
     },
     {
         "name": "get/abstract", "get": true,
         "selector": "Paper information/Text", "display_if_list_has": "!abstract",
         "position": 1000,
         "require": "src/listactions/la_get_sub.php",
-        "factory_class": "GetAbstract_SearchAction"
+        "factory_class": "GetAbstract_ListAction"
     },
     {
         "name": "get/authors", "get": true,
         "selector": "Paper information/Authors",
         "position": 1001, "display_if_list_has": "authors",
         "require": "src/listactions/la_get_sub.php",
-        "factory_class": "GetAuthors_SearchAction"
+        "factory_class": "GetAuthors_ListAction"
     },
     {
         "name": "get/contact", "get": true,
         "require": "src/listactions/la_get_sub.php", "display_if": false,
-        "factory_class": "GetContacts_SearchAction"
+        "factory_class": "GetContacts_ListAction"
     },
     {
         "name": "get/topics", "get": true,
         "selector": "Paper information/Topics", "display_if": "has_topics",
         "position": 1050,
         "require": "src/listactions/la_get_sub.php",
-        "factory_class": "GetTopics_SearchAction"
+        "factory_class": "GetTopics_ListAction"
     },
     {
         "name": "get/pcconf", "get": true,
         "selector": "Paper information/PC conflicts",
         "position": 1060,
         "require": "src/listactions/la_get_sub.php",
-        "factory_class": "GetPcconflicts_SearchAction"
+        "factory_class": "GetPcconflicts_ListAction"
     },
     {
         "name": "get/csv", "get": true,
         "selector": "Paper information/CSV",
         "position": 1089,
         "require": "src/listactions/la_get_sub.php",
-        "factory_class": "GetCSV_SearchAction"
+        "factory_class": "GetCSV_ListAction"
     },
     {
         "name": "mail", "get": true,
-        "renderer": "Mail_SearchAction::render", "title": "Mail",
+        "renderer": "Mail_ListAction::render", "title": "Mail",
         "position": 1000,
         "allow_if": "manager", "display_if_report": "!editpref",
-        "factory_class": "Mail_SearchAction",
-        "require": "src/listactions/la_mail.php"
+        "factory_class": "Mail_ListAction"
     },
     {
         "name": "tag", "post": true,
-        "renderer": "Tag_SearchAction::render", "title": "Tag",
+        "renderer": "Tag_ListAction::render", "title": "Tag",
         "position": 500,
         "allow_if": "pc", "display_if_report": "!editpref",
-        "factory_class": "Tag_SearchAction",
-        "require": "src/listactions/la_tag.php"
+        "factory_class": "Tag_ListAction"
     },
     {
         "name": "uploadpref",
-        "renderer": "GetRevpref_SearchAction::render_upload", "title": "Upload",
+        "renderer": "GetRevpref_ListAction::render_upload", "title": "Upload",
         "allow_if": "pc", "display_if_report": "editpref",
-        "require": "src/listactions/la_get_revpref.php",
         "position": 100
     },
     {
         "name": "setpref",
-        "renderer": "GetRevpref_SearchAction::render_set", "title": "Set preferences",
+        "renderer": "GetRevpref_ListAction::render_set", "title": "Set preferences",
         "allow_if": "pc", "display_if_report": "editpref",
-        "require": "src/listactions/la_get_revpref.php",
         "position": 200
     }
 ]

@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class Assign_SearchAction extends SearchAction {
+class Assign_ListAction extends SearchAction {
     function allow(Contact $user) {
         return $user->privChair && Navigation::page() !== "reviewprefs";
     }

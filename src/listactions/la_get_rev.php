@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class GetPcassignments_SearchAction extends SearchAction {
+class GetPcassignments_ListAction extends SearchAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
@@ -13,7 +13,7 @@ class GetPcassignments_SearchAction extends SearchAction {
     }
 }
 
-class GetReviewBase_SearchAction extends SearchAction {
+class GetReviewBase_ListAction extends SearchAction {
     protected $isform;
     protected $iszip;
     function __construct($isform, $iszip) {
@@ -75,7 +75,7 @@ class GetReviewBase_SearchAction extends SearchAction {
     }
 }
 
-class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
+class GetReviewForm_ListAction extends GetReviewBase_SearchAction {
     function __construct($fj) {
         parent::__construct(true, $fj->name === "get/revformz");
     }
@@ -115,7 +115,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
     }
 }
 
-class GetReviews_SearchAction extends GetReviewBase_SearchAction {
+class GetReviews_ListAction extends GetReviewBase_SearchAction {
     private $include_paper;
     function __construct($fj) {
         parent::__construct(false, !!get($fj, "zip"));
@@ -137,7 +137,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
             }
             $rctext = "";
             if ($this->include_paper)
-                $rctext = GetAbstract_SearchAction::render($prow, $user);
+                $rctext = GetAbstract_ListAction::render($prow, $user);
             $last_rc = null;
             foreach ($prow->viewable_submitted_reviews_and_comments($user, null) as $rc) {
                 $rctext .= PaperInfo::review_or_comment_text_separator($last_rc, $rc);
@@ -169,7 +169,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
     }
 }
 
-class GetScores_SearchAction extends SearchAction {
+class GetScores_ListAction extends SearchAction {
     function allow(Contact $user) {
         return $user->can_view_some_review();
     }
@@ -226,7 +226,7 @@ class GetScores_SearchAction extends SearchAction {
     }
 }
 
-class GetVotes_SearchAction extends SearchAction {
+class GetVotes_ListAction extends SearchAction {
     function allow(Contact $user) {
         return $user->isPC;
     }
@@ -245,7 +245,7 @@ class GetVotes_SearchAction extends SearchAction {
     }
 }
 
-class GetRank_SearchAction extends SearchAction {
+class GetRank_ListAction extends SearchAction {
     function allow(Contact $user) {
         return $user->conf->setting("tag_rank") && $user->is_reviewer();
     }
@@ -290,7 +290,7 @@ class GetRank_SearchAction extends SearchAction {
     }
 }
 
-class GetLead_SearchAction extends SearchAction {
+class GetLead_ListAction extends SearchAction {
     private $islead;
     function __construct($fj) {
         $this->islead = $fj->name === "get/lead";

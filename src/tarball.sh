@@ -182,9 +182,11 @@ src/init.php
 src/initweb.php
 src/listactions/la_assign.php
 src/listactions/la_decide.php
-src/listactions/la_get_json.php
+src/listactions/la_getallrevpref.php
+src/listactions/la_getjson.php
+src/listactions/la_getjsonrqc.php
+src/listactions/la_getrevpref.php
 src/listactions/la_get_rev.php
-src/listactions/la_get_revpref.php
 src/listactions/la_get_sub.php
 src/listactions/la_mail.php
 src/listactions/la_tag.php
