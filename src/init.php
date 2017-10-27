@@ -100,7 +100,7 @@ set_path_variables();
 class SiteLoader {
     static $map = [
         "AbbreviationClass" => "lib/abbreviationmatcher.php",
-        "AssignmentSet" => "src/assigners.php",
+        "AssignmentCountSet" => "src/assignmentset.php",
         "AutoassignerCosts" => "src/autoassigner.php",
         "BanalSettings" => "src/settings/s_subform.php",
         "CapabilityManager" => "src/capability.php",
@@ -119,7 +119,7 @@ class SiteLoader {
         "PaperInfoSet" => "src/paperinfo.php",
         "PaperInfo_AuthorMatcher" => "src/paperinfo.php",
         "PaperOptionList" => "src/paperoption.php",
-        "Review_Assigner" => "src/assigners.php",
+        "Review_Assigner" => "src/assignmentset.php",
         "ReviewField" => "src/review.php",
         "ReviewFieldInfo" => "src/review.php",
         "ReviewForm" => "src/review.php",
@@ -135,6 +135,7 @@ class SiteLoader {
     ];
 
     static $suffix_map = [
+        "_assignmentparser.php" => ["a_", "assigners"],
         "_helptopic.php" => ["h_", "help"],
         "_listaction.php" => ["la_", "listactions"],
         "_papercolumn.php" => ["pc_", "papercolumns"],

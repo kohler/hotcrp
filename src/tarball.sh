@@ -146,7 +146,13 @@ pages/adminhome.php
 pages/home.php
 
 src/.htaccess
-src/assigners.php
+src/assigners/a_conflict.php
+src/assigners/a_decision.php
+src/assigners/a_lead.php
+src/assigners/a_preference.php
+src/assigners/a_status.php
+src/assigners/a_tag.php
+src/assignmentset.php
 src/autoassigner.php
 src/banal
 src/capability.php

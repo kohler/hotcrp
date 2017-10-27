@@ -4,8 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
-require_once("src/papersearch.php");
-require_once("src/assigners.php");
 if (!$Me->is_manager())
     $Me->escape();
 if (check_post())

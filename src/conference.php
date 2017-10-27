@@ -868,7 +868,7 @@ class Conf {
         return false;
     }
     function assignment_parser($keyword, Contact $user = null) {
-        require_once("assigners.php");
+        require_once("assignmentset.php");
         if ($this->_assignment_parsers === null) {
             $this->_assignment_parsers = [];
             expand_json_includes_callback(["etc/assignmentparsers.json"], [$this, "_add_assignment_parser_json"]);

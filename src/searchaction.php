@@ -75,7 +75,7 @@ class SearchAction {
 
 
     static function pcassignments_csv_data(Contact $user, $selection) {
-        require_once("assigners.php");
+        require_once("assignmentset.php");
         $pcm = $user->conf->pc_members();
         $token_users = [];
 

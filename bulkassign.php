@@ -4,8 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
-require_once("src/papersearch.php");
-require_once("src/assigners.php");
 if (!$Me->is_manager())
     $Me->escape();
 if (check_post())
@@ -203,20 +201,20 @@ echo '<div class="f-contain"><div class="f-i"><div class="f-e">',
 echo '<div class="g"><strong>OR</strong> &nbsp;',
     '<input type="file" name="bulk" accept="text/plain,text/csv" size="30" /></div>';
 
-echo '<div id="foldoptions" class="lg foldc fold2o fold3c">',
-    'By default, assign&nbsp; ',
-    Ht::select("default_action", array("guess" => "(guess action)",
-                                       "primary" => "primary reviews",
-                                       "secondary" => "secondary reviews",
-                                       "pcreview" => "optional PC reviews",
-                                       "metareview" => "metareviews",
-                                       "review" => "external reviews",
-                                       "conflict" => "PC conflicts",
-                                       "lead" => "discussion leads",
-                                       "shepherd" => "shepherds",
+echo '<div id="foldoptions" class="lg foldc fold2c fold3c">',
+    'By default,&nbsp; ',
+    Ht::select("default_action", array("guess" => "guess action from input",
+                                       "primary" => "assign primary reviews",
+                                       "secondary" => "assign secondary reviews",
+                                       "pcreview" => "assign optional PC reviews",
+                                       "metareview" => "assign metareviews",
+                                       "review" => "assign external reviews",
+                                       "conflict" => "assign PC conflicts",
+                                       "lead" => "assign discussion leads",
+                                       "shepherd" => "assign shepherds",
                                        "tag" => "add tags",
                                        "settag" => "replace tags",
-                                       "preference" => "reviewer preferences"),
+                                       "preference" => "set reviewer preferences"),
                defval($_REQUEST, "default_action", "guess"),
                array("id" => "tsel", "onchange" => "fold(\"options\",this.value!=\"review\");fold(\"options\",!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),2)"));
 $rev_rounds = $Conf->round_selector_options();
