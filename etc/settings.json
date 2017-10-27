@@ -357,21 +357,6 @@
         "title": "Review visibility tags", "group": "decisions",
         "type": "taglist", "parser": "Tag_SettingParser", "size": 24
     },
-    "tag_autosearch": {
-        "title": "Automatic tags", "group": "autosearch",
-        "parser": "Autosearch_SettingParser",
-        "type": "string", "require": "src/settings/s_autosearch.php"
-    },
-    "tag_autosearch_t": {
-        "title": "Automatic tag", "group": "autosearch",
-        "type": "tag", "size": 28, "placeholder": "Tag", "internal": true,
-        "extensible": true
-    },
-    "tag_autosearch_q": {
-        "title": "Automatic tag search", "group": "autosearch",
-        "type": "text", "size": 50, "placeholder": "Search", "internal": true,
-        "extensible": true
-    },
     "tag_badge": {
         "title": "Tag badges",
         "type": "taglist", "parser": "Tag_SettingParser", "size": 40, "autogrow": true,

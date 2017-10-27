@@ -56,10 +56,6 @@
         "renderer": "Tags_SettingRenderer::render_styles"
     },
     {
-        "name": "autosearch", "group": "tags", "position": 730,
-        "renderer": "Autosearch_SettingRenderer::render"
-    },
-    {
         "name": "tracks", "group": "tags", "position": 750,
         "crosschecker": "Tracks_SettingRenderer::crosscheck",
         "renderer": "Tracks_SettingRenderer::render"
