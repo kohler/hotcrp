@@ -685,7 +685,7 @@ class Conf {
         if ($this->_emoji_codes === null) {
             $this->_emoji_codes = json_decode(file_get_contents("$ConfSitePATH/etc/emojicodes.json"), true);
             if (($olist = $this->opt("emojiCodes")))
-                expand_json_includes_callback($olist, [$this, "_add_emoji_code", null, true]);
+                expand_json_includes_callback($olist, [$this, "_add_emoji_code"]);
         }
         return $this->_emoji_codes;
     }
@@ -3272,7 +3272,7 @@ class Conf {
             expand_json_includes_callback($m, [$this->_ims, "addj"],
                                           ["priority" => -1.0], true);
             if (($mlist = $this->opt("msgs_include")))
-                expand_json_includes_callback($mlist, [$this->_ims, "addj"], null, true);
+                expand_json_includes_callback($mlist, [$this->_ims, "addj"]);
         }
         return $this->_ims;
     }

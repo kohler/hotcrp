@@ -108,6 +108,7 @@ class PaperOptionList {
     private $nonpaper_am;
     private $osubmission;
     private $ofinal;
+    private $_adding_fixed;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -115,11 +116,11 @@ class PaperOptionList {
         $this->ofinal = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "title" => "Final version", "message_title" => "final version", "json_key" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
     }
 
-    function _add_json($oj, $fixed) {
+    function _add_json($oj) {
         if (is_string($oj->id) && is_numeric($oj->id))
             $oj->id = intval($oj->id);
         if (is_int($oj->id) && $oj->id > 0 && !isset($this->jlist[$oj->id])
-            && ($oj->id >= PaperOption::MINFIXEDID) === $fixed
+            && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed
             && ((isset($oj->name) && is_string($oj->name))
                 || (isset($oj->title) && is_string($oj->title)))) {
             if ($this->conf->xt_allowed($oj) && !Conf::xt_disabled($oj))
@@ -132,10 +133,14 @@ class PaperOptionList {
     private function option_json_list() {
         if ($this->jlist === null) {
             $this->jlist = $this->jmap = [];
-            if (($olist = $this->conf->setting_json("options")))
-                expand_json_includes_callback($olist, [$this, "_add_json"], false);
-            if (($olist = $this->conf->opt("fixedOptions")))
-                expand_json_includes_callback($olist, [$this, "_add_json"], true);
+            if (($olist = $this->conf->setting_json("options"))) {
+                $this->_adding_fixed = false;
+                expand_json_includes_callback($olist, [$this, "_add_json"]);
+            }
+            if (($olist = $this->conf->opt("fixedOptions"))) {
+                $this->_adding_fixed = true;
+                expand_json_includes_callback($olist, [$this, "_add_json"]);
+            }
             uasort($this->jlist, ["PaperOption", "compare"]);
         }
         return $this->jlist;

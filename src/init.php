@@ -262,7 +262,7 @@ function read_included_options(&$files) {
         }
 }
 
-function expand_json_includes_callback($includelist, $callback, $extra_arg = null, $no_validate = false) {
+function expand_json_includes_callback($includelist, $callback) {
     $includes = [];
     foreach (is_array($includelist) ? $includelist : [$includelist] as $k => $str) {
         $expandable = null;
@@ -292,16 +292,28 @@ function expand_json_includes_callback($includelist, $callback, $extra_arg = nul
                 continue;
             }
         }
-        if (is_object($entry) && !$no_validate
-            && !isset($entry->id) && !isset($entry->name) && !isset($entry->match) && !isset($entry->factory) && !isset($entry->factory_class))
-            $entry = get_object_vars($entry);
-        foreach (is_array($entry) ? $entry : [$entry] as $key => $obj) {
-            $arg = $extra_arg === null ? $key : $extra_arg;
-            if (is_object($obj))
-                $obj->__subposition = ++Conf::$next_xt_subposition;
-            if ((!is_object($obj) && !$no_validate)
-                || !call_user_func($callback, $obj, $arg))
-                error_log("$landmark: Invalid expansion " . json_encode($obj) . ".");
+        if (is_object($entry) && !isset($entry->name) && !isset($entry->match)) {
+            $isassoc = true;
+            $nassoctest = 5;
+            foreach (get_object_vars($entry) as $k => $v) {
+                if (!is_object($v))
+                    $isassoc = false;
+                if (!$isassoc || --$nassoctest === 0)
+                    break;
+            }
+            if ($isassoc)
+                $entry = get_object_vars($entry);
+        } else {
+            $isassoc = false;
+        }
+        foreach (is_array($entry) ? $entry : [$entry] as $k => $v) {
+            if (is_object($v)) {
+                if ($isassoc && !isset($v->name))
+                    $v->name = $k;
+                $v->__subposition = ++Conf::$next_xt_subposition;
+            }
+            if (!call_user_func($callback, $v, $k))
+                error_log("$landmark: Invalid expansion " . json_encode($v) . ".");
         }
     }
 }
