@@ -778,8 +778,15 @@ class PaperStatus extends MessageSet {
         foreach ($this->conflicts_array($pj, $old_pj) as $c)
             if ($c >= CONFLICT_CONTACTAUTHOR)
                 ++$ncontacts;
-        if (!$ncontacts && $old_pj && self::contacts_array($old_pj))
-            $this->error_at("contacts", $this->_("Each submission must have at least one contact."));
+        if (!$ncontacts && $old_pj) {
+            $noldcontacts = 0;
+            foreach (self::contacts_array($old_pj) as $c) {
+                if ($c->contact)
+                    ++$noldcontacts;
+            }
+            if ($noldcontacts)
+                $this->error_at("contacts", $this->_("Each submission must have at least one contact."));
+        }
         foreach ($pj->bad_contacts as $reg)
             if (!isset($reg->email))
                 $this->error_at("contacts", $this->_("Contact %s has no associated email.", Text::user_html($reg)));
