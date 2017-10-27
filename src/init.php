@@ -137,6 +137,8 @@ class SiteLoader {
     static $suffix_map = [
         "_helptopic.php" => ["h_", "help"],
         "_listaction.php" => ["la_", "listactions"],
+        "_papercolumn.php" => ["pc_", "papercolumns"],
+        "_papercolumnfactory.php" => ["pc_", "papercolumns"],
         "_searchterm.php" => ["st_", "search"],
         "_settingrenderer.php" => ["s_", "settings"],
         "_settingparser.php" => ["s_", "settings"]
