@@ -781,7 +781,7 @@ class PaperStatus extends MessageSet {
         if (!$ncontacts && $old_pj) {
             $noldcontacts = 0;
             foreach (self::contacts_array($old_pj) as $c) {
-                if ($c->contact)
+                if (isset($c->contact) && $c->contact)
                     ++$noldcontacts;
             }
             if ($noldcontacts)
