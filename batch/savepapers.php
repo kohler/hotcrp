@@ -115,8 +115,10 @@ if (str_starts_with($content, "\x50\x4B\x03\x04")) {
     }
 }
 
-if (($jp = json_decode($content)) === null) {
-    Json::decode($content); // our JSON decoder provides error positions
+$jp = json_decode($content);
+if ($jp === null)
+    $jp = Json::decode($content); // our JSON decoder provides error positions
+if ($jp === null) {
     fwrite(STDERR, "{$filepfx}invalid JSON: " . Json::last_error_msg() . "\n");
     exit(1);
 } else if (!is_object($jp) && !is_array($jp)) {

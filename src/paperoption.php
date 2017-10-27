@@ -836,11 +836,10 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function store_json($pj, PaperStatus $ps) {
-        if (is_object($pj)) {
-            $ps->upload_document($pj, $this);
-            return $pj->docid;
-        } else if ($pj !== null)
-            $ps->error_at_option($this, "Option should be a document.");
+        if ($pj !== null) {
+            $xpj = $ps->upload_document($pj, $this);
+            return $xpj ? $xpj->docid : null;
+        }
     }
 
     function list_display($isrow) {
@@ -1141,12 +1140,10 @@ class AttachmentsPaperOption extends PaperOption {
         if (is_object($pj))
             $pj = [$pj];
         $result = [];
-        foreach ($pj as $docj)
-            if (is_object($docj)) {
-                $ps->upload_document($docj, $this);
-                $result[] = (int) $docj->docid;
-            } else
-                $ps->error_at_option($this, "Option should be a document.");
+        foreach ($pj as $docj) {
+            if (($xdocj = $ps->upload_document($docj, $this)))
+                $result[] = (int) $xdocj->docid;
+        }
         if (count($result) >= 2) {
             // Duplicate the document IDs in the first option’s sort data.
             // This is so (1) the link from option -> PaperStorage is visible

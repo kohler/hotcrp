@@ -337,17 +337,22 @@ class PaperStatus extends MessageSet {
     }
 
     function upload_document($docj, PaperOption $o) {
-        if (get($docj, "error") || get($docj, "error_html")) {
+        if (!is_object($docj) && is_array($docj) && count($docj) === 1)
+            $docj = $docj[0];
+        if (!is_object($docj)) {
+            $this->error_at($o->json_key, "Format error [{$o->json_key}]");
+            return false;
+        } else if (get($docj, "error") || get($docj, "error_html")) {
             $this->error_at_option($o, get($docj, "error_html", "Upload error."));
             $docj->docid = 1;
-            return;
+            return $docj;
         }
 
         // check on_document_import
         foreach ($this->_on_document_import as $cb)
             if (call_user_func($cb, $docj, $o, $this) === false) {
                 $docj->docid = 1;
-                return;
+                return $docj;
             }
 
         // look for an existing document with same hash;
@@ -377,7 +382,7 @@ class PaperStatus extends MessageSet {
             $docj->timestamp = (int) $oldj->timestamp;
             $docj->size = (int) $oldj->size;
             $docj->mimetype = $oldj->mimetype;
-            return;
+            return $docj;
         }
 
         // check filter
@@ -414,6 +419,7 @@ class PaperStatus extends MessageSet {
             $docj->docid = 1;
             $this->error_at_option($o, $newdoc ? $newdoc->error_html : "Empty document.");
         }
+        return $docj;
     }
 
     private function normalize_string($pj, $k, $simplify, $preserve) {
@@ -468,13 +474,16 @@ class PaperStatus extends MessageSet {
     private function normalize_topics($pj) {
         $topics = $pj->topics;
         unset($pj->topics);
+        if (is_string($topics))
+            $topics = explode("\n", cleannl($topics));
         if (is_array($topics)) {
             $new_topics = (object) array();
-            foreach ($topics as $v)
+            foreach ($topics as $v) {
                 if ($v && (is_int($v) || is_string($v)))
                     $new_topics->$v = true;
                 else if ($v)
                     $this->error_at("topics", "Format error [topics]");
+            }
             $topics = $new_topics;
         }
         if (is_object($topics)) {
@@ -921,9 +930,9 @@ class PaperStatus extends MessageSet {
 
         // store documents (options already stored)
         if (isset($pj->submission) && $pj->submission)
-            $this->upload_document($pj->submission, $this->conf->paper_opts->get(DTYPE_SUBMISSION));
+            $pj->submission = $this->upload_document($pj->submission, $this->conf->paper_opts->get(DTYPE_SUBMISSION));
         if (isset($pj->final) && $pj->final)
-            $this->upload_document($pj->final, $this->conf->paper_opts->get(DTYPE_FINAL));
+            $pj->final = $this->upload_document($pj->final, $this->conf->paper_opts->get(DTYPE_FINAL));
 
         // create contacts
         foreach (self::contacts_array($pj) as $c) {
