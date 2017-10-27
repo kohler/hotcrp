@@ -6,7 +6,7 @@
 // setting information
 class Si {
     public $name;
-    public $short_description;
+    public $title;
     public $group;
     public $type;
     public $internal;
@@ -46,25 +46,22 @@ class Si {
         "urlstring" => self::SI_DATA
     ];
 
-    private function store($name, $key, $j, $jkey, $typecheck) {
+    private function store($key, $j, $jkey, $typecheck) {
         if (isset($j->$jkey) && call_user_func($typecheck, $j->$jkey))
             $this->$key = $j->$jkey;
         else if (isset($j->$jkey))
-            trigger_error("setting $name.$jkey format error");
+            trigger_error("setting {$j->name}.$jkey format error");
     }
 
-    function __construct($name, $j) {
-        assert(!preg_match('/_(?:\$|n|m?\d+)\z/', $name));
-        $this->name = $name;
-        $this->store($name, "short_description", $j, "name", "is_string");
-        if (isset($j->title))
-            $this->store($name, "short_description", $j, "title", "is_string");
-        foreach (["short_description", "type", "storage", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
-            $this->store($name, $k, $j, $k, "is_string");
+    function __construct($j) {
+        assert(!preg_match('/_(?:\$|n|m?\d+)\z/', $j->name));
+        $this->name = $this->title = $j->name;
+        foreach (["title", "type", "storage", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
+            $this->store($k, $j, $k, "is_string");
         foreach (["internal", "optional", "novalue", "disabled", "autogrow"] as $k)
-            $this->store($name, $k, $j, $k, "is_bool");
-        $this->store($name, "size", $j, "size", "is_int");
-        $this->store($name, "values", $j, "values", "is_array");
+            $this->store($k, $j, $k, "is_bool");
+        $this->store("size", $j, "size", "is_int");
+        $this->store("values", $j, "values", "is_array");
         if (isset($j->default_value) && (is_int($j->default_value) || is_string($j->default_value)))
             $this->default_value = $j->default_value;
         if (isset($j->extensible) && $j->extensible === true)
@@ -72,7 +69,7 @@ class Si {
         else if (isset($j->extensible) && $j->extensible === "word")
             $this->extensible = self::X_WORD;
         else if (isset($j->extensible) && $j->extensible !== false)
-            trigger_error("setting $name.extensible format error");
+            trigger_error("setting {$j->name}.extensible format error");
         if (isset($j->group)) {
             if (is_string($j->group))
                 $this->group = $j->group;
@@ -82,13 +79,13 @@ class Si {
                     if (is_string($g))
                         $this->group[] = $g;
                     else
-                        trigger_error("setting $name.group format error");
+                        trigger_error("setting {$j->name}.group format error");
             }
         }
 
         if (!$this->type && $this->parser)
             $this->type = "special";
-        $s = $this->storage ? : $name;
+        $s = $this->storage ? : $this->name;
         $pfx = substr($s, 0, 4);
         if ($pfx === "opt.")
             $this->storage_type = self::SI_DATA | self::SI_OPT;
@@ -162,7 +159,7 @@ class Si {
             if ($si->storage)
                 $si->storage .= $m[2];
             if ($si->extensible === self::X_WORD)
-                $si->short_description .= " (" . htmlspecialchars($m[2]) . ")";
+                $si->title .= " (" . htmlspecialchars($m[2]) . ")";
             self::$all[$name] = $si;
         }
         if (!isset(self::$all[$name]))
@@ -185,33 +182,34 @@ class Si {
         return $info;
     }
 
-    static function initialize() {
-        global $ConfSitePATH;
-        $fname = "$ConfSitePATH/etc/settings.json";
-        $info = self::read([], file_get_contents($fname), $fname);
-        if (($settinginfo_include = opt("settinginfo_include"))) {
-            if (!is_array($settinginfo_include))
-                $settinginfo_include = array($settinginfo_include);
-            foreach ($settinginfo_include as $k => $si) {
-                if (preg_match(',\A\s*\{\s*\",s', $si))
-                    $info = self::read($info, $si, "include entry $k");
-                else
-                    foreach (expand_includes($si) as $f)
-                        if (($x = file_get_contents($f)))
-                            $info = self::read($info, $x, $f);
-            }
-        }
+    static function _add_json($j) {
+        if (is_object($j) && isset($j->name) && is_string($j->name)) {
+            self::$all[] = $j;
+            return true;
+        } else
+            return false;
+    }
 
-        foreach ($info as $k => $v) {
-            if (isset($v["require"])) {
-                foreach (expand_includes($v["require"]) as $f)
-                    require_once $f;
+    static function initialize() {
+        global $Conf;
+        self::$all = [];
+        expand_json_includes_callback(["etc/settings.json"], "Si::_add_json");
+        if (($olist = $Conf->opt("settingSpecs")))
+            expand_json_includes_callback($olist, "Si::_add_json");
+        usort(self::$all, "Conf::xt_priority_compare");
+
+        $known = $all = [];
+        foreach (self::$all as $j) {
+            if (!isset($known[$j->name]) && $Conf->xt_allowed($j)) {
+                $known[$j->name] = true;
+                if (Conf::xt_enabled($j)) {
+                    Conf::xt_resolve_require($j);
+                    $class = get_s($j, "factory_class", "Si");
+                    $all[$j->name] = new $class($j);
+                }
             }
-            $class = "Si";
-            if (isset($v["info_class"]))
-                $class = $v["info_class"];
-            self::$all[$k] = new $class($k, (object) $v);
         }
+        self::$all = $all;
     }
 }
 
@@ -362,8 +360,8 @@ class SettingValues extends MessageSet {
     }
     static private function check_error_field($field, &$html) {
         if ($field instanceof Si) {
-            if ($field->short_description && $html !== false)
-                $html = htmlspecialchars($field->short_description) . ": " . $html;
+            if ($field->title && $html !== false)
+                $html = htmlspecialchars($field->title) . ": " . $html;
             return $field->name;
         } else
             return $field;
@@ -759,7 +757,7 @@ class SettingValues extends MessageSet {
                 $this->save($dn1, $dv2);
             else if ($dv2 && $dv1 > $dv2) {
                 $si = Si::get($dn1);
-                $this->error_at($si, "Must come before " . Si::get($dn2, "short_description") . ".");
+                $this->error_at($si, "Must come before " . Si::get($dn2, "title") . ".");
                 $this->error_at($dn2);
             }
         if ($this->has_savedv("sub_sub"))
@@ -777,7 +775,7 @@ class SettingValues extends MessageSet {
                 $isuf = $i ? "_$i" : "";
                 if ($this->newv("resp_open$isuf") > $this->newv("resp_done$isuf")) {
                     $si = Si::get("resp_open$isuf");
-                    $this->error_at($si, "Must come before " . Si::get("resp_done", "short_description") . ".");
+                    $this->error_at($si, "Must come before " . Si::get("resp_done", "title") . ".");
                     $this->error_at("resp_done$isuf");
                 }
             }

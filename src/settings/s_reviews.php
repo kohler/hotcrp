@@ -306,7 +306,7 @@ class Round_SettingParser extends SettingParser {
                         $sv->save($soft, $hardv);
                     else if ($hardv && $softv > $hardv) {
                         $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
-                        $sv->error_at($soft, Si::get("{$k}soft", "short_description") . $desc . ": Must come before " . Si::get("{$k}hard", "short_description") . ".");
+                        $sv->error_at($soft, Si::get("{$k}soft", "title") . $desc . ": Must come before " . Si::get("{$k}hard", "title") . ".");
                         $sv->error_at($hard);
                     }
                 }
