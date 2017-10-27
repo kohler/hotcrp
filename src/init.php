@@ -282,15 +282,15 @@ function expand_json_includes_callback($includelist, $callback) {
     foreach ($includes as $xentry) {
         list($entry, $landmark) = $xentry;
         if (is_string($entry)) {
-            if (($x = json_decode($entry)) !== false)
-                $entry = $x;
-            else {
-                if (json_last_error()) {
-                    Json::decode($entry);
-                    error_log("$landmark: Invalid JSON. " . Json::last_error_msg());
-                }
-                continue;
+            $x = json_decode($entry);
+            if ($x === null && json_last_error()) {
+                $x = Json::decode($entry);
+                if ($x === null)
+                    error_log("$landmark: Invalid JSON: " . Json::last_error_msg());
             }
+            if ($x === null)
+                continue;
+            $entry = $x;
         }
         if (is_object($entry) && !isset($entry->name) && !isset($entry->match)) {
             $isassoc = true;
