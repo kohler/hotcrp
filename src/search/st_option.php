@@ -164,7 +164,7 @@ class Option_SearchTerm extends SearchTerm {
                     if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
                         $qo[] = new OptionMatcher($o, $ocompar, $m[1]);
                     else
-                        $warn[] = "Submission option “" . htmlspecialchars($o->name) . "” takes integer values.";
+                        $warn[] = "Submission option “" . htmlspecialchars($o->title) . "” takes integer values.";
                 } else if ($o->type === "text") {
                     $qo[] = new OptionMatcher($o, "~=", $oval, "text");
                 } else if ($o->has_attachments()) {

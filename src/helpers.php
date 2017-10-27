@@ -783,9 +783,9 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
     if (isset($whyNot["pdfPermission"]))
         $ms[] = $conf->_("You don’t have permission to view uploaded documents for submission #%d.", $paperId);
     if (isset($whyNot["optionPermission"]))
-        $ms[] = $conf->_("You don’t have permission to view the %2\$s for submission #%1\$d.", $paperId, $whyNot["optionPermission"]->message_name);
+        $ms[] = $conf->_("You don’t have permission to view the %2\$s for submission #%1\$d.", $paperId, $whyNot["optionPermission"]->message_title);
     if (isset($whyNot["optionNotAccepted"]))
-        $ms[] = $conf->_("Non-accepted submission #%d can have no %s.", $paperId, $whyNot["optionNotAccepted"]->message_name);
+        $ms[] = $conf->_("Non-accepted submission #%d can have no %s.", $paperId, $whyNot["optionNotAccepted"]->message_title);
     if (isset($whyNot["signin"]))
         $ms[] = $conf->_("You must sign in to $action submission #%d.", $paperId);
     if (isset($whyNot["withdrawn"]))

@@ -53,7 +53,7 @@ class Keywords_HelpTopic {
             echo $hth->tgroup("Options");
             foreach ($oex as $extype => $oex) {
                 if ($extype === "has") {
-                    $desc = "paper has “" . htmlspecialchars($oex[1]->name) . "” submission option";
+                    $desc = "paper has “" . htmlspecialchars($oex[1]->title) . "” submission option";
                     $oabbr = array();
                     foreach ($hth->conf->paper_opts->option_list() as $ox)
                         if ($ox !== $oex[1])
@@ -63,13 +63,13 @@ class Keywords_HelpTopic {
                 } else if ($extype === "yes")
                     $desc = "same meaning; abbreviations also accepted";
                 else if ($extype === "numeric")
-                    $desc = "paper’s “" . htmlspecialchars($oex[1]->name) . "” option has value &gt; 100";
+                    $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” option has value &gt; 100";
                 else if ($extype === "selector")
-                    $desc = "paper’s “" . htmlspecialchars($oex[1]->name) . "” option has value “" . htmlspecialchars($oex[1]->selector[1]) . "”";
+                    $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” option has value “" . htmlspecialchars($oex[1]->selector[1]) . "”";
                 else if ($extype === "attachment-count")
-                    $desc = "paper has more than 2 “" . htmlspecialchars($oex[1]->name) . "” attachments";
+                    $desc = "paper has more than 2 “" . htmlspecialchars($oex[1]->title) . "” attachments";
                 else if ($extype === "attachment-filename")
-                    $desc = "paper has an “" . htmlspecialchars($oex[1]->name) . "” attachment with a .gif extension";
+                    $desc = "paper has an “" . htmlspecialchars($oex[1]->title) . "” attachment with a .gif extension";
                 else
                     continue;
                 echo $hth->search_trow($oex[0], $desc);

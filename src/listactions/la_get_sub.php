@@ -57,7 +57,7 @@ class GetDocument_ListAction extends SearchAction {
         $fj = (object) [
             "name" => "get/" . $opt->dtype_name(),
             "dtype" => $opt->id,
-            "selector" => "Documents/" . ($opt->id <= 0 ? pluralize($opt->name) : $opt->name),
+            "selector" => "Documents/" . ($opt->id <= 0 ? pluralize($opt->title) : $opt->title),
             "position" => $opt->position + ($opt->final ? 0 : 100),
             "display_if_list_has" => $opt->field_key(),
             "factory_class" => "GetDocument_ListAction"
@@ -73,7 +73,7 @@ class GetDocument_ListAction extends SearchAction {
     }
     static function error_document(PaperOption $opt, PaperInfo $row, $error_html = "") {
         if (!$error_html)
-            $error_html = $row->conf->_("Submission #%d has no %s.", $row->paperId, $opt->message_name);
+            $error_html = $row->conf->_("Submission #%d has no %s.", $row->paperId, $opt->message_title);
         $x = new DocumentInfo(["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $error_html], $row->conf);
         if (($mimetypes = $opt->mimetypes()) && count($mimetypes) == 1)
             $x->mimetype = $mimetypes[0]->mimetype;
@@ -140,7 +140,7 @@ class GetAbstract_ListAction extends SearchAction {
         if ($dtype === PaperOption::PAGE_HTML_NAME)
             $n = join(" ", $otxt);
         else
-            $n = $o->name;
+            $n = $o->title;
         $text = prefix_word_wrap("", $n, 0, self::WIDTH);
         $text .= str_repeat("-", min(self::WIDTH, strlen($text) - 1)) . "\n";
         if ($dtype === PaperOption::PAGE_HTML_DATA && !empty($otxt)) {

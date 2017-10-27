@@ -509,8 +509,8 @@ class PaperTable {
         if (($accepts = $docx->mimetypes()))
             $msgs[] = htmlspecialchars(Mimetype::description($accepts));
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
-        echo $this->editable_papt($field, $this->field_name(htmlspecialchars($docx->name)) . ' <span class="papfnh">(' . join(", ", $msgs) . ")</span>");
-        echo $this->field_hint(htmlspecialchars($docx->name), $docx->description);
+        echo $this->editable_papt($field, $this->field_name(htmlspecialchars($docx->title)) . ' <span class="papfnh">(' . join(", ", $msgs) . ")</span>");
+        echo $this->field_hint(htmlspecialchars($docx->title), $docx->description);
         echo $this->messages_for($field);
         echo '<div class="papev">';
         if ($optionType)
@@ -892,7 +892,7 @@ class PaperTable {
                 foreach ($phtml as $p)
                     $ts[] = $div . $p . "</div>\n";
             } else {
-                $x = $div . '<span class="pavfn">' . htmlspecialchars($o->name) . '</span>';
+                $x = $div . '<span class="pavfn">' . htmlspecialchars($o->title) . '</span>';
                 foreach ($phtml as $p)
                     $x .= '<div class="pavb">' . $p . '</div>';
                 $ts[] = $x . "</div>\n";
@@ -906,7 +906,7 @@ class PaperTable {
                 foreach ($phtml as $p)
                     $ts[] = $div . $p . "</div>\n";
             } else {
-                $x = $div . '<div class="pavt"><span class="pavfn">' . htmlspecialchars($o->name) . '</span></div>';
+                $x = $div . '<div class="pavt"><span class="pavfn">' . htmlspecialchars($o->title) . '</span></div>';
                 foreach ($phtml as $p)
                     $x .= '<div class="pavb">' . $p . '</div>';
                 $ts[] = $x . "</div>\n";
@@ -926,7 +926,7 @@ class PaperTable {
                         || $p[0] !== "<"
                         || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $p, $cm))
                         $cm = [null, "", $p];
-                    $ts[] = $div . $cm[1] . '<span class="papon">' . htmlspecialchars($o->name) . ':</span> ' . $cm[2] . "</div>\n";
+                    $ts[] = $div . $cm[1] . '<span class="papon">' . htmlspecialchars($o->title) . ':</span> ' . $cm[2] . "</div>\n";
                 }
             }
         }
@@ -1229,9 +1229,9 @@ class PaperTable {
     }
 
     function echo_editable_option_papt(PaperOption $o, $label = null) {
-        echo $this->editable_papt("opt$o->id", $label ? : $this->field_name(htmlspecialchars($o->name)),
+        echo $this->editable_papt("opt$o->id", $label ? : $this->field_name(htmlspecialchars($o->title)),
                                   ["id" => "opt{$o->id}_div"]);
-        echo $this->field_hint(htmlspecialchars($o->name), $o->description);
+        echo $this->field_hint(htmlspecialchars($o->title), $o->description);
         echo $this->messages_for("opt$o->id"), Ht::hidden("has_opt$o->id", 1);
     }
 

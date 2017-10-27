@@ -111,8 +111,8 @@ class PaperOptionList {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->osubmission = new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "message_name" => "submission", "json_key" => "paper", "type" => null, "position" => 0], $this->conf);
-        $this->ofinal = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "message_name" => "final version", "json_key" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
+        $this->osubmission = new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "title" => "Submission", "message_title" => "submission", "json_key" => "paper", "type" => null, "position" => 0], $this->conf);
+        $this->ofinal = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "title" => "Final version", "message_title" => "final version", "json_key" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
     }
 
     function _add_json($oj, $fixed) {
@@ -120,7 +120,8 @@ class PaperOptionList {
             $oj->id = intval($oj->id);
         if (is_int($oj->id) && $oj->id > 0 && !isset($this->jlist[$oj->id])
             && ($oj->id >= PaperOption::MINFIXEDID) === $fixed
-            && isset($oj->name) && is_string($oj->name)) {
+            && ((isset($oj->name) && is_string($oj->name))
+                || (isset($oj->title) && is_string($oj->title)))) {
             if ($this->conf->xt_allowed($oj) && !Conf::xt_disabled($oj))
                 $this->jlist[$oj->id] = $oj;
             return true;
@@ -293,7 +294,8 @@ class PaperOption implements Abbreviator {
     public $id;
     public $conf;
     public $name;
-    public $message_name;
+    public $title;
+    public $message_title;
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
     private $_json_key;
@@ -336,8 +338,9 @@ class PaperOption implements Abbreviator {
             $args = get_object_vars($args);
         $this->id = (int) $args["id"];
         $this->conf = $conf ? : $Conf;
-        $this->name = $args["name"];
-        $this->message_name = get($args, "message_name", $this->name);
+        $this->name = isset($args["name"]) ? $args["name"] : $args["title"];
+        $this->title = isset($args["title"]) ? $args["title"] : $args["name"];
+        $this->message_title = get($args, "message_title", $this->title);
         $this->type = $args["type"];
 
         if (($x = get_s($args, "json_key")))
@@ -622,7 +625,7 @@ class CheckboxPaperOption extends PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
         $cb = Ht::checkbox("opt{$this->id}", 1, $reqv, ["data-default-checked" => !!$ov->value]);
-        $pt->echo_editable_option_papt($this, $cb . "&nbsp;" . Ht::label(htmlspecialchars($this->name)));
+        $pt->echo_editable_option_papt($this, $cb . "&nbsp;" . Ht::label(htmlspecialchars($this->title)));
         echo "</div>\n\n";
         Ht::stash_script("jQuery('#opt{$this->id}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
@@ -655,7 +658,7 @@ class CheckboxPaperOption extends PaperOption {
 
     function unparse_page_html(PaperInfo $row, PaperOptionValue $ov) {
         if ($ov->value)
-            return [self::PAGE_HTML_NAME, "✓&nbsp;" . htmlspecialchars($this->name)];
+            return [self::PAGE_HTML_NAME, "✓&nbsp;" . htmlspecialchars($this->title)];
         else
             return false;
     }
@@ -857,7 +860,7 @@ class DocumentPaperOption extends PaperOption {
             $diflags = DocumentInfo::L_SMALL;
             if ($this->display() === self::DISP_SUBMISSION)
                 $diflags = 0;
-            return [self::PAGE_HTML_FULL, $d->link_html('<span class="pavfn">' . htmlspecialchars($this->name) . '</span>', $diflags)];
+            return [self::PAGE_HTML_FULL, $d->link_html('<span class="pavfn">' . htmlspecialchars($this->title) . '</span>', $diflags)];
         } else
             return false;
     }
@@ -1088,7 +1091,7 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
-        $pt->echo_editable_option_papt($this, htmlspecialchars($this->name) . ' <span class="papfnh">(max ' . ini_get("upload_max_filesize") . "B per file)</span>");
+        $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="papfnh">(max ' . ini_get("upload_max_filesize") . "B per file)</span>");
         echo '<div class="papev">';
         $docclass = new HotCRPDocument($this->conf, $this->id, $this);
         foreach ($ov->documents() as $doc) {
@@ -1159,7 +1162,7 @@ class AttachmentsPaperOption extends PaperOption {
         foreach ($ov ? $ov->documents() : [] as $d) {
             $linkname = htmlspecialchars($d->unique_filename);
             if ($diflags === 0)
-                $linkname = '<span class="pavfn">' . htmlspecialchars($this->name) . '</span>/' . $linkname;
+                $linkname = '<span class="pavfn">' . htmlspecialchars($this->title) . '</span>/' . $linkname;
             $link = $d->link_html($linkname, $diflags);
             if ($d->docclass->is_archive($d)) {
                 $link = '<span class="archive foldc"><a href="#" class="expandarchive qq">' . expander(null, 0) . "</a>&nbsp;" . $link . "</span>";

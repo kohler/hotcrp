@@ -21,7 +21,7 @@ class Option_PaperColumn extends PaperColumn {
                                          $b->option($this->opt->id));
     }
     function header(PaperList $pl, $is_text) {
-        return $is_text ? $this->opt->name : htmlspecialchars($this->opt->name);
+        return $is_text ? $this->opt->title : htmlspecialchars($this->opt->title);
     }
     function completion_name() {
         return $this->opt->search_keyword();
