@@ -4102,14 +4102,15 @@ function suggest(elt, suggestions_promise, options) {
                 evt.stopImmediatePropagation();
             }
         } else if ((k === "Tab" || k === "Enter") && !m && hintdiv) {
-            if (!(k === "Enter" && lastkey === "Backspace")) {
-                var $active = hintdiv.self().find(".suggestion.active");
-                $active.length && do_complete($active[0]);
-            }
+            var $active = hintdiv.self().find(".suggestion.active");
+            if ((k !== "Enter" || lastkey !== "Backspace") && $active.length)
+                do_complete($active[0]);
             kill();
-            evt.preventDefault();
-            evt.stopImmediatePropagation();
-            result = false;
+            if ($active.length || this.selectionEnd !== this.value.length) {
+                evt.preventDefault();
+                evt.stopImmediatePropagation();
+                result = false;
+            }
         } else if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
             evt.preventDefault();
             result = false;
