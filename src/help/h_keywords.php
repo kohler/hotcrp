@@ -191,7 +191,7 @@ class Keywords_HelpTopic {
                 list($greater, $less, $hint) = array("greater", "less", "");
             else {
                 $hint = "<br /><small>(better scores are closer to A than Z)</small>";
-                if (opt("smartScoreCompare"))
+                if ($hth->conf->opt("smartScoreCompare"))
                     list($greater, $less) = array("better", "worse");
                 else
                     list($greater, $less) = array("worse", "better");

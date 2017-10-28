@@ -153,9 +153,9 @@ class AutoassignerInterface {
     public $ok = false;
     public $errors = [];
 
-    static function current_costs($qreq) {
+    static function current_costs(Conf $conf, $qreq) {
         $costs = new AutoassignerCosts;
-        if (($x = opt("autoassignCosts"))
+        if (($x = $conf->opt("autoassignCosts"))
             && ($x = json_decode($x))
             && is_object($x))
             $costs = $x;
@@ -355,18 +355,18 @@ class AutoassignerInterface {
             $autoassigner->set_method(Autoassigner::METHOD_RANDOM);
         else
             $autoassigner->set_method(Autoassigner::METHOD_MCMF);
-        if (opt("autoassignReviewGadget") === "expertise")
+        if ($this->conf->opt("autoassignReviewGadget") === "expertise")
             $autoassigner->set_review_gadget(Autoassigner::REVIEW_GADGET_EXPERTISE);
         // save costs
-        $autoassigner->costs = self::current_costs($this->qreq);
+        $autoassigner->costs = self::current_costs($this->conf, $this->qreq);
         $costs_json = json_encode($autoassigner->costs);
-        if ($costs_json !== opt("autoassignCosts")) {
+        if ($costs_json !== $this->conf->opt("autoassignCosts")) {
             if ($costs_json === json_encode(new AutoassignerCosts))
                 $this->conf->save_setting("opt.autoassignCosts", null);
             else
                 $this->conf->save_setting("opt.autoassignCosts", 1, $costs_json);
         }
-        $autoassigner->add_progressf(array($this, "progress"));
+        $autoassigner->add_progressf([$this, "progress"]);
         $this->live = true;
         echo '<div id="propass" class="propass">';
 
@@ -662,9 +662,9 @@ echo_radio_row("method", "mcmf", "Globally optimal assignment");
 echo_radio_row("method", "random", "Random good assignment");
 echo "</table>\n";
 
-if (opt("autoassignReviewGadget") === "expertise") {
+if ($Conf->opt("autoassignReviewGadget") === "expertise") {
     echo "<div><strong>Costs:</strong> ";
-    $costs = AutoassignerInterface::current_costs($Qreq);
+    $costs = AutoassignerInterface::current_costs($Conf, $Qreq);
     foreach (get_object_vars($costs) as $k => $v)
         echo '<span style="display:inline-block;margin-right:2em">',
             Ht::label($k, "{$k}_cost"),
