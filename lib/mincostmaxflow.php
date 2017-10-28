@@ -17,25 +17,25 @@ class MinCostMaxFlow_Node {
     public $n_outgoing_admissible = 0;
     public $e = array();
     public $xe;
-    public function __construct($name, $klass) {
+    function __construct($name, $klass) {
         $this->name = $name;
         $this->klass = $klass;
     }
-    public function check_excess($expected) {
+    function check_excess($expected) {
         foreach ($this->e as $e)
             $expected += $e->flow_to($this);
         if ($expected != $this->excess)
             fwrite(STDERR, "{$this->name}: bad excess e{$this->excess}, have $expected\n");
         assert($expected == $this->excess);
     }
-    public function count_outgoing_price_admissible() {
+    function count_outgoing_price_admissible() {
         $n = 0;
         foreach ($this->e as $e)
             if ($e->is_price_admissible_from($this))
                 ++$n;
         return $n;
     }
-    public function set_price_fix_admissible($p) {
+    function set_price_fix_admissible($p) {
         $old_price = $this->price;
         $this->price = $p;
 
@@ -61,47 +61,52 @@ class MinCostMaxFlow_Edge {
     public $mincap;
     public $cost;
     public $flow = 0;
-    public function __construct($src, $dst, $cap, $cost, $mincap = 0) {
+    function __construct($src, $dst, $cap, $cost, $mincap = 0) {
         $this->src = $src;
         $this->dst = $dst;
         $this->cap = $cap;
         $this->mincap = $mincap;
         $this->cost = $cost;
     }
-    public function other($v) {
+    function other($v) {
         return $v === $this->src ? $this->dst : $this->src;
     }
-    public function flow_to($v) {
+    function flow_to($v) {
         return $v === $this->dst ? $this->flow : -$this->flow;
     }
-    public function residual_cap($isrev) {
+    function residual_cap($isrev) {
         return $isrev ? $this->flow - $this->mincap : $this->cap - $this->flow;
     }
-    public function residual_cap_from($v) {
+    function residual_cap_from($v) {
         return $v === $this->src ? $this->cap - $this->flow : $this->flow - $this->mincap;
     }
-    public function residual_cap_to($v) {
+    function residual_cap_to($v) {
         return $v === $this->src ? $this->flow - $this->mincap : $this->cap - $this->flow;
     }
-    public function reduced_cost($isrev) {
+    function reduced_cost($isrev) {
         $c = $this->cost + $this->src->price - $this->dst->price;
         return $isrev ? -$c : $c;
     }
-    public function reduced_cost_from($v) {
+    function reduced_cost_from($v) {
         return $this->reduced_cost($v === $this->dst);
     }
-    public function is_distance_admissible_from($v) {
+    function is_distance_admissible_from($v) {
         if ($v === $this->src)
             return $this->flow < $this->cap && $v->distance == $this->dst->distance + 1;
         else
             return $this->flow > $this->mincap && $v->distance == $this->src->distance + 1;
     }
-    public function is_price_admissible_from($v) {
+    function is_price_admissible_from($v) {
         $c = $this->cost + $this->src->price - $this->dst->price;
         if ($v === $this->src)
             return $this->flow < $this->cap && $c < 0;
         else
             return $this->flow > $this->mincap && $c > 0;
+    }
+    function update_flow($delta) {
+        $this->flow += $delta;
+        $this->src->excess -= $delta;
+        $this->dst->excess += $delta;
     }
 };
 
@@ -139,12 +144,12 @@ class MinCostMaxFlow {
 
     const DEBUG = 1;
 
-    public function __construct($flags = false) {
+    function __construct($flags = false) {
         $this->clear();
         $this->debug = ($flags & self::DEBUG) != 0;
     }
 
-    public function add_node($name, $klass = "") {
+    function add_node($name, $klass = "") {
         if ($name === "")
             $name = ".v" . count($this->v);
         assert(is_string($name) && !isset($this->vmap[$name]));
@@ -153,7 +158,7 @@ class MinCostMaxFlow {
         return $v;
     }
 
-    public function add_edge($vs, $vd, $cap, $cost = 0, $mincap = 0) {
+    function add_edge($vs, $vd, $cap, $cost = 0, $mincap = 0) {
         if (is_string($vs))
             $vs = $this->vmap[$vs];
         if (is_string($vd))
@@ -167,18 +172,18 @@ class MinCostMaxFlow {
         $this->maxcost = max($this->maxcost, $cost);
     }
 
-    public function add_progressf($progressf) {
+    function add_progressf($progressf) {
         $this->progressf[] = $progressf;
     }
 
 
     // extract information
 
-    public function node_exists($name) {
+    function node_exists($name) {
         return isset($this->vmap[$name]);
     }
 
-    public function nodes($klass) {
+    function nodes($klass) {
         $a = array();
         foreach ($this->v as $v)
             if ($v->klass === $klass)
@@ -186,14 +191,14 @@ class MinCostMaxFlow {
         return $a;
     }
 
-    public function current_flow() {
+    function current_flow() {
         if ($this->maxflow !== null)
             return $this->maxflow;
         else
             return min(-$this->source->excess, $this->sink->excess);
     }
 
-    public function current_cost() {
+    function current_cost() {
         $cost = 0;
         foreach ($this->e as $e)
             if ($e->flow)
@@ -211,7 +216,7 @@ class MinCostMaxFlow {
         }
     }
 
-    public function reachable($v, $klass) {
+    function reachable($v, $klass) {
         if (is_string($v))
             $v = $this->vmap[$v];
         $a = array();
@@ -230,7 +235,7 @@ class MinCostMaxFlow {
         }
     }
 
-    public function topological_sort($v, $klass) {
+    function topological_sort($v, $klass) {
         if (is_string($v))
             $v = $this->vmap[$v];
         foreach ($this->v as $vx)
@@ -283,9 +288,7 @@ class MinCostMaxFlow {
         $amt = min($src->excess, $e->residual_cap_from($src));
         $amt = ($src == $e->dst ? -$amt : $amt);
         //fwrite(STDERR, "push {$amt} {$e->src->name}@{$e->src->distance} -> {$e->dst->name}@{$e->dst->distance}\n");
-        $e->flow += $amt;
-        $e->src->excess -= $amt;
-        $e->dst->excess += $amt;
+        $e->update_flow($amt);
     }
 
     private function pushrelabel_relabel($v) {
@@ -327,14 +330,9 @@ class MinCostMaxFlow {
         $this->pushrelabel_make_distance();
         foreach ($this->e as $e) {
             if ($e->src === $this->source)
-                $f = $e->cap;
+                $e->update_flow($e->cap);
             else if ($e->mincap > 0)
-                $f = $e->mincap;
-            else
-                continue;
-            $e->flow = $f;
-            $e->dst->excess += $f;
-            $e->src->excess -= $f;
+                $e->update_flow($e->mincap);
         }
 
         // initialize list
@@ -408,9 +406,7 @@ class MinCostMaxFlow {
 
         $amt = min($src->excess, $e->residual_cap_from($src));
         $amt = ($e->src === $src ? $amt : -$amt);
-        $e->flow += $amt;
-        $e->src->excess -= $amt;
-        $e->dst->excess += $amt;
+        $e->update_flow($amt);
         if (!$e->residual_cap_from($src))
             --$src->n_outgoing_admissible;
 
@@ -559,9 +555,7 @@ class MinCostMaxFlow {
                 foreach ($v->e as $e)
                     if ($e->is_price_admissible_from($v)) {
                         $delta = ($e->src === $v ? $e->cap : $e->mincap) - $e->flow;
-                        $e->flow += $delta;
-                        $e->dst->excess += $delta;
-                        $e->src->excess -= $delta;
+                        $e->update_flow($delta);
                         --$v->n_outgoing_admissible;
                     }
             }
@@ -600,7 +594,7 @@ class MinCostMaxFlow {
         }
     }
 
-    public function cspushrelabel_check($allow_excess = false) {
+    function cspushrelabel_check($allow_excess = false) {
         if (!$allow_excess)
             foreach ($this->v as $v)
                 if ($v->excess > 0)
@@ -615,7 +609,7 @@ class MinCostMaxFlow {
         }
     }
 
-    public function cspushrelabel_finish() {
+    function cspushrelabel_finish() {
         // refine the maximum flow to achieve min cost
         $this->mincost_start_at = microtime(true);
         $this->npush = $this->nrelabel = 0;
@@ -646,14 +640,14 @@ class MinCostMaxFlow {
     }
 
 
-    public function shuffle() {
+    function shuffle() {
         // shuffle vertices and edges because edge order affects which
         // circulations we choose; this randomizes the assignment
         shuffle($this->v);
         shuffle($this->e);
     }
 
-    public function run() {
+    function run() {
         assert(!$this->hasrun);
         $this->hasrun = true;
         $this->initialize_edges();
@@ -665,7 +659,7 @@ class MinCostMaxFlow {
     }
 
 
-    public function reset() {
+    function reset() {
         if ($this->hasrun) {
             foreach ($this->v as $v) {
                 $v->distance = $v->excess = $v->price = 0;
@@ -680,7 +674,7 @@ class MinCostMaxFlow {
         }
     }
 
-    public function clear() {
+    function clear() {
         // break circular references
         foreach ($this->v as $v)
             $v->link = $v->xlink = $v->e = null;
@@ -696,7 +690,7 @@ class MinCostMaxFlow {
         $this->hasrun = false;
     }
 
-    public function debug_info($only_flow = false) {
+    function debug_info($only_flow = false) {
         $ex = array();
         $cost = 0;
         foreach ($this->e as $e) {
@@ -747,11 +741,11 @@ class MinCostMaxFlow {
         return join("", $x);
     }
 
-    public function maxflow_dimacs_input() {
+    function maxflow_dimacs_input() {
         return $this->dimacs_input(false);
     }
 
-    public function mincost_dimacs_input() {
+    function mincost_dimacs_input() {
         return $this->dimacs_input(true);
     }
 
@@ -784,11 +778,11 @@ class MinCostMaxFlow {
         return join("", $x);
     }
 
-    public function maxflow_dimacs_output() {
+    function maxflow_dimacs_output() {
         return $this->dimacs_output(false);
     }
 
-    public function mincost_dimacs_output() {
+    function mincost_dimacs_output() {
         return $this->dimacs_output(true);
     }
 
@@ -799,7 +793,7 @@ class MinCostMaxFlow {
         return $v;
     }
 
-    public function parse_dimacs($str) {
+    function parse_dimacs($str) {
         $this->reset();
         $vnames = array();
         $ismax = null;
