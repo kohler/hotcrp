@@ -75,7 +75,7 @@ class GetReviewBase_ListAction extends SearchAction {
     }
 }
 
-class GetReviewForm_ListAction extends GetReviewBase_SearchAction {
+class GetReviewForm_ListAction extends GetReviewBase_ListAction {
     function __construct($fj) {
         parent::__construct(true, $fj->name === "get/revformz");
     }
@@ -115,7 +115,7 @@ class GetReviewForm_ListAction extends GetReviewBase_SearchAction {
     }
 }
 
-class GetReviews_ListAction extends GetReviewBase_SearchAction {
+class GetReviews_ListAction extends GetReviewBase_ListAction {
     private $include_paper;
     function __construct($fj) {
         parent::__construct(false, !!get($fj, "zip"));
