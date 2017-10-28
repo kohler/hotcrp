@@ -182,10 +182,9 @@ class Autoassigner {
         while (($row = PaperInfo::fetch($result, null, $this->conf))) {
             $pid = $row->paperId;
             foreach ($this->pcm as $cid => $p) {
-                $topic_interest_score = $row->topic_interest_score($p);
-                $px = $row->reviewer_preference($p);
+                $px = $row->reviewer_preference($p, true);
                 $rt = $row->review_type($p);
-                $this->prefinfo[$cid][$pid] = [$px[0], $px[1], $topic_interest_score];
+                $this->prefinfo[$cid][$pid] = $px;
                 if ($rt == $reviewtype)
                     $this->eass[$cid][$pid] = self::EOLDASSIGN;
                 else if ($rt)
