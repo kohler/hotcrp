@@ -394,7 +394,7 @@
         "parser": "Topics_SettingParser", "require": "src/settings/s_topics.php"
     },
     "tracks": {
-        "parser": "Track_SettingParser", "group": "tracks",
+        "parser": "Tracks_SettingParser", "group": "tracks",
         "type": "string"
     }
 }

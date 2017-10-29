@@ -128,7 +128,7 @@ class Tracks_SettingRenderer {
     }
 }
 
-class Track_SettingParser extends SettingParser {
+class Tracks_SettingParser extends SettingParser {
     function parse(SettingValues $sv, Si $si) {
         $tagger = new Tagger;
         $tracks = (object) array();
