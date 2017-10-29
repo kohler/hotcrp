@@ -22,7 +22,7 @@ class Csv_SearchResult extends SearchResult {
     }
 }
 
-class SearchAction {
+class ListAction {
     public $subname;
     const ENOENT = "No such search action.";
     const EPERM = "Permission error.";
@@ -128,4 +128,7 @@ class SearchAction {
         $header[] = "title";
         return [$header, $texts];
     }
+}
+
+class SearchAction extends ListAction {
 }

@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class GetJson_ListAction extends SearchAction {
+class GetJson_ListAction extends ListAction {
     private $iszip;
     private $zipdoc;
     function __construct($fj) {

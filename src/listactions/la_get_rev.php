@@ -3,17 +3,17 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class GetPcassignments_ListAction extends SearchAction {
+class GetPcassignments_ListAction extends ListAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {
-        list($header, $items) = SearchAction::pcassignments_csv_data($user, $ssel->selection());
+        list($header, $items) = ListAction::pcassignments_csv_data($user, $ssel->selection());
         return new Csv_SearchResult("pcassignments", $header, $items, true);
     }
 }
 
-class GetReviewBase_ListAction extends SearchAction {
+class GetReviewBase_ListAction extends ListAction {
     protected $isform;
     protected $iszip;
     function __construct($isform, $iszip) {
@@ -169,7 +169,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
     }
 }
 
-class GetScores_ListAction extends SearchAction {
+class GetScores_ListAction extends ListAction {
     function allow(Contact $user) {
         return $user->can_view_some_review();
     }
@@ -226,7 +226,7 @@ class GetScores_ListAction extends SearchAction {
     }
 }
 
-class GetVotes_ListAction extends SearchAction {
+class GetVotes_ListAction extends ListAction {
     function allow(Contact $user) {
         return $user->isPC;
     }
@@ -245,7 +245,7 @@ class GetVotes_ListAction extends SearchAction {
     }
 }
 
-class GetRank_ListAction extends SearchAction {
+class GetRank_ListAction extends ListAction {
     function allow(Contact $user) {
         return $user->conf->setting("tag_rank") && $user->is_reviewer();
     }
@@ -290,7 +290,7 @@ class GetRank_ListAction extends SearchAction {
     }
 }
 
-class GetLead_ListAction extends SearchAction {
+class GetLead_ListAction extends ListAction {
     private $islead;
     function __construct($fj) {
         $this->islead = $fj->name === "get/lead";

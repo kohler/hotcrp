@@ -225,7 +225,7 @@ $Qreq->display = PaperList::change_display($Me, "pf");
 // Search actions
 if ($Qreq->fn === "get" && $SSel && !$SSel->is_empty()
     && $Conf->list_action("get/{$Qreq->getfn}", $Me, $Qreq->method()))
-    SearchAction::call("get/{$Qreq->getfn}", $Me, $Qreq, $SSel);
+    ListAction::call("get/{$Qreq->getfn}", $Me, $Qreq, $SSel);
 
 
 // set options to view

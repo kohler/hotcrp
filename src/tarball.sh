@@ -186,6 +186,7 @@ src/hotcrpdocument.php
 src/hotcrpmailer.php
 src/init.php
 src/initweb.php
+src/listaction.php
 src/listactions/la_assign.php
 src/listactions/la_decide.php
 src/listactions/la_getallrevpref.php
@@ -249,7 +250,6 @@ src/search/st_reviewtoken.php
 src/search/st_revpref.php
 src/search/st_tag.php
 src/search/st_topic.php
-src/searchaction.php
 src/searchselection.php
 src/settings/s_basics.php
 src/settings/s_decisions.php

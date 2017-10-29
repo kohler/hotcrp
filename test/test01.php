@@ -601,7 +601,7 @@ xassert($review2d->reviewNeedsSubmit == 0);
 // uploading the current assignment makes no changes
 function get_pcassignment_csv() {
     global $user_chair;
-    list($header, $texts) = SearchAction::pcassignments_csv_data($user_chair, range(1, 30));
+    list($header, $texts) = ListAction::pcassignments_csv_data($user_chair, range(1, 30));
     $csvg = new CsvGenerator;
     $csvg->set_header($header);
     $csvg->set_selection($header);

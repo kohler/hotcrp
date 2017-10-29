@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class Get_ListAction extends SearchAction {
+class Get_ListAction extends ListAction {
     static function render(PaperList $pl) {
         $actions = array_values($pl->displayable_list_actions("get/"));
         foreach ($pl->user->user_option_list() as $o)
@@ -48,7 +48,7 @@ class Get_ListAction extends SearchAction {
     }
 }
 
-class GetDocument_ListAction extends SearchAction {
+class GetDocument_ListAction extends ListAction {
     private $dt;
     function __construct($fj) {
         $this->dt = $fj->dtype;
@@ -101,7 +101,7 @@ class GetDocument_ListAction extends SearchAction {
     }
 }
 
-class GetCheckFormat_ListAction extends SearchAction {
+class GetCheckFormat_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $papers = [];
@@ -133,7 +133,7 @@ class GetCheckFormat_ListAction extends SearchAction {
     }
 }
 
-class GetAbstract_ListAction extends SearchAction {
+class GetAbstract_ListAction extends ListAction {
     const WIDTH = 96;
     static private function render_option(PaperOption $o, $otxt) {
         $dtype = array_shift($otxt);
@@ -214,7 +214,7 @@ class GetAbstract_ListAction extends SearchAction {
     }
 }
 
-class GetAuthors_ListAction extends SearchAction {
+class GetAuthors_ListAction extends ListAction {
     static function contact_map(Conf $conf, $ssel) {
         $result = $conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
         $contact_map = [];
@@ -265,7 +265,7 @@ class GetAuthors_ListAction extends SearchAction {
 }
 
 /* NB this search action is actually unavailable via the UI */
-class GetContacts_ListAction extends SearchAction {
+class GetContacts_ListAction extends ListAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
@@ -283,7 +283,7 @@ class GetContacts_ListAction extends SearchAction {
     }
 }
 
-class GetPcconflicts_ListAction extends SearchAction {
+class GetPcconflicts_ListAction extends ListAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
@@ -312,7 +312,7 @@ class GetPcconflicts_ListAction extends SearchAction {
     }
 }
 
-class GetTopics_ListAction extends SearchAction {
+class GetTopics_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(array("paperId" => $ssel->selection(), "topics" => 1));
         $texts = array();
@@ -329,7 +329,7 @@ class GetTopics_ListAction extends SearchAction {
     }
 }
 
-class GetCSV_ListAction extends SearchAction {
+class GetCSV_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $search = new PaperSearch($user, $qreq, $qreq->attachment("reviewer_contact"));
         $pl = new PaperList($search, ["sort" => true, "display" => $qreq->display], $qreq);

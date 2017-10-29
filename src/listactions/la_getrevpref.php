@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class GetRevpref_ListAction extends SearchAction {
+class GetRevpref_ListAction extends ListAction {
     private $extended;
     function __construct($fj) {
         $this->extended = $fj->name === "get/revprefx";

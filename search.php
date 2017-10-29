@@ -53,7 +53,7 @@ if ($Qreq->fn) {
     $fn = $Qreq->fn;
     if (strpos($fn, "/") === false && isset($Qreq[$Qreq->fn . "fn"]))
         $fn .= "/" . $Qreq[$Qreq->fn . "fn"];
-    SearchAction::call($fn, $Me, $Qreq, $SSel);
+    ListAction::call($fn, $Me, $Qreq, $SSel);
 }
 
 
