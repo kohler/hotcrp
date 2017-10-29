@@ -149,7 +149,12 @@ function jqxhr_error_message(jqxhr, status, errormsg) {
 
 $(document).ajaxError(function (event, jqxhr, settings, httperror) {
     if (jqxhr.readyState == 4) {
-        var msg = url_absolute(settings.url) + " API failure: status " + jqxhr.status + ", " + httperror;
+        var msg = url_absolute(settings.url) + " API failure: ";
+        if (hotcrp_user && hotcrp_user.email)
+            msg += "user " + hotcrp_user.email + ", ";
+        msg += jqxhr.status;
+        if (httperror)
+            msg += ", " + httperror;
         if (jqxhr.responseText)
             msg += ", " + jqxhr.responseText.substr(0, 100);
         log_jserror(msg);
