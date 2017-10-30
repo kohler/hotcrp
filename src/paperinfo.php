@@ -1667,7 +1667,7 @@ class PaperInfo {
             return $this->num_reviews_in_progress($user, $forceShow);
     }
 
-    function viewable_submitted_reviews_by_display(Contact $contact, $forceShow) {
+    function viewable_submitted_reviews_by_display(Contact $contact, $forceShow = null) {
         $cinfo = $this->contact_info($contact);
         if ($cinfo->vsreviews_array === null
             || $cinfo->vsreviews_version !== $this->_review_array_version
@@ -1684,7 +1684,7 @@ class PaperInfo {
         return $cinfo->vsreviews_array;
     }
 
-    function viewable_submitted_reviews_by_user(Contact $contact, $forceShow) {
+    function viewable_submitted_reviews_by_user(Contact $contact, $forceShow = null) {
         $cinfo = $this->contact_info($contact);
         if ($cinfo->vsreviews_cid_array === null
             || $cinfo->vsreviews_version !== $this->_review_array_version
