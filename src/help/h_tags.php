@@ -78,8 +78,7 @@ Tags are not case sensitive.</p>";
 . "\">Search</a> for papers, select them, and use the action area underneath the
 search list. <b>Add</b> adds tags to the selected papers, <b>Remove</b> removes
 tags from the selected papers, and <b>Define</b> adds the tag to the selected
-papers and removes it from all others.  The chair-only <b>Clear twiddle</b>
-action removes a tag and all users’ matching twiddle tags.</p>
+papers and removes it from all others.</p>
 
 <p>" . Ht::img("extagssearch.png", "[Setting tags on the search page]", ["width" => 510, "height" => 94]) . "</p></li>
 

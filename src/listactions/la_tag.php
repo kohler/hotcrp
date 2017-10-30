@@ -10,7 +10,6 @@ class Tag_ListAction extends ListAction {
         $tagextra = array("id" => "placttagtype");
         if ($pl->user->privChair) {
             $tagopt["xxxb"] = null;
-            $tagopt["da"] = "Clear twiddle";
             $tagopt["cr"] = "Calculate rank";
             $tagextra["onchange"] = "plactions_dofold()";
             Ht::stash_script("plactions_dofold()", "plactions_dofold");
