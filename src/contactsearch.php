@@ -141,11 +141,11 @@ class ContactSearch {
             $where = array();
             if ($n !== "") {
                 $x = sqlq_for_like(UnicodeHelper::deaccent($n));
-                $where[] = "unaccentedName like '%" . preg_replace('/[\s*]+/', "%", $x) . "%'";
+                $where[] = "unaccentedName like " . Dbl::utf8ci("'%" . preg_replace('/[\s*]+/', "%", $x) . "%'");
             }
             if ($e !== "") {
                 $x = sqlq_for_like($e);
-                $where[] = "email like '" . preg_replace('/[\s*]+/', "%", $x) . "'";
+                $where[] = "email like " . Dbl::utf8ci("'" . preg_replace('/[\s*]+/', "%", $x) . "'");
             }
             $q = "select contactId, firstName, lastName, unaccentedName, email, roles from ContactInfo where " . join(" or ", $where);
             if ($this->type & self::F_ALLOW_DELETED)
