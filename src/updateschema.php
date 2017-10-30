@@ -1285,6 +1285,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->update_papersub_setting(0);
         $conf->update_schema_version(179);
     }
+    if ($conf->sversion == 179
+        && $conf->ql("alter table ContactInfo change `affiliation` `affiliation` varbinary(2048) NOT NULL DEFAULT ''")
+        && $conf->ql("alter table ContactInfo change `voicePhoneNumber` `voicePhoneNumber` varbinary(256) DEFAULT NULL"))
+        $conf->update_schema_version(180);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

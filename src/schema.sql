@@ -45,8 +45,8 @@ CREATE TABLE `ContactInfo` (
   `unaccentedName` varchar(120) NOT NULL DEFAULT '',
   `email` varchar(120) NOT NULL,
   `preferredEmail` varchar(120) DEFAULT NULL,
-  `affiliation` varchar(2048) NOT NULL DEFAULT '',
-  `voicePhoneNumber` varchar(256) DEFAULT NULL,
+  `affiliation` varbinary(2048) NOT NULL DEFAULT '',
+  `voicePhoneNumber` varbinary(256) DEFAULT NULL,
   `country` varbinary(256) DEFAULT NULL,
   `password` varbinary(2048) NOT NULL,
   `passwordTime` bigint(11) NOT NULL DEFAULT '0',
@@ -487,7 +487,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 179);
+insert into Settings (name, value) values ('allowPaperOption', 180);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);
