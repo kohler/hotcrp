@@ -126,10 +126,10 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
         // add and remove use different paths
         $remove = $remove || $m[4] === "none" || $m[4] === "clear";
-        if (!$remove && strpos($tag, "*") !== false)
-            return "Tag wildcards aren’t allowed when adding tags.";
         if ($remove)
             return $this->apply_remove($prow, $state, $m);
+        else if (strpos($tag, "*") !== false)
+            return "Tag wildcards aren’t allowed when adding tags.";
 
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
@@ -188,13 +188,17 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->user)->ids;
-            if (empty($twiddlecids))
-                return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
-            else if (count($twiddlecids) == 1)
-                $m[1] = $twiddlecids[0] . "~";
-            else
-                $m[1] = "(?:" . join("|", $twiddlecids) . ")~";
+            if (strcasecmp($c, "any") == 0 || strcasecmp($c, "all") == 0 || $c === "*") {
+                $m[1] = "(?:\\d+)~";
+            } else {
+                $twiddlecids = ContactSearch::make_pc($c, $state->user)->ids;
+                if (empty($twiddlecids))
+                    return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
+                else if (count($twiddlecids) == 1)
+                    $m[1] = $twiddlecids[0] . "~";
+                else
+                    $m[1] = "(?:" . join("|", $twiddlecids) . ")~";
+            }
         }
 
         // resolve tag portion
