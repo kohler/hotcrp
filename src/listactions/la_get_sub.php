@@ -332,7 +332,7 @@ class GetTopics_ListAction extends ListAction {
 class GetCSV_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $search = new PaperSearch($user, $qreq, $qreq->attachment("reviewer_contact"));
-        $pl = new PaperList($search, ["sort" => true, "display" => $qreq->display], $qreq);
+        $pl = new PaperList($search, ["sort" => true, "report" => "pl", "display" => $qreq->display], $qreq);
         $pl->set_selection($ssel, true);
         $pl->set_view("sel", false);
         list($header, $data) = $pl->text_csv($search->limitName);

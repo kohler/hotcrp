@@ -4442,14 +4442,15 @@ function same_ids(tbl, ids) {
 }
 
 function href_sorter(href, newval) {
-    var re = /([?&;]sort=)([^=&;#]*)/;
+    var re = /^([^#]*[?&;]sort=)([^=&;#]*)(.*)$/,
+        m = re.exec(href);
     if (newval == null) {
-        var m = re.exec(href);
         return m ? urldecode(m[2]) : null;
-    } else
-        return href.replace(re, function (all, first) {
-            return first + urlencode(newval);
-        });
+    } else if (m) {
+        return m[1] + urlencode(newval) + m[3];
+    } else {
+        return hoturl_add(href, "sort=" + urlencode(newval));
+    }
 }
 
 function sorter_toggle_reverse(sorter, toggle) {
@@ -4481,6 +4482,16 @@ function search_sort_success(tbl, href, data) {
             }
             this.setAttribute("href", href_sorter(href, sorter));
         });
+    var $form = $(tbl).closest("form");
+    if ($form.length) {
+        var action;
+        if ($form[0].hasAttribute("data-original-action")) {
+            action = $form[0].getAttribute("data-original-action", action);
+            $form[0].removeAttribute("data-original-action");
+        } else
+            action = $form[0].action;
+        $form[0].action = href_sorter(action, want_sorter);
+    }
 }
 
 $(document).on("collectState", function (event, state) {
