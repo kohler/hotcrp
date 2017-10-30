@@ -28,6 +28,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     function only_pc() {
         return $this->review_type >= REVIEW_PC;
     }
+    function review_type() {
+        return $this->review_type;
+    }
     function apply_review_type($word, $allow_pc = false) {
         if ($word === "meta")
             $this->review_type = REVIEW_META;
