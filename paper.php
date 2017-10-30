@@ -106,10 +106,16 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 
         // remove voting tags so people don't have phantom votes
         if ($Conf->tags()->has_vote) {
-            $q = array();
-            foreach ($Conf->tags()->filter("vote") as $t)
-                $q[] = "tag='" . sqlq($t->tag) . "' or tag like '%~" . sqlq_for_like($t->tag) . "'";
-            Dbl::qe_raw("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")");
+            // XXX should do this in a_status.php
+            $acsv = ["paper,action,tag"];
+            foreach ($Conf->tags()->filter("vote") as $vt) {
+                array_push($acsv, "{$prow->paperId},cleartag,{$vt->tag}",
+                           "{$prow->paperId},cleartag,all~{$vt->tag}");
+            }
+            $assignset = new AssignmentSet($Conf->site_contact());
+            $assignset->enable_papers($prow);
+            $assignset->parse(join("\n", $acsv));
+            $assignset->execute();
         }
 
         $Me->log_activity("Withdrew", $prow->paperId);

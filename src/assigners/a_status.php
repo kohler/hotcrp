@@ -42,6 +42,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             $r = (string) get($req, "withdraw_reason", get($req, "reason", null));
             if ($r !== "")
                 $res["_withdraw_reason"] = $r;
+            // XXX should update tags
         } else if ($this->xtype === "revive") {
             if ($res["_withdrawn"] !== 0) {
                 assert($res["_submitted"] <= 0);
