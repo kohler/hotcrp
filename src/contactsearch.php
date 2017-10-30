@@ -27,16 +27,19 @@ class ContactSearch {
         $this->user = $user;
         $this->cset = $cset;
         if ($this->ids === false
-            && (!($this->type & self::F_QUOTED) || $this->text === ""))
+            && (!($this->type & self::F_QUOTED) || $this->text === "")) {
             $this->ids = $this->check_simple();
+        }
         if ($this->ids === false
             && ($this->type & self::F_TAG)
             && !($this->type & self::F_QUOTED)
-            && $this->user->can_view_contact_tags())
+            && $this->user->can_view_contact_tags()) {
             $this->ids = $this->check_pc_tag();
+        }
         if ($this->ids === false
-            && ($this->type & self::F_USER))
+            && ($this->type & self::F_USER)) {
             $this->ids = $this->check_user();
+        }
     }
     static function make_pc($text, Contact $user) {
         return new ContactSearch(self::F_PC | self::F_TAG | self::F_USER, $text, $user);
@@ -50,18 +53,24 @@ class ContactSearch {
     private function check_simple() {
         if (strcasecmp($this->text, "me") == 0
             && (!($this->type & self::F_PC)
-                || ($this->user->roles & Contact::ROLE_PC)))
+                || ($this->user->roles & Contact::ROLE_PC))) {
             return [$this->user->contactId];
+        }
         if ($this->user->can_view_pc()) {
             if ($this->text === ""
-                || strcasecmp($this->text, "pc") == 0
-                || (strcasecmp($this->text, "any") == 0 && ($this->type & self::F_PC)))
+                || strcasecmp($this->text, "pc") == 0) {
                 return array_keys($this->conf->pc_members());
-            else if (strcasecmp($this->text, "chair") == 0) {
+            } else if (($this->type & self::F_PC)
+                       && (strcasecmp($this->text, "any") == 0
+                           || strcasecmp($this->text, "all") == 0)
+                           || $this->text === "*") {
+                return array_keys($this->conf->pc_members_and_admins());
+            } else if (strcasecmp($this->text, "chair") == 0) {
                 $chairs = [];
-                foreach ($this->conf->pc_members() as $p)
+                foreach ($this->conf->pc_members() as $p) {
                     if ($p->roles & Contact::ROLE_CHAIR)
                         $chairs[] = $p->contactId;
+                }
                 return $chairs;
             }
         }
@@ -81,14 +90,15 @@ class ContactSearch {
 
         if ($this->conf->pc_tag_exists($x)) {
             $a = array();
-            foreach ($this->conf->pc_members() as $cid => $pc)
+            foreach ($this->conf->pc_members() as $cid => $pc) {
                 if ($pc->has_tag($x))
                     $a[] = $cid;
-            if ($neg && ($this->type & self::F_PC))
+            }
+            if ($neg && ($this->type & self::F_PC)) {
                 return array_diff(array_keys($this->conf->pc_members()), $a);
-            else if (!$neg)
+            } else if (!$neg) {
                 return $a;
-            else {
+            } else {
                 $result = $this->conf->qe("select contactId from ContactInfo where contactId ?A", $a);
                 return Dbl::fetch_first_columns($result);
             }
@@ -123,11 +133,11 @@ class ContactSearch {
 
         // contact database if not restricted to PC or cset
         $result = null;
-        if ($this->cset)
+        if ($this->cset) {
             $cs = $this->cset;
-        else if ($this->type & self::F_PC)
+        } else if ($this->type & self::F_PC) {
             $cs = $this->conf->pc_members();
-        else {
+        } else {
             $where = array();
             if ($n !== "") {
                 $x = sqlq_for_like(UnicodeHelper::deaccent($n));
@@ -182,16 +192,18 @@ class ContactSearch {
         global $Me;
         if ($this->contacts === false) {
             $this->contacts = array();
-            $pcm = $this->conf->pc_members();
-            foreach ($this->ids as $cid)
-                if ($this->cset && ($p = get($this->cset, $cid)))
+            $pcm = $this->conf->pc_members_and_admins();
+            foreach ($this->ids as $cid) {
+                if ($this->cset && ($p = get($this->cset, $cid))) {
                     $this->contacts[] = $p;
-                else if (($p = get($pcm, $cid)))
+                } else if (($p = get($pcm, $cid))) {
                     $this->contacts[] = $p;
-                else if ($Me->contactId == $cid && $Me->conf === $this->conf)
+                } else if ($Me->contactId == $cid && $Me->conf === $this->conf) {
                     $this->contacts[] = $Me;
-                else
+                } else {
                     $this->contacts[] = $this->conf->user_by_id($cid);
+                }
+            }
         }
         return $this->contacts;
     }
