@@ -1686,7 +1686,7 @@ class Formula {
         } else
             $t = "return 0;";
 
-        $args = '$prow, $rrow_cid, $contact, $forceShow = false';
+        $args = '$prow, $rrow_cid, $contact, $forceShow = null';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n");
         return create_function($args, $t);
     }
@@ -1705,7 +1705,7 @@ class Formula {
         $t = "assert(\$contact->contactId == $user->contactId);\n  "
             . join("\n  ", $state->gstmt)
             . "\n  return array_keys($g);\n";
-        $args = '$prow, $contact, $forceShow = false';
+        $args = '$prow, $contact, $forceShow = null';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  $t}\n");
         return create_function($args, $t);
     }
@@ -1719,7 +1719,7 @@ class Formula {
             $t .= "  return " . $state->fragments[0] . ";\n";
         else
             $t .= "  return [" . join(", ", $state->fragments) . "];\n";
-        $args = '$prow, $rrow_cid, $contact, $forceShow = false';
+        $args = '$prow, $rrow_cid, $contact, $forceShow = null';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // fragments " . simplify_whitespace($this->expression) . "\n  $t}\n");
         $outf = create_function($args, $t);
 
@@ -1728,7 +1728,7 @@ class Formula {
         $state->combining = 0;
         $expr = $this->_parse ? $this->_parse->compile($state) : "0";
         $t = self::compile_body(null, $state, $expr);
-        $args = '$groups, $forceShow = false';
+        $args = '$groups, $forceShow = null';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // combine " . simplify_whitespace($this->expression) . "\n  $t}\n");
         $inf = create_function($args, $t);
 
