@@ -192,10 +192,7 @@ class Autoassigner {
                 else if ($row->conflict_type($p)
                          || !$p->can_accept_review_assignment($row))
                     $this->eass[$cid][$pid] = self::ENOASSIGN;
-                if ($px[0])
-                    $this->prefs[$cid][$pid] = max($px[0], -1000);
-                else
-                    $this->prefs[$cid][$pid] = $topic_interest_score / 100;
+                $this->prefs[$cid][$pid] = max($px[0], -1000) + ($px[2] / 100);
             }
             ++$nmade;
             if ($nmade % 16 == 0)
