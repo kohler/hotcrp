@@ -1044,13 +1044,13 @@ class ScoreGraph_PaperColumn extends PaperColumn {
             && (!$pl->user->privChair || $pl->conf->has_any_manager()))
             $pl->qopts["reviewSignatures"] = true;
     }
-    function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
+    function score_values(PaperList $pl, PaperInfo $row) {
         return null;
     }
     protected function set_sort_fields(PaperList $pl, PaperInfo $row, ListSorter $sorter) {
         $k = $sorter->uid;
         $avgk = $k . "avg";
-        $s = $this->score_values($pl, $row, null);
+        $s = $this->score_values($pl, $row);
         if ($s !== null) {
             $scoreinfo = new ScoreInfo($s, true);
             $cid = $this->contact->contactId;
@@ -1075,26 +1075,19 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         return $x;
     }
     function field_content(PaperList $pl, ReviewField $field, PaperInfo $row) {
-        $values = $this->score_values($pl, $row, false);
-        $wrap_conflict = false;
-        if (empty($values) && $pl->row_overridable) {
-            $values = $this->score_values($pl, $row, true);
-            $wrap_conflict = true;
-        }
+        $values = $this->score_values($pl, $row);
         if (empty($values))
             return "";
         $pl->need_render = true;
         $cid = $this->contact->contactId;
         if ($this->not_me && !$row->can_view_review_identity_of($cid, $pl->user))
             $cid = 0;
-        $t = $field->unparse_graph($values, 1, get($values, $cid));
-        return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
+        return $field->unparse_graph($values, 1, get($values, $cid));
     }
 }
 
 class Score_PaperColumn extends ScoreGraph_PaperColumn {
     public $score;
-    public $max_score;
     private $form_field;
     function __construct($cj, Conf $conf) {
         parent::__construct($cj);
@@ -1106,18 +1099,16 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         if (!$pl->scoresOk
             || $this->form_field->view_score <= $pl->user->permissive_view_score_bound())
             return false;
-        if ($visible) {
+        if ($visible)
             $pl->qopts["scores"][$this->score] = true;
-            $this->max_score = count($this->form_field->options);
-        }
         parent::prepare($pl, $visible);
         return true;
     }
-    function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
+    function score_values(PaperList $pl, PaperInfo $row) {
         $fid = $this->form_field->id;
         $row->ensure_review_score($this->form_field);
         $scores = [];
-        foreach ($row->viewable_submitted_reviews_by_user($pl->user, $forceShow) as $rrow)
+        foreach ($row->viewable_submitted_reviews_by_user($pl->user) as $rrow)
             if (isset($rrow->$fid) && $rrow->$fid)
                 $scores[$rrow->contactId] = $rrow->$fid;
         return $scores;
@@ -1140,21 +1131,24 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
 }
 
 class Score_PaperColumnFactory {
-    static function expand($name, Conf $conf, $xfj, $m) {
+    static function xt_user_visible_fields($name, Conf $conf = null) {
         if ($name === "scores") {
             $fs = $conf->all_review_fields();
             $conf->xt_factory_mark_matched();
         } else
             $fs = [$conf->find_review_field($name)];
         $vsbound = $conf->xt_user->permissive_view_score_bound();
+        return array_filter($fs, function ($f) use ($vsbound) {
+            return $f && $f->has_options && $f->displayed && $f->view_score > $vsbound;
+        });
+    }
+    static function expand($name, Conf $conf, $xfj, $m) {
         return array_map(function ($f) use ($xfj) {
             $cj = (array) $xfj;
             $cj["name"] = $f->search_keyword();
             $cj["review_field_id"] = $f->id;
             return (object) $cj;
-        }, array_filter($fs, function ($f) use ($vsbound) {
-            return $f && $f->has_options && $f->displayed && $f->view_score > $vsbound;
-        }));
+        }, self::xt_user_visible_fields($name, $conf));
     }
     static function completions(Contact $user, $fxt) {
         if (!$user->can_view_some_review())

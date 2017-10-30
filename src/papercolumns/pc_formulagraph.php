@@ -27,13 +27,13 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         parent::prepare($pl, $visible);
         return true;
     }
-    function score_values(PaperList $pl, PaperInfo $row, $forceShow) {
+    function score_values(PaperList $pl, PaperInfo $row) {
         $indexesf = $this->indexes_function;
-        $indexes = $indexesf ? $indexesf($row, $pl->user, $forceShow) : [null];
+        $indexes = $indexesf ? $indexesf($row, $pl->user) : [null];
         $formulaf = $this->formula_function;
         $vs = [];
         foreach ($indexes as $i)
-            if (($v = $formulaf($row, $i, $pl->user, $forceShow)) !== null)
+            if (($v = $formulaf($row, $i, $pl->user)) !== null)
                 $vs[$i] = $v;
         return $vs;
     }
