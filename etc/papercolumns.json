@@ -68,18 +68,10 @@
         "position": 820
     },
     {
-        "match": "revtype:(.+)", "priority": -1,
-        "expand_function": "ReviewerType_PaperColumnFactory::expand"
-    },
-    {
         "name": "revstat",
         "column": true, "sort": true, "completion": true, "className": "pl_revstat",
         "factory_class": "ReviewStatus_PaperColumn", "allow_if": "reviewer",
         "position": 830
-    },
-    {
-        "match": "revstat:(.+)", "priority": -1, "allow_if": "reviewer",
-        "expand_function": "ReviewStatus_PaperColumnFactory::expand"
     },
     {
         "name": "assrev",

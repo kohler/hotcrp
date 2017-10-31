@@ -344,30 +344,6 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     }
 }
 
-class ReviewStatus_PaperColumnFactory {
-    static function expand($name, Conf $conf, $xfj, $m) {
-        if (!($fj = (array) $conf->basic_paper_column("revstat", $conf->xt_user)))
-            return null;
-        if (strcasecmp($m[1], "any") == 0)
-            return [(object) $fj];
-        unset($fj["__column_renderer"]);
-        $rs = [];
-        if (strcasecmp($m[1], "all") == 0) {
-            foreach ($conf->defined_round_list() as $i => $rname) {
-                $fj["name"] = "revstat:" . $rname;
-                $fj["round"] = $i;
-                $rs[] = (object) $fj;
-            }
-        } else if (($round = $conf->round_number($m[1], false)) !== false) {
-            $fj["name"] = "revstat:" . ($conf->round_name($round) ? : "unnamed");
-            $fj["round"] = $round;
-            $rs[] = (object) $fj;
-        } else
-            $conf->xt_factory_error("No review round matches “" . htmlspecialchars($m[1]) . "”.");
-        return $rs;
-    }
-}
-
 class Authors_PaperColumn extends PaperColumn {
     private $aufull;
     private $anonau;
@@ -620,24 +596,6 @@ class ReviewerType_PaperColumn extends PaperColumn {
         if ($flags & self::F_CONFLICT)
             $t[] = "Conflict";
         return $t ? join("; ", $t) : "";
-    }
-}
-
-class ReviewerType_PaperColumnFactory {
-    static function expand($name, Conf $conf, $xfj, $m) {
-        if (!($fj = (array) $conf->basic_paper_column("revtype", $conf->xt_user)))
-            return null;
-        unset($fj["__column_renderer"]);
-        $rs = [];
-        foreach (ContactSearch::make_pc($m[1], $conf->xt_user)->ids as $cid) {
-            $u = $conf->pc_member_by_id($cid);
-            $fj["name"] = "revtype:" . $u->email;
-            $fj["user"] = $u->email;
-            $rs[] = (object) $fj;
-        }
-        if (empty($rs))
-            $conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[1]) . "”.");
-        return $rs;
     }
 }
 
