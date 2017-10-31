@@ -278,7 +278,7 @@ class ConstantFexpr extends Fexpr {
     private function _check_revtype() {
         $rsm = new ReviewSearchMatcher;
         if ($rsm->apply_review_type($this->x, true)) {
-            $this->x = $rsm->review_type;
+            $this->x = $rsm->review_type();
             return true;
         } else
             return false;
