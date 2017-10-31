@@ -4058,22 +4058,23 @@ function suggest(elt, suggestions_promise, options) {
 
     function move_active(k) {
         var $sug = hintdiv.self().find(".suggestion"),
-            $active = hintdiv.self().find(".suggestion.active"), next = null;
-        if (k == "ArrowUp" || k == "ArrowDown") {
-            var pos = 0;
-            if ($active.length) {
-                for (pos = 0; pos != $sug.length && $sug[pos] !== $active[0]; ++pos)
-                    /* nada */;
-                if (pos == $sug.length)
-                    pos -= (k == "ArrowDown");
-            }
-            pos += (k == "ArrowDown" ? 1 : $sug.length - 1);
-            next = $($sug[pos % $sug.length]);
-        } else if ((k == "ArrowLeft" || k == "ArrowRight")
-                   && lastkey && /^Arrow/.test(lastkey)) {
+            $active = hintdiv.self().find(".suggestion.active"),
+            pos = null;
+        if (!$active.length) {
+            if (k === "ArrowUp" || (k === "ArrowLeft" && elt.selectionStart == 0))
+                pos = -1;
+            else if (k === "ArrowDown" || (k === "ArrowRight" && elt.selectionStart == elt.value.length))
+                pos = 0;
+            else
+                return false;
+        } else if (k === "ArrowUp" || k === "ArrowDown") {
+            for (pos = 0; pos !== $sug.length - 1 && $sug[pos] !== $active[0]; ++pos)
+                /* nada */;
+            pos += k === "ArrowDown" ? 1 : -1;
+        } else if (k === "ArrowLeft" || k === "ArrowRight") {
             var $activeg = $active.geometry(),
                 nextadx = Infinity, nextady = Infinity,
-                isleft = (k == "ArrowLeft"),
+                isleft = k === "ArrowLeft",
                 side = (isleft ? "left" : "right");
             for (var i = 0; i != $sug.length; ++i) {
                 var $thisg = $($sug[i]).geometry(),
@@ -4081,20 +4082,25 @@ function suggest(elt, suggestions_promise, options) {
                     adx = Math.abs(dx),
                     ady = Math.abs(($activeg.top + $activeg.bottom) - ($thisg.top + $thisg.bottom));
                 if ((isleft ? dx > 0 : dx < 0)
-                    && (adx < nextadx
-                        || (adx == nextadx && ady < nextady))) {
-                    next = $sug[i];
+                    && (adx < nextadx || (adx == nextadx && ady < nextady))) {
+                    pos = i;
                     nextadx = adx;
                     nextady = ady;
                 }
             }
-        } else
-            return false;
-        if (next && next !== $active[0]) {
-            $active.removeClass("active");
-            $(next).addClass("active");
+            if (pos === null && elt.selectionStart == (isleft ? 0 : elt.value.length))
+                return true;
         }
-        return true;
+        if (pos !== null) {
+            pos = (pos + $sug.length) % $sug.length;
+            if ($sug[pos] !== $active[0]) {
+                $active.removeClass("active");
+                $($sug[pos]).addClass("active");
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     function kp(evt) {
