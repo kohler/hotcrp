@@ -3984,12 +3984,14 @@ function make_suggestions(precaret, postcaret, options) {
 }
 
 function suggest(elt, suggestions_promise, options) {
-    var hintdiv, blurring, hiding = false, lastkey = false, suggdata;
+    var hintdiv, suggdata;
+    var blurring = false, hiding = false, lastkey = false, wasnav = 0;
 
     function kill() {
         hintdiv && hintdiv.remove();
         hintdiv = null;
         blurring = hiding = lastkey = false;
+        wasnav = 0;
     }
 
     function finish_display(cinfo) {
@@ -4061,9 +4063,9 @@ function suggest(elt, suggestions_promise, options) {
             $active = hintdiv.self().find(".suggestion.active"),
             pos = null;
         if (!$active.length) {
-            if (k === "ArrowUp" || (k === "ArrowLeft" && elt.selectionStart == 0))
+            if (k === "ArrowUp")
                 pos = -1;
-            else if (k === "ArrowDown" || (k === "ArrowRight" && elt.selectionStart == elt.value.length))
+            else if (k === "ArrowDown")
                 pos = 0;
             else
                 return false;
@@ -4071,7 +4073,7 @@ function suggest(elt, suggestions_promise, options) {
             for (pos = 0; pos !== $sug.length - 1 && $sug[pos] !== $active[0]; ++pos)
                 /* nada */;
             pos += k === "ArrowDown" ? 1 : -1;
-        } else if (k === "ArrowLeft" || k === "ArrowRight") {
+        } else if ((k === "ArrowLeft" || k === "ArrowRight") && wasnav > 0) {
             var $activeg = $active.geometry(),
                 nextadx = Infinity, nextady = Infinity,
                 isleft = k === "ArrowLeft",
@@ -4088,8 +4090,10 @@ function suggest(elt, suggestions_promise, options) {
                     nextady = ady;
                 }
             }
-            if (pos === null && elt.selectionStart == (isleft ? 0 : elt.value.length))
+            if (pos === null && elt.selectionStart == (isleft ? 0 : elt.value.length)) {
+                wasnav = 2;
                 return true;
+            }
         }
         if (pos !== null) {
             pos = (pos + $sug.length) % $sug.length;
@@ -4097,6 +4101,7 @@ function suggest(elt, suggestions_promise, options) {
                 $active.removeClass("active");
                 $($sug[pos]).addClass("active");
             }
+            wasnav = 2;
             return true;
         } else {
             return false;
@@ -4128,6 +4133,7 @@ function suggest(elt, suggestions_promise, options) {
         } else if (hintdiv || event_key.printable(evt) || k === "Backspace")
             setTimeout(display, 1);
         lastkey = k;
+        wasnav = Math.max(wasnav - 1, 0);
         return result;
     }
 
@@ -4141,6 +4147,7 @@ function suggest(elt, suggestions_promise, options) {
         hintdiv.self().find(".active").removeClass("active");
         $(this).addClass("active");
         lastkey = "Arrow";
+        wasnav = 1;
     }
 
     function blur() {
