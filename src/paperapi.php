@@ -382,10 +382,11 @@ class PaperApi {
 
     static function fieldhtml_api(Contact $user, $qreq, $prow) {
         $fdef = $qreq->f ? $user->conf->paper_columns($qreq->f, $user) : null;
-        if (count($fdef) > 1)
+        if (count($fdef) > 1) {
             return new JsonResult(400, "“" . htmlspecialchars($qreq->f) . "” expands to more than one field.");
-        else if (!$fdef || !$fdef[0]->fold)
+        } else if (!$fdef || !isset($fdef[0]->fold) || !$fdef[0]->fold) {
             return new JsonResult(404, "No such field.");
+        }
         $fdef = PaperColumn::make($fdef[0], $user->conf);
         if ($qreq->f == "au" || $qreq->f == "authors")
             PaperList::change_display($user, "pl", "aufull", (int) $qreq->aufull);
