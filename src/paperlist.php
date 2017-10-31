@@ -231,6 +231,8 @@ class PaperList {
     }
 
     function set_view($k, $v) {
+        if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"")
+            $k = substr($k, 1, -1);
         if (in_array($k, ["compact", "cc", "compactcolumn", "ccol", "compactcolumns"]))
             $this->_view_compact_columns = $this->_view_columns = $v;
         else if (in_array($k, ["columns", "column", "col"]))
@@ -1127,13 +1129,15 @@ class PaperList {
     private function _prepare_columns($field_list) {
         $field_list2 = [];
         $this->tbody_attr = [];
-        foreach ($field_list as $fdef)
+        foreach ($field_list as $fdef) {
             if ($fdef) {
                 $fdef->is_visible = !$this->is_folded($fdef);
                 $fdef->has_content = false;
-                if ($fdef->prepare($this, $fdef->is_visible ? 1 : 0))
+                if ($fdef->prepare($this, $fdef->is_visible ? 1 : 0)) {
                     $field_list2[] = $fdef->realize($this);
+                }
             }
+        }
         assert(empty($this->row_attr));
         return $field_list2;
     }
@@ -1157,8 +1161,9 @@ class PaperList {
 
     private function _columns($field_list, $table_html) {
         $field_list = $this->_canonicalize_columns($field_list);
-        if ($table_html)
+        if ($table_html) {
             $field_list = $this->_view_columns($field_list);
+        }
         $this->_prepare_sort(); // NB before prepare_columns so columns see sorter
         return $this->_prepare_columns($field_list);
     }
@@ -1465,13 +1470,13 @@ class PaperList {
             return null;
 
         // field is never folded, no sorting
-        $fname = $fdef->name;
-        $this->set_view($fname, true);
+        $this->set_view($fdef->name, true);
         assert(!$this->is_folded($fdef));
         $this->sorters = [];
 
         // get rows
-        $field_list = $this->_columns($fname, false);
+        $field_list = $this->_columns([$fdef->name], false);
+        assert(count($field_list) === 1);
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
@@ -1483,7 +1488,7 @@ class PaperList {
         // output field data
         $data = array();
         if (($x = $fdef->header($this, false)))
-            $data["$fname.headerhtml"] = $x;
+            $data["{$fdef->name}.headerhtml"] = $x;
         $m = array();
         foreach ($rows as $row) {
             ++$this->count;
@@ -1497,21 +1502,20 @@ class PaperList {
                 $data["attr.$k"][$row->paperId] = $v;
             }
         }
-        $data["$fname.html"] = $m;
+        $data["{$fdef->name}.html"] = $m;
 
         // output statistics
         if ($fdef->has_statistics()) {
             $m = [];
             foreach (self::$stats as $stat)
                 $m[ScoreInfo::$stat_keys[$stat]] = $fdef->statistic($this, $stat);
-            $data["$fname.stat.html"] = $m;
+            $data["{$fdef->name}.stat.html"] = $m;
         }
+        if ($fdef->has_content)
+            $this->mark_has($fdef->name);
 
         // restore forceShow
         $this->user->set_overrides($overrides);
-
-        if ($fdef->has_content)
-            $this->mark_has($fname);
         return $data;
     }
 

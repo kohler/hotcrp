@@ -101,14 +101,16 @@ if ($qreq->fn === "jserror") {
 }
 
 if ($qreq->fn === "setsession") {
-    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|scoresort)(|\.[a-zA-Z0-9_:]+)\z/', (string) $qreq->var, $m)) {
+    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|scoresort)(|\..*)\z/', (string) $qreq->var, $m)) {
         $val = $qreq->val;
         if ($m[2]) {
             $on = !($val !== null && intval($val) > 0);
             if ($m[1] === "pldisplay" || $m[1] === "pfdisplay")
                 PaperList::change_display($Me, substr($m[1], 0, 2), substr($m[2], 1), $on);
-            else
+            else if (preg_match('/\A[-a-zA-Z0-9_:]+\z/', $m[2]))
                 displayOptionsSet($m[1], substr($m[2], 1), $on);
+            else
+                json_exit(["ok" => false]);
         } else
             $Conf->save_session($m[1], $val !== null ? intval($val) : null);
         json_exit(["ok" => true]);
