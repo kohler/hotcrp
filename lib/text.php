@@ -333,7 +333,7 @@ class Text {
             . ($zw ? self::UTF8_FINAL_NONLETTERDIGIT : '');
     }
 
-    static function star_text_pregexes($word) {
+    static function star_text_pregexes($word, $literal_star = false) {
         if (is_object($word))
             $reg = $word;
         else
@@ -344,7 +344,7 @@ class Text {
             $reg->preg_raw = Text::word_regex($word);
         $reg->preg_utf8 = Text::utf8_word_regex($word);
 
-        if (strpos($word, "*") !== false) {
+        if (!$literal_star && strpos($word, "*") !== false) {
             if ($reg->preg_raw)
                 $reg->preg_raw = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_raw));
             $reg->preg_utf8 = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_utf8));
