@@ -954,6 +954,7 @@ class FormulaCompiler {
     public $user;
     public $tagger;
     private $gvar;
+    private $g0stmt;
     public $gstmt;
     public $lstmt;
     public $fragments = array();
@@ -977,7 +978,7 @@ class FormulaCompiler {
     }
 
     function clear() {
-        $this->gvar = $this->gstmt = $this->lstmt = array();
+        $this->gvar = $this->g0stmt = $this->gstmt = $this->lstmt = [];
         $this->looptype = Fexpr::LNONE;
         $this->datatype = 0;
         $this->lprefix = 0;
@@ -1083,12 +1084,12 @@ class FormulaCompiler {
             $this->queryOptions["scores"] = array();
         $this->queryOptions["scores"][$fid] = $fid;
         if ($this->check_gvar('$ensure_score_' . $fid))
-            $this->gstmt[] = '$prow->ensure_review_score("' . $fid . '");';
+            $this->g0stmt[] = '$prow->ensure_review_score("' . $fid . '");';
     }
     function _ensure_review_word_counts() {
         $this->queryOptions["reviewWordCounts"] = true;
         if ($this->check_gvar('$ensure_reviewWordCounts'))
-            $this->gstmt[] = '$prow->ensure_review_word_counts();';
+            $this->g0stmt[] = '$prow->ensure_review_word_counts();';
     }
 
     private function _push() {
@@ -1186,6 +1187,14 @@ class FormulaCompiler {
         $t = $this->_addltemp($e->compile($this));
         $this->_pop($this->_join_lstmt(false));
         return $t;
+    }
+
+    function statement_text() {
+        return join("\n  ", $this->g0stmt)
+            . (empty($this->g0stmt) || empty($this->gstmt) ? "" : "\n  ")
+            . join("\n  ", $this->gstmt)
+            . (empty($this->gstmt) || empty($this->lstmt) ? "" : "\n  ")
+            . join("\n  ", $this->lstmt) . "\n";
     }
 }
 
@@ -1666,9 +1675,7 @@ class Formula {
         $t = "";
         if ($user)
             $t .= "assert(\$contact->contactId == $user->contactId);\n  ";
-        $t .= join("\n  ", $state->gstmt)
-            . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
-            . join("\n  ", $state->lstmt) . "\n";
+        $t .= $state->statement_text();
         if ($expr !== null && !$sortable)
             $t .= "\n  return $expr;\n";
         else if ($expr !== null) {
