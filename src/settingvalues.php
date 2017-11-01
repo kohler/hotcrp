@@ -159,7 +159,7 @@ class Si {
             if ($si->storage)
                 $si->storage .= $m[2];
             if ($si->extensible === self::X_WORD)
-                $si->title .= " (" . htmlspecialchars($m[2]) . ")";
+                $si->title .= " (" . htmlspecialchars(substr($m[2], 1)) . ")";
             self::$all[$name] = $si;
         }
         if (!isset(self::$all[$name]))
