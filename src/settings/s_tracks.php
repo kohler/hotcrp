@@ -97,7 +97,7 @@ class Tracks_SettingRenderer {
         if ($sv->use_req())
             for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
                 $trackname = trim($sv->req["name_track$i"]);
-                if (!isset($trackj->$trackname)) {
+                if (!isset($trackj->$trackname) && $trackname !== "_") {
                     self::do_track($sv, $trackname, $tracknum);
                     ++$tracknum;
                 }
