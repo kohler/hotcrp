@@ -62,6 +62,8 @@ class Conf {
     private $_round_settings = null;
     private $tracks = null;
     private $_taginfo = null;
+    public $tag_basic_colors = "red|orange|yellow|green|blue|purple|violet|grey|gray|white|bold|italic|underline|strikethrough|big|small|dim";
+    public $tag_basic_badges = "normal|red|orange|yellow|green|blue|purple|white|pink|gray";
     private $_track_tags = null;
     private $_track_view_sensitivity = false;
     private $_track_review_sensitivity = false;
@@ -1093,8 +1095,21 @@ class Conf {
 
 
     function tags() {
-        if (!$this->_taginfo)
+        if (!$this->_taginfo) {
+            if (isset($this->opt["tagBasicColors"])) {
+                if (str_starts_with($this->opt["tagBasicColors"], "|"))
+                    $this->tag_basic_colors .= $this->opt["tagBasicColors"];
+                else
+                    $this->tag_basic_colors = $this->opt["tagBasicColors"];
+            }
+            if (isset($this->opt["tagBasicBadges"])) {
+                if (str_starts_with($this->opt["tagBasicBadges"], "|"))
+                    $this->tag_basic_badges .= $this->opt["tagBasicBadges"];
+                else
+                    $this->tag_basic_badges = $this->opt["tagBasicBadges"];
+            }
             $this->_taginfo = TagMap::make($this);
+        }
         return $this->_taginfo;
     }
 

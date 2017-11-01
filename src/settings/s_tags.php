@@ -43,7 +43,7 @@ class Tags_SettingRenderer {
     static function render_styles(SettingValues $sv) {
         $tag_color_data = $sv->conf->setting_data("tag_color", "");
         $tag_colors_rows = array();
-        foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
+        foreach ($sv->conf->tags()->canonical_colors() as $k) {
             preg_match_all("{(\\A|\\s)(\\S+)=$k\\b}", $tag_color_data, $m);
             $sv->set_oldv("tag_color_$k", join(" ", get($m, 1, [])));
             $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
@@ -121,11 +121,12 @@ class Tags_SettingParser extends SettingParser {
 
         if ($si->name == "tag_color") {
             $ts = array();
-            foreach (explode("|", TagInfo::BASIC_COLORS) as $k)
+            foreach ($sv->conf->tags()->canonical_colors() as $k) {
                 if (isset($sv->req["tag_color_$k"])) {
                     foreach ($this->my_parse_list($sv->si("tag_color_$k"), Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t)
                         $ts[] = $t . "=" . $k;
                 }
+            }
             $sv->update("tag_color", join(" ", $ts));
         }
 

@@ -171,17 +171,18 @@ class Color_SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $word = strtolower($word);
         $tm = new TagSearchMatcher;
-        if ($srch->user->isPC
-            && preg_match(',\A(any|none|color|' . TagInfo::BASIC_COLORS_PLUS . ')\z,', $word)) {
-            if ($word === "any" || $word === "none")
+        if ($srch->user->isPC) {
+            if ($word === "any" || $word === "none") {
                 $f = function ($t, $colors) { return !empty($colors); };
-            else if ($word === "color")
+            } else if ($word === "color") {
                 $f = function ($t, $colors) {
-                    return !empty($colors)
-                        && preg_match('/ (?:' . TagInfo::BASIC_COLORS_NOSTYLES . ') /',
-                                      " " . join(" ", $colors) . " ");
+                    foreach ($colors as $c) {
+                        if (TagInfo::classes_have_colors("{$c}tag"))
+                            return true;
+                    }
+                    return false;
                 };
-            else {
+            } else {
                 $word = TagInfo::canonical_color($word);
                 $f = function ($t, $colors) use ($word) {
                     return !empty($colors) && array_search($word, $colors) !== false;
@@ -198,7 +199,7 @@ class Color_SearchTerm {
         if ($srch->user->isPC && $srch->conf->tags()->has_badges) {
             if ($word === "any" || $word === "none")
                 $f = function ($t) { return !empty($t->badges); };
-            else if (preg_match(',\A(black|' . TagInfo::BASIC_BADGES . ')\z,', $word)
+            else if (preg_match(',\A(black|' . join("|", $srch->conf->tags()->canonical_badges()) . ')\z,', $word)
                      && !$sword->quoted) {
                 $word = $word === "black" ? "normal" : $word;
                 $f = function ($t) use ($word) {

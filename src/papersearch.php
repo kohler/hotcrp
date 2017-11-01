@@ -2486,10 +2486,13 @@ class PaperSearch {
             foreach ($this->conf->topic_map() as $tname)
                 $res[] = "topic:\"{$tname}\"";
         }
-        if (!$category || $category === "style") {
+        if ((!$category || $category === "style") && $this->user->can_view_tags()) {
             $res[] = array("pri" => -1, "nosort" => true, "i" => array("style:any", "style:none", "color:any", "color:none"));
-            foreach (explode("|", TagInfo::BASIC_COLORS) as $t)
-                array_push($res, "style:$t", "color:$t");
+            foreach ($this->conf->tags()->canonical_colors() as $t) {
+                $res[] = "style:$t";
+                if (TagInfo::classes_have_colors("{$t}tag"))
+                    $res[] = "color:$t";
+            }
         }
         if (!$category || $category === "show" || $category === "hide") {
             $cats = array();

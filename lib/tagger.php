@@ -34,7 +34,7 @@ class TagMapItem {
     }
     function set_tag($tag) {
         $this->tag = $tag;
-        if (preg_match('/\A(?:' . TagInfo::BASIC_COLORS_PLUS . ')\z/i', $tag)) {
+        if (preg_match('/\A(?:' . $this->conf->tag_basic_colors . ')\z/i', $tag)) {
             $this->colors[] = TagInfo::canonical_color($tag);
             $this->basic_color = true;
         }
@@ -318,7 +318,7 @@ class TagMap implements IteratorAggregate {
 
     function color_regex() {
         if (!$this->color_re) {
-            $re = "{(?:\\A| )(?:\\d*~|~~|)(" . TagInfo::BASIC_COLORS_PLUS;
+            $re = "{(?:\\A| )(?:\\d*~|~~|)(" . $this->conf->tag_basic_colors;
             foreach ($this->filter("colors") as $t)
                 $re .= "|" . $t->tag_regex();
             $this->color_re = $re . ")(?=\\z|[# ])}i";
@@ -361,12 +361,19 @@ class TagMap implements IteratorAggregate {
         return $key;
     }
 
+    function canonical_colors() {
+        return array_values(array_filter(explode("|", $this->conf->tag_basic_colors),
+            function ($t) {
+                return TagInfo::canonical_color($t) === $t;
+            }));
+    }
+
     function tags_with_color($f) {
         $a = [];
         foreach ($this as $t)
             if (call_user_func($f, $t->tag, $t->colors ? : []))
                 $a[] = $t->tag;
-        foreach (explode("|", TagInfo::BASIC_COLORS_PLUS) as $ltag)
+        foreach (explode("|", $this->conf->tag_basic_colors) as $ltag)
             if (!isset($this->storage[$ltag])
                 && call_user_func($f, $ltag, [TagInfo::canonical_color($ltag)]))
                 $a[] = $ltag;
@@ -381,6 +388,10 @@ class TagMap implements IteratorAggregate {
             $this->badge_re = substr($re, 0, -1) . ")(?:#[\\d.]+)?(?=\\z| )}i";
         }
         return $this->badge_re;
+    }
+
+    function canonical_badges() {
+        return explode("|", $this->conf->tag_basic_badges);
     }
 
     function emoji_regex() {
@@ -484,11 +495,6 @@ class TagMap implements IteratorAggregate {
 }
 
 class TagInfo {
-    const BASIC_COLORS = "red|orange|yellow|green|blue|purple|gray|white|bold|italic|underline|strikethrough|big|small|dim";
-    const BASIC_COLORS_PLUS = "red|orange|yellow|green|blue|purple|violet|grey|gray|white|bold|italic|underline|strikethrough|big|small|dim";
-    const BASIC_COLORS_NOSTYLES = "red|orange|yellow|green|blue|purple|gray|white";
-    const BASIC_BADGES = "normal|red|orange|yellow|green|blue|purple|white|pink|gray";
-
     static function base($tag) {
         if ($tag && (($pos = strpos($tag, "#")) > 0
                      || ($pos = strpos($tag, "=")) > 0))
