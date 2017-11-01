@@ -23,16 +23,16 @@ class Tags_SettingRenderer {
             $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Administrators can view and change these tags for every paper.", ["class" => "need-tagcompletion"]);
 
         $sv->set_oldv("tag_approval", self::render_tags($tagmap->filter("approval")));
-        $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-tagcompletion"]);
+        $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>", ["class" => "need-tagcompletion"]);
 
         $x = [];
         foreach ($tagmap->filter("vote") as $t)
             $x[] = "{$t->tag}#{$t->vote}";
         $sv->set_oldv("tag_vote", join(" ", $x));
-        $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. <span class=\"barsep\">·</span> <a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-tagcompletion"]);
+        $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>)", ["class" => "need-tagcompletion"]);
 
         $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
-        $sv->echo_entry_row("tag_rank", "Ranking tag", "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='" . hoturl("help", "t=ranking") . "'>What is this?</a>");
+        $sv->echo_entry_row("tag_rank", "Ranking tag", "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href='" . hoturl("help", "t=ranking") . "'>Help</a>)");
         echo "</tbody></table>";
 
         echo "<div class='g'></div>\n";
@@ -53,8 +53,8 @@ class Tags_SettingRenderer {
         }
 
         echo Ht::hidden("has_tag_color", 1),
-            '<h3 class="settings g">Styles and colors</h3>',
-            "<p class=\"settingtext\">Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</p>",
+            '<h3 class="settings g">Colors and styles</h3>',
+            "<p class=\"settingtext\">Papers tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
             '<table id="foldtag_color" class="demargin"><tr><th></th><th style="min-width:8rem">Style name</th><th>Tags</th><th></th></tr>',
             join("", $tag_colors_rows), "</table>\n";
 
