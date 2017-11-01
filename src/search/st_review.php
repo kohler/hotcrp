@@ -309,12 +309,13 @@ class Review_SearchTerm extends SearchTerm {
         if ($f->has_options)
             return self::parse_score_field($rsm, $word, $f, $srch);
         else {
-            if ($word === "any" && !$sword->quoted)
+            if ($word === "any" && !$sword->quoted) {
                 return $rsm->make_field_term($f, true);
-            else if ($word === "none" && !$sword->quoted)
+            } else if ($word === "none" && !$sword->quoted) {
                 return $rsm->make_field_term($f, false);
-            else
-                return $rsm->make_field_term($f, Text::star_text_pregexes($word));
+            } else {
+                return $rsm->make_field_term($f, Text::star_text_pregexes($word, $sword->quoted));
+            }
         }
     }
     private static function impossible_score_match(ReviewField $f) {

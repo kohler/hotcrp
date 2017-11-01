@@ -12,9 +12,10 @@ class SearchWord {
     public $kwdef;
     function __construct($qword) {
         $this->qword = $this->word = $qword;
-        $this->quoted = $qword !== "" && $qword[0] === "\"";
+        $this->quoted = $qword !== "" && $qword[0] === "\""
+            && strpos($qword, "\"", 1) === strlen($qword) - 1;
         if ($this->quoted)
-            $this->word = str_replace('*', '\*', preg_replace('/(?:\A"|"\z)/', '', $qword));
+            $this->word = substr($qword, 1, -1);
     }
 }
 
@@ -500,14 +501,14 @@ class TextMatch_SearchTerm extends SearchTerm {
         "au" => "authorInformation", "co" => "collaborators"
     ];
 
-    function __construct($t, $text) {
+    function __construct($t, $text, $quoted) {
         parent::__construct($t);
         $this->field = self::$map[$t];
         $this->authorish = $t === "au" || $t === "co";
         if (is_bool($text))
             $this->trivial = $text;
         else
-            $this->regex = Text::star_text_pregexes($text);
+            $this->regex = Text::star_text_pregexes($text, $quoted);
     }
     static function parse($word, SearchWord $sword) {
         if ($sword->kwexplicit && !$sword->quoted) {
@@ -516,7 +517,7 @@ class TextMatch_SearchTerm extends SearchTerm {
             else if ($word === "none")
                 $word = false;
         }
-        return new TextMatch_SearchTerm($sword->kwdef->name, $word);
+        return new TextMatch_SearchTerm($sword->kwdef->name, $word, $sword->quoted);
     }
 
     function trivial_rights(Contact $user, PaperSearch $srch) {
@@ -769,8 +770,6 @@ class Show_SearchTerm {
         return SearchTerm::make_float($f);
     }
     static function parse_heading($word, SearchWord $sword) {
-        if ($sword->quoted)
-            $word = str_replace('\\*', '*', $word);
         return SearchTerm::make_float(["heading" => simplify_whitespace($word)]);
     }
 }

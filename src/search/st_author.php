@@ -7,11 +7,11 @@ class Author_SearchTerm extends SearchTerm {
     private $csm;
     private $regex;
 
-    function __construct($countexpr, $contacts, $match) {
+    function __construct($countexpr, $contacts, $match, $quoted) {
         parent::__construct("au");
         $this->csm = new ContactCountMatcher($countexpr, $contacts);
         if (!$contacts && $match)
-            $this->regex = Text::star_text_pregexes($match);
+            $this->regex = Text::star_text_pregexes($match, $quoted);
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $count = ">0";
@@ -29,7 +29,7 @@ class Author_SearchTerm extends SearchTerm {
             } else if (trim($word) !== "")
                 $cids = $srch->matching_special_contacts($word, false, false);
         }
-        return new Author_SearchTerm($count, $cids, $word);
+        return new Author_SearchTerm($count, $cids, $word, $sword->quoted);
     }
     function trivial_rights(Contact $user, PaperSearch $srch) {
         return $this->csm->has_sole_contact($user->contactId);
@@ -94,7 +94,7 @@ class AuthorMatch_SearchTerm extends SearchTerm {
     static function parse($word, SearchWord $sword) {
         $type = $sword->kwdef->name;
         if ($word === "any" && $sword->kwexplicit && !$sword->quoted)
-            return new TextMatch_SearchTerm(substr($type, 0, 2), true);
+            return new TextMatch_SearchTerm(substr($type, 0, 2), true, false);
         $matcher = new PaperInfo_AuthorMatcher($word);
         if ($matcher->general_pregexes)
             return new AuthorMatch_SearchTerm($type, $matcher);
