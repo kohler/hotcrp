@@ -51,7 +51,7 @@ class Tracks_SettingRenderer {
         echo "<div id=\"trackgroup$tnum\"",
             ($tnum ? "" : " style=\"display:none\""),
             "><table style=\"margin-bottom:0.5em\">";
-        echo "<tr><td colspan=\"3\" style=\"padding-bottom:3px\">";
+        echo "<tr><td colspan=\"4\" style=\"padding-bottom:3px\">";
         if ($trackname === "_")
             echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
         else

@@ -61,18 +61,17 @@ echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
 echo Ht::form(hoturl_post("settings", "group=$Group"), array("id" => "settingsform"));
 
-echo '<div class="leftmenu_menucontainer"><div class="leftmenu_list">';
+echo '<div class="leftmenu-menu-container"><div class="leftmenu-list">';
 foreach ($group_titles as $name => $title) {
     if ($name === $Group)
-        echo '<div class="leftmenu_item_on">', $title, '</div>';
+        echo '<div class="leftmenu-item-on">', $title, '</div>';
     else
-        echo '<div class="leftmenu_item">',
+        echo '<div class="leftmenu-item">',
             '<a href="', hoturl("settings", "group={$name}"), '">', $title, '</a></div>';
 }
 echo "</div></div>\n",
-    '<div class="leftmenu_content_container"><div class="leftmenu_content">',
-    '<div class="leftmenu_body">';
-Ht::stash_script("jQuery(\".leftmenu_item\").click(divclick)");
+    '<div class="leftmenu-content-container"><div class="leftmenu-content aahc">';
+Ht::stash_script("jQuery(\".leftmenu-item\").click(divclick)");
 
 function doActionArea($top) {
     echo '<div class="aab aabr aabig">',
@@ -81,16 +80,13 @@ function doActionArea($top) {
         '<hr class="c" /></div>';
 }
 
-echo '<div class="aahc">';
 doActionArea(true);
 
-echo "<div>";
 $Sv->report(isset($_REQUEST["update"]) && check_post());
 $Sv->render_group($Group);
-echo "</div>";
 
 doActionArea(false);
-echo "</div></div></div></div></form>\n";
+echo "</div></div></form>\n";
 
 Ht::stash_script("hiliter_children('#settingsform')");
 $Conf->footer();

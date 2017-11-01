@@ -46,15 +46,16 @@ class Tags_SettingRenderer {
         foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
             preg_match_all("{\\b(\\S+)=$k\\b}", $tag_color_data, $m);
             $sv->set_oldv("tag_color_$k", join(" ", get($m, 1, [])));
-            $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"lxcaption\"></td>"
+            $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
                 . "<td class=\"lxcaption taghl\">$k</td>"
-                . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-tagcompletion"]) . "</td></tr>";
+                . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-tagcompletion"]) . "</td>"
+                . "<td class=\"remargin-left\"></td></tr>";
         }
 
         echo Ht::hidden("has_tag_color", 1),
             '<h3 class="settings g">Styles and colors</h3>',
             "<p class=\"settingtext\">Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</p>",
-            '<table id="foldtag_color"><tr><th colspan="2" style="min-width:8rem">Style name</th><th>Tags</th></tr>',
+            '<table id="foldtag_color" class="demargin"><tr><th></th><th style="min-width:8rem">Style name</th><th>Tags</th><th></th></tr>',
             join("", $tag_colors_rows), "</table>\n";
 
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");

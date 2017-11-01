@@ -118,12 +118,12 @@ a.q:active, a.qq:active, a.u:active, a.uu:active, a.nn:active, a.maillink:active
 	color: red;
 }
 a.q, a.qq, a.qx, a.x, a.xx, a.nn, a.btn,
-div.papmodex > a, div.papmodex:hover > a.noul, div.leftmenu_item > a,
+div.papmodex > a, div.papmodex:hover > a.noul, div.leftmenu-item > a,
 a.pnum, a.ptitle, a.maillink, u.x, .noul {
 	text-decoration: none;
 }
 a.q:hover, a.qq:hover, a.x:hover,
-div.papmodex:hover > a, div.leftmenu_item:hover > a,
+div.papmodex:hover > a, div.leftmenu-item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 .childfold:hover a.q, a.maillink:hover, a:hover u.x, .ul {
 	text-decoration: underline;
@@ -230,7 +230,7 @@ div#mailref, pre.email, tt.email {
 
 
 /* general */
-table, tr, td {
+table, tr, td, th {
 	padding: 0;
 	border-spacing: 0;
 	border: 0 none;
@@ -306,13 +306,13 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 .xmsgs-atbody {
 	margin: 12px -24px 24px;
 }
-.leftmenu_body .xmsg {
+.leftmenu-content > .xmsg {
 	margin-left: -16px;
 	margin-right: -16px;
 	border-left-width: 0;
 	border-right-width: 0;
 }
-.leftmenu_body .xmsgc {
+.leftmenu-content > .xmsg > .xmsgc {
 	margin-left: 16px;
 	margin-right: 16px;
 }
@@ -957,8 +957,8 @@ h3.settings, h3.helppage, h3.profile {
 h3.helppage + p {
 	margin-top: 0.5em;
 }
-h3.settings:first-child {
-	margin-top: 0;
+div.aab + h3.settings {
+	margin-top: 0.5em;
 }
 .settingtext {
 	max-width: 640px;
@@ -997,19 +997,24 @@ table#foldtag_color th {
 }
 
 /* help pages */
-.leftmenu_menucontainer {
+.leftmenu-menu-container {
 	width: 140px;
 	font-size: smaller;
 	float: left;
 	position: absolute;
 }
-.leftmenu_item {
+.leftmenu-item, .leftmenu-item-on {
+	-webkit-column-break-inside: avoid;
+	page-break-inside: avoid;
+	break-inside: avoid;
+}
+.leftmenu-item {
 	padding: 0.25ex 5px 0.6ex 5px;
 	margin-left: -5px;
 	cursor: pointer;
 	clear: left;
 }
-.leftmenu_item_on {
+.leftmenu-item-on {
 	padding: 0.5ex 5px 0.6ex 5px;
 	margin-left: -6px;
 	background: white;
@@ -1019,10 +1024,10 @@ table#foldtag_color th {
 	font-weight: bold;
 	display: inline-block;
 }
-.leftmenu_item_on > a {
+.leftmenu-item-on > a {
 	display: table-cell;
 }
-.leftmenu_content_container {
+.leftmenu-content-container {
 	margin-left: 140px;
 	padding-bottom: 2em;
 	background: #eeeeee;
@@ -1030,16 +1035,17 @@ table#foldtag_color th {
 	padding: 5px 0;
 	border-radius: 4px;
 }
-.leftmenu_content {
+.leftmenu-content {
 	background: white;
 	border-radius: 2px;
 	padding: 16px;
 }
-.leftmenu_body {
-	position: relative;
+.leftmenu-content > .demargin {
+	margin-left: -16px;
+	margin-right: -16px;
 }
-.leftmenu_body > *:first-child {
-	margin-top: 0;
+.leftmenu-content > .demargin .remargin-left {
+	padding-left: 16px;
 }
 .profiletext, .settingstext {
 	max-width: 640px;

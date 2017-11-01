@@ -25,12 +25,20 @@ h2.paptitle {
 	text-indent: -1.5em;
 	margin-left: 1.5em;
 }
-.pspcard_container, .leftmenu_menucontainer {
+.pspcard_container, .leftmenu-menu-container {
 	float: none;
 	position: static;
 	width: auto;
 	margin-left: 0;
 	margin-bottom: 16px;
+}
+.leftmenu-list {
+	-webkit-columns: 100px 4;
+	-moz-columns: 100px 4;
+	columns: 100px 4;
+	-webkit-column-gap: 18px;
+	-moz-column-gap: 18px;
+	column-gap: 18px;
 }
 .pspcard_fold {
 	padding: 7px 0;
@@ -49,26 +57,23 @@ h2.paptitle {
 .papcard, .pedcard, .notecard, .revcard, .cmtcard {
 	margin-left: 0;
 }
-.leftmenu_content_container {
+.leftmenu-content-container {
 	margin: 0 -12px;
 }
-.leftmenu_content {
+.leftmenu-content {
 	padding-left: 12px;
 	padding-right: 12px;
 }
-.leftmenu_body .xmsg {
+.leftmenu-content > .xmsg, .leftmenu-content > .demargin {
 	margin-left: -12px;
 	margin-right: -12px;
 }
-.leftmenu_body .xmsgc {
+.leftmenu-content > .xmsg > .xmsgc {
 	padding-left: 12px;
 	padding-right: 12px;
 }
-.helplist_item {
-	margin-left: -12px;
-	margin-right: -12px;
+.leftmenu-content > .demargin .remargin-left {
 	padding-left: 12px;
-	padding-right: 12px;
 }
 input, textarea {
 	max-width: 100%;
