@@ -13,6 +13,7 @@ class TagMapItem {
     public $pattern = false;
     public $pattern_instance = false;
     public $pattern_version = 0;
+    public $is_private = false;
     public $chair = false;
     public $track = false;
     public $votish = false;
@@ -37,6 +38,8 @@ class TagMapItem {
             $this->colors[] = TagInfo::canonical_color($tag);
             $this->basic_color = true;
         }
+        if ($tag[0] === "~" && $tag[1] !== "~")
+            $this->is_private = true;
     }
     function merge(TagMapItem $t) {
         foreach (["chair", "track", "votish", "vote", "approval", "sitewide", "rank", "autosearch"] as $property)
@@ -50,6 +53,8 @@ class TagMapItem {
         $t = preg_quote($this->tag);
         if ($this->pattern)
             $t = str_replace("\\*", "[^\\s#]*", $t);
+        if ($this->is_private)
+            $t = "\\d*" . $t;
         return $t;
     }
     function order_anno_list() {
@@ -370,7 +375,7 @@ class TagMap implements IteratorAggregate {
 
     function badge_regex() {
         if (!$this->badge_re) {
-            $re = "{(?:\\A| )(?:\\d*~|~~|)(";
+            $re = "{(?:\\A| )(?:\\d*~|)(";
             foreach ($this->filter("badges") as $t)
                 $re .= $t->tag_regex() . "|";
             $this->badge_re = substr($re, 0, -1) . ")(?:#[\\d.]+)?(?=\\z| )}i";
