@@ -482,7 +482,7 @@ class TagInfo {
     const BASIC_COLORS = "red|orange|yellow|green|blue|purple|gray|white|bold|italic|underline|strikethrough|big|small|dim";
     const BASIC_COLORS_PLUS = "red|orange|yellow|green|blue|purple|violet|grey|gray|white|bold|italic|underline|strikethrough|big|small|dim";
     const BASIC_COLORS_NOSTYLES = "red|orange|yellow|green|blue|purple|gray|white";
-    const BASIC_BADGES = "normal|red|yellow|green|blue|white|pink|gray";
+    const BASIC_BADGES = "normal|red|orange|yellow|green|blue|purple|white|pink|gray";
 
     static function base($tag) {
         if ($tag && (($pos = strpos($tag, "#")) > 0

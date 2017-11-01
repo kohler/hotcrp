@@ -2080,6 +2080,10 @@ a.qq:hover > .badge {
 .redbadge {
 	background: #ee0000;
 }
+.orangebadge {
+	background: #ee9900;
+	color: #222222;
+}
 .yellowbadge {
 	background: #e2e200;
 	color: #222222;
@@ -2089,6 +2093,9 @@ a.qq:hover > .badge {
 }
 .bluebadge {
 	background: #0000ff;
+}
+.purplebadge {
+	background: #aa00ee;
 }
 .graybadge {
 	background: #8c8c94;
