@@ -44,7 +44,7 @@ class Tags_SettingRenderer {
         $tag_color_data = $sv->conf->setting_data("tag_color", "");
         $tag_colors_rows = array();
         foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
-            preg_match_all("{\\b(\\S+)=$k\\b}", $tag_color_data, $m);
+            preg_match_all("{(\\A|\\s)(\\S+)=$k\\b}", $tag_color_data, $m);
             $sv->set_oldv("tag_color_$k", join(" ", get($m, 1, [])));
             $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
                 . "<td class=\"lxcaption taghl\">$k</td>"
