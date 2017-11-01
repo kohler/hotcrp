@@ -138,12 +138,8 @@ class Formula_PaperColumn extends PaperColumn {
 
 class Formula_PaperColumnFactory {
     static function make($xfj, Formula $f) {
-        if ($f->formulaId)
-            $name = $f->name;
-        else
-            $name = "formula:" . $f->expression;
         $cj = (array) $xfj;
-        $cj["name"] = $name;
+        $cj["name"] = "formula:" . ($f->formulaId ? $f->name : $f->expression);
         $cj["formula"] = $f;
         return new Formula_PaperColumn((object) $cj);
     }
@@ -157,20 +153,32 @@ class Formula_PaperColumnFactory {
                     return $f->view_score($conf->xt_user) > $vsbound;
                 }));
         }
-        $ff = $conf->find_named_formula($name);
-        if (!$ff && str_starts_with($name, "formula"))
+
+        $ff = null;
+        if (str_starts_with($name, "formula")
+            && ctype_digit(substr($name, 7)))
             $ff = get($conf->named_formulas(), substr($name, 7));
-        if (!$ff) {
-            if (str_starts_with($name, "f:"))
-                $name = ltrim(substr($name, 2));
-            else if (str_starts_with($name, "formula:"))
-                $name = ltrim(substr($name, 8));
-            $ff = new Formula($name);
+
+        $want_error = strpos($name, "(") !== false;
+        if (!$ff && str_starts_with($name, "f:")) {
+            $name = substr($name, 2);
+            $want_error = true;
+        } else if (!$ff && str_starts_with($name, "formula:")) {
+            $name = substr($name, 8);
+            $want_error = true;
         }
-        if ($ff->check($conf->xt_user)) {
+
+        if (!$ff)
+            $ff = $conf->find_named_formula($name);
+        if (!$ff && str_starts_with($name, "\"") && strpos($name, "\"", 1) === strlen($name) - 1)
+            $ff = $conf->find_named_formula(substr($name, 1, -1));
+        if (!$ff && $name !== "")
+            $ff = new Formula($name);
+
+        if ($ff && $ff->check($conf->xt_user)) {
             if ($ff->view_score($conf->xt_user) > $vsbound)
                 return [Formula_PaperColumnFactory::make($xfj, $ff)];
-        } else if (strpos($name, "(") !== false)
+        } else if ($ff && $want_error)
             $conf->xt_factory_error($ff->error_html());
         return null;
     }

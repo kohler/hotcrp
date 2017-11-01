@@ -12,12 +12,11 @@ class Formula_SearchTerm extends SearchTerm {
         $this->function = $formula->compile_function();
     }
     static private function read_formula($word, $quoted, $is_graph, PaperSearch $srch) {
-        $result = $formula = null;
-        if (preg_match('/\A[^(){}\[\]]+\z/', $word) && !$quoted
-            && ($result = $srch->conf->qe("select * from Formula where name=?", $word)))
-            $formula = Formula::fetch($srch->conf, $result);
-        Dbl::free($result);
-        $formula = $formula ? : new Formula($word, $is_graph);
+        $formula = null;
+        if (preg_match('/\A[^(){}\[\]]+\z/', $word))
+            $formula = $srch->conf->find_named_formula($word);
+        if (!$formula)
+            $formula = new Formula($word, $is_graph);
         if (!$formula->check($srch->user)) {
             $srch->warn($formula->error_html());
             $formula = null;

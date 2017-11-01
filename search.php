@@ -138,7 +138,7 @@ function saveformulas() {
 
         if ($lname === "")
             $errors[] = "Missing formula name.";
-        else if (preg_match('/\A(?:formula\d+|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d*)?|none|any|all|unknown)\z/', $lname))
+        else if (preg_match('/\A(?:formula[:\d].*|f:.*|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d*)?|none|any|all|unknown)\z/', $lname))
             $errors[] = "Formula name “" . htmlspecialchars($name) . "” is reserved. Please pick another name.";
         else if (preg_match_all('/[()\[\]\{\}\\\\\"\']/', $lname, $m))
             $errors[] = "Characters like “" . htmlspecialchars(join("", $m[0])) . "” cannot be used in formula names. Please pick another name.";
@@ -408,7 +408,7 @@ if ($pl_text) {
     // Formulas group
     $named_formulas = $Conf->viewable_named_formulas($Me, $Qreq->t == "a");
     foreach ($named_formulas as $formula)
-        $display_options->checkbox_item(40, $formula->name, htmlspecialchars($formula->name));
+        $display_options->checkbox_item(40, "formula:" . $formula->name, htmlspecialchars($formula->name));
     if ($named_formulas)
         $display_options->set_header(40, "<strong>Formulas:</strong>");
     if ($Me->isPC && $Qreq->t != "a") {
