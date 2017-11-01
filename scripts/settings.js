@@ -91,13 +91,13 @@ function settings_tag_autosearch() {
 
 
 function settings_add_track() {
-    var i, h, j;
-    for (i = 1; jQuery("#trackgroup" + i).length; ++i)
+    for (var i = 1; jQuery("#trackgroup" + i).length; ++i)
         /* do nothing */;
-    jQuery("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\"></div>");
-    j = jQuery("#trackgroup" + i);
-    j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
-    j.find("input[placeholder]").each(mktemptext);
+    $("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\" class=\"mg\"></div>");
+    var $j = jQuery("#trackgroup" + i);
+    $j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
+    $j.find("input[placeholder]").each(mktemptext);
+    $j.find("input[name^=name]").focus();
 }
 
 

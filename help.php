@@ -100,13 +100,18 @@ class HtHead extends Ht {
     }
     function settings_link($html, $group = null) {
         if ($this->user->privChair) {
+            $pre = $post = "";
             if ($group === null) {
-                $group = is_string($html) ? ["group" => $html] : $html;
-                return ' (<a href="' . hoturl("settings", $group) . '">Change this setting</a>)';
-            } else {
-                $group = is_string($group) ? ["group" => $group] : $group;
-                return '<a href="' . hoturl("settings", $group) . '">' . $html . '</a>';
+                $group = $html;
+                $html = "Change this setting";
+                $pre = " (";
+                $post = ")";
             }
+            if (is_string($group) && ($hash = strpos($group, "#")) !== false)
+                $group = ["group" => substr($group, 0, $hash), "anchor" => substr($group, $hash + 1)];
+            else if (is_string($group))
+                $group = ["group" => $group];
+            return $pre . '<a href="' . hoturl("settings", $group) . '">' . $html . '</a>' . $post;
         } else {
             if ($group === null)
                 return '';

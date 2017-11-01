@@ -141,7 +141,7 @@ with similar PC conflicts, which can make the meeting run smoother.</p>";
 
     function render_colors() {
         $hth = $this->hth;
-        echo $hth->subhead("Tag colors, badges, and emoji", "colors");
+        echo $hth->subhead("Tag colors", "colors");
         echo "<p>Tags “red”, “orange”, “yellow”, “green”, “blue”, “purple”, “gray”, and
 “white” act as highlight colors. For example, papers tagged with “#red” will
 appear <span class=\"tagcolorspan redtag\">red</span> in paper lists (for people
@@ -149,18 +149,7 @@ who can see that tag).  Tag a paper “#~red” to make it red only on your disp
 Other styles are available; try “#bold”, “#italic”, “#big”, “#small”, and
 “#dim”. The ", $hth->settings_link("settings page", "tags"), " can associate other tags
 with colors so that, for example, “" . $hth->search_link("#reject") . "” papers appear
-gray.</p>
-
-<p>The ", $hth->settings_link("settings page", "tags"), " can
-declare certain tags as <span class=\"badge normalbadge\">badges</span>, which
-display near titles.</p>
-
-<p><a href=\"http://www.emoji-cheat-sheet.com/\">Emoji codes</a> like “:fire:”
-and “:confused:” can be used as tags. The corresponding emoji displays next to
-the paper title. <a href=\"#values\">Tag values</a> show multiple emoji,
-so “#:star:#5” shows five stars.</p>
-
-<p>" . Ht::img("extagcolors.png", "[Tag colors, badges, and emoji]", ["width" => 498, "height" => 151]) . "</p></li>";
+gray.</p>\n";
     }
 
     function render_examples() {

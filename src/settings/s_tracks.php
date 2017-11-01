@@ -48,7 +48,7 @@ class Tracks_SettingRenderer {
     }
 
     static private function do_track($sv, $trackname, $tnum) {
-        echo "<div id=\"trackgroup$tnum\"",
+        echo "<div id=\"trackgroup$tnum\" class=\"mg\"",
             ($tnum ? "" : " style=\"display:none\""),
             "><table style=\"margin-bottom:0.5em\">";
         echo "<tr><td colspan=\"4\" style=\"padding-bottom:3px\">";
@@ -104,7 +104,7 @@ class Tracks_SettingRenderer {
             }
         // catchall track
         self::do_track($sv, "_", 1);
-        echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
+        echo Ht::js_button("Add track", "settings_add_track()", ["class" => "btn btn-sm"]);
 
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
     }

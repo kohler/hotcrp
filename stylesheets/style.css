@@ -685,6 +685,9 @@ span.expander > span.in0 {
 	white-space: nowrap;
 	text-indent: 0;
 }
+.btn.btn-sm {
+	font-size: smaller;
+}
 .btn:hover {
 	border: 1px solid #cccccc;
 	background-image: linear-gradient(#eeeeee, #dddddd);
