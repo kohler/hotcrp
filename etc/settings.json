@@ -350,30 +350,24 @@
     },
     "tag_approval": {
         "title": "Approval voting tags",
-        "type": "taglist", "parser": "Tag_SettingParser", "size": 50, "autogrow": true,
-        "require": "src/settings/s_tags.php"
+        "type": "taglist", "parser": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "tag_au_seerev": {
         "title": "Review visibility tags", "group": "decisions",
-        "type": "taglist", "parser": "Tag_SettingParser", "size": 24
-    },
-    "tag_badge": {
-        "title": "Tag badges",
-        "type": "taglist", "parser": "Tag_SettingParser", "size": 40, "autogrow": true,
-        "extensible": "word"
+        "type": "taglist", "parser": "Tags_SettingParser", "size": 24
     },
     "tag_chair": {
         "title": "Chair-only tags", "group": "tags",
-        "type": "taglist", "parser": "Tag_SettingParser", "size": 50, "autogrow": true
+        "type": "taglist", "parser": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "tag_color": {
         "title": "Tag colors",
-        "type": "taglist", "parser": "Tag_SettingParser", "size": 40, "autogrow": true,
+        "type": "taglist", "parser": "Tags_SettingParser", "size": 40, "autogrow": true,
         "extensible": "word"
     },
     "tag_rank": {
         "title": "Ranking tags",
-        "type": "taglist", "parser": "Tag_SettingParser", "size": 50, "autogrow": true
+        "type": "taglist", "parser": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "tag_rounds": {
         "internal": true, "type": "taglist"
@@ -384,11 +378,11 @@
     },
     "tag_sitewide": {
         "title": "Site-wide tags", "group": "tags",
-        "type": "taglist", "parser": "Tag_SettingParser", "size": 50, "autogrow": true
+        "type": "taglist", "parser": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "tag_vote": {
         "title": "Allotment voting tags",
-        "type": "taglist", "parser": "Tag_SettingParser", "size": 50, "autogrow": true
+        "type": "taglist", "parser": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "topics": {
         "parser": "Topics_SettingParser", "require": "src/settings/s_topics.php"

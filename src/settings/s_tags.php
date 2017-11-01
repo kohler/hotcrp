@@ -51,23 +51,10 @@ class Tags_SettingRenderer {
                 . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-tagcompletion"]) . "</td></tr>";
         }
 
-        $tag_badge_data = $sv->conf->setting_data("tag_badge", "");
-        foreach (["normal" => "black badge", "red" => "red badge",
-                  "yellow" => "yellow badge", "green" => "green badge",
-                  "blue" => "blue badge", "white" => "white badge",
-                  "pink" => "pink badge", "gray" => "gray badge"]
-                 as $k => $desc) {
-            preg_match_all("{\\b(\\S+)=$k\\b}", $tag_badge_data, $m);
-            $sv->set_oldv("tag_badge_$k", join(" ", get($m, 1, [])));
-            $tag_colors_rows[] = "<tr><td class=\"lxcaption\"></td>"
-                . "<td class=\"lxcaption\"><span class=\"badge {$k}badge\" style=\"margin:0\">$desc</span></td>"
-                . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_badge_$k", ["class" => "need-tagcompletion"]) . "</td></tr>";
-        }
-
-        echo Ht::hidden("has_tag_color", 1), Ht::hidden("has_tag_badge", 1),
+        echo Ht::hidden("has_tag_color", 1),
             '<h3 class="settings g">Styles and colors</h3>',
             "<p class=\"settingtext\">Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</p>",
-            "<table id='foldtag_color'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>",
+            '<table id="foldtag_color"><tr><th colspan="2" style="min-width:8rem">Style name</th><th>Tags</th></tr>',
             join("", $tag_colors_rows), "</table>\n";
 
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
@@ -75,48 +62,56 @@ class Tags_SettingRenderer {
 }
 
 
-class Tag_SettingParser extends SettingParser {
+class Tags_SettingParser extends SettingParser {
+    private $sv;
     private $tagger;
-    public function __construct() {
-        $this->tagger = new Tagger;
+    function __construct(SettingValues $sv) {
+        $this->sv = $sv;
+        $this->tagger = new Tagger($sv->user);
     }
-    private function parse_list(SettingValues $sv, Si $si, $checkf, $min_idx) {
+    static function parse_list(Tagger $tagger, SettingValues $sv, Si $si,
+                               $checkf, $min_idx) {
         $ts = array();
         foreach (preg_split('/\s+/', $sv->req[$si->name]) as $t)
-            if ($t !== "" && ($tx = $this->tagger->check($t, $checkf))) {
+            if ($t !== "" && ($tx = $tagger->check($t, $checkf))) {
                 list($tag, $idx) = TagInfo::unpack($tx);
                 if ($min_idx)
                     $tx = $tag . "#" . max($min_idx, (float) $idx);
                 $ts[$tag] = $tx;
             } else if ($t !== "")
-                $sv->error_at($si->name, $si->title . ": " . $this->tagger->error_html);
+                $sv->error_at($si->name, $si->title . ": " . $tagger->error_html);
         return array_values($ts);
     }
-    public function parse(SettingValues $sv, Si $si) {
+    function my_parse_list(Si $si, $checkf, $min_idx) {
+        return self::parse_list($this->tagger, $this->sv, $si, $checkf, $min_idx);
+    }
+    function parse(SettingValues $sv, Si $si) {
+        assert($this->sv === $sv);
+
         if ($si->name == "tag_chair" && isset($sv->req["tag_chair"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
+            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
             $sv->update($si->name, join(" ", $ts));
         }
 
         if ($si->name == "tag_sitewide" && isset($sv->req["tag_sitewide"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
+            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
             $sv->update($si->name, join(" ", $ts));
         }
 
         if ($si->name == "tag_vote" && isset($sv->req["tag_vote"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
+            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
             if ($sv->update("tag_vote", join(" ", $ts)))
                 $sv->need_lock["PaperTag"] = true;
         }
 
         if ($si->name == "tag_approval" && isset($sv->req["tag_approval"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             if ($sv->update("tag_approval", join(" ", $ts)))
                 $sv->need_lock["PaperTag"] = true;
         }
 
         if ($si->name == "tag_rank" && isset($sv->req["tag_rank"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             if (count($ts) > 1)
                 $sv->error_at("tag_rank", "At most one rank tag is currently supported.");
             else
@@ -127,31 +122,21 @@ class Tag_SettingParser extends SettingParser {
             $ts = array();
             foreach (explode("|", TagInfo::BASIC_COLORS) as $k)
                 if (isset($sv->req["tag_color_$k"])) {
-                    foreach ($this->parse_list($sv, $sv->si("tag_color_$k"), Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t)
+                    foreach ($this->my_parse_list($sv->si("tag_color_$k"), Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t)
                         $ts[] = $t . "=" . $k;
                 }
             $sv->update("tag_color", join(" ", $ts));
         }
 
-        if ($si->name == "tag_badge") {
-            $ts = array();
-            foreach (explode("|", TagInfo::BASIC_BADGES) as $k)
-                if (isset($sv->req["tag_badge_$k"])) {
-                    foreach ($this->parse_list($sv, $sv->si("tag_badge_$k"), Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t)
-                        $ts[] = $t . "=" . $k;
-                }
-            $sv->update("tag_badge", join(" ", $ts));
-        }
-
         if ($si->name == "tag_au_seerev" && isset($sv->req["tag_au_seerev"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             $sv->update("tag_au_seerev", join(" ", $ts));
         }
 
         return true;
     }
 
-    public function save(SettingValues $sv, Si $si) {
+    function save(SettingValues $sv, Si $si) {
         if ($si->name == "tag_vote" && $sv->has_savedv("tag_vote")) {
             // check allotments
             $pcm = $sv->conf->pc_members();

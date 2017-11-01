@@ -395,10 +395,10 @@ class SettingValues extends MessageSet {
             Conf::msg_warning($msgs, true);
     }
     function parser(Si $si) {
-        if ($si->parser) {
-            if (!isset($this->parsers[$si->parser]))
-                $this->parsers[$si->parser] = new $si->parser;
-            return $this->parsers[$si->parser];
+        if (($class = $si->parser)) {
+            if (!isset($this->parsers[$class]))
+                $this->parsers[$class] = new $class($this);
+            return $this->parsers[$class];
         } else
             return null;
     }
