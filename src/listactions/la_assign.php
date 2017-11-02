@@ -56,7 +56,7 @@ class Assign_ListAction extends ListAction {
         $text = "paper,action,user\n";
         foreach ($ssel->selection() as $pid)
             $text .= "$pid,$mt,$mpc\n";
-        $assignset = new AssignmentSet($user);
+        $assignset = new AssignmentSet($user, true);
         $assignset->enable_papers($ssel->selection());
         $assignset->parse($text);
         return $assignset->execute(true);
