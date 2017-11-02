@@ -1013,7 +1013,7 @@ function downloadText($text, $filename, $inline = false) {
 
 function parse_preference($n) {
     $n = trim($n);
-    if (preg_match(',\A(-+|\++|[-+]?\d+(?:\.\d*)?|)\s*([xyz]|)\s*[\'`]*\z,i', $n, $m)) {
+    if (preg_match(',\A\"?\s*(-+|\++|[-+]?\d+(?:\.\d*)?|)\s*([xyz]|)\s*[\'`\"]?\z,i', $n, $m)) {
         if ($m[1] === "")
             $p = 0;
         else if (is_numeric($m[1])) {

@@ -1066,10 +1066,15 @@ class AssignmentSet {
         return $es;
     }
     function errors_div_html($linenos = false) {
-        if (($es = $this->errors_html($linenos)))
-            return '<div class="parseerr"><p>' . join("</p>\n<p>", $es) . '</p></div>';
-        else
+        $es = $this->errors_html($linenos);
+        if (empty($es))
             return "";
+        else if ($linenos)
+            return '<div class="parseerr"><p>' . join("</p>\n<p>", $es) . '</p></div>';
+        else if (count($es) == 1)
+            return $es[0];
+        else
+            return '<div><div class="mmm">' . join('</div><div class="mmm">', $es) . '</div></div>';
     }
     function errors_text($linenos = false) {
         $es = array();

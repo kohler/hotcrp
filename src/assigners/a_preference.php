@@ -53,8 +53,12 @@ class Preference_AssignmentParser extends AssignmentParser {
         $pref = trim((string) $pref);
         if ($pref == "" || $pref == "none")
             $ppref = array(0, null);
-        else if (($ppref = parse_preference($pref)) === null)
-            return "Invalid preference “" . htmlspecialchars($pref) . "”.";
+        else if (($ppref = parse_preference($pref)) === null) {
+            if (preg_match('/([+-]?)\s*(\d+)\s*([xyz]?)/i', $pref, $m))
+                return $state->conf->_("“%s” isn’t a valid preference. Did you mean “%s”?", htmlspecialchars($pref), $m[1] . $m[2] . strtoupper($m[3]));
+            else
+                return $state->conf->_("“%s” isn’t a valid preference.", htmlspecialchars($pref));
+        }
 
         foreach (array("expertise", "revexp") as $k)
             if (($exp = get($req, $k)) !== null)
