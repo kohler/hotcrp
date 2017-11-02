@@ -17,8 +17,11 @@ class Preference_PaperColumn extends PaperColumn {
         if ($conf && isset($cj->user))
             $this->contact = $conf->pc_member_by_email($cj->user);
     }
-    function make_editable() {
-        return new Preference_PaperColumn(["name" => $this->name] + (array) self::lookup_json("editpref"), $this->contact);
+    function make_editable(PaperList $pl) {
+        if (!($fj = (array) $pl->conf->basic_paper_column("editpref", $pl->user)))
+            return $this;
+        $fj["name"] = $this->name;
+        return new Preference_PaperColumn((object) $fj, $pl->conf);
     }
     function prepare(PaperList $pl, $visible) {
         $this->viewer_contact = $pl->user;

@@ -1070,9 +1070,10 @@ class PaperList {
         }
         foreach ($viewmap_add as $k => $v)
             $this->_view_fields[$k] = $v;
-        foreach ($field_list as $fi => &$f)
+        foreach ($field_list as $fi => &$f) {
             if (get($this->_view_fields, $f->name) === "edit")
-                $f = $f->make_editable();
+                $f = $f->make_editable($this);
+        }
         unset($f);
 
         // remove deselected columns;

@@ -32,7 +32,7 @@ class PaperColumn extends Column {
     }
 
 
-    function make_editable() {
+    function make_editable(PaperList $pl) {
         return $this;
     }
 
@@ -801,7 +801,7 @@ class TagList_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_ALWAYS;
         $this->editable = $editable;
     }
-    function make_editable() {
+    function make_editable(PaperList $pl) {
         return new TagList_PaperColumn($this->column_json(), true);
     }
     function prepare(PaperList $pl, $visible) {
@@ -859,7 +859,7 @@ class Tag_PaperColumn extends PaperColumn {
         $this->dtag = $cj->tag;
         $this->is_value = get($cj, "tagvalue");
     }
-    function make_editable() {
+    function make_editable(PaperList $pl) {
         $is_value = $this->is_value || $this->is_value === null;
         $cj = $this->column_json() + ["tagvalue" => $is_value, "tag" => $this->dtag];
         return new EditTag_PaperColumn((object) $cj);
