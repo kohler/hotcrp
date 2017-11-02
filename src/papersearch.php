@@ -1173,11 +1173,9 @@ class PaperSearch {
         return $cids === false ? null : (empty($cids) ? [] : $cids);
     }
 
-    static function decision_matchexpr(Conf $conf, $word, $quoted = null) {
-        if ($quoted === null && ($quoted = ($word && $word[0] === '"')))
-            $word = str_replace('"', '', $word);
+    static function decision_matchexpr(Conf $conf, $word, $flag) {
         $lword = strtolower($word);
-        if (!$quoted) {
+        if (!($flag & Text::SEARCH_NO_SPECIAL)) {
             if ($lword === "yes")
                 return ">0";
             else if ($lword === "no")
@@ -1189,19 +1187,7 @@ class PaperSearch {
             else if ($lword === "any")
                 return "!=0";
         }
-        $flags = $quoted ? Text::SEARCH_ONLY_EXACT : Text::SEARCH_UNPRIVILEGE_EXACT;
-        return array_keys(Text::simple_search($word, $conf->decision_map(), $flags));
-    }
-    static function matching_decisions(Conf $conf, $word, $quoted = null) {
-        $dec = self::decision_matchexpr($conf, $word, $quoted);
-        if (is_string($dec)) {
-            $cm = new CountMatcher($dec);
-            $dec = [];
-            foreach ($conf->decision_map() as $d => $x)
-                if ($cm->test($d))
-                    $dec[] = $d;
-        }
-        return $dec;
+        return array_keys(Text::simple_search($word, $conf->decision_map(), $flag));
     }
 
     static function status_field_matcher(Conf $conf, $word, $quoted = null) {
@@ -1213,8 +1199,10 @@ class PaperSearch {
             return ["timeSubmitted", "<=0", "timeWithdrawn", "<=0"];
         else if (strcasecmp($word, "active") == 0)
             return ["timeWithdrawn", "<=0"];
-        else
-            return ["outcome", self::decision_matchexpr($conf, $word, $quoted)];
+        else {
+            $flag = $quoted ? Text::SEARCH_NO_SPECIAL : Text::SEARCH_UNPRIVILEGE_EXACT;
+            return ["outcome", self::decision_matchexpr($conf, $word, $flag)];
+        }
     }
 
     static function parse_reconflict($word, SearchWord $sword, PaperSearch $srch) {

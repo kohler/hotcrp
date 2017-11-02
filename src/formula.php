@@ -1406,7 +1406,8 @@ class Formula {
     static private function field_search_fexpr($fval) {
         $fn = null;
         for ($i = 0; $i < count($fval); $i += 2) {
-            list($k, $v) = [$fval[$i], $fval[$i + 1]];
+            $k = $fval[$i];
+            $v = $fval[$i + 1];
             $fx = ($k === "outcome" ? new Decision_Fexpr : new TimeField_Fexpr($k));
             if (is_string($v))
                 $fx = new Fexpr(str_replace("0", "", $v), $fx, ConstantFexpr::czero());
@@ -1530,7 +1531,8 @@ class Formula {
             $e = $this->_parse_option($rest[1]);
             $t = $rest[2];
         } else if (preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
-            $e = $this->field_search_fexpr(["outcome", PaperSearch::decision_matchexpr($this->conf, $m[1])]);
+            $me = PaperSearch::decision_matchexpr($this->conf, $m[1], Text::SEARCH_UNPRIVILEGE_EXACT);
+            $e = $this->field_search_fexpr(["outcome", $me]);
             $t = $m[2];
         } else if (preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {
             $e = new Decision_Fexpr;

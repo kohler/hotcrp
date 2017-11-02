@@ -438,6 +438,7 @@ class Text {
     const SEARCH_CASE_SENSITIVE = 1;
     const SEARCH_UNPRIVILEGE_EXACT = 2;
     const SEARCH_ONLY_EXACT = 4;
+    const SEARCH_NO_SPECIAL = 8;
 
     static function simple_search($needle, $haystacks, $flags = 0) {
         $reflags = $flags & self::SEARCH_CASE_SENSITIVE ? "" : "i";

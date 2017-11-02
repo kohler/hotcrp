@@ -11,7 +11,8 @@ class Decision_SearchTerm extends SearchTerm {
         $this->match = $match;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $dec = PaperSearch::decision_matchexpr($srch->conf, $word, $sword->quoted);
+        $flag = $sword->quoted ? Text::SEARCH_NO_SPECIAL : Text::SEARCH_UNPRIVILEGE_EXACT;
+        $dec = PaperSearch::decision_matchexpr($srch->conf, $word, $flag);
         if (is_array($dec) && empty($dec)) {
             $srch->warn("“" . htmlspecialchars($word) . "” doesn’t match a decision.");
             $dec[] = -10000000;

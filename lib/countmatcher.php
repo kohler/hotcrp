@@ -33,6 +33,9 @@ class CountMatcher {
     function test($n) {
         return self::compare($n, $this->allowed, $this->value);
     }
+    function filter($x) {
+        return array_filter($x, [$this, "test"]);
+    }
     static function compare($x, $compar, $y) {
         if (!is_int($compar))
             $compar = self::$opmap[$compar];
@@ -59,6 +62,14 @@ class CountMatcher {
             return self::compare($x, $m[1], $m[2]);
         else
             return false;
+    }
+    static function filter_using($x, $compar_y) {
+        if (is_array($compar_y))
+            return array_intersect($x, $compar_y);
+        else {
+            $cm = new CountMatcher($compar_y);
+            return $cm->filter($x);
+        }
     }
     function countexpr() {
         assert(!!$this->allowed);

@@ -25,7 +25,9 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         if (!$this->remove) {
             if (!isset($req["decision"]))
                 return "Decision missing.";
-            $dec = PaperSearch::matching_decisions($state->conf, $req["decision"], true);
+            $matchexpr = PaperSearch::decision_matchexpr($state->conf, $req["decision"], 0);
+            $dec = array_keys($state->conf->decision_map());
+            $dec = array_values(CountMatcher::filter_using($dec, $matchexpr));
             if (count($dec) == 1)
                 $dec = $dec[0];
             else if (empty($dec))
