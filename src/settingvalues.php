@@ -609,9 +609,9 @@ class SettingValues extends MessageSet {
         $v = $this->curv($name);
         $t = "";
         if (($si = $this->si($name))) {
-            if ($si->size)
+            if ($si->size && !isset($js["size"]))
                 $js["size"] = $si->size;
-            if ($si->placeholder)
+            if ($si->placeholder && !isset($js["placeholder"]))
                 $js["placeholder"] = $si->placeholder;
             if ($si->autogrow)
                 $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
