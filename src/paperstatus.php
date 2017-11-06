@@ -14,6 +14,7 @@ class PaperStatus extends MessageSet {
     private $export_content = false;
     private $disable_users = false;
     private $allow_any_content_file = false;
+    private $content_file_prefix = false;
     private $add_topics = false;
     private $prow;
     private $paperid;
@@ -29,7 +30,8 @@ class PaperStatus extends MessageSet {
         $this->contact = $contact;
         foreach (array("no_email", "forceShow", "export_ids", "hide_docids",
                        "export_content", "disable_users",
-                       "allow_any_content_file", "add_topics") as $k)
+                       "allow_any_content_file", "content_file_prefix",
+                       "add_topics") as $k)
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
         $this->_on_document_import[] = [$this, "document_import_check_filename"];
@@ -327,12 +329,13 @@ class PaperStatus extends MessageSet {
 
     function document_import_check_filename($docj, PaperOption $o, PaperStatus $pstatus) {
         unset($docj->filestore);
-        if (!$this->allow_any_content_file
-            && isset($docj->content_file)
-            && is_string($docj->content_file)
-            && preg_match(',\A/|(?:\A|/)\.\.(?:/|\z),', $docj->content_file)) {
-            $pstatus->error_at_option($o, "Bad content_file: only simple filenames allowed.");
-            return false;
+        if (isset($docj->content_file) && is_string($docj->content_file)) {
+            if (!$this->allow_any_content_file && preg_match(',\A/|(?:\A|/)\.\.(?:/|\z),', $docj->content_file)) {
+                $pstatus->error_at_option($o, "Bad content_file: only simple filenames allowed.");
+                return false;
+            }
+            if ((string) $this->content_file_prefix !== "")
+                $docj->content_file = $this->content_file_prefix . $docj->content_file;
         }
     }
 

@@ -36,36 +36,28 @@ $site_contact = $Conf->site_contact();
 $site_contact->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TIME);
 $tf = new ReviewValues($Conf->review_form(), ["no_notify" => true]);
 
+// allow uploading a whole zip archive
+global $ziparchive, $content_file_prefix;
+$ziparchive = $content_file_prefix = null;
+
 if ($file === "-") {
     $content = stream_get_contents(STDIN);
     $filepfx = "";
+} else if (str_ends_with(strtolower($file), ".zip")) {
+    $ziparchive = new ZipArchive;
+    $zipfile = $file;
+    $filepfx = "$file: ";
 } else {
     $content = file_get_contents($file);
     $filepfx = "$file: ";
+    $content_file_prefix = dirname($file) . "/";
 }
-if ($content === false) {
+if (!$ziparchive && $content === false) {
     fwrite(STDERR, "{$filepfx}Read error\n");
     exit(1);
 }
 
-if (!isset($arg["f"]))
-    $arg["f"] = [];
-else if (!is_array($arg["f"]))
-    $arg["f"] = [$arg["f"]];
-foreach ($arg["f"] as &$f) {
-    if (($colon = strpos($f, ":")) !== false
-        && $colon + 1 < strlen($f)
-        && $f[$colon + 1] !== ":") {
-        require_once(substr($f, 0, $colon));
-        $f = substr($f, $colon + 1);
-    }
-}
-unset($f);
-
-// allow uploading a whole zip archive
-global $ziparchive;
-$ziparchive = null;
-if (str_starts_with($content, "\x50\x4B\x03\x04")) {
+if (!$ziparchive && str_starts_with($content, "\x50\x4B\x03\x04")) {
     if (!($tmpdir = tempdir())) {
         fwrite(STDERR, "Cannot create temporary directory\n");
         exit(1);
@@ -73,9 +65,12 @@ if (str_starts_with($content, "\x50\x4B\x03\x04")) {
         fwrite(STDERR, "$tmpdir/data.zip: Cannot write file\n");
         exit(1);
     }
-
     $ziparchive = new ZipArchive;
-    if ($ziparchive->open("$tmpdir/data.zip") !== true) {
+    $zipfile = "$tmpdir/data.zip";
+    $content_file_prefix = null;
+}
+if ($ziparchive) {
+    if ($ziparchive->open($zipfile) !== true) {
         fwrite(STDERR, "{$filepfx}Invalid zip\n");
         exit(1);
     } else if ($ziparchive->numFiles == 0) {
@@ -92,17 +87,22 @@ if (str_starts_with($content, "\x50\x4B\x03\x04")) {
             if (!str_starts_with($ziparchive->getNameIndex($i), $dirprefix))
                 $dirprefix = "";
     }
+    $content_file_prefix = $dirprefix . ($dirprefix ? "/" : "");
     // find "*-data.json" file
-    $data_filename = [];
+    $data_filename = $json_filename = [];
     for ($i = 0; $i < $ziparchive->numFiles; ++$i) {
         $filename = $ziparchive->getNameIndex($i);
         if (str_starts_with($filename, $dirprefix)) {
             $dirname = substr($filename, strlen($dirprefix));
             if (preg_match(',\A[^/]*(?:\A|[-_])data\.json\z,', $dirname))
                 $data_filename[] = $filename;
+            if (str_ends_with($dirname, ".json"))
+                $json_filename[] = $filename;
         }
     }
-    if (count($data_filename) !== 1) {
+    if (count($data_filename) === 0 && count($json_filename) === 1) {
+        $data_filename = $json_filename;
+    } else if (count($data_filename) !== 1) {
         fwrite(STDERR, "{$filepfx}Should contain exactly one `*-data.json` file\n");
         exit(1);
     }
@@ -114,6 +114,20 @@ if (str_starts_with($content, "\x50\x4B\x03\x04")) {
         exit(1);
     }
 }
+
+if (!isset($arg["f"]))
+    $arg["f"] = [];
+else if (!is_array($arg["f"]))
+    $arg["f"] = [$arg["f"]];
+foreach ($arg["f"] as &$f) {
+    if (($colon = strpos($f, ":")) !== false
+        && $colon + 1 < strlen($f)
+        && $f[$colon + 1] !== ":") {
+        require_once(substr($f, 0, $colon));
+        $f = substr($f, $colon + 1);
+    }
+}
+unset($f);
 
 $jp = json_decode($content);
 if ($jp === null)
@@ -147,8 +161,11 @@ $nerrors = 0;
 $nsuccesses = 0;
 foreach ($jp as &$j) {
     ++$index;
-    if ($ignore_pid)
+    if ($ignore_pid) {
+        if (isset($j->pid))
+            $j->__original_pid = $j->pid;
         unset($j->pid, $j->id);
+    }
     if (!isset($j->pid) && !isset($j->id) && isset($j->title) && is_string($j->title)) {
         $pids = Dbl::fetch_first_columns("select paperId from Paper where title=?", simplify_whitespace($j->title));
         if (count($pids) == 1)
@@ -177,7 +194,7 @@ foreach ($jp as &$j) {
 
     foreach ($arg["f"] as $f) {
         if ($j)
-            $j = call_user_func($f, $j, $Conf);
+            $j = call_user_func($f, $j, $Conf, $ziparchive);
     }
     if (!$j) {
         fwrite(STDERR, $pidtext . $titletext . "filtered out\n");
@@ -188,7 +205,8 @@ foreach ($jp as &$j) {
         fwrite(STDERR, $pidtext . $titletext . ": ");
     $ps = new PaperStatus($Conf, null, ["no_email" => true,
                                         "disable_users" => $disable_users,
-                                        "add_topics" => $add_topics]);
+                                        "add_topics" => $add_topics,
+                                        "content_file_prefix" => $content_file_prefix]);
     $ps->allow_error_at("topics", true);
     $ps->allow_error_at("options", true);
     $ps->on_document_import("on_document_import");
