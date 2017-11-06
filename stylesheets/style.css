@@ -1280,6 +1280,8 @@ pre.entryexample {
 	background: #eeeeee;
 	border: 1px solid #dddddd;
 	display: table-cell;
+	overflow-wrap: break-word;
+	white-space: pre-wrap;
 }
 pre.entryexample.dark {
 	background: rgba(66, 66, 88, 0.95);
