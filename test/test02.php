@@ -183,6 +183,26 @@ foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
     xassert_eqq(parseReviewOrdinal($t), $n);
 }
 
+// preference tests
+xassert_eqq(Preference_AssignmentParser::parse("--2"), [-2, null]);
+xassert_eqq(Preference_AssignmentParser::parse("\"--2\""), [-2, null]);
+xassert_eqq(Preference_AssignmentParser::parse("\"-2-\""), [-2, null]);
+xassert_eqq(Preference_AssignmentParser::parse("`-2-`"), [-2, null]);
+xassert_eqq(Preference_AssignmentParser::parse(" - 2"), [-2, null]);
+xassert_eqq(Preference_AssignmentParser::parse(" – 2"), [-2, null]);
+xassert_eqq(Preference_AssignmentParser::parse(" — 2"), [-2, null]);
+xassert_eqq(Preference_AssignmentParser::parse(" — 2--"), null);
+xassert_eqq(Preference_AssignmentParser::parse("+0.2"), [0, null]);
+xassert_eqq(Preference_AssignmentParser::parse("-2x"), [-2, 1]);
+xassert_eqq(Preference_AssignmentParser::parse("-2     Y"), [-2, 0]);
+xassert_eqq(Preference_AssignmentParser::parse("- - - -Y"), null);
+xassert_eqq(Preference_AssignmentParser::parse("- - - -"), [-4, null]);
+xassert_eqq(Preference_AssignmentParser::parse("++"), [2, null]);
+xassert_eqq(Preference_AssignmentParser::parse("+ 2+"), [2, null]);
+xassert_eqq(Preference_AssignmentParser::parse("xsaonaif"), null);
+xassert_eqq(Preference_AssignmentParser::parse("NONE"), [0, null]);
+xassert_eqq(Preference_AssignmentParser::parse("CONFLICT"), [-100, null]);
+
 // AbbreviationMatcher::make_abbreviation tests
 xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty", new AbbreviationClass), "Nov");
 xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an amazing", new AbbreviationClass), "NovIsAma");

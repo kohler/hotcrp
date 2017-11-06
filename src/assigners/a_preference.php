@@ -44,16 +44,50 @@ class Preference_AssignmentParser extends AssignmentParser {
     static private function make_exp($exp) {
         return $exp === null ? "N" : +$exp;
     }
+    static function parse($str) {
+        if ($str === "" || strcasecmp($str, "none") == 0)
+            return [0, null];
+        else if (is_numeric($str)) {
+            if ($str <= 1000000)
+                return [(int) round($str), null];
+            else
+                return null;
+        }
+
+        $str = preg_replace('{(?:\A\s*[\"\'`]\s*|\s*[\"\'`]\s*\z|\s+(?=[-+\d.xyz]))}i', "", $str);
+        if ($str === "" || strcasecmp($str, "none") == 0 || strcasecmp($str, "n/a") == 0)
+            return [0, null];
+        else if (strspn($str, "-") === strlen($str))
+            return [-strlen($str), null];
+        else if (strspn($str, "+") === strlen($str))
+            return [strlen($str), null];
+        else if (preg_match('{\A(?:--?(?=-[\d.])|\+(?=\+?[\d.])|)([-+]?(?:\d+(?:\.\d*)?|\.\d+)|)([xyz]?)(?:[-+]|)\z}i', $str, $m)) {
+            if ($m[1] === "")
+                $p = 0;
+            else if ($m[1] <= 1000000)
+                $p = (int) round($m[1]);
+            else
+                return null;
+            if ($m[2] === "")
+                $e = null;
+            else
+                $e = 9 - (ord($m[2]) & 15);
+            return [$p, $e];
+        } else if (strcasecmp($str, "conflict") == 0)
+            return [-100, null];
+        else {
+            $str2 = str_replace(["\xE2\x88\x92", "–", "—"], ["-", "-", "-"], $str);
+            return $str === $str2 ? null : self::parse($str2);
+        }
+    }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         foreach (array("preference", "pref", "revpref") as $k)
             if (($pref = get($req, $k)) !== null)
                 break;
         if ($pref === null)
             return "Missing preference.";
-        $pref = trim((string) $pref);
-        if ($pref == "" || $pref == "none")
-            $ppref = array(0, null);
-        else if (($ppref = parse_preference($pref)) === null) {
+        $ppref = self::parse($pref);
+        if ($ppref === null) {
             if (preg_match('/([+-]?)\s*(\d+)\s*([xyz]?)/i', $pref, $m))
                 return $state->conf->_("“%s” isn’t a valid preference. Did you mean “%s”?", htmlspecialchars($pref), $m[1] . $m[2] . strtoupper($m[3]));
             else
@@ -64,7 +98,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             if (($exp = get($req, $k)) !== null)
                 break;
         if ($exp && ($exp = trim($exp)) !== "") {
-            if (($pexp = parse_preference($exp)) === null || $pexp[0])
+            if (($pexp = self::parse($exp)) === null || $pexp[0])
                 return "Invalid expertise “" . htmlspecialchars($exp) . "”.";
             $ppref[1] = $pexp[1];
         }

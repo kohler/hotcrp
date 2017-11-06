@@ -121,14 +121,10 @@ SearchSelection::clear_request($Qreq);
 
 // Set multiple paper preferences
 if ($Qreq->fn === "setpref" && $SSel && !$SSel->is_empty() && check_post()) {
-    if (!parse_preference($Qreq->pref))
-        Conf::msg_error("Preferences must be small positive or negative integers.");
-    else {
-        $new_qreq = new Qrequest($Qreq->method());
-        foreach ($SSel->selection() as $p)
-            $new_qreq["revpref{$p}u{$reviewer->contactId}"] = $Qreq->pref;
-        savePreferences($new_qreq, false);
-    }
+    $new_qreq = new Qrequest($Qreq->method());
+    foreach ($SSel->selection() as $p)
+        $new_qreq["revpref{$p}u{$reviewer->contactId}"] = $Qreq->pref;
+    savePreferences($new_qreq, false);
 }
 
 
