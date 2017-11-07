@@ -1723,7 +1723,7 @@ class PaperTable {
                 return Ht::xmsg("warning", 'The <a href="' . hoturl("deadlines") . '">submission deadline</a> has passed and the submission will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_deadline_override_message());
         } else if ($Me->can_update_paper($prow)) {
             if ($this->mode === "edit")
-                return Ht::xmsg("confirm", 'The submission is ready and will be considered for review. You can still make changes if necessary.' . $this->deadlineSettingIs("sub_update"));
+                return Ht::xmsg("confirm", 'The submission is ready and will be considered for review. You do not need to take any further action. However, you can still make changes if you wish.' . $this->deadlineSettingIs("sub_update"));
         } else if ($this->conf->collectFinalPapers()
                    && $prow->outcome > 0
                    && $can_view_decision) {
