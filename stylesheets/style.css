@@ -1283,9 +1283,6 @@ pre.email {
 	margin: 0;
 }
 
-td.rpad {
-	padding-right: 2em;
-}
 .pcconfaff, .pcconfmatch, div.pcrevsum {
 	font-size: 69%;
 }
@@ -1297,13 +1294,6 @@ td.rpad {
 	color: #ff6600;
 }
 
-tr.pt_topics > td.entry, tr.pt_actions > td,
-td.plholder, tr.rev_actions > td.entry, tr.pt_reviews > td.entry,
-tr.rev_reviewers > td.caption, tr.rev_reviewers > td.entry,
-tr.rev_reviewers_hdr > td.caption, tr.rev_reviewers_hdr > td.entry,
-tr.pt_conflict_ass > td.entry, tr.propass > td.entry {
-	vertical-align: top;
-}
 .asspref, .asspref1, .asspref-1 {
 	font-size: 69%;
 	font-weight: normal;
