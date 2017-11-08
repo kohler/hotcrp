@@ -26,8 +26,12 @@ class Tracks_SettingRenderer {
         }
 
         $hint = "";
-        if (is_array($question))
-            list($question, $hint) = [$question[0], '<p class="hint" style="margin:0;max-width:480px">' . $question[1] . '</p>'];
+        if (is_array($question)) {
+            list($question, $hint) = $question;
+        }
+        if ($hint) {
+            $hint = '<p class="hint" style="margin:0;max-width:480px">' . $hint . '</p>';
+        }
 
         echo "<tr data-fold=\"true\" class=\"fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">";
         if ($type === "viewtracker")
@@ -36,21 +40,21 @@ class Tracks_SettingRenderer {
             echo "<td style=\"width:2em\"></td><td class=\"lxcaption\">";
         echo $sv->label(["{$type}_track$tnum", "{$type}tag_track$tnum"],
                         $question, "{$type}_track$tnum"),
-            "</td><td>",
+            "</td><td class=\"settings-track-perm\">",
             Ht::select("{$type}_track$tnum", $perm, $tclass,
                        $sv->sjs("{$type}_track$tnum", array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
-            " &nbsp;</td><td style=\"min-width:120px\">",
+            " &nbsp;</td><td class=\"settings-track-tag\">",
             Ht::entry("${type}tag_track$tnum", $ttag,
                       $sv->sjs("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)"))),
             "</td></tr>";
         if ($hint)
-            echo "<tr><td></td><td colspan=\"3\" style=\"padding-bottom:2px\">", $hint, "</td></tr>";
+            echo "<tr><td></td><td colspan=\"3\">", $hint, "</td></tr>";
     }
 
     static private function do_track($sv, $trackname, $tnum) {
         echo "<div id=\"trackgroup$tnum\" class=\"mg\"",
             ($tnum ? "" : " style=\"display:none\""),
-            "><table style=\"margin-bottom:0.5em\">";
+            "><table class=\"settings-tracks\">";
         echo "<tr><td colspan=\"4\" style=\"padding-bottom:3px\">";
         if ($trackname === "_")
             echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");

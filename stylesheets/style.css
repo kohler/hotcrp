@@ -1016,6 +1016,13 @@ th.settings-simplehead {
 .settings-opt + .settings-opt {
 	margin-top: 3em;
 }
+.settings-tracks {
+	margin-bottom: 1em;
+}
+td.settings-track-perm {
+	padding-top: 3px;
+	padding-bottom: 3px;
+}
 
 /* help pages */
 .leftmenu-menu-container {
