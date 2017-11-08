@@ -1802,7 +1802,7 @@ div.pl_autoassignment > em.plx {
 div.pl_autoassignment ins {
 	text-decoration: none;
 }
-tr.pl_headrow > td, tr.pl_headrow > th {
+td.plh, th.plh {
 	border-bottom: 1px solid #999999;
 }
 tr.pl_headrow.pl_annorow {
@@ -1820,14 +1820,14 @@ tr.pl_statheadrow {
 	font-size: smaller;
 	font-weight: bold;
 }
-tr.pl_statheadrow > td {
+tr.pl_statheadrow > td.plstat {
 	border-top: 1px solid #cccccc;
 }
-tr.pl_footrow > td {
+td.plf {
 	border-top: 1px solid #cccccc;
 	padding-top: 3px;
 }
-table.pltable_reviewerhome > thead > tr.pl_headrow > th {
+table.pltable_reviewerhome > thead > tr > th.plh {
 	border-bottom: none;
 }
 span.dragtaghandle {

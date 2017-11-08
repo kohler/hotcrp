@@ -564,12 +564,12 @@ if (!$Me->privChair || !empty($exclude_pids)) {
 searchbar($lrg, $page, $count);
 if (!empty($trs)) {
     echo '<table class="pltable pltable_full">
-  <thead><tr class="pl_headrow"><th class="pll pl_time">Time</th><th class="pll pl_ip">IP</th><th class="pll pl_name">User</th>';
+  <thead><tr class="pl_headrow"><th class="pll plh pl_time">Time</th><th class="pll plh pl_ip">IP</th><th class="pll plh pl_name">User</th>';
     if ($has_dest_user)
-        echo '<th class="pll pl_name">Affected user</th>';
+        echo '<th class="pll plh pl_name">Affected user</th>';
     else
-        echo '<th></th>';
-    echo '<th class="pll pl_act">Action</th></tr></thead>',
+        echo '<th class="pll plh"></th>';
+    echo '<th class="pll plh pl_act">Action</th></tr></thead>',
         "\n  <tbody class=\"pltable\">\n",
         join("", $trs),
         "  </tbody>\n</table>\n";

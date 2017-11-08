@@ -490,11 +490,11 @@ class PaperList {
         // Linelinks container
         $foot = "  <tr class=\"pl_footrow\">";
         if (!$this->_view_columns) {
-            $foot .= '<td class="pl_footselector">'
+            $foot .= '<td class="plf pl_footselector">'
                 . Ht::img("_.gif", "^^", "placthook") . "</td>";
             --$ncol;
         }
-        $foot .= '<td id="plact" class="pl_footer linelinks' . $whichlll . '" colspan="' . $ncol . '">';
+        $foot .= '<td id="plact" class="plf pl_footer linelinks' . $whichlll . '" colspan="' . $ncol . '">';
 
         $foot .= "<table><tbody><tr>\n"
             . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a href="' . SelfHref::make($this->qreq, ["selectall" => 1]) . '#plact" onclick="return papersel(true)">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
@@ -1178,7 +1178,7 @@ class PaperList {
             return "";
         $t = '  <tr class="pl_statheadrow fx8">';
         if ($rstate->titlecol)
-            $t .= "<td colspan=\"{$rstate->titlecol}\"></td>";
+            $t .= "<td colspan=\"{$rstate->titlecol}\" class=\"plstat\"></td>";
         $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics", ["n" => 7, "st" => "statistics"]) . "</td></tr>\n";
         foreach (self::$stats as $stat) {
             $t .= '  <tr';
@@ -1371,7 +1371,7 @@ class PaperList {
             foreach ($fieldDef as $fdef) {
                 if (!$fdef->viewable_column() || !$fdef->is_visible)
                     continue;
-                $colhead .= "<th class=\"pl " . $fdef->className;
+                $colhead .= "<th class=\"pl plh " . $fdef->className;
                 if ($fdef->fold)
                     $colhead .= " fx" . $fdef->fold;
                 $colhead .= "\">";
@@ -1392,8 +1392,8 @@ class PaperList {
                 if (strcasecmp($drag_tag, $this->search->is_order_anno) == 0) {
                     $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->search->is_order_anno}\">";
                     if ($rstate->titlecol)
-                        $colhead .= "<td colspan=\"$rstate->titlecol\"></td>";
-                    $colhead .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a href=\"#\" onclick=\"return plinfo_tags.edit_anno(this)\">Annotate order</a></td></tr>\n";
+                        $colhead .= "<td class=\"plh\" colspan=\"$rstate->titlecol\"></td>";
+                    $colhead .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a href=\"#\" onclick=\"return plinfo_tags.edit_anno(this)\">Annotate order</a></td></tr>\n";
                 }
             }
 

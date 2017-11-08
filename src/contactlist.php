@@ -462,9 +462,9 @@ class ContactList {
             return "";
 
         $t = "  <tfoot class=\"pltable" . ($hascolors ? " pltable_colored" : "")
-            . "\"><tr class=\"pl_footrow\">\n    <td class=\"pl_footselector\">"
+            . "\"><tr class=\"pl_footrow\">\n    <td class=\"plf pl_footselector\">"
             . Ht::img("_.gif", "^^", "placthook")
-            . "</td>\n  <td class=\"pl_footer\" colspan=\"" . ($ncol - 1) . '">'
+            . "</td>\n  <td class=\"plf pl_footer\" colspan=\"" . ($ncol - 1) . '">'
             . '<div id="plact" class="linelinks1">'
             . '<a name="plact"><b>Select people</b></a> (or <a href="#" onclick="return papersel(true)">select all ' . $this->count . "</a>), then ";
 
@@ -788,10 +788,10 @@ class ContactList {
                     if ($fdef[1] != 1)
                         continue;
                     else if (!isset($anyData[$fieldId])) {
-                        $x .= "    <th class=\"pl pl_$fdef[0]\"></th>\n";
+                        $x .= "    <th class=\"pl plh pl_$fdef[0]\"></th>\n";
                         continue;
                     }
-                    $x .= "    <th class=\"pl pl_$fdef[0]\">";
+                    $x .= "    <th class=\"pl plh pl_$fdef[0]\">";
                     $ftext = $this->header($fieldId, $ord++);
                     if ($fieldId == $this->sortField)
                         $x .= '<a class="pl_sort pl_sorting' . ($this->reverseSort ? "_rev" : "_fwd") . '" rel="nofollow" href="' . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . '">' . $ftext . "</a>";
@@ -805,10 +805,10 @@ class ContactList {
             } else {
                 foreach ($fieldDef as $fieldId => $fdef)
                     if ($fdef[1] == 1 && isset($anyData[$fieldId]))
-                        $x .= "    <th class=\"pl pl_$fdef[0]\">"
+                        $x .= "    <th class=\"pl plh pl_$fdef[0]\">"
                             . $this->header($fieldId, $ord++) . "</th>\n";
                     else if ($fdef[1] == 1)
-                        $x .= "    <th class=\"pl pl_$fdef[0]\"></th>\n";
+                        $x .= "    <th class=\"pl plh pl_$fdef[0]\"></th>\n";
             }
 
             $x .= "  </tr></thead>\n";
