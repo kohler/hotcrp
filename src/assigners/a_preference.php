@@ -54,7 +54,7 @@ class Preference_AssignmentParser extends AssignmentParser {
                 return null;
         }
 
-        $str = preg_replace('{(?:\A\s*[\"\'`]\s*|\s*[\"\'`]\s*\z|\s+(?=[-+\d.xyz]))}i', "", $str);
+        $str = rtrim(preg_replace('{(?:\A\s*[\"\'`]\s*|\s*[\"\'`]\s*\z|\s+(?=[-+\d.xyz]))}i', "", $str));
         if ($str === "" || strcasecmp($str, "none") == 0 || strcasecmp($str, "n/a") == 0)
             return [0, null];
         else if (strspn($str, "-") === strlen($str))

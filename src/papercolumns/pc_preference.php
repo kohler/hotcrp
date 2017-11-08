@@ -41,12 +41,6 @@ class Preference_PaperColumn extends PaperColumn {
             $this->prefix = $pl->user->reviewer_html_for($this->contact);
         return true;
     }
-    function completion_name() {
-        return $this->name ? : "pref:<user>";
-    }
-    function sort_name($score_sort) {
-        return "pref";
-    }
     private function preference_values($row) {
         if ($this->not_me && !$this->viewer_contact->allow_administer($row))
             return [null, null];

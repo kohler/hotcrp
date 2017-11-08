@@ -185,6 +185,7 @@ foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
 
 // preference tests
 xassert_eqq(Preference_AssignmentParser::parse("--2"), [-2, null]);
+xassert_eqq(Preference_AssignmentParser::parse("--3 "), [-3, null]);
 xassert_eqq(Preference_AssignmentParser::parse("\"--2\""), [-2, null]);
 xassert_eqq(Preference_AssignmentParser::parse("\"-2-\""), [-2, null]);
 xassert_eqq(Preference_AssignmentParser::parse("`-2-`"), [-2, null]);
