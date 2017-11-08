@@ -475,7 +475,6 @@ foreach ($visible_rows as $row) {
     $act = $row->action;
 
     $t = ['<td class="pl pl_time">' . $Conf->unparse_time_short($row->timestamp) . '</td>'];
-    $t[] = '<td class="pl pl_ip">' . htmlspecialchars($row->ipaddr) . '</td>';
 
     $user = $row->contactId ? get($users, $row->contactId) : null;
     $dest_user = $row->destContactId ? get($users, $row->destContactId) : null;
@@ -564,7 +563,7 @@ if (!$Me->privChair || !empty($exclude_pids)) {
 searchbar($lrg, $page, $count);
 if (!empty($trs)) {
     echo '<table class="pltable pltable_full">
-  <thead><tr class="pl_headrow"><th class="pll plh pl_time">Time</th><th class="pll plh pl_ip">IP</th><th class="pll plh pl_name">User</th>';
+  <thead><tr class="pl_headrow"><th class="pll plh pl_time">Time</th><th class="pll plh pl_name">User</th>';
     if ($has_dest_user)
         echo '<th class="pll plh pl_name">Affected user</th>';
     else
