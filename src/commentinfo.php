@@ -166,12 +166,12 @@ class CommentInfo {
                 $include = true;
                 $record = false;
             }
-            if ($include)
+            if ($include) {
                 $result[] = [$cr, 1, $connector];
-            else
+                if ($record)
+                    $known_cids[$cid] = count($result) - 1;
+            } else
                 ++$result[$known_cids[$cid]][1];
-            if ($record)
-                $known_cids[$cid] = count($result) - 1;
         }
         if (!empty($result))
             $result[count($result) - 1][2] = "";
