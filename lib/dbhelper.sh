@@ -165,8 +165,12 @@ set_myargs () {
             myargs="$myargs -p$password"
         fi
     fi
-    if test -n "$dbhost"; then
-        myargs="$myargs -h'$dbhost'"
+    if test -n "$dbhost" -a "$dbhost" != "''"; then
+        if expr "$dbhost" : "'" >/dev/null 2>&1; then
+            myargs="$myargs -h$dbhost"
+        else
+            myargs="$myargs -h'$dbhost'"
+        fi
     fi
 }
 
