@@ -2061,21 +2061,16 @@ function foldup(e, event, opts) {
     return m;
 }
 
-(function () {
-function prepare() {
-    $(document.body).on("fold", function (evt, opts) {
-        var attr = opts.f ? "onfold" : "onunfold";
-        var folder = $(evt.target).data(attr);
-        if (typeof folder === "string") {
-            folder = new Function("foldnum", folder);
-            $(evt.target).data(attr, folder);
-        }
-        if ($.isFunction(folder))
-            folder.call(evt.target, opts);
-    });
-}
-document.body ? prepare() : $(prepare);
-})();
+$(document).on("fold", function (evt, opts) {
+    var attr = opts.f ? "onfold" : "onunfold";
+    var folder = $(evt.target).data(attr);
+    if (typeof folder === "string") {
+        folder = new Function("foldnum", folder);
+        $(evt.target).data(attr, folder);
+    }
+    if ($.isFunction(folder))
+        folder.call(evt.target, opts);
+});
 
 // special-case folding for author table
 function aufoldup(event) {
@@ -3519,11 +3514,7 @@ $(document).on("hotcrp_renderPreview", function (evt, format, value, dest) {
     var t = render_text(format, value);
     dest.className = "format" + (t.format || 0);
     dest.innerHTML = t.content;
-});
-function prepare() {
-    $(document.body).on("click", "a.togglepreview", switch_preview);
-}
-document.body ? prepare() : $(prepare);
+}).on("click", "a.togglepreview", switch_preview);
 })($);
 
 
@@ -4206,7 +4197,7 @@ var add_revpref_ajax = (function () {
             .on("change.revpref_ajax", "input.revpref", rp_change)
             .on("keydown.revpref_ajax", "input.revpref", make_onkey("Enter", rp_change));
         if (on_unload) {
-            $(document.body).on("click", "a", rp_a_click);
+            $(document).on("click", "a", rp_a_click);
             $(window).on("beforeunload", rp_unload);
         }
     }
@@ -4570,7 +4561,7 @@ function search_scoresort_change(evt) {
 }
 
 if ("pushState" in window.history) {
-    $(document.body).on("click", "a.pl_sort", search_sort_click);
+    $(document).on("click", "a.pl_sort", search_sort_click);
     $(window).on("popstate", function (evt) {
         var state = (evt.originalEvent || evt).state, tbl;
         if (state && state.sortpl && (tbl = document.getElementById("foldpl")))
@@ -6253,14 +6244,11 @@ function row_click(e) {
 function override_conflict(e) {
     return foldup(this, e, {n: 5, f: false});
 }
-function prepare() {
-    $(document.body).on("click", "a", add_list);
-    $(document.body).on("submit", "form", add_list);
-    $(document.body).on("click", "tbody.pltable > tr.pl", row_click);
-    $(document.body).on("click", "a.fn5", override_conflict);
-    hotcrp_list && $(window).on("beforeunload", unload_list);
-}
-document.body ? prepare() : $(prepare);
+$(document).on("click", "a", add_list);
+$(document).on("submit", "form", add_list);
+$(document).on("click", "tbody.pltable > tr.pl", row_click);
+$(document).on("click", "a.fn5", override_conflict);
+hotcrp_list && $(window).on("beforeunload", unload_list);
 })(jQuery);
 
 function hotlist_search_params(x, ids) {
