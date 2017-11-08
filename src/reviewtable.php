@@ -77,7 +77,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         }
 
         $t = "";
-        $tclass = ($rrow && $highlight ? "hilite" : "");
+        $tclass = ($rrow && $highlight ? "reviewers-highlight" : "");
 
         // review ID
         $id = "Review";
@@ -96,7 +96,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         else
             $id .= " (not started)";
         $rlink = unparseReviewOrdinal($rr);
-        $t .= '<td class="nw">';
+        $t .= '<td class="rl nw">';
         if ($rrow && $rrow->reviewId == $rr->reviewId) {
             if ($Me->contactId == $rr->contactId && !$rr->reviewSubmitted)
                 $id = "Your $id";
@@ -132,7 +132,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         // reviewer identity
         $showtoken = $rr->reviewToken && $Me->can_review($prow, $rr);
         if (!$Me->can_view_review_identity($prow, $rr, null)) {
-            $t .= ($rtype ? "<td>$rtype</td>" : '<td class="empty"></td>');
+            $t .= ($rtype ? '<td class="rl">' . $rtype . '</td>' : '<td></td>');
         } else {
             if (!$showtoken || !Contact::is_anonymous_email($rr->email))
                 $n = $Me->name_html_for($rr);
@@ -155,7 +155,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 && $rr->requestedBy
                 && $rr->requestedBy != $rr->contactId
                 && $Me->can_view_review_requester($prow, $rr, null)) {
-                $t .= '<td style="font-size:smaller">';
+                $t .= '<td class="rl" style="font-size:smaller">';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
                 else
@@ -165,9 +165,9 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
 
                 if ($rr->reviewModified <= 0
                     && ($rr->requestedBy == $Me->contactId || $admin))
-                    $t .= '<td>' . _retract_review_request_form($prow, $rr) . '</td>';
+                    $t .= '<td class="rl">' . _retract_review_request_form($prow, $rr) . '</td>';
             } else
-                $t .= '<td class="empty"></td>';
+                $t .= '<td></td>';
         }
 
         // scores
@@ -179,7 +179,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                     && (!$f->round_mask || $f->is_round_visible($rr))
                     && isset($rr->$fid) && $rr->$fid) {
                     if ($score_header[$fid] === "")
-                        $score_header[$fid] = "<th>" . $f->web_abbreviation() . "</th>";
+                        $score_header[$fid] = '<th class="revscore">' . $f->web_abbreviation() . "</th>";
                     $scores[$fid] = '<td class="revscore" data-rf="' . $f->uid() . '">'
                         . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
@@ -199,17 +199,17 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
             $t = "";
 
             // review ID
-            $t = "<td>Proposed review</td>";
+            $t = '<td class="rl">Proposed review</td>';
 
             // reviewer identity
-            $t .= "<td>" . Text::user_html($rr);
+            $t .= '<td class="rl">' . Text::user_html($rr);
             if ($allow_admin)
                 $t .= _review_table_actas($rr);
             $t .= "</td>";
 
             // requester
             if ($cflttype <= 0 || $admin) {
-                $t .= '<td style="font-size:smaller">';
+                $t .= '<td class="rl" style="font-size:smaller">';
                 if ($rr->requestedBy) {
                     if ($rr->requestedBy == $Me->contactId)
                         $t .= "you";
@@ -220,7 +220,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 $want_requested_by = true;
             }
 
-            $t .= '<td>';
+            $t .= '<td class="rl">';
             if ($admin) {
                 $t .= '<small>'
                     . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
@@ -263,7 +263,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
     // completion
     if (count($nonsubrev) + count($subrev)) {
         if ($want_requested_by)
-            array_unshift($score_header, '<th class="revsl">Requester</th>');
+            array_unshift($score_header, '<th class="rl">Requester</th>');
         $score_header_text = join("", $score_header);
         $t = "<div class=\"reviewersdiv\"><table class=\"reviewers";
         if ($score_header_text)
@@ -273,9 +273,9 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         if ($score_header_text) {
             foreach ($score_header as $x)
                 $nscores += $x !== "" ? 1 : 0;
-            $t .= '<tr><td class="empty" colspan="2"></td>';
+            $t .= '<tr><td colspan="2"></td>';
             if ($mode === "assign" && !$want_requested_by)
-                $t .= '<td class="empty"></td>';
+                $t .= '<td></td>';
             $t .= $score_header_text . "</tr>\n";
         }
         foreach (array_merge($subrev, $nonsubrev) as $r) {

@@ -1444,21 +1444,21 @@ table.reviewers {
 	line-height: 1.25;
 	margin-left: -6px;
 }
-table.reviewers > tbody > tr > td:first-child {
+td.rl:first-child {
 	padding-left: 6px;
 }
-table.reviewers > tbody > tr > td {
+td.rl {
 	padding-right: 1em;
 }
-table.reviewers > tbody > tr.hilite {
+tr.reviewers-highlight {
 	background: #f0f0ff;
 }
-table.reviewers > tbody > tr > th {
+th.revscore, th.rl {
 	font-size: smaller;
 	padding: 0 0.25em;
 	color: #666666;
 }
-table.reviewers th.revsl {
+th.rl {
 	padding-left: 0;
 	text-align: left;
 }
@@ -1470,17 +1470,11 @@ span.revround {
 	font-style: italic;
 	/* border-bottom: 1px dotted #777777; */
 }
-table.reviewers td.revscore {
+td.revscore {
 	padding-right: 0;
 	text-align: center;
 	font-weight: bold;
 	color: red;
-}
-table.reviewers td.rs_id, table.reviewscores td.rs_num {
-	text-align: left;
-}
-table.reviewers td.empty {
-	padding: 0;
 }
 
 
