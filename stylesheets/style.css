@@ -13,6 +13,14 @@ body {
 	background-color: white;
 	margin: 0;
 }
+table, tr, td, th {
+	padding: 0;
+	border-spacing: 0;
+	border: 0 none;
+	border-collapse: collapse;
+	empty-cells: show;
+}
+
 
 /* header */
 #header {
@@ -88,15 +96,16 @@ table.vbar {
 body#home table.vbar {
 	margin-top: -4px;
 }
-table.vbar td {
+td.vbar {
 	vertical-align: bottom;
 	min-height: 4px;
+	white-space: nowrap;
 }
 td.gopaper {
 	vertical-align: middle;
 	padding: 4px 0 6px 0.5em;
 }
-table.vbar td.quicklinks, #trackerconnect {
+td.quicklinks, #trackerconnect {
 	vertical-align: middle;
 	padding: 4px 0.75em 4px 0.5em;
 }
@@ -235,16 +244,6 @@ table.manyassign {
 }
 div#mailref, pre.email, tt.email {
 	font-size: smaller;
-}
-
-
-/* general */
-table, tr, td, th {
-	padding: 0;
-	border-spacing: 0;
-	border: 0 none;
-	border-collapse: collapse;
-	empty-cells: show;
 }
 
 
@@ -1267,12 +1266,6 @@ h2 {
 	font-size: larger;
 }
 
-tr.pt_actions td, tr.pt_outcome td {
-	white-space: nowrap;
-}
-tr.pt_paper input {
-	margin-top: 4px;
-}
 span.author, span.conflict {
 	font-weight: bold;
 	color: #ff0000;
@@ -1462,9 +1455,6 @@ th.rl {
 	padding-left: 0;
 	text-align: left;
 }
-table.reviewers td.highlight {
-	padding-right: 0.25em;
-}
 span.revround {
 	font-size: 69%;
 	font-style: italic;
@@ -1481,18 +1471,6 @@ td.revscore {
 span.pstat {
 	font-weight: bold;
 	white-space: nowrap;
-}
-tr.rs_heading td {
-	font-size: smaller;
-	font-weight: bold;
-}
-tr.rs_rev td.rs_id, tr.rs_rev td.rs_num {
-	font-weight: normal;
-	color: black;
-}
-tr.rs_rev td {
-	font-weight: bold;
-	color: red;
 }
 .pstat_with {
 	color: #333333;

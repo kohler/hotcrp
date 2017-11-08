@@ -267,7 +267,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
         $score_header_text = join("", $score_header);
         $t = "<div class=\"reviewersdiv\"><table class=\"reviewers";
         if ($score_header_text)
-            $t .= " reviewers_scores";
+            $t .= " has-scores";
         $t .= "\">\n";
         $nscores = 0;
         if ($score_header_text) {

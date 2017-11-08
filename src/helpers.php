@@ -924,7 +924,7 @@ function actionBar($mode = null, $prow = null) {
     // quicklinks
     if ($prow
         && ($list = SessionList::active($listtype, $listtype === "u" ? $prow->contactId : $prow->paperId))) {
-        $x .= '<td class="quicklinks nw">';
+        $x .= '<td class="vbar quicklinks">';
         if ($list->id_position > 0)
             $x .= _one_quicklink($list->ids[$list->id_position - 1], $goBase, $xmode, $listtype, true);
         if ($list->description) {
@@ -942,10 +942,10 @@ function actionBar($mode = null, $prow = null) {
         $x .= '</td>';
 
         if ($Me->privChair && $listtype == "p")
-            $x .= "  <td id=\"trackerconnect\" class=\"nb\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"tbtn need-tooltip\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
+            $x .= "  <td id=\"trackerconnect\" class=\"vbar\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"tbtn need-tooltip\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
     }
 
-    return $x . '<td class="gopaper nb">' . goPaperForm($goBase, $xmode) . "</td></tr></table>";
+    return $x . '<td class="vbar gopaper">' . goPaperForm($goBase, $xmode) . "</td></tr></table>";
 }
 
 function parseReviewOrdinal($text) {
