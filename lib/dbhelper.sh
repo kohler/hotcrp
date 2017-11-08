@@ -165,9 +165,8 @@ set_myargs () {
             myargs="$myargs -p$password"
         fi
     fi
-    if test "$dbhost"
-    then
-	myargs="$myargs -h$dbhost"
+    if test -n "$dbhost"; then
+        myargs="$myargs -h'$dbhost'"
     fi
 }
 
