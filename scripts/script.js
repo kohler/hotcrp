@@ -6205,49 +6205,57 @@ function set_list_order(info, tbody) {
         l.push(p0 == p1 ? p0 : p0 + "-" + p1);
     return info.replace(/"ids":"[-0-9']+"/, '"ids":"' + l.join("'") + '"');
 }
-function add_list() {
-    var $hl, href;
-    href = this.getAttribute(this.tagName === "FORM" ? "action" : "href");
+function handle_list(e, href) {
     if (href
         && href.substring(0, siteurl.length) === siteurl
-        && is_listable(href)
-        && ($hl = $(this).closest(".has-hotlist")).length) {
-        var info = $hl.attr("data-hotlist");
-        if ($hl.is("table.pltable") && document.getElementById("footer"))
-            // Existence of `#footer` checks that the table is fully loaded
-            info = set_list_order(info, $hl.children("tbody.pltable")[0]);
-        set_cookie(info);
+        && is_listable(href)) {
+        var $hl = $(e).closest(".has-hotlist");
+        if ($hl.length) {
+            var info = $hl.attr("data-hotlist");
+            if ($hl.is("table.pltable") && document.getElementById("footer"))
+                // Existence of `#footer` checks that the table is fully loaded
+                info = set_list_order(info, $hl.children("tbody.pltable")[0]);
+            set_cookie(info);
+        }
     }
-    return true;
 }
 function unload_list() {
     if (hotcrp_list && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
         set_cookie(hotcrp_list.info);
 }
-function row_click(e) {
-    var $tgt = $(e.target);
-    if (e.target.tagName !== "A"
-        && ($tgt.hasClass("pl_id") || $tgt.hasClass("pl_title")
+function row_click(evt) {
+    var $tgt = $(evt.target);
+    if (evt.target.tagName !== "A"
+        && $(this.parentElement).hasClass("pltable")
+        && ($tgt.hasClass("pl_id")
+            || $tgt.hasClass("pl_title")
             || $tgt.closest("td").hasClass("pl_rowclick"))) {
-        var $a = $(this).find("a.pnum").first();
-        add_list.call($a[0]);
-        if (event_key.is_default_a(e))
-            window.location = $a.attr("href");
+        var $a = $(this).find("a.pnum").first(),
+            href = $a[0].getAttribute("href");
+        handle_list($a[0], href);
+        if (event_key.is_default_a(evt))
+            window.location = href;
         else {
-            var w = window.open($a.attr("href"), "_blank");
+            var w = window.open(href, "_blank");
             w.blur();
             window.focus();
         }
-        event_prevent(e);
+        event_prevent(evt);
     }
 }
-function override_conflict(e) {
-    return foldup(this, e, {n: 5, f: false});
-}
-$(document).on("click", "a", add_list);
-$(document).on("submit", "form", add_list);
-$(document).on("click", "tbody.pltable > tr.pl", row_click);
-$(document).on("click", "a.fn5", override_conflict);
+$(document).on("click", "a", function (evt) {
+    if ($(this).hasClass("fn5"))
+        return foldup(this, evt, {n: 5, f: false});
+    else {
+        handle_list(this, this.getAttribute("href"));
+        return true;
+    }
+});
+$(document).on("submit", "form", function () {
+    handle_list(this, this.getAttribute("action"));
+    return true;
+});
+$(document).on("click", "tr.pl", row_click);
 hotcrp_list && $(window).on("beforeunload", unload_list);
 })(jQuery);
 
