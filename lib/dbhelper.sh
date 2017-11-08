@@ -165,6 +165,10 @@ set_myargs () {
             myargs="$myargs -p$password"
         fi
     fi
+    if test "$dbhost"
+    then
+	myargs="$myargs -h$dbhost"
+    fi
 }
 
 generate_random_ints () {
@@ -222,6 +226,7 @@ get_dboptions () {
     dbname="`getdbopt dbName 2>/dev/null`"
     dbuser="`getdbopt dbUser 2>/dev/null`"
     dbpass="`getdbopt dbPassword 2>/dev/null`"
+    dbhost="`getdbopt dbHost 2>/dev/null`"
     if test -z "$dbname" -o -z "$dbuser" -o -z "$dbpass"; then
         echo "$1: Can't extract database options from `findoptions`!" 1>&2
         if test "`getdbopt multiconference 2>/dev/null`" '!=' "''"; then

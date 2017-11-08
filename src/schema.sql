@@ -9,7 +9,7 @@ CREATE TABLE `ActionLog` (
   `destContactId` int(11) NOT NULL DEFAULT '0',
   `paperId` int(11) DEFAULT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `ipaddr` varbinary(32) DEFAULT NULL,
+  `ipaddr` varbinary(39) DEFAULT NULL,
   `action` varbinary(4096) NOT NULL,
   PRIMARY KEY (`logId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
