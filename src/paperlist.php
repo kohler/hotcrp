@@ -766,7 +766,7 @@ class PaperList {
         $trclass = [];
         $cc = "";
         if (get($row, "paperTags")) {
-            if ($row->conflictType > 0 && $this->user->allow_administer($row)) {
+            if ($this->row_overridable) {
                 if (($vto = $row->viewable_tags($this->user, true))
                     && ($cco = $row->conf->tags()->color_classes($vto))) {
                     $vtx = $row->viewable_tags($this->user, false);
@@ -776,7 +776,7 @@ class PaperList {
                         $this->row_attr["data-color-classes-conflicted"] = $ccx;
                         $trclass[] = "colorconflict";
                     }
-                    $cc = $this->user->is_admin_force() ? $cco : $ccx;
+                    $cc = $this->_view_force ? $cco : $ccx;
                 }
             } else if (($vt = $row->viewable_tags($this->user)))
                 $cc = $row->conf->tags()->color_classes($vt);
@@ -963,7 +963,7 @@ class PaperList {
         if ($has_sel)
             $classes[] = "fold6" . ($this->is_folded("rownum") ? "c" : "o");
         if ($this->user->privChair)
-            $classes[] = "fold5" . ($this->user->is_admin_force() ? "o" : "c");
+            $classes[] = "fold5" . ($this->_view_force ? "o" : "c");
         $classes[] = "fold7" . ($this->is_folded("statistics") ? "c" : "o");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
         if ($this->_table_id)

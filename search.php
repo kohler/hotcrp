@@ -247,6 +247,8 @@ if (isset($Qreq->q))
 else
     $Search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => "NONE"]);
 $pl = new PaperList($Search, ["sort" => true, "report" => "pl", "display" => $Qreq->display], $Qreq);
+if (isset($Qreq->forceShow))
+    $pl->set_view("force", !!$Qreq->forceShow);
 if (isset($Qreq->q)) {
     $pl->set_table_id_class("foldpl", "pltable_full", "p#");
     $pl->set_selection($SSel);
