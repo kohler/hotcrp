@@ -67,7 +67,7 @@ if (!$Me->isPC && !$Me->tracker_kiosk_state)
     $Me->escape();
 
 // header and script
-$no_discussion = '<div><h2>No discussion<\/h2>'; // <div> is CSS-styled
+$no_discussion = '<div class=\\"remargin-left remargin-right\\"><h2>No discussion<\/h2>';
 if ($Me->privChair)
     $no_discussion .= '<p>To start a discussion, <a href=\\"' . hoturl("search") . '\\">search<\/a> for a list, go to a paper in that list, and use the “&#9759;” button.<\/p>';
 $no_discussion .= '</div>';
@@ -83,7 +83,7 @@ function trackertable_paper_row(hc, idx, paper) {
     }
 
     hc.push("<tr class=\"trackertable" + idx + (showpapers && pcconf ? " t" : " t b") + "\">", "<\/tr>");
-    hc.push("<td class=\"trackertable trackerdesc\">", "<\/td>");
+    hc.push("<td class=\"trackertable trackerdesc remargin-left\">", "<\/td>");
     hc.push_pop(idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     hc.push("<td class=\"trackertable trackerpid\">", "<\/td>");
     hc.push_pop(paper.pid && showpapers ? "#" + paper.pid : "");
@@ -98,13 +98,15 @@ function trackertable_paper_row(hc, idx, paper) {
     else
         hc.push_pop("<i>No title</i>");
     if (idx == 0)
-        hc.push("<td id=\"trackerelapsed\"><\/td>");
+        hc.push("<td id=\"trackerelapsed\" class=\"trackertable remargin-right\"><\/td>");
+    else
+        hc.push("<td class=\"trackertable remargin-right\"><\/td>");
     hc.pop();
     if (showpapers && pcconf) {
         hc.push("<tr class=\"trackertable" + idx + " b\">", "<\/tr>");
-        hc.push("<td colspan=\"2\"><\/td>");
+        hc.push("<td class=\"trackertable remargin-left\" colspan=\"2\"><\/td>");
         hc.push("<td class=\"trackertable trackerpcconf\">" + pcconf + "<\/td>");
-        hc.push("<td><\/td>");
+        hc.push("<td class=\"trackertable remargin-right\"><\/td>");
         hc.pop();
     }
 }
@@ -114,7 +116,7 @@ function trackertable() {
     if (!dl.tracker || !dl.tracker.papers)
         hc.push("' . $no_discussion . '");
     else {
-        hc.push("<table>", "<\/table>");
+        hc.push("<table style=\\"width:100%\\">", "<\/table>");
 
         hc.push("<tbody>", "<\/tbody>");
         for (var i = 0; i < dl.tracker.papers.length; ++i)
@@ -151,7 +153,7 @@ jQuery(window).on("hotcrp_deadlines", function (evt, dl) {
 })');
 $Conf->header("Discussion status", "buzzer", false);
 
-echo '<div id="trackertable" style="margin-top:1em"></div>';
+echo '<div id="trackertable" class="demargin" style="margin-top:1em"></div>';
 echo "<audio id=\"buzzersound\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";
 
 echo Ht::form(hoturl_post("buzzer"));

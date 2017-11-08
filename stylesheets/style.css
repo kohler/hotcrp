@@ -209,6 +209,15 @@ div#body {
 	position: relative;
 	z-index: 3;
 }
+div#body > .demargin {
+	margin: 0 -24px;
+}
+div#body > .demargin .remargin-left {
+	padding-left: 24px;
+}
+div#body > .demargin .remargin-right {
+	padding-right: 24px;
+}
 body.paper {
 	background: #dce4e8;
 }
@@ -1140,7 +1149,7 @@ td.padl, th.padl, div.padl {
 td.padlb, th.padlb, div.padlb {
 	padding-left: 2em;
 }
-div.error, td.error, tr.error > td {
+div.error, td.error, tr.error {
 	font-weight: bold;
 	color: #ff0000;
 }
@@ -1157,8 +1166,8 @@ div.error > div.f-c, .papet.error > .papfn, .revet.error > .revfn {
 }
 /* NB these rules must come after other color-setting rules */
 input.error,
-div.error input, td.error input, tr.error > td input,
-div.error textarea, td.error textarea, tr.error > td textarea,
+div.error input, td.error input, tr.error input,
+div.error textarea, td.error textarea, tr.error textarea,
 div.error > div.f-c,
 span.error,
 h2.error, h3.error, h4.error, h5.error, h6.error {
@@ -2971,36 +2980,23 @@ body {
 }
 
 #trackertable {
-	line-height: 1.25;
+	line-height: 1.35;
 	font-size: larger;
-	margin: 0 -24px;
-}
-#trackertable > div {
-	margin: 0 24px;
-}
-#trackertable > table {
-	width: 100%;
 }
 .trackertable0 {
 	background: #ffffff;
 }
-.trackertable0.t > td {
+.trackertable0.t > td.trackertable {
 	border-top: 1px solid #f33360;
 }
-.trackertable0.b > td {
+.trackertable0.b > td.trackertable {
 	border-bottom: 1px solid #f33360;
 }
 .trackertable {
 	padding: 0.25em 0.5em 0.25em 0;
 }
-.trackertable.trackerdesc {
-	padding-left: 24px;
-}
 .trackertable.trackertitle {
 	padding-right: 2em;
-}
-#trackerelapsed {
-	padding-right: 24px;
 }
 .trackertable.trackerpcconf {
 	padding-top: 0;

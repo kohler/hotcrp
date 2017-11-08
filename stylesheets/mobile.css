@@ -15,6 +15,15 @@ table.vbar {
 div#body {
 	margin: 0 12px;
 }
+div#body > .demargin {
+	margin: 0 -12px;
+}
+div#body > .demargin .remargin-left {
+	padding-left: 12px;
+}
+div#body > .demargin .remargin-right {
+	padding-right: 12px;
+}
 div#initialmsgs {
 	padding: 0 12px;
 }
