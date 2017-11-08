@@ -1936,9 +1936,6 @@ hr.c {
 .pltable_colored > tr:first-child {
 	border-top: 0 none;
 }
-.pltable > tr:last-child > td {
-	padding-bottom: 2px;
-}
 .k1, .topicinterest > tbody > tr:nth-child(even) {
 	background-color: #f1f8fc;
 }
