@@ -23,24 +23,24 @@ function settings_option_type() {
 }
 
 function settings_option_move() {
-    var odiv = $(this).closest(".settings_opt")[0];
-    if ($(this).hasClass("settings_opt_moveup") && odiv.previousSibling)
+    var odiv = $(this).closest(".settings-opt")[0];
+    if ($(this).hasClass("settings-opt-moveup") && odiv.previousSibling)
         odiv.parentNode.insertBefore(odiv, odiv.previousSibling);
-    else if ($(this).hasClass("settings_opt_movedown") && odiv.nextSibling)
+    else if ($(this).hasClass("settings-opt-movedown") && odiv.nextSibling)
         odiv.parentNode.insertBefore(odiv, odiv.nextSibling.nextSibling);
-    else if ($(this).hasClass("settings_opt_delete")) {
-        if ($(odiv).find(".settings_opt_id").val() === "new")
+    else if ($(this).hasClass("settings-opt-delete")) {
+        if ($(odiv).find(".settings-opt-id").val() === "new")
             $(odiv).remove();
         else {
-            $(odiv).find(".settings_opt_fp").val("deleted").change();
+            $(odiv).find(".settings-opt-fp").val("deleted").change();
             $(odiv).find(".f-i, .f-ix").each(function () {
-                if (!$(this).find(".settings_opt_fp").length)
+                if (!$(this).find(".settings-opt-fp").length)
                     $(this).remove();
             });
             $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
             $(odiv).append('<div class="f-i"><em>(Option deleted)</em></div></div>');
         }
-    } else if ($(this).hasClass("settings_opt_new")) {
+    } else if ($(this).hasClass("settings-opt-new")) {
         var h = $("#settings_newopt").html();
         var next = 1;
         while ($("#optn_" + next).length)
@@ -56,11 +56,11 @@ function settings_option_move() {
 }
 
 function settings_option_move_enable() {
-    $(".settings_opt_moveup, .settings_opt_movedown").prop("disabled", false);
-    $(".settings_opt:first-child .settings_opt_moveup").prop("disabled", true);
-    $(".settings_opt:last-child .settings_opt_movedown").prop("disabled", true);
+    $(".settings-opt-moveup, .settings-opt-movedown").prop("disabled", false);
+    $(".settings-opt:first-child .settings-opt-moveup").prop("disabled", true);
+    $(".settings-opt:last-child .settings-opt-movedown").prop("disabled", true);
     var index = 0;
-    $(".settings_opt_fp").each(function () {
+    $(".settings-opt-fp").each(function () {
         if (this.value !== "deleted" && this.name !== "optfp_0") {
             ++index;
             if (this.value != index)
@@ -294,21 +294,21 @@ function fill_field(fid, fieldj, order) {
 }
 
 function remove() {
-    var $f = $(this).closest(".settings_revfield"),
+    var $f = $(this).closest(".settings-revfield"),
         fid = $f.attr("data-revfield");
     $f.find(".revfield_order").val(0);
     $f.detach().hide().appendTo("#reviewform_removedcontainer");
     check_change(fid);
-    $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings_revfieldremoved"><span class="settings_revfn" style="text-decoration:line-through">' + escape_entities($f.find("#shortName_" + fid).val()) + '</span>&nbsp; (field removed)</div>');
+    $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings-revfieldremoved"><span class="settings-revfn" style="text-decoration:line-through">' + escape_entities($f.find("#shortName_" + fid).val()) + '</span>&nbsp; (field removed)</div>');
     fill_order();
 }
 
-var revfield_template = '<table id="revfield_$" class="settings_revfield f-contain fold2c errloc_$" data-revfield="$" data-fold="true"><tbody>\
+var revfield_template = '<table id="revfield_$" class="settings-revfield f-contain fold2c errloc_$" data-revfield="$" data-fold="true"><tbody>\
 <tr><td class="nw"><a href="#" class="q revfield-folder">\
 <span class="expander"><span class="in0 fx2">▼</span><span class="in1 fn2 need-tooltip" data-tooltip="Edit field" data-tooltip-dir="r">▶</span></span>\
 </a></td><td>\
-<div id="revfieldview_$" class="settings_revfieldview fn2"></div>\
-<div id="revfieldedit_$" class="settings_revfieldedit fx2">\
+<div id="revfieldview_$" class="settings-revfieldview fn2"></div>\
+<div id="revfieldedit_$" class="settings-revfieldedit fx2">\
   <div class="f-i errloc_shortName_$">\
     <input name="shortName_$" id="shortName_$" type="text" size="50" style="font-weight:bold" placeholder="Field name" />\
   </div>\
@@ -351,10 +351,10 @@ var revfield_template = '<table id="revfield_$" class="settings_revfield f-conta
 </td></tr></tbody></table>';
 
 var revfieldview_template = '<div style="line-height:1.35">\
-<span class="settings_revfn"></span>\
-<span class="settings_revrounds"></span>\
-<span class="settings_revvis"></span>\
-<div class="settings_revdata"></div>\
+<span class="settings-revfn"></span>\
+<span class="settings-revrounds"></span>\
+<span class="settings-revvis"></span>\
+<div class="settings-revdata"></div>\
 </div>';
 
 function option_value_html(fieldj, value) {
@@ -378,7 +378,7 @@ function option_value_html(fieldj, value) {
 }
 
 function view_unfold(event) {
-    var $f = $(event.target).closest(".settings_revfield");
+    var $f = $(event.target).closest(".settings-revfield");
     if ($f.hasClass("fold2c") || !form_differs($f))
         foldup(event.target, event, {n: 2});
     return false;
@@ -399,9 +399,9 @@ function field_visibility_text(visibility) {
 
 function create_field_view(fid, fieldj) {
     var $f = $(revfieldview_template.replace(/\$/g, fid)), $x, i, j, x;
-    $f.find(".settings_revfn").text(fieldj.name || "<unnamed>");
+    $f.find(".settings-revfn").text(fieldj.name || "<unnamed>");
 
-    $x = $f.find(".settings_revvis");
+    $x = $f.find(".settings-revvis");
     x = field_visibility_text(fieldj.visibility);
     x ? $x.text(x) : $x.remove();
 
@@ -410,7 +410,7 @@ function create_field_view(fid, fieldj) {
         x = "(" + fieldj.round_list[0] + " only)";
     else if ((fieldj.round_list || []).length > 1)
         x = "(" + commajoin(fieldj.round_list) + ")";
-    $x = $f.find(".settings_revrounds");
+    $x = $f.find(".settings-revrounds");
     x ? $x.text(x) : $x.remove();
 
     if (fieldj.options) {
@@ -419,14 +419,14 @@ function create_field_view(fid, fieldj) {
         fieldj.option_letter && x.reverse();
     } else
         x = ["Text field"];
-    $f.find(".settings_revdata").html(x.join(" … "));
+    $f.find(".settings-revdata").html(x.join(" … "));
 
     return $f;
 }
 
 function move_field(event) {
     var isup = $(this).hasClass("revfield_moveup"),
-        $f = $(this).closest(".settings_revfield").detach(),
+        $f = $(this).closest(".settings-revfield").detach(),
         fid = $f.attr("data-revfield"),
         pos = $f.find(".revfield_order").val() | 0,
         $c = $("#reviewform_container")[0], $n, i;
@@ -508,7 +508,7 @@ function rfs(data) {
     for (i = 0; i != fieldorder.length; ++i)
         append_field(fieldorder[i], i + 1);
     $("#reviewform_container").on("click", "a.revfield-folder", view_unfold);
-    $("#reviewform_container").on("fold", ".settings_revfield", function (evt, opts) {
+    $("#reviewform_container").on("fold", ".settings-revfield", function (evt, opts) {
         if (!opts.f) {
             $(this).find("textarea").css("height", "auto").autogrow();
             $(this).find("input[type=text]").autogrow();
@@ -557,19 +557,19 @@ function add_dialog(fid, focus) {
             var s = samples[template - 1];
             $d.find(".newreviewfield-template-name").text(s.selector);
             var hc = new HtmlCollector;
-            hc.push('<div><span class="settings_revfn">' + text_to_html(s.name) + '</span>', '<hr class="c" /></div>');
+            hc.push('<div><span class="settings-revfn">' + text_to_html(s.name) + '</span>', '<hr class="c" /></div>');
             var x = field_visibility_text(s.visibility);
             if (x)
-                hc.push('<span class="settings_revvis">' + text_to_html(x) + '</span>');
+                hc.push('<span class="settings-revvis">' + text_to_html(x) + '</span>');
             hc.pop();
-            hc.push('<div class="settings_revhint">' + text_to_html(s.description || "") + '</div>');
+            hc.push('<div class="settings-revhint">' + text_to_html(s.description || "") + '</div>');
             if (s.options) {
                 x = [];
                 for (var i = 1; i <= s.options.length; ++i)
                     x.push(i);
                 if (s.option_letter)
                     x.reverse();
-                hc.push('<table class="settings_revoptions"><tbody>', '</tbody></table>');
+                hc.push('<table class="settings-revoptions"><tbody>', '</tbody></table>');
                 for (var i = 0; i < x.length; ++i) {
                     var ov = option_value_html(s, x[i]);
                     hc.push('<tr><td class="nw">' + ov[0] + ' </td>' +

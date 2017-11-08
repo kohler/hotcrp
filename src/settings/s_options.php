@@ -45,7 +45,7 @@ class Options_SettingRenderer {
         if ($o->final)
             $optvt .= ":final";
 
-        echo '<div class="settings_opt fold2c fold3o ',
+        echo '<div class="settings-opt fold2c fold3o ',
             (PaperOption::type_has_selector($optvt) ? "fold4o" : "fold4c"),
             '" data-fold="true">';
         echo '<div class="f-ix"><div class="f-i">',
@@ -53,8 +53,8 @@ class Options_SettingRenderer {
             $sv->label("optn_$xpos", "Option name"),
             '</div><div class="f-e">',
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", array("placeholder" => "(Enter new option)", "size" => 50, "id" => "optn_$xpos"))),
-            Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings_opt_id"]),
-            Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings_opt_fp", "data-default-value" => $xpos]),
+            Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings-opt-id"]),
+            Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
             '</div></div><div class="f-i"><div class="f-c">',
             $sv->label("optd_$xpos", "Description"),
             '</div><div class="f-e">',
@@ -93,10 +93,10 @@ class Options_SettingRenderer {
         echo '<div class="f-ix"><div class="f-ii"><div class="f-c">',
             $sv->label("optvt_$xpos", "Type"),
             '</div><div class="f-e">',
-            Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "settings_optvt", "id" => "optvt_$xpos"]),
+            Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "settings-optvt", "id" => "optvt_$xpos"]),
             "</div></div></div>\n";
 
-        Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings_optvt", settings_option_type); $("#settings_opts").on("click", "button", settings_option_move); settings_option_move_enable(); $("select.settings_optvt").each(settings_option_type); })', 'settings_optvt');
+        Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings-optvt", settings_option_type); $("#settings_opts").on("click", "button", settings_option_move); settings_option_move_enable(); $("select.settings-optvt").each(settings_option_type); })', 'settings_optvt');
 
         echo '<div class="f-ix fn2"><div class="f-ii"><div class="f-c">',
             $sv->label("optp_$xpos", "Visibility"),
@@ -143,9 +143,9 @@ class Options_SettingRenderer {
         }
 
         echo '<hr class="c" /><div class="f-i"><div class="f-e">',
-            Ht::button("Move up", ["class" => "btn settings_opt_moveup"]),
-            Ht::button("Move down", ["class" => "btn settings_opt_movedown", "style" => "margin-left: 1em"]),
-            Ht::button($delete_text, ["class" => "btn settings_opt_delete", "style" => "margin-left: 1em"]),
+            Ht::button("Move up", ["class" => "btn settings-opt-moveup"]),
+            Ht::button("Move down", ["class" => "btn settings-opt-movedown", "style" => "margin-left: 1em"]),
+            Ht::button($delete_text, ["class" => "btn settings-opt-delete", "style" => "margin-left: 1em"]),
             "</div></div>\n";
 
         echo '<hr class="c" /></div>';
@@ -164,7 +164,7 @@ class Options_SettingRenderer {
             $self->render_option($sv, $o, ++$pos);
         echo "</div>\n",
             '<div style="margin-top:2em">',
-            Ht::js_button("Add option", "settings_option_move.call(this)", ["class" => "settings_opt_new btn"]),
+            Ht::js_button("Add option", "settings_option_move.call(this)", ["class" => "settings-opt-new btn"]),
             "</div>\n<div id=\"settings_newopt\" style=\"display:none\">";
         $self->render_option($sv, null, 0);
         echo "</div>\n\n";

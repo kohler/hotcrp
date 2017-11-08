@@ -989,31 +989,31 @@ div.aab + h3.settings {
 h4.helppage {
 	margin: 0.8em 0 0;
 }
-th.settings_simplehead {
+th.settings-simplehead {
 	text-align: left;
 	font-size: smaller;
 	padding-right: 1em;
 }
-.settings_revfield, .settings_revfieldremoved {
+.settings-revfield, .settings-revfieldremoved {
 	margin: 1em 0 2em;
 }
-.settings_revfieldedit {
+.settings-revfieldedit {
 	margin-top: -2px;
 }
-.settings_revfieldview, .settings_revfieldedit {
+.settings-revfieldview, .settings-revfieldedit {
 	position: relative;
 }
-.settings_revfn {
+.settings-revfn {
 	font-weight: bold;
 }
-.settings_revvis, .settings_revrounds, .settings_reveditor {
+.settings-revvis, .settings-revrounds, .settings-reveditor {
 	display: inline-block;
 	padding-left: 1em;
 }
-.settings_revdata, .settings_revhint {
+.settings-revdata, .settings-revhint {
 	clear: both;
 }
-.settings_opt + .settings_opt {
+.settings-opt + .settings-opt {
 	margin-top: 3em;
 }
 

@@ -5120,7 +5120,7 @@ function edit_anno(locator) {
         return false;
     }
     function ondeleteclick() {
-        var $div = $(this).closest(".settings_revfield"), annoid = $div.attr("data-anno-id");
+        var $div = $(this).closest(".settings-revfield"), annoid = $div.attr("data-anno-id");
         $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
         $div.append('<input type="hidden" name="deleted_' + annoid + '" value="1" />');
         $div.find("input[name='heading_" + annoid + "']").prop("disabled", true);
@@ -5141,7 +5141,7 @@ function edit_anno(locator) {
         var annoid = anno.annoid;
         if (annoid == null)
             annoid = "n" + (last_newannoid += 1);
-        hc.push('<div class="settings_revfield" data-anno-id="' + annoid + '"><table><tbody>', '</tbody></table></div>');
+        hc.push('<div class="settings-revfield" data-anno-id="' + annoid + '"><table><tbody>', '</tbody></table></div>');
         hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32" tabindex="1000" /></td></tr>');
         hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" tabindex="1000" />', '</td></tr>');
         if (anno.annoid)
