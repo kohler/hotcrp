@@ -1119,10 +1119,10 @@ $blind\n";
 
     static private function unparse_rating($rating, $flags) {
         if (($flags & self::RJ_UNPARSE_RATINGS)
-            && ($n = get(self::$rating_types, $rating ? : "n")) !== null)
+            && ($n = get(self::$rating_types, $rating === null ? "n" : $rating)) !== null)
             return $n;
         else
-            return $rating ? : null;
+            return $rating;
     }
 
     static function unparse_ratings_json(ReviewInfo $rrow, $flags) {

@@ -221,9 +221,8 @@ class ReviewInfo {
         $cid = is_object($user) ? $user->contactId : $user;
         $str = ",$cid ";
         $pos = strpos("," . $this->allRatings, $str);
-        if ($pos !== false
-            && ($rating = intval(substr($this->allRatings, $pos + strlen($str) - 1))))
-            return $rating;
+        if ($pos !== false)
+            return intval(substr($this->allRatings, $pos + strlen($str) - 1));
         return null;
     }
 }
