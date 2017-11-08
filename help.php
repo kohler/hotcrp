@@ -45,30 +45,32 @@ class HtHead extends Ht {
     function table($tabletype = false) {
         $this->_rowidx = 0;
         $this->_tabletype = $tabletype;
-        return $this->_tabletype ? "" : '<table class="helppage"><tbody>';
+        return $this->_tabletype ? "" : '<table class="demargin"><tbody>';
     }
     function tgroup($title, $id = null) {
         $this->_rowidx = 0;
         if ($this->_tabletype)
             return $this->subhead($title, $id);
         else
-            return '<tr><td class="sentry nw" colspan="2"><h4 class="helppage"'
+            return '<tr><td class="sentry nw remargin-left remargin-right" colspan="2"><h4 class="helppage"'
                 . ($id ? " id=\"{$id}\"" : "") . '>'
                 . $title . "</h4></td></tr>\n";
     }
     function trow($caption, $entry = null) {
         if ($this->_tabletype) {
-            $t = "<div class=\"helplist-item k{$this->_rowidx}\">"
-                . "<table class=\"helppage\"><tbody><tr><td class=\"helplist-dt\">"
+            $t = "<div class=\"helplist-item demargin k{$this->_rowidx}\">"
+                . "<table><tbody><tr>"
+                . "<td class=\"helplist-dt remargin-left\">"
                 . $caption
-                . "</td><td class=\"helplist-dd\">"
+                . "</td><td class=\"helplist-dd remargin-right\">"
                 . $entry . "</td></tr></tbody></table></div>\n";
         } else {
-            $t = "<tr class=\"k{$this->_rowidx}\"><td class=\"sentry\"";
+            $t = "<tr class=\"k{$this->_rowidx}\">"
+                . "<td class=\"sentry remargin-left";
             if ((string) $entry === "")
-                $t .= ' colspan="2">' . $caption;
+                $t .= ' remargin-right" colspan="2">' . $caption;
             else
-                $t .= '>' . $caption . '</td><td class="sentry">' . $entry;
+                $t .= '">' . $caption . '</td><td class="sentry remargin-right">' . $entry;
             $t .= "</td></tr>\n";
         }
         $this->_rowidx = 1 - $this->_rowidx;

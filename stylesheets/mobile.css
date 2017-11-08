@@ -75,6 +75,9 @@ h2.paptitle {
 .leftmenu-content > .demargin .remargin-left {
 	padding-left: 12px;
 }
+.leftmenu-content > .demargin .remargin-right {
+	padding-right: 12px;
+}
 input, textarea {
 	max-width: 100%;
 }

@@ -1050,6 +1050,9 @@ table#foldtag_color th {
 .leftmenu-content > .demargin .remargin-left {
 	padding-left: 16px;
 }
+.leftmenu-content > .demargin .remargin-right {
+	padding-right: 16px;
+}
 .profiletext, .settingstext {
 	max-width: 640px;
 	line-height: 1.35;
@@ -1070,20 +1073,10 @@ table#foldtag_color th {
 #helpcontent > dl > dd {
 	margin-left: 28px;
 }
-table.helppage {
-	margin: 0 -16px;
-}
 .helplist-item {
-	margin: 0 -16px;
-	padding: 3px 16px;
+	padding: 3px 0;
 }
 .helplist-dt {
-	padding-right: 16px;
-}
-table.helppage > tbody > tr > td:first-child {
-	padding-left: 16px;
-}
-table.helppage > tbody > tr > td:last-child {
 	padding-right: 16px;
 }
 ul.compact {
