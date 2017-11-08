@@ -60,7 +60,7 @@ class Tags_SettingRenderer {
         echo Ht::hidden("has_tag_color", 1),
             '<h3 class="settings g">Colors and styles</h3>',
             "<p class=\"settingtext\">Papers tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
-            '<table id="foldtag_color" class="demargin"><tr><th></th><th style="min-width:8rem">Style name</th><th>Tags</th><th></th></tr>',
+            '<table id="foldtag_color" class="demargin"><tr><th></th><th class="settings_simplehead" style="min-width:8rem">Style name</th><th class="settings_simplehead">Tags</th><th></th></tr>',
             join("", $tag_colors_rows), "</table>\n";
 
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");

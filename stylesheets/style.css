@@ -3,6 +3,27 @@
 /* HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC */
 /* Distributed under an MIT-like license; see LICENSE */
 
+/* generic styles */
+table, tr, td, th {
+	padding: 0;
+	border-spacing: 0;
+	border: 0 none;
+	border-collapse: collapse;
+	empty-cells: show;
+}
+tr, textarea, select {
+	vertical-align: baseline;
+}
+input, textarea, button {
+	font-family: inherit;
+	font-size: 100%;
+}
+select {
+	font-family: inherit;
+	font-size: 92%;
+}
+
+
 /* page background */
 html {
 	font-family: "Helvetica Neue", Helvetica, Arial, verdana, tahoma, sans-serif;
@@ -12,13 +33,6 @@ body {
 	color: #333333;
 	background-color: white;
 	margin: 0;
-}
-table, tr, td, th {
-	padding: 0;
-	border-spacing: 0;
-	border: 0 none;
-	border-collapse: collapse;
-	empty-cells: show;
 }
 
 
@@ -531,7 +545,7 @@ span.hastitle {
 	display: table-cell;
 }
 .lld1, .lld2, .lld3, .lld4, .lld5, .lld6, .lld7, .lld8 {
- 	display: none;
+	display: none;
 }
 
 /* search > display options */
@@ -640,10 +654,10 @@ span.impending a {
 span.expander {
 	display: inline-block;
 	width: 0.8em;
-        padding-right: 0.2em;
+	padding-right: 0.2em;
 	opacity: 0.65;
-        text-decoration: none;
-        text-indent: 0;
+	text-decoration: none;
+	text-indent: 0;
 }
 span.expander > span.in0, span.expander > span.in1 {
 	position: relative;
@@ -660,10 +674,10 @@ span.expander > span.in0 {
 
 .tbtn, .tbtn-on {
 	border-radius: 5px;
-        display: inline-block;
-        padding: 2px 4px;
-        text-decoration: none;
-        color: white;
+	display: inline-block;
+	padding: 2px 4px;
+	text-decoration: none;
+	color: white;
 }
 .tbtn {
 	background: #4444cc;
@@ -736,7 +750,6 @@ span.expander > span.in0 {
 	background: rgba(222, 222, 222, 0.5);
 }
 .aabig .btn {
-	font-size: 14px;
 	padding: 4px 9px 4px;
 }
 .aab {
@@ -875,9 +888,6 @@ table.paper, table.settings {
 div.relative {
 	position: relative;
 }
-tr, textarea, select {
-	vertical-align: baseline;
-}
 td.textarea, td.top {
 	vertical-align: top;
 }
@@ -979,7 +989,7 @@ div.aab + h3.settings {
 h4.helppage {
 	margin: 0.8em 0 0;
 }
-table#foldtag_color th {
+th.settings_simplehead {
 	text-align: left;
 	font-size: smaller;
 	padding-right: 1em;
@@ -1225,10 +1235,6 @@ span.textlite {
 	padding: 0 4px;
 	background: #fcfcfc;
 }
-input[type=text], input[type=password],
-input[type=email], input[type=url], textarea {
-	font-size: 100%;
-}
 input.textlite-tt, textarea.tt {
 	font-family: monospace;
 }
@@ -1369,8 +1375,8 @@ pre.email {
 	display: inline-block;
 	width: 0.72em;
 	height: 0.72em;
-        border-width: 1px;
-        position: relative;
+	border-width: 1px;
+	position: relative;
 	bottom: -0.125em;
 }
 del .rto {
@@ -1400,10 +1406,10 @@ del .rto {
 }
 .rti {
 	display: table-cell;
-        position: absolute;
+	position: absolute;
 	width: 100%;
 	height: 100%;
-        font-family: "Helvetica Neue", Helvetica, verdana, tahoma, sans-serif;
+	font-family: "Helvetica Neue", Helvetica, verdana, tahoma, sans-serif;
 	font-size: 62.5%;
 	line-height: 1;
 	text-align: center;
@@ -2232,34 +2238,34 @@ div.pst span.hint {
 
 /* suggestions */
 .suggesttable {
-        -webkit-column-gap: 18px;
-        -moz-column-gap: 18px;
-        column-gap: 18px;
+	-webkit-column-gap: 18px;
+	-moz-column-gap: 18px;
+	column-gap: 18px;
 }
 .suggesttable2 {
-        -webkit-columns: 100px 2;
-        -moz-columns: 100px 2;
-        columns: 100px 2;
+	-webkit-columns: 100px 2;
+	-moz-columns: 100px 2;
+	columns: 100px 2;
 }
 .suggesttable3 {
-        -webkit-columns: 100px 3;
-        -moz-columns: 100px 3;
-        columns: 100px 3;
+	-webkit-columns: 100px 3;
+	-moz-columns: 100px 3;
+	columns: 100px 3;
 }
 .suggesttable4 {
-        -webkit-columns: 100px 4;
-        -moz-columns: 100px 4;
-        columns: 100px 4;
+	-webkit-columns: 100px 4;
+	-moz-columns: 100px 4;
+	columns: 100px 4;
 }
 .suggesttable5 {
-        -webkit-columns: 100px 5;
-        -moz-columns: 100px 5;
-        columns: 100px 5;
+	-webkit-columns: 100px 5;
+	-moz-columns: 100px 5;
+	columns: 100px 5;
 }
 .suggesttable6 {
-        -webkit-columns: 100px 6;
-        -moz-columns: 100px 6;
-        columns: 100px 6;
+	-webkit-columns: 100px 6;
+	-moz-columns: 100px 6;
+	columns: 100px 6;
 }
 .suggestion {
 	-webkit-column-break-inside: avoid;
@@ -2651,9 +2657,6 @@ body#offline .revcard {
 	font-size: 69%;
 	padding: 0.4em 0.8em 0.4em 0;
 }
-.rev_rating select, div.rev_rating input {
-	font-size: smaller;
-}
 .rev_rating_summary {
 	font-weight: bold;
 }
@@ -2848,9 +2851,9 @@ body {
 	margin-bottom: 16px;
 }
 .pspcard_body {
-        -webkit-column-count: 200px 2;
-        -moz-columns: 200px 2;
-        columns: 200px 2;
+	-webkit-column-count: 200px 2;
+	-moz-columns: 200px 2;
+	columns: 200px 2;
 }
 .papcard, .pedcard, .notecard, .revcard, .cmtcard {
 	margin-left: -24px;
@@ -2859,12 +2862,12 @@ body {
 }
 
 #tracker {
-        left: 0;
-        top: 0;
-        width: 100%;
-        font-size: smaller;
-        position: fixed;
-        z-index: 8;
+	left: 0;
+	top: 0;
+	width: 100%;
+	font-size: smaller;
+	position: fixed;
+	z-index: 8;
 }
 #tracker.active {
 	background: rgba(100, 255, 100, 0.9);
@@ -2931,7 +2934,7 @@ body {
 }
 .trackerdesc {
 	font-weight: bold;
-        padding-right: 0.5em;
+	padding-right: 0.5em;
 }
 .trackerpid {
 	text-align: right;
@@ -2943,9 +2946,9 @@ body {
 }
 #trackerelapsed {
 	font-weight: bold;
-        padding: 0 1em 0 0.5em;
-        opacity: 0.5;
-        text-align: right;
+	padding: 0 1em 0 0.5em;
+	opacity: 0.5;
+	text-align: right;
 }
 
 #trackertable {
