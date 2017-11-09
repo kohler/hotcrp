@@ -1206,7 +1206,7 @@ h2.error, h3.error, h4.error, h5.error, h6.error {
 	font-size: smaller;
 }
 
-img.dlimg, img.placthook {
+img.dlimg {
 	position: relative;
 	bottom: -6px;
 	margin-top: -6px;
@@ -1216,6 +1216,7 @@ img.placthook {
 	height: 12px;
 	background-image: url(../images/sprite.png?2);
 	background-position: -40px 0;
+	vertical-align: 7px;
 }
 img.sdlimg {
 	position: relative;
@@ -1553,13 +1554,6 @@ table.setreviewform th, table.auedittable th {
 	font-size: 90%;
 	white-space: nowrap;
 }
-.pl_footselector {
-	text-align: right;
-	white-space: nowrap;
-	vertical-align: top;
-	padding-top: 0;
-	padding-right: 4px;
-}
 img.b {
 	vertical-align: text-bottom;
 }
@@ -1820,6 +1814,11 @@ tr.pl_statheadrow > td.plstat {
 td.plf {
 	border-top: 1px solid #cccccc;
 	padding-top: 3px;
+}
+td.pl_footselector {
+	text-align: right;
+	white-space: nowrap;
+	padding-right: 6px;
 }
 table.pltable_reviewerhome > thead > tr > th.plh {
 	border-bottom: none;
