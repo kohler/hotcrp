@@ -268,7 +268,7 @@ function document_download() {
     if (isset($_GET["fn"]) && ($_GET["fn"] === "listing" || $_GET["fn"] === "consolidatedlisting")) {
         if (!$doc->docclass->is_archive($doc))
             json_exit(["ok" => false, "error" => "That file is not an archive."]);
-        else if (($listing = $doc->docclass->archive_listing($doc)) === false)
+        else if (($listing = $doc->docclass->archive_listing($doc, 65536)) === false)
             json_exit(["ok" => false, "error" => isset($doc->error) ? $doc->error_text : "Internal error."]);
         else {
             $listing = $doc->docclass->clean_archive_listing($listing);

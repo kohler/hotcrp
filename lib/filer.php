@@ -786,7 +786,7 @@ class Filer {
             && preg_match('/\.(?:zip|tar|tgz|tar\.[gx]?z|tar\.bz2)\z/i', $doc->filename);
     }
 
-    function archive_listing(DocumentInfo $doc) {
+    function archive_listing(DocumentInfo $doc, $max_length = -1) {
         if (!$this->load_to_filestore($doc))
             return false;
         $type = null;
@@ -819,54 +819,51 @@ class Filer {
         $cmd .= escapeshellarg($doc->filestore);
         $pipes = null;
         $proc = proc_open($cmd, [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
-        $out = stream_get_contents($pipes[1]);
-        $err = stream_get_contents($pipes[2]);
+        $out = stream_get_contents($pipes[1], $max_length);
         fclose($pipes[1]);
+        $err = stream_get_contents($pipes[2]);
         fclose($pipes[2]);
         $status = proc_close($proc);
         if ($err != "")
             $err = preg_replace('/^tar: Ignoring unknown[^\n]*\n*/m', '', $err);
         if ($status != 0 || $err != "")
             error_log("$cmd problem: status $status, stderr $err");
-        return explode("\n", rtrim($out));
+        if ($max_length > 0 && strlen($out) === $max_length)
+            return explode("\n", rtrim($out) . "\n…");
+        else
+            return explode("\n", rtrim($out));
     }
 
     function clean_archive_listing($listing) {
-        $etcetera = false;
-        $listing = array_filter($listing, function ($x) use (&$etcetera) {
-            if (str_ends_with($x, "/"))
-                return false;
-            else if (preg_match('@(?:\A|/)(?:\A__MACOSX|\._.*|\.DS_Store|\.svn|\.git|.*~\z|\A…\z)(?:/|\z)@', $x)) {
-                $etcetera = true;
-                return false;
-            } else
-                return true;
-        });
-        natcasesort($listing);
-        $listing = array_values($listing);
-        if ($etcetera)
-            $listing[] = "…";
+        $bad = preg_grep('@(?:\A|/)(?:\A__MACOSX|\._.*|\.DS_Store|\.svn|\.git|.*~\z|.*/\z|\A…\z)(?:/|\z)@', $listing);
+        if (!empty($bad)) {
+            $listing = array_values(array_diff_key($listing, $bad));
+            if (preg_match('@[^/]\n@', join("\n", $bad) . "\n"))
+                $listing[] = "…";
+        }
         return $listing;
     }
 
     function consolidate_archive_listing($listing) {
         $new_listing = [];
-        $etcetera = empty($listing) || $listing[count($listing) - 1] !== "…" ? 0 : 1;
-        for ($i = 0; $i < count($listing) - $etcetera; ) {
-            if (($slash = strpos($listing[$i], "/")) !== false) {
+        $nlisting = count($listing);
+        $etcetera = $nlisting && $listing[$nlisting - 1] === "…";
+        if ($etcetera)
+            --$nlisting;
+        for ($i = 0; $i < $nlisting; ) {
+            if ($i + 1 < $nlisting && ($slash = strpos($listing[$i], "/")) !== false) {
                 $prefix = substr($listing[$i], 0, $slash + 1);
-                for ($j = $i + 1; $j < count($listing) && str_starts_with($listing[$j], $prefix); ++$j)
-                    /* nada */;
+                for ($j = $i + 1; $j < $nlisting && str_starts_with($listing[$j], $prefix); ++$j) {
+                }
                 if ($j > $i + 1) {
                     $xlisting = [];
-                    for ($k = $i; $k < $j; ++$k)
-                        $xlisting[] = substr($listing[$k], $slash + 1);
+                    for (; $i < $j; ++$i)
+                        $xlisting[] = substr($listing[$i], $slash + 1);
                     $xlisting = $this->consolidate_archive_listing($xlisting);
                     if (count($xlisting) == 1)
                         $new_listing[] = $prefix . $xlisting[0];
                     else
                         $new_listing[] = $prefix . "{" . join(", ", $xlisting) . "}";
-                    $i = $j;
                     continue;
                 }
             }
