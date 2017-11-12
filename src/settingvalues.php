@@ -262,12 +262,13 @@ class SettingParser {
 class SettingValues extends MessageSet {
     public $conf;
     public $user;
-    public $interesting_groups = array();
+    public $interesting_groups = [];
 
-    private $parsers = array();
-    public $save_callbacks = array();
-    public $need_lock = array();
-    public $changes = array();
+    private $parsers = [];
+    private $saved_si = [];
+    private $cleanup_callbacks;
+    public $need_lock = [];
+    public $changes = [];
 
     public $req = array();
     public $req_files = array();
@@ -528,6 +529,12 @@ class SettingValues extends MessageSet {
             return true;
         } else
             return false;
+    }
+    function cleanup_callback($name, $func, $arg = null) {
+        if (!isset($this->cleanup_callbacks[$name]))
+            $this->cleanup_callbacks[$name] = [$func, null];
+        if (func_num_args() > 2)
+            $this->cleanup_callbacks[$name][1][] = $arg;
     }
 
     private function si_curv($name, Si $si, $default_value) {
@@ -792,7 +799,7 @@ class SettingValues extends MessageSet {
         // make settings
         $this->changes = [];
         if (!$this->has_error()
-            && (!empty($this->savedv) || !empty($this->save_callbacks))) {
+            && (!empty($this->savedv) || !empty($this->saved_si))) {
             $tables = "Settings write";
             foreach ($this->need_lock as $t => $need)
                 if ($need)
@@ -807,9 +814,8 @@ class SettingValues extends MessageSet {
             Dbl::free($result);
 
             // apply settings
-            foreach ($this->save_callbacks as $si) {
-                $p = $this->parser($si);
-                $p->save($this, $si);
+            foreach ($this->saved_si as $si) {
+                $this->parser($si)->save($this, $si);
             }
 
             $dv = $av = array();
@@ -851,6 +857,8 @@ class SettingValues extends MessageSet {
             if (!empty($this->changes))
                 $this->user->log_activity("Updated settings " . join(", ", $this->changes));
             $this->conf->load_settings();
+            foreach ($this->cleanup_callbacks as $cb)
+                call_user_func($cb[0], $this, $cb[1]);
 
             // contactdb may need to hear about changes to shortName
             if ($this->has_savedv("opt.shortName") && ($cdb = Contact::contactdb()))
@@ -862,12 +870,12 @@ class SettingValues extends MessageSet {
         if ($si1->internal)
             return;
         foreach ($this->req_si($si1) as $si) {
-            if ($si->disabled || $si->novalue || !$si->type || $si->type === "none")
+            if ($si->disabled || $si->novalue || !$si->type || $si->type === "none") {
                 /* ignore changes to disabled/novalue settings */;
-            else if ($si->parser) {
-                $p = $this->parser($si);
-                if ($p->parse($this, $si))
-                    $this->save_callbacks[$si->name] = $si;
+            } else if ($si->parser) {
+                if ($this->parser($si)->parse($this, $si)) {
+                    $this->saved_si[] = $si;
+                }
             } else {
                 $v = $this->parse_value($si);
                 if ($v === null || $v === false)
