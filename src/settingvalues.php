@@ -266,7 +266,7 @@ class SettingValues extends MessageSet {
 
     private $parsers = [];
     private $saved_si = [];
-    private $cleanup_callbacks;
+    private $cleanup_callbacks = [];
     public $need_lock = [];
     public $changes = [];
 
