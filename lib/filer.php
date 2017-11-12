@@ -832,9 +832,9 @@ class Filer {
             stream_select($r, $w, $e, $delta_sec, (int) (($delta - $delta_sec) * 1000000));
             foreach ($r as $f) {
                 if ($f === $pipes[1])
-                    $out .= fread($pipes[1], $max_length < 0 ? 16384 : min(16384, $max_length - strlen($out)));
+                    $out .= fread($pipes[1], $max_length < 0 ? 65536 : min(65536, $max_length - strlen($out)));
                 else if ($f === $pipes[2])
-                    $err .= fread($pipes[2], 16384);
+                    $err .= fread($pipes[2], 65536);
             }
             $now = microtime(true);
         }
