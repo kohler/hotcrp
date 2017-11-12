@@ -846,7 +846,7 @@ class Filer {
         if ($status != 0 || $err != "")
             error_log("$cmd problem: status $status, stderr $err");
         if ($max_length > 0 && strlen($out) === $max_length)
-            return explode("\n", rtrim($out) . "\n…");
+            return explode("\n", substr($out, 0, strrpos($out, "\n") + 1) . "…");
         else
             return explode("\n", rtrim($out));
     }
