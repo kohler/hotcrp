@@ -6085,6 +6085,7 @@ function save_tags() {
     $.ajax(hoturl_post("api/settags", {p: hotcrp_paperid}), {
         method: "POST", data: $("#tagform").serialize(), timeout: 4000,
         success: function (data) {
+            $("#tagform input").prop("disabled", false);
             if (data.ok) {
                 fold("tags", true);
                 save_tags.success(data);
