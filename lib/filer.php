@@ -819,9 +819,26 @@ class Filer {
         $cmd .= escapeshellarg($doc->filestore);
         $pipes = null;
         $proc = proc_open($cmd, [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
-        $out = stream_get_contents($pipes[1], $max_length);
+        // Some versions of PHP experience timeouts here; work around that.
+        $out = $err = "";
+        $now = microtime(true);
+        $end_time = $now + 5;
+        while ($now < $end_time
+               && ($max_length < 0 || $max_length > strlen($out))) {
+            $r = [$pipes[1], $pipes[2]];
+            $w = $e = [];
+            $delta = $end_time - $now;
+            $delta_sec = (int) $delta;
+            stream_select($r, $w, $e, $delta_sec, (int) (($delta - $delta_sec) * 1000000));
+            foreach ($r as $f) {
+                if ($f === $pipes[1])
+                    $out .= fread($pipes[1], $max_length < 0 ? 16384 : min(16384, $max_length - strlen($out)));
+                else if ($f === $pipes[2])
+                    $err .= fread($pipes[2], 16384);
+            }
+            $now = microtime(true);
+        }
         fclose($pipes[1]);
-        $err = stream_get_contents($pipes[2]);
         fclose($pipes[2]);
         $status = proc_close($proc);
         if ($err != "")
