@@ -823,7 +823,9 @@ class Filer {
         $out = $err = "";
         $now = microtime(true);
         $end_time = $now + 5;
-        while ($now < $end_time
+        $done = false;
+        while (!$done
+               && $now < $end_time
                && ($max_length < 0 || $max_length > strlen($out))) {
             $r = [$pipes[1], $pipes[2]];
             $w = $e = [];
@@ -831,9 +833,13 @@ class Filer {
             $delta_sec = (int) $delta;
             stream_select($r, $w, $e, $delta_sec, (int) (($delta - $delta_sec) * 1000000));
             foreach ($r as $f) {
-                if ($f === $pipes[1])
-                    $out .= fread($pipes[1], $max_length < 0 ? 65536 : min(65536, $max_length - strlen($out)));
-                else if ($f === $pipes[2])
+                if ($f === $pipes[1]) {
+                    $t = fread($pipes[1], $max_length < 0 ? 65536 : min(65536, $max_length - strlen($out)));
+                    if ($t === "")
+                        $done = true;
+                    else
+                        $out .= $t;
+                } else if ($f === $pipes[2])
                     $err .= fread($pipes[2], 65536);
             }
             $now = microtime(true);
@@ -845,8 +851,8 @@ class Filer {
             $err = preg_replace('/^tar: Ignoring unknown[^\n]*\n*/m', '', $err);
         if ($status != 0 || $err != "")
             error_log("$cmd problem: status $status, stderr $err");
-        if ($max_length > 0 && strlen($out) === $max_length)
-            return explode("\n", substr($out, 0, strrpos($out, "\n") + 1) . "…");
+        if (!$done && ($slash = strrpos($out, "\n")) > 0)
+            return explode("\n", substr($out, 0, $slash + 1) . "…");
         else
             return explode("\n", rtrim($out));
     }
