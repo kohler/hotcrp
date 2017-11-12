@@ -847,9 +847,9 @@ class Filer {
         fclose($pipes[1]);
         fclose($pipes[2]);
         $status = proc_close($proc);
-        if ($err != "")
+        if ($err !== "")
             $err = preg_replace('/^tar: Ignoring unknown[^\n]*\n*/m', '', $err);
-        if ($status != 0 || $err != "")
+        if (($status !== 0 && $status !== 2) || $err !== "")
             error_log("$cmd problem: status $status, stderr $err");
         if (!$done && ($slash = strrpos($out, "\n")) > 0)
             return explode("\n", substr($out, 0, $slash + 1) . "…");
