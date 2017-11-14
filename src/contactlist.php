@@ -711,12 +711,12 @@ class ContactList {
                 continue;
 
             $trclass = "k" . ($this->count % 2);
-            if ($show_colors && ($m = $row->viewable_color_classes($this->contact))) {
-                if (TagInfo::classes_have_colors($m)) {
-                    $trclass = $m;
+            if ($show_colors && ($k = $row->viewable_color_classes($this->contact))) {
+                if (str_ends_with($k, " tagbg")) {
+                    $trclass = $k;
                     $hascolors = true;
                 } else
-                    $trclass .= " $m";
+                    $trclass .= " " . $k;
             }
             if ($row->disabled && $this->contact->isPC)
                 $trclass .= " graytext";

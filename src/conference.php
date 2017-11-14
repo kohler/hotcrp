@@ -3140,7 +3140,7 @@ class Conf {
         $hpcj = $list = [];
         foreach ($this->pc_members() as $pcm) {
             $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_text_for($pcm), "email" => $pcm->email];
-            if (($color_classes = $user->user_span_color_classes_for($pcm)))
+            if (($color_classes = $user->user_color_classes_for($pcm)))
                 $j->color_classes = $color_classes;
             if ($this->sort_by_last && $pcm->lastName) {
                 $r = Text::analyze_name($pcm);

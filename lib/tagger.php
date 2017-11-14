@@ -326,7 +326,7 @@ class TagMap implements IteratorAggregate {
         return $this->color_re;
     }
 
-    function color_class_array($tags, $only_colors = false) {
+    function color_class_array($tags, $only_background = false) {
         if (is_array($tags))
             $tags = join(" ", $tags);
         if (!$tags || $tags === " " || !preg_match_all($this->color_regex(), $tags, $m))
@@ -338,13 +338,27 @@ class TagMap implements IteratorAggregate {
                     $classes[] = $k . "tag";
             } else
                 $classes[] = TagInfo::canonical_color($tag) . "tag";
-        if ($classes && $only_colors)
+        if ($classes && $only_background)
             $classes = array_filter($classes, "TagInfo::classes_have_colors");
-        if ($classes && count($classes) > 1) {
+        if (empty($classes))
+            return null;
+        if (count($classes) > 1) {
             sort($classes);
             $classes = array_unique($classes);
         }
-        return empty($classes) ? null : $classes;
+        if ($only_background)
+            $have_bg = true;
+        else {
+            $have_bg = false;
+            foreach ($classes as $k)
+                if (TagInfo::classes_have_colors($k)) {
+                    $have_bg = true;
+                    break;
+                }
+        }
+        if ($have_bg)
+            $classes[] = "tagbg";
+        return $classes;
     }
 
     function color_classes($tags, $no_pattern_fill = false) {

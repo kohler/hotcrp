@@ -2339,7 +2339,7 @@ div.pst span.hint {
 .bubble.tooltip {
 	margin: 0 8px;
 }
-.bubble.tooltip .tagcolorspan, .bubble.graphtip .tagcolorspan {
+.bubble.tooltip span.tagbg, .bubble.graphtip span.tagbg {
 	color: #2c2c33;
 }
 .bubble.suggest {
@@ -2821,12 +2821,12 @@ body#offline .revcard {
 	padding-top: 1px;
 	padding-bottom: 2px;
 }
-.tagcolorspan {
+span.tagbg {
 	display: inline-block;
 	padding-left: 2px;
 	padding-right: 2px;
 }
-del .tagcolorspan {
+del span.tagbg {
 	text-decoration-line: line-through;
 }
 

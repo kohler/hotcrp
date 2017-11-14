@@ -331,11 +331,8 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
                 $cid = CommentInfo::unparse_html_id($cx[0]);
                 $tclass = "cmtlink";
                 if (($tags = $cx[0]->viewable_tags($Me, null))
-                    && ($color = $cx[0]->conf->tags()->color_classes($tags))) {
-                    if (TagInfo::classes_have_colors($color))
-                        $tclass .= " tagcolorspan";
+                    && ($color = $cx[0]->conf->tags()->color_classes($tags)))
                     $tclass .= " $color taghl";
-                }
                 return "<span class=\"nb\"><a class=\"{$tclass}\" href=\"#{$cid}\">"
                     . $cx[0]->unparse_user_html($Me, null)
                     . "</a>"
