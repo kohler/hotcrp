@@ -143,13 +143,13 @@ a.q:active, a.qq:active, a.u:active, a.uu:active, a.nn:active, a.maillink:active
 a.q, a.qq, a.qx, a.x, a.xx, a.nn, a.btn,
 div.papmodex > a, div.papmodex:hover > a.noul, div.leftmenu-item > a,
 a.pnum, a.ptitle, a.maillink, u.x, .noul {
-	text-decoration: none;
+	text-decoration-line: none;
 }
 a.q:hover, a.qq:hover, a.x:hover,
 div.papmodex:hover > a, div.leftmenu-item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 .childfold:hover a.q, a.maillink:hover, a:hover u.x, .ul {
-	text-decoration: underline;
+	text-decoration-line: underline;
 }
 a.small {
 	font-size: smaller;
@@ -477,12 +477,12 @@ span.hastitle {
 }
 .tablinks1 .tll1 a.tla, .tablinks2 .tll2 a.tla,
 .tablinks3 .tll3 a.tla, .tablinks4 .tll4 a.tla {
-	text-decoration: none;
+	text-decoration-line: none;
 	color: black;
 }
 .tablinks1 .tll1 a.tla:hover, .tablinks2 .tll2 a.tla:hover,
 .tablinks3 .tll3 a.tla:hover, .tablinks4 .tll4 a.tla:hover {
-	text-decoration: underline;
+	text-decoration-line: underline;
 }
 .tll1, .tll2, .tll3, .tll4 {
 	position: relative;
@@ -529,12 +529,12 @@ span.hastitle {
 }
 .linelinks1 .lla1, .linelinks2 .lla2, .linelinks3 .lla3, .linelinks4 .lla4,
 .linelinks5 .lla5, .linelinks6 .lla6, .linelinks7 .lla7, .linelinks8 .lla8 {
-	text-decoration: none;
+	text-decoration-line: none;
 	color: black;
 }
 .linelinks1 .lla1:hover, .linelinks2 .lla2:hover, .linelinks3 .lla3:hover, .linelinks4 .lla4:hover,
 .linelinks5 .lla5:hover, .linelinks6 .lla6:hover, .linelinks7 .lla7:hover, .linelinks8 .lla8:hover {
-	text-decoration: underline;
+	text-decoration-line: underline;
 }
 .linelinks1 .lld1, .linelinks2 .lld2, .linelinks3 .lld3, .linelinks4 .lld4,
 .linelinks5 .lld5, .linelinks6 .lld6, .linelinks7 .lld7, .linelinks8 .lld8 {
@@ -656,7 +656,7 @@ span.expander {
 	width: 0.8em;
 	padding-right: 0.2em;
 	opacity: 0.65;
-	text-decoration: none;
+	text-decoration-line: none;
 	text-indent: 0;
 }
 span.expander > span.in0, span.expander > span.in1 {
@@ -676,7 +676,7 @@ span.expander > span.in0 {
 	border-radius: 5px;
 	display: inline-block;
 	padding: 2px 4px;
-	text-decoration: none;
+	text-decoration-line: none;
 	color: white;
 }
 .tbtn {
@@ -688,7 +688,7 @@ span.expander > span.in0 {
 .closebtn {
 	display: inline-block;
 	padding: 2px 4px;
-	text-decoration: none;
+	text-decoration-line: none;
 	border: 1px solid black;
 	color: black;
 	line-height: .85;
@@ -1788,7 +1788,7 @@ div.pl_autoassignment > em.plx {
 	font-weight: bold;
 }
 div.pl_autoassignment ins {
-	text-decoration: none;
+	text-decoration-line: none;
 }
 td.plh, th.plh {
 	border-bottom: 1px solid #999999;
@@ -1904,11 +1904,11 @@ hr.c {
 }
 
 .pl_sort {
-	text-decoration: none;
+	text-decoration-line: none;
 	color: #444488;
 }
 .pl_sort:hover {
-	text-decoration: underline;
+	text-decoration-line: underline;
 	color: black;
 }
 .pl_sorting_fwd:after {
@@ -1997,10 +1997,10 @@ tr.plx {
 	font-style: italic;
 }
 .underlinetag.taghl, .underlinetag .taghl {
-	text-decoration: underline;
+	text-decoration-line: underline;
 }
 .strikethroughtag.taghl, .strikethroughtag .taghl {
-	text-decoration: line-through;
+	text-decoration-line: line-through;
 }
 .bigtag.taghl, .bigtag .taghl {
 	font-size: 140%;
@@ -2047,7 +2047,7 @@ h1 .badge {
 	bottom: 2px;
 }
 a.qq:hover > .badge {
-	text-decoration: underline;
+	text-decoration-line: underline;
 }
 .whitebadge {
 	background: white;
@@ -2827,7 +2827,7 @@ body#offline .revcard {
 	padding-right: 2px;
 }
 del .tagcolorspan {
-	text-decoration: line-through;
+	text-decoration-line: line-through;
 }
 
 .words {
