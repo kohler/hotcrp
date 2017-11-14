@@ -5980,7 +5980,13 @@ return function (classes, class_prefix) {
         return fmap[index];
     // check canonical pattern name
     var tags = classes.split(/\s+/).sort(function (a, b) {
-        return cmap[a] && cmap[b] ? cmap[a] - cmap[b] : a.localeCompare(b);
+        var am = cmap[a], bm = cmap[b];
+        if (am && bm)
+            return am < bm ? -1 : 1;
+        else if (am || bm)
+            return am ? -1 : 1;
+        else
+            return a.localeCompare(b);
     }), i;
     for (i = 0; i < tags.length; )
         if (!cmap[tags[i]] || (i && tags[i] == tags[i - 1]))
