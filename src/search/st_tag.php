@@ -172,18 +172,19 @@ class Color_SearchTerm {
         $word = strtolower($word);
         $tm = new TagSearchMatcher;
         if ($srch->user->isPC) {
+            $dt = $srch->conf->tags();
             if ($word === "any" || $word === "none") {
                 $f = function ($t, $colors) { return !empty($colors); };
             } else if ($word === "color") {
-                $f = function ($t, $colors) {
+                $f = function ($t, $colors) use ($dt) {
                     foreach ($colors as $c) {
-                        if (TagInfo::classes_have_colors("{$c}tag"))
+                        if ($dt->is_background_style($c))
                             return true;
                     }
                     return false;
                 };
             } else {
-                $word = TagInfo::canonical_color($word);
+                $word = $dt->canonical_style($word);
                 $f = function ($t, $colors) use ($word) {
                     return !empty($colors) && array_search($word, $colors) !== false;
                 };

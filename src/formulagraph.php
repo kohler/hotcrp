@@ -194,7 +194,7 @@ class FormulaGraph {
                 if ($need_anal[$qi]) {
                     $c = [];
                     if ($prow->paperTags)
-                        $c = $this->conf->tags()->color_class_array($prow->viewable_tags($this->user), true);
+                        $c = $this->conf->tags()->color_class_array($prow->viewable_tags($this->user), TagMap::STYLE_BG);
                     if ($qcolors[$qi] !== null)
                         $c = array_values(array_intersect($qcolors[$qi], $c));
                     if (empty($c)) {

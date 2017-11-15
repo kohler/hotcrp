@@ -28,14 +28,14 @@ class TagMapItem {
     public $badges = null;
     public $emoji = null;
     public $autosearch = null;
-    function __construct($tag, Conf $conf) {
-        $this->conf = $conf;
-        $this->set_tag($tag);
+    function __construct($tag, TagMap $tagmap) {
+        $this->conf = $tagmap->conf;
+        $this->set_tag($tag, $tagmap);
     }
-    function set_tag($tag) {
+    function set_tag($tag, TagMap $tagmap) {
         $this->tag = $tag;
-        if (preg_match('/\A(?:' . $this->conf->tag_basic_colors . ')\z/i', $tag)) {
-            $this->colors[] = TagInfo::canonical_color($tag);
+        if (($color = $tagmap->canonical_style($tag))) {
+            $this->colors[] = $color;
             $this->basic_color = true;
         }
         if ($tag[0] === "~" && $tag[1] !== "~")
@@ -168,11 +168,56 @@ class TagMap implements IteratorAggregate {
     private $emoji_re = null;
     private $sitewide_re_part = null;
 
+    const STYLE_FG = 1;
+    const STYLE_BG = 2;
+    const STYLE_FG_BG = 3;
+    const STYLE_SYNONYM = 4;
+    private $style_info_lmap = [];
+    private $canonical_style_lmap = [];
+    private $basic_badges;
+
     private static $emoji_code_map = null;
     private static $multicolor_map = [];
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
+
+        $basic_colors = "red&|orange&|yellow&|green&|blue&|purple&|violet=purple|gray&|grey=gray|white&|bold|italic|underline|strikethrough|big|small|dim";
+        if (($o = $conf->opt("tagBasicColors"))) {
+            if (str_starts_with($o, "|"))
+                $basic_colors .= $o;
+            else
+                $basic_colors = $o;
+        }
+        preg_match_all('/([a-z@_.][-a-z0-9!@_:.\/]*)(\&?)(?:=([a-z@_.][-a-z0-9!@_:.\/]*))?/', strtolower($basic_colors), $ms, PREG_SET_ORDER);
+        foreach ($ms as $m) {
+            $m[3] = isset($m[3]) ? $m[3] : $m[1];
+            while (isset($this->style_info_lmap[$m[3]])
+                   && ($this->style_info_lmap[$m[3]] & self::STYLE_SYNONYM)) {
+                $m[3] = $this->canonical_style_lmap[$m[3]];
+            }
+            if ($m[3] !== $m[1] && isset($this->style_info_lmap[$m[3]])) {
+                $this->style_info_lmap[$m[1]] = $this->style_info_lmap[$m[3]] | self::STYLE_SYNONYM;
+                $this->canonical_style_lmap[$m[1]] = $m[3];
+            } else {
+                $this->style_info_lmap[$m[1]] = $m[2] ? self::STYLE_BG : self::STYLE_FG;
+                $this->canonical_style_lmap[$m[1]] = $m[1];
+            }
+        }
+
+        $this->basic_badges = "normal|red|orange|yellow|green|blue|purple|white|pink|gray";
+        if (($o = $conf->opt("tagBasicBadges"))) {
+            if (str_starts_with($o, "|"))
+                $this->basic_badges .= $o;
+            else
+                $this->basic_badges = $o;
+        }
+    }
+    function canonical_style($tag) {
+        return get($this->canonical_style_lmap, strtolower($tag), false);
+    }
+    function is_background_style($tag) {
+        return (get($this->style_info_lmap, strtolower($tag), 0) & self::STYLE_BG) !== 0;
     }
     function check_emoji_code($ltag) {
         $len = strlen($ltag);
@@ -193,7 +238,7 @@ class TagMap implements IteratorAggregate {
                 if ($i >= $version && preg_match($p->pattern, $ltag)) {
                     if (!$t) {
                         $t = clone $p;
-                        $t->set_tag($tag);
+                        $t->set_tag($tag, $this);
                         $t->pattern = false;
                         $t->pattern_instance = true;
                         $this->storage[$ltag] = $t;
@@ -223,7 +268,7 @@ class TagMap implements IteratorAggregate {
         $ltag = strtolower($tag);
         $t = get($this->storage, $ltag);
         if (!$t) {
-            $t = new TagMapItem($tag, $this->conf, 0);
+            $t = new TagMapItem($tag, $this);
             if (!TagInfo::basic_check($ltag))
                 return $t;
             $this->storage[$ltag] = $t;
@@ -316,9 +361,10 @@ class TagMap implements IteratorAggregate {
         return $this->sitewide_re_part;
     }
 
+
     function color_regex() {
         if (!$this->color_re) {
-            $re = "{(?:\\A| )(?:\\d*~|~~|)(" . $this->conf->tag_basic_colors;
+            $re = "{(?:\\A| )(?:\\d*~|~~|)(" . join("|", array_keys($this->style_info_lmap));
             foreach ($this->filter("colors") as $t)
                 $re .= "|" . $t->tag_regex();
             $this->color_re = $re . ")(?=\\z|[# ])}i";
@@ -326,37 +372,31 @@ class TagMap implements IteratorAggregate {
         return $this->color_re;
     }
 
-    function color_class_array($tags, $only_background = false) {
+    function color_class_array($tags, $match = self::STYLE_FG_BG) {
         if (is_array($tags))
             $tags = join(" ", $tags);
         if (!$tags || $tags === " " || !preg_match_all($this->color_regex(), $tags, $m))
             return null;
         $classes = null;
-        foreach ($m[1] as $tag)
-            if (($t = $this->check($tag)) && $t->colors) {
-                foreach ($t->colors as $k)
-                    $classes[] = $k . "tag";
-            } else
-                $classes[] = TagInfo::canonical_color($tag) . "tag";
-        if ($classes && $only_background)
-            $classes = array_filter($classes, "TagInfo::classes_have_colors");
+        $info = 0;
+        foreach ($m[1] as $tag) {
+            $ltag = strtolower($tag);
+            $t = $this->check($ltag);
+            $ks = $t ? $t->colors : [$ltag];
+            foreach ($ks as $k) {
+                if ($this->style_info_lmap[$k] & $match) {
+                    $classes[] = $this->canonical_style_lmap[$k] . "tag";
+                    $info |= $this->style_info_lmap[$k];
+                }
+            }
+        }
         if (empty($classes))
             return null;
         if (count($classes) > 1) {
             sort($classes);
             $classes = array_unique($classes);
         }
-        if ($only_background)
-            $have_bg = true;
-        else {
-            $have_bg = false;
-            foreach ($classes as $k)
-                if (TagInfo::classes_have_colors($k)) {
-                    $have_bg = true;
-                    break;
-                }
-        }
-        if ($have_bg)
+        if ($info & self::STYLE_BG)
             $classes[] = "tagbg";
         return $classes;
     }
@@ -376,10 +416,11 @@ class TagMap implements IteratorAggregate {
     }
 
     function canonical_colors() {
-        return array_values(array_filter(explode("|", $this->conf->tag_basic_colors),
-            function ($t) {
-                return TagInfo::canonical_color($t) === $t;
-            }));
+        $colors = [];
+        foreach ($this->canonical_style_lmap as $ltag => $canon_ltag)
+            if ($ltag === $canon_ltag)
+                $colors[] = $ltag;
+        return $colors;
     }
 
     function tags_with_color($f) {
@@ -387,25 +428,26 @@ class TagMap implements IteratorAggregate {
         foreach ($this as $t)
             if (call_user_func($f, $t->tag, $t->colors ? : []))
                 $a[] = $t->tag;
-        foreach (explode("|", $this->conf->tag_basic_colors) as $ltag)
+        foreach ($this->style_info_lmap as $ltag => $x)
             if (!isset($this->storage[$ltag])
-                && call_user_func($f, $ltag, [TagInfo::canonical_color($ltag)]))
+                && call_user_func($f, $ltag, [$this->canonical_style_lmap[$ltag]]))
                 $a[] = $ltag;
         return $a;
     }
+
 
     function badge_regex() {
         if (!$this->badge_re) {
             $re = "{(?:\\A| )(?:\\d*~|)(";
             foreach ($this->filter("badges") as $t)
                 $re .= $t->tag_regex() . "|";
-            $this->badge_re = substr($re, 0, -1) . ")(?:#[\\d.]+)?(?=\\z| )}i";
+            $this->badge_re = substr($re, 0, -1) . ")(?:#[-\\d.]+)?(?=\\z| )}i";
         }
         return $this->badge_re;
     }
 
     function canonical_badges() {
-        return explode("|", $this->conf->tag_basic_badges);
+        return explode("|", $this->basic_badges);
     }
 
     function emoji_regex() {
@@ -448,8 +490,9 @@ class TagMap implements IteratorAggregate {
         $ct = $conf->setting_data("tag_color", "");
         if ($ct !== "")
             foreach (explode(" ", $ct) as $k)
-                if ($k !== "" && ($p = strpos($k, "=")) !== false) {
-                    $map->add(substr($k, 0, $p))->colors[] = TagInfo::canonical_color(substr($k, $p + 1));
+                if ($k !== "" && ($p = strpos($k, "=")) !== false
+                    && ($kk = $map->canonical_style(substr($k, $p + 1)))) {
+                    $map->add(substr($k, 0, $p))->colors[] = $kk;
                     $map->has_colors = true;
                 }
         $bt = $conf->setting_data("tag_badge", "");
@@ -487,8 +530,10 @@ class TagMap implements IteratorAggregate {
                     }
                     if (($x = get($data, "color")))
                         foreach (is_string($x) ? [$x] : $x as $c) {
-                            $t->colors[] = TagInfo::canonical_color($c);
-                            $map->has_colors = true;
+                            if (($kk = $this->canonical_style($c))) {
+                                $t->colors[] = $kk;
+                                $map->has_colors = true;
+                            }
                         }
                     if (($x = get($data, "badge")))
                         foreach (is_string($x) ? [$x] : $x as $c) {
@@ -540,20 +585,6 @@ class TagInfo {
     static function basic_check($tag) {
         return $tag !== "" && strlen($tag) <= TAG_MAXLEN
             && preg_match('{\A' . TAG_REGEX . '\z}', $tag);
-    }
-
-    static function canonical_color($tag) {
-        $tag = strtolower($tag);
-        if ($tag === "violet")
-            return "purple";
-        else if ($tag === "grey")
-            return "gray";
-        else
-            return $tag;
-    }
-
-    static function classes_have_colors($classes) {
-        return preg_match('_\b(?:\A|\s)(?:red|orange|yellow|green|blue|purple|gray|white)tag(?:\z|\s)_', $classes);
     }
 
 

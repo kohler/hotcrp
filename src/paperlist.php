@@ -783,8 +783,9 @@ class PaperList {
         }
         if ($cc) {
             $trclass[] = $cc;
-            $rstate->hascolors = $rstate->hascolors || TagInfo::classes_have_colors($cc);
-        } else
+            $rstate->hascolors = $rstate->hascolors || str_ends_with($cc, " tagbg");
+        }
+        if (!$cc || !$rstate->hascolors)
             $trclass[] = "k" . $rstate->colorindex;
         if (($highlightclass = get($this->search->highlightmap, $row->paperId)))
             $trclass[] = $highlightclass[0] . "highlightmark";
