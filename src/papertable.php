@@ -1173,7 +1173,8 @@ class PaperTable {
                     '<span class="psfn">Tags:</span> ',
                     $tagger->unparse_and_link($viewable),
                     '</div>';
-            }
+            } else
+                echo '<hr class="c" />';
 
             echo '</div><div class="pspcard_open">';
             Ht::stash_script('$(".pspcard_fold").click(function(e){$(".pspcard_fold").hide();$(".pspcard_open").show();e.preventDefault();return false})');
