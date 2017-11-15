@@ -866,12 +866,13 @@ class Tagger {
                 continue;
             $lbase = strtolower($base);
             if (($link = $this->link($tag)))
-                $tx = '<a class="qq nw" href="' . $link . '">#' . $base . '</a>';
+                $tx = '<a class="nn nw" href="' . $link . '"><u class="x">#'
+                    . $base . '</u>' . substr($tag, strlen($base)) . '</a>';
             else
-                $tx = "#" . $base;
+                $tx = "#" . $tag;
             if (($cc = $dt->styles($base, TagMap::STYLE_FG)))
                 $tx = '<span class="' . join(" ", $cc) . ' taghl">' . $tx . '</span>';
-            $tt .= $tx . substr($tag, strlen($base)) . " ";
+            $tt .= $tx . " ";
         }
         return rtrim($tt);
     }
