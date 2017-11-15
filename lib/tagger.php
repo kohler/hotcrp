@@ -34,7 +34,7 @@ class TagMapItem {
     }
     function set_tag($tag, TagMap $tagmap) {
         $this->tag = $tag;
-        if (($color = $tagmap->canonical_style($tag))) {
+        if (($color = $tagmap->known_style($tag))) {
             $this->colors[] = $color;
             $this->basic_color = true;
         }
@@ -213,12 +213,6 @@ class TagMap implements IteratorAggregate {
                 $this->basic_badges = $o;
         }
     }
-    function canonical_style($tag) {
-        return get($this->canonical_style_lmap, strtolower($tag), false);
-    }
-    function is_background_style($tag) {
-        return (get($this->style_info_lmap, strtolower($tag), 0) & self::STYLE_BG) !== 0;
-    }
     function check_emoji_code($ltag) {
         $len = strlen($ltag);
         if ($len < 3 || $ltag[0] !== ":" || $ltag[$len - 1] !== ":")
@@ -362,6 +356,26 @@ class TagMap implements IteratorAggregate {
     }
 
 
+    function known_styles() {
+        return array_keys($this->style_info_lmap);
+    }
+    function known_style($tag) {
+        return get($this->canonical_style_lmap, strtolower($tag), false);
+    }
+    function is_known_style($tag, $match = self::STYLE_FG_BG) {
+        return (get($this->style_info_lmap, strtolower($tag), 0) & $match) !== 0;
+    }
+    function is_style($tag, $match = self::STYLE_FG_BG) {
+        $ltag = strtolower($tag);
+        if (($t = $this->check($ltag))) {
+            foreach ($t->colors ? : [] as $k)
+                if ($this->style_info_lmap[$k] & $match)
+                    return true;
+            return false;
+        } else
+            return (get($this->style_info_lmap, $ltag, 0) & $match) !== 0;
+    }
+
     function color_regex() {
         if (!$this->color_re) {
             $re = "{(?:\\A| )(?:\\d*~|~~|)(" . join("|", array_keys($this->style_info_lmap));
@@ -423,18 +437,6 @@ class TagMap implements IteratorAggregate {
         return $colors;
     }
 
-    function tags_with_color($f) {
-        $a = [];
-        foreach ($this as $t)
-            if (call_user_func($f, $t->tag, $t->colors ? : []))
-                $a[] = $t->tag;
-        foreach ($this->style_info_lmap as $ltag => $x)
-            if (!isset($this->storage[$ltag])
-                && call_user_func($f, $ltag, [$this->canonical_style_lmap[$ltag]]))
-                $a[] = $ltag;
-        return $a;
-    }
-
 
     function badge_regex() {
         if (!$this->badge_re) {
@@ -491,7 +493,7 @@ class TagMap implements IteratorAggregate {
         if ($ct !== "")
             foreach (explode(" ", $ct) as $k)
                 if ($k !== "" && ($p = strpos($k, "=")) !== false
-                    && ($kk = $map->canonical_style(substr($k, $p + 1)))) {
+                    && ($kk = $map->known_style(substr($k, $p + 1)))) {
                     $map->add(substr($k, 0, $p))->colors[] = $kk;
                     $map->has_colors = true;
                 }
@@ -530,7 +532,7 @@ class TagMap implements IteratorAggregate {
                     }
                     if (($x = get($data, "color")))
                         foreach (is_string($x) ? [$x] : $x as $c) {
-                            if (($kk = $this->canonical_style($c))) {
+                            if (($kk = $this->known_style($c))) {
                                 $t->colors[] = $kk;
                                 $map->has_colors = true;
                             }

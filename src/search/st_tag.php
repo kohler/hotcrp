@@ -173,23 +173,19 @@ class Color_SearchTerm {
         $tm = new TagSearchMatcher;
         if ($srch->user->isPC) {
             $dt = $srch->conf->tags();
-            if ($word === "any" || $word === "none") {
-                $f = function ($t, $colors) { return !empty($colors); };
-            } else if ($word === "color") {
-                $f = function ($t, $colors) use ($dt) {
-                    foreach ($colors as $c) {
-                        if ($dt->is_background_style($c))
-                            return true;
-                    }
-                    return false;
-                };
-            } else {
-                $word = $dt->canonical_style($word);
-                $f = function ($t, $colors) use ($word) {
-                    return !empty($colors) && array_search($word, $colors) !== false;
-                };
+            $tags = array_unique(array_merge(array_keys($dt->filter("colors")), $dt->known_styles()));
+            $known_style = $dt->known_style($word) . "tag";
+            foreach ($tags as $t) {
+                if ($word === "any" || $word === "none") {
+                } else if ($word === "color") {
+                    if (!$dt->is_style($t, TagMap::STYLE_BG))
+                        continue;
+                } else {
+                    if (array_search($known_style, $dt->color_class_array($t)) === false)
+                        continue;
+                }
+                $tm->tags[] = $t;
             }
-            $tm->tags = $srch->conf->tags()->tags_with_color($f);
         }
         $tm->include_twiddles($srch->user);
         return $tm->make_term()->negate_if($word === "none");

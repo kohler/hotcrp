@@ -2478,7 +2478,7 @@ class PaperSearch {
             $res[] = array("pri" => -1, "nosort" => true, "i" => array("style:any", "style:none", "color:any", "color:none"));
             foreach ($this->conf->tags()->canonical_colors() as $t) {
                 $res[] = "style:$t";
-                if ($this->conf->tags()->is_background_style($t))
+                if ($this->conf->tags()->is_known_style($t, TagMap::STYLE_BG))
                     $res[] = "color:$t";
             }
         }
