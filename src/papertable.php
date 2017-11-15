@@ -1151,6 +1151,15 @@ class PaperTable {
             "</div></div>\n\n";
     }
 
+    private function papstrip_tags_background_classes($viewable) {
+        $t = "has-tag-classes pscopen";
+        if (($color = $this->prow->conf->tags()->styles($viewable, TagMap::STYLE_BG))) {
+            TagMap::mark_pattern_fill($color);
+            $t .= " " . join(" ", $color);
+        }
+        return $t;
+    }
+
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
         global $Me;
         if (!$this->npapstrip) {
@@ -1160,8 +1169,7 @@ class PaperTable {
 
             if ($this->prow && ($viewable = $this->prow->viewable_tags($Me))) {
                 $tagger = new Tagger;
-                $color = $this->prow->conf->tags()->color_classes($viewable);
-                echo '<div class="', trim("has-tag-classes pscopen $color"), '">',
+                echo '<div class="', $this->papstrip_tags_background_classes($viewable), '">',
                     '<span class="psfn">Tags:</span> ',
                     $tagger->unparse_and_link($viewable),
                     '</div>';
@@ -1417,8 +1425,7 @@ class PaperTable {
         $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.open()"]);
-        $color = $this->prow->conf->tags()->color_classes($viewable);
-        echo '<div class="', trim("has-tag-classes pscopen $color"), '">';
+        echo '<div class="', $this->papstrip_tags_background_classes($viewable), '">';
 
         if ($is_editable)
             echo Ht::form_div(hoturl("paper", "p=" . $this->prow->paperId), ["id" => "tagform", "onsubmit" => "return save_tags()"]);
@@ -1430,7 +1437,7 @@ class PaperTable {
             $treport = PaperApi::tagreport($Me, $this->prow);
 
             // uneditable
-            echo '<div class="fn taghl">';
+            echo '<div class="fn">';
             if ($treport->warnings)
                 echo Ht::xmsg("warning", join("<br>", $treport->warnings));
             echo ($tx === "" ? "None" : $tx), '</div>';

@@ -386,7 +386,7 @@ class TagMap implements IteratorAggregate {
         return $this->color_re;
     }
 
-    function color_class_array($tags, $match = self::STYLE_FG_BG) {
+    function styles($tags, $match = self::STYLE_FG_BG) {
         if (is_array($tags))
             $tags = join(" ", $tags);
         if (!$tags || $tags === " " || !preg_match_all($this->color_regex(), $tags, $m))
@@ -415,17 +415,23 @@ class TagMap implements IteratorAggregate {
         return $classes;
     }
 
+    static function mark_pattern_fill($classes) {
+        $key = is_array($classes) ? join(" ", $classes) : $classes;
+        if (!isset(self::$multicolor_map[$key]) && strpos($key, " ") !== false) {
+            Ht::stash_script("make_pattern_fill(" . json_encode_browser($key) . ")");
+            self::$multicolor_map[$key] = true;
+        }
+    }
+
     function color_classes($tags, $no_pattern_fill = false) {
-        $classes = $this->color_class_array($tags);
+        $classes = $this->styles($tags);
         if (!$classes)
             return "";
         $key = join(" ", $classes);
         // This seems out of place---it's redundant if we're going to
         // generate JSON, for example---but it is convenient.
-        if (!$no_pattern_fill && count($classes) > 1 && !isset(self::$multicolor_map[$key])) {
-            Ht::stash_script("make_pattern_fill(" . json_encode_browser($key) . ")");
-            self::$multicolor_map[$key] = true;
-        }
+        if (!$no_pattern_fill && count($classes) > 1)
+            self::mark_pattern_fill($classes);
         return $key;
     }
 
@@ -863,7 +869,9 @@ class Tagger {
                 $tx = '<a class="qq nw" href="' . $link . '">#' . $base . '</a>';
             else
                 $tx = "#" . $base;
-            $tt .= substr($tag, strlen($base)) . " ";
+            if (($cc = $dt->styles($base, TagMap::STYLE_FG)))
+                $tx = '<span class="' . join(" ", $cc) . ' taghl">' . $tx . '</span>';
+            $tt .= $tx . substr($tag, strlen($base)) . " ";
         }
         return rtrim($tt);
     }

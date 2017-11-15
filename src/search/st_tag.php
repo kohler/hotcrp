@@ -181,7 +181,7 @@ class Color_SearchTerm {
                     if (!$dt->is_style($t, TagMap::STYLE_BG))
                         continue;
                 } else {
-                    if (array_search($known_style, $dt->color_class_array($t)) === false)
+                    if (array_search($known_style, $dt->styles($t)) === false)
                         continue;
                 }
                 $tm->tags[] = $t;

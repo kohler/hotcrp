@@ -5988,11 +5988,12 @@ return function (classes, class_prefix) {
         else
             return a.localeCompare(b);
     }), i;
-    for (i = 0; i < tags.length; )
+    for (i = 0; i < tags.length; ) {
         if (!cmap[tags[i]] || (i && tags[i] == tags[i - 1]))
             tags.splice(i, 1);
         else
             ++i;
+    }
     var canonical_index = class_prefix + tags.join(" ");
     if (canonical_index in fmap || tags.length <= 1) {
         fmap[index] = fmap[canonical_index] || null;
@@ -6107,7 +6108,7 @@ function save_tags() {
 save_tags.success = function (data) {
     data.color_classes && make_pattern_fill(data.color_classes, "", true);
     $(".has-tag-classes").each(function () {
-        var t = $.trim(this.className.replace(/(?: |^)\w*tag(?= |$)/g, " "));
+        var t = $.trim(this.className.replace(/(?: |^)\w*tag(?:bg)?(?= |$)/g, " "));
         this.className = t + " " + (data.color_classes || "");
     });
     var h = data.tags_view_html == "" ? "None" : data.tags_view_html,
