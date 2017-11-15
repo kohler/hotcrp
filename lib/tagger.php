@@ -845,27 +845,15 @@ class Tagger {
         return hoturl("search", ["q" => $q]);
     }
 
-    function unparse_and_link($viewable, $highlight = false) {
-        $vtags = $this->unparse($viewable);
-        if ($vtags === "")
+    function unparse_and_link($viewable) {
+        $tags = $this->unparse($viewable);
+        if ($tags === "")
             return "";
 
         // decorate with URL matches
+        $dt = $this->conf->tags();
         $tt = "";
-
-        // clean $highlight
-        $byhighlight = array();
-        $anyhighlight = false;
-        assert($highlight === false || is_array($highlight));
-        if ($highlight)
-            foreach ($highlight as $h) {
-                $tag = is_object($h) ? $h->tag : $h;
-                if (($pos = strpos($tag, "~")) !== false)
-                    $tag = substr($tag, $pos);
-                $byhighlight[strtolower($tag)] = "";
-            }
-
-        foreach (preg_split('/\s+/', $vtags) as $tag) {
+        foreach (preg_split('/\s+/', $tags) as $tag) {
             if (!($base = TagInfo::base($tag)))
                 continue;
             $lbase = strtolower($base);
@@ -873,17 +861,8 @@ class Tagger {
                 $tx = '<a class="qq nw" href="' . $link . '">#' . $base . '</a>';
             else
                 $tx = "#" . $base;
-            $tx .= substr($tag, strlen($base));
-            if (isset($byhighlight[$lbase])) {
-                $byhighlight[$lbase] .= "<strong>" . $tx . "</strong> ";
-                $anyhighlight = true;
-            } else
-                $tt .= $tx . " ";
+            $tt .= substr($tag, strlen($base)) . " ";
         }
-
-        if ($anyhighlight)
-            return rtrim(join("", $byhighlight) . $tt);
-        else
-            return rtrim($tt);
+        return rtrim($tt);
     }
 }
