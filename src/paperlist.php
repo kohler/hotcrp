@@ -476,7 +476,7 @@ class PaperList {
         usort($renderers, "Conf::xt_position_compare");
 
         $lllgroups = [];
-        $whichlll = 0;
+        $whichlll = -1;
         foreach ($renderers as $rf)
             if (($lllg = call_user_func($rf->renderer, $this))) {
                 if (is_string($lllg))
@@ -484,7 +484,7 @@ class PaperList {
                 array_unshift($lllg, $rf->name, $rf->title);
                 $lllgroups[] = $lllg;
                 if ($this->qreq->fn == $rf->name || $this->atab == $rf->name)
-                    $whichlll = count($lllgroups);
+                    $whichlll = count($lllgroups) - 1;
             }
 
         // Linelinks container
@@ -494,18 +494,20 @@ class PaperList {
                 . Ht::img("_.gif", "^^", "placthook") . "</td>";
             --$ncol;
         }
-        $foot .= '<td id="plact" class="plf pl_footer linelinks' . $whichlll . '" colspan="' . $ncol . '">';
+        $foot .= '<td id="plact" class="plf pl_footer linelinks" colspan="' . $ncol . '">';
 
         $foot .= "<table><tbody><tr>\n"
             . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a href="' . SelfHref::make($this->qreq, ["selectall" => 1]) . '#plact" onclick="return papersel(true)">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
             . "   </tr></tbody></table>";
         foreach ($lllgroups as $i => $lllg) {
-            $x = $i + 1;
-            $foot .= "<table><tbody><tr>\n"
-                . "    <td class=\"pl_footer_desc lll$x\"><a class=\"lla$x\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[0]]) . "#plact\" onclick=\"return focus_fold.call(this)\">" . $lllg[1] . "</a></td>\n";
+            $foot .= "<table class=\"linelink";
+            if ($i === $whichlll)
+                $foot .= " active";
+            $foot .= "\"><tbody><tr>\n"
+                . "    <td class=\"pl_footer_desc lll\"><a class=\"tla\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[0]]) . "#plact\" onclick=\"return focus_fold.call(this)\">" . $lllg[1] . "</a></td>\n";
             for ($j = 2; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
-                $class = isset($cell["class"]) ? "lld$x " . $cell["class"] : "lld$x";
+                $class = isset($cell["class"]) ? "lld " . $cell["class"] : "lld";
                 $foot .= "    <td class=\"$class\"";
                 if (isset($cell["id"]))
                     $foot .= " id=\"" . $cell["id"] . "\"";

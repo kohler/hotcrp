@@ -523,30 +523,29 @@ span.hastitle {
 
 
 /* Line links, as in bottom of search table */
-.linelinks1 .lll1, .linelinks2 .lll2, .linelinks3 .lll3, .linelinks4 .lll4,
-.linelinks5 .lll5, .linelinks6 .lll6, .linelinks7 .lll7, .linelinks8 .lll8 {
+.linelink.active .lll {
 	font-weight: bold;
 }
-.linelinks1 .lla1, .linelinks2 .lla2, .linelinks3 .lla3, .linelinks4 .lla4,
-.linelinks5 .lla5, .linelinks6 .lla6, .linelinks7 .lla7, .linelinks8 .lla8 {
+.linelink.active a.tla {
 	text-decoration-line: none;
-	color: black;
+	color: inherit;
 }
-.linelinks1 .lla1:hover, .linelinks2 .lla2:hover, .linelinks3 .lla3:hover, .linelinks4 .lla4:hover,
-.linelinks5 .lla5:hover, .linelinks6 .lla6:hover, .linelinks7 .lla7:hover, .linelinks8 .lla8:hover {
+.linelink.active a.tla:hover {
 	text-decoration-line: underline;
 }
-.linelinks1 .lld1, .linelinks2 .lld2, .linelinks3 .lld3, .linelinks4 .lld4,
-.linelinks5 .lld5, .linelinks6 .lld6, .linelinks7 .lld7, .linelinks8 .lld8 {
-	display: inline;
-}
-.linelinks1 td.lld1, .linelinks2 td.lld2, .linelinks3 td.lld3, .linelinks4 td.lld4,
-.linelinks5 td.lld5, .linelinks6 td.lld6, .linelinks7 td.lld7, .linelinks8 td.lld8 {
-	display: table-cell;
-}
-.lld1, .lld2, .lld3, .lld4, .lld5, .lld6, .lld7, .lld8 {
+.linelink .lld {
 	display: none;
 }
+.linelink.active .lld {
+	display: inline;
+}
+.linelink.active td.lld {
+	display: table-cell;
+}
+.linelink.active div.lld {
+	display: block;
+}
+
 
 /* search > display options */
 .dispopt-item, .dispopt-checkitem {

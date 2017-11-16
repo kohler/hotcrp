@@ -31,6 +31,27 @@ function serialize_object(x) {
 if (!window.JSON || !window.JSON.parse)
     window.JSON = {parse: $.parseJSON};
 
+function hasClass(e, k) {
+    if (e.classList)
+        return e.classList.contains(k);
+    else
+        return $(e).hasClass(k);
+}
+
+function removeClass(e, k) {
+    if (e.classList)
+        e.classList.remove(k);
+    else
+        $(e).removeClass(k);
+}
+
+function addClass(e, k) {
+    if (e.classList)
+        e.classList.add(k);
+    else
+        e.className += " " + k;
+}
+
 
 // callback combination
 function add_callback(cb1, cb2) {
@@ -1932,15 +1953,18 @@ function hiliter(elt, off) {
     else if (!elt || elt.preventDefault)
         elt = this;
     while (elt && elt.tagName
-           && (elt.tagName != "DIV" || !/\baahc\b/.test(elt.className)))
+           && (elt.tagName != "DIV" || !hasClass(elt, "aahc")))
         elt = elt.parentNode;
-    if (elt && elt.tagName && elt.className)
-        elt.className = elt.className.replace(" alert", "") + (off ? "" : " alert");
+    if (elt && elt.tagName) {
+        removeClass(elt, "alert");
+        if (!off)
+            addClass(elt, "alert");
+    }
 }
 
 function hiliter_children(form, on_unload) {
     function hilite() {
-        if (!$(this).hasClass("ignore-diff"))
+        if (!hasClass(this, "ignore-diff"))
             form_highlight(form, this);
     }
     $(form).on("change input", "input, select, textarea", hilite);
@@ -1949,7 +1973,7 @@ function hiliter_children(form, on_unload) {
             $(this).addClass("submitting");
         });
         $(window).on("beforeunload", function () {
-            if ($(form).hasClass("alert") && !$(form).hasClass("submitting"))
+            if (hasClass(form, "alert") && !hasClass(form, "submitting"))
                 return "If you leave this page now, your edits may be lost.";
         });
     }
@@ -1959,7 +1983,7 @@ function focus_at(felt) {
     felt.jquery && (felt = felt[0]);
     felt.focus();
     if (!felt.hotcrp_ever_focused) {
-        if (felt.select && $(felt).hasClass("want-select"))
+        if (felt.select && hasClass(felt, "want-select"))
             felt.select();
         else if (felt.setSelectionRange) {
             try {
@@ -2124,19 +2148,33 @@ window.focus_fold = (function ($) {
 var has_focused;
 
 function focus_fold(do_focus) {
-    var e = this, m;
-    while (e && !(m = e.className.match(/\b(?:lll|lld|tll|tld)(\d+)/)))
-        e = e.parentElement;
-    while (e && !/\b(?:tab|line)links\d/.test(e.className))
-        e = e.parentElement;
-    if (e) {
-        e.className = e.className.replace(/links[0-9]*/, 'links' + m[1]);
-        if (do_focus)
-            focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
-        has_focused = true;
-        return false;
-    } else
-        return true;
+    var e = this, m, f;
+    while (e) {
+        if (hasClass(e, "linelink")) {
+            for (f = e.parentElement; f && !hasClass(f, "linelinks"); f = f.parentElement) {
+            }
+            if (!f)
+                break;
+            addClass(e, "active");
+            $(f).find(".linelink").not(e).removeClass("active");
+            if (do_focus)
+                focus_within(e, ".lld *");
+            has_focused = true;
+            return false;
+        } else if ((m = e.className.match(/\b(?:lll|lld|tll|tld)(\d+)/))) {
+            while (e && !/\b(?:tab|line)links\d/.test(e.className))
+                e = e.parentElement;
+            if (!e)
+                break;
+            e.className = e.className.replace(/links[0-9]*/, 'links' + m[1]);
+            if (do_focus)
+                focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
+            has_focused = true;
+            return false;
+        } else
+            e = e.parentElement;
+    }
+    return true;
 }
 
 function jump(href) {
@@ -2157,7 +2195,7 @@ function handler() {
     var done = focus_fold.call(this, true);
     if (!done
         && this instanceof HTMLAnchorElement
-        && $(this).hasClass("has-focus-history"))
+        && hasClass(this, "has-focus-history"))
         push_history_state(this.href);
     return done;
 }
@@ -2508,12 +2546,12 @@ function author_table_events($j) {
         return true;
     });
     $j.on("click", "a", function () {
-        var $a = $(this), delta;
-        if ($a.hasClass("moveup"))
+        var delta;
+        if (hasClass(this, "moveup"))
             delta = -1;
-        else if ($a.hasClass("movedown"))
+        else if (hasClass(this, "movedown"))
             delta = 1;
-        else if ($a.hasClass("delete"))
+        else if (hasClass(this, "delete"))
             delta = Infinity;
         else
             return true;
@@ -5212,10 +5250,10 @@ function popup_skeleton() {
 function popup_near(elt, anchor) {
     if (elt.jquery)
         elt = elt[0];
-    if ($(elt).hasClass("popupbg"))
+    if (hasClass(elt, "popupbg"))
         elt = elt.childNodes[0];
     var parent_offset = {left: 0, top: 0};
-    if ($(elt.parentNode).hasClass("popupbg")) {
+    if (hasClass(elt.parentNode, "popupbg")) {
         elt.parentNode.style.display = "block";
         parent_offset = $(elt.parentNode).offset();
     }
@@ -5783,7 +5821,7 @@ function plinfo(type, dofold) {
     var statistics = false;
     for (var t in fields)
         if (fields[t].has_statistics
-            && $(self).hasClass("fold" + fields[t].foldnum + "o")) {
+            && hasClass(self, "fold" + fields[t].foldnum + "o")) {
             statistics = true;
             break;
         }
@@ -6234,7 +6272,7 @@ function unload_list() {
 function row_click(evt) {
     var $tgt = $(evt.target);
     if (evt.target.tagName !== "A"
-        && $(this.parentElement).hasClass("pltable")
+        && hasClass(this.parentElement, "pltable")
         && ($tgt.hasClass("pl_id")
             || $tgt.hasClass("pl_title")
             || $tgt.closest("td").hasClass("pl_rowclick"))) {
@@ -6252,7 +6290,7 @@ function row_click(evt) {
     }
 }
 $(document).on("click", "a", function (evt) {
-    if ($(this).hasClass("fn5"))
+    if (hasClass(this, "fn5"))
         return foldup(this, evt, {n: 5, f: false});
     else {
         handle_list(this, this.getAttribute("href"));
