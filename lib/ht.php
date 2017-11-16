@@ -350,15 +350,16 @@ class Ht {
             . self::extra($js) . " />";
     }
 
-    static private function make_link($html, $href, $onclick, $js) {
+    static private function make_link($html, $href, $js) {
         if ($js === null)
             $js = [];
         if ($href && !isset($js["href"]))
             $js["href"] = $href;
-        if ($onclick && !isset($js["onclick"]))
-            $js["onclick"] = $onclick;
         if (isset($js["onclick"]) && !preg_match('/(?:^return|;)/', $js["onclick"]))
             $js["onclick"] = "return " . $js["onclick"];
+        if (isset($js["onclick"])
+            && (!isset($js["class"]) || !preg_match('/(?:\A|\s)(?:ui|btn|tla)(?=\s|\z)/', $js["class"])))
+            error_log(caller_landmark(2) . ": JS Ht::link lacks class");
         if (!get($js, "href"))
             $js["href"] = "#";
         return "<a" . self::extra($js) . ">" . $html . "</a>";
@@ -366,25 +367,9 @@ class Ht {
 
     static function link($html, $href, $js = null) {
         if ($js === null && is_array($href))
-            return self::make_link($html, null, null, $href);
+            return self::make_link($html, null, $href);
         else
-            return self::make_link($html, $href, null, $js);
-    }
-
-    static function js_link($html, $onclick, $js = null) {
-        if ($js === null && is_array($onclick))
-            return self::make_link($html, null, null, $onclick);
-        else
-            return self::make_link($html, null, $onclick, $js);
-    }
-
-    static function auto_link($html, $dest, $js = null) {
-        if ($js === null && is_array($dest))
-            return self::make_link($html, null, null, $dest);
-        else if ($dest && strcspn($dest, " ({") < strlen($dest))
-            return self::make_link($html, null, $dest, $js);
-        else
-            return self::make_link($html, $dest, null, $js);
+            return self::make_link($html, $href, $js);
     }
 
     static function link_urls($html) {

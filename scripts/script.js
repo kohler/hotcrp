@@ -609,7 +609,7 @@ event_key.modifier = function (evt) {
 };
 event_key.is_default_a = function (evt, a) {
     return !evt.metaKey && !evt.ctrlKey && evt.which != 2
-        && (!a || !a.getAttribute("onclick"));
+        && (!a || !/(?:^|\s)(?:ui|btn|tla)(?=\s|$)/i.test(a.className || ""));
 };
 return event_key;
 })();
@@ -1548,7 +1548,7 @@ function tracker_html(mytracker) {
     if (dl.is_admin) {
         var dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
         t += '<div class="need-tooltip" id="trackerlogo" data-tooltip="' + escape_entities(dt) + '"></div>';
-        t += '<div style="float:right"><a class="closebtn need-tooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-tooltip="Stop meeting tracker">x</a></div>';
+        t += '<div style="float:right"><a class="ui closebtn need-tooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-tooltip="Stop meeting tracker">x</a></div>';
     } else
         t += '<div id="trackerlogo"></div>';
     if (dl.tracker && dl.tracker.position_at)
@@ -1574,7 +1574,7 @@ function display_tracker() {
     if ((e = $$("trackerconnectbtn"))) {
         if (mytracker) {
             e.className = "tbtn-on need-tooltip";
-            e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div></div>");
+            e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ui ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div></div>");
         } else {
             e.className = "tbtn need-tooltip";
             e.setAttribute("data-tooltip", "Start meeting tracker");
@@ -2953,14 +2953,14 @@ function add_review(rrow) {
     // edit/text links
     hc.push('<div class="floatright">', '</div>');
     if (rrow.editable)
-        hc.push('<a href="' + hoturl_html("review", rlink) + '" class="xx">'
+        hc.push('<a class="xx" href="' + hoturl_html("review", rlink) + '">'
                 + '<img class="b" src="' + assetsurl + 'images/edit48.png" alt="[Edit]" width="16" height="16" />'
                 + '&nbsp;<u>Edit</u></a><br />');
-    hc.push_pop('<a href="' + hoturl_html("review", rlink + "&text=1") + '" class="xx">'
+    hc.push_pop('<a class="xx" href="' + hoturl_html("review", rlink + "&text=1") + '">'
                 + '<img class="b" src="' + assetsurl + 'images/txt.png" alt="[Text]" />'
                 + '&nbsp;<u>Plain text</u></a>');
 
-    hc.push('<h3><a href="' + hoturl_html("review", rlink) + '" class="u">'
+    hc.push('<h3><a class="u" href="' + hoturl_html("review", rlink) + '">'
             + 'Review' + (rrow.ordinal ? '&nbsp;#' + rid : '') + '</a></h3>');
 
     // author info
@@ -3096,7 +3096,7 @@ function comment_identity_time(cj) {
                + cj.ordinal + '</span></a></div>');
     if (cj.author && cj.author_hidden)
         t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
-               + '<a class="q" href="#" onclick="return fold(\'cid' + cj.cid + '\',null,4)" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
+               + '<a class="ui q" href="#" onclick="return fold(\'cid' + cj.cid + '\',null,4)" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
                + cj.author + '</span></div>');
     else if (cj.author && cj.blind && cj.visibility == "au")
         t.push('<div class="cmtname">[' + cj.author + ']</div>');
@@ -3159,7 +3159,7 @@ function render_editing(hc, cj) {
         hc.push('<input type="hidden" name="review_token" value="' + escape_entities(cj.review_token) + '" />');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
     if (fmt.has_preview)
-        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="#" class="togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
+        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a class="ui togglepreview" href="#" data-format="' + (fmt.format || 0) + '">Preview</a>';
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60" style="clear:both"></textarea>');
     if (!cj.response && !cj.by_author) {
@@ -3383,7 +3383,7 @@ function render_cmt(j, cj, editing, msg) {
     // header
     hc.push('<div class="cmtt">', '</div>');
     if (cj.is_new && !editing) {
-        hc.push('<h3><a class="q fn cmteditor" href="#">+&nbsp;', '</a></h3>');
+        hc.push('<h3><a class="q ui fn cmteditor" href="#">+&nbsp;', '</a></h3>');
         if (cj.response)
             hc.push_pop(cj.response == "1" ? "Add Response" : "Add " + cj.response + " Response");
         else
@@ -3391,7 +3391,7 @@ function render_cmt(j, cj, editing, msg) {
     } else if (cj.is_new && !cj.response)
         hc.push('<h3>Add Comment</h3>');
     else if (cj.editable && !editing) {
-        t = '<div class="cmtinfo floatright"><a href="#" class="xx editor cmteditor"><u>Edit</u></a></div>';
+        t = '<div class="cmtinfo floatright"><a class="xx ui editor cmteditor" href="#"><u>Edit</u></a></div>';
         cj.response ? $(t).prependTo(chead) : hc.push(t);
     }
     t = comment_identity_time(cj);
@@ -3462,7 +3462,7 @@ function add(cj, editing) {
         var $c = $("#body").children().last();
         if (!$c.hasClass("cmtcard") && ($pc = $("#body > .cmtcard").last()).length) {
             if (!cj.is_new)
-                $pc.append('<div class="cmtcard_link"><a href="#' + cid + '" class="qq">Later comments &#x25BC;</a></div>');
+                $pc.append('<div class="cmtcard_link"><a class="qq" href="#' + cid + '">Later comments &#x25BC;</a></div>');
         }
         if (!$c.hasClass("cmtcard") || cj.response || $c.hasClass("response")) {
             var t;
@@ -3476,7 +3476,7 @@ function add(cj, editing) {
                 t = '<div class="cmtcard">';
             $c = $(t + '<div class="cmtcard_body"></div></div>').appendTo("#body");
             if (!cj.response && $pc && $pc.length)
-                $c.prepend('<div class="cmtcard_link"><a href="#' + ($pc.find("[id]").last().attr("id")) + '" class="qq">Earlier comments &#x25B2;</a></div>');
+                $c.prepend('<div class="cmtcard_link"><a class="qq" href="#' + ($pc.find("[id]").last().attr("id")) + '">Earlier comments &#x25B2;</a></div>');
         }
         if (cj.response)
             j = $('<div class="cmtg"></div>');
@@ -5183,7 +5183,7 @@ function edit_anno(locator) {
         hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32" tabindex="1000" /></td></tr>');
         hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" tabindex="1000" />', '</td></tr>');
         if (anno.annoid)
-            hc.push(' <a class="closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete group">x</a>');
+            hc.push(' <a class="ui closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete group">x</a>');
         hc.pop_n(2);
     }
     function show_dialog(rv) {
@@ -5566,7 +5566,7 @@ function render_row_tags(div) {
             t = '<span class="fn5"><em class="plx">' + f.title + ':</em> ' + ct.join(" ") + '</span>' + t;
     }
     if (t != "" && ptr.getAttribute("data-tags-editable") != null) {
-        t += ' <span class="hoveronly"><span class="barsep">·</span> <a class="edittags-link" href="#">Edit</a></span>';
+        t += ' <span class="hoveronly"><span class="barsep">·</span> <a class="ui edittags-link" href="#">Edit</a></span>';
         if (!has_edittags_link) {
             $(ptr).closest("tbody").on("click", "a.edittags-link", edittags_link_onclick);
             has_edittags_link = true;
@@ -5907,7 +5907,7 @@ function edit_formulas() {
         hc.push('<div class="editformulas-formula" data-formula-number="' + nformulas + '">', '</div>');
         hc.push('<div class="f-i"><div class="f-c">Name</div><div class="f-e">');
         if (f.editable) {
-            hc.push('<div style="float:right"><a class="closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete formula">x</a></div>');
+            hc.push('<div style="float:right"><a class="ui closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete formula">x</a></div>');
             hc.push('<textarea class="editformulas-name" name="formulaname_' + nformulas + '" rows="1" cols="60" style="width:37.5rem;width:calc(99% - 2.5em)">' + escape_entities(f.name) + '</textarea>');
             hc.push('<hr class="c" />');
         } else

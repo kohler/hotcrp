@@ -593,7 +593,7 @@ if (count($pctags)) {
 $pctyp_sel[] = array("__flip__", -1, "flip");
 $sep = "";
 foreach ($pctyp_sel as $pctyp) {
-    echo $sep, "<a href='#pc_", $pctyp[0], "' onclick='",
+    echo $sep, "<a class=\"ui\" href='#pc_", $pctyp[0], "' onclick='",
         "papersel(", $pctyp[1], ",\"pcs[]\");\$\$(\"pctyp_sel\").checked=true;return false'>",
         $pctyp[2], "</a>";
     $sep = ", ";
@@ -643,7 +643,7 @@ for ($i = 1; $i == 1 || isset($Qreq["bpa$i"]); ++$i) {
         echo "or &nbsp;";
     echo '</td><td class="lentry">', $selector_text;
     if ($i == 1)
-        echo ' &nbsp;to the same paper &nbsp;(<a href="#" onclick="return badpairs_change(true)">More</a> &nbsp;·&nbsp; <a href="#" onclick="return badpairs_change(false)">Fewer</a>)';
+        echo ' &nbsp;to the same paper &nbsp;(<a class="ui" href="#" onclick="return badpairs_change(true)">More</a> &nbsp;·&nbsp; <a class="ui" href="#" onclick="return badpairs_change(false)">Fewer</a>)';
     echo "</td></tr>\n";
 }
 echo "</tbody></table></div>\n";

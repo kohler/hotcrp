@@ -497,7 +497,7 @@ class PaperList {
         $foot .= '<td id="plact" class="plf pl_footer linelinks" colspan="' . $ncol . '">';
 
         $foot .= "<table><tbody><tr>\n"
-            . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a href="' . SelfHref::make($this->qreq, ["selectall" => 1]) . '#plact" onclick="return papersel(true)">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
+            . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a class="ui" href="' . SelfHref::make($this->qreq, ["selectall" => 1]) . '#plact" onclick="return papersel(true)">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
             . "   </tr></tbody></table>";
         foreach ($lllgroups as $i => $lllg) {
             $foot .= "<table class=\"linelink";
@@ -977,23 +977,23 @@ class PaperList {
     private function _make_title_header_extra($rstate, $fieldDef, $show_links) {
         $titleextra = "";
         if (isset($rstate->row_folded))
-            $titleextra .= '<span class="sep"></span><a class="fn3" href="#" onclick="return fold(\'pl\',0,3)">Show all papers</a><a class="fx3" href="#" onclick="return fold(\'pl\',1,3)">Hide unlikely conflicts</a>';
+            $titleextra .= '<span class="sep"></span><a class="ui fn3" href="#" onclick="return fold(\'pl\',0,3)">Show all papers</a><a class="ui fx3" href="#" onclick="return fold(\'pl\',1,3)">Hide unlikely conflicts</a>';
         if ($this->has("authors") && $show_links) {
             $titleextra .= "<span class='sep'></span>";
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER)
-                $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
+                $titleextra .= '<a class="ui fn1" href="#" onclick="return plinfo(\'au\',false)">Show authors</a><a class="ui fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
             else if ($this->user->is_manager() && !$this->has("openau"))
-                $titleextra .= '<a class="fn1 fn2" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',false)">Show authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
+                $titleextra .= '<a class="ui fn1 fn2" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',false)">Show authors</a><a class="ui fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
             else if ($this->user->is_manager() && $this->has("anonau"))
-                $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',true)">Show non-anonymous authors</a><a class="fx1 fn2" href="#" onclick="return plinfo(\'anonau\',false)">Show all authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
+                $titleextra .= '<a class="ui fn1" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',true)">Show non-anonymous authors</a><a class="ui fx1 fn2" href="#" onclick="return plinfo(\'anonau\',false)">Show all authors</a><a class="ui fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
             else
-                $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show non-anonymous authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
+                $titleextra .= '<a class="ui fn1" href="#" onclick="return plinfo(\'au\',false)">Show non-anonymous authors</a><a class="ui fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
         }
         if ($show_links)
             foreach ($fieldDef as $fdef)
                 if ($fdef->name == "tags" && $fdef->fold && $fdef->has_content) {
                     $titleextra .= "<span class='sep'></span>";
-                    $titleextra .= "<a class='fn$fdef->fold' href='#' onclick='return plinfo(\"tags\",0)'>Show tags</a><a class='fx$fdef->fold' href='#' onclick='return plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
+                    $titleextra .= "<a class='ui fn$fdef->fold' href='#' onclick='return plinfo(\"tags\",0)'>Show tags</a><a class='ui fx$fdef->fold' href='#' onclick='return plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
                 }
         return $titleextra ? "<span class='pl_titleextra'>$titleextra</span>" : "";
     }
@@ -1396,7 +1396,7 @@ class PaperList {
                     $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->search->is_order_anno}\">";
                     if ($rstate->titlecol)
                         $colhead .= "<td class=\"plh\" colspan=\"$rstate->titlecol\"></td>";
-                    $colhead .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a href=\"#\" onclick=\"return plinfo_tags.edit_anno(this)\">Annotate order</a></td></tr>\n";
+                    $colhead .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a class=\"ui\" href=\"#\" onclick=\"return plinfo_tags.edit_anno(this)\">Annotate order</a></td></tr>\n";
                 }
             }
 

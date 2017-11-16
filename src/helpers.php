@@ -285,13 +285,13 @@ function json_exit($json, $arg2 = null) {
 
 function foldbutton($foldtype, $foldnum = 0, $content = "") {
     $foldnumid = ($foldnum ? ",$foldnum" : "");
-    return '<a href="#" class="q" onclick="return fold(\''
+    return '<a class="ui q" href="#" onclick="return fold(\''
         . $foldtype . '\',null' . $foldnumid . ')">'
         . expander(null, $foldnum) . $content . '</a>';
 }
 
 function foldupbutton($foldnum = 0, $content = "", $j = null) {
-    return '<a href="#" class="q" onclick="return foldup(this,event,'
+    return '<a class="ui q" href="#" onclick="return foldup(this,event,'
         . ($j ? htmlspecialchars(json_encode_browser($j)) : $foldnum) . ')">'
         . expander(null, $foldnum) . $content . '</a>';
 }
@@ -942,7 +942,7 @@ function actionBar($mode = null, $prow = null) {
         $x .= '</td>';
 
         if ($Me->privChair && $listtype == "p")
-            $x .= "  <td id=\"trackerconnect\" class=\"vbar\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"tbtn need-tooltip\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
+            $x .= "  <td id=\"trackerconnect\" class=\"vbar\"><a id=\"trackerconnectbtn\" class=\"tbtn need-tooltip\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
     }
 
     return $x . '<td class="vbar gopaper">' . goPaperForm($goBase, $xmode) . "</td></tr></table>";

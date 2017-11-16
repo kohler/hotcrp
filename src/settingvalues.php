@@ -702,7 +702,7 @@ class SettingValues extends MessageSet {
         $si = $this->si($name);
         $si->default_value = $this->conf->message_default_html($name);
         $current = $this->curv($name);
-        $description = '<a class="q" href="#" onclick="return foldup(this,event)">'
+        $description = '<a class="ui q" href="#" onclick="return foldup(this,event)">'
             . expander(null, 0) . $description . '</a>';
         echo '<div class="fold', ($current == $si->default_value ? "c" : "o"), '" data-fold="true">',
             '<div class="', $class, ' childfold" onclick="return foldup(this,event)">',

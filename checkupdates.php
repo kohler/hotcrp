@@ -60,7 +60,7 @@ if ($Me->privChair && isset($_REQUEST["data"])
                 $m .= "<div class='bigid'>First unaffected commit: " . htmlspecialchars($update["to"]);
                 if ($errid)
                     $m .= " <span class='barsep'>·</span> "
-                        . "<a href='#' onclick='return check_version.ignore(\"$errid\")'>Ignore for two days</a>";
+                        . "<a class=\"ui\" href='#' onclick='return check_version.ignore(\"$errid\")'>Ignore for two days</a>";
                 $m .= "</div>";
             }
             $messages[] = $m . "</div>\n";

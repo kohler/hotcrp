@@ -563,11 +563,17 @@ function echo_modes($hlbulk) {
     echo '<div class="psmode">',
         '<div class="', ($hlbulk == 0 ? "papmodex" : "papmode"), '">',
         Ht::link($newProfile || $Me->email == $Acct->email ? "Your profile" : "Profile", selfHref(["u" => null])),
-        '</div><div class="', ($hlbulk == 1 ? "papmodex" : "papmode"), '">',
-        Ht::auto_link("New account", $newProfile ? "fold('bulk',true,9)" : hoturl("profile", "u=new")),
-        '</div><div class="', ($hlbulk == 2 ? "papmodex" : "papmode"), '">',
-        Ht::auto_link("Bulk update", $newProfile ? "fold('bulk',false,9)" : hoturl("profile", "u=new&amp;bulkregister=1")),
-        '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";
+        '</div><div class="', ($hlbulk == 1 ? "papmodex" : "papmode"), '">';
+    if ($newProfile)
+        echo Ht::link("New account", "#", ["onclick" => "fold('bulk',true,9)", "class" => "ui"]);
+    else
+        echo Ht::link("New account", hoturl("profile", "u=new"));
+    echo '</div><div class="', ($hlbulk == 2 ? "papmodex" : "papmode"), '">';
+    if ($newProfile)
+        echo Ht::link("Bulk update", "#", ["onclick" => "fold('bulk',false,9)", "class" => "ui"]);
+    else
+        echo Ht::link("Bulk update", hoturl("profile", "u=new&amp;bulkregister=1"));
+    echo '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";
 }
 
 
@@ -743,7 +749,7 @@ if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct))
             Ht::stash_script("function shift_password(dir){var form=$$(\"accountform\");fold(\"account\",dir);if(form&&form.whichpassword)form.whichpassword.value=dir?\"\":\"t\";return false}");
             if (Contact::password_storage_cleartext())
                 echo " <span class=\"sep\"></span>";
-            echo "<span class='f-cx'><a class='fn' href='#' onclick='return shift_password(0)'>Show password</a><a class='fx' href='#' onclick='return shift_password(1)'>Hide password</a></span>";
+            echo "<span class='f-cx'><a class='ui fn' href='#' onclick='return shift_password(0)'>Show password</a><a class='ui fx' href='#' onclick='return shift_password(1)'>Hide password</a></span>";
         }
         echo "</div>\n";
     }

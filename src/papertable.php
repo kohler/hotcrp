@@ -299,14 +299,14 @@ class PaperTable {
         if (!$fold) {
             $n = (is_array($name) ? $name[0] : $name);
             if ($editfolder)
-                $c .= "<a class=\"q fn\" "
+                $c .= "<a class=\"ui q fn\" "
                     . "href=\"" . selfHref(array("atab" => $what))
                     . "\" onclick=\"return foldup(this,event$foldnumarg)\">"
                     . $n . "</a><span class=\"fx\">" . $n . "</span>";
             else
                 $c .= $n;
         } else {
-            $c .= '<a class="q" href="#" onclick="return foldup(this,event'
+            $c .= '<a class="ui q" href="#" onclick="return foldup(this,event'
                 . $foldnumarg . ')"';
             if (($title = defval($extra, "foldtitle")))
                 $c .= ' title="' . $title . '"';
@@ -322,7 +322,7 @@ class PaperTable {
         $c .= "</span>";
         if ($editfolder) {
             $c .= "<span class=\"pstedit fn\">"
-                . "<a class=\"xx need-tooltip\" href=\"" . selfHref(array("atab" => $what))
+                . "<a class=\"ui xx need-tooltip\" href=\"" . selfHref(array("atab" => $what))
                 . "\" onclick=\"return foldup(this,event$foldnumarg)\" data-tooltip=\"Edit\">"
                 . "<span class=\"psteditimg\">"
                 . Ht::img("edit48.png", "[Edit]", "editimg")
@@ -534,12 +534,12 @@ class PaperTable {
             if (($stamps = self::pdf_stamps_html($doc)))
                 echo '<span class="sep"> </span>', $stamps;
             if ($has_cf && ($this->cf->failed || $this->cf->need_run))
-                echo "<span class='sep'> </span><a href='#' onclick='return docheckformat.call(this, $documentType)'>Check format</a>";
+                echo "<span class='sep'> </span><a class='ui' href='#' onclick='return docheckformat.call(this, $documentType)'>Check format</a>";
             else if ($has_cf) {
                 if (!$this->cf->has_problem())
                     echo '<span class="sep"></span><span class="confirm">Format OK</span>';
                 if ($this->cf->possible_run)
-                    echo '<span class="sep"></span><a href="#" onclick="return docheckformat.call(this, ', $documentType, ')">Recheck format</a>';
+                    echo '<span class="sep"></span><a class="ui" href="#" onclick="return docheckformat.call(this, ', $documentType, ')">Recheck format</a>';
             }
             echo "</td></tr></table>\n";
         }
@@ -569,7 +569,7 @@ class PaperTable {
         $uploader .= " />";
         if ($doc && $optionType)
             $uploader .= " <span class='barsep'>·</span> "
-                . "<a id='remover_$inputid' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
+                . "<a id='remover_$inputid' class='ui' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
         if ($doc)
             $uploader .= "</div>";
 
@@ -635,7 +635,7 @@ class PaperTable {
         echo "</div></div></div>";
         if ($extra)
             echo '<div class="fn6 fx7 longtext-fader"></div>',
-                '<div class="fn6 fx7 longtext-expander"><a class="x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
+                '<div class="fn6 fx7 longtext-expander"><a class="ui x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
         echo "</div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");
@@ -819,7 +819,7 @@ class PaperTable {
             '" onclick="return aufoldup(event)">',
             '<span class="pavfn">';
         if (!$viewable || $this->allFolded)
-            echo '<a class="q" href="#" onclick="return aufoldup(event)" title="Toggle author display">';
+            echo '<a class="ui q" href="#" onclick="return aufoldup(event)" title="Toggle author display">';
         if (!$viewable)
             echo '<span class="fn8">Authors</span><span class="fx8">';
         if ($this->allFolded)
@@ -839,13 +839,13 @@ class PaperTable {
             $inauthors = "[blind] ";
         echo '<div class="pavb">';
         if (!$viewable)
-            echo '<a class="q fn8" href="#" onclick="return aufoldup(event)" title="Toggle author display">',
+            echo '<a class="ui q fn8" href="#" onclick="return aufoldup(event)" title="Toggle author display">',
                 '+&nbsp;<i>Hidden for blind review</i>',
                 '</a><div class="fx8">';
         if ($this->allFolded)
             echo '<div class="fn9">',
                 $this->authorData($aulist, "last", null, $inauthors),
-                ' <a href="#" onclick="return aufoldup(event)">[details]</a>',
+                ' <a class="ui" href="#" onclick="return aufoldup(event)">[details]</a>',
                 '</div><div class="fx9">';
         echo $this->authorData($aulist, "col", $Me, $inauthors);
         if ($this->allFolded)
@@ -1035,7 +1035,7 @@ class PaperTable {
             ($open ? "foldo" : "foldc"),
             '"><div class="papet childfold fn0" ',
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
-            '><span class="papfn"><a class="qq" href="#" ',
+            '><span class="papfn"><a class="ui qq" href="#" ',
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
             ' title="Edit contacts">', expander(true),
             $this->field_name("Contacts"),

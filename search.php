@@ -422,7 +422,7 @@ if ($pl_text) {
             $fjs[] = $fj;
         }
         Ht::stash_script("edit_formulas.formulas=" . json_encode_browser($fjs));
-        $display_options->item(40, '<div class="dispopt-item"><a href="#" onclick="edit_formulas();return false">Edit formulas</a></div>');
+        $display_options->item(40, '<div class="dispopt-item"><a class="ui" href="#" onclick="edit_formulas();return false">Edit formulas</a></div>');
     }
 }
 
@@ -541,7 +541,7 @@ if ($Me->isPC || $Me->privChair) {
         echo_request_as_hidden_inputs(true);
         echo "<table id='ssearchnew' class='foldc'>",
             "<tr><td>", foldbutton("ssearchnew"), "</td>",
-            "<td><a class='q fn' href='#' onclick='return fold(\"ssearchnew\")'>New saved search</a><div class='fx'>",
+            "<td><a class='ui q fn' href='#' onclick='return fold(\"ssearchnew\")'>New saved search</a><div class='fx'>",
             "Save ";
         if ($Qreq->q)
             echo "search “", htmlspecialchars($Qreq->q), "”";
