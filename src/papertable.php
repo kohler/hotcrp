@@ -815,11 +815,11 @@ class PaperTable {
 
         // header with folding
         echo '<div class="pg">',
-            '<div class="pavt childfold', $this->error_class("authors"),
-            '" onclick="return aufoldup(event)">',
-            '<span class="pavfn">';
+            '<div class="pavt childfold want-aufoldup', $this->error_class("authors"),
+            '"><span class="pavfn">';
+        Ht::stash_script('$(document).on("click",".want-aufoldup",aufoldup)', "aufoldup");
         if (!$viewable || $this->allFolded)
-            echo '<a class="ui q" href="#" onclick="return aufoldup(event)" title="Toggle author display">';
+            echo '<a class="ui q want-aufoldup" href="#" title="Toggle author display">';
         if (!$viewable)
             echo '<span class="fn8">Authors</span><span class="fx8">';
         if ($this->allFolded)
@@ -839,13 +839,13 @@ class PaperTable {
             $inauthors = "[blind] ";
         echo '<div class="pavb">';
         if (!$viewable)
-            echo '<a class="ui q fn8" href="#" onclick="return aufoldup(event)" title="Toggle author display">',
+            echo '<a class="ui q want-aufoldup fn8" href="#" title="Toggle author display">',
                 '+&nbsp;<i>Hidden for blind review</i>',
                 '</a><div class="fx8">';
         if ($this->allFolded)
             echo '<div class="fn9">',
                 $this->authorData($aulist, "last", null, $inauthors),
-                ' <a class="ui" href="#" onclick="return aufoldup(event)">[details]</a>',
+                ' <a class="ui want-aufoldup" href="#">[details]</a>',
                 '</div><div class="fx9">';
         echo $this->authorData($aulist, "col", $Me, $inauthors);
         if ($this->allFolded)
