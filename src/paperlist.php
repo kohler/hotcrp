@@ -1182,7 +1182,7 @@ class PaperList {
         $t = '  <tr class="pl_statheadrow fx8">';
         if ($rstate->titlecol)
             $t .= "<td colspan=\"{$rstate->titlecol}\" class=\"plstat\"></td>";
-        $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics", ["n" => 7, "s" => "statistics"]) . "</td></tr>\n";
+        $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics", ["n" => 7, "st" => "statistics"]) . "</td></tr>\n";
         foreach (self::$stats as $stat) {
             $t .= '  <tr';
             if ($this->_row_id_pattern)
@@ -1431,8 +1431,7 @@ class PaperList {
             $url = Navigation::siteurl() . $url . (strpos($url, "?") ? "&" : "?") . "sort={sort}";
             $enter .= "\" data-sort-url-template=\"" . htmlspecialchars($url);
         }
-        $enter .= "\" data-fold=\"true\" data-fold-session=\""
-            . htmlspecialchars(json_encode()) . "\">\n";
+        $enter .= "\" data-fold=\"true\">\n";
         if (self::$include_stash)
             $enter .= Ht::unstash();
         $exit = "</table>";
