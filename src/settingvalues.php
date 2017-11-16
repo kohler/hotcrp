@@ -203,7 +203,8 @@ class Si {
         for ($i = 0; $i < $nall; ++$i) {
             $j = self::$all[$i];
             if ($Conf->xt_allowed($j) && !isset($all[$j->name])) {
-                while ($j->merge && $i + 1 < $nall && $j->name === self::$all[$i + 1]->name) {
+                while (isset($j->merge) && $j->merge && $i + 1 < $nall
+                       && $j->name === self::$all[$i + 1]->name) {
                     unset($j->merge);
                     $j = object_replace_recursive(self::$all[$i + 1], $j);
                     ++$i;
