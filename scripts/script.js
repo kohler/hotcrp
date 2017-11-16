@@ -2166,7 +2166,7 @@ function focus_fold(do_focus) {
                 e = e.parentElement;
             if (!e)
                 break;
-            e.className = e.className.replace(/links[0-9]*/, 'links' + m[1]);
+            e.className = e.className.replace(/links\d+/, 'links' + m[1]);
             if (do_focus)
                 focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
             has_focused = true;
@@ -6290,7 +6290,9 @@ function row_click(evt) {
     }
 }
 $(document).on("click", "a", function (evt) {
-    if (hasClass(this, "fn5"))
+    if (hasClass(this, "tla"))
+        return focus_fold.call(this);
+    else if (hasClass(this, "fn5"))
         return foldup(this, evt, {n: 5, f: false});
     else {
         handle_list(this, this.getAttribute("href"));

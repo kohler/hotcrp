@@ -427,7 +427,7 @@ if ($pl_text) {
 }
 
 
-echo '<div id="searchform" class="tablinks', $activetab, ' clearfix">',
+echo '<div id="searchform" class="linelinks tablinks', $activetab, ' clearfix">',
     '<div class="tlx"><div class="tld1">';
 
 // Basic search
@@ -606,12 +606,12 @@ echo "</div>";
 
 // Tab selectors
 echo '<div class="tllx"><table><tr>',
-  "<td><div class='tll1'><a class='tla has-focus-history' onclick='return focus_fold.call(this)' href=\"\">Search</a></div></td>
-  <td><div class='tll2'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#advanced\">Advanced search</a></div></td>\n";
+  "<td><div class='tll1'><a class='tla has-focus-history' href=\"\">Search</a></div></td>
+  <td><div class='tll2'><a class='tla nw has-focus-history' href=\"#advanced\">Advanced search</a></div></td>\n";
 if ($ss)
-    echo "  <td><div class='tll4'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#savedsearches\">Saved searches</a></div></td>\n";
+    echo "  <td><div class='tll4'><a class='tla nw has-focus-history' href=\"#savedsearches\">Saved searches</a></div></td>\n";
 if ($pl->count > 0)
-    echo "  <td><div class='tll3'><a class='tla nw has-focus-history' onclick='return focus_fold.call(this)' href=\"#view\">View options</a></div></td>\n";
+    echo "  <td><div class='tll3'><a class='tla nw has-focus-history' href=\"#view\">View options</a></div></td>\n";
 echo "</tr></table></div></div>\n\n";
 if ($pl->count == 0)
     Ht::stash_script("focus_fold.call(\$(\"#searchform .tll$activetab\")[0])");

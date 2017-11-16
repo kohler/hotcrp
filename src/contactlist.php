@@ -472,7 +472,7 @@ class ContactList {
         $types = array("nameemail" => "Names and emails");
         if ($this->contact->privChair)
             $types["pcinfo"] = "PC info";
-        $t .= "<span class=\"linelink\"><a class=\"tla lll\" href=\"#\" onclick=\"return focus_fold.call(this)\">Download</a><span class=\"lld\"><b>:</b> &nbsp;"
+        $t .= "<span class=\"linelink\"><a class=\"tla lll\" href=\"#\">Download</a><span class=\"lld\"><b>:</b> &nbsp;"
             . Ht::select("getaction", $types, null, ["class" => "want-focus"])
             . "&nbsp; " . Ht::submit("getgo", "Go")
             . "</span></span>";
@@ -480,14 +480,14 @@ class ContactList {
         $barsep = " <span class='barsep'>·</span> ";
         if ($this->contact->privChair) {
             $t .= $barsep;
-            $t .= "<span class=\"linelink\"><a class=\"tla lll\" href=\"#\" onclick=\"return focus_fold.call(this)\">Tag</a><span class=\"lld\"><b>:</b> &nbsp;";
+            $t .= "<span class=\"linelink\"><a class=\"tla lll\" href=\"#\">Tag</a><span class=\"lld\"><b>:</b> &nbsp;";
             $t .= Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), req("tagtype"))
                 . ' &nbsp;tag(s) &nbsp;'
                 . Ht::entry("tag", req("tag"), ["size" => 15, "class" => "want-focus", "onfocus" => "autosub('tagact',this)"])
                 . ' &nbsp;' . Ht::submit("tagact", "Go") . '</span></span>';
 
             $t .= $barsep;
-            $t .= "<span class=\"linelink\"><a class=\"tla lll\" href=\"#\" onclick=\"return focus_fold.call(this)\">Modify</a><span class=\"lld\"><b>:</b> &nbsp;";
+            $t .= "<span class=\"linelink\"><a class=\"tla lll\" href=\"#\">Modify</a><span class=\"lld\"><b>:</b> &nbsp;";
             $t .= Ht::select("modifytype", array("disableaccount" => "Disable",
                                                  "enableaccount" => "Enable",
                                                  "resetpassword" => "Reset password",
