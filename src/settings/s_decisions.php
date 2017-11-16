@@ -143,7 +143,7 @@ static function render(SettingValues $sv) {
     $sv->echo_messages_near("final_open");
     echo '<div class="fold2o" data-fold="true">';
     echo '<table>';
-    $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx2">:</span></b>', "void foldup(this,event,{f:'c'})");
+    $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx2">:</span></b>', "void foldup.call(this,event,{f:'c'})");
     echo '<tr class="fx2"><td></td><td><table><tbody class="secondary-settings">';
     $sv->echo_entry_row("final_soft", "Deadline");
     $sv->echo_entry_row("final_done", "Hard deadline");
@@ -155,7 +155,7 @@ static function render(SettingValues $sv) {
     echo "</td></tr></table>",
         "<p class=\"settingtext\">To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</p>",
         "</div>\n\n";
-    Ht::stash_script("foldup(\$\$('cbfinal_open'),null,{f:\"c\"})");
+    Ht::stash_script("foldup.call(\$\$('cbfinal_open'),null,{f:\"c\"})");
 }
 
     static function crosscheck(SettingValues $sv) {

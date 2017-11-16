@@ -2058,8 +2058,8 @@ function fold(elt, dofold, foldnum, foldsessiontype) {
     return false;
 }
 
-function foldup(e, event, opts) {
-    var dofold = false, attr, m, foldnum;
+function foldup(event, opts) {
+    var e = this, dofold = false, attr, m, foldnum;
     if (typeof opts === "number")
         opts = {n: opts};
     else if (!opts)
@@ -2104,9 +2104,9 @@ function aufoldup(event) {
         m9 = e.className.match(/\bfold9([co])\b/),
         m8 = e.className.match(/\bfold8([co])\b/);
     if (m9 && (!m8 || m8[1] == "o"))
-        foldup(e, event, {n: 9, s: "foldpaperp"});
+        foldup.call(e, event, {n: 9, s: "foldpaperp"});
     if (m8 && (!m9 || m8[1] == "c" || m9[1] == "o")) {
-        foldup(e, event, {n: 8, s: "foldpapera"});
+        foldup.call(e, event, {n: 8, s: "foldpapera"});
         if (m8[1] == "o" && $$("foldpscollab"))
             fold("pscollab", 1);
     }
@@ -3625,7 +3625,7 @@ function make_pseditor(type, url) {
         val = jQuery(edite).val();
     function cancel() {
         jQuery(edite).val(val);
-        foldup(folde, null, {f: true});
+        foldup.call(folde, null, {f: true});
     }
     function done(ok, message) {
         jQuery(folde).find(".psfn .savesuccess, .psfn .savefailure").remove();
@@ -3645,7 +3645,7 @@ function make_pseditor(type, url) {
                function (data) {
                    if (data.ok) {
                        done(true);
-                       foldup(folde, null, {f: true});
+                       foldup.call(folde, null, {f: true});
                        val = saveval;
                        var p = folde.getElementsByTagName("p")[0];
                        p.innerHTML = data.result || edite.options[edite.selectedIndex].innerHTML;
@@ -3690,7 +3690,7 @@ function make_selector_shortcut(type) {
         var e = $$("fold" + type);
         if (e) {
             e.className += " psfocus";
-            foldup(e, null, {f: false});
+            foldup.call(e, null, {f: false});
             jQuery(e).scrollIntoView();
             if ((e = find(e))) {
                 focus_at(e);
@@ -6295,7 +6295,7 @@ $(document).on("click", "a", function (evt) {
     if (hasClass(this, "tla"))
         return focus_fold.call(this);
     else if (hasClass(this, "fn5"))
-        return foldup(this, evt, {n: 5, f: false});
+        return foldup.call(this, evt, {n: 5, f: false});
     else {
         handle_list(this, this.getAttribute("href"));
         return true;
@@ -6364,7 +6364,7 @@ function save_tag_index(e) {
            function (data) {
                if (data.ok) {
                    save_tags.success(data);
-                   foldup(j[0]);
+                   foldup.call(j[0]);
                    done(true);
                } else {
                    e.focus();

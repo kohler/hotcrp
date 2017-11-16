@@ -13,7 +13,7 @@ class BanalSettings {
 
         echo '<table class="', ($sv->curv("sub_banal$suffix") ? "foldo" : "foldc"), '" data-fold="true">';
         $sv->echo_checkbox_row("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>",
-                               "void foldup(this,null,{f:'c'})");
+                               "void foldup.call(this,null,{f:'c'})");
         echo '<tr class="fx"><td></td><td class="top">',
             Ht::hidden("has_sub_banal$suffix", 1),
             '<table><tbody class="secondary-settings">';
@@ -26,7 +26,7 @@ class BanalSettings {
         $sv->echo_entry_row("sub_banal_bodylineheight$suffix", "Minimum line height", null, ["after_entry" => "&nbsp;pt"]);
         $sv->echo_entry_row("sub_banal_columns$suffix", "Columns");
         echo "</tbody></table></td></tr></table>";
-        Ht::stash_script('$(function(){foldup($$("cbsub_banal' . $suffix . '"),null,{f:"c"})})');
+        Ht::stash_script('$(function(){foldup.call($$("cbsub_banal' . $suffix . '"),null,{f:"c"})})');
     }
     static private function cf_status(CheckFormat $cf) {
         if ($cf->failed)

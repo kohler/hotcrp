@@ -42,7 +42,7 @@ class Tracks_SettingRenderer {
                         $question, "{$type}_track$tnum"),
             "</td><td class=\"settings-track-perm\">",
             Ht::select("{$type}_track$tnum", $perm, $tclass,
-                       $sv->sjs("{$type}_track$tnum", array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
+                       $sv->sjs("{$type}_track$tnum", array("onchange" => "void foldup.call(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
             " &nbsp;</td><td class=\"settings-track-tag\">",
             Ht::entry("${type}tag_track$tnum", $ttag,
                       $sv->sjs("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)"))),

@@ -291,7 +291,7 @@ function foldbutton($foldtype, $foldnum = 0, $content = "") {
 }
 
 function foldupbutton($foldnum = 0, $content = "", $j = null) {
-    return '<a class="ui q" href="#" onclick="return foldup(this,event,'
+    return '<a class="ui q" href="#" onclick="return foldup.call(this,event,'
         . ($j ? htmlspecialchars(json_encode_browser($j)) : $foldnum) . ')">'
         . expander(null, $foldnum) . $content . '</a>';
 }

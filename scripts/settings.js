@@ -16,9 +16,9 @@ function next_lexicographic_permutation(i, size) {
 
 function settings_option_type() {
     var v = this.value;
-    foldup(this, null, {n: 2, f: !/:final/.test(v)});
-    foldup(this, null, {n: 3, f: v != "pdf:final"});
-    foldup(this, null, {n: 4, f: v != "selector" && v != "radio"});
+    foldup.call(this, null, {n: 2, f: !/:final/.test(v)});
+    foldup.call(this, null, {n: 3, f: v != "pdf:final"});
+    foldup.call(this, null, {n: 4, f: v != "selector" && v != "radio"});
     return true;
 }
 
@@ -380,7 +380,7 @@ function option_value_html(fieldj, value) {
 function view_unfold(event) {
     var $f = $(event.target).closest(".settings-revfield");
     if ($f.hasClass("fold2c") || !form_differs($f))
-        foldup(event.target, event, {n: 2});
+        foldup.call(event.target, event, {n: 2});
     return false;
 }
 
@@ -524,13 +524,13 @@ function rfs(data) {
         if (!text_eq($j.val(), data.req[i])) {
             $j.val(data.req[i]);
             hiliter("reviewform_container");
-            foldup($j[0], null, {n: 2, f: false});
+            foldup.call($j[0], null, {n: 2, f: false});
         }
     }
     for (i in data.errf || {}) {
         $j = $(".errloc_" + i);
         $j.addClass("error");
-        foldup($j[0], null, {n: 2, f: false});
+        foldup.call($j[0], null, {n: 2, f: false});
     }
 };
 
@@ -539,7 +539,7 @@ function add_field(fid) {
     original[fid] = original[fid] || {};
     original[fid].position = fieldorder.length;
     append_field(fid, fieldorder.length);
-    foldup($("#revfield_" + fid)[0], null, {n: 2, f: false});
+    foldup.call($("#revfield_" + fid)[0], null, {n: 2, f: false});
     hiliter("reviewform_container");
     return true;
 }

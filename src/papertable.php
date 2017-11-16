@@ -294,19 +294,19 @@ class PaperTable {
 
         $c = "<div class=\"$divclass" . $this->error_class($what);
         if (($fold || $editfolder) && !get($extra, "float"))
-            $c .= " childfold\" onclick=\"return foldup(this,event$foldnumarg)";
+            $c .= " childfold\" onclick=\"return foldup.call(this,event$foldnumarg)";
         $c .= "\"><span class=\"$hdrclass\">";
         if (!$fold) {
             $n = (is_array($name) ? $name[0] : $name);
             if ($editfolder)
                 $c .= "<a class=\"ui q fn\" "
                     . "href=\"" . selfHref(array("atab" => $what))
-                    . "\" onclick=\"return foldup(this,event$foldnumarg)\">"
+                    . "\" onclick=\"return foldup.call(this,event$foldnumarg)\">"
                     . $n . "</a><span class=\"fx\">" . $n . "</span>";
             else
                 $c .= $n;
         } else {
-            $c .= '<a class="ui q" href="#" onclick="return foldup(this,event'
+            $c .= '<a class="ui q" href="#" onclick="return foldup.call(this,event'
                 . $foldnumarg . ')"';
             if (($title = defval($extra, "foldtitle")))
                 $c .= ' title="' . $title . '"';
@@ -323,7 +323,7 @@ class PaperTable {
         if ($editfolder) {
             $c .= "<span class=\"pstedit fn\">"
                 . "<a class=\"ui xx need-tooltip\" href=\"" . selfHref(array("atab" => $what))
-                . "\" onclick=\"return foldup(this,event$foldnumarg)\" data-tooltip=\"Edit\">"
+                . "\" onclick=\"return foldup.call(this,event$foldnumarg)\" data-tooltip=\"Edit\">"
                 . "<span class=\"psteditimg\">"
                 . Ht::img("edit48.png", "[Edit]", "editimg")
                 . "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
@@ -635,7 +635,7 @@ class PaperTable {
         echo "</div></div></div>";
         if ($extra)
             echo '<div class="fn6 fx7 longtext-fader"></div>',
-                '<div class="fn6 fx7 longtext-expander"><a class="ui x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
+                '<div class="fn6 fx7 longtext-expander"><a class="ui x" href="#" onclick="return foldup.call(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
         echo "</div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");
@@ -1034,9 +1034,9 @@ class PaperTable {
             '<div id="foldcontactauthors" class="papeg ',
             ($open ? "foldo" : "foldc"),
             '"><div class="papet childfold fn0" ',
-            "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
+            "onclick=\"\$\$('setcontacts').value=2;return foldup.call(this,event)\"",
             '><span class="papfn"><a class="ui qq" href="#" ',
-            "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
+            "onclick=\"\$\$('setcontacts').value=2;return foldup.call(this,event)\"",
             ' title="Edit contacts">', expander(true),
             $this->field_name("Contacts"),
             '</a></span></div>',
