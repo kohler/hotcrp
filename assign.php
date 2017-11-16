@@ -523,15 +523,18 @@ if ($Me->can_administer($prow)) {
 echo "</div></div>\n";
 
 // add external reviewers
+$req = "Request an external review";
+if (!$Me->allow_administer($prow) && $Conf->setting("extrev_chairreq"))
+    $req = "Propose an external review";
 echo Ht::form($loginUrl), '<div class="aahc revcard"><div class="revcard_head">',
-    "<h3>Request an external review</h3>\n",
-    "<div class='hint'>External reviewers get access to their assigned papers, including ";
+    "<h3>", $req, "</h3>\n",
+    "<div class='hint'>External reviewers may view their assigned papers, including ";
 if ($Conf->setting("extrev_view") >= 2)
-    echo "the other reviewers' identities and ";
+    echo "the other reviewers’ identities and ";
 echo "any eventual decision.  Before requesting an external review,
  you should generally check personally whether they are interested.";
 if ($Me->allow_administer($prow))
-    echo "\nTo create a review with no associated reviewer, leave Name and Email blank.";
+    echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
 echo '</div></div><div class="revcard_body">';
 echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>Name</div>

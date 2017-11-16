@@ -74,7 +74,8 @@ static function render(SettingValues $sv) {
 
     // Deadlines
     echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";
-    echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.<br />', ($sv->type_hint("date") ? : ""), '</p>';
+    echo '<p class="settingtext">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>';
+    echo '<p class="hint">', ($sv->type_hint("date") ? : ""), '</p>';
 
     $rounds = $sv->conf->round_list();
     if ($sv->use_req()) {
@@ -163,9 +164,10 @@ static function render(SettingValues $sv) {
     // External reviews
     echo "<h3 class=\"settings g\">External reviews</h3>\n";
 
+    echo '<p class="settingtext">Any PC reviewer can propose an external review; secondary PC reviewers can delegate their reviews to external reviewers.</p>', "\n";
     echo '<table id="foldpcrev_editdelegate" class="fold2o"><tbody>';
-    $sv->echo_checkbox_row("extrev_chairreq", "PC chair must approve proposed external reviewers");
-    $sv->echo_checkbox_row("pcrev_editdelegate", "PC members can edit external reviews they requested", "pcrev_editdelegate_change()");
+    $sv->echo_checkbox_row("extrev_chairreq", "PC chair must approve all external reviewers");
+    $sv->echo_checkbox_row("pcrev_editdelegate", "PC members can edit delegated external reviews (and other external reviews they requested)", "pcrev_editdelegate_change()");
     Ht::stash_script('function pcrev_editdelegate_change() { fold("pcrev_editdelegate",!$$("cbpcrev_editdelegate").checked,2); } $(pcrev_editdelegate_change)');
     echo '<tr class="fx2"><td></td><td>';
     $sv->echo_checkbox("extrev_approve", "Requesters must approve external reviews after they are submitted");
