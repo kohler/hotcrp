@@ -198,15 +198,19 @@ class Si {
             expand_json_includes_callback($olist, "Si::_add_json");
         usort(self::$all, "Conf::xt_priority_compare");
 
-        $known = $all = [];
-        foreach (self::$all as $j) {
-            if (!isset($known[$j->name]) && $Conf->xt_allowed($j)) {
-                $known[$j->name] = true;
-                if (Conf::xt_enabled($j)) {
-                    Conf::xt_resolve_require($j);
-                    $class = get_s($j, "factory_class", "Si");
-                    $all[$j->name] = new $class($j);
+        $all = [];
+        $nall = count(self::$all);
+        for ($i = 0; $i < $nall; ++$i) {
+            $j = self::$all[$i];
+            if ($Conf->xt_allowed($j) && !isset($all[$j->name])) {
+                while ($j->merge && $i + 1 < $nall && $j->name === self::$all[$i + 1]->name) {
+                    unset($j->merge);
+                    $j = object_replace_recursive(self::$all[$i + 1], $j);
+                    ++$i;
                 }
+                Conf::xt_resolve_require($j);
+                $class = get_s($j, "factory_class", "Si");
+                $all[$j->name] = new $class($j);
             }
         }
         self::$all = $all;
