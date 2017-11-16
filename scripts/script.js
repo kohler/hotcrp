@@ -835,6 +835,8 @@ function rangeclick(evt, elt, kind) {
     return true;
 }
 
+$(document).on("click", "input.want-range-click", rangeclick);
+
 
 // bubbles and tooltips
 var make_bubble = (function () {

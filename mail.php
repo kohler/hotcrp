@@ -287,9 +287,9 @@ class MailSender {
                 echo "<td class='mhx'></td>";
             else {
                 ++$this->cbcount;
-                echo '<td class="mhcb"><input type="checkbox" class="cb" name="', $cbkey,
+                echo '<td class="mhcb"><input type="checkbox" class="cb want-range-click" name="', $cbkey,
                     '" value="1" checked="checked" data-range-type="mhcb" id="psel', $this->cbcount,
-                    '" onclick="rangeclick(event,this)" /></td>';
+                    '" /></td>';
             }
             echo '<td class="mhnp nw">', $k, ":</td>",
                 '<td class="mhdp">', $vh, "</td></tr>\n";

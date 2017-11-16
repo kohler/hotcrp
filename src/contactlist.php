@@ -307,8 +307,8 @@ class ContactList {
             $this->any->sel = true;
             $c = "";
             if ($fieldId == self::FIELD_SELECTOR_ON)
-                $c = " checked='checked'";
-            return "<input type='checkbox' class='cb' name='pap[]' value='$row->contactId' tabindex='1' id='psel$this->count' onclick='rangeclick(event,this)' $c/>";
+                $c = ' checked="checked"';
+            return '<input type="checkbox" class="cb want-range-click" name="pap[]" value="' . $row->contactId . '" tabindex="1"' . $c . ' />';
         case self::FIELD_HIGHTOPICS:
         case self::FIELD_LOWTOPICS:
             if (!($topics = $row->topic_interest_map()))

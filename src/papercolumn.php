@@ -129,7 +129,7 @@ class SelectorPaperColumn extends PaperColumn {
             unset($row->folded);
         }
         return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
-            . '<input type="checkbox" class="cb" name="pap[]" value="' . $row->paperId . '" tabindex="3" onclick="rangeclick(event,this)"' . $c . ' />';
+            . '<input type="checkbox" class="cb want-range-click" name="pap[]" value="' . $row->paperId . '" tabindex="3"' . $c . ' />';
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $this->checked($pl, $row) ? "Y" : "N";
