@@ -2071,6 +2071,8 @@ function foldup(event, opts) {
         opts = {n: opts};
     else if (!opts)
         opts = {};
+    if (!("n" in opts) && (x = e.getAttribute("data-fold-number")))
+        opts.n = +x;
     if (opts.f === "c")
         opts.f = !e.checked;
     while (e && (!e.id || e.id.substr(0, 4) != "fold")
@@ -2092,6 +2094,7 @@ function foldup(event, opts) {
     return m;
 }
 
+$(document).on("click", ".want-foldup", foldup);
 $(document).on("fold", function (evt, opts) {
     var attr = opts.f ? "onfold" : "onunfold";
     var folder = $(evt.target).data(attr);
