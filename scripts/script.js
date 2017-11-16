@@ -2019,7 +2019,7 @@ function refocus_within(elt) {
 }
 
 function fold(elt, dofold, foldnum, foldsessiontype) {
-    var i, foldname, selt, opentxt, closetxt, isopen, foldnumid;
+    var i, foldname, opentxt, closetxt, isopen, foldnumid;
 
     // find element
     if (elt && ($.isArray(elt) || elt.jquery)) {
@@ -2050,16 +2050,23 @@ function fold(elt, dofold, foldnum, foldsessiontype) {
         }
 
         // check for session
-        if ((opentxt = elt.getAttribute("data-fold-session"))
-            && foldsessiontype !== false)
-            $.post(hoturl("api/setsession", {var: opentxt.replace("$", foldsessiontype || foldnum), val: (isopen ? 1 : 0)}));
+        var ses = elt.getAttribute("data-fold-session");
+        if (ses && foldsessiontype !== false) {
+            if (ses.charAt(0) === "{") {
+                ses = (JSON.parse(ses) || {})[foldnum];
+            }
+            if (ses) {
+                ses = ses.replace("$", foldsessiontype || foldnum);
+                $.post(hoturl("api/setsession", {var: ses, val: isopen ? 1 : 0}));
+            }
+        }
     }
 
     return false;
 }
 
 function foldup(event, opts) {
-    var e = this, dofold = false, attr, m, foldnum;
+    var e = this, dofold = false, m, x, foldnum;
     if (typeof opts === "number")
         opts = {n: opts};
     else if (!opts)
@@ -2078,8 +2085,6 @@ function foldup(event, opts) {
     if ("f" in opts && !!opts.f == !dofold)
         return false;
     opts.f = dofold;
-    if (opts.s)
-        $.post(hoturl("api/setsession"), {var: opts.s, val: (dofold ? 1 : 0)});
     if (event)
         event_stop(event);
     m = fold(e, dofold, foldnum, opts.st);
@@ -2104,9 +2109,9 @@ function aufoldup(event) {
         m9 = e.className.match(/\bfold9([co])\b/),
         m8 = e.className.match(/\bfold8([co])\b/);
     if (m9 && (!m8 || m8[1] == "o"))
-        foldup.call(e, event, {n: 9, s: "foldpaperp"});
+        foldup.call(e, event, 9);
     if (m8 && (!m9 || m8[1] == "c" || m9[1] == "o")) {
-        foldup.call(e, event, {n: 8, s: "foldpapera"});
+        foldup.call(e, event, 8);
         if (m8[1] == "o" && $$("foldpscollab"))
             fold("pscollab", 1);
     }

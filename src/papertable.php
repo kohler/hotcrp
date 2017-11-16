@@ -235,7 +235,11 @@ class PaperTable {
         $folders[] = $folds["b"] ? "fold6c" : "fold6o";
 
         // echo div
-        echo '<div id="foldpaper" class="', join(" ", $folders), '">';
+        echo '<div id="foldpaper" class="', join(" ", $folders), '" data-fold-session="'
+            . htmlspecialchars(json_encode_browser([
+                "5" => "foldpapert", "6" => "foldpaperb",
+                "8" => "foldpapera", "9" => "foldpaperp"
+            ])) . '">';
     }
 
     private function echoDivExit() {
@@ -281,10 +285,7 @@ class PaperTable {
         $editfolder = defval($extra, "editfolder", false);
         if ($fold || $editfolder) {
             $foldnum = defval($extra, "foldnum", 0);
-            if (isset($extra["foldsession"]))
-                $foldnumarg = ",{n:" . (+$foldnum) . ",s:'" . $extra["foldsession"] . "'}";
-            else
-                $foldnumarg = $foldnum ? ",$foldnum" : "";
+            $foldnumarg = $foldnum ? ",$foldnum" : "";
         }
 
         if (get($extra, "type") === "ps")
@@ -620,7 +621,6 @@ class PaperTable {
         $extra = [];
         if ($this->allFolded && $this->abstract_foldable($text))
             $extra = ["fold" => "paper", "foldnum" => 6,
-                      "foldsession" => "foldpaperb",
                       "foldtitle" => "Toggle full abstract"];
         echo '<div class="paperinfo-cl"><div class="paperinfo-abstract"><div class="pg">',
             $this->papt("abstract", "Abstract", $extra),
@@ -635,7 +635,7 @@ class PaperTable {
         echo "</div></div></div>";
         if ($extra)
             echo '<div class="fn6 fx7 longtext-fader"></div>',
-                '<div class="fn6 fx7 longtext-expander"><a class="ui x" href="#" onclick="return foldup.call(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
+                '<div class="fn6 fx7 longtext-expander"><a class="ui x" href="#" onclick="return foldup.call(this,event,6)">[more]</a></div>';
         echo "</div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");
@@ -979,7 +979,6 @@ class PaperTable {
 
             if ($this->allFolded) {
                 $extra = array("fold" => "paper", "foldnum" => 5,
-                               "foldsession" => "foldpapert",
                                "foldtitle" => "Toggle " . strtolower($tanda));
                 $eclass = " fx5";
             } else {
