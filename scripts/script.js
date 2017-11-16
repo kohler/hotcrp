@@ -2071,8 +2071,11 @@ function foldup(event, opts) {
         opts = {n: opts};
     else if (!opts)
         opts = {};
-    if (!("n" in opts) && (x = e.getAttribute("data-fold-number")))
-        opts.n = +x;
+    if (!("n" in opts) && (x = e.getAttribute("data-fold-number"))) {
+        opts.n = +x || 0;
+        if (!("f" in opts) && /[co]$/.test(x))
+            opts.f = /c$/.test(x);
+    }
     if (opts.f === "c")
         opts.f = !e.checked;
     while (e && (!e.id || e.id.substr(0, 4) != "fold")
