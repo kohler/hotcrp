@@ -953,7 +953,7 @@ class PaperList {
             $fdef->annotate_field_js($this, $j);
             $jscol[] = $j;
             if ($fdef->fold)
-                $classes[] = "fold$fdef->fold" . ($fdef->is_visible ? "o" : "c");
+                $classes[] = "fold" . $fdef->fold . ($fdef->is_visible ? "o" : "c");
             if (isset($fdef->is_selector))
                 $has_sel = true;
         }
@@ -1182,7 +1182,7 @@ class PaperList {
         $t = '  <tr class="pl_statheadrow fx8">';
         if ($rstate->titlecol)
             $t .= "<td colspan=\"{$rstate->titlecol}\" class=\"plstat\"></td>";
-        $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics", ["n" => 7, "st" => "statistics"]) . "</td></tr>\n";
+        $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics", ["data-fold-session-subtype" => "statistics"]) . "</td></tr>\n";
         foreach (self::$stats as $stat) {
             $t .= '  <tr';
             if ($this->_row_id_pattern)

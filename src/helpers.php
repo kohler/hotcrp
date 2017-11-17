@@ -283,10 +283,11 @@ function json_exit($json, $arg2 = null) {
     }
 }
 
-function foldupbutton($foldnum = 0, $content = "", $j = null) {
-    return '<a class="ui q" href="#" onclick="return foldup.call(this,event,'
-        . ($j ? htmlspecialchars(json_encode_browser($j)) : $foldnum) . ')">'
-        . expander(null, $foldnum) . $content . '</a>';
+function foldupbutton($foldnum = 0, $content = "", $js = null) {
+    if ($foldnum)
+        $js["data-fold-number"] = $foldnum;
+    $js["class"] = "ui q want-foldup";
+    return Ht::link(expander(null, $foldnum) . $content, "#", $js);
 }
 
 function expander($open, $foldnum = null) {

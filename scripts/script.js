@@ -2076,6 +2076,8 @@ function foldup(event, opts) {
         if (!("f" in opts) && /[co]$/.test(x))
             opts.f = /c$/.test(x);
     }
+    if (!("st" in opts) && (x = e.getAttribute("data-fold-session-subtype")))
+        opts.st = x;
     if (opts.f === "c")
         opts.f = !e.checked;
     while (e && (!e.id || e.id.substr(0, 4) != "fold")
@@ -2098,16 +2100,7 @@ function foldup(event, opts) {
 }
 
 $(document).on("click", ".want-foldup", foldup);
-$(document).on("fold", function (evt, opts) {
-    var attr = opts.f ? "onfold" : "onunfold";
-    var folder = $(evt.target).data(attr);
-    if (typeof folder === "string") {
-        folder = new Function("foldnum", folder);
-        $(evt.target).data(attr, folder);
-    }
-    if ($.isFunction(folder))
-        folder.call(evt.target, opts);
-});
+
 
 // special-case folding for author table
 function aufoldup(event) {
