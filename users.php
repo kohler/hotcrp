@@ -287,7 +287,7 @@ $Conf->header($title, "accounts", actionBar());
 
 $pl = new ContactList($Me, true);
 $pl_text = $pl->table_html($_REQUEST["t"], hoturl("users", ["t" => $_REQUEST["t"]]),
-                     $tOpt[$_REQUEST["t"]], 'uldisplay.$');
+                     $tOpt[$_REQUEST["t"]], 'uldisplay.');
 
 
 // form
@@ -312,12 +312,13 @@ if (count($tOpt) > 1) {
 
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
-    $foldmap = ["aff" => 2, "tags" => 3, "topics" => 1, "collab" => 6];
-    foreach (array("aff" => "Affiliations", "collab" => "Collaborators",
-                   "tags" => "Tags", "topics" => "Topics") as $fold => $text)
+    foreach (array("tags" => "Tags",
+                   "aff" => "Affiliations", "collab" => "Collaborators",
+                   "topics" => "Topics") as $fold => $text)
         if (get($pl->have_folds, $fold) !== null) {
+            $k = array_search($fold, ContactList::$folds) + 1;
             echo Ht::checkbox("show$fold", 1, $pl->have_folds[$fold],
-                               array("onchange" => "fold('ul',!this.checked,{$foldmap[$fold]},'{$fold}')")),
+                               array("onchange" => "fold('ul',!this.checked,{$k})")),
                 "&nbsp;", Ht::label($text), "<br />\n";
         }
     echo "</td>";

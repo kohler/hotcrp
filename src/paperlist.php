@@ -1189,7 +1189,7 @@ class PaperList {
         $t = '  <tr class="pl_statheadrow fx8">';
         if ($rstate->titlecol)
             $t .= "<td colspan=\"{$rstate->titlecol}\" class=\"plstat\"></td>";
-        $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics", ["data-fold-session-subtype" => "statistics"]) . "</td></tr>\n";
+        $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics") . "</td></tr>\n";
         foreach (self::$stats as $stat) {
             $t .= '  <tr';
             if ($this->_row_id_pattern)
@@ -1423,9 +1423,11 @@ class PaperList {
             $enter .= " " . join(" ", $foldclasses);
         if ($this->_table_id)
             $enter .= "\" id=\"" . $this->_table_id;
-        if (defval($options, "attributes"))
+        if (!empty($options["attributes"]))
             foreach ($options["attributes"] as $n => $v)
                 $enter .= "\" $n=\"" . htmlspecialchars($v);
+        if (get($options, "fold_session_prefix"))
+            $enter .= "\" data-fold-session-prefix=\"" . htmlspecialchars($options["fold_session_prefix"]);
         if ($this->search->is_order_anno)
             $enter .= "\" data-order-tag=\"{$this->search->is_order_anno}";
         if ($this->groups)

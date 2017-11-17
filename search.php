@@ -252,7 +252,7 @@ if (isset($Qreq->forceShow))
 if (isset($Qreq->q)) {
     $pl->set_table_id_class("foldpl", "pltable_full", "p#");
     $pl->set_selection($SSel);
-    $pl_text = $pl->table_html($Search->limitName, ["attributes" => ["data-fold-session" => 'pldisplay.$'], "list" => true]);
+    $pl_text = $pl->table_html($Search->limitName, ["fold_session_prefix" => "pldisplay.", "list" => true]);
     unset($Qreq->atab);
 } else
     $pl_text = null;
@@ -353,7 +353,7 @@ if ($pl_text) {
 
     // Row numbers
     if ($pl->has("sel"))
-        $display_options->checkbox_item(1, "rownum", "Row numbers", ["onchange" => "fold('pl',!this.checked,6,'rownum')"]);
+        $display_options->checkbox_item(1, "rownum", "Row numbers", ["onchange" => "fold('pl',!this.checked,6)"]);
 
     // Options
     /*foreach ($Conf->paper_opts->option_list() as $ox)

@@ -2018,13 +2018,13 @@ function refocus_within(elt) {
     }
 }
 
-function fold(elt, dofold, foldnum, foldsessiontype) {
+function fold(elt, dofold, foldnum) {
     var i, foldname, opentxt, closetxt, isopen, foldnumid;
 
     // find element
     if (elt && ($.isArray(elt) || elt.jquery)) {
         for (i = 0; i < elt.length; i++)
-            fold(elt[i], dofold, foldnum, foldsessiontype);
+            fold(elt[i], dofold, foldnum);
         return false;
     } else if (typeof elt == "string")
         elt = $$("fold" + elt) || $$(elt);
@@ -2050,13 +2050,14 @@ function fold(elt, dofold, foldnum, foldsessiontype) {
         }
 
         // check for session
-        var ses = elt.getAttribute("data-fold-session");
-        if (ses && foldsessiontype !== false) {
-            if (ses.charAt(0) === "{") {
+        var ses = $(elt).data("foldSession");
+        if (ses) {
+            if (typeof ses === "string" && ses.charAt(0) === "{") {
                 ses = (JSON.parse(ses) || {})[foldnum];
+            } else if (typeof ses === "object") {
+                ses = ses[foldnum];
             }
             if (ses) {
-                ses = ses.replace("$", foldsessiontype || foldnum);
                 $.post(hoturl("api/setsession", {var: ses, val: isopen ? 1 : 0}));
             }
         }
@@ -2076,8 +2077,6 @@ function foldup(event, opts) {
         if (!("f" in opts) && /[co]$/.test(x))
             opts.f = /c$/.test(x);
     }
-    if (!("st" in opts) && (x = e.getAttribute("data-fold-session-subtype")))
-        opts.st = x;
     if (!("f" in opts)
         && e.tagName === "INPUT"
         && (e.type === "checkbox" || e.type === "radio"))
@@ -3109,7 +3108,7 @@ function comment_identity_time(cj) {
                + cj.ordinal + '</span></a></div>');
     if (cj.author && cj.author_hidden)
         t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
-               + '<a class="ui q" href="#" onclick="return fold(\'cid' + cj.cid + '\',null,4)" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
+               + '<a class="ui q want-foldup" href="#" data-fold-number="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
                + cj.author + '</span></div>');
     else if (cj.author && cj.blind && cj.visibility == "au")
         t.push('<div class="cmtname">[' + cj.author + ']</div>');
@@ -5415,7 +5414,7 @@ var self, fields, field_order, aufull = {},
     tagmap = false, _bypid = {}, _bypidx = {};
 
 function foldmap(type) {
-    var fn = ({anonau:2, aufull:4, force:5, rownum:6})[type];
+    var fn = ({anonau:2, aufull:4, force:5, rownum:6, statistics:7})[type];
     return fn || fields[type].foldnum;
 }
 
@@ -5808,14 +5807,16 @@ function plinfo(type, dofold) {
         && elt.checked != $$("showau").checked)
         elt.click();
     if (type !== "aufull")
-        fold(self, dofold, foldmap(type), type);
+        fold(self, dofold, foldmap(type));
     if (plinfo.extra)
         plinfo.extra(type, dofold);
 
     // may need to load information by ajax
     if (type === "aufull" && aufull[!!dofold]) {
         make_callback(dofold, type)(aufull[!!dofold]);
-        $.post(hoturl("api/setsession", {var: self.getAttribute("data-fold-session").replace("$", type), val: (dofold ? 1 : 0)}));
+        var ses = $(self).data("foldSessionPrefix");
+        if (ses)
+            $.post(hoturl("api/setsession", {var: ses + "aufull", val: dofold ? 1 : 0}));
     } else if ((!dofold && f.loadable && type !== "anonau") || type === "aufull") {
         // set up "loading" display
         setTimeout(show_loading(f), 750);
@@ -5838,7 +5839,7 @@ function plinfo(type, dofold) {
             statistics = true;
             break;
         }
-    fold(self, !statistics, 8, false);
+    fold(self, !statistics, 8);
 
     return false;
 }
@@ -5847,13 +5848,19 @@ plinfo.initialize = function (sel, fo) {
     self = $(sel)[0];
     field_order = fo;
     fields = {};
+    var fold_prefix = $(self).data("foldSessionPrefix");
+    var fold_session = fold_prefix ? {"2": fold_prefix + "anonau", "5": fold_prefix + "force", "6": fold_prefix + "rownum", "7": fold_prefix + "statistics"} : null;
     for (var i = 0; i < fo.length; ++i) {
         fields[fo[i].name] = fo[i];
         if (/^(?:#|tag:|tagval:)\S+$/.test(fo[i].name))
             set_tags_callbacks.push(make_tag_column_callback(fo[i]));
+        if (fo[i].foldnum && fold_session)
+            fold_session[fo[i].foldnum] = fold_prefix + fo[i].name;
     }
     if (fields.authors)
         fields.au = fields.anonau = fields.aufull = fields.authors;
+    if (fold_session)
+        $(self).data("foldSession", fold_session);
 };
 plinfo.set_scoresort = function (ss) {
     var re = / (?:counts|average|median|variance|minmax|my)$/;
@@ -5895,7 +5902,7 @@ plinfo.on_set_tags = function (f) {
 plinfo.fold_override = function (selector, checkbox) {
     $(function () {
         var on = checkbox.checked;
-        fold(selector, !on, 5, "force");
+        fold(selector, !on, 5);
         $("#forceShow").val(on ? 1 : 0);
         // show the color classes appropriate to this conflict state
         $("#fold" + selector + " .colorconflict").each(function () {

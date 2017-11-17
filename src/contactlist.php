@@ -770,8 +770,13 @@ class ContactList {
         $x = "<table id=\"foldul\" class=\"pltable pltable_full plt_" . htmlspecialchars($listquery);
         if ($foldclasses)
             $x .= " " . join(" ", $foldclasses);
-        if ($foldclasses && $foldsession)
-            $x .= "\" data-fold-session=\"$foldsession";
+        if ($foldclasses && $foldsession) {
+            $fs = [];
+            foreach (self::$folds as $k => $fold) {
+                $fs[$k + 1] = $foldsession . $fold;
+            }
+            $x .= "\" data-fold-session=\"" . htmlspecialchars(json_encode_browser($fs));
+        }
         $x .= "\">\n";
 
         if ($this->showHeader) {
