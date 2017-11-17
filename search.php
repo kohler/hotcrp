@@ -295,14 +295,13 @@ class Search_DisplayOptions {
     }
     function checkbox_item($column, $type, $title, $options = []) {
         $checked = display_option_checked($type);
-        if (!isset($options["onchange"]))
-            $options["onchange"] = "plinfo('$type',this)";
         $x = '<div class="dispopt-checkitem"';
         if (get($options, "indent"))
             $x .= ' style="padding-left:2em"';
         unset($options["indent"]);
-        $options["class"] = "dispopt-checkctrl";
-        $x .= '><span class="dispopt-check">' . Ht::checkbox("show$type", 1, $checked, $options)
+        $options["class"] = "dispopt-checkctrl paperlist-display";
+        $x .= '><span class="dispopt-check">'
+            . Ht::checkbox("show$type", 1, $checked, $options)
             . '&nbsp;</span>' . Ht::label($title) . '</div>';
         $this->item($column, $x);
     }
@@ -313,6 +312,8 @@ $display_options = new Search_DisplayOptions;
 // Create checkboxes
 
 if ($pl_text) {
+    Ht::stash_script("$(document).on(\"change\",\"input.paperlist-display\",plinfo.checkbox_change)");
+
     // Abstract
     if ($pl->has("abstract"))
         $display_options->checkbox_item(1, "abstract", "Abstracts");
@@ -328,15 +329,13 @@ if ($pl_text) {
         if ($Me->privChair && $viewAllAuthors)
             $display_options_extra .=
                 Ht::checkbox("showanonau", 1, display_option_checked("au"),
-                             array("id" => "showau_hidden",
-                                   "onchange" => "plinfo('anonau',this)",
+                             array("id" => "showau_hidden", "class" => "paperlist-display",
                                    "style" => "display:none"));
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
         $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl->has("anonau")]);
         $display_options_extra .=
             Ht::checkbox("showau", 1, display_option_checked("anonau"),
-                         array("id" => "showau_hidden",
-                               "onchange" => "plinfo('au',this)",
+                         array("id" => "showau_hidden", "class" => "paperlist-display",
                                "style" => "display:none"));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
@@ -353,7 +352,7 @@ if ($pl_text) {
 
     // Row numbers
     if ($pl->has("sel"))
-        $display_options->checkbox_item(1, "rownum", "Row numbers", ["onchange" => "fold('pl',!this.checked,6)"]);
+        $display_options->checkbox_item(1, "rownum", "Row numbers");
 
     // Options
     /*foreach ($Conf->paper_opts->option_list() as $ox)
@@ -397,11 +396,10 @@ if ($pl_text) {
             if ($f->view_score > $revViewScore && $f->has_options)
                 $display_options->checkbox_item(30, $f->search_keyword(), $f->name_html);
         if (!empty($display_options->items[30])) {
-            $onchange = "hiliter(\"redisplay\")";
             $sortitem = '<div class="dispopt-item" style="margin-top:1ex">Sort by: &nbsp;'
                 . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
                              ListSorter::canonical_long_score_sort($Conf->session("scoresort")),
-                             ["id" => "scoresort", "onchange" => $onchange, "style" => "font-size:100%"])
+                             ["id" => "scoresort", "style" => "font-size:100%"])
                 . '<a class="help" href="' . hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
             $display_options->item(30, $sortitem);
         }
@@ -585,8 +583,7 @@ if ($pl->count > 0) {
     if ($Me->privChair)
         echo "<td class='padlb'>",
             Ht::checkbox("showforce", 1, !!$Qreq->forceShow,
-                          array("id" => "showforce",
-                                "onchange" => "plinfo.fold_override('pl',this)")),
+                         ["id" => "showforce", "class" => "paperlist-display"]),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     echo "<td class='padlb'>";

@@ -5899,13 +5899,13 @@ plinfo.on_set_tags = function (f) {
     set_tags_callbacks.push(f);
 };
 
-plinfo.fold_override = function (selector, checkbox) {
+plinfo.fold_override = function (checkbox) {
     $(function () {
         var on = checkbox.checked;
-        fold(selector, !on, 5);
+        fold(self, !on, 5);
         $("#forceShow").val(on ? 1 : 0);
         // show the color classes appropriate to this conflict state
-        $("#fold" + selector + " .colorconflict").each(function () {
+        $(self).find(".colorconflict").each(function () {
             var pl = this;
             while (pl.nodeType !== 1 || /^plx/.test(pl.className))
                 pl = pl.previousSibling;
@@ -5913,6 +5913,18 @@ plinfo.fold_override = function (selector, checkbox) {
             this.className = this.className.replace(/ *\S*tag(?= |$)/g, "").trim() + " " + a;
         });
     });
+};
+
+plinfo.checkbox_change = function (event) {
+    if (this.name.substring(0, 4) === "show") {
+        var type = this.name.substring(4);
+        if (type === "force")
+            plinfo.fold_override(this);
+        else if (type === "rownum")
+            fold(self, !this.checked, 6);
+        else
+            plinfo(type, this);
+    }
 };
 
 return plinfo;
