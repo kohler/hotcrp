@@ -304,7 +304,8 @@ class PaperTable {
             if ($editfolder)
                 $c .= "<a class=\"ui q fn want-foldup\" "
                     . "href=\"" . selfHref(array("atab" => $what))
-                    . "\"" . $foldnumclass . $n . "</a><span class=\"fx\">" . $n . "</span>";
+                    . "\"" . $foldnumclass . ">" . $n
+                    . "</a><span class=\"fx\">" . $n . "</span>";
             else
                 $c .= $n;
         } else {
@@ -1424,7 +1425,8 @@ class PaperTable {
         $tx = $tagger->unparse_and_link($viewable);
         $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
 
-        $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.open()"]);
+        $this->_papstripBegin("tags", !$unfolded);
+        Ht::stash_script('$("#foldtags").on("fold", function(evt,opts) { opts.f || save_tags.open(); })');
         echo '<div class="', $this->papstrip_tags_background_classes($viewable), '">';
 
         if ($is_editable)

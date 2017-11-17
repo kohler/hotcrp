@@ -403,7 +403,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     // Actions
     $sep = "";
     if ($myrow) {
-        echo $sep, foldbutton("re"), "<a href=\"", hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
+        echo $sep, foldupbutton(), "<a href=\"", hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
         $sep = $xsep;
     }
     if ($Me->is_requester() && $Conf->setting("extrev_approve") && $Conf->setting("pcrev_editdelegate")) {
@@ -464,10 +464,11 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
 
     if ($Me->is_reviewer()) {
-        echo "<div class=\"homegrp fold20c\" id=\"homeactivity\" data-fold=\"true\" data-fold-session=\"foldhomeactivity\" data-onunfold=\"unfold_events(this)\">",
-            foldbutton("homeactivity", 20),
+        echo "<div class=\"homegrp fold20c\" id=\"homeactivity\" data-fold=\"true\" data-fold-session=\"foldhomeactivity\">",
+            foldupbutton(20),
             "<h4><a class=\"x ui homeactivity want-foldup\" href=\"#\" data-fold-number=\"20\">Recent activity<span class='fx20'>:</span></a></h4>",
             "</div>";
+        Ht::stash_script('$("#homeactivity").on("fold", function(e,opts) { opts.f || unfold_events(this); })');
         if (!$Conf->session("foldhomeactivity", 1))
             Ht::stash_script("foldup.call(\$(\"#homeactivity\")[0],null,20)");
     }

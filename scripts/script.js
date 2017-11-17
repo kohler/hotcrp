@@ -6733,7 +6733,7 @@ function load_more_events() {
 function render_events(e, rows) {
     var j = $(e).find("tbody");
     if (!j.length) {
-        $(e).append("<table class=\"hotcrp_events_table\"><tbody class=\"pltable\"></tbody></table><div class=\"g\"><button type=\"button\">More</button></div>");
+        $(e).append("<table class=\"hotcrp_events_table\"><tbody class=\"pltable\"></tbody></table><div class=\"g\"><button class=\"btn\" type=\"button\">More</button></div>");
         $(e).find("button").on("click", load_more_events);
         j = $(e).find("tbody");
     }
