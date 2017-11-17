@@ -113,6 +113,7 @@ class PaperList {
     private $_view_columns = false;
     private $_view_compact_columns = false;
     private $_view_row_numbers = false;
+    private $_view_statistics = false;
     private $_view_force = false;
     private $_view_fields = [];
     private $atab;
@@ -240,7 +241,7 @@ class PaperList {
         else if ($k === "force")
             $this->_view_force = $v;
         else if (in_array($k, ["statistics", "stat", "stats", "totals"]))
-            /* skip */;
+            $this->_view_statistics = $v;
         else if (in_array($k, ["rownum", "rownumbers"]))
             $this->_view_row_numbers = $v;
         else {
@@ -680,6 +681,12 @@ class PaperList {
         $fname = $fdef;
         if (is_object($fdef) || ($fdef = $this->find_column($fname)))
             $fname = $fdef->fold ? $fdef->name : null;
+        else if ($fname === "force")
+            return !$this->_view_force;
+        else if ($fname === "rownum")
+            return !$this->_view_row_numbers;
+        else if ($fname === "statistics")
+            return !$this->_view_statistics;
         if ($fname === "authors")
             $fname = "au";
         if (!$fname || $this->_unfold_all || $this->qreq["show$fname"])
@@ -964,10 +971,10 @@ class PaperList {
         if (isset($rstate->row_folded))
             $classes[] = "fold3c";
         if ($has_sel)
-            $classes[] = "fold6" . ($this->is_folded("rownum") ? "c" : "o");
+            $classes[] = "fold6" . ($this->_view_row_numbers ? "o" : "c");
         if ($this->user->privChair)
             $classes[] = "fold5" . ($this->_view_force ? "o" : "c");
-        $classes[] = "fold7" . ($this->is_folded("statistics") ? "c" : "o");
+        $classes[] = "fold7" . ($this->_view_statistics ? "o" : "c");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
         if ($this->_table_id)
             Ht::stash_script("plinfo.initialize(\"#{$this->_table_id}\"," . json_encode_browser($jscol) . ");");
@@ -1628,13 +1635,15 @@ class PaperList {
         $field_list = $this->_columns($field_list, false);
         $res = [];
         if ($this->_view_force)
-            $res["-2 force"] = "show:force";
+            $res["-3 force"] = "show:force";
         if ($this->_view_compact_columns)
-            $res["-1 ccol"] = "show:ccol";
+            $res["-2 ccol"] = "show:ccol";
         else if ($this->_view_columns)
-            $res["-1 col"] = "show:col";
+            $res["-2 col"] = "show:col";
         if ($this->_view_row_numbers)
-            $res["rownum"] = "show:rownum";
+            $res["-1 rownum"] = "show:rownum";
+        if ($this->_view_statistics)
+            $res["-1 statistics"] = "show:statistics";
         $x = [];
         foreach ($this->_view_fields as $k => $v) {
             $f = $this->_expand_view_column($k, false);
