@@ -172,7 +172,7 @@ class Formula_PaperColumnFactory {
             $ff = $conf->find_named_formula($name);
         if (!$ff && str_starts_with($name, "\"") && strpos($name, "\"", 1) === strlen($name) - 1)
             $ff = $conf->find_named_formula(substr($name, 1, -1));
-        if (!$ff && $name !== "")
+        if (!$ff && $name !== "" && ($want_error || !is_numeric($name)))
             $ff = new Formula($name);
 
         if ($ff && $ff->check($conf->xt_user)) {
