@@ -565,12 +565,12 @@ function echo_modes($hlbulk) {
         Ht::link($newProfile || $Me->email == $Acct->email ? "Your profile" : "Profile", selfHref(["u" => null])),
         '</div><div class="', ($hlbulk == 1 ? "papmodex" : "papmode"), '">';
     if ($newProfile)
-        echo Ht::link("New account", "#", ["class" => "ui want-foldup", "data-fold-number" => "9c"]);
+        echo Ht::link("New account", "", ["class" => "tla has-focus-history", "data-fold-number" => "9c"]);
     else
         echo Ht::link("New account", hoturl("profile", "u=new"));
     echo '</div><div class="', ($hlbulk == 2 ? "papmodex" : "papmode"), '">';
     if ($newProfile)
-        echo Ht::link("Bulk update", "#", ["class" => "ui want-foldup", "data-fold-number" => "9o"]);
+        echo Ht::link("Bulk update", "#bulk", ["class" => "tla has-focus-history", "data-fold-number" => "9o"]);
     else
         echo Ht::link("Bulk update", hoturl("profile", "u=new&amp;bulkregister=1"));
     echo '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";
@@ -635,7 +635,7 @@ else if ($Me->contactId != $Acct->contactId)
 if (isset($Qreq->ls))
     $form_params[] = "ls=" . urlencode($Qreq->ls);
 if ($newProfile)
-    echo '<div id="foldbulk" class="fold9' . ($Qreq->bulkregister ? "o" : "c") . '"><div class="fn9">';
+    echo '<div id="foldbulk" class="fold9' . ($Qreq->bulkregister ? "o" : "c") . ' want-fold-focus"><div class="fn9">';
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "accountform", "autocomplete" => "off")),
@@ -670,7 +670,7 @@ echo '<div id="foldaccount" class="aahc profiletext', ($need_highlight ? " alert
 
 echo '<div class="f-contain">', "\n\n";
 $actas = "";
-if ($Acct !== $Me && $Me->privChair)
+if ($Acct !== $Me && $Acct->email && $Me->privChair)
     $actas = '&nbsp;' . actas_link($Acct);
 if (!$Conf->external_login())
     echofield(0, "uemail", "Email",
@@ -926,7 +926,7 @@ if ($newProfile) {
     }
     echo '<div class="f-contain"><div class="f-i"><div class="f-e">',
         Ht::textarea("bulkentry", $bulkentry,
-                     ["rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line"]),
+                     ["rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line", "class" => "want-focus"]),
         '</div></div></div>';
 
     echo '<div class="g"><strong>OR</strong> &nbsp;',
@@ -966,8 +966,8 @@ John Adams,john@earbox.org,UC Berkeley,pc
 }
 
 
-if ($newProfile)
-    Ht::stash_script('if(/bulk/.test(location.hash))fold("bulk",false,9)');
 Ht::stash_script('hiliter_children("#accountform",true);$("textarea").autogrow()');
 Ht::stash_script('focus_within($("#accountform"))');
+if ($newProfile)
+    Ht::stash_script("focus_fold.hash(true)");
 $Conf->footer();

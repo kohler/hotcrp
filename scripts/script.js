@@ -2066,7 +2066,7 @@ function fold(elt, dofold, foldnum, foldsessiontype) {
 }
 
 function foldup(event, opts) {
-    var e = this, dofold = false, m, x, foldnum;
+    var e = this, dofold = false, m, x;
     if (typeof opts === "number")
         opts = {n: opts};
     else if (!opts)
@@ -2078,28 +2078,31 @@ function foldup(event, opts) {
     }
     if (!("st" in opts) && (x = e.getAttribute("data-fold-session-subtype")))
         opts.st = x;
-    if (opts.f === "c")
+    if (!("f" in opts)
+        && e.tagName === "INPUT"
+        && (e.type === "checkbox" || e.type === "radio"))
         opts.f = !e.checked;
     while (e && (!e.id || e.id.substr(0, 4) != "fold")
            && (!e.getAttribute || !e.getAttribute("data-fold")))
         e = e.parentNode;
     if (!e)
         return true;
-    foldnum = opts.n || 0;
-    if (!foldnum && (m = e.className.match(/\bfold(\d*)[oc]\b/)))
-        foldnum = m[1];
-    dofold = !(new RegExp("\\bfold" + (foldnum || "") + "c\\b")).test(e.className);
-    if ("f" in opts && !!opts.f == !dofold)
-        return false;
-    opts.f = dofold;
-    if (event)
-        event_stop(event);
-    m = fold(e, dofold, foldnum, opts.st);
-    $(e).trigger("fold", opts);
-    return m;
+    if (!opts.n && (m = e.className.match(/\bfold(\d*)[oc]\b/)))
+        opts.n = +m[1];
+    dofold = !(new RegExp("\\bfold" + (opts.n || "") + "c\\b")).test(e.className);
+    if (!("f" in opts) || !!opts.f !== !dofold) {
+        opts.f = dofold;
+        fold(e, dofold, opts.n || 0, opts.st);
+        $(e).trigger("fold", opts);
+    }
+    if (event && typeof event === "object" && event.type === "click")
+        event_prevent(event);
 }
 
 $(document).on("click", ".want-foldup", foldup);
+$(document).on("fold", ".want-fold-focus", function (event, opts) {
+    focus_within(this, (opts.f ? ".fn" : ".fx") + (opts.n || "") + " *");
+});
 
 
 // special-case folding for author table
@@ -2153,8 +2156,13 @@ else
 window.focus_fold = (function ($) {
 var has_focused;
 
-function focus_fold(do_focus) {
+function focus_fold(event) {
     var e = this, m, f;
+    if (e.hasAttribute("data-fold-number")) {
+        foldup.call(e, event);
+        has_focused = true;
+        return false;
+    }
     while (e) {
         if (hasClass(e, "linelink")) {
             for (f = e.parentElement; f && !hasClass(f, "linelinks"); f = f.parentElement) {
@@ -2163,7 +2171,7 @@ function focus_fold(do_focus) {
                 break;
             addClass(e, "active");
             $(f).find(".linelink").not(e).removeClass("active");
-            if (do_focus)
+            if (event)
                 focus_within(e, ".lld *");
             has_focused = true;
             return false;
@@ -2173,7 +2181,7 @@ function focus_fold(do_focus) {
             if (!e)
                 break;
             e.className = e.className.replace(/links\d+/, 'links' + m[1]);
-            if (do_focus)
+            if (event)
                 focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
             has_focused = true;
             return false;
@@ -2188,7 +2196,7 @@ function jump(href) {
     hash = hash ? hash[0] : "";
     $("a.has-focus-history").each(function () {
         if (this.getAttribute("href") === hash)
-            return focus_fold.call(this, false);
+            return focus_fold.call(this);
     });
 }
 
@@ -2197,8 +2205,8 @@ $(window).on("popstate", function (event) {
     state && jump(state.href);
 });
 
-function handler() {
-    var done = focus_fold.call(this, true);
+function handler(event) {
+    var done = focus_fold.call(this, event);
     if (!done
         && this instanceof HTMLAnchorElement
         && hasClass(this, "has-focus-history"))
@@ -2207,8 +2215,7 @@ function handler() {
 }
 
 handler.hash = function () {
-    if (location.hash)
-        has_focused || jump(location.href);
+    has_focused || jump(location.href);
 };
 
 return handler;
@@ -6297,7 +6304,7 @@ function row_click(evt) {
 }
 $(document).on("click", "a", function (evt) {
     if (hasClass(this, "tla"))
-        return focus_fold.call(this);
+        return focus_fold.call(this, evt);
     else if (hasClass(this, "fn5"))
         return foldup.call(this, evt, {n: 5, f: false});
     else {

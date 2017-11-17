@@ -478,7 +478,7 @@ span.hastitle {
 .tablinks1 .tll1 a.tla, .tablinks2 .tll2 a.tla,
 .tablinks3 .tll3 a.tla, .tablinks4 .tll4 a.tla {
 	text-decoration-line: none;
-	color: black;
+	color: inherit;
 }
 .tablinks1 .tll1 a.tla:hover, .tablinks2 .tll2 a.tla:hover,
 .tablinks3 .tll3 a.tla:hover, .tablinks4 .tll4 a.tla:hover {
