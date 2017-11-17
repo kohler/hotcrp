@@ -56,7 +56,7 @@ class BanalSettings {
             if (trim($cf->banal_stderr))
                 $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
             $errors .= "<tr><td>Check:&nbsp;</td><td>" . join("<br />\n", $cf->messages()) . "</td></tr>";
-            $sv->warning_at(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldbutton("banal_warning", 0, "Checker output") . $errors . "</table></div></div>");
+            $sv->warning_at(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldupbutton(0, "Checker output") . $errors . "</table></div></div>");
             if (($s1 == "warning" || $s1 == "error") && $e1_papersize)
                 $sv->warning_at(null, "(Try setting <code>\$Opt[\"banalZoom\"]</code> to 1.)");
         }

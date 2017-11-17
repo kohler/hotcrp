@@ -283,13 +283,6 @@ function json_exit($json, $arg2 = null) {
     }
 }
 
-function foldbutton($foldtype, $foldnum = 0, $content = "") {
-    $foldnumid = ($foldnum ? ",$foldnum" : "");
-    return '<a class="ui q" href="#" onclick="return fold(\''
-        . $foldtype . '\',null' . $foldnumid . ')">'
-        . expander(null, $foldnum) . $content . '</a>';
-}
-
 function foldupbutton($foldnum = 0, $content = "", $j = null) {
     return '<a class="ui q" href="#" onclick="return foldup.call(this,event,'
         . ($j ? htmlspecialchars(json_encode_browser($j)) : $foldnum) . ')">'

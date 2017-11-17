@@ -520,8 +520,8 @@ if ($Me->isPC || $Me->privChair) {
         if (count($ss)) {
             $n = 0;
             foreach ($ss as $sn => $sv) {
-                echo "<table id='ssearch$n' class='foldc'><tr><td>",
-                    foldbutton("ssearch$n"),
+                echo "<table id=\"ssearch$n\" class=\"foldc\" data-fold=\"true\"><tr><td>",
+                    foldupbutton(),
                     "</td><td>";
                 $arest = "";
                 foreach (array("qt", "t", "sort") as $k)
@@ -539,9 +539,9 @@ if ($Me->isPC || $Me->privChair) {
         }
         echo Ht::form_div(hoturl_post("search", "savesearch=1"));
         echo_request_as_hidden_inputs(true);
-        echo "<table id='ssearchnew' class='foldc'>",
-            "<tr><td>", foldbutton("ssearchnew"), "</td>",
-            "<td><a class='ui q fn' href='#' onclick='return fold(\"ssearchnew\")'>New saved search</a><div class='fx'>",
+        echo "<table id=\"ssearchnew\" class=\"foldc\" data-fold=\"true\">",
+            "<tr><td>", foldupbutton(), "</td>",
+            "<td><a class='ui q fn' href='#' onclick='return foldup.call(this,event)'>New saved search</a><div class='fx'>",
             "Save ";
         if ($Qreq->q)
             echo "search “", htmlspecialchars($Qreq->q), "”";
