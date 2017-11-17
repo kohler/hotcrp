@@ -466,7 +466,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     if ($Me->is_reviewer()) {
         echo "<div class=\"homegrp fold20c\" id=\"homeactivity\" data-fold=\"true\" data-fold-session=\"foldhomeactivity\">",
             foldupbutton(20),
-            "<h4><a class=\"x ui homeactivity want-foldup\" href=\"#\" data-fold-number=\"20\">Recent activity<span class='fx20'>:</span></a></h4>",
+            "<h4><a class=\"x ui homeactivity want-foldup\" href=\"#\" data-fold-target=\"20\">Recent activity<span class='fx20'>:</span></a></h4>",
             "</div>";
         Ht::stash_script('$("#homeactivity").on("fold", function(e,opts) { opts.f || unfold_events(this); })');
         if (!$Conf->session("foldhomeactivity", 1))

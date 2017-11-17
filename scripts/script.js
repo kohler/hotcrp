@@ -2072,7 +2072,7 @@ function foldup(event, opts) {
         opts = {n: opts};
     else if (!opts)
         opts = {};
-    if (!("n" in opts) && (x = e.getAttribute("data-fold-number"))) {
+    if (!("n" in opts) && (x = e.getAttribute("data-fold-target"))) {
         opts.n = +x || 0;
         if (!("f" in opts) && /[co]$/.test(x))
             opts.f = /c$/.test(x);
@@ -2157,7 +2157,7 @@ var has_focused;
 
 function focus_fold(event) {
     var e = this, m, f;
-    if (e.hasAttribute("data-fold-number")) {
+    if (e.hasAttribute("data-fold-target")) {
         foldup.call(e, event);
         has_focused = true;
         return false;
@@ -3108,7 +3108,7 @@ function comment_identity_time(cj) {
                + cj.ordinal + '</span></a></div>');
     if (cj.author && cj.author_hidden)
         t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
-               + '<a class="ui q want-foldup" href="#" data-fold-number="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
+               + '<a class="ui q want-foldup" href="#" data-fold-target="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
                + cj.author + '</span></div>');
     else if (cj.author && cj.blind && cj.visibility == "au")
         t.push('<div class="cmtname">[' + cj.author + ']</div>');

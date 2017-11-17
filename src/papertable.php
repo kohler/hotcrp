@@ -285,7 +285,7 @@ class PaperTable {
         $editfolder = defval($extra, "editfolder", false);
         if ($fold || $editfolder) {
             $foldnum = defval($extra, "foldnum", 0);
-            $foldnumclass = $foldnum ? " data-fold-number=\"$foldnum\"" : "";
+            $foldnumclass = $foldnum ? " data-fold-target=\"$foldnum\"" : "";
         }
 
         if (get($extra, "type") === "ps")
@@ -636,7 +636,7 @@ class PaperTable {
         echo "</div></div></div>";
         if ($extra)
             echo '<div class="fn6 fx7 longtext-fader"></div>',
-                '<div class="fn6 fx7 longtext-expander"><a class="ui x want-foldup" href="#" data-fold-number="6">[more]</a></div>';
+                '<div class="fn6 fx7 longtext-expander"><a class="ui x want-foldup" href="#" data-fold-target="6">[more]</a></div>';
         echo "</div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");

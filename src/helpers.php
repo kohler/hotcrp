@@ -285,7 +285,7 @@ function json_exit($json, $arg2 = null) {
 
 function foldupbutton($foldnum = 0, $content = "", $js = null) {
     if ($foldnum)
-        $js["data-fold-number"] = $foldnum;
+        $js["data-fold-target"] = $foldnum;
     $js["class"] = "ui q want-foldup";
     return Ht::link(expander(null, $foldnum) . $content, "#", $js);
 }
