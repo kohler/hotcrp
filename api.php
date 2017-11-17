@@ -107,7 +107,7 @@ if ($qreq->fn === "setsession") {
             $on = !($val !== null && intval($val) > 0);
             if ($m[1] === "pldisplay" || $m[1] === "pfdisplay")
                 PaperList::change_display($Me, substr($m[1], 0, 2), substr($m[2], 1), $on);
-            else if (preg_match('/\A[-a-zA-Z0-9_:]+\z/', $m[2]))
+            else if (preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2]))
                 displayOptionsSet($m[1], substr($m[2], 1), $on);
             else
                 json_exit(["ok" => false]);
