@@ -10,7 +10,7 @@ class Decide_ListAction extends ListAction {
     static function render(PaperList $pl) {
         return ["Set to &nbsp;"
                 . decisionSelector($pl->qreq->decision, null, " class=\"want-focus\"")
-                . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide", "onclick" => "return plist_submit.call(this)"])];
+                . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide"])];
     }
     function run(Contact $user, $qreq, $ssel) {
         $aset = new AssignmentSet($user, true);

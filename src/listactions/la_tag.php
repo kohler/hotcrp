@@ -18,13 +18,13 @@ class Tag_ListAction extends ListAction {
         // tag name cell
         $t = "";
         if ($pl->user->privChair) {
-            $t .= '<span class="fx99"><a class="ui q" href="#" onclick="return fold(\'placttags\')">'
+            $t .= '<span class="fx99"><a class="ui q want-foldup" href="#" data-fold-target="placttags">'
                 . expander(null, 0) . "</a></span>";
         }
         $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
             . Ht::entry("tag", $pl->qreq->tag,
                         ["size" => 15, "onfocus" => "suggest(this,taghelp_tset);autosub('tag',this)", "class" => "want-focus"])
-            . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "onclick" => "return plist_submit.call(this)"]);
+            . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag"]);
         if ($pl->user->privChair) {
             $t .= "<div class='fx'><div style='margin:2px 0'>"
                 . Ht::checkbox("tagcr_gapless", 1, !!$pl->qreq->tagcr_gapless, array("style" => "margin-left:0"))

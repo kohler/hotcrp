@@ -246,7 +246,7 @@ $pl = new PaperList($search, ["sort" => true, "report" => "pf"], $Qreq);
 $pl->set_table_id_class("foldpl", "pltable_full", "p#");
 $pl_text = $pl->table_html("editpref",
                 array("fold_session_prefix" => "pfdisplay.",
-                      "footer_extra" => "<div id='plactr'>" . Ht::submit("fn", "Save changes", ["class" => "btn", "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => "always", "value" => "saveprefs"]) . "</div>",
+                      "footer_extra" => "<div id='plactr'>" . Ht::submit("fn", "Save changes", ["class" => "btn", "data-plist-submit-all" => "always", "value" => "saveprefs"]) . "</div>",
                       "list" => true));
 
 

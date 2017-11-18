@@ -14,11 +14,11 @@ class GetRevpref_ListAction extends ListAction {
     static function render_upload(PaperList $pl) {
         return ["<b>&nbsp;preference file:</b> &nbsp;"
                 . "<input class=\"want-focus\" type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"uploadpref\",this)' />&nbsp; "
-                . Ht::submit("fn", "Go", ["value" => "uploadpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
+                . Ht::submit("fn", "Go", ["value" => "uploadpref", "tabindex" => 6, "data-plist-submit-all" => 1])];
     }
     static function render_set(PaperList $pl) {
         return [Ht::entry("pref", "", array("class" => "want-focus", "size" => 4, "tabindex" => 6, "onfocus" => 'autosub("setpref",this)'))
-                . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "setpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)"])];
+                . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "setpref", "tabindex" => 6])];
     }
     function run(Contact $user, $qreq, $ssel) {
         // maybe download preferences for someone else

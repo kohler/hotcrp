@@ -522,6 +522,7 @@ class PaperList {
             $foot .= "   </tr></tbody></table>";
         }
         $foot .= $extra . "<hr class=\"c\" /></td>\n  </tr>\n";
+        $this->add_header_script('$("#plact").on("click", "input[type=submit], button[type=submit]", function (evt) { $(this).closest("form").data("submitFn", evt.target.value); })');
         return $foot;
     }
 

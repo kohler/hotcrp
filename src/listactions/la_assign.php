@@ -27,7 +27,7 @@ class Assign_ListAction extends ListAction {
                           ["class" => "want-focus", "onchange" => "plactions_dofold()"])
             . '<span class="fx"> &nbsp;<span id="atab_assign_for">for</span> &nbsp;'
             . Ht::select("markpc", [], 0, ["id" => "markpc", "class" => "need-pcselector", "data-pcselector-selected" => $pl->qreq->markpc])
-            . "</span> &nbsp;" . Ht::submit("fn", "Go", ["value" => "assign", "onclick" => "return plist_submit.call(this)"])];
+            . "</span> &nbsp;" . Ht::submit("fn", "Go", ["value" => "assign"])];
     }
     function run(Contact $user, $qreq, $ssel) {
         $mt = $qreq->assignfn;

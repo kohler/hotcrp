@@ -2263,8 +2263,8 @@ function papersel(value, name) {
 
 function plist_onsubmit() {
     // analyze why this is being submitted
-    var fn = this.getAttribute("data-submit-fn");
-    this.removeAttribute("data-submit-fn");
+    var fn = $(this).data("submitFn");
+    $(this).removeData("submitFn");
     if (!fn && this.defaultact)
         fn = $(this.defaultact).val();
     if (!fn && document.activeElement) {
@@ -2308,7 +2308,7 @@ function plist_onsubmit() {
     return true;
 }
 function plist_submit() {
-    $(this).closest("form")[0].setAttribute("data-submit-fn", this.value);
+    $(this).closest("form").data("submitFn", this.value);
     return true;
 }
 
