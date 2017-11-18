@@ -2072,15 +2072,20 @@ function foldup(event, opts) {
         opts = {n: opts};
     else if (!opts)
         opts = {};
-    if (!("n" in opts) && (x = e.getAttribute("data-fold-target"))) {
+    if (!("n" in opts) && (x = this.getAttribute("data-fold-target"))) {
+        var sp = x.indexOf(" ");
+        if (sp > 0) {
+            e = $$(x.substring(0, sp));
+            x = x.substring(sp + 1);
+        }
         opts.n = +x || 0;
         if (!("f" in opts) && /[co]$/.test(x))
             opts.f = /c$/.test(x);
     }
     if (!("f" in opts)
-        && e.tagName === "INPUT"
-        && (e.type === "checkbox" || e.type === "radio"))
-        opts.f = !e.checked;
+        && this.tagName === "INPUT"
+        && (this.type === "checkbox" || this.type === "radio"))
+        opts.f = !this.checked;
     while (e && (!e.id || e.id.substr(0, 4) != "fold")
            && (!e.getAttribute || !e.getAttribute("data-fold")))
         e = e.parentNode;
@@ -2094,11 +2099,15 @@ function foldup(event, opts) {
         fold(e, dofold, opts.n || 0, opts.st);
         $(e).trigger("fold", opts);
     }
-    if (event && typeof event === "object" && event.type === "click")
+    if (event && typeof event === "object" && event.type === "click") {
+        event_stop(event);
         event_prevent(event);
+    }
 }
 
-$(document).on("click", ".want-foldup", foldup);
+$(document).on("click", "a.want-foldup", foldup);
+$(document).on("click", "div.want-foldup", foldup);
+$(document).on("change", "input.want-foldup", foldup);
 $(document).on("fold", ".want-fold-focus", function (event, opts) {
     focus_within(this, (opts.f ? ".fn" : ".fx") + (opts.n || "") + " *");
 });
