@@ -1215,7 +1215,6 @@ img.placthook {
 	height: 12px;
 	background-image: url(../images/sprite.png?2);
 	background-position: -40px 0;
-	vertical-align: 7px;
 }
 img.sdlimg {
 	position: relative;
@@ -1817,7 +1816,9 @@ td.plf {
 td.pl_footselector {
 	text-align: right;
 	white-space: nowrap;
+	padding-top: 6px;
 	padding-right: 6px;
+	vertical-align: top;
 }
 table.pltable_reviewerhome > thead > tr > th.plh {
 	border-bottom: none;
