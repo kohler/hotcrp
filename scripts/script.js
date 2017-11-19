@@ -609,7 +609,7 @@ event_key.modifier = function (evt) {
 };
 event_key.is_default_a = function (evt, a) {
     return !evt.metaKey && !evt.ctrlKey && evt.which != 2
-        && (!a || !/(?:^|\s)(?:ui|btn|tla)(?=\s|$)/i.test(a.className || ""));
+        && (!a || !/(?:^|\s)(?:ui|btn)(?=\s|$)/i.test(a.className || ""));
 };
 return event_key;
 })();
@@ -2105,8 +2105,7 @@ function foldup(event, opts) {
     }
 }
 
-$(document).on("click", "a.want-foldup", foldup);
-$(document).on("click", "div.want-foldup", foldup);
+$(document).on("click", "div.want-foldup", foldup); // a.want-foldup below
 $(document).on("change", "input.want-foldup", foldup);
 $(document).on("fold", ".want-fold-focus", function (event, opts) {
     focus_within(this, (opts.f ? ".fn" : ".fx") + (opts.n || "") + " *");
@@ -6322,9 +6321,13 @@ function row_click(evt) {
     }
 }
 $(document).on("click", "a", function (evt) {
-    if (hasClass(this, "tla"))
-        return focus_fold.call(this, evt);
-    else if (hasClass(this, "fn5"))
+    if (hasClass(this, "ui")) {
+        if (hasClass(this, "tla"))
+            return focus_fold.call(this, evt);
+        else if (hasClass(this, "want-foldup"))
+            return foldup.call(this, evt);
+    }
+    if (hasClass(this, "fn5"))
         return foldup.call(this, evt, {n: 5, f: false});
     else {
         handle_list(this, this.getAttribute("href"));

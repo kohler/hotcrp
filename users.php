@@ -350,8 +350,8 @@ if (count($tOpt) > 1) {
 
     // Tab selectors
     echo "<tr><td class='tllx'><table><tr>
-  <td><div class='tll1'><a class='tla' href=''>User selection</a></div></td>
-  <td><div class='tll2'><a class='tla' href=''>Display options</a></div></td>
+  <td><div class='tll1'><a class='ui tla' href=''>User selection</a></div></td>
+  <td><div class='tll2'><a class='ui tla' href=''>Display options</a></div></td>
 </tr></table></td></tr>
 </table>\n\n";
 }

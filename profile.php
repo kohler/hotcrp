@@ -565,12 +565,12 @@ function echo_modes($hlbulk) {
         Ht::link($newProfile || $Me->email == $Acct->email ? "Your profile" : "Profile", selfHref(["u" => null])),
         '</div><div class="', ($hlbulk == 1 ? "papmodex" : "papmode"), '">';
     if ($newProfile)
-        echo Ht::link("New account", "", ["class" => "tla has-focus-history", "data-fold-target" => "9c"]);
+        echo Ht::link("New account", "", ["class" => "ui tla has-focus-history", "data-fold-target" => "9c"]);
     else
         echo Ht::link("New account", hoturl("profile", "u=new"));
     echo '</div><div class="', ($hlbulk == 2 ? "papmodex" : "papmode"), '">';
     if ($newProfile)
-        echo Ht::link("Bulk update", "#bulk", ["class" => "tla has-focus-history", "data-fold-target" => "9o"]);
+        echo Ht::link("Bulk update", "#bulk", ["class" => "ui tla has-focus-history", "data-fold-target" => "9o"]);
     else
         echo Ht::link("Bulk update", hoturl("profile", "u=new&amp;bulkregister=1"));
     echo '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";

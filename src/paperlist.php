@@ -505,7 +505,7 @@ class PaperList {
             if ($i === $whichlll)
                 $foot .= " active";
             $foot .= "\"><tbody><tr>\n"
-                . "    <td class=\"pl_footer_desc lll\"><a class=\"tla\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[0]]) . "#plact\">" . $lllg[1] . "</a></td>\n";
+                . "    <td class=\"pl_footer_desc lll\"><a class=\"ui tla\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[0]]) . "#plact\">" . $lllg[1] . "</a></td>\n";
             for ($j = 2; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
                 $class = isset($cell["class"]) ? "lld " . $cell["class"] : "lld";
