@@ -318,7 +318,7 @@ if (count($tOpt) > 1) {
         if (get($pl->have_folds, $fold) !== null) {
             $k = array_search($fold, ContactList::$folds) + 1;
             echo Ht::checkbox("show$fold", 1, $pl->have_folds[$fold],
-                              ["data-fold-target" => "foldul $k", "class" => "want-foldup"]),
+                              ["data-fold-target" => "foldul#$k", "class" => "want-foldup"]),
                 "&nbsp;", Ht::label($text), "<br />\n";
         }
     echo "</td>";

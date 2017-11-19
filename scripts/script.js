@@ -2073,12 +2073,12 @@ function foldup(event, opts) {
     else if (!opts)
         opts = {};
     if (!("n" in opts) && (x = this.getAttribute("data-fold-target"))) {
-        var sp = x.indexOf(" ");
+        var sp = x.indexOf("#");
         if (sp > 0) {
             e = $$(x.substring(0, sp));
             x = x.substring(sp + 1);
         }
-        opts.n = +x || 0;
+        opts.n = parseInt(x) || 0;
         if (!("f" in opts) && /[co]$/.test(x))
             opts.f = /c$/.test(x);
     }
