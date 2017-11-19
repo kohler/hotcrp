@@ -254,11 +254,12 @@ $pl_text = $pl->table_html("editpref",
 echo "<table id='searchform' class='tablinks1'>
 <tr><td>"; // <div class='tlx'><div class='tld1'>";
 
-$showing_au = (!$Conf->subBlindAlways() && strpos($Qreq->display, " au ") !== false);
-$showing_anonau = ((!$Conf->subBlindNever() || $Me->privChair) && strpos($Qreq->display, " anonau ") !== false);
+$showing_au = !$Conf->subBlindAlways() && !$pl->is_folded("au");
+$showing_anonau = (!$Conf->subBlindNever() || $Me->privChair) && !$pl->is_folded("anonau");
 
 echo Ht::form_div(hoturl("reviewprefs"), array("method" => "get", "id" => "redisplayform",
-                                               "class" => ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c"))),
+                                               "class" => ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c"),
+                                               "data-fold" => "true")),
     "<table>";
 
 if ($Me->privChair) {
@@ -286,35 +287,39 @@ echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'>
     "</tr>\n";
 
 $show_data = array();
-if (!$Conf->subBlindAlways()
-    && ($Conf->subBlindNever() || $pl->has("openau")))
+if (!$Conf->subBlindAlways()) {
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showau", 1, strpos($Qreq->display, " au ") !== false,
-                array("disabled" => (!$Conf->subBlindNever() && !$pl->has("openau")),
-                      "onchange" => "plinfo('au',this)",
-                      "id" => "showau"))
-        . "&nbsp;" . Ht::label("Authors") . '</span>';
-if (!$Conf->subBlindNever() && $Me->privChair)
-    $show_data[] = '<span class="sep' . (!$Conf->subBlindAlways() ? " fx10" : "") . '">'
-        . Ht::checkbox("showanonau", 1, strpos($Qreq->display, " anonau ") !== false,
-                       array("disabled" => !$pl->has("anonau"),
-                             "onchange" => (!$Conf->subBlindAlways() ? "" : "plinfo('au',this);") . "plinfo('anonau',this)",
-                             "id" => (!$Conf->subBlindAlways() ? "showanonau" : "showau")))
-        . "&nbsp;" . Ht::label(!$Conf->subBlindAlways() ? "Anonymous authors" : "Authors") . '</span>';
+        . Ht::checkbox("showau", 1, !$pl->is_folded("au"),
+                ["id" => "showau", "class" => "paperlist-display"])
+        . "&nbsp;" . Ht::label("Authors") . "</span>";
+} else if ($Me->privChair && $Conf->subBlindAlways()) {
+    $show_data[] = '<span class="sep">'
+        . Ht::checkbox("showanonau", 1, !$pl->is_folded("anonau"),
+                ["id" => "showau", "class" => "paperlist-display"])
+        . "&nbsp;" . Ht::label("Authors (deblinded)") . "</span>"
+        . Ht::checkbox("showau", 1, strpos($Qreq->display, " anonau ") !== false,
+                ["id" => "showau_hidden", "class" => "paperlist-display",
+                 "style" => "display:none"]);
+}
 if (!$Conf->subBlindAlways() || $Me->privChair) {
     $show_data[] = '<span class="sep fx10">'
-        . Ht::checkbox("showaufull", 1, strpos($Qreq->display, " aufull ") !== false,
-                       array("onchange" => "plinfo('aufull',this)", "id" => "showaufull"))
+        . Ht::checkbox("showaufull", 1, !$pl->is_folded("aufull"),
+                ["id" => "showaufull", "class" => "paperlist-display"])
         . "&nbsp;" . Ht::label("Full author info") . "</span>";
-    Ht::stash_script("plinfo.extra=function(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)};");
+}
+if ($Me->privChair && !$Conf->subBlindAlways() && !$Conf->subBlindNever()) {
+    $show_data[] = '<span class="sep fx10">'
+        . Ht::checkbox("showanonau", 1, !$pl->is_folded("anonau"),
+                ["id" => "showanonau", "class" => "paperlist-display"])
+        . "&nbsp;" . Ht::label("Deblinded authors") . "</span>";
 }
 if ($pl->has("abstract"))
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showabstract", 1, strpos($Qreq->display, " abstract ") !== false, array("onchange" => "plinfo('abstract',this)"))
+        . Ht::checkbox("showabstract", 1, !$pl->is_folded("abstract"), ["class" => "cb paperlist-display"])
         . "&nbsp;" . Ht::label("Abstracts") . '</span>';
 if ($pl->has("topics"))
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showtopics", 1, strpos($Qreq->display, " topics ") !== false, array("onchange" => "plinfo('topics',this)"))
+        . Ht::checkbox("showtopics", 1, !$pl->is_folded("topics"), ["class" => "cb paperlist-display"])
         . "&nbsp;" . Ht::label("Topics") . '</span>';
 if (!empty($show_data) && $pl->count)
     echo '<tr><td class="lxcaption"><strong>Show:</strong> &nbsp;',
@@ -322,6 +327,7 @@ if (!empty($show_data) && $pl->count)
         join('', $show_data), '</td></tr>';
 echo "</table></div></form>"; // </div></div>
 echo "</td></tr></table>\n";
+Ht::stash_script("$(document).on(\"change\",\"input.paperlist-display\",plinfo.checkbox_change);$(\"#showau\").on(\"change\", function () { foldup.call(this, null, {n:10}) })");
 
 
 // main form

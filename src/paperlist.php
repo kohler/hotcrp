@@ -985,25 +985,34 @@ class PaperList {
     private function _make_title_header_extra($rstate, $fieldDef, $show_links) {
         $titleextra = "";
         if (isset($rstate->row_folded))
-            $titleextra .= '<span class="sep"></span><a class="ui fn3" href="#" onclick="return fold(\'pl\',0,3)">Show all papers</a><a class="ui fx3" href="#" onclick="return fold(\'pl\',1,3)">Hide unlikely conflicts</a>';
-        if ($this->has("authors") && $show_links) {
-            $titleextra .= "<span class='sep'></span>";
+            $titleextra .= '<span class="sep"></span><a class="ui want-foldup" href="#" data-fold-target="3"><span class="fn3">Show all papers</span><span class="fx3">Hide unlikely conflicts</span></a>';
+        if ($show_links && $this->has("authors")) {
+            $titleextra .= '<span class="sep"></span>';
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER)
-                $titleextra .= '<a class="ui fn1" href="#" onclick="return plinfo(\'au\',false)">Show authors</a><a class="ui fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
+                $titleextra .= '<a class="ui want-plinfo" href="#" data-plinfo-field="au">'
+                    . '<span class="fn1">Show authors</span><span class="fx1">Hide authors</span></a>';
             else if ($this->user->is_manager() && !$this->has("openau"))
-                $titleextra .= '<a class="ui fn1 fn2" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',false)">Show authors</a><a class="ui fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
+                $titleextra .= '<a class="ui want-plinfo" href="#" data-plinfo-field="au anonau">'
+                    . '<span class="fn1 fn2">Show authors</span><span class="fx1 fx2">Hide authors</span></a>';
             else if ($this->user->is_manager() && $this->has("anonau"))
-                $titleextra .= '<a class="ui fn1" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',true)">Show non-anonymous authors</a><a class="ui fx1 fn2" href="#" onclick="return plinfo(\'anonau\',false)">Show all authors</a><a class="ui fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
+                $titleextra .= '<a class="ui want-plinfo fn1" href="#" data-plinfo-field="au">Show authors</a>'
+                    . '<a class="ui want-plinfo fx1 fn2" href="#" data-plinfo-field="anonau">Show all authors</a>'
+                    . '<a class="ui want-plinfo fx1 fx2" href="#" data-plinfo-field="au anonau">Hide authors</a>';
             else
-                $titleextra .= '<a class="ui fn1" href="#" onclick="return plinfo(\'au\',false)">Show non-anonymous authors</a><a class="ui fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
+                $titleextra .= '<a class="ui want-plinfo" href="#" data-plinfo-field="tags">'
+                    . '<span class="fn1">Show non-anonymous authors</span><span class="fx1">Hide authors</span></a>';
         }
-        if ($show_links)
-            foreach ($fieldDef as $fdef)
-                if ($fdef->name == "tags" && $fdef->fold && $fdef->has_content) {
-                    $titleextra .= "<span class='sep'></span>";
-                    $titleextra .= "<a class='ui fn$fdef->fold' href='#' onclick='return plinfo(\"tags\",0)'>Show tags</a><a class='ui fx$fdef->fold' href='#' onclick='return plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
-                }
-        return $titleextra ? "<span class='pl_titleextra'>$titleextra</span>" : "";
+        if ($show_links && $this->has("tags")) {
+            $tagfold = $this->find_column("tags")->fold;
+            $titleextra .= '<span class="sep"></span>';
+            $titleextra .= '<a class="ui want-plinfo" href="#" data-plinfo-field="tags">'
+                . '<span class="fn' . $tagfold . '">Show tags</span><span class="fx' . $tagfold . '">Hide tags</span></a>';
+        }
+        if ($titleextra) {
+            $titleextra = '<span id="plheaderlinks" class="pl_titleextra">' . $titleextra . '</span>';
+            $this->add_header_script('$("#plheaderlinks").on("click", "a.want-plinfo", plinfo.a_click)');
+        }
+        return $titleextra;
     }
 
     private function _column_split($rstate, $colhead, &$body) {

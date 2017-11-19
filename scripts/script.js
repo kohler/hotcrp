@@ -2008,7 +2008,7 @@ function focus_within(elt, subfocus_selector) {
 
 function refocus_within(elt) {
     var focused = document.activeElement;
-    if (focused && !$(focused).is(":visible")) {
+    if (focused && focused.tagName !== "A" && !$(focused).is(":visible")) {
         while (focused && focused !== elt)
             focused = focused.parentElement;
         if (focused) {
@@ -5817,8 +5817,6 @@ function plinfo(type, dofold) {
         elt.click();
     if (type !== "aufull")
         fold(self, dofold, foldmap(type));
-    if (plinfo.extra)
-        plinfo.extra(type, dofold);
 
     // may need to load information by ajax
     if (type === "aufull" && aufull[!!dofold]) {
@@ -5908,7 +5906,7 @@ plinfo.on_set_tags = function (f) {
     set_tags_callbacks.push(f);
 };
 
-plinfo.fold_override = function (checkbox) {
+function fold_override(checkbox) {
     $(function () {
         var on = checkbox.checked;
         fold(self, !on, 5);
@@ -5928,11 +5926,23 @@ plinfo.checkbox_change = function (event) {
     if (this.name.substring(0, 4) === "show") {
         var type = this.name.substring(4);
         if (type === "force")
-            plinfo.fold_override(this);
+            fold_override(this);
         else if (type === "rownum")
             fold(self, !this.checked, 6);
         else
             plinfo(type, this);
+    }
+};
+
+plinfo.a_click = function (event) {
+    var type = this.getAttribute("data-plinfo-field");
+    if (type) {
+        type = type.split(/\s+/);
+        for (var i = 0; i != type.length; ++i)
+            if (type[i])
+                plinfo(type[i], null);
+        event_stop(event);
+        event_prevent(event);
     }
 };
 

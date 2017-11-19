@@ -18,7 +18,7 @@ class Tag_ListAction extends ListAction {
         // tag name cell
         $t = "";
         if ($pl->user->privChair) {
-            $t .= '<span class="fx99"><a class="ui q want-foldup" href="#" data-fold-target="placttags">'
+            $t .= '<span class="fx99"><a class="ui q want-foldup" href="#">'
                 . expander(null, 0) . "</a></span>";
         }
         $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
