@@ -276,11 +276,6 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $Qreq->t, 1);
 // Prepare more display options
 $display_options_extra = "";
 
-function display_option_checked($type) {
-    global $pl;
-    return !$pl->is_folded($type);
-}
-
 class Search_DisplayOptions {
     public $headers = [];
     public $items = [];
@@ -294,7 +289,8 @@ class Search_DisplayOptions {
         $this->items[$column][] = $item;
     }
     function checkbox_item($column, $type, $title, $options = []) {
-        $checked = display_option_checked($type);
+        global $pl;
+        $checked = !$pl->is_folded($type);
         $x = '<div class="dispopt-checkitem"';
         if (get($options, "indent"))
             $x .= ' style="padding-left:2em"';
@@ -328,13 +324,13 @@ if ($pl_text) {
         $display_options->checkbox_item(1, "au", "Authors", ["id" => "showau"]);
         if ($Me->privChair && $viewAllAuthors)
             $display_options_extra .=
-                Ht::checkbox("showanonau", 1, display_option_checked("au"),
+                Ht::checkbox("showanonau", 1, !$pl->is_folded("au"),
                              array("id" => "showau_hidden", "class" => "paperlist-display",
                                    "style" => "display:none"));
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
         $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl->has("anonau")]);
         $display_options_extra .=
-            Ht::checkbox("showau", 1, display_option_checked("anonau"),
+            Ht::checkbox("showau", 1, !$pl->is_folded("anonau"),
                          array("id" => "showau_hidden", "class" => "paperlist-display",
                                "style" => "display:none"));
     }
