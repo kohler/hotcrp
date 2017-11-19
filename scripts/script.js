@@ -6328,6 +6328,8 @@ $(document).on("click", "a", function (evt) {
             return foldup.call(this, evt);
         else if (hasClass(this, "want-edit-comment"))
             return papercomment.edit_id(this.hash.substring(1));
+        else
+            evt.preventDefault();
     }
     if (hasClass(this, "fn5"))
         return foldup.call(this, evt, {n: 5, f: false});
