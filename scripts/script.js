@@ -1312,7 +1312,7 @@ function tooltip_erase() {
 }
 
 function add_tooltip() {
-    var j = jQuery(this);
+    var j = $(this);
     if (j.attr("data-tooltip-type") == "focus")
         j.on("focus", tooltip_enter).on("blur", tooltip_leave);
     else
@@ -1320,7 +1320,7 @@ function add_tooltip() {
     j.removeClass("need-tooltip");
 }
 
-jQuery(function () { jQuery(".need-tooltip").each(add_tooltip); });
+$(function () { $(".need-tooltip").each(add_tooltip); });
 
 
 // temporary text
@@ -3507,13 +3507,13 @@ function edit(cj) {
     if (!elt && /\beditcomment\b/.test(window.location.search))
         return false;
     var $c = $cmt(elt);
-    if (!$c.find("textarea[name='comment']").length)
+    if (!$c.find("textarea[name=comment]").length)
         render_cmt($c, cj, true);
     location.hash = "#" + cid;
     $c.scrollIntoView();
-    var te = $c.find("textarea[name='comment']")[0];
-    te.focus();
+    var te = $c.find("textarea[name=comment]")[0];
     te.setSelectionRange && te.setSelectionRange(te.value.length, te.value.length);
+    $(function(){ te.focus(); });
     has_unload || $(window).on("beforeunload.papercomment", beforeunload);
     has_unload = true;
     return false;
@@ -6326,6 +6326,8 @@ $(document).on("click", "a", function (evt) {
             return focus_fold.call(this, evt);
         else if (hasClass(this, "want-foldup"))
             return foldup.call(this, evt);
+        else if (hasClass(this, "want-edit-comment"))
+            return papercomment.edit_id(this.hash.substring(1));
     }
     if (hasClass(this, "fn5"))
         return foldup.call(this, evt, {n: 5, f: false});
