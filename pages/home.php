@@ -381,9 +381,9 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
                 if ($d == "N/A")
                     $d = $Conf->printableTimeSetting($Conf->review_deadline($round, $Me->isPC, true), "span");
                 if ($d != "N/A")
-                    echo ' <span class="deadline">Please submit your ', $rname, ($myrow->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
+                    echo ' <span class="deadline">Please submit your round ', $rname, ($myrow->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
             } else if ($Conf->time_review($round, $Me->isPC, true))
-                echo ' <span class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $Conf->printableTimeSetting($Conf->review_deadline($round, $Me->isPC, false), "span"), ".</span><br />\n";
+                echo ' <span class="deadline"><strong class="overdue"> Round ', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $Conf->printableTimeSetting($Conf->review_deadline($round, $Me->isPC, false), "span"), ".</span><br />\n";
             else
                 echo ' <span class="deadline"><strong class="overdue">The <a href="', hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></span><br />\n";
         }
