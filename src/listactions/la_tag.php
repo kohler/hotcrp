@@ -23,7 +23,7 @@ class Tag_ListAction extends ListAction {
         }
         $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
             . Ht::entry("tag", $pl->qreq->tag,
-                        ["size" => 15, "onfocus" => "suggest(this,taghelp_tset);autosub('tag',this)", "class" => "want-focus"])
+                        ["size" => 15, "onfocus" => "suggest(this,taghelp_tset)", "class" => "want-focus want-autosubmit", "data-autosubmit-type" => "tag"])
             . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag"]);
         if ($pl->user->privChair) {
             $t .= "<div class='fx'><div style='margin:2px 0'>"

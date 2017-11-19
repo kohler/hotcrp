@@ -472,8 +472,8 @@ if (!isset($Qreq->q)) // XXX redundant
 echo Ht::entry("q", $Qreq->q,
                array("id" => "autoassignq", "placeholder" => "(All)",
                      "size" => 40, "title" => "Enter paper numbers or search terms",
-                     "class" => "hotcrp_searchbox",
-                     "onfocus" => 'autosub("requery",this)')), " &nbsp;in &nbsp;";
+                     "class" => "hotcrp_searchbox want-autosubmit",
+                     "data-autosubmit-type" => "requery")), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
     echo Ht::select("t", $tOpt, $Qreq->t);
 else
@@ -504,14 +504,14 @@ echo '<table>';
 echo_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revct", get($Qreq, "revct", 1),
-              array("size" => 3, "onfocus" => 'autosub(false,this)')), "&nbsp; ";
+              array("size" => 3, "class" => "want-autosubmit")), "&nbsp; ";
 doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s)</td></tr>\n";
 
 echo_radio_row("a", "revadd", "Assign", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revaddct", get($Qreq, "revaddct", 1),
-              array("size" => 3, "onfocus" => 'autosub(false,this)')),
+              array("size" => 3, "class" => "want-autosubmit")),
     "&nbsp; <i>additional</i>&nbsp; ";
 doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s) per selected paper</td></tr>\n";
@@ -519,7 +519,7 @@ echo "&nbsp; review(s) per selected paper</td></tr>\n";
 echo_radio_row("a", "revpc", "Assign each PC member", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revpcct", get($Qreq, "revpcct", 1),
-              array("size" => 3, "onfocus" => 'autosub(false,this)')),
+              array("size" => 3, "class" => "want-autosubmit")),
     "&nbsp; additional&nbsp; ";
 doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s) from this paper selection</td></tr>\n";
@@ -566,7 +566,7 @@ echo '<tr><td colspan="2" class="mg"></td></tr>';
 // discussion order
 echo_radio_row("a", "discorder", "Create discussion order in tag #", ["open" => true]);
 echo Ht::entry("discordertag", get($Qreq, "discordertag", "discuss"),
-               array("size" => 12, "onfocus" => 'autosub(false,this)')),
+               array("size" => 12, "class" => "want-autosubmit")),
     ", grouping papers with similar PC conflicts</td></tr>";
 
 echo "</table>\n";

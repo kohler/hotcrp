@@ -2333,40 +2333,26 @@ function make_onkey(key, f) {
     };
 }
 
-window.autosub = (function () {
-var current;
 
-function autosub_kp(event) {
-    var form, inputs, i;
-    event = event || window.event;
-    if (event_modkey(event) || event_key(event) != "Enter")
+$(document).on("focus", "input.want-autosubmit", function (event) {
+    $(event.target).closest("form").data("autosubmitType", event.target.getAttribute("data-autosubmit-type") || false);
+});
+$(document).on("keypress", "input.want-autosubmit", function (event) {
+    if (event_modkey(event) || event_key(event) !== "Enter")
         return true;
-    else if (current === false)
-        return false;
-    form = this;
-    while (form && form.tagName && form.tagName != "FORM")
-        form = form.parentNode;
-    if (form && form.tagName) {
-        inputs = form.getElementsByTagName("input");
-        for (i = 0; i < inputs.length; ++i)
-            if (inputs[i].name == "default") {
-                this.blur();
-                inputs[i].click();
-                return false;
-            }
+    var $f = $(event.target).closest("form"),
+        type = $f.data("autosubmitType"),
+        defaulte = $f[0] ? $f[0]["default"] : null;
+    if (defaulte && type) {
+        $f[0].defaultact.value = type;
+        event.target.blur();
+        defaulte.click();
     }
-    return true;
-}
-
-return function (name, elt) {
-    var da = $$("defaultact");
-    if (da && typeof name === "string")
-        da.value = name;
-    current = name;
-    if (elt && !elt.onkeypress && elt.tagName == "INPUT")
-        elt.onkeypress = autosub_kp;
-};
-})();
+    if (defaulte || !type) {
+        event_stop(event);
+        event_prevent(event);
+    }
+});
 
 
 function plactions_dofold() {
@@ -4251,7 +4237,6 @@ var add_revpref_ajax = (function () {
             $e = $e.parent();
         }
         $e.off(".revpref_ajax")
-            .on("focus.revpref_ajax", "input.revpref", rp_focus)
             .on("blur.revpref_ajax", "input.revpref", rp_blur)
             .on("change.revpref_ajax", "input.revpref", rp_change)
             .on("keydown.revpref_ajax", "input.revpref", make_onkey("Enter", rp_change));
@@ -4264,10 +4249,6 @@ var add_revpref_ajax = (function () {
     rp.then = function (f) {
         outstanding ? then = f : f();
     };
-
-    function rp_focus() {
-        autosub("update", this);
-    }
 
     function rp_blur() {
         blurred_at = now_msec();

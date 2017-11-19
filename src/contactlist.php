@@ -483,7 +483,7 @@ class ContactList {
             $t .= "<span class=\"linelink\"><a class=\"tla lll\" href=\"#\">Tag</a><span class=\"lld\"><b>:</b> &nbsp;";
             $t .= Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), req("tagtype"))
                 . ' &nbsp;tag(s) &nbsp;'
-                . Ht::entry("tag", req("tag"), ["size" => 15, "class" => "want-focus", "onfocus" => "autosub('tagact',this)"])
+                . Ht::entry("tag", req("tag"), ["size" => 15, "class" => "want-focus want-autosubmit", "data-autosubmit-type" => "tagact"])
                 . ' &nbsp;' . Ht::submit("tagact", "Go") . '</span></span>';
 
             $t .= $barsep;
