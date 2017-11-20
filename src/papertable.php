@@ -65,18 +65,16 @@ class PaperTable {
             $ms["p"] = true;
         if ($user->can_review($prow, null))
             $ms["re"] = true;
-        if ($user->can_view_paper($prow) && $user->allow_administer($prow))
+        if ($user->can_view_paper($prow) && $this->allow_admin)
             $ms["p"] = true;
         if ($prow->has_author($user)
             && ($this->conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
             $ms["edit"] = true;
         if ($user->can_view_paper($prow))
             $ms["p"] = true;
-        if ($prow->has_author($user)
-            || $user->allow_administer($prow))
+        if ($prow->has_author($user) || $this->allow_admin)
             $ms["edit"] = true;
-        if ($prow->myReviewType >= REVIEW_SECONDARY
-            || $user->allow_administer($prow))
+        if ($prow->myReviewType >= REVIEW_SECONDARY || $this->allow_admin)
             $ms["assign"] = true;
         if (!$mode)
             $mode = $this->qreq->m ? : $this->qreq->mode;
@@ -431,7 +429,7 @@ class PaperTable {
                 $out[] = '<p class="xd">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
             }
 
-            $force = $this->get_option_force($prow);
+            $force = $this->get_option_force();
             foreach ($prow ? $prow->options() : [] as $ov) {
                 $o = $ov->option;
                 if ($o->display() === PaperOption::DISP_SUBMISSION
@@ -861,9 +859,8 @@ class PaperTable {
         }
     }
 
-    private function get_option_force(PaperInfo $prow) {
-        if ($this->user->allow_administer($prow)
-            && !$this->user->can_view_authors($prow, false))
+    private function get_option_force() {
+        if ($this->allow_admin && !$this->user->can_view_authors($this->prow, false))
             return true;
         else
             return null;
@@ -932,7 +929,7 @@ class PaperTable {
         $topicdata = $this->prow->unparse_topics_html(false, $this->user);
         $optt = $optp = [];
         $optp_nfold = $optt_ndoc = $optt_nfold = 0;
-        $force = $this->get_option_force($this->prow);
+        $force = $this->get_option_force();
 
         foreach ($this->prow->options() as $ov) {
             $o = $ov->option;
@@ -1340,7 +1337,7 @@ class PaperTable {
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit, $wholefold) {
-        $editable = ($type === "manager" ? $this->user->privChair : $this->user->can_administer($this->prow));
+        $editable = ($type === "manager" ? $this->user->privChair : $this->admin);
 
         $field = $type . "ContactId";
         if ($this->prow->$field == 0 && !$editable)
@@ -1934,7 +1931,7 @@ class PaperTable {
         // what actions are supported?
         $canEdit = $this->user->can_edit_paper($prow);
         $canReview = $this->user->can_review($prow, null);
-        $canAssign = $this->user->can_administer($prow);
+        $canAssign = $this->user->admin;
         $canHome = ($canEdit || $canAssign || $this->mode === "contact");
 
         $t = "";
@@ -2217,7 +2214,7 @@ class PaperTable {
                 $ct = $this->prow->has_author($this->user) ? COMMENTTYPE_BYAUTHOR : 0;
                 $cs[] = ["commentType" => $ct];
             }
-            if ($this->prow->has_author($this->user) || $this->user->can_administer($this->prow)) {
+            if ($this->admin || $this->prow->has_author($this->user)) {
                 foreach ($this->conf->time_author_respond() as $i => $rname) {
                     if (!$this->has_response($i))
                         $cs[] = ["commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i];
@@ -2267,7 +2264,6 @@ class PaperTable {
     function paptabEndWithEditableReview() {
         $prow = $this->prow;
         $act_pc = $this->user->act_pc($prow);
-        $actChair = $this->user->can_administer($prow);
 
         // review messages
         $whyNot = $this->user->perm_view_review($prow, null, false);
@@ -2302,9 +2298,9 @@ class PaperTable {
         $opt = array("edit" => $this->mode === "re");
 
         if ($this->editrrow
-            && ($this->user->is_owned_review($this->editrrow) || $actChair)
+            && ($this->user->is_owned_review($this->editrrow) || $this->admin)
             && !$this->conf->time_review($this->editrrow, $act_pc, true)) {
-            if ($actChair)
+            if ($this->admin)
                 $override = " As an administrator, you can override this deadline.";
             else {
                 $override = "";
@@ -2544,7 +2540,7 @@ class PaperTable {
         if ($this->mode === "p" && $prow && empty($this->viewable_rrows)
             && empty($this->mycrows)
             && $prow->has_author($this->user)
-            && !$this->user->allow_administer($prow)
+            && !$this->allow_admin
             && ($this->conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
             $this->mode = "edit";
     }
