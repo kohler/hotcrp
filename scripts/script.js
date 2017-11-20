@@ -6081,23 +6081,31 @@ return function (classes, class_prefix) {
 })();
 
 
-function docheckformat(dt) {    // NB must return void
-    var $j = $("#foldcheckformat" + dt);
+window.document_ui = (function ($) {
+function check_format() {
+    var $self = $(this), $d = $self.closest(".has-document"),
+        $cf = $d.find(".check-format-result");
     if (this && "tagName" in this && this.tagName === "A")
-        $(this).hide();
+        $self.hide();
     var running = setTimeout(function () {
-        $j.html('<div class="xmsg xinfo"><div class="xmsg0"></div><div class="xmsgc">Checking format (this can take a while)...</div><div class="xmsg1"></div></div>');
+        $cf.html('<div class="xmsg xinfo"><div class="xmsg0"></div><div class="xmsgc">Checking format (this can take a while)...</div><div class="xmsg1"></div></div>');
     }, 1000);
     $.ajax(hoturl_post("api/checkformat", {p: hotcrp_paperid}), {
-        timeout: 20000, data: {dt: dt, docid: $j.attr("docid")},
+        timeout: 20000, data: {dt: $d.data("dtype"), docid: $d.data("docid")},
         success: function (data) {
             clearTimeout(running);
-            if (data.ok)
-                $j.html(data.response);
+            data.ok && $cf.html(data.response);
         }
     });
     return false;
 }
+
+return function (event) {
+    if (hasClass(this, "want-check-format"))
+        return check_format.call(this);
+};
+})($);
+
 
 function addattachment(oid) {
     var ctr = $$("opt" + oid + "_new"), n = ctr.childNodes.length,
@@ -6308,6 +6316,8 @@ $(document).on("click", "a", function (evt) {
             return foldup.call(this, evt);
         else if (hasClass(this, "want-edit-comment"))
             return papercomment.edit_id(this.hash.substring(1));
+        else if (hasClass(this, "want-document-ui"))
+            return document_ui.call(this, evt);
         else
             evt.preventDefault();
     }
@@ -6324,7 +6334,8 @@ $(document).on("submit", "form", function () {
 });
 $(document).on("click", "tr.pl", row_click);
 hotcrp_list && $(window).on("beforeunload", unload_list);
-})(jQuery);
+})($);
+
 
 function hotlist_search_params(x, ids) {
     if (x instanceof HTMLElement)

@@ -487,44 +487,45 @@ class PaperTable {
     }
 
     function echo_editable_document(PaperOption $docx, $storageId, $flags) {
-        global $Me;
-
-        $prow = $this->prow;
         $docclass = $this->conf->docclass($docx->id);
-        $documentType = $docx->id;
-        $optionType = $docx->type;
-        $main_submission = ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
+        $dtype = $docx->id;
 
-        $filetypes = array();
-        $accepts = array();
-        if ($documentType == DTYPE_SUBMISSION
-            && ($this->conf->opt("noPapers") === 1 || $this->conf->opt("noPapers") === true))
-            return;
+        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL) {
+            $noPapers = $this->conf->opt("noPapers");
+            if ($noPapers === 1 || $noPapers === true)
+                return;
+        }
 
         $accepts = $docx->mimetypes();
         $field = $docx->field_key();
+        $doc = null;
+        if ($this->prow && $this->user->can_view_pdf($this->prow) && $storageId > 1)
+            $doc = $this->prow->document($dtype, $storageId, true);
+
         $msgs = [];
-        if (($accepts = $docx->mimetypes()))
+        if ($accepts)
             $msgs[] = htmlspecialchars(Mimetype::description($accepts));
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
         echo $this->editable_papt($field, $this->field_name(htmlspecialchars($docx->title)) . ' <span class="papfnh">(' . join(", ", $msgs) . ")</span>");
         echo $this->field_hint(htmlspecialchars($docx->title), $docx->description);
         echo $this->messages_for($field);
-        echo '<div class="papev">';
-        if ($optionType)
-            echo Ht::hidden("has_opt$docx->id", 1);
+
+        echo '<div class="papev has-document" data-dtype="', $dtype, '"';
+        if ($doc)
+            echo ' data-docid="', $doc->paperStorageId, '"';
+        echo '>';
+        if ($dtype > 0)
+            echo Ht::hidden("has_opt" . $dtype, 1);
 
         // current version, if any
-        $doc = null;
         $has_cf = false;
-        $inputid = ($optionType ? "opt" . $documentType : "paperUpload");
-        if ($prow && $Me->can_view_pdf($prow) && $storageId > 1
-            && (($doc = $prow->document($documentType, $storageId, true)))) {
+        $inputid = $dtype > 0 ? "opt" . $dtype : "paperUpload";
+        if ($doc) {
             if ($doc->mimetype === "application/pdf") {
                 if (!$this->cf)
                     $this->cf = new CheckFormat(CheckFormat::RUN_NO);
-                if (($has_cf = $this->cf->has_spec($documentType)))
-                    $this->cf->check_document($prow, $doc);
+                if (($has_cf = $this->cf->has_spec($dtype)))
+                    $this->cf->check_document($this->prow, $doc);
             }
 
             echo "<table id='current_$inputid'><tr>",
@@ -532,12 +533,12 @@ class PaperTable {
             if (($stamps = self::pdf_stamps_html($doc)))
                 echo '<span class="sep"> </span>', $stamps;
             if ($has_cf && ($this->cf->failed || $this->cf->need_run))
-                echo "<span class='sep'> </span><a class='ui' href='#' onclick='return docheckformat.call(this, $documentType)'>Check format</a>";
+                echo '<span class="sep"> </span><a class="ui want-document-ui want-check-format" href="#">Check format</a>';
             else if ($has_cf) {
                 if (!$this->cf->has_problem())
                     echo '<span class="sep"></span><span class="confirm">Format OK</span>';
                 if ($this->cf->possible_run)
-                    echo '<span class="sep"></span><a class="ui" href="#" onclick="return docheckformat.call(this, ', $documentType, ')">Recheck format</a>';
+                    echo '<span class="sep"></span><a class="ui want-document-ui want-check-format" href="#">Recheck format</a>';
             }
             echo "</td></tr></table>\n";
         }
@@ -552,12 +553,12 @@ class PaperTable {
         if (count($accepts) == 1)
             $uploader .= " accept='" . $accepts[0]->mimetype . "'";
         $uploader .= ' size="30"';
-        if ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL
+        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL
             || ($flags & self::ENABLESUBMIT)) {
             $onchange = [];
-            if ($documentType == DTYPE_SUBMISSION)
+            if ($dtype == DTYPE_SUBMISSION)
                 $onchange[] = "fold('isready',0);paperform_checkready()";
-            else if ($documentType == DTYPE_FINAL)
+            else if ($dtype == DTYPE_FINAL)
                 $onchange[] = "paperform_checkready(true)";
             if ($flags & self::ENABLESUBMIT)
                 $onchange[] = "form.submitpaper.disabled=false";
@@ -565,7 +566,7 @@ class PaperTable {
                 $uploader .= ' onchange="' . join(";", $onchange) . '"';
         }
         $uploader .= " />";
-        if ($doc && $optionType)
+        if ($doc && $dtype > 0)
             $uploader .= " <span class='barsep'>·</span> "
                 . "<a id='remover_$inputid' class='ui' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
         if ($doc)
@@ -573,14 +574,13 @@ class PaperTable {
 
         if ($has_cf) {
             $cf_open = !$this->cf->failed && $this->cf->has_problem();
-            echo '<div id="foldcheckformat', $documentType, '" class="',
-                $cf_open ? "foldo" : "foldc", '" data-docid="', $doc->paperStorageId, '">';
+            echo '<div class="check-format-result">';
             if ($cf_open)
-                echo $this->cf->document_report($prow, $doc);
+                echo $this->cf->document_report($this->prow, $doc);
             echo '</div>';
         }
 
-        if ($documentType == DTYPE_FINAL)
+        if ($dtype == DTYPE_FINAL)
             echo Ht::hidden("submitpaper", 1);
 
         echo $uploader, "</div>";
