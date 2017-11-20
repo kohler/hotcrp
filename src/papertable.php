@@ -472,18 +472,17 @@ class PaperTable {
 
     private function echo_editable_complete() {
         $checked = $this->is_ready_checked();
-        echo "<div id='foldisready' class='",
+        echo '<div class="ready-container ',
             (($this->prow && $this->prow->paperStorageId > 1)
              || $this->conf->opt("noPapers") ? "foldo" : "foldc"),
-            "'><table class='fx'><tr><td class='nw'>",
-            Ht::checkbox("submitpaper", 1, $checked, ["id" => "paperisready", "onchange" => "paperform_checkready()"]), "&nbsp;";
-        if ($this->conf->setting('sub_freeze'))
+            '"><table class="fx"><tr><td class="nw">',
+            Ht::checkbox("submitpaper", 1, $checked, ["class" => "want-document-ui want-check-ready"]), "&nbsp;";
+        if ($this->conf->setting("sub_freeze"))
             echo "</td><td>", Ht::label("<strong>" . $this->conf->_("The submission is complete.") . "</strong>"),
                 "</td></tr><tr><td></td><td><small>You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</small>";
         else
             echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review.") . "</strong>");
         echo "</td></tr></table></div>\n";
-        Ht::stash_script("$(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0);paperform_checkready()})");
     }
 
     function echo_editable_document(PaperOption $docx, $storageId, $flags) {
@@ -549,22 +548,12 @@ class PaperTable {
             echo '<div class="g" id="removable_', $inputid, '">';
             $uploader .= 'Replace:&nbsp; ';
         }
-        $uploader .= "<input id='$inputid' type='file' name='$inputid'";
+        $uploader .= '<input id="' . $inputid . '" type="file" name="' . $inputid . '"';
         if (count($accepts) == 1)
-            $uploader .= " accept='" . $accepts[0]->mimetype . "'";
+            $uploader .= ' accept="' . $accepts[0]->mimetype . '"';
         $uploader .= ' size="30"';
-        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL
-            || ($flags & self::ENABLESUBMIT)) {
-            $onchange = [];
-            if ($dtype == DTYPE_SUBMISSION)
-                $onchange[] = "fold('isready',0);paperform_checkready()";
-            else if ($dtype == DTYPE_FINAL)
-                $onchange[] = "paperform_checkready(true)";
-            if ($flags & self::ENABLESUBMIT)
-                $onchange[] = "form.submitpaper.disabled=false";
-            if ($onchange)
-                $uploader .= ' onchange="' . join(";", $onchange) . '"';
-        }
+        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL)
+            $uploader .= ' class="want-document-ui want-check-ready"';
         $uploader .= " />";
         if ($doc && $dtype > 0)
             $uploader .= " <span class='barsep'>·</span> "
@@ -1983,12 +1972,29 @@ class PaperTable {
         $this->edit_fields[] = [$prio, count($this->edit_fields), $callback, $name];
     }
 
-    private function _echo_editable_body($form) {
+    private function _echo_editable_form() {
+        $form_js = ["id" => "paperform"];
+        if ($this->prow && $this->prow->timeSubmitted > 0)
+            $form_js["data-submitted"] = $this->prow->timeSubmitted;
+        if ($this->useRequest)
+            $form_js["class"] = "alert";
+        echo Ht::form(hoturl_post("paper", "p=" . ($this->prow ? $this->prow->paperId : "new") . "&amp;m=edit"), $form_js);
+        Ht::stash_script('$("#paperform").on("change", ".want-document-ui", document_ui)');
+        if ($this->prow
+            && $this->prow->paperStorageId > 1
+            && $this->prow->timeSubmitted > 0
+            && !$this->conf->setting("sub_freeze"))
+            Ht::stash_script('$("#paperform").on("submit", document_ui)');
+        Ht::stash_script('$(function(){$("#paperform input[name=paperUpload]").trigger("change")})');
+    }
+
+    private function _echo_editable_body() {
         $prow = $this->prow;
         $this->canUploadFinal = $prow && $prow->outcome > 0
             && $this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_submit_final_paper", $prow);
 
-        echo $form, "<div class='aahc'>";
+        $this->_echo_editable_form();
+        echo '<div class="aahc">';
 
         if (($m = $this->editMessage()))
             echo $m, '<div class="g"></div>';
@@ -2050,26 +2056,16 @@ class PaperTable {
         else
             echo '<div class="papcard_body">';
 
-        $form_js = array("id" => "paperform");
-        if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
-            && !$this->conf->setting('sub_freeze'))
-            $form_js["onsubmit"] = "return docheckpaperstillready()";
-        if ($prow && $prow->timeSubmitted > 0)
-            $form_js["data-submitted"] = $prow->timeSubmitted;
-        if ($this->useRequest)
-            $form_js["class"] = "alert";
-        $form = Ht::form(hoturl_post("paper", "p=" . ($prow ? $prow->paperId : "new") . "&amp;m=edit"), $form_js);
-
         $this->echoDivEnter();
         if ($this->editable) {
             if (!$this->user->can_clickthrough("submit")) {
                 echo '<div class="clickthrough"><h3>Submission terms</h3>You must agree to these terms before you can submit a paper.<hr />';
                 self::_echo_clickthrough("submit");
                 echo '</div><div id="clickthrough_show" style="display:none">';
-                $this->_echo_editable_body($form);
+                $this->_echo_editable_body();
                 echo '</div>';
             } else
-                $this->_echo_editable_body($form);
+                $this->_echo_editable_body();
         } else {
             if ($this->mode === "edit" && ($m = $this->editMessage()))
                 echo $m, "<div class='g'></div>\n";
@@ -2088,7 +2084,7 @@ class PaperTable {
         $this->echoDivExit();
 
         if (!$this->editable && $this->mode === "edit") {
-            echo $form;
+            $this->_echo_editable_form();
             if ($prow->timeSubmitted > 0)
                 $this->echo_editable_contact_author(true);
             $this->echoActions(false);

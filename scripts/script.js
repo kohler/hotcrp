@@ -2546,26 +2546,6 @@ function author_table_events($j) {
     });
 }
 
-function paperform_checkready(ischecked) {
-    var t, $j = $("#paperisready"),
-        is, was = $("#paperform").attr("data-submitted");
-    if ($j.is(":visible"))
-        is = $j.is(":checked");
-    else
-        is = was || ischecked;
-    if (!is)
-        t = "Save draft";
-    else if (was)
-        t = "Save and resubmit";
-    else
-        t = "Save and submit";
-    var $b = $("#paperform").find(".btn-savepaper");
-    if ($b.length && $b[0].tagName == "INPUT")
-        $b.val(t);
-    else
-        $b.html(t);
-}
-
 
 // check marks for ajax saves
 function make_outline_flasher(elt, rgba, duration) {
@@ -6100,9 +6080,42 @@ function check_format() {
     return false;
 }
 
+function check_ready(event) {
+    var $f = $(this).closest("form"),
+        readye = $f[0].submitpaper,
+        was = $f.attr("data-submitted"), is = true;
+    if (this && this.tagName === "INPUT" && this.type === "file" && this.value)
+        fold($f.find(".ready-container"), false);
+    if (readye && readye.type === "checkbox")
+        is = readye.checked && $(readye).is(":visible");
+    var t;
+    if (!is)
+        t = "Save draft";
+    else if (was)
+        t = "Save and resubmit";
+    else
+        t = "Save and submit";
+    var $b = $f.find(".btn-savepaper");
+    if ($b.length && $b[0].tagName === "INPUT")
+        $b.val(t);
+    else
+        $b.html(t);
+}
+
+function check_still_ready() {
+    if (this.submitpaper && !this.submitpaper.checked)
+        return window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered.");
+    else
+        return true;
+}
+
 return function (event) {
     if (hasClass(this, "want-check-format"))
         return check_format.call(this);
+    else if (hasClass(this, "want-check-ready"))
+        return check_ready.call(this, event);
+    else if (event.type === "submit")
+        return check_still_ready.call(this);
 };
 })($);
 
@@ -6121,14 +6134,6 @@ function document_upload() {
     $(this).remove();
     file[0].click();
     return false;
-}
-
-function docheckpaperstillready() {
-    var e = $$("paperisready");
-    if (e && !e.checked)
-        return window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered.");
-    else
-        return true;
 }
 
 function doremovedocument(elt) {
