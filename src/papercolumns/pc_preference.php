@@ -116,7 +116,6 @@ class Preference_PaperColumnFactory {
     static function expand($name, Conf $conf, $xfj, $m) {
         if (!($fj = (array) $conf->basic_paper_column("pref", $conf->xt_user)))
             return null;
-        unset($fj["__column_renderer"]);
         if ($m[2]) {
             $fj["row"] = true;
             $fj["column"] = false;

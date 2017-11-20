@@ -19,16 +19,12 @@ class PaperColumn extends Column {
     }
 
     static function make($cj, Conf $conf) {
-        if (!isset($cj->__column_renderer)) {
-            if (($factory_class = get($cj, "factory_class")))
-                $cx = new $factory_class($cj, $conf);
-            else if (($factory = get($cj, "factory")))
-                $cx = call_user_func($factory, $cj, $conf);
-            else
-                $cx = null;
-            $cj->__column_renderer = $cx;
-        }
-        return $cj->__column_renderer;
+        if (($factory_class = get($cj, "factory_class")))
+            return new $factory_class($cj, $conf);
+        else if (($factory = get($cj, "factory")))
+            return call_user_func($factory, $cj, $conf);
+        else
+            return null;
     }
 
 
@@ -509,8 +505,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
         return $this->contact;
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $this->contact ? : $pl->context_user();
-        $this->self = $this->contact->contactId === $pl->user->contactId;
+        $this->contact = $this->contact ? : $pl->reviewer_user();
+        $this->not_me = $this->contact->contactId !== $pl->user->contactId;
         return true;
     }
     const F_CONFLICT = 1;
@@ -518,7 +514,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
     const F_SHEPHERD = 4;
     private function analysis(PaperList $pl, PaperInfo $row, $forceShow = null) {
         $rrow = $row->review_of_user($this->contact);
-        if ($rrow && ($this->self || $pl->user->can_view_review_identity($row, $rrow, $forceShow)))
+        if ($rrow && (!$this->not_me || $pl->user->can_view_review_identity($row, $rrow, $forceShow)))
             $ranal = $pl->make_review_analysis($rrow, $row);
         else
             $ranal = null;
@@ -526,13 +522,13 @@ class ReviewerType_PaperColumn extends PaperColumn {
             $pl->mark_has("need_review");
         $flags = 0;
         if ($row->conflict_type($this->contact)
-            && ($this->self || $pl->user->can_view_conflicts($row, $forceShow)))
+            && (!$this->not_me || $pl->user->can_view_conflicts($row, $forceShow)))
             $flags |= self::F_CONFLICT;
         if ($row->leadContactId == $this->contact->contactId
-            && ($this->self || $pl->user->can_view_lead($row, $forceShow)))
+            && (!$this->not_me || $pl->user->can_view_lead($row, $forceShow)))
             $flags |= self::F_LEAD;
         if ($row->shepherdContactId == $this->contact->contactId
-            && ($this->self || $pl->user->can_view_shepherd($row, $forceShow)))
+            && (!$this->not_me || $pl->user->can_view_shepherd($row, $forceShow)))
             $flags |= self::F_SHEPHERD;
         return [$ranal, $flags];
     }
@@ -555,7 +551,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         return $b->$k - $a->$k;
     }
     function header(PaperList $pl, $is_text) {
-        if ($this->self)
+        if (!$this->not_me)
             return "Review";
         else if ($is_text)
             return $pl->user->name_text_for($this->contact) . " review";
