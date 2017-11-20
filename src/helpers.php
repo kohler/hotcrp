@@ -1060,17 +1060,6 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
     return $text . "  </select>";
 }
 
-function pc_members_selector_options($include_none) {
-    global $Conf;
-    $sel = array();
-    if ($include_none)
-        $sel["0"] = is_string($include_none) ? $include_none : "None";
-    $textarg = array("lastFirst" => $Conf->opt("sortByLastName"));
-    foreach ($Conf->pc_members() as $p)
-        $sel[$p->email] = Text::name_html($p, $textarg);
-    return $sel;
-}
-
 function review_type_icon($revtype, $unfinished = null, $title = null) {
     // see also script.js:review_form
     static $revtypemap = array(-3 => array("&minus;", "Refused"),

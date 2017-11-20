@@ -2472,26 +2472,6 @@ function handle_clickthrough(form) {
 }
 
 
-// bad-pairs
-function badpairs_change(more) {
-    var tbody = $("#bptable > tbody"), n = tbody.children().length;
-    if (more) {
-        ++n;
-        tbody.append('<tr><td class="rentry nw">or &nbsp;</td><td class="lentry"><select name="bpa' + n + '" onchange="badpairs_click()"></select> &nbsp;and&nbsp; <select name="bpb' + n + '" onchange="badpairs_click()"></select></td></tr>');
-        var options = tbody.find("select").first().html();
-        tbody.find("select[name='bpa" + n + "'], select[name='bpb" + n + "']").html(options).val(0);
-    } else if (n > 1) {
-        --n;
-        tbody.children().last().remove();
-    }
-    return false;
-}
-
-function badpairs_click() {
-    var x = $$("badpairs");
-    x.checked || x.click();
-}
-
 // author entry
 function author_change(e, delta) {
     var $e = $(e), $tbody = $e.closest("tbody");
@@ -6414,33 +6394,41 @@ function save_tag_index(e) {
 
 // PC selectors
 function populate_pcselector() {
-    var optids = hotcrp_pc.__order__, i = 0, opts = [], x, email, name, pos;
-    if (this.hasAttribute("data-pcselector-options"))
-        optids = this.getAttribute("data-pcselector-options").split(/[\s,]+/);
-    else if (this.hasAttribute("data-pcselector-allownone"))
-        i = -1;
+    var optids = this.getAttribute("data-pcselector-options") || "*";
+    if (optids.charAt(0) === "[")
+        optids = JSON.parse(optids);
+    else
+        optids = optids.split(/[\s,]+/);
     var selected = this.getAttribute("data-pcselector-selected"), selindex = 0;
-    for (; i < optids.length; ++i) {
-        if (i < 0 || !+optids[i]) {
+    var last_first = hotcrp_pc.__sort__ === "last", used = {};
+
+    for (var i = 0; i < optids.length; ++i) {
+        if (optids[i] === "" || optids[i] === "*")
+            optids.splice.apply(optids, [i, 1].concat(hotcrp_pc.__order__));
+        var cid = +optids[i], email, name, p;
+        if (!cid) {
             email = "none";
-            name = "None";
-        } else if ((x = hotcrp_pc[optids[i]])) {
-            email = x.email;
-            name = x.name;
-            if (hotcrp_pc.__sort__ === "last" && x.lastpos) {
-                if (x.emailpos)
-                    name = name.substr(x.lastpos, x.emailpos - x.lastpos - 1) + ", " + name.substr(0, x.lastpos - 1) + name.substr(x.emailpos - 1);
-                else
-                    name = name.substr(x.lastpos) + ", " + name.substr(0, x.lastpos - 1);
+            name = optids[i];
+            if (name === "" || name === "0")
+                name = "None";
+        } else if ((p = hotcrp_pc[cid])) {
+            email = p.email;
+            name = p.name;
+            if (last_first && p.lastpos) {
+                var nameend = p.emailpos ? p.emailpos - 1 : name.length;
+                name = name.substring(p.lastpos, nameend) + ", " + name.substring(0, p.lastpos - 1) + name.substring(nameend);
             }
         } else
             continue;
-        var opt = document.createElement("option");
-        opt.setAttribute("value", email);
-        opt.text = name;
-        this.add(opt);
-        if (email == selected || (i >= 0 && optids[i] == selected))
-            selindex = this.options.length - 1;
+        if (!used[email]) {
+            used[email] = true;
+            var opt = document.createElement("option");
+            opt.setAttribute("value", email);
+            opt.text = name;
+            this.add(opt);
+            if (email === selected || (email !== "none" && cid == selected))
+                selindex = this.options.length - 1;
+        }
     }
     this.selectedIndex = selindex;
     $(this).removeClass("need-pcselector");

@@ -266,20 +266,20 @@ if ($Me->privChair) {
     echo "<tr><td class='lxcaption'><strong>Preferences:</strong> &nbsp;</td><td class='lentry'>";
 
     $prefcount = array();
-    $result = $Conf->qe_raw("select contactId, count(preference) from PaperReviewPreference where preference!=0 group by contactId");
+    $result = $Conf->qe_raw("select contactId, count(*) from PaperReviewPreference where preference!=0 or expertise is not null group by contactId");
     while (($row = edb_row($result)))
         $prefcount[$row[0]] = $row[1];
 
-    $revopt = pc_members_selector_options(false);
-    foreach ($Conf->pc_members() as $pcm)
-        if (!get($prefcount, $pcm->contactId))
-            $revopt[$pcm->email] .= " (no preferences)";
-    if (!isset($revopt[$reviewer->email]))
-        $revopt[$reviewer->email] = Text::name_html($Me) . " (not on PC)";
+    $sel = [];
+    $textarg = ["lastFirst" => $Conf->opt("sortByLastName")];
+    foreach ($Conf->pc_members() as $p)
+        $sel[$p->email] = Text::name_html($p, $textarg) . " &nbsp; [" . plural(get($prefcount, $p->contactId, 0), "pref") . "]";
+    if (!isset($sel[$reviewer->email]))
+        $sel[$reviewer->email] = Text::name_html($reviewer) . " &nbsp; [" . get($prefcount, $reviewer->contactId, 0) . "; not on PC]";
 
-    echo Ht::select("reviewer", $revopt, $reviewer->email,
-                    array("onchange" => "\$\$(\"redisplayform\").submit()")),
+    echo Ht::select("reviewer", $sel, $reviewer->email),
         "<div class='g'></div></td></tr>\n";
+    Ht::stash_script('$("#redisplayform select[name=reviewer]").on("change", function () { $$("redisplayform").submit() })');
 }
 
 echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input type='text' size='32' name='q' value=\"", htmlspecialchars($Qreq->q), "\" /><span class='sep'></span></td>",
@@ -297,7 +297,7 @@ if (!$Conf->subBlindAlways()) {
         . Ht::checkbox("showanonau", 1, !$pl->is_folded("anonau"),
                 ["id" => "showau", "class" => "paperlist-display"])
         . "&nbsp;" . Ht::label("Authors (deblinded)") . "</span>"
-        . Ht::checkbox("showau", 1, strpos($Qreq->display, " anonau ") !== false,
+        . Ht::checkbox("showau", 1, !$pl->is_folded("anonau") !== false,
                 ["id" => "showau_hidden", "class" => "paperlist-display",
                  "style" => "display:none"]);
 }

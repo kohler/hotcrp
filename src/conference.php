@@ -3119,7 +3119,7 @@ class Conf {
         echo Ht::unstash(), "</body>\n</html>\n";
     }
 
-    public function stash_hotcrp_pc(Contact $user) {
+    function stash_hotcrp_pc(Contact $user) {
         if (!Ht::mark_stash("hotcrp_pc"))
             return;
         $hpcj = $list = [];

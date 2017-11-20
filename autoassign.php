@@ -623,12 +623,9 @@ echo '<div class="pc_ctable">', join("", $summary), "</div>\n",
 
 // Bad pairs
 function bpSelector($i, $which) {
-    global $badPairSelector, $Qreq;
-    if (!$badPairSelector)
-        $badPairSelector = pc_members_selector_options("(PC member)");
-    return Ht::select("bp$which$i", $badPairSelector,
-                      $Qreq["bp$which$i"] ? : "0",
-                      ["onchange" => "badpairs_click()"]);
+    global $Qreq;
+    return Ht::select("bp$which$i", [], 0,
+        ["class" => "need-pcselector badpairs", "data-pcselector-selected" => $Qreq["bp$which$i"], "data-pcselector-options" => "[\"(PC member)\",\"*\"]"]);
 }
 
 echo "<div class='g'></div><div class='relative'><table id=\"bptable\"><tbody>\n";
@@ -643,10 +640,31 @@ for ($i = 1; $i == 1 || isset($Qreq["bpa$i"]); ++$i) {
         echo "or &nbsp;";
     echo '</td><td class="lentry">', $selector_text;
     if ($i == 1)
-        echo ' &nbsp;to the same paper &nbsp;(<a class="ui" href="#" onclick="return badpairs_change(true)">More</a> &nbsp;·&nbsp; <a class="ui" href="#" onclick="return badpairs_change(false)">Fewer</a>)';
+        echo ' &nbsp;to the same paper &nbsp;(<a class="ui want-badpairs-row more" href="#">More</a> &nbsp;·&nbsp; <a class="ui want-badpairs-row less" href="#">Fewer</a>)';
     echo "</td></tr>\n";
 }
 echo "</tbody></table></div>\n";
+$Conf->stash_hotcrp_pc($Me);
+echo Ht::unstash_script('$("#bptable").on("change", "select.badpairs", function () {
+    if (this.value !== "none") {
+        var x = $$("badpairs");
+        x.checked || x.click();
+    }
+});
+$("#bptable a.want-badpairs-row").on("click", function () {
+    var tbody = $("#bptable > tbody"), n = tbody.children().length;
+    if (hasClass(this, "more")) {
+        ++n;
+        tbody.append(\'<tr><td class="rentry nw">or &nbsp;</td><td class="lentry"><select name="bpa\' + n + \'" class="badpairs"></select> &nbsp;and&nbsp; <select name="bpb\' + n + \'" class="badpairs"></select></td></tr>\');
+        var options = tbody.find("select").first().html();
+        tbody.find("select[name=bpa" + n + "], select[name=bpb" + n + "]").html(options).val("none");
+    } else if (n > 1) {
+        --n;
+        tbody.children().last().remove();
+    }
+    return false;
+});
+$(".need-pcselector").each(populate_pcselector)');
 
 
 // Load balancing
