@@ -165,8 +165,6 @@ class Ht {
         if (!get($js, "id"))
             $js["id"] = "htctl" . ++self::$_controlid;
         self::$_lastcontrolid = $js["id"];
-        if (!isset($js["class"]))
-            $js["class"] = "cb";
         assert($checked !== null);
         if ($checked === null)
             $checked = isset($_REQUEST[$name]) && $_REQUEST[$name] === $value;

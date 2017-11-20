@@ -315,11 +315,11 @@ if ($Me->privChair && !$Conf->subBlindAlways() && !$Conf->subBlindNever()) {
 }
 if ($pl->has("abstract"))
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showabstract", 1, !$pl->is_folded("abstract"), ["class" => "cb paperlist-display"])
+        . Ht::checkbox("showabstract", 1, !$pl->is_folded("abstract"), ["class" => "paperlist-display"])
         . "&nbsp;" . Ht::label("Abstracts") . '</span>';
 if ($pl->has("topics"))
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showtopics", 1, !$pl->is_folded("topics"), ["class" => "cb paperlist-display"])
+        . Ht::checkbox("showtopics", 1, !$pl->is_folded("topics"), ["class" => "paperlist-display"])
         . "&nbsp;" . Ht::label("Topics") . '</span>';
 if (!empty($show_data) && $pl->count)
     echo '<tr><td class="lxcaption"><strong>Show:</strong> &nbsp;',
