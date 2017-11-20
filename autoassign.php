@@ -421,7 +421,7 @@ function echo_radio_row($name, $value, $text, $extra = null) {
         $Qreq[$name] = $value;
     $extra = ($extra ? $extra : array());
     $extra["id"] = "${name}_$value";
-    echo '<tr class="has-radio-focus',
+    echo '<tr class="want-radio-focus',
         isset($Error[$value]) ? " error" : "",
         '"><td class="nw">',
         Ht::radio($name, $value, $checked, $extra), "&nbsp;</td><td>";
@@ -579,45 +579,95 @@ echo_radio_row("pctyp", "all", "Use entire PC");
 
 echo_radio_row("pctyp", "sel", "Use selected PC members:", ["open" => true]);
 echo " &nbsp; (select ";
-$pctyp_sel = array(array("all", 1, "all"), array("none", 0, "none"));
+$pctyp_sel = array(array("all", "all"), array("none", "none"));
 $pctags = $Conf->pc_tags();
-if (count($pctags)) {
+if (!empty($pctags)) {
     $tagsjson = array();
     foreach ($Conf->pc_members() as $pc)
         $tagsjson[$pc->contactId] = " " . trim(strtolower($pc->viewable_tags($Me))) . " ";
-    Ht::stash_script("pc_tags_json=" . json_encode($tagsjson) . ";");
+    Ht::stash_script("var hotcrp_pc_tags=" . json_encode($tagsjson) . ";");
     foreach ($pctags as $tagname => $pctag)
         if ($tagname !== "pc" && Tagger::strip_nonviewable($tagname, $Me))
-            $pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "#$pctag");
+            $pctyp_sel[] = [$pctag, "#$pctag"];
 }
-$pctyp_sel[] = array("__flip__", -1, "flip");
+$pctyp_sel[] = array("__flip__", "flip");
 $sep = "";
 foreach ($pctyp_sel as $pctyp) {
-    echo $sep, "<a class=\"ui\" href='#pc_", $pctyp[0], "' onclick='",
-        "papersel(", $pctyp[1], ",\"pcs[]\");\$\$(\"pctyp_sel\").checked=true;return false'>",
-        $pctyp[2], "</a>";
+    echo $sep, "<a class=\"ui want-pcsel-tag\" href=\"#pc_", $pctyp[0], "\">", $pctyp[1], "</a>";
     $sep = ", ";
 }
-echo ")</td></tr>\n<tr><td></td><td>";
+echo ")";
+Ht::stash_script('function make_pcsel_members(tag) {
+    if (tag === "__flip__")
+        return function () { return !this.checked; };
+    else if (tag === "all")
+        return function () { return true; };
+    else if (tag === "none")
+        return function () { return false; };
+    else {
+        tag = " " + tag.toLowerCase() + "#";
+        return function () {
+            var tlist = hotcrp_pc_tags[this.value] || "";
+            return tlist.indexOf(tag) >= 0;
+        };
+    }
+}
+function pcsel_tag(event) {
+    var $g = $(this).closest(".want-radio-focus"), e;
+    if (this.tagName === "A") {
+        $g.find("input[type=radio]").first().click();
+        var f = make_pcsel_members(this.hash.substring(4));
+        $g.find("input").each(function () {
+            if (this.name === "pcs[]")
+                this.checked = f.call(this);
+        });
+        event_prevent(event);
+    }
+    var tags = [], functions = {};
+    $g.find("a.want-pcsel-tag").each(function () {
+        var tag = this.hash.substring(4);
+        tags.push(tag);
+        functions[tag] = make_pcsel_members(tag);
+    });
+    $g.find("input").each(function () {
+        if (this.name === "pcs[]") {
+            for (var i = 0; i < tags.length; ) {
+                if (this.checked !== functions[tags[i]].call(this))
+                    tags.splice(i, 1);
+                else
+                    ++i;
+            }
+        }
+    });
+    $g.find("a.want-pcsel-tag").each(function () {
+        if ($.inArray(this.hash.substring(4), tags) >= 0)
+            $(this).css("font-weight", "bold");
+        else
+            $(this).css("font-weight", "inherit");
+    });
+}
+$(document).on("click", "a.want-pcsel-tag", pcsel_tag);
+$(document).on("change", "input.want-pcsel-tag", pcsel_tag);
+$(function(){$("input.want-pcsel-tag").first().trigger("change")})');
 
 $summary = [];
 $tagger = new Tagger($Me);
 $nrev = new AssignmentCountSet($Conf);
 $nrev->load_rev();
-foreach ($Conf->pc_members() as $p) {
+foreach ($Conf->pc_members() as $id => $p) {
     $t = '<div class="ctelt"><div class="ctelti';
     if (($k = $p->viewable_color_classes($Me)))
         $t .= ' ' . $k;
     $t .= '"><table><tr><td class="nw">'
-        . Ht::checkbox("pcs[]", $p->contactId, isset($pcsel[$p->contactId]),
-                       ["id" => "pcsel" . (count($summary) + 1),
-                        "onclick" => "rangeclick(event,this);$$('pctyp_sel').checked=true"])
-        . '&nbsp;</td><td><span class="taghl">' . $Me->name_html_for($p) . '</span>'
+        . Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),
+                       ["id" => "pcc$id", "class" => "want-range-click want-pcsel-tag"])
+        . '&nbsp;</td><td>'
+        . Ht::label($Me->name_html_for($p), "pcc$id", ["class" => "taghl"])
         . AssignmentSet::review_count_report($nrev, null, $p, "")
         . "</td></tr></table><hr class=\"c\" />\n</div></div>";
     $summary[] = $t;
 }
-echo '<div class="pc_ctable">', join("", $summary), "</div>\n",
+echo '<div class="pc_ctable" style="margin-top:0.5em">', join("", $summary), "</div>\n",
     "</td></tr></table>\n";
 
 

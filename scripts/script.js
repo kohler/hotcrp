@@ -2311,15 +2311,6 @@ function plist_submit() {
     return true;
 }
 
-function pc_tags_members(tag) {
-    var pc_tags = pc_tags_json, answer = [], pc, tags;
-    tag = " " + tag + "#";
-    for (pc in pc_tags)
-        if (pc_tags[pc].indexOf(tag) >= 0)
-            answer.push(pc);
-    return answer;
-}
-
 function make_onkey(key, f) {
     return function (evt) {
         if (!event_modkey(evt) && event_key(evt) == key) {
@@ -6364,8 +6355,8 @@ function hotlist_search_params(x, ids) {
 
 // focusing
 $(function () {
-$(".has-radio-focus input, .has-radio-focus select").on("click keypress", function (event) {
-    var x = $(this).closest(".has-radio-focus").find("input[type='radio']").first();
+$(".want-radio-focus input, .want-radio-focus select").on("click keypress", function (event) {
+    var x = $(this).closest(".want-radio-focus").find("input[type=radio]").first();
     if (x.length && x[0] !== this)
         x[0].click();
     return true;
