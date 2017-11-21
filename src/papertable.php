@@ -1751,7 +1751,7 @@ class PaperTable {
             else {
                 $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn submissions has passed. Are you sure you want to override it?";
                 if ($this->admin)
-                    $b = array(Ht::js_button("Revive submission", "override_deadlines(this)", ["class" => "btn", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
+                    $b = array(Ht::button("Revive submission", ["class" => "btn ui want-override-deadlines", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
             }
             return array($b);
         }
@@ -1784,7 +1784,7 @@ class PaperTable {
             else if ($this->admin) {
                 $x = whyNotText($whyNot, $prow ? "update" : "register")
                     . " Are you sure you want to override the deadline?";
-                $buttons[] = array(Ht::js_button($save_name, "override_deadlines(this)", ["class" => "btn btn-default btn-savepaper", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
+                $buttons[] = array(Ht::button($save_name, ["class" => "btn btn-default btn-savepaper ui want-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
             } else if ($prow && $prow->timeSubmitted > 0)
                 $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", ["class" => "btn"]), "");
             else if ($this->conf->timeFinalizePaper($prow))
@@ -1808,7 +1808,7 @@ class PaperTable {
                 $admins = "Only administrators can undo this step.";
             $override = "";
             if (!$this->user->can_withdraw_paper($prow))
-                $override = "<div>" . Ht::checkbox("override", array("id" => "dialog_override")) . "&nbsp;"
+                $override = "<div>" . Ht::checkbox("override") . "&nbsp;"
                     . Ht::label("Override deadlines") . "</div>";
             Ht::stash_html("<div class='popupbg'><div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this submission from consideration and/or
@@ -1816,7 +1816,7 @@ class PaperTable {
     . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"),
                    ["onsubmit" => '$("#paperform").addClass("submitting");return true'])
     . Ht::textarea("reason", null,
-                   array("id" => "withdrawreason", "rows" => 3, "cols" => 40,
+                   array("rows" => 3, "cols" => 40,
                          "style" => "width:99%", "placeholder" => "Optional explanation", "spellcheck" => "true"))
     . $override
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))

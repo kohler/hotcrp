@@ -3235,7 +3235,7 @@ function beforeunload() {
 function save_editor(elt, action, really) {
     var $c = $cmt(elt), $f = $c.find("form");
     if (!edit_allowed($c.c) && !really) {
-        override_deadlines(elt, function () {
+        override_deadlines.call(elt, function () {
             save_editor(elt, action, true);
         });
         return;
@@ -5228,7 +5228,6 @@ function popup(anchor, which, dofold, populate) {
         elt = $$("popup_" + which);
         if (!elt)
             log_jserror("no popup " + which);
-        anchor = anchor || $$("popupanchor_" + which);
     }
 
     if (dofold) {
@@ -5285,14 +5284,14 @@ function popup_render(hc) {
     return $d;
 }
 
-function override_deadlines(elt, callback) {
-    var ejq = jQuery(elt);
-    var djq = jQuery('<div class="popupbg"><div class="popupo"><p>'
-                     + (ejq.attr("data-override-text") || "Are you sure you want to override the deadline?")
-                     + '</p><form><div class="popup-actions">'
-                     + '<button type="button" name="bsubmit" class="btn btn-default"></button>'
-                     + '<button type="button" name="cancel" class="btn">Cancel</button>'
-                     + '</div></form></div></div>');
+function override_deadlines(callback) {
+    var ejq = $(this);
+    var djq = $('<div class="popupbg"><div class="popupo"><p>'
+                + (ejq.attr("data-override-text") || "Are you sure you want to override the deadline?")
+                + '</p><form><div class="popup-actions">'
+                + '<button type="button" name="bsubmit" class="btn btn-default"></button>'
+                + '<button type="button" name="cancel" class="btn">Cancel</button>'
+                + '</div></form></div></div>');
     djq.find("button[name=cancel]").on("click", function () {
         djq.remove();
     });
@@ -5310,7 +5309,7 @@ function override_deadlines(elt, callback) {
         djq.remove();
     });
     djq.appendTo(document.body);
-    popup_near(djq, elt);
+    popup_near(djq, this);
 }
 
 
@@ -6304,19 +6303,23 @@ function row_click(evt) {
         event_prevent(evt);
     }
 }
+function handle_ui(evt) {
+    if (hasClass(this, "tla"))
+        return focus_fold.call(this, evt);
+    else if (hasClass(this, "want-foldup"))
+        return foldup.call(this, evt);
+    else if (hasClass(this, "want-edit-comment"))
+        return papercomment.edit_id(this.hash.substring(1));
+    else if (hasClass(this, "want-document-ui"))
+        return document_ui.call(this, evt);
+    else if (hasClass(this, "want-override-deadlines"))
+        return override_deadlines.call(this);
+    else
+        evt.preventDefault();
+}
 $(document).on("click", "a", function (evt) {
-    if (hasClass(this, "ui")) {
-        if (hasClass(this, "tla"))
-            return focus_fold.call(this, evt);
-        else if (hasClass(this, "want-foldup"))
-            return foldup.call(this, evt);
-        else if (hasClass(this, "want-edit-comment"))
-            return papercomment.edit_id(this.hash.substring(1));
-        else if (hasClass(this, "want-document-ui"))
-            return document_ui.call(this, evt);
-        else
-            evt.preventDefault();
-    }
+    if (hasClass(this, "ui"))
+        handle_ui.call(this, evt);
     if (hasClass(this, "fn5"))
         return foldup.call(this, evt, {n: 5, f: false});
     else {
@@ -6324,6 +6327,7 @@ $(document).on("click", "a", function (evt) {
         return true;
     }
 });
+$(document).on("click", "button.ui", handle_ui);
 $(document).on("submit", "form", function () {
     handle_list(this, this.getAttribute("action"));
     return true;
