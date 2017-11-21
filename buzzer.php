@@ -37,14 +37,14 @@ if ($Me->privChair) {
 
 if ($Me->privChair && isset($_POST["signout_to_kiosk"]) && check_post()) {
     LoginHelper::logout(false);
-    $Me->change_capability("tracker_kiosk", $kiosk_keys[@$_POST["buzzer_showpapers"] ? 1 : 0]);
+    $Me->set_capability("tracker_kiosk", $kiosk_keys[get($_POST, "buzzer_showpapers") ? 1 : 0]);
     redirectSelf();
 }
 
 function kiosk_lookup($key) {
     global $Conf, $Now;
     $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : array());
-    if (@$kiosks[$key] && $kiosks[$key]->update_at >= $Now - 604800)
+    if (isset($kiosks[$key]) && $kiosks[$key]->update_at >= $Now - 604800)
         return $kiosks[$key];
     return null;
 }
@@ -53,7 +53,7 @@ $kiosk = null;
 if (!$Me->has_email() && !$Me->capability("tracker_kiosk")
     && ($key = Navigation::path_component(0))
     && ($kiosk = kiosk_lookup($key)))
-    $Me->change_capability("tracker_kiosk", $key);
+    $Me->set_capability("tracker_kiosk", $key);
 else if (($key = $Me->capability("tracker_kiosk")))
     $kiosk = kiosk_lookup($key);
 
@@ -66,91 +66,7 @@ if ($kiosk) {
 if (!$Me->isPC && !$Me->tracker_kiosk_state)
     $Me->escape();
 
-// header and script
-$no_discussion = '<div class=\\"remargin-left remargin-right\\"><h2>No discussion<\/h2>';
-if ($Me->privChair)
-    $no_discussion .= '<p>To start a discussion, <a href=\\"' . hoturl("search") . '\\">search<\/a> for a list, go to a paper in that list, and use the “&#9759;” button.<\/p>';
-$no_discussion .= '</div>';
-Ht::stash_script('var buzzer_status = "open", buzzer_muted = false, showpapers = ' . json_encode_browser($show_papers) . ', tracker_has_format;
-function trackertable_paper_row(hc, idx, paper) {
-    var pcconf;
-    if (paper.pc_conflicts) {
-        pcconf = [];
-        for (var i = 0; i < paper.pc_conflicts.length; ++i)
-            pcconf.push(text_to_html(paper.pc_conflicts[i].name));
-        pcconf = "<em class=\"plx\">PC conflicts:</em> " +
-            (pcconf.length ? "<span class=\"nb\">" + pcconf.join(",</span> <span class=\"nb\">") + "</span>" : "None");
-    }
 
-    hc.push("<tr class=\"trackertable" + idx + (showpapers && pcconf ? " t" : " t b") + "\">", "<\/tr>");
-    hc.push("<td class=\"trackertable trackerdesc remargin-left\">", "<\/td>");
-    hc.push_pop(idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
-    hc.push("<td class=\"trackertable trackerpid\">", "<\/td>");
-    hc.push_pop(paper.pid && showpapers ? "#" + paper.pid : "");
-    hc.push("<td class=\"trackertable trackertitle\">", "<\/td>");
-    if (!showpapers)
-        hc.push_pop(pcconf ? pcconf : "");
-    else if (paper.title && paper.format) {
-        hc.push_pop("<span class=\"ptitle need-format\" data-format=\"" + paper.format + "\">" + text_to_html(paper.title) + "<\/span>");
-        tracker_has_format = true;
-    } else if (paper.title)
-        hc.push_pop(text_to_html(paper.title));
-    else
-        hc.push_pop("<i>No title</i>");
-    if (idx == 0)
-        hc.push("<td id=\"trackerelapsed\" class=\"trackertable remargin-right\"><\/td>");
-    else
-        hc.push("<td class=\"trackertable remargin-right\"><\/td>");
-    hc.pop();
-    if (showpapers && pcconf) {
-        hc.push("<tr class=\"trackertable" + idx + " b\">", "<\/tr>");
-        hc.push("<td class=\"trackertable remargin-left\" colspan=\"2\"><\/td>");
-        hc.push("<td class=\"trackertable trackerpcconf\">" + pcconf + "<\/td>");
-        hc.push("<td class=\"trackertable remargin-right\"><\/td>");
-        hc.pop();
-    }
-}
-function trackertable() {
-    var dl = hotcrp_status, hc = new HtmlCollector;
-    tracker_has_format = false;
-    if (!dl.tracker || !dl.tracker.papers)
-        hc.push("' . $no_discussion . '");
-    else {
-        hc.push("<table style=\\"width:100%\\">", "<\/table>");
-
-        hc.push("<tbody>", "<\/tbody>");
-        for (var i = 0; i < dl.tracker.papers.length; ++i)
-            trackertable_paper_row(hc, i, dl.tracker.papers[i]);
-    }
-    jQuery("#trackertable").html(hc.render());
-    if (dl.tracker && dl.tracker.position != null)
-        hotcrp_deadlines.tracker_show_elapsed();
-    if (tracker_has_format)
-        render_text.on_page();
-    if (buzzer_status != "open" && (dl.tracker_status || "off") != "off"
-        && buzzer_status != dl.tracker_status && !buzzer_muted) {
-        var sound = jQuery("#buzzersound")[0];
-        sound.pause();
-        sound.currentTime = 0;
-        sound.play();
-    }
-    buzzer_status = dl.tracker_status || "off";
-}
-function trackertable_mute(elt) {
-    fold(elt);
-    buzzer_muted = jQuery(elt).hasClass("foldo");
-}
-function trackertable_showpapers() {
-    var e = jQuery("#buzzer_showpapers");
-    if (e && !!showpapers != !!e.is(":checked")) {
-        showpapers = !showpapers;
-        trackertable();
-    }
-}
-jQuery(window).on("hotcrp_deadlines", function (evt, dl) {
-    evt.preventDefault();
-    jQuery(trackertable);
-})');
 $Conf->header("Discussion status", "buzzer", false);
 
 echo '<div id="trackertable" class="demargin" style="margin-top:1em"></div>';
@@ -160,7 +76,7 @@ echo Ht::form(hoturl_post("buzzer"));
 echo '<table style="margin-top:3em"><tr>';
 
 // mute button
-echo '<td><button type="button" class="foldc" style="padding-bottom:5px" onclick="trackertable_mute(this)">
+echo '<td><button id="trackertable_mute" type="button" class="btn foldc" style="padding-bottom:5px">
 <svg id="soundicon" class="fn" width="1.5em" height="1.5em" viewBox="0 0 75 75" style="position:relative;bottom:-3px">
  <polygon points="39.389,13.769 22.235,28.606 6,28.606 6,47.699 21.989,47.699 39.389,62.75 39.389,13.769" style="stroke:#111111;stroke-width:5;stroke-linejoin:round;fill:#111111;" />
  <path d="M 48.128,49.03 C 50.057,45.934 51.19,42.291 51.19,38.377 C 51.19,34.399 50.026,30.703 48.043,27.577" style="fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round"/>
@@ -177,36 +93,31 @@ echo '<td><button type="button" class="foldc" style="padding-bottom:5px" onclick
 // show-papers
 if ($Me->has_database_account()) {
     echo '<td style="padding-left:2em">',
-        Ht::checkbox("buzzer_showpapers", 1, $show_papers,
-                     array("id" => "buzzer_showpapers",
-                           "onclick" => "trackertable_showpapers()")),
+        Ht::checkbox("buzzer_showpapers", 1, $show_papers, ["id" => "trackertable_showpapers"]),
         "&nbsp;", Ht::label("Show papers"), '</td>';
-    Ht::stash_script("trackertable_showpapers()");
 }
 
 // kiosk mode
 if ($Me->privChair) {
     echo '<td style="padding-left:2em">',
-        Ht::js_button("Kiosk mode", "popup(this,'kiosk',0,true)"),
+        Ht::button("Kiosk mode", ["id" => "trackertable_kioskmode"]),
         '</td>';
-    Ht::stash_html('<div class="popupbg"><div id="popup_kiosk" class="popupc">
-<p>Kiosk mode is a discussion status page with no
-other site privileges. It’s safe to leave a browser in kiosk mode
-open in the hallway.</p>
-<p><b>Kiosk mode will sign your browser out of the site.</b>
-Do not use kiosk mode on your main browser. These URLs access kiosk
-mode without signing in:</p>
-<p><table><tr><td class="lcaption nw">With papers</td>
-<td>' . hoturl_absolute("buzzer", array("__PATH__" => $kiosk_keys[1])) . '</td></tr>
-<tr><td class="lcaption nw">Conflicts only</td>
-<td>' . hoturl_absolute("buzzer", array("__PATH__" => $kiosk_keys[0])) . '</td></tr></table></p>'
-    . Ht::form_div(hoturl_post("buzzer"))
-    . Ht::hidden("buzzer_showpapers", 1, array("class" => "popup_populate"))
-    . '<div class="popup-actions">'
-    . Ht::submit("signout_to_kiosk", "Enter kiosk mode", ["class" => "btn"])
-    . Ht::js_button("Cancel", "popup(null,'kiosk',1)", ["class" => "btn"])
-    . '</div></div></form></div></div>');
 }
+
+// header and script
+$buzzer_status = ["status" => "open", "muted" => false,
+                  "show_papers" => $show_papers];
+$no_discussion = '<div class="remargin-left remargin-right"><h2>No discussion</h2>';
+if ($Me->privChair) {
+    $no_discussion .= '<p>To start a discussion, <a href="' . hoturl("search") . '">search</a> for a list, go to a paper in that list, and use the “&#9759;” button.</p>';
+    $buzzer_status["kiosk_urls"] = [hoturl_absolute("buzzer", ["__PATH__" => $kiosk_keys[0]]),
+        hoturl_absolute("buzzer", ["__PATH__" => $kiosk_keys[1]])];
+} else if ($kiosk)
+    $buzzer_status["is_kiosk"] = true;
+$buzzer_status["no_discussion"] = $no_discussion . '</div>';
+echo Ht::unstash();
+echo $Conf->make_script_file("scripts/buzzer.js");
+echo Ht::unstash_script('start_buzzer_page(' . json_encode_browser($buzzer_status) . ')');
 
 echo "</tr></table></form>\n";
 $Conf->footer();

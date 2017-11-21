@@ -572,7 +572,7 @@ class Contact {
                               $cap_req, $m, PREG_SET_ORDER)) {
             foreach ($m as $mm) {
                 $c = ($mm[3] == "a" ? self::CAP_AUTHORVIEW : 0);
-                $this->change_capability((int) $mm[2], $c, $mm[1] !== "-");
+                $this->change_paper_capability((int) $mm[2], $c, $mm[1] !== "-");
             }
             unset($_REQUEST["testcap"], $_GET["testcap"], $_POST["testcap"]);
         }
@@ -790,31 +790,49 @@ class Contact {
             return "";
     }
 
-    function capability($pid) {
-        $caps = $this->capabilities ? : array();
-        return get($caps, $pid) ? : 0;
+    private function update_capabilities() {
+        ++self::$rights_version;
+        if (empty($this->capabilities))
+            $this->capabilities = null;
+        if ($this->activated_)
+            $this->conf->save_session("capabilities", $this->capabilities);
     }
 
-    function change_capability($pid, $c, $on = null) {
-        if (!$this->capabilities)
-            $this->capabilities = array();
-        $oldval = get($this->capabilities, $pid) ? : 0;
-        if ($on === null)
-            $newval = ($c != null ? $c : 0);
+    function capability($name) {
+        if ($this->capabilities !== null && isset($this->capabilities[0]))
+            return get($this->capabilities[0], $name);
         else
-            $newval = ($oldval | ($on ? $c : 0)) & ~($on ? 0 : $c);
+            return null;
+    }
+
+    function set_capability($name, $newval) {
+        $oldval = $this->capability($name);
         if ($newval !== $oldval) {
             ++self::$rights_version;
+            if ($newval !== null)
+                $this->capabilities[0][$name] = $newval;
+            else
+                unset($this->capabilities[0][$name]);
+            if (empty($this->capabilities[0]))
+                unset($this->capabilities[0]);
+            $this->update_capabilities();
+        }
+        return $newval !== $oldval;
+    }
+
+    function change_paper_capability($pid, $bit, $isset) {
+        $oldval = 0;
+        if ($this->capabilities !== null)
+            $oldval = get($this->capabilities, $pid) ? : 0;
+        $newval = ($oldval & ~$bit) | ($isset ? $bit : 0);
+        if ($newval !== $oldval) {
             if ($newval !== 0)
                 $this->capabilities[$pid] = $newval;
             else
                 unset($this->capabilities[$pid]);
+            $this->update_capabilities();
         }
-        if (!count($this->capabilities))
-            $this->capabilities = null;
-        if ($this->activated_ && $newval !== $oldval)
-            $this->conf->save_session("capabilities", $this->capabilities);
-        return $newval != $oldval;
+        return $newval !== $oldval;
     }
 
     function apply_capability_text($text) {
@@ -825,7 +843,7 @@ class Contact {
             $text = substr($text, strlen($m[1]));
             if ($rowcap === $text
                 || $rowcap === str_replace("/", "_", $text))
-                return $this->change_capability((int) $m[2], self::CAP_AUTHORVIEW, $m[1] !== "-");
+                return $this->change_paper_capability((int) $m[2], self::CAP_AUTHORVIEW, $m[1] !== "-");
         }
         return null;
     }
@@ -1594,10 +1612,11 @@ class Contact {
         Dbl::free($result);
 
         // Update contact information from capabilities
-        if ($this->capabilities)
+        if ($this->capabilities) {
             foreach ($this->capabilities as $pid => $cap)
-                if ($cap & self::CAP_AUTHORVIEW)
+                if ($pid && ($cap & self::CAP_AUTHORVIEW))
                     $this->active_roles_ |= self::ROLE_AUTHOR;
+        }
     }
 
     private function check_rights_version() {
@@ -1974,7 +1993,7 @@ class Contact {
         $m = [];
         if (isset($this->capabilities) && !$this->isPC) {
             foreach ($this->capabilities as $pid => $cap)
-                if ($cap & Contact::CAP_AUTHORVIEW)
+                if ($pid && ($cap & Contact::CAP_AUTHORVIEW))
                     $m[] = "Paper.paperId=$pid";
         }
         if (empty($m) && $this->contactId && $only_if_complex)
@@ -3493,8 +3512,6 @@ class Contact {
                 && ($tinfo = MeetingTracker::info_for($this))) {
                 $dl->tracker = $tinfo;
                 $dl->tracker_status = MeetingTracker::tracker_status($tracker);
-                if ($this->conf->opt("trackerHidden"))
-                    $dl->tracker_hidden = true;
                 $dl->now = microtime(true);
             }
             if ($tracker->position_at)

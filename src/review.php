@@ -874,7 +874,7 @@ $blind\n";
     . Ht::hidden("refuse", "refuse")
     . "<p style='margin:0 0 0.3em'>Select “Decline review” to decline this review. Thank you for keeping us informed.</p>"
     . Ht::textarea("reason", null,
-                   array("id" => "refusereviewreason", "rows" => 3, "cols" => 40,
+                   array("rows" => 3, "cols" => 40,
                          "placeholder" => "Optional explanation", "spellcheck" => "true"))
     . '<div class="popup-actions">'
     . Ht::submit("Decline review", ["class" => "btn"])

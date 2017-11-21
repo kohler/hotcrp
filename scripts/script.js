@@ -1589,7 +1589,7 @@ function display_tracker() {
         had_tracker_at = now_sec();
     else if (tracker_window_state())
         wstorage(true, "hotcrp-tracking", null);
-    if (!dl.tracker || dl.tracker_hidden) {
+    if (!dl.tracker || hasClass(document.body, "hide-tracker")) {
         if (mne)
             mne.parentNode.removeChild(mne);
         if (mnspace)
@@ -5279,7 +5279,7 @@ function popup_render(hc) {
     $d.on("click", function (evt) {
         evt.target == $d[0] && popup_close($d);
     });
-    popup_near($d, window);
+    popup_near($d, this || window);
     $d.find("textarea, input[type=text]").autogrow();
     return $d;
 }

@@ -2952,6 +2952,8 @@ class Conf {
                 htmlspecialchars($list->info_string()), '"';
         else if ($ispaper)
             echo ' class="paper"';
+        else if ($id === "buzzer")
+            echo ' class="hide-tracker"';
         echo ">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
