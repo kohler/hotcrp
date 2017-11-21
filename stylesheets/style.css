@@ -74,8 +74,14 @@ h1 {
 #header {
 	padding-bottom: 24px;
 }
+#header_site > h1 {
+	font-weight: normal;
+}
 .header_site_page > h1 {
 	font-size: 100%;
+}
+.header-site-name {
+	font-weight: bold;
 }
 #header_page {
 	clear: both;

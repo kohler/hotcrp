@@ -2980,9 +2980,10 @@ class Conf {
         $site_div = '<div id="header_site" class="'
             . ($is_home ? "header_site_home" : "header_site_page")
             . '"><h1><a class="qq" href="' . $this->hoturl("index") . '">'
-            . htmlspecialchars($this->short_name);
+            . '<span class="header-site-name">'
+            . htmlspecialchars($this->short_name) . '</span>';
         if (!$is_home)
-            $site_div .= ' <span style="font-weight:normal">Home</span>';
+            $site_div .= ' Home';
         $site_div .= '</a></h1></div>';
 
         // $header_profile
