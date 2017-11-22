@@ -6108,7 +6108,7 @@ function transfer_form_values($dst, $src, names) {
 }
 
 
-window.document_ui = (function ($) {
+window.edit_paper_ui = (function ($) {
 function check_format() {
     var $self = $(this), $d = $self.closest(".has-document"),
         $cf = $d.find(".check-format-result");
@@ -6170,7 +6170,7 @@ function add_attachment() {
     var $na = $('<div class="has-document document-new-instance" data-document-name="' + name + '" style="display:none">'
         + '<div class="document-file"><input type="file" name="' + name + '" size="15" /></div>'
         + '<div class="document-stamps"></div>'
-        + '<div class="document-actions"><a class="ui want-document-ui want-remove-document" href="#">Delete</a></div>'
+        + '<div class="document-actions"><a class="ui want-edit-paper-ui want-remove-document" href="#">Delete</a></div>'
         + '</div>');
     $ei.length ? $na.insertAfter($ei[$ei.length - 1]) : $na.prependTo($ea);
     $na.find("input[type=file]").on("change", function () {
@@ -6446,8 +6446,8 @@ function handle_ui(evt) {
         return foldup.call(this, evt);
     else if (hasClass(this, "want-edit-comment"))
         return papercomment.edit_id(this.hash.substring(1));
-    else if (hasClass(this, "want-document-ui"))
-        return document_ui.call(this, evt);
+    else if (hasClass(this, "want-edit-paper-ui"))
+        return edit_paper_ui.call(this, evt);
     else if (hasClass(this, "want-override-deadlines"))
         return override_deadlines.call(this);
     else

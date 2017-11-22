@@ -477,7 +477,7 @@ class PaperTable {
             (($this->prow && $this->prow->paperStorageId > 1)
              || $this->conf->opt("noPapers") ? "foldo" : "foldc"),
             '"><table class="fx"><tr><td class="nw">',
-            Ht::checkbox("submitpaper", 1, $checked, ["class" => "want-document-ui want-check-ready"]), "&nbsp;";
+            Ht::checkbox("submitpaper", 1, $checked, ["class" => "want-edit-paper-ui want-check-ready"]), "&nbsp;";
         if ($this->conf->setting("sub_freeze"))
             echo "</td><td>", Ht::label("<strong>" . $this->conf->_("The submission is complete.") . "</strong>"),
                 "</td></tr><tr><td></td><td><small>You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</small>";
@@ -533,12 +533,12 @@ class PaperTable {
             if (($stamps = self::pdf_stamps_html($doc)))
                 echo '<span class="sep"> </span>', $stamps;
             if ($has_cf && ($this->cf->failed || $this->cf->need_run))
-                echo '<span class="sep"> </span><a class="ui want-document-ui want-check-format" href="#">Check format</a>';
+                echo '<span class="sep"> </span><a class="ui want-edit-paper-ui want-check-format" href="#">Check format</a>';
             else if ($has_cf) {
                 if (!$this->cf->has_problem())
                     echo '<span class="sep"></span><span class="confirm">Format OK</span>';
                 if ($this->cf->possible_run)
-                    echo '<span class="sep"></span><a class="ui want-document-ui want-check-format" href="#">Recheck format</a>';
+                    echo '<span class="sep"></span><a class="ui want-edit-paper-ui want-check-format" href="#">Recheck format</a>';
             }
             echo "</td></tr></table>\n";
         }
@@ -554,7 +554,7 @@ class PaperTable {
             $uploader .= ' accept="' . $accepts[0]->mimetype . '"';
         $uploader .= ' size="30"';
         if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL)
-            $uploader .= ' class="want-document-ui want-check-ready"';
+            $uploader .= ' class="want-edit-paper-ui want-check-ready"';
         $uploader .= " />";
         if ($doc && $dtype > 0)
             $uploader .= " <span class='barsep'>·</span> "
@@ -1802,7 +1802,7 @@ class PaperTable {
         else if ($prow->timeSubmitted <= 0)
             $b = Ht::submit("withdraw", "Withdraw");
         else {
-            $args = ["class" => "btn ui want-document-ui want-withdraw"];
+            $args = ["class" => "btn ui want-edit-paper-ui want-withdraw"];
             if ($this->user->can_withdraw_paper($prow))
                 $args["data-withdrawable"] = "true";
             if (($this->admin && !$prow->has_author($this->user))
@@ -1831,7 +1831,7 @@ class PaperTable {
         $buttons = $this->_collectActionButtons();
 
         if ($this->admin && $this->prow)
-            $buttons[] = array(Ht::js_button("Delete", ["class" => "btn ui want-document-ui want-delete-paper"]), "(admin only)");
+            $buttons[] = array(Ht::js_button("Delete", ["class" => "btn ui want-edit-paper-ui want-delete-paper"]), "(admin only)");
 
         echo Ht::actions($buttons, array("class" => "aab aabr aabig"));
     }
@@ -1952,7 +1952,7 @@ class PaperTable {
         if ($this->useRequest)
             $form_js["class"] = "alert";
         echo Ht::form(hoturl_post("paper", "p=" . ($this->prow ? $this->prow->paperId : "new") . "&amp;m=edit"), $form_js);
-        Ht::stash_script('$("#paperform").on("change", ".want-document-ui", document_ui)');
+        Ht::stash_script('$("#paperform").on("change", ".want-edit-paper-ui", document_ui)');
         if ($this->prow
             && $this->prow->paperStorageId > 1
             && $this->prow->timeSubmitted > 0
