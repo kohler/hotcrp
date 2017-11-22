@@ -2689,6 +2689,40 @@ body#offline .revcard {
 	width: 248px;
 	max-width: 600px;
 }
+.has-editable-attachments {
+	display: table;
+	margin-bottom: -0.25rem;
+}
+.has-editable-attachments > * {
+	display: table-row;
+}
+.has-editable-attachments > * > * {
+	display: table-cell;
+	padding-top: 0.25rem;
+	padding-bottom: 0.5rem;
+}
+.document-file {
+	white-space: nowrap;
+}
+.document-stamps, .document-actions {
+	padding-left: 1rem;
+}
+@media screen and (max-width: 900px) {
+.has-editable-attachments, .has-editable-attachments > * > * {
+	display: block;
+}
+.has-editable-attachments > * {
+	display: block;
+	padding-top: 0.25rem;
+	padding-bottom: 0.5rem;
+}
+.document-file {
+	padding: 0;
+}
+.document-stamps, .document-actions {
+	padding: 0 0 0 3rem;
+}
+}
 
 /* review ratings */
 .rev_rating {

@@ -1096,20 +1096,21 @@ class AttachmentsPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="papfnh">(max ' . ini_get("upload_max_filesize") . "B per file)</span>");
-        echo '<div class="papev">';
+        echo '<div class="papev has-editable-attachments" data-document-prefix="opt', $this->id, '">';
         $docclass = new HotCRPDocument($this->conf, $this->id, $this);
         foreach ($ov->documents() as $doc) {
             $oname = "opt" . $this->id . "_" . $doc->paperStorageId;
-            echo "<div id=\"removable_$oname\" class=\"ug foldo\"><table id=\"current_$oname\"><tr>",
-                "<td class=\"nw\">", $doc->link_html(htmlspecialchars($doc->unique_filename)), "</td>",
-                '<td class="fx"><span class="sep"></span></td>',
-                "<td class=\"fx\"><a id=\"remover_$oname\" class=\"ui\" href=\"#remover_$oname\" onclick=\"return doremovedocument(this)\">Delete</a></td>";
+            echo '<div class="document-instance" data-document-name="', $oname, '">',
+                '<div class="document-file">',
+                    $doc->link_html(htmlspecialchars($doc->unique_filename)),
+                '</div><div class="document-stamps">';
             if (($stamps = PaperTable::pdf_stamps_html($doc)))
-                echo '<td class="fx"><span class="sep"></span></td><td class="fx">', $stamps, "</td>";
-            echo "</tr></table></div>\n";
+                echo $stamps;
+            echo '</div><div class="document-actions">',
+                    Ht::link("Delete", "#", ["class" => "ui want-document-ui want-remove-document"]),
+                '</div></div>';
         }
-        echo '<div id="opt', $this->id, '_new"></div>',
-            Ht::js_button("Add attachment", "addattachment($this->id)"),
+        echo '<div><div>', Ht::button("Add attachment", ["class" => "btn ui want-document-ui want-add-attachment"]), '</div></div>',
             "</div></div>\n\n";
     }
 

@@ -6099,6 +6099,51 @@ function check_still_ready() {
         return true;
 }
 
+function add_attachment() {
+    var $ea = $(this).closest(".has-editable-attachments"),
+        $ei = $ea.find(".document-instance"), n = 0, name;
+    do {
+        ++n;
+        name = $ea.data("documentPrefix") + "_new_" + n;
+        $ei.each(function () {
+            if ($(this).data("documentName") === name)
+                return (name = false);
+        });
+    } while (name === false);
+    var $na = $('<div class="document-instance document-new-instance" data-document-name="' + name + '" style="display:none">'
+        + '<div class="document-file"><input type="file" name="' + name + '" size="15" /></div>'
+        + '<div class="document-stamps"></div>'
+        + '<div class="document-actions"><a class="ui want-document-ui want-remove-document" href="#">Delete</a></div>'
+        + '</div>');
+    $ei.length ? $na.insertAfter($ei[$ei.length - 1]) : $na.prependTo($ea);
+    $na.find("input[type=file]").on("change", function () {
+        $(this).closest(".document-instance").css("display", "");
+    })[0].click();
+}
+
+function remove_document(event) {
+    var $ei = $(this).closest(".document-instance"),
+        $f = $ei.closest("form"),
+        $r = $ei.find(".document-remover"),
+        $en = $ei.find(".document-file");
+    if (hasClass(this, "undelete")) {
+        $r.val("");
+        $en.find("del > *").unwrap();
+        $(this).removeClass("undelete").html("Delete");
+    } else if ($ei.hasClass("document-new-instance"))
+        $ei.remove();
+    else {
+        if (!$r.length)
+            $r = $('<input type="hidden" class="document-remover" name="remove_' + $ei.data("documentName") + '" data-default-value="" value="1" />').appendTo($ei.find(".document-actions"));
+        $r.val(1);
+        if (!$en.find("del").length)
+            $en.wrapInner("<del></del>");
+        $(this).addClass("undelete").html("Undelete");
+    }
+    form_highlight($f[0]);
+    event_prevent(event);
+}
+
 return function (event) {
     if (hasClass(this, "want-check-format"))
         return check_format.call(this);
@@ -6106,17 +6151,13 @@ return function (event) {
         return check_ready.call(this, event);
     else if (event.type === "submit")
         return check_still_ready.call(this);
+    else if (hasClass(this, "want-add-attachment"))
+        return add_attachment.call(this);
+    else if (hasClass(this, "want-remove-document"))
+        return remove_document.call(this, event);
 };
 })($);
 
-
-function addattachment(oid) {
-    var ctr = $$("opt" + oid + "_new"), n = ctr.childNodes.length,
-        e = document.createElement("div");
-    e.innerHTML = "<input type='file' name='opt" + oid + "_new_" + n + "' size='30' />";
-    ctr.appendChild(e);
-    e.childNodes[0].click();
-}
 
 function document_upload() {
     var oname = this.getAttribute("data-option"), accept = this.getAttribute("data-accept");
