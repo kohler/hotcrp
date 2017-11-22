@@ -149,12 +149,14 @@ a.q:active, a.qq:active, a.u:active, a.uu:active, a.nn:active, a.maillink:active
 a.q, a.qq, a.qx, a.x, a.xx, a.nn, a.btn,
 div.papmodex > a, div.papmodex:hover > a.noul, div.leftmenu-item > a,
 a.pnum, a.ptitle, a.maillink, u.x, .noul {
+	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 }
 a.q:hover, a.qq:hover, a.x:hover,
 div.papmodex:hover > a, div.leftmenu-item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 .childfold:hover a.q, a.maillink:hover, a:hover u.x, .ul {
+	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
 a.small {
@@ -483,11 +485,13 @@ span.hastitle {
 }
 .tablinks1 .tll1 a.tla, .tablinks2 .tll2 a.tla,
 .tablinks3 .tll3 a.tla, .tablinks4 .tll4 a.tla {
+	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	color: inherit;
 }
 .tablinks1 .tll1 a.tla:hover, .tablinks2 .tll2 a.tla:hover,
 .tablinks3 .tll3 a.tla:hover, .tablinks4 .tll4 a.tla:hover {
+	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
 .tll1, .tll2, .tll3, .tll4 {
@@ -533,10 +537,12 @@ span.hastitle {
 	font-weight: bold;
 }
 .linelink.active a.tla {
+	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	color: inherit;
 }
 .linelink.active a.tla:hover {
+	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
 .linelink .lld {
@@ -661,6 +667,7 @@ span.expander {
 	width: 0.8em;
 	padding-right: 0.2em;
 	opacity: 0.65;
+	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	text-indent: 0;
 }
@@ -681,6 +688,7 @@ span.expander > span.in0 {
 	border-radius: 5px;
 	display: inline-block;
 	padding: 2px 4px;
+	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	color: white;
 }
@@ -693,6 +701,7 @@ span.expander > span.in0 {
 .closebtn {
 	display: inline-block;
 	padding: 2px 4px;
+	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	border: 1px solid black;
 	color: black;
@@ -1803,6 +1812,7 @@ div.pl_autoassignment > em.plx {
 	font-weight: bold;
 }
 div.pl_autoassignment ins {
+	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 }
 td.plh, th.plh {
@@ -1921,10 +1931,12 @@ hr.c {
 }
 
 .pl_sort {
+	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	color: #444488;
 }
 .pl_sort:hover {
+	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 	color: black;
 }
@@ -2014,9 +2026,11 @@ tr.plx {
 	font-style: italic;
 }
 .underlinetag.taghl, .underlinetag .taghl {
+	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
 .strikethroughtag.taghl, .strikethroughtag .taghl {
+	-webkit-text-decoration-line: line-through;
 	text-decoration-line: line-through;
 }
 .bigtag.taghl, .bigtag .taghl {
@@ -2064,6 +2078,7 @@ h1 .badge {
 	bottom: 2px;
 }
 a.qq:hover > .badge {
+	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
 .whitebadge {
@@ -2844,6 +2859,7 @@ span.tagbg {
 	padding-right: 2px;
 }
 del span.tagbg {
+	-webkit-text-decoration-line: line-through;
 	text-decoration-line: line-through;
 }
 
