@@ -1235,11 +1235,22 @@ img.elimg {
 img.check {
 	padding-left: 0.4em;
 }
+.checksum {
+	position: relative;
+}
 .checksum > .checksum-overflow {
 	display: none;
 }
 .checksum:hover > .checksum-overflow {
-	display: inline;
+	display: inline-block;
+	position: absolute;
+	background: white;
+	color: #333333;
+	outline: 0.25rem solid white;
+	border-radius: 5px;
+}
+.checksum:hover > .checksum-abbreviation {
+	visibility: hidden;
 }
 
 span.textlite {

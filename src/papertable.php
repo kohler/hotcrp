@@ -398,8 +398,9 @@ class PaperTable {
                 else if ($alg === "sha256")
                     $x .= "SHA-256 checksum";
             }
-            $x .= '"><svg width="12" height="12" viewBox="0 0 48 48" style="vertical-align:-2px"><path style="fill:#333" d="M19 32l-8-8-7 7 14 14 26-26-6-6-19 19z"/><path style="fill:#333" d="M15 3V10H8v5h7v7h5v-7H27V10h-7V3h-5z"/></svg> ';
-            $x .= substr($xhash, 0, 8) . '<span class="checksum-overflow">' . substr($xhash, 8) . '</span></span>';
+            $x .= '"><svg width="12" height="12" viewBox="0 0 48 48" style="vertical-align:-2px"><path style="fill:#333" d="M19 32l-8-8-7 7 14 14 26-26-6-6-19 19z"/><path style="fill:#333" d="M15 3V10H8v5h7v7h5v-7H27V10h-7V3h-5z"/></svg> '
+                . '<span class="checksum-overflow">' . $xhash . '</span>'
+                . '<span class="checksum-abbreviation">' . substr($xhash, 0, 8) . '</span></span>';
             $t[] = $x;
         }
         if (!empty($t))
