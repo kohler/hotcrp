@@ -541,7 +541,7 @@ class ContactList {
         firstName, lastName, email, affiliation, roles, contactTags,
         voicePhoneNumber, u.collaborators, lastLogin, disabled";
         if (isset($queryOptions["reviews"])) {
-            $rf[] = "count(if(reviewNeedsSubmit<=0,reviewSubmitted,reviewId)) numReviews";
+            $rf[] = "count(if(reviewNeedsSubmit=0,reviewSubmitted,reviewId)) numReviews";
             $rf[] = "count(reviewSubmitted) numReviewsSubmitted";
             $pq .= ", numReviews, numReviewsSubmitted";
         }
