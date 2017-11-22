@@ -552,7 +552,7 @@ function add_dialog(fid, focus) {
             hc = new HtmlCollector;
         if (!template || !samples[template - 1] || !samples[template - 1].options != !has_options) {
             template = 0;
-            $dtn.text("(Empty field)");
+            $dtn.text("(Blank)");
         } else {
             var s = samples[template - 1];
             $d.find(".newreviewfield-template-name").text(s.selector);
@@ -590,9 +590,7 @@ function add_dialog(fid, focus) {
         return false;
     }
     function onclick() {
-        if (this.name == "cancel")
-            popup_close($d);
-        else if (this.name == "next" || this.name == "prev") {
+        if (this.name == "next" || this.name == "prev") {
             var dir = this.name == "next" ? 1 : -1;
             template += dir;
             if (template < 0)
@@ -619,9 +617,9 @@ function add_dialog(fid, focus) {
         hc.push('<td style="text-align:right"><button name="next" type="button" tabindex="1002" class="btn need-tooltip" data-tooltip="Next template">&gt;</button></td>');
         hc.pop();
         hc.push('<div class="newreviewfield-template" style="width:500px;max-width:90%;min-height:6em"></div>');
-        hc.push_actions(['<button name="add" type="submit" tabindex="1000" class="btn popup-btn want-focus">Create field</button>',
-            '<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button>']);
-        $d = popup_render(hc);
+        hc.push_actions(['<button type="submit" name="add" tabindex="1000" class="btn btn-default want-focus">Create field</button>',
+            '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
+        $d = hc.show();
         render_template();
         $d.find(".newreviewfield-template-name").on("click", change_template);
         $d.on("click", "button", onclick);

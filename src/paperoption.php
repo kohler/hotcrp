@@ -1100,7 +1100,7 @@ class AttachmentsPaperOption extends PaperOption {
         $docclass = new HotCRPDocument($this->conf, $this->id, $this);
         foreach ($ov->documents() as $doc) {
             $oname = "opt" . $this->id . "_" . $doc->paperStorageId;
-            echo '<div class="document-instance" data-document-name="', $oname, '">',
+            echo '<div class="has-document" data-document-name="', $oname, '">',
                 '<div class="document-file">',
                     $doc->link_html(htmlspecialchars($doc->unique_filename)),
                 '</div><div class="document-stamps">';

@@ -1802,30 +1802,13 @@ class PaperTable {
         else if ($prow->timeSubmitted <= 0)
             $b = Ht::submit("withdraw", "Withdraw");
         else {
-            $b = Ht::button("Withdraw", ["onclick" => "popup(this,'w',0,true)"]);
-            $admins = "";
-            if ((!$this->admin || $prow->has_author($this->user))
-                && !$this->conf->timeFinalizePaper($prow))
-                $admins = "Only administrators can undo this step.";
-            $override = "";
-            if (!$this->user->can_withdraw_paper($prow))
-                $override = "<div>" . Ht::checkbox("override") . "&nbsp;"
-                    . Ht::label("Override deadlines") . "</div>";
-            Ht::stash_html("<div class='popupbg'><div id='popup_w' class='popupc'>
-  <p>Are you sure you want to withdraw this submission from consideration and/or
-  publication? $admins</p>\n"
-    . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"),
-                   ["onsubmit" => '$("#paperform").addClass("submitting");return true'])
-    . Ht::textarea("reason", null,
-                   array("rows" => 3, "cols" => 40,
-                         "style" => "width:99%", "placeholder" => "Optional explanation", "spellcheck" => "true"))
-    . $override
-    . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
-    . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
-    . "<div class='popup-actions'>"
-    . Ht::submit("withdraw", "Withdraw", ["class" => "btn"])
-    . Ht::js_button("Cancel", "popup(null,'w',1)", ["class" => "btn"])
-    . "</div></div></form></div></div>", "popup_w");
+            $args = ["class" => "btn ui want-document-ui want-withdraw"];
+            if ($this->user->can_withdraw_paper($prow))
+                $args["data-withdrawable"] = "true";
+            if (($this->admin && !$prow->has_author($this->user))
+                || $this->conf->timeFinalizePaper($prow))
+                $args["data-revivable"] = "true";
+            $b = Ht::button("Withdraw", $args);
         }
         if ($b) {
             if (!$this->user->can_withdraw_paper($prow))
@@ -1847,19 +1830,8 @@ class PaperTable {
 
         $buttons = $this->_collectActionButtons();
 
-        if ($this->admin && $this->prow) {
-            $buttons[] = array(Ht::js_button("Delete", "popup(this,'delp',0,true)", ["class" => "btn"]), "(admin only)");
-            Ht::stash_html("<div class='popupbg'><div id='popup_delp' class='popupc'>"
-    . Ht::form_div(hoturl_post("paper", "p={$this->prow->paperId}&amp;m=edit"),
-                   ["onsubmit" => '$("#paperform").addClass("submitting");return true'])
-    . "<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>\n"
-    . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
-    . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
-    . "<div class='popup-actions'>"
-    . Ht::submit("delete", "Delete", ["class" => "btn dangerous"])
-    . Ht::js_button("Cancel", "popup(null,'delp',1)", ["class" => "btn"])
-    . "</div></div></form></div></div>", "popup_delp");
-        }
+        if ($this->admin && $this->prow)
+            $buttons[] = array(Ht::js_button("Delete", ["class" => "btn ui want-document-ui want-delete-paper"]), "(admin only)");
 
         echo Ht::actions($buttons, array("class" => "aab aabr aabig"));
     }

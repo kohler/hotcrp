@@ -2662,6 +2662,15 @@ HtmlCollector.prototype.clear = function () {
     this.html = "";
     return this;
 };
+HtmlCollector.prototype.next_htctl_id = (function () {
+var id = 1;
+return function () {
+    while (document.getElementById("htctl" + id))
+        ++id;
+    ++id;
+    return "htctl" + (id - 1);
+};
+})();
 
 
 // text rendering
@@ -3026,7 +3035,7 @@ var vismap = {rev: "hidden from authors",
               pc: "hidden from authors and external reviewers",
               admin: "shown only to administrators"};
 var cmts = {}, has_unload = false;
-var idctr = 0, resp_rounds = {}, detwiddle;
+var resp_rounds = {}, detwiddle;
 if (hotcrp_user && hotcrp_user.cid)
     detwiddle = new RegExp("^" + hotcrp_user.cid + "~");
 else
@@ -3112,7 +3121,6 @@ function render_editing(hc, cj) {
     if (msgx.length)
         hc.push('<div class="xmsg xinfo"><div class="xmsg0"></div>' + msgx.join("") + '<div class="xmsg1"></div></div>');
 
-    ++idctr;
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form class="shortcutok"><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
@@ -3138,8 +3146,10 @@ function render_editing(hc, cj) {
         hc.push('<option value="admin">Administrators only</option>');
         hc.pop();
         hc.push('<div class="fx2 hint">', '</div>');
-        if (hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true)
-            hc.push('<input type="checkbox" name="blind" value="1" tabindex="1" id="htctlcb' + idctr + '" />&nbsp;<label for="htctlcb' + idctr + '">Anonymous to authors</label><br />\n');
+        if (hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true) {
+            var idctr = hc.next_htctl_id();
+            hc.push('<input type="checkbox" name="blind" value="1" tabindex="1" id="' + idctr + '" />&nbsp;<label for="' + idctr + '">Anonymous to authors</label><br />\n');
+        }
         if (hotcrp_status.myperm.some_author_can_view_review)
             hc.push('Authors will be notified immediately.');
         else
@@ -5083,9 +5093,7 @@ function edit_anno(locator) {
     var mytag = elt.getAttribute("data-anno-tag"),
         annoid = elt.hasAttribute("data-anno-id") ? +elt.getAttribute("data-anno-id") : null;
     function onclick(evt) {
-        if (this.name === "cancel")
-            popup_close($d);
-        else if (this.name === "add") {
+        if (this.name === "add") {
             var hc = new HtmlCollector;
             add_anno(hc, {});
             var $row = $(hc.render());
@@ -5152,9 +5160,9 @@ function edit_anno(locator) {
         for (var i = 0; i < annos.length; ++i)
             add_anno(hc, annos[i]);
         hc.pop();
-        hc.push('<div class="g"><button name="add" type="button" tabindex="1000" class="btn">Add group</button></div>');
-        hc.push_actions(['<button name="save" type="submit" tabindex="1000" class="btn btn-default">Save changes</button>', '<button name="cancel" type="button" tabindex="1001" class="btn">Cancel</button>']);
-        $d = popup_render(hc);
+        hc.push('<div class="g"><button type="button" name="add" tabindex="1000" class="btn">Add group</button></div>');
+        hc.push_actions(['<button type="submit" name="save" tabindex="1000" class="btn btn-default">Save changes</button>', '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
+        $d = hc.show();
         for (var i = 0; i < annos.length; ++i) {
             $d.find("input[name='heading_" + annos[i].annoid + "']").val(annos[i].heading);
             $d.find("input[name='tagval_" + annos[i].annoid + "']").val(tagvalue_unparse(annos[i].tagval));
@@ -5191,14 +5199,31 @@ function expand_archive(evt) {
 }
 
 // popup dialogs
-function popup_skeleton() {
+function popup_skeleton(options) {
     var hc = new HtmlCollector;
-    hc.push('<div class="popupbg"><div class="popupo popupcenter"><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form><div class="popup-bottom"></div></div></div>');
+    options = options || {};
+    var klass = options.anchor && options.anchor != window ? "" : " popupcenter";
+    hc.push('<div class="popupbg"><div class="popupo' + klass + '"><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form><div class="popup-bottom"></div></div></div>');
     hc.push_actions = function (actions) {
         hc.push('<div class="popup-actions">', '</div>');
         if (actions)
             hc.push(actions.join("")).pop();
         return hc;
+    };
+    hc.show = function () {
+        var $d = $(hc.render()).appendTo(document.body);
+        $d.find(".need-tooltip").each(add_tooltip);
+        $d.on("click", function (event) {
+            event.target === $d[0] && popup_close($d);
+        });
+        $d.find("button[name=cancel]").on("click", function () {
+            popup_close($d);
+        });
+        if (options.action)
+            $d.find("form").attr({action: options.action, method: options.method || "post"});
+        popup_near($d, options.anchor || window);
+        $d.find("textarea, input[type=text]").autogrow();
+        return $d;
     };
     return hc;
 }
@@ -5542,8 +5567,8 @@ function edittags_callback(rv) {
         return;
     $(div).html('<em class="plx">Tags:</em> '
                 + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" class="want-focus" data-tooltip-dir="v"></textarea>'
-                + ' &nbsp;<button name="tagsave ' + rv.pid + '" type="button" class="btn">Save</button>'
-                + ' &nbsp;<button name="tagcancel ' + rv.pid + '" type="button" class="btn">Cancel</button>');
+                + ' &nbsp;<button type="button" name="tagsave ' + rv.pid + '" class="btn">Save</button>'
+                + ' &nbsp;<button type="button" name="tagcancel ' + rv.pid + '" class="btn">Cancel</button>');
     var $ta = $(div).find("textarea");
     suggest($ta, taghelp_tset);
     $ta.val(rv.tags_edit_text).autogrow()
@@ -5620,7 +5645,7 @@ function add_column(f) {
         stmpl = stmpl.replace(/\{sort\}/, urlencode(f.sort_name));
         h = '<a class="pl_sort" rel="nofollow" href="' + escape_entities(stmpl) + '">' + h + '</a>';
     }
-    h = '<th' + classEnd + '>' + h + '</th>';
+    h = '<th class="pl plh ' + classes + '">' + h + '</th>';
     $j.find("thead > tr.pl_headrow:first-child").each(function () {
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
@@ -5906,9 +5931,7 @@ function edit_formulas() {
         hc.push_pop('</div></div>');
     }
     function onclick() {
-        if (this.name === "cancel")
-            popup_close($d);
-        else if (this.name === "add") {
+        if (this.name === "add") {
             var hc = new HtmlCollector;
             push_formula(hc, {name: "", expression: "", editable: true, id: "new"});
             var $f = $(hc.render()).appendTo($d.find(".editformulas"));
@@ -5926,19 +5949,20 @@ function edit_formulas() {
         return false;
     }
     function create() {
-        var hc = popup_skeleton(), i;
+        var hc = popup_skeleton({
+            action: hoturl_add(window.location.href, "post=" + siteurl_postvalue)
+        }), i;
         hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
         hc.push('<h2>Named formulas</h2>');
         hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
         hc.push('<div class="editformulas">', '</div>');
         for (i in edit_formulas.formulas || [])
             push_formula(hc, edit_formulas.formulas[i]);
-        hc.pop_push('<button name="add" type="button" class="btn">Add named formula</button>');
-        hc.push_actions(['<button name="save" type="submit" tabindex="1000" class="btn btn-default popup-btn">Save</button>', '<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button>']);
-        $d = popup_render(hc);
+        hc.pop_push('<button type="button" name="add" class="btn">Add named formula</button>');
+        hc.push_actions(['<button type="submit" name="saveformulas" value="1" tabindex="1000" class="btn btn-default">Save</button>', '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
+        $d = hc.show();
         $d.on("click", "button", onclick);
         $d.on("click", "a.delete-link", ondelete);
-        $d.find("form").attr({action: hoturl_add(window.location.href, "saveformulas=1&post=" + siteurl_postvalue), method: "post"});
     }
     create();
 }
@@ -5947,10 +5971,6 @@ function edit_formulas() {
 /* list report options */
 function edit_report_display() {
     var $d;
-    function onclick() {
-        if (this.name === "cancel")
-            popup_close($d);
-    }
     function onsubmit() {
         $.ajax(hoturl_post("api/listreport"), {
             method: "POST", data: $(this).serialize(),
@@ -5971,9 +5991,8 @@ function edit_report_display() {
         hc.push('<div class="f-i"><div class="f-c">Current view options</div><div class="f-e">', '</div></div>');
         hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(display_current || "") + '</textarea>');
         hc.pop();
-        hc.push_actions(['<button name="save" type="submit" tabindex="1000" class="btn btn-default popup-btn">Save current options as default</button>', '<button name="cancel" type="button" tabindex="1001" class="btn popup-btn">Cancel</button>']);
-        $d = popup_render(hc);
-        $d.on("click", "button", onclick);
+        hc.push_actions(['<button type="submit" name="save" tabindex="1000" class="btn btn-default">Save options as default</button>', '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
+        $d = hc.show();
         $d.on("submit", "form", onsubmit);
     }
     $.ajax(hoturl_post("api/listreport", {q: $("#searchform input[name=q]").val()}), {
@@ -6055,6 +6074,35 @@ return function (classes, class_prefix) {
 })();
 
 
+/* form value transfer */
+function transfer_form_values($dst, $src, names) {
+    var smap = {};
+    $src.find("input, select, textarea").each(function () {
+        smap[this.name] = this;
+    });
+    if ($dst.length == 1 && $dst[0].firstChild.tagName === "DIV")
+        $dst = $dst.children();
+    for (var i = 0; i != names.length; ++i) {
+        var n = names[i], v = null;
+        if (!smap[n])
+            /* skip */;
+        else if (smap[n].type === "checkbox" || smap[n].type === "radio") {
+            if (smap[n].checked)
+                v = smap[n].value;
+        } else
+            v = $(smap[n]).val();
+        var $d = $dst.find("input[name='" + n + "']");
+        if (v === null)
+            $d.remove();
+        else {
+            if (!$d.length)
+                $d = $('<input type="hidden" name="' + n + '" />').appendTo($dst);
+            $d.val(v);
+        }
+    }
+}
+
+
 window.document_ui = (function ($) {
 function check_format() {
     var $self = $(this), $d = $self.closest(".has-document"),
@@ -6105,7 +6153,7 @@ function check_still_ready() {
 
 function add_attachment() {
     var $ea = $(this).closest(".has-editable-attachments"),
-        $ei = $ea.find(".document-instance"), n = 0, name;
+        $ei = $ea.find(".has-document"), n = 0, name;
     do {
         ++n;
         name = $ea.data("documentPrefix") + "_new_" + n;
@@ -6114,19 +6162,19 @@ function add_attachment() {
                 return (name = false);
         });
     } while (name === false);
-    var $na = $('<div class="document-instance document-new-instance" data-document-name="' + name + '" style="display:none">'
+    var $na = $('<div class="has-document document-new-instance" data-document-name="' + name + '" style="display:none">'
         + '<div class="document-file"><input type="file" name="' + name + '" size="15" /></div>'
         + '<div class="document-stamps"></div>'
         + '<div class="document-actions"><a class="ui want-document-ui want-remove-document" href="#">Delete</a></div>'
         + '</div>');
     $ei.length ? $na.insertAfter($ei[$ei.length - 1]) : $na.prependTo($ea);
     $na.find("input[type=file]").on("change", function () {
-        $(this).closest(".document-instance").css("display", "");
+        $(this).closest(".has-document").css("display", "");
     })[0].click();
 }
 
 function remove_document(event) {
-    var $ei = $(this).closest(".document-instance"),
+    var $ei = $(this).closest(".has-document"),
         $f = $ei.closest("form"),
         $r = $ei.find(".document-remover"),
         $en = $ei.find(".document-file");
@@ -6148,6 +6196,40 @@ function remove_document(event) {
     event_prevent(event);
 }
 
+function withdraw_dialog(event) {
+    var $f = $(this).closest("form"),
+        hc = popup_skeleton({
+            anchor: this, action: hoturl_post("paper", {p: hotcrp_paperid, m: "edit"})
+        });
+    hc.push('<p>Are you sure you want to withdraw this submission from consideration and/or publication?');
+    if (!this.hasAttribute("data-revivable"))
+        hc.push(' Only administrators can undo this step.');
+    hc.push('</p>');
+    hc.push('<textarea name="reason" rows="3" cols="40" style="width:99%" placeholder="Optional explanation" spellcheck="true"></textarea>');
+    if (!this.hasAttribute("data-withdrawable")) {
+        var idctr = hc.next_htctl_id();
+        hc.push('<div><input type="checkbox" name="override" value="1" id="' + idctr + '" />&nbsp;<label for="' + idctr + '">Override deadlines</label></div>');
+    }
+    hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn" tabindex="1000">Withdraw</button>',
+        '<button type="button" name="cancel" class="btn" tabindex="1001">Cancel</button>']);
+    var $d = hc.show();
+    transfer_form_values($d.find("form"), $f, ["doemail", "emailNote"]);
+    $d.on("submit", "form", function () { $f.addClass("submitting"); });
+}
+
+function delete_paper_dialog(event) {
+    var $f = $(this).closest("form"),
+        hc = popup_skeleton({
+            anchor: this, action: hoturl_post("paper", {p: hotcrp_paperid, m: "edit"})
+        });
+    hc.push('<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>');
+    hc.push_actions(['<button type="submit" name="delete" value="1" class="btn dangerous" tabindex="1000">Delete</button>',
+        '<button type="button" name="cancel" class="btn" tabindex="1001">Cancel</button>']);
+    var $d = hc.show();
+    transfer_form_values($d.find("form"), $f, ["doemail", "emailNote"]);
+    $d.on("submit", "form", function () { $f.addClass("submitting"); });
+}
+
 return function (event) {
     if (hasClass(this, "want-check-format"))
         return check_format.call(this);
@@ -6159,6 +6241,10 @@ return function (event) {
         return add_attachment.call(this);
     else if (hasClass(this, "want-remove-document"))
         return remove_document.call(this, event);
+    else if (hasClass(this, "want-withdraw"))
+        return withdraw_dialog.call(this, event);
+    else if (hasClass(this, "want-delete-paper"))
+        return delete_paper_dialog.call(this, event);
 };
 })($);
 
