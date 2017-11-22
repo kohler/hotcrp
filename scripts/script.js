@@ -2178,8 +2178,10 @@ function focus_fold(event) {
                 break;
             addClass(e, "active");
             $(f).find(".linelink").not(e).removeClass("active");
-            if (event)
+            if (event) {
                 focus_within(e, ".lld *");
+                event_prevent(event);
+            }
             has_focused = true;
             return false;
         } else if ((m = e.className.match(/\b(?:lll|lld|tll|tld)(\d+)/))) {
@@ -2188,8 +2190,10 @@ function focus_fold(event) {
             if (!e)
                 break;
             e.className = e.className.replace(/links\d+/, 'links' + m[1]);
-            if (event)
+            if (event) {
                 focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
+                event_prevent(event);
+            }
             has_focused = true;
             return false;
         } else
