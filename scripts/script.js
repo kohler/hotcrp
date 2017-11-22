@@ -5200,29 +5200,34 @@ function expand_archive(evt) {
 
 // popup dialogs
 function popup_skeleton(options) {
-    var hc = new HtmlCollector;
+    var hc = new HtmlCollector, $d = null;
     options = options || {};
-    var klass = options.anchor && options.anchor != window ? "" : " popupcenter";
-    hc.push('<div class="popupbg"><div class="popupo' + klass + '"><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form><div class="popup-bottom"></div></div></div>');
+    hc.push('<div class="popupbg"><div class="popupo'
+        + (options.anchor && options.anchor != window ? "" : " popupcenter")
+        + '"><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form><div class="popup-bottom"></div></div></div>');
     hc.push_actions = function (actions) {
         hc.push('<div class="popup-actions">', '</div>');
         if (actions)
             hc.push(actions.join("")).pop();
         return hc;
     };
-    hc.show = function () {
-        var $d = $(hc.render()).appendTo(document.body);
-        $d.find(".need-tooltip").each(add_tooltip);
-        $d.on("click", function (event) {
-            event.target === $d[0] && popup_close($d);
-        });
-        $d.find("button[name=cancel]").on("click", function () {
-            popup_close($d);
-        });
-        if (options.action)
-            $d.find("form").attr({action: options.action, method: options.method || "post"});
-        popup_near($d, options.anchor || window);
-        $d.find("textarea, input[type=text]").autogrow();
+    hc.show = function (visible) {
+        if (!$d) {
+            $d = $(hc.render()).appendTo(document.body);
+            $d.find(".need-tooltip").each(add_tooltip);
+            $d.on("click", function (event) {
+                event.target === $d[0] && popup_close($d);
+            });
+            $d.find("button[name=cancel]").on("click", function () {
+                popup_close($d);
+            });
+            if (options.action)
+                $d.find("form").attr({action: options.action, method: options.method || "post"});
+        }
+        if (visible !== false) {
+            popup_near($d, options.anchor || window);
+            $d.find("textarea, input[type=text]").autogrow();
+        }
         return $d;
     };
     return hc;
