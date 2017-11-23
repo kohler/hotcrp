@@ -292,21 +292,21 @@ class PaperTable {
 
         $c = "<div class=\"$divclass" . $this->error_class($what);
         if (($fold || $editfolder) && !get($extra, "float"))
-            $c .= " childfold want-foldup\"" . $foldnumclass . ">";
+            $c .= " childfold js-foldup\"" . $foldnumclass . ">";
         else
             $c .= "\">";
         $c .= "<span class=\"$hdrclass\">";
         if (!$fold) {
             $n = (is_array($name) ? $name[0] : $name);
             if ($editfolder)
-                $c .= "<a class=\"ui q fn want-foldup\" "
+                $c .= "<a class=\"ui q fn js-foldup\" "
                     . "href=\"" . selfHref(array("atab" => $what))
                     . "\"" . $foldnumclass . ">" . $n
                     . "</a><span class=\"fx\">" . $n . "</span>";
             else
                 $c .= $n;
         } else {
-            $c .= '<a class="ui q want-foldup" href="#"' . $foldnumclass;
+            $c .= '<a class="ui q js-foldup" href="#"' . $foldnumclass;
             if (($title = defval($extra, "foldtitle")))
                 $c .= ' title="' . $title . '"';
             $c .= '>' . expander(null, $foldnum);
@@ -321,7 +321,7 @@ class PaperTable {
         $c .= "</span>";
         if ($editfolder) {
             $c .= "<span class=\"pstedit fn\">"
-                . "<a class=\"ui xx need-tooltip want-foldup\" href=\"" . selfHref(array("atab" => $what))
+                . "<a class=\"ui xx need-tooltip js-foldup\" href=\"" . selfHref(array("atab" => $what))
                 . "\"" . $foldnumclass . " data-tooltip=\"Edit\">"
                 . "<span class=\"psteditimg\">"
                 . Ht::img("edit48.png", "[Edit]", "editimg")
@@ -477,7 +477,7 @@ class PaperTable {
             (($this->prow && $this->prow->paperStorageId > 1)
              || $this->conf->opt("noPapers") ? "foldo" : "foldc"),
             '"><table class="fx"><tr><td class="nw">',
-            Ht::checkbox("submitpaper", 1, $checked, ["class" => "want-edit-paper-ui want-check-ready"]), "&nbsp;";
+            Ht::checkbox("submitpaper", 1, $checked, ["class" => "edit-paper-ui js-check-ready"]), "&nbsp;";
         if ($this->conf->setting("sub_freeze"))
             echo "</td><td>", Ht::label("<strong>" . $this->conf->_("The submission is complete.") . "</strong>"),
                 "</td></tr><tr><td></td><td><small>You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</small>";
@@ -533,12 +533,12 @@ class PaperTable {
             if (($stamps = self::pdf_stamps_html($doc)))
                 echo '<span class="sep"> </span>', $stamps;
             if ($has_cf && ($this->cf->failed || $this->cf->need_run))
-                echo '<span class="sep"> </span><a class="ui want-edit-paper-ui want-check-format" href="#">Check format</a>';
+                echo '<span class="sep"> </span><a class="ui edit-paper-ui js-check-format" href="#">Check format</a>';
             else if ($has_cf) {
                 if (!$this->cf->has_problem())
                     echo '<span class="sep"></span><span class="confirm">Format OK</span>';
                 if ($this->cf->possible_run)
-                    echo '<span class="sep"></span><a class="ui want-edit-paper-ui want-check-format" href="#">Recheck format</a>';
+                    echo '<span class="sep"></span><a class="ui edit-paper-ui js-check-format" href="#">Recheck format</a>';
             }
             echo "</td></tr></table>\n";
         }
@@ -554,7 +554,7 @@ class PaperTable {
             $uploader .= ' accept="' . $accepts[0]->mimetype . '"';
         $uploader .= ' size="30"';
         if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL)
-            $uploader .= ' class="want-edit-paper-ui want-check-ready"';
+            $uploader .= ' class="edit-paper-ui js-check-ready"';
         $uploader .= " />";
         if ($doc && $dtype > 0)
             $uploader .= " <span class='barsep'>·</span> "
@@ -622,7 +622,7 @@ class PaperTable {
         echo "</div></div></div>";
         if ($extra)
             echo '<div class="fn6 fx7 longtext-fader"></div>',
-                '<div class="fn6 fx7 longtext-expander"><a class="ui x want-foldup" href="#" data-fold-target="6">[more]</a></div>';
+                '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="#" data-fold-target="6">[more]</a></div>';
         echo "</div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");
@@ -800,11 +800,11 @@ class PaperTable {
 
         // header with folding
         echo '<div class="pg">',
-            '<div class="pavt childfold want-aufoldup', $this->error_class("authors"),
+            '<div class="pavt childfold js-aufoldup', $this->error_class("authors"),
             '"><span class="pavfn">';
-        Ht::stash_script('$(document).on("click",".want-aufoldup",aufoldup)', "aufoldup");
+        Ht::stash_script('$(document).on("click",".js-aufoldup",aufoldup)', "aufoldup");
         if (!$viewable || $this->allFolded)
-            echo '<a class="ui q want-aufoldup" href="#" title="Toggle author display">';
+            echo '<a class="ui q js-aufoldup" href="#" title="Toggle author display">';
         if (!$viewable)
             echo '<span class="fn8">Authors</span><span class="fx8">';
         if ($this->allFolded)
@@ -824,13 +824,13 @@ class PaperTable {
             $inauthors = "[blind] ";
         echo '<div class="pavb">';
         if (!$viewable)
-            echo '<a class="ui q want-aufoldup fn8" href="#" title="Toggle author display">',
+            echo '<a class="ui q js-aufoldup fn8" href="#" title="Toggle author display">',
                 '+&nbsp;<i>Hidden for blind review</i>',
                 '</a><div class="fx8">';
         if ($this->allFolded)
             echo '<div class="fn9">',
                 $this->authorData($aulist, "last", null, $inauthors),
-                ' <a class="ui want-aufoldup" href="#">[details]</a>',
+                ' <a class="ui js-aufoldup" href="#">[details]</a>',
                 '</div><div class="fx9">';
         echo $this->authorData($aulist, "col", $this->user, $inauthors);
         if ($this->allFolded)
@@ -1752,7 +1752,7 @@ class PaperTable {
             else {
                 $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn submissions has passed. Are you sure you want to override it?";
                 if ($this->admin)
-                    $b = array(Ht::button("Revive submission", ["class" => "btn ui want-override-deadlines", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
+                    $b = array(Ht::button("Revive submission", ["class" => "btn ui js-override-deadlines", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
             }
             return array($b);
         }
@@ -1785,7 +1785,7 @@ class PaperTable {
             else if ($this->admin) {
                 $x = whyNotText($whyNot, $prow ? "update" : "register")
                     . " Are you sure you want to override the deadline?";
-                $buttons[] = array(Ht::button($save_name, ["class" => "btn btn-default btn-savepaper ui want-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
+                $buttons[] = array(Ht::button($save_name, ["class" => "btn btn-default btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
             } else if ($prow && $prow->timeSubmitted > 0)
                 $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", ["class" => "btn"]), "");
             else if ($this->conf->timeFinalizePaper($prow))
@@ -1802,7 +1802,7 @@ class PaperTable {
         else if ($prow->timeSubmitted <= 0)
             $b = Ht::submit("withdraw", "Withdraw");
         else {
-            $args = ["class" => "btn ui want-edit-paper-ui want-withdraw"];
+            $args = ["class" => "btn ui edit-paper-ui js-withdraw"];
             if ($this->user->can_withdraw_paper($prow))
                 $args["data-withdrawable"] = "true";
             if (($this->admin && !$prow->has_author($this->user))
@@ -1831,7 +1831,7 @@ class PaperTable {
         $buttons = $this->_collectActionButtons();
 
         if ($this->admin && $this->prow)
-            $buttons[] = array(Ht::js_button("Delete", ["class" => "btn ui want-edit-paper-ui want-delete-paper"]), "(admin only)");
+            $buttons[] = array(Ht::js_button("Delete", ["class" => "btn ui edit-paper-ui js-delete-paper"]), "(admin only)");
 
         echo Ht::actions($buttons, array("class" => "aab aabr aabig"));
     }
@@ -1952,7 +1952,7 @@ class PaperTable {
         if ($this->useRequest)
             $form_js["class"] = "alert";
         echo Ht::form(hoturl_post("paper", "p=" . ($this->prow ? $this->prow->paperId : "new") . "&amp;m=edit"), $form_js);
-        Ht::stash_script('$("#paperform").on("change", ".want-edit-paper-ui", document_ui)');
+        Ht::stash_script('$("#paperform").on("change", ".edit-paper-ui", document_ui)');
         if ($this->prow
             && $this->prow->paperStorageId > 1
             && $this->prow->timeSubmitted > 0

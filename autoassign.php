@@ -421,7 +421,7 @@ function echo_radio_row($name, $value, $text, $extra = null) {
         $Qreq[$name] = $value;
     $extra = ($extra ? $extra : array());
     $extra["id"] = "${name}_$value";
-    echo '<tr class="want-radio-focus',
+    echo '<tr class="js-radio-focus',
         isset($Error[$value]) ? " error" : "",
         '"><td class="nw">',
         Ht::radio($name, $value, $checked, $extra), "&nbsp;</td><td>";
@@ -472,7 +472,7 @@ if (!isset($Qreq->q)) // XXX redundant
 echo Ht::entry("q", $Qreq->q,
                array("id" => "autoassignq", "placeholder" => "(All)",
                      "size" => 40, "title" => "Enter paper numbers or search terms",
-                     "class" => "hotcrp_searchbox want-autosubmit",
+                     "class" => "hotcrp_searchbox js-autosubmit",
                      "data-autosubmit-type" => "requery")), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
     echo Ht::select("t", $tOpt, $Qreq->t);
@@ -504,14 +504,14 @@ echo '<table>';
 echo_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revct", get($Qreq, "revct", 1),
-              array("size" => 3, "class" => "want-autosubmit")), "&nbsp; ";
+              array("size" => 3, "class" => "js-autosubmit")), "&nbsp; ";
 doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s)</td></tr>\n";
 
 echo_radio_row("a", "revadd", "Assign", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revaddct", get($Qreq, "revaddct", 1),
-              array("size" => 3, "class" => "want-autosubmit")),
+              array("size" => 3, "class" => "js-autosubmit")),
     "&nbsp; <i>additional</i>&nbsp; ";
 doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s) per selected paper</td></tr>\n";
@@ -519,7 +519,7 @@ echo "&nbsp; review(s) per selected paper</td></tr>\n";
 echo_radio_row("a", "revpc", "Assign each PC member", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revpcct", get($Qreq, "revpcct", 1),
-              array("size" => 3, "class" => "want-autosubmit")),
+              array("size" => 3, "class" => "js-autosubmit")),
     "&nbsp; additional&nbsp; ";
 doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s) from this paper selection</td></tr>\n";
@@ -566,7 +566,7 @@ echo '<tr><td colspan="2" class="mg"></td></tr>';
 // discussion order
 echo_radio_row("a", "discorder", "Create discussion order in tag #", ["open" => true]);
 echo Ht::entry("discordertag", get($Qreq, "discordertag", "discuss"),
-               array("size" => 12, "class" => "want-autosubmit")),
+               array("size" => 12, "class" => "js-autosubmit")),
     ", grouping papers with similar PC conflicts</td></tr>";
 
 echo "</table>\n";
@@ -593,7 +593,7 @@ if (!empty($pctags)) {
 $pctyp_sel[] = array("__flip__", "flip");
 $sep = "";
 foreach ($pctyp_sel as $pctyp) {
-    echo $sep, "<a class=\"ui want-pcsel-tag\" href=\"#pc_", $pctyp[0], "\">", $pctyp[1], "</a>";
+    echo $sep, "<a class=\"ui js-pcsel-tag\" href=\"#pc_", $pctyp[0], "\">", $pctyp[1], "</a>";
     $sep = ", ";
 }
 echo ")";
@@ -613,7 +613,7 @@ Ht::stash_script('function make_pcsel_members(tag) {
     }
 }
 function pcsel_tag(event) {
-    var $g = $(this).closest(".want-radio-focus"), e;
+    var $g = $(this).closest(".js-radio-focus"), e;
     if (this.tagName === "A") {
         $g.find("input[type=radio]").first().click();
         var f = make_pcsel_members(this.hash.substring(4));
@@ -624,7 +624,7 @@ function pcsel_tag(event) {
         event_prevent(event);
     }
     var tags = [], functions = {};
-    $g.find("a.want-pcsel-tag").each(function () {
+    $g.find("a.js-pcsel-tag").each(function () {
         var tag = this.hash.substring(4);
         tags.push(tag);
         functions[tag] = make_pcsel_members(tag);
@@ -639,16 +639,16 @@ function pcsel_tag(event) {
             }
         }
     });
-    $g.find("a.want-pcsel-tag").each(function () {
+    $g.find("a.js-pcsel-tag").each(function () {
         if ($.inArray(this.hash.substring(4), tags) >= 0)
             $(this).css("font-weight", "bold");
         else
             $(this).css("font-weight", "inherit");
     });
 }
-$(document).on("click", "a.want-pcsel-tag", pcsel_tag);
-$(document).on("change", "input.want-pcsel-tag", pcsel_tag);
-$(function(){$("input.want-pcsel-tag").first().trigger("change")})');
+$(document).on("click", "a.js-pcsel-tag", pcsel_tag);
+$(document).on("change", "input.js-pcsel-tag", pcsel_tag);
+$(function(){$("input.js-pcsel-tag").first().trigger("change")})');
 
 $summary = [];
 $tagger = new Tagger($Me);
@@ -660,7 +660,7 @@ foreach ($Conf->pc_members() as $id => $p) {
         $t .= ' ' . $k;
     $t .= '"><table><tr><td class="nw">'
         . Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),
-                       ["id" => "pcc$id", "class" => "want-range-click want-pcsel-tag"])
+                       ["id" => "pcc$id", "class" => "js-range-click js-pcsel-tag"])
         . '&nbsp;</td><td>'
         . Ht::label($Me->name_html_for($p), "pcc$id", ["class" => "taghl"])
         . AssignmentSet::review_count_report($nrev, null, $p, "")
@@ -690,7 +690,7 @@ for ($i = 1; $i == 1 || isset($Qreq["bpa$i"]); ++$i) {
         echo "or &nbsp;";
     echo '</td><td class="lentry">', $selector_text;
     if ($i == 1)
-        echo ' &nbsp;to the same paper &nbsp;(<a class="ui want-badpairs-row more" href="#">More</a> &nbsp;·&nbsp; <a class="ui want-badpairs-row less" href="#">Fewer</a>)';
+        echo ' &nbsp;to the same paper &nbsp;(<a class="ui js-badpairs-row more" href="#">More</a> &nbsp;·&nbsp; <a class="ui js-badpairs-row less" href="#">Fewer</a>)';
     echo "</td></tr>\n";
 }
 echo "</tbody></table></div>\n";
@@ -701,7 +701,7 @@ echo Ht::unstash_script('$("#bptable").on("change", "select.badpairs", function 
         x.checked || x.click();
     }
 });
-$("#bptable a.want-badpairs-row").on("click", function () {
+$("#bptable a.js-badpairs-row").on("click", function () {
     var tbody = $("#bptable > tbody"), n = tbody.children().length;
     if (hasClass(this, "more")) {
         ++n;

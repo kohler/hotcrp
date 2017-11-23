@@ -835,7 +835,7 @@ function rangeclick(evt, elt, kind) {
     return true;
 }
 
-$(document).on("click", "input.want-range-click", rangeclick);
+$(document).on("click", "input.js-range-click", rangeclick);
 
 
 // bubbles and tooltips
@@ -2105,9 +2105,9 @@ function foldup(event, opts) {
     }
 }
 
-$(document).on("click", "div.want-foldup", foldup); // a.want-foldup below
-$(document).on("change", "input.want-foldup", foldup);
-$(document).on("fold", ".want-fold-focus", function (event, opts) {
+$(document).on("click", "div.js-foldup", foldup); // a.js-foldup below
+$(document).on("change", "input.js-foldup", foldup);
+$(document).on("fold", ".js-fold-focus", function (event, opts) {
     focus_within(this, (opts.f ? ".fn" : ".fx") + (opts.n || "") + " *");
 });
 
@@ -2328,10 +2328,10 @@ function make_onkey(key, f) {
 }
 
 
-$(document).on("focus", "input.want-autosubmit", function (event) {
+$(document).on("focus", "input.js-autosubmit", function (event) {
     $(event.target).closest("form").data("autosubmitType", event.target.getAttribute("data-autosubmit-type") || false);
 });
-$(document).on("keypress", "input.want-autosubmit", function (event) {
+$(document).on("keypress", "input.js-autosubmit", function (event) {
     if (event_modkey(event) || event_key(event) !== "Enter")
         return true;
     var $f = $(event.target).closest("form"),
@@ -3066,7 +3066,7 @@ function comment_identity_time(cj) {
                + cj.ordinal + '</span></a></div>');
     if (cj.author && cj.author_hidden)
         t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
-               + '<a class="ui q want-foldup" href="#" data-fold-target="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
+               + '<a class="ui q js-foldup" href="#" data-fold-target="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
                + cj.author + '</span></div>');
     else if (cj.author && cj.blind && cj.visibility == "au")
         t.push('<div class="cmtname">[' + cj.author + ']</div>');
@@ -6170,7 +6170,7 @@ function add_attachment() {
     var $na = $('<div class="has-document document-new-instance" data-document-name="' + name + '" style="display:none">'
         + '<div class="document-file"><input type="file" name="' + name + '" size="15" /></div>'
         + '<div class="document-stamps"></div>'
-        + '<div class="document-actions"><a class="ui want-edit-paper-ui want-remove-document" href="#">Delete</a></div>'
+        + '<div class="document-actions"><a class="ui edit-paper-ui js-remove-document" href="#">Delete</a></div>'
         + '</div>');
     $ei.length ? $na.insertAfter($ei[$ei.length - 1]) : $na.prependTo($ea);
     $na.find("input[type=file]").on("change", function () {
@@ -6236,19 +6236,19 @@ function delete_paper_dialog(event) {
 }
 
 return function (event) {
-    if (hasClass(this, "want-check-format"))
+    if (hasClass(this, "js-check-format"))
         return check_format.call(this);
-    else if (hasClass(this, "want-check-ready"))
+    else if (hasClass(this, "js-check-ready"))
         return check_ready.call(this, event);
     else if (event.type === "submit")
         return check_still_ready.call(this);
-    else if (hasClass(this, "want-add-attachment"))
+    else if (hasClass(this, "js-add-attachment"))
         return add_attachment.call(this);
-    else if (hasClass(this, "want-remove-document"))
+    else if (hasClass(this, "js-remove-document"))
         return remove_document.call(this, event);
-    else if (hasClass(this, "want-withdraw"))
+    else if (hasClass(this, "js-withdraw"))
         return withdraw_dialog.call(this, event);
-    else if (hasClass(this, "want-delete-paper"))
+    else if (hasClass(this, "js-delete-paper"))
         return delete_paper_dialog.call(this, event);
 };
 })($);
@@ -6275,9 +6275,9 @@ function delete_user_dialog(event) {
 }
 
 return function (event) {
-    if (hasClass(this, "want-cannot-delete-user"))
+    if (hasClass(this, "js-cannot-delete-user"))
         return cannot_delete_user_dialog.call(this);
-    else if (hasClass(this, "want-delete-user"))
+    else if (hasClass(this, "js-delete-user"))
         return delete_user_dialog.call(this, event);
 };
 })($);
@@ -6471,15 +6471,15 @@ function row_click(evt) {
 function handle_ui(evt) {
     if (hasClass(this, "tla"))
         return focus_fold.call(this, evt);
-    else if (hasClass(this, "want-foldup"))
+    else if (hasClass(this, "js-foldup"))
         return foldup.call(this, evt);
-    else if (hasClass(this, "want-edit-comment"))
+    else if (hasClass(this, "js-edit-comment"))
         return papercomment.edit_id(this.hash.substring(1));
-    else if (hasClass(this, "want-edit-paper-ui"))
+    else if (hasClass(this, "edit-paper-ui"))
         return edit_paper_ui.call(this, evt);
-    else if (hasClass(this, "want-profile-ui"))
+    else if (hasClass(this, "profile-ui"))
         return profile_ui.call(this, evt);
-    else if (hasClass(this, "want-override-deadlines"))
+    else if (hasClass(this, "js-override-deadlines"))
         return override_deadlines.call(this);
     else
         evt.preventDefault();
@@ -6526,8 +6526,8 @@ function hotlist_search_params(x, ids) {
 
 // focusing
 $(function () {
-$(".want-radio-focus input, .want-radio-focus select").on("click keypress", function (event) {
-    var x = $(this).closest(".want-radio-focus").find("input[type=radio]").first();
+$(".js-radio-focus").on("click keypress", "input, select", function (event) {
+    var x = $(this).closest(".js-radio-focus").find("input[type=radio]").first();
     if (x.length && x[0] !== this)
         x[0].click();
     return true;

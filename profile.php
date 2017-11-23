@@ -635,7 +635,7 @@ else if ($Me->contactId != $Acct->contactId)
 if (isset($Qreq->ls))
     $form_params[] = "ls=" . urlencode($Qreq->ls);
 if ($newProfile)
-    echo '<div id="foldbulk" class="fold9' . ($Qreq->bulkregister ? "o" : "c") . ' want-fold-focus"><div class="fn9">';
+    echo '<div id="foldbulk" class="fold9' . ($Qreq->bulkregister ? "o" : "c") . ' js-fold-focus"><div class="fn9">';
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "accountform", "autocomplete" => "off")),
@@ -749,7 +749,7 @@ if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct))
             Ht::stash_script("function shift_password(dir){var form=$$(\"accountform\");fold(\"account\",dir);if(form&&form.whichpassword)form.whichpassword.value=dir?\"\":\"t\";return false}");
             if (Contact::password_storage_cleartext())
                 echo " <span class=\"sep\"></span>";
-            echo "<span class='f-cx'><a class='ui fn' href='#' onclick='return shift_password(0)'>Show password</a><a class='ui fx' href='#' onclick='return shift_password(1)'>Hide password</a></span>";
+            echo '<span class="f-cx"><a class="ui profile-ui js-plaintext-password" href=""><span class="fn">Show password</span><span class="fx">Hide password</span></a></span>';
         }
         echo "</div>\n";
     }
@@ -858,12 +858,12 @@ $buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save change
 
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
-    $args = ["class" => "btn ui want-profile-ui"];
+    $args = ["class" => "btn ui profile-ui"];
     if (count($tracks->soleAuthor)) {
-        $args["class"] .= " want-cannot-delete-user";
+        $args["class"] .= " js-cannot-delete-user";
         $args["data-sole-author"] = pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor);
     } else {
-        $args["class"] .= " want-delete-user";
+        $args["class"] .= " js-delete-user";
         if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
             $x = $y = array();
             if (count($tracks->author)) {

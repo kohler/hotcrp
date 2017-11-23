@@ -902,10 +902,10 @@ $blind\n";
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot, "review") . " Are you sure you want to override the deadline?";
             if (!$submitted) {
-                $buttons[] = array(Ht::button("Submit review", ["class" => "btn btn-default ui want-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
-                $buttons[] = array(Ht::button("Save changes", ["class" => "btn ui want-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
+                $buttons[] = array(Ht::button("Submit review", ["class" => "btn btn-default ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
+                $buttons[] = array(Ht::button("Save changes", ["class" => "btn ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
             } else
-                $buttons[] = array(Ht::button("Save changes", ["class" => "btn btn-default ui want-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
+                $buttons[] = array(Ht::button("Save changes", ["class" => "btn btn-default ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
         } else if (!$submitted && $rrow && $this->review_needs_approval($rrow)) {
             if ($my_review && !$rrow->timeApprovalRequested)
                 $buttons[] = Ht::submit("submitreview", "Submit for approval", ["class" => "btn btn-default", "disabled" => $disabled]);
@@ -920,7 +920,7 @@ $blind\n";
                 if ($my_rrow->reviewModified <= 1)
                     $buttons[] = Ht::submit("adoptreview", "Adopt as your review", ["class" => "btn", "disabled" => $disabled]);
                 else if (!$my_rrow->reviewSubmitted)
-                    $buttons[] = Ht::button("Adopt as your review", ["class" => "btn ui want-override-deadlines", "data-override-text" => "Are you sure you want to replace your current draft review?", "data-override-submit" => "adoptreview", "disabled" => $disabled]);
+                    $buttons[] = Ht::button("Adopt as your review", ["class" => "btn ui js-override-deadlines", "data-override-text" => "Are you sure you want to replace your current draft review?", "data-override-submit" => "adoptreview", "disabled" => $disabled]);
             }
         } else if (!$submitted) {
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable

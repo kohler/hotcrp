@@ -45,8 +45,8 @@ class Topics_SettingRenderer {
                     "topic:", htmlspecialchars($oabbrev), "</a>”",
                     "<div class='hint'>Topic abbreviations are also allowed.</div>";
                 if ($ninterests)
-                    echo "<a class='ui hint fn want-foldup' href=\"#\">Show PC interest counts</a>",
-                        "<a class='ui hint fx want-foldup' href=\"#\">Hide PC interest counts</a>";
+                    echo "<a class='ui hint fn js-foldup' href=\"#\">Show PC interest counts</a>",
+                        "<a class='ui hint fx js-foldup' href=\"#\">Hide PC interest counts</a>";
                 echo "</div></td>";
             }
             echo "</tr>\n";

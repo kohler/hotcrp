@@ -308,7 +308,7 @@ class ContactList {
             $c = "";
             if ($fieldId == self::FIELD_SELECTOR_ON)
                 $c = ' checked="checked"';
-            return '<input type="checkbox" class="want-range-click" name="pap[]" value="' . $row->contactId . '" tabindex="1"' . $c . ' />';
+            return '<input type="checkbox" class="js-range-click" name="pap[]" value="' . $row->contactId . '" tabindex="1"' . $c . ' />';
         case self::FIELD_HIGHTOPICS:
         case self::FIELD_LOWTOPICS:
             if (!($topics = $row->topic_interest_map()))
@@ -483,7 +483,7 @@ class ContactList {
             $t .= "<span class=\"linelink\"><a class=\"ui tla lll\" href=\"#\">Tag</a><span class=\"lld\"><b>:</b> &nbsp;";
             $t .= Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), req("tagtype"))
                 . ' &nbsp;tag(s) &nbsp;'
-                . Ht::entry("tag", req("tag"), ["size" => 15, "class" => "want-focus want-autosubmit", "data-autosubmit-type" => "tagact"])
+                . Ht::entry("tag", req("tag"), ["size" => 15, "class" => "want-focus js-autosubmit", "data-autosubmit-type" => "tagact"])
                 . ' &nbsp;' . Ht::submit("tagact", "Go") . '</span></span>';
 
             $t .= $barsep;

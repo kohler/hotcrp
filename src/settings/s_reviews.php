@@ -178,7 +178,7 @@ static function render(SettingValues $sv) {
     echo "<table id='foldmailbody_requestreview' class='",
         ($t == SettingParser::expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
         "'><tr><td>", foldupbutton(), "</td>",
-        "<td><a class='ui q want-foldup' href='#'>Mail template for external review requests</a>",
+        "<td><a class='ui q js-foldup' href='#'>Mail template for external review requests</a>",
         " <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed; set to empty for default)<br /></span>
 <textarea class='tt fx need-autogrow' name='mailbody_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea>",
         "</td></tr></table>\n";

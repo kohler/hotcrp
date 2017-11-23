@@ -536,7 +536,7 @@ if ($Me->isPC || $Me->privChair) {
         echo_request_as_hidden_inputs(true);
         echo "<table id=\"ssearchnew\" class=\"foldc\" data-fold=\"true\">",
             "<tr><td>", foldupbutton(), "</td>",
-            "<td><a class='ui q fn want-foldup' href='#'>New saved search</a><div class='fx'>",
+            "<td><a class='ui q fn js-foldup' href='#'>New saved search</a><div class='fx'>",
             "Save ";
         if ($Qreq->q)
             echo "search “", htmlspecialchars($Qreq->q), "”";
