@@ -6254,6 +6254,35 @@ return function (event) {
 })($);
 
 
+window.profile_ui = (function ($) {
+
+function cannot_delete_user_dialog(event) {
+    var hc = popup_skeleton({anchor: this});
+    hc.push('<p><strong>This user cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the user, first remove these papers from the database or give the papers more contacts.</p>');
+    hc.push_actions(['<button type="button" name="cancel" tabindex="1000" class="btn">Cancel</button>']);
+    hc.show();
+}
+
+function delete_user_dialog(event) {
+    var $f = $(this).closest("form"),
+        hc = popup_skeleton({anchor: this, action: $f[0].action}), x;
+    hc.push('<p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>');
+    if ((x = $(this).data("deleteInfo")))
+        hc.push(x);
+    hc.push_actions(['<button type="submit" name="delete" value="1" tabindex="1000" class="btn dangerous">Delete user</button>',
+        '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
+    hc.show();
+}
+
+return function (event) {
+    if (hasClass(this, "want-cannot-delete-user"))
+        return cannot_delete_user_dialog.call(this);
+    else if (hasClass(this, "want-delete-user"))
+        return delete_user_dialog.call(this, event);
+};
+})($);
+
+
 function document_upload() {
     var oname = this.getAttribute("data-option"), accept = this.getAttribute("data-accept");
     var file = $('<input type="file" name="' + oname + '" id="' + oname + (accept ? '" accept="' + accept : "") + '" size="30" />').insertAfter(this);
@@ -6448,6 +6477,8 @@ function handle_ui(evt) {
         return papercomment.edit_id(this.hash.substring(1));
     else if (hasClass(this, "want-edit-paper-ui"))
         return edit_paper_ui.call(this, evt);
+    else if (hasClass(this, "want-profile-ui"))
+        return profile_ui.call(this, evt);
     else if (hasClass(this, "want-override-deadlines"))
         return override_deadlines.call(this);
     else

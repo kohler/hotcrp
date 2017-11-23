@@ -858,17 +858,12 @@ $buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save change
 
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
-    $buttons[] = array(Ht::js_button("Delete user", "popup(this,'d',0)"), "(admin only)");
+    $args = ["class" => "btn ui want-profile-ui"];
     if (count($tracks->soleAuthor)) {
-        Ht::stash_html("<div class=\"popupbg\"><div id='popup_d' class='popupc'>
-  <p><strong>This user cannot be deleted</strong> because they are the sole
-  contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".
-  Delete these papers from the database or add alternate paper contacts and
-  you will be able to delete this user.</p>
-  <div class='popup-actions'>"
-    . Ht::js_button("Close", "popup(null,'d',1)", ["class" => "btn"])
-    . "</div></div></div>");
+        $args["class"] .= " want-cannot-delete-user";
+        $args["data-sole-author"] = pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor);
     } else {
+        $args["class"] .= " want-delete-user";
         if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
             $x = $y = array();
             if (count($tracks->author)) {
@@ -883,20 +878,10 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
                 $x[] = "commenter for " . pluralx($tracks->comment, "paper") . " " . textArrayPapers($tracks->comment);
                 $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
             }
-            $dialog = "<p>This user is " . commajoin($x) . ".
-  Deleting the user will also " . commajoin($y) . ".</p>";
-        } else
-            $dialog = "";
-        Ht::stash_html("<div class=\"popupbg\"><div id='popup_d' class='popupc'>
-  <p>Be careful: This will permanently delete all information about this
-  user from the database and <strong>cannot be undone</strong>.</p>
-  $dialog
-  <form method='post' action=\"" . hoturl_post("profile", "u=" . urlencode($Acct->email)) . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
-    <div class='popup-actions'>"
-      . Ht::submit("delete", "Delete user", ["class" => "btn dangerous"])
-      . Ht::js_button("Cancel", "popup(null,'d',1)", ["class" => "btn"])
-      . "</div></form></div></div>");
+            $args["data-delete-info"] = "<p>This user is " . commajoin($x) . ". Deleting the user will also " . commajoin($y) . ".</p>";
+        }
     }
+    $buttons[] = [Ht::button("Delete user", $args), "(admin only)"];
 }
 if (!$newProfile && $Acct->contactId == $Me->contactId)
     array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
