@@ -665,7 +665,7 @@ if ($UserStatus->has_messages()) {
 }
 
 echo '<div id="foldaccount" class="aahc profiletext', ($need_highlight ? " alert" : ""),
-    " foldc fold1", ($pcrole == "no" ? "c" : "o"), " fold2",
+    " fold1", ($pcrole == "no" ? "c" : "o"), " fold2",
     ($Qreq->bulkregister ? "o" : "c"), "\">\n";
 
 echo '<div class="f-contain">', "\n\n";
@@ -715,11 +715,11 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
 
 
 if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct)) {
-    echo '<div id="foldpassword" class="',
+    echo '<div id="foldpassword" class="foldc ',
         ($UserStatus->has_problem_at("password") ? "fold3o" : "fold3c"),
         '" style="margin-top:20px">';
     // Hit a button to change your password
-    echo Ht::js_button("Change password", "fold('password',null,3)", array("class" => "btn fn3"));
+    echo Ht::button("Change password", ["class" => "btn ui js-foldup fn3", "data-fold-target" => "3o"]);
     // Display the following after the button is clicked
     echo '<div class="fx3">';
     if (!$Me->can_change_password(null)) {
@@ -746,7 +746,6 @@ if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct))
         if (Contact::password_storage_cleartext())
             echo "The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
         if ($Me->privChair) {
-            Ht::stash_script("function shift_password(dir){var form=$$(\"accountform\");fold(\"account\",dir);if(form&&form.whichpassword)form.whichpassword.value=dir?\"\":\"t\";return false}");
             if (Contact::password_storage_cleartext())
                 echo " <span class=\"sep\"></span>";
             echo '<span class="f-cx"><a class="ui profile-ui js-plaintext-password" href=""><span class="fn">Show password</span><span class="fx">Hide password</span></a></span>';
@@ -783,10 +782,10 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     foreach (array("chair" => "PC chair",
                    "pc" => "PC member",
                    "no" => "Not on the PC") as $k => $v) {
-        echo Ht::radio("pctype", $k, $pcrole === $k,
-                       ["id" => "pctype_$k", "onchange" => "fold('account',\$\$('pctype_no').checked,1)"]),
+        echo Ht::radio("pctype", $k, $pcrole === $k, ["class" => "ui profile-ui js-role"]),
             "&nbsp;", Ht::label($v), "<br />\n";
     }
+    Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
 
     echo "</td><td><span class='sep'></span></td><td class='nw'>";
     $is_ass = isset($formcj->roles) && get($formcj->roles, "sysadmin");
@@ -881,6 +880,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
             $args["data-delete-info"] = "<p>This user is " . commajoin($x) . ". Deleting the user will also " . commajoin($y) . ".</p>";
         }
     }
+    $buttons[] = "";
     $buttons[] = [Ht::button("Delete user", $args), "(admin only)"];
 }
 if (!$newProfile && $Acct->contactId == $Me->contactId)

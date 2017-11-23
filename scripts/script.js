@@ -6274,11 +6274,30 @@ function delete_user_dialog(event) {
     hc.show();
 }
 
+function plaintext_password(event) {
+    foldup.call(this);
+    var open = $(this).closest(".foldo, .foldc").hasClass("foldo");
+    var form = $(this).closest("form")[0];
+    if (form && form.whichpassword)
+        form.whichpassword.value = open ? "t" : "";
+    event_prevent(event);
+}
+
+function role_change() {
+    var $f = $(this).closest("form");
+    var open = $f.find("input[name=pctype]:checked").val() !== "no";
+    foldup.call(this, null, {n: 1, f: !open});
+}
+
 return function (event) {
     if (hasClass(this, "js-cannot-delete-user"))
         return cannot_delete_user_dialog.call(this);
     else if (hasClass(this, "js-delete-user"))
         return delete_user_dialog.call(this, event);
+    else if (hasClass(this, "js-plaintext-password"))
+        return plaintext_password.call(this, event);
+    else if (hasClass(this, "js-role"))
+        return role_change.call(this);
 };
 })($);
 
