@@ -291,24 +291,23 @@ class GetRank_ListAction extends ListAction {
 }
 
 class GetLead_ListAction extends ListAction {
-    private $islead;
+    private $type;
     function __construct($fj) {
-        $this->islead = $fj->name === "get/lead";
+        $this->type = $fj->type;
     }
     function allow(Contact $user) {
         return $user->isPC;
     }
     function run(Contact $user, $qreq, $ssel) {
-        $type = $this->islead ? "lead" : "shepherd";
-        $key = $type . "ContactId";
+        $key = $this->type . "ContactId";
+        $can_view = "can_view_" . $this->type;
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $texts = array();
         foreach (PaperInfo::fetch_all($result, $user) as $row)
-            if ($row->$key
-                && ($this->islead ? $user->can_view_lead($row, true) : $user->can_view_shepherd($row, true))) {
+            if ($row->$key && $user->$can_view($row, true)) {
                 $name = $user->name_object_for($row->$key);
                 arrayappend($texts[$row->paperId], [$row->paperId, $row->title, $name->firstName, $name->lastName, $name->email]);
             }
-        return new Csv_SearchResult("{$type}s", ["paper", "title", "first", "last", "{$type}email"], $ssel->reorder($texts));
+        return new Csv_SearchResult("{$this->type}s", ["paper", "title", "first", "last", "{$this->type}email"], $ssel->reorder($texts));
     }
 }

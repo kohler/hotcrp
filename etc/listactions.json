@@ -133,7 +133,8 @@
         "selector": "Reviews/Shepherds", "position": 3091,
         "allow_if": "pc", "display_if": "shepherd",
         "require": "src/listactions/la_get_rev.php",
-        "factory_class": "GetShepherd_ListAction"
+        "factory_class": "GetLead_ListAction",
+        "type": "shepherd"
     },
     {
         "name": "get/revpref", "get": true,
