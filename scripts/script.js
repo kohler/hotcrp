@@ -831,8 +831,6 @@ function rangeclick(evt, elt, kind) {
         for (; i <= j; ++i)
             cbs[i].checked = elt.checked;
     }
-
-    return true;
 }
 
 $(document).on("click", "input.js-range-click", rangeclick);
@@ -2167,8 +2165,7 @@ function focus_fold(event) {
     var e = this, m, f;
     if (e.hasAttribute("data-fold-target")) {
         foldup.call(e, event);
-        has_focused = true;
-        return false;
+        return (has_focused = true);
     }
     while (e) {
         if (hasClass(e, "linelink")) {
@@ -2182,8 +2179,7 @@ function focus_fold(event) {
                 focus_within(e, ".lld *");
                 event_prevent(event);
             }
-            has_focused = true;
-            return false;
+            return (has_focused = true);
         } else if ((m = e.className.match(/\b(?:lll|lld|tll|tld)(\d+)/))) {
             while (e && !/\b(?:tab|line)links\d/.test(e.className))
                 e = e.parentElement;
@@ -2194,20 +2190,21 @@ function focus_fold(event) {
                 focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
                 event_prevent(event);
             }
-            has_focused = true;
-            return false;
+            return (has_focused = true);
         } else
             e = e.parentElement;
     }
-    return true;
+    return false;
 }
 
 function jump(href) {
     var hash = href.match(/#.*/);
     hash = hash ? hash[0] : "";
     $("a.has-focus-history").each(function () {
-        if (this.getAttribute("href") === hash)
-            return focus_fold.call(this);
+        if (this.getAttribute("href") === hash) {
+            focus_fold.call(this);
+            return false;
+        }
     });
 }
 
@@ -2217,12 +2214,10 @@ $(window).on("popstate", function (event) {
 });
 
 function handler(event) {
-    var done = focus_fold.call(this, event);
-    if (!done
+    if (focus_fold.call(this, event)
         && this instanceof HTMLAnchorElement
         && hasClass(this, "has-focus-history"))
         push_history_state(this.href);
-    return done;
 }
 
 handler.hash = function () {
@@ -2333,7 +2328,7 @@ $(document).on("focus", "input.js-autosubmit", function (event) {
 });
 $(document).on("keypress", "input.js-autosubmit", function (event) {
     if (event_modkey(event) || event_key(event) !== "Enter")
-        return true;
+        return;
     var $f = $(event.target).closest("form"),
         type = $f.data("autosubmitType"),
         defaulte = $f[0] ? $f[0]["default"] : null;
@@ -6124,7 +6119,6 @@ function check_format() {
             data.ok && $cf.html(data.response);
         }
     });
-    return false;
 }
 
 function check_ready(event) {
@@ -6149,11 +6143,11 @@ function check_ready(event) {
         $b.html(t);
 }
 
-function check_still_ready() {
-    if (this.submitpaper && !this.submitpaper.checked)
-        return window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered.");
-    else
-        return true;
+function check_still_ready(event) {
+    if (this.submitpaper && !this.submitpaper.checked) {
+        if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered."))
+            event.preventDefault();
+    }
 }
 
 function add_attachment() {
@@ -6198,7 +6192,7 @@ function remove_document(event) {
         $(this).addClass("undelete").html("Undelete");
     }
     form_highlight($f[0]);
-    event_prevent(event);
+    event.preventDefault();
 }
 
 function withdraw_dialog(event) {
@@ -6241,7 +6235,7 @@ return function (event) {
     else if (hasClass(this, "js-check-ready"))
         return check_ready.call(this, event);
     else if (event.type === "submit")
-        return check_still_ready.call(this);
+        return check_still_ready.call(this, event);
     else if (hasClass(this, "js-add-attachment"))
         return add_attachment.call(this);
     else if (hasClass(this, "js-remove-document"))
@@ -6280,7 +6274,6 @@ function plaintext_password(event) {
     var form = $(this).closest("form")[0];
     if (form && form.whichpassword)
         form.whichpassword.value = open ? "t" : "";
-    event_prevent(event);
 }
 
 function role_change() {
@@ -6488,35 +6481,31 @@ function row_click(evt) {
     }
 }
 function handle_ui(evt) {
+    evt.preventDefault();
     if (hasClass(this, "tla"))
-        return focus_fold.call(this, evt);
+        focus_fold.call(this, evt);
     else if (hasClass(this, "js-foldup"))
-        return foldup.call(this, evt);
+        foldup.call(this, evt);
     else if (hasClass(this, "js-edit-comment"))
-        return papercomment.edit_id(this.hash.substring(1));
+        papercomment.edit_id(this.hash.substring(1));
     else if (hasClass(this, "edit-paper-ui"))
-        return edit_paper_ui.call(this, evt);
+        edit_paper_ui.call(this, evt);
     else if (hasClass(this, "profile-ui"))
-        return profile_ui.call(this, evt);
+        profile_ui.call(this, evt);
     else if (hasClass(this, "js-override-deadlines"))
-        return override_deadlines.call(this);
-    else
-        evt.preventDefault();
+        override_deadlines.call(this);
 }
 $(document).on("click", "a", function (evt) {
     if (hasClass(this, "ui"))
         handle_ui.call(this, evt);
-    if (hasClass(this, "fn5"))
-        return foldup.call(this, evt, {n: 5, f: false});
-    else {
+    else if (hasClass(this, "fn5"))
+        foldup.call(this, evt, {n: 5, f: false});
+    else
         handle_list(this, this.getAttribute("href"));
-        return true;
-    }
 });
 $(document).on("click", "button.ui", handle_ui);
 $(document).on("submit", "form", function () {
     handle_list(this, this.getAttribute("action"));
-    return true;
 });
 $(document).on("click", "tr.pl", row_click);
 hotcrp_list && $(window).on("beforeunload", unload_list);
@@ -6549,7 +6538,6 @@ $(".js-radio-focus").on("click keypress", "input, select", function (event) {
     var x = $(this).closest(".js-radio-focus").find("input[type=radio]").first();
     if (x.length && x[0] !== this)
         x[0].click();
-    return true;
 });
 });
 

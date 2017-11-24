@@ -1952,12 +1952,12 @@ class PaperTable {
         if ($this->useRequest)
             $form_js["class"] = "alert";
         echo Ht::form(hoturl_post("paper", "p=" . ($this->prow ? $this->prow->paperId : "new") . "&amp;m=edit"), $form_js);
-        Ht::stash_script('$("#paperform").on("change", ".edit-paper-ui", document_ui)');
+        Ht::stash_script('$("#paperform").on("change", ".edit-paper-ui", edit_paper_ui)');
         if ($this->prow
             && $this->prow->paperStorageId > 1
             && $this->prow->timeSubmitted > 0
             && !$this->conf->setting("sub_freeze"))
-            Ht::stash_script('$("#paperform").on("submit", document_ui)');
+            Ht::stash_script('$("#paperform").on("submit", edit_paper_ui)');
         Ht::stash_script('$(function(){$("#paperform input[name=paperUpload]").trigger("change")})');
     }
 
