@@ -661,7 +661,7 @@ class PaperTable {
             . $this->editable_author_component_entry($n, "auname", $au) . ' '
             . $this->editable_author_component_entry($n, "auemail", $au) . ' '
             . $this->editable_author_component_entry($n, "auaff", $au)
-            . '<span class="nb btnbox aumovebox"><a href="#" class="qx btn need-tooltip moveup" data-tooltip="Move up" tabindex="-1">&#x25b2;</a><a href="#" class="qx btn need-tooltip movedown" data-tooltip="Move down" tabindex="-1">&#x25bc;</a><a href="#" class="qx btn need-tooltip delete" data-tooltip="Delete" tabindex="-1">✖</a></span></td></tr>';
+            . '<span class="nb btnbox aumovebox"><a href="#" class="ui btn qx need-tooltip row-order-ui moveup" data-tooltip="Move up" tabindex="-1">&#x25b2;</a><a href="#" class="ui btn qx need-tooltip row-order-ui movedown" data-tooltip="Move down" tabindex="-1">&#x25bc;</a><a href="#" class="ui btn qx need-tooltip row-order-ui delete" data-tooltip="Delete" tabindex="-1">✖</a></span></td></tr>';
     }
 
     private function echo_editable_authors() {
@@ -676,7 +676,7 @@ class PaperTable {
         echo $this->field_hint("Authors", $hint),
             $this->messages_for("authors"),
             '<div class="papev"><table id="auedittable" class="auedittable">',
-            '<tbody data-last-row-blank="true" data-min-rows="', $min_authors, '" ',
+            '<tbody class="js-row-order need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
             'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', null, $max_authors)), '">';
 
@@ -693,7 +693,6 @@ class PaperTable {
                 ++$n;
             } while ($n <= $min_authors);
         echo "</tbody></table></div></div>\n\n";
-        Ht::stash_script('author_table_events("#auedittable")');
     }
 
     private function authorData($table, $type, $viewAs = null, $prefix = "") {

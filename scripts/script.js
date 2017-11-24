@@ -2082,7 +2082,7 @@ function foldup(event, opts) {
     }
     if (!("f" in opts)
         && this.tagName === "INPUT"
-        && (this.type === "checkbox" || this.type === "radio"))
+        && input_is_checkboxlike(this))
         opts.f = !this.checked;
     while (e && (!e.id || e.id.substr(0, 4) != "fold")
            && (!e.getAttribute || !e.getAttribute("data-fold")))
@@ -2463,13 +2463,20 @@ function handle_clickthrough(form) {
 
 
 // author entry
-function author_change(e, delta) {
-    var $e = $(e), $tbody = $e.closest("tbody");
-    if (delta == Infinity) {
-        $e.closest("tr").remove();
+var row_order_ui = (function ($) {
+
+function row_order_change(e, delta, action) {
+    var $r = $(e).closest("tr"),
+        $tbody = $r.closest("tbody"),
+        max_rows = +$tbody.data("maxRows") || 0,
+        min_rows = Math.max(+$tbody.data("minRows") || 0, 1),
+        autogrow = $tbody.data("rowOrderAutogrow");
+
+    if (action < 0) {
+        $r.remove();
         delta = 0;
     } else {
-        var tr = $e.closest("tr")[0];
+        var tr = $r[0];
         for (; delta < 0 && tr.previousSibling; ++delta)
             $(tr).insertBefore(tr.previousSibling);
         for (; delta > 0 && tr.nextSibling; --delta)
@@ -2478,8 +2485,6 @@ function author_change(e, delta) {
 
     function any_interesting(row) {
         var $x = $(row).find("input, select, textarea"), i;
-        if (!$tbody.attr("data-last-row-blank"))
-            return false;
         for (i = 0; i != $x.length; ++i) {
             var $e = $($x[i]), v = $e.val();
             if (v != "" && v !== $e.attr("placeholder"))
@@ -2488,17 +2493,23 @@ function author_change(e, delta) {
         return false;
     }
 
-    var trs = $tbody.children(), max_rows = +$tbody.attr("data-max-rows");
-    while (trs.length < Math.max(1, +$tbody.attr("data-min-rows"))
-           || any_interesting(trs[trs.length - 1])
-           || delta > 0) {
-        if (max_rows > 0 && trs.length >= max_rows)
-            break;
-        var $newtr = $($tbody.attr("data-row-template")).appendTo($tbody);
+    var trs = $tbody.children();
+    if (trs.length > min_rows
+        && action < 0
+        && !any_interesting(trs[trs.length - 1])) {
+        $(trs[trs.length - 1]).remove();
+        trs = $tbody.children();
+    }
+
+    while ((trs.length < min_rows
+            || (autogrow && any_interesting(trs[trs.length - 1]))
+            || action > 0)
+           && (max_rows <= 0 || trs.length < max_rows)) {
+        var $newtr = $($tbody.data("rowTemplate")).appendTo($tbody);
         $newtr.find("input[placeholder]").each(mktemptext);
         suggest($newtr.find(".hotcrp_searchbox"), taghelp_q);
         trs = $tbody.children();
-        --delta;
+        --action;
     }
 
     for (var i = 1; i <= trs.length; ++i) {
@@ -2511,30 +2522,37 @@ function author_change(e, delta) {
                 this.setAttribute("name", m[1] + i);
         });
     }
-
-    return false;
 }
 
-function author_table_events($j) {
-    $j = $($j);
-    $j.on("input change", "input, select, textarea", function () {
-        author_change(this, 0);
-        return true;
-    });
-    $j.on("click", "a", function () {
-        var delta;
-        if (hasClass(this, "moveup"))
-            delta = -1;
-        else if (hasClass(this, "movedown"))
-            delta = 1;
-        else if (hasClass(this, "delete"))
-            delta = Infinity;
-        else
-            return true;
-        author_change(this, delta);
-        return false;
-    });
+function row_order_ui(event) {
+    if (hasClass(this, "moveup"))
+        row_order_change(this, -1, 0);
+    else if (hasClass(this, "movedown"))
+        row_order_change(this, 1, 0);
+    else if (hasClass(this, "delete"))
+        row_order_change(this, 0, -1);
+    else if (hasClass(this, "addrow")) {
+        var $tb = $(this).closest("table").find("tbody.js-row-order");
+        row_order_change($tb[0].lastChild, 0, 1);
+    }
 }
+
+row_order_ui.autogrow = function ($j) {
+    $j = $j || $(this);
+    if (!$j.data("rowOrderAutogrow")) {
+        $j.data("rowOrderAutogrow", true).removeClass("need-row-order-autogrow")
+            .on("input change", "input, select, textarea", function () {
+                row_order_change(this, 0);
+            });
+    }
+};
+
+$(function () {
+    $(".need-row-order-autogrow").each(row_order_ui.autogrow);
+});
+
+return row_order_ui;
+})($);
 
 
 // check marks for ajax saves
@@ -6492,6 +6510,8 @@ function handle_ui(evt) {
         edit_paper_ui.call(this, evt);
     else if (hasClass(this, "profile-ui"))
         profile_ui.call(this, evt);
+    else if (hasClass(this, "row-order-ui"))
+        row_order_ui.call(this, evt);
     else if (hasClass(this, "js-override-deadlines"))
         override_deadlines.call(this);
 }

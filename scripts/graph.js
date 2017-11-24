@@ -1202,10 +1202,6 @@ hotcrp_graphs.boxplot = function (args) {
     }
 };
 
-hotcrp_graphs.formulas_add_qrow = function () {
-    author_change($("#qcontainer > tr:last-child > td:first-child"), 1);
-};
-
 function option_letter_ticks(n, c, sv) {
     var info = make_score_info(n, c, sv), split = 2;
     function format(extent) {

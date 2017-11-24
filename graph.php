@@ -53,8 +53,8 @@ function formulas_qrow($i, $q, $s, $errf) {
         $q = "";
     $klass = ($errf ? "setting_error " : "") . "hotcrp_searchbox";
     $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "placeholder" => "(All)", "class" => $klass));
-    $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("plain" => "plain", "by-tag" => "by tag", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag");
-    $t .= ' <span class="nb btnbox aumovebox" style="margin-left:1em"><a href="#" class="qx btn" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx btn" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx btn" onclick="return author_change(this,Infinity)" tabindex="-1">✖</a></span></td></tr>';
+    $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("by-tag" => "by tag", "plain" => "plain", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag");
+    $t .= ' <span class="nb btnbox aumovebox" style="margin-left:1em"><a href="#" class="ui btn qx row-order-ui moveup" tabindex="-1">&#x25b2;</a><a href="#" class="ui btn qx row-order-ui movedown" tabindex="-1">&#x25bc;</a><a href="#" class="ui btn qx row-order-ui delete" tabindex="-1">✖</a></span></td></tr>';
     return $t;
 }
 
@@ -153,14 +153,14 @@ if ($Graph == "formula") {
         '</td></tr>';
     // Series
     echo '<tr><td class="lcaption"><label for="q">Search</label></td>',
-        '<td class="lentry"><table><tbody id="qcontainer" data-row-template="',
+        '<td class="lentry">',
+        '<table><tbody id="qcontainer" class="js-row-order" data-row-template="',
         htmlspecialchars(formulas_qrow('$', "", "by-tag", false)), '">';
     for ($i = 0; $i < count($styles); ++$i)
         echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fg && get($fg->errf, "q$i"));
-    echo "</tbody></table>\n";
-    echo '<tr><td></td><td class="lentry">',
-        Ht::js_button("Add search", "hotcrp_graphs.formulas_add_qrow()"),
-        '</td></tr>';
+    echo "</tbody><tbody><tr><td class=\"lentry\">",
+        Ht::link("Add search", "#", ["class" => "ui btn row-order-ui addrow"]),
+        "</td></tr></tbody></table></td></tr>\n";
     echo '</table>';
     echo '<div class="g"></div>';
     echo Ht::submit(null, "Graph");
