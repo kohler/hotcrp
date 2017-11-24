@@ -5269,13 +5269,10 @@ function popup_near(elt, anchor) {
     efocus && focus_at(efocus);
 }
 
-function popup(anchor, which, dofold, populate) {
-    var elt, form, elts, populates, i, xelt, type;
-    if (typeof which === "string") {
-        elt = $$("popup_" + which);
-        if (!elt)
-            log_jserror("no popup " + which);
-    }
+function popup(anchor, which, dofold) {
+    var elt = $$("popup_" + which);
+    if (!elt)
+        log_jserror("no popup " + which);
 
     if (dofold) {
         elt.className = "popupc";
@@ -5286,26 +5283,6 @@ function popup(anchor, which, dofold, populate) {
         popup_near(elt, anchor);
     }
 
-    // transfer input values to the new form if asked
-    if (anchor && populate) {
-        elts = elt.getElementsByTagName("input");
-        populates = {};
-        for (i = 0; i < elts.length; ++i)
-            if (elts[i].className.indexOf("popup_populate") >= 0)
-                populates[elts[i].name] = elts[i];
-        form = anchor;
-        while (form && form.tagName && form.tagName != "FORM")
-            form = form.parentNode;
-        elts = (form && form.tagName ? form.getElementsByTagName("input") : []);
-        for (i = 0; i < elts.length; ++i)
-            if (elts[i].name && (xelt = populates[elts[i].name])) {
-                if (elts[i].type == "checkbox" && !elts[i].checked)
-                    xelt.value = "";
-                else if (elts[i].type != "radio" || elts[i].checked)
-                    xelt.value = elts[i].value;
-            }
-    }
-
     return false;
 }
 
@@ -5313,22 +5290,6 @@ function popup_close(popup) {
     window.global_tooltip && window.global_tooltip.erase();
     popup.find("textarea, input[type=text]").unautogrow();
     popup.remove();
-}
-
-function popup_render(hc) {
-    var $d = hc;
-    if (typeof hc === "string")
-        $d = $(hc);
-    else if (hc instanceof HtmlCollector)
-        $d = $(hc.render());
-    $d.appendTo(document.body);
-    $d.find(".need-tooltip").each(add_tooltip);
-    $d.on("click", function (evt) {
-        evt.target == $d[0] && popup_close($d);
-    });
-    popup_near($d, this || window);
-    $d.find("textarea, input[type=text]").autogrow();
-    return $d;
 }
 
 function override_deadlines(callback) {
