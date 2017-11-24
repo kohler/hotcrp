@@ -1830,7 +1830,7 @@ class PaperTable {
         $buttons = $this->_collectActionButtons();
 
         if ($this->admin && $this->prow)
-            $buttons[] = array(Ht::js_button("Delete", ["class" => "btn ui edit-paper-ui js-delete-paper"]), "(admin only)");
+            $buttons[] = array(Ht::button("Delete", ["class" => "btn ui edit-paper-ui js-delete-paper"]), "(admin only)");
 
         echo Ht::actions($buttons, array("class" => "aab aabr aabig"));
     }
