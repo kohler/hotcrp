@@ -10,7 +10,9 @@ $show_papers = true;
 // kiosk mode
 if ($Me->privChair) {
     $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : array());
-    uasort($kiosks, create_function('$a, $b', 'return $a->update_at - $b->update_at;'));
+    uasort($kiosks, function ($a, $b) {
+        return $a->update_at - $b->update_at;
+    });
     $kchange = false;
     // delete old kiosks
     while (count($kiosks)
