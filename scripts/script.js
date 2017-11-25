@@ -2466,16 +2466,21 @@ function handle_clickthrough(form) {
 var row_order_ui = (function ($) {
 
 function row_order_change(e, delta, action) {
-    var $r = $(e).closest("tr"),
-        $tbody = $r.closest("tbody"),
-        max_rows = +$tbody.data("maxRows") || 0,
+    var $r, $tbody;
+    if (action > 0 && e.tagName === "TBODY")
+        $tbody = $(e);
+    else {
+        $r = $(e).closest("tr");
+        $tbody = $r.closest("tbody");
+    }
+    var max_rows = +$tbody.data("maxRows") || 0,
         min_rows = Math.max(+$tbody.data("minRows") || 0, 1),
         autogrow = $tbody.data("rowOrderAutogrow");
 
     if (action < 0) {
         $r.remove();
         delta = 0;
-    } else {
+    } else if (action == 0) {
         var tr = $r[0];
         for (; delta < 0 && tr.previousSibling; ++delta)
             $(tr).insertBefore(tr.previousSibling);
@@ -2501,6 +2506,7 @@ function row_order_change(e, delta, action) {
         trs = $tbody.children();
     }
 
+    var want_focus = action > 0;
     while ((trs.length < min_rows
             || (autogrow && any_interesting(trs[trs.length - 1]))
             || action > 0)
@@ -2509,6 +2515,10 @@ function row_order_change(e, delta, action) {
         $newtr.find("input[placeholder]").each(mktemptext);
         suggest($newtr.find(".hotcrp_searchbox"), taghelp_q);
         trs = $tbody.children();
+        if (want_focus) {
+            focus_within($newtr);
+            want_focus = false;
+        }
         --action;
     }
 
@@ -2531,10 +2541,8 @@ function row_order_ui(event) {
         row_order_change(this, 1, 0);
     else if (hasClass(this, "delete"))
         row_order_change(this, 0, -1);
-    else if (hasClass(this, "addrow")) {
-        var $tb = $(this).closest("table").find("tbody.js-row-order");
-        row_order_change($tb[0].lastChild, 0, 1);
-    }
+    else if (hasClass(this, "addrow"))
+        row_order_change($(this).closest("table").children("tbody.js-row-order")[0], 0, 1);
 }
 
 row_order_ui.autogrow = function ($j) {
