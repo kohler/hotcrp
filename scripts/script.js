@@ -3329,15 +3329,12 @@ function keydown_editor(evt) {
     if (event_key(evt) === "Enter" && event_modkey(evt) === event_modkey.META) {
         evt.preventDefault();
         save_editor(this, "submit");
-        return false;
-    } else
-        return true;
+    }
 }
 
 function submit_editor(evt) {
     evt.preventDefault();
     save_editor(this, "submit");
-    return false;
 }
 
 function savedraft_editor() {
@@ -5958,7 +5955,7 @@ function edit_formulas() {
 /* list report options */
 function edit_report_display() {
     var $d;
-    function onsubmit() {
+    function onsubmit(event) {
         $.ajax(hoturl_post("api/listreport"), {
             method: "POST", data: $(this).serialize(),
             success: function (data) {
@@ -5966,7 +5963,7 @@ function edit_report_display() {
                     popup_close($d);
             }
         });
-        return false;
+        event.preventDefault();
     }
     function create(display_default, display_current) {
         var hc = popup_skeleton();
