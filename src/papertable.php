@@ -1082,7 +1082,7 @@ class PaperTable {
                 continue;
             echo '<tr><td class="nb">', $ctl, ' </td>',
                 '<td>', Ht::label(Text::user_html_nolink($au)),
-                ' ', ($au->nonauthor ? "(<em>non-author</em>)" : "");
+                ($au->nonauthor ? " (<em>non-author</em>)" : "");
             if ($this->user->privChair && $au->contactId
                 && $au->contactId != $this->user->contactId)
                 echo '&nbsp;', actas_link($au);
