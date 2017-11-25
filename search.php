@@ -585,7 +585,7 @@ if ($pl->count > 0) {
 
     echo "<td class='padlb'>";
     if ($Me->privChair)
-        echo Ht::js_button("Change default view", "edit_report_display()"), "&nbsp; ";
+        echo Ht::button("Change default view", ["onclick" => "edit_report_display()"]), "&nbsp; ";
     echo Ht::submit("Redisplay", array("id" => "redisplay"));
 
     echo "</td></tr></table>", $display_options_extra, "</div>";

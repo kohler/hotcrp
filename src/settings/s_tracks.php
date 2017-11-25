@@ -108,7 +108,7 @@ class Tracks_SettingRenderer {
             }
         // catchall track
         self::do_track($sv, "_", 1);
-        echo Ht::js_button("Add track", "settings_add_track()", ["class" => "btn btn-sm"]);
+        echo Ht::button("Add track", ["class" => "btn btn-sm", "onclick" => "settings_add_track()"]);
 
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
     }

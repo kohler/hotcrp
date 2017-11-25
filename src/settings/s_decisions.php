@@ -68,7 +68,7 @@ static function render(SettingValues $sv) {
     }
 
     echo '</div><div class="mg">',
-        Ht::js_button("Add response round", "settings_add_resp_round()", ["style" => "font-size:smaller"]),
+        Ht::button("Add response round", ["style" => "font-size:smaller", "onclick" => "settings_add_resp_round()"]),
         '</div></td></tr></table></div>';
 
     echo '<table class="mg">';

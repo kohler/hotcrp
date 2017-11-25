@@ -164,7 +164,7 @@ class Options_SettingRenderer {
             $self->render_option($sv, $o, ++$pos);
         echo "</div>\n",
             '<div style="margin-top:2em">',
-            Ht::js_button("Add option", "settings_option_move.call(this)", ["class" => "settings-opt-new btn"]),
+            Ht::button("Add option", ["class" => "settings-opt-new btn", "onclick" => "settings_option_move.call(this)"]),
             "</div>\n<div id=\"settings_newopt\" style=\"display:none\">";
         $self->render_option($sv, null, 0);
         echo "</div>\n\n";

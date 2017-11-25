@@ -23,7 +23,7 @@ class Reviews_SettingRenderer {
         if ($deletable)
             echo '<div class="inb" style="padding-left:2em">',
                 Ht::hidden("deleteround_$rnum", "", ["data-default-value" => ""]),
-                Ht::js_button("Delete round", "review_round_settings.kill(this)"),
+                Ht::button("Delete round", ["onclick" => "review_round_settings.kill(this)"]),
                 '</div>';
         if ($rnum === '$')
             echo '<div class="hint">Names like “R1” and “R2” work well.</div>';
@@ -122,7 +122,7 @@ static function render(SettingValues $sv) {
     echo '</div><div id="newround" style="display:none">';
     self::echo_round($sv, '$', "", "", true);
     echo '</div><div class="g"></div>';
-    echo Ht::js_button("Add round", "review_round_settings.add();hiliter(this)"),
+    echo Ht::button("Add round", ["onclick" => "review_round_settings.add();hiliter(this)"]),
         ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
         Ht::hidden("oldroundcount", count($sv->conf->round_list())),
         Ht::hidden("has_rev_roundtag", 1), Ht::hidden("has_extrev_roundtag", 1);

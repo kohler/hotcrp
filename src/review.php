@@ -878,7 +878,7 @@ $blind\n";
                          "placeholder" => "Optional explanation", "spellcheck" => "true"))
     . '<div class="popup-actions">'
     . Ht::submit("Decline review", ["class" => "btn"])
-    . Ht::js_button("Cancel", "popup(null,'ref',1)", ["class" => "btn"])
+    . Ht::button("Cancel", ["class" => "btn", "onclick" => "popup(null,'ref',1)"])
     . "</div></div></form></div>", "declinereviewform");
             if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy)))
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
@@ -934,14 +934,14 @@ $blind\n";
             $buttons[] = "";
             if ($submitted)
                 $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review", ["class" => "btn"]), "(admin only)");
-            $buttons[] = array(Ht::js_button("Delete review", "popup(this,'d',0)", ["class" => "btn"]), "(admin only)");
+            $buttons[] = array(Ht::button("Delete review", ["class" => "btn", "onclick" => "popup(this,'d',0)"]), "(admin only)");
             Ht::stash_html("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   review assignment from the database and <strong>cannot be
   undone</strong>.</p>
   " . Ht::form_div($reviewPostLink, array("divclass" => "popup-actions"))
     . Ht::submit("deletereview", "Delete review", ["class" => "btn dangerous"])
-    . Ht::js_button("Cancel", "popup(null,'d',1)", ["class" => "btn"])
+    . Ht::button("Cancel", ["class" => "btn", "onclick" => "popup(null,'d',1)"])
     . "</div></form></div>");
         }
 
