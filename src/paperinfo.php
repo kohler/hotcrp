@@ -168,6 +168,8 @@ class PaperInfo_Author {
     public $firstName_deaccent;
     public $lastName_deaccent;
     public $affiliation_deaccent;
+    public $nonauthor;
+    public $sorter;
 
     function __construct($x, $only_tabs = false) {
         if (is_object($x)) {

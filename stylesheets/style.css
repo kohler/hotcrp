@@ -216,6 +216,9 @@ td.g {
 .ug { /* microgap */
 	margin: 0.35em 0;
 }
+td.ug {
+	padding-top: 0.35em;
+}
 .c, .clear {
 	clear: both;
 }

@@ -44,20 +44,39 @@ class PaperSaver {
 
     static function replace_contacts($pj, $qreq) {
         $pj->contacts = array();
-        foreach ($qreq as $k => $v)
-            if (str_starts_with($k, "contact_")) {
-                $email = html_id_decode(substr($k, 8));
-                $pj->contacts[] = $email;
-            } else if (str_starts_with($k, "newcontact_email")
-                       && trim($v) !== ""
-                       && trim($v) !== "Email") {
-                $suffix = substr($k, strlen("newcontact_email"));
-                $email = trim($v);
-                $name = $qreq["newcontact_name$suffix"];
-                if ($name === "Name")
-                    $name = "";
-                $pj->contacts[] = (object) ["email" => $email, "name" => $name];
+        if (isset($qreq["contact_email_1"])) {
+            for ($i = 1; isset($qreq["contact_email_{$i}"]); ++$i) {
+                if ($qreq["contact_active_{$i}"])
+                    $pj->contacts[] = $qreq["contact_email_{$i}"];
             }
+            for ($i = 1; isset($qreq["newcontact_email_{$i}"]); ++$i) {
+                $email = trim((string) $qreq["newcontact_email_{$i}"]);
+                if ($qreq["newcontact_active_{$i}"]
+                    && $email !== ""
+                    && $email !== "Email") {
+                    $name = trim((string) $qreq["newcontact_name_{$i}"]);
+                    if ($name === "Name")
+                        $name = "";
+                    $pj->contacts[] = (object) ["email" => $email, "name" => $name];
+                }
+            }
+        } else {
+            // XXX backwards compat
+            foreach ($qreq as $k => $v)
+                if (str_starts_with($k, "contact_")) {
+                    $email = html_id_decode(substr($k, 8));
+                    $pj->contacts[] = $email;
+                } else if (str_starts_with($k, "newcontact_email")
+                           && trim($v) !== ""
+                           && trim($v) !== "Email") {
+                    $suffix = substr($k, strlen("newcontact_email"));
+                    $email = trim($v);
+                    $name = $qreq["newcontact_name$suffix"];
+                    if ($name === "Name")
+                        $name = "";
+                    $pj->contacts[] = (object) ["email" => $email, "name" => $name];
+                }
+        }
     }
 }
 
