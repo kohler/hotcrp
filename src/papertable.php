@@ -668,10 +668,18 @@ class PaperTable {
         $max_authors = (int) $this->conf->opt("maxAuthors");
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
 
-        echo $this->editable_papt("authors", $this->conf->_c("paper_edit_field", "Authors", $max_authors));
+        $sb = $this->conf->submission_blindness();
+        $title = $this->conf->_c("paper_edit_field", "Authors", $max_authors);
+        if ($sb === Conf::BLIND_ALWAYS)
+            $title .= " (blind)";
+        else if ($sb === Conf::BLIND_UNTILREVIEW)
+            $title .= " (blind until review)";
+        echo $this->editable_papt("authors", $title);
         $hint = "List the authors, including email addresses and affiliations.";
-        if ($this->conf->submission_blindness() == Conf::BLIND_ALWAYS)
+        if ($sb === Conf::BLIND_ALWAYS)
             $hint .= " Submission is blind, so reviewers will not be able to see author information.";
+        else if ($sb === Conf::BLIND_UNTILREVIEW)
+            $hint .= " Reviewers will not be able to see author information before submitting a review.";
         $hint .= " Any author with an account on this site can edit the submission.";
         echo $this->field_hint("Authors", $hint),
             $this->messages_for("authors"),
@@ -695,7 +703,7 @@ class PaperTable {
         echo "</tbody></table></div></div>\n\n";
     }
 
-    private function authorData($table, $type, $viewAs = null, $prefix = "") {
+    private function authorData($table, $type, $viewAs = null) {
         if ($this->matchPreg && isset($this->matchPreg["authorInformation"]))
             $highpreg = $this->matchPreg["authorInformation"];
         else
@@ -709,7 +717,7 @@ class PaperTable {
                 $names[] = Text::highlight($n, $highpreg, $nm);
                 $this->entryMatches += $nm;
             }
-            return $prefix . join(", ", $names);
+            return join(", ", $names);
 
         } else {
             foreach ($table as $au) {
@@ -731,8 +739,7 @@ class PaperTable {
                 if ($au->email !== "" && $au->contactId
                     && $viewAs !== null && $viewAs->email !== $au->email && $viewAs->privChair)
                     $t .= " <a href=\"" . selfHref(array("actas" => $au->email)) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($au))) . "</a>";
-                $names[] = '<p class="odname">' . $prefix . $t . '</p>';
-                $prefix = "";
+                $names[] = '<p class="odname">' . $t . '</p>';
             }
             return join("\n", $names);
         }
@@ -795,7 +802,15 @@ class PaperTable {
         // "author" or "authors"?
         $auname = pluralx(count($aulist), "Author");
         if (!$viewable)
-            $auname = "$auname (deblinded)";
+            $auname .= " (deblinded)";
+        else if ($this->user->act_author_view($this->prow)) {
+            $sb = $this->conf->submission_blindness();
+            if ($sb === Conf::BLIND_ALWAYS
+                || ($sb === Conf::BLIND_OPTIONAL && $this->prow->blind))
+                $auname .= " (blind)";
+            else if ($sb === Conf::BLIND_UNTILREVIEW)
+                $auname .= " (blind until review)";
+        }
 
         // header with folding
         echo '<div class="pg">',
@@ -818,9 +833,6 @@ class PaperTable {
         echo '</span></div>';
 
         // contents
-        $inauthors = "";
-        if ($viewable && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL && $this->prow->blind)
-            $inauthors = "[blind] ";
         echo '<div class="pavb">';
         if (!$viewable)
             echo '<a class="ui q js-aufoldup fn8" href="#" title="Toggle author display">',
@@ -828,10 +840,10 @@ class PaperTable {
                 '</a><div class="fx8">';
         if ($this->allFolded)
             echo '<div class="fn9">',
-                $this->authorData($aulist, "last", null, $inauthors),
+                $this->authorData($aulist, "last", null),
                 ' <a class="ui js-aufoldup" href="#">[details]</a>',
                 '</div><div class="fx9">';
-        echo $this->authorData($aulist, "col", $this->user, $inauthors);
+        echo $this->authorData($aulist, "col", $this->user);
         if ($this->allFolded)
             echo '</div>';
         if (!$viewable)
