@@ -3994,7 +3994,7 @@ function suggest(elt, suggestions_promise, options) {
             hintdiv = make_bubble({dir: "nw", color: "suggest"});
             hintdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
                 .on("click", "div.suggestion", click)
-                .on("mouseenter", "div.suggestion", hover);
+                .on("mousemove", "div.suggestion", hover);
         }
 
         var i, ml = [10, 30, 60, 90, 120];
