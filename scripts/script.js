@@ -5897,13 +5897,13 @@ function edit_formulas() {
         hc.push('<div class="f-i"><div class="f-c">Name</div><div class="f-e">');
         if (f.editable) {
             hc.push('<div style="float:right"><a class="ui closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete formula">x</a></div>');
-            hc.push('<textarea class="editformulas-name" name="formulaname_' + nformulas + '" rows="1" cols="60" style="width:37.5rem;width:calc(99% - 2.5em)">' + escape_entities(f.name) + '</textarea>');
+            hc.push('<textarea class="editformulas-name" name="formulaname_' + nformulas + '" rows="1" cols="60" style="width:37.5rem;width:calc(99% - 2.5em)" tabindex="1000">' + escape_entities(f.name) + '</textarea>');
             hc.push('<hr class="c" />');
         } else
             hc.push(escape_entities(f.name));
         hc.push('</div></div><div class="f-i"><div class="f-c">Expression</div><div class="f-e">');
         if (f.editable)
-            hc.push('<textarea class="editformulas-expression" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(f.expression) + '</textarea>')
+            hc.push('<textarea class="editformulas-expression" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:99%" tabindex="1000">' + escape_entities(f.expression) + '</textarea>')
                 .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '" />');
         else
             hc.push(escape_entities(f.expression));
@@ -5968,7 +5968,7 @@ function edit_report_display() {
         hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "") + '</div>');
         hc.pop();
         hc.push('<div class="f-i"><div class="f-c">Current view options</div><div class="f-e">', '</div></div>');
-        hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(display_current || "") + '</textarea>');
+        hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%" tabindex="1000">' + escape_entities(display_current || "") + '</textarea>');
         hc.pop();
         hc.push_actions(['<button type="submit" name="save" tabindex="1000" class="btn btn-default">Save options as default</button>', '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
         $d = hc.show();
@@ -6082,7 +6082,7 @@ function transfer_form_values($dst, $src, names) {
 }
 
 
-window.edit_paper_ui = (function ($) {
+var edit_paper_ui = (function ($) {
 function check_format() {
     var $self = $(this), $d = $self.closest(".has-document"),
         $cf = $d.find(".check-format-result");
@@ -6183,7 +6183,7 @@ function withdraw_dialog(event) {
     if (!this.hasAttribute("data-revivable"))
         hc.push(' Only administrators can undo this step.');
     hc.push('</p>');
-    hc.push('<textarea name="reason" rows="3" cols="40" style="width:99%" placeholder="Optional explanation" spellcheck="true"></textarea>');
+    hc.push('<textarea name="reason" rows="3" cols="40" style="width:99%" placeholder="Optional explanation" spellcheck="true" tabindex="1000"></textarea>');
     if (!this.hasAttribute("data-withdrawable")) {
         var idctr = hc.next_htctl_id();
         hc.push('<div><input type="checkbox" name="override" value="1" id="' + idctr + '" />&nbsp;<label for="' + idctr + '">Override deadlines</label></div>');
@@ -6209,25 +6209,25 @@ function delete_paper_dialog(event) {
 }
 
 return function (event) {
-    if (hasClass(this, "js-check-format"))
-        return check_format.call(this);
+    if (event.type === "submit")
+        check_still_ready.call(this, event);
+    else if (hasClass(this, "js-check-format"))
+        check_format.call(this);
     else if (hasClass(this, "js-check-ready"))
-        return check_ready.call(this, event);
-    else if (event.type === "submit")
-        return check_still_ready.call(this, event);
+        check_ready.call(this, event);
     else if (hasClass(this, "js-add-attachment"))
-        return add_attachment.call(this);
+        add_attachment.call(this);
     else if (hasClass(this, "js-remove-document"))
-        return remove_document.call(this, event);
+        remove_document.call(this, event);
     else if (hasClass(this, "js-withdraw"))
-        return withdraw_dialog.call(this, event);
+        withdraw_dialog.call(this, event);
     else if (hasClass(this, "js-delete-paper"))
-        return delete_paper_dialog.call(this, event);
+        delete_paper_dialog.call(this, event);
 };
 })($);
 
 
-window.profile_ui = (function ($) {
+var profile_ui = (function ($) {
 
 function cannot_delete_user_dialog(event) {
     var hc = popup_skeleton({anchor: this});
@@ -6263,13 +6263,13 @@ function role_change() {
 
 return function (event) {
     if (hasClass(this, "js-cannot-delete-user"))
-        return cannot_delete_user_dialog.call(this);
+        cannot_delete_user_dialog.call(this);
     else if (hasClass(this, "js-delete-user"))
-        return delete_user_dialog.call(this, event);
+        delete_user_dialog.call(this, event);
     else if (hasClass(this, "js-plaintext-password"))
-        return plaintext_password.call(this, event);
+        plaintext_password.call(this, event);
     else if (hasClass(this, "js-role"))
-        return role_change.call(this);
+        role_change.call(this);
 };
 })($);
 
