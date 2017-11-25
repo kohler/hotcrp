@@ -749,6 +749,15 @@ function ini_get_bytes($varname, $value = null) {
     return (int) ceil(floatval($val) * (1 << (+strpos(".kmg", $last) * 10)));
 }
 
+function filter_whynot($whyNot, $keys) {
+    $revWhyNot = [];
+    foreach ($whyNot as $k => $v) {
+        if ($k === "fail" || $k === "paperId" || $k === "conf" || in_array($k, $keys))
+            $revWhyNot[$k] = $v;
+    }
+    return $revWhyNot;
+}
+
 function whyNotText($whyNot, $action, $suggest_redirection = false) {
     global $Conf, $Now;
     $conf = get($whyNot, "conf") ? : $Conf;

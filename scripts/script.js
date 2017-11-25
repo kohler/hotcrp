@@ -6117,7 +6117,9 @@ function check_ready(event) {
     if (readye && readye.type === "checkbox")
         is = readye.checked && $(readye).is(":visible");
     var t;
-    if (!is)
+    if ($f.attr("data-contacts-only"))
+        t = "Save contacts";
+    else if (!is)
         t = "Save draft";
     else if (was)
         t = "Save and resubmit";

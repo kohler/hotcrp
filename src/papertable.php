@@ -1784,23 +1784,21 @@ class PaperTable {
                 $whyNot = $this->user->perm_start_paper();
             }
             $this->user->set_overrides($old_overrides);
-            // pay attention only to the deadline
-            if ($whyNot && (get($whyNot, "deadline") || get($whyNot, "rejected")))
-                $whyNot = array_merge($prow ? $prow->initial_whynot() : [], ["deadline" => get($whyNot, "deadline"), "rejected" => get($whyNot, "rejected")]);
-            else
-                $whyNot = null;
             // produce button
             $save_name = $this->is_ready() ? "Save and resubmit" : "Save draft";
             if (!$whyNot)
                 $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn btn-default btn-savepaper"]), "");
             else if ($this->admin) {
-                $x = whyNotText($whyNot, $prow ? "update" : "register")
+                $revWhyNot = filter_whynot($whyNot, ["deadline", "rejected"]);
+                $x = whyNotText($revWhyNot, $prow ? "update" : "register")
                     . " Are you sure you want to override the deadline?";
                 $buttons[] = array(Ht::button($save_name, ["class" => "btn btn-default btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
-            } else if ($prow && $prow->timeSubmitted > 0)
-                $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", ["class" => "btn"]), "");
-            else if ($this->conf->timeFinalizePaper($prow))
+            } else if (isset($whyNot["updateSubmitted"])
+                       && $this->user->can_finalize_paper($prow)) {
                 $buttons[] = array(Ht::submit("update", $save_name, ["class" => "btn btn-savepaper"]));
+            } else if ($prow) {
+                $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", ["class" => "btn"]), "");
+            }
             if (!empty($buttons)) {
                 $buttons[] = [Ht::submit("cancel", "Cancel", ["class" => "btn"])];
                 $buttons[] = "";
@@ -1960,6 +1958,11 @@ class PaperTable {
         $form_js = ["id" => "paperform"];
         if ($this->prow && $this->prow->timeSubmitted > 0)
             $form_js["data-submitted"] = $this->prow->timeSubmitted;
+        if ($this->prow
+            && ($this->canUploadFinal
+                ? !$this->user->can_submit_final_paper($this->prow)
+                : !$this->user->can_update_paper($this->prow)))
+            $form_js["data-contacts-only"] = 1;
         if ($this->useRequest)
             $form_js["class"] = "alert";
         echo Ht::form(hoturl_post("paper", "p=" . ($this->prow ? $this->prow->paperId : "new") . "&amp;m=edit"), $form_js);
@@ -2069,17 +2072,17 @@ class PaperTable {
 
         if (!$this->editable && $this->mode === "edit") {
             $this->_echo_editable_form();
-            if ($prow->timeSubmitted > 0)
-                $this->echo_editable_contact_author(true);
+            $this->echo_editable_contact_author(true);
             $this->echoActions(false);
             echo "</form>";
-        } else if (!$this->editable && $this->user->act_author_view($prow) && !$this->user->contactId) {
+        } else if (!$this->editable && $this->user->act_author_view($prow)
+                   && !$this->user->contactId) {
             echo '<hr class="papcard_sep" />',
                 "To edit this submission, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
         }
 
         Ht::stash_script("shortcut().add()");
-        if ($this->editable)
+        if ($this->editable || $this->mode === "edit")
             Ht::stash_script('hiliter_children("#paperform", true)');
     }
 
