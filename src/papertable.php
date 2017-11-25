@@ -1685,15 +1685,16 @@ class PaperTable {
 
     private function _edit_message_for_author(PaperInfo $prow) {
         $can_view_decision = $prow->outcome != 0 && $this->user->can_view_decision($prow);
-        if ($can_view_decision && $prow->outcome < 0)
+        if ($can_view_decision && $prow->outcome < 0) {
             return Ht::xmsg("warning", "The submission was not accepted." . $this->_forceShow_message());
-        else if ($prow->timeWithdrawn > 0) {
+        } else if ($prow->timeWithdrawn > 0) {
             if ($this->user->can_revive_paper($prow))
                 return Ht::xmsg("warning", "The submission has been withdrawn, but you can still revive it." . $this->deadlineSettingIs("sub_update"));
             else
                 return Ht::xmsg("warning", "The submission has been withdrawn." . $this->_forceShow_message());
         } else if ($prow->timeSubmitted <= 0) {
-            if ($this->user->can_update_paper($prow)) {
+            $whyNot = $this->user->perm_update_paper($prow);
+            if (!$whyNot) {
                 if ($this->conf->setting("sub_freeze"))
                     $t = "This submission must be completed before it can be reviewed.";
                 else if ($prow->paperStorageId <= 1 && !$this->conf->opt("noPapers"))
@@ -1701,12 +1702,18 @@ class PaperTable {
                 else
                     $t = "This submission is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
                 return Ht::xmsg("warning", $t . $this->deadlineSettingIs("sub_update"));
-            } else if ($this->user->can_finalize_paper($prow))
-                return Ht::xmsg("warning", 'The submission is not ready for review. You cannot make any changes as the <a href="' . hoturl("deadlines") . '">deadline</a> has passed, but the current version can be still be submitted.' . $this->deadlineSettingIs("sub_sub") . $this->_deadline_override_message());
-            else if ($this->conf->deadlinesBetween("", "sub_sub", "sub_grace"))
-                return Ht::xmsg("warning", 'The site is not open for updates at the moment.' . $this->_deadline_override_message());
-            else
-                return Ht::xmsg("warning", 'The <a href="' . hoturl("deadlines") . '">submission deadline</a> has passed and the submission will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_deadline_override_message());
+            } else if (isset($whyNot["updateSubmitted"])
+                       && $this->user->can_finalize_paper($prow)) {
+                return Ht::xmsg("warning", 'The submission is not ready for review. Although you cannot make any further changes, the current version can be still be submitted for review.' . $this->deadlineSettingIs("sub_sub") . $this->_deadline_override_message());
+            } else if (isset($whyNot["deadline"])) {
+                if ($this->conf->deadlinesBetween("", "sub_sub", "sub_grace")) {
+                    return Ht::xmsg("warning", 'The site is not open for updates at the moment.' . $this->_deadline_override_message());
+                } else {
+                    return Ht::xmsg("warning", 'The <a href="' . hoturl("deadlines") . '">submission deadline</a> has passed and the submission will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_deadline_override_message());
+                }
+            } else {
+                return Ht::xmsg("warning", 'The submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message());
+            }
         } else if ($this->user->can_update_paper($prow)) {
             if ($this->mode === "edit")
                 return Ht::xmsg("confirm", 'The submission is ready and will be considered for review. You do not need to take any further action. However, you can still make changes if you wish.' . $this->deadlineSettingIs("sub_update"));
@@ -1716,8 +1723,9 @@ class PaperTable {
             if ($this->user->can_submit_final_paper($prow)) {
                 if (($t = $this->conf->message_html("finalsubmit", array("deadline" => $this->deadlineSettingIs("final_soft")))))
                     return Ht::xmsg("info", $t);
-            } else if ($this->mode === "edit")
+            } else if ($this->mode === "edit") {
                 return Ht::xmsg("warning", "The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message());
+            }
         } else if ($this->mode === "edit") {
             $t = "";
             if ($this->user->can_withdraw_paper($prow))
