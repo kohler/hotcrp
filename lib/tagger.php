@@ -680,6 +680,13 @@ class Tagger {
         return $t;
     }
 
+    function expand($tag) {
+        if (strlen($tag) > 2 && $tag[0] === "~" && $tag[1] !== "~" && $this->_contactId)
+            return $this->_contactId . $tag;
+        else
+            return $tag;
+    }
+
     static function check_tag_keyword($text, Contact $user, $flags = 0) {
         $re = '/\A(?:#|tagval:\s*'
             . ($flags & self::NOTAGKEYWORD ? '' : '|tag:\s*')

@@ -162,11 +162,12 @@ if ($qreq->conflist && $Me->has_email() && ($cdb = Contact::contactdb())) {
     }
 }
 
-$pj = (object) array();
-if ($Conf->paper && $Me->can_view_tags($Conf->paper))
+if ($Conf->paper && $Me->can_view_tags($Conf->paper)) {
+    $pj = (object) ["pid" => $Conf->paper->paperId];
     $Conf->paper->add_tag_info_json($pj, $Me);
-if (count((array) $pj))
-    $j->p = [$Conf->paper->paperId => $pj];
+    if (count((array) $pj) > 1)
+        $j->p = [$Conf->paper->paperId => $pj];
+}
 
 $j->ok = true;
 json_exit($j);

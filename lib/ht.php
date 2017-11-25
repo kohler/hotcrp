@@ -441,6 +441,8 @@ class Ht {
             $type = "merror";
         if (is_array($content))
             $content = join('</div><div class="xmsgc">', $content);
+        if ($content === "")
+            return "";
         return '<div class="xmsg x' . $type . '"><div class="xmsg0"></div>'
             . '<div class="xmsgc">' . $content . '</div>'
             . '<div class="xmsg1"></div></div>';

@@ -3300,8 +3300,9 @@ class Contact {
         } else {
             $tag = TagInfo::base($tag);
             $twiddle = strpos($tag, "~");
-            if (($twiddle === 0 && $tag[1] === "~")
-                || ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId))
+            if ($twiddle === 0 && $tag[1] === "~")
+                $whyNot["chairTag"] = true;
+            else if ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId)
                 $whyNot["otherTwiddleTag"] = true;
             else if ($twiddle !== false)
                 $whyNot["voteTagNegative"] = true;

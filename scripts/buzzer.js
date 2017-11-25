@@ -67,8 +67,7 @@ function make_table() {
     }
     status = dl.tracker_status || "off";
 }
-$(window).on("hotcrp_deadlines", function (evt, dl) {
-    evt.preventDefault();
+$(window).on("hotcrpdeadlines", function (evt, dl) {
     $(make_table);
 });
 

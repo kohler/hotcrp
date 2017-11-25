@@ -61,7 +61,10 @@ class PaperApi {
     }
 
     static function tagreport(Contact $user, $prow) {
-        $ret = (object) ["ok" => $user->can_view_tags($prow), "warnings" => [], "messages" => []];
+        $ret = (object) ["ok" => $user->can_view_tags($prow)];
+        if ($prow)
+            $ret->pid = $prow->paperId;
+        $ret->tagreport = [];
         if (!$ret->ok)
             return $ret;
         if (($vt = $user->conf->tags()->filter("vote"))) {
@@ -77,30 +80,18 @@ class PaperApi {
                 $myvotes[$lbase] += +$row[1];
             }
             Dbl::free($result);
-            $vlo = $vhi = array();
             foreach ($vt as $lbase => $t) {
                 if ($myvotes[$lbase] < $t->vote)
-                    $vlo[] = '<a class="q" href="' . hoturl("search", "q=editsort:-%23~{$t->tag}") . '">~' . $t->tag . '</a>#' . ($t->vote - $myvotes[$lbase]);
-                else if ($myvotes[$lbase] > $t->vote
-                         && (!$prow || $prow->has_tag($myprefix . $lbase)))
-                    $vhi[] = '<span class="nw"><a class="q" href="' . hoturl("search", "q=sort:-%23~{$t->tag}+edit:%23~{$t->tag}") . '">~' . $t->tag . '</a> (' . ($myvotes[$lbase] - $t->vote) . " over)</span>";
+                    $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 0, "message" => plural($t->vote - $myvotes[$lbase], "vote") . " remaining", "search" => "editsort:-#~{$t->tag}"];
+                else if ($myvotes[$lbase] > $t->vote)
+                    $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 1, "message" => plural($myvotes[$lbase] - $t->vote, "vote") . " over", "search" => "editsort:-#~{$t->tag}"];
             }
-            if (count($vlo))
-                $ret->messages[] = 'Remaining <a class="q" href="' . hoturl("help", "t=votetags") . '">votes</a>: ' . join(", ", $vlo);
-            if (count($vhi))
-                $ret->warnings[] = 'Overallocated <a class="q" href="' . hoturl("help", "t=votetags") . '">votes</a>: ' . join(", ", $vhi);
         }
         return $ret;
     }
 
     static function tagreport_api(Contact $user, $qreq, $prow) {
-        $treport = self::tagreport($user, $prow);
-        $response = "";
-        if (!empty($treport->warnings))
-            $response .= Ht::xmsg("warning", join("<br>", $treport->warnings));
-        if (!empty($treport->messages))
-            $response .= Ht::xmsg("info", join("<br>", $treport->messages));
-        $jr = new JsonResult(["ok" => $treport->ok, "response" => $response]);
+        $jr = new JsonResult((array) self::tagreport($user, $prow));
         $jr->transfer_messages($user->conf, true);
         return $jr;
     }
@@ -142,10 +133,7 @@ class PaperApi {
         // exit
         if ($ok && $prow) {
             $prow->load_tags();
-            $treport = self::tagreport($user, $prow);
-            if ($treport->warnings)
-                $user->conf->warnMsg(join("<br>", $treport->warnings));
-            $taginfo = (object) ["ok" => true, "pid" => $prow->paperId];
+            $taginfo = self::tagreport($user, $prow);
             $prow->add_tag_info_json($taginfo, $user);
             $jr = new JsonResult($taginfo);
         } else if ($ok) {

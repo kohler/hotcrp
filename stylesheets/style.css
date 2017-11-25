@@ -2188,7 +2188,7 @@ body#offline td#upload {
 .pspcard_fold {
 	display: none;
 }
-#papstriptagsedit {
+.js-tag-editor {
 	font-size: 8.7pt;
 	font-size: 0.791rem;
 }
