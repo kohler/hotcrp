@@ -863,23 +863,15 @@ $blind\n";
         return $x;
     }
 
-    private function _echo_accept_decline($prow, $rrow, $reviewPostLink) {
-        if ($rrow && !$rrow->reviewModified && $rrow->reviewType < REVIEW_SECONDARY) {
+    private function _echo_accept_decline(PaperInfo $prow, $rrow, $reviewPostLink,
+                                          Contact $user) {
+        if ($rrow && !$rrow->reviewModified
+            && $rrow->reviewType < REVIEW_SECONDARY
+            && ($user->is_my_review($rrow) || $user->can_administer($prow))) {
             $buttons = [];
             $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn btn-highlight"]);
-            $buttons[] = Ht::button("Decline", ["onclick" => "popup(this,'ref',0)"]);
+            $buttons[] = Ht::button("Decline", ["class" => "ui btn review-ui js-decline-review"]);
             // Also see $_REQUEST["refuse"] case in review.php.
-            Ht::stash_html("<div id='popup_ref' class='popupc'>"
-    . Ht::form_div($reviewPostLink)
-    . Ht::hidden("refuse", "refuse")
-    . "<p style='margin:0 0 0.3em'>Select “Decline review” to decline this review. Thank you for keeping us informed.</p>"
-    . Ht::textarea("reason", null,
-                   array("rows" => 3, "cols" => 40,
-                         "placeholder" => "Optional explanation", "spellcheck" => "true"))
-    . '<div class="popup-actions">'
-    . Ht::submit("Decline review", ["class" => "btn"])
-    . Ht::button("Cancel", ["class" => "btn", "onclick" => "popup(null,'ref',1)"])
-    . "</div></div></form></div>", "declinereviewform");
             if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy)))
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
             else
@@ -934,15 +926,7 @@ $blind\n";
             $buttons[] = "";
             if ($submitted)
                 $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review", ["class" => "btn"]), "(admin only)");
-            $buttons[] = array(Ht::button("Delete review", ["class" => "btn", "onclick" => "popup(this,'d',0)"]), "(admin only)");
-            Ht::stash_html("<div id='popup_d' class='popupc'>
-  <p>Be careful: This will permanently delete all information about this
-  review assignment from the database and <strong>cannot be
-  undone</strong>.</p>
-  " . Ht::form_div($reviewPostLink, array("divclass" => "popup-actions"))
-    . Ht::submit("deletereview", "Delete review", ["class" => "btn dangerous"])
-    . Ht::button("Cancel", ["class" => "btn", "onclick" => "popup(null,'d',1)"])
-    . "</div></form></div>");
+            $buttons[] = array(Ht::button("Delete review", ["class" => "ui btn review-ui js-delete-review"]), "(admin only)");
         }
 
         echo Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-$type:0"]);
@@ -1083,7 +1067,7 @@ $blind\n";
 
         // top save changes
         if ($Me->timeReview($prow, $rrow) || $admin) {
-            $this->_echo_accept_decline($prow, $rrow, $reviewPostLink);
+            $this->_echo_accept_decline($prow, $rrow, $reviewPostLink, $Me);
             $this->_echo_review_actions($prow, $rrow, "top", $reviewPostLink);
         }
 

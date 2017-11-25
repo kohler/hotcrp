@@ -6274,6 +6274,35 @@ return function (event) {
 })($);
 
 
+var review_ui = (function ($) {
+function decline_review_dialog() {
+    var $f = $(this).closest("form"),
+        hc = popup_skeleton({anchor: this, action: $f[0].action});
+    hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
+    hc.push('<textarea name="reason" rows="3" cols="40" style="width:99%" placeholder="Optional explanation" spellcheck="true" tabindex="1000"></textarea>');
+    hc.push_actions(['<button type="submit" name="refuse" value="yes" tabindex="1000" class="btn btn-default">Decline review</button>',
+        '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
+    hc.show();
+}
+
+function delete_review_dialog() {
+    var $f = $(this).closest("form"),
+        hc = popup_skeleton({anchor: this, action: $f[0].action});
+    hc.push('<p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p>');
+    hc.push_actions(['<button type="submit" name="deletereview" value="1" tabindex="1000" class="btn dangerous">Delete review</button>',
+        '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
+    hc.show();
+}
+
+return function (event) {
+    if (hasClass(this, "js-decline-review"))
+        decline_review_dialog.call(this, event);
+    else if (hasClass(this, "js-delete-review"))
+        delete_review_dialog.call(this, event);
+}
+})($);
+
+
 function document_upload() {
     var oname = this.getAttribute("data-option"), accept = this.getAttribute("data-accept");
     var file = $('<input type="file" name="' + oname + '" id="' + oname + (accept ? '" accept="' + accept : "") + '" size="30" />').insertAfter(this);
@@ -6467,12 +6496,14 @@ function handle_ui(evt) {
         foldup.call(this, evt);
     else if (hasClass(this, "js-edit-comment"))
         papercomment.edit_id(this.hash.substring(1));
+    else if (hasClass(this, "row-order-ui"))
+        row_order_ui.call(this, evt);
     else if (hasClass(this, "edit-paper-ui"))
         edit_paper_ui.call(this, evt);
     else if (hasClass(this, "profile-ui"))
         profile_ui.call(this, evt);
-    else if (hasClass(this, "row-order-ui"))
-        row_order_ui.call(this, evt);
+    else if (hasClass(this, "review-ui"))
+        review_ui.call(this, evt);
     else if (hasClass(this, "js-override-deadlines"))
         override_deadlines.call(this);
 }
