@@ -800,6 +800,20 @@ function hoturl_post_go(page, options) {
 }
 
 
+// render_xmsg
+function render_xmsg(status, msg) {
+    if (typeof msg === "string")
+        msg = msg === "" ? [] : [msg];
+    if (msg.length === 0)
+        return '';
+    if (status === 0 || status === 1 || status === 2)
+        status = ["info", "warning", "merror"][status];
+    return '<div class="xmsg x' + status + '"><div class="xmsg0"></div>' +
+        '<div class="xmsgc">' + msg.join('</div><div class="xmsgc">') +
+        '</div><div class="xmsg1"></div></div>';
+}
+
+
 // rangeclick
 function rangeclick(evt, elt, kind) {
     elt = elt || this;
@@ -3124,12 +3138,12 @@ function render_editing(hc, cj) {
 
     var msgx = [];
     if (cj.response && resp_rounds[cj.response].instrux)
-        msgx.push('<div class="xmsgc">' + resp_rounds[cj.response].instrux + '</div>');
+        msgx.push(resp_rounds[cj.response].instrux);
     if (cj.response && papercomment.nonauthor)
-        msgx.push('<div class="xmsgc">You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.</div>');
+        msgx.push('You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.');
     else if (cj.review_token && hotcrp_status.myperm.review_tokens
              && hotcrp_status.myperm.review_tokens.indexOf(cj.review_token) >= 0)
-        msgx.push('<div class="xmsgc">You have a review token for this paper, so your comment will be anonymous.</div>');
+        msgx.push('You have a review token for this paper, so your comment will be anonymous.');
     else if (!cj.response && cj.author_email && hotcrp_user.email
              && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase()) {
         var msg;
@@ -3137,10 +3151,10 @@ function render_editing(hc, cj) {
             msg = "You didn’t write this comment, but you can edit it as a fellow author.";
         else
             msg = "You didn’t write this comment, but you can edit it as an administrator.";
-        msgx.push('<div class="xmsgc">' + msg + '</div>');
+        msgx.push(msg);
     }
     if (msgx.length)
-        hc.push('<div class="xmsg xinfo"><div class="xmsg0"></div>' + msgx.join("") + '<div class="xmsg1"></div></div>');
+        hc.push(render_xmsg(0, msgx));
 
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
@@ -3300,7 +3314,7 @@ function save_editor(elt, action, really) {
                 $f[0].action = hoturl_post("paper", $.extend({editcomment: 1}, carg));
                 $f[0].submit();
             }
-            $c.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + data.error + '</div><div class="xmsg1"</div></div>' : data.msg);
+            $c.find(".cmtmsg").html(data.error ? render_xmsg(2, data.error) : data.msg);
             $c.find("button").prop("disabled", false);
             return;
         }
@@ -6094,7 +6108,7 @@ function check_format() {
     if (this && "tagName" in this && this.tagName === "A")
         $self.hide();
     var running = setTimeout(function () {
-        $cf.html('<div class="xmsg xinfo"><div class="xmsg0"></div><div class="xmsgc">Checking format (this can take a while)...</div><div class="xmsg1"></div></div>');
+        $cf.html(render_xmsg(0, "Checking format (this can take a while)..."));
     }, 1000);
     $.ajax(hoturl_post("api/checkformat", {p: hotcrp_paperid}), {
         timeout: 20000, data: {dt: $d.data("dtype"), docid: $d.data("docid")},
