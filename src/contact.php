@@ -1239,6 +1239,8 @@ class Contact {
                        "collaborators", "preferredEmail", "country") as $k)
             if (($v = $cdbu && $cdbu->$k ? $cdbu->$k : get($reg, $k)))
                 $cj->$k = $v;
+        if (isset($reg->name) && !isset($cj->firstName) && !isset($cj->lastName))
+            list($cj->firstName, $cj->lastName) = Text::split_name($reg->name);
         if (($v = $cdbu && $cdbu->voicePhoneNumber ? $cdbu->voicePhoneNumber : get($reg, "voicePhoneNumber")))
             $cj->phone = $v;
         if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
