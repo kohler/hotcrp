@@ -889,14 +889,15 @@ class Tag_PaperColumn extends PaperColumn {
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         $k = $sorter->uid;
         $careful = !$pl->user->privChair && !$pl->conf->tag_seeall;
-        $unviewable = $empty = $sorter->reverse ? -(TAG_INDEXBOUND - 1) : TAG_INDEXBOUND - 1;
+        $unviewable = $empty = TAG_INDEXBOUND * ($sorter->reverse ? -1 : 1);
         if ($this->editable)
-            $empty = $sorter->reverse ? -TAG_INDEXBOUND : TAG_INDEXBOUND;
-        foreach ($rows as $row)
+            $empty = (TAG_INDEXBOUND - 1) * ($sorter->reverse ? -1 : 1);
+        foreach ($rows as $row) {
             if ($careful && !$pl->user->can_view_tag($row, $this->ltag, true))
                 $row->$k = $unviewable;
             else if (($row->$k = $row->tag_value($this->ltag)) === false)
                 $row->$k = $empty;
+        }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $k = $sorter->uid;
