@@ -596,8 +596,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
 }
 
 class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct($cj, Conf $conf = null) {
+        parent::__construct($cj, $conf);
     }
     function prepare(PaperList $pl, $visible) {
         if (!parent::prepare($pl, $visible) || !$pl->user->is_manager())
@@ -610,9 +610,9 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
         if ($this->contact === $pl->reviewer_user())
             return "Assignment";
         else if ($is_text)
-            return $pl->user->name_text_for($p) . " Assignment";
+            return $pl->user->name_text_for($this->contact) . " Assignment";
         else
-            return $pl->user->name_html_for($p) . "<br />Assignment";
+            return $pl->user->name_html_for($this->contact) . "<br />Assignment";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->allow_administer($row);
