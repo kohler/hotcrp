@@ -42,7 +42,7 @@ class Tracks_SettingRenderer {
                         $question, "{$type}_track$tnum"),
             "</td><td class=\"settings-track-perm\">",
             Ht::select("{$type}_track$tnum", $perm, $tclass,
-                       $sv->sjs("{$type}_track$tnum", array("onchange" => "void foldup.call(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
+                       $sv->sjs("{$type}_track$tnum", ["class" => "js-track-perm"])),
             " &nbsp;</td><td class=\"settings-track-tag\">",
             Ht::entry("${type}tag_track$tnum", $ttag,
                       $sv->sjs("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)"))),
@@ -108,9 +108,11 @@ class Tracks_SettingRenderer {
             }
         // catchall track
         self::do_track($sv, "_", 1);
-        echo Ht::button("Add track", ["class" => "btn btn-sm", "onclick" => "settings_add_track()"]);
+        echo Ht::button("Add track", ["class" => "btn", "id" => "settings_track_add"]);
 
+        Ht::stash_script('$("#settings_track_add").on("click", settings_add_track)');
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
+        Ht::stash_script('$(document).on("change", "select.js-track-perm", function (event) { foldup.call(this, event, {f: this.selectedIndex == 0 || this.selectedIndex == 3}) })');
     }
 
     static function crosscheck(SettingValues $sv) {

@@ -164,8 +164,9 @@ class Options_SettingRenderer {
             $self->render_option($sv, $o, ++$pos);
         echo "</div>\n",
             '<div style="margin-top:2em">',
-            Ht::button("Add option", ["class" => "settings-opt-new btn", "onclick" => "settings_option_move.call(this)"]),
+            Ht::button("Add option", ["class" => "settings-opt-new btn"]),
             "</div>\n<div id=\"settings_newopt\" style=\"display:none\">";
+        Ht::stash_script('$("button.settings-opt-new").on("click", settings_option_move)');
         $self->render_option($sv, null, 0);
         echo "</div>\n\n";
     }

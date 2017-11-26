@@ -20,11 +20,12 @@ class Reviews_SettingRenderer {
         if ($rnum !== '$' && $review_count)
             echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $sv->conf->round_name($rnum) : "none"))), '">(', plural($review_count, "review"), ')</a>';
         echo '</div>';
-        if ($deletable)
+        if ($deletable) {
             echo '<div class="inb" style="padding-left:2em">',
                 Ht::hidden("deleteround_$rnum", "", ["data-default-value" => ""]),
-                Ht::button("Delete round", ["onclick" => "review_round_settings.kill(this)"]),
+                Ht::button("Delete round", ["class" => "btn js-settings-review-round-delete"]),
                 '</div>';
+        }
         if ($rnum === '$')
             echo '<div class="hint">Names like “R1” and “R2” work well.</div>';
         echo '</div>';
@@ -122,7 +123,7 @@ static function render(SettingValues $sv) {
     echo '</div><div id="newround" style="display:none">';
     self::echo_round($sv, '$', "", "", true);
     echo '</div><div class="g"></div>';
-    echo Ht::button("Add round", ["onclick" => "review_round_settings.add();hiliter(this)"]),
+    echo Ht::button("Add round", ["id" => "settings_review_round_add"]),
         ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
         Ht::hidden("oldroundcount", count($sv->conf->round_list())),
         Ht::hidden("has_rev_roundtag", 1), Ht::hidden("has_extrev_roundtag", 1);
@@ -130,7 +131,9 @@ static function render(SettingValues $sv) {
         if ($rounds[$i] === ";")
             echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
                 Ht::hidden("deleteround_$i", 1, ["data-default-value" => "1"]);
-    Ht::stash_script("review_round_settings.init()");
+    Ht::stash_script('$("#settings_review_round_add").on("click", function () { review_round_settings.add(); hiliter(this) })');
+    Ht::stash_script('$(".js-settings-review-round-delete").on("click", review_round_settings.kill)');
+    Ht::stash_script('review_round_settings.init()');
 
     $extselector = array_merge(["#same" => "(same as PC)"], $selector);
     echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',

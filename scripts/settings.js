@@ -128,8 +128,8 @@ function add() {
     jQuery("#roundname_" + i).focus().on("input change", namechange);
 }
 
-function kill(e) {
-    var divj = jQuery(e).closest("div[data-round-number]"),
+function kill() {
+    var divj = jQuery(this).closest("div[data-round-number]"),
         roundnum = divj.attr("data-round-number"),
         vj = divj.find("input[name=deleteround_" + roundnum + "]"),
         ej = divj.find("input[name=roundname_" + roundnum + "]");
@@ -137,14 +137,14 @@ function kill(e) {
         vj.val("");
         ej.val(ej.attr("data-round-name"));
         ej.removeClass("dim").prop("disabled", false);
-        jQuery(e).html("Delete round");
+        jQuery(this).html("Delete round");
     } else {
         vj.val(1);
         var x = ej.val();
         ej.attr("data-round-name", x);
         ej.val(x == "(no name)" ? "(deleted)" : "(" + (ej.val() || "unnamed round") + " deleted)")
             .addClass("dim").prop("disabled", true);
-        jQuery(e).html("Restore round");
+        jQuery(this).html("Restore round");
     }
     divj.find("table").toggle(!vj.val());
     form_highlight("#settingsform");

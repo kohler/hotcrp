@@ -608,15 +608,17 @@ class SettingValues extends MessageSet {
         if ($x === null || !isset($varr[$x]))
             $x = 0;
         echo "<table style=\"margin-top:0.25em\" id=\"{$name}_table\">\n";
-        $changejs = "settings_radio_table(" . json_encode_browser($name) . ")";
         foreach ($varr as $k => $text) {
             echo "<tr id=\"{$name}_row_{$k}\" class=\"foldc\"><td class=\"nb\">",
-                Ht::radio($name, $k, $k == $x, $this->sjs($name, ["id" => "{$name}_{$k}", "onchange" => $changejs])),
+                Ht::radio($name, $k, $k == $x, $this->sjs($name, ["id" => "{$name}_{$k}"])),
                 "&nbsp;</td><td>",
                 $this->label($name, $text, true),
                 "</td></tr>\n";
         }
-        echo "</table>\n", Ht::unstash_script($changejs);
+        echo "</table>\n";
+        $changejs = "settings_radio_table(" . json_encode_browser($name) . ")";
+        Ht::stash_script('$(' . json_encode_browser("#{$name}") . ').on("change", "input[type=radio]", function () { ' . $changejs . ' })');
+        echo Ht::unstash_script($changejs);
     }
     function render_entry($name, $js = []) {
         $v = $this->curv($name);

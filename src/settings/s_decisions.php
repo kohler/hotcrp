@@ -68,8 +68,9 @@ static function render(SettingValues $sv) {
     }
 
     echo '</div><div class="mg">',
-        Ht::button("Add response round", ["style" => "font-size:smaller", "onclick" => "settings_add_resp_round()"]),
+        Ht::button("Add response round", ["class" => "btn", "id" => "resp_round_add"]),
         '</div></td></tr></table></div>';
+    Ht::stash_script('$("#resp_round_add").on("click", settings_add_resp_round)');
 
     echo '<table class="mg">';
     $sv->echo_checkbox_row("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers when reviews are visible");
