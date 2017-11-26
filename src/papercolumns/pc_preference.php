@@ -122,7 +122,7 @@ class Preference_PaperColumnFactory {
         }
         $rs = [];
         foreach (ContactSearch::make_pc($m[1], $conf->xt_user)->ids as $cid) {
-            $u = $conf->pc_member_by_id($cid);
+            $u = $conf->cached_user_by_id($cid);
             $fj["name"] = "pref:" . $u->email . $m[2];
             $fj["user"] = $u->email;
             $rs[] = (object) $fj;
