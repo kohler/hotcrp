@@ -595,8 +595,7 @@ class ReviewForm implements JsonSerializable {
                 echo $format_description;
                 echo Ht::textarea($fid, (string) $fval,
                         array("class" => "reviewtext need-autogrow", "rows" => $f->display_space,
-                              "cols" => 60, "onchange" => "hiliter(this)",
-                              "spellcheck" => "true"));
+                              "cols" => 60, "spellcheck" => "true"));
             }
             echo "</div></div>\n";
         }

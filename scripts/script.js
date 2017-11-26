@@ -2283,8 +2283,8 @@ function papersel(value, name) {
 
 function plist_onsubmit() {
     // analyze why this is being submitted
-    var fn = $(this).data("submitFn");
-    $(this).removeData("submitFn");
+    var $self = $(this), fn = $self.data("submitFn");
+    $self.removeData("submitFn");
     if (!fn && this.defaultact)
         fn = $(this.defaultact).val();
     if (!fn && document.activeElement) {
@@ -2298,10 +2298,10 @@ function plist_onsubmit() {
 
     // if nothing selected, either select all or error out
     $("#sel_papstandin").remove();
-    if (!$(this).find("input[name='pap[]']:checked").length) {
-        var subbtn = fn && $(this).find("input[type=submit], button[type=submit]").filter("[value=" + fn + "]");
+    if (!$self.find("input[name='pap[]']:checked").length) {
+        var subbtn = fn && $self.find("input[type=submit], button[type=submit]").filter("[value=" + fn + "]");
         if (subbtn && subbtn.length == 1 && subbtn[0].hasAttribute("data-plist-submit-all")) {
-            var values = $(this).find("input[name='pap[]']").map(function () { return this.value; }).get();
+            var values = $self.find("input[name='pap[]']").map(function () { return this.value; }).get();
             $("#sel").append('<div id="sel_papstandin"><input type="hidden" name="pap" value="' + values.join(" ") + '" /></div>');
         } else {
             alert("Select one or more papers first.");
@@ -2310,9 +2310,9 @@ function plist_onsubmit() {
     }
 
     // encode the expected download in the form action, to ease debugging
-    if (!this.hasAttribute("data-original-action"))
-        this.setAttribute("data-original-action", this.action);
-    var action = this.getAttribute("data-original-action"), s = fn;
+    var action = $self.data("originalAction"), s = fn;
+    if (!action)
+        $self.data("originalAction", (action = this.action));
     if (s == "get")
         s = "get-" + $(this.getfn).val();
     else if (s == "tag")
@@ -2325,10 +2325,6 @@ function plist_onsubmit() {
         s = "decide-" + $(this.decision).val();
     if (s)
         this.action = hoturl_add(action, "action=" + encodeURIComponent(s));
-    return true;
-}
-function plist_submit() {
-    $(this).closest("form").data("submitFn", this.value);
     return true;
 }
 
@@ -2346,7 +2342,8 @@ function make_onkey(key, f) {
 
 
 $(document).on("focus", "input.js-autosubmit", function (event) {
-    $(event.target).closest("form").data("autosubmitType", event.target.getAttribute("data-autosubmit-type") || false);
+    var $self = $(event.target);
+    $self.closest("form").data("autosubmitType", $self.data("autosubmitType") || false);
 });
 $(document).on("keypress", "input.js-autosubmit", function (event) {
     if (event_modkey(event) || event_key(event) !== "Enter")
@@ -2834,11 +2831,11 @@ var rtype_info = {
 };
 
 function score_tooltip_enter(evt) {
-    var j = $(this), tt = j.data("hotcrp_tooltip");
+    var $self = $(this), tt = $self.data("hotcrp_tooltip");
     if (!tt) {
-        var fieldj = formj[this.getAttribute("data-rf")], score;
+        var fieldj = formj[$self.data("rf")], score;
         if (fieldj && fieldj.score_info
-            && (score = fieldj.score_info.parse(j.find("span.sv").text())))
+            && (score = fieldj.score_info.parse($self.find("span.sv").text())))
             tt = tooltip({
                 content: fieldj.options[score - 1],
                 dir: "l", near: ">span", element: this
@@ -4169,12 +4166,12 @@ $(function () { suggest($(".hotcrp_searchbox"), taghelp_q); });
 
 // review preferences
 function setfollow() {
-    var self = this;
-    $.post(hoturl_post("api/follow", {p: $(this).data("paper") || hotcrp_paperid}),
-           {following: this.checked, reviewer: $(this).data("reviewer") || hotcrp_user.email},
+    var $self = $(this);
+    $.post(hoturl_post("api/follow", {p: $self.data("pid") || hotcrp_paperid}),
+           {following: this.checked, reviewer: $self.data("reviewer") || hotcrp_user.email},
            function (rv) {
-               setajaxcheck(self, rv);
-               rv.ok && (self.checked = rv.following);
+               setajaxcheck($self[0], rv);
+               rv.ok && ($self[0].checked = rv.following);
            });
 }
 
@@ -4267,8 +4264,8 @@ function add_assrev_ajax(selector) {
     }
 
     $(selector).off(".assrev_ajax")
-        .on("change.assrev_ajax", "select[name^='assrev']", assrev_ajax)
-        .on("click.assrev_ajax", "input[name^='assrev']", assrev_ajax);
+        .on("change.assrev_ajax", "select[name^=assrev]", assrev_ajax)
+        .on("click.assrev_ajax", "input[name^=assrev]", assrev_ajax);
 }
 
 
@@ -5081,7 +5078,7 @@ function edit_anno(locator) {
     plt_tbody || set_plt_tbody(elt);
     var mytag = elt.getAttribute("data-anno-tag"),
         annoid = elt.hasAttribute("data-anno-id") ? +elt.getAttribute("data-anno-id") : null;
-    function onclick(evt) {
+    function clickh(evt) {
         if (this.name === "add") {
             var hc = new HtmlCollector;
             add_anno(hc, {});
@@ -5156,7 +5153,7 @@ function edit_anno(locator) {
             $d.find("input[name='heading_" + annos[i].annoid + "']").val(annos[i].heading);
             $d.find("input[name='tagval_" + annos[i].annoid + "']").val(tagvalue_unparse(annos[i].tagval));
         }
-        $d.on("click", "button", onclick).on("click", "a.delete-link", ondeleteclick);
+        $d.on("click", "button", clickh).on("click", "a.delete-link", ondeleteclick);
     }
     $.post(hoturl_post("api/taganno", {tag: mytag}), show_dialog);
 }
@@ -5503,7 +5500,7 @@ function render_row_tags(div) {
     if (t != "" && ptr.getAttribute("data-tags-editable") != null) {
         t += ' <span class="hoveronly"><span class="barsep">·</span> <a class="ui edittags-link" href="#">Edit</a></span>';
         if (!has_edittags_link) {
-            $(ptr).closest("tbody").on("click", "a.edittags-link", edittags_link_onclick);
+            $(ptr).closest("tbody").on("click", "a.edittags-link", edittags_link_click);
             has_edittags_link = true;
         }
     }
@@ -5511,9 +5508,8 @@ function render_row_tags(div) {
     t == "" ? $(div).empty() : $(div).html(t);
 }
 
-function edittags_link_onclick() {
+function edittags_link_click() {
     $.post(hoturl_post("api/settags", {p: pidnear(this), forceShow: 1}), edittags_callback);
-    return false;
 }
 
 function edittags_callback(rv) {
@@ -5885,7 +5881,7 @@ function edit_formulas() {
             hc.push(escape_entities(f.expression));
         hc.push_pop('</div></div>');
     }
-    function onclick() {
+    function click() {
         if (this.name === "add") {
             var hc = new HtmlCollector;
             push_formula(hc, {name: "", expression: "", editable: true, id: "new"});
@@ -5893,15 +5889,13 @@ function edit_formulas() {
             $f.find("textarea").autogrow();
             focus_at($f.find(".editformulas-name"));
             $d.find(".popup-bottom").scrollIntoView();
-        } else if (this.name === "save")
-            return true;
+        }
     }
     function ondelete() {
         var $x = $(this).closest(".editformulas-formula");
         $x.find(".editformulas-expression").closest(".f-i").hide();
         $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
         $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1" />');
-        return false;
     }
     function create() {
         var hc = popup_skeleton({
@@ -5916,7 +5910,7 @@ function edit_formulas() {
         hc.pop_push('<button type="button" name="add" class="btn">Add named formula</button>');
         hc.push_actions(['<button type="submit" name="saveformulas" value="1" tabindex="1000" class="btn btn-default">Save</button>', '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
         $d = hc.show();
-        $d.on("click", "button", onclick);
+        $d.on("click", "button", click);
         $d.on("click", "a.delete-link", ondelete);
     }
     create();

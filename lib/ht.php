@@ -230,17 +230,6 @@ class Ht {
         return self::button($html, $js);
     }
 
-    static function js_button($html, $onclick, $js = null) {
-        if ($js === null && is_array($onclick)) {
-            $js = $onclick;
-            $onclick = null;
-        } else if ($js === null)
-            $js = array();
-        if ($onclick)
-            $js["onclick"] = $onclick;
-        return self::button($html, $js);
-    }
-
     static function hidden_default_submit($name, $value = null, $js = null) {
         if ($js === null && is_array($value)) {
             $js = $value;

@@ -589,7 +589,7 @@ function add_dialog(fid, focus) {
         popup_close($d);
         return false;
     }
-    function onclick() {
+    function click() {
         if (this.name == "next" || this.name == "prev") {
             var dir = this.name == "next" ? 1 : -1;
             template += dir;
@@ -599,7 +599,6 @@ function add_dialog(fid, focus) {
                 template += dir;
             render_template();
         }
-        return true;
     }
     function change_template() {
         ++template;
@@ -622,7 +621,7 @@ function add_dialog(fid, focus) {
         $d = hc.show();
         render_template();
         $d.find(".newreviewfield-template-name").on("click", change_template);
-        $d.on("click", "button", onclick);
+        $d.on("click", "button", click);
         $d.find("form").on("submit", onsubmit);
     }
     create();
