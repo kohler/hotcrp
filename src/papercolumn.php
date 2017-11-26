@@ -845,7 +845,7 @@ class TagList_PaperColumn extends PaperColumn {
 class Tag_PaperColumn extends PaperColumn {
     protected $is_value;
     protected $dtag;
-    protected $xtag;
+    protected $ltag;
     protected $ctag;
     protected $editable = false;
     protected $emoji = false;
@@ -861,7 +861,7 @@ class Tag_PaperColumn extends PaperColumn {
         return new EditTag_PaperColumn((object) $cj);
     }
     function sorts_my_tag($sorter, Contact $user) {
-        return strcasecmp(Tagger::check_tag_keyword($sorter->type, $user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID), $this->xtag) == 0;
+        return strcasecmp(Tagger::check_tag_keyword($sorter->type, $user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID), $this->ltag) == 0;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_tags(null))
@@ -869,12 +869,12 @@ class Tag_PaperColumn extends PaperColumn {
         $tagger = new Tagger($pl->user);
         if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID)))
             return false;
-        $this->xtag = strtolower($ctag);
-        $this->ctag = " {$this->xtag}#";
+        $this->ltag = strtolower($ctag);
+        $this->ctag = " {$this->ltag}#";
         if ($visible)
             $pl->qopts["tags"] = 1;
         $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
-        if ($this->dtag[0] == ":" && !$this->is_value
+        if ($this->ltag[0] == ":" && !$this->is_value
             && ($dt = $pl->user->conf->tags()->check($this->dtag))
             && count($dt->emoji) == 1)
             $this->emoji = $dt->emoji[0];
@@ -893,9 +893,9 @@ class Tag_PaperColumn extends PaperColumn {
         if ($this->editable)
             $empty = $sorter->reverse ? -TAG_INDEXBOUND : TAG_INDEXBOUND;
         foreach ($rows as $row)
-            if ($careful && !$pl->user->can_view_tag($row, $this->xtag, true))
+            if ($careful && !$pl->user->can_view_tag($row, $this->ltag, true))
                 $row->$k = $unviewable;
-            else if (($row->$k = $row->tag_value($this->xtag)) === false)
+            else if (($row->$k = $row->tag_value($this->ltag)) === false)
                 $row->$k = $empty;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
@@ -903,13 +903,24 @@ class Tag_PaperColumn extends PaperColumn {
         return $a->$k < $b->$k ? -1 : ($a->$k == $b->$k ? 0 : 1);
     }
     function header(PaperList $pl, $is_text) {
+        if (($twiddle = strpos($this->dtag, "~")) > 0) {
+            $cid = (int) substr($this->dtag, 0, $twiddle);
+            if ($cid == $pl->user->contactId)
+                return "#" . substr($this->dtag, $twiddle);
+            else if (($p = $pl->conf->cached_user_by_id($cid))) {
+                if ($is_text)
+                    return $pl->user->name_text_for($p) . " #" . substr($this->dtag, $twiddle);
+                else
+                    return $pl->user->name_html_for($p) . "<br />#" . substr($this->dtag, $twiddle);
+            }
+        }
         return "#$this->dtag";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_tag($row, $this->xtag);
+        return !$pl->user->can_view_tag($row, $this->ltag);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if (($v = $row->tag_value($this->xtag)) === false)
+        if (($v = $row->tag_value($this->ltag)) === false)
             return "";
         else if ($v >= 0.0 && $this->emoji)
             return Tagger::unparse_emoji_html($this->emoji, $v);
@@ -919,8 +930,8 @@ class Tag_PaperColumn extends PaperColumn {
             return $v;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (($v = $row->tag_value($this->xtag)) === false)
-            return "N";
+        if (($v = $row->tag_value($this->ltag)) === false)
+            return "";
         else if ($v === 0.0 && !$this->is_value)
             return "Y";
         else
@@ -930,10 +941,33 @@ class Tag_PaperColumn extends PaperColumn {
 
 class Tag_PaperColumnFactory {
     static function expand($name, Conf $conf, $xfj, $m) {
-        $fj = (array) $xfj;
-        $fj["name"] = $name;
-        $fj["tag"] = $m[1];
-        return (object) $fj;
+        $tagger = new Tagger($conf->xt_user);
+        $ts = [];
+        if (($twiddle = strpos($m[2], "~")) > 0
+            && !ctype_digit(substr($m[2], 0, $twiddle))) {
+            $utext = substr($m[2], 0, $twiddle);
+            foreach (ContactSearch::make_pc($utext, $conf->xt_user)->ids as $cid) {
+                $ts[] = $cid . substr($m[2], $twiddle);
+            }
+            if (!$ts) {
+                $conf->xt_factory_error("No PC member matches “" . htmlspecialchars($utext) . "”.");
+            }
+        } else {
+            $ts[] = $m[2];
+        }
+        $flags = Tagger::NOVALUE | ($conf->xt_user->is_manager() ? Tagger::ALLOWCONTACTID : 0);
+        $rs = [];
+        foreach ($ts as $t) {
+            if ($tagger->check($t, $flags)) {
+                $fj = (array) $xfj;
+                $fj["name"] = $m[1] . $t;
+                $fj["tag"] = $t;
+                $rs[] = (object) $fj;
+            } else {
+                $conf->xt_factory_error($tagger->error_html);
+            }
+        }
+        return $rs;
     }
 }
 
@@ -963,7 +997,7 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
         return true;
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $v = $row->tag_value($this->xtag);
+        $v = $row->tag_value($this->ltag);
         if ($this->editsort && !isset($pl->row_attr["data-tags"]))
             $pl->row_attr["data-tags"] = $this->dtag . "#" . $v;
         if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0, true))

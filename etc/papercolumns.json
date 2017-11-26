@@ -124,7 +124,7 @@
         "completion_function": "Formula_PaperColumnFactory::completions"
     },
     {
-        "match": "tag:(.*)", "priority": -1, "allow_if": "pc",
+        "match": "(tag:)(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": false,
         "column": true, "sort": true, "minimal": true,
         "factory_class": "Tag_PaperColumn",
@@ -132,7 +132,7 @@
         "position": 1400
     },
     {
-        "match": "tagval:(.*)", "priority": -1, "allow_if": "pc",
+        "match": "(tagval:)(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": true,
         "column": true, "sort": true, "minimal": true,
         "factory_class": "Tag_PaperColumn",
@@ -140,17 +140,9 @@
         "position": 1400
     },
     {
-        "match": "#(~?[a-zA-Z@*_:.][-a-zA-Z0-9!@*_:.\/]*)", "priority": -1, "allow_if": "pc",
+        "match": "(#)([-a-zA-Z0-9!@*_:.\/~]+)", "priority": -1, "allow_if": "pc",
         "tagvalue": null,
         "column": true, "sort": true, "completion": "#<tag>", "minimal": true,
-        "factory_class": "Tag_PaperColumn",
-        "expand_function": "Tag_PaperColumnFactory::expand",
-        "position": 1400
-    },
-    {
-        "match": "#((?:~~|.*~)[a-zA-Z@*_:.][-a-zA-Z0-9!@*_:.\/]*)", "priority": -1, "allow_if": "chair",
-        "tagvalue": null,
-        "column": true, "sort": true, "minimal": true,
         "factory_class": "Tag_PaperColumn",
         "expand_function": "Tag_PaperColumnFactory::expand",
         "position": 1400

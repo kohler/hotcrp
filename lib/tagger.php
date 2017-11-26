@@ -636,7 +636,7 @@ class Tagger {
         $this->conf = $this->contact ? $this->contact->conf : $Conf;
     }
 
-    private function set_error($e) {
+    private function set_error_html($e) {
         $this->error_html = $e;
         return false;
     }
@@ -647,34 +647,34 @@ class Tagger {
         if ($tag !== "" && $tag[0] === "#")
             $tag = substr($tag, 1);
         if ((string) $tag === "")
-            return $this->set_error("Tag missing.");
+            return $this->set_error_html("Tag missing.");
         if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-?\d+(?:\.\d*)?|-?\.\d+|))\z/', $tag, $m))
-            return $this->set_error("Format error: #" . htmlspecialchars($tag) . " is an invalid tag.");
+            return $this->set_error_html("Invalid tag.");
         if (!($flags & self::ALLOWSTAR) && strpos($tag, "*") !== false)
-            return $this->set_error("Wildcards aren’t allowed in tag names.");
+            return $this->set_error_html("Wildcards aren’t allowed in tag names.");
         // After this point we know `$tag` contains no HTML specials
         if ($m[1] === "")
             /* OK */;
         else if ($m[1] === "~~") {
             if ($flags & self::NOCHAIR)
-                return $this->set_error("Tag #{$tag} is exclusively for chairs.");
+                return $this->set_error_html("Tag #{$tag} is exclusively for chairs.");
         } else {
             if ($flags & self::NOPRIVATE)
-                return $this->set_error("Twiddle tags aren’t allowed here.");
+                return $this->set_error_html("Twiddle tags aren’t allowed here.");
             if ($m[1] === "~" && $this->_contactId)
                 $m[1] = $this->_contactId . "~";
             if ($m[1] !== "~" && $m[1] !== $this->_contactId . "~"
                 && !($flags & self::ALLOWCONTACTID))
-                return $this->set_error("Format error: #{$tag} is an invalid tag.");
+                return $this->set_error_html("Other users’ twiddle tags are off limits.");
         }
         if ($m[3] !== "" && ($flags & self::NOVALUE))
-            return $this->set_error("Tag values aren’t allowed here.");
+            return $this->set_error_html("Tag values aren’t allowed here.");
         if (!($flags & self::ALLOWRESERVED)
             && (!strcasecmp("none", $m[2]) || !strcasecmp("any", $m[2])))
-            return $this->set_error("Tag #{$m[2]} is reserved.");
+            return $this->set_error_html("Tag #{$m[2]} is reserved.");
         $t = $m[1] . $m[2];
         if (strlen($t) > TAG_MAXLEN)
-            return $this->set_error("Tag #{$tag} is too long.");
+            return $this->set_error_html("Tag #{$tag} is too long.");
         if ($m[3] !== "")
             $t .= "#" . substr($m[3], 1);
         return $t;
