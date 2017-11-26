@@ -4244,31 +4244,6 @@ var add_revpref_ajax = (function () {
 })();
 
 
-function add_assrev_ajax(selector) {
-    function assrev_ajax() {
-        var that = this, m, data = {};
-        if ($("#assrevimmediate")[0].checked
-            && (m = /^assrev(\d+)u(\d+)$/.exec(that.name))) {
-            if ($(that).is("select")) {
-                data.kind = "a";
-                data["pcs" + m[2]] = that.value;
-                data.rev_round = $("#assrevround").val() || "";
-            } else {
-                data.kind = "c";
-                data["pcs" + m[2]] = that.checked ? -1 : 0;
-            }
-            $.post(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}),
-                   data, function (rv) { setajaxcheck(that, rv); });
-        } else
-            hiliter(that);
-    }
-
-    $(selector).off(".assrev_ajax")
-        .on("change.assrev_ajax", "select[name^=assrev]", assrev_ajax)
-        .on("click.assrev_ajax", "input[name^=assrev]", assrev_ajax);
-}
-
-
 window.plinfo_tags = (function () {
 
 function tag_canonicalize(tag) {
@@ -6518,6 +6493,40 @@ return function (event) {
     else if (hasClass(this, "js-delete-review"))
         delete_review_dialog.call(this, event);
 }
+})($);
+
+
+var paperlist_ui = (function ($) {
+
+function assrev_change(event) {
+    var self = this, m = /^assrev(\d+)u(\d+)$/.exec(this.name);
+    if (m) {
+        var immediate = $$("assrevimmediate"), data;
+        if (!immediate || immediate.checked) {
+            if (this.tagName === "SELECT") {
+                var round = $$("assrevround");
+                data = {kind: "a", rev_round: round ? round.value : ""};
+                data["pcs" + m[2]] = this.value;
+            } else {
+                data = {kind: "c"};
+                data["pcs" + m[2]] = this.checked ? -1 : 0;
+            }
+            $.post(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}),
+                data, function (rv) { setajaxcheck(self, rv); });
+        } else {
+            hiliter(this);
+        }
+    }
+}
+
+function paperlist_ui(event) {
+}
+
+paperlist_ui.prepare_assrev = function (selector) {
+    $(selector).off(".assrev")
+        .on("change.assrev", "select.assrev, input.assrev", assrev_change);
+}
+return paperlist_ui;
 })($);
 
 

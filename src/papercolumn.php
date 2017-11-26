@@ -142,7 +142,7 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
         if (!$pl->user->is_manager())
             return false;
         if (($tid = $pl->table_id()))
-            $pl->add_header_script("add_assrev_ajax(" . json_encode_browser("#$tid") . ")");
+            $pl->add_header_script('paperlist_ui.prepare_assrev(' . json_encode_browser("#$tid") . ')');
         return true;
     }
     function header(PaperList $pl, $is_text) {
@@ -166,7 +166,7 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
             $c .= ' checked="checked"';
             unset($row->folded);
         }
-        return '<input type="checkbox" '
+        return '<input type="checkbox" class="assrev" '
             . 'name="assrev' . $row->paperId . 'u' . $this->contact->contactId
             . '" value="-1" tabindex="3"' . $c . ' />';
     }
@@ -603,7 +603,7 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
         if (!parent::prepare($pl, $visible) || !$pl->user->is_manager())
             return false;
         if ($visible > 0 && ($tid = $pl->table_id()))
-            $pl->add_header_script("add_assrev_ajax(" . json_encode_browser("#$tid") . ")");
+            $pl->add_header_script("paperlist_ui.prepare_assrev(" . json_encode_browser("#$tid") . ")");
         return true;
     }
     function header(PaperList $pl, $is_text) {
@@ -636,7 +636,7 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
         else
             $options = array(0 => "None", -1 => "Conflict");
         return Ht::select("assrev{$row->paperId}u{$this->contact->contactId}",
-                          $options, $rt, ["tabindex" => 3]);
+                          $options, $rt, ["class" => "assrev", "tabindex" => 3]);
     }
 }
 
