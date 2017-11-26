@@ -529,7 +529,7 @@ class PaperApi {
         return ["ok" => true];
     }
 
-    static function listreport_api(Contact $user, Qrequest $qreq, $prow) {
+    static function viewoptions_api(Contact $user, Qrequest $qreq, $prow) {
         $report = get($qreq, "report", "pl");
         if ($report !== "pl" && $report !== "pf")
             return new JsonResult(400, "Parameter error.");
@@ -550,5 +550,16 @@ class PaperApi {
         $s2 = new PaperSearch($user, "NONE");
         $l2 = new PaperList($s2, ["sort" => true, "report" => $report, "no_session_display" => true]);
         return new JsonResult(["ok" => true, "report" => $report, "display_current" => $l1->display("s"), "display_default" => $l2->display("s")]);
+    }
+
+    static function namedformula_api(Contact $user, Qrequest $qreq, $prow) {
+        $fjs = [];
+        foreach ($user->conf->viewable_named_formulas($user, false) as $f) {
+            $fj = ["name" => $f->name, "expression" => $f->expression, "id" => $f->formulaId];
+            if ($user->can_edit_formula($f))
+                $fj["editable"] = true;
+            $fjs[] = $fj;
+        }
+        return new JsonResult(["ok" => true, "formulas" => $fjs]);
     }
 }

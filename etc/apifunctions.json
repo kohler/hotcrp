@@ -27,8 +27,13 @@
         "function": "PaperApi::lead_api"
     },
     {
-        "name": "listreport", "get": true, "post": true,
-        "function": "PaperApi::listreport_api"
+        "name": "viewoptions", "get": true, "post": true,
+        "function": "PaperApi::viewoptions_api",
+        "synonym": ["listreport"]
+    },
+    {
+        "name": "namedformula", "get": true, "post": true,
+        "function": "PaperApi::namedformula_api"
     },
     {
         "name": "mentioncompletion", "get": true, "post": true,

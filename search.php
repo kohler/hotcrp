@@ -409,15 +409,7 @@ if ($pl_text) {
     if ($named_formulas)
         $display_options->set_header(40, "<strong>Formulas:</strong>");
     if ($Me->isPC && $Qreq->t != "a") {
-        $fjs = [];
-        foreach ($Conf->viewable_named_formulas($Me, false) as $f) {
-            $fj = ["name" => $f->name, "expression" => $f->expression, "id" => $f->formulaId];
-            if ($Me->can_edit_formula($f))
-                $fj["editable"] = true;
-            $fjs[] = $fj;
-        }
-        Ht::stash_script("edit_formulas.formulas=" . json_encode_browser($fjs));
-        $display_options->item(40, '<div class="dispopt-item"><a class="ui" href="#" onclick="edit_formulas();return false">Edit formulas</a></div>');
+        $display_options->item(40, '<div class="dispopt-item"><a class="ui paperlist-ui js-edit-formulas" href="">Edit formulas</a></div>');
     }
 }
 
@@ -585,7 +577,7 @@ if ($pl->count > 0) {
 
     echo "<td class='padlb'>";
     if ($Me->privChair)
-        echo Ht::button("Change default view", ["onclick" => "edit_report_display()"]), "&nbsp; ";
+        echo Ht::button("Change default view", ["class" => "btn ui paperlist-ui js-edit-view-options"]), "&nbsp; ";
     echo Ht::submit("Redisplay", array("id" => "redisplay"));
 
     echo "</td></tr></table>", $display_options_extra, "</div>";

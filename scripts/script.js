@@ -5835,100 +5835,6 @@ return plinfo;
 })();
 
 
-/* formula editor functions */
-function edit_formulas() {
-    var $d, nformulas = 0;
-    function push_formula(hc, f) {
-        ++nformulas;
-        hc.push('<div class="editformulas-formula" data-formula-number="' + nformulas + '">', '</div>');
-        hc.push('<div class="f-i"><div class="f-c">Name</div><div class="f-e">');
-        if (f.editable) {
-            hc.push('<div style="float:right"><a class="ui closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete formula">x</a></div>');
-            hc.push('<textarea class="editformulas-name" name="formulaname_' + nformulas + '" rows="1" cols="60" style="width:37.5rem;width:calc(99% - 2.5em)" tabindex="1000">' + escape_entities(f.name) + '</textarea>');
-            hc.push('<hr class="c" />');
-        } else
-            hc.push(escape_entities(f.name));
-        hc.push('</div></div><div class="f-i"><div class="f-c">Expression</div><div class="f-e">');
-        if (f.editable)
-            hc.push('<textarea class="editformulas-expression" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:99%" tabindex="1000">' + escape_entities(f.expression) + '</textarea>')
-                .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '" />');
-        else
-            hc.push(escape_entities(f.expression));
-        hc.push_pop('</div></div>');
-    }
-    function click() {
-        if (this.name === "add") {
-            var hc = new HtmlCollector;
-            push_formula(hc, {name: "", expression: "", editable: true, id: "new"});
-            var $f = $(hc.render()).appendTo($d.find(".editformulas"));
-            $f.find("textarea").autogrow();
-            focus_at($f.find(".editformulas-name"));
-            $d.find(".popup-bottom").scrollIntoView();
-        }
-    }
-    function ondelete() {
-        var $x = $(this).closest(".editformulas-formula");
-        $x.find(".editformulas-expression").closest(".f-i").hide();
-        $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
-        $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1" />');
-    }
-    function create() {
-        var hc = popup_skeleton({
-            action: hoturl_add(window.location.href, "post=" + siteurl_postvalue)
-        }), i;
-        hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
-        hc.push('<h2>Named formulas</h2>');
-        hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
-        hc.push('<div class="editformulas">', '</div>');
-        for (i in edit_formulas.formulas || [])
-            push_formula(hc, edit_formulas.formulas[i]);
-        hc.pop_push('<button type="button" name="add" class="btn">Add named formula</button>');
-        hc.push_actions(['<button type="submit" name="saveformulas" value="1" tabindex="1000" class="btn btn-default">Save</button>', '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
-        $d = hc.show();
-        $d.on("click", "button", click);
-        $d.on("click", "a.delete-link", ondelete);
-    }
-    create();
-}
-
-
-/* list report options */
-function edit_report_display() {
-    var $d;
-    function onsubmit(event) {
-        $.ajax(hoturl_post("api/listreport"), {
-            method: "POST", data: $(this).serialize(),
-            success: function (data) {
-                if (data.ok)
-                    popup_close($d);
-            }
-        });
-        event.preventDefault();
-    }
-    function create(display_default, display_current) {
-        var hc = popup_skeleton();
-        hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
-        hc.push('<h2>View options</h2>');
-        hc.push('<div class="f-i"><div class="f-c">Default view options</div><div class="f-e">', '</div></div>');
-        hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "") + '</div>');
-        hc.pop();
-        hc.push('<div class="f-i"><div class="f-c">Current view options</div><div class="f-e">', '</div></div>');
-        hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%" tabindex="1000">' + escape_entities(display_current || "") + '</textarea>');
-        hc.pop();
-        hc.push_actions(['<button type="submit" name="save" tabindex="1000" class="btn btn-default">Save options as default</button>', '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
-        $d = hc.show();
-        $d.on("submit", "form", onsubmit);
-    }
-    $.ajax(hoturl_post("api/listreport", {q: $("#searchform input[name=q]").val()}), {
-        success: function (data) {
-            if (data.ok)
-                create(data.display_default, data.display_current);
-        }
-    });
-    return false;
-}
-
-
 /* pattern fill functions */
 window.make_pattern_fill = (function () {
 var fmap = {}, cmap = {"whitetag": 1, "redtag": 2, "orangetag": 3, "yellowtag": 4, "greentag": 5, "bluetag": 6, "purpletag": 7, "graytag": 8},
@@ -6519,7 +6425,103 @@ function assrev_change(event) {
     }
 }
 
+function edit_formulas() {
+    var self = this, $d, nformulas = 0;
+    function push_formula(hc, f) {
+        ++nformulas;
+        hc.push('<div class="editformulas-formula" data-formula-number="' + nformulas + '">', '</div>');
+        hc.push('<div class="f-i"><div class="f-c">Name</div><div class="f-e">');
+        if (f.editable) {
+            hc.push('<div style="float:right"><a class="ui closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete formula">x</a></div>');
+            hc.push('<textarea class="editformulas-name" name="formulaname_' + nformulas + '" rows="1" cols="60" style="width:37.5rem;width:calc(99% - 2.5em)" tabindex="1000">' + escape_entities(f.name) + '</textarea>');
+            hc.push('<hr class="c" />');
+        } else
+            hc.push(escape_entities(f.name));
+        hc.push('</div></div><div class="f-i"><div class="f-c">Expression</div><div class="f-e">');
+        if (f.editable)
+            hc.push('<textarea class="editformulas-expression" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:99%" tabindex="1000">' + escape_entities(f.expression) + '</textarea>')
+                .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '" />');
+        else
+            hc.push(escape_entities(f.expression));
+        hc.push_pop('</div></div>');
+    }
+    function click() {
+        if (this.name === "add") {
+            var hc = new HtmlCollector;
+            push_formula(hc, {name: "", expression: "", editable: true, id: "new"});
+            var $f = $(hc.render()).appendTo($d.find(".editformulas"));
+            $f.find("textarea").autogrow();
+            focus_at($f.find(".editformulas-name"));
+            $d.find(".popup-bottom").scrollIntoView();
+        }
+    }
+    function ondelete() {
+        var $x = $(this).closest(".editformulas-formula");
+        $x.find(".editformulas-expression").closest(".f-i").hide();
+        $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
+        $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1" />');
+    }
+    function create(formulas) {
+        var hc = popup_skeleton({
+            action: hoturl_add(window.location.href, "post=" + siteurl_postvalue)
+        }), i;
+        hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
+        hc.push('<h2>Named formulas</h2>');
+        hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
+        hc.push('<div class="editformulas">', '</div>');
+        for (i in formulas || [])
+            push_formula(hc, formulas[i]);
+        hc.pop_push('<button type="button" name="add" class="btn">Add named formula</button>');
+        hc.push_actions(['<button type="submit" name="saveformulas" value="1" tabindex="1000" class="btn btn-default">Save</button>', '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
+        $d = hc.show();
+        $d.on("click", "button", click);
+        $d.on("click", "a.delete-link", ondelete);
+    }
+    $.get(hoturl_post("api/namedformula"), function (data) {
+        if (data.ok)
+            create(data.formulas);
+    });
+}
+
+function edit_view_options() {
+    var $d;
+    function submit(event) {
+        $.ajax(hoturl_post("api/viewoptions"), {
+            method: "POST", data: $(this).serialize(),
+            success: function (data) {
+                if (data.ok)
+                    popup_close($d);
+            }
+        });
+        event.preventDefault();
+    }
+    function create(display_default, display_current) {
+        var hc = popup_skeleton();
+        hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
+        hc.push('<h2>View options</h2>');
+        hc.push('<div class="f-i"><div class="f-c">Default view options</div><div class="f-e">', '</div></div>');
+        hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "") + '</div>');
+        hc.pop();
+        hc.push('<div class="f-i"><div class="f-c">Current view options</div><div class="f-e">', '</div></div>');
+        hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%" tabindex="1000">' + escape_entities(display_current || "") + '</textarea>');
+        hc.pop();
+        hc.push_actions(['<button type="submit" name="save" tabindex="1000" class="btn btn-default">Save options as default</button>', '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
+        $d = hc.show();
+        $d.on("submit", "form", submit);
+    }
+    $.ajax(hoturl_post("api/viewoptions", {q: $("#searchform input[name=q]").val()}), {
+        success: function (data) {
+            if (data.ok)
+                create(data.display_default, data.display_current);
+        }
+    });
+}
+
 function paperlist_ui(event) {
+    if (hasClass(this, "js-edit-formulas"))
+        edit_formulas.call(this, event);
+    else if (hasClass(this, "js-edit-view-options"))
+        edit_view_options.call(this, event);
 }
 
 paperlist_ui.prepare_assrev = function (selector) {
@@ -6638,6 +6640,8 @@ function handle_ui(evt) {
         profile_ui.call(this, evt);
     else if (hasClass(this, "review-ui"))
         review_ui.call(this, evt);
+    else if (hasClass(this, "paperlist-ui"))
+        paperlist_ui.call(this, evt);
     else if (hasClass(this, "js-override-deadlines"))
         override_deadlines.call(this);
 }
