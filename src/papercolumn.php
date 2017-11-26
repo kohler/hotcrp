@@ -494,7 +494,7 @@ class Abstract_PaperColumn extends PaperColumn {
 
 class ReviewerType_PaperColumn extends PaperColumn {
     protected $contact;
-    private $self;
+    private $not_me;
     private $rrow_key;
     function __construct($cj, Conf $conf = null) {
         parent::__construct($cj);
@@ -600,15 +600,19 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
         parent::__construct($cj);
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $this->contact ? : $pl->reviewer_user();
-        if (!$pl->user->is_manager())
+        if (!parent::prepare($pl, $visible) || !$pl->user->is_manager())
             return false;
         if ($visible > 0 && ($tid = $pl->table_id()))
             $pl->add_header_script("add_assrev_ajax(" . json_encode_browser("#$tid") . ")");
         return true;
     }
     function header(PaperList $pl, $is_text) {
-        return "Assignment";
+        if ($this->contact === $pl->reviewer_user())
+            return "Assignment";
+        else if ($is_text)
+            return $pl->user->name_text_for($p) . " Assignment";
+        else
+            return $pl->user->name_html_for($p) . "<br />Assignment";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->allow_administer($row);
