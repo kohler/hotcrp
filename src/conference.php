@@ -3458,7 +3458,7 @@ class Conf {
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $checkf);
         return self::xt_enabled($uf) ? $uf : null;
     }
-    function paper_columns($name, Contact $user = null) {
+    function paper_columns($name, Contact $user) {
         $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $checkf);
         $expansions = $this->xt_search_factories($this->_paper_column_factories, $name, $checkf, $uf, $user, "i");

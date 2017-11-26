@@ -95,6 +95,7 @@ class PaperList {
     private $contact;
     public $sorters = [];
     private $_columns_by_name;
+    private $_column_errors_by_name = [];
     public $scoresOk = false;
     public $search;
     public $tagger;
@@ -295,6 +296,16 @@ class PaperList {
     private function find_columns($name) {
         if (!array_key_exists($name, $this->_columns_by_name)) {
             $fs = $this->conf->paper_columns($name, $this->user);
+            if (!$fs) {
+                $errors = $this->conf->xt_factory_errors();
+                if (empty($errors)) {
+                    if ($this->conf->paper_columns($name, $this->conf->site_contact()))
+                        $errors[] = "Permission error.";
+                    else
+                        $errors[] = "No such column.";
+                }
+                $this->_column_errors_by_name[$name] = $errors;
+            }
             $nfs = [];
             foreach ($fs as $fdef) {
                 if ($fdef->name === $name)
@@ -1065,11 +1076,10 @@ class PaperList {
                 if (($rfinfo = ReviewInfo::field_info($k, $this->conf))
                     && ($rfield = $this->conf->review_field($rfinfo->id)))
                     $fs = $this->find_columns($rfield->name);
-            } else if ($report && $this->conf->xt_factory_errors()) {
-                foreach ($this->conf->xt_factory_errors() as $i => $err)
+            } else if ($report && isset($this->_column_errors_by_name[$k])) {
+                foreach ($this->_column_errors_by_name[$k] as $i => $err)
                     $this->error_html[] = ($i ? "" : "Can’t show “" . htmlspecialchars($k) . "”: ") . $err;
-            } else if ($report && !$this->conf->xt_factory_matched())
-                $this->error_html[] = "No such column “" . htmlspecialchars($k) . "”.";
+            }
         }
         return $fs;
     }
