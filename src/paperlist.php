@@ -822,10 +822,17 @@ class PaperList {
                 continue;
             list($empty, $content) = $this->_row_field_content($fdef, $row);
             if ($fdef->is_visible) {
-                $tm .= "<td class=\"pl " . $fdef->className;
-                if ($fdef->fold)
-                    $tm .= " fx$fdef->fold";
-                $tm .= "\">" . $content . "</td>";
+                if ($content !== "") {
+                    $tm .= "<td class=\"pl " . $fdef->className;
+                    if ($fdef->fold)
+                        $tm .= " fx{$fdef->fold}";
+                    $tm .= "\">" . $content . "</td>";
+                } else {
+                    $tm .= "<td";
+                    if ($fdef->fold)
+                        $tm .= " class=\"fx{$fdef->fold}\"";
+                    $tm .= "></td>";
+                }
             }
             if ($fdef->is_visible ? $content !== "" : !$empty)
                 $fdef->has_content = true;
@@ -1401,17 +1408,24 @@ class PaperList {
             foreach ($fieldDef as $fdef) {
                 if (!$fdef->viewable_column() || !$fdef->is_visible)
                     continue;
-                $colhead .= "<th class=\"pl plh " . $fdef->className;
-                if ($fdef->fold)
-                    $colhead .= " fx" . $fdef->fold;
-                $colhead .= "\">";
-                if ($fdef->has_content)
-                    $colhead .= $this->_field_title($fdef);
-                if ($titleextra && $fdef->className == "pl_title") {
-                    $colhead .= $titleextra;
-                    $titleextra = false;
+                if ($fdef->has_content) {
+                    $colhead .= "<th class=\"pl plh " . $fdef->className;
+                    if ($fdef->fold)
+                        $colhead .= " fx" . $fdef->fold;
+                    $colhead .= "\">";
+                    if ($fdef->has_content)
+                        $colhead .= $this->_field_title($fdef);
+                    if ($titleextra && $fdef->className == "pl_title") {
+                        $colhead .= $titleextra;
+                        $titleextra = false;
+                    }
+                    $colhead .= "</th>";
+                } else {
+                    $colhead .= "<th";
+                    if ($fdef->fold)
+                        $colhead .= " class=\"fx{$fdef->fold}\"";
+                    $colhead .= "></th>";
                 }
-                $colhead .= "</th>";
             }
 
             $colhead .= "</tr>\n";
