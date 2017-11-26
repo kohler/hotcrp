@@ -167,8 +167,8 @@ static function render(SettingValues $sv) {
     echo '<p class="settingtext">Any PC reviewer can propose an external review; secondary PC reviewers can delegate their reviews to external reviewers.</p>', "\n";
     echo '<table id="foldpcrev_editdelegate" class="fold2o"><tbody>';
     $sv->echo_checkbox_row("extrev_chairreq", "PC chair must approve all external reviewers");
-    $sv->echo_checkbox_row("pcrev_editdelegate", "PC members can edit delegated external reviews (and other external reviews they requested)", "pcrev_editdelegate_change()");
-    Ht::stash_script('function pcrev_editdelegate_change() { fold("pcrev_editdelegate",!$$("cbpcrev_editdelegate").checked,2); } $(pcrev_editdelegate_change)');
+    $sv->echo_checkbox_row("pcrev_editdelegate", "PC members can edit delegated external reviews (and other external reviews they requested)");
+    Ht::stash_script('function pcrev_editdelegate_change() { fold("pcrev_editdelegate",!$$("cbpcrev_editdelegate").checked,2); } $("#cbpcrev_editdelegate").on("change", pcrev_editdelegate_change); $(pcrev_editdelegate_change)');
     echo '<tr class="fx2"><td></td><td>';
     $sv->echo_checkbox("extrev_approve", "Requesters must approve external reviews after they are submitted");
     echo '</tr></tbody></table>';

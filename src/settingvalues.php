@@ -588,18 +588,19 @@ class SettingValues extends MessageSet {
             $this->conf->msg($xtype[$status], $msgs);
         }
     }
-    function echo_checkbox_only($name, $onchange = null) {
+    function echo_checkbox_only($name, $extra = null) {
+        $extra["id"] = "cb$name";
         $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
-            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name")));
+            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $extra));
     }
-    function echo_checkbox($name, $text, $onchange = null) {
-        $this->echo_checkbox_only($name, $onchange);
+    function echo_checkbox($name, $text, $extra = null) {
+        $this->echo_checkbox_only($name, $extra);
         echo "&nbsp;", $this->label($name, $text, true), "<br />\n";
     }
-    function echo_checkbox_row($name, $text, $onchange = null) {
+    function echo_checkbox_row($name, $text, $extra = null) {
         echo '<tr><td class="nb">';
-        $this->echo_checkbox_only($name, $onchange);
+        $this->echo_checkbox_only($name, $extra);
         echo '&nbsp;</td><td>', $this->label($name, $text, true), "</td></tr>\n";
     }
     function echo_radio_table($name, $varr) {

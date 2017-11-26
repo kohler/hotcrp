@@ -27,8 +27,8 @@ static function render(SettingValues $sv) {
 
     // Authors' response
     echo '<div class="mg"><table id="foldauresp" class="fold2o">';
-    $sv->echo_checkbox_row('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", "resp_active_change()");
-    Ht::stash_script('function resp_active_change() { fold("auresp",!$$("cbresp_active").checked,2); } $(resp_active_change);');
+    $sv->echo_checkbox_row('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>");
+    Ht::stash_script('function resp_active_change() { fold("auresp",!$$("cbresp_active").checked,2); } $("#cbresp_active").on("change", resp_active_change); $(resp_active_change);');
     echo '<tr class="fx2"><td></td><td><div id="auresparea">',
         Ht::hidden("has_resp_rounds", 1);
 
@@ -143,7 +143,7 @@ static function render(SettingValues $sv) {
     $sv->echo_messages_near("final_open");
     echo '<div class="fold2o" data-fold="true">';
     echo '<table>';
-    $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx2">:</span></b>', "void foldup.call(this,event)");
+    $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx2">:</span></b>', ["class" => "js-foldup"]);
     echo '<tr class="fx2"><td></td><td><table><tbody class="secondary-settings">';
     $sv->echo_entry_row("final_soft", "Deadline");
     $sv->echo_entry_row("final_done", "Hard deadline");
@@ -155,7 +155,7 @@ static function render(SettingValues $sv) {
     echo "</td></tr></table>",
         "<p class=\"settingtext\">To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</p>",
         "</div>\n\n";
-    Ht::stash_script("foldup.call(\$\$('cbfinal_open'))");
+    Ht::stash_script("foldup.call(\$\$('cbfinal_open'), null)");
 }
 
     static function crosscheck(SettingValues $sv) {

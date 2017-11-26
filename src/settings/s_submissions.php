@@ -27,7 +27,7 @@ static function render(SettingValues $sv) {
 
 
     echo "<div class=\"g\"></div><table id=\"foldpc_seeall\" class=\"foldo\"><tbody>\n";
-    $sv->echo_checkbox_row("pc_seeall", "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>", "fold('pc_seeall',!this.checked)");
+    $sv->echo_checkbox_row("pc_seeall", "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>", ["class" => "js-foldup"]);
     echo "</tbody><tbody class=\"fx\">\n";
     $sv->echo_checkbox_row("pc_seeallpdf", "PC can see submitted PDFs before submission deadline");
     echo "</tbody></table>\n";

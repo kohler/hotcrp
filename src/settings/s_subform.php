@@ -12,8 +12,7 @@ class BanalSettings {
         }
 
         echo '<table class="', ($sv->curv("sub_banal$suffix") ? "foldo" : "foldc"), '" data-fold="true">';
-        $sv->echo_checkbox_row("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>",
-                               "void foldup.call(this,null)");
+        $sv->echo_checkbox_row("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "js-foldup"]);
         echo '<tr class="fx"><td></td><td class="top">',
             Ht::hidden("has_sub_banal$suffix", 1),
             '<table><tbody class="secondary-settings">';
@@ -197,7 +196,7 @@ class SubForm_SettingRenderer {
 
         echo '<div>', $sv->label("sub_nopapers", "Is a PDF required to complete a submission?"),
             '&nbsp; ',
-            $sv->render_select("sub_nopapers", [0 => "PDF required", 2 => "PDF optional", 1 => "No PDF allowed"], ["onchange" => "sub_nopapers_change()"]),
+            $sv->render_select("sub_nopapers", [0 => "PDF required", 2 => "PDF optional", 1 => "No PDF allowed"]),
             '<div class="hint fx3">Submission registration never requires a PDF.</div></div>';
 
         if (is_executable("src/banal")) {
@@ -207,13 +206,12 @@ class SubForm_SettingRenderer {
         }
 
         echo '</div>';
-        Ht::stash_script('function sub_nopapers_change() { var v = $("#sub_nopapers").val(); fold("pdfupload",v==1,2); fold("pdfupload",v!=0,3); } $(sub_nopapers_change)');
+        Ht::stash_script('function sub_nopapers_change() { var v = $("#sub_nopapers").val(); fold("pdfupload",v==1,2); fold("pdfupload",v!=0,3); } $("#sub_nopapers").on("change", sub_nopapers_change); $(sub_nopapers_change)');
 
         echo "<h3 class=\"settings\">Conflicts and collaborators</h3>\n",
             "<table id=\"foldpcconf\" class=\"fold",
             ($sv->curv("sub_pcconf") ? "o" : "c"), " g\">\n";
-        $sv->echo_checkbox_row("sub_pcconf", "Collect authors’ PC conflicts",
-                               "void fold('pcconf',!this.checked)");
+        $sv->echo_checkbox_row("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "js-foldup"]);
         echo "<tr class='fx'><td></td><td>";
         $cflt = array();
         foreach (Conflict::$type_descriptions as $n => $d)
