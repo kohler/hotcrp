@@ -2973,7 +2973,7 @@ class Conf {
             && $trackerstate->trackerid
             && $trackerstate->sessionid == session_id();
         if ($trackerowner)
-            Ht::stash_script("hotcrp_deadlines.tracker(0)");
+            Ht::stash_script("hotcrp_deadlines.tracker_ui(0)");
 
         echo '<div id="prebody"><div id="header">';
 

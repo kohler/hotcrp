@@ -466,7 +466,7 @@ class ContactList {
             . Ht::img("_.gif", "^^", "placthook")
             . "</td>\n  <td class=\"plf pl_footer\" colspan=\"" . ($ncol - 1) . '">'
             . '<div id="plact" class="linelinks">'
-            . '<a name="plact"><b>Select people</b></a> (or <a class="ui" href="#" onclick="return papersel(true)">select all ' . $this->count . "</a>), then&nbsp; ";
+            . '<a name="plact"><b>Select people</b></a> (or <a class="ui paperlist-ui js-select-all" href="">select all ' . $this->count . "</a>), then&nbsp; ";
 
         // Begin linelinks
         $types = array("nameemail" => "Names and emails");

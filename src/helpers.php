@@ -945,7 +945,7 @@ function actionBar($mode = null, $prow = null) {
         $x .= '</td>';
 
         if ($Me->privChair && $listtype == "p")
-            $x .= "  <td id=\"trackerconnect\" class=\"vbar\"><a id=\"trackerconnectbtn\" class=\"tbtn need-tooltip\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
+            $x .= "  <td id=\"trackerconnect\" class=\"vbar\"><a id=\"trackerconnectbtn\" class=\"ui tracker-ui start tbtn need-tooltip\" href=\"\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
     }
 
     return $x . '<td class="vbar gopaper">' . goPaperForm($goBase, $xmode) . "</td></tr></table>";

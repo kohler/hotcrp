@@ -1565,7 +1565,7 @@ function tracker_html(mytracker) {
     if (dl.is_admin) {
         var dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
         t += '<div class="need-tooltip" id="trackerlogo" data-tooltip="' + escape_entities(dt) + '"></div>';
-        t += '<div style="float:right"><a class="ui closebtn need-tooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-tooltip="Stop meeting tracker">x</a></div>';
+        t += '<div style="float:right"><a class="ui tracker-ui stop closebtn need-tooltip" href="" data-tooltip="Stop meeting tracker">x</a></div>';
     } else
         t += '<div id="trackerlogo"></div>';
     if (dl.tracker && dl.tracker.position_at)
@@ -1590,12 +1590,11 @@ function display_tracker() {
     // tracker button
     if ((e = $$("trackerconnectbtn"))) {
         if (mytracker) {
-            e.className = "tbtn-on need-tooltip";
-            e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ui ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div></div>");
+            e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ui tracker-ui stop ttmenu\" href=\"\">Stop meeting tracker</a></div></div>");
         } else {
-            e.className = "tbtn need-tooltip";
             e.setAttribute("data-tooltip", "Start meeting tracker");
         }
+        e.className = e.className.replace(/\btbtn(?:-on)*\b/, mytracker ? "tbtn-on" : "tbtn");
     }
 
     // tracker display management
@@ -1646,41 +1645,45 @@ function display_tracker() {
         tracker_show_elapsed();
 }
 
-function tracker(start) {
-    var trackerstate;
+function tracker_ui(event) {
+    if (typeof event !== "number") {
+        if (hasClass(this, "stop"))
+            event = -1;
+        else if (hasClass(this, "start"))
+            event = 1;
+        else
+            event = 0;
+    }
     if (window.global_tooltip)
         window.global_tooltip.erase();
-    if (start < 0) {
+    if (event < 0) {
         $.post(hoturl_post("api/track", {track: "stop"}), load_success);
         if (tracker_refresher) {
             clearInterval(tracker_refresher);
             tracker_refresher = null;
         }
-        return false;
+    } else if (wstorage()) {
+        var tstate = tracker_window_state();
+        if (tstate && tstate[0] != hoturl_absolute_base())
+            tstate = null;
+        if (event && (!tstate || !is_my_tracker())) {
+            tstate = [hoturl_absolute_base(), Math.floor(Math.random() * 100000), null, null];
+            hotcrp_list && (tstate[3] = hotcrp_list.info);
+        }
+        if (tstate) {
+            var req = "track=" + tstate[1] + "%20x", reqdata = {};
+            if (hotcrp_paperid)
+                req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
+            if (tstate[2])
+                req += "&tracker_start_at=" + tstate[2];
+            if (tstate[3])
+                reqdata["hotlist-info"] = tstate[3];
+            $.post(hoturl_post("api/track", req), reqdata, load_success);
+            if (!tracker_refresher)
+                tracker_refresher = setInterval(tracker_ui, 25000, 0);
+            wstorage(true, "hotcrp-tracking", tstate);
+        }
     }
-    if (!wstorage())
-        return false;
-    trackerstate = tracker_window_state();
-    if (trackerstate && trackerstate[0] != hoturl_absolute_base())
-        trackerstate = null;
-    if (start && (!trackerstate || !is_my_tracker())) {
-        trackerstate = [hoturl_absolute_base(), Math.floor(Math.random() * 100000), null, null];
-        hotcrp_list && (trackerstate[3] = hotcrp_list.info);
-    }
-    if (trackerstate) {
-        var req = "track=" + trackerstate[1] + "%20x", reqdata = {};
-        if (hotcrp_paperid)
-            req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
-        if (trackerstate[2])
-            req += "&tracker_start_at=" + trackerstate[2];
-        if (trackerstate[3])
-            reqdata["hotlist-info"] = trackerstate[3];
-        $.post(hoturl_post("api/track", req), reqdata, load_success);
-        if (!tracker_refresher)
-            tracker_refresher = setInterval(tracker, 25000);
-        wstorage(true, "hotcrp-tracking", trackerstate);
-    }
-    return false;
 }
 
 
@@ -1895,7 +1898,7 @@ function reload() {
 
 return {
     init: function (dlx) { load(dlx, true); },
-    tracker: tracker,
+    tracker_ui: tracker_ui,
     tracker_show_elapsed: tracker_show_elapsed
 };
 })(jQuery);
@@ -2256,31 +2259,6 @@ function make_link_callback(elt) {
 }
 
 
-// paper selection
-function papersel(value, name) {
-    var ins = document.getElementsByTagName("input"),
-        xvalue = value, value_hash = true, i, chk = !!xvalue;
-    name = name || "pap[]";
-
-    if (jQuery.isArray(value)) {
-        xvalue = {};
-        for (i = value.length; i >= 0; --i)
-            xvalue[value[i]] = 1;
-    } else if (value === null || typeof value !== "object")
-        value_hash = false;
-
-    for (var i = 0; i < ins.length; i++)
-        if (ins[i].name == name) {
-            if (value_hash)
-                chk = !!xvalue[ins[i].value];
-            else if (xvalue === -1)
-                chk = !ins[i].checked;
-            ins[i].checked = chk;
-        }
-
-    return false;
-}
-
 function plist_onsubmit() {
     // analyze why this is being submitted
     var $self = $(this), fn = $self.data("submitFn");
@@ -2334,9 +2312,7 @@ function make_onkey(key, f) {
             evt.preventDefault();
             evt.stopImmediatePropagation();
             f.call(this, evt);
-            return false;
-        } else
-            return true;
+        }
     };
 }
 
@@ -6517,11 +6493,19 @@ function edit_view_options() {
     });
 }
 
+function select_all(event) {
+    $(this).closest("table.pltable").find("input[name='pap[]']").prop("checked", true);
+}
+
 function paperlist_ui(event) {
     if (hasClass(this, "js-edit-formulas"))
         edit_formulas.call(this, event);
     else if (hasClass(this, "js-edit-view-options"))
         edit_view_options.call(this, event);
+    else if (hasClass(this, "js-annotate-order"))
+        plinfo_tags.edit_anno(this);
+    else if (hasClass(this, "js-select-all"))
+        select_all.call(this, event);
 }
 
 paperlist_ui.prepare_assrev = function (selector) {
@@ -6642,6 +6626,8 @@ function handle_ui(evt) {
         review_ui.call(this, evt);
     else if (hasClass(this, "paperlist-ui"))
         paperlist_ui.call(this, evt);
+    else if (hasClass(this, "tracker-ui"))
+        hotcrp_deadlines.tracker_ui.call(this, evt);
     else if (hasClass(this, "js-override-deadlines"))
         override_deadlines.call(this);
 }
