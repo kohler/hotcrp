@@ -74,9 +74,9 @@
         "position": 830
     },
     {
-        "name": "assrev",
+        "name": "assignment",
         "column": true, "sort": true, "completion": true, "factory_class": "AssignReview_PaperColumn",
-        "position": 840
+        "position": 840, "synonym": ["assrev", "assign"]
     },
     {
         "name": "status",
