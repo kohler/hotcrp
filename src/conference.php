@@ -809,7 +809,7 @@ class Conf {
                 $r = [$r];
             foreach ($r ? : [] as $xt) {
                 self::xt_combine($xt, $fxt);
-                $prio = self::xt_priority_compare($fxt, $found);
+                $prio = self::xt_priority_compare($xt, $found);
                 if ($prio <= 0 && call_user_func($checkf, $xt)) {
                     if ($prio < 0)
                         $xts = [];
