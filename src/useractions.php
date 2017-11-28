@@ -68,17 +68,4 @@ class UserActions {
         return self::modify_password_mail("true", false, "send", $ids);
         $Conf->confirmMsg("Account information sent.");
     }
-
-    static function save_clickthrough(Contact $user, Qrequest $qreq) {
-        global $Now;
-        $confirmed = false;
-        if ($qreq->clickthrough_accept && $qreq->clickthrough_sha1) {
-            $user->merge_and_save_data(["clickthrough" => [$qreq->clickthrough_sha1 => $Now]]);
-            $confirmed = true;
-        } else if ($qreq->clickthrough_decline)
-            Conf::msg_error("You can’t continue until you accept these terms.");
-        if ($qreq->ajax)
-            json_exit(["ok" => $confirmed]);
-        SelfHref::redirect($qreq);
-    }
 }

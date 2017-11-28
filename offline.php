@@ -165,8 +165,11 @@ if ($Me->is_reviewer()) {
     if (!$Conf->time_review_open())
         $Conf->infoMsg("The site is not open for review.");
     $Conf->infoMsg("Use this page to download a blank review form, or to upload review forms you’ve already filled out.");
-    if (!$Me->can_clickthrough("review"))
+    if (!$Me->can_clickthrough("review")) {
+        echo '<div class="js-clickthrough-container">';
         PaperTable::echo_review_clickthrough();
+        echo '</div>';
+    }
 } else
     $Conf->infoMsg("You aren’t registered as a reviewer or PC member for this conference, but for your information, you may download the review form anyway.");
 

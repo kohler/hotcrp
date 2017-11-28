@@ -58,6 +58,10 @@ class Ht {
     }
 
     static function form($action, $extra = null) {
+        if (is_array($action)) {
+            $extra = $action;
+            $action = get($extra, "action", "");
+        }
         $method = get($extra, "method") ? : "post";
         if ($method === "get" && strpos($action, "?") !== false)
             error_log(caller_landmark() . ": GET form action $action params will be ignored");

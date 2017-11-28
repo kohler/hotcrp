@@ -12,6 +12,10 @@
         "function": "PaperApi::checkformat_api"
     },
     {
+        "name": "clickthrough", "post": true,
+        "function": "User_API::clickthrough"
+    },
+    {
         "name": "decision", "paper": true, "get": true, "post": true,
         "function": "PaperApi::decision_api"
     },

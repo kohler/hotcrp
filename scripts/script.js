@@ -2392,23 +2392,6 @@ function save_review_round(elt) {
 }
 
 
-// clickthrough
-function handle_clickthrough(form) {
-    jQuery.post(form.action,
-                jQuery(form).serialize() + "&clickthrough_accept=1&ajax=1",
-                function (data, status, jqxhr) {
-                    if (data && data.ok) {
-                        $("#clickthrough_show").show();
-                        var ce = form.getAttribute("data-clickthrough-enable");
-                        ce && $(ce).prop("disabled", false);
-                        $(form).closest(".clickthrough").remove();
-                    } else
-                        alert((data && data.error) || "You can’t continue until you accept these terms.");
-                });
-    return false;
-}
-
-
 // author entry
 var row_order_ui = (function ($) {
 
@@ -6195,6 +6178,26 @@ function save_pstagindex(event) {
             {"addtags": tags.join(" ")}, done);
 }
 
+function clickthrough(event) {
+    var self = this,
+        $container = $(this).closest(".js-clickthrough-container");
+    $.post(hoturl_post("api/clickthrough", {accept: 1}),
+        $(this).closest("form").serialize(),
+        function (data) {
+                console.log(data);
+            if (data && data.ok) {
+                $container.find(".js-clickthrough-body")
+                    .removeClass("hidden")
+                    .find(".need-clickthrough-enable")
+                    .prop("disabled", false).removeClass("need-clickthrough-enable");
+                $container.find(".js-clickthrough-terms").slideUp();
+            } else {
+                make_bubble((data && data.error) || "You can’t continue to review until you accept these terms.", "errorbubble")
+                    .dir("l").near(self);
+            }
+        });
+}
+
 function edit_paper_ui(event) {
     if (event.type === "submit")
         check_still_ready.call(this, event);
@@ -6210,6 +6213,8 @@ function edit_paper_ui(event) {
         withdraw_dialog.call(this, event);
     else if (hasClass(this, "js-delete-paper"))
         delete_paper_dialog.call(this, event);
+    else if (hasClass(this, "js-clickthrough"))
+        clickthrough.call(this, event);
 };
 
 edit_paper_ui.prepare_psedit = prepare_psedit;
@@ -6628,16 +6633,17 @@ function handle_ui(evt) {
         override_deadlines.call(this);
 }
 $(document).on("click", "a", function (evt) {
-    if (hasClass(this, "ui"))
-        handle_ui.call(this, evt);
-    else if (hasClass(this, "fn5"))
+    if (hasClass(this, "fn5"))
         foldup.call(this, evt, {n: 5, f: false});
     else
         handle_list(this, this.getAttribute("href"));
 });
-$(document).on("click", "button.ui", handle_ui);
-$(document).on("submit", "form", function () {
-    handle_list(this, this.getAttribute("action"));
+$(document).on("click", ".ui", handle_ui);
+$(document).on("submit", "form", function (evt) {
+    if (hasClass(this, "ui"))
+        handle_ui.call(this, evt);
+    else
+        handle_list(this, this.getAttribute("action"));
 });
 $(document).on("click", "tr.pl", row_click);
 hotcrp_list && $(window).on("beforeunload", unload_list);

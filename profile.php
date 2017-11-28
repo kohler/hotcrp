@@ -426,8 +426,6 @@ else if ($Qreq->bulkregister && $newProfile && $Qreq->has_file("bulk")) {
 } else if (isset($Qreq->merge) && !$newProfile
            && $Acct->contactId == $Me->contactId)
     go(hoturl("mergeaccounts"));
-else if (isset($Qreq->clickthrough))
-    UserActions::save_clickthrough($Acct, $Qreq);
 
 function databaseTracks($who) {
     global $Conf;

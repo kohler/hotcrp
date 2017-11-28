@@ -1950,17 +1950,16 @@ class PaperTable {
     static private function _echo_clickthrough($ctype) {
         global $Conf, $Now;
         $data = $Conf->message_html("clickthrough_$ctype");
-        echo Ht::form(hoturl_post("profile"), ["onsubmit" => "return handle_clickthrough(this)", "data-clickthrough-enable" => ".editrevform input[name=submitreview], .editrevform input[name=savedraft]"]), "<div class='aahc'>", $data;
-        $buttons = array(Ht::submit("clickthrough_accept", "Agree", array("class" => "btn btnbig btn-highlight")));
-        echo "<div class='g'></div>",
-            Ht::hidden("clickthrough", $ctype),
-            Ht::hidden("clickthrough_sha1", sha1($data)),
+        echo Ht::form(["class" => "ui"]), '<div class="aahc">', $data;
+        $buttons = [Ht::submit("Agree", ["class" => "btn btnbig btn-highlight ui edit-paper-ui js-clickthrough"])];
+        echo Ht::hidden("clickthrough_type", $ctype),
+            Ht::hidden("clickthrough_id", sha1($data)),
             Ht::hidden("clickthrough_time", $Now),
             Ht::actions($buttons, ["class" => "aab aabig aabr"]), "</div></form>";
     }
 
     static function echo_review_clickthrough() {
-        echo '<div class="revcard clickthrough"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">', Ht::xmsg("error", "You must agree to these terms before you can save reviews.");
+        echo '<div class="revcard js-clickthrough-terms"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">', Ht::xmsg("error", "You must agree to these terms before you can save reviews.");
         self::_echo_clickthrough("review");
         echo "</form></div></div>";
     }
@@ -2061,11 +2060,14 @@ class PaperTable {
         $this->echoDivEnter();
         if ($this->editable) {
             if (!$this->user->can_clickthrough("submit")) {
-                echo '<div class="clickthrough"><h3>Submission terms</h3>You must agree to these terms before you can submit a paper.<hr />';
+                echo '<div class="js-clickthrough-container">',
+                    '<div class="js-clickthrough-terms">',
+                    '<h3>Submission terms</h3>',
+                    Ht::xmsg("error", "You must agree to these terms to register a submission.");
                 self::_echo_clickthrough("submit");
-                echo '</div><div id="clickthrough_show" style="display:none">';
+                echo '</div><div class="js-clickthrough-body hidden">';
                 $this->_echo_editable_body();
-                echo '</div>';
+                echo '</div></div>';
             } else
                 $this->_echo_editable_body();
         } else {
@@ -2313,11 +2315,16 @@ class PaperTable {
             $opt["edit"] = false;
 
         // maybe clickthrough
-        if ($opt["edit"] && !$this->user->can_clickthrough("review"))
-            self::echo_review_clickthrough();
-
+        $need_clickthrough = $opt["edit"] && !$this->user->can_clickthrough("review");
         $rf = $this->conf->review_form();
+        if ($need_clickthrough) {
+            echo '<div class="js-clickthrough-container">';
+            self::echo_review_clickthrough();
+            echo '<div class="js-clickthrough-body">';
+        }
         $rf->show($prow, $this->editrrow, $opt, $this->review_values);
+        if ($need_clickthrough)
+            echo '</div></div>';
     }
 
 
