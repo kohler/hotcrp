@@ -16,7 +16,8 @@
         "function": "PaperApi::decision_api"
     },
     {
-        "name": "fieldhtml", "get": true, "function": "PaperApi::fieldhtml_api"
+        "name": "fieldhtml", "get": true,
+        "function": "Search_API::fieldhtml"
     },
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
@@ -28,12 +29,12 @@
     },
     {
         "name": "viewoptions", "get": true, "post": true,
-        "function": "PaperApi::viewoptions_api",
+        "function": "SearchConfig_API::viewoptions",
         "synonym": ["listreport"]
     },
     {
         "name": "namedformula", "get": true, "post": true,
-        "function": "PaperApi::namedformula_api"
+        "function": "SearchConfig_API::namedformula"
     },
     {
         "name": "mentioncompletion", "get": true, "post": true,
@@ -58,11 +59,7 @@
     },
     {
         "name": "search", "get": true,
-        "function": "PaperApi::search_api"
-    },
-    {
-        "name": "settaganno", "post": true,
-        "function": "PaperApi::settaganno_api"
+        "function": "Search_API::search"
     },
     {
         "name": "settags", "post": true,
@@ -73,7 +70,13 @@
         "function": "PaperApi::shepherd_api"
     },
     {
-        "name": "taganno", "get": true, "function": "PaperApi::taganno_api"
+        "name": "taganno", "get": true,
+        "function": "TagAnno_API::get"
+    },
+    {
+        "name": "taganno", "post": true,
+        "function": "TagAnno_API::set",
+        "synonym": ["settaganno"]
     },
     {
         "name": "tagreport", "paper": true, "get": true,
@@ -88,6 +91,7 @@
         "function": "PaperApi::votereport_api"
     },
     {
-        "name": "whoami", "get": true, "function": "PaperApi::whoami_api"
+        "name": "whoami", "get": true,
+        "function": "User_API::whoami"
     }
 ]

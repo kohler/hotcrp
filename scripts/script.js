@@ -4929,7 +4929,7 @@ function commit_drag(si, di) {
                {tagassignment: saves.join(",")},
                make_tag_save_callback(rowanal[si].entry));
     if (annosaves.length)
-        $.post(hoturl_post("api/settaganno", {tag: dragtag, forceShow: 1}),
+        $.post(hoturl_post("api/taganno", {tag: dragtag, forceShow: 1}),
                {anno: JSON.stringify(annosaves)}, taganno_success);
 }
 
@@ -5005,7 +5005,7 @@ function edit_anno(locator) {
                 if (heading != "" || tagval != 0)
                     anno.push({annoid: "new", heading: heading, tagval: tagval});
             }
-            $.post(hoturl_post("api/settaganno", {tag: mytag}),
+            $.post(hoturl_post("api/taganno", {tag: mytag}),
                    {anno: JSON.stringify(anno)}, make_onsave($d));
         }
         return false;
@@ -5058,7 +5058,7 @@ function edit_anno(locator) {
         }
         $d.on("click", "button", clickh).on("click", "a.delete-link", ondeleteclick);
     }
-    $.post(hoturl_post("api/taganno", {tag: mytag}), show_dialog);
+    $.get(hoturl_post("api/taganno", {tag: mytag}), show_dialog);
 }
 
 function plinfo_tags(selector) {

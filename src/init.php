@@ -136,6 +136,7 @@ class SiteLoader {
     ];
 
     static $suffix_map = [
+        "_api.php" => ["api_", "api"],
         "_assignmentparser.php" => ["a_", "assigners"],
         "_helptopic.php" => ["h_", "help"],
         "_listaction.php" => ["la_", "listactions"],

@@ -146,6 +146,10 @@ pages/adminhome.php
 pages/home.php
 
 src/.htaccess
+src/api/api_search.php
+src/api/api_searchconfig.php
+src/api/api_taganno.php
+src/api/api_user.php
 src/assigners/a_conflict.php
 src/assigners/a_decision.php
 src/assigners/a_lead.php

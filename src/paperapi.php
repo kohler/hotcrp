@@ -152,80 +152,7 @@ class PaperApi {
         return $jr;
     }
 
-    static function taganno_api(Contact $user, $qreq, $prow) {
-        $tagger = new Tagger($user);
-        if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
-            return ["ok" => false, "error" => $tagger->error_html];
-        $j = ["ok" => true, "tag" => $tag, "editable" => $user->can_change_tag_anno($tag),
-              "anno" => []];
-        $dt = $user->conf->tags()->add(TagInfo::base($tag));
-        foreach ($dt->order_anno_list() as $oa)
-            if ($oa->annoId !== null)
-                $j["anno"][] = $oa;
-        return $j;
-    }
-
-    static function settaganno_api($user, $qreq, $prow) {
-        $tagger = new Tagger($user);
-        if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
-            json_exit(["ok" => false, "error" => $tagger->error_html]);
-        if (!$user->can_change_tag_anno($tag))
-            json_exit(["ok" => false, "error" => "Permission error."]);
-        if (!isset($qreq->anno) || ($reqanno = json_decode($qreq->anno)) === false
-            || (!is_object($reqanno) && !is_array($reqanno)))
-            json_exit(["ok" => false, "error" => "Bad request."]);
-        $q = $qv = $errors = $errf = $inserts = [];
-        $next_annoid = $user->conf->fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
-        // parse updates
-        foreach (is_object($reqanno) ? [$reqanno] : $reqanno as $anno) {
-            if (!isset($anno->annoid)
-                || (!is_int($anno->annoid) && !preg_match('/^n/', $anno->annoid)))
-                json_exit(["ok" => false, "error" => "Bad request."]);
-            if (isset($anno->deleted) && $anno->deleted) {
-                if (is_int($anno->annoid)) {
-                    $q[] = "delete from PaperTagAnno where tag=? and annoId=?";
-                    array_push($qv, $tag, $anno->annoid);
-                }
-                continue;
-            }
-            if (is_int($anno->annoid))
-                $annoid = $anno->annoid;
-            else {
-                $annoid = $next_annoid;
-                ++$next_annoid;
-                $q[] = "insert into PaperTagAnno (tag,annoId) values (?,?)";
-                array_push($qv, $tag, $annoid);
-            }
-            if (isset($anno->heading)) {
-                $q[] = "update PaperTagAnno set heading=?, annoFormat=null where tag=? and annoId=?";
-                array_push($qv, $anno->heading, $tag, $annoid);
-            }
-            if (isset($anno->tagval)) {
-                $tagval = trim($anno->tagval);
-                if ($tagval === "")
-                    $tagval = "0";
-                if (is_numeric($tagval)) {
-                    $q[] = "update PaperTagAnno set tagIndex=? where tag=? and annoId=?";
-                    array_push($qv, floatval($tagval), $tag, $annoid);
-                } else {
-                    $errf["tagval_{$anno->annoid}"] = true;
-                    $errors[] = "Tag value should be a number.";
-                }
-            }
-        }
-        // return error if any
-        if (!empty($errors))
-            json_exit(["ok" => false, "error" => join("<br />", $errors), "errf" => $errf]);
-        // apply changes
-        if (!empty($q)) {
-            $mresult = Dbl::multi_qe_apply($user->conf->dblink, join(";", $q), $qv);
-            $mresult->free_all();
-        }
-        // return results
-        return self::taganno_api($user, $qreq, $prow);
-    }
-
-    static function votereport_api(Contact $user, $qreq, $prow) {
+    static function votereport_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
             json_exit(["ok" => false, "error" => $tagger->error_html]);
@@ -364,36 +291,6 @@ class PaperApi {
         return ["ok" => !$cf->failed, "response" => $cf->document_report($prow, $doc)];
     }
 
-    static function whoami_api(Contact $user, $qreq, $prow) {
-        return ["ok" => true, "email" => $user->email];
-    }
-
-    static function fieldhtml_api(Contact $user, $qreq, $prow) {
-        $fdef = $qreq->f ? $user->conf->paper_columns($qreq->f, $user) : null;
-        if (count($fdef) > 1) {
-            return new JsonResult(400, "“" . htmlspecialchars($qreq->f) . "” expands to more than one field.");
-        } else if (!$fdef || !isset($fdef[0]->fold) || !$fdef[0]->fold) {
-            return new JsonResult(404, "No such field.");
-        }
-        $fdef = PaperColumn::make($fdef[0], $user->conf);
-        if ($qreq->f == "au" || $qreq->f == "authors")
-            PaperList::change_display($user, "pl", "aufull", (int) $qreq->aufull);
-        if (!isset($qreq->q) && $prow) {
-            $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
-            $qreq->q = $prow->paperId;
-        } else if (!isset($qreq->q))
-            $qreq->q = "";
-        $reviewer = null;
-        if ($qreq->reviewer && $user->email !== $qreq->reviewer)
-            $reviewer = $user->conf->user_by_email($qreq->reviewer);
-        unset($qreq->reviewer);
-        $search = new PaperSearch($user, $qreq, $reviewer);
-        $pl = new PaperList($search, ["report" => "pl"]);
-        $response = $pl->column_json($qreq->f);
-        $response["ok"] = !empty($response);
-        return $response;
-    }
-
     static function follow_api(Contact $user, $qreq, $prow) {
         $reviewer = self::get_reviewer($user, $qreq, $prow);
         $following = friendly_boolean($qreq->following);
@@ -422,35 +319,6 @@ class PaperApi {
         }
         ksort($result);
         return ["ok" => true, "mentioncompletion" => array_values($result)];
-    }
-
-    static function search_api(Contact $user, Qrequest $qreq, $prow) {
-        $topt = PaperSearch::search_types($user, $qreq->t);
-        if (empty($topt) || ($qreq->t && !isset($topt[$qreq->t])))
-            return new JsonResult(403, "Permission error.");
-        $t = $qreq->t ? : key($topt);
-
-        $q = $qreq->q;
-        if (isset($q)) {
-            $q = trim($q);
-            if ($q === "(All)")
-                $q = "";
-        } else if (isset($qreq->qa) || isset($qreq->qo) || isset($qreq->qx))
-            $q = PaperSearch::canonical_query((string) $qreq->qa, (string) $qreq->qo, (string) $qreq->qx, $user->conf);
-        else
-            return new JsonResult(400, "Missing parameter.");
-
-        $sarg = ["t" => $t, "q" => $q];
-        if ($qreq->qt)
-            $sarg["qt"] = $qreq->qt;
-        if ($qreq->urlbase)
-            $sarg["urlbase"] = $qreq->urlbase;
-
-        $search = new PaperSearch($user, $sarg);
-        $pl = new PaperList($search, ["sort" => true], $qreq);
-        $ih = $pl->ids_and_groups();
-        return ["ok" => true, "ids" => $ih[0], "groups" => $ih[1],
-                "hotlist_info" => $pl->session_list_object()->info_string()];
     }
 
     static function review_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
@@ -527,39 +395,5 @@ class PaperApi {
         $rnum = (int) $user->conf->round_number($round, true);
         $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rrow->reviewId);
         return ["ok" => true];
-    }
-
-    static function viewoptions_api(Contact $user, Qrequest $qreq, $prow) {
-        $report = get($qreq, "report", "pl");
-        if ($report !== "pl" && $report !== "pf")
-            return new JsonResult(400, "Parameter error.");
-        if ($qreq->method() !== "GET" && $user->privChair) {
-            if (!isset($qreq->display))
-                return new JsonResult(400, "Parameter error.");
-            $base_display = "";
-            if ($report === "pl")
-                $base_display = $user->conf->review_form()->default_display();
-            $display = simplify_whitespace($qreq->display);
-            if ($display === $base_display)
-                $user->conf->save_setting("{$report}display_default", null);
-            else
-                $user->conf->save_setting("{$report}display_default", 1, $display);
-        }
-        $s1 = new PaperSearch($user, get($qreq, "q", "NONE"));
-        $l1 = new PaperList($s1, ["sort" => get($qreq, "sort", true), "report" => $report]);
-        $s2 = new PaperSearch($user, "NONE");
-        $l2 = new PaperList($s2, ["sort" => true, "report" => $report, "no_session_display" => true]);
-        return new JsonResult(["ok" => true, "report" => $report, "display_current" => $l1->display("s"), "display_default" => $l2->display("s")]);
-    }
-
-    static function namedformula_api(Contact $user, Qrequest $qreq, $prow) {
-        $fjs = [];
-        foreach ($user->conf->viewable_named_formulas($user, false) as $f) {
-            $fj = ["name" => $f->name, "expression" => $f->expression, "id" => $f->formulaId];
-            if ($user->can_edit_formula($f))
-                $fj["editable"] = true;
-            $fjs[] = $fj;
-        }
-        return new JsonResult(["ok" => true, "formulas" => $fjs]);
     }
 }
