@@ -582,12 +582,12 @@ function add_dialog(fid, focus) {
         }
         $dt.html(hc.render());
     }
-    function onsubmit() {
+    function submit(event) {
         add_field(fid);
         template && fill_field(fid, samples[template - 1], false);
         $("#shortName_" + fid)[0].focus();
         popup_close($d);
-        return false;
+        event.preventDefault();
     }
     function click() {
         if (this.name == "next" || this.name == "prev") {
@@ -622,7 +622,7 @@ function add_dialog(fid, focus) {
         render_template();
         $d.find(".newreviewfield-template-name").on("click", change_template);
         $d.on("click", "button", click);
-        $d.find("form").on("submit", onsubmit);
+        $d.find("form").on("submit", submit);
     }
     create();
 }
