@@ -23,7 +23,7 @@ function _review_table_round_selector(PaperInfo $prow, $rr) {
             . "</span>";
     }
     return '&nbsp;'
-        . '<form onsubmit="return false"><div class="inline">'
+        . '<form class="ui"><div class="inline">'
         . Ht::select("round", $sel, $prow->conf->round_name($rr->reviewRound) ? : "unnamed",
                      array("onchange" => "save_review_round(this)", "title" => "Set review round", "data-reviewid" => $rr->reviewId))
         . '</div></form>';
