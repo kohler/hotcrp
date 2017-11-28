@@ -616,11 +616,13 @@ if ($pl_text) {
 
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
-    if ($pl->has("sel"))
-        echo Ht::form_div(SelfHref::make($Qreq, ["post" => post_value(), "forceShow" => null]), array("id" => "sel", "onsubmit" => "return plist_onsubmit.call(this)")),
+    if ($pl->has("sel")) {
+        echo Ht::form_div(SelfHref::make($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel"]),
             Ht::hidden("defaultact", "", array("id" => "defaultact")),
             Ht::hidden("forceShow", req_s("forceShow"), array("id" => "forceShow")),
             Ht::hidden_default_submit("default", 1);
+        Ht::stash_script('$("#sel").on("submit", paperlist_ui)');
+    }
 
     echo $pl_text;
     if ($pl->count == 0 && $Qreq->t != "s") {

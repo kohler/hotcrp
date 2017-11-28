@@ -9,7 +9,7 @@ class Decide_ListAction extends ListAction {
     }
     static function render(PaperList $pl) {
         return ["Set to &nbsp;"
-                . decisionSelector($pl->qreq->decision, null, " class=\"want-focus\"")
+                . decisionSelector($pl->qreq->decision, null, " class=\"want-focus js-submit-action-info-decide\"")
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide"])];
     }
     function run(Contact $user, $qreq, $ssel) {

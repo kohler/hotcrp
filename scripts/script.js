@@ -622,6 +622,16 @@ event_modkey.CTRL = 2;
 event_modkey.ALT = 4;
 event_modkey.META = 8;
 
+function make_onkey(key, f) {
+    return function (evt) {
+        if (!event_modkey(evt) && event_key(evt) == key) {
+            evt.preventDefault();
+            evt.stopImmediatePropagation();
+            f.call(this, evt);
+        }
+    };
+}
+
 
 // localStorage
 var wstorage = function () { return false; };
@@ -2255,64 +2265,6 @@ return handler;
 function make_link_callback(elt) {
     return function () {
         window.location = elt.href;
-    };
-}
-
-
-function plist_onsubmit() {
-    // analyze why this is being submitted
-    var $self = $(this), fn = $self.data("submitFn");
-    $self.removeData("submitFn");
-    if (!fn && this.defaultact)
-        fn = $(this.defaultact).val();
-    if (!fn && document.activeElement) {
-        var $td = $(document.activeElement).closest("td"), cname;
-        if ($td.length && (cname = $td[0].className.match(/\b(lld\d+)\b/))) {
-            var $sub = $td.closest("tr").find("." + cname).find("input[type=submit], button[type=submit]");
-            if ($sub.length == 1)
-                fn = this.defaultact.value = $sub[0].value;
-        }
-    }
-
-    // if nothing selected, either select all or error out
-    $("#sel_papstandin").remove();
-    if (!$self.find("input[name='pap[]']:checked").length) {
-        var subbtn = fn && $self.find("input[type=submit], button[type=submit]").filter("[value=" + fn + "]");
-        if (subbtn && subbtn.length == 1 && subbtn[0].hasAttribute("data-plist-submit-all")) {
-            var values = $self.find("input[name='pap[]']").map(function () { return this.value; }).get();
-            $("#sel").append('<div id="sel_papstandin"><input type="hidden" name="pap" value="' + values.join(" ") + '" /></div>');
-        } else {
-            alert("Select one or more papers first.");
-            return false;
-        }
-    }
-
-    // encode the expected download in the form action, to ease debugging
-    var action = $self.data("originalAction"), s = fn;
-    if (!action)
-        $self.data("originalAction", (action = this.action));
-    if (s == "get")
-        s = "get-" + $(this.getfn).val();
-    else if (s == "tag")
-        s = "tag-" + $(this.tagfn).val() + "-" + $(this.tag).val();
-    else if (s == "assign") {
-        s = "assign-" + $(this.assignfn).val();
-        if ($(this.assignfn).val() != "auto")
-            s += "-" + $(this.markpc).val();
-    } else if (s == "decide")
-        s = "decide-" + $(this.decision).val();
-    if (s)
-        this.action = hoturl_add(action, "action=" + encodeURIComponent(s));
-    return true;
-}
-
-function make_onkey(key, f) {
-    return function (evt) {
-        if (!event_modkey(evt) && event_key(evt) == key) {
-            evt.preventDefault();
-            evt.stopImmediatePropagation();
-            f.call(this, evt);
-        }
     };
 }
 
@@ -6497,6 +6449,48 @@ function select_all(event) {
     $(this).closest("table.pltable").find("input[name='pap[]']").prop("checked", true);
 }
 
+function paperlist_submit(event) {
+    // analyze why this is being submitted
+    var $self = $(this), fn = $self.data("submitFn");
+    $self.removeData("submitFn");
+    if (!fn && this.defaultact)
+        fn = $(this.defaultact).val();
+    if (!fn && document.activeElement) {
+        var $td = $(document.activeElement).closest("td");
+        if ($td.hasClass("lld")) {
+            var $sub = $td.closest(".linelink.active").find("input[type=submit], button[type=submit]");
+            if ($sub.length == 1)
+                fn = this.defaultact.value = $sub[0].value;
+        }
+    }
+
+    // if nothing selected, either select all or error out
+    $self.find(".js-default-submit-values").remove();
+    if (!$self.find("input[name='pap[]']:checked").length) {
+        var subbtn = fn && $self.find("input[type=submit], button[type=submit]").filter("[value=" + fn + "]");
+        if (subbtn && subbtn.length == 1 && subbtn.data("defaultSubmitAll")) {
+            var values = $self.find("input[name='pap[]']").map(function () { return this.value; }).get();
+            $self.append('<div class="js-default-submit-values"><input type="hidden" name="pap" value="' + values.join(" ") + '" /></div>');
+        } else {
+            alert("Select one or more papers first.");
+            event.preventDefault();
+            return;
+        }
+    }
+
+    // encode the expected download in the form action, to ease debugging
+    var action = $self.data("originalAction");
+    if (!action)
+        $self.data("originalAction", (action = this.action));
+    if (fn && /^[-_\w]+$/.test(fn)) {
+        $self.find(".js-submit-action-info-" + fn).each(function () {
+            fn += "-" + ($(this).val() || "");
+        });
+        action = hoturl_add(action, "action=" + encodeURIComponent(fn));
+    }
+    this.action = action;
+}
+
 function paperlist_ui(event) {
     if (hasClass(this, "js-edit-formulas"))
         edit_formulas.call(this, event);
@@ -6506,12 +6500,14 @@ function paperlist_ui(event) {
         plinfo_tags.edit_anno(this);
     else if (hasClass(this, "js-select-all"))
         select_all.call(this, event);
+    else if (event.type === "submit")
+        paperlist_submit.call(this, event);
 }
 
 paperlist_ui.prepare_assrev = function (selector) {
     $(selector).off(".assrev")
         .on("change.assrev", "select.assrev, input.assrev", assrev_change);
-}
+};
 return paperlist_ui;
 })($);
 

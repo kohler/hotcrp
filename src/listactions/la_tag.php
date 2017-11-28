@@ -7,7 +7,7 @@ class Tag_ListAction extends ListAction {
     static function render(PaperList $pl) {
         // tagtype cell
         $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
-        $tagextra = array("id" => "placttagtype");
+        $tagextra = ["id" => "placttagtype", "class" => "js-submit-action-info-tag"];
         if ($pl->user->privChair) {
             $tagopt["xxxb"] = null;
             $tagopt["cr"] = "Calculate rank";
@@ -23,7 +23,7 @@ class Tag_ListAction extends ListAction {
         }
         $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
             . Ht::entry("tag", $pl->qreq->tag,
-                        ["size" => 15, "onfocus" => "suggest(this,taghelp_tset)", "class" => "want-focus js-autosubmit", "data-autosubmit-type" => "tag"])
+                        ["size" => 15, "onfocus" => "suggest(this,taghelp_tset)", "class" => "want-focus js-autosubmit js-submit-action-info-tag", "data-autosubmit-type" => "tag"])
             . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag"]);
         if ($pl->user->privChair) {
             $t .= "<div class='fx'><div style='margin:2px 0'>"
