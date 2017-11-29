@@ -414,13 +414,14 @@ if ($t !== "")
 
 // PC assignments
 if ($Me->can_administer($prow)) {
-    $result = $Conf->qe("select ContactInfo.contactId,
-        group_concat(reviewType separator '') allReviews,
+    $result = $Conf->qe("select ContactInfo.contactId, allReviews,
         exists(select paperId from PaperReviewRefused where paperId=? and contactId=ContactInfo.contactId) refused
         from ContactInfo
-        left join PaperReview using (contactId)
-        where ContactInfo.roles!=0 and (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0
-        group by ContactInfo.contactId",
+        left join (select contactId, group_concat(reviewType separator '') allReviews
+            from PaperReview join Paper using (paperId)
+            where reviewType>=" . REVIEW_PC . " and timeSubmitted>=0
+            group by contactId) A using (contactId)
+        where ContactInfo.roles!=0 and (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0",
         $prow->paperId);
     $pcx = array();
     while (($row = edb_orow($result)))
