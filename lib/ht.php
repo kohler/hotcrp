@@ -142,15 +142,18 @@ class Ht {
                 } else
                     $optgroup = "";
             } else {
-                $x .= '<option value="' . htmlspecialchars($value) . '"';
+                $x .= '<option';
+                if (get($info, "id"))
+                    $x .= ' id="' . $info->id . '"';
+                $x .= ' value="' . htmlspecialchars($value) . '"';
                 if (strcmp($value, $selected) == 0)
                     $x .= ' selected="selected"';
                 if (get($info, "disabled"))
                     $x .= ' disabled="disabled"';
+                if (get($info, "class"))
+                    $x .= ' class="' . $info->class . '"';
                 if (get($info, "style"))
-                    $x .= ' style="' . $info->style . '"';
-                if (get($info, "id"))
-                    $x .= ' id="' . $info->id . '"';
+                    $x .= ' style="' . htmlspecialchars($info->style) . '"';
                 $x .= '>' . $info->label . '</option>';
             }
         }

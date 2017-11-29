@@ -16,6 +16,8 @@ class MailRecipients {
     const F_ANYPC = 1;
     const F_GROUP = 2;
     const F_HIDE = 4;
+    const F_NOPAPERS = 8;
+    const F_SINCE = 16;
 
     private function defsel($name, $description, $flags = 0) {
         assert(!isset($this->sel[$name]));
@@ -97,7 +99,7 @@ class MailRecipients {
             $hide = $any_pcrev ? 0 : self::F_HIDE;
             $this->defsel("pcrev", "PC reviewers", $hide);
             $this->defsel("uncpcrev", "PC reviewers with incomplete reviews", $hide);
-            $this->defsel("newpcrev", "PC reviewers with new review assignments", $any_newpcrev && $any_pcrev ? 0 : self::F_HIDE);
+            $this->defsel("newpcrev", "PC reviewers with new review assignments", ($any_newpcrev && $any_pcrev ? 0 : self::F_HIDE) | self::F_SINCE);
 
             $hide = $any_extrev ? 0 : self::F_HIDE;
             $this->defsel("extrev", "External reviewers", $hide);
@@ -116,17 +118,17 @@ class MailRecipients {
 
         $this->defsel("pc_group", "Program committee", self::F_GROUP);
         $selcount = count($this->sel);
-        $this->defsel("pc", "Program committee", self::F_ANYPC);
+        $this->defsel("pc", "Program committee", self::F_ANYPC | self::F_NOPAPERS);
         foreach ($this->conf->pc_tags() as $t)
             if ($t != "pc")
-                $this->defsel("pc:$t", "#$t program committee", self::F_ANYPC);
+                $this->defsel("pc:$t", "#$t program committee", self::F_ANYPC | self::F_NOPAPERS);
         if (count($this->sel) == $selcount + 1)
             unset($this->sel["pc_group"]);
         else
             $this->defsel("pc_group_end", null, self::F_GROUP);
 
         if ($contact->privChair)
-            $this->defsel("all", "All users");
+            $this->defsel("all", "All users", self::F_NOPAPERS);
 
         if (isset($this->sel[$type])
             && !($this->selflags[$type] & self::F_GROUP))
@@ -156,7 +158,8 @@ class MailRecipients {
         $sel = [];
         $last = null;
         foreach ($this->sel as $n => $d) {
-            if ($this->selflags[$n] & self::F_GROUP) {
+            $flags = $this->selflags[$n];
+            if ($flags & self::F_GROUP) {
                 if ($d !== null)
                     $sel[$n] = ["optgroup", $d];
                 else if ($last !== null
@@ -164,14 +167,22 @@ class MailRecipients {
                     unset($sel[$last]);
                 else
                     $sel[$n] = ["optgroup"];
-            } else if (!($this->selflags[$n] & self::F_HIDE)
-                       || $n == $this->type)
+            } else if (!($flags & self::F_HIDE) || $n == $this->type) {
+                if (is_string($d))
+                    $d = ["label" => $d];
+                $k = null;
+                if ($flags & self::F_NOPAPERS)
+                    $k[] = "mail-want-no-papers";
+                if ($flags & self::F_SINCE)
+                    $k[] = "mail-want-since";
+                if (!empty($k))
+                    $d["class"] = join(" ", $k);
                 $sel[$n] = $d;
-            else
+            } else
                 continue;
             $last = $n;
         }
-        return Ht::select("recipients", $sel, $this->type, array("id" => "recipients", "onchange" => "setmailpsel(this)"));
+        return Ht::select("recipients", $sel, $this->type, ["id" => "recipients"]);
     }
 
     function unparse() {

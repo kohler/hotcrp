@@ -507,7 +507,7 @@ echo Ht::select("template", $tmpl, $_REQUEST["template"], array("onchange" => "h
  <span class='hint'>Templates are mail texts tailored for common conference tasks.</span>
 </div>
 
-<div class='mail' style='float:left;margin:4px 1em 12px 0'><table>\n";
+<div class='mail' style='float:left;margin:4px 1em 12px 0'><table id=\"foldpsel\" class=\"fold8c fold9o fold10c\">\n";
 
 // ** TO
 echo '<tr><td class="mhnp nw">To:</td><td class="mhdd">',
@@ -515,13 +515,10 @@ echo '<tr><td class="mhnp nw">To:</td><td class="mhdd">',
     "<div class='g'></div>\n";
 
 // paper selection
-echo '<div id="foldpsel" class="fold8c fold9o fold10c">';
 echo '<table class="fx9"><tr>';
 if ($Me->privChair)
     echo '<td class="nw">',
-        Ht::checkbox("plimit", 1, isset($_REQUEST["plimit"]),
-                     ["id" => "plimit",
-                      "onchange" => "fold('psel', !this.checked, 8)"]),
+        Ht::checkbox("plimit", 1, isset($_REQUEST["plimit"]), ["id" => "plimit"]),
         "&nbsp;</td><td>", Ht::label("Choose papers", "plimit"),
         "<span class='fx8'>:&nbsp; ";
 else
@@ -559,9 +556,17 @@ echo 'Assignments since:&nbsp; ',
               array("placeholder" => "(all)", "size" => 30)),
     '</div>';
 
-echo '<div class="fx9 g"></div></div>';
+echo '<div class="fx9 g"></div>';
 
-Ht::stash_script("setmailpsel(\$\$(\"recipients\"))");
+Ht::stash_script('function mail_recipients_fold(event) {
+    var plimit = $$("plimit");
+    foldup.call(this, null, {f: !!plimit && !plimit.checked, n: 8});
+    var sopt = $(this).find("option[value=\'" + this.value + "\']");
+    foldup.call(this, null, {f: sopt.hasClass("mail-want-no-papers"), n: 9});
+    foldup.call(this, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
+}
+$("#recipients, #plimit").on("change", mail_recipients_fold);
+$(function () { $("#recipients").trigger("change"); })');
 
 echo "</td></tr>\n";
 
