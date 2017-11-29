@@ -321,7 +321,7 @@ class AutoassignerInterface {
         }
         if (!$this->live) {
             $t = '<h3>Preparing assignment</h3><p><strong>Status:</strong> ' . htmlspecialchars($status);
-            echo '<script>$$("propass").innerHTML=', json_encode($t), ";</script>\n";
+            echo Ht::script('$$("propass").innerHTML=' . json_encode_browser($t) . ';'), "\n";
             flush();
             while (@ob_end_flush())
                 /* skip */;

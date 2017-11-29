@@ -46,6 +46,10 @@ class Ht {
         return $x;
     }
 
+    static function script($script) {
+        return '<script>' . $script . '</script>';
+    }
+
     static function script_file($src, $js = null) {
         if ($js && get($js, "crossorigin") && !preg_match(',\A([a-z]+:)?//,', $src))
             unset($js["crossorigin"]);

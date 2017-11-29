@@ -1367,7 +1367,7 @@ class PaperList {
                 $need_render = true;
             }
             if ($this->need_render && $this->count % 16 == 15) {
-                $body[count($body) - 1] .= "  <script>plinfo.render_needed()</script>\n";
+                $body[count($body) - 1] .= "  " . Ht::script('plinfo.render_needed()') . "\n";
                 $this->need_render = false;
             }
         }
@@ -1506,7 +1506,7 @@ class PaperList {
 
         // header scripts to set up delegations
         if ($this->_header_script)
-            $enter .= '  <script>' . $this->_header_script . "</script>\n";
+            $enter .= '  ' . Ht::script($this->_header_script) . "\n";
 
         return $enter . join("", $body) . " </tbody>\n" . $exit;
     }

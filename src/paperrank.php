@@ -89,12 +89,12 @@ class PaperRank {
             $this->info_printed = true;
         }
         if ($n < count($this->papersel)) {
-            echo "<script>document.getElementById('rankpercentage').innerHTML = '$pct'";
+            $x = '$("#rankpercentage").html("' . $pct . '")';
             if ($this->deletedpref > 0)
-                echo ";document.getElementById('rankdeletedpref').innerHTML = ', ", round(($this->totalpref - $this->deletedpref) / $this->totalpref * 100), "% of preferences remain'";
-            echo "</script>\n";
+                $x .= ';$("#rankdeletedpref").html(", ' . round(($this->totalpref - $this->deletedpref) / $this->totalpref * 100) . '% of preferences remain")';
         } else
-            echo "<script>document.getElementById('foldrankcalculation').className = 'foldo'</script>\n";
+            $x = '$("#foldrankcalculation").addClass("foldo")';
+        echo Ht::script($x), "\n";
         flush();
     }
 
