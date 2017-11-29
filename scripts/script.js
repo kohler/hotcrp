@@ -6082,9 +6082,6 @@ function prepare_psedit(url) {
         }
     }
     $ctl.on("change", change).on("keyup", keyup);
-    $(self).find("form").on("submit", function (evt) {
-        evt.preventDefault();
-    });
 }
 
 function reduce_tag_report(tagreport, min_status, tags) {
@@ -6625,7 +6622,7 @@ $(document).on("click", "a", function (evt) {
         handle_list(this, this.getAttribute("href"));
 });
 $(document).on("submit", "form", function (evt) {
-    if (hasClass(this, "ui"))
+    if (hasClass(this, "submit-ui"))
         handle_ui.call(this, evt);
     else
         handle_list(this, this.getAttribute("action"));

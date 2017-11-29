@@ -1368,7 +1368,7 @@ class PaperTable {
                     || $p->contactId == $value)
                     $selopt[] = $p->contactId;
             $this->conf->stash_hotcrp_pc($this->user);
-            echo '<form class="fx"><div>',
+            echo '<form class="submit-ui fx"><div>',
                 Ht::select($type, [], 0, ["class" => "psc-select need-pcselector want-focus", "style" => "width:99%", "data-pcselector-options" => join(" ", $selopt), "data-pcselector-selected" => $value]),
                 '</div></form>';
             Ht::stash_script('edit_paper_ui.prepare_psedit.call($$("fold' . $type . '"),{p:' . $this->prow->paperId . ',fn:"' . $type . '"})');
@@ -1469,7 +1469,7 @@ class PaperTable {
     function papstripOutcomeSelector() {
         $this->_papstripBegin("decision", $this->qreq->atab !== "decision");
         echo $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
-            '<div class="psv"><form class="fx"><div>';
+            '<div class="psv"><form class="submit-ui fx"><div>';
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
         echo decisionSelector($this->prow->outcome, null, " class=\"want-focus\" style=\"width:99%\""),
@@ -1623,7 +1623,7 @@ class PaperTable {
         else
             $watchValue = 0;
 
-        echo "<form><div>",
+        echo '<form class="submit-ui"><div>',
             $this->papt("watch",
                         Ht::checkbox("follow", 1,
                                      $watchValue & ($this->watchCheckbox << WATCHSHIFT_ON),
