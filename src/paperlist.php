@@ -509,7 +509,7 @@ class PaperList {
         $foot .= '<td id="plact" class="plf pl_footer linelinks" colspan="' . $ncol . '">';
 
         $foot .= "<table><tbody><tr>\n"
-            . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a class="ui paperlist-ui js-select-all" href="' . SelfHref::make($this->qreq, ["selectall" => 1]) . '#plact">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
+            . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a class="ui js-select-all" href="' . SelfHref::make($this->qreq, ["selectall" => 1]) . '#plact">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
             . "   </tr></tbody></table>";
         foreach ($lllgroups as $i => $lllg) {
             $foot .= "<table class=\"linelink";
@@ -1437,7 +1437,7 @@ class PaperList {
                     $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->search->is_order_anno}\">";
                     if ($rstate->titlecol)
                         $colhead .= "<td class=\"plh\" colspan=\"$rstate->titlecol\"></td>";
-                    $colhead .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a class=\"ui paperlist-ui js-annotate-order\" href=\"\">Annotate order</a></td></tr>\n";
+                    $colhead .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a class=\"ui js-annotate-order\" href=\"\">Annotate order</a></td></tr>\n";
                 }
             }
 

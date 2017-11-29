@@ -409,7 +409,7 @@ if ($pl_text) {
     if ($named_formulas)
         $display_options->set_header(40, "<strong>Formulas:</strong>");
     if ($Me->isPC && $Qreq->t != "a") {
-        $display_options->item(40, '<div class="dispopt-item"><a class="ui paperlist-ui js-edit-formulas" href="">Edit formulas</a></div>');
+        $display_options->item(40, '<div class="dispopt-item"><a class="ui js-edit-formulas" href="">Edit formulas</a></div>');
     }
 }
 
@@ -577,7 +577,7 @@ if ($pl->count > 0) {
 
     echo "<td class='padlb'>";
     if ($Me->privChair)
-        echo Ht::button("Change default view", ["class" => "btn ui paperlist-ui js-edit-view-options"]), "&nbsp; ";
+        echo Ht::button("Change default view", ["class" => "btn ui js-edit-view-options"]), "&nbsp; ";
     echo Ht::submit("Redisplay", array("id" => "redisplay"));
 
     echo "</td></tr></table>", $display_options_extra, "</div>";

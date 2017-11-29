@@ -1107,10 +1107,10 @@ class AttachmentsPaperOption extends PaperOption {
             if (($stamps = PaperTable::pdf_stamps_html($doc)))
                 echo $stamps;
             echo '</div><div class="document-actions">',
-                    Ht::link("Delete", "#", ["class" => "ui edit-paper-ui js-remove-document"]),
+                    Ht::link("Delete", "#", ["class" => "ui js-remove-document"]),
                 '</div></div>';
         }
-        echo '<div><div>', Ht::button("Add attachment", ["class" => "btn ui edit-paper-ui js-add-attachment"]), '</div></div>',
+        echo '<div><div>', Ht::button("Add attachment", ["class" => "btn ui js-add-attachment"]), '</div></div>',
             "</div></div>\n\n";
     }
 

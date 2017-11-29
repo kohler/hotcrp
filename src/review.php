@@ -869,7 +869,7 @@ $blind\n";
             && ($user->is_my_review($rrow) || $user->can_administer($prow))) {
             $buttons = [];
             $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn btn-highlight"]);
-            $buttons[] = Ht::button("Decline", ["class" => "ui btn review-ui js-decline-review"]);
+            $buttons[] = Ht::button("Decline", ["class" => "ui btn js-decline-review"]);
             // Also see $_REQUEST["refuse"] case in review.php.
             if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy)))
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
@@ -925,7 +925,7 @@ $blind\n";
             $buttons[] = "";
             if ($submitted)
                 $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review", ["class" => "btn"]), "(admin only)");
-            $buttons[] = array(Ht::button("Delete review", ["class" => "ui btn review-ui js-delete-review"]), "(admin only)");
+            $buttons[] = array(Ht::button("Delete review", ["class" => "ui btn js-delete-review"]), "(admin only)");
         }
 
         echo Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-$type:0"]);

@@ -746,7 +746,7 @@ if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct))
         if ($Me->privChair) {
             if (Contact::password_storage_cleartext())
                 echo " <span class=\"sep\"></span>";
-            echo '<span class="f-cx"><a class="ui profile-ui js-plaintext-password" href=""><span class="fn">Show password</span><span class="fx">Hide password</span></a></span>';
+            echo '<span class="f-cx"><a class="ui js-plaintext-password" href=""><span class="fn">Show password</span><span class="fx">Hide password</span></a></span>';
         }
         echo "</div>\n";
     }
@@ -780,7 +780,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     foreach (array("chair" => "PC chair",
                    "pc" => "PC member",
                    "no" => "Not on the PC") as $k => $v) {
-        echo Ht::radio("pctype", $k, $pcrole === $k, ["class" => "ui profile-ui js-role"]),
+        echo Ht::radio("pctype", $k, $pcrole === $k, ["class" => "ui js-role"]),
             "&nbsp;", Ht::label($v), "<br />\n";
     }
     Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
@@ -855,7 +855,7 @@ $buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save change
 
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
-    $args = ["class" => "btn ui profile-ui"];
+    $args = ["class" => "btn ui"];
     if (count($tracks->soleAuthor)) {
         $args["class"] .= " js-cannot-delete-user";
         $args["data-sole-author"] = pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor);

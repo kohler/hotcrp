@@ -31,25 +31,34 @@ function serialize_object(x) {
 if (!window.JSON || !window.JSON.parse)
     window.JSON = {parse: $.parseJSON};
 
-function hasClass(e, k) {
-    if (e.classList)
+var hasClass, addClass, removeClass, classList;
+if ("classList" in document.createElement("span")) {
+    hasClass = function (e, k) {
         return e.classList.contains(k);
-    else
-        return $(e).hasClass(k);
-}
-
-function removeClass(e, k) {
-    if (e.classList)
-        e.classList.remove(k);
-    else
-        $(e).removeClass(k);
-}
-
-function addClass(e, k) {
-    if (e.classList)
+    };
+    addClass = function (e, k) {
         e.classList.add(k);
-    else
-        e.className += " " + k;
+    };
+    removeClass = function (e, k) {
+        e.classList.remove(k);
+    };
+    classList = function (e) {
+        return e.classList;
+    };
+} else {
+    hasClass = function (e, k) {
+        return $(e).hasClass(k);
+    };
+    addClass = function (e, k) {
+        $(e).addClass(k);
+    };
+    removeClass = function (e, k) {
+        $(e).removeClass(k);
+    };
+    classList = function (e) {
+        var k = $.trim(e.className);
+        return k === "" ? [] : k.split(/\s+/);
+    };
 }
 
 
@@ -822,6 +831,30 @@ function render_xmsg(status, msg) {
         '<div class="xmsgc">' + msg.join('</div><div class="xmsgc">') +
         '</div><div class="xmsg1"></div></div>';
 }
+
+
+// ui
+var handle_ui = (function ($) {
+var callbacks = {};
+function handle_ui(event) {
+    event.preventDefault();
+    var k = classList(this);
+    for (var i = 0; i < k.length; ++i) {
+        var c = callbacks[k[i]];
+        if (c) {
+            for (var j = 0; j < c.length; ++j) {
+                c[j].call(this, event);
+            }
+        }
+    }
+}
+handle_ui.on = function (className, callback) {
+    callbacks[className] = callbacks[className] || [];
+    callbacks[className].push(callback);
+};
+return handle_ui;
+})($);
+$(document).on("click", ".ui", handle_ui);
 
 
 // rangeclick
@@ -1696,6 +1729,8 @@ function tracker_ui(event) {
     }
 }
 
+handle_ui.on("tracker-ui", tracker_ui);
+
 
 // Comet tracker
 var comet_sent_at, comet_stop_until, comet_nerrors = 0, comet_nsuccess = 0,
@@ -1998,6 +2033,7 @@ function hiliter(elt, off) {
 }
 
 function hiliter_children(form, on_unload) {
+    on_unload && (form = $(form)[0]);
     function hilite() {
         if (!hasClass(this, "ignore-diff"))
             form_highlight(form, this);
@@ -2138,7 +2174,8 @@ function foldup(event, opts) {
     }
 }
 
-$(document).on("click", "div.js-foldup", foldup); // a.js-foldup below
+handle_ui.on("js-foldup", foldup);
+$(document).on("click", "div.js-foldup", foldup);
 $(document).on("change", "input.js-foldup", foldup);
 $(document).on("fold", ".js-fold-focus", function (event, opts) {
     focus_within(this, (opts.f ? ".fn" : ".fx") + (opts.n || "") + " *");
@@ -2261,6 +2298,8 @@ handler.hash = function () {
 
 return handler;
 })($);
+
+handle_ui.on("tla", focus_fold);
 
 function make_link_callback(elt) {
     return function () {
@@ -2474,6 +2513,7 @@ function row_order_ui(event) {
     else if (hasClass(this, "addrow"))
         row_order_change($(this).closest("table").children("tbody.js-row-order")[0], 0, 1);
 }
+handle_ui.on("row-order-ui", row_order_ui);
 
 row_order_ui.autogrow = function ($j) {
     $j = $j || $(this);
@@ -5165,7 +5205,7 @@ function override_deadlines(callback) {
     djq.find("button[name=bsubmit]")
         .html(ejq.html() || ejq.attr("value") || "Save changes")
         .on("click", function () {
-        if (callback)
+        if (callback && $.isFunction(callback))
             callback();
         else {
             var fjq = ejq.closest("form");
@@ -5178,6 +5218,8 @@ function override_deadlines(callback) {
     djq.appendTo(document.body);
     popup_near(djq, this);
 }
+handle_ui.on("js-override-deadlines", override_deadlines);
+
 
 
 // ajax checking for paper updates
@@ -5844,8 +5886,8 @@ function transfer_form_values($dst, $src, names) {
 }
 
 
-var edit_paper_ui = (function ($) {
-function check_format() {
+// paper UI
+handle_ui.on("js-check-format", function () {
     var $self = $(this), $d = $self.closest(".has-document"),
         $cf = $d.find(".check-format-result");
     if (this && "tagName" in this && this.tagName === "A")
@@ -5860,9 +5902,9 @@ function check_format() {
             data.ok && $cf.html(data.response);
         }
     });
-}
+});
 
-function check_ready(event) {
+handle_ui.on("js-check-submittable", function (event) {
     var $f = $(this).closest("form"),
         readye = $f[0].submitpaper,
         was = $f.attr("data-submitted"), is = true;
@@ -5884,16 +5926,9 @@ function check_ready(event) {
         $b.val(t);
     else
         $b.html(t);
-}
+});
 
-function check_still_ready(event) {
-    if (this.submitpaper && !this.submitpaper.checked) {
-        if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered."))
-            event.preventDefault();
-    }
-}
-
-function add_attachment() {
+handle_ui.on("js-add-attachment", function () {
     var $ea = $(this).closest(".has-editable-attachments"),
         $ei = $ea.find(".has-document"), n = 0, name;
     do {
@@ -5907,15 +5942,15 @@ function add_attachment() {
     var $na = $('<div class="has-document document-new-instance" data-document-name="' + name + '" style="display:none">'
         + '<div class="document-file"><input type="file" name="' + name + '" size="15" /></div>'
         + '<div class="document-stamps"></div>'
-        + '<div class="document-actions"><a class="ui edit-paper-ui js-remove-document" href="#">Delete</a></div>'
+        + '<div class="document-actions"><a class="ui js-remove-document" href="#">Delete</a></div>'
         + '</div>');
     $ei.length ? $na.insertAfter($ei[$ei.length - 1]) : $na.prependTo($ea);
     $na.find("input[type=file]").on("change", function () {
         $(this).closest(".has-document").css("display", "");
     })[0].click();
-}
+});
 
-function remove_document(event) {
+handle_ui.on("js-remove-document", function (event) {
     var $ei = $(this).closest(".has-document"),
         $f = $ei.closest("form"),
         $r = $ei.find(".document-remover"),
@@ -5935,10 +5970,9 @@ function remove_document(event) {
         $(this).addClass("undelete").html("Undelete");
     }
     form_highlight($f[0]);
-    event.preventDefault();
-}
+});
 
-function withdraw_dialog(event) {
+handle_ui.on("js-withdraw", function (event) {
     var $f = $(this).closest("form"),
         hc = popup_skeleton({
             anchor: this, action: hoturl_post("paper", {p: hotcrp_paperid, m: "edit"})
@@ -5957,9 +5991,9 @@ function withdraw_dialog(event) {
     var $d = hc.show();
     transfer_form_values($d.find("form"), $f, ["doemail", "emailNote"]);
     $d.on("submit", "form", function () { $f.addClass("submitting"); });
-}
+});
 
-function delete_paper_dialog(event) {
+handle_ui.on("js-delete-paper", function (event) {
     var $f = $(this).closest("form"),
         hc = popup_skeleton({
             anchor: this, action: hoturl_post("paper", {p: hotcrp_paperid, m: "edit"})
@@ -5970,6 +6004,33 @@ function delete_paper_dialog(event) {
     var $d = hc.show();
     transfer_form_values($d.find("form"), $f, ["doemail", "emailNote"]);
     $d.on("submit", "form", function () { $f.addClass("submitting"); });
+});
+
+handle_ui.on("js-clickthrough", function (event) {
+    var self = this,
+        $container = $(this).closest(".js-clickthrough-container");
+    $.post(hoturl_post("api/clickthrough", {accept: 1}),
+        $(this).closest("form").serialize(),
+        function (data) {
+            if (data && data.ok) {
+                $container.find(".js-clickthrough-body")
+                    .removeClass("hidden")
+                    .find(".need-clickthrough-enable")
+                    .prop("disabled", false).removeClass("need-clickthrough-enable");
+                $container.find(".js-clickthrough-terms").slideUp();
+            } else {
+                make_bubble((data && data.error) || "You can’t continue to review until you accept these terms.", "errorbubble")
+                    .dir("l").near(self);
+            }
+        });
+});
+
+var edit_paper_ui = (function ($) {
+function check_still_ready(event) {
+    if (this.submitpaper && !this.submitpaper.checked) {
+        if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered."))
+            event.preventDefault();
+    }
 }
 
 function prepare_psedit(url) {
@@ -6178,45 +6239,10 @@ function save_pstagindex(event) {
             {"addtags": tags.join(" ")}, done);
 }
 
-function clickthrough(event) {
-    var self = this,
-        $container = $(this).closest(".js-clickthrough-container");
-    $.post(hoturl_post("api/clickthrough", {accept: 1}),
-        $(this).closest("form").serialize(),
-        function (data) {
-                console.log(data);
-            if (data && data.ok) {
-                $container.find(".js-clickthrough-body")
-                    .removeClass("hidden")
-                    .find(".need-clickthrough-enable")
-                    .prop("disabled", false).removeClass("need-clickthrough-enable");
-                $container.find(".js-clickthrough-terms").slideUp();
-            } else {
-                make_bubble((data && data.error) || "You can’t continue to review until you accept these terms.", "errorbubble")
-                    .dir("l").near(self);
-            }
-        });
-}
-
 function edit_paper_ui(event) {
     if (event.type === "submit")
         check_still_ready.call(this, event);
-    else if (hasClass(this, "js-check-format"))
-        check_format.call(this);
-    else if (hasClass(this, "js-check-ready"))
-        check_ready.call(this, event);
-    else if (hasClass(this, "js-add-attachment"))
-        add_attachment.call(this);
-    else if (hasClass(this, "js-remove-document"))
-        remove_document.call(this, event);
-    else if (hasClass(this, "js-withdraw"))
-        withdraw_dialog.call(this, event);
-    else if (hasClass(this, "js-delete-paper"))
-        delete_paper_dialog.call(this, event);
-    else if (hasClass(this, "js-clickthrough"))
-        clickthrough.call(this, event);
 };
-
 edit_paper_ui.prepare_psedit = prepare_psedit;
 edit_paper_ui.prepare_pstags = prepare_pstags;
 edit_paper_ui.prepare_pstagindex = prepare_pstagindex;
@@ -6259,16 +6285,15 @@ if (hotcrp_paperid) {
 }
 
 
-var profile_ui = (function ($) {
-
-function cannot_delete_user_dialog(event) {
+// profile UI
+handle_ui.on("js-cannot-delete-user", function (event) {
     var hc = popup_skeleton({anchor: this});
     hc.push('<p><strong>This user cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the user, first remove these papers from the database or give the papers more contacts.</p>');
     hc.push_actions(['<button type="button" name="cancel" tabindex="1000" class="btn">Cancel</button>']);
     hc.show();
-}
+});
 
-function delete_user_dialog(event) {
+handle_ui.on("js-delete-user", function (event) {
     var $f = $(this).closest("form"),
         hc = popup_skeleton({anchor: this, action: $f[0].action}), x;
     hc.push('<p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>');
@@ -6277,37 +6302,29 @@ function delete_user_dialog(event) {
     hc.push_actions(['<button type="submit" name="delete" value="1" tabindex="1000" class="btn dangerous">Delete user</button>',
         '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
     hc.show();
-}
+});
 
-function plaintext_password(event) {
+handle_ui.on("js-plaintext-password", function (event) {
     foldup.call(this);
     var open = $(this).closest(".foldo, .foldc").hasClass("foldo");
     var form = $(this).closest("form")[0];
     if (form && form.whichpassword)
         form.whichpassword.value = open ? "t" : "";
-}
+});
 
-function role_change() {
-    var $f = $(this).closest("form");
-    var open = $f.find("input[name=pctype]:checked").val() !== "no";
-    foldup.call(this, null, {n: 1, f: !open});
-}
-
+var profile_ui = (function ($) {
 return function (event) {
-    if (hasClass(this, "js-cannot-delete-user"))
-        cannot_delete_user_dialog.call(this);
-    else if (hasClass(this, "js-delete-user"))
-        delete_user_dialog.call(this, event);
-    else if (hasClass(this, "js-plaintext-password"))
-        plaintext_password.call(this, event);
-    else if (hasClass(this, "js-role"))
-        role_change.call(this);
+    if (hasClass(this, "js-role")) {
+        var $f = $(this).closest("form");
+        var open = $f.find("input[name=pctype]:checked").val() !== "no";
+        foldup.call(this, null, {n: 1, f: !open});
+    }
 };
 })($);
 
 
-var review_ui = (function ($) {
-function decline_review_dialog() {
+// review UI
+handle_ui.on("js-decline-review", function () {
     var $f = $(this).closest("form"),
         hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
@@ -6315,50 +6332,20 @@ function decline_review_dialog() {
     hc.push_actions(['<button type="submit" name="refuse" value="yes" tabindex="1000" class="btn btn-default">Decline review</button>',
         '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
     hc.show();
-}
+});
 
-function delete_review_dialog() {
+handle_ui.on("js-delete-review", function () {
     var $f = $(this).closest("form"),
         hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p>');
     hc.push_actions(['<button type="submit" name="deletereview" value="1" tabindex="1000" class="btn dangerous">Delete review</button>',
         '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
     hc.show();
-}
-
-return function (event) {
-    if (hasClass(this, "js-decline-review"))
-        decline_review_dialog.call(this, event);
-    else if (hasClass(this, "js-delete-review"))
-        delete_review_dialog.call(this, event);
-}
-})($);
+});
 
 
-var paperlist_ui = (function ($) {
-
-function assrev_change(event) {
-    var self = this, m = /^assrev(\d+)u(\d+)$/.exec(this.name);
-    if (m) {
-        var immediate = $$("assrevimmediate"), data;
-        if (!immediate || immediate.checked) {
-            if (this.tagName === "SELECT") {
-                var round = $$("assrevround");
-                data = {kind: "a", rev_round: round ? round.value : ""};
-                data["pcs" + m[2]] = this.value;
-            } else {
-                data = {kind: "c"};
-                data["pcs" + m[2]] = this.checked ? -1 : 0;
-            }
-            $.post(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}),
-                data, function (rv) { setajaxcheck(self, rv); });
-        } else {
-            hiliter(this);
-        }
-    }
-}
-
-function edit_formulas() {
+// search/paperlist UI
+handle_ui.on("js-edit-formulas", function () {
     var self = this, $d, nformulas = 0;
     function push_formula(hc, f) {
         ++nformulas;
@@ -6414,9 +6401,9 @@ function edit_formulas() {
         if (data.ok)
             create(data.formulas);
     });
-}
+});
 
-function edit_view_options() {
+handle_ui.on("js-edit-view-options", function () {
     var $d;
     function submit(event) {
         $.ajax(hoturl_post("api/viewoptions"), {
@@ -6448,10 +6435,37 @@ function edit_view_options() {
                 create(data.display_default, data.display_current);
         }
     });
-}
+});
 
-function select_all(event) {
+handle_ui.on("js-select-all", function () {
     $(this).closest("table.pltable").find("input[name='pap[]']").prop("checked", true);
+});
+
+handle_ui.on("js-annotate-order", function (event) {
+    return plinfo_tags.edit_anno(this, event);
+});
+
+var paperlist_ui = (function ($) {
+
+function assrev_change(event) {
+    var self = this, m = /^assrev(\d+)u(\d+)$/.exec(this.name);
+    if (m) {
+        var immediate = $$("assrevimmediate"), data;
+        if (!immediate || immediate.checked) {
+            if (this.tagName === "SELECT") {
+                var round = $$("assrevround");
+                data = {kind: "a", rev_round: round ? round.value : ""};
+                data["pcs" + m[2]] = this.value;
+            } else {
+                data = {kind: "c"};
+                data["pcs" + m[2]] = this.checked ? -1 : 0;
+            }
+            $.post(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}),
+                data, function (rv) { setajaxcheck(self, rv); });
+        } else {
+            hiliter(this);
+        }
+    }
 }
 
 function paperlist_submit(event) {
@@ -6497,18 +6511,9 @@ function paperlist_submit(event) {
 }
 
 function paperlist_ui(event) {
-    if (hasClass(this, "js-edit-formulas"))
-        edit_formulas.call(this, event);
-    else if (hasClass(this, "js-edit-view-options"))
-        edit_view_options.call(this, event);
-    else if (hasClass(this, "js-annotate-order"))
-        plinfo_tags.edit_anno(this);
-    else if (hasClass(this, "js-select-all"))
-        select_all.call(this, event);
-    else if (event.type === "submit")
+    if (event.type === "submit")
         paperlist_submit.call(this, event);
 }
-
 paperlist_ui.prepare_assrev = function (selector) {
     $(selector).off(".assrev")
         .on("change.assrev", "select.assrev, input.assrev", assrev_change);
@@ -6609,36 +6614,15 @@ function row_click(evt) {
         event_prevent(evt);
     }
 }
-function handle_ui(evt) {
-    evt.preventDefault();
-    if (hasClass(this, "tla"))
-        focus_fold.call(this, evt);
-    else if (hasClass(this, "js-foldup"))
-        foldup.call(this, evt);
-    else if (hasClass(this, "js-edit-comment"))
-        papercomment.edit_id(this.hash.substring(1));
-    else if (hasClass(this, "row-order-ui"))
-        row_order_ui.call(this, evt);
-    else if (hasClass(this, "edit-paper-ui"))
-        edit_paper_ui.call(this, evt);
-    else if (hasClass(this, "profile-ui"))
-        profile_ui.call(this, evt);
-    else if (hasClass(this, "review-ui"))
-        review_ui.call(this, evt);
-    else if (hasClass(this, "paperlist-ui"))
-        paperlist_ui.call(this, evt);
-    else if (hasClass(this, "tracker-ui"))
-        hotcrp_deadlines.tracker_ui.call(this, evt);
-    else if (hasClass(this, "js-override-deadlines"))
-        override_deadlines.call(this);
-}
+handle_ui.on("js-edit-comment", function (event) {
+    return papercomment.edit_id(this.hash.substring(1));
+});
 $(document).on("click", "a", function (evt) {
     if (hasClass(this, "fn5"))
         foldup.call(this, evt, {n: 5, f: false});
-    else
+    else if (!hasClass(this, "ui"))
         handle_list(this, this.getAttribute("href"));
 });
-$(document).on("click", ".ui", handle_ui);
 $(document).on("submit", "form", function (evt) {
     if (hasClass(this, "ui"))
         handle_ui.call(this, evt);
