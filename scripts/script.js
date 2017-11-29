@@ -6026,6 +6026,17 @@ handle_ui.on("js-clickthrough", function (event) {
         });
 });
 
+handle_ui.on("js-follow-change", function (event) {
+    var self = this;
+    $.post(hoturl_post("api/follow",
+        {p: $(self).data("pid") || hotcrp_paperid}),
+        {following: this.checked, reviewer: $(self).data("reviewer") || hotcrp_user.email},
+        function (rv) {
+            setajaxcheck(self, rv);
+            rv.ok && (self.checked = rv.following);
+        });
+});
+
 var edit_paper_ui = (function ($) {
 function check_still_ready(event) {
     if (this.submitpaper && !this.submitpaper.checked) {

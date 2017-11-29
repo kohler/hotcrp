@@ -1627,12 +1627,13 @@ class PaperTable {
             $this->papt("watch",
                         Ht::checkbox("follow", 1,
                                      $watchValue & ($this->watchCheckbox << WATCHSHIFT_ON),
-                                     ["onchange" => "setfollow.call(this)",
+                                     ["class" => "js-follow-change",
                                       "style" => "padding-left:0;margin-left:0"])
                         . "&nbsp;" . Ht::label("Email notification"),
                         array("type" => "ps")),
-            "<div class='pshint'>Select to receive email on updates to reviews and comments.</div>",
+            '<div class="pshint">Select to receive email on updates to reviews and comments.</div>',
             "</div></form></div>\n\n";
+        Ht::stash_script('$(".js-follow-change").on("change", handle_ui)');
     }
 
 
