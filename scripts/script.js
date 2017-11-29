@@ -3119,7 +3119,7 @@ function render_editing(hc, cj) {
         hc.push('<input type="hidden" name="review_token" value="' + escape_entities(cj.review_token) + '" />');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
     if (fmt.has_preview)
-        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a class="ui togglepreview" href="#" data-format="' + (fmt.format || 0) + '">Preview</a>';
+        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60" style="clear:both"></textarea>');
     if (!cj.response && !cj.by_author) {
@@ -3511,7 +3511,8 @@ $(document).on("hotcrp_renderPreview", function (evt, format, value, dest) {
     var t = render_text(format, value);
     dest.className = "format" + (t.format || 0);
     dest.innerHTML = t.content;
-}).on("click", "a.togglepreview", switch_preview);
+});
+handle_ui.on("js-togglepreview", switch_preview);
 })($);
 
 
