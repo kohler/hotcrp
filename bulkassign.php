@@ -216,7 +216,12 @@ echo '<div id="foldoptions" class="lg foldc fold2c fold3c">',
                                        "settag" => "replace tags",
                                        "preference" => "set reviewer preferences"),
                defval($_REQUEST, "default_action", "guess"),
-               array("id" => "tsel", "onchange" => "fold(\"options\",this.value!=\"review\");fold(\"options\",!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),2)"));
+               ["id" => "tsel"]);
+Ht::stash_script('$(function(){
+$("#tsel").on("change",function(){
+foldup.call(this,null,{f:this.value!=="review"});
+foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),n:2});
+}).trigger("change")})');
 $rev_rounds = $Conf->round_selector_options();
 if (count($rev_rounds) > 1)
     echo '<span class="fx2">&nbsp; in round &nbsp;',
