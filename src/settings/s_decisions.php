@@ -21,14 +21,15 @@ static function render(SettingValues $sv) {
         $sv->conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
     if ($sv->conf->opt("allow_auseerev_unlessincomplete"))
         $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev", ["onfocus" => "$('#au_seerev_" . Conf::AUSEEREV_TAGS . "').click()"]);
+    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev");
     $sv->echo_radio_table("au_seerev", $opts);
     echo Ht::hidden("has_tag_au_seerev", 1);
+    Ht::stash_script('$("#tag_au_seerev").on("input", function () { $("#au_seerev_' . Conf::AUSEEREV_TAGS . '").click(); })');
 
     // Authors' response
     echo '<div class="mg"><table id="foldauresp" class="fold2o">';
     $sv->echo_checkbox_row('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>");
-    Ht::stash_script('function resp_active_change() { fold("auresp",!$$("cbresp_active").checked,2); } $("#cbresp_active").on("change", resp_active_change); $(resp_active_change);');
+    Ht::stash_script('$(function () { $("#cbresp_active").on("change", function () { fold("auresp",!$$("cbresp_active").checked,2); }).trigger("change"); })');
     echo '<tr class="fx2"><td></td><td><div id="auresparea">',
         Ht::hidden("has_resp_rounds", 1);
 
