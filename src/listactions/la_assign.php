@@ -8,8 +8,22 @@ class Assign_ListAction extends ListAction {
         return $user->privChair && Navigation::page() !== "reviewprefs";
     }
     static function render(PaperList $pl) {
-        Ht::stash_script("plactions_dofold()", "plactions_dofold");
         $pl->conf->stash_hotcrp_pc($pl->user);
+        Ht::stash_script('$(function () {
+$(".js-submit-action-info-assign").on("change", function () {
+var $t = $(this).closest(".linelink"), $mpc = $t.find("select[name=markpc]"),
+afn = $(this).val();
+foldup.call($t[0], null, {f: afn === "auto"});
+if (afn === "lead" || afn === "shepherd") {
+    $t.find(".js-assign-for").html("to");
+    if (!$mpc.find("option[value=0]").length)
+        $mpc.prepend(\'<option value="0">None</option>\');
+} else {
+    $t.find(".js-assign-for").html("for");
+    $mpc.find("option[value=0]").remove();
+}
+}).trigger("change");
+})', 'Assign_ListAction script');
         return [Ht::select("assignfn",
                           array("auto" => "Automatic assignments",
                                 "zzz1" => null,
@@ -24,10 +38,11 @@ class Assign_ListAction extends ListAction {
                                 "lead" => "Discussion lead",
                                 "shepherd" => "Shepherd"),
                           $pl->qreq->assignfn,
-                          ["class" => "want-focus js-submit-action-info-assign", "onchange" => "plactions_dofold()"])
-            . '<span class="fx"> &nbsp;<span id="atab_assign_for">for</span> &nbsp;'
-            . Ht::select("markpc", [], 0, ["id" => "markpc", "class" => "need-pcselector", "data-pcselector-selected" => $pl->qreq->markpc])
-            . "</span> &nbsp;" . Ht::submit("fn", "Go", ["value" => "assign"])];
+                          ["class" => "want-focus js-submit-action-info-assign"])
+            . '<span class="fx"> &nbsp;<span class="js-assign-for">for</span> &nbsp;'
+            . Ht::select("markpc", [], 0, ["class" => "need-pcselector", "data-pcselector-selected" => $pl->qreq->markpc])
+            . "</span> &nbsp;" . Ht::submit("fn", "Go", ["value" => "assign"]),
+            ["linelink-class" => "foldc", "linelink-data-fold" => 1]];
     }
     function run(Contact $user, $qreq, $ssel) {
         $mt = $qreq->assignfn;

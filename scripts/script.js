@@ -2330,36 +2330,6 @@ $(document).on("keypress", "input.js-autosubmit", function (event) {
 });
 
 
-function plactions_dofold() {
-    var $j, val, sel;
-    // Tags > Calculate rank subform
-    $j = jQuery("#placttagtype");
-    if ($j.length) {
-        fold("placttags", $j.val() != "cr", 99);
-        if ($j.val() != "cr")
-            fold("placttags", true);
-        else if (jQuery("#sel [name='tagcr_source']").val()
-                 || jQuery("#sel [name='tagcr_method']").val() != "schulze"
-                 || jQuery("#sel [name='tagcr_gapless']").is(":checked"))
-            fold("placttags", false);
-    }
-    // Assign > "for [USER]"
-    if (jQuery("#foldass").length) {
-        val = jQuery("#foldass select[name='assignfn']").val();
-        fold("ass", !!(val && val == "auto"));
-        sel = jQuery("#foldass select[name='markpc']");
-        if (val == "lead" || val == "shepherd") {
-            jQuery("#atab_assign_for").html("to");
-            if (!sel.find("option[value='0']").length)
-                sel.prepend('<option value="0">None</option>');
-        } else {
-            jQuery("#atab_assign_for").html("for");
-            sel.find("option[value='0']").remove();
-        }
-    }
-}
-
-
 // assignment selection
 var assigntable = (function () {
 var active, bubble, blurring = 0;
@@ -6524,6 +6494,21 @@ function paperlist_ui(event) {
 paperlist_ui.prepare_assrev = function (selector) {
     $(selector).off(".assrev")
         .on("change.assrev", "select.assrev, input.assrev", assrev_change);
+};
+paperlist_ui.prepare_tag_listaction = function () {
+    $("input.js-submit-action-info-tag").each(function () {
+        this.name === "tag" && suggest(this, taghelp_tset);
+    });
+    function placttag() {
+        var $t = $(this).closest(".linelink"),
+            $ty = $t.find("select[name=tagfn]");
+        foldup.call($t[0], null, {f: $ty.val() !== "cr", n: 99});
+        foldup.call($t[0], null, {f: $ty.val() === "cr"
+            || (!$t.find("input[name=tagcr_source]").val()
+                && $t.find("input[name=tagcr_method]").val() !== "schulze"
+                && !$t.find("input[name=tagcr_gapless]").is(":checked"))});
+    }
+    $("select.js-submit-action-info-tag").on("change", placttag).trigger("change");
 };
 return paperlist_ui;
 })($);

@@ -5,25 +5,25 @@
 
 class Tag_ListAction extends ListAction {
     static function render(PaperList $pl) {
+        Ht::stash_script('$(paperlist_ui.prepare_tag_listaction)', "Tag_ListAction script");
+
         // tagtype cell
         $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
-        $tagextra = ["id" => "placttagtype", "class" => "js-submit-action-info-tag"];
+        $tagextra = ["class" => "js-submit-action-info-tag"];
         if ($pl->user->privChair) {
             $tagopt["xxxb"] = null;
             $tagopt["cr"] = "Calculate rank";
-            $tagextra["onchange"] = "plactions_dofold()";
-            Ht::stash_script("plactions_dofold()", "plactions_dofold");
         }
 
         // tag name cell
         $t = "";
         if ($pl->user->privChair) {
-            $t .= '<span class="fx99"><a class="ui q js-foldup" href="#">'
+            $t .= '<span class="fx99"><a class="ui q js-foldup" href="">'
                 . expander(null, 0) . "</a></span>";
         }
         $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
             . Ht::entry("tag", $pl->qreq->tag,
-                        ["size" => 15, "onfocus" => "suggest(this,taghelp_tset)", "class" => "want-focus js-autosubmit js-submit-action-info-tag", "data-autosubmit-type" => "tag"])
+                        ["size" => 15, "class" => "want-focus js-autosubmit js-submit-action-info-tag", "data-autosubmit-type" => "tag"])
             . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag"]);
         if ($pl->user->privChair) {
             $t .= "<div class='fx'><div style='margin:2px 0'>"
@@ -38,7 +38,7 @@ class Tag_ListAction extends ListAction {
         }
 
         return [Ht::select("tagfn", $tagopt, $pl->qreq->tagfn, $tagextra) . " &nbsp;",
-            ["id" => "foldplacttags", "class" => "foldc fold99c", "content" => $t]];
+            ["linelink-class" => "foldc fold99c", "linelink-data-fold" => 1, "content" => $t]];
     }
     function allow(Contact $user) {
         return $user->can_change_some_tag();

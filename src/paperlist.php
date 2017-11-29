@@ -512,21 +512,44 @@ class PaperList {
             . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a class="ui js-select-all" href="' . SelfHref::make($this->qreq, ["selectall" => 1]) . '#plact">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
             . "   </tr></tbody></table>";
         foreach ($lllgroups as $i => $lllg) {
-            $foot .= "<table class=\"linelink";
+            $attr = ["class" => "linelink"];
             if ($i === $whichlll)
-                $foot .= " active";
-            $foot .= "\"><tbody><tr>\n"
+                $attr["class"] .= " active";
+            for ($j = 2; $j < count($lllg); ++$j) {
+                if (is_array($lllg[$j]))
+                    foreach ($lllg[$j] as $k => $v)
+                        if (str_starts_with($k, "linelink-")) {
+                            $k = substr($k, 9);
+                            if ($k === "class")
+                                $attr["class"] .= " " . $v;
+                            else
+                                $attr[$k] = $v;
+                        }
+            }
+            $foot .= "<table";
+            foreach ($attr as $k => $v)
+                $foot .= " $k=\"" . htmlspecialchars($v) . "\"";
+            $foot .= "><tbody><tr>\n"
                 . "    <td class=\"pl_footer_desc lll\"><a class=\"ui tla\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[0]]) . "#plact\">" . $lllg[1] . "</a></td>\n";
             for ($j = 2; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
-                $class = isset($cell["class"]) ? "lld " . $cell["class"] : "lld";
-                $foot .= "    <td class=\"$class\"";
-                if (isset($cell["id"]))
-                    $foot .= " id=\"" . $cell["id"] . "\"";
-                $foot .= ">";
-                if ($j === 2 && !str_starts_with($cell["content"], "<b>"))
-                    $foot .= "<b>:&nbsp;</b> ";
-                $foot .= $cell["content"] . "</td>\n";
+                $attr = [];
+                foreach ($cell as $k => $v) {
+                    if ($k !== "content" && !str_starts_with($k, "linelink-"))
+                        $attr[$k] = $v;
+                }
+                if ($attr || isset($cell["content"])) {
+                    $attr["class"] = rtrim("lld " . get($attr, "class", ""));
+                    $foot .= "    <td";
+                    foreach ($attr as $k => $v)
+                        $foot .= " $k=\"" . htmlspecialchars($v) . "\"";
+                    $foot .= ">";
+                    if ($j === 2 && isset($cell["content"]) && !str_starts_with($cell["content"], "<b>"))
+                        $foot .= "<b>:&nbsp;</b> ";
+                    if (isset($cell["content"]))
+                        $foot .= $cell["content"];
+                    $foot .= "</td>\n";
+                }
             }
             if ($i < count($lllgroups) - 1)
                 $foot .= "    <td>&nbsp;<span class='barsep'>·</span>&nbsp;</td>\n";
