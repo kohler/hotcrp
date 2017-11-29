@@ -9,7 +9,7 @@ if (isset($_REQUEST["text"]) && $_REQUEST["text"])
 else
     header("Content-Type: application/json");
 
-if ($Me->privChair && isset($_REQUEST["ignore"])) {
+if ($Me->privChair && check_post() && isset($_REQUEST["ignore"])) {
     $when = time() + 86400 * 2;
     $Conf->qe_raw("insert into Settings (name, value) values ('ignoreupdate_" . sqlq($_REQUEST["ignore"]) . "', $when) on duplicate key update value=$when");
 }
@@ -59,8 +59,8 @@ if ($Me->privChair && isset($_REQUEST["data"])
             if (isset($update["to"]) && is_string($update["to"])) {
                 $m .= "<div class='bigid'>First unaffected commit: " . htmlspecialchars($update["to"]);
                 if ($errid)
-                    $m .= " <span class='barsep'>·</span> "
-                        . "<a class=\"ui\" href='#' onclick='return check_version.ignore(\"$errid\")'>Ignore for two days</a>";
+                    $m .= ' <span class="barsep">·</span> '
+                        . '<a class="ui js-check-version-ignore" href="" data-version-id="' . $errid . '">Ignore for two days</a>';
                 $m .= "</div>";
             }
             $messages[] = $m . "</div>\n";
@@ -69,9 +69,4 @@ if ($Me->privChair && isset($_REQUEST["data"])
     }
 }
 
-if (!count($messages))
-    echo "{\"ok\":true}\n";
-else {
-    $j = array("ok" => true, "messages" => join("", $messages));
-    echo json_encode_browser($j);
-}
+json_exit($messages ? ["ok" => true] : ["ok" => true, "messages" => join("", $messages)]);

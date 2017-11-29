@@ -5247,14 +5247,12 @@ function check_version(url, versionstr) {
     }
     jQuery.get(url + "&site=" + encodeURIComponent(window.location.toString()) + "&jsonp=?",
                null, updatecb, "jsonp");
+    handle_ui.on("js-check-version-ignore", function () {
+        var id = $(this).data("versionId");
+        $.post(siteurl + "checkupdates.php", {ignore: id, post: siteurl_postvalue});
+        $("#softwareupdate_" + id).hide();
+    });
 }
-check_version.ignore = function (id) {
-    jQuery.get(siteurl + "checkupdates.php", {ignore: id});
-    var e = $$("softwareupdate_" + id);
-    if (e)
-        e.style.display = "none";
-    return false;
-};
 
 
 // ajax loading of paper information
