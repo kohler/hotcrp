@@ -667,21 +667,11 @@ span.impending a {
 }
 span.expander {
 	display: inline-block;
-	width: 0.8em;
 	padding-right: 0.2em;
 	opacity: 0.65;
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	text-indent: 0;
-}
-span.expander > span.in0, span.expander > span.in1 {
-	position: relative;
-	font-family: verdana, sans-serif;
-	font-size: 80%;
-}
-span.expander > span.in0 {
-	left: -0.05em;
-	top: 0.1em;
 }
 .temptext {
 	color: #aaaaaa;

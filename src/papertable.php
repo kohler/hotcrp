@@ -661,7 +661,11 @@ class PaperTable {
             . $this->editable_author_component_entry($n, "auname", $au) . ' '
             . $this->editable_author_component_entry($n, "auemail", $au) . ' '
             . $this->editable_author_component_entry($n, "auaff", $au)
-            . '<span class="nb btnbox aumovebox"><a href="#" class="ui btn qx need-tooltip row-order-ui moveup" data-tooltip="Move up" tabindex="-1">&#x25b2;</a><a href="#" class="ui btn qx need-tooltip row-order-ui movedown" data-tooltip="Move down" tabindex="-1">&#x25bc;</a><a href="#" class="ui btn qx need-tooltip row-order-ui delete" data-tooltip="Delete" tabindex="-1">✖</a></span></td></tr>';
+            . '<span class="nb btnbox aumovebox"><a href="#" class="ui btn qx need-tooltip row-order-ui moveup" data-tooltip="Move up" tabindex="-1">'
+            . svg_triangle(0)
+            . '</a><a href="#" class="ui btn qx need-tooltip row-order-ui movedown" data-tooltip="Move down" tabindex="-1">'
+            . svg_triangle(2)
+            . '</a><a href="#" class="ui btn qx need-tooltip row-order-ui delete" data-tooltip="Delete" tabindex="-1">✖</a></span></td></tr>';
     }
 
     private function echo_editable_authors() {
