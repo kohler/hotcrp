@@ -129,7 +129,6 @@ if ($Graph == "formula") {
             echo "<h2>", htmlspecialchars($fg->fy->expression), " vs. $xhtml</h2>\n";
         echo_graph();
 
-        echo Ht::unstash_script('hotgraph_info=' . json_encode_browser(["selector" => "#hotgraph"] + $fg->graph_json()) . ';'), "\n";
         $gtype = "scatter";
         if ($fg->type & FormulaGraph::BARCHART)
             $gtype = "barchart";
@@ -137,7 +136,8 @@ if ($Graph == "formula") {
             $gtype = "boxplot";
         else if ($fg->type == FormulaGraph::CDF)
             $gtype = "cdf";
-        echo '$(function () { hotcrp_graphs.', $gtype, "(hotgraph_info) });\n</script>";
+        echo Ht::unstash_script('hotgraph_info=' . json_encode_browser(["selector" => "#hotgraph"] + $fg->graph_json()) . ';'
+            . "\$(function () { hotcrp_graphs.{$gtype}(hotgraph_info) });"), "\n";
     } else
         echo "<h2>Formulas</h2>\n";
 
