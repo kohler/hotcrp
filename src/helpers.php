@@ -306,7 +306,7 @@ function actas_link($cid, $contact = null) {
     $contact = !$contact && is_object($cid) ? $cid : $contact;
     $cid = is_object($contact) ? $contact->email : $cid;
     return '<a href="' . selfHref(array("actas" => $cid))
-        . '">' . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($contact))) . '</a>';
+        . '" tabindex="-1">' . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($contact))) . '</a>';
 }
 
 function decorateNumber($n) {
