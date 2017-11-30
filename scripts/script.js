@@ -1170,7 +1170,7 @@ return function (content, bubopt) {
             if (typeof epos === "string" || epos.tagName || epos.jquery) {
                 epos = $(epos);
                 if (dirspec == null)
-                    dirspec = epos.attr("data-tooltip-dir");
+                    dirspec = $(epos).data("tooltipDir");
                 epos = epos.geometry(true);
             }
             for (i = 0; i < 4; ++i)
@@ -1252,29 +1252,44 @@ return function (content, bubopt) {
 })();
 
 
-function tooltip(info) {
+var tooltip = (function ($) {
+var builders = {};
+
+function prepare_info($self, info) {
+    var xinfo = $self.data("tooltipInfo");
+    if (xinfo) {
+        if (typeof xinfo === "string" && xinfo.charAt(0) === "{")
+            xinfo = JSON.parse(xinfo);
+        else if (typeof xinfo === "string")
+            xinfo = {builder: xinfo};
+        info = $.extend(xinfo, info);
+    }
+    if (info.builder && builders[info.builder])
+        info = builders[info.builder].call($self[0], info) || info;
+    if (info.dir == null)
+        info.dir = $self.data("tooltipDir") || "v";
+    if (info.type == null)
+        info.type = $self.data("tooltipType");
+    if (info.className == null)
+        info.className = $self.data("tooltipClass") || "dark";
+    if (info.content == null)
+        info.content = $self.data("tooltip");
+    return info;
+}
+
+function show_tooltip(info) {
     if (window.disable_tooltip)
         return null;
 
-    var j;
-    if (info.tagName)
-        info = {element: info};
-    j = $(info.element);
+    var $self = $(this);
+    info = prepare_info($self, $.extend({}, info || {}));
+    info.element = this;
 
-    function jqnear(x) {
-        if (x && x.charAt(0) == ">")
-            return j.find(x.substr(1));
-        else if (x)
-            return $(x);
-        else
-            return $();
-    }
-
-    var tt = null, content = info.content, bub = null, to = null, refcount = 0;
+    var tt, bub = null, to = null, refcount = 0, content = info.content;
     function erase() {
         to = clearTimeout(to);
         bub && bub.remove();
-        j.removeData("hotcrp_tooltip");
+        $self.removeData("tooltipState");
         if (window.global_tooltip === tt)
             window.global_tooltip = null;
     }
@@ -1303,7 +1318,7 @@ function tooltip(info) {
             return tt;
         },
         erase: erase,
-        elt: info.element,
+        _element: $self[0],
         html: function (new_content) {
             if (new_content === undefined)
                 return content;
@@ -1318,67 +1333,58 @@ function tooltip(info) {
         }
     };
 
-    if (info.dir == null)
-        info.dir = j.attr("data-tooltip-dir") || "v";
-    if (info.type == null)
-        info.type = j.attr("data-tooltip-type");
-    if (info.near == null)
-        info.near = j.attr("data-tooltip-near");
-    if (info.near)
-        info.near = jqnear(info.near)[0];
-    if (info.className == null)
-        info.className = j.attr("data-tooltip-class") || "dark";
-
     function complete(new_content) {
-        var tx = window.global_tooltip;
-        content = new_content;
-        if (tx && tx.elt == info.element && tx.html() == content && !info.done)
-            tt = tx;
+        if (new_content instanceof HPromise)
+            new_content.then(complete);
         else {
-            tx && tx.erase();
-            j.data("hotcrp_tooltip", tt);
-            show_bub();
-            window.global_tooltip = tt;
+            var tx = window.global_tooltip;
+            content = new_content;
+            if (tx && tx._element === info.element
+                && tx.html() === content
+                && !info.done)
+                tt = tx;
+            else {
+                tx && tx.erase();
+                $self.data("tooltipState", tt);
+                show_bub();
+                window.global_tooltip = tt;
+            }
         }
     }
 
-    if (content == null && j[0].hasAttribute("data-tooltip"))
-        content = j.attr("data-tooltip");
-    if (content == null && j[0].hasAttribute("data-tooltip-content-selector"))
-        content = jqnear(j.attr("data-tooltip-content-selector")).html();
-    if (content == null && j[0].hasAttribute("data-tooltip-content-promise"))
-        geval.call(this, j[0].getAttribute("data-tooltip-content-promise")).then(complete);
-    else
-        complete(content);
+    complete(content);
     info.done = true;
     return tt;
 }
 
-function tooltip_enter() {
-    var tt = $(this).data("hotcrp_tooltip") || tooltip(this);
+function ttenter() {
+    var tt = $(this).data("tooltipState") || show_tooltip.call(this);
     tt && tt.enter();
 }
 
-function tooltip_leave() {
-    var tt = $(this).data("hotcrp_tooltip");
+function ttleave() {
+    var tt = $(this).data("tooltipState");
     tt && tt.exit();
 }
 
-function tooltip_erase() {
-    var tt = $(this).data("hotcrp_tooltip");
-    tt && tt.erase();
-}
-
-function add_tooltip() {
-    var j = $(this);
-    if (j.attr("data-tooltip-type") == "focus")
-        j.on("focus", tooltip_enter).on("blur", tooltip_leave);
+function tooltip() {
+    var $self = $(this).removeClass("need-tooltip");
+    if ($self.data("tooltipType") === "focus")
+        $self.on("focus", ttenter).on("blur", ttleave);
     else
-        j.hover(tooltip_enter, tooltip_leave);
-    j.removeClass("need-tooltip");
+        $self.hover(ttenter, ttleave);
 }
+tooltip.erase = function () {
+    var tt = $(this).data("tooltipState");
+    tt && tt.erase();
+};
+tooltip.add_builder = function (name, f) {
+    builders[name] = f;
+};
 
-$(function () { $(".need-tooltip").each(add_tooltip); });
+$(function () { $(".need-tooltip").each(tooltip); });
+return tooltip;
+})($);
 
 
 // temporary text
@@ -1633,9 +1639,9 @@ function display_tracker() {
     // tracker button
     if ((e = $$("trackerconnectbtn"))) {
         if (mytracker) {
-            e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ui tracker-ui stop ttmenu\" href=\"\">Stop meeting tracker</a></div></div>");
+            $(e).data("tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ui tracker-ui stop ttmenu\" href=\"\">Stop meeting tracker</a></div></div>");
         } else {
-            e.setAttribute("data-tooltip", "Start meeting tracker");
+            $(e).data("tooltip", "Start meeting tracker");
         }
         e.className = e.className.replace(/\btbtn(?:-on)*\b/, mytracker ? "tbtn-on" : "tbtn");
     }
@@ -1679,7 +1685,7 @@ function display_tracker() {
         if (dl.tracker && (dl.tracker.listinfo || dl.tracker.listid))
             tt += ' has-hotlist" data-hotlist="' + escape_entities(dl.tracker.listinfo || dl.tracker.listid);
         mne.innerHTML = tt + '">' + t + '</div>';
-        $(mne).find(".need-tooltip").each(add_tooltip);
+        $(mne).find(".need-tooltip").each(tooltip);
         if (tracker_has_format)
             render_text.on_page();
         mnspace.style.height = mne.offsetHeight + "px";
@@ -2751,24 +2757,21 @@ var rtype_info = {
     4: ["1", "Primary review"], 5: ["M", "Metareview"]
 };
 
-function score_tooltip_enter(evt) {
-    var $self = $(this), tt = $self.data("hotcrp_tooltip");
-    if (!tt) {
-        var fieldj = formj[$self.data("rf")], score;
-        if (fieldj && fieldj.score_info
-            && (score = fieldj.score_info.parse($self.find("span.sv").text())))
-            tt = tooltip({
-                content: fieldj.options[score - 1],
-                dir: "l", near: ">span", element: this
-            });
-    }
-    tt && tt.enter();
-}
+tooltip.add_builder("rf-score", function (info) {
+    var $self = $(this), fieldj = formj[$self.data("rf")], score;
+    if (fieldj && fieldj.score_info
+        && (score = fieldj.score_info.parse($self.find("span.sv").text())))
+        info = $.extend({
+            content: fieldj.options[score - 1],
+            dir: "l", near: $self.find("span")[0]
+        }, info);
+    return info;
+});
 
-function score_header_tooltip_enter(evt) {
-    var j = $(this), tt = j.data("hotcrp_tooltip"), rv;
-    if (!tt && (rv = j.closest(".rv")[0])) {
-        var fieldj = formj[rv.getAttribute("data-rf")];
+tooltip.add_builder("rf-description", function (info) {
+    var rv = $(this).closest(".rv");
+    if (rv.length) {
+        var fieldj = formj[rv.data("rf")];
         if (fieldj && (fieldj.description || fieldj.options)) {
             var d = "", si, vo;
             if (fieldj.description) {
@@ -2783,16 +2786,15 @@ function score_header_tooltip_enter(evt) {
                      si < vo.length; ++si)
                     d += "<div class=\"od\"><span class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</span>&nbsp;" + escape_entities(fieldj.options[vo[si] - 1]) + "</div>";
             }
-            tt = tooltip({content: d, dir: "l", element: this});
+            info = $.extend({content: d, dir: "l"}, info);
         }
     }
-    tt && tt.enter();
-}
+    return info;
+});
 
-function score_header_tooltips(j) {
-    j.find(".rv .revfn").each(function () {
-        $(this).hover(score_header_tooltip_enter, tooltip_leave);
-    });
+function score_header_tooltips($j) {
+    $j.find(".rv .revfn").data("tooltipInfo", "rf-description")
+        .each(tooltip);
 }
 
 function render_review_body(rrow) {
@@ -2979,11 +2981,6 @@ return {
     },
     set_ratings: function (j) {
         ratingsj = j;
-    },
-    score_tooltips: function (j) {
-        j.find(".revscore").each(function () {
-            $(this).hover(score_tooltip_enter, tooltip_leave);
-        });
     },
     add_review: add_review
 };
@@ -3702,22 +3699,16 @@ var alltags = new HPromise().onThen(function (p) {
         p.fulfill([]);
 });
 
-var votereport = (function () {
-var vr = {};
-function votereport(tag) {
-    if (!vr[tag])
-        vr[tag] = new HPromise().onThen(function (p) {
-            $.get(hoturl("api/votereport", {p: hotcrp_paperid, tag: tag}), null, function (v) {
-                p.fulfill(v.ok ? v.result || "" : v.error);
+
+tooltip.add_builder("votereport", function (info) {
+    var pid = $(this).data("pid") || hotcrp_paperid, tag = $(this).data("tag");
+    if (pid && tag)
+        info.content = new HPromise().onThen(function (p) {
+            $.get(hoturl("api/votereport", {p: pid, tag: tag}), function (rv) {
+                p.fulfill(rv.ok ? rv.result || "" : rv.error);
             });
         });
-    return vr[tag];
-}
-votereport.clear = function () {
-    vr = {};
-};
-return votereport;
-})();
+});
 
 var allmentions = new HPromise().onThen(function (p) {
     if (hotcrp_user.is_pclike)
@@ -5009,7 +5000,7 @@ function edit_anno(locator) {
         $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
         $div.append('<input type="hidden" name="deleted_' + annoid + '" value="1" />');
         $div.find("input[name='heading_" + annoid + "']").prop("disabled", true);
-        tooltip_erase.call(this);
+        tooltip.erase.call(this);
         $(this).remove();
         return false;
     }
@@ -5097,7 +5088,7 @@ function popup_skeleton(options) {
     hc.show = function (visible) {
         if (!$d) {
             $d = $(hc.render()).appendTo(document.body);
-            $d.find(".need-tooltip").each(add_tooltip);
+            $d.find(".need-tooltip").each(tooltip);
             $d.on("click", function (event) {
                 event.target === $d[0] && popup_close($d);
             });
@@ -6257,7 +6248,6 @@ if (hotcrp_paperid) {
         $("h1.paptitle .tagdecoration").remove();
         if (data.tag_decoration_html)
             $("h1.paptitle").append(data.tag_decoration_html);
-        votereport.clear();
     });
 }
 

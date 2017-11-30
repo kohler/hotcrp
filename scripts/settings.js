@@ -335,11 +335,11 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
   </div>\
   <div class="f-i errloc_description_$">\
     <div class="f-c">Description</div>\
-    <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="6" data-tooltip-content-selector="#review_form_caption_description" data-tooltip-dir="h" data-tooltip-type="focus"></textarea>\
+    <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea>\
   </div>\
   <div class="f-i errloc_options_$ reviewrow_options">\
     <div class="f-c">Options</div>\
-    <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-content-selector="#review_form_caption_options" data-tooltip-dir="h" data-tooltip-type="focus"></textarea>\
+    <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea>\
   </div>\
   <div class="f-i">\
     <button id="moveup_$" class="btn revfield_moveup" type="button">Move up</button><span class="sep"></span>\
@@ -356,6 +356,12 @@ var revfieldview_template = '<div style="line-height:1.35">\
 <span class="settings-revvis"></span>\
 <div class="settings-revdata"></div>\
 </div>';
+
+tooltip.add_builder("settings-review-form", function (info) {
+    return $.extend({
+        dir: "h", content: $(/^description/.test(this.name) ? "#review_form_caption_description" : "#review_form_caption_options").html()
+    }, info);
+});
 
 function option_value_html(fieldj, value) {
     var cc = 48, ccdelta = 1, t, n;
@@ -486,7 +492,7 @@ function append_field(fid, pos) {
     $f.appendTo("#reviewform_container");
 
     fill_field(fid, original[fid], true);
-    $f.find(".need-tooltip").each(add_tooltip);
+    $f.find(".need-tooltip").each(tooltip);
 }
 
 function rfs(data) {

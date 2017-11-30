@@ -180,7 +180,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                     && isset($rr->$fid) && $rr->$fid) {
                     if ($score_header[$fid] === "")
                         $score_header[$fid] = '<th class="revscore">' . $f->web_abbreviation() . "</th>";
-                    $scores[$fid] = '<td class="revscore" data-rf="' . $f->uid() . '">'
+                    $scores[$fid] = '<td class="revscore need-tooltip" data-rf="' . $f->uid() . '" data-tooltip-info="rf-score">'
                         . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
                 }
@@ -290,8 +290,8 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 $t .= '<td colspan="' . $nscores . '"></td>';
             $t .= "</tr>\n";
         }
-        if ($score_header_text)
-            Ht::stash_script("review_form.score_tooltips($(\"table.reviewers_scores\"))", "score_tooltips");
+        if ($admin && $mode === "assign")
+            Ht::stash_script('$(".need-js-review-round").each(review_round_prepare).removeClass("need-js-review-round")');
         return $t . "</table></div>\n" . $notetxt;
     } else
         return $notetxt;

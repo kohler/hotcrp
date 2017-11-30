@@ -1507,7 +1507,7 @@ class PaperTable {
         $extradiv = "";
         if ($type === "vote" || $type === "approval") {
             $class .= " need-tooltip";
-            $extradiv = ' data-tooltip-dir="h" data-tooltip-content-promise="votereport(\'' . $tag . '\')"';
+            $extradiv = ' data-tooltip-dir="h" data-tooltip-info="votereport" data-tag="' . htmlspecialchars($tag) . '"';
         }
         return '<div class="' . $class . '" style="display:' . ($totval ? "block" : "none")
             . '"' . $extradiv
