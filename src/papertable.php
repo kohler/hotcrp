@@ -1325,7 +1325,7 @@ class PaperTable {
             $p = $pcm[$id];
             $text = "<p class=\"odname\">" . $this->user->name_html_for($p) . "</p>";
             if ($this->user->isPC && ($classes = $p->viewable_color_classes($this->user)))
-                $text = "<div class=\"pscopen $classes taghl\">$text</div>";
+                $text = "<div class=\"pscopen $classes taghh\">$text</div>";
             $pcconf[$p->sort_position] = $text;
         }
         ksort($pcconf);
@@ -1356,7 +1356,7 @@ class PaperTable {
         $n = $p ? $this->user->name_html_for($p) : ($value ? "Unknown!" : "");
         $text = '<p class="fn odname js-psedit-result">' . $n . '</p>';
         if ($p && ($classes = $this->user->user_color_classes_for($p)))
-            echo '<div class="pscopen taghl ', $classes, '">', $text, '</div>';
+            echo '<div class="pscopen taghh ', $classes, '">', $text, '</div>';
         else
             echo $text;
 

@@ -6046,7 +6046,7 @@ function prepare_psedit(url) {
                     $p.html(data.result || $ctl[0].options[$ctl[0].selectedIndex].innerHTML);
                     if (data.color_classes != null) {
                         make_pattern_fill(data.color_classes);
-                        $p.closest("div.taghl").removeClass().addClass("taghl pscopen " + data. color_classes);
+                        $p.closest("div.taghh").removeClass().addClass("taghh pscopen " + data.color_classes);
                     }
                 } else
                     done(false, data.error);

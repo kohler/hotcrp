@@ -332,7 +332,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
                 $tclass = "cmtlink";
                 if (($tags = $cx[0]->viewable_tags($Me, null))
                     && ($color = $cx[0]->conf->tags()->color_classes($tags)))
-                    $tclass .= " $color taghl";
+                    $tclass .= " $color taghh";
                 return "<span class=\"nb\"><a class=\"{$tclass}\" href=\"#{$cid}\">"
                     . $cx[0]->unparse_user_html($Me, null)
                     . "</a>"

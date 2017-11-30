@@ -878,7 +878,7 @@ class Tagger {
             else
                 $tx = "#" . $tag;
             if (($cc = $dt->styles($base, TagMap::STYLE_FG)))
-                $tx = '<span class="' . join(" ", $cc) . ' taghl">' . $tx . '</span>';
+                $tx = '<span class="' . join(" ", $cc) . ' taghh">' . $tx . '</span>';
             $tt .= $tx . " ";
         }
         return rtrim($tt);

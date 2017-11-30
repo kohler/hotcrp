@@ -1297,7 +1297,7 @@ function named_integer_ticks(map) {
         if (want_mclasses)
             this.selectAll("g.tick text").filter(mclasses).each(function (i) {
                 var c = mclasses(i);
-                d3.select(this).attr("class", "taghl " + c);
+                d3.select(this).attr("class", c + " taghh");
                 var b = this.getBBox();
                 d3.select(this.parentNode).insert("rect", "text")
                     .attr("x", b.x - 3).attr("y", b.y)

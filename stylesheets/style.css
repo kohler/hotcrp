@@ -2022,43 +2022,43 @@ tr.plx {
 .whitetag .pst {
 	background-color: #f8f8f8;
 }
-.boldtag.taghl, .boldtag .taghl {
+.boldtag.taghh, .boldtag .taghl {
 	font-weight: bold;
 }
-.italictag.taghl, .italictag .taghl {
+.italictag.taghh, .italictag .taghl {
 	font-style: italic;
 }
-.underlinetag.taghl, .underlinetag .taghl {
+.underlinetag.taghh, .underlinetag .taghl {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
-.strikethroughtag.taghl, .strikethroughtag .taghl {
+.strikethroughtag.taghh, .strikethroughtag .taghl {
 	-webkit-text-decoration-line: line-through;
 	text-decoration-line: line-through;
 }
-.bigtag.taghl, .bigtag .taghl {
+.bigtag.taghh, .bigtag .taghl {
 	font-size: 140%;
 }
-.smalltag.taghl, .smalltag .taghl {
+.smalltag.taghh, .smalltag .taghl {
 	font-size: 80%;
 }
-.dimtag.taghl, .dimtag .taghl {
+.dimtag.taghh, .dimtag .taghl {
 	color: gray;
 }
-.highlightmark.taghl, .highlightmark .taghl,
-.yellowhighlightmark.taghl, .yellowhighlightmark .taghl {
+.highlightmark.taghh, .highlightmark .taghl,
+.yellowhighlightmark.taghh, .yellowhighlightmark .taghl {
 	background-color: #ffeb00;
 	box-shadow: -0.2em 0 0 #ffeb00, 0.2em 0 0 0 #ffeb00;
 }
-.pinkhighlightmark.taghl, .pinkhighlightmark .taghl {
+.pinkhighlightmark.taghh, .pinkhighlightmark .taghl {
 	background-color: #ff9ee5;
 	box-shadow: -0.2em 0 0 #ff9ee5, 0.2em 0 0 0 #ff9ee5;
 }
-.greenhighlightmark.taghl, .greenhighlightmark .taghl {
+.greenhighlightmark.taghh, .greenhighlightmark .taghl {
 	background-color: #70ff63;
 	box-shadow: -0.2em 0 0 #70ff63, 0.2em 0 0 0 #70ff63;
 }
-.bluehighlightmark.taghl, .bluehighlightmark .taghl {
+.bluehighlightmark.taghh, .bluehighlightmark .taghl {
 	background-color: #c4d2ff;
 	box-shadow: -0.2em 0 0 #c4d2ff, 0.2em 0 0 0 #c4d2ff;
 }

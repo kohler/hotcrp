@@ -617,7 +617,7 @@ class Contact {
         $n = Text::name_html($user);
         if ($pfx === "r" && isset($user->contactTags)
             && ($colors = $this->user_color_classes_for($user)))
-            $n = '<span class="' . $colors . '">' . $n . '</span>';
+            $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
         return $n;
     }
 
