@@ -500,7 +500,7 @@ foreach ($tmpl as $k => &$v) {
 }
 if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
-echo Ht::select("template", $tmpl, $_REQUEST["template"], array("onchange" => "hiliter(\"loadtmpl\")")),
+echo Ht::select("template", $tmpl, $_REQUEST["template"]),
     " &nbsp;",
     Ht::submit("loadtmpl", "Load", ["id" => "loadtmpl"]),
     " &nbsp;

@@ -2400,12 +2400,6 @@ return function (j) {
 };
 })();
 
-function save_review_round(elt) {
-    $.post(hoturl_post("api/reviewround", {p: hotcrp_paperid, r: $(elt).data("reviewid")}),
-           $(elt).closest("form").serialize(),
-           function (rv) { setajaxcheck(elt, rv); });
-}
-
 
 // author entry
 var row_order_ui = (function ($) {
@@ -6309,6 +6303,19 @@ handle_ui.on("js-delete-review", function () {
         '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
     hc.show();
 });
+
+function review_round_prepare() {
+    $(this).on("change", function () {
+        var self = this;
+        $.post(hoturl_post("api/reviewround", {
+            p: $(self).data("pid") || hotcrp_paperid,
+            r: $(self).data("reviewid")
+        }), {round: $(self).val()}, function (rv) {
+            setajaxcheck(self, rv);
+        });
+    });
+}
+
 
 
 // search/paperlist UI

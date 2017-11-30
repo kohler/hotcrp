@@ -307,7 +307,7 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
 <tr><td class="nw"><a href="#" class="q revfield-folder">\
 <span class="expander"><span class="in0 fx2">▼</span><span class="in1 fn2 need-tooltip" data-tooltip="Edit field" data-tooltip-dir="r">▶</span></span>\
 </a></td><td>\
-<div id="revfieldview_$" class="settings-revfieldview fn2"></div>\
+<div id="revfieldview_$" class="settings-revfieldview fn2 js-foldup"></div>\
 <div id="revfieldedit_$" class="settings-revfieldedit fx2">\
   <div class="f-i errloc_shortName_$">\
     <input name="shortName_$" id="shortName_$" type="text" size="50" style="font-weight:bold" placeholder="Field name" />\
