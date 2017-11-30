@@ -954,9 +954,6 @@ td.rpentry {
 td.llentry {
 	padding: 0 0.75em;
 }
-td.hint {
-	padding: 0 0.5em;
-}
 div.hint {
 	margin-bottom: 0.5ex;
 }
@@ -973,12 +970,6 @@ div.hint {
 }
 td.caption span.hint {
 	font-weight: normal;
-}
-div#aumg td.hint, table.paper td.hint, table.setreviewform td.hint {
-	width: 25%;
-}
-table.setreviewform td.rxcaption {
-	width: 10em;
 }
 
 
@@ -1551,11 +1542,6 @@ span.pstat {
 	padding-left: 1em;
 	float: right;
 }
-table.setreviewform th, table.auedittable th {
-	text-align: left;
-	padding-right: 0.125em;
-	vertical-align: bottom;
-}
 .pl_name, .pl_email, .pl_affiliation, .pl_lastvisit, .pl_papers {
 	text-align: left;
 	padding-right: 1em;
@@ -1624,12 +1610,6 @@ td.pl_lastvisit, td.pl_time {
 	position: relative;
 	white-space: nowrap;
 	font-weight: bold;
-}
-table.setreviewform th {
-	border-bottom: 1px solid #999999;
-}
-table.setreviewform th, table.auedittable th {
-	font-size: smaller;
 }
 .aumovebox {
 	visibility: hidden;
