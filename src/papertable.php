@@ -1973,10 +1973,7 @@ class PaperTable {
         $form_js = ["id" => "paperform"];
         if ($this->prow && $this->prow->timeSubmitted > 0)
             $form_js["data-submitted"] = $this->prow->timeSubmitted;
-        if ($this->prow
-            && ($this->canUploadFinal
-                ? !$this->user->can_submit_final_paper($this->prow)
-                : !$this->user->can_update_paper($this->prow)))
+        if ($this->prow && !$this->editable)
             $form_js["data-contacts-only"] = 1;
         if ($this->useRequest)
             $form_js["class"] = "alert";
