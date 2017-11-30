@@ -267,9 +267,8 @@ class Navigation {
         echo "<!DOCTYPE html><html lang=\"en\"><head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
-<title>Redirection</title>\n",
-            Ht::script('location=' . json_encode_browser($url) . ';'),
-            "</head><body>
+<title>Redirection</title>
+<script>location=", json_encode($url), ";</script>
 <p>You should be redirected <a href=\"", htmlspecialchars($url), "\">to here</a>.</p>
 </body></html>\n";
         exit();
