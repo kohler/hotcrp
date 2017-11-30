@@ -147,7 +147,12 @@ static function render(SettingValues $sv) {
 
     // PC reviews
     echo "<h3 class=\"settings g\" id=\"pcreviews\">PC reviews</h3>\n";
-    $sv->echo_checkbox('pcrev_any', "PC members can review any submitted paper");
+    echo '<table><tbody>';
+    $sv->echo_checkbox_row('pcrev_any', "PC members can review any submitted paper");
+    if ($sv->conf->setting("pcrev_any")
+        && $sv->conf->check_track_sensitivity(Track::UNASSREV))
+        echo '<tr><td></td><td class="hint">', Ht::link("Current track settings", hoturl("settings", "group=tracks")), ' may restrict self-assigned reviews.</td></tr>';
+    echo "</tbody></table>\n";
 
     echo "<div class=\"g\">Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
     if ($sv->conf->has_any_metareviews())

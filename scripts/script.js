@@ -3693,7 +3693,6 @@ var alltags = new HPromise().onThen(function (p) {
         p.fulfill([]);
 });
 
-
 tooltip.add_builder("votereport", function (info) {
     var pid = $(this).data("pid") || hotcrp_paperid, tag = $(this).data("tag");
     if (pid && tag)
