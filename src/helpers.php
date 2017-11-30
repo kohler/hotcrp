@@ -301,23 +301,6 @@ function expander($open, $foldnum = null) {
     return $t . '</span>';
 }
 
-function reviewType($paperId, $row, $long = 0) {
-    if ($row->reviewType == REVIEW_PRIMARY)
-        return "<span class='rtype rtype_pri'>Primary</span>";
-    else if ($row->reviewType == REVIEW_SECONDARY)
-        return "<span class='rtype rtype_sec'>Secondary</span>";
-    else if ($row->reviewType == REVIEW_EXTERNAL)
-        return "<span class='rtype rtype_req'>External</span>";
-    else if ($row->conflictType >= CONFLICT_AUTHOR)
-        return "<span class='author'>Author</span>";
-    else if ($row->conflictType > 0)
-        return "<span class='conflict'>Conflict</span>";
-    else if (!($row->reviewId === null) || $long)
-        return "<span class='rtype rtype_pc'>PC</span>";
-    else
-        return "";
-}
-
 function actas_link($cid, $contact = null) {
     global $Conf;
     $contact = !$contact && is_object($cid) ? $cid : $contact;
