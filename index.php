@@ -16,8 +16,10 @@ if (Navigation::page() !== "index") {
         $_GET["file"] = $page . Navigation::path();
         include("cacheable.php");
         exit;
-    } else
+    } else {
+        require_once("lib/ht.php");
         Navigation::redirect_site("index");
+    }
 }
 
 require_once("pages/home.php");
