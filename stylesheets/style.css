@@ -2870,7 +2870,7 @@ body#offline .revcard {
 	padding-top: 1px;
 	padding-bottom: 2px;
 }
-span.tagbg {
+span.tagbg, a.tagbg {
 	display: inline-block;
 	padding-left: 2px;
 	padding-right: 2px;
