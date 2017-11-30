@@ -780,7 +780,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     foreach (array("chair" => "PC chair",
                    "pc" => "PC member",
                    "no" => "Not on the PC") as $k => $v) {
-        echo Ht::radio("pctype", $k, $pcrole === $k, ["class" => "ui js-role"]),
+        echo Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role"]),
             "&nbsp;", Ht::label($v), "<br />\n";
     }
     Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
