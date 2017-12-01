@@ -91,7 +91,7 @@
     {
         "name": "topic",
         "parser": "Topic_SearchTerm::parse",
-        "has": "any"
+        "synonym": ["topics"], "has": "any"
     },
     {
         "name": "lead",
