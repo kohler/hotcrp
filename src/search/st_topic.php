@@ -33,16 +33,15 @@ class Topic_SearchTerm extends SearchTerm {
         return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $thistab = "Topic_" . count($sqi->tables);
-        $joiner = "";
-        if (!is_array($this->topics))
-            $thistab = "AnyTopic";
-        else if (empty($this->topics))
-            $joiner = "false";
-        else
-            $joiner = "topicId in (" . join(",", $this->topics) . ")";
-        $sqi->add_table($thistab, ["left join", "PaperTopic", $joiner]);
-        return "$thistab.topicId is " . ($this->topics === false ? "null" : "not null");
+        $tm = "";
+        if ($this->topics === [])
+            return "false";
+        else if (is_array($this->topics))
+            $tm = " and topicId in (" . join(",", $this->topics) . ")";
+        $t = "exists (select * from PaperTopic where paperId=Paper.paperId$tm)";
+        if ($this->topics === false)
+            $t = "not $t";
+        return $t;
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         if (is_bool($this->topics))

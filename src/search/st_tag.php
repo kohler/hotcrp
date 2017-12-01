@@ -152,15 +152,10 @@ class Tag_SearchTerm extends SearchTerm {
         return $term;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $thistab = "Tag_" . count($sqi->tables);
-        $tm_sql = $this->tsm->tagmatch_sql($thistab, $sqi->user);
-        if ($tm_sql === false) {
-            $thistab = "AnyTag";
-            $tdef = ["left join", "PaperTag"];
-        } else
-            $tdef = ["left join", "PaperTag", $tm_sql];
-        $sqi->add_table($thistab, $tdef);
-        return "$thistab.tag is not null";
+        $tm_sql = $this->tsm->tagmatch_sql("PaperTag", $sqi->user);
+        if ($tm_sql !== false)
+            $tm_sql = " and ($tm_sql)";
+        return 'exists (select * from PaperTag where paperId=Paper.paperId' . ($tm_sql ? : "") . ')';
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $this->tsm->evaluate($srch->user, $row->searchable_tags($srch->user));
