@@ -502,8 +502,7 @@ class PaperList {
         // Linelinks container
         $foot = "  <tr class=\"pl_footrow\">";
         if (!$this->_view_columns) {
-            $foot .= '<td class="plf pl_footselector">'
-                . Ht::img("_.gif", "^^", "placthook") . "</td>";
+            $foot .= '<td class="plf pl_footselector">' . Icons::ui_upperleft() . '</td>';
             --$ncol;
         }
         $foot .= '<td id="plact" class="plf pl_footer linelinks" colspan="' . $ncol . '">';

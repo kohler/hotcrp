@@ -118,6 +118,7 @@ lib/dbl.php
 lib/filer.php
 lib/getopt.php
 lib/ht.php
+lib/icons.php
 lib/intlmsgset.php
 lib/json.php
 lib/ldaplogin.php
@@ -278,7 +279,6 @@ extra/hotcrp.vim
 images/.htaccess
 images/_.gif
 images/assign48.png
-images/bendulft.png
 images/buzzer.mp3
 images/check.png
 images/comment48.png

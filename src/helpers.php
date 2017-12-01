@@ -290,25 +290,14 @@ function foldupbutton($foldnum = 0, $content = "", $js = null) {
     return Ht::link(expander(null, $foldnum) . $content, "#", $js);
 }
 
-function svg_triangle($direction) {
-    $t = '<svg width="0.75em" height="0.75em" viewBox="0 0 14 14" style="vertical-align:-0.05em" preserveAspectRatio="none"><path style="fill:currentColor" d="';
-    if ($direction == 0)
-        $t .= 'M1 13L7 1L13 13z';
-    else if ($direction == 1)
-        $t .= 'M1 1L13 7L1 13z';
-    else if ($direction == 2)
-        $t .= 'M1 1L7 13L13 1z';
-    return $t . '" /></svg>';
-}
-
 function expander($open, $foldnum = null) {
     $f = $foldnum !== null;
     $foldnum = ($foldnum !== 0 ? $foldnum : "");
     $t = '<span class="expander">';
     if ($open === null || !$open)
-        $t .= '<span class="in0' . ($f ? " fx$foldnum" : "") . '">' . svg_triangle(2) . '</span>';
+        $t .= '<span class="in0' . ($f ? " fx$foldnum" : "") . '">' . Icons::ui_triangle(2) . '</span>';
     if ($open === null || $open)
-        $t .= '<span class="in1' . ($f ? " fn$foldnum" : "") . '">' . svg_triangle(1) . '</span>';
+        $t .= '<span class="in1' . ($f ? " fn$foldnum" : "") . '">' . Icons::ui_triangle(1) . '</span>';
     return $t . '</span>';
 }
 

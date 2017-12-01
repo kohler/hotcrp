@@ -55,9 +55,9 @@ function formulas_qrow($i, $q, $s, $errf) {
     $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "placeholder" => "(All)", "class" => $klass));
     $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("by-tag" => "by tag", "plain" => "plain", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag");
     $t .= ' <span class="nb btnbox aumovebox" style="margin-left:1em"><a href="#" class="ui btn qx row-order-ui moveup" tabindex="-1">'
-        . svg_triangle(0)
+        . Icons::ui_triangle(0)
         . '</a><a href="#" class="ui btn qx row-order-ui movedown" tabindex="-1">'
-        . svg_triangle(2)
+        . Icons::ui_triangle(2)
         . '</a><a href="#" class="ui btn qx row-order-ui delete" tabindex="-1">✖</a></span></td></tr>';
     return $t;
 }
