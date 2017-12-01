@@ -1699,17 +1699,18 @@ class Conf {
                     $csv[] = "{$prow->paperId}," . CsvGenerator::quote($dt->tag . ($want ? "" : "#clear"));
             }
         }
-        if (count($csv) > 1)
-            $this->_update_autosearch_tags_csv($csv);
+        $this->_update_autosearch_tags_csv($csv);
     }
 
     function _update_autosearch_tags_csv($csv) {
-        $this->_updating_autosearch_tags = true;
-        $aset = new AssignmentSet($this->site_contact(), true);
-        $aset->set_search_type("all");
-        $aset->parse($csv);
-        $aset->execute();
-        $this->_updating_autosearch_tags = false;
+        if (count($csv) > 1) {
+            $this->_updating_autosearch_tags = true;
+            $aset = new AssignmentSet($this->site_contact(), true);
+            $aset->set_search_type("all");
+            $aset->parse($csv);
+            $aset->execute();
+            $this->_updating_autosearch_tags = false;
+        }
     }
 
 
