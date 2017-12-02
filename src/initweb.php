@@ -42,6 +42,9 @@ if ($zlib_output_compression) {
 // to cache for history buttons
 header("Cache-Control: max-age=0,must-revalidate,private");
 
+// Set up Content-Security-Policy if appropriate
+$Conf->prepare_content_security_policy();
+
 // Don't set up a session if $Me is false
 if ($Me === false)
     return;

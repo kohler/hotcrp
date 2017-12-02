@@ -2814,6 +2814,30 @@ class Conf {
         return $this->make_script_file($jquery, true, $integrity);
     }
 
+    function prepare_content_security_policy() {
+        if (($csp = $this->opt("contentSecurityPolicy"))) {
+            if (is_string($csp))
+                $csp = [$csp];
+            else if ($csp === true)
+                $csp = [];
+            $report_only = false;
+            if (($pos = array_search("'report-only'", $csp)) !== false) {
+                $report_only = true;
+                array_splice($csp, $pos, 1);
+            }
+            if (empty($csp))
+                array_push($csp, "script-src", "'nonce'");
+            if (($pos = array_search("'nonce'", $csp)) !== false) {
+                $nonceval = base64_encode(random_bytes(16));
+                $csp[$pos] = "'nonce-$nonceval'";
+                Ht::set_script_nonce($nonceval);
+            }
+            header("Content-Security-Policy"
+                   . ($report_only ? "-Report-Only: " : ": ")
+                   . join(" ", $csp));
+        }
+    }
+
     function header_head($title) {
         global $Me, $ConfSitePATH;
         // load session list and clear its cookie

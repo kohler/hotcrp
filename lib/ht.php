@@ -7,6 +7,7 @@ class Ht {
 
     public static $img_base = "";
     public static $default_button_class = "";
+    private static $_script_open = "<script";
     private static $_controlid = 0;
     private static $_lastcontrolid = 0;
     private static $_stash = "";
@@ -46,14 +47,21 @@ class Ht {
         return $x;
     }
 
+    static function set_script_nonce($nonce) {
+        if ((string) $nonce === "")
+            self::$_script_open = '<script';
+        else
+            self::$_script_open = '<script nonce="' . htmlspecialchars($nonce) . '"';
+    }
+
     static function script($script) {
-        return '<script>' . $script . '</script>';
+        return self::$_script_open . '>' . $script . '</script>';
     }
 
     static function script_file($src, $js = null) {
         if ($js && get($js, "crossorigin") && !preg_match(',\A([a-z]+:)?//,', $src))
             unset($js["crossorigin"]);
-        return '<script src="' . htmlspecialchars($src) . '"' . self::extra($js) . '></script>';
+        return self::$_script_open . ' src="' . htmlspecialchars($src) . '"' . self::extra($js) . '></script>';
     }
 
     static function stylesheet_file($src) {
@@ -399,7 +407,7 @@ class Ht {
         if ($js !== null && $js !== false && $js !== ""
             && (!$uniqueid || self::mark_stash($uniqueid))) {
             if (!self::$_stash_inscript)
-                self::$_stash .= "<script>";
+                self::$_stash .= self::$_script_open . ">";
             else if (($c = self::$_stash[strlen(self::$_stash) - 1]) !== "}"
                      && $c !== "{" && $c !== ";")
                 self::$_stash .= ";";
