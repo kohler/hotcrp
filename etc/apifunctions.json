@@ -37,8 +37,12 @@
         "synonym": ["listreport"]
     },
     {
-        "name": "namedformula", "get": true, "post": true,
+        "name": "namedformula", "get": true,
         "function": "SearchConfig_API::namedformula"
+    },
+    {
+        "name": "namedformula", "post": true,
+        "function": "SearchConfig_API::save_namedformula"
     },
     {
         "name": "mentioncompletion", "get": true, "post": true,

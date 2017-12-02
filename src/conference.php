@@ -922,6 +922,10 @@ class Conf {
         return $this->_defined_formulas;
     }
 
+    function invalidate_named_formulas() {
+        $this->_defined_formulas = null;
+    }
+
     function find_named_formula($text) {
         return $this->abbrev_matcher()->find1($text, self::FSRCH_FORMULA);
     }

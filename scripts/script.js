@@ -6352,7 +6352,7 @@ handle_ui.on("js-edit-formulas", function () {
             hc.push(escape_entities(f.expression));
         hc.push_pop('</div></div>');
     }
-    function click() {
+    function click(event) {
         if (this.name === "add") {
             var hc = new HtmlCollector;
             push_formula(hc, {name: "", expression: "", editable: true, id: "new"});
@@ -6368,10 +6368,25 @@ handle_ui.on("js-edit-formulas", function () {
         $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
         $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1" />');
     }
+    function submit(event) {
+        event.preventDefault();
+        $.post(hoturl_post("api/namedformula"),
+            $d.find("form").serialize(),
+            function (data) {
+                if (data.ok)
+                    location.reload(true);
+                else {
+                    $d.find(".xmerror").remove();
+                    $d.find(".editformulas").prepend($(render_xmsg(2, data.error)));
+                    $d.find(".error").removeClass("error");
+                    for (var f in data.errf || {}) {
+                        $d.find("input, textarea").filter("[name='" + f + "']").addClass("error");
+                    }
+                }
+            });
+    }
     function create(formulas) {
-        var hc = popup_skeleton({
-            action: hoturl_add(window.location.href, "post=" + siteurl_postvalue)
-        }), i;
+        var hc = popup_skeleton(), i;
         hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
         hc.push('<h2>Named formulas</h2>');
         hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
@@ -6383,6 +6398,7 @@ handle_ui.on("js-edit-formulas", function () {
         $d = hc.show();
         $d.on("click", "button", click);
         $d.on("click", "a.delete-link", ondelete);
+        $d.on("submit", "form", submit);
     }
     $.get(hoturl_post("api/namedformula"), function (data) {
         if (data.ok)
