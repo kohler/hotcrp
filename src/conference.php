@@ -2768,6 +2768,8 @@ class Conf {
 
     function make_css_link($url, $media = null) {
         global $ConfSitePATH;
+        if (str_starts_with($url, "<meta"))
+            return $url;
         $t = '<link rel="stylesheet" type="text/css" href="';
         if (str_starts_with($url, "stylesheets/")
             || !preg_match(',\A(?:https?:|/),i', $url))
@@ -2826,8 +2828,14 @@ class Conf {
         if (!$this->opt("allowIndexPapers") && $this->paper)
             echo "<meta name=\"robots\" content=\"noindex,noarchive\" />\n";
 
-        echo $this->opt("fontScript", "");
+        if (($font_script = $this->opt("fontScript"))) {
+            if (!str_starts_with($font_script, "<script"))
+                $font_script = Ht::script($font_script);
+            echo $font_script, "\n";
+        }
 
+        foreach (mkarray($this->opt("prependStylesheets", [])) as $css)
+            echo $this->make_css_link($css), "\n";
         echo $this->make_css_link("stylesheets/style.css"), "\n";
         if ($this->opt("mobileStylesheet")) {
             echo '<meta name="viewport" content="width=device-width, initial-scale=1">', "\n";

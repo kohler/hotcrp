@@ -201,7 +201,6 @@ $Opt["passwordHmacKey"] = null;
 //   hideManager     If set, PC members are not shown paper managers.
 //   disableCapabilities If set, emails to authors will not have a
 //                   token enabling them to view their papers without logging in.
-//   mobileStylesheet  If true, make the site mobile aware.
 
 $Opt["smartScoreCompare"] = true;
 
