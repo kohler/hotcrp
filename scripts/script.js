@@ -920,7 +920,7 @@ function to_rgba(c) {
 }
 
 function make_model(color) {
-    return $('<div style="display:none" class="bubble' + color + '"><div class="bubtail bubtail0' + color + '"></div></div>').appendTo(document.body);
+    return $('<div class="bubble hidden' + color + '"><div class="bubtail bubtail0' + color + '"></div></div>').appendTo(document.body);
 }
 
 function calculate_sizes(color) {
@@ -1454,11 +1454,10 @@ function setLocalTime(elt, servtime) {
             s = strftime("%A %#e %b %Y %#r your time", d);
         if (elt.tagName == "SPAN") {
             elt.innerHTML = " (" + s + ")";
-            elt.style.display = "inline";
         } else {
             elt.innerHTML = s;
-            elt.style.display = "block";
         }
+        removeClass(elt, "hidden");
     }
 }
 setLocalTime.initialize = function (servzone, hr24) {
@@ -3455,13 +3454,13 @@ function switch_preview(evt) {
         $ta = $ta.first();
         if ($ta.is(":visible")) {
             var format = +this.getAttribute("data-format");
-            $ta.hide();
+            $ta.addClass("hidden");
             $ta.after('<div class="preview"><div class="preview-border" style="margin-bottom:6px"></div><div></div><div class="preview-border" style="margin-top:6px"></div></div>');
             $ta.trigger("hotcrp_renderPreview", [format, $ta[0].value, $ta[0].nextSibling.firstChild.nextSibling]);
             this.innerHTML = "Edit";
         } else {
             $ta.next().remove();
-            $ta.show();
+            $ta.removeClass("hidden");
             $ta[0].focus();
             this.innerHTML = "Preview";
         }
@@ -6365,7 +6364,7 @@ handle_ui.on("js-edit-formulas", function () {
     }
     function ondelete() {
         var $x = $(this).closest(".editformulas-formula");
-        $x.find(".editformulas-expression").closest(".f-i").hide();
+        $x.find(".editformulas-expression").closest(".f-i").addClass("hidden");
         $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
         $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1" />');
     }
@@ -6764,7 +6763,7 @@ function make_info(n, c, sv) {
     function rgb_array(val) {
         var svx = sv + fm9(val);
         if (!sccolor[svx]) {
-            var j = $('<span style="display:none" class="svb ' + svx + '"></span>').appendTo(document.body), m;
+            var j = $('<span class="svb hidden ' + svx + '"></span>').appendTo(document.body), m;
             sccolor[svx] = [0, 0, 0];
             if ((m = /^\s*rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)[\s,)]/.exec(j.css("color"))))
                 sccolor[svx] = [+m[1], +m[2], +m[3]];

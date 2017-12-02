@@ -325,14 +325,12 @@ if ($pl_text) {
         if ($Me->privChair && $viewAllAuthors)
             $display_options_extra .=
                 Ht::checkbox("showanonau", 1, !$pl->is_folded("au"),
-                             array("id" => "showau_hidden", "class" => "paperlist-display",
-                                   "style" => "display:none"));
+                             ["id" => "showau_hidden", "class" => "paperlist-display hidden"]);
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
         $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl->has("anonau")]);
         $display_options_extra .=
             Ht::checkbox("showau", 1, !$pl->is_folded("anonau"),
-                         array("id" => "showau_hidden", "class" => "paperlist-display",
-                               "style" => "display:none"));
+                         ["id" => "showau_hidden", "class" => "paperlist-display hidden"]);
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
         $display_options->checkbox_item(1, "aufull", "Full author info", ["id" => "showaufull", "indent" => true]);

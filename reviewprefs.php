@@ -298,8 +298,7 @@ if (!$Conf->subBlindAlways()) {
                 ["id" => "showau", "class" => "paperlist-display"])
         . "&nbsp;" . Ht::label("Authors (deblinded)") . "</span>"
         . Ht::checkbox("showau", 1, !$pl->is_folded("anonau") !== false,
-                ["id" => "showau_hidden", "class" => "paperlist-display",
-                 "style" => "display:none"]);
+                ["id" => "showau_hidden", "class" => "paperlist-display hidden"]);
 }
 if (!$Conf->subBlindAlways() || $Me->privChair) {
     $show_data[] = '<span class="sep fx10">'
