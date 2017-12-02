@@ -490,7 +490,7 @@ class ContactList {
             . "\">" . PaperList::render_footer_row(1, $ncol - 1,
                 "<b>Select people</b> (or <a class=\"ui js-select-all\" href=\"\">select all {$this->count}</a>), then&nbsp; ",
                 $lllgroups)
-            . "  </tfoot>\n";
+            . "</tfoot>\n";
     }
 
     private function _conflict_pids() {

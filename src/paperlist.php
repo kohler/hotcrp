@@ -529,7 +529,7 @@ class PaperList {
                 $foot .= "    <td>&nbsp;<span class='barsep'>·</span>&nbsp;</td>\n";
             $foot .= "   </tr></tbody></table>";
         }
-        return $foot . (string) $extra . "<hr class=\"c\" /></td>\n  </tr>";
+        return $foot . (string) $extra . "<hr class=\"c\" /></td>\n </tr>";
     }
 
     private function _footer($ncol, $extra) {
@@ -1536,7 +1536,7 @@ class PaperList {
             $foot .= $this->_footer($ncol, get_s($options, "footer_extra"));
         if ($foot)
             $enter .= ' <tfoot class="pltable' . ($rstate->hascolors ? ' pltable_colored' : "")
-                . "\">\n" . $foot . " </tfoot>\n";
+                . "\">" . $foot . "</tfoot>\n";
 
         // body
         $enter .= " <tbody class=\"$tbody_class\">\n";
