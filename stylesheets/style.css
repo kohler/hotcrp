@@ -662,9 +662,6 @@ span.impending a {
 }
 
 /* buttons */
-#plact input, #plact button, #plact select {
-	font-size: 100%;
-}
 span.expander {
 	display: inline-block;
 	padding-right: 0.2em;
