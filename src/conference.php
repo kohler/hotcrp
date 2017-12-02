@@ -3331,12 +3331,15 @@ class Conf {
         return $this->_api_map;
     }
     private function check_api_json($fj, Contact $user = null, $method) {
-        if ((isset($fj->allow_if) && !$this->xt_allowed($fj, $user))
-            || ($method === "GET" && !get($fj, "get"))
-            || ($method === "POST" && get($fj, "post") === false))
+        if (isset($fj->allow_if) && !$this->xt_allowed($fj, $user))
             return false;
-        else
+        else if (!$method)
             return true;
+        else {
+            $methodx = get($fj, strtolower($method));
+            return $methodx
+                || ($method === "POST" && $methodx === null && get($fj, "get"));
+        }
     }
     function has_api($fn, Contact $user = null, $method = null) {
         return !!$this->api($fn, $user, $method);
@@ -3349,7 +3352,9 @@ class Conf {
         return self::xt_enabled($uf) ? $uf : null;
     }
     private function call_api($fn, $uf, Contact $user, Qrequest $qreq, $prow) {
-        if ($qreq->method() !== "GET" && $qreq->method() !== "HEAD" && !check_post($qreq))
+        $method = $qreq->method();
+        if ($method !== "GET" && $method !== "HEAD" && $method !== "OPTIONS"
+            && (!$uf || !get($uf, "allow_xss")) && !check_post($qreq))
             return new JsonResult(403, ["ok" => false, "error" => "Missing credentials."]);
         if (!$uf) {
             if ($this->has_api($fn, $user, null))

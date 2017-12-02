@@ -6,12 +6,22 @@
 require_once("init.php");
 global $Conf, $Me, $Opt;
 
+// Check method: GET/HEAD/POST only, except OPTIONS is allowed for API calls
+if ($_SERVER["REQUEST_METHOD"] !== "GET"
+    && $_SERVER["REQUEST_METHOD"] !== "HEAD"
+    && $_SERVER["REQUEST_METHOD"] !== "POST"
+    && (Navigation::page() !== "api"
+        || $_SERVER["REQUEST_METHOD"] !== "OPTIONS")) {
+    header("HTTP/1.0 405 Method Not Allowed");
+    exit;
+}
+
 // Check for obsolete pages
 // These are pages that we've removed from the source. But some user might
 // have an old version of the page lying around their directory. Don't run
 // that code; redirect to index.
 if (array_search(Navigation::page(),
-                 array("account", "contactauthors", "contacts", "login", "logout")) !== false)
+                 ["account", "contactauthors", "contacts", "login", "logout"]) !== false)
     go();
 
 // Check for redirect to https
