@@ -62,44 +62,6 @@ if ($qreq->p && ctype_digit($qreq->p)) {
 if ($Conf->has_api($qreq->fn))
     $Conf->call_api_exit($qreq->fn, $Me, $qreq, $Conf->paper);
 
-if ($qreq->fn === "jserror") {
-    $url = (string) $qreq->url;
-    if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
-        $url = $m[1];
-    if (($n = $qreq->lineno))
-        $url .= ":" . $n;
-    if (($n = $qreq->colno))
-        $url .= ":" . $n;
-    if ($url !== "")
-        $url .= ": ";
-    $errormsg = trim((string) $qreq->error);
-    if ($errormsg) {
-        $suffix = "";
-        if ($Me->email)
-            $suffix .= ", user " . $Me->email;
-        if (isset($_SERVER["REMOTE_ADDR"]))
-            $suffix .= ", host " . $_SERVER["REMOTE_ADDR"];
-        error_log("JS error: $url$errormsg$suffix");
-        if (($stacktext = $qreq->stack)) {
-            $stack = array();
-            foreach (explode("\n", $stacktext) as $line) {
-                $line = trim($line);
-                if ($line === "" || $line === $errormsg || "Uncaught $line" === $errormsg)
-                    continue;
-                if (preg_match('/\Aat (\S+) \((\S+)\)/', $line, $m))
-                    $line = $m[1] . "@" . $m[2];
-                else if (substr($line, 0, 1) === "@")
-                    $line = substr($line, 1);
-                else if (substr($line, 0, 3) === "at ")
-                    $line = substr($line, 3);
-                $stack[] = $line;
-            }
-            error_log("JS error: {$url}via " . join(" ", $stack));
-        }
-    }
-    json_exit(["ok" => true]);
-}
-
 if ($qreq->fn === "setsession") {
     if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|scoresort)(|\..*)\z/', (string) $qreq->var, $m)) {
         $val = $qreq->val;

@@ -101,5 +101,9 @@
     {
         "name": "whoami", "get": true,
         "function": "User_API::whoami"
+    },
+    {
+        "name": "jserror", "get": true, "post": true,
+        "function": "Error_API::jserror"
     }
 ]

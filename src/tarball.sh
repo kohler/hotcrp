@@ -147,6 +147,7 @@ pages/adminhome.php
 pages/home.php
 
 src/.htaccess
+src/api/api_error.php
 src/api/api_search.php
 src/api/api_searchconfig.php
 src/api/api_taganno.php
