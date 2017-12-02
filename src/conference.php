@@ -3076,7 +3076,7 @@ class Conf {
         // Callback for version warnings
         if ($Me && $Me->privChair
             && (!isset($_SESSION["updatecheck"])
-                || $_SESSION["updatecheck"] + 20 <= $Now)
+                || $_SESSION["updatecheck"] + 3600 <= $Now)
             && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {
             $m = isset($this->opt["updatesSite"]) ? $this->opt["updatesSite"] : "//hotcrp.lcdf.org/updates";
             $m .= (strpos($m, "?") === false ? "?" : "&")
