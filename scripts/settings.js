@@ -47,7 +47,7 @@ function settings_option_move() {
             ++next;
         h = h.replace(/_0/g, "_" + next);
         odiv = $(h).appendTo("#settings_opts");
-        odiv.find("input[placeholder]").each(mktemptext);
+        mktemptext(odiv);
         odiv.find("textarea").autogrow();
         $("#optn_" + next)[0].focus();
     }
@@ -82,7 +82,7 @@ function settings_tag_autosearch() {
             ++next;
         h = h.replace(/_0/g, "_" + next);
         odiv = $(h).appendTo("#settings_tag_autosearch");
-        odiv.find("input[placeholder]").each(mktemptext);
+        mktemptext(odiv);
         odiv.find("input[type=text]").autogrow();
         $("#tag_autosearch_t_" + next)[0].focus();
     }
@@ -96,7 +96,7 @@ function settings_add_track() {
     $("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\" class=\"mg\"></div>");
     var $j = jQuery("#trackgroup" + i);
     $j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
-    $j.find("input[placeholder]").each(mktemptext);
+    mktemptext($j);
     $j.find("input[name^=name]").focus();
 }
 
@@ -124,7 +124,7 @@ function add() {
         jQuery("div[data-round-number=" + i + "] > :first-child").append('<div class="hint">Example name: “R1”</div>');
     jQuery("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
     jQuery("#extrev_roundtag").append('<option value="#' + i + '" id="extrev_roundtag_' + i + '">(new round)</option>');
-    jQuery("div[data-round-number=" + i + "] input[placeholder]").each(mktemptext);
+    mktemptext($("div[data-round-number=" + i + "])"));
     jQuery("#roundname_" + i).focus().on("input change", namechange);
 }
 
@@ -518,7 +518,7 @@ function rfs(data) {
         if (!opts.f) {
             $(this).find("textarea").css("height", "auto").autogrow();
             $(this).find("input[type=text]").autogrow();
-            $(this).find("input[placeholder]").each(mktemptext);
+            mktemptext($(this));
         }
     });
 
@@ -676,7 +676,7 @@ function settings_add_resp_round() {
     jQuery("#response_n").before("<div id=\"response_" + i + "\" style=\"padding-top:1em\"></div>");
     j = jQuery("#response_" + i);
     j.html(jQuery("#response_n").html().replace(/_n\"/g, "_" + i + "\""));
-    j.find("input[placeholder]").each(mktemptext);
+    mktemptext(j);
     j.find("textarea").css({height: "auto"}).autogrow().val(jQuery("#response_n textarea").val());
     return false;
 }

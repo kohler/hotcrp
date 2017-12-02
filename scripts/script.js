@@ -1397,22 +1397,17 @@ if (Object.prototype.toString.call(window.operamini) === '[object OperaMini]'
         $e.toggleClass("temptext", event.type != "focus" && (v === "" || v === p));
     }
 
-    return function (e) {
-        e = typeof e === "number" ? this : e;
-        $(e).on("focus blur change input", ttaction);
-        ttaction.call(e, {type: "blur"});
+    return function ($base) {
+        $base.find("input[placeholder], textarea[placeholder]").each(function () {
+            $(this).on("focus blur change input", ttaction);
+            ttaction.call(this, {type: "blur"});
+        });
     };
     })();
+
+    $(function () { mktemptext($(document)); });
 } else {
-    window.mktemptext = function (e) {
-        e = typeof e === "number" ? this : e;
-        var p = e.getAttribute("placeholder");
-        if (e.getAttribute("value") == p)
-            e.setAttribute("value", "");
-        if (e.value == p)
-            e.value = "";
-        $(e).removeClass("temptext");
-    };
+    window.mktemptext = $.noop;
 }
 
 
@@ -1951,10 +1946,7 @@ return {
 
 
 var hotcrp_load = {
-    time: setLocalTime.initialize,
-    temptext: function () {
-        jQuery("input[placeholder], textarea[placeholder]").each(mktemptext);
-    }
+    time: setLocalTime.initialize
 };
 
 
@@ -2446,7 +2438,7 @@ function row_order_change(e, delta, action) {
             || action > 0)
            && (max_rows <= 0 || trs.length < max_rows)) {
         var $newtr = $($tbody.data("rowTemplate")).appendTo($tbody);
-        $newtr.find("input[placeholder]").each(mktemptext);
+        mktemptext($newtr);
         suggest($newtr.find(".hotcrp_searchbox"), taghelp_q);
         trs = $tbody.children();
         if (want_focus) {

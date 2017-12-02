@@ -252,13 +252,8 @@ class Ht {
     }
 
     private static function apply_placeholder(&$value, &$js) {
-        if ($value === null)
+        if ($value === null || $value === get($js, "placeholder"))
             $value = "";
-        if (($temp = get($js, "placeholder"))) {
-            if ($value === "" || $value === $temp)
-                $js["class"] = trim(get_s($js, "class") . " temptext");
-            self::stash_script("jQuery(hotcrp_load.temptext)", "temptext");
-        }
         if (($default = get($js, "data-default-value")) !== null
             && $value === $default)
             unset($js["data-default-value"]);
