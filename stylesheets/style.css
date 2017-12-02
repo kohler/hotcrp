@@ -22,6 +22,9 @@ select {
 	font-family: inherit;
 	font-size: 92%;
 }
+a > img {
+	border: none;
+}
 
 
 /* page background */
@@ -172,9 +175,6 @@ span.barsep {
 	display: inline-block;
 	margin: -2px 0 -2px 0;
 	padding: 2px 0 2px 19px;
-}
-a > img {
-	border: none;
 }
 span.sep {
 	padding-right: 1em;
@@ -2659,38 +2659,51 @@ body#offline .revcard {
 	width: 248px;
 	max-width: 600px;
 }
-.has-editable-attachments {
-	display: table;
-	margin-bottom: -0.25rem;
+.has-document {
+	margin-top: 0.25rem;
+	margin-bottom: 0.5rem;
 }
-.has-editable-attachments > * {
-	display: table-row;
+.document-file, .document-upload, .document-stamps, .document-actions {
+	display: inline-block;
 }
-.has-editable-attachments > * > * {
-	display: table-cell;
-	padding-top: 0.25rem;
-	padding-bottom: 0.5rem;
+.document-upload {
+	line-height: 1.75;
 }
-.document-file {
-	white-space: nowrap;
+.document-stamps {
+	margin-left: 1.5rem;
 }
-.document-stamps, .document-actions {
-	padding-left: 1rem;
+.document-actions {
+	margin-left: 0.5rem;
+}
+.document-action {
+	display: inline-block;
+	margin-left: 1rem;
+}
+.has-document:after {
+	clear: both;
+	content: "";
+	display: block;
+}
+@media screen and (min-width: 900px) {
+.document-file, .document-upload {
+	min-width: 19rem;
+}
+.document-file.nameless {
+	min-width: 6rem;
+}
+.document-stamps {
+	min-width: 18.5rem;
+}
 }
 @media screen and (max-width: 900px) {
-.has-editable-attachments, .has-editable-attachments > * > * {
+.document-file, .document-upload {
 	display: block;
 }
-.has-editable-attachments > * {
-	display: block;
-	padding-top: 0.25rem;
-	padding-bottom: 0.5rem;
+.document-stamps {
+	margin-left: 3rem;
 }
-.document-file {
-	padding: 0;
-}
-.document-stamps, .document-actions {
-	padding: 0 0 0 3rem;
+.document-actions {
+	margin-left: 2rem;
 }
 }
 

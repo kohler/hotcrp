@@ -1107,10 +1107,10 @@ class AttachmentsPaperOption extends PaperOption {
             if (($stamps = PaperTable::pdf_stamps_html($doc)))
                 echo $stamps;
             echo '</div><div class="document-actions">',
-                    Ht::link("Delete", "#", ["class" => "ui js-remove-document"]),
+                    Ht::link("Delete", "#", ["class" => "ui js-remove-document document-action"]),
                 '</div></div>';
         }
-        echo '<div><div>', Ht::button("Add attachment", ["class" => "btn ui js-add-attachment"]), '</div></div>',
+        echo '<div>', Ht::button("Add attachment", ["class" => "btn ui js-add-attachment"]), '</div>',
             "</div></div>\n\n";
     }
 
@@ -1124,16 +1124,17 @@ class AttachmentsPaperOption extends PaperOption {
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         $attachments = $opt_pj ? : [];
-        $opfx = "opt{$this->id}_";
-        foreach ($qreq->files() as $k => $v)
-            if (str_starts_with($k, $opfx))
-                $attachments[] = DocumentInfo::make_file_upload($pj->pid, $this->id, $v);
-        for ($i = 0; $i < count($attachments); ++$i)
+        for ($i = 1; isset($qreq["has_opt{$this->id}_new_$i"]); ++$i) {
+            if (($f = $qreq->file("opt{$this->id}_new_$i")))
+                $attachments[] = DocumentInfo::make_file_upload($pj->pid, $this->id, $f);
+        }
+        for ($i = 0; $i < count($attachments); ++$i) {
             if (isset($attachments[$i]->docid)
                 && $qreq["remove_opt{$this->id}_{$attachments[$i]->docid}"]) {
                 array_splice($attachments, $i, 1);
                 --$i;
             }
+        }
         return empty($attachments) ? null : $attachments;
     }
 

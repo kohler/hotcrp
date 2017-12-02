@@ -487,14 +487,14 @@ class PaperTable {
     }
 
     function echo_editable_document(PaperOption $docx, $storageId, $flags) {
-        $docclass = $this->conf->docclass($docx->id);
         $dtype = $docx->id;
-
         if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL) {
             $noPapers = $this->conf->opt("noPapers");
             if ($noPapers === 1 || $noPapers === true)
                 return;
         }
+        $docclass = $this->conf->docclass($docx->id);
+        $inputid = $dtype > 0 ? "opt" . $dtype : "paperUpload";
 
         $accepts = $docx->mimetypes();
         $field = $docx->field_key();
@@ -510,16 +510,25 @@ class PaperTable {
         echo $this->field_hint(htmlspecialchars($docx->title), $docx->description);
         echo $this->messages_for($field);
 
-        echo '<div class="papev has-document" data-dtype="', $dtype, '"';
+        echo '<div class="papev has-document" data-dtype="', $dtype,
+            '" data-document-name="', $docx->field_key(), '"';
         if ($doc)
             echo ' data-docid="', $doc->paperStorageId, '"';
         echo '>';
         if ($dtype > 0)
             echo Ht::hidden("has_opt" . $dtype, 1);
 
+        $upload_input = '<input id="' . $inputid . '" type="file" name="' . $inputid . '"';
+        if (count($accepts) == 1)
+            $upload_input .= ' accept="' . $accepts[0]->mimetype . '"';
+        $upload_input .= ' size="30"';
+        $k = ["document-uploader"];
+        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL)
+            $k[] = "js-check-submittable";
+        $upload_input .= ' class="' . join(" ", $k) . '" />';
+
         // current version, if any
         $has_cf = false;
-        $inputid = $dtype > 0 ? "opt" . $dtype : "paperUpload";
         if ($doc) {
             if ($doc->mimetype === "application/pdf") {
                 if (!$this->cf)
@@ -528,52 +537,35 @@ class PaperTable {
                     $this->cf->check_document($this->prow, $doc);
             }
 
-            echo "<table id='current_$inputid'><tr>",
-                "<td class='nw'>", $doc->link_html(), "</td><td>";
+            echo '<div class="document-file nameless">', $doc->link_html(), '</div>',
+                '<div class="document-upload hidden">', $upload_input, '</div>',
+                '<div class="document-stamps">';
             if (($stamps = self::pdf_stamps_html($doc)))
-                echo '<span class="sep"> </span>', $stamps;
-            if ($has_cf && ($this->cf->failed || $this->cf->need_run))
-                echo '<span class="sep"> </span><a class="ui js-check-format" href="#">Check format</a>';
-            else if ($has_cf) {
-                if (!$this->cf->has_problem())
-                    echo '<span class="sep"></span><span class="confirm">Format OK</span>';
-                if ($this->cf->possible_run)
-                    echo '<span class="sep"></span><a class="ui js-check-format" href="#">Recheck format</a>';
+                echo $stamps;
+            echo '</div><div class="document-actions">',
+                Ht::button("Replace", ["class" => "btn ui js-replace-document document-action"]);
+            if ($dtype > 0)
+                '<a href="" class="ui js-remove-document document-action">Delete</a>';
+            if ($has_cf && ($this->cf->failed || $this->cf->need_run || $this->cf->possible_run)) {
+                echo '<a href="" class="ui js-check-format document-action">',
+                    ($this->cf->failed || $this->cf->need_run ? "Check format" : "Recheck format"),
+                    '</a>';
             }
-            echo "</td></tr></table>\n";
-        }
-
-        // uploader
-        $uploader = "";
-        if ($doc) {
-            echo '<div class="g" id="removable_', $inputid, '">';
-            $uploader .= 'Replace:&nbsp; ';
-        }
-        $uploader .= '<input id="' . $inputid . '" type="file" name="' . $inputid . '"';
-        if (count($accepts) == 1)
-            $uploader .= ' accept="' . $accepts[0]->mimetype . '"';
-        $uploader .= ' size="30"';
-        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL)
-            $uploader .= ' class="js-check-submittable"';
-        $uploader .= " />";
-        if ($doc && $dtype > 0)
-            $uploader .= " <span class='barsep'>·</span> "
-                . "<a id='remover_$inputid' class='ui' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
-        if ($doc)
-            $uploader .= "</div>";
-
-        if ($has_cf) {
-            $cf_open = !$this->cf->failed && $this->cf->has_problem();
-            echo '<div class="check-format-result">';
-            if ($cf_open)
-                echo $this->cf->document_report($this->prow, $doc);
             echo '</div>';
+            if ($has_cf) {
+                echo '<div class="document-format">';
+                if (!$this->cf->failed && $this->cf->has_problem())
+                    echo $this->cf->document_report($this->prow, $doc);
+                echo '</div>';
+            }
+        } else {
+            echo '<div class="document-upload">', $upload_input, '</div>';
         }
 
         if ($dtype == DTYPE_FINAL)
             echo Ht::hidden("submitpaper", 1);
 
-        echo $uploader, "</div>";
+        echo "</div>";
     }
 
     private function echo_editable_submission() {

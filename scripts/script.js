@@ -5842,9 +5842,9 @@ function transfer_form_values($dst, $src, names) {
 // paper UI
 handle_ui.on("js-check-format", function () {
     var $self = $(this), $d = $self.closest(".has-document"),
-        $cf = $d.find(".check-format-result");
+        $cf = $d.find(".document-format");
     if (this && "tagName" in this && this.tagName === "A")
-        $self.hide();
+        $self.addClass("hidden");
     var running = setTimeout(function () {
         $cf.html(render_xmsg(0, "Checking format (this can take a while)..."));
     }, 1000);
@@ -5892,14 +5892,27 @@ handle_ui.on("js-add-attachment", function () {
                 return (name = false);
         });
     } while (name === false);
-    var $na = $('<div class="has-document document-new-instance" data-document-name="' + name + '" style="display:none">'
-        + '<div class="document-file"><input type="file" name="' + name + '" size="15" /></div>'
+    var $na = $('<div class="has-document document-new-instance hidden" data-document-name="' + name + '">'
+        + '<div class="document-upload"><input type="file" name="' + name + '" size="15" /></div>'
         + '<div class="document-stamps"></div>'
-        + '<div class="document-actions"><a class="ui js-remove-document" href="#">Delete</a></div>'
+        + '<div class="document-actions"><a class="ui js-remove-document document-action" href="#">Delete</a></div>'
         + '</div>');
     $ei.length ? $na.insertAfter($ei[$ei.length - 1]) : $na.prependTo($ea);
     $na.find("input[type=file]").on("change", function () {
-        $(this).closest(".has-document").css("display", "");
+        $(this).closest(".has-document").removeClass("hidden");
+        $ea.append('<input type="hidden" name="has_' + name + '" value="1" />');
+    })[0].click();
+});
+
+handle_ui.on("js-replace-document", function (event) {
+    var $ei = $(this).closest(".has-document"),
+        $u = $ei.find(".document-uploader");
+    $ei.find(".document-remover").val("");
+    $u.on("change", function () {
+        $ei.find(".document-file, .document-stamps, .js-replace-document").addClass("hidden");
+        $ei.find(".document-upload").removeClass("hidden");
+        $ei.find(".js-remove-document").removeClass("undelete").html("Delete");
+        $ei.find(".js-replace-document").addClass("hidden");
     })[0].click();
 });
 
@@ -5911,15 +5924,17 @@ handle_ui.on("js-remove-document", function (event) {
     if (hasClass(this, "undelete")) {
         $r.val("");
         $en.find("del > *").unwrap();
+        $ei.find(".document-stamps").removeClass("hidden");
         $(this).removeClass("undelete").html("Delete");
-    } else if ($ei.hasClass("document-new-instance"))
+    } else if ($ei.hasClass("document-new-instance")) {
         $ei.remove();
-    else {
+    } else {
         if (!$r.length)
             $r = $('<input type="hidden" class="document-remover" name="remove_' + $ei.data("documentName") + '" data-default-value="" value="1" />').appendTo($ei.find(".document-actions"));
         $r.val(1);
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
+        $ei.find(".document-stamps").addClass("hidden");
         $(this).addClass("undelete").html("Undelete");
     }
     form_highlight($f[0]);
@@ -6508,29 +6523,6 @@ paperlist_ui.prepare_tag_listaction = function () {
 };
 return paperlist_ui;
 })($);
-
-
-function document_upload() {
-    var oname = this.getAttribute("data-option"), accept = this.getAttribute("data-accept");
-    var file = $('<input type="file" name="' + oname + '" id="' + oname + (accept ? '" accept="' + accept : "") + '" size="30" />').insertAfter(this);
-    $(this).remove();
-    file[0].click();
-    return false;
-}
-
-function doremovedocument(elt) {
-    var name = elt.id.replace(/^remover_/, ""), e;
-    if (!$$("remove_" + name))
-        $(elt.parentNode).append('<input type="hidden" id="remove_' + name + '" name="remove_' + name + '" value="" />');
-    $$("remove_" + name).value = 1;
-    if ((e = $$("current_" + name))) {
-        $(e).find("td").first().css("textDecoration", "line-through");
-        $(e).find("td").last().html('<span class="sep"></span><strong><em>To be deleted</em></strong>');
-    }
-    $("#removable_" + name).hide();
-    hiliter(elt);
-    return false;
-}
 
 
 // list management, conflict management
