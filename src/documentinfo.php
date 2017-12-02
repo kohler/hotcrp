@@ -271,7 +271,7 @@ class DocumentInfo implements JsonSerializable {
             $cf = new CheckFormat($runflag);
             $cf->check_document($this->prow, $this);
             if ($cf->has_error()) {
-                if ($flags & self::L_SMALL)
+                if (($flags & self::L_SMALL) || $cf->failed)
                     return ["", $suffix . "x"];
                 else
                     return ['<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->messages())) . '">ⓘ</span>', $suffix . "x"];
