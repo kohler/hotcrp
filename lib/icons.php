@@ -7,7 +7,7 @@ class Icons {
     static function ui_triangle($direction) {
         $t = '<svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="';
         if ($direction == 0)
-            $t .= 'M1 15L8 1L15 13z';
+            $t .= 'M1 15L8 1L15 15z';
         else if ($direction == 1)
             $t .= 'M1 1L15 8L1 15z';
         else if ($direction == 2)
