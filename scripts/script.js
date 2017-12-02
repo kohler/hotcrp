@@ -11,10 +11,6 @@ function $$(id) {
     return document.getElementById(id);
 }
 
-function geval(__str) {
-    return eval(__str);
-}
-
 function serialize_object(x) {
     if (typeof x === "string")
         return x;
