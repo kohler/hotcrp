@@ -1518,13 +1518,34 @@ span.pstat {
 	padding: 0 1em 0 0;
 }
 
-/* other list tables */
-#plact > table {
-	float: left;
+/* list footers */
+tfoot.pltable {
+	font-size: smaller;
 }
-.pl_footer_desc {
+tr.pl_statrow {
+	background: #eeeeee;
+}
+tr.pl_statheadrow {
+	background: #eeeeee;
+	font-weight: bold;
+}
+tr.pl_statheadrow > td.plstat {
+	border-top: 1px solid #cccccc;
+}
+.pl_footselector, .pl_footer_desc {
 	line-height: 2;
 }
+.pl_footselector {
+	text-align: right;
+	white-space: nowrap;
+	padding-right: 6px;
+	vertical-align: top;
+}
+.pl_footerpart {
+	float: left;
+}
+
+/* other list tables */
 #plactr {
 	padding-top: 2px;
 	padding-left: 1em;
@@ -1792,31 +1813,12 @@ td.plh, th.plh {
 tr.pl_headrow.pl_annorow {
 	background: #cccccc;
 }
-tr.pl_headrow, td.pl_footer {
+tr.pl_headrow {
 	font-size: smaller;
-}
-tr.pl_statrow {
-	background: #eeeeee;
-	font-size: smaller;
-}
-tr.pl_statheadrow {
-	background: #eeeeee;
-	font-size: smaller;
-	font-weight: bold;
-}
-tr.pl_statheadrow > td.plstat {
-	border-top: 1px solid #cccccc;
 }
 td.plf {
 	border-top: 1px solid #cccccc;
 	padding-top: 3px;
-}
-td.pl_footselector {
-	text-align: right;
-	white-space: nowrap;
-	padding-top: 6px;
-	padding-right: 6px;
-	vertical-align: top;
 }
 table.pltable_reviewerhome > thead > tr > th.plh {
 	border-bottom: none;

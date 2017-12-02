@@ -468,54 +468,27 @@ class PaperList {
         return true;
     }
 
-    private function _footer($ncol, $extra) {
-        if ($this->count == 0)
-            return "";
-
-        $renderers = [];
-        foreach ($this->conf->list_action_renderers() as $name => $fjs) {
-            $rf = null;
-            foreach ($fjs as $fj)
-                if (Conf::xt_priority_compare($fj, $rf) <= 0
-                    && $this->conf->xt_allowed($fj, $this->user)
-                    && $this->action_xt_displayed($fj))
-                    $rf = $fj;
-            if ($rf) {
-                Conf::xt_resolve_require($rf);
-                $renderers[] = $rf;
-            }
-        }
-        usort($renderers, "Conf::xt_position_compare");
-
-        $lllgroups = [];
-        $whichlll = -1;
-        foreach ($renderers as $rf)
-            if (($lllg = call_user_func($rf->renderer, $this))) {
-                if (is_string($lllg))
-                    $lllg = [$lllg];
-                array_unshift($lllg, $rf->name, $rf->title);
-                $lllgroups[] = $lllg;
-                if ($this->qreq->fn == $rf->name || $this->atab == $rf->name)
-                    $whichlll = count($lllgroups) - 1;
-            }
-
-        // Linelinks container
-        $foot = "  <tr class=\"pl_footrow\">";
-        if (!$this->_view_columns) {
-            $foot .= '<td class="plf pl_footselector">' . Icons::ui_upperleft() . '</td>';
-            --$ncol;
+    static function render_footer_row($arrow_ncol, $ncol, $header,
+                            $lllgroups, $activegroup = -1, $extra = null) {
+        $foot = "<tr class=\"pl_footrow\">\n   ";
+        if ($arrow_ncol) {
+            $foot .= '<td class="plf pl_footselector" colspan="' . $arrow_ncol . '">'
+                . Icons::ui_upperleft() . "</td>\n   ";
         }
         $foot .= '<td id="plact" class="plf pl_footer linelinks" colspan="' . $ncol . '">';
 
-        $foot .= "<table><tbody><tr>\n"
-            . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a class="ui js-select-all" href="' . SelfHref::make($this->qreq, ["selectall" => 1]) . '#plact">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
-            . "   </tr></tbody></table>";
+        if ($header) {
+            $foot .= "<table class=\"pl_footerpart\"><tbody><tr>\n"
+                . '    <td class="pl_footer_desc">' . $header . "</td>\n"
+                . '   </tr></tbody></table>';
+        }
+
         foreach ($lllgroups as $i => $lllg) {
-            $attr = ["class" => "linelink"];
-            if ($i === $whichlll)
+            $attr = ["class" => "linelink pl_footerpart"];
+            if ($i === $activegroup)
                 $attr["class"] .= " active";
             for ($j = 2; $j < count($lllg); ++$j) {
-                if (is_array($lllg[$j]))
+                if (is_array($lllg[$j])) {
                     foreach ($lllg[$j] as $k => $v)
                         if (str_starts_with($k, "linelink-")) {
                             $k = substr($k, 9);
@@ -524,12 +497,14 @@ class PaperList {
                             else
                                 $attr[$k] = $v;
                         }
+                }
             }
             $foot .= "<table";
             foreach ($attr as $k => $v)
                 $foot .= " $k=\"" . htmlspecialchars($v) . "\"";
             $foot .= "><tbody><tr>\n"
-                . "    <td class=\"pl_footer_desc lll\"><a class=\"ui tla\" href=\"" . SelfHref::make($this->qreq, ["atab" => $lllg[0]]) . "#plact\">" . $lllg[1] . "</a></td>\n";
+                . "    <td class=\"pl_footer_desc lll\"><a class=\"ui tla\" href=\""
+                . $lllg[0] . "\">" . $lllg[1] . "</a></td>\n";
             for ($j = 2; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
                 $attr = [];
@@ -554,9 +529,49 @@ class PaperList {
                 $foot .= "    <td>&nbsp;<span class='barsep'>·</span>&nbsp;</td>\n";
             $foot .= "   </tr></tbody></table>";
         }
-        $foot .= $extra . "<hr class=\"c\" /></td>\n  </tr>\n";
+        return $foot . (string) $extra . "<hr class=\"c\" /></td>\n  </tr>";
+    }
+
+    private function _footer($ncol, $extra) {
+        if ($this->count == 0)
+            return "";
+
+        $renderers = [];
+        foreach ($this->conf->list_action_renderers() as $name => $fjs) {
+            $rf = null;
+            foreach ($fjs as $fj)
+                if (Conf::xt_priority_compare($fj, $rf) <= 0
+                    && $this->conf->xt_allowed($fj, $this->user)
+                    && $this->action_xt_displayed($fj))
+                    $rf = $fj;
+            if ($rf) {
+                Conf::xt_resolve_require($rf);
+                $renderers[] = $rf;
+            }
+        }
+        usort($renderers, "Conf::xt_position_compare");
+
+        $lllgroups = [];
+        $whichlll = -1;
+        foreach ($renderers as $rf) {
+            if (($lllg = call_user_func($rf->renderer, $this))) {
+                if (is_string($lllg))
+                    $lllg = [$lllg];
+                array_unshift($lllg, $rf->name, $rf->title);
+                $lllg[0] = SelfHref::make($this->qreq, ["atab" => $lllg[0], "anchor" => "plact"]);
+                $lllgroups[] = $lllg;
+                if ($this->qreq->fn == $rf->name || $this->atab == $rf->name)
+                    $whichlll = count($lllgroups) - 1;
+            }
+        }
+
         $this->add_header_script('$("#plact").on("click", "input[type=submit], button[type=submit]", function (evt) { $(this).closest("form").data("submitFn", evt.target.value); })');
-        return $foot;
+        $footsel_ncol = $this->_view_columns ? 0 : 1;
+        return self::render_footer_row($footsel_ncol, $ncol - $footsel_ncol,
+            "<b>Select papers</b> (or <a class=\"ui js-select-all\" href=\""
+            . SelfHref::make($this->qreq, ["selectall" => 1, "anchor" => "plact"])
+            . '">select all ' . $this->count . "</a>), then&nbsp;",
+            $lllgroups, $whichlll, $extra);
     }
 
     private function _default_linkto($page) {
@@ -1520,8 +1535,8 @@ class PaperList {
             && !get($options, "nofooter"))
             $foot .= $this->_footer($ncol, get_s($options, "footer_extra"));
         if ($foot)
-            $enter .= ' <tfoot' . ($rstate->hascolors ? ' class="pltable_colored"' : "")
-                . ">\n" . $foot . " </tfoot>\n";
+            $enter .= ' <tfoot class="pltable' . ($rstate->hascolors ? ' pltable_colored' : "")
+                . "\">\n" . $foot . " </tfoot>\n";
 
         // body
         $enter .= " <tbody class=\"$tbody_class\">\n";

@@ -460,52 +460,37 @@ class ContactList {
         global $Conf;
         if ($this->count == 0)
             return "";
-
-        $t = "  <tfoot class=\"pltable" . ($hascolors ? " pltable_colored" : "")
-            . "\"><tr class=\"pl_footrow\">\n    <td class=\"plf pl_footselector\">"
-            . Icons::ui_upperleft()
-            . "</td>\n"
-            . "<td id=\"plact\" class=\"plf pl_footer linelinks\" colspan=\"" . ($ncol - 1) . '">'
-            . '<table><tbody><tr>'
-            . '<td class="pl_footer_desc">'
-            . '<b>Select people</b> (or <a class="ui js-select-all" href="">select all ' . $this->count . "</a>), then&nbsp; "
-            . '</td></tr></tbody></table>';
+        $lllgroups = [];
 
         // Begin linelinks
         $types = array("nameemail" => "Names and emails");
         if ($this->contact->privChair)
             $types["pcinfo"] = "PC info";
-        $t .= "<table class=\"linelink\"><tbody><tr>"
-            . "<td class=\"pl_footer_desc lll\"><a class=\"ui tla\" href=\"\">Download</a></td>"
-            . "<td class=\"lld\"><b>:&nbsp;</b> "
-            . Ht::select("getaction", $types, null, ["class" => "want-focus"])
-            . "&nbsp; " . Ht::submit("getgo", "Go")
-            . "</td>";
+        $lllgroups[] = ["", "Download",
+            Ht::select("getaction", $types, null, ["class" => "want-focus"])
+            . "&nbsp; " . Ht::submit("getgo", "Go")];
 
-        $barsep = "<td>&nbsp;<span class='barsep'>·</span>&nbsp;</td>";
         if ($this->contact->privChair) {
-            $t .= $barsep . "</tr></tbody></table>";
-            $t .= "<table class=\"linelink\"><tbody><tr>"
-                . "<td class=\"pl_footer_desc lll\"><a class=\"ui tla\" href=\"\">Tag</a></td>"
-                . "<td class=\"lld\"><b>:&nbsp;</b> "
-                . Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), req("tagtype"))
+            $lllgroups[] = ["", "Tag",
+                Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), req("tagtype"))
                 . ' &nbsp;tag(s) &nbsp;'
                 . Ht::entry("tag", req("tag"), ["size" => 15, "class" => "want-focus js-autosubmit", "data-autosubmit-type" => "tagact"])
-                . ' &nbsp;' . Ht::submit("tagact", "Go") . '</td>'
-                . $barsep . "</tr></tbody></table>";
+                . ' &nbsp;' . Ht::submit("tagact", "Go")];
 
-            $t .= "<table class=\"linelink\"><tbody><tr>"
-                . "<td class=\"pl_footer_desc lll\"><a class=\"ui tla\" href=\"\">Modify</a></td>"
-                . "<td class=\"lld\"><b>:&nbsp;</b> "
-                . Ht::select("modifytype", array("disableaccount" => "Disable",
-                                                 "enableaccount" => "Enable",
-                                                 "resetpassword" => "Reset password",
-                                                 "sendaccount" => "Send account information"),
-                             null, ["class" => "want-focus"])
-                . "&nbsp; " . Ht::submit("modifygo", "Go") . "</td>";
+            $lllgroups[] = ["", "Modify",
+                Ht::select("modifytype", ["disableaccount" => "Disable",
+                                          "enableaccount" => "Enable",
+                                          "resetpassword" => "Reset password",
+                                          "sendaccount" => "Send account information"],
+                           null, ["class" => "want-focus"])
+                . "&nbsp; " . Ht::submit("modifygo", "Go")];
         }
 
-        return $t . "</tr></tbody></table></td></tr></tfoot>\n";
+        return "  <tfoot class=\"pltable" . ($hascolors ? " pltable_colored" : "")
+            . "\">" . PaperList::render_footer_row(1, $ncol - 1,
+                "<b>Select people</b> (or <a class=\"ui js-select-all\" href=\"\">select all {$this->count}</a>), then&nbsp; ",
+                $lllgroups)
+            . "  </tfoot>\n";
     }
 
     private function _conflict_pids() {
