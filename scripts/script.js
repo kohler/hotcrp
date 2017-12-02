@@ -5186,8 +5186,10 @@ function check_version(url, versionstr) {
             return;
     } catch (x) {
     }
-    jQuery.get(url + "&site=" + encodeURIComponent(window.location.toString()) + "&jsonp=?",
-               null, updatecb, "jsonp");
+    $.ajax(url + "&site=" + encodeURIComponent(window.location.toString()), {
+        method: "GET", dataType: "json", cache: true, crossDomain: false,
+        jsonp: false, global: false, success: updatecb
+    });
     handle_ui.on("js-check-version-ignore", function () {
         var id = $(this).data("versionId");
         $.post(siteurl + "checkupdates.php", {ignore: id, post: siteurl_postvalue});
