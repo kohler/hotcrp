@@ -7,12 +7,12 @@ class Decisions_SettingRenderer {
 static function render(SettingValues $sv) {
     echo "<h3 class=\"settings\">Review sharing and responses</h3>\n";
     echo "Can <b>authors see reviews and author-visible comments</b> for their papers?<br />";
-    $no_text = "No, unless responses are active";
+    $no_text = "No, unless authors can edit responses";
     if (!$sv->conf->setting("au_seerev", 0)) {
         if ($sv->conf->timeAuthorViewReviews())
-            $no_text .= '<div class="hint">Responses are active, so authors can see reviews.</div>';
+            $no_text .= '<div class="hint">Authors can edit responses and see reviews now.</div>';
         else if ($sv->conf->setting("resp_active"))
-            $no_text .= '<div class="hint">Responses are not active now.</div>';
+            $no_text .= '<div class="hint">Authors cannot edit responses now.</div>';
     }
     $opts = array(Conf::AUSEEREV_NO => $no_text,
                   Conf::AUSEEREV_YES => "Yes");
