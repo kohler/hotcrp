@@ -36,7 +36,7 @@ class ListAction {
     static private function do_call($name, Contact $user, Qrequest $qreq, $selection) {
         if ($qreq->method() !== "GET" && $qreq->method() !== "HEAD" && !check_post($qreq))
             return new JsonResult(403, ["ok" => false, "error" => "Missing credentials."]);
-        $uf = $user->conf->list_action($name, $user, $qreq);
+        $uf = $user->conf->list_action($name, $user, $qreq->method());
         if (!$uf) {
             if ($user->conf->has_list_action($name, $user, null))
                 return new JsonResult(405, ["ok" => false, "error" => "Method not supported."]);
