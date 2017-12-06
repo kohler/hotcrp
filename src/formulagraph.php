@@ -254,8 +254,8 @@ class FormulaGraph {
     }
 
     private function _scatter_data(PaperInfoSet $rowset) {
-        $data = [];
-        if ($this->fx->result_format() === Fexpr::FREVIEWER && ($this->type & self::BOXPLOT))
+        if ($this->fx->result_format() === Fexpr::FREVIEWER
+            && ($this->type & self::BOXPLOT))
             $this->_prepare_reviewer_color($this->user);
 
         $fxf = $this->fx->compile_function();
@@ -264,6 +264,7 @@ class FormulaGraph {
         if ($this->fx->is_indexed() || $this->fy->is_indexed())
             $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes() | $this->fy->datatypes());
 
+        $data = [];
         foreach ($rowset->all() as $prow) {
             $s = $ps = $this->_paper_style($prow);
             $d = [0, 0, 0];
@@ -293,7 +294,7 @@ class FormulaGraph {
         $this->_data = $data;
     }
 
-    // combine data: [x, y, pids, style, [query]]
+    // combine data: [x, y, pids, style, [query...]]
 
     static function barchart_compare($a, $b) {
         if (get_i($a, 4) != get_i($b, 4))
@@ -339,14 +340,16 @@ class FormulaGraph {
 
         $is_sum = $this->fy->is_sum();
         usort($data, "FormulaGraph::barchart_compare");
-        $ndata = [];
-        for ($i = 0; $i != count($data); $i = $j) {
+        $newdata = [];
+        $ndata = count($data);
+        for ($i = 0; $i != $ndata; $i = $j) {
             $d = [$data[$i][0], [$data[$i][1]], [$data[$i][2]], $data[$i][3],
                   get($data[$i], 4)];
             for ($j = $i + 1;
-                 $j != count($data) && $data[$j][0] == $d[0]
-                 && get($data[$j], 4) == $d[4]
-                 && (!$is_sum || $data[$j][3] == $d[3]);
+                 $j != $ndata
+                   && $data[$j][0] == $d[0]
+                   && get($data[$j], 4) == $d[4]
+                   && (!$is_sum || $data[$j][3] == $d[3]);
                  ++$j) {
                 $d[1][] = $data[$j][1];
                 $d[2][] = $data[$j][2];
@@ -360,7 +363,7 @@ class FormulaGraph {
             }
             $ndata[] = $d;
         }
-        $this->_data = $ndata;
+        $this->_data = $newdata;
     }
 
     private function _valuemap_axes($format) {
@@ -399,8 +402,9 @@ class FormulaGraph {
         assert(!!$axes);
         if ($this->type == self::CDF) {
             foreach ($this->_data as $dx) {
-                foreach ($dx->d as &$d)
+                foreach ($dx->d as &$d) {
                     array_key_exists($d, $m) && ($d = $m[$d]);
+                }
                 unset($d);
             }
         } else if ($this->type & self::BARCHART) {
@@ -570,7 +574,11 @@ class FormulaGraph {
     }
 
     function graph_json() {
-        $j = ["data" => $this->data(), "x" => $this->axis_json("x"), "y" => $this->axis_json("y")];
+        $j = [
+            "data" => $this->data(),
+            "x" => $this->axis_json("x"),
+            "y" => $this->axis_json("y")
+        ];
         if ($this->type === self::CDF)
             $j["cdf_tooltip_position"] = true;
         return $j;

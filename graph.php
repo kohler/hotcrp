@@ -11,6 +11,10 @@ $Graph = $Qreq->g;
 if (!$Graph
     && preg_match(',\A/(\w+)(/|\z),', Navigation::path(), $m))
     $Graph = $Qreq->g = $m[1];
+if (!isset($Qreq->x) && !isset($Qreq->y) && isset($Qreq->fx) && isset($Qreq->fy)) {
+    $Qreq->x = $Qreq->fx;
+    $Qreq->y = $Qreq->fy;
+}
 
 // collect allowed graphs
 $Graphs = array();
@@ -64,7 +68,7 @@ function formulas_qrow($i, $q, $s, $errf) {
 
 if ($Graph == "formula") {
     // derive a sample graph
-    if (!isset($Qreq->fx) || !isset($Qreq->fy)) {
+    if (!isset($Qreq->x) || !isset($Qreq->y)) {
         $all_review_fields = $Conf->all_review_fields();
         $field1 = get($all_review_fields, "overAllMerit");
         $field2 = null;
@@ -73,19 +77,19 @@ if ($Graph == "formula") {
                 $field1 = $f;
             else if ($f->has_options && !$field2 && $field1 != $f)
                 $field2 = $f;
-        unset($Qreq->fx, $Qreq->fy);
+        unset($Qreq->x, $Qreq->y);
         if ($field1)
-            $Qreq->fy = "avg(" . $field1->search_keyword() . ")";
+            $Qreq->y = "avg(" . $field1->search_keyword() . ")";
         if ($field1 && $field2)
-            $Qreq->fx = "avg(" . $field2->search_keyword() . ")";
+            $Qreq->x = "avg(" . $field2->search_keyword() . ")";
         else
-            $Qreq->fx = "pid";
+            $Qreq->x = "pid";
     }
 
     $fg = null;
-    if ($Qreq->fx && $Qreq->fy) {
-        $fg = new FormulaGraph($Me, $Qreq->fx, $Qreq->fy);
-        if (count($fg->error_html))
+    if ($Qreq->x && $Qreq->y) {
+        $fg = new FormulaGraph($Me, $Qreq->x, $Qreq->y);
+        if (!empty($fg->error_html))
             Conf::msg_error(join("<br/>", $fg->error_html));
     }
 
@@ -144,13 +148,13 @@ if ($Graph == "formula") {
     echo Ht::form_div(hoturl("graph", "g=formula"), array("method" => "get"));
     echo '<table>';
     // X axis
-    echo '<tr><td class="lcaption"><label for="fx">X axis</label></td>',
-        '<td class="lentry">', Ht::entry("fx", (string) $Qreq->fx, array("id" => "fx", "size" => 32, "class" => $fg && get($fg->errf, "fx") ? "setting_error" : "")),
+    echo '<tr><td class="lcaption"><label for="x_entry">X axis</label></td>',
+        '<td class="lentry">', Ht::entry("x", (string) $Qreq->x, array("id" => "x_entry", "size" => 32, "class" => $fg && get($fg->errf, "fx") ? "setting_error" : "")),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “search”</span>',
         '</td></tr>';
     // Y axis
-    echo '<tr><td class="lcaption"><label for="fy">Y axis</label></td>',
-        '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("fy", (string) $Qreq->fy, array("id" => "fy", "size" => 32, "class" => $fg && get($fg->errf, "fy") ? "setting_error" : "")),
+    echo '<tr><td class="lcaption"><label for="y_entry">Y axis</label></td>',
+        '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("y", (string) $Qreq->y, array("id" => "y_entry", "size" => 32, "class" => $fg && get($fg->errf, "fy") ? "setting_error" : "")),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</span>',
         '</td></tr>';
     // Series
