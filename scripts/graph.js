@@ -1283,7 +1283,9 @@ function named_integer_ticks(map) {
 
         var max_width = get_max_tick_width(this);
         if (max_width > 100) { // shrink font
-            this.selectAll("g.tick text").style("font-size", "smaller");
+            this.attr("class", function () {
+                return this.getAttribute("class") + " widelabel";
+            });
             max_width = get_max_tick_width(this);
         }
         var example_height = get_sample_tick_height(this);
@@ -1294,17 +1296,20 @@ function named_integer_ticks(map) {
                 .attr("dx", "-9px").attr("dy", "2px");
 
         // apply classes by adding them and adding background rects
-        if (want_mclasses)
+        if (want_mclasses) {
             this.selectAll("g.tick text").filter(mclasses).each(function (i) {
                 var c = mclasses(i);
                 d3.select(this).attr("class", c + " taghh");
-                var b = this.getBBox();
-                d3.select(this.parentNode).insert("rect", "text")
-                    .attr("x", b.x - 3).attr("y", b.y)
-                    .attr("width", b.width + 6).attr("height", b.height + 1)
-                    .attr("class", "glab " + c)
-                    .style("fill", make_pattern_fill(c, "glab "));
+                if (/\btagbg\b/.test(c)) {
+                    var b = this.getBBox();
+                    d3.select(this.parentNode).insert("rect", "text")
+                        .attr("x", b.x - 3).attr("y", b.y)
+                        .attr("width", b.width + 6).attr("height", b.height + 1)
+                        .attr("class", "glab " + c)
+                        .style("fill", make_pattern_fill(c, "glab "));
+                }
             });
+        }
 
         // apply tilt rotation, enlarge container if necessary
         if (want_tilt) {

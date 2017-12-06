@@ -3293,6 +3293,9 @@ table#offlineform table, table#offlineform form {
 }
 
 /* graphs */
+.axis.widelabel > .tick {
+	font-size: smaller;
+}
 .axis path, .axis line {
 	fill: none;
 	stroke: black;
