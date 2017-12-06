@@ -437,6 +437,7 @@ class AggregateFexpr extends Fexpr {
         // The “R-7” quantile implementation
         if (count($a) === 0 || $p < 0 || $p > 1)
             return null;
+        sort($a, SORT_NUMERIC);
         $ix = (count($a) - 1) * $p + 1;
         $i = (int) $ix;
         $v = $a[$i - 1];
