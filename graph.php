@@ -89,6 +89,8 @@ if ($Graph == "formula") {
     $fg = null;
     if ($Qreq->x && $Qreq->y) {
         $fg = new FormulaGraph($Me, $Qreq->x, $Qreq->y);
+        if ($Qreq->xorder)
+            $fg->set_xorder($Qreq->xorder);
         if (!empty($fg->error_html))
             Conf::msg_error(join("<br/>", $fg->error_html));
     }

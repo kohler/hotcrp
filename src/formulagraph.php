@@ -30,7 +30,10 @@ class FormulaGraph {
     private $reviewer_color = false;
     private $remapped_rounds = [];
     private $tags = [];
+    private $fxorder;
     private $_data;
+    private $_xorder_data;
+    private $_xorder_map;
     public $error_html = [];
     public $errf = [];
 
@@ -133,6 +136,24 @@ class FormulaGraph {
 
     function fx_expression() {
         return $this->fx_expression;
+    }
+
+    function set_xorder($xorder) {
+        $this->fxorder = null;
+        $xorder = simplify_whitespace($xorder);
+        if ($xorder !== "" && $this->type !== self::SCATTER) {
+            $fxorder = new Formula($xorder, true);
+            $fxorder->check($this->user);
+            if ($fxorder->error_html()) {
+                $this->error_html[] = "X order formula: " . $fxorder->error_html();
+                $this->errf["xorder"] = true;
+            } else if (!$fxorder->can_combine()) {
+                $this->error_html[] = "X order formula “" . htmlspecialchars($xorder) . "” is unsuitable, use an aggregate function.";
+                $this->errf["xorder"] = true;
+            } else {
+                $this->fxorder = $fxorder;
+            }
+        }
     }
 
     private function _cdf_data_one_fx($fx, $qcolors, $dashp, PaperInfoSet $rowset) {
@@ -263,6 +284,11 @@ class FormulaGraph {
         $reviewf = null;
         if ($this->fx->is_indexed() || $this->fy->is_indexed())
             $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes() | $this->fy->datatypes());
+        $orderf = $order_data = null;
+        if ($this->fxorder) {
+            list($orderf, $ordercf) = $this->fxorder->compile_combine_functions();
+            $order_data = [];
+        }
 
         $data = [];
         foreach ($rowset->all() as $prow) {
@@ -278,6 +304,10 @@ class FormulaGraph {
                 $d[2] = $prow->paperId;
                 if ($rrow && $rrow->reviewOrdinal)
                     $d[2] .= unparseReviewOrdinal($rrow->reviewOrdinal);
+                if ($orderf) {
+                    $order_data[$d[0]] = get($order_data, $d[0], []);
+                    $order_data[$d[0]][] = $orderf($prow, $rcid, $this->user);
+                }
                 if ($ps === self::REVIEWER_COLOR)
                     $s = get($this->reviewer_color, $d[0]) ? : "";
                 if ($this->fx_type === self::X_QUERY) {
@@ -292,6 +322,12 @@ class FormulaGraph {
             }
         }
         $this->_data = $data;
+
+        if ($orderf) {
+            $this->_xorder_data = [];
+            foreach ($order_data as $x => $vs)
+                $this->_xorder_data[] = [$x, $ordercf($vs)];
+        }
     }
 
     // combine data: [x, y, pids, style, [query...]]
@@ -421,6 +457,12 @@ class FormulaGraph {
                 unset($d);
             }
         }
+        if (($axes & 1) && $this->_xorder_data) {
+            foreach ($this->_xorder_data as &$d) {
+                array_key_exists($d[0], $m) && ($d[0] = $m[$d[0]]);
+            }
+            unset($d);
+        }
     }
 
     private function _reviewer_reformat() {
@@ -470,6 +512,42 @@ class FormulaGraph {
         $this->_valuemap_rewrite($axes, $m);
     }
 
+    private function _xorder_rewrite() {
+        if (!$this->_xorder_data)
+            return;
+        usort($this->_xorder_data, function ($x, $y) {
+            if ($x[1] != $y[1])
+                return $x[1] < $y[1] ? -1 : 1;
+            else if ($x[0] != $y[0])
+                return $x[0] < $y[0] ? -1 : 1;
+            else
+                return 0;
+        });
+        $xo = [];
+        foreach ($this->_xorder_data as $i => $d)
+            $xo[$d[0]] = $i + 1;
+        $this->_xorder_map = $xo;
+        if ($this->type == self::CDF) {
+            foreach ($this->_data as $dx) {
+                foreach ($dx->d as &$d) {
+                    $d = get($xo, $d);
+                }
+                unset($d);
+            }
+        } else if ($this->type & self::BARCHART) {
+            foreach ($this->_data as &$d) {
+                $d[0] = get($xo, $d[0]);
+            }
+        } else {
+            foreach ($this->_data as &$dx) {
+                foreach ($dx as &$d) {
+                    $d[0] = get($xo, $d[0]);
+                }
+                unset($d);
+            }
+        }
+    }
+
     function data() {
         if ($this->_data !== null)
             return $this->_data;
@@ -498,6 +576,7 @@ class FormulaGraph {
         $this->_reviewer_reformat();
         $this->_revround_reformat();
         $this->_tag_reformat();
+        $this->_xorder_rewrite();
 
         return $this->_data;
     }
@@ -565,9 +644,24 @@ class FormulaGraph {
                 $j["ticks"] = ["named", $this->remapped_rounds];
             } else if ($format === Fexpr::FREVTYPE) {
                 $j["ticks"] = ["named", ReviewForm::$revtype_names];
+            } else if ($isx && $this->_xorder_map) {
+                if (isset($j["label"]))
+                    $j["label"] .= " order";
+                else
+                    $j["label"] = "order";
             }
             if (!$isx && isset($j["ticks"]))
                 $j["rotate_ticks"] = -90;
+        }
+
+        if ($isx && $this->_xorder_map && isset($j["ticks"])
+            && $j["ticks"][0] === "named") {
+            $newticks = [];
+            foreach ($j["ticks"][1] as $n => $x) {
+                if (isset($this->_xorder_map[$n]))
+                    $newticks[$this->_xorder_map[$n]] = $x;
+            }
+            $j["ticks"][1] = $newticks;
         }
 
         return $j;
