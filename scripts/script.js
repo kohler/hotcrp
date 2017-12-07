@@ -1399,8 +1399,10 @@ if (Object.prototype.toString.call(window.operamini) === '[object OperaMini]'
 
     return function ($base) {
         $base.find("input[placeholder], textarea[placeholder]").each(function () {
-            $(this).on("focus blur change input", ttaction);
-            ttaction.call(this, {type: "blur"});
+            if (!hasClass(this, "has-mktemptext")) {
+                $(this).on("focus blur change input", ttaction).addClass("has-mktemptext");
+                ttaction.call(this, {type: "blur"});
+            }
         });
     };
     })();

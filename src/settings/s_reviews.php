@@ -13,7 +13,7 @@ class Reviews_SettingRenderer {
             $rname_si->placeholder = "(new round)";
         $sv->set_oldv($rname, $nameval);
 
-        echo '<div class="mg" data-round-number="', $rnum, '"><div>',
+        echo '<div class="mg js-settings-review-round" data-review-round-number="', $rnum, '"><div>',
             $sv->label($rname, "Round"), ' &nbsp;',
             $sv->render_entry($rname);
         echo '<div class="inb" style="min-width:7em;margin-left:2em">';
@@ -120,7 +120,7 @@ static function render(SettingValues $sv) {
             self::echo_round($sv, $i, $i ? $rounds[$i] : "", +get($round_map, $i), count($selector) !== 1);
             ++$num_printed;
         }
-    echo '</div><div id="newround" style="display:none">';
+    echo '</div><div id="newround" class="hidden">';
     self::echo_round($sv, '$', "", "", true);
     echo '</div><div class="g"></div>';
     echo Ht::button("Add round", ["id" => "settings_review_round_add"]),
@@ -131,9 +131,7 @@ static function render(SettingValues $sv) {
         if ($rounds[$i] === ";")
             echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
                 Ht::hidden("deleteround_$i", 1, ["data-default-value" => "1"]);
-    Ht::stash_script('$("#settings_review_round_add").on("click", function () { review_round_settings.add(); hiliter(this) })');
-    Ht::stash_script('$(".js-settings-review-round-delete").on("click", review_round_settings.kill)');
-    Ht::stash_script('review_round_settings.init()');
+    Ht::stash_script('review_round_settings()');
 
     $extselector = array_merge(["#same" => "(same as PC)"], $selector);
     echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',

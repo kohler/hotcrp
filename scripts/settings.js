@@ -101,57 +101,55 @@ function settings_add_track() {
 }
 
 
-window.review_round_settings = (function () {
+window.review_round_settings = (function ($) {
 var added = 0;
 
 function namechange() {
-    var roundnum = this.id.substr(10), name = jQuery.trim(jQuery(this).val());
-    jQuery("#rev_roundtag_" + roundnum + ", #extrev_roundtag_" + roundnum)
+    var roundnum = this.id.substr(10), name = $.trim($(this).val());
+    $("#rev_roundtag_" + roundnum + ", #extrev_roundtag_" + roundnum)
         .text(name === "" ? "(no name)" : name);
-}
-
-function init() {
-    jQuery("#roundtable input[type=text]").on("input change", namechange);
 }
 
 function add() {
     var i, h, j;
-    for (i = 1; jQuery("#roundname_" + i).length; ++i)
+    for (i = 1; $("#roundname_" + i).length; ++i)
         /* do nothing */;
-    jQuery("#round_container").show();
-    jQuery("#roundtable").append(jQuery("#newround").html().replace(/\$/g, i));
+    $("#round_container").show();
+    $("#roundtable").append($("#newround").html().replace(/\$/g, i));
+    var $mydiv = $("#roundname_" + i).closest(".js-settings-review-round");
     if (++added == 1 && i == 1)
-        jQuery("div[data-round-number=" + i + "] > :first-child").append('<div class="hint">Example name: “R1”</div>');
-    jQuery("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
-    jQuery("#extrev_roundtag").append('<option value="#' + i + '" id="extrev_roundtag_' + i + '">(new round)</option>');
-    mktemptext($("div[data-round-number=" + i + "])"));
-    jQuery("#roundname_" + i).focus().on("input change", namechange);
+        $mydiv.children().first().append('<div class="hint">Example name: “R1”</div>');
+    $("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
+    $("#extrev_roundtag").append('<option value="#' + i + '" id="extrev_roundtag_' + i + '">(new round)</option>');
+    mktemptext($mydiv);
+    $("#roundname_" + i).focus().on("input change", namechange);
 }
 
 function kill() {
-    var divj = jQuery(this).closest("div[data-round-number]"),
-        roundnum = divj.attr("data-round-number"),
+    var divj = $(this).closest(".js-settings-review-round"),
+        roundnum = divj.data("reviewRoundNumber"),
         vj = divj.find("input[name=deleteround_" + roundnum + "]"),
         ej = divj.find("input[name=roundname_" + roundnum + "]");
     if (vj.val()) {
         vj.val("");
-        ej.val(ej.attr("data-round-name"));
-        ej.removeClass("dim").prop("disabled", false);
-        jQuery(this).html("Delete round");
+        divj.find(".js-settings-review-round-deleted").remove();
+        ej.prop("disabled", false);
+        $(this).html("Delete round");
     } else {
         vj.val(1);
-        var x = ej.val();
-        ej.attr("data-round-name", x);
-        ej.val(x == "(no name)" ? "(deleted)" : "(" + (ej.val() || "unnamed round") + " deleted)")
-            .addClass("dim").prop("disabled", true);
-        jQuery(this).html("Restore round");
+        ej.prop("disabled", true);
+        $(this).html("Restore round").after('<strong class="js-settings-review-round-deleted" style="padding-left:1.5em;font-style:italic;color:red">&nbsp; Review round deleted</strong>');
     }
     divj.find("table").toggle(!vj.val());
     form_highlight("#settingsform");
 }
 
-return {init: init, add: add, kill: kill};
-})();
+return function () {
+    $("#roundtable input[type=text]").on("input change", namechange);
+    $("#settings_review_round_add").on("click", add);
+    $("#roundtable").on("click", ".js-settings-review-round-delete", kill);
+};
+})($);
 
 
 window.review_form_settings = (function () {
