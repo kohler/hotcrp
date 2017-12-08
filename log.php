@@ -511,9 +511,9 @@ function render_users($users) {
         return '<div class="has-fold foldc"><a href="" class="ui js-foldup">'
             . expander(null, 0)
             . '</a>'
-            . '<span class="fn">'
+            . '<span class="fn"><a href="" class="ui js-foldup qq">'
             . sprintf($Conf->_($fmt, count($ts)), count($ts))
-            . '</span><span class="fx">' . join(", ", $ts)
+            . '</a></span><span class="fx">' . join(", ", $ts)
             . '</span></div>';
     }
 }
