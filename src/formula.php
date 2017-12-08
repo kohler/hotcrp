@@ -746,7 +746,7 @@ class Decision_Fexpr extends Sub_Fexpr {
         $this->format_ = self::FDECISION;
     }
     function view_score(Contact $user) {
-        if ($user->conf->can_some_author_view_decision())
+        if ($user->can_view_some_decision_as_author())
             return VIEWSCORE_AUTHOR;
         else if ($user->conf->timePCViewDecision(false))
             return VIEWSCORE_PC;

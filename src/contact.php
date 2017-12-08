@@ -2271,10 +2271,11 @@ class Contact {
                 || (!$this->conf->setting("shepherd_hide")
                     && $this->can_view_decision($prow, $forceShow)
                     && $this->can_view_review($prow, null, $forceShow));
-        } else
+        } else {
             return $this->isPC
                 || (!$this->conf->setting("shepherd_hide")
-                    && $this->conf->can_some_author_view_decision());
+                    && $this->can_view_some_decision_as_author());
+        }
     }
 
     /* NB caller must check can_view_paper() */
@@ -3051,9 +3052,13 @@ class Contact {
 
     function can_view_some_decision() {
         return $this->is_manager()
-            || ($this->is_author() && $this->conf->can_some_author_view_decision())
+            || ($this->is_author() && $this->can_view_some_decision_as_author())
             || ($this->isPC && $this->conf->timePCViewDecision(false))
             || ($this->is_reviewer() && $this->conf->time_reviewer_view_decision());
+    }
+
+    function can_view_some_decision_as_author() {
+        return $this->conf->can_some_author_view_decision();
     }
 
     function can_set_decision(PaperInfo $prow, $forceShow = null) {
@@ -3110,7 +3115,7 @@ class Contact {
         else if ($this->is_reviewer())
             return VIEWSCORE_REVIEWERONLY - 1;
         else if ($this->is_author() && $this->conf->timeAuthorViewReviews()) {
-            if ($this->conf->can_some_author_view_decision())
+            if ($this->can_view_some_decision_as_author())
                 return VIEWSCORE_AUTHORDEC - 1;
             else
                 return VIEWSCORE_AUTHOR - 1;
@@ -3119,7 +3124,7 @@ class Contact {
     }
 
     function author_permissive_view_score_bound() {
-        if ($this->conf->can_some_author_view_decision())
+        if ($this->conf->can_view_some_decision_as_author())
             return VIEWSCORE_AUTHORDEC - 1;
         else
             return VIEWSCORE_AUTHOR - 1;
