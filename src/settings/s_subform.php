@@ -11,7 +11,7 @@ class BanalSettings {
             $sv->set_oldv("sub_banal_$k$suffix", $val == "" ? "N/A" : $val);
         }
 
-        echo '<table class="', ($sv->curv("sub_banal$suffix") ? "foldo" : "foldc"), '" data-fold="true">';
+        echo '<table class="has-fold ', ($sv->curv("sub_banal$suffix") ? "foldo" : "foldc"), '">';
         $sv->echo_checkbox_row("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "js-foldup"]);
         echo '<tr class="fx"><td></td><td class="top">',
             Ht::hidden("has_sub_banal$suffix", 1),

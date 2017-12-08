@@ -143,7 +143,7 @@ static function render(SettingValues $sv) {
     // Final versions
     echo "<h3 id=\"finalversions\" class=\"settings g\">Final versions</h3>\n";
     $sv->echo_messages_near("final_open");
-    echo '<div class="fold2o" data-fold="true">';
+    echo '<div class="has-fold fold2o">';
     echo '<table>';
     $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx2">:</span></b>', ["class" => "js-foldup"]);
     echo '<tr class="fx2"><td></td><td><table><tbody class="secondary-settings">';

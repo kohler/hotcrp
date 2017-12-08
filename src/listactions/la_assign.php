@@ -42,7 +42,7 @@ if (afn === "lead" || afn === "shepherd") {
             . '<span class="fx"> &nbsp;<span class="js-assign-for">for</span> &nbsp;'
             . Ht::select("markpc", [], 0, ["class" => "need-pcselector", "data-pcselector-selected" => $pl->qreq->markpc])
             . "</span> &nbsp;" . Ht::submit("fn", "Go", ["value" => "assign"]),
-            ["linelink-class" => "foldc", "linelink-data-fold" => 1]];
+            ["linelink-class" => "has-fold foldc"]];
     }
     function run(Contact $user, $qreq, $ssel) {
         $mt = $qreq->assignfn;

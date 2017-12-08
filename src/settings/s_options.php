@@ -45,9 +45,8 @@ class Options_SettingRenderer {
         if ($o->final)
             $optvt .= ":final";
 
-        echo '<div class="settings-opt fold2c fold3o ',
-            (PaperOption::type_has_selector($optvt) ? "fold4o" : "fold4c"),
-            '" data-fold="true">';
+        echo '<div class="settings-opt has-fold fold2c fold3o ',
+            (PaperOption::type_has_selector($optvt) ? "fold4o" : "fold4c"), '">';
         echo '<div class="f-ix"><div class="f-i">',
             '<div class="f-c">',
             $sv->label("optn_$xpos", "Option name"),

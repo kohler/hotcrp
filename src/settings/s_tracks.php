@@ -33,7 +33,7 @@ class Tracks_SettingRenderer {
             $hint = '<p class="hint" style="margin:0;max-width:480px">' . $hint . '</p>';
         }
 
-        echo "<tr data-fold=\"true\" class=\"fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">";
+        echo "<tr class=\"has-fold fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">";
         if ($type === "viewtracker")
             echo "<td class=\"lxcaption\" colspan=\"2\" style=\"padding-top:0.5em\">";
         else

@@ -301,7 +301,7 @@ function remove() {
     fill_order();
 }
 
-var revfield_template = '<table id="revfield_$" class="settings-revfield f-contain fold2c errloc_$" data-revfield="$" data-fold="true"><tbody>\
+var revfield_template = '<table id="revfield_$" class="settings-revfield f-contain has-fold fold2c errloc_$" data-revfield="$"><tbody>\
 <tr><td class="nw"><a href="#" class="q revfield-folder">\
 <span class="expander"><span class="in0 fx2">▼</span><span class="in1 fn2 need-tooltip" data-tooltip="Edit field" data-tooltip-dir="r">▶</span></span>\
 </a></td><td>\

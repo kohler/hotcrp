@@ -1489,7 +1489,7 @@ class PaperList {
         if ($this->_table_class)
             $enter .= " " . $this->_table_class;
         if (get($options, "list"))
-            $enter .= " has-hotlist";
+            $enter .= " has-hotlist has-fold";
         if (!empty($foldclasses))
             $enter .= " " . join(" ", $foldclasses);
         if ($this->_table_id)
@@ -1511,7 +1511,7 @@ class PaperList {
             $url = Navigation::siteurl() . $url . (strpos($url, "?") ? "&" : "?") . "sort={sort}";
             $enter .= "\" data-sort-url-template=\"" . htmlspecialchars($url);
         }
-        $enter .= "\" data-fold=\"true\">\n";
+        $enter .= "\">\n";
         if (self::$include_stash)
             $enter .= Ht::unstash();
         $exit = "</table>";

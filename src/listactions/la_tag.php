@@ -38,7 +38,7 @@ class Tag_ListAction extends ListAction {
         }
 
         return [Ht::select("tagfn", $tagopt, $pl->qreq->tagfn, $tagextra) . " &nbsp;",
-            ["linelink-class" => "foldc fold99c", "linelink-data-fold" => 1, "content" => $t]];
+            ["linelink-class" => "has-fold foldc fold99c", "content" => $t]];
     }
     function allow(Contact $user) {
         return $user->can_change_some_tag();

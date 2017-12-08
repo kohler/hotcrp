@@ -257,9 +257,8 @@ echo "<table id='searchform' class='tablinks1'>
 $showing_au = !$Conf->subBlindAlways() && !$pl->is_folded("au");
 $showing_anonau = (!$Conf->subBlindNever() || $Me->privChair) && !$pl->is_folded("anonau");
 
-echo Ht::form_div(hoturl("reviewprefs"), array("method" => "get", "id" => "redisplayform",
-                                               "class" => ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c"),
-                                               "data-fold" => "true")),
+echo Ht::form_div(hoturl("reviewprefs"), ["method" => "get", "id" => "redisplayform",
+                                          "class" => "has-fold " . ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c")]),
     "<table>";
 
 if ($Me->privChair) {

@@ -2150,8 +2150,7 @@ function foldup(event, opts) {
         && this.tagName === "INPUT"
         && input_is_checkboxlike(this))
         opts.f = !this.checked;
-    while (e && (!e.id || e.id.substr(0, 4) != "fold")
-           && (!e.getAttribute || !e.getAttribute("data-fold")))
+    while (e && (!e.id || e.id.substr(0, 4) != "fold") && !hasClass(e, "has-fold"))
         e = e.parentNode;
     if (!e)
         return true;

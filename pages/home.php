@@ -467,7 +467,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
 
     if ($Me->is_reviewer()) {
-        echo "<div class=\"homegrp fold20c\" id=\"homeactivity\" data-fold=\"true\" data-fold-session=\"foldhomeactivity\">",
+        echo "<div class=\"homegrp has-fold fold20c\" id=\"homeactivity\" data-fold-session=\"foldhomeactivity\">",
             foldupbutton(20),
             "<h4><a class=\"x ui homeactivity js-foldup\" href=\"#\" data-fold-target=\"20\">Recent activity<span class='fx20'>:</span></a></h4>",
             "</div>";
