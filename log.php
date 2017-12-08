@@ -85,7 +85,7 @@ if ($Qreq->acct !== "") {
     if (count($where))
         $wheres[] = "(" . join(" or ", $where) . ")";
     else {
-        $Conf->infoMsg("No accounts match “" . htmlspecialchars($Qreq->acct) . "”.");
+        $Conf->infoMsg("No users match “" . htmlspecialchars($Qreq->acct) . "”.");
         $wheres[] = "false";
     }
 }
@@ -117,8 +117,8 @@ class LogRowGenerator {
     private $wheres;
     private $page_size;
     private $delta = 0;
-    private $lower_offset_bound = 0;
-    private $upper_offset_bound = INF;
+    private $lower_offset_bound;
+    private $upper_offset_bound;
     private $rows_offset;
     private $rows_max_offset;
     private $rows;
@@ -130,6 +130,7 @@ class LogRowGenerator {
         $this->conf = $conf;
         $this->wheres = $wheres;
         $this->page_size = $page_size;
+        $this->set_filter(null);
     }
 
     function has_filter() {
@@ -275,7 +276,7 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
     if ($Qreq->forceShow)
         echo Ht::hidden("forceShow", 1);
     echo "<table id=\"searchform\"><tr>
-  <td class='lxcaption", get($Eclass, "q", ""), "'>With <b>any</b> of the words</td>
+  <td class='lxcaption", get($Eclass, "q", ""), "'>Concerning action(s)</td>
   <td class='lentry", get($Eclass, "q", ""), "'>", Ht::entry("q", $Qreq->q, ["size" => 40]),
         "<span class=\"sep\"></span></td>
   <td rowspan='3'>", Ht::submit("search", "Search"), "</td>
@@ -283,7 +284,7 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
   <td class='lxcaption", get($Eclass, "p", ""), "'>Concerning paper(s)</td>
   <td class='lentry", get($Eclass, "p", ""), "'>", Ht::entry("p", $Qreq->p, ["size" => 40]), "</td>
 </tr><tr>
-  <td class='lxcaption", get($Eclass, "acct", ""), "'>Concerning account(s)</td>
+  <td class='lxcaption", get($Eclass, "acct", ""), "'>Concerning user(s)</td>
   <td class='lentry", get($Eclass, "acct", ""), "'>", Ht::entry("acct", $Qreq->acct, ["size" => 40]), "</td>
 </tr><tr>
   <td class='lxcaption", get($Eclass, "n", ""), "'>Show</td>

@@ -253,8 +253,10 @@ class MailSender {
         ++$this->mcount;
         if ($this->sending) {
             Mailer::send_preparation($prep);
-            foreach ($prep->contacts as $cid)
+            foreach ($prep->contacts as $cid) {
+                // Log format matters
                 $Conf->log_for($Me, $cid, "Sent mail" . $this->mailid_text, $prep->paperId);
+            }
         }
 
         // hide passwords from non-chair users
@@ -360,6 +362,7 @@ class MailSender {
                 $q .= ", fromNonChair=1";
             if (($log_result = $Conf->qe_apply("insert into MailLog set $q", $qv)))
                 $this->mailid_text = " #" . $log_result->insert_id;
+            // Mail format matters
             $Me->log_activity("Sending mail$this->mailid_text \"$subject\"");
         } else
             $rest["no_send"] = true;
