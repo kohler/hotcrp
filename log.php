@@ -175,7 +175,7 @@ class LogRowGenerator {
         }
         $offset = ($pageno - 1) * $this->page_size;
         $db_offset = $offset;
-        if ($this->filter && $db_offset !== 0) {
+        if (($this->filter || !$this->explode_mail) && $db_offset !== 0) {
             if (!isset($this->page_to_offset[$pageno])) {
                 $xlimit = min(4 * $this->page_size + $limit, 2000);
                 $xpageno = max($pageno - floor($xlimit / $this->page_size), 1);
@@ -215,8 +215,7 @@ class LogRowGenerator {
                 if (!$this->filter || call_user_func($this->filter, $row)) {
                     $this->rows[] = $row;
                     ++$n;
-                    if ($this->filter
-                        && $n % $this->page_size === 0)
+                    if ($n % $this->page_size === 0)
                         $this->page_to_offset[$pageno + ($n / $this->page_size)] = $db_offset;
                     if (!$this->explode_mail) {
                         if (substr($row->action, 0, 11) === "Sent mail #") {

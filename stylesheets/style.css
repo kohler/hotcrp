@@ -3297,6 +3297,9 @@ table#offlineform table, table#offlineform form {
 th.pl_logname {
 	width: 20%;
 }
+td.pl_logname {
+	overflow-wrap: break-word;
+}
 th.pl_logaction {
 	width: 40%;
 }
