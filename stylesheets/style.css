@@ -1592,11 +1592,11 @@ img.bm {
 	width: 16px;
 	height: 16px;
 }
-.pl_lastvisit, .pl_time {
+.pl_lastvisit, .pl_logtime {
 	padding-right: 1.25em;
 	white-space: nowrap;
 }
-td.pl_lastvisit, td.pl_time {
+td.pl_lastvisit, td.pl_logtime {
 	font-size: smaller;
 }
 .pl_uscores {
@@ -3290,6 +3290,15 @@ table#offlineform table, table#offlineform form {
 }
 .lognavdr, .lognavxr {
 	text-align: right;
+}
+.pltable_log {
+	table-layout: fixed;
+}
+th.pl_logname {
+	width: 20%;
+}
+th.pl_logaction {
+	width: 40%;
 }
 
 /* graphs */

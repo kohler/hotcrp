@@ -125,6 +125,8 @@ class LogRowGenerator {
     private $filter;
     private $page_to_offset;
     private $log_url_base;
+    private $explode_mail = false;
+    private $mail_stash;
 
     function __construct(Conf $conf, $wheres, $page_size) {
         $this->conf = $conf;
@@ -133,16 +135,20 @@ class LogRowGenerator {
         $this->set_filter(null);
     }
 
-    function has_filter() {
-        return !!$this->filter;
-    }
-
     function set_filter($filter) {
         $this->filter = $filter;
         $this->rows = null;
         $this->lower_offset_bound = 0;
         $this->upper_offset_bound = INF;
         $this->page_to_offset = [];
+    }
+
+    function set_explode_mail($explode_mail) {
+        $this->explode_mail = $explode_mail;
+    }
+
+    function has_filter() {
+        return !!$this->filter;
     }
 
     function page_delta() {
@@ -197,11 +203,36 @@ class LogRowGenerator {
             $first_db_offset = $db_offset;
             while ($result && ($row = $result->fetch_object())) {
                 ++$db_offset;
+                if (!$this->explode_mail
+                    && $this->mail_stash
+                    && $this->mail_stash->action === $row->action) {
+                    if ($row->destContactId)
+                        $this->mail_stash->destContactIdArray[] = $row->destContactId;
+                    if ($row->paperId)
+                        $this->mail_stash->paperIdArray[] = $row->paperId;
+                    continue;
+                }
                 if (!$this->filter || call_user_func($this->filter, $row)) {
                     $this->rows[] = $row;
                     ++$n;
-                    if ($this->filter && $n % $this->page_size === 0)
+                    if ($this->filter
+                        && $n % $this->page_size === 0)
                         $this->page_to_offset[$pageno + ($n / $this->page_size)] = $db_offset;
+                    if (!$this->explode_mail) {
+                        if (substr($row->action, 0, 11) === "Sent mail #") {
+                            $this->mail_stash = $row;
+                            $row->destContactIdArray = $row->paperIdArray = [];
+                            if ($row->destContactId) {
+                                $row->destContactIdArray[] = $row->destContactId;
+                                $row->destContactId = null;
+                            }
+                            if ($row->paperId) {
+                                $row->paperIdArray[] = $row->paperId;
+                                $row->paperId = null;
+                            }
+                        } else
+                            $this->mail_stash = null;
+                    }
                 }
             }
             Dbl::free($result);
@@ -449,24 +480,41 @@ if (!empty($unknown_cids)) {
 }
 
 // render rows
-function render_user(Contact $user = null) {
-    global $Me;
-    if (!$user)
-        return "";
-    else if (!$user->email && $user->disabled === "deleted")
-        return '<del>[deleted user ' . $user->contactId . ']</del>';
-    else {
-        $t = $Me->reviewer_html_for($user);
-        if ($user->disabled === "deleted")
-            $t = "<del>" . $t . " &lt;" . htmlspecialchars($user->email) . "&gt;</del>";
+function render_users($users) {
+    global $Conf, $Me;
+    $all_pc = true;
+    $ts = [];
+    usort($users, "Contact::compare");
+    foreach ($users as $user) {
+        if ($all_pc && (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE)))
+            $all_pc = false;
+        if (!$user->email && $user->disabled === "deleted")
+            return '<del>[deleted user ' . $user->contactId . ']</del>';
         else {
-            $t = '<a href="' . hoturl("profile", "u=" . urlencode($user->email)) . '">' . $t . '</a>';
-            if (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE))
-                $t .= ' &lt;' . htmlspecialchars($user->email) . '&gt;';
-            if (isset($user->roles) && ($rolet = $user->role_html()))
-                $t .= " $rolet";
+            $t = $Me->reviewer_html_for($user);
+            if ($user->disabled === "deleted")
+                $t = "<del>" . $t . " &lt;" . htmlspecialchars($user->email) . "&gt;</del>";
+            else {
+                $t = '<a href="' . hoturl("profile", "u=" . urlencode($user->email)) . '">' . $t . '</a>';
+                if (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE))
+                    $t .= ' &lt;' . htmlspecialchars($user->email) . '&gt;';
+                if (isset($user->roles) && ($rolet = $user->role_html()))
+                    $t .= " $rolet";
+            }
+            $ts[] = $t;
         }
-        return $t;
+    }
+    if (count($ts) <= 3) {
+        return join(", ", $ts);
+    } else {
+        $fmt = $all_pc ? "%d PC users" : "%d users";
+        return '<div class="has-fold foldc"><a href="" class="ui js-foldup">'
+            . expander(null, 0)
+            . '</a>'
+            . '<span class="fn">'
+            . sprintf($Conf->_($fmt, count($ts)), count($ts))
+            . '</span><span class="fx">' . join(", ", $ts)
+            . '</span></div>';
     }
 }
 
@@ -475,19 +523,31 @@ $has_dest_user = false;
 foreach ($visible_rows as $row) {
     $act = $row->action;
 
-    $t = ['<td class="pl pl_time">' . $Conf->unparse_time_short($row->timestamp) . '</td>'];
+    $t = ['<td class="pl pl_logtime">' . $Conf->unparse_time_short($row->timestamp) . '</td>'];
 
-    $user = $row->contactId ? get($users, $row->contactId) : null;
-    $dest_user = $row->destContactId ? get($users, $row->destContactId) : null;
-    if (!$user && $dest_user)
-        $user = $dest_user;
+    $xusers = $xdest_users = [];
+    if ($row->contactId
+        && ($u = get($users, $row->contactId)))
+        $xusers[] = $u;
+    if ($row->destContactId
+        && ($u = get($users, $row->destContactId)))
+        $xdest_users[] = $u;
+    if (isset($row->destContactIdArray)) {
+        foreach ($row->destContactIdArray as $cid) {
+            if (($u = get($users, $cid)))
+                $xdest_users[] = $u;
+        }
+    }
+    if (empty($xusers) && !empty($xdest_users))
+        $xusers[] = $xdest_users[0];
 
-    $t[] = '<td class="pl pl_name">' . render_user($user) . '</td>';
-    if ($dest_user && $user !== $dest_user) {
-        $t[] = '<td class="pl pl_name">' . render_user($dest_user) . '</td>';
+    if ($xdest_users && $xusers != $xdest_users) {
+        $t[] = '<td class="pl pl_logname">' . render_users($xusers) . '</td>'
+            . '<td class="pl pl_logname">' . render_users($xdest_users) . '</td>';
         $has_dest_user = true;
-    } else
-        $t[] = '<td></td>';
+    } else {
+        $t[] = '<td class="pl pl_logname" colspan="2">' . render_users($xusers) . '</td>';
+    }
 
     // XXX users that aren't in contactId slot
     // if (preg_match(',\A(.*)<([^>]*@[^>]*)>\s*(.*)\z,', $act, $m)) {
@@ -518,11 +578,20 @@ foreach ($visible_rows as $row) {
             $act = $m[4];
         }
     } else if ($row->paperId > 0
-               && (substr($act, 0, 8) === "Updated " || substr($act, 0, 10) === "Submitted " || substr($act, 0, 11) === "Registered ")
+               && (substr($act, 0, 8) === "Updated "
+                   || substr($act, 0, 10) === "Submitted "
+                   || substr($act, 0, 11) === "Registered ")
                && preg_match('/\A(\S+(?: final)?)(.*)\z/', $act, $m)
                && preg_match('/\A(.* )(final|submission)((?:,| |\z).*)\z/', $m[2], $mm)) {
         $at = $m[1] . $mm[1] . "<a href=\"" . hoturl("doc", "p={$row->paperId}&amp;dt={$mm[2]}&amp;at={$row->timestamp}") . "\">{$mm[2]}</a>";
         $act = $mm[3];
+    }
+    if (isset($row->paperIdArray)) {
+        $pids = array_unique($row->paperIdArray);
+        if (count($pids) == 1)
+            $row->paperId = $pids[0];
+        else
+            $row->action .= " (papers " . join(", ", $pids) . ")";
     }
     if (preg_match('/\A(.* |)\(papers ([\d, ]+)\)?\z/', $act, $m)) {
         $at .= htmlspecialchars($m[1])
@@ -534,7 +603,7 @@ foreach ($visible_rows as $row) {
         $at .= htmlspecialchars($act);
     if ($row->paperId)
         $at .= " (<a href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">paper " . htmlspecialchars($row->paperId) . "</a>)";
-    $t[] = '<td class="pl pl_act">' . $at . '</td>';
+    $t[] = '<td class="pl pl_logaction">' . $at . '</td>';
     $trs[] = '    <tr class="k' . (count($trs) % 2) . '">' . join("", $t) . "</tr>\n";
 }
 
@@ -563,13 +632,12 @@ if (!$Me->privChair || !empty($exclude_pids)) {
 
 searchbar($lrg, $page, $count);
 if (!empty($trs)) {
-    echo '<table class="pltable pltable_full">
-  <thead><tr class="pl_headrow"><th class="pll plh pl_time">Time</th><th class="pll plh pl_name">User</th>';
-    if ($has_dest_user)
-        echo '<th class="pll plh pl_name">Affected user</th>';
-    else
-        echo '<th class="pll plh"></th>';
-    echo '<th class="pll plh pl_act">Action</th></tr></thead>',
+    echo "<table class=\"pltable pltable_full pltable_log\">\n",
+        '  <thead><tr class="pl_headrow">',
+        '<th class="pll plh pl_logtime">Time</th>',
+        '<th class="pll plh pl_logname">User</th>',
+        '<th class="pll plh pl_logname">Affected user</th>',
+        '<th class="pll plh pl_logaction">Action</th></tr></thead>',
         "\n  <tbody class=\"pltable\">\n",
         join("", $trs),
         "  </tbody>\n</table>\n";
