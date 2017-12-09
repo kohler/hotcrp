@@ -646,7 +646,7 @@ class PaperList {
         $this->qopts["scores"] = array_keys($this->qopts["scores"]);
         if (empty($this->qopts["scores"]))
             unset($this->qopts["scores"]);
-        $result = $this->user->paper_result($this->qopts);
+        $result = $this->conf->paper_result($this->user, $this->qopts);
         if (!$result)
             return null;
         $rowset = new PaperInfoSet;

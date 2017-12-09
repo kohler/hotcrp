@@ -560,7 +560,7 @@ class FormulaGraph {
         if ($this->fx->is_indexed() || $this->fy->is_indexed())
             $queryOptions["reviewSignatures"] = true;
 
-        $result = $this->user->paper_result($queryOptions);
+        $result = $this->conf->paper_result($this->user, $queryOptions);
         $rowset = new PaperInfoSet;
         while (($prow = PaperInfo::fetch($result, $this->user)))
             if ($this->user->can_view_paper($prow))

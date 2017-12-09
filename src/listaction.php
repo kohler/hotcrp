@@ -83,8 +83,7 @@ class ListAction {
         $any_round = $any_token = false;
 
         $texts = array();
-        $result = $user->paper_result(["paperId" => $selection, "reviewSignatures" => 1]);
-        while (($prow = PaperInfo::fetch($result, $user)))
+        foreach ($user->paper_set($selection, ["reviewSignatures" => true]) as $prow) {
             if (!$user->allow_administer($prow)) {
                 $texts[] = array();
                 $texts[] = array("paper" => $prow->paperId,
@@ -120,6 +119,7 @@ class ListAction {
                     $any_round = $any_round || $round != 0;
                 }
             }
+        }
         $header = array("paper", "action", "email");
         if ($any_round)
             $header[] = "round";

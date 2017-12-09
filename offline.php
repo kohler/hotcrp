@@ -40,8 +40,7 @@ if (isset($_REQUEST["uploadForm"])
 function saveTagIndexes($tag, $filename, &$settings, &$titles, &$linenos, &$errors) {
     global $Conf, $Me, $Error;
 
-    $result = $Me->paper_result(["paperId" => array_keys($settings)]);
-    while (($row = PaperInfo::fetch($result, $Me)))
+    foreach ($Me->paper_set(array_keys($settings)) as $row) {
         if ($settings[$row->paperId] !== null
             && !$Me->can_change_tag($row, $tag, null, 1)) {
             $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId.";
@@ -50,6 +49,7 @@ function saveTagIndexes($tag, $filename, &$settings, &$titles, &$linenos, &$erro
                    && strcmp($row->title, $titles[$row->paperId]) != 0
                    && strcasecmp($row->title, simplify_whitespace($titles[$row->paperId])) != 0)
             $errors[$linenos[$row->paperId]] = "Warning: Title doesn’t match";
+    }
 
     if (!$tag)
         defappend($Error["tags"], "No tag defined");

@@ -139,12 +139,10 @@ class PaperApi {
         } else if ($ok) {
             $p = [];
             if ($pids) {
-                $result = $user->paper_result(["paperId" => array_keys($pids), "tags" => true]);
-                while (($prow = PaperInfo::fetch($result, $user))) {
+                foreach ($user->paper_set(array_keys($pids)) as $prow) {
                     $p[$prow->paperId] = (object) [];
                     $prow->add_tag_info_json($p[$prow->paperId], $user);
                 }
-                Dbl::free($result);
             }
             $jr = new JsonResult(["ok" => true, "p" => (object) $p]);
         } else

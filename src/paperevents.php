@@ -148,9 +148,8 @@ class PaperEvents {
         foreach ($this->crows as $crow)
             if (!$this->prows->get($crow->paperId))
                 $need[$crow->paperId] = true;
-        $result = $this->user->paper_result(["paperId" => array_keys($need), "watch" => true]);
-        while (($prow = PaperInfo::fetch($result, $this->user)))
-            $this->prows->add($prow);
+        if (!empty($need))
+            $this->prows->take_all($this->user->paper_set(array_keys($need), ["watch" => true]));
     }
 
     static function _activity_compar($a, $b) {

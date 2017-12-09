@@ -528,6 +528,13 @@ class PaperInfoSet implements IteratorAggregate {
             $prow->_row_set = $this;
         }
     }
+    function take_all(PaperInfoSet $set) {
+        foreach ($set->prows as $prow) {
+            $prow->_row_set = null;
+            $this->add($prow);
+        }
+        $set->prows = $set->by_pid = [];
+    }
     function all() {
         return $this->prows;
     }
