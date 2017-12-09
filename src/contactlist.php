@@ -27,13 +27,14 @@ class ContactList {
 
     public static $folds = array("topics", "aff", "tags", "collab");
 
+    public $conf;
+    public $user;
     var $showHeader = true;
     var $sortField = null;
     var $reverseSort;
     var $sortable;
     var $count;
     var $any;
-    var $contact;
     private $tagger;
     var $scoreMax;
     var $limit;
@@ -41,8 +42,11 @@ class ContactList {
     var $contactLinkArgs;
     private $_cfltpids = null;
 
-    function __construct($contact, $sortable = true) {
+    function __construct(Contact $user, $sortable = true) {
         global $contactListFields;
+
+        $this->conf = $user->conf;
+        $this->user = $user;
 
         $s = ($sortable ? defval($_REQUEST, "sort", "") : "");
         $x = (strlen($s) ? $s[strlen($s)-1] : "");
@@ -53,14 +57,13 @@ class ContactList {
             $this->sortField = $s;
         $this->sortable = $sortable;
 
-        $this->contact = $contact;
-        $this->tagger = new Tagger($this->contact);
+        $this->contact = $user;
+        $this->tagger = new Tagger($this->user);
         $this->contactLinkArgs = "";
     }
 
     function selector($fieldId, &$queryOptions) {
-        global $Conf;
-        if (!$this->contact->isPC
+        if (!$this->user->isPC
             && $fieldId != self::FIELD_NAME
             && $fieldId != self::FIELD_AFFILIATION
             && $fieldId != self::FIELD_AFFILIATION_ROW)
@@ -74,7 +77,7 @@ class ContactList {
         if ($fieldId == self::FIELD_SHEPHERDS)
             $queryOptions["shepherds"] = true;
         if ($fieldId == self::FIELD_REVIEW_RATINGS) {
-            if ($Conf->setting("rev_ratings") == REV_RATINGS_NONE)
+            if ($this->conf->setting("rev_ratings") == REV_RATINGS_NONE)
                 return false;
             $queryOptions["revratings"] = $queryOptions["reviews"] = true;
         }
@@ -88,8 +91,8 @@ class ContactList {
             $this->have_folds["tags"] = true;
         if ($fieldId == self::FIELD_COLLABORATORS)
             $this->have_folds["collab"] = true;
-        if (($f = $Conf->review_field($fieldId))) {
-            $revViewScore = $this->contact->aggregated_view_score_bound();
+        if (($f = $this->conf->review_field($fieldId))) {
+            $revViewScore = $this->user->aggregated_view_score_bound();
             if ($f->view_score <= $revViewScore || !$f->has_options)
                 return false;
             $queryOptions["reviews"] = true;
@@ -138,7 +141,6 @@ class ContactList {
     }
 
     function _sortReviewRatings($a, $b) {
-        global $Conf;
         if ((int) $a->sumRatings != (int) $b->sumRatings)
             return ($a->sumRatings > $b->sumRatings ? -1 : 1);
         if ((int) $a->numRatings != (int) $b->numRatings)
@@ -161,7 +163,6 @@ class ContactList {
     }
 
     function _sort($rows) {
-        global $Conf;
         switch ($this->sortField) {
         case self::FIELD_NAME:
             usort($rows, [$this, "_sortBase"]);
@@ -193,10 +194,10 @@ class ContactList {
             usort($rows, array($this, "_sortPapers"));
             break;
         default:
-            if (($f = $Conf->review_field($this->sortField))) {
+            if (($f = $this->conf->review_field($this->sortField))) {
                 $fieldId = $this->sortField;
                 $scoreMax = $this->scoreMax[$fieldId];
-                $scoresort = $Conf->session("scoresort", "A");
+                $scoresort = $this->conf->session("scoresort", "A");
                 if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
                     $scoresort = "A";
                 Contact::$allow_nonexistent_properties = true;
@@ -217,7 +218,6 @@ class ContactList {
     }
 
     function header($fieldId, $ordinal, $row = null) {
-        global $Conf;
         switch ($fieldId) {
         case self::FIELD_NAME:
             return "Name";
@@ -251,7 +251,7 @@ class ContactList {
         case self::FIELD_COLLABORATORS:
             return "Collaborators";
         default:
-            if (($f = $Conf->review_field($fieldId)))
+            if (($f = $this->conf->review_field($fieldId)))
                 return $f->web_abbreviation();
             else
                 return "&lt;$fieldId&gt;?";
@@ -259,30 +259,29 @@ class ContactList {
     }
 
     function content($fieldId, $row) {
-        global $Conf;
         switch ($fieldId) {
         case self::FIELD_NAME:
-            if ($this->sortField == $fieldId && $Conf->sort_by_last)
+            if ($this->sortField == $fieldId && $this->conf->sort_by_last)
                 $t = Text::name_html($row, NameInfo::make_last_first());
             else
                 $t = Text::name_html($row);
             if (trim($t) == "")
                 $t = "[No name]";
             $t = '<span class="taghl">' . $t . '</span>';
-            if ($this->contact->privChair)
+            if ($this->user->privChair)
                 $t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->disabled ? " class='uu'" : "") . ">$t</a>";
             $role = $row->role_html();
             if ($role !== "" && ($this->limit !== "pc" || ($row->roles & Contact::ROLE_PCLIKE) !== Contact::ROLE_PC))
                 $t .= " $role";
-            if ($this->contact->privChair && $row->email != $this->contact->email)
+            if ($this->user->privChair && $row->email != $this->user->email)
                 $t .= " <a href=\"" . hoturl("index", "actas=" . urlencode($row->email)) . "\">"
                     . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($row)))
                     . "</a>";
-            if ($row->disabled && $this->contact->isPC)
+            if ($row->disabled && $this->user->isPC)
                 $t .= ' <span class="hint">(disabled)</span>';
             return $t;
         case self::FIELD_EMAIL:
-            if (!$this->contact->isPC)
+            if (!$this->user->isPC)
                 return "";
             $e = htmlspecialchars($row->email);
             if (strpos($row->email, "@") === false)
@@ -295,10 +294,10 @@ class ContactList {
         case self::FIELD_LASTVISIT:
             if (!$row->activity_at)
                 return "Never";
-            else if ($this->contact->privChair)
-                return $Conf->unparse_time_short($row->activity_at);
+            else if ($this->user->privChair)
+                return $this->conf->unparse_time_short($row->activity_at);
             else
-                return $Conf->unparse_time_obscure($row->activity_at);
+                return $this->conf->unparse_time_obscure($row->activity_at);
         case self::FIELD_SELECTOR:
         case self::FIELD_SELECTOR_ON:
             $this->any->sel = true;
@@ -314,7 +313,7 @@ class ContactList {
                 $nt = array_filter($topics, function ($i) { return $i > 0; });
             else
                 $nt = array_filter($topics, function ($i) { return $i < 0; });
-            return PaperInfo::unparse_topic_list_html($Conf, $nt, true);
+            return PaperInfo::unparse_topic_list_html($this->conf, $nt, true);
         case self::FIELD_REVIEWS:
             if (!$row->numReviews && !$row->numReviewsSubmitted)
                 return "";
@@ -380,8 +379,8 @@ class ContactList {
             return '<div class="has-hotlist" data-hotlist="' . $ls . '">'
                 . join(", ", $m) . '</div>';
         case self::FIELD_TAGS:
-            if ($this->contact->isPC
-                && ($tags = $row->viewable_tags($this->contact))) {
+            if ($this->user->isPC
+                && ($tags = $row->viewable_tags($this->user))) {
                 $x = [];
                 foreach (TagInfo::split($tags) as $t)
                     if ($t !== "pc#0")
@@ -390,7 +389,7 @@ class ContactList {
             }
             return "";
         case self::FIELD_COLLABORATORS:
-            if (!$this->contact->isPC || !($row->roles & Contact::ROLE_PC))
+            if (!$this->user->isPC || !($row->roles & Contact::ROLE_PC))
                 return "";
             $t = array();
             foreach (explode("\n", $row->collaborators) as $collab) {
@@ -402,10 +401,10 @@ class ContactList {
             }
             return join("; ", $t);
         default:
-            $f = $Conf->review_field($fieldId);
+            $f = $this->conf->review_field($fieldId);
             if (!$f
                 || (!($row->roles & Contact::ROLE_PC)
-                    && !$this->contact->privChair
+                    && !$this->user->privChair
                     && $this->limit != "req")
                 || (string) $row->$fieldId === "")
                 return "";
@@ -414,9 +413,8 @@ class ContactList {
     }
 
     function addScores($a) {
-        global $Conf;
-        if ($this->contact->isPC) {
-            foreach ($Conf->all_review_fields() as $f)
+        if ($this->user->isPC) {
+            foreach ($this->conf->all_review_fields() as $f)
                 if ($f->has_options
                     && strpos(displayOptionsSet("uldisplay"), " {$f->id} ") !== false)
                     array_push($a, $f->id);
@@ -454,20 +452,19 @@ class ContactList {
     }
 
     function footer($ncol, $hascolors) {
-        global $Conf;
         if ($this->count == 0)
             return "";
         $lllgroups = [];
 
         // Begin linelinks
         $types = array("nameemail" => "Names and emails");
-        if ($this->contact->privChair)
+        if ($this->user->privChair)
             $types["pcinfo"] = "PC info";
         $lllgroups[] = ["", "Download",
             Ht::select("getaction", $types, null, ["class" => "want-focus"])
             . "&nbsp; " . Ht::submit("getgo", "Go")];
 
-        if ($this->contact->privChair) {
+        if ($this->user->privChair) {
             $lllgroups[] = ["", "Tag",
                 Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), req("tagtype"))
                 . ' &nbsp;tag(s) &nbsp;'
@@ -491,19 +488,19 @@ class ContactList {
     }
 
     private function _conflict_pids() {
-        global $Conf;
         if ($this->_cfltpids === null) {
             $this->_cfltpids = [];
-            if (!$this->contact->privChair || $Conf->has_any_manager()) {
-                $user = $this->contact;
-                $result = $Conf->paper_result($user, $Conf->has_tracks() ? ["tags" => true] : []);
-                while (($row = PaperInfo::fetch($result, $user)))
+            if (!$this->user->privChair || $this->conf->has_any_manager()) {
+                $user = $this->user;
+                $result = $this->conf->paper_result($user, $this->conf->has_tracks() ? ["tags" => true] : []);
+                while (($row = PaperInfo::fetch($result, $user))) {
                     if (!$user->can_view_paper($row)
                         || !$user->can_view_review_assignment($row, null, true)
                         || !$user->can_view_review_identity($row, null, true))
                         $this->_cfltpids[] = $row->paperId;
                     else if ($row->conflictType > 0 && !$user->privChair)
-                        error_log("WARNING: counting {$Conf->dbname} #{$row->paperId} for {$user->email} despite conflict");
+                        error_log("WARNING: counting {$this->conf->dbname} #{$row->paperId} for {$user->email} despite conflict");
+                }
                 Dbl::free($result);
             }
         }
@@ -518,8 +515,6 @@ class ContactList {
     }
 
     function _rows($queryOptions) {
-        global $Conf;
-
         // XXX This section is a bit of a mess. We don't always obey the
         // visibility restrictions in Contact. Most of the time (but probably
         // not always) we are more restricted: for instance, conflicted PC
@@ -566,9 +561,9 @@ class ContactList {
             if ($this->limit == "req" || $this->limit == "ext" || $this->limit == "extsub")
                 $jwhere[] = "r.reviewType=" . REVIEW_EXTERNAL;
             if ($this->limit == "req")
-                $jwhere[] = "r.requestedBy=" . $this->contact->contactId;
+                $jwhere[] = "r.requestedBy=" . $this->user->contactId;
             if (($cfltpids = $this->_conflict_pids()))
-                $jwhere[] = "(r.paperId not in (" . join(",", $cfltpids) . ") or r.contactId=" . $this->contact->contactId . ")";
+                $jwhere[] = "(r.paperId not in (" . join(",", $cfltpids) . ") or r.contactId=" . $this->user->contactId . ")";
             $jwhere[] = "(p.timeSubmitted>0 or r.reviewSubmitted>0)";
             if (count($jwhere))
                 $pq .= "\n\t\twhere " . join(" and ", $jwhere);
@@ -579,7 +574,7 @@ class ContactList {
                 from ReviewRating
                 join PaperReview on (PaperReview.paperId=ReviewRating.paperId and PaperReview.reviewId=ReviewRating.reviewId)";
             $jwhere = [];
-            if (($badratings = PaperSearch::unusableRatings($this->contact)))
+            if (($badratings = PaperSearch::unusableRatings($this->user)))
                 $jwhere[] = "ReviewRating.reviewId not in (" . join(",", $badratings) . ")";
             if (($cfltpids = $this->_conflict_pids()))
                 $jwhere[] = "ReviewRating.paperId not in (" . join(",", $cfltpids) . ")";
@@ -613,7 +608,7 @@ class ContactList {
             $pq .= "\twhere " . join(" and ", $mainwhere) . "\n";
 
         // make query
-        $result = $Conf->qe_raw($pq);
+        $result = $this->conf->qe_raw($pq);
         if (!$result)
             return NULL;
 
@@ -629,7 +624,7 @@ class ContactList {
     }
 
     function table_html($listname, $url, $listtitle = "", $foldsession = null) {
-        global $Conf, $contactListFields;
+        global $contactListFields;
 
         // PC tags
         $listquery = $listname;
@@ -687,7 +682,7 @@ class ContactList {
 
         // collect row data
         $this->count = 0;
-        $show_colors = $this->contact->isPC;
+        $show_colors = $this->user->isPC;
 
         $anyData = array();
         $body = '';
@@ -699,14 +694,14 @@ class ContactList {
                 continue;
 
             $trclass = "k" . ($this->count % 2);
-            if ($show_colors && ($k = $row->viewable_color_classes($this->contact))) {
+            if ($show_colors && ($k = $row->viewable_color_classes($this->user))) {
                 if (str_ends_with($k, " tagbg")) {
                     $trclass = $k;
                     $hascolors = true;
                 } else
                     $trclass .= " " . $k;
             }
-            if ($row->disabled && $this->contact->isPC)
+            if ($row->disabled && $this->user->isPC)
                 $trclass .= " graytext";
             $this->count++;
             $ids[] = (int) $row->contactId;
@@ -812,7 +807,7 @@ class ContactList {
             $x .= $this->footer($ncol, $hascolors);
 
         $x .= "<tbody class=\"pltable" . ($hascolors ? " pltable_colored" : "");
-        if ($this->contact->privChair) {
+        if ($this->user->privChair) {
             $l = SessionList::create("u/" . $listname, $ids, $listtitle ? : "Users",
                                      hoturl_site_relative_raw("users", ["t" => $listname]));
             $x .= " has-hotlist\" data-hotlist=\"" . htmlspecialchars($l->info_string());
