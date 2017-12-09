@@ -69,21 +69,28 @@ class Formula_PaperColumn extends PaperColumn {
         $this->results = $this->override_results = [];
         $this->real_format = null;
         $isreal = $this->formula->result_format_is_real();
+        $override_rows = null;
         foreach ($rows as $row) {
             $v = $formulaf($row, null, $pl->user);
             $this->results[$row->paperId] = $v;
             if ($isreal && !$this->real_format && is_float($v)
                 && round($v * 100) % 100 != 0)
                 $this->real_format = "%.2f";
-            if ($row->conflictType > 0 && $pl->user->allow_administer($row)) {
-                $vv = $formulaf($row, null, $pl->user, true);
-                if ($vv !== $v) {
+            if ($row->conflictType > 0 && $pl->user->allow_administer($row))
+                $override_rows[] = $row;
+        }
+        if ($override_rows) {
+            $overrides = $pl->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+            foreach ($override_rows as $row) {
+                $vv = $formulaf($row, null, $pl->user);
+                if ($vv !== $this->results[$row->paperId]) {
                     $this->override_results[$row->paperId] = $vv;
                     if ($isreal && !$this->real_format && is_float($vv)
                         && round($vv * 100) % 100 != 0)
                         $this->real_format = "%.2f";
                 }
             }
+            $pl->user->set_overrides($overrides);
         }
         assert(!!$this->statistics);
     }

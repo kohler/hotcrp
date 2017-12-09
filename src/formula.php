@@ -729,7 +729,7 @@ class Option_Fexpr extends Sub_Fexpr {
         $ovar = "\$opt" . ($id < 0 ? "m" . -$id : $id);
         if ($state->check_gvar($ovar)) {
             $state->queryOptions["options"] = true;
-            $state->gstmt[] = "if (\$contact->can_view_paper_option(\$prow, $id, \$forceShow)) {";
+            $state->gstmt[] = "if (\$contact->can_view_paper_option(\$prow, $id)) {";
             $state->gstmt[] = "  $ovar = \$prow->option($id);";
             if ($this->option->type == "checkbox")
                 $state->gstmt[] = "  $ovar = !!($ovar && {$ovar}->value);";
@@ -755,7 +755,7 @@ class Decision_Fexpr extends Sub_Fexpr {
     }
     function compile(FormulaCompiler $state) {
         if ($state->check_gvar('$decision'))
-            $state->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow, \$forceShow) ? (int) \$prow->outcome : 0;";
+            $state->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow) ? (int) \$prow->outcome : 0;";
         return '$decision';
     }
 }
@@ -872,7 +872,7 @@ class Reviewer_Fexpr extends Review_Fexpr {
     function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         $state->queryOptions["reviewSignatures"] = true;
-        return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact, $forceShow) ? ' . $state->_rrow_cid() . ' : null)';
+        return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact) ? ' . $state->_rrow_cid() . ' : null)';
     }
 }
 
@@ -912,7 +912,7 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
             $tag = $this->arg[0] === "#" ? substr($this->arg, 1) : $this->arg;
             return "($cvt ? ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
         } else
-            return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact, $forceShow) ? array_search(' . $state->_rrow_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
+            return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact) ? array_search(' . $state->_rrow_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
     }
     function matches_at_most_once() {
         return count($this->csearch->ids) <= 1;
@@ -1015,21 +1015,21 @@ class FormulaCompiler {
     function _add_vsreviews() {
         if ($this->check_gvar('$vsreviews')) {
             $this->queryOptions["reviewSignatures"] = true;
-            $this->gstmt[] = "\$vsreviews = \$prow->viewable_submitted_reviews_by_user(\$contact, \$forceShow);";
+            $this->gstmt[] = "\$vsreviews = \$prow->viewable_submitted_reviews_by_user(\$contact);";
         }
         return '$vsreviews';
     }
     function _add_review_prefs() {
         if ($this->check_gvar('$allrevprefs')) {
             $this->queryOptions["allReviewerPreference"] = true;
-            $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null, \$forceShow) ? \$prow->reviewer_preferences() : [];";
+            $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null) ? \$prow->reviewer_preferences() : [];";
         }
         return '$allrevprefs';
     }
     function _add_conflicts() {
         if ($this->check_gvar('$conflicts')) {
             $this->queryOptions["allConflictType"] = true;
-            $this->gstmt[] = "\$conflicts = \$contact->can_view_conflicts(\$prow, \$forceShow) ? \$prow->conflicts() : [];";
+            $this->gstmt[] = "\$conflicts = \$contact->can_view_conflicts(\$prow) ? \$prow->conflicts() : [];";
         }
         return '$conflicts';
     }
@@ -1043,7 +1043,7 @@ class FormulaCompiler {
             return "false";
         if ($this->check_gvar('$tags')) {
             $this->queryOptions["tags"] = true;
-            $this->gstmt[] = "\$tags = \$contact->can_view_tags(\$prow, \$forceShow) ? \$prow->all_tags_text() : \"\";";
+            $this->gstmt[] = "\$tags = \$contact->can_view_tags(\$prow) ? \$prow->all_tags_text() : \"\";";
         }
         if (!isset($this->known_tag_indexes[$tag])) {
             $n = count($this->tagrefs);
@@ -1696,7 +1696,7 @@ class Formula {
         } else
             $t = "return 0;";
 
-        $args = '$prow, $rrow_cid, $contact, $forceShow = null';
+        $args = '$prow, $rrow_cid, $contact';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n");
         return create_function($args, $t);
     }
@@ -1715,7 +1715,7 @@ class Formula {
         $t = "assert(\$contact->contactId == $user->contactId);\n  "
             . join("\n  ", $state->gstmt)
             . "\n  return array_keys($g);\n";
-        $args = '$prow, $contact, $forceShow = null';
+        $args = '$prow, $contact';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  $t}\n");
         return create_function($args, $t);
     }
@@ -1729,7 +1729,7 @@ class Formula {
             $t .= "  return " . $state->fragments[0] . ";\n";
         else
             $t .= "  return [" . join(", ", $state->fragments) . "];\n";
-        $args = '$prow, $rrow_cid, $contact, $forceShow = null';
+        $args = '$prow, $rrow_cid, $contact';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // fragments " . simplify_whitespace($this->expression) . "\n  $t}\n");
         $outf = create_function($args, $t);
 
@@ -1738,7 +1738,7 @@ class Formula {
         $state->combining = 0;
         $expr = $this->_parse ? $this->_parse->compile($state) : "0";
         $t = self::compile_body(null, $state, $expr);
-        $args = '$groups, $forceShow = null';
+        $args = '$groups';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // combine " . simplify_whitespace($this->expression) . "\n  $t}\n");
         $inf = create_function($args, $t);
 
