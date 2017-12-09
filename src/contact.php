@@ -3070,10 +3070,7 @@ class Contact {
     }
 
     function can_view_formula(Formula $formula, $as_author = false) {
-        if ($as_author)
-            $bound = $this->author_permissive_view_score_bound();
-        else
-            $bound = $this->permissive_view_score_bound();
+        $bound = $this->permissive_view_score_bound($as_author);
         return $formula->view_score($this) > $bound;
     }
 
@@ -3109,25 +3106,21 @@ class Contact {
             return VIEWSCORE_PC - 1;
     }
 
-    function permissive_view_score_bound() {
-        if ($this->is_manager())
+    function permissive_view_score_bound($as_author = false) {
+        if (!$as_author && $this->is_manager()) {
             return VIEWSCORE_ADMINONLY - 1;
-        else if ($this->is_reviewer())
+        } else if (!$as_author && $this->is_reviewer()) {
             return VIEWSCORE_REVIEWERONLY - 1;
-        else if ($this->is_author() && $this->conf->timeAuthorViewReviews()) {
-            if ($this->can_view_some_decision_as_author())
+        } else if (($as_author || $this->is_author())
+                   && $this->conf->au_seerev != 0) {
+            if ($this->can_view_some_decision_as_author()) {
                 return VIEWSCORE_AUTHORDEC - 1;
-            else
+            } else {
                 return VIEWSCORE_AUTHOR - 1;
-        } else
+            }
+        } else {
             return VIEWSCORE_MAX + 1;
-    }
-
-    function author_permissive_view_score_bound() {
-        if ($this->conf->can_view_some_decision_as_author())
-            return VIEWSCORE_AUTHORDEC - 1;
-        else
-            return VIEWSCORE_AUTHOR - 1;
+        }
     }
 
     function aggregated_view_score_bound() {
