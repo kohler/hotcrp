@@ -2499,7 +2499,7 @@ class PaperTable {
         $this->crows = $this->mycrows = array();
         if ($this->prow) {
             $this->crows = $this->prow->all_comments();
-            $this->mycrows = $this->prow->viewable_comments($this->user, null);
+            $this->mycrows = $this->prow->viewable_comments($this->user);
         }
     }
 

@@ -1642,14 +1642,14 @@ class PaperInfo {
         return $this->fresh_review_of("contactId", self::contact_to_cid($contact));
     }
 
-    function viewable_submitted_reviews_by_display(Contact $contact, $forceShow = null) {
-        $cinfo = $contact->__rights($this, $forceShow);
+    function viewable_submitted_reviews_by_display(Contact $contact) {
+        $cinfo = $contact->__rights($this, null);
         if ($cinfo->vsreviews_array === null
             || $cinfo->vsreviews_version !== $this->_review_array_version) {
             $cinfo->vsreviews_array = [];
             foreach ($this->reviews_by_display() as $id => $rrow) {
                 if ($rrow->reviewSubmitted > 0
-                    && $contact->can_view_review($this, $rrow, $forceShow))
+                    && $contact->can_view_review($this, $rrow))
                     $cinfo->vsreviews_array[$id] = $rrow;
             }
             $cinfo->vsreviews_cid_array = null;
@@ -1658,11 +1658,11 @@ class PaperInfo {
         return $cinfo->vsreviews_array;
     }
 
-    function viewable_submitted_reviews_by_user(Contact $contact, $forceShow = null) {
-        $cinfo = $contact->__rights($this, $forceShow);
+    function viewable_submitted_reviews_by_user(Contact $contact) {
+        $cinfo = $contact->__rights($this, null);
         if ($cinfo->vsreviews_cid_array === null
             || $cinfo->vsreviews_version !== $this->_review_array_version) {
-            $rrows = $this->viewable_submitted_reviews_by_display($contact, $forceShow);
+            $rrows = $this->viewable_submitted_reviews_by_display($contact);
             $cinfo->vsreviews_cid_array = [];
             foreach ($rrows as $rrow)
                 $cinfo->vsreviews_cid_array[$rrow->contactId] = $rrow;
@@ -1855,10 +1855,10 @@ class PaperInfo {
         return $this->_comment_array;
     }
 
-    function viewable_comments(Contact $user, $forceShow) {
+    function viewable_comments(Contact $user) {
         $crows = [];
         foreach ($this->all_comments() as $cid => $crow)
-            if ($user->can_view_comment($this, $crow, $forceShow))
+            if ($user->can_view_comment($this, $crow))
                 $crows[$cid] = $crow;
         return $crows;
     }
@@ -1922,10 +1922,10 @@ class PaperInfo {
                 return $a->reviewId < $b->reviewId ? -1 : 1;
         }
     }
-    function viewable_submitted_reviews_and_comments(Contact $user, $forceShow) {
+    function viewable_submitted_reviews_and_comments(Contact $user) {
         $this->ensure_full_reviews();
-        $rrows = $this->viewable_submitted_reviews_by_display($user, $forceShow);
-        $crows = $this->viewable_comments($user, $forceShow);
+        $rrows = $this->viewable_submitted_reviews_by_display($user);
+        $crows = $this->viewable_comments($user);
         $rcs = array_merge(array_values($rrows), array_values($crows));
         usort($rcs, "PaperInfo::review_or_comment_compare");
         return $rcs;

@@ -2978,7 +2978,7 @@ class Contact {
         return false;
     }
 
-    function can_view_comment(PaperInfo $prow, $crow, $forceShow) {
+    function can_view_comment(PaperInfo $prow, $crow, $forceShow = null) {
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
         $rights = $this->rights($prow, $forceShow);
         return ($crow

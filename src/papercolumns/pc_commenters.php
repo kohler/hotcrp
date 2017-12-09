@@ -11,10 +11,10 @@ class Commenters_PaperColumn extends PaperColumn {
         return "Commenters";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$row->viewable_comments($pl->user, null);
+        return !$row->viewable_comments($pl->user);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $crows = $row->viewable_comments($pl->user, null);
+        $crows = $row->viewable_comments($pl->user);
         $cnames = array_map(function ($cx) use ($pl) {
             $n = $t = $cx[0]->unparse_user_html($pl->user, null);
             if (($tags = $cx[0]->viewable_tags($pl->user))
@@ -27,7 +27,7 @@ class Commenters_PaperColumn extends PaperColumn {
         return join(" ", $cnames);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $crows = $row->viewable_comments($pl->user, null);
+        $crows = $row->viewable_comments($pl->user);
         $cnames = array_map(function ($cx) use ($pl) {
             $t = $cx[0]->unparse_user_text($pl->user, null);
             if ($cx[1] > 1)
