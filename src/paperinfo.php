@@ -973,11 +973,11 @@ class PaperInfo {
         return $this->paperTags;
     }
 
-    function searchable_tags(Contact $user, $forceShow = null) {
+    function searchable_tags(Contact $user) {
         if ($user->allow_administer($this))
             return $this->all_tags_text();
         else
-            return $this->viewable_tags($user, $forceShow);
+            return $this->viewable_tags($user);
     }
 
     function viewable_tags(Contact $user, $forceShow = null) {

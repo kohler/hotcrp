@@ -17,7 +17,7 @@ class Commenters_PaperColumn extends PaperColumn {
         $crows = $row->viewable_comments($pl->user, null);
         $cnames = array_map(function ($cx) use ($pl) {
             $n = $t = $cx[0]->unparse_user_html($pl->user, null);
-            if (($tags = $cx[0]->viewable_tags($pl->user, null))
+            if (($tags = $cx[0]->viewable_tags($pl->user))
                 && ($color = $cx[0]->conf->tags()->color_classes($tags)))
                 $t = '<span class="cmtlink ' . $color . ' taghh">' . $n . '</span>';
             if ($cx[1] > 1)
