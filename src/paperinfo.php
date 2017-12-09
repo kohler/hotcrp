@@ -639,14 +639,6 @@ class PaperInfo {
         return $prow;
     }
 
-    static function fetch_all($result, $contact, Conf $conf = null) {
-        $set = new PaperInfoSet;
-        while (($prow = self::fetch($result, $contact, $conf)))
-            $set->add($prow);
-        Dbl::free($result);
-        return $set;
-    }
-
     static function table_name() {
         return "Paper";
     }

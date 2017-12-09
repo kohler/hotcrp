@@ -3603,10 +3603,6 @@ class Contact {
 
     // papers
 
-    function paper_result($options) {
-        return $this->conf->paper_result($this, $options);
-    }
-
     function paper_set($pids, $options = null) {
         if (is_int($pids)) {
             $options["paperId"] = $pids;
