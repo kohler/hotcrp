@@ -2605,10 +2605,9 @@ class Contact {
     }
 
     function can_view_aggregated_review_identity() {
-        /*return $this->privChair
-            || ($this->isPC
-                && (!$this->conf->setting("pc_seeblindrev") || !$this->conf->is_review_blind(null)));*/
-        return $this->isPC;
+        // XXX This doesn't consider tracks, per-round settings, etc.
+        return $this->privChair
+            || ($this->isPC && !$this->conf->setting("pc_seeblindrev"));
     }
 
     function can_view_review_round(PaperInfo $prow, ReviewInfo $rrow = null, $forceShow = null) {

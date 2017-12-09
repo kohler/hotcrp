@@ -264,7 +264,7 @@ if ($pl_text) {
         $display_options->checkbox_item(20, "pcconf", "PC conflicts");
         $display_options->checkbox_item(20, "allpref", "Review preferences");
     }
-    if ($Me->can_view_some_review_identity(true))
+    if ($Me->can_view_some_review_identity())
         $display_options->checkbox_item(20, "reviewers", "Reviewers");
 
     // Tags group

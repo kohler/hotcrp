@@ -90,9 +90,7 @@ class ContactList {
             $this->have_folds["collab"] = true;
         if (($f = $Conf->review_field($fieldId))) {
             $revViewScore = $this->contact->aggregated_view_score_bound();
-            if ($f->view_score <= $revViewScore
-                || !$f->has_options
-                || !$this->contact->can_view_aggregated_review_identity())
+            if ($f->view_score <= $revViewScore || !$f->has_options)
                 return false;
             $queryOptions["reviews"] = true;
             if (!isset($queryOptions["scores"]))
