@@ -214,7 +214,7 @@ class AssignmentState {
                 $fetch_pids[] = $p;
         assert($initial_load || empty($fetch_pids));
         if (!empty($fetch_pids)) {
-            $result = $this->user->paper_result(["paperId" => $fetch_pids, "tags" => $this->conf->has_tracks()]);
+            $result = $this->user->paper_result(["paperId" => $fetch_pids]);
             foreach (PaperInfo::fetch_all($result, $this->user) as $prow)
                 $this->prows[$prow->paperId] = $prow;
             foreach ($fetch_pids as $pid)

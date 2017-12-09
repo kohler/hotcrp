@@ -2543,7 +2543,9 @@ class Conf {
         else if (get($options, "options"))
             $cols[] = "'' as optionIds";
 
-        if (get($options, "tags") || ($contact && $contact->isPC))
+        if (get($options, "tags")
+            || ($contact && $contact->isPC)
+            || $this->has_tracks())
             $cols[] = "(select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where PaperTag.paperId=Paper.paperId) paperTags";
         if (get($options, "tagIndex") && !is_array($options["tagIndex"]))
             $options["tagIndex"] = array($options["tagIndex"]);

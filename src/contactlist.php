@@ -492,7 +492,7 @@ class ContactList {
             $this->_cfltpids = [];
             if (!$this->user->privChair || $this->conf->has_any_manager()) {
                 $user = $this->user;
-                $result = $this->conf->paper_result($user, $this->conf->has_tracks() ? ["tags" => true] : []);
+                $result = $this->conf->paper_result($user);
                 while (($row = PaperInfo::fetch($result, $user))) {
                     if (!$user->can_view_paper($row)
                         || !$user->can_view_review_assignment($row, null, true)
