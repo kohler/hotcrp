@@ -76,11 +76,10 @@ function saveAssignments($qreq, $reviewer) {
     if (!count($qreq->assrev))
         return;
 
-    $result = $Me->paper_result(["paperId" => array_keys($qreq->assrev)]);
-
     $lastPaperId = -1;
     $del = $ins = "";
-    while (($row = PaperInfo::fetch($result, $Me))) {
+    $assignments = [];
+    foreach ($Me->paper_set(array_keys($qreq->assrev), ["reviewSignatures" => true]) as $row) {
         $conflict_type = $row->conflict_type($reviewer);
         if ($row->paperId == $lastPaperId
             || !$Me->can_administer($row)
@@ -93,12 +92,19 @@ function saveAssignments($qreq, $reviewer) {
             $del .= " or paperId=$row->paperId";
         if ($type < 0 && $conflict_type < CONFLICT_CHAIRMARK)
             $ins .= ", ($row->paperId, {$reviewer->contactId}, " . CONFLICT_CHAIRMARK . ")";
-        if ($qreq->kind == "a" && $type != $row->review_type($reviewer)
-            && ($type <= 0 || $reviewer->can_accept_review_assignment_ignore_conflict($row))) {
-            if ($type > 0 && $round_number === null)
-                $round_number = (int) $Conf->round_number($qreq->rev_round, true);
-            $Me->assign_review($row->paperId, $reviewer->contactId, $type,
-                               array("round_number" => $round_number));
+        if ($qreq->kind == "a") {
+            $type = max((int) $type, 0);
+            $old_type = $row->review_type($reviewer);
+            if ($type != $old_type
+                && ($type == 0 || $reviewer->can_accept_review_assignment_ignore_conflict($row))) {
+                $assignment = [$row->paperId, $reviewer->contactId, $type];
+                if ($old_type <= 0) {
+                    if ($round_number === null)
+                        $round_number = (int) $Conf->round_number($qreq->rev_round, true);
+                    $assignment[] = ["round_number" => $round_number];
+                }
+                $assignments[] = $assignment;
+            }
         }
     }
 
@@ -106,6 +112,8 @@ function saveAssignments($qreq, $reviewer) {
         $Conf->qe_raw("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))");
     if ($del)
         $Conf->qe_raw("delete from PaperConflict where contactId={$reviewer->contactId} and (" . substr($del, 4) . ")");
+    foreach ($assignments as $assignment)
+        call_user_func_array([$Me, "assign_review"], $assignment);
 
     if ($Conf->setting("rev_tokens") === -1)
         $Conf->update_rev_tokens_setting(0);
