@@ -139,7 +139,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             if ($this->include_paper)
                 $rctext = GetAbstract_ListAction::render($prow, $user);
             $last_rc = null;
-            foreach ($prow->viewable_submitted_reviews_and_comments($user, null) as $rc) {
+            foreach ($prow->viewable_submitted_reviews_and_comments($user) as $rc) {
                 $rctext .= PaperInfo::review_or_comment_text_separator($last_rc, $rc);
                 if (isset($rc->reviewId))
                     $rctext .= $rf->pretty_text($prow, $rc, $user, false, true);
@@ -191,7 +191,7 @@ class GetScores_ListAction extends ListAction {
                 $a = ["paper" => $row->paperId, "title" => $row->title];
                 if ($row->outcome && $user->can_view_decision($row, true))
                     $a["decision"] = $any_decision = $user->conf->decision_name($row->outcome);
-                foreach ($row->viewable_submitted_reviews_by_display($user, null) as $rrow) {
+                foreach ($row->viewable_submitted_reviews_by_display($user) as $rrow) {
                     $view_bound = $user->view_score_bound($row, $rrow, null);
                     $this_scores = false;
                     $b = $a;

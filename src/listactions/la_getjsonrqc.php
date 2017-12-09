@@ -8,6 +8,7 @@ class GetJsonRQC_ListAction extends ListAction {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {
+        $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
         $results = ["hotcrp_version" => HOTCRP_VERSION];
         if (($git_data = Conf::git_status()))
@@ -16,14 +17,16 @@ class GetJsonRQC_ListAction extends ListAction {
         $results["reviewform"] = $rf->unparse_json(0, VIEWSCORE_REVIEWERONLY);
         $pj = [];
         $ps = new PaperStatus($user->conf, $user, ["forceShow" => true, "hide_docids" => true]);
-        foreach (PaperInfo::fetch_all($result, $user) as $prow)
+        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
             if ($user->allow_administer($prow)) {
                 $pj[$prow->paperId] = $j = $ps->paper_json($prow);
                 $prow->ensure_full_reviews();
-                foreach ($prow->viewable_submitted_reviews_by_display($user, true) as $rrow)
+                foreach ($prow->viewable_submitted_reviews_by_display($user) as $rrow)
                     $j->reviews[] = $rf->unparse_review_json($prow, $rrow, $user, true, ReviewForm::RJ_NO_EDITABLE | ReviewForm::RJ_UNPARSE_RATINGS | ReviewForm::RJ_ALL_RATINGS | ReviewForm::RJ_NO_REVIEWERONLY);
             } else
                 $pj[$prow->paperId] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
+        }
+        $user->set_overrides($overrides);
         $pj = array_values($ssel->reorder($pj));
         $results["papers"] = $pj;
         header("Content-Type: application/json");

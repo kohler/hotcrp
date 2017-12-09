@@ -226,7 +226,7 @@ function download_all_text_reviews() {
     global $rf, $Conf, $Me, $prow, $paperTable;
     $lastrc = null;
     $text = "";
-    foreach ($prow->viewable_submitted_reviews_and_comments($Me, null) as $rc) {
+    foreach ($prow->viewable_submitted_reviews_and_comments($Me) as $rc) {
         $text .= PaperInfo::review_or_comment_text_separator($lastrc, $rc);
         if (isset($rc->reviewId))
             $text .= $rf->pretty_text($prow, $rc, $Me, false, true);

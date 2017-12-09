@@ -337,7 +337,7 @@ class PaperApi {
             $rrows = $rrow ? [$rrow] : [];
         } else {
             $prow->ensure_full_reviews();
-            $rrows = $prow->viewable_submitted_reviews_by_display($user, null);
+            $rrows = $prow->viewable_submitted_reviews_by_display($user);
         }
         $vrrows = [];
         $rf = $user->conf->review_form();
