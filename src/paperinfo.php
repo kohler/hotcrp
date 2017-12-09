@@ -1635,40 +1635,6 @@ class PaperInfo {
         return $this->fresh_review_of("contactId", self::contact_to_cid($contact));
     }
 
-    function num_reviews_submitted(Contact $user, $forceShow = null) {
-        $n = 0;
-        foreach ($this->reviews_by_id() as $rrow)
-            if ($rrow->reviewSubmitted > 0
-                && $user->can_view_review_assignment($this, $rrow, $forceShow))
-                ++$n;
-        return $n;
-    }
-
-    function num_reviews_assigned(Contact $user, $forceShow = null) {
-        $n = 0;
-        foreach ($this->reviews_by_id() as $rrow)
-            if (($rrow->reviewSubmitted > 0 || $rrow->reviewNeedsSubmit > 0)
-                && $user->can_view_review_assignment($this, $rrow, $forceShow))
-                ++$n;
-        return $n;
-    }
-
-    function num_reviews_in_progress(Contact $user, $forceShow = null) {
-        $n = 0;
-        foreach ($this->reviews_by_id() as $rrow)
-            if (($rrow->reviewSubmitted > 0 || $rrow->reviewModified > 0)
-                && $user->can_view_review_assignment($this, $rrow, $forceShow))
-                ++$n;
-        return $n;
-    }
-
-    function num_reviews_started(Contact $user, $forceShow = null) {
-        if ($user->privChair || !$this->conflict_type($user))
-            return $this->num_reviews_assigned($user, $forceShow);
-        else
-            return $this->num_reviews_in_progress($user, $forceShow);
-    }
-
     function viewable_submitted_reviews_by_display(Contact $contact, $forceShow = null) {
         $cinfo = $this->contact_info($contact);
         if ($cinfo->vsreviews_array === null
