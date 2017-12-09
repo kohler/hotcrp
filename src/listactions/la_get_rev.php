@@ -91,10 +91,8 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
             return;
         }
 
-        $result = $user->paper_result(["paperId" => $ssel->selection()]);
-        $texts = array();
-        $errors = array();
-        foreach (PaperInfo::fetch_all($result, $user) as $row) {
+        $texts = $errors = [];
+        foreach ($user->paper_set($ssel) as $row) {
             $whyNot = $user->perm_review($row, null);
             if ($whyNot && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"]))
@@ -128,9 +126,8 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
         $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $errors = $texts = [];
-        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
+        foreach ($user->paper_set($ssel) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
                 $errors["#$prow->paperId: " . whyNotText($whyNot, "view")] = true;
                 continue;
@@ -177,11 +174,10 @@ class GetScores_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
         $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $result = $user->paper_result(["paperId" => $ssel->selection()]);
         // compose scores; NB chair is always forceShow
         $errors = $texts = $any_scores = array();
         $any_decision = $any_reviewer_identity = false;
-        foreach (PaperInfo::fetch_all($result, $user) as $row) {
+        foreach ($user->paper_set($ssel) as $row) {
             if (($whyNot = $user->perm_view_paper($row)))
                 $errors[] = "#$row->paperId: " . whyNotText($whyNot, "view");
             else if (($whyNot = $user->perm_view_review($row, null, null)))
@@ -237,11 +233,10 @@ class GetVotes_ListAction extends ListAction {
         $tagger = new Tagger($user);
         if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
             $showtag = trim($qreq->tag); // no "23~" prefix
-            $result = $user->paper_result(["paperId" => $ssel->selection(), "tagIndex" => $tag]);
             $texts = array();
-            foreach (PaperInfo::fetch_all($result, $user) as $prow)
+            foreach ($user->paper_set($ssel) as $prow)
                 if ($user->can_view_tags($prow, true))
-                    arrayappend($texts[$prow->paperId], array($showtag, (float) $prow->tagIndex, $prow->paperId, $prow->title));
+                    arrayappend($texts[$prow->paperId], array($showtag, (float) $prow->tag_value($tag), $prow->paperId, $prow->title));
             return new Csv_SearchResult("votes", ["tag", "votes", "paper", "title"], $ssel->reorder($texts));
         } else
             Conf::msg_error($tagger->error_html);
@@ -258,10 +253,9 @@ class GetRank_ListAction extends ListAction {
             return self::EPERM;
         $tagger = new Tagger($user);
         if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
-            $result = $user->paper_result(["paperId" => $ssel->selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"]);
             $real = "";
             $null = "\n";
-            foreach (PaperInfo::fetch_all($result, $user) as $prow)
+            foreach ($user->paper_set($ssel, ["tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"]) as $prow)
                 if ($user->can_change_tag($prow, $tag, null, 1)) {
                     $csvt = CsvGenerator::quote($prow->title);
                     if ($prow->tagIndex === null)
@@ -304,9 +298,8 @@ class GetLead_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $key = $this->type . "ContactId";
         $can_view = "can_view_" . $this->type;
-        $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $texts = array();
-        foreach (PaperInfo::fetch_all($result, $user) as $row)
+        foreach ($user->paper_set($ssel) as $row)
             if ($row->$key && $user->$can_view($row, true)) {
                 $name = $user->name_object_for($row->$key);
                 arrayappend($texts[$row->paperId], [$row->paperId, $row->title, $name->firstName, $name->lastName, $name->email]);

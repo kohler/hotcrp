@@ -49,8 +49,7 @@ class PaperEvents {
         } else {
             // Papers (perhaps limited to those being watched) whose reviews
             // are viewable.
-            $result = $user->paper_result(["watch" => true, "myWatching" => true]);
-            $this->prows = PaperInfo::fetch_all($result, $user);
+            $this->prows = $user->paper_set(["watch" => true, "myWatching" => true]);
         }
     }
 

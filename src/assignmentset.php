@@ -214,8 +214,7 @@ class AssignmentState {
                 $fetch_pids[] = $p;
         assert($initial_load || empty($fetch_pids));
         if (!empty($fetch_pids)) {
-            $result = $this->user->paper_result(["paperId" => $fetch_pids]);
-            foreach (PaperInfo::fetch_all($result, $this->user) as $prow)
+            foreach ($this->user->paper_set($fetch_pids) as $prow)
                 $this->prows[$prow->paperId] = $prow;
             foreach ($fetch_pids as $pid)
                 if (!isset($this->prows[$pid]))

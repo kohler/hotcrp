@@ -9,7 +9,6 @@ class GetJsonRQC_ListAction extends ListAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
         $results = ["hotcrp_version" => HOTCRP_VERSION];
         if (($git_data = Conf::git_status()))
             $results["hotcrp_commit"] = $git_data[0];
@@ -17,7 +16,7 @@ class GetJsonRQC_ListAction extends ListAction {
         $results["reviewform"] = $rf->unparse_json(0, VIEWSCORE_REVIEWERONLY);
         $pj = [];
         $ps = new PaperStatus($user->conf, $user, ["forceShow" => true, "hide_docids" => true]);
-        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
+        foreach ($user->paper_set($ssel, ["topics" => true, "options" => true]) as $prow) {
             if ($user->allow_administer($prow)) {
                 $pj[$prow->paperId] = $j = $ps->paper_json($prow);
                 $prow->ensure_full_reviews();

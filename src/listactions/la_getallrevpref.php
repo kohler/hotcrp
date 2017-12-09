@@ -8,11 +8,10 @@ class GetAllRevpref_ListAction extends ListAction {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]);
         $texts = array();
         $pcm = $user->conf->pc_members();
         $has_conflict = $has_expertise = $has_topic_score = false;
-        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
+        foreach ($user->paper_set($ssel, ["allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]) as $prow) {
             if (!$user->allow_administer($prow))
                 continue;
             $conflicts = $prow->conflicts();

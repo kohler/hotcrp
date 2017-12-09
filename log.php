@@ -362,8 +362,7 @@ $lrg = new LogRowGenerator($Conf, $wheres, $count);
 
 $exclude_pids = $Me->hidden_papers ? : [];
 if ($Me->privChair && $Conf->has_any_manager()) {
-    $result = $Conf->paper_result($Me, ["myConflicts" => true]);
-    foreach (PaperInfo::fetch_all($result, $Me) as $prow)
+    foreach ($Me->paper_set(["myConflicts" => true]) as $prow)
         if (!$Me->allow_administer($prow))
             $exclude_pids[$prow->paperId] = true;
 }
@@ -416,9 +415,8 @@ class LogRowFilter {
 }
 
 if (!$Me->privChair) {
-    $result = $Conf->paper_result($Me, $Conf->check_any_admin_tracks($Me) ? [] : ["myManaged" => true]);
     $good_pids = [];
-    foreach (PaperInfo::fetch_all($result, $Me) as $prow)
+    foreach ($Me->paper_set($Conf->check_any_admin_tracks($Me) ? [] : ["myManaged" => true]) as $prow)
         if ($Me->allow_administer($prow))
             $good_pids[$prow->paperId] = true;
     $lrg->set_filter(new LogRowFilter($Me, $good_pids, true, $include_pids));

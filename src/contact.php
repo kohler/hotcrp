@@ -3607,6 +3607,26 @@ class Contact {
         return $this->conf->paper_result($this, $options);
     }
 
+    function paper_set($pids, $options = null) {
+        if (is_int($pids)) {
+            $options["paperId"] = $pids;
+        } else if (is_array($pids) && !is_associative_array($pids)
+                   && (!empty($pids) || $options !== null)) {
+            $options["paperId"] = $pids;
+        } else if (is_object($pids) && $pids instanceof SearchSelection) {
+            $options["paperId"] = $pids->selection();
+        } else {
+            $options = $pids;
+        }
+        $result = $this->conf->paper_result($this, $options);
+        $set = new PaperInfoSet;
+        while (($prow = PaperInfo::fetch($result, $this))) {
+            $set->add($prow);
+        }
+        Dbl::free($result);
+        return $set;
+    }
+
     function paper_status_info($row, $forceShow = null) {
         if ($row->timeWithdrawn > 0)
             return array("pstat_with", "Withdrawn");

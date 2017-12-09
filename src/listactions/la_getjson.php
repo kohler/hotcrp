@@ -19,14 +19,13 @@ class GetJson_ListAction extends ListAction {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
         $pj = [];
         $ps = new PaperStatus($user->conf, $user, ["forceShow" => true, "hide_docids" => true]);
         if ($this->iszip) {
             $this->zipdoc = new ZipDocument($user->conf->download_prefix . "data.zip");
             $ps->on_document_export([$this, "document_callback"]);
         }
-        foreach (PaperInfo::fetch_all($result, $user) as $prow)
+        foreach ($user->paper_set($ssel, ["topics" => true, "options" => true]) as $prow)
             if ($user->allow_administer($prow))
                 $pj[$prow->paperId] = $ps->paper_json($prow);
             else {

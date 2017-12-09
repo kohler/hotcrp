@@ -80,10 +80,9 @@ class GetDocument_ListAction extends ListAction {
         return $x;
     }
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $downloads = $errors = [];
         $opt = $user->conf->paper_opts->get($this->dt);
-        foreach (PaperInfo::fetch_all($result, $user) as $row)
+        foreach ($user->paper_set($ssel) as $row)
             if (($whyNot = $user->perm_view_paper_option($row, $opt, true)))
                 $errors[] = self::error_document($opt, $row, whyNotText($whyNot, "view"));
             else if (($doc = $row->document($opt->id)))
@@ -103,9 +102,8 @@ class GetDocument_ListAction extends ListAction {
 
 class GetCheckFormat_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $papers = [];
-        foreach (PaperInfo::fetch_all($result, $user) as $prow)
+        foreach ($user->paper_set($ssel) as $prow)
             if ($user->can_view_pdf($prow))
                 $papers[$prow->paperId] = $prow;
         $csvg = downloadCSV(false, ["paper", "title", "pages", "format"], "formatcheck");
@@ -199,9 +197,8 @@ class GetAbstract_ListAction extends ListAction {
         return $text . "\n";
     }
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => 1]);
         $texts = array();
-        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
+        foreach ($user->paper_set($ssel, ["topics" => 1]) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow)))
                 Conf::msg_error(whyNotText($whyNot, "view"));
             else {
@@ -229,10 +226,9 @@ class GetAuthors_ListAction extends ListAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $contact_map = self::contact_map($user->conf, $ssel);
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "allConflictType" => 1]);
         $texts = array();
         $want_contacttype = false;
-        foreach (PaperInfo::fetch_all($result, $user) as $prow) {
+        foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow) {
             if (!$user->allow_view_authors($prow))
                 continue;
             $admin = $user->allow_administer($prow);
@@ -271,8 +267,7 @@ class GetContacts_ListAction extends ListAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $contact_map = GetAuthors_ListAction::contact_map($user->conf, $ssel);
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "allConflictType" => 1]);
-        foreach (PaperInfo::fetch_all($result, $user) as $prow)
+        foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow)
             if ($user->allow_administer($prow))
                 foreach ($prow->contacts() as $cid => $c) {
                     $a = $contact_map[$cid];
@@ -292,10 +287,9 @@ class GetPcconflicts_ListAction extends ListAction {
         $allConflictTypes[CONFLICT_CHAIRMARK] = "Chair-confirmed";
         $allConflictTypes[CONFLICT_AUTHOR] = "Author";
         $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact";
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "allConflictType" => 1]);
         $pcm = $user->conf->pc_members();
         $texts = array();
-        foreach (PaperInfo::fetch_all($result, $user) as $prow)
+        foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow)
             if ($user->can_view_conflicts($prow, true)) {
                 $m = [];
                 foreach ($prow->conflicts() as $cid => $c)
@@ -314,9 +308,8 @@ class GetPcconflicts_ListAction extends ListAction {
 
 class GetTopics_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->paper_result(array("paperId" => $ssel->selection(), "topics" => 1));
         $texts = array();
-        foreach (PaperInfo::fetch_all($result, $user) as $row)
+        foreach ($user->paper_set($ssel, ["topics" => 1]) as $row)
             if ($user->can_view_paper($row)) {
                 $out = array();
                 foreach ($row->named_topic_map() as $t)
