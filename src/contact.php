@@ -415,6 +415,9 @@ class Contact {
     function add_overrides($overrides) {
         return $this->set_overrides($this->overrides_ | $overrides);
     }
+    function remove_overrides($overrides) {
+        return $this->set_overrides($this->overrides_ & ~$overrides);
+    }
     function call_with_overrides($overrides, $method /* arguments */) {
         $old_overrides = $this->set_overrides($overrides);
         $result = call_user_func_array([$this, $method], array_slice(func_get_args(), 2));
@@ -1814,7 +1817,6 @@ class Contact {
     // permissions policies
 
     private function rights(PaperInfo $prow, $forceShow = null) {
-        global $Me;
         $ci = $prow->contact_info($this);
 
         // check first whether administration is allowed
@@ -1829,22 +1831,20 @@ class Contact {
                      || ($this->isPC
                          && $this->is_track_manager()
                          && $this->conf->check_admin_tracks($prow, $this))))
-                || $this->is_site_contact)
+                || $this->is_site_contact) {
                 $ci->allow_administer = true;
+            }
         }
 
         // correct $forceShow
-        if ($forceShow === null)
-            $forceShow = ($this->overrides_ & self::OVERRIDE_CONFLICT) !== 0;
-        else if (!$ci->allow_administer || $forceShow === null)
+        if (!$ci->allow_administer)
             $forceShow = false;
+        else if ($forceShow === null)
+            $forceShow = ($this->overrides_ & self::OVERRIDE_CONFLICT) !== 0;
         else if ($forceShow === "any")
             $forceShow = !!$ci->forced_rights_link;
-        if ($forceShow) {
-            if (!$ci->forced_rights_link)
-                $ci->forced_rights_link = clone $ci;
-            $ci = $ci->forced_rights_link;
-        }
+        if ($forceShow)
+            $ci = $ci->get_forced_rights();
 
         // set other rights
         if ($ci->rights_forced !== $forceShow) {
@@ -1913,6 +1913,11 @@ class Contact {
         }
 
         return $ci;
+    }
+
+    function __rights(PaperInfo $prow, $forceShow = null) {
+        // public access point; to be avoided
+        return $this->rights($prow, $forceShow);
     }
 
     function override_deadlines($rights) {

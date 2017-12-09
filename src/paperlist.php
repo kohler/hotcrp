@@ -1318,7 +1318,7 @@ class PaperList {
         if ($this->user->can_view_tags(null))
             $this->qopts["tags"] = 1;
 
-        // get column list, check sort
+        // get column list
         if (isset($options["field_list"]))
             $field_list = $options["field_list"];
         else
@@ -1327,20 +1327,26 @@ class PaperList {
             Conf::msg_error("There is no paper list query named “" . htmlspecialchars($this->report_id) . "”.");
             return null;
         }
+
+        // turn off forceShow
+        $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
+
+        // expand fields, check sort
         $field_list = $this->_columns($field_list, true);
         $rows = $this->_rows($field_list);
-        if ($rows === null)
-            return null;
 
         if (empty($rows)) {
+            $this->user->set_overrides($overrides);
+            if ($rows === null)
+                return null;
             if (($altq = $this->search->alternate_query())) {
                 $altqh = htmlspecialchars($altq);
                 $url = $this->search->url_site_relative_raw($altq);
                 if (substr($url, 0, 5) == "search")
                     $altqh = "<a href=\"" . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $altqh . "</a>";
                 return "No matching papers. Did you mean “${altqh}”?";
-            } else
-                return "No matching papers";
+            }
+            return "No matching papers";
         }
 
         // get field array
@@ -1378,9 +1384,6 @@ class PaperList {
         foreach ($this->user->user_option_list() as $o)
             if ($o->is_document())
                 $this->_any_option_checks[] = $o;
-
-        // turn off forceShow
-        $overrides = $this->user->set_overrides($this->user->overrides() & ~Contact::OVERRIDE_CONFLICT);
 
         // collect row data
         $body = array();

@@ -27,7 +27,6 @@ class PaperContactInfo {
 
     public $vsreviews_array = null;
     public $vsreviews_cid_array = null;
-    public $vsreviews_force_show = null;
     public $vsreviews_version = null;
 
     static function make_empty(PaperInfo $prow, $cid) {
@@ -155,6 +154,14 @@ class PaperContactInfo {
         foreach ($cids as $cid)
             if (!$prow->_get_contact_info($cid))
                 $prow->_add_contact_info(PaperContactInfo::make_empty($prow, $cid));
+    }
+
+    function get_forced_rights() {
+        if (!$this->forced_rights_link) {
+            $ci = $this->forced_rights_link = clone $this;
+            $ci->vsreviews_array = $ci->vsreviews_cid_array = null;
+        }
+        return $this->forced_rights_link;
     }
 }
 
@@ -1636,27 +1643,25 @@ class PaperInfo {
     }
 
     function viewable_submitted_reviews_by_display(Contact $contact, $forceShow = null) {
-        $cinfo = $this->contact_info($contact);
+        $cinfo = $contact->__rights($this, $forceShow);
         if ($cinfo->vsreviews_array === null
-            || $cinfo->vsreviews_version !== $this->_review_array_version
-            || $forceShow !== $cinfo->vsreviews_force_show) {
+            || $cinfo->vsreviews_version !== $this->_review_array_version) {
             $cinfo->vsreviews_array = [];
-            foreach ($this->reviews_by_display() as $id => $rrow)
+            foreach ($this->reviews_by_display() as $id => $rrow) {
                 if ($rrow->reviewSubmitted > 0
                     && $contact->can_view_review($this, $rrow, $forceShow))
                     $cinfo->vsreviews_array[$id] = $rrow;
+            }
             $cinfo->vsreviews_cid_array = null;
-            $cinfo->vsreviews_force_show = $forceShow;
             $cinfo->vsreviews_version = $this->_review_array_version;
         }
         return $cinfo->vsreviews_array;
     }
 
     function viewable_submitted_reviews_by_user(Contact $contact, $forceShow = null) {
-        $cinfo = $this->contact_info($contact);
+        $cinfo = $contact->__rights($this, $forceShow);
         if ($cinfo->vsreviews_cid_array === null
-            || $cinfo->vsreviews_version !== $this->_review_array_version
-            || $forceShow !== $cinfo->vsreviews_force_show) {
+            || $cinfo->vsreviews_version !== $this->_review_array_version) {
             $rrows = $this->viewable_submitted_reviews_by_display($contact, $forceShow);
             $cinfo->vsreviews_cid_array = [];
             foreach ($rrows as $rrow)
