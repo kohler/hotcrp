@@ -772,7 +772,7 @@ class PaperList {
         if ($this->row_overridable && $fdef->override === PaperColumn::OVERRIDE_FOLD) {
             $empty = $fdef->content_empty($this, $row);
             if ($empty) {
-                $overrides = $this->user->set_overrides($this->user->overrides() | Contact::OVERRIDE_CONFLICT);
+                $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
                 $empty = $fdef->content_empty($this, $row);
                 if (!$empty && $fdef->is_visible)
                     $content = $this->_wrap_conflict("", $fdef->content($this, $row), $fdef);
@@ -784,7 +784,7 @@ class PaperList {
             $empty1 = $fdef->content_empty($this, $row);
             if (!$empty1 && $fdef->is_visible)
                 $content1 = $fdef->content($this, $row);
-            $overrides = $this->user->set_overrides($this->user->overrides() | Contact::OVERRIDE_CONFLICT);
+            $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             $empty2 = $fdef->content_empty($this, $row);
             if (!$empty2 && $fdef->is_visible)
                 $content2 = $fdef->content($this, $row);
@@ -792,7 +792,7 @@ class PaperList {
             $empty = $empty1 && $empty2;
             $content = $this->_wrap_conflict($content1, $content2, $fdef);
         } else if ($this->row_overridable && $fdef->override === PaperColumn::OVERRIDE_ALWAYS) {
-            $overrides = $this->user->set_overrides($this->user->overrides() | Contact::OVERRIDE_CONFLICT);
+            $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             $empty = $fdef->content_empty($this, $row);
             if (!$empty && $fdef->is_visible)
                 $content = $fdef->content($this, $row);

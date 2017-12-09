@@ -7,7 +7,7 @@ require_once("src/initweb.php");
 require_once("src/papersearch.php");
 if (!$Me->is_manager())
     $Me->escape();
-$Me->set_overrides($Me->overrides() | Contact::OVERRIDE_CONFLICT);
+$Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 
 // request cleaning
 $qreq = make_qreq();

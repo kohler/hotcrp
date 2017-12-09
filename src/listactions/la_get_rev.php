@@ -127,7 +127,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
-        $user->set_overrides($user->overrides() | Contact::OVERRIDE_CONFLICT);
+        $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $errors = $texts = [];
         foreach (PaperInfo::fetch_all($result, $user) as $prow) {
@@ -165,6 +165,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             $first = false;
         }
         unset($text);
+        $user->set_overrides($overrides);
         $this->finish($user, $texts, $errors);
     }
 }
@@ -175,12 +176,12 @@ class GetScores_ListAction extends ListAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
-        $user->set_overrides($user->overrides() | Contact::OVERRIDE_CONFLICT);
+        $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
         // compose scores; NB chair is always forceShow
         $errors = $texts = $any_scores = array();
         $any_decision = $any_reviewer_identity = false;
-        foreach (PaperInfo::fetch_all($result, $user) as $row)
+        foreach (PaperInfo::fetch_all($result, $user) as $row) {
             if (($whyNot = $user->perm_view_paper($row)))
                 $errors[] = "#$row->paperId: " . whyNotText($whyNot, "view");
             else if (($whyNot = $user->perm_view_review($row, null, null)))
@@ -209,6 +210,8 @@ class GetScores_ListAction extends ListAction {
                         arrayappend($texts[$row->paperId], $b);
                 }
             }
+        }
+        $user->set_overrides($overrides);
 
         if (!empty($texts)) {
             $header = array("paper", "title");

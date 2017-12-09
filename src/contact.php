@@ -412,6 +412,9 @@ class Contact {
         $this->overrides_ = $overrides;
         return $old_overrides;
     }
+    function add_overrides($overrides) {
+        return $this->set_overrides($this->overrides_ | $overrides);
+    }
     function call_with_overrides($overrides, $method /* arguments */) {
         $old_overrides = $this->set_overrides($overrides);
         $result = call_user_func_array([$this, $method], array_slice(func_get_args(), 2));

@@ -140,7 +140,7 @@ $pldisplay = $Conf->session("pldisplay");
 if ($Me->privChair && !isset($Qreq->forceShow)
     && preg_match('/\b(show:|)force\b/', $pldisplay)) {
     $Qreq->forceShow = 1;
-    $Me->set_overrides($Me->overrides() | Contact::OVERRIDE_CONFLICT);
+    $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 }
 
 
