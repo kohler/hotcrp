@@ -25,8 +25,7 @@ class Formula_PaperColumn extends PaperColumn {
         return $this->formula->name ? : $this->formula->expression;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->scoresOk
-            || !$this->formula->check($pl->user)
+        if (!$this->formula->check($pl->user)
             || !$pl->user->can_view_formula($this->formula, $pl->search->limitName == "a"))
             return false;
         $this->formula_function = $this->formula->compile_function();

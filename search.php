@@ -285,24 +285,19 @@ if ($pl_text) {
         $display_options->checkbox_item(20, "shepherd", "Shepherds");
 
     // Scores group
-    if ($pl->scoresOk == "present") {
-        $rf = $Conf->review_form();
-        if ($Me->is_reviewer() && $Qreq->t != "a")
-            $revViewScore = $Me->permissive_view_score_bound();
-        else
-            $revViewScore = VIEWSCORE_AUTHOR - 1;
+    $rf = $Conf->review_form();
+    $revViewScore = $Me->permissive_view_score_bound($Qreq->t == "a");
+    foreach ($rf->forder as $f)
+        if ($f->view_score > $revViewScore && $f->has_options)
+            $display_options->checkbox_item(30, $f->search_keyword(), $f->name_html);
+    if (!empty($display_options->items[30])) {
         $display_options->set_header(30, "<strong>Scores:</strong>");
-        foreach ($rf->forder as $f)
-            if ($f->view_score > $revViewScore && $f->has_options)
-                $display_options->checkbox_item(30, $f->search_keyword(), $f->name_html);
-        if (!empty($display_options->items[30])) {
-            $sortitem = '<div class="dispopt-item" style="margin-top:1ex">Sort by: &nbsp;'
-                . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
-                             ListSorter::canonical_long_score_sort($Conf->session("scoresort")),
-                             ["id" => "scoresort", "style" => "font-size:100%"])
-                . '<a class="help" href="' . hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
-            $display_options->item(30, $sortitem);
-        }
+        $sortitem = '<div class="dispopt-item" style="margin-top:1ex">Sort by: &nbsp;'
+            . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
+                         ListSorter::canonical_long_score_sort($Conf->session("scoresort")),
+                         ["id" => "scoresort", "style" => "font-size:100%"])
+            . '<a class="help" href="' . hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
+        $display_options->item(30, $sortitem);
     }
 
     // Formulas group

@@ -96,7 +96,6 @@ class PaperList {
     public $sorters = [];
     private $_columns_by_name;
     private $_column_errors_by_name = [];
-    public $scoresOk = false;
     public $search;
     public $tagger;
     public $check_format;
@@ -166,9 +165,6 @@ class PaperList {
         $this->atab = $qreq->atab;
 
         $this->tagger = new Tagger($this->user);
-        $this->scoresOk = $this->user->is_manager()
-            || $this->user->is_reviewer()
-            || $this->conf->timeAuthorViewReviews();
 
         $this->qopts = $this->search->simple_search_options();
         if ($this->qopts === false)
@@ -633,10 +629,6 @@ class PaperList {
             $fields = explode(" ", $fields);
         $field_list = array();
         foreach ($fields as $fid) {
-            if (($fid == "scores" || $fid == "formulas") && !$this->scoresOk)
-                continue;
-            if ($fid == "scores")
-                $this->scoresOk = "present";
             foreach ($this->find_columns($fid) as $fdef)
                 $field_list[] = $fdef;
         }

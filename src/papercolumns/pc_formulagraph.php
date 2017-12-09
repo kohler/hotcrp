@@ -13,8 +13,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         $this->formula = $cj->formula;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->scoresOk
-            || !$this->formula->check($pl->user)
+        if (!$this->formula->check($pl->user)
             || !($this->formula->result_format() instanceof ReviewField)
             || !$pl->user->can_view_formula($this->formula, $pl->search->limitName == "a"))
             return false;

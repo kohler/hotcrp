@@ -1089,8 +1089,8 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $this->score = $this->form_field->id;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->scoresOk
-            || $this->form_field->view_score <= $pl->user->permissive_view_score_bound())
+        $bound = $pl->user->permissive_view_score_bound($pl->search->limitName == "a");
+        if ($this->form_field->view_score <= $bound)
             return false;
         if ($visible)
             $pl->qopts["scores"][$this->score] = true;
