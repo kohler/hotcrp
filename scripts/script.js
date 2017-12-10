@@ -1203,8 +1203,12 @@ return function (content, bubopt) {
             var n = bubch[1];
             if (content === undefined)
                 return n.innerHTML;
+            if (typeof content === "string"
+                && content === n.innerHTML
+                && bubdiv.style.visibility === "visible")
+                return bubble;
             nearpos && $(bubdiv).css({maxWidth: "", left: "", top: ""});
-            if (typeof content == "string")
+            if (typeof content === "string")
                 n.innerHTML = content;
             else {
                 while (n.childNodes.length)

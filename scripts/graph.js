@@ -8,41 +8,41 @@ var PATHSEG_ARGMAP = {
     m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,
     s: 4, S: 4, q: 4, Q: 4, t: 2, T: 2, a: 7, A: 7, b: 1, B: 1
 };
+var normalized_path_cache = {}, normalized_path_cache_size = 0;
 
 function svg_path_number_of_items(s) {
     if (s instanceof SVGPathElement)
         s = s.getAttribute("d");
-    return s.replace(/[^A-DF-Za-df-z]/g, "").length;
+    if (normalized_path_cache[s])
+        return normalized_path_cache[s].length;
+    else
+        return s.replace(/[^A-DF-Za-df-z]+/g, "").length;
 }
 
 function make_svg_path_parser(s) {
     if (s instanceof SVGPathElement)
         s = s.getAttribute("d");
-    var i = 0, e = s.length, next_cmd, numre = /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[Ee][-+]?\d+)?/;
+    s = s.split(/([a-zA-Z]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[Ee][-+]?\d+)?)/);
+    var i = 1, e = s.length, next_cmd;
     return function () {
         var a = null, m, ch;
         while (i < e) {
-            ch = s.charAt(i);
-            if (ch <= " " || ch == ",")
-                ++i;
-            else if (ch >= "+" && ch <= "9") {
-                if (!a && next_cmd)
-                    a = [next_cmd];
-                else if (!a || a.length == PATHSEG_ARGMAP[a[0]] + 1)
+            ch = s[i];
+            if (ch >= "A") {
+                if (a)
                     break;
-                if ((m = numre.exec(s.substring(i)))) {
-                    a.push(+m[0]);
-                    i += m[0].length;
-                } else
-                    break;
-            } else if (ch >= "A" && ch <= "z" && !a) {
                 a = [ch];
                 next_cmd = ch;
-                if (ch == "m" || ch == "M" || ch == "z" || ch == "Z")
-                    next_cmd = ch == "m" ? "l" : "L";
-                ++i;
-            } else
-                break;
+                if (ch === "m" || ch === "M" || ch === "z" || ch === "Z")
+                    next_cmd = (ch === "m" || ch === "z" ? "l" : "L");
+            } else {
+                if (!a && next_cmd)
+                    a = [next_cmd];
+                else if (!a || a.length === PATHSEG_ARGMAP[a[0]] + 1)
+                    break;
+                a.push(+ch);
+            }
+            i += 2;
         }
         return a;
     };
@@ -50,6 +50,11 @@ function make_svg_path_parser(s) {
 
 var normalize_path_complaint = false;
 function normalize_svg_path(s) {
+    if (s instanceof SVGPathElement)
+        s = s.getAttribute("d");
+    if (normalized_path_cache[s])
+        return normalized_path_cache[s];
+
     var res = [],
         cx = 0, cy = 0, cx0 = 0, cy0 = 0, copen = false,
         cb = 0, sincb = 0, coscb = 1,
@@ -155,6 +160,13 @@ function normalize_svg_path(s) {
         cx = a[a.length - 2];
         cy = a[a.length - 1];
     }
+
+    if (normalized_path_cache_size >= 1000) {
+        normalized_path_cache = {};
+        normalized_path_cache_size = 0;
+    }
+    normalized_path_cache[s] = res;
+    ++normalized_path_cache_size;
     return res;
 }
 
@@ -198,12 +210,12 @@ function pathNodeMayBeNearer(pathNode, point, dist) {
 
 function closestPoint(pathNode, point, inbest) {
     // originally from Mike Bostock http://bl.ocks.org/mbostock/8027637
+    if (inbest && !pathNodeMayBeNearer(pathNode, point, inbest.distance))
+        return inbest;
+
     var pathLength = pathNode.getTotalLength(),
         precision = pathLength / svg_path_number_of_items(pathNode) * .125,
         best, bestLength, bestDistance2 = Infinity;
-
-    if (inbest && !pathNodeMayBeNearer(pathNode, point, inbest.distance))
-        return inbest;
 
     function check(pLength) {
         var p = pathNode.getPointAtLength(pLength);
@@ -219,8 +231,7 @@ function closestPoint(pathNode, point, inbest) {
     }
 
     // linear scan for coarse approximation
-    var sl;
-    for (sl = 0; sl <= pathLength; sl += precision)
+    for (var sl = 0; sl <= pathLength; sl += precision)
         check(sl);
 
     // binary search for precise estimate
