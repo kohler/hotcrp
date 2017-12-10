@@ -1558,16 +1558,23 @@ tr.pl_statheadrow > td.plstat {
 .pl_ip {
 	min-width: 4em;
 }
-.pl_activityicon {
+.has-events {
+	position: relative;
+	padding-top: 0.25rem;
+}
+div.eventtable {
+	overflow-x: hidden;
+}
+.pl_eventicon {
 	padding: 0.2ex 0 0.3ex 0.3em;
 	vertical-align: top;
 }
-.pl_activityid {
+.pl_eventid {
 	text-align: right;
 	padding: 0.2ex 0.4em 0.3ex;
 	vertical-align: top;
 }
-.pl_activitymain {
+.pl_eventdesc {
 	padding: 0.2ex 0 0.3ex 0.125em;
 	vertical-align: top;
 	font-size: 90%;

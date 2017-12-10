@@ -1190,11 +1190,11 @@ $blind\n";
         // See also CommentInfo::unparse_flow_entry
         $barsep = ' <span class="barsep">·</span> ';
         $a = '<a href="' . hoturl("paper", "p=$prow->paperId#r" . unparseReviewOrdinal($rrow)) . '"';
-        $t = '<tr class="pl"><td class="pl_activityicon">' . $a . '>'
+        $t = '<tr class="pl"><td class="pl_eventicon">' . $a . '>'
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
-            . '</a></td><td class="pl_activityid pl_rowclick">'
+            . '</a></td><td class="pl_eventid pl_rowclick">'
             . $a . ' class="pnum">#' . $prow->paperId . '</a></td>'
-            . '<td class="pl_activitymain pl_rowclick"><small>'
+            . '<td class="pl_eventdesc pl_rowclick"><small>'
             . $a . ' class="ptitle">'
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($prow->title, 80))
             . "</a>";

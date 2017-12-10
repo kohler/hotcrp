@@ -328,11 +328,11 @@ class CommentInfo {
     function unparse_flow_entry(Contact $contact) {
         // See also ReviewForm::reviewFlowEntry
         $a = "<a href=\"" . hoturl("paper", "p=$this->paperId#" . self::unparse_html_id($this)) . "\"";
-        $t = '<tr class="pl"><td class="pl_activityicon">' . $a . ">"
+        $t = '<tr class="pl"><td class="pl_eventicon">' . $a . ">"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
-            . '</a></td><td class="pl_activityid pl_rowclick">'
+            . '</a></td><td class="pl_eventid pl_rowclick">'
             . $a . ' class="pnum">#' . $this->paperId . '</a></td>'
-            . '<td class="pl_activitymain pl_rowclick"><small>'
+            . '<td class="pl_eventdesc pl_rowclick"><small>'
             . $a . ' class="ptitle">'
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->prow->title, 80))
             . "</a>";

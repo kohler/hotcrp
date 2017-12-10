@@ -6985,7 +6985,7 @@ function load_more_events() {
             if (data.ok) {
                 events = (events || []).concat(data.rows);
                 events_at = data.to;
-                $(".hotcrp_events_container").each(function (i, e) {
+                $(".has-events").each(function (i, e) {
                     render_events(e, data.rows);
                 });
             }
@@ -6996,7 +6996,7 @@ function load_more_events() {
 function render_events(e, rows) {
     var j = $(e).find("tbody");
     if (!j.length) {
-        $(e).append("<table class=\"hotcrp_events_table\"><tbody class=\"pltable\"></tbody></table><div class=\"g\"><button class=\"btn\" type=\"button\">More</button></div>");
+        $(e).append("<div class=\"eventtable\"><table class=\"pltable pltable_full\"><tbody class=\"pltable\"></tbody></table></div><div class=\"g\"><button class=\"btn\" type=\"button\">More</button></div>");
         $(e).find("button").on("click", load_more_events);
         j = $(e).find("tbody");
     }
@@ -7006,8 +7006,8 @@ function render_events(e, rows) {
 
 return function (e) {
     var j = $(e);
-    if (!j.find(".hotcrp_events_container").length) {
-        j = $("<div class=\"fx20 hotcrp_events_container\" style=\"overflow:hidden;padding-top:3px\"></div>").appendTo(j);
+    if (!j.find(".has-events").length) {
+        j = $("<div class=\"fx20 has-events\"></div>").appendTo(j);
         events ? render_events(j[0], events) : load_more_events();
     }
 };
