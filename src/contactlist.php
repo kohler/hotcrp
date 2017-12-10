@@ -488,22 +488,8 @@ class ContactList {
     }
 
     private function _conflict_pids() {
-        if ($this->_cfltpids === null) {
-            $this->_cfltpids = [];
-            if (!$this->user->privChair || $this->conf->has_any_manager()) {
-                $user = $this->user;
-                $result = $this->conf->paper_result($user);
-                while (($row = PaperInfo::fetch($result, $user))) {
-                    if (!$user->can_view_paper($row)
-                        || !$user->can_view_review_assignment($row, null, true)
-                        || !$user->can_view_review_identity($row, null, true))
-                        $this->_cfltpids[] = $row->paperId;
-                    else if ($row->conflictType > 0 && !$user->privChair)
-                        error_log("WARNING: counting {$this->conf->dbname} #{$row->paperId} for {$user->email} despite conflict");
-                }
-                Dbl::free($result);
-            }
-        }
+        if ($this->_cfltpids === null)
+            $this->_cfltpids = $this->user->hide_reviewer_identity_pids();
         return $this->_cfltpids;
     }
 

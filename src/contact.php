@@ -2604,12 +2604,6 @@ class Contact {
         return $this->can_view_review_identity($prow, null);
     }
 
-    function can_view_aggregated_review_identity() {
-        // XXX This doesn't consider tracks, per-round settings, etc.
-        return $this->privChair
-            || ($this->isPC && !$this->conf->setting("pc_seeblindrev"));
-    }
-
     function can_view_review_round(PaperInfo $prow, ReviewInfo $rrow = null, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
         return $rights->can_administer
@@ -3623,7 +3617,22 @@ class Contact {
         return $set;
     }
 
-    function paper_status_info($row, $forceShow = null) {
+    function hide_reviewer_identity_pids() {
+        $pids = [];
+        if (!$this->privChair || $this->conf->has_any_manager()) {
+            $overrides = $this->add_overrides(Contact::OVERRIDE_CONFLICT);
+            foreach ($this->paper_set([]) as $prow) {
+                if (!$this->can_view_paper($prow)
+                    || !$this->can_view_review_assignment($prow, null)
+                    || !$this->can_view_review_identity($prow, null))
+                    $pids[] = $prow->paperId;
+            }
+            $this->set_overrides($overrides);
+        }
+        return $pids;
+    }
+
+    function paper_status_info(PaperInfo $row, $forceShow = null) {
         if ($row->timeWithdrawn > 0)
             return array("pstat_with", "Withdrawn");
         else if ($row->outcome && $this->can_view_decision($row, $forceShow)) {

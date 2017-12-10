@@ -247,23 +247,11 @@ function tangentAngle(pathNode, length) {
 
 
 /* CDF functions */
-function submission_delay_seq(ri) {
-    var seq = [], i;
-    for (i in ri)
-        if (ri[i][1] > 0)
-            seq.push((ri[i][1] - ri[i][0]) / 86400);
-    seq.ntotal = ri.length;
-    return seq;
-}
-submission_delay_seq.label = function (dl) {
-    return "Days after assignment";
-};
-
 function procrastination_seq(ri, dl) {
     var seq = [], i;
     for (i in ri)
-        if (ri[i][1] > 0)
-            seq.push((ri[i][1] - dl[ri[i][2]]) / 86400);
+        if (ri[i][0] > 0)
+            seq.push((ri[i][0] - dl[ri[i][1]]) / 86400);
     seq.ntotal = ri.length;
     return seq;
 }
@@ -274,8 +262,8 @@ procrastination_seq.label = function (dl) {
 function max_procrastination_seq(ri, dl) {
     var seq = [], i, dlx = Math.max.apply(null, dl);
     for (i in ri)
-        if (ri[i][1] > 0)
-            seq.push((ri[i][1] - dlx) / 86400);
+        if (ri[i][0] > 0)
+            seq.push((ri[i][0] - dlx) / 86400);
     seq.ntotal = ri.length;
     return seq;
 }
@@ -597,15 +585,13 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
     var dlf = max_procrastination_seq;
 
     // infer deadlines when not set
-    if (dlf != submission_delay_seq) {
-        for (i in revdata.deadlines)
-            if (!revdata.deadlines[i]) {
-                var subat = alldata.filter(function (d) { return d[2] == i; })
-                    .map(proj0);
-                subat.sort(d3.ascending);
-                revdata.deadlines[i] = subat.length ? d3.quantile(subat, 0.8) : 0;
-            }
-    }
+    for (i in revdata.deadlines)
+        if (!revdata.deadlines[i]) {
+            var subat = alldata.filter(function (d) { return d[2] == i; })
+                .map(proj0);
+            subat.sort(d3.ascending);
+            revdata.deadlines[i] = subat.length ? d3.quantile(subat, 0.8) : 0;
+        }
     // make cdfs
     for (i in args.data)
         args.data[i].d = seq_to_cdf(dlf(args.data[i].d, revdata.deadlines));
