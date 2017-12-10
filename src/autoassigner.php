@@ -165,6 +165,10 @@ class Autoassigner {
         $this->prefs = $this->eass = [];
         foreach ($this->pcm as $cid => $p)
             $this->prefs[$cid] = $this->eass[$cid] = array_fill_keys($this->papersel, 0);
+        foreach ($this->badpairs as $cid1 => $cid2) {
+            if (!isset($this->pcm[$cid1]))
+                $this->eass[$cid1] = array_fill_keys($this->papersel, 0);
+        }
     }
 
     private function preferences_review($reviewtype) {
@@ -202,14 +206,13 @@ class Autoassigner {
         $this->make_pref_groups();
 
         // need to populate review assignments for badpairs not in `pcm`
-        foreach ($this->badpairs as $cid => $x)
-            if (!isset($this->eass[$cid])) {
-                $this->eass[$cid] = array_fill_keys($this->papersel, 0);
-                $result = $this->conf->qe("select paperId from PaperReview where contactId=? and paperId ?a", $cid, $this->papersel);
-                while (($row = edb_row($result)))
-                    $this->eass[$cid][$row[0]] = max($this->eass[$cid][$row[0]], self::ENOASSIGN);
-                Dbl::free($result);
-            }
+        $missing_pcm = array_diff(array_keys($this->badpairs), array_keys($this->pcm));
+        if ($missing_pcm) {
+            $result = $this->conf->qe("select contactId, paperId from PaperReview where paperId?a and contactId?a", $this->papersel, array_values($missing_pcm));
+            while (($row = edb_row($result)))
+                $this->eass[$row[0]][$row[1]] = max($this->eass[$row[0]][$row[1]], self::ENOASSIGN);
+            Dbl::free($result);
+        }
 
         // mark badpairs as noassign
         foreach ($this->badpairs as $cid => $bp)
