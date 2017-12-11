@@ -803,6 +803,14 @@ span.expander {
 	vertical-align: -0.05em;
 	fill: currentColor;
 }
+.licon-s {
+	vertical-align: -0.05em;
+	stroke: currentColor;
+	fill: none;
+	stroke-width: 2;
+	stroke-linejoin: round;
+	stroke-linecap: round;
+}
 
 /* Action area */
 .aa {
@@ -1424,18 +1432,6 @@ del .rto {
 	font-size: 62.5%;
 	line-height: 1;
 	text-align: center;
-}
-
-img.prev, img.next {
-	background-image: url(../images/sprite.png?2);
-	width: 8px;
-	height: 9px;
-}
-img.prev {
-	background-position: -32px 0;
-}
-img.next {
-	background-position: -10px 0;
 }
 
 .ti_interest {

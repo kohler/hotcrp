@@ -540,9 +540,9 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
     }
     return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
         . "\" class=\"x\" href=\"" . hoturl($baseUrl, $urlrest) . "\">"
-        . ($isprev ? Ht::img("_.gif", "<-", "prev") : "")
+        . ($isprev ? Icons::ui_linkarrow(3) : "")
         . $paperText
-        . ($isprev ? "" : Ht::img("_.gif", "->", "next"))
+        . ($isprev ? "" : Icons::ui_linkarrow(1))
         . "</a>";
 }
 

@@ -336,7 +336,7 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
             echo $lrg->page_link_html(1, "<strong>Newest</strong>"), " &nbsp;|&nbsp;&nbsp;";
         echo "</div></td><td><div class='lognavxr'>";
         if ($page > 1)
-            echo $lrg->page_link_html($page - 1, "<strong>" . Ht::img("_.gif", "<-", array("class" => "prev")) . " Newer</strong>");
+            echo $lrg->page_link_html($page - 1, "<strong>" . Icons::ui_linkarrow(3) . "Newer</strong>");
         echo "</div></td><td><div class='lognavdr'>";
         if ($page - $nlinks > 1)
             echo "&nbsp;...";
@@ -349,7 +349,7 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
             echo "...&nbsp;";
         echo "</div></td><td><div class='lognavx'>";
         if ($lrg->has_page($page + 1))
-            echo $lrg->page_link_html($page + 1, "<strong>Older " . Ht::img("_.gif", "->", array("class" => "next")) . "</strong>");
+            echo $lrg->page_link_html($page + 1, "<strong>Older" . Icons::ui_linkarrow(1) . "</strong>");
         echo "</div></td><td><div class='lognavd'>";
         if ($lrg->has_page($page + $nlinks + 1))
             echo "&nbsp;&nbsp;|&nbsp; ", $lrg->page_link_html("earliest", "<strong>Oldest</strong>");

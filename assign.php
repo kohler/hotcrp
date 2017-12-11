@@ -463,7 +463,7 @@ if ($Me->can_administer($prow)) {
         $conflict_type = $prow->conflict_type($pc);
         if ($conflict_type >= CONFLICT_AUTHOR) {
             echo '<div class="pctbass">', review_type_icon(-2),
-                Ht::img("_.gif", ">", array("class" => "next", "style" => "visibility:hidden")), '&nbsp;</div>',
+                Icons::ui_linkarrow(-1), '&nbsp;</div>',
                 '<div id="ass' . $pc->contactId . '" class="pctbname pctbname-2 taghl">',
                 $Me->name_html_for($pc), '</div>';
         } else {
@@ -478,9 +478,9 @@ if ($Me->can_administer($prow)) {
             // NB manualassign.php also uses the "pcs$contactId" convention
             echo '<div class="pctbass">'
                 . '<div id="foldass' . $pc->contactId . '" class="foldc" style="position:relative">'
-                . '<a id="folderass' . $pc->contactId . '" href="#">'
+                . '<a id="folderass' . $pc->contactId . '" href="" class="qq">'
                 . review_type_icon($revtype, false, $title)
-                . Ht::img("_.gif", ">", array("class" => "next")) . '</a>&nbsp;'
+                . Icons::ui_linkarrow(1) . '</a>&nbsp;'
                 . Ht::hidden("pcs$pc->contactId", $value, ["id" => "pcs$pc->contactId", "data-default-value" => $value])
                 . '</div></div>';
 
