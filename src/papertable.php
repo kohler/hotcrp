@@ -486,6 +486,17 @@ class PaperTable {
         echo "</td></tr></table></div>\n";
     }
 
+    static function document_upload_input($inputid, $dtype, $accepts) {
+        $t = '<input id="' . $inputid . '" type="file" name="' . $inputid . '"';
+        if (count($accepts) == 1)
+            $t .= ' accept="' . $accepts[0]->mimetype . '"';
+        $t .= ' size="30" class="';
+        $k = ["document-uploader"];
+        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL)
+            $k[] = "js-check-submittable";
+        return $t . join(" ", $k) . '" />';
+    }
+
     function echo_editable_document(PaperOption $docx, $storageId, $flags) {
         $dtype = $docx->id;
         if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL) {
@@ -518,14 +529,7 @@ class PaperTable {
         if ($dtype > 0)
             echo Ht::hidden("has_opt" . $dtype, 1);
 
-        $upload_input = '<input id="' . $inputid . '" type="file" name="' . $inputid . '"';
-        if (count($accepts) == 1)
-            $upload_input .= ' accept="' . $accepts[0]->mimetype . '"';
-        $upload_input .= ' size="30"';
-        $k = ["document-uploader"];
-        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL)
-            $k[] = "js-check-submittable";
-        $upload_input .= ' class="' . join(" ", $k) . '" />';
+        $upload_input = self::document_upload_input($inputid, $dtype, $accepts);
 
         // current version, if any
         $has_cf = false;

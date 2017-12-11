@@ -2670,10 +2670,11 @@ body#offline .revcard {
 	margin-top: 0.25rem;
 	margin-bottom: 0.5rem;
 }
-.document-file, .document-upload, .document-stamps, .document-actions {
+.document-file, .document-upload, .document-stamps,
+.document-shortformat, .document-actions {
 	display: inline-block;
 }
-.document-upload {
+.document-file, .document-upload {
 	line-height: 1.75;
 }
 .document-stamps {
@@ -2681,6 +2682,10 @@ body#offline .revcard {
 }
 .document-actions {
 	margin-left: 0.5rem;
+}
+.document-actions.block {
+	display: block;
+	margin-left: -1rem;
 }
 .document-action {
 	display: inline-block;

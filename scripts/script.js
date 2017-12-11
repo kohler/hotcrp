@@ -5887,9 +5887,9 @@ handle_ui.on("js-add-attachment", function () {
         });
     } while (name === false);
     var $na = $('<div class="has-document document-new-instance hidden" data-document-name="' + name + '">'
-        + '<div class="document-upload"><input type="file" name="' + name + '" size="15" /></div>'
+        + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="document-uploader" /></div>'
         + '<div class="document-stamps"></div>'
-        + '<div class="document-actions"><a class="ui js-remove-document document-action" href="#">Delete</a></div>'
+        + '<div class="document-actions"><a href="" class="ui js-remove-document document-action">Delete</a></div>'
         + '</div>');
     $ei.length ? $na.insertAfter($ei[$ei.length - 1]) : $na.prependTo($ea);
     $na.find("input[type=file]").on("change", function () {
@@ -5903,7 +5903,7 @@ handle_ui.on("js-replace-document", function (event) {
         $u = $ei.find(".document-uploader");
     $ei.find(".document-remover").val("");
     $u.on("change", function () {
-        $ei.find(".document-file, .document-stamps, .js-replace-document").addClass("hidden");
+        $ei.find(".document-file, .document-stamps, .document-shortformat, .js-replace-document").addClass("hidden");
         $ei.find(".document-upload").removeClass("hidden");
         $ei.find(".js-remove-document").removeClass("undelete").html("Delete");
         $ei.find(".js-replace-document").addClass("hidden");
@@ -5918,7 +5918,7 @@ handle_ui.on("js-remove-document", function (event) {
     if (hasClass(this, "undelete")) {
         $r.val("");
         $en.find("del > *").unwrap();
-        $ei.find(".document-stamps").removeClass("hidden");
+        $ei.find(".document-stamps, .document-shortformat").removeClass("hidden");
         $(this).removeClass("undelete").html("Delete");
     } else if ($ei.hasClass("document-new-instance")) {
         $ei.remove();
@@ -5928,7 +5928,7 @@ handle_ui.on("js-remove-document", function (event) {
         $r.val(1);
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
-        $ei.find(".document-stamps").addClass("hidden");
+        $ei.find(".document-stamps, .document-shortformat").addClass("hidden");
         $(this).addClass("undelete").html("Undelete");
     }
     form_highlight($f[0]);
