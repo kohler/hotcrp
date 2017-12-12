@@ -66,12 +66,11 @@ foreach ($group_titles as $name => $title) {
     if ($name === $Group)
         echo '<div class="leftmenu-item-on">', $title, '</div>';
     else
-        echo '<div class="leftmenu-item">',
+        echo '<div class="leftmenu-item ui js-click-child">',
             '<a href="', hoturl("settings", "group={$name}"), '">', $title, '</a></div>';
 }
 echo "</div></div>\n",
     '<div class="leftmenu-content-container"><div class="leftmenu-content aahc">';
-Ht::stash_script("jQuery(\".leftmenu-item\").click(divclick)");
 
 function doActionArea($top) {
     echo '<div class="aab aabr aabig">',

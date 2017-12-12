@@ -833,7 +833,9 @@ function render_xmsg(status, msg) {
 var handle_ui = (function ($) {
 var callbacks = {};
 function handle_ui(event) {
-    event.preventDefault();
+    if (hasClass(event.target, "ui")) {
+        event.preventDefault();
+    }
     var k = classList(this);
     for (var i = 0; i < k.length; ++i) {
         var c = callbacks[k[i]];
@@ -2193,13 +2195,17 @@ handle_ui.on("js-aufoldup", function (event) {
     }
 });
 
-function divclick(event) {
-    var j = jQuery(this), a = j.find("a")[0];
+handle_ui.on("js-click-child", function (event) {
+    var a = $(this).find("a")[0];
     if (a && event.target !== a) {
-        a.click();
-        event_prevent(event);
+        var newEvent = new MouseEvent("click", {
+            button: event.button, buttons: event.buttons,
+            ctrlKey: event.ctrlKey, shiftKey: event.shiftKey,
+            altKey: event.altKey, metaKey: event.metaKey
+        });
+        a.dispatchEvent(newEvent);
     }
-}
+});
 
 
 // history

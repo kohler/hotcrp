@@ -220,14 +220,13 @@ foreach ($help_topics->groups() as $gj) {
     if ($gj->name === $topic)
         echo '<div class="leftmenu-item-on">', $gj->title, '</div>';
     else if (isset($gj->title))
-        echo '<div class="leftmenu-item">',
+        echo '<div class="leftmenu-item ui js-click-child">',
             '<a href="', hoturl("help", "t=$gj->name"), '">', $gj->title, '</a></div>';
     if ($gj->name === "topics")
         echo '<div class="c g"></div>';
 }
 echo "</div></div>\n",
     '<div class="leftmenu-content-container"><div id="helpcontent" class="leftmenu-content">';
-Ht::stash_script("jQuery(\".leftmenu-item\").click(divclick)");
 
 echo '<h2 class="helppage">', $topicj->title, '</h2>';
 $hth->echo_topic($topic);
