@@ -2173,7 +2173,6 @@ function foldup(event, opts) {
 }
 
 handle_ui.on("js-foldup", foldup);
-$(document).on("click", "div.js-foldup", foldup);
 $(document).on("change", "input.js-foldup", foldup);
 $(document).on("fold", ".js-fold-focus", function (event, opts) {
     focus_within(this, (opts.f ? ".fn" : ".fx") + (opts.n || "") + " *");
@@ -2181,7 +2180,7 @@ $(document).on("fold", ".js-fold-focus", function (event, opts) {
 
 
 // special-case folding for author table
-function aufoldup(event) {
+handle_ui.on("js-aufoldup", function (event) {
     var e = $$("foldpaper"),
         m9 = e.className.match(/\bfold9([co])\b/),
         m8 = e.className.match(/\bfold8([co])\b/);
@@ -2192,8 +2191,7 @@ function aufoldup(event) {
         if (m8[1] == "o" && $$("foldpscollab"))
             fold("pscollab", 1);
     }
-    return false;
-}
+});
 
 function divclick(event) {
     var j = jQuery(this), a = j.find("a")[0];

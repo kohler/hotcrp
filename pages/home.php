@@ -282,7 +282,7 @@ function reviewTokenGroup($non_reviews) {
             "<h4>Review tokens: &nbsp;</h4>";
     else
         echo '<table id="foldrevtokens" class="', count($tokens) ? "fold2o" : "fold2c", '" style="display:inline-table">',
-            '<tr><td class="fn2"><a class="ui fn2 js-foldup" href="#">Add review tokens</a></td>',
+            '<tr><td class="fn2"><a href="" class="fn2 ui js-foldup">Add review tokens</a></td>',
             '<td class="fx2">Review tokens: &nbsp;';
 
     echo Ht::form_div(hoturl_post("index")),
@@ -469,7 +469,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     if ($Me->is_reviewer()) {
         echo "<div class=\"homegrp has-fold fold20c\" id=\"homeactivity\" data-fold-session=\"foldhomeactivity\">",
             foldupbutton(20),
-            "<h4><a class=\"x ui homeactivity js-foldup\" href=\"#\" data-fold-target=\"20\">Recent activity<span class='fx20'>:</span></a></h4>",
+            "<h4><a href=\"\" class=\"x homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class='fx20'>:</span></a></h4>",
             "</div>";
         Ht::stash_script('$("#homeactivity").on("fold", function(e,opts) { opts.f || unfold_events(this); })');
         if (!$Conf->session("foldhomeactivity", 1))

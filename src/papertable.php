@@ -292,21 +292,21 @@ class PaperTable {
 
         $c = "<div class=\"$divclass" . $this->error_class($what);
         if (($fold || $editfolder) && !get($extra, "float"))
-            $c .= " childfold js-foldup\"" . $foldnumclass . ">";
+            $c .= " ui js-foldup\"" . $foldnumclass . ">";
         else
             $c .= "\">";
         $c .= "<span class=\"$hdrclass\">";
         if (!$fold) {
             $n = (is_array($name) ? $name[0] : $name);
             if ($editfolder)
-                $c .= "<a class=\"ui q fn js-foldup\" "
+                $c .= "<a class=\"q fn ui js-foldup\" "
                     . "href=\"" . selfHref(array("atab" => $what))
                     . "\"" . $foldnumclass . ">" . $n
                     . "</a><span class=\"fx\">" . $n . "</span>";
             else
                 $c .= $n;
         } else {
-            $c .= '<a class="ui q js-foldup" href="#"' . $foldnumclass;
+            $c .= '<a class="q ui js-foldup" href=""' . $foldnumclass;
             if (($title = defval($extra, "foldtitle")))
                 $c .= ' title="' . $title . '"';
             $c .= '>' . expander(null, $foldnum);
@@ -618,7 +618,7 @@ class PaperTable {
         echo "</div></div></div>";
         if ($extra)
             echo '<div class="fn6 fx7 longtext-fader"></div>',
-                '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="#" data-fold-target="6">[more]</a></div>';
+                '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" data-fold-target="6">[more]</a></div>';
         echo "</div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");
@@ -657,11 +657,11 @@ class PaperTable {
             . $this->editable_author_component_entry($n, "auname", $au) . ' '
             . $this->editable_author_component_entry($n, "auemail", $au) . ' '
             . $this->editable_author_component_entry($n, "auaff", $au)
-            . '<span class="nb btnbox aumovebox"><a href="#" class="ui btn qx need-tooltip row-order-ui moveup" data-tooltip="Move up" tabindex="-1">'
+            . '<span class="nb btnbox aumovebox"><a href="" class="ui btn qx need-tooltip row-order-ui moveup" data-tooltip="Move up" tabindex="-1">'
             . Icons::ui_triangle(0)
-            . '</a><a href="#" class="ui btn qx need-tooltip row-order-ui movedown" data-tooltip="Move down" tabindex="-1">'
+            . '</a><a href="" class="ui btn qx need-tooltip row-order-ui movedown" data-tooltip="Move down" tabindex="-1">'
             . Icons::ui_triangle(2)
-            . '</a><a href="#" class="ui btn qx need-tooltip row-order-ui delete" data-tooltip="Delete" tabindex="-1">✖</a></span></td></tr>';
+            . '</a><a href="" class="ui btn qx need-tooltip row-order-ui delete" data-tooltip="Delete" tabindex="-1">✖</a></span></td></tr>';
     }
 
     private function echo_editable_authors() {
@@ -817,11 +817,10 @@ class PaperTable {
 
         // header with folding
         echo '<div class="pg">',
-            '<div class="pavt childfold js-aufoldup', $this->error_class("authors"),
+            '<div class="pavt ui js-aufoldup', $this->error_class("authors"),
             '"><span class="pavfn">';
-        Ht::stash_script('$(document).on("click",".js-aufoldup",aufoldup)', "aufoldup");
         if (!$viewable || $this->allFolded)
-            echo '<a class="ui q js-aufoldup" href="#" title="Toggle author display">';
+            echo '<a class="q ui js-aufoldup" href="" title="Toggle author display">';
         if (!$viewable)
             echo '<span class="fn8">Authors</span><span class="fx8">';
         if ($this->allFolded)
@@ -838,13 +837,13 @@ class PaperTable {
         // contents
         echo '<div class="pavb">';
         if (!$viewable)
-            echo '<a class="ui q js-aufoldup fn8" href="#" title="Toggle author display">',
+            echo '<a class="q fn8 ui js-aufoldup" href="" title="Toggle author display">',
                 '+&nbsp;<i>Hidden for blind review</i>',
                 '</a><div class="fx8">';
         if ($this->allFolded)
             echo '<div class="fn9">',
                 $this->authorData($aulist, "last", null),
-                ' <a class="ui js-aufoldup" href="#">[details]</a>',
+                ' <a class="ui js-aufoldup" href="">[details]</a>',
                 '</div><div class="fx9">';
         echo $this->authorData($aulist, "col", $this->user);
         if ($this->allFolded)

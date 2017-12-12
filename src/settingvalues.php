@@ -708,7 +708,7 @@ class SettingValues extends MessageSet {
         $description = '<a class="ui q js-foldup" href="#">'
             . expander(null, 0) . $description . '</a>';
         echo '<div class="has-fold fold', ($current == $si->default_value ? "c" : "o"), '">',
-            '<div class="', $class, ' childfold js-foldup">',
+            '<div class="', $class, ' ui js-foldup">',
             $this->label($name, $description),
             ' <span class="f-cx fx">(HTML allowed)</span></div>',
             $hint,

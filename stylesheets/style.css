@@ -158,7 +158,9 @@ a.pnum, a.ptitle, a.maillink, u.x, .noul {
 a.q:hover, a.qq:hover, a.x:hover,
 div.papmodex:hover > a, div.leftmenu-item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
-.childfold:hover a.q, a.maillink:hover, a:hover u.x, .ul {
+div.js-foldup:hover a.js-foldup,
+div.js-aufoldup:hover a.js-aufoldup,
+a.maillink:hover, a:hover u.x, .ul {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
@@ -664,7 +666,7 @@ span.impending a {
 /* buttons */
 span.expander {
 	display: inline-block;
-	padding-right: 0.2em;
+	padding-right: 0.25em;
 	opacity: 0.65;
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
