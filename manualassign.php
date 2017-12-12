@@ -274,7 +274,7 @@ if ($reviewer) {
         "<div class=\"aa\">",
         Ht::submit("update", "Save assignments");
     if ($qreq->kind != "c") {
-        $rev_rounds = $Conf->round_selector_options();
+        $rev_rounds = $Conf->round_selector_options(false);
         if (count($rev_rounds) > 1)
             echo '<span style="padding-left:2em">Review round: &nbsp;',
                 Ht::select("rev_round", $rev_rounds, $qreq->rev_round ? : "unnamed", array("id" => "assrevround")),

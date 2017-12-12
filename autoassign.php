@@ -525,7 +525,7 @@ doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "se
 echo "&nbsp; review(s) from this paper selection</td></tr>\n";
 
 // Review round
-$rev_rounds = $Conf->round_selector_options();
+$rev_rounds = $Conf->round_selector_options(null);
 if (count($rev_rounds) > 1 || !get($rev_rounds, "unnamed")) {
     echo '<tr><td></td><td';
     if (isset($Error["rev_round"]))

@@ -222,7 +222,7 @@ $("#tsel").on("change",function(){
 foldup.call(this,null,{f:this.value!=="review"});
 foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),n:2});
 }).trigger("change")})');
-$rev_rounds = $Conf->round_selector_options();
+$rev_rounds = $Conf->round_selector_options(null);
 if (count($rev_rounds) > 1)
     echo '<span class="fx2">&nbsp; in round &nbsp;',
         Ht::select("rev_round", $rev_rounds, $_REQUEST["rev_round"] ? : "unnamed"),

@@ -1308,13 +1308,20 @@ class Conf {
             return false;
     }
 
-    function round_selector_options() {
-        $opt = array();
+    function round_selector_options($isexternal) {
+        $opt = $arounds = [];
+        if (($isexternal === null || $isexternal === false)
+            && ($r = $this->assignment_round_name(false)) !== null)
+            $arounds[$r === "" ? "unnamed" : $r] = true;
+        if (($isexternal === null || $isexternal === true)
+            && ($r = $this->assignment_round_name(true)) !== null)
+            $arounds[$r === "" ? "unnamed" : $r] = true;
+        if (isset($arounds["unnamed"]))
+            $opt["unnamed"] = "unnamed";
         foreach ($this->defined_round_list() as $rname)
             $opt[$rname] = $rname;
-        $crname = $this->assignment_round_name(false) ? : "unnamed";
-        if ($crname && !get($opt, $crname))
-            $opt[$crname] = $crname;
+        foreach (array_keys($arounds) as $r)
+            $opt[$r] = $r;
         return $opt;
     }
 
