@@ -1167,8 +1167,8 @@ return function (content, bubopt) {
             var i, off;
             if (typeof epos === "string" || epos.tagName || epos.jquery) {
                 epos = $(epos);
-                if (dirspec == null)
-                    dirspec = $(epos).data("tooltipDir");
+                if (dirspec == null && epos[0])
+                    dirspec = epos[0].getAttribute("data-tooltip-dir");
                 epos = epos.geometry(true);
             }
             for (i = 0; i < 4; ++i)
@@ -1257,8 +1257,8 @@ return function (content, bubopt) {
 var tooltip = (function ($) {
 var builders = {};
 
-function prepare_info($self, info) {
-    var xinfo = $self.data("tooltipInfo");
+function prepare_info(elt, info) {
+    var xinfo = elt.getAttribute("data-tooltip-info");
     if (xinfo) {
         if (typeof xinfo === "string" && xinfo.charAt(0) === "{")
             xinfo = JSON.parse(xinfo);
@@ -1267,15 +1267,15 @@ function prepare_info($self, info) {
         info = $.extend(xinfo, info);
     }
     if (info.builder && builders[info.builder])
-        info = builders[info.builder].call($self[0], info) || info;
+        info = builders[info.builder].call(elt, info) || info;
     if (info.dir == null)
-        info.dir = $self.data("tooltipDir") || "v";
+        info.dir = elt.getAttribute("data-tooltip-dir") || "v";
     if (info.type == null)
-        info.type = $self.data("tooltipType");
+        info.type = elt.getAttribute("data-tooltip-type");
     if (info.className == null)
-        info.className = $self.data("tooltipClass") || "dark";
+        info.className = elt.getAttribute("data-tooltip-class") || "dark";
     if (info.content == null)
-        info.content = $self.data("tooltip");
+        info.content = elt.getAttribute("data-tooltip");
     return info;
 }
 
@@ -1284,7 +1284,7 @@ function show_tooltip(info) {
         return null;
 
     var $self = $(this);
-    info = prepare_info($self, $.extend({}, info || {}));
+    info = prepare_info($self[0], $.extend({}, info || {}));
     info.element = this;
 
     var tt, bub = null, to = null, refcount = 0, content = info.content;
@@ -1371,7 +1371,7 @@ function ttleave() {
 
 function tooltip() {
     var $self = $(this).removeClass("need-tooltip");
-    if ($self.data("tooltipType") === "focus")
+    if ($self[0].getAttribute("data-tooltip-type") === "focus")
         $self.on("focus", ttenter).on("blur", ttleave);
     else
         $self.hover(ttenter, ttleave);
@@ -1637,9 +1637,9 @@ function display_tracker() {
     // tracker button
     if ((e = $$("trackerconnectbtn"))) {
         if (mytracker) {
-            $(e).data("tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ui tracker-ui stop ttmenu\" href=\"\">Stop meeting tracker</a></div></div>");
+            e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ui tracker-ui stop ttmenu\" href=\"\">Stop meeting tracker</a></div></div>");
         } else {
-            $(e).data("tooltip", "Start meeting tracker");
+            e.setAttribute("data-tooltip", "Start meeting tracker");
         }
         e.className = e.className.replace(/\btbtn(?:-on)*\b/, mytracker ? "tbtn-on" : "tbtn");
     }
@@ -2120,7 +2120,7 @@ function fold(elt, dofold, foldnum) {
         }
 
         // check for session
-        var ses = $(elt).data("foldSession");
+        var ses = elt.getAttribute("data-fold-session");
         if (ses) {
             if (typeof ses === "string" && ses.charAt(0) === "{") {
                 ses = (JSON.parse(ses) || {})[foldnum];
@@ -2211,7 +2211,7 @@ handle_ui.on("js-click-child", function (event) {
 // history
 
 var push_history_state;
-if ("pushState" in window.history)
+if ("pushState" in window.history) {
     push_history_state = function (href) {
         var state;
         if (!history.state) {
@@ -2226,8 +2226,9 @@ if ("pushState" in window.history)
         }
         return false;
     };
-else
+} else {
     push_history_state = function () { return true; };
+}
 
 
 // focus_fold
