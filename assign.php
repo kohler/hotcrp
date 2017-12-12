@@ -127,36 +127,54 @@ if (isset($_REQUEST["retract"]) && check_post()) {
 
 
 // change PC assignments
-function pcAssignments() {
+function pcAssignments($qreq) {
     global $Conf, $Me, $prow;
 
-    $reviewer = req("reviewer");
-    if (($rname = $Conf->sanitize_round_name(req("rev_round"))) === "")
+    $reviewer = $qreq->reviewer;
+    if (($rname = $Conf->sanitize_round_name($qreq->rev_round)) === "")
         $rname = "unnamed";
     $round = CsvGenerator::quote(":" . (string) $rname);
 
     $t = ["paper,action,email,round\n"];
-    foreach ($Conf->pc_members() as $cid => $p)
-        if ((!$reviewer || strcasecmp($p->email, $reviewer) == 0
-             || (string) $p->contactId === $reviewer)
-            && isset($_REQUEST["pcs$cid"])
-            && ($rtype = cvtint($_REQUEST["pcs$cid"], null)) !== null) {
-            $user = CsvGenerator::quote($p->email);
-            if ($rtype >= 0)
-                $t[] = "{$prow->paperId},clearconflict,$user\n";
-            if ($rtype <= 0)
-                $t[] = "{$prow->paperId},clearreview,$user\n";
-            if ($rtype == REVIEW_META)
-                $t[] = "{$prow->paperId},metareview,$user,$round\n";
-            else if ($rtype == REVIEW_PRIMARY)
-                $t[] = "{$prow->paperId},primary,$user,$round\n";
-            else if ($rtype == REVIEW_SECONDARY)
-                $t[] = "{$prow->paperId},secondary,$user,$round\n";
-            else if ($rtype == REVIEW_PC || $rtype == REVIEW_EXTERNAL)
-                $t[] = "{$prow->paperId},pcreview,$user,$round\n";
-            else if ($rtype < 0)
-                $t[] = "{$prow->paperId},conflict,$user\n";
+    foreach ($Conf->pc_members() as $cid => $p) {
+        if ($reviewer
+            && strcasecmp($p->email, $reviewer) != 0
+            && (string) $p->contactId !== $reviewer)
+            continue;
+
+        if (isset($qreq["assrev{$prow->paperId}u{$cid}"]))
+            $revtype = $qreq["assrev{$prow->paperId}u{$cid}"];
+        else if (isset($qreq["pcs{$cid}"]))
+            $revtype = $qreq["pcs{$cid}"];
+        else
+            continue;
+        $revtype = cvtint($revtype, null);
+        if ($revtype === null)
+            continue;
+
+        $myround = $round;
+        if (isset($qreq["rev_round{$prow->paperId}u{$cid}"])) {
+            $x = $Conf->sanitize_round_name($qreq["rev_round{$prow->paperId}u{$cid}"]);
+            if ($x !== false)
+                $myround = $x === "" ? "unnamed" : CsvGenerator::quote($x);
         }
+
+        $user = CsvGenerator::quote($p->email);
+        if ($revtype >= 0)
+            $t[] = "{$prow->paperId},clearconflict,$user\n";
+        if ($revtype <= 0)
+            $t[] = "{$prow->paperId},clearreview,$user\n";
+        if ($revtype == REVIEW_META)
+            $t[] = "{$prow->paperId},metareview,$user,$myround\n";
+        else if ($revtype == REVIEW_PRIMARY)
+            $t[] = "{$prow->paperId},primary,$user,$myround\n";
+        else if ($revtype == REVIEW_SECONDARY)
+            $t[] = "{$prow->paperId},secondary,$user,$myround\n";
+        else if ($revtype == REVIEW_PC || $revtype == REVIEW_EXTERNAL)
+            $t[] = "{$prow->paperId},pcreview,$user,$myround\n";
+        else if ($revtype < 0)
+            $t[] = "{$prow->paperId},conflict,$user\n";
+    }
 
     $aset = new AssignmentSet($Me, true);
     $aset->enable_papers($prow);
@@ -165,7 +183,7 @@ function pcAssignments() {
         if (req("ajax"))
             json_exit(["ok" => true]);
         else {
-            $Conf->confirmMsg("Assignments saved.");
+            $Conf->confirmMsg("Assignments saved." . $aset->errors_div_html());
             redirectSelf();
             // NB normally redirectSelf() does not return
             loadRows();
@@ -179,7 +197,7 @@ function pcAssignments() {
 }
 
 if (isset($_REQUEST["update"]) && $Me->allow_administer($prow) && check_post())
-    pcAssignments();
+    pcAssignments(make_qreq());
 else if (isset($_REQUEST["update"]) && defval($_REQUEST, "ajax"))
     json_exit(["ok" => false, "error" => "Only administrators can assign papers."]);
 
@@ -432,67 +450,64 @@ if ($Me->can_administer($prow)) {
         "<h3 style=\"margin-top:0\">PC review assignments</h3>",
         Ht::form_div($loginUrl, array("id" => "ass")),
         '<p>';
-    Ht::stash_script('assigntable("#ass")');
+    Ht::stash_script('hiliter_children("#ass", true)');
 
-    $rev_round = (string) $Conf->sanitize_round_name(req("rev_round"));
-    $rev_rounds = $Conf->round_selector_options();
-    $x = array();
-    if (count($rev_rounds) > 1)
-        $x[] = 'Review round:&nbsp; '
-            . Ht::select("rev_round", $rev_rounds, $rev_round ? : "unnamed");
-    else if (!get($rev_rounds, "unnamed"))
-        $x[] = 'Review round: ' . $rev_round
-            . Ht::hidden("rev_round", $rev_round);
     if ($Conf->has_topics())
-        $x[] = "Review preferences display as “P#”, topic scores as “T#”.";
+        echo "<p>Review preferences display as “P#”, topic scores as “T#”.</p>";
     else
-        $x[] = "Review preferences display as “P#”.";
-    echo join(' <span class="barsep">·</span> ', $x), '</p>';
+        echo "<p>Review preferences display as “P#”.</p>";
 
-    echo '<div class="pc_ctable">';
+    echo '<div class="pc_ctable has-assignment-set need-assignment-change"';
+    $rev_rounds = array_keys($Conf->round_selector_options(false));
+    echo ' data-review-rounds="', htmlspecialchars(json_encode($rev_rounds)), '"',
+        ' data-default-review-round="', htmlspecialchars($Conf->assignment_round_name(false)), '">';
     $tagger = new Tagger($Me);
     $show_possible_conflicts = $Me->allow_view_authors($prow);
+
     foreach ($Conf->full_pc_members() as $pc) {
         $p = $pcx[$pc->contactId];
         if (!$pc->can_accept_review_assignment_ignore_conflict($prow))
             continue;
 
         // first, name and assignment
-        $color = $pc->viewable_color_classes($Me);
-        echo '<div class="ctelt"><div class="ctelti' . ($color ? " $color" : "") . '">';
         $conflict_type = $prow->conflict_type($pc);
-        if ($conflict_type >= CONFLICT_AUTHOR) {
-            echo '<div class="pctbass">', review_type_icon(-2),
-                Icons::ui_linkarrow(-1), '&nbsp;</div>',
-                '<div id="ass' . $pc->contactId . '" class="pctbname pctbname-2 taghl">',
-                $Me->name_html_for($pc), '</div>';
-        } else {
-            if ($conflict_type > 0)
-                $revtype = $value = -1;
-            else {
-                $revtype = $value = $prow->review_type($pc);
-                if (!$revtype && $p->refused)
-                    $revtype = -3;
-            }
-            $title = ($p->refused ? "Review previously declined" : "Assignment");
-            // NB manualassign.php also uses the "pcs$contactId" convention
-            echo '<div class="pctbass">'
-                . '<div id="foldass' . $pc->contactId . '" class="foldc" style="position:relative">'
-                . '<a id="folderass' . $pc->contactId . '" href="" class="qq">'
-                . review_type_icon($revtype, false, $title)
-                . Icons::ui_linkarrow(1) . '</a>&nbsp;'
-                . Ht::hidden("pcs$pc->contactId", $value, ["id" => "pcs$pc->contactId", "data-default-value" => $value])
-                . '</div></div>';
+        $rrow = $prow->review_of_user($pc);
+        if ($conflict_type >= CONFLICT_AUTHOR)
+            $revtype = -2;
+        else if ($conflict_type > 0)
+            $revtype = -1;
+        else
+            $revtype = $rrow ? $rrow->reviewType : 0;
 
-            echo '<div id="ass' . $pc->contactId . '" class="pctbname pctbname' . $revtype . '">'
-                . '<span class="taghl">' . $Me->name_html_for($pc) . '</span>';
-            if ($conflict_type == 0)
-                echo unparse_preference_span($prow->reviewer_preference($pc, true));
-            echo '</div>';
-            if ($show_possible_conflicts
-                && ($pcconfmatch = $prow->potential_conflict_html($pc, $conflict_type <= 0)))
-                echo $pcconfmatch;
+        $color = $pc->viewable_color_classes($Me);
+        echo '<div class="ctelt">',
+            '<div class="ctelti', ($color ? " $color" : ""), ' has-assignment has-fold foldc"',
+            ' data-pid="', $prow->paperId,
+            '" data-uid="', $pc->contactId,
+            '" data-review-type="', $revtype;
+        if (!$revtype && $p->refused)
+            echo '" data-assignment-refused="', htmlspecialchars($p->refused);
+        if ($rrow && $rrow->reviewRound && ($rn = $rrow->round_name()))
+            echo '" data-review-round="', htmlspecialchars($rn);
+        if ($rrow && $rrow->reviewModified > 1)
+            echo '" data-review-in-progress="';
+        echo '"><div class="pctbname pctbname', $revtype, ' ui js-assignment-fold">',
+            '<a class="qq taghl ui js-assignment-fold" href="">', expander(null, 0),
+            $Me->name_html_for($pc), '</a>';
+        if ($revtype != 0) {
+            echo ' ', review_type_icon($revtype, $rrow && !$rrow->reviewSubmitted);
+            if ($rrow && $rrow->reviewRound > 0)
+                echo ' <span class="revround" title="Review round">',
+                    htmlspecialchars($Conf->round_name($rrow->reviewRound)),
+                    '</span>';
         }
+        if ($revtype >= 0)
+            echo unparse_preference_span($prow->reviewer_preference($pc, true));
+        echo '</div>'; // .pctbname
+        if ($show_possible_conflicts
+            && $revtype != -2
+            && ($pcconfmatch = $prow->potential_conflict_html($pc, $conflict_type <= 0)))
+            echo $pcconfmatch;
 
         // then, number of reviews
         echo '<div class="pctbnrev">';
@@ -509,8 +524,9 @@ if ($Me->can_administer($prow)) {
                     . hoturl("search", "q=pri:" . urlencode($pc->email))
                     . "\">$numPrimary primary</a>)";
         }
-        echo "</div><hr class=\"c\" /></div></div>\n";
+        echo "</div></div></div>\n"; // .pctbnrev .ctelti .ctelt
     }
+
     echo "</div>\n",
         '<div class="aab aabr aabig">',
         '<div class="aabut">', Ht::submit("update", "Save assignments", ["class" => "btn btn-default"]), '</div>',

@@ -160,6 +160,7 @@ div.papmodex:hover > a, div.leftmenu-item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
+div.js-assignment-fold:hover a.js-assignment-fold,
 a.maillink:hover, a:hover u.x, .ul {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
@@ -1390,6 +1391,25 @@ pre.email {
 .ctelti {
 	padding: 0 6px;
 }
+.has-assignment.foldo {
+	margin-bottom: 0.5rem;
+}
+.assignment-ui-options {
+	-webkit-columns: 8rem 3;
+	-moz-columns: 8rem 3;
+	columns: 8rem 3;
+	-webkit-column-gap: 0.5rem;
+	-moz-column-gap: 0.5rem;
+	column-gap: 0.5rem;
+}
+.assignment-ui-choice {
+	-webkit-column-break-inside: avoid;
+	page-break-inside: avoid;
+	break-inside: avoid;
+}
+input.assignment-ui-radio {
+	margin-left: 0;
+}
 
 /* review type/assignment blocks */
 .rto {
@@ -1473,6 +1493,7 @@ th.rl {
 span.revround {
 	font-size: 69%;
 	font-style: italic;
+	font-weight: normal;
 	/* border-bottom: 1px dotted #777777; */
 }
 td.revscore {

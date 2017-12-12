@@ -2334,68 +2334,106 @@ $(document).on("keypress", "input.js-autosubmit", function (event) {
 
 
 // assignment selection
-var assigntable = (function () {
-var active, bubble, blurring = 0;
-function opener() {
-    if (!this.id || this.id.substr(0, 9) !== "folderass")
-        return true;
-
-    var self = this, which = +self.id.substr(9);
-    function change() {
-        $("#ass" + which).className = "pctbname pctbname" + this.value;
-        self.firstChild.className = "rto rt" + this.value;
-        self.firstChild.innerHTML = '<span class="rti">' +
-            (["&minus;", "A", "C", "", "E", "P", "2", "1", "M"])[+this.value + 3] +
-            "</span>";
-        var $h = $("#pcs" + which).val(this.value);
-        form_highlight($h.closest("form"), $h);
-        self.focus();
-        close();
-    }
-    function click() {
-        self.focus();
-        close();
-    }
-    function blur() {
-        close();
-        if (bubble) {
-            blurring = which;
-            setTimeout(function () { blurring = 0; }, 300);
-        }
-    }
-    function close() {
-        setTimeout(function () {
-            if (active == which && bubble) {
-                bubble.remove();
-                bubble = null;
-            }
-        }, 50);
-    }
-
-    if ((active != which || !bubble) && blurring != which) {
-        bubble && bubble.remove();
-        var $sel = $('<select name="pcs' + which + '" size="6">'
-            + '<option value="0">None</option>'
-            + '<option value="4">Primary</option>'
-            + '<option value="3">Secondary</option>'
-            + '<option value="2">Optional</option>'
-            + '<option value="5">Metareview</option>'
-            + '<option value="-1">Conflict</option></select>');
-        $sel.on("click", click).on("change", change).on("blur", blur)
-            .val(+$("#pcs" + which).val());
-        active = which;
-        bubble = make_bubble({content: $sel, dir: "l", color: "tooltip dark"});
-        bubble.near("#folderass" + which);
-    }
-    if (blurring != which)
-        bubble.self().find("select")[0].focus();
-    return false;
+(function ($) {
+function make_radio(name, value, html, revtype) {
+    var rname = "assrev" + name, id = rname + "_" + value,
+        t = '<div class="assignment-ui-choice">'
+        + '<input type="radio" name="' + rname + '" value="' + value + '" id="' + id + '" class="assignment-ui-radio';
+    if (value == revtype)
+        t += ' want-focus" checked';
+    else
+        t += '"';
+    t += ' />&nbsp;<label for="' + id + '">';
+    if (value != 0)
+        t += '<span class="rto rt' + value + '"><span class="rti">' + ["C", "", "E", "P", "2", "1", "M"][value + 1] + '</span></span>&nbsp;';
+    if (value == revtype)
+        t += '<u>' + html + '</u>';
+    else
+        t += html;
+    return t + '</label></div>';
 }
-return function (j) {
-    hiliter_children(j, true);
-    $(j).on("click", "a", opener);
-};
-})();
+function make_round_selector(name, revtype, $a) {
+    var $as = $a.closest(".has-assignment-set"), rounds;
+    try {
+        rounds = JSON.parse($as.attr("data-review-rounds") || "[]");
+    } catch (e) {
+        rounds = [];
+    }
+    var t = "", around;
+    if (rounds.length > 1) {
+        if (revtype > 0)
+            around = $a[0].getAttribute("data-review-round");
+        else
+            around = $as[0].getAttribute("data-default-review-round");
+        around = around || "unnamed";
+        t += '<div class="assignment-ui-round fx2">Round:&nbsp; <select name="rev_round' + name + '" data-default-value="' + around + '">';
+        for (var i = 0; i < rounds.length; ++i) {
+            t += '<option value="' + rounds[i] + '"';
+            if (rounds[i] == around)
+                t += " selected";
+            t += '>' + rounds[i] + '</option>';
+        }
+        t += '</select></div>';
+    }
+    return t;
+}
+function revtype_change(event) {
+    close_unnecessary(event);
+    if (this.checked) {
+        var $a = $(this).closest(".has-assignment-ui");
+        fold($a[0], this.value <= 0, 2);
+    }
+}
+function close_unnecessary(event) {
+    var $a = $(event.target).closest(".has-assignment"),
+        $as = $a.closest(".has-assignment-set"),
+        d = $as.data("lastAssignmentModified");
+    if (d && d !== $a[0] && !form_differs($(d))) {
+        $(d).find(".has-assignment-ui").remove();
+        $(d).addClass("foldc").removeClass("foldo");
+    }
+    $as.data("lastAssignmentModified", $a[0]);
+}
+function setup($a) {
+    var $as = $a.closest(".has-assignment-set");
+    if ($as.hasClass("need-assignment-change")) {
+        $as.on("change", "input.assignment-ui-radio", revtype_change)
+            .removeClass("need-assignment-change");
+    }
+}
+handle_ui.on("js-assignment-fold", function (event) {
+    var $a = $(event.target).closest(".has-assignment"),
+        $x = $a.find(".has-assignment-ui");
+    if ($a.hasClass("foldc")) {
+        setup($a);
+        // close_unnecessary(event);
+        if (!$x.length) {
+            var name = $a.attr("data-pid") + "u" + $a.attr("data-uid"),
+                revtype = +$a.attr("data-review-type"),
+                revinprogress = $a[0].hasAttribute("data-review-in-progress");
+            $x = $('<div class="has-assignment-ui fold2' + (revtype > 0 ? "o" : "c") + '">'
+                + '<div class="assignment-ui-options">'
+                + make_radio(name, 4, "Primary", revtype)
+                + make_radio(name, 3, "Secondary", revtype)
+                + make_radio(name, 2, "Optional", revtype)
+                + make_radio(name, 5, "Metareview", revtype)
+                + (revinprogress ? "" :
+                   make_radio(name, -1, "Conflict", revtype)
+                   + make_radio(name, 0, "None", revtype))
+                + '</div>'
+                + make_round_selector(name, revtype, $a)
+                + '</div>').appendTo($a);
+        }
+        $a.addClass("foldo").removeClass("foldc");
+        focus_within($x[0]);
+    } else if (!form_differs($a)) {
+        $x.remove();
+        form_highlight($a.closest("form")[0]);
+        $a.addClass("foldc").removeClass("foldo");
+    }
+    event.stopPropagation();
+});
+})($);
 
 
 // author entry
@@ -6316,19 +6354,6 @@ handle_ui.on("js-delete-review", function () {
         '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
     hc.show();
 });
-
-function review_round_prepare() {
-    $(this).on("change", function () {
-        var self = this;
-        $.post(hoturl_post("api/reviewround", {
-            p: $(self).data("pid") || hotcrp_paperid,
-            r: $(self).data("reviewid")
-        }), {round: $(self).val()}, function (rv) {
-            setajaxcheck(self, rv);
-        });
-    });
-}
-
 
 
 // search/paperlist UI

@@ -4,6 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class ReviewInfo {
+    public $conf;
     public $paperId;
     public $reviewId;
     public $contactId;
@@ -55,6 +56,7 @@ class ReviewInfo {
     const MIN_SFIELD = 12;
 
     private function merge(Conf $conf) {
+        $this->conf = $conf;
         foreach (["paperId", "reviewId", "contactId", "reviewType",
                   "reviewRound", "requestedBy", "reviewBlind",
                   "reviewOrdinal", "reviewNeedsSubmit"] as $k) {
@@ -100,6 +102,10 @@ class ReviewInfo {
             = explode(" ", $signature);
         $rrow->merge($prow->conf);
         return $rrow;
+    }
+
+    function round_name() {
+        return $this->reviewRound ? $this->conf->round_name($this->reviewRound) : "";
     }
 
     function assign_name($c) {

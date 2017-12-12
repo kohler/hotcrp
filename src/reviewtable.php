@@ -12,24 +12,7 @@ function _review_table_actas($rr) {
         . "</a>";
 }
 
-function _review_table_round_selector(PaperInfo $prow, $rr) {
-    $sel = $prow->conf->round_selector_options($rr->reviewRound);
-    if (count($sel) <= 1) {
-        if (get($sel, "unnamed") || count($sel) == 0)
-            return "";
-        reset($sel);
-        return '&nbsp;<span class="revround" title="Review round">'
-            . htmlspecialchars($prow->conf->round_name($rr->reviewRound))
-            . "</span>";
-    }
-    return '&nbsp;'
-        . '<form class="submit-ui"><div class="inline">'
-        . Ht::select("round", $sel, $prow->conf->round_name($rr->reviewRound) ? : "unnamed",
-                     ["title" => "Set review round", "data-reviewid" => $rr->reviewId, "class" => "need-js-review-round"])
-        . '</div></form>';
-}
-
-function _retract_review_request_form(PaperInfo $prow, $rr) {
+function _retract_review_request_form(PaperInfo $prow, ReviewInfo $rr) {
     return '<small>'
         . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
         . '<div class="inline">'
@@ -120,9 +103,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
             $rtype = "";
         else if ($rr->reviewType > 0) {
             $rtype = review_type_icon($rr->reviewType, $rr->reviewNeedsSubmit != 0);
-            if ($admin && $mode === "assign")
-                $rtype .= _review_table_round_selector($prow, $rr);
-            else if ($rr->reviewRound > 0 && $Me->can_view_review_round($prow, $rr))
+            if ($rr->reviewRound > 0 && $Me->can_view_review_round($prow, $rr))
                 $rtype .= '&nbsp;<span class="revround" title="Review round">'
                     . htmlspecialchars($conf->round_name($rr->reviewRound))
                     . "</span>";
@@ -290,8 +271,6 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 $t .= '<td colspan="' . $nscores . '"></td>';
             $t .= "</tr>\n";
         }
-        if ($admin && $mode === "assign")
-            Ht::stash_script('$(".need-js-review-round").each(review_round_prepare).removeClass("need-js-review-round")');
         return $t . "</table></div>\n" . $notetxt;
     } else
         return $notetxt;
