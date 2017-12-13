@@ -6,14 +6,17 @@ class CsvParser {
     private $lines;
     private $lpos = 0;
     private $type;
+    private $typefn;
     private $header = false;
     private $comment_chars = false;
     private $comment_function = null;
 
-    const TYPE_GUESS = -1;
-    const TYPE_COMMA = 0;
-    const TYPE_PIPE = 1;
-    const TYPE_TAB = 2;
+    const TYPE_COMMA = 1;
+    const TYPE_PIPE = 2;
+    const TYPE_BAR = 2;
+    const TYPE_TAB = 4;
+    const TYPE_DOUBLEBAR = 8;
+    const TYPE_GUESS = 7;
 
     static public function split_lines($str) {
         $b = array();
@@ -25,7 +28,21 @@ class CsvParser {
 
     function __construct($str, $type = self::TYPE_COMMA) {
         $this->lines = is_array($str) ? $str : self::split_lines($str);
+        $this->set_type($type);
+    }
+
+    private function set_type($type) {
         $this->type = $type;
+        if ($this->type === self::TYPE_COMMA)
+            $this->typefn = "parse_comma";
+        else if ($this->type === self::TYPE_BAR)
+            $this->typefn = "parse_bar";
+        else if ($this->type === self::TYPE_TAB)
+            $this->typefn = "parse_tab";
+        else if ($this->type === self::TYPE_DOUBLEBAR)
+            $this->typefn = "parse_doublebar";
+        else
+            $this->typefn = "parse_guess";
     }
 
     function set_comment_chars($s) {
@@ -89,23 +106,33 @@ class CsvParser {
             return null;
         }
         // split on type
-        if ($this->type == self::TYPE_GUESS) {
+        $fn = $this->typefn;
+        return $this->$fn($line, $this->header);
+    }
+
+    private function parse_guess($line, $header) {
+        $pipe = $tab = $comma = $doublepipe = -1;
+        if ($this->type & self::TYPE_BAR)
             $pipe = substr_count($line, "|");
+        if ($this->type & self::TYPE_DOUBLEBAR)
+            $doublepipe = substr_count($line, "||");
+        if ($doublepipe > 0 && $pipe > 0 && $doublepipe * 2.1 > $pipe)
+            $pipe = -1;
+        if ($this->type & self::TYPE_TAB)
             $tab = substr_count($line, "\t");
+        if ($this->type & self::TYPE_COMMA)
             $comma = substr_count($line, ",");
-            if ($tab > $pipe && $tab > $comma)
-                $this->type = self::TYPE_TAB;
-            else if ($pipe > $comma)
-                $this->type = self::TYPE_PIPE;
-            else
-                $this->type = self::TYPE_COMMA;
-        }
-        if ($this->type == self::TYPE_PIPE)
-            return self::parse_pipe($line, $this->header);
-        else if ($this->type == self::TYPE_TAB)
-            return self::parse_tab($line, $this->header);
+        if ($tab > $pipe && $tab > $doublepipe && $tab > $comma)
+            $this->set_type(self::TYPE_TAB);
+        else if ($doublepipe > $pipe && $doublepipe > $comma)
+            $this->set_type(self::TYPE_DOUBLEBAR);
+        else if ($pipe > $comma)
+            $this->set_type(self::TYPE_PIPE);
         else
-            return $this->parse_comma($line, $this->header);
+            $this->set_type(self::TYPE_COMMA);
+        $fn = $this->typefn;
+        assert($fn !== "parse_guess");
+        return $this->$fn($line, $header);
     }
 
     function parse_comma($line, $header) {
@@ -150,7 +177,7 @@ class CsvParser {
         return $a;
     }
 
-    static function parse_pipe($line, $header) {
+    function parse_bar($line, $header) {
         $i = 0;
         $a = array();
         $linelen = self::linelen($line);
@@ -172,7 +199,29 @@ class CsvParser {
         return $a;
     }
 
-    static function parse_tab($line, $header) {
+    function parse_doublebar($line, $header) {
+        $i = 0;
+        $a = array();
+        $linelen = self::linelen($line);
+        $pos = 0;
+        while ($pos != $linelen) {
+            $bpos = $pos;
+            $pos = strpos($line, "||", $pos);
+            if ($pos === false)
+                $pos = $linelen;
+            $field = substr($line, $bpos, $pos - $bpos);
+            if ($header && get_s($header, $i) !== "")
+                $a[$header[$i]] = $field;
+            else
+                $a[$i] = $field;
+            ++$i;
+            if ($pos + 1 <= $linelen && $line[$pos] === "|" && $line[$pos + 1] === "|")
+                $pos += 2;
+        }
+        return $a;
+    }
+
+    function parse_tab($line, $header) {
         $i = 0;
         $a = array();
         $linelen = self::linelen($line);
