@@ -1,6 +1,5 @@
 // settings.js -- HotCRP JavaScript library for settings
-// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 function next_lexicographic_permutation(i, size) {
     var y = (i & -i) || 1, c = i + y, highbit = 1 << size;

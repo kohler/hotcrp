@@ -1,7 +1,6 @@
 <?php
 // intlmsg.php -- HotCRP helper functions for message i18n
-// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class IntlMsg {
     public $context;

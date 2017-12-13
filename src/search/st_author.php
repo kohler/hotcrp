@@ -1,7 +1,6 @@
 <?php
 // search/st_author.php -- HotCRP helper class for searching for papers
-// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class Author_SearchTerm extends SearchTerm {
     private $csm;

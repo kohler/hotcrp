@@ -1,7 +1,6 @@
 <?php
 // paperstatus.php -- HotCRP helper for reading/storing papers as JSON
-// HotCRP is Copyright (c) 2008-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2008-2017 Eddie Kohler; see LICENSE.
 
 class PaperStatus extends MessageSet {
     private $conf;

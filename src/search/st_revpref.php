@@ -1,7 +1,6 @@
 <?php
 // search/st_revpref.php -- HotCRP helper class for searching for papers
-// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class RevprefSearchMatcher extends ContactCountMatcher {
     public $preference_match = null;

@@ -1,7 +1,6 @@
 <?php
 // xlsx.php -- HotCRP XLSX generator functions
-// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and others
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class XlsxGenerator {
 

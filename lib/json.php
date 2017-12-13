@@ -1,7 +1,6 @@
 <?php
 // json.php -- HotCRP JSON function replacements (if PHP JSON not available)
-// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 foreach (["JSON_ERROR_NONE" => 0, "JSON_ERROR_DEPTH" => 1,
           "JSON_ERROR_STATE_MISMATCH" => 2, "JSON_ERROR_CTRL_CHAR" => 3,

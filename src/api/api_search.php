@@ -1,7 +1,6 @@
 <?php
 // api_search.php -- HotCRP search-related API calls
-// HotCRP is Copyright (c) 2008-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2008-2017 Eddie Kohler; see LICENSE.
 
 class Search_API {
     static function search(Contact $user, Qrequest $qreq) {

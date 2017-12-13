@@ -1,7 +1,6 @@
 <?php
 // formula.php -- HotCRP helper class for paper expressions
-// HotCRP is Copyright (c) 2009-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2009-2017 Eddie Kohler; see LICENSE.
 
 class FormulaCall {
     public $name;

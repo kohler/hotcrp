@@ -1,7 +1,6 @@
 <?php
 // api_error.php -- HotCRP error reporting API calls
-// HotCRP is Copyright (c) 2008-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2008-2017 Eddie Kohler; see LICENSE.
 
 class Error_API {
     static function jserror(Contact $user, Qrequest $qreq) {

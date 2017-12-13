@@ -1,7 +1,6 @@
 <?php
 // initweb.php -- HotCRP initialization for web scripts
-// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 require_once("init.php");
 global $Conf, $Me, $Opt;

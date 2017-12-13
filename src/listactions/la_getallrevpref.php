@@ -1,7 +1,6 @@
 <?php
 // listactions/la_getallrevpref.php -- HotCRP helper classes for list actions
-// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class GetAllRevpref_ListAction extends ListAction {
     function allow(Contact $user) {

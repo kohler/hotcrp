@@ -1,6 +1,5 @@
 // graph.js -- HotCRP JavaScript library for graph drawing
-// HotCRP is Copyright (c) 2006-2017 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
+// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 var hotcrp_graphs = (function ($, d3) {
 var BOTTOM_MARGIN = 30;
