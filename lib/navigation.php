@@ -267,7 +267,7 @@ class Navigation {
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
 <title>Redirection</title>
-<script>location=\"$url\";</script></head>
+<script>location=", json_encode($url), ";</script></head>
 <body>
 <p>You should be redirected <a href=\"", htmlspecialchars($url), "\">to here</a>.</p>
 </body></html>\n";
