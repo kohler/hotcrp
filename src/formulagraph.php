@@ -396,7 +396,7 @@ class FormulaGraph {
                 array_pop($d);
                 $d[3] || array_pop($d);
             }
-            $ndata[] = $d;
+            $newdata[] = $d;
         }
         $this->_data = $newdata;
     }
