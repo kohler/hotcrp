@@ -2839,6 +2839,7 @@ body#offline .revcard {
 	margin-bottom: 0;
 }
 .revtext, .cmttext {
+	white-space: pre-wrap;
 	position: relative;
 }
 .preview {
