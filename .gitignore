@@ -1,8 +1,8 @@
 *~
 docs
-extra/d3/d3.js
-extra/d3/d3-hotcrp.min.js
-extra/d3/node_modules
+devel/d3/d3.js
+devel/d3/d3-hotcrp.min.js
+devel/d3/node_modules
 filestore
 logs
 conf/options.php
