@@ -2680,7 +2680,8 @@ function lookup(format) {
     var r, p;
     if (format && (r = renderers[format]))
         return r;
-    if (format && typeof format === "string"
+    if (format
+        && typeof format === "string"
         && (p = format.indexOf(".")) > 0
         && (r = renderers[format.substring(0, p)]))
         return r;
@@ -2697,7 +2698,7 @@ function do_render(format, is_inline, a) {
             return {
                 format: r.formatClass || r.format,
                 content: f.apply(this, a)
-            }
+            };
         } catch (e) {
             log_jserror("do_render format " + r.format + ": " + e.toString(), e);
         }
