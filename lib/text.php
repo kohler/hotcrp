@@ -469,10 +469,9 @@ class Text {
         $out = "";
         $last = false;
         foreach ($m[0] as $line) {
-            if ($line !== "" && $last && !ctype_space(substr($line, 0, 1)))
-                $out = rtrim($out) . " " . $line;
-            else
-                $out .= $line;
+            if ($last && $line !== "" && !ctype_space($line[0]))
+                $out = rtrim($out) . " ";
+            $out .= $line;
             $last = strlen($line) > 50;
         }
         return $out;
