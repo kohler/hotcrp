@@ -2671,7 +2671,17 @@ return function () {
 // text rendering
 window.render_text = (function () {
 function render0(text) {
-    return link_urls(escape_entities(text));
+    var lines = text.split(/([ \t]*(?:\r\n?|\n)(?:[-+*][ \t])?)/), ch;
+    for (var i = 1; i < lines.length; i += 2) {
+        if (lines[i - 1].length > 49
+            && $.trim(lines[i]) === ""
+            && (ch = lines[i + 1].charAt(0)) !== ""
+            && ch !== " "
+            && ch !== "\t")
+            lines[i] = " ";
+    }
+    text = "<p>" + link_urls(escape_entities(lines.join(""))) + "</p>";
+    return text.replace(/(?:\r\n?)(?:\r\n?)+|\n\n+/g, "</p><p>");
 }
 
 var default_format = 0, renderers = {"0": {format: 0, render: render0}};

@@ -465,16 +465,17 @@ class Text {
     }
 
     static function single_line_paragraphs($text) {
-        preg_match_all('/.*?(?:\r\n?|\n|\z)/', $text, $m);
-        $out = "";
-        $last = false;
-        foreach ($m[0] as $line) {
-            if ($last && $line !== "" && !ctype_space($line[0]))
-                $out = rtrim($out) . " ";
-            $out .= $line;
-            $last = strlen($line) > 50;
+        $lines = preg_split('/([ \t]*(?:\r\n?|\n)(?:[-+*][ \t])?)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $n = count($lines);
+        for ($i = 1; $i < $n; $i += 2) {
+            if (strlen($lines[$i - 1]) > 49
+                && ctype_space($lines[$i])
+                && $lines[$i + 1] !== ""
+                && $lines[$i + 1][0] !== " "
+                && $lines[$i + 1][0] !== "\t")
+                $lines[$i] = " ";
         }
-        return $out;
+        return join("", $lines);
     }
 
     static function html_to_text($x) {
