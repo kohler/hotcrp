@@ -2832,14 +2832,20 @@ body#offline .revcard {
 	word-wrap: break-word;
 	overflow-wrap: break-word;
 }
-.pavb > p:first-child {
+.pavb > p:first-child, .format0 > p:first-child {
 	margin-top: 0;
 }
-.pavb > p:last-child {
+.pavb > p:last-child, .format0 > p:last-child {
 	margin-bottom: 0;
 }
 .revtext, .cmttext {
 	position: relative;
+}
+.format0 {
+	white-space: pre-wrap;
+}
+.revtext.format0, .cmttext.format0, .revtext .format0, .cmttext .format0 {
+	max-width: 640px;
 }
 .preview {
 	margin-bottom: 24px;

@@ -379,7 +379,7 @@ class Ht {
 
     static function format0($html_text) {
         $html_text = self::link_urls(Text::single_line_paragraphs($html_text));
-        return preg_replace('/(?:\r\n?){2,}|\n{2,}/', "</p>\n<p>", "<p>$html_text</p>");
+        return preg_replace('/(?:\r\n?){2,}|\n{2,}/', "</p><p>", "<p>$html_text</p>");
     }
 
     static function check_stash($uniqueid) {
