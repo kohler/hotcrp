@@ -2669,9 +2669,9 @@ return function () {
 
 
 // text rendering
-window.render_text = (function () {
+window.render_text = (function ($) {
 function render0(text) {
-    var lines = text.split(/([ \t]*(?:\r\n?|\n)(?:[-+*][ \t])?)/), ch;
+    var lines = text.split(/((?:\r\n?|\n)(?:[-+*][ \t])?)/), ch;
     for (var i = 1; i < lines.length; i += 2) {
         if (lines[i - 1].length > 49
             && $.trim(lines[i]) === ""
@@ -2681,7 +2681,7 @@ function render0(text) {
             lines[i] = " ";
     }
     text = "<p>" + link_urls(escape_entities(lines.join(""))) + "</p>";
-    return text.replace(/(?:\r\n?)(?:\r\n?)+|\n\n+/g, "</p><p>");
+    return text.replace(/\r\n?(?:\r\n?)+|\n\n+/g, "</p><p>");
 }
 
 var default_format = 0, renderers = {"0": {format: 0, render: render0}};
@@ -2730,8 +2730,8 @@ function render_inline(format, text /* arguments... */) {
 }
 
 function on() {
-    var $j = $(this), format = this.getAttribute("data-format"),
-        content = this.getAttribute("data-content") || $j.text(), args = null, f, i;
+    var $self = $(this), format = this.getAttribute("data-format"),
+        content = this.getAttribute("data-content") || $self.text(), args = null, f, i;
     if ((i = format.indexOf(".")) > 0) {
         var a = format.split(/\./);
         format = a[0];
@@ -2743,12 +2743,9 @@ function on() {
         f = render_text.call(this, format, content, args);
     else
         f = render_inline.call(this, format, content, args);
-    if (f.format)
-        $j.html(f.content);
     var s = $.trim(this.className.replace(/(?:^| )(?:need-format|format\d+)(?= |$)/g, " "));
     this.className = s + (s ? " format" : "format") + (f.format || 0);
-    if (f.format)
-        $j.trigger("renderText", f);
+    $self.html(f.content).trigger("renderText", f);
 }
 
 $.extend(render_text, {
@@ -2766,7 +2763,7 @@ $.extend(render_text, {
     on_page: function () { $(".need-format").each(on); }
 });
 return render_text;
-})();
+})($);
 
 
 // abstract
