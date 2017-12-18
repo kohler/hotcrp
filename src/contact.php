@@ -1259,7 +1259,7 @@ class Contact {
             }
             return $acct;
         } else {
-            $conf->log_for($Me, null, "Account $email creation failure", $Me);
+            $conf->log_for($Me, $Me, "Account $email creation failure");
             return null;
         }
     }
