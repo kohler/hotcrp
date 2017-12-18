@@ -1998,4 +1998,36 @@ class PaperInfo {
 
         $this->replace_contact_info_map($cimap);
     }
+
+    function delete_from_database(Contact $user = null) {
+        // XXX email self?
+        if ($this->paperId <= 0)
+            return false;
+        $rrows = $this->reviews_by_id();
+
+        $qs = [];
+        foreach (["PaperWatch", "PaperReviewPreference", "PaperReviewRefused", "ReviewRequest", "PaperTag", "PaperComment", "PaperReview", "PaperTopic", "PaperOption", "PaperConflict", "Paper", "PaperStorage", "Capability"] as $table) {
+            $qs[] = "delete from $table where paperId={$this->paperId}";
+        }
+        $mresult = Dbl::multi_qe($this->conf->dblink, join(";", $qs));
+        $mresult->free_all();
+
+        if (!Dbl::$nerrors) {
+            $this->conf->update_papersub_setting(-1);
+            if ($this->outcome > 0)
+                $this->conf->update_paperacc_setting(-1);
+            if ($this->leadContactId > 0 || $this->shepherdContactId > 0)
+                $this->conf->update_paperlead_setting(-1);
+            if ($this->managerContactId > 0)
+                $this->conf->update_papermanager_setting(-1);
+            if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewToken > 0; }))
+                $this->conf->update_rev_tokens_setting(-1);
+            if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewType == REVIEW_META; }))
+                $this->conf->update_metareviews_setting(-1);
+            $this->conf->log_for($user, $user, "Deleted", $this->paperId);
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
