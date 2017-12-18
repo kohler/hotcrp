@@ -469,7 +469,7 @@ class Text {
         $n = count($lines);
         for ($i = 1; $i < $n; $i += 2) {
             if (strlen($lines[$i - 1]) > 49
-                && ctype_space($lines[$i])
+                && strlen($lines[$i]) <= 2
                 && $lines[$i + 1] !== ""
                 && $lines[$i + 1][0] !== " "
                 && $lines[$i + 1][0] !== "\t")

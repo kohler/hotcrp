@@ -2674,7 +2674,7 @@ function render0(text) {
     var lines = text.split(/((?:\r\n?|\n)(?:[-+*][ \t])?)/), ch;
     for (var i = 1; i < lines.length; i += 2) {
         if (lines[i - 1].length > 49
-            && $.trim(lines[i]) === ""
+            && lines[i].length <= 2
             && (ch = lines[i + 1].charAt(0)) !== ""
             && ch !== " "
             && ch !== "\t")
