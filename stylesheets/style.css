@@ -604,6 +604,7 @@ span.hastitle {
 	-webkit-column-gap: 18px;
 	-moz-column-gap: 18px;
 	column-gap: 18px;
+	margin-bottom: -0.2em;
 }
 .topict.topict-medium {
 	-webkit-columns: 15rem 4;
