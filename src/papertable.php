@@ -936,7 +936,10 @@ class PaperTable {
             $t = '<li class="topictp';
             if (($i = get($interests, $tid)))
                 $t .= ' topic' . $i;
-            $ts[] = $t . '">' . htmlspecialchars($tname) . '</li>';
+            $x = htmlspecialchars($tname);
+            if ($this->user->isPC && strpos($tname, "\"") === false)
+                $x = Ht::link($x, hoturl("search", ["q" => "topic:\"$tname\""]), ["class" => "qq"]);
+            $ts[] = $t . '">' . $x . '</li>';
             if ($k < 2 && strlen($tname) > 50 && UnicodeHelper::utf8_glyphlen($tname) > 50)
                 $k = 2;
             else if ($k < 1 && strlen($tname) > 20 && UnicodeHelper::utf8_glyphlen($tname) > 20)
