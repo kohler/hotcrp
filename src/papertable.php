@@ -926,8 +926,28 @@ class PaperTable {
         return $ts;
     }
 
+    private function paptab_topics() {
+        if (!($tmap = $this->prow->named_topic_map()))
+            return "";
+        $interests = $this->user->topic_interest_map();
+        $k = 0;
+        $ts = [];
+        foreach ($tmap as $tid => $tname) {
+            $t = '<p class="topictp';
+            if (($i = get($interests, $tid)))
+                $t .= ' topic' . $i;
+            $ts[] = $t . '">' . htmlspecialchars($tname) . '</p>';
+            if ($k < 2 && strlen($tname) > 50 && UnicodeHelper::utf8_glyphlen($tname) > 50)
+                $k = 2;
+            else if ($k < 1 && strlen($tname) > 20 && UnicodeHelper::utf8_glyphlen($tname) > 20)
+                $k = 1;
+        }
+        $k = get(["short", "medium", "long"], $k);
+        return '<div class="topict topict-' . $k . '">' . join("", $ts) . '</div>';
+    }
+
     private function paptabTopicsOptions() {
-        $topicdata = $this->prow->unparse_topics_html(false, $this->user);
+        $topicdata = $this->paptab_topics();
         $optt = $optp = [];
         $optp_nfold = $optt_ndoc = $optt_nfold = 0;
         $force = $this->get_option_force();

@@ -26,7 +26,24 @@ class Topics_PaperColumn extends PaperColumn {
         return !isset($row->topicIds) || $row->topicIds == "";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $row->unparse_topics_html(true, $this->interest_contact);
+        if (!($tmap = $row->named_topic_map()))
+            return "";
+        $out = $interests = [];
+        if ($this->interest_contact)
+            $interests = $this->interest_contact->topic_interest_map();
+        $sep = rtrim($row->conf->topic_separator()) . '</span> ';
+        foreach ($tmap as $tid => $tname) {
+            if (!empty($out))
+                $out[] = $sep;
+            $t = '<span class="topicsp';
+            if (($i = get($interests, $tid)))
+                $t .= ' topic' . $i;
+            if (strlen($tname) <= 50)
+                $t .= ' nw';
+            $out[] = $t . '">' . htmlspecialchars($tname);
+        }
+        $out[] = '</span>';
+        return join("", $out);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $row->unparse_topics_text();

@@ -235,12 +235,12 @@ if ($reviewer) {
     if (!empty($interest[1]) && $qreq->kind !== "c")
         echo '<div class="f-i"><div class="f-c">High interest topics</div>',
             '<div class="f-e">',
-            PaperInfo::unparse_topic_list_html($Conf, $interest[1], true),
+            PaperInfo::unparse_topic_list_html($Conf, $interest[1]),
             "</div></div>";
     if (!empty($interest[0]) && $qreq->kind !== "c")
         echo '<div class="f-i"><div class="f-c">Low interest topics</div>',
             '<div class="f-e">',
-            PaperInfo::unparse_topic_list_html($Conf, $interest[0], true),
+            PaperInfo::unparse_topic_list_html($Conf, $interest[0]),
             "</div></div>";
 
     // Conflict information

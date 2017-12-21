@@ -1061,10 +1061,7 @@ class PaperInfo {
     }
 
     function topic_map() {
-        $t = [];
-        foreach ($this->topic_list() as $tid)
-            $t[$tid] = true;
-        return $t;
+        return array_fill_keys($this->topic_list(), true);
     }
 
     function named_topic_map() {
@@ -1090,28 +1087,7 @@ class PaperInfo {
         return $s . '">' . htmlspecialchars($tname) . '</span>';
     }
 
-    private static function render_topic_list(Conf $conf, $out, $comma, $long) {
-        if ($comma)
-            return join($conf->topic_separator(), $out);
-        else if ($long)
-            return '<p class="od">' . join('</p><p class="od">', $out) . '</p>';
-        else
-            return '<p class="topicp">' . join(' ', $out) . '</p>';
-    }
-
-    function unparse_topics_html($comma, Contact $interests_user = null) {
-        if (!($tmap = $this->named_topic_map()))
-            return "";
-        $out = $interests = [];
-        if ($interests_user)
-            $interests = $interests_user->topic_interest_map();
-        $long = false;
-        foreach ($tmap as $tid => $tname)
-            $out[] = self::render_topic($tname, get($interests, $tid), $long);
-        return self::render_topic_list($this->conf, $out, $comma, $long);
-    }
-
-    static function unparse_topic_list_html(Conf $conf, $ti, $comma) {
+    static function unparse_topic_list_html(Conf $conf, $ti) {
         if (!$ti)
             return "";
         $out = array();
@@ -1121,7 +1097,7 @@ class PaperInfo {
         foreach ($ti as $t => $i)
             $out[$tomap[$t]] = self::render_topic($tmap[$t], $i, $long);
         ksort($out);
-        return self::render_topic_list($conf, $out, $comma, $long);
+        return join($conf->topic_separator(), $out);
     }
 
     private static $topic_interest_values = [-0.7071, -0.5, 0, 0.7071, 1];

@@ -312,7 +312,7 @@ class ContactList {
                 $nt = array_filter($topics, function ($i) { return $i > 0; });
             else
                 $nt = array_filter($topics, function ($i) { return $i < 0; });
-            return PaperInfo::unparse_topic_list_html($this->conf, $nt, true);
+            return PaperInfo::unparse_topic_list_html($this->conf, $nt);
         case self::FIELD_REVIEWS:
             if (!$row->numReviews && !$row->numReviewsSubmitted)
                 return "";
