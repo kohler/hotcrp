@@ -598,13 +598,16 @@ span.hastitle {
 	margin-right: 1em;
 }
 .topict {
+	display: block;
+	padding-left: 0;
+	list-style: none;
 	-webkit-columns: 10rem 4;
 	-moz-columns: 10rem 4;
 	columns: 10rem 4;
 	-webkit-column-gap: 18px;
 	-moz-column-gap: 18px;
 	column-gap: 18px;
-	margin-bottom: -0.2em;
+	margin: 0 0 -0.2em;
 }
 .topict.topict-medium {
 	-webkit-columns: 15rem 4;

@@ -933,17 +933,17 @@ class PaperTable {
         $k = 0;
         $ts = [];
         foreach ($tmap as $tid => $tname) {
-            $t = '<p class="topictp';
+            $t = '<li class="topictp';
             if (($i = get($interests, $tid)))
                 $t .= ' topic' . $i;
-            $ts[] = $t . '">' . htmlspecialchars($tname) . '</p>';
+            $ts[] = $t . '">' . htmlspecialchars($tname) . '</li>';
             if ($k < 2 && strlen($tname) > 50 && UnicodeHelper::utf8_glyphlen($tname) > 50)
                 $k = 2;
             else if ($k < 1 && strlen($tname) > 20 && UnicodeHelper::utf8_glyphlen($tname) > 20)
                 $k = 1;
         }
         $k = get(["short", "medium", "long"], $k);
-        return '<div class="topict topict-' . $k . '">' . join("", $ts) . '</div>';
+        return '<ul class="topict topict-' . $k . '">' . join("", $ts) . '</ul>';
     }
 
     private function paptabTopicsOptions() {
