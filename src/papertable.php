@@ -725,7 +725,7 @@ class PaperTable {
                 if ($au->email !== "") {
                     $e = Text::highlight($au->email, $highpreg, $nm2);
                     $e = '&lt;<a href="mailto:' . htmlspecialchars($au->email)
-                        . '">' . $e . '</a>&gt;';
+                        . '" class="mailto">' . $e . '</a>&gt;';
                 }
                 $t = ($n === "" ? $e : $n);
                 if ($au->affiliation !== "")

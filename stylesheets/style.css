@@ -139,18 +139,27 @@ td.quicklinks, #trackerconnect {
 
 
 /* generic horizontal styles */
+a, a.nv, a.ui {
+	color: #0066c0;
+}
+:visited {
+	color: #7711c0;
+}
+a:hover, a.nv:hover, a.ui:hover {
+	color: #c45500;
+}
 a.q, a.u, a.qx {
 	color: black;
 }
-a.qq, a.uu, a.nn, a.maillink, a.btn {
+a.qq, a.uu, a.nn, a.mailto, a.btn {
 	color: inherit;
 }
-a.q:active, a.qq:active, a.u:active, a.uu:active, a.nn:active, a.maillink:active {
+a.q:active, a.qq:active, a.u:active, a.uu:active, a.nn:active, a.mailto:active {
 	color: red;
 }
 a.q, a.qq, a.qx, a.x, a.xx, a.nn, a.btn,
 div.papmodex > a, div.papmodex:hover > a.noul, div.leftmenu-item > a,
-a.pnum, a.ptitle, a.maillink, u.x, .noul {
+a.pnum, a.ptitle, a.mailto, u.x, .noul {
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 }
@@ -160,7 +169,7 @@ tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
 div.js-assignment-fold:hover a.js-assignment-fold,
-a.maillink:hover, a:hover u.x, .ul {
+a.mailto:hover, a:hover u.x, .ul {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
@@ -707,7 +716,7 @@ span.expander {
 	color: #aaaaaa;
 }
 
-.tbtn, .tbtn-on {
+a.tbtn, a.tbtn-on {
 	border-radius: 5px;
 	display: inline-block;
 	padding: 2px 4px;
@@ -721,7 +730,7 @@ span.expander {
 .tbtn-on {
 	background: #cc4444;
 }
-.closebtn {
+a.closebtn {
 	display: inline-block;
 	padding: 2px 4px;
 	-webkit-text-decoration-line: none;
@@ -2102,14 +2111,12 @@ tr.plx {
 	background: #333333;
 	color: white;
 	font-weight: 500;
+	-webkit-text-decoration-line: none;
+	text-decoration-line: none;
 }
 h1 .badge {
 	font-size: 51%;
 	bottom: 2px;
-}
-a.qq:hover > .badge {
-	-webkit-text-decoration-line: underline;
-	text-decoration-line: underline;
 }
 .whitebadge {
 	background: white;
@@ -2143,6 +2150,19 @@ a.qq:hover > .badge {
 .pinkbadge {
 	background: #ffc3c8;
 	color: #222222;
+}
+a.badge:hover {
+	color: #ffa25b;
+}
+a.whitebadge:hover {
+	color: #c45500;
+	border: 1px solid #c45500;
+}
+a.orangebadge:hover, a.yellowbadge:hover, a.pinkbadge:hover {
+	color: #c45500;
+}
+a.badge:active {
+	color: red;
 }
 
 .graytext {

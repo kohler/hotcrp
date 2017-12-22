@@ -286,7 +286,7 @@ class ContactList {
             if (strpos($row->email, "@") === false)
                 return $e;
             else
-                return "<a href=\"mailto:$e\">$e</a>";
+                return "<a href=\"mailto:$e\" class=\"mailto\">$e</a>";
         case self::FIELD_AFFILIATION:
         case self::FIELD_AFFILIATION_ROW:
             return htmlspecialchars($row->affiliation);

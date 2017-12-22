@@ -798,15 +798,14 @@ class Tagger {
             && preg_match_all($dt->badge_regex(), $tags, $m, PREG_SET_ORDER))
             foreach ($m as $mx)
                 if (($t = $dt->check($mx[1])) && $t->badges) {
+                    $klass = ' class="badge ' . $t->badges[0] . 'badge"';
                     $tag = $this->unparse(trim($mx[0]));
                     if (($link = $this->link($tag))) {
-                        if (($hash = strpos($tag, "#")) !== false)
-                            $b = '<a class="nn" href="' . $link . '"><u class="x">#' . substr($tag, 0, $hash) . '</u>' . substr($tag, $hash) . '</a>';
-                        else
-                            $b = '<a class="qq" href="' . $link . '">#' . $tag . '</a>';
-                    } else
-                        $b = "#$tag";
-                    $x .= ' <span class="badge ' . $t->badges[0] . 'badge">' . $b . '</span>';
+                        $b = '<a href="' . $link . '"' . $klass . '>#' . $tag . '</a>';
+                    } else {
+                        $b = '<span' . $klass . '>#' . $tag . '</span>';
+                    }
+                    $x .= ' ' . $b;
                 }
         return $x === "" ? "" : '<span class="tagdecoration">' . $x . '</span>';
     }
