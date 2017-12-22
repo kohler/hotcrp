@@ -832,7 +832,7 @@ function render_xmsg(status, msg) {
 var handle_ui = (function ($) {
 var callbacks = {};
 function handle_ui(event) {
-    if (hasClass(event.target, "ui")) {
+    if (event.target && hasClass(event.target, "ui")) {
         event.preventDefault();
     }
     var k = classList(this);
@@ -2772,7 +2772,8 @@ $(function () {
         var want_hidden = $("#foldpaper").hasClass("fold6c");
         if (want_hidden) {
             var $ab = $(".abstract");
-            want_hidden = $ab.height() <= $ab.closest(".paperinfo-abstract").height() - $ab.position().top;
+            if ($ab.length && $ab.height() > $ab.closest(".paperinfo-abstract").height() - $ab.position().top)
+                want_hidden = false;
         }
         $("#foldpaper").toggleClass("fold7c", want_hidden);
     }
