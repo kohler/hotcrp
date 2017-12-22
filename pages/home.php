@@ -202,41 +202,25 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         '</div>
   <div class="f-e', $email_class, '">',
         Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
-                  ["size" => 36, "tabindex" => 1, "id" => "signin_email"]),
+                  ["size" => 36, "tabindex" => 1, "id" => "signin_email", "class" => "wide-control"]),
         '</div>
 </div>
 <div class="f-i fx">
-  <div class="f-c', $password_class, '">Password</div>
-  <div class="f-e">',
+  <div class="f-c', $password_class, '">';
+    if (!$Conf->opt("ldapLogin"))
+        echo '<div class="f-cxr"><a href="" class="x ui js-forgot-password">Forgot your password?</a></div>';
+    echo 'Password</div><div class="f-e">',
         Ht::password("password", "",
-                     array("size" => 36, "tabindex" => 1, "id" => "signin_password")),
+                     array("size" => 36, "tabindex" => 1, "id" => "signin_password", "class" => "wide-control")),
         "</div>\n</div>\n";
     if ($password_reset)
         echo Ht::unstash_script("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode_browser($password_reset->password) . ")})");
     if ($Conf->opt("ldapLogin"))
         echo Ht::hidden("action", "login");
-    else {
-        echo "<div class='f-i'>\n  ",
-            Ht::radio("action", "login", true, array("tabindex" => 2, "id" => "signin_action_login")),
-            "&nbsp;", Ht::label("<b>Sign me in</b>"), "<br />\n";
-        echo Ht::radio("action", "forgot", false, array("tabindex" => 2)),
-            "&nbsp;", Ht::label("I forgot my password"), "<br />\n";
-        echo Ht::radio("action", "new", false, array("tabindex" => 2)),
-            "&nbsp;", Ht::label("I’m a new user and want to create an account");
-        echo "\n</div>\n";
-        Ht::stash_script("function login_type() {
-    var act = jQuery(\"#homeacct input[name=action]:checked\")[0] || jQuery(\"#signin_action_login\")[0];
-    fold(\"homeacct\", act.value != \"login\");
-    var felt = act.value != \"login\" || !jQuery(\"#signin_email\").val().length;
-    jQuery(\"#signin_\" + (felt ? \"email\" : \"password\"))[0].focus();
-    jQuery(\"#signin_signin\")[0].value = {\"login\":\"Sign in\",\"forgot\":\"Reset password\",\"new\":\"Create account\"}[act.value];
-}
-jQuery(\"#homeacct input[name='action']\").on('click',login_type);jQuery(login_type)");
-    }
-    echo "<div class='f-i'>",
-        Ht::submit("signin", "Sign in", array("tabindex" => 1, "id" => "signin_signin")),
-        "</div></div></form>
-<hr class='home' /></div>\n";
+    echo '<div class="popup-actions">',
+        Ht::submit("signin", "Sign in", ["tabindex" => 1, "id" => "signin_signin", "class" => "btn btn-default"]),
+        '</div><p class="hint">New to the site? <a href="" class="ui js-create-account">Create an account</a></p></div></form></div>
+<hr class="home" />';
     Ht::stash_script("focus_within(\$(\"#login\"));window.scroll(0,0)");
 }
 

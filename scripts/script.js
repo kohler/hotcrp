@@ -5130,8 +5130,12 @@ function popup_skeleton(options) {
             $d.find("button[name=cancel]").on("click", function () {
                 popup_close($d);
             });
-            if (options.action)
+            if (options.action) {
                 $d.find("form").attr({action: options.action, method: options.method || "post"});
+            }
+            if (options.maxWidth) {
+                $d.children().css("maxWidth", options.maxWidth);
+            }
         }
         if (visible !== false) {
             popup_near($d, options.anchor || window);
@@ -5156,6 +5160,9 @@ function popup_near(elt, anchor) {
     var wg = $(window).geometry();
     var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
     var y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
+    if (anchor === window) {
+        y = Math.min((3 * anchorPos.top + anchorPos.bottom) / 4, y);
+    }
     x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) - parent_offset.left;
     y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - parent_offset.top;
     elt.style.left = x + "px";
@@ -5881,6 +5888,30 @@ function transfer_form_values($dst, $src, names) {
         }
     }
 }
+
+
+// login UI
+handle_ui.on("js-forgot-password", function (event) {
+    var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "forgot"}), maxWidth: "25rem"});
+    hc.push('<p>Enter your email and we’ll send you instructions.</p>');
+    hc.push('<p><div class="f-c">Email</div><div class="f-e">', '</div></p>');
+    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" />');
+    hc.push_actions(['<button type="submit" class="btn btn-default" tabindex="1000">Reset password</button>',
+        '<button type="button" name="cancel" class="btn" tabindex="1001">Cancel</button>']);
+    var $d = hc.show();
+    transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);
+});
+
+handle_ui.on("js-create-account", function (event) {
+    var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "new"}), maxWidth: "25rem"});
+    hc.push('<h2>Create account</h2>');
+    hc.push('<p><div class="f-c">Email</div><div class="f-e">', '</div></p>');
+    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" />');
+    hc.push_actions(['<button type="submit" class="btn btn-default" tabindex="1000">Create account</button>',
+        '<button type="button" name="cancel" class="btn" tabindex="1001">Cancel</button>']);
+    var $d = hc.show();
+    transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);
+});
 
 
 // paper UI

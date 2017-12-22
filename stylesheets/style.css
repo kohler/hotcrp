@@ -225,7 +225,8 @@ td.ug {
 	clear: both;
 }
 .clearfix:after, .pst:after, .pavt:after, .papet:after, .submission_modes:after,
-.revvt:after, .revet:after, .rvg:after, .cmteditinfo:after, .aa:after, .aab:after {
+.revvt:after, .revet:after, .rvg:after, .cmteditinfo:after, .aa:after, .aab:after,
+.popup-actions:after {
 	clear: both;
 	content: "";
 	display: block;
@@ -664,7 +665,8 @@ span.hastitle {
 	color: #555555;
 }
 #homeacct {
-	margin: 1em 0 0;
+	margin: 1em 0;
+	max-width: 25rem;
 }
 .homeside ul {
 	margin: 0;
@@ -1174,6 +1176,7 @@ dl.spaced > dt {
 .f-c {
 	color: #555555;
 	font-size: smaller;
+	margin-bottom: 0.25em;
 }
 th.f-c {
 	text-align: left;
@@ -1183,8 +1186,11 @@ th.f-c {
 	color: #555555;
 	clear: both;
 }
-.f-cx {
+.f-cx, .f-cxr {
 	font-weight: normal;
+}
+.f-cxr {
+	float: right;
 }
 .f-cl .f-cx {
 	font-size: smaller;
@@ -1291,7 +1297,7 @@ input.textlite-tt, textarea.tt {
 .papertext {
 	width: 96%;
 }
-.reviewtext, div#popup_ref textarea {
+.wide-control, .reviewtext, div#popup_ref textarea {
 	width: 99%;
 }
 .papertext, .reviewtext {
@@ -3258,7 +3264,7 @@ a.help {
 	margin-top: 0;
 }
 .popup-actions {
-	margin-top: 8px;
+	margin-top: 1em;
 }
 .popup-actions .btn {
 	float: right;

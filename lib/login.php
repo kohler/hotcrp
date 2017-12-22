@@ -165,12 +165,12 @@ class LoginHelper {
         if (!$external_login) {
             if (($password = trim(req_s("password"))) === "") {
                 $password_class = " error";
-                return Conf::msg_error("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
+                return Conf::msg_error("Password missing.");
             }
 
             if (!$xuser->check_password($password)) {
                 $password_class = " error";
-                return Conf::msg_error("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");
+                return Conf::msg_error("Incorrect password. You may want to use the “Forgot your password?” link.");
             }
         }
 
@@ -224,12 +224,12 @@ class LoginHelper {
         // check for errors
         if ($user && $user->has_database_account() && $user->activity_at > 0) {
             $email_class = " error";
-            return Conf::msg_error("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
+            return Conf::msg_error("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". Enter your password or select “Forgot your password?” to reset it.");
         } else if ($cdb_user && $cdb_user->allow_contactdb_password()
                    && $cdb_user->activity_at > 0) {
             $desc = opt("contactdb_description") ? : "HotCRP";
             $email_class = " error";
-            return Conf::msg_error("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . " on $desc. Sign in using your $desc password or select “I forgot my password.”");
+            return Conf::msg_error("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . " on $desc. Sign in using your $desc password or select “Forgot your password?” to reset it.");
         } else if (!validate_email($_REQUEST["email"])) {
             $email_class = " error";
             return Conf::msg_error("“" . htmlspecialchars($_REQUEST["email"]) . "” is not a valid email address.");
