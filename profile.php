@@ -808,9 +808,9 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     $topics = $Conf->topic_map();
     if (!empty($topics)) {
         echo '<div id="topicinterest"><h3 class="profile">Topic interests</h3>', "\n",
-            '<div class="hint">
+            '<p>
     Please indicate your interest in reviewing papers on these conference
-    topics. We use this information to help match papers to reviewers.</div>
+    topics. We use this information to help match papers to reviewers.</p>
     <table class="topicinterest"><thead>
        <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest">High</th></tr></thead><tbody>', "\n";
 
