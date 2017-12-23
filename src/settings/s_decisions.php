@@ -69,9 +69,9 @@ class Decisions_SettingParser extends SettingParser {
             if ($dname === "")
                 /* remove decision */;
             else if (($derror = Conf::decision_name_error($dname)))
-                $sv->error_at($k, htmlspecialchars($derror));
+                $sv->error_at("dec_name_$ndec", htmlspecialchars($derror));
             else if (isset($dec_revmap[strtolower($dname)]))
-                $sv->error_at($k, "Decision name “{$dname}” was already used.");
+                $sv->error_at("dec_name_$ndec", "Decision name “{$dname}” was already used.");
             else
                 $dec_revmap[strtolower($dname)] = true;
             if (isset($sv->req["dec_class_$ndec"])
