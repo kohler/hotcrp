@@ -1,5 +1,5 @@
 <?php
-// src/groupedextensions.php -- HotCRP settings > decisions page
+// src/groupedextensions.php -- HotCRP extensible groups
 // Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class GroupedExtensions {

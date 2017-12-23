@@ -4,29 +4,10 @@
 
 class Decisions_SettingRenderer {
 static function render(SettingValues $sv) {
-    echo "<h3 class=\"settings\">Review sharing and responses</h3>\n";
-    echo "Can <b>authors see reviews and author-visible comments</b> for their papers?<br />";
-    $no_text = "No, unless authors can edit responses";
-    if (!$sv->conf->setting("au_seerev", 0)) {
-        if ($sv->conf->timeAuthorViewReviews())
-            $no_text .= '<div class="hint">Authors can edit responses and see reviews now.</div>';
-        else if ($sv->conf->setting("resp_active"))
-            $no_text .= '<div class="hint">Authors cannot edit responses now.</div>';
-    }
-    $opts = array(Conf::AUSEEREV_NO => $no_text,
-                  Conf::AUSEEREV_YES => "Yes");
-    if ($sv->newv("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
-        && !$sv->conf->opt("allow_auseerev_unlessincomplete"))
-        $sv->conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
-    if ($sv->conf->opt("allow_auseerev_unlessincomplete"))
-        $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev");
-    $sv->echo_radio_table("au_seerev", $opts);
-    echo Ht::hidden("has_tag_au_seerev", 1);
-    Ht::stash_script('$("#tag_au_seerev").on("input", function () { $("#au_seerev_' . Conf::AUSEEREV_TAGS . '").click(); })');
+    echo '<h3 class="settings">Responses</h3>';
 
     // Authors' response
-    echo '<div class="mg"><table id="foldauresp" class="fold2o">';
+    echo '<div class="settings-g"><table id="foldauresp" class="fold2o">';
     $sv->echo_checkbox_row('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>");
     Ht::stash_script('$(function () { $("#cbresp_active").on("change", function () { fold("auresp",!$$("cbresp_active").checked,2); }).trigger("change"); })');
     echo '<tr class="fx2"><td></td><td><div id="auresparea">',
@@ -67,25 +48,55 @@ static function render(SettingValues $sv) {
         echo '</div></div>', "\n";
     }
 
-    echo '</div><div class="mg">',
+    echo '</div><div class="settings-g">',
         Ht::button("Add response round", ["class" => "btn", "id" => "resp_round_add"]),
         '</div></td></tr></table></div>';
     Ht::stash_script('$("#resp_round_add").on("click", settings_add_resp_round)');
 
-    echo '<table class="mg">';
+
+    echo '<h3 class="settings">Review and decision visibility</h3>';
+    echo '<div class="settings-g">';
+    echo '<p class="settings-p">Can <b>authors see reviews and author-visible comments</b> for their papers?</p>';
+    $no_text = "No, unless authors can edit responses";
+    if (!$sv->conf->setting("au_seerev", 0)) {
+        if ($sv->conf->timeAuthorViewReviews())
+            $no_text .= '<div class="hint">Authors can edit responses and see reviews now.</div>';
+        else if ($sv->conf->setting("resp_active"))
+            $no_text .= '<div class="hint">Authors cannot edit responses now.</div>';
+    }
+    $opts = array(Conf::AUSEEREV_NO => $no_text,
+                  Conf::AUSEEREV_YES => "Yes");
+    if ($sv->newv("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
+        && !$sv->conf->opt("allow_auseerev_unlessincomplete"))
+        $sv->conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
+    if ($sv->conf->opt("allow_auseerev_unlessincomplete"))
+        $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
+    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev");
+    $sv->echo_radio_table("au_seerev", $opts);
+    echo Ht::hidden("has_tag_au_seerev", 1);
+    Ht::stash_script('$("#tag_au_seerev").on("input", function () { $("#au_seerev_' . Conf::AUSEEREV_TAGS . '").click(); })');
+    echo "</div>\n";
+
+    echo '<table class="settings-g">';
     $sv->echo_checkbox_row("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers when reviews are visible");
     echo "</table>\n";
 
-
-    echo "<h3 class=\"settings g\">Decisions</h3>\n";
-
-    echo "Who can see paper <b>decisions</b> (accept/reject)?<br />\n";
+    echo '<div class="settings-g"><p class="settings-p">',
+        "Who can see paper <b>decisions</b> (accept/reject)?</p>\n";
     $sv->echo_radio_table("seedec", array(Conf::SEEDEC_ADMIN => "Only administrators",
                             Conf::SEEDEC_NCREV => "Reviewers and non-conflicted PC members",
                             Conf::SEEDEC_REV => "Reviewers and <em>all</em> PC members",
                             Conf::SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"));
+    echo "</div>\n";
 
-    echo "<div class='g'></div>\n";
+    echo "<table class=\"settings-g\">";
+    $sv->echo_checkbox_row("shepherd_hide", "Hide shepherd names from authors");
+    echo "</table>\n";
+
+
+
+    echo "<h3 class=\"settings\">Decision types</h3>\n";
+
     echo "<table>\n";
     $decs = $sv->conf->decision_map();
 
@@ -133,10 +144,6 @@ static function render(SettingValues $sv) {
         echo '<tr><td></td><td class="lentry nw">',
             Ht::checkbox("decn_confirm", 1, false),
             '&nbsp;<span class="error">', Ht::label("Confirm"), "</span></td></tr>";
-    echo "</table>\n";
-
-    echo "<table class=\"mg\">";
-    $sv->echo_checkbox_row("shepherd_hide", "Hide shepherd names from authors");
     echo "</table>\n";
 
     // Final versions

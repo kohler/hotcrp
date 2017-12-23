@@ -1016,13 +1016,16 @@ td.caption span.hint {
 
 /* settings */
 h3.settings, h2.helppage, h3.helppage, h3.profile, h4.helppage {
-	color: #565d91;
+	color: #4b4f6d;
 }
 h2.helppage {
 	font-size: 140%;
 }
-h3.settings, h3.helppage, h3.profile {
-	margin: 2em 0 0.5em;
+h3.settings {
+	margin: 3em 0 1em;
+}
+h3.helppage, h3.profile {
+	margin: 2em 0 1em;
 }
 h3.helppage + p {
 	margin-top: 0.5em;
@@ -1042,6 +1045,12 @@ th.settings-simplehead {
 	text-align: left;
 	font-size: smaller;
 	padding-right: 1em;
+}
+.settings-p {
+	margin: 1em 0 0.35em;
+}
+.settings-g {
+	margin: 1em 0 2em;
 }
 .settings-revfield, .settings-revfieldremoved {
 	margin: 1em 0 2em;
