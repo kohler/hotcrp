@@ -139,11 +139,11 @@ td.quicklinks, #trackerconnect {
 
 
 /* generic horizontal styles */
-a, a.nv, a.ui {
-	color: #0066c0;
+:link, a.nv, a.ui {
+	color: #004daa;
 }
 :visited {
-	color: #7711c0;
+	color: #660099;
 }
 a:hover, a.nv:hover, a.ui:hover {
 	color: #c45500;
