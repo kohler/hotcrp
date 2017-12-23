@@ -4,12 +4,34 @@
         "title": "Basics",
         "renderer": "Basics_SettingRenderer::render"
     },
+
     {
         "name": "decisions", "synonym": ["dec"], "position": 800,
-        "title": "Decisions",
-        "crosschecker": "Decisions_SettingRenderer::crosscheck",
-        "renderer": "Decisions_SettingRenderer::render"
+        "title": "Decisions"
     },
+    {
+        "name": "decisions/responses", "synonym": ["responses"], "position": 10,
+        "title": "Responses",
+        "renderer": "Responses_SettingParser::render"
+    },
+    {
+        "name": "decisions/review-visibility", "position": 20,
+        "title": "Review and decision visibility",
+        "renderer": "ReviewVisibility_SettingParser::render",
+        "crosschecker": "ReviewVisibility_SettingParser::crosscheck"
+    },
+    {
+        "name": "decisions/decision-types", "position": 30,
+        "title": "Decision types",
+        "renderer": "Decisions_SettingParser::render"
+    },
+    {
+        "name": "decisions/final-versions", "position": 100,
+        "title": "Final versions",
+        "renderer": "FinalVersions_SettingParser::render",
+        "crosschecker": "FinalVersions_SettingParser::crosscheck"
+    },
+
     {
         "name": "msg", "position": 200,
         "title": "Messages",

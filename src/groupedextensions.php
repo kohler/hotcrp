@@ -17,6 +17,11 @@ class GroupedExtensions {
                 $fj->synonym = [];
             else if (is_string($fj->synonym))
                 $fj->synonym = [$fj->synonym];
+            if (!isset($fj->anchorid)
+                && ($pos = strpos($fj->name, "/")) !== false) {
+                $x = substr($fj->name, $pos + 1);
+                $fj->anchorid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9_:.]+/', "-", strtolower($x));
+            }
             $this->_subgroups[] = $fj;
             return true;
         } else

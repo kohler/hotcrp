@@ -20,7 +20,7 @@
         "type": "checkbox"
     },
     "decisions": {
-        "parser": "Decision_SettingParser"
+        "parser": "Decisions_SettingParser"
     },
     "extrev_approve": {
         "title": "External reviews must be approved by their requesters",
@@ -205,7 +205,7 @@
         "type": "date", "extensible": true
     },
     "resp_rounds": {
-        "parser": "RespRound_SettingParser",
+        "parser": "Responses_SettingParser",
         "type": "string"
     },
     "resp_roundname": {

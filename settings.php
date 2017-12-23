@@ -81,7 +81,7 @@ function doActionArea($top) {
 doActionArea(true);
 
 $Sv->report(isset($_REQUEST["update"]) && check_post());
-$Sv->render_group($Group);
+$Sv->echo_topic($Group);
 
 doActionArea(false);
 echo "</div></div></form>\n";

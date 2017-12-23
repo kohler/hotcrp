@@ -350,8 +350,18 @@ class SettingValues extends MessageSet {
             }
         }
     }
-    function render_group($g) {
+    function echo_topic($g) {
+        $last_title = null;
         foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+            if (isset($gj->title)
+                && $gj->title !== $last_title
+                && $gj->group !== $gj->name) {
+                echo '<h3 class="settings"';
+                if (isset($gj->anchorid))
+                    echo ' id="', htmlspecialchars($gj->anchorid), '"';
+                echo '>', $gj->title, "</h3>\n";
+                $last_title = $gj->title;
+            }
             if (isset($gj->renderer)) {
                 Conf::xt_resolve_require($gj);
                 call_user_func($gj->renderer, $this, $gj);

@@ -69,24 +69,42 @@ function settings_option_move_enable() {
 }
 
 
-function settings_tag_autosearch() {
+handle_ui.on("js-settings-add-decision-type", function (event) {
+    var $t = $("#settings-decision-types"), next = 1;
+    while ($t.find("input[name=dec_name_" + next + "]").length)
+        ++next;
+    $("#settings-decision-type-notes").removeClass("hidden");
+    var h = $("#settings-new-decision-type").html().replace(/_0/g, "_" + next),
+        $r = $(h).appendTo($t);
+    mktemptext($r);
+    $r.find("input[type=text]").autogrow();
+    $r.find("input[name=dec_name_" + next + "]")[0].focus();
+});
+
+handle_ui.on("js-settings-remove-decision-type", function (event) {
+    var $r = $(this).closest("tr");
+    $r.addClass("hidden").find("input[name^=dec_name]").val("");
+    $r.find("select[name^=dec_class]").val("1");
+    form_highlight($r.closest("form"));
+});
+
+handle_ui.on("js-settings-new-autosearch", function (event) {
+    var odiv = $(this).closest(".settings_tag_autosearch")[0],
+        h = $("#settings_newtag_autosearch").html(), next = 1;
+    while ($("#tag_autosearch_t_" + next).length)
+        ++next;
+    h = h.replace(/_0/g, "_" + next);
+    odiv = $(h).appendTo("#settings_tag_autosearch");
+    mktemptext(odiv);
+    odiv.find("input[type=text]").autogrow();
+    $("#tag_autosearch_t_" + next)[0].focus();
+});
+
+handle_ui.on("js-settings-delete-autosearch", function (event) {
     var odiv = $(this).closest(".settings_tag_autosearch")[0];
-    if ($(this).hasClass("settings_tag_autosearch_delete")) {
-        $(odiv).find("input[name^=tag_autosearch_q_]").val("");
-        $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
-    } else if ($(this).hasClass("settings_tag_autosearch_new")) {
-        var h = $("#settings_newtag_autosearch").html();
-        var next = 1;
-        while ($("#tag_autosearch_t_" + next).length)
-            ++next;
-        h = h.replace(/_0/g, "_" + next);
-        odiv = $(h).appendTo("#settings_tag_autosearch");
-        mktemptext(odiv);
-        odiv.find("input[type=text]").autogrow();
-        $("#tag_autosearch_t_" + next)[0].focus();
-    }
-    return false;
-}
+    $(odiv).find("input[name^=tag_autosearch_q_]").val("");
+    $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
+});
 
 
 function settings_add_track() {

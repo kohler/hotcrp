@@ -984,6 +984,9 @@ td.leftentry {
 td.lentry {
 	padding: 2px 0.5em 2px 0;
 }
+td.lmentry {
+	padding: 2px 1em 2px 0;
+}
 td.rentry {
 	padding: 2px 0;
 	text-align: right;
