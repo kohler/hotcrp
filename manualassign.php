@@ -221,10 +221,10 @@ echo '<tr><td colspan="2"><div class="aab aabr">',
 if ($reviewer) {
     // search outline from old CRP, done here in a very different way
     $hlsearch = [];
-    foreach ($reviewer->aucollab_matchers() as $index => $matcher) {
+    foreach ($reviewer->aucollab_matchers() as $matcher) {
         $text = "match:\"" . str_replace("\"", "", $matcher->nameaff_text()) . "\"";
         $hlsearch[] = "au" . $text;
-        if (!$index && $Conf->setting("sub_collab"))
+        if (!$matcher->nonauthor && $Conf->setting("sub_collab"))
             $hlsearch[] = "co" . $text;
     }
 

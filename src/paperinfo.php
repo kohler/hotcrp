@@ -177,7 +177,7 @@ class PaperInfo_Author {
     public $nonauthor;
     public $sorter;
 
-    function __construct($x, $only_tabs = false) {
+    function __construct($x) {
         if (is_object($x)) {
             $this->firstName = $x->firstName;
             $this->lastName = $x->lastName;
@@ -192,17 +192,17 @@ class PaperInfo_Author {
                     $this->email = $a[2];
                     $this->affiliation = $a[3];
                 } else if (isset($a[2]) && $a[2] !== "") {
-                    if (strpos($a[2], "@") === false)
+                    if (strpos($a[2], "@") === false) {
                         $this->affiliation = $a[2];
-                    else
+                    } else {
                         $this->email = $a[2];
+                    }
                 }
             } else {
                 if (preg_match('/\A\s*(\S.*?)\s*\((.*)\)(?:[\s,;.]*|\s*(?:-+|–|—|:)\s+.*)\z/', $x, $m)) {
                     $this->affiliation = trim($m[2]);
                     $x = $m[1];
-                } else
-                    $this->affiliation = "";
+                }
                 $this->_name = trim($x);
                 list($this->firstName, $this->lastName, $this->email) = Text::split_name($x, true);
             }
@@ -272,8 +272,9 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
     private static $wordinfo;
 
     function __construct($x) {
-        if (is_string($x) && ($hash = strpos($x, "#")) !== false)
+        if (is_string($x) && ($hash = strpos($x, "#")) !== false) {
             $x = substr($x, 0, $hash);
+        }
         parent::__construct($x);
 
         $any = [];
@@ -311,10 +312,14 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
         }
 
         $aff = "";
-        if ($this->affiliation !== "" && $this->firstName === "" && $this->lastName === "" && $this->email === "")
+        if ($this->affiliation !== ""
+            && $this->firstName === ""
+            && $this->lastName === ""
+            && $this->email === "") {
             $aff = $this->affiliation;
-        else if ($this->affiliation === "" && is_string($x))
+        } else if ($this->affiliation === "" && is_string($x)) {
             $aff = $x;
+        }
         if ($aff !== "") {
             self::wordinfo();
             preg_match_all('/[a-z0-9&]+/', strtolower(UnicodeHelper::deaccent($aff)), $m);
@@ -370,28 +375,46 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
     function is_empty() {
         return !$this->general_pregexes;
     }
+    static function make($x, $nonauthor) {
+        if ($x !== "") {
+            $m = new PaperInfo_AuthorMatcher($x);
+            if (!$m->is_empty()) {
+                $m->nonauthor = $nonauthor;
+                return $m;
+            }
+        }
+        return null;
+    }
+    static function make_affiliation($x, $nonauthor) {
+        return self::make((object) ["firstName" => "", "lastName" => "", "email" => "", "affiliation" => $x], $nonauthor);
+    }
+
     function test($au) {
-        if (!$this->general_pregexes)
+        if (!$this->general_pregexes) {
             return false;
-        if (is_string($au))
+        }
+        if (is_string($au)) {
             $au = new PaperInfo_Author($au);
+        }
         if ($au->firstName_deaccent === null) {
             $au->firstName_deaccent = $au->lastName_deaccent = false;
             $au->firstName_deaccent = UnicodeHelper::deaccent($au->firstName);
             $au->lastName_deaccent = UnicodeHelper::deaccent($au->lastName);
             $au->affiliation_deaccent = strtolower(UnicodeHelper::deaccent($au->affiliation));
         }
-        if ($this->lastName_matcher) {
-            if ($au->lastName !== ""
-                && Text::match_pregexes($this->lastName_matcher, $au->lastName, $au->lastName_deaccent)
-                && ($au->firstName === ""
-                    || !$this->firstName_matcher
-                    || Text::match_pregexes($this->firstName_matcher, $au->firstName, $au->firstName_deaccent)))
-                return true;
-        }
-        if ($this->affiliation_matcher && $au->affiliation !== ""
-            && $this->test_affiliation($au->affiliation_deaccent))
+        if ($this->lastName_matcher
+            && $au->lastName !== ""
+            && Text::match_pregexes($this->lastName_matcher, $au->lastName, $au->lastName_deaccent)
+            && ($au->firstName === ""
+                || !$this->firstName_matcher
+                || Text::match_pregexes($this->firstName_matcher, $au->firstName, $au->firstName_deaccent))) {
             return true;
+        }
+        if ($this->affiliation_matcher
+            && $au->affiliation !== ""
+            && $this->test_affiliation($au->affiliation_deaccent)) {
+            return true;
+        }
         return false;
     }
     static function highlight_all($au, $matchers) {
@@ -813,7 +836,8 @@ class PaperInfo {
 
     function collaborator_list($matcher = false) {
         if ($this->_collaborator_array === null
-            || (!empty($this->_collaborator_array) && $matcher
+            || ($matcher
+                && !empty($this->_collaborator_array)
                 && !($this->_collaborator_array[0] instanceof PaperInfo_AuthorMatcher))) {
             $klass = $matcher ? "PaperInfo_AuthorMatcher" : "PaperInfo_Author";
             $this->_collaborator_array = [];
@@ -839,11 +863,11 @@ class PaperInfo {
         $details = [];
         if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
             foreach ($this->author_list() as $n => $au)
-                foreach ($user->aucollab_matchers() as $matcheridx => $matcher) {
+                foreach ($user->aucollab_matchers() as $matcher) {
                     if ($matcher->test($au)) {
                         if (!$full_info)
                             return true;
-                        $details[] = ["#" . ($n + 1), '<div class="mmm">Author ' . $matcher->highlight($au) . '<br />matches ' . ($matcheridx ? "PC’s collaborator " : "PC member ") . $matcher->nameaff_html() . '</div>'];
+                        $details[] = ["#" . ($n + 1), '<div class="mmm">Author ' . $matcher->highlight($au) . '<br />matches ' . ($matcher->nonauthor ? "PC’s collaborator " : "PC member ") . $matcher->nameaff_html() . '</div>'];
                     }
                 }
         }

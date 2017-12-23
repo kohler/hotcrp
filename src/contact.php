@@ -3371,17 +3371,17 @@ class Contact {
     function aucollab_matchers() {
         if ($this->_aucollab_matchers === null) {
             $this->_aucollab_matchers = [];
-            $m = new PaperInfo_AuthorMatcher($this);
-            if (!$m->is_empty())
+            if (($m = PaperInfo_AuthorMatcher::make($this, false)))
+                $this->_aucollab_matchers[] = $m;
+            if ($this->affiliation !== ""
+                && ($m = PaperInfo_AuthorMatcher::make_affiliation($this->affiliation, false)))
                 $this->_aucollab_matchers[] = $m;
             if ((string) $this->collaborators !== "") {
                 $collab = self::fix_collaborator_affiliations($this->collaborators);
-                foreach (explode("\n", $collab) as $co)
-                    if ($co !== "") {
-                        $m = new PaperInfo_AuthorMatcher($co);
-                        if (!$m->is_empty())
-                            $this->_aucollab_matchers[] = $m;
-                    }
+                foreach (explode("\n", $collab) as $co) {
+                    if (($m = PaperInfo_AuthorMatcher::make($co, true)))
+                        $this->_aucollab_matchers[] = $m;
+                }
             }
         }
         return $this->_aucollab_matchers;
