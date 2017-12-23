@@ -11,6 +11,9 @@
     "none": {
         "stop": true
     },
+    "unaffiliated": {
+        "stop": true
+    },
 
     "a": {
         "weak": true
