@@ -3,25 +3,25 @@
 // Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class Decisions_SettingParser extends SettingParser {
-    static private function render_row(SettingValues $sv, $num, $k, $v, $isnew, $count) {
+    static private function render_row(SettingValues $sv, $ndec, $k, $v, $isnew, $count) {
         $vx = $v;
-        if ($num && $sv->use_req())
+        if ($ndec && $sv->use_req())
             $vx = get($sv->req, "dec_name_$ndec", $v);
         echo '<tr><td class="lmentry nw">',
-            Ht::entry("dec_name_$num", $vx, ["size" => 35, "placeholder" => "Decision name", "data-default-value" => $v]),
+            Ht::entry("dec_name_$ndec", $vx, ["size" => 35, "placeholder" => "Decision name", "data-default-value" => $v]),
             '</td><td class="lmentry nw">',
             '<a href="" class="ui js-settings-remove-decision-type btn qx need-tooltip" data-tooltip="Delete" tabindex="-1">✖</a>',
             '</td><td>';
         if ($isnew) {
-            echo Ht::select("dec_class_$num",
+            echo Ht::select("dec_class_$ndec",
                     [1 => "Accept class", -1 => "Reject class"],
                     $k > 0 ? 1 : -1, ["data-default-value" => 1]);
-            if ($sv->has_error_at("dec_class_$num")) {
-                echo ' &nbsp; <label>', Ht::checkbox("dec_classconfirm_$num", 1, false),
+            if ($sv->has_error_at("dec_class_$ndec")) {
+                echo ' &nbsp; <label>', Ht::checkbox("dec_classconfirm_$ndec", 1, false),
                     '&nbsp;<span class="error">Confirm</span></label>';
             }
         } else {
-            echo Ht::hidden("dec_val_$num", $k),
+            echo Ht::hidden("dec_val_$ndec", $k),
                     $k > 0 ? "Accept class" : "Reject class";
             if ($count) {
                 echo ", ", plural($count, "paper");
