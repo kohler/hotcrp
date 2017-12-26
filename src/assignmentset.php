@@ -799,9 +799,10 @@ class Review_Assigner extends Assigner {
         $this->rtype = $item->get(false, "_rtype");
         $this->unsubmit = $item->get(true, "_rsubmitted") && !$item->get(false, "_rsubmitted");
         if (!$item->existed() && $this->rtype == REVIEW_EXTERNAL
-            && get($state->defaults, "extrev_notify")
-            && !$this->contact->is_anonymous_user())
-            $this->notify = true;
+            && !$this->contact->is_anonymous_user()
+            && ($notify = get($state->defaults, "extrev_notify"))
+            && Mailer::is_template($notify))
+            $this->notify = $notify;
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
         return new Review_Assigner($item, $state);

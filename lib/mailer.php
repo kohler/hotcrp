@@ -395,18 +395,28 @@ class Mailer {
 
     static function get_template($templateName, $default = false) {
         global $Conf, $mailTemplates;
-        $m = $mailTemplates[$templateName];
+        $mail = $mailTemplates[$templateName];
         if (!$default && $Conf) {
             if (($t = $Conf->setting_data("mailsubj_" . $templateName, false)) !== false)
-                $m["subject"] = $t;
+                $mail["subject"] = $t;
             if (($t = $Conf->setting_data("mailbody_" . $templateName, false)) !== false)
-                $m["body"] = $t;
+                $mail["body"] = $t;
         }
-        return $m;
+        return $mail;
     }
 
     function expand_template($templateName, $default = false) {
         return $this->expand(self::get_template($templateName, $default));
+    }
+
+    static function is_template($template) {
+        global $mailTemplates;
+        return (is_array($template)
+                && is_string(get($template, "subject"))
+                && is_string(get($template, "body")))
+            || (is_string($template)
+                && $template[0] === "@"
+                && isset($mailTemplates[substr($template, 1)]));
     }
 
 
@@ -426,7 +436,7 @@ class Mailer {
         global $Conf;
 
         // look up template
-        if (is_string($template) && $template[0] == "@")
+        if (is_string($template) && $template[0] === "@")
             $template = self::get_template(substr($template, 1));
         // add rest fields to template for expansion
         foreach (self::$email_fields as $lcfield => $field)
@@ -435,13 +445,13 @@ class Mailer {
 
         // expand the template
         $prep = $this->preparation = $this->create_preparation();
-        $m = $this->expand($template);
+        $mail = $this->expand($template);
         $this->preparation = null;
 
-        $subject = MimeText::encode_header("Subject: ", $m["subject"]);
+        $subject = MimeText::encode_header("Subject: ", $mail["subject"]);
         $prep->subject = substr($subject, 9);
 
-        $prep->body = $m["body"];
+        $prep->body = $mail["body"];
 
         // look up recipient; use preferredEmail if set
         $recipient = $this->recipient;
@@ -454,7 +464,7 @@ class Mailer {
                     $recipient->$k = $this->recipient->$k;
         }
         $prep->to = array(Text::user_email_to($recipient));
-        $m["to"] = $prep->to[0];
+        $mail["to"] = $prep->to[0];
         $prep->sendable = self::allow_send($recipient->email);
 
         // parse headers
@@ -463,7 +473,7 @@ class Mailer {
         $eol = self::eol();
         $prep->headers = array("from" => $Conf->opt("emailFromHeader") . $eol, "subject" => $subject . $eol, "to" => "");
         foreach (self::$email_fields as $lcfield => $field)
-            if (($text = get_s($m, $lcfield)) !== "" && $text !== "<none>") {
+            if (($text = get_s($mail, $lcfield)) !== "" && $text !== "<none>") {
                 if (($hdr = MimeText::encode_email_header($field . ": ", $text)))
                     $prep->headers[$lcfield] = $hdr . $eol;
                 else {
