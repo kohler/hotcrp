@@ -173,7 +173,16 @@ function jqxhr_error_message(jqxhr, status, errormsg) {
 }
 
 $(document).ajaxError(function (event, jqxhr, settings, httperror) {
-    if (jqxhr.readyState == 4) {
+    if (jqxhr.readyState != 4)
+        return;
+    var data;
+    if (jqxhr.responseText && jqxhr.responseText.charAt(0) === "{") {
+        try {
+            data = JSON.parse(jqxhr.responseText);
+        } catch (e) {
+        }
+    }
+    if (!data || !data.user_error) {
         var msg = url_absolute(settings.url) + " API failure: ";
         if (hotcrp_user && hotcrp_user.email)
             msg += "user " + hotcrp_user.email + ", ";
