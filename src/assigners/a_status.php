@@ -54,6 +54,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             }
         }
         $state->add($res);
+        return true;
     }
 }
 

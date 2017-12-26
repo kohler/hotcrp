@@ -105,6 +105,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         $state->remove(array("type" => "pref", "pid" => $prow->paperId, "cid" => $contact->contactId));
         if ($ppref[0] || $ppref[1] !== null)
             $state->add(array("type" => "pref", "pid" => $prow->paperId, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => self::make_exp($ppref[1])));
+        return true;
     }
 }
 

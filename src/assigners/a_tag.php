@@ -79,7 +79,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $state->paper_error("You have a conflict with #{$prow->paperId}.");
         else
             $state->paper_error("You can’t view that tag for #{$prow->paperId}.");
-        return true;
+        return false;
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         if (!($tag = get($req, "tag")))
@@ -121,7 +121,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $m[1] = ($contact->contactId ? : $state->user->contactId) . "~";
         // ignore attempts to change vote tags
         if (!$m[1] && $state->conf->tags()->is_votish($m[2]))
-            return false;
+            return true;
 
         // add and remove use different paths
         $remove = $remove || $m[4] === "none" || $m[4] === "clear";
@@ -172,6 +172,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
                          "_tag" => $tag, "_index" => (float) $index]);
         if ($vtag)
             $this->account_votes($prow->paperId, $vtag, $state);
+        return true;
     }
     private function apply_next_index($pid, $tag, AssignmentState $state, $m) {
         $ltag = strtolower($tag);
@@ -203,7 +204,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // resolve tag portion
         $search_ltag = null;
         if (strcasecmp($m[2], "none") == 0)
-            return;
+            return true;
         else if (strcasecmp($m[2], "any") == 0 || strcasecmp($m[2], "all") == 0) {
             $cid = $state->user->contactId;
             if ($state->user->privChair)
@@ -249,6 +250,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             }
         foreach ($vote_adjustments as $vtag => $v)
             $this->account_votes($prow->paperId, $vtag, $state);
+        return true;
     }
     private function account_votes($pid, $vtag, AssignmentState $state) {
         $res = $state->query(array("type" => "tag", "pid" => $pid));

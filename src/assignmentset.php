@@ -496,6 +496,7 @@ class AssignmentParser {
         return false;
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        return true;
     }
 }
 
@@ -559,6 +560,7 @@ class Null_AssignmentParser extends UserlessAssignmentParser {
         return true;
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+        return true;
     }
 }
 
@@ -779,6 +781,7 @@ class Review_AssignmentParser extends AssignmentParser {
         } else if (!$rdata->newtype && !empty($res) && $res[0]["_rsubmitted"])
             // do not remove submitted reviews
             $state->add($res[0]);
+        return true;
     }
 }
 
@@ -952,6 +955,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
             $r["_rsubmitted"] = 0;
             $state->add($r);
         }
+        return true;
     }
 }
 
@@ -1427,21 +1431,28 @@ class AssignmentSet {
                     if (!$contact->contactId) {
                         $this->astate->error("User “none” is not allowed here. [{$contact->email}]");
                         break 2;
-                    } else if ($prow->has_conflict($contact))
+                    } else if ($prow->has_conflict($contact)) {
                         $err = Text::user_html_nolink($contact) . " has a conflict with #$p.";
-                    else
+                    } else {
                         $err = Text::user_html_nolink($contact) . " cannot be assigned to #$p.";
+                    }
                 }
-                if (is_string($err))
-                    $this->astate->paper_error($err);
-                if ($err !== true)
+                if ($err !== true) {
+                    if (is_string($err)) {
+                        $this->astate->paper_error($err);
+                    }
                     continue;
+                }
 
                 $err = $aparser->apply($prow, $contact, $req, $this->astate);
-                if (is_string($err))
-                    $this->astate->error($err);
-                if (!$err)
-                    $any_success = true;
+                if ($err !== true) {
+                    if (is_string($err)) {
+                        $this->astate->error($err);
+                    }
+                    continue;
+                }
+
+                $any_success = true;
             }
         }
 

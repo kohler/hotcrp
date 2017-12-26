@@ -52,6 +52,7 @@ class Lead_AssignmentParser extends AssignmentParser {
         $state->remove(array("type" => $this->key, "pid" => $prow->paperId, "_cid" => $remcid));
         if (!$this->remove && $contact->contactId)
             $state->add(array("type" => $this->key, "pid" => $prow->paperId, "_cid" => $contact->contactId));
+        return true;
     }
 }
 

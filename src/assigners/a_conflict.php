@@ -74,6 +74,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $ct = $admin ? CONFLICT_CHAIRMARK : CONFLICT_AUTHORMARK;
         if ($ct > 0)
             $state->add(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId, "_ctype" => $ct]);
+        return true;
     }
 }
 

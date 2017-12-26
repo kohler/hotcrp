@@ -37,6 +37,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         $state->remove(["type" => "decision", "pid" => $prow->paperId]);
         if (!$this->remove && $dec)
             $state->add(["type" => "decision", "pid" => $prow->paperId, "_decision" => +$dec]);
+        return true;
     }
 }
 
