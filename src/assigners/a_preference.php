@@ -87,10 +87,13 @@ class Preference_AssignmentParser extends AssignmentParser {
             return "Missing preference.";
         $ppref = self::parse($pref);
         if ($ppref === null) {
-            if (preg_match('/([+-]?)\s*(\d+)\s*([xyz]?)/i', $pref, $m))
-                return $state->conf->_("“%s” isn’t a valid preference. Did you mean “%s”?", htmlspecialchars($pref), $m[1] . $m[2] . strtoupper($m[3]));
-            else
-                return $state->conf->_("“%s” isn’t a valid preference.", htmlspecialchars($pref));
+            if (preg_match('/([+-]?)\s*(\d+)\s*([xyz]?)/i', $pref, $m)) {
+                $msg = $state->conf->_("“%s” isn’t a valid preference. Did you mean “%s”?", htmlspecialchars($pref), $m[1] . $m[2] . strtoupper($m[3]));
+            } else {
+                $msg = $state->conf->_("“%s” isn’t a valid preference.", htmlspecialchars($pref));
+            }
+            $state->user_error($msg);
+            return false;
         }
 
         foreach (array("expertise", "revexp") as $k)

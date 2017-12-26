@@ -246,10 +246,13 @@ class AssignmentState {
     }
 
     function error($message) {
-        $this->errors[] = [$message, true];
+        $this->errors[] = [$message, true, false];
     }
     function paper_error($message) {
-        $this->errors[] = [$message, $this->paper_exact_match];
+        $this->errors[] = [$message, $this->paper_exact_match, false];
+    }
+    function user_error($message) {
+        $this->errors[] = [$message, true, true];
     }
 }
 
@@ -970,6 +973,7 @@ class AssignmentSet {
     private $enabled_actions = null;
     private $msgs = array();
     private $has_error = false;
+    private $has_user_error = false;
     private $my_conflicts = null;
     private $astate;
     private $searches = array();
@@ -1035,14 +1039,15 @@ class AssignmentSet {
     function clear_errors() {
         $this->msgs = [];
         $this->has_error = false;
+        $this->has_user_error = false;
     }
 
-    // error(message) OR error(lineno, message)
     function msg($lineno, $msg, $status) {
         $l = ($this->filename ? $this->filename . ":" : "line ") . $lineno;
         $n = count($this->msgs) - 1;
-        if ($n >= 0 && $this->msgs[$n][0] == $l
-            && $this->msgs[$n][1] == $msg)
+        if ($n >= 0
+            && $this->msgs[$n][0] === $l
+            && $this->msgs[$n][1] === $msg)
             $this->msgs[$n][2] = max($this->msgs[$n][2], $status);
         else
             $this->msgs[] = [$l, $msg, $status];
@@ -1098,12 +1103,18 @@ class AssignmentSet {
     }
 
     function json_result($linenos = false) {
-        if ($this->has_error)
-            return new JsonResult(403, ["ok" => false, "error" => $this->errors_div_html($linenos)]);
-        else if (!empty($this->msgs))
+        if ($this->has_error) {
+            $jr = new JsonResult(403, ["ok" => false, "error" => $this->errors_div_html($linenos)]);
+            if ($this->has_user_error) {
+                $jr->status = 422;
+                $jr->content["user_error"] = true;
+            }
+            return $jr;
+        } else if (!empty($this->msgs)) {
             return new JsonResult(["ok" => true, "response" => $this->errors_div_html($linenos)]);
-        else
+        } else {
             return new JsonResult(["ok" => true]);
+        }
     }
 
     private static function req_user_html($req) {
@@ -1456,8 +1467,11 @@ class AssignmentSet {
             }
         }
 
-        foreach ($this->astate->errors as $e)
+        foreach ($this->astate->errors as $e) {
             $this->msg($this->astate->lineno, $e[0], $e[1] || !$any_success ? 2 : 1);
+            if ($e[2])
+                $this->has_user_error = true;
+        }
         return $any_success;
     }
 
