@@ -202,7 +202,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         '</div>
   <div class="f-e', $email_class, '">',
         Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
-                  ["size" => 36, "tabindex" => 1, "id" => "signin_email", "class" => "wide-control"]),
+                  ["size" => 36, "id" => "signin_email", "class" => "wide-control"]),
         '</div>
 </div>
 <div class="f-i fx">
@@ -211,14 +211,14 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         echo '<div class="f-cxr"><a href="" class="x ui js-forgot-password">Forgot your password?</a></div>';
     echo 'Password</div><div class="f-e">',
         Ht::password("password", "",
-                     array("size" => 36, "tabindex" => 1, "id" => "signin_password", "class" => "wide-control")),
+                     ["size" => 36, "id" => "signin_password", "class" => "wide-control"]),
         "</div>\n</div>\n";
     if ($password_reset)
         echo Ht::unstash_script("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode_browser($password_reset->password) . ")})");
     if ($Conf->opt("ldapLogin"))
         echo Ht::hidden("action", "login");
     echo '<div class="popup-actions">',
-        Ht::submit("signin", "Sign in", ["tabindex" => 1, "id" => "signin_signin", "class" => "btn btn-default"]),
+        Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn btn-default"]),
         '</div><p class="hint">New to the site? <a href="" class="ui js-create-account">Create an account</a></p></div></form></div>
 <hr class="home" />';
     Ht::stash_script("focus_within(\$(\"#login\"));window.scroll(0,0)");

@@ -978,11 +978,11 @@ td.mcaption {
 	text-align: right;
 	padding-right: 1em;
 }
-td.leftentry {
-	width: 18em;
-}
 td.lentry {
 	padding: 2px 0.5em 2px 0;
+}
+td.lentry:last-child {
+	padding-right: 0;
 }
 td.lmentry {
 	padding: 2px 1em 2px 0;

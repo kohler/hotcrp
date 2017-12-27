@@ -98,7 +98,7 @@ class IdPaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $href = $pl->_paperLink($row);
-        return "<a href=\"$href\" class=\"pnum taghl\" tabindex=\"4\">#$row->paperId</a>";
+        return "<a href=\"$href\" class=\"pnum taghl\">#$row->paperId</a>";
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $row->paperId;
@@ -124,7 +124,7 @@ class SelectorPaperColumn extends PaperColumn {
             unset($row->folded);
         }
         return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
-            . '<input type="checkbox" class="js-range-click" name="pap[]" value="' . $row->paperId . '" tabindex="3"' . $c . ' />';
+            . '<input type="checkbox" class="js-range-click" name="pap[]" value="' . $row->paperId . '"' . $c . ' />';
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $this->checked($pl, $row) ? "Y" : "N";
@@ -167,7 +167,7 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
         }
         return '<input type="checkbox" class="assrev" '
             . 'name="assrev' . $row->paperId . 'u' . $this->contact->contactId
-            . '" value="-1" tabindex="3"' . $c . ' />';
+            . '" value="-1"' . $c . ' />';
     }
 }
 
@@ -205,7 +205,7 @@ class TitlePaperColumn extends PaperColumn {
                 . '" data-title="' . htmlspecialchars($row->title);
         }
 
-        $t .= '" tabindex="5">' . $highlight_text . '</a>'
+        $t .= '">' . $highlight_text . '</a>'
             . $pl->_contentDownload($row);
 
         if ($this->has_decoration && (string) $row->paperTags !== "") {
@@ -635,7 +635,7 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
         else
             $options = array(0 => "None", -1 => "Conflict");
         return Ht::select("assrev{$row->paperId}u{$this->contact->contactId}",
-                          $options, $rt, ["class" => "assrev", "tabindex" => 3]);
+                          $options, $rt, ["class" => "assrev", "tabindex" => 2]);
     }
 }
 
@@ -1007,7 +1007,7 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
         if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0, true))
             return $this->is_value ? (string) $v : ($v === false ? "" : "&#x2713;");
         if (!$this->is_value)
-            return '<input type="checkbox" class="edittag" name="tag:' . "$this->dtag $row->paperId" . '" value="x" tabindex="6"'
+            return '<input type="checkbox" class="edittag" name="tag:' . "$this->dtag $row->paperId" . '" value="x" tabindex="2"'
                 . ($v !== false ? ' checked="checked"' : '') . " />";
         $t = '<input type="text" class="edittagval';
         if ($this->editsort) {
@@ -1015,7 +1015,7 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
             $pl->need_render = true;
         }
         return $t . '" size="4" name="tag:' . "$this->dtag $row->paperId" . '" value="'
-            . ($v !== false ? htmlspecialchars($v) : "") . '" tabindex="6" />';
+            . ($v !== false ? htmlspecialchars($v) : "") . '" tabindex="2" />';
     }
 }
 

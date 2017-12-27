@@ -30,8 +30,8 @@ class Get_ListAction extends ListAction {
         }
         if (!empty($sel_opt)) {
             return Ht::select("getfn", $sel_opt, $pl->qreq->getfn,
-                              ["tabindex" => 6, "class" => "want-focus js-submit-action-info-get", "style" => "max-width:10em"])
-                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "tabindex" => 6, "data-default-submit-all" => 1]);
+                              ["class" => "want-focus js-submit-action-info-get", "style" => "max-width:10em"])
+                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "data-default-submit-all" => 1]);
         } else
             return null;
     }

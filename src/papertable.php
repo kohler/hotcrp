@@ -1466,13 +1466,14 @@ class PaperTable {
             if ($this->prow)
                 $editable = $this->prow->editable_tags($this->user);
             echo '<div style="position:relative">',
-                '<textarea cols="20" rows="4" name="tags" style="width:97%;margin:0" class="want-focus" tabindex="1000">',
+                '<textarea cols="20" rows="4" name="tags" style="width:97%;margin:0" class="want-focus">',
                 $tagger->unparse($editable),
                 "</textarea></div>",
-                '<div style="padding:1ex 0;text-align:right">',
-                Ht::submit("cancel", "Cancel", ["tabindex" => 1001]),
-                " &nbsp;", Ht::submit("save", "Save", ["tabindex" => 1000]),
-                "</div>",
+                '<div class="aab aabr"><div class="aabut">',
+                Ht::submit("save", "Save", ["class" => "btn btn-default"]),
+                '</div><div class="aabut">',
+                Ht::submit("cancel", "Cancel"),
+                "</div></div>",
                 "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> <span class='barsep'>·</span> <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
                 "</div>";
         } else
@@ -1506,7 +1507,7 @@ class PaperTable {
         $rp = unparse_preference($this->prow);
         $rp = ($rp == "0" ? "" : $rp);
         echo "<input id=\"revprefform_d\" type=\"text\" name=\"revpref", $this->prow->paperId,
-            "\" size=\"4\" value=\"$rp\" tabindex=\"1\" class=\"revpref want-focus want-select\" />",
+            "\" size=\"4\" value=\"$rp\" class=\"revpref want-focus want-select\" />",
             "</div></form></div></div>\n";
         Ht::stash_script("add_revpref_ajax(\"#revprefform_d\",true);shortcut(\"revprefform_d\").add()");
     }
@@ -1556,8 +1557,7 @@ class PaperTable {
                          array("type" => "ps", "fold" => $id, "float" => $totmark)),
             '<div class="psv"><div class="fx">',
             Ht::entry("tagindex", $myval,
-                      array("size" => 4, "tabindex" => 1,
-                            "class" => "is-tag-index want-focus",
+                      array("size" => 4, "class" => "is-tag-index want-focus",
                             "data-tag-base" => "~$tag")),
             ' <span class="barsep">·</span> ',
             '<a href="', hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Edit all</a>',
@@ -1580,8 +1580,7 @@ class PaperTable {
                          array("type" => "ps", "fold" => $id, "float" => $totmark)),
             '<div class="psv"><div class="fx">',
             Ht::entry("tagindex", $myval,
-                      array("size" => 4, "tabindex" => 1,
-                            "class" => "is-tag-index want-focus",
+                      array("size" => 4, "class" => "is-tag-index want-focus",
                             "data-tag-base" => "~$tag")),
             " &nbsp;of $allotment",
             ' <span class="barsep">·</span> ',
@@ -1602,8 +1601,7 @@ class PaperTable {
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id,
                          Ht::checkbox("tagindex", "0", $myval !== "",
-                                      array("tabindex" => 1,
-                                            "class" => "is-tag-index want-focus",
+                                      array("class" => "is-tag-index want-focus",
                                             "data-tag-base" => "~$tag",
                                             "style" => "padding-left:0;margin-left:0;margin-top:0"))
                          . "&nbsp;" . Ht::label("#$tag vote"),

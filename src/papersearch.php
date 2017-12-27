@@ -2383,7 +2383,7 @@ class PaperSearch {
             }
             $sel_extra = array();
             if ($tabindex)
-                $sel_extra["tabindex"] = 1;
+                $sel_extra["tabindex"] = $tabindex;
             return Ht::select("t", $sel_opt, $type, $sel_extra);
         } else
             return current($tOpt);

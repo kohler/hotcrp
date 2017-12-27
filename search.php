@@ -317,10 +317,11 @@ echo '<div id="searchform" class="linelinks tablinks', $activetab, ' clearfix">'
 // Basic search
 echo Ht::form_div(hoturl("search"), array("method" => "get")),
     Ht::entry("q", (string) $Qreq->q,
-              array("size" => 40, "tabindex" => 1, "style" => "width:30em",
-                    "class" => "hotcrp_searchbox want-focus")),
+              ["size" => 40, "style" => "width:30em", "tabindex" => 1,
+               "class" => "hotcrp_searchbox want-focus",
+               "placeholder" => "(All)"]),
     " &nbsp;in &nbsp;$tselect &nbsp;\n",
-    Ht::submit("Search"),
+    Ht::submit("Search", ["tabindex" => 1]),
     "</div></form>";
 
 echo '</div><div class="tld2">';
@@ -328,13 +329,13 @@ echo '</div><div class="tld2">';
 // Advanced search
 echo Ht::form_div(hoturl("search"), array("method" => "get")),
     "<table><tr>
-  <td class='lxcaption'>Search these papers</td>
-  <td class='lentry'>$tselect</td>
+  <td class=\"rxcaption\">Search</td>
+  <td class=\"lentry\">$tselect</td>
   <td></td>
 </tr>
 <tr>
-  <td class='lxcaption'>Using these fields</td>
-  <td class='lentry'>";
+  <td class=\"rxcaption\">Using these fields</td>
+  <td class=\"lentry\">";
 $qtOpt = array("ti" => "Title",
                "ab" => "Abstract");
 if ($Me->privChair || $Conf->subBlindNever()) {
@@ -354,32 +355,39 @@ if ($Me->isPC) {
     $qtOpt["re"] = "Reviewers";
     $qtOpt["tag"] = "Tags";
 }
-echo Ht::select("qt", $qtOpt, $Qreq->get("qt", "n"), array("tabindex" => 1)),
+echo Ht::select("qt", $qtOpt, $Qreq->get("qt", "n")),
     "</td>
   <td></td>
 </tr>
-<tr><td colspan=\"3\"><div class='g'></div></td></tr>
+<tr><td colspan=\"2\"><div class='g'></div></td></tr>
 <tr>
-  <td class='lxcaption'>With <b>all</b> the words</td>
+  <td class='rxcaption'>With <b>all</b> the words</td>
   <td class='lentry'>",
-    Ht::entry("qa", htmlspecialchars($Qreq->get("qa", $Qreq->get("q", ""))), ["size" => 40, "style" => "width:30em", "tabindex" => 1, "class" => "want-focus"]),
-    "<span class='sep'></span></td>
-  <td rowspan='3'>", Ht::submit("Search", array("tabindex" => 2)), "</td>
-</tr><tr>
-  <td class='lxcaption'>With <b>any</b> of the words</td>
-  <td class='lentry'>",
-    Ht::entry("qo", htmlspecialchars($Qreq->get("qo", "")), ["size" => 40, "style" => "width:30em", "tabindex" => 1]),
+    Ht::entry("qa", htmlspecialchars($Qreq->get("qa", $Qreq->get("q", ""))), ["size" => 40, "style" => "width:30em", "class" => "want-focus"]),
     "</td>
 </tr><tr>
-  <td class='lxcaption'><b>Without</b> the words</td>
+  <td class='rxcaption'>With <b>any</b> of the words</td>
   <td class='lentry'>",
-    Ht::entry("qx", htmlspecialchars($Qreq->get("qx", "")), ["size" => 40, "style" => "width:30em", "tabindex" => 1]),
+    Ht::entry("qo", htmlspecialchars($Qreq->get("qo", "")), ["size" => 40, "style" => "width:30em"]),
+    "</td>
+</tr><tr>
+  <td class='rxcaption'><b>Without</b> the words</td>
+  <td class='lentry'>",
+    Ht::entry("qx", htmlspecialchars($Qreq->get("qx", "")), ["size" => 40, "style" => "width:30em"]),
     "</td>
 </tr>
+<tr><td colspan=\"2\"><div class='g'></div></td></tr>
 <tr>
   <td class='lxcaption'></td>
-  <td><span style='font-size: x-small'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>·</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a></span></td>
-</tr></table></div></form>";
+  <td class=\"lentry\" style=\"padding-bottom:4px\"><div class=\"aab\">",
+    Ht::submit("Search"),
+    '<div style="float:right;font-size:x-small">',
+    Ht::link("Search help", hoturl("help", "t=search")),
+    ' <span class="barsep">·</span> ',
+    Ht::link("Search keywords", hoturl("help", "t=keywords")),
+    '</div></div>
+  </td>
+</tr></table></div></form>';
 
 echo "</div>";
 
@@ -432,7 +440,7 @@ if ($Me->isPC || $Me->privChair) {
         else
             echo "empty search";
         echo " as:<br />ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;",
-            Ht::submit("Save", array("tabindex" => 8)),
+            Ht::submit("Save"),
             "</div></td></tr></table>",
             "</div></form>";
 

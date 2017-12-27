@@ -632,13 +632,13 @@ function add_dialog(fid, focus) {
         hc.push('<h2>' + (has_options ? "Add score field" : "Add text field") + '</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
         hc.push('<table style="width:500px;max-width:90%;margin-bottom:2em"><tbody><tr>', '</tr></tbody></table>');
-        hc.push('<td style="text-align:left"><button name="prev" type="button" tabindex="1002" class="btn need-tooltip" data-tooltip="Previous template">&lt;</button></td>');
+        hc.push('<td style="text-align:left"><button name="prev" type="button" class="btn need-tooltip" data-tooltip="Previous template">&lt;</button></td>');
         hc.push('<td class="newreviewfield-template-name" style="text-align:center"></td>');
-        hc.push('<td style="text-align:right"><button name="next" type="button" tabindex="1002" class="btn need-tooltip" data-tooltip="Next template">&gt;</button></td>');
+        hc.push('<td style="text-align:right"><button name="next" type="button" class="btn need-tooltip" data-tooltip="Next template">&gt;</button></td>');
         hc.pop();
         hc.push('<div class="newreviewfield-template" style="width:500px;max-width:90%;min-height:6em"></div>');
-        hc.push_actions(['<button type="submit" name="add" tabindex="1000" class="btn btn-default want-focus">Create field</button>',
-            '<button type="button" name="cancel" tabindex="1001" class="btn">Cancel</button>']);
+        hc.push_actions(['<button type="submit" name="add" class="btn btn-default want-focus">Create field</button>',
+            '<button type="button" name="cancel" class="btn">Cancel</button>']);
         $d = hc.show();
         render_template();
         $d.find(".newreviewfield-template-name").on("click", change_template);
