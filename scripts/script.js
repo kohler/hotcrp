@@ -3130,17 +3130,25 @@ function render_editing(hc, cj) {
     if (fmt.has_preview)
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
-    hc.push('<textarea name="comment" class="reviewtext cmttext c" rows="5" cols="60"></textarea>');
+    hc.push('<textarea name="comment" class="reviewtext cmttext c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
     if (!cj.response && !cj.by_author) {
+        var au_option, au_description;
+        if (hotcrp_status.myperm.some_author_can_view_review) {
+            au_option = 'Visible to authors';
+            au_description = 'Authors will be notified immediately.';
+        } else {
+            au_option = 'Eventually visible to authors';
+            au_description = 'Authors cannot view comments at the moment.';
+        }
+        if (hotcrp_status.rev.blind === true)
+            au_option += ' (anonymous to authors)';
+
         // visibility
-        hc.push('<div class="cmteditinfo f-i fold2o">', '</div>');
-        hc.push('<div class="f-ix">', '</div>');
-        hc.push('<div class="f-c">Visibility</div>');
+        hc.push('<div class="cmteditinfo fold2o">', '</div>');
+        hc.push('<div class="f-ii"><div class="f-c">Visibility</div>', '</div>');
         hc.push('<div class="f-e">', '</div>');
         hc.push('<select name="visibility">', '</select>');
-        hc.push('<option value="au">Visible to authors'
-                + (hotcrp_status.rev.blind === true ? " (anonymous to authors)" : "")
-                + '</option>');
+        hc.push('<option value="au">' + au_option + '</option>');
         hc.push('<option value="rev">Hidden from authors</option>');
         hc.push('<option value="pc">Hidden from authors and external reviewers</option>');
         hc.push('<option value="admin">Administrators only</option>');
@@ -3150,16 +3158,13 @@ function render_editing(hc, cj) {
             var idctr = hc.next_htctl_id();
             hc.push('<input type="checkbox" name="blind" value="1" id="' + idctr + '" />&nbsp;<label for="' + idctr + '">Anonymous to authors</label><br />\n');
         }
-        if (hotcrp_status.myperm.some_author_can_view_review)
-            hc.push('Authors will be notified immediately.');
-        else
-            hc.push('Authors cannot view comments at the moment.');
+        hc.push(au_description);
         hc.pop_n(3);
 
         // tags
-        hc.push('<div class="f-ix" style="margin-left:4em"><div class="f-c">Tags</div>', '</div>')
-        hc.push('<textarea name="commenttags" cols="40" rows="1" style="font-size:smaller"></textarea>');
-        hc.pop_n(2);
+        hc.push('<div class="f-i"><div class="f-c">Tags</div>', '</div>')
+        hc.push('<textarea name="commenttags" cols="40" rows="1" class="reviewtext" style="font-size:smaller"></textarea>');
+        hc.pop(2);
 
         // actions
         actions.push('<button type="button" name="bsubmit" class="btn btn-default">Save</button>' + bnote);
@@ -3237,7 +3242,7 @@ function activate_editing(j, cj) {
 }
 
 function beforeunload() {
-    var i, $cs = $(".cmtg textarea[name='comment']"), $c, text;
+    var i, $cs = $(".cmtg textarea[name=comment]"), $c, text;
     for (i = 0; i != $cs.length && has_unload; ++i) {
         $c = $cmt($cs[i]);
         text = $($cs[i]).val().replace(/\s+$/, "");
