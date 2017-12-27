@@ -23,7 +23,16 @@ class CommentInfo {
     public $commentOverflow;
 
     static private $watching;
-    static private $visibility_map = array(COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc", COMMENTTYPE_REVIEWER => "rev", COMMENTTYPE_AUTHOR => "au");
+    static private $visibility_map = [
+        COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc",
+        COMMENTTYPE_REVIEWER => "rev", COMMENTTYPE_AUTHOR => "au"
+    ];
+    static private $visibility_revmap = [
+        "admin" => COMMENTTYPE_ADMINONLY, "pc" => COMMENTTYPE_PCONLY,
+        "p" => COMMENTTYPE_PCONLY, "rev" => COMMENTTYPE_REVIEWER,
+        "r" => COMMENTTYPE_REVIEWER, "au" => COMMENTTYPE_AUTHOR,
+        "a" => COMMENTTYPE_AUTHOR
+    ];
 
 
     function __construct($x, PaperInfo $prow = null, Conf $conf = null) {
@@ -369,25 +378,25 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $Table = $this->prow->comment_table_name();
         $LinkTable = $this->prow->table_name();
         $LinkColumn = $this->prow->id_column();
-        $req_visibility = get($req, "visibility");
+
+        $req_visibility = get(self::$visibility_revmap, get($req, "visibility", ""));
+        if ($req_visibility === null && $this->commentId)
+            $req_visibility = $this->commentType & COMMENTTYPE_VISIBILITY;
 
         $is_response = !!($this->commentType & COMMENTTYPE_RESPONSE);
-        if ($is_response && get($req, "submit"))
+        if ($is_response) {
             $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR;
-        else if ($is_response)
-            $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR | COMMENTTYPE_DRAFT;
-        else if ($contact->act_author_view($this->prow))
-            $ctype = COMMENTTYPE_AUTHOR | COMMENTTYPE_BYAUTHOR;
-        else if ($req_visibility == "a" || $req_visibility == "au")
-            $ctype = COMMENTTYPE_AUTHOR;
-        else if ($req_visibility == "p" || $req_visibility == "pc")
-            $ctype = COMMENTTYPE_PCONLY;
-        else if ($req_visibility == "admin")
-            $ctype = COMMENTTYPE_ADMINONLY;
-        else if ($this->commentId && $req_visibility === null)
-            $ctype = $this->commentType;
-        else // $req->visibility == "r" || $req->visibility == "rev"
-            $ctype = COMMENTTYPE_REVIEWER;
+            if (!get($req, "submit"))
+                $ctype |= COMMENTTYPE_DRAFT;
+        } else if ($contact->act_author_view($this->prow)) {
+            if ($req_visibility === null)
+                $req_visibility = COMMENTTYPE_AUTHOR;
+            $ctype = $req_visibility | COMMENTTYPE_BYAUTHOR;
+        } else {
+            if ($req_visibility === null)
+                $req_visibility = COMMENTTYPE_REVIEWER;
+            $ctype = $req_visibility;
+        }
         if ($is_response ? $this->prow->blind : $this->conf->is_review_blind(!!get($req, "blind")))
             $ctype |= COMMENTTYPE_BLIND;
 
