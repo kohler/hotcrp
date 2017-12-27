@@ -3543,6 +3543,9 @@ class Contact {
                 }
                 if (self::can_some_author_view_submitted_review($prow))
                     $perm->some_author_can_view_review = true;
+                if ($this->isPC
+                    && !$this->conf->can_some_external_reviewer_view_comment())
+                    $perm->default_comment_visibility = "pc";
                 if ($this->review_tokens_) {
                     $tokens = [];
                     foreach ($prow->reviews_by_id() as $rrow) {

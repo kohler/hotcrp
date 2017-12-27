@@ -2178,6 +2178,9 @@ class Conf {
     function review_blindness() {
         return $this->settings["rev_blind"];
     }
+    function can_some_external_reviewer_view_comment() {
+        return $this->settings["extrev_view"] == 2;
+    }
 
     function has_any_submitted() {
         return !get($this->settings, "no_papersub");
