@@ -1668,20 +1668,20 @@ class PaperInfo {
         return $cinfo->vsreviews_cid_array;
     }
 
-    function can_view_review_identity_of($cid, Contact $contact, $forceShow = null) {
-        if ($contact->can_administer($this, $forceShow)
+    function can_view_review_identity_of($cid, Contact $contact) {
+        if ($contact->can_administer($this)
             || $cid == $contact->contactId)
             return true;
         else {
             $rrow = $this->review_of_user($cid);
             return $rrow
-                && $contact->can_view_review_identity($this, $rrow, $forceShow);
+                && $contact->can_view_review_identity($this, $rrow);
         }
     }
 
-    function may_have_viewable_scores($field, Contact $contact, $forceShow = null) {
+    function may_have_viewable_scores($field, Contact $contact) {
         $field = is_object($field) ? $field : $this->conf->review_field($field);
-        return $contact->can_view_review($this, $field->view_score, $forceShow)
+        return $contact->can_view_review($this, $field->view_score)
             || $this->review_type($contact);
     }
 
