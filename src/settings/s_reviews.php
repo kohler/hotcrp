@@ -64,9 +64,9 @@ static function render(SettingValues $sv) {
 
     echo "<div class='g'></div>\n";
     echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
-    $sv->echo_radio_table("rev_blind", array(Conf::BLIND_ALWAYS => "Yes—reviews are anonymous",
-                               Conf::BLIND_NEVER => "No—reviewer names are visible to authors",
-                               Conf::BLIND_OPTIONAL => "Depends—reviewers decide whether to expose their names"));
+    $sv->echo_radio_table("rev_blind", array(Conf::BLIND_ALWAYS => "Yes, reviews are anonymous",
+                               Conf::BLIND_NEVER => "No, reviewer names are visible to authors",
+                               Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"));
 
     echo "<div class='g'></div>\n";
     $sv->echo_checkbox('rev_notifychair', 'Notify PC chairs of newly submitted reviews by email');
@@ -189,7 +189,7 @@ static function render(SettingValues $sv) {
         "</td></tr></table>\n";
 
     echo "<div class='g'></div>";
-    echo "Can external reviewers see the other reviews for their assigned papers, once they’ve submitted their own?<br />\n";
+    echo "Can external reviewers see reviews and comments for their assigned papers, once they’ve submitted a review?<br />\n";
     $sv->echo_radio_table("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"));
 
 
@@ -223,6 +223,11 @@ static function render(SettingValues $sv) {
             && $Now < $sv->newv("pcrev_soft")
             && !$sv->has_error())
             $sv->warning_at(null, "Authors can see reviews and comments although it is before the review deadline. This is sometimes unintentional.");
+
+        if (($sv->has_interest("rev_blind") || $sv->has_interest("extrev_view"))
+            && $sv->newv("rev_blind") == Conf::BLIND_NEVER
+            && $sv->newv("extrev_view") == 1)
+            $sv->warning_at("extrev_view", "Reviews aren’t blind, so external reviewers can see reviewer names and comments despite your settings.");
     }
 }
 

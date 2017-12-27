@@ -46,7 +46,8 @@
     },
     "extrev_view": {
         "title": "External reviewers can view reviews",
-        "type": "radio", "values": [0, 1, 2], "default_value": 0
+        "type": "radio", "values": [0, 1, 2], "default_value": 0,
+        "group": "reviews"
     },
     "final_done": {
         "title": "Final version upload hard deadline",
@@ -219,7 +220,8 @@
     },
     "rev_blind": {
         "title": "Review anonymity",
-        "type": "radio", "values": [0, 1, 2], "default_value": 2
+        "type": "radio", "values": [0, 1, 2], "default_value": 2,
+        "group": "reviews"
     },
     "rev_notifychair": {
         "title": "Notify PC chairs of new reviews by email",
