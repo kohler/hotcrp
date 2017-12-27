@@ -2978,21 +2978,18 @@ class Contact {
                     || $crow->contactId == $rights->review_token_cid))
             || $rights->can_administer
             || ($rights->act_author_view
+                && ($ctype & (COMMENTTYPE_BYAUTHOR | COMMENTTYPE_RESPONSE)))
+            || ($rights->act_author_view
                 && $ctype >= COMMENTTYPE_AUTHOR
-                && (($ctype & COMMENTTYPE_RESPONSE)    // author's response
-                    || ($ctype & COMMENTTYPE_BYAUTHOR)
-                    || (!($ctype & COMMENTTYPE_DRAFT)  // author-visible cmt
-                        && $this->can_view_submitted_review_as_author($prow))))
+                && !($ctype & COMMENTTYPE_DRAFT)
+                && $this->can_view_submitted_review_as_author($prow))
             || (!$rights->view_conflict_type
                 && !($ctype & COMMENTTYPE_DRAFT)
-                && $this->can_view_review($prow, null, $forceShow)
-                && (($rights->allow_pc
-                     && !$this->conf->setting("pc_seeblindrev"))
-                    || $rights->reviewType == REVIEW_META
-                    || $prow->review_not_incomplete($this))
                 && ($rights->allow_pc
                     ? $ctype >= COMMENTTYPE_PCONLY
-                    : $ctype >= COMMENTTYPE_REVIEWER));
+                    : $ctype >= COMMENTTYPE_REVIEWER)
+                && $this->can_view_review($prow, null, $forceShow)
+                && $this->can_view_review_identity($prow, null, $forceShow));
     }
 
     function can_view_new_comment_ignore_conflict(PaperInfo $prow) {

@@ -160,7 +160,7 @@ static function render(SettingValues $sv) {
                                   Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviews.</div>"));
     echo "</div>\n";
 
-    echo "<div class=\"g\">Can PC members see <strong>reviewer names and comments</strong> except for conflicts?<br />\n";
+    echo "<div class=\"g\">Can PC members see <strong>comments and reviewer names</strong> except for conflicts?<br />\n";
     $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
                                     1 => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviewer names.</div>"));
     echo "</div>\n";
@@ -190,7 +190,7 @@ static function render(SettingValues $sv) {
 
     echo "<div class='g'></div>";
     echo "Can external reviewers see the other reviews for their assigned papers, once they’ve submitted their own?<br />\n";
-    $sv->echo_radio_table("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see who wrote blind reviews", 0 => "No"));
+    $sv->echo_radio_table("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"));
 
 
     // Review ratings
