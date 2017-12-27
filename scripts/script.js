@@ -3180,7 +3180,7 @@ function render_editing(hc, cj) {
     }
     if (cj.response && resp_rounds[cj.response].words > 0)
         actions.push("", '<div class="words"></div>');
-    hc.push('<div class="aabig aab aabr">', '</div>');
+    hc.push('<div class="reviewtext aabig aab aabr">', '</div>');
     for (i = 0; i < actions.length; ++i)
         if (actions[i] !== "")
             hc.push('<div class="aabut' + (actions[i+1] === "" ? " aabutsp" : "") + '">' + actions[i] + '</div>');

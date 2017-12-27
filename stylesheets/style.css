@@ -1323,6 +1323,7 @@ input.textlite-tt, textarea.tt {
 }
 .papertext, .reviewtext {
 	max-width: 640px;
+	box-sizing: border-box;
 }
 textarea[name=comment] {
 	min-height: 10em;
