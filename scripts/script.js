@@ -2930,14 +2930,10 @@ function add_review(rrow) {
     hc.push('<div class="revcard_head">', '</div>');
 
     // edit/text links
-    hc.push('<div class="floatright">', '</div>');
     if (rrow.editable)
-        hc.push('<a class="xx" href="' + hoturl_html("review", rlink) + '">'
+        hc.push('<div class="floatright"><a class="xx" href="' + hoturl_html("review", rlink) + '">'
                 + '<img class="b" src="' + assetsurl + 'images/edit48.png" alt="[Edit]" width="16" height="16" />'
-                + '&nbsp;<u>Edit</u></a><br />');
-    hc.push_pop('<a class="xx" href="' + hoturl_html("review", rlink + "&text=1") + '">'
-                + '<img class="b" src="' + assetsurl + 'images/txt.png" alt="[Text]" />'
-                + '&nbsp;<u>Plain text</u></a>');
+                + '&nbsp;<u>Edit</u></a></div>');
 
     hc.push('<h3><a class="u" href="' + hoturl_html("review", rlink) + '">'
             + 'Review' + (rrow.ordinal ? '&nbsp;#' + rid : '') + '</a></h3>');
