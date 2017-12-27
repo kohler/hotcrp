@@ -323,7 +323,7 @@ if (count($tOpt) > 1) {
     echo "</td>";
     if (isset($pl->scoreMax)) {
         echo "<td class='pad'>";
-        $revViewScore = $Me->aggregated_view_score_bound();
+        $revViewScore = $Me->permissive_view_score_bound();
         foreach ($Conf->all_review_fields() as $f)
             if ($f->view_score > $revViewScore && $f->has_options) {
                 $checked = strpos(displayOptionsSet("uldisplay"), $f->id) !== false;

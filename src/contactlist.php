@@ -91,7 +91,7 @@ class ContactList {
         if ($fieldId == self::FIELD_COLLABORATORS)
             $this->have_folds["collab"] = true;
         if (($f = $this->conf->review_field($fieldId))) {
-            $revViewScore = $this->user->aggregated_view_score_bound();
+            $revViewScore = $this->user->permissive_view_score_bound();
             if ($f->view_score <= $revViewScore || !$f->has_options)
                 return false;
             $queryOptions["reviews"] = true;

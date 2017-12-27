@@ -3123,20 +3123,6 @@ class Contact {
         }
     }
 
-    function aggregated_view_score_bound() {
-        // XXX Every time this function is used it represents a problem.
-        // For instance, privChair users can view admin-only scores for
-        // papers that have explicit administrators.
-        // Should use permissive_view_score_bound() and then restrict
-        // what is actually visible based on per-review view_score_bound.
-        if ($this->privChair)
-            return VIEWSCORE_ADMINONLY - 1;
-        else if ($this->isPC)
-            return VIEWSCORE_PC - 1;
-        else
-            return VIEWSCORE_MAX + 1;
-    }
-
     function can_view_tags(PaperInfo $prow = null, $forceShow = null) {
         // see also PaperApi::alltags,
         // Contact::list_submitted_papers_with_viewable_tags
