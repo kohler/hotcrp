@@ -10,6 +10,7 @@ class ListSorter {
     public $thenmap = null;
     public $field = null;
     public $uid = null;
+    public $list = null;
 
     static private $next_uid = 1;
 

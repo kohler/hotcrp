@@ -215,18 +215,20 @@
     },
     {
         "name": "administrator",
-        "row": true, "fold": true, "factory_class": "Administrator_PaperColumn",
-        "synonym": ["admin"],
+        "row": true, "sort": true, "fold": true, "synonym": ["admin"],
+        "factory_class": "Administrator_PaperColumn",
         "position": 1500
     },
     {
         "name": "lead",
-        "row": true, "fold": true, "completion": true, "factory_class": "Lead_PaperColumn",
+        "row": true, "sort": true, "fold": true, "completion": true,
+        "factory_class": "Lead_PaperColumn",
         "position": 1600
     },
     {
         "name": "shepherd",
-        "row": true, "fold": true, "completion": true, "factory_class": "Shepherd_PaperColumn",
+        "row": true, "sort": true, "fold": true, "completion": true,
+        "factory_class": "Shepherd_PaperColumn",
         "position": 1700
     },
     {

@@ -11,12 +11,20 @@ class Lead_PaperColumn extends PaperColumn {
         return $pl->user->can_view_lead(null, true)
             && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
+    static private function cid(PaperList $pl, PaperInfo $row) {
+        if ($row->leadContactId && $pl->user->can_view_lead($row))
+            return $row->leadContactId;
+        return 0;
+    }
+    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
+        $pl = $sorter->list;
+        return $pl->_compare_pc(self::cid($pl, $a), self::cid($pl, $b));
+    }
     function header(PaperList $pl, $is_text) {
         return "Discussion lead";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$row->leadContactId
-            || !$pl->user->can_view_lead($row);
+        return !self::cid($pl, $row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         return $pl->_content_pc($row->leadContactId);

@@ -11,14 +11,20 @@ class Shepherd_PaperColumn extends PaperColumn {
         return $pl->user->can_view_shepherd(null, true)
             && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
+    static private function cid(PaperList $pl, PaperInfo $row) {
+        if ($row->shepherdContactId && $pl->user->can_view_shepherd($row))
+            return $row->shepherdContactId;
+        return 0;
+    }
+    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
+        $pl = $sorter->list;
+        return $pl->_compare_pc(self::cid($pl, $a), self::cid($pl, $b));
+    }
     function header(PaperList $pl, $is_text) {
         return "Shepherd";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$row->shepherdContactId
-            || !$pl->user->can_view_shepherd($row);
-        // XXX external reviewer can view shepherd even if external reviewer
-        // cannot view reviewer identities? WHO GIVES A SHIT
+        return !self::cid($pl, $row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         return $pl->_content_pc($row->shepherdContactId);

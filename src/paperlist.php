@@ -328,8 +328,10 @@ class PaperList {
         }
 
         self::$magic_sort_info = $this->sorters;
-        foreach ($this->sorters as $s)
+        foreach ($this->sorters as $s) {
             $s->assign_uid();
+            $s->list = $this;
+        }
         foreach ($this->sorters as $i => $s) {
             $s->field->analyze_sort($this, $rows, $s);
             $rev = ($s->reverse ? "-" : "");
@@ -345,7 +347,10 @@ class PaperList {
         $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
 
         usort($rows, create_function("\$a, \$b", $code));
+
         self::$magic_sort_info = null;
+        foreach ($this->sorters as $s)
+            $s->list = null; // break circular ref
         return $rows;
     }
 
@@ -418,6 +423,17 @@ class PaperList {
     function _text_pc($contactId) {
         $pc = $this->conf->pc_member_by_id($contactId);
         return $pc ? $this->user->reviewer_text_for($pc) : "";
+    }
+
+    function _compare_pc($contactId1, $contactId2) {
+        $pc1 = $this->conf->pc_member_by_id($contactId1);
+        $pc2 = $this->conf->pc_member_by_id($contactId2);
+        if ($pc1 === $pc2)
+            return 0;
+        else if (!$pc1 || !$pc2)
+            return $pc1 ? -1 : 1;
+        else
+            return Contact::compare($pc1, $pc2);
     }
 
     function displayable_list_actions($prefix) {
