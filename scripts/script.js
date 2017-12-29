@@ -27,7 +27,8 @@ if (!window.JSON || !window.JSON.parse)
     window.JSON = {parse: $.parseJSON};
 
 var hasClass, addClass, removeClass, classList;
-if ("classList" in document.createElement("span")) {
+if ("classList" in document.createElement("span")
+    && !/MSIE|rv:11\.0/.test(navigator.userAgent || "")) {
     hasClass = function (e, k) {
         return e.classList.contains(k);
     };
