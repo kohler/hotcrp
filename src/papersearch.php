@@ -1228,14 +1228,14 @@ class PaperSearch {
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {
         $lword = strtolower($word);
         if (($kwdef = $srch->conf->search_keyword($lword, $srch->user))) {
-            if (get($kwdef, "has_parser"))
-                $qe = call_user_func($kwdef->has_parser, $word, $sword, $srch);
+            if (get($kwdef, "parse_has_callback"))
+                $qe = call_user_func($kwdef->parse_has_callback, $word, $sword, $srch);
             else if (get($kwdef, "has")) {
                 $sword2 = new SearchWord($kwdef->has);
                 $sword2->kwexplicit = true;
                 $sword2->keyword = $lword;
                 $sword2->kwdef = $kwdef;
-                $qe = call_user_func($kwdef->parser, $kwdef->has, $sword2, $srch);
+                $qe = call_user_func($kwdef->parse_callback, $kwdef->has, $sword2, $srch);
             } else
                 $qe = null;
             if ($qe && $sword->keyword === "no") {
@@ -1361,8 +1361,8 @@ class PaperSearch {
         $sword->keyword = $keyword;
         $sword->kwexplicit = $kwexplicit;
         $sword->kwdef = $this->conf->search_keyword($keyword, $this->user);
-        if ($sword->kwdef && get($sword->kwdef, "parser")) {
-            $qx = call_user_func($sword->kwdef->parser, $word, $sword, $this);
+        if ($sword->kwdef && get($sword->kwdef, "parse_callback")) {
+            $qx = call_user_func($sword->kwdef->parse_callback, $word, $sword, $this);
             if ($qx && !is_array($qx))
                 $qt[] = $qx;
             else if ($qx)
@@ -2497,9 +2497,9 @@ class PaperSearch {
                 if (!$this->conf->xt_allowed($fxj, $this->user)
                     || Conf::xt_disabled($fxj))
                     continue;
-                if (isset($fxj->completion_function)) {
+                if (isset($fxj->completion_callback)) {
                     Conf::xt_resolve_require($fxj);
-                    foreach (call_user_func($fxj->completion_function, $this->user, $fxj) as $c)
+                    foreach (call_user_func($fxj->completion_callback, $this->user, $fxj) as $c)
                         $cats[$c] = true;
                 } else if (isset($fxj->completion) && is_string($fxj->completion))
                     $cats[$fxj->completion] = true;

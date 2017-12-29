@@ -219,7 +219,7 @@ class Review_SearchTerm extends SearchTerm {
     static function keyword_factory($keyword, Conf $conf, $kwfj, $m) {
         $c = str_replace("-", "", $m[1]);
         return (object) [
-            "name" => $keyword, "parser" => "Review_SearchTerm::parse",
+            "name" => $keyword, "parse_callback" => "Review_SearchTerm::parse",
             "retype" => str_replace("-", "", $m[2]),
             "recompleteness" => get(self::$recompleteness_map, $c, $c),
             "has" => ">0"
@@ -281,7 +281,7 @@ class Review_SearchTerm extends SearchTerm {
         $f = $conf->find_all_fields($keyword);
         if (count($f) == 1 && $f[0] instanceof ReviewField)
             return (object) [
-                "name" => $keyword, "parser" => "Review_SearchTerm::parse_review_field",
+                "name" => $keyword, "parse_callback" => "Review_SearchTerm::parse_review_field",
                 "review_field" => $f[0], "has" => "any"
             ];
         else

@@ -30,7 +30,7 @@ class Comment_SearchTerm extends SearchTerm {
     static function comment_factory($keyword, Conf $conf, $kwfj, $m) {
         $tword = str_replace("-", "", $m[1]);
         return (object) [
-            "name" => $keyword, "parser" => "Comment_SearchTerm::parse",
+            "name" => $keyword, "parse_callback" => "Comment_SearchTerm::parse",
             "response" => $tword === "any", "comment" => true,
             "round" => null, "draft" => false,
             "only_author" => $tword === "au" || $tword === "author",
@@ -42,7 +42,7 @@ class Comment_SearchTerm extends SearchTerm {
         if ($round === false || ($m[1] && $m[3]))
             return null;
         return (object) [
-            "name" => $keyword, "parser" => "Comment_SearchTerm::parse",
+            "name" => $keyword, "parse_callback" => "Comment_SearchTerm::parse",
             "response" => true, "comment" => false,
             "round" => $round, "draft" => ($m[1] || $m[3]),
             "only_author" => false, "has" => ">0"

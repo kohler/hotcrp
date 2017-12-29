@@ -87,7 +87,7 @@ class Option_SearchTerm extends SearchTerm {
         $f = $conf->find_all_fields($keyword);
         if (count($f) == 1 && $f[0] instanceof PaperOption)
             return (object) [
-                "name" => $keyword, "parser" => "Option_SearchTerm::parse",
+                "name" => $keyword, "parse_callback" => "Option_SearchTerm::parse",
                 "has" => "yes"
             ];
         else
