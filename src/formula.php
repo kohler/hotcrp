@@ -1567,22 +1567,21 @@ class Formula {
                    && ($kwdef = $this->conf->formula_function($m[1], $this->user))) {
             $t = $m[2];
             $ff = new FormulaCall($kwdef, $m[1]);
-            if (get($kwdef, "modifier_parser")) {
+            if (get($kwdef, "parse_modifier_callback")) {
                 while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-A-Za-z0-9_.#@]+))(.*)/s', $t, $m)
                        && !preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1])
                        && (get($kwdef, "args") || !preg_match('/\A\s*\(/s', $m[2]))
-                       && ($marg = call_user_func($kwdef->modifier_parser, $ff, $m[1], $m[2], $this)))
+                       && ($marg = call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this)))
                     $t = $m[2];
             }
-            if (get($kwdef, "args") && !$this->_parse_function_args($ff, $t))
+            if ((get($kwdef, "args") && !$this->_parse_function_args($ff, $t))
+                || !isset($kwdef->callback))
                 return null;
-            $e = null;
-            if (isset($kwdef->factory))
-                $e = call_user_func($kwdef->factory, $ff, $this);
-            else if (isset($kwdef->factory_class)) {
-                $cname = $kwdef->factory_class;
-                $e = new $cname($ff, $this);
-            }
+            if ($kwdef->callback[0] === "+") {
+                $class = substr($kwdef->callback, 1);
+                $e = new $class($ff, $this);
+            } else
+                $e = call_user_func($kwdef->callback, $ff, $this);
             if (!$e)
                 return null;
         } else if (preg_match('/\A([-A-Za-z0-9_.@]+|\".*?\")(.*)\z/s', $t, $m)
