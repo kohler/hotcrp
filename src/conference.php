@@ -722,7 +722,7 @@ class Conf {
     static private function xt_combine($xt1, $xt2) {
         foreach (get_object_vars($xt2) as $k => $v)
             if (!property_exists($xt1, $k)
-                && !in_array($k, ["match", "expand_function"]))
+                && !in_array($k, ["match", "expand_function", "expand_callback"]))
                 $xt1->$k = $v;
     }
     static function xt_enabled($xt) {

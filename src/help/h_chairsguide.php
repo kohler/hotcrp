@@ -3,12 +3,7 @@
 // Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class ChairsGuide_HelpTopic {
-    private $hth;
-    function __construct($hth) {
-        $this->hth = $hth;
-    }
-    function render_presubmission($gj) {
-        $hth = $this->hth;
+    static function render_presubmission($hth, $gj) {
         if (!isset($gj->index)) {
             echo $hth->subhead("Submission time");
             echo "<p>Follow these steps to prepare to accept paper submissions.</p>\n\n<ol>\n";
@@ -87,8 +82,7 @@ form also can include:</p>
         }
     }
 
-    function render_assignments($gj) {
-        $hth = $this->hth;
+    static function render_assignments($hth, $gj) {
         if (!isset($gj->index)) {
             echo $hth->subhead("Assignments");
             echo "<p>After the submission deadline has passed:</p>\n<ol>\n";
@@ -177,8 +171,7 @@ form also can include:</p>
         }
     }
 
-    function render_chair_conflicts() {
-        $hth = $this->hth;
+    static function render_chair_conflicts($hth, $gj) {
         echo $hth->subhead("Chair conflicts");
         echo "<p>Chairs and system administrators can access any information stored in the
 conference system, including reviewer identities for conflicted papers.
@@ -221,8 +214,7 @@ review tokens; then even web server access logs store only the
 administrator’s identity.</p>\n\n";
     }
 
-    function render_premeeting($gj) {
-        $hth = $this->hth;
+    static function render_premeeting($hth, $gj) {
         if (!isset($gj->index)) {
             echo $hth->subhead("Before the meeting");
             echo "<ol>\n";
@@ -285,8 +277,7 @@ administrator’s identity.</p>\n\n";
     }
 
 
-    function render_atmeeting($gj) {
-        $hth = $this->hth;
+    static function render_atmeeting($hth, $gj) {
         if (!isset($gj->index)) {
             echo $hth->subhead("At the meeting");
             echo "<ol>\n";
@@ -324,8 +315,7 @@ administrator’s identity.</p>\n\n";
         }
     }
 
-    function render_postmeeting($gj) {
-        $hth = $this->hth;
+    static function render_postmeeting($hth, $gj) {
         if (!isset($gj->index)) {
             echo $hth->subhead("After the meeting");
             echo "<ol>\n";

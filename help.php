@@ -5,7 +5,7 @@
 require_once("src/initweb.php");
 
 $help_topics = new GroupedExtensions($Me, [
-    '{"name":"topics","title":"Help topics","position":-1000000,"priority":1000000,"function":"show_help_topics"}',
+    '{"name":"topics","title":"Help topics","position":-1000000,"priority":1000000,"callback":"show_help_topics"}',
     "etc/helptopics.json"
 ], $Conf->opt("helpTopics"));
 
@@ -30,7 +30,7 @@ class HtHead extends Ht {
     private $_rowidx;
     private $_help_topics;
     private $_renderers = [];
-    function __construct(Contact $user, $help_topics) {
+    function __construct($help_topics, Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->_help_topics = $help_topics;
@@ -156,20 +156,16 @@ class HtHead extends Ht {
     function echo_topic($topic) {
         foreach ($this->_help_topics->members($topic) as $gj) {
             Conf::xt_resolve_require($gj);
-            if (isset($gj->function))
-                call_user_func($gj->function, $this, $gj);
-            else if (isset($gj->renderer))
-                call_user_func($gj->renderer, $this, $gj);
-            else if (isset($gj->method)) {
-                $method = $gj->method;
-                if (($colons = strpos($method, "::"))) {
-                    $klass = substr($method, 0, $colons);
-                    $method = substr($method, $colons + 2);
-                } else
-                    $klass = $gj->factory_class;
-                if (!isset($renderers[$klass]))
-                    $renderers[$klass] = new $klass($this, $gj);
-                call_user_func([$renderers[$klass], $method], $gj);
+            if (isset($gj->callback)) {
+                $cb = $gj->callback;
+                if ($cb[0] === "*") {
+                    $colons = strpos($cb, ":");
+                    $klass = substr($cb, 1, $colons - 1);
+                    if (!isset($this->_renderers[$klass]))
+                        $this->_renderers[$klass] = new $klass($this, $gj);
+                    $cb = [$this->_renderers[$klass], substr($cb, $colons + 2)];
+                }
+                call_user_func($cb, $this, $gj);
             }
         }
     }
@@ -178,7 +174,7 @@ class HtHead extends Ht {
     }
 }
 
-$hth = new HtHead($Me, $help_topics);
+$hth = new HtHead($help_topics, $Me);
 
 
 function show_help_topics($hth) {
