@@ -3351,7 +3351,7 @@ class Conf {
     // API
     function _add_api_json($fj) {
         if (isset($fj->name) && is_string($fj->name)
-            && isset($fj->function) && is_string($fj->function))
+            && isset($fj->callback) && is_string($fj->callback))
             return self::xt_add($this->_api_map, $fj->name, $fj);
         else
             return false;
@@ -3402,7 +3402,7 @@ class Conf {
         if (!$prow && get($uf, "paper"))
             return new JsonResult(400, ["ok" => false, "error" => "No paper specified."]);
         self::xt_resolve_require($uf);
-        return call_user_func($uf->function, $user, $qreq, $prow, $uf);
+        return call_user_func($uf->callback, $user, $qreq, $prow, $uf);
     }
     function call_api_exit($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         // XXX precondition: $user->can_view_paper($prow) || !$prow

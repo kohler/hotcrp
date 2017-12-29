@@ -1,109 +1,109 @@
 [
     {
         "name": "administrator", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::manager_api",
+        "callback": "PaperApi::manager_api",
         "synonym": ["manager"]
     },
     {
-        "name": "alltags", "get": true, "function": "PaperApi::alltags_api"
+        "name": "alltags", "get": true, "callback": "PaperApi::alltags_api"
     },
     {
         "name": "checkformat", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::checkformat_api"
+        "callback": "PaperApi::checkformat_api"
     },
     {
         "name": "clickthrough", "post": true,
-        "function": "User_API::clickthrough"
+        "callback": "User_API::clickthrough"
     },
     {
         "name": "decision", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::decision_api"
+        "callback": "PaperApi::decision_api"
     },
     {
         "name": "fieldhtml", "get": true,
-        "function": "Search_API::fieldhtml"
+        "callback": "Search_API::fieldhtml"
     },
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
-        "function": "PaperApi::follow_api"
+        "callback": "PaperApi::follow_api"
     },
     {
         "name": "lead", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::lead_api"
+        "callback": "PaperApi::lead_api"
     },
     {
         "name": "viewoptions", "get": true, "post": true,
-        "function": "SearchConfig_API::viewoptions",
+        "callback": "SearchConfig_API::viewoptions",
         "synonym": ["listreport"]
     },
     {
         "name": "namedformula", "get": true,
-        "function": "SearchConfig_API::namedformula"
+        "callback": "SearchConfig_API::namedformula"
     },
     {
         "name": "namedformula", "post": true,
-        "function": "SearchConfig_API::save_namedformula"
+        "callback": "SearchConfig_API::save_namedformula"
     },
     {
         "name": "mentioncompletion", "get": true, "post": true,
-        "function": "PaperApi::mentioncompletion_api"
+        "callback": "PaperApi::mentioncompletion_api"
     },
     {
         "name": "review", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::review_api"
+        "callback": "PaperApi::review_api"
     },
     {
         "name": "reviewrating", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::reviewrating_api"
+        "callback": "PaperApi::reviewrating_api"
     },
     {
         "name": "reviewround", "paper": true, "post": true, "xxx": true,
-        "function": "PaperApi::reviewround_api"
+        "callback": "PaperApi::reviewround_api"
     },
     {
         "name": "revpref", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::pref_api",
+        "callback": "PaperApi::pref_api",
         "synonym": ["pref"]
     },
     {
         "name": "search", "get": true,
-        "function": "Search_API::search"
+        "callback": "Search_API::search"
     },
     {
         "name": "settags", "post": true,
-        "function": "PaperApi::settags_api"
+        "callback": "PaperApi::settags_api"
     },
     {
         "name": "shepherd", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::shepherd_api"
+        "callback": "PaperApi::shepherd_api"
     },
     {
         "name": "taganno", "get": true,
-        "function": "TagAnno_API::get"
+        "callback": "TagAnno_API::get"
     },
     {
         "name": "taganno", "post": true,
-        "function": "TagAnno_API::set",
+        "callback": "TagAnno_API::set",
         "synonym": ["settaganno"]
     },
     {
         "name": "tagreport", "paper": true, "get": true,
-        "function": "PaperApi::tagreport_api"
+        "callback": "PaperApi::tagreport_api"
     },
     {
         "name": "trackerstatus", "get": true, "post": true,
-        "function": "MeetingTracker::trackerstatus_api"
+        "callback": "MeetingTracker::trackerstatus_api"
     },
     {
         "name": "votereport", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::votereport_api"
+        "callback": "PaperApi::votereport_api"
     },
     {
         "name": "whoami", "get": true,
-        "function": "User_API::whoami"
+        "callback": "User_API::whoami"
     },
     {
         "name": "jserror", "get": true, "post": true,
-        "function": "Error_API::jserror"
+        "callback": "Error_API::jserror"
     }
 ]
