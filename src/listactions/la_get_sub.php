@@ -49,7 +49,7 @@ class Get_ListAction extends ListAction {
 
 class GetDocument_ListAction extends ListAction {
     private $dt;
-    function __construct($fj) {
+    function __construct($conf, $fj) {
         $this->dt = $fj->dtype;
     }
     static function make_list_action(PaperOption $opt) {
@@ -59,7 +59,7 @@ class GetDocument_ListAction extends ListAction {
             "selector" => "Documents/" . ($opt->id <= 0 ? pluralize($opt->title) : $opt->title),
             "position" => $opt->position + ($opt->final ? 0 : 100),
             "display_if_list_has" => $opt->field_key(),
-            "factory_class" => "GetDocument_ListAction"
+            "callback" => "+GetDocument_ListAction"
         ];
         return $fj;
     }

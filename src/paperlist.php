@@ -565,7 +565,7 @@ class PaperList {
         $lllgroups = [];
         $whichlll = -1;
         foreach ($renderers as $rf) {
-            if (($lllg = call_user_func($rf->renderer, $this))) {
+            if (($lllg = call_user_func($rf->render_callback, $this, $rf))) {
                 if (is_string($lllg))
                     $lllg = [$lllg];
                 array_unshift($lllg, $rf->name, $rf->title);

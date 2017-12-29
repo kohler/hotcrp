@@ -4,7 +4,7 @@
 
 class GetRevpref_ListAction extends ListAction {
     private $extended;
-    function __construct($fj) {
+    function __construct($conf, $fj) {
         $this->extended = $fj->name === "get/revprefx";
     }
     function allow(Contact $user) {

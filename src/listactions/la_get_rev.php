@@ -75,7 +75,7 @@ class GetReviewBase_ListAction extends ListAction {
 }
 
 class GetReviewForm_ListAction extends GetReviewBase_ListAction {
-    function __construct($fj) {
+    function __construct($conf, $fj) {
         parent::__construct(true, $fj->name === "get/revformz");
     }
     function allow(Contact $user) {
@@ -114,7 +114,7 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
 
 class GetReviews_ListAction extends GetReviewBase_ListAction {
     private $include_paper;
-    function __construct($fj) {
+    function __construct($conf, $fj) {
         parent::__construct(false, !!get($fj, "zip"));
         $this->include_paper = !!get($fj, "abstract");
         require_once("la_get_sub.php");
@@ -288,7 +288,7 @@ class GetRank_ListAction extends ListAction {
 
 class GetLead_ListAction extends ListAction {
     private $type;
-    function __construct($fj) {
+    function __construct($conf, $fj) {
         $this->type = $fj->type;
     }
     function allow(Contact $user) {

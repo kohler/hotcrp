@@ -803,7 +803,7 @@ class Conf {
             if (!call_user_func($checkf, $fxt))
                 continue;
             self::xt_resolve_require($fxt);
-            $r = call_user_func($fxt->expand_function, $name, $this, $fxt, $m);
+            $r = call_user_func($fxt->expand_callback, $name, $this, $fxt, $m);
             if (is_object($r))
                 $r = [$r];
             foreach ($r ? : [] as $xt) {
@@ -836,7 +836,7 @@ class Conf {
     function _add_search_keyword_json($kwj) {
         if (isset($kwj->name) && is_string($kwj->name))
             return self::xt_add($this->_search_keyword_base, $kwj->name, $kwj);
-        else if (is_string($kwj->match) && is_string($kwj->expand_function)) {
+        else if (is_string($kwj->match) && is_string($kwj->expand_callback)) {
             $this->_search_keyword_factories[] = $kwj;
             return true;
         } else
@@ -3435,16 +3435,14 @@ class Conf {
     function _add_list_action_json($fj) {
         $ok = false;
         if (isset($fj->name) && is_string($fj->name)) {
-            if (isset($fj->renderer) && is_string($fj->renderer))
+            if (isset($fj->render_callback) && is_string($fj->render_callback))
                 $ok = self::xt_add($this->_list_action_renderers, $fj->name, $fj);
-            if ((isset($fj->factory) && is_string($fj->factory))
-                || (isset($fj->factory_class) && is_string($fj->factory_class)))
+            if (isset($fj->callback) && is_string($fj->callback))
                 $ok = self::xt_add($this->_list_action_map, $fj->name, $fj);
-        } else if (isset($fj->match) && is_string($fj->match)) {
-            if (isset($fj->expand_function) && is_string($fj->expand_function)) {
-                $this->_list_action_factories[] = $fj;
-                $ok = true;
-            }
+        } else if (isset($fj->match) && is_string($fj->match)
+                   && isset($fj->expand_callback) && is_string($fj->expand_callback)) {
+            $this->_list_action_factories[] = $fj;
+            $ok = true;
         }
         return $ok;
     }
@@ -3485,7 +3483,7 @@ class Conf {
         if (isset($fj->name) && is_string($fj->name))
             return self::xt_add($this->_paper_column_map, $fj->name, $fj);
         else if (isset($fj->match) && is_string($fj->match)
-                 && isset($fj->expand_function) && is_string($fj->expand_function)) {
+                 && isset($fj->expand_callback) && is_string($fj->expand_callback)) {
             $this->_paper_column_factories[] = $fj;
             return true;
         } else

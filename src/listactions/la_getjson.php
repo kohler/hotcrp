@@ -5,7 +5,7 @@
 class GetJson_ListAction extends ListAction {
     private $iszip;
     private $zipdoc;
-    function __construct($fj) {
+    function __construct($conf, $fj) {
         $this->iszip = $fj->name === "get/jsonattach";
     }
     function document_callback($dj, DocumentInfo $doc, $dtype, PaperStatus $pstatus) {

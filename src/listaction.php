@@ -48,12 +48,12 @@ class ListAction {
             $selection = new SearchSelection($selection);
         if (get($uf, "paper") && $selection->is_empty())
             return new JsonResult(400, ["ok" => false, "error" => "No papers selected."]);
-        if (isset($uf->factory_class)) {
-            $fc = $uf->factory_class;
-            $action = new $fc($uf, $user->conf);
+        if ($uf->callback[0] === "+") {
+            $class = substr($uf->callback, 1);
+            $action = new $class($user->conf, $uf);
         } else
-            $action = call_user_func($uf->factory, $uf, $user->conf);
-        if (!$action->allow($user))
+            $action = call_user_func($uf->callback, $user->conf, $uf);
+        if (!$action || !$action->allow($user))
             return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
         else
             return $action->run($user, $qreq, $selection);
