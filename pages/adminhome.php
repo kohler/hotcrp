@@ -6,8 +6,8 @@ function admin_home_messages() {
     global $Conf;
     $m = array();
     $errmarker = "<span class=\"error\">Error:</span> ";
-    if (preg_match("/^(?:[1-4]\\.|5\\.[0123])/", phpversion()))
-        $m[] = $errmarker . "HotCRP requires PHP version 5.4 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".";
+    if (preg_match("/^(?:[1-4]\\.|5\\.[012345])/", phpversion()))
+        $m[] = $errmarker . "HotCRP requires PHP version 5.6 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".";
     $result = Dbl::qx_raw("show variables like 'max_allowed_packet'");
     $max_file_size = ini_get_bytes("upload_max_filesize");
     if (($row = edb_row($result))
