@@ -34,8 +34,12 @@
     },
     {
         "name": "topicscore",
-        "column": true, "sort": true, "completion": true, "factory_class": "TopicScore_PaperColumn",
+        "column": true, "sort": true, "completion": true, "className": "pl_topicscore", "factory_class": "TopicScore_PaperColumn",
         "position": 400
+    },
+    {
+        "match": "topicscore:(.+?)", "priority": -1, "allow_if": "manager",
+        "expand_function": "TopicScore_PaperColumn::expand"
     },
     {
         "name": "desirability",
@@ -54,7 +58,7 @@
     },
     {
         "match": "(?:pref:|revpref:|preference:)(.+?)((?::row)?)", "priority": -1, "allow_if": "manager",
-        "expand_function": "Preference_PaperColumnFactory::expand",
+        "expand_function": "Preference_PaperColumn::expand",
         "completion": "pref:<user>"
     },
     {

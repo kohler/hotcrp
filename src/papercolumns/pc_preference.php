@@ -28,8 +28,7 @@ class Preference_PaperColumn extends PaperColumn {
         $this->contact = $this->contact ? : $reviewer;
         $this->not_me = $this->contact->contactId !== $pl->user->contactId;
         if (!$pl->user->isPC
-            || (($this->not_me || !$this->name /* user factory */)
-                && !$pl->user->is_manager()))
+            || ($this->not_me && !$pl->user->is_manager()))
             return false;
         if ($visible)
             $pl->qopts["topics"] = 1;
@@ -75,7 +74,7 @@ class Preference_PaperColumn extends PaperColumn {
                 $this->show_conflict = false;
     }
     function header(PaperList $pl, $is_text) {
-        if (!$this->not_me || $this->row)
+        if ($this->contact === $pl->user || $this->row)
             return "Preference";
         else if ($is_text)
             return $pl->user->name_text_for($this->contact) . " preference";
@@ -109,9 +108,7 @@ class Preference_PaperColumn extends PaperColumn {
     function text(PaperList $pl, PaperInfo $row) {
         return unparse_preference($this->preference_values($row));
     }
-}
 
-class Preference_PaperColumnFactory {
     static function expand($name, Conf $conf, $xfj, $m) {
         if (!($fj = (array) $conf->basic_paper_column("pref", $conf->xt_user)))
             return null;

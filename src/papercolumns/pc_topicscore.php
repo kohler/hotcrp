@@ -4,11 +4,13 @@
 
 class TopicScore_PaperColumn extends PaperColumn {
     private $contact;
-    function __construct($cj) {
+    function __construct($cj, Conf $conf = null) {
         parent::__construct($cj);
+        if ($conf && isset($cj->user))
+            $this->contact = $conf->pc_member_by_email($cj->user);
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $pl->reviewer_user();
+        $this->contact = $this->contact ? : $pl->reviewer_user();
         if (!$pl->conf->has_topics()
             || !$pl->user->isPC
             || ($this->contact->contactId !== $pl->user->contactId
@@ -19,15 +21,37 @@ class TopicScore_PaperColumn extends PaperColumn {
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        return $b->topic_interest_score($this->contact) - $a->topic_interest_score($this->contact);
+        $at = $a->topic_interest_score($this->contact);
+        $bt = $b->topic_interest_score($this->contact);
+        return $at < $bt ? 1 : ($at == $bt ? 0 : -1);
     }
     function header(PaperList $pl, $is_text) {
-        return $is_text ? "Topic score" : "Topic<br />score";
+        if ($this->contact === $pl->user)
+            return $is_text ? "Topic score" : "Topic<br />score";
+        else if ($is_text)
+            return $pl->user->name_text_for($this->contact) . " topic score";
+        else
+            return $pl->user->name_html_for($this->contact) . "<br />topic score";
     }
     function content(PaperList $pl, PaperInfo $row) {
         return htmlspecialchars($row->topic_interest_score($this->contact));
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $row->topic_interest_score($this->contact);
+    }
+
+    static function expand($name, Conf $conf, $xfj, $m) {
+        if (!($fj = (array) $conf->basic_paper_column("topicscore", $conf->xt_user)))
+            return null;
+        $rs = [];
+        foreach (ContactSearch::make_pc($m[1], $conf->xt_user)->ids as $cid) {
+            $u = $conf->cached_user_by_id($cid);
+            $fj["name"] = "topicscore:" . $u->email;
+            $fj["user"] = $u->email;
+            $rs[] = (object) $fj;
+        }
+        if (empty($rs))
+            $conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[1]) . "”.");
+        return $rs;
     }
 }
