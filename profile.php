@@ -684,11 +684,11 @@ else if (!$newProfile) {
 }
 
 echofield(1, "firstName", "First&nbsp;name",
-          Ht::entry("firstName", contact_value("firstName"), ["size" => 24]));
+          Ht::entry("firstName", contact_value("firstName"), ["size" => 24, "autocomplete" => "given-name"]));
 echofield(3, "lastName", "Last&nbsp;name",
-          Ht::entry("lastName", contact_value("lastName"), ["size" => 24]));
+          Ht::entry("lastName", contact_value("lastName"), ["size" => 24, "autocomplete" => "family-name"]));
 echofield(0, "affiliation", "Affiliation",
-          Ht::entry("affiliation", contact_value("affiliation"), ["size" => 52]));
+          Ht::entry("affiliation", contact_value("affiliation"), ["size" => 52, "autocomplete" => "organization"]));
 echofield(0, false, "Country", Countries::selector("country", contact_value("country")));
 
 $data = $Acct->data();
@@ -697,17 +697,17 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
     echo "<div style='margin-top:20px'></div>\n";
     $address = get($data, "address");
     echofield(0, false, "Address line 1",
-              Ht::entry("addressLine1", value("addressLine1", $address ? $address[0] : null), ["size" => 52]));
+              Ht::entry("addressLine1", value("addressLine1", $address ? $address[0] : null), ["size" => 52, "autocomplete" => "address-line1"]));
     echofield(0, false, "Address line 2",
-              Ht::entry("addressLine2", value("addressLine2", $address ? $address[1] : null), ["size" => 52]));
+              Ht::entry("addressLine2", value("addressLine2", $address ? $address[1] : null), ["size" => 52, "autocomplete" => "address-line2"]));
     echofield(0, false, "City",
-              Ht::entry("city", value("city", get($data, "city")), ["size" => 52]));
+              Ht::entry("city", value("city", get($data, "city")), ["size" => 52, "autocomplete" => "address-level2"]));
     echofield(1, false, "State/Province/Region",
-              Ht::entry("state", value("state", get($data, "state")), ["size" => 24]));
+              Ht::entry("state", value("state", get($data, "state")), ["size" => 24, "autocomplete" => "address-level1"]));
     echofield(3, false, "ZIP/Postal code",
-              Ht::entry("zipCode", value("zipCode", get($data, "zip")), ["size" => 12]));
+              Ht::entry("zipCode", value("zipCode", get($data, "zip")), ["size" => 12, "autocomplete" => "postal-code"]));
     echofield(0, false, "Phone <span class='f-cx'>(optional)</span>",
-              Ht::entry("voicePhoneNumber", contact_value("voicePhoneNumber"), ["size" => 24]));
+              Ht::entry("voicePhoneNumber", contact_value("voicePhoneNumber"), ["size" => 24, "autocomplete" => "tel"]));
 }
 
 
@@ -722,16 +722,16 @@ if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct))
     if (!$Me->can_change_password(null)) {
         echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
         echo '<div class="f-i"><div class="', fcclass("password"), '">Current password</div>',
-            '<div class="', feclass("password"), '">', Ht::password("oldpassword", "", array("size" => 24)), '</div>',
+            '<div class="', feclass("password"), '">', Ht::password("oldpassword", "", ["size" => 24, "autocomplete" => "current-password"]), '</div>',
             '</div>';
     }
     if ($Conf->opt("contactdb_dsn") && $Conf->opt("contactdb_loginFormHeading"))
         echo $Conf->opt("contactdb_loginFormHeading");
     echo '<div class="f-i"><div class="f-ix">
   <div class="', fcclass("password"), '">New password</div>
-  <div class="', feclass("password"), '">', Ht::password("upassword", "", array("size" => 24, "class" => "fn"));
+  <div class="', feclass("password"), '">', Ht::password("upassword", "", ["size" => 24, "class" => "fn", "autocomplete" => "new-password"]);
     if ($Acct->plaintext_password() && $Me->privChair)
-        echo Ht::entry("upasswordt", contact_value("upasswordt", "password"), array("size" => 24, "class" => "fx"));
+        echo Ht::entry("upasswordt", contact_value("upasswordt", "password"), ["size" => 24, "class" => "fx", "autocomplete" => "new-password"]);
     echo '</div>
 </div><div class="fn f-ix">
   <div class="', fcclass("password"), '">Repeat new password</div>

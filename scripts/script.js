@@ -5907,7 +5907,7 @@ handle_ui.on("js-forgot-password", function (event) {
     var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "forgot"}), maxWidth: "25rem"});
     hc.push('<p>Enter your email and we’ll send you instructions.</p>');
     hc.push('<p><div class="f-c">Email</div><div class="f-e">', '</div></p>');
-    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" />');
+    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" autocomplete="username" />');
     hc.push_actions(['<button type="submit" class="btn btn-default">Reset password</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
     var $d = hc.show();
@@ -5918,7 +5918,7 @@ handle_ui.on("js-create-account", function (event) {
     var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "new"}), maxWidth: "25rem"});
     hc.push('<h2>Create account</h2>');
     hc.push('<p><div class="f-c">Email</div><div class="f-e">', '</div></p>');
-    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" />');
+    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" autocomplete="email" />');
     hc.push_actions(['<button type="submit" class="btn btn-default">Create account</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
     var $d = hc.show();

@@ -208,24 +208,26 @@ class Countries {
         "us" => "united states of america",
         "usa" => "united states of america");
 
-    public static function selector($name, $country) {
-        $t = "<select name=\"$name\">\n";
+    public static function selector($name, $country, $extra = []) {
+        if (!isset($extra["autocomplete"]))
+            $extra["autocomplete"] = "country-name";
+        $t = "<select name=\"$name\"" . Ht::extra($extra) . ">\n";
         $t .= "<option";
         if (!$country)
-            $t .= " selected='selected'";
+            $t .= ' selected="selected"';
         $t .= " value=''>(Select one)</option>\n";
         if (($x = get(self::$synonyms, strtolower($country))))
             $country = $x;
         foreach (self::$list as $c) {
             $t .= "<option";
             if ($country && !strcasecmp($country, $c)) {
-                $t .= " selected='selected'";
+                $t .= ' selected="selected"';
                 $country = null;
             }
             $t .= ">" . $c . "</option>\n";
         }
         if ($country)
-            $t .= "<option selected='selected'>" . htmlspecialchars($country) . "</option>\n";
+            $t .= '<option selected="selected">' . htmlspecialchars($country) . "</option>\n";
         return $t . "</select>";
     }
 

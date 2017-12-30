@@ -202,7 +202,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         '</div>
   <div class="f-e', $email_class, '">',
         Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
-                  ["size" => 36, "id" => "signin_email", "class" => "wide-control"]),
+                  ["size" => 36, "id" => "signin_email", "class" => "wide-control", "autocomplete" => "username"]),
         '</div>
 </div>
 <div class="f-i fx">
@@ -211,7 +211,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         echo '<div class="f-cxr"><a href="" class="x ui js-forgot-password">Forgot your password?</a></div>';
     echo 'Password</div><div class="f-e">',
         Ht::password("password", "",
-                     ["size" => 36, "id" => "signin_password", "class" => "wide-control"]),
+                     ["size" => 36, "id" => "signin_password", "class" => "wide-control", "autocomplete" => "current-password"]),
         "</div>\n</div>\n";
     if ($password_reset)
         echo Ht::unstash_script("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode_browser($password_reset->password) . ")})");
