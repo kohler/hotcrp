@@ -4,9 +4,9 @@
 
 class TopicScore_PaperColumn extends PaperColumn {
     private $contact;
-    function __construct($cj, Conf $conf = null) {
-        parent::__construct($cj);
-        if ($conf && isset($cj->user))
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
+        if (isset($cj->user))
             $this->contact = $conf->pc_member_by_email($cj->user);
     }
     function prepare(PaperList $pl, $visible) {

@@ -4,8 +4,8 @@
 
 class ReviewDelegation_PaperColumn extends PaperColumn {
     private $requester;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->isPC)

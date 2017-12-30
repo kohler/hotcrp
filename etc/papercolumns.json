@@ -1,40 +1,40 @@
 [
     {
         "name": "sel",
-        "column": true, "minimal": true, "factory_class": "SelectorPaperColumn",
+        "column": true, "minimal": true, "callback": "+SelectorPaperColumn",
         "position": 10
     },
     {
         "name": "selon",
-        "column": true, "minimal": true, "className": "pl_sel", "factory_class": "SelectorPaperColumn",
+        "column": true, "minimal": true, "className": "pl_sel", "callback": "+SelectorPaperColumn",
         "position": 10
     },
     {
         "name": "selconf",
-        "column": true, "minimal": true, "className": "pl_confsel", "factory_class": "ConflictSelector_PaperColumn",
+        "column": true, "minimal": true, "className": "pl_confsel", "callback": "+ConflictSelector_PaperColumn",
         "position": 10
     },
     {
         "name": "id",
-        "column": true, "sort": true, "minimal": true, "completion": true, "factory_class": "IdPaperColumn",
+        "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+IdPaperColumn",
         "position": 100
     },
     {
         "name": "title",
-        "column": true, "sort": true, "minimal": true, "completion": true, "factory_class": "TitlePaperColumn",
+        "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+TitlePaperColumn",
         "position": 120
     },
     {
         "match": "((?:opt:)?)(.*?)((?:[-:]row)?)", "priority": -2000,
         "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_option",
-        "factory_class": "Option_PaperColumn",
+        "callback": "+Option_PaperColumn",
         "expand_callback": "Option_PaperColumnFactory::expand",
-        "completion_function": "Option_PaperColumnFactory::completions",
+        "completion_callback": "Option_PaperColumnFactory::completions",
         "position": 200
     },
     {
         "name": "topicscore",
-        "column": true, "sort": true, "completion": true, "className": "pl_topicscore", "factory_class": "TopicScore_PaperColumn",
+        "column": true, "sort": true, "completion": true, "className": "pl_topicscore", "callback": "+TopicScore_PaperColumn",
         "position": 400
     },
     {
@@ -43,17 +43,17 @@
     },
     {
         "name": "desirability",
-        "column": true, "sort": true, "completion": true, "factory_class": "Desirability_PaperColumn",
+        "column": true, "sort": true, "completion": true, "callback": "+Desirability_PaperColumn",
         "position": 410
     },
     {
         "name": "pref",
-        "column": true, "sort": true, "completion": true, "className": "pl_revpref", "factory_class": "Preference_PaperColumn",
+        "column": true, "sort": true, "completion": true, "className": "pl_revpref", "callback": "+Preference_PaperColumn",
         "position": 500, "synonym": ["revpref", "preference"]
     },
     {
         "name": "editpref",
-        "column": true, "edit": true, "sort": true, "className": "pl_editrevpref", "factory_class": "Preference_PaperColumn",
+        "column": true, "edit": true, "sort": true, "className": "pl_editrevpref", "callback": "+Preference_PaperColumn",
         "position": 500, "synonym": ["editrevpref"]
     },
     {
@@ -63,58 +63,58 @@
     },
     {
         "name": "revdelegation",
-        "row": true, "className": "pl_text", "factory_class": "ReviewDelegation_PaperColumn",
+        "row": true, "className": "pl_text", "callback": "+ReviewDelegation_PaperColumn",
         "position": 800
     },
     {
         "name": "revtype",
-        "column": true, "sort": true, "completion": true, "className": "pl_revtype", "factory_class": "ReviewerType_PaperColumn",
+        "column": true, "sort": true, "completion": true, "className": "pl_revtype", "callback": "+ReviewerType_PaperColumn",
         "position": 820
     },
     {
         "name": "revstat",
         "column": true, "sort": true, "completion": true, "className": "pl_revstat",
-        "factory_class": "ReviewStatus_PaperColumn", "allow_if": "reviewer",
+        "callback": "+ReviewStatus_PaperColumn", "allow_if": "reviewer",
         "position": 830
     },
     {
         "name": "assignment",
-        "column": true, "sort": true, "completion": true, "factory_class": "AssignReview_PaperColumn",
+        "column": true, "sort": true, "completion": true, "callback": "+AssignReview_PaperColumn",
         "position": 840, "synonym": ["assrev", "assign"]
     },
     {
         "name": "status",
-        "column": true, "sort": true, "completion": true, "factory_class": "StatusPaperColumn",
+        "column": true, "sort": true, "completion": true, "callback": "+StatusPaperColumn",
         "position": 900
     },
     {
         "name": "statusfull",
-        "column": true, "sort": true, "completion": true, "className": "pl_status", "factory_class": "StatusPaperColumn",
+        "column": true, "sort": true, "completion": true, "className": "pl_status", "callback": "+StatusPaperColumn",
         "position": 910
     },
     {
         "name": "timestamp",
-        "column": true, "sort": true, "completion": true, "factory_class": "Timestamp_PaperColumn",
+        "column": true, "sort": true, "completion": true, "callback": "+Timestamp_PaperColumn",
         "position": 920
     },
     {
         "name": "pagecount",
-        "column": true, "sort": true, "fold": true, "completion": true, "minimal": true, "className": "plr", "factory_class": "PageCount_PaperColumn",
+        "column": true, "sort": true, "fold": true, "completion": true, "minimal": true, "className": "plr", "callback": "+PageCount_PaperColumn",
         "position": 1000, "synonym": ["pages"]
     },
     {
         "match": ".*", "priority": -2100,
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true,
         "className": "pl_score",
-        "factory_class": "Score_PaperColumn",
+        "callback": "+Score_PaperColumn",
         "position": 1100,
         "expand_callback": "Score_PaperColumnFactory::expand",
-        "completion_function": "Score_PaperColumnFactory::completions"
+        "completion_callback": "Score_PaperColumnFactory::completions"
     },
     {
         "match": "(?:g|graph):?\\((.*)\\)", "priority": -1,
         "column": true, "fold": true, "sort": true, "minimal": true, "className": "pl_score",
-        "factory_class": "FormulaGraph_PaperColumn",
+        "callback": "+FormulaGraph_PaperColumn",
         "position": 1200,
         "expand_callback": "FormulaGraph_PaperColumnFactory::expand",
         "completion": "graph(<formula>)"
@@ -122,16 +122,16 @@
     {
         "match": ".*", "priority": -3000,
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_formula",
-        "factory_class": "Formula_PaperColumn",
+        "callback": "+Formula_PaperColumn",
         "position": 1300,
         "expand_callback": "Formula_PaperColumnFactory::expand",
-        "completion_function": "Formula_PaperColumnFactory::completions"
+        "completion_callback": "Formula_PaperColumnFactory::completions"
     },
     {
         "match": "(tag:)(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": false,
         "column": true, "sort": true, "minimal": true,
-        "factory_class": "Tag_PaperColumn",
+        "callback": "+Tag_PaperColumn",
         "expand_callback": "Tag_PaperColumnFactory::expand",
         "position": 1400
     },
@@ -139,7 +139,7 @@
         "match": "(tagval:)(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": true,
         "column": true, "sort": true, "minimal": true,
-        "factory_class": "Tag_PaperColumn",
+        "callback": "+Tag_PaperColumn",
         "expand_callback": "Tag_PaperColumnFactory::expand",
         "position": 1400
     },
@@ -147,100 +147,100 @@
         "match": "(#)([-a-zA-Z0-9!@*_:.\/~]+)", "priority": -1, "allow_if": "pc",
         "tagvalue": null,
         "column": true, "sort": true, "completion": "#<tag>", "minimal": true,
-        "factory_class": "Tag_PaperColumn",
+        "callback": "+Tag_PaperColumn",
         "expand_callback": "Tag_PaperColumnFactory::expand",
         "position": 1400
     },
     {
         "name": "abstract",
-        "row": true, "fold": true, "completion": true, "factory_class": "Abstract_PaperColumn",
+        "row": true, "fold": true, "completion": true, "callback": "+Abstract_PaperColumn",
         "position": 140
     },
     {
         "name": "authors",
-        "row": true, "fold": 1, "completion": true, "factory_class": "Authors_PaperColumn",
+        "row": true, "fold": 1, "completion": true, "callback": "+Authors_PaperColumn",
         "synonym": "au", "position": 150
     },
     {
         "name": "authorsmatch",
-        "row": true, "factory_class": "ConflictMatch_PaperColumn",
+        "row": true, "callback": "+ConflictMatch_PaperColumn",
         "position": 155
     },
     {
         "name": "collab",
-        "row": true, "fold": true, "completion": true, "factory_class": "Collab_PaperColumn",
+        "row": true, "fold": true, "completion": true, "callback": "+Collab_PaperColumn",
         "synonym": ["collaborators", "co"],
         "position": 160
     },
     {
         "name": "collabmatch",
-        "row": true, "factory_class": "ConflictMatch_PaperColumn",
+        "row": true, "callback": "+ConflictMatch_PaperColumn",
         "position": 161
     },
     {
         "name": "topics",
-        "row": true, "fold": true, "completion": true, "factory_class": "Topics_PaperColumn",
+        "row": true, "fold": true, "completion": true, "callback": "+Topics_PaperColumn",
         "position": 420
     },
     {
         "name": "pcconf",
-        "row": true, "fold": true, "completion": "pcconflicts", "factory_class": "PCConflicts_PaperColumn",
+        "row": true, "fold": true, "completion": "pcconflicts", "callback": "+PCConflicts_PaperColumn",
         "synonym": ["conf", "conflicts", "pcconflicts", "pc-conflicts"],
         "position": 450
     },
     {
         "name": "allpref",
-        "row": true, "fold": true, "completion": true, "factory_class": "PreferenceList_PaperColumn",
+        "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
         "synonym": ["allrevpref"],
         "position": 550
     },
     {
         "name": "alltopicpref",
-        "row": true, "fold": true, "completion": true, "factory_class": "PreferenceList_PaperColumn",
+        "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
         "topics": true, "synonym": ["alltopicrevpref"],
         "position": 550
     },
     {
         "name": "reviewers",
-        "row": true, "fold": true, "completion": true, "factory_class": "ReviewerList_PaperColumn",
+        "row": true, "fold": true, "completion": true, "callback": "+ReviewerList_PaperColumn",
         "position": 850
     },
     {
         "name": "tags",
-        "row": true, "fold": true, "completion": true, "factory_class": "TagList_PaperColumn",
+        "row": true, "fold": true, "completion": true, "callback": "+TagList_PaperColumn",
         "position": 1410
     },
     {
         "match": "(?:tagreport:|tagrep:|tagreports\\z)(.*)", "priority": -1,
         "row": true, "fold": true, "className": "pl_tagrep",
-        "factory_class": "TagReport_PaperColumn",
+        "callback": "+TagReport_PaperColumn",
         "expand_callback": "TagReport_PaperColumnFactory::expand",
         "position": 1420
     },
     {
         "name": "administrator",
         "row": true, "sort": true, "fold": true, "synonym": ["admin"],
-        "factory_class": "Administrator_PaperColumn",
+        "callback": "+Administrator_PaperColumn",
         "position": 1500
     },
     {
         "name": "lead",
         "row": true, "sort": true, "fold": true, "completion": true,
-        "factory_class": "Lead_PaperColumn",
+        "callback": "+Lead_PaperColumn",
         "position": 1600
     },
     {
         "name": "shepherd",
         "row": true, "sort": true, "fold": true, "completion": true,
-        "factory_class": "Shepherd_PaperColumn",
+        "callback": "+Shepherd_PaperColumn",
         "position": 1700
     },
     {
         "name": "commenters",
-        "row": true, "fold": true, "completion": true, "factory_class": "Commenters_PaperColumn",
+        "row": true, "fold": true, "completion": true, "callback": "+Commenters_PaperColumn",
         "position": 2000
     },
     {
-        "name": "foldall", "factory_class": "FoldAll_PaperColumn"
+        "name": "foldall", "callback": "+FoldAll_PaperColumn"
     }
 ]

@@ -3480,10 +3480,11 @@ class Conf {
 
     // Paper columns
     function _add_paper_column_json($fj) {
-        if (isset($fj->name) && is_string($fj->name))
+        if (isset($fj->name) && is_string($fj->name)
+            && isset($fj->callback) && is_string($fj->callback)) {
             return self::xt_add($this->_paper_column_map, $fj->name, $fj);
-        else if (isset($fj->match) && is_string($fj->match)
-                 && isset($fj->expand_callback) && is_string($fj->expand_callback)) {
+        } else if (isset($fj->match) && is_string($fj->match)
+                   && isset($fj->expand_callback) && is_string($fj->expand_callback)) {
             $this->_paper_column_factories[] = $fj;
             return true;
         } else

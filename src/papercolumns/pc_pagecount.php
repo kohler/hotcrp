@@ -3,8 +3,8 @@
 // Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class PageCount_PaperColumn extends PaperColumn {
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->user->can_view_some_pdf();

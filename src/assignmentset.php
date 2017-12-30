@@ -1811,7 +1811,7 @@ class AssignmentSet {
 class AutoassignmentPaperColumn extends PaperColumn {
     private $aset;
     function __construct(AssignmentSet $aset) {
-        parent::__construct(["name" => "autoassignment", "row" => true, "className" => "pl_autoassignment"]);
+        parent::__construct($aset->conf, ["name" => "autoassignment", "row" => true, "className" => "pl_autoassignment"]);
         $this->aset = $aset;
     }
     function header(PaperList $pl, $is_text) {

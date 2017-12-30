@@ -304,10 +304,10 @@ class PaperList {
             $nfs = [];
             foreach ($fs as $fdef) {
                 if ($fdef->name === $name)
-                    $nfs[] = PaperColumn::make($fdef, $this->conf);
+                    $nfs[] = PaperColumn::make($this->conf, $fdef);
                 else {
                     if (!array_key_exists($fdef->name, $this->_columns_by_name))
-                        $this->_columns_by_name[$fdef->name][] = PaperColumn::make($fdef, $this->conf);
+                        $this->_columns_by_name[$fdef->name][] = PaperColumn::make($this->conf, $fdef);
                     $nfs = array_merge($nfs, $this->_columns_by_name[$fdef->name]);
                 }
             }

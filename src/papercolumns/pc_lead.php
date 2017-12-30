@@ -3,8 +3,8 @@
 // Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class Lead_PaperColumn extends PaperColumn {
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
     }
     function prepare(PaperList $pl, $visible) {

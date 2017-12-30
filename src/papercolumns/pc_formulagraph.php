@@ -7,8 +7,8 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     private $indexes_function;
     private $formula_function;
     private $results;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->formula = $cj->formula;
     }
     function prepare(PaperList $pl, $visible) {

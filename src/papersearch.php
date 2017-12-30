@@ -1728,7 +1728,7 @@ class PaperSearch {
                 $this->sorters[] = $s;
             }
         if (!$qe->get_float("sort") && $qe->type === "pn") {
-            $s = ListSorter::make_field(new NumericOrderPaperColumn(array_flip($qe->pids)));
+            $s = ListSorter::make_field(new NumericOrderPaperColumn($this->conf, array_flip($qe->pids)));
             $s->thenmap = $thenmap;
             $this->sorters[] = $s;
         }
@@ -2487,7 +2487,7 @@ class PaperSearch {
             foreach ($this->conf->paper_column_map() as $cname => $cj) {
                 $cj = $this->conf->basic_paper_column($cname, $this->user);
                 if ($cj && isset($cj->completion) && $cj->completion
-                    && ($c = PaperColumn::make($cj, $this->conf))
+                    && ($c = PaperColumn::make($this->conf, $cj))
                     && ($cat = $c->completion_name())
                     && $c->prepare($pl, 0)) {
                     $cats[$cat] = true;

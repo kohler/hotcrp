@@ -9,8 +9,8 @@ class Preference_PaperColumn extends PaperColumn {
     private $not_me;
     private $show_conflict;
     private $prefix;
-    function __construct($cj, Conf $conf = null) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
         $this->editable = !!get($cj, "edit");
         if ($conf && isset($cj->user))
@@ -20,7 +20,7 @@ class Preference_PaperColumn extends PaperColumn {
         if (!($fj = (array) $pl->conf->basic_paper_column("editpref", $pl->user)))
             return $this;
         $fj["name"] = $this->name;
-        return new Preference_PaperColumn((object) $fj, $pl->conf);
+        return new Preference_PaperColumn($pl->conf, (object) $fj);
     }
     function prepare(PaperList $pl, $visible) {
         $this->viewer_contact = $pl->user;

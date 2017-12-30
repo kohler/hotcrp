@@ -4,8 +4,8 @@
 
 class Topics_PaperColumn extends PaperColumn {
     private $interest_contact;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->conf->has_topics())

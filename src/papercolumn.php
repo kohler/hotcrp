@@ -13,17 +13,16 @@ class PaperColumn extends Column {
     const PREP_FOLDED = 0; // value matters
     const PREP_VISIBLE = 1; // value matters
 
-    function __construct($cj) {
+    function __construct(Conf $conf, $cj) {
         parent::__construct($cj);
     }
 
-    static function make($cj, Conf $conf) {
-        if (($factory_class = get($cj, "factory_class")))
-            return new $factory_class($cj, $conf);
-        else if (($factory = get($cj, "factory")))
-            return call_user_func($factory, $cj, $conf);
-        else
-            return null;
+    static function make(Conf $conf, $cj) {
+        if ($cj->callback[0] === "+") {
+            $class = substr($cj->callback, 1);
+            return new $class($conf, $cj);
+        } else
+            return call_user_func($cj->callback, $conf, $cj);
     }
 
 
@@ -87,8 +86,8 @@ class PaperColumn extends Column {
 }
 
 class IdPaperColumn extends PaperColumn {
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function header(PaperList $pl, $is_text) {
         return "ID";
@@ -107,8 +106,8 @@ class IdPaperColumn extends PaperColumn {
 
 class SelectorPaperColumn extends PaperColumn {
     public $is_selector = true;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function header(PaperList $pl, $is_text) {
         return $is_text ? "Selected" : "";
@@ -133,8 +132,8 @@ class SelectorPaperColumn extends PaperColumn {
 
 class ConflictSelector_PaperColumn extends SelectorPaperColumn {
     private $contact;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $pl->reviewer_user();
@@ -174,8 +173,8 @@ class ConflictSelector_PaperColumn extends SelectorPaperColumn {
 class TitlePaperColumn extends PaperColumn {
     private $has_decoration = false;
     private $highlight = false;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
         $this->has_decoration = $pl->user->can_view_tags(null)
@@ -234,8 +233,8 @@ class TitlePaperColumn extends PaperColumn {
 
 class StatusPaperColumn extends PaperColumn {
     private $is_long;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->is_long = $cj->name === "statusfull";
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
@@ -276,8 +275,8 @@ class StatusPaperColumn extends PaperColumn {
 
 class ReviewStatus_PaperColumn extends PaperColumn {
     private $round;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
         $this->round = get($cj, "round", null);
     }
@@ -343,8 +342,8 @@ class Authors_PaperColumn extends PaperColumn {
     private $aufull;
     private $anonau;
     private $highlight;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function header(PaperList $pl, $is_text) {
         return "Authors";
@@ -436,8 +435,8 @@ class Authors_PaperColumn extends PaperColumn {
 }
 
 class Collab_PaperColumn extends PaperColumn {
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
     }
     function prepare(PaperList $pl, $visible) {
@@ -466,8 +465,8 @@ class Collab_PaperColumn extends PaperColumn {
 }
 
 class Abstract_PaperColumn extends PaperColumn {
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function header(PaperList $pl, $is_text) {
         return "Abstract";
@@ -495,8 +494,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
     protected $contact;
     private $not_me;
     private $rrow_key;
-    function __construct($cj, Conf $conf = null) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         if ($conf && isset($cj->user))
             $this->contact = $conf->pc_member_by_email($cj->user);
     }
@@ -595,8 +594,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
 }
 
 class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
-    function __construct($cj, Conf $conf = null) {
-        parent::__construct($cj, $conf);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
         if (!parent::prepare($pl, $visible) || !$pl->user->is_manager())
@@ -641,8 +640,8 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
 
 class PreferenceList_PaperColumn extends PaperColumn {
     private $topics;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->topics = get($cj, "topics");
     }
     function prepare(PaperList $pl, $visible) {
@@ -691,8 +690,8 @@ class PreferenceList_PaperColumn extends PaperColumn {
 
 class ReviewerList_PaperColumn extends PaperColumn {
     private $topics;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_some_review_identity())
@@ -750,8 +749,8 @@ class ReviewerList_PaperColumn extends PaperColumn {
 class ConflictMatch_PaperColumn extends PaperColumn {
     private $field;
     private $highlight;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         if ($cj->name === "authorsmatch")
             $this->field = "authorInformation";
         else
@@ -795,13 +794,13 @@ class ConflictMatch_PaperColumn extends PaperColumn {
 
 class TagList_PaperColumn extends PaperColumn {
     private $editable;
-    function __construct($cj, $editable = false) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj, $editable = false) {
+        parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_ALWAYS;
         $this->editable = $editable;
     }
     function make_editable(PaperList $pl) {
-        return new TagList_PaperColumn($this->column_json(), true);
+        return new TagList_PaperColumn($pl->conf, $this->column_json(), true);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_tags(null))
@@ -852,8 +851,8 @@ class Tag_PaperColumn extends PaperColumn {
     protected $ctag;
     protected $editable = false;
     protected $emoji = false;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
         $this->dtag = $cj->tag;
         $this->is_value = get($cj, "tagvalue");
@@ -861,7 +860,7 @@ class Tag_PaperColumn extends PaperColumn {
     function make_editable(PaperList $pl) {
         $is_value = $this->is_value || $this->is_value === null;
         $cj = $this->column_json() + ["tagvalue" => $is_value, "tag" => $this->dtag];
-        return new EditTag_PaperColumn((object) $cj);
+        return new EditTag_PaperColumn($pl->conf, (object) $cj);
     }
     function sorts_my_tag($sorter, Contact $user) {
         return strcasecmp(Tagger::check_tag_keyword($sorter->type, $user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID), $this->ltag) == 0;
@@ -977,8 +976,8 @@ class Tag_PaperColumnFactory {
 
 class EditTag_PaperColumn extends Tag_PaperColumn {
     private $editsort;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->editable = true;
     }
     function prepare(PaperList $pl, $visible) {
@@ -1022,8 +1021,8 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
 class ScoreGraph_PaperColumn extends PaperColumn {
     protected $contact;
     protected $not_me;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function sort_name($score_sort) {
         $score_sort = ListSorter::canonical_long_score_sort($score_sort);
@@ -1081,8 +1080,8 @@ class ScoreGraph_PaperColumn extends PaperColumn {
 class Score_PaperColumn extends ScoreGraph_PaperColumn {
     public $score;
     private $form_field;
-    function __construct($cj, Conf $conf) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
         $this->form_field = $conf->review_field($cj->review_field_id);
         $this->score = $this->form_field->id;
@@ -1159,10 +1158,8 @@ class Score_PaperColumnFactory {
 
 class NumericOrderPaperColumn extends PaperColumn {
     private $order;
-    function __construct($order) {
-        parent::__construct([
-            "name" => "numericorder", "sort" => true
-        ]);
+    function __construct(Conf $conf, $order) {
+        parent::__construct($conf, ["name" => "numericorder", "sort" => true]);
         $this->order = $order;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
@@ -1171,8 +1168,8 @@ class NumericOrderPaperColumn extends PaperColumn {
 }
 
 class FoldAll_PaperColumn extends PaperColumn {
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
         $pl->qopts["foldall"] = true;

@@ -10,8 +10,8 @@ class Formula_PaperColumn extends PaperColumn {
     private $results;
     private $override_results;
     private $real_format;
-    function __construct($cj) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->formula = $cj->formula;
     }
     function completion_name() {
@@ -142,17 +142,17 @@ class Formula_PaperColumn extends PaperColumn {
 }
 
 class Formula_PaperColumnFactory {
-    static function make($xfj, Formula $f) {
+    static function make(Formula $f, $xfj) {
         $cj = (array) $xfj;
         $cj["name"] = "formula:" . ($f->formulaId ? $f->name : $f->expression);
         $cj["formula"] = $f;
-        return new Formula_PaperColumn((object) $cj);
+        return new Formula_PaperColumn($f->conf, (object) $cj);
     }
     static function expand($name, Conf $conf, $xfj, $m) {
         $vsbound = $conf->xt_user->permissive_view_score_bound();
         if ($name === "formulas") {
             return array_map(function ($f) use ($xfj) {
-                return Formula_PaperColumnFactory::make($xfj, $f);
+                return Formula_PaperColumnFactory::make($f, $xfj);
             }, array_filter($conf->named_formulas(),
                 function ($f) use ($conf, $vsbound) {
                     return $f->view_score($conf->xt_user) > $vsbound;
@@ -182,7 +182,7 @@ class Formula_PaperColumnFactory {
 
         if ($ff && $ff->check($conf->xt_user)) {
             if ($ff->view_score($conf->xt_user) > $vsbound)
-                return [Formula_PaperColumnFactory::make($xfj, $ff)];
+                return [Formula_PaperColumnFactory::make($ff, $xfj)];
         } else if ($ff && $want_error)
             $conf->xt_factory_error($ff->error_html());
         return null;

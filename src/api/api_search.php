@@ -39,7 +39,7 @@ class Search_API {
         } else if (!$fdef || !isset($fdef[0]->fold) || !$fdef[0]->fold) {
             return new JsonResult(404, "No such field.");
         }
-        $fdef = PaperColumn::make($fdef[0], $user->conf);
+        $fdef = PaperColumn::make($user->conf, $fdef[0]);
         if ($qreq->f == "au" || $qreq->f == "authors")
             PaperList::change_display($user, "pl", "aufull", (int) $qreq->aufull);
         if (!isset($qreq->q) && $prow) {

@@ -4,8 +4,8 @@
 
 class Option_PaperColumn extends PaperColumn {
     private $opt;
-    function __construct($cj, Conf $conf) {
-        parent::__construct($cj);
+    function __construct(Conf $conf, $cj) {
+        parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
         $this->opt = $conf->paper_opts->get($cj->option_id);
     }
