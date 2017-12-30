@@ -882,7 +882,7 @@ class Conf {
         if ($uf && !isset($uf->__parser)) {
             self::xt_resolve_require($uf);
             $p = $uf->parser_class;
-            $uf->__parser = new $p($uf, $this);
+            $uf->__parser = new $p($this, $uf);
         }
         return $uf ? $uf->__parser : null;
     }

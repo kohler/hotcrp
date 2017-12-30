@@ -5,7 +5,7 @@
 class Lead_AssignmentParser extends AssignmentParser {
     private $key;
     private $remove;
-    function __construct($aj) {
+    function __construct(Conf $conf, $aj) {
         parent::__construct($aj->name);
         $this->key = $aj->type;
         $this->remove = $aj->remove;

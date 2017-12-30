@@ -51,7 +51,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     const NEXTSEQ = 2;
     private $remove;
     private $isnext;
-    function __construct($aj) {
+    function __construct(Conf $conf, $aj) {
         parent::__construct("tag");
         $this->remove = $aj->remove;
         if (!$this->remove && $aj->next)

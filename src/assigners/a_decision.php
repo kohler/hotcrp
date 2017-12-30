@@ -4,7 +4,7 @@
 
 class Decision_AssignmentParser extends UserlessAssignmentParser {
     private $remove;
-    function __construct($aj) {
+    function __construct(Conf $conf, $aj) {
         parent::__construct("decision");
         $this->remove = $aj->remove;
     }

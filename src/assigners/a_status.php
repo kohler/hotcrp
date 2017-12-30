@@ -4,7 +4,7 @@
 
 class Status_AssignmentParser extends UserlessAssignmentParser {
     private $xtype;
-    function __construct($aj) {
+    function __construct(Conf $conf, $aj) {
         parent::__construct("status");
         $this->xtype = $aj->type;
     }

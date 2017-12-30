@@ -666,7 +666,7 @@ class Review_AssignmentParser extends AssignmentParser {
         else
             return $rtype < 0 ? "review" : "clearreview";
     }
-    function __construct($aj) {
+    function __construct(Conf $conf, $aj) {
         parent::__construct($aj->name);
         if ($aj->review_type)
             $this->rtype = (int) ReviewAssigner_Data::parse_type($aj->review_type);

@@ -5,7 +5,7 @@
 class Conflict_AssignmentParser extends AssignmentParser {
     private $remove;
     private $iscontact;
-    function __construct($aj) {
+    function __construct(Conf $conf, $aj) {
         parent::__construct("conflict");
         $this->remove = $aj->remove;
         $this->iscontact = $aj->iscontact;
