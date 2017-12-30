@@ -2179,7 +2179,7 @@ function foldup(event, opts) {
     }
     if (event && typeof event === "object" && event.type === "click") {
         event_stop(event);
-        event_prevent(event);
+        event.preventDefault(); // needed for expanders despite handle_ui!
     }
 }
 
@@ -2440,6 +2440,7 @@ handle_ui.on("js-assignment-fold", function (event) {
         form_highlight($a.closest("form")[0]);
         $a.addClass("foldc").removeClass("foldo");
     }
+    event.preventDefault();
     event.stopPropagation();
 });
 })($);
