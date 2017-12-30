@@ -633,8 +633,8 @@ span.hastitle {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
-	margin: 0;
-	padding-bottom: 0.2em;
+	margin-left: 1.5em;
+	text-indent: -1.5em;
 }
 .dim {
 	color: #777777;
