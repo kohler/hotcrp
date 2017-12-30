@@ -107,7 +107,7 @@ class DocumentRequest {
                 break;
             }
             $filter = null;
-            foreach (FileFilter::all_by_name() as $ff)
+            foreach (FileFilter::all_by_name($conf) as $ff)
                 if (str_ends_with($dtname, "-" . $ff->name) || $dtname === $ff->name) {
                     $filter = $ff;
                     break;

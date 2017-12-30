@@ -96,6 +96,7 @@ class Conf {
     private $_list_action_factories = null;
     private $_paper_column_map = null;
     private $_paper_column_factories = null;
+    public $_file_filters = null; // maintained externally
 
     public $paper = null; // current paper row
 
@@ -493,8 +494,10 @@ class Conf {
         if (!$this->sort_by_last != !$sort_by_last)
             $this->invalidate_caches("pc");
         $this->sort_by_last = $sort_by_last;
+
         $this->_api_map = null;
         $this->_list_action_map = $this->_list_action_renderers = $this->_list_action_factories = null;
+        $this->_file_filters = null;
     }
 
     function has_setting($name) {

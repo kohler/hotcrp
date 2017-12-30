@@ -6,54 +6,32 @@ class FileFilter {
     public $id;
     public $name;
 
-    static private $filter_by_name;
-    static private $filter_by_id;
-
-    static public function _add_json($fj) {
-        if (is_object($fj)
-            && (!isset($fj->id) || is_int($fj->id))
-            && isset($fj->name) && is_string($fj->name)
-            && $fj->name !== "" && ctype_alnum($fj->name)) {
-            $ff = null;
-            if (($factory_class = get($fj, "factory_class")))
-                $ff = new $factory_class($fj);
-            else if (($factory = get($fj, "factory")))
-                $ff = call_user_func($factory, $fj);
-            if ($ff) {
-                $ff->id = get($fj, "id");
-                $ff->name = $fj->name;
-                if ($ff->id !== null)
-                    self::$filter_by_id[$ff->id] = $ff;
-                self::$filter_by_name[$fj->name] = $ff;
-                return true;
+    static private function load(Conf $conf) {
+        if ($conf->_file_filters === null) {
+            $conf->_file_filters = [];
+            if (($flist = $conf->opt("documentFilters"))) {
+                $ffa = new FileFilterJsonExpander($conf);
+                expand_json_includes_callback($flist, [$ffa, "_add_json"]);
             }
         }
-        return false;
-    }
-    static private function load() {
-        if (self::$filter_by_name === null) {
-            self::$filter_by_name = self::$filter_by_id = [];
-            if (($flist = opt("documentFilters")))
-                expand_json_includes_callback($flist, "FileFilter::_add_json");
-        }
     }
 
-    static public function find_by_name($name) {
-        self::load();
-        return get(self::$filter_by_name, $name);
+    static function find_by_name(Conf $conf, $name) {
+        self::load($conf);
+        return get($conf->_file_filters, $name);
     }
-    static public function all_by_name() {
-        self::load();
-        return self::$filter_by_name;
+    static function all_by_name(Conf $conf) {
+        self::load($conf);
+        return $conf->_file_filters;
     }
-    static public function apply_named($doc, PaperInfo $prow, $name) {
-        if (($filter = self::find_by_name($name))
+    static function apply_named($doc, PaperInfo $prow, $name) {
+        if (($filter = self::find_by_name($prow->conf, $name))
             && ($xdoc = $filter->apply($doc, $prow)))
             return $xdoc;
         return $doc;
     }
 
-    public function find_filtered($doc) {
+    function find_filtered($doc) {
         if ($this->id) {
             $result = $doc->conf->qe("select PaperStorage.* from FilteredDocument join PaperStorage on (PaperStorage.paperStorageId=FilteredDocument.outDocId) where inDocId=? and FilteredDocument.filterType=?", $doc->paperStorageId, $this->id);
             $fdoc = DocumentInfo::fetch($result, $doc->conf);
@@ -67,11 +45,39 @@ class FileFilter {
         return $fdoc;
     }
 
-    public function mimetype($doc, $mimetype) {
+    function mimetype($doc, $mimetype) {
         return $mimetype;
     }
 
-    public function apply($doc, PaperInfo $prow) {
+    function apply($doc, PaperInfo $prow) {
+        return false;
+    }
+}
+
+class FileFilterJsonExpander {
+    private $conf;
+    function __construct(Conf $conf) {
+        $this->conf = $conf;
+    }
+    function _add_json($fj) {
+        if (is_object($fj)
+            && (!isset($fj->id) || is_int($fj->id))
+            && isset($fj->name) && is_string($fj->name) && $fj->name !== ""
+            && ctype_alnum($fj->name) && !ctype_digit($fj->name)
+            && isset($fj->callback) && is_string($fj->callback)) {
+            $ff = null;
+            if (($impl = get($fj, "impl"))) {
+                $ff = new $impl($this->conf, $fj);
+            } else if (($callback = get($fj, "callback"))) {
+                $ff = call_user_func($callback, $this->conf, $fj);
+            }
+            if ($ff) {
+                $ff->id = get($fj, "id");
+                $ff->name = $fj->name;
+                $this->conf->_file_filters[$ff->name] = $ff;
+                return true;
+            }
+        }
         return false;
     }
 }
