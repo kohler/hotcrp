@@ -1,8 +1,22 @@
 [
     {
         "name": "basics", "synonym": ["info"], "position": 0,
-        "title": "Basics",
-        "render_callback": "Basics_SettingRenderer::render"
+        "title": "Basics"
+    },
+    {
+        "name": "basics/names", "position": 10,
+        "render_callback": "Basics_SettingParser::render_names",
+        "title": "Conference information"
+    },
+    {
+        "name": "basics/site-contact", "position": 20,
+        "render_callback": "Basics_SettingParser::render_site_contact",
+        "title": "Site contact"
+    },
+    {
+        "name": "basics/email", "position": 30,
+        "render_callback": "Basics_SettingParser::render_email",
+        "title": "Email configuration"
     },
 
     {
