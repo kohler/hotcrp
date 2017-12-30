@@ -145,6 +145,9 @@
         "type": "simplestring", "size": 20,
         "require": "src/settings/s_basics.php"
     },
+    "opt.timezone": {
+        "internal": true
+    },
     "options": {
         "parser_class": "Options_SettingParser", "group": "subform",
         "type": "string"

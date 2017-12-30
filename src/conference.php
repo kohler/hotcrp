@@ -1936,10 +1936,16 @@ class Conf {
         if ($this->opt["dateFormatSimplifier"])
             $d = preg_replace($this->opt["dateFormatSimplifier"], "", $d);
         if ($include_zone) {
-            if ($this->opt["dateFormatTimezone"] === null)
-                $d .= " " . date("T", $value);
-            else if ($this->opt["dateFormatTimezone"])
-                $d .= " " . $this->opt["dateFormatTimezone"];
+            $z = $this->opt["dateFormatTimezone"];
+            if ($z === null) {
+                $z = date("T", $value);
+                if ($z === "+12")
+                    $z = "AoE";
+                else if ($z && ($z[0] === "+" || $z[0] === "-"))
+                    $z = "UTC" . $z;
+            }
+            if ($z)
+                $d .= " " . $z;
         }
         return $d;
     }
@@ -1956,14 +1962,20 @@ class Conf {
                     if ($tz["timezone_id"] == $mytz)
                         $x[] = preg_quote($tzname);
             }
-            if (count($x) == 0)
-                $x[] = preg_quote(date("T", $reference));
+            if (count($x) == 0) {
+                $z = date("T", $reference);
+                if ($z === "+12")
+                    $x[] = "AoE";
+                $x[] = preg_quote($z);
+            }
             $this->opt["dateFormatTimezoneRemover"] =
                 "/(?:\\s|\\A)(?:" . join("|", $x) . ")(?:\\s|\\z)/i";
         }
         if ($this->opt["dateFormatTimezoneRemover"])
             $d = preg_replace($this->opt["dateFormatTimezoneRemover"], " ", $d);
-        $d = preg_replace('/\butc([-+])/i', 'GMT$1', $d);
+        $d = preg_replace_callback('/\b(utc(?=[-+])|aoe(?=\s|\z))/i', function ($m) {
+            return strcasecmp($m[1], "aoe") === 0 ? "GMT-1200" : "GMT";
+        }, $d);
         return strtotime($d, $reference);
     }
 
