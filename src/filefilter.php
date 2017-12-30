@@ -66,10 +66,11 @@ class FileFilterJsonExpander {
             && ctype_alnum($fj->name) && !ctype_digit($fj->name)
             && isset($fj->callback) && is_string($fj->callback)) {
             $ff = null;
-            if (($impl = get($fj, "impl"))) {
-                $ff = new $impl($this->conf, $fj);
-            } else if (($callback = get($fj, "callback"))) {
-                $ff = call_user_func($callback, $this->conf, $fj);
+            if ($fj->callback[0] === "+") {
+                $class = substr($fj->callback, 1);
+                $ff = new $class($this->conf, $fj);
+            } else {
+                $ff = call_user_func($fj->callback, $this->conf, $fj);
             }
             if ($ff) {
                 $ff->id = get($fj, "id");
