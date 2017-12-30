@@ -111,8 +111,8 @@ class PaperOptionList {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->osubmission = new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "title" => "Submission", "message_title" => "submission", "json_key" => "paper", "type" => null, "position" => 0], $this->conf);
-        $this->ofinal = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "title" => "Final version", "message_title" => "final version", "json_key" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
+        $this->osubmission = new DocumentPaperOption($this->conf, ["id" => DTYPE_SUBMISSION, "name" => "Submission", "title" => "Submission", "message_title" => "submission", "json_key" => "paper", "type" => null, "position" => 0]);
+        $this->ofinal = new DocumentPaperOption($this->conf, ["id" => DTYPE_FINAL, "name" => "Final version", "title" => "Final version", "message_title" => "final version", "json_key" => "final", "type" => null, "final" => true, "position" => 0]);
     }
 
     function _add_json($oj) {
@@ -172,7 +172,7 @@ class PaperOptionList {
             $this->jmap[$id] = $o;
         }
         if (!$o && $force)
-            $o = $this->jmap[$id] = new UnknownPaperOption($id, $this->conf);
+            $o = $this->jmap[$id] = new UnknownPaperOption($this->conf, $id);
         return $o;
     }
 
@@ -280,13 +280,15 @@ class PaperOptionList {
     }
 
     function list_subform_options(PaperOption $o = null) {
-        $factory_classes = array_flip(PaperOption::factory_classes());
-        foreach ($this->option_json_list() as $x)
-            if (isset($x->factory_class))
-                $factory_classes[$x->factory_class] = true;
-        $options = [];
-        foreach ($factory_classes as $f => $x)
-            $f::list_subform_options($options, $o);
+        $callbacks = array_values(PaperOption::callback_map());
+        foreach ($this->option_json_list() as $x) {
+            if (isset($x->callback) && $x->callback[0] === "+")
+                $callbacks[] = $x->callback;
+        }
+        foreach (array_unique($callbacks) as $callback) {
+            $class = substr($callback, 1);
+            $class::list_subform_options($options, $o);
+        }
         usort($options, function ($a, $b) { return $a[0] - $b[0]; });
         return $options;
     }
@@ -327,21 +329,24 @@ class PaperOption implements Abbreviator {
     ];
     static private $display_rmap = null;
 
-    static private $factory_class_map = [
-        "checkbox" => "CheckboxPaperOption",
-        "radio" => "SelectorPaperOption", "selector" => "SelectorPaperOption",
-        "numeric" => "NumericPaperOption",
-        "text" => "TextPaperOption",
-        "pdf" => "DocumentPaperOption", "slides" => "DocumentPaperOption", "video" => "DocumentPaperOption",
-        "document" => "DocumentPaperOption", "attachments" => "AttachmentsPaperOption"
+    static private $callback_map = [
+        "checkbox" => "+CheckboxPaperOption",
+        "radio" => "+SelectorPaperOption",
+        "selector" => "+SelectorPaperOption",
+        "numeric" => "+NumericPaperOption",
+        "text" => "+TextPaperOption",
+        "pdf" => "+DocumentPaperOption",
+        "slides" => "+DocumentPaperOption",
+        "video" => "+DocumentPaperOption",
+        "document" => "+DocumentPaperOption",
+        "attachments" => "+AttachmentsPaperOption"
     ];
 
-    function __construct($args, $conf) {
-        global $Conf;
+    function __construct(Conf $conf, $args) {
         if (is_object($args))
             $args = get_object_vars($args);
         $this->id = (int) $args["id"];
-        $this->conf = $conf ? : $Conf;
+        $this->conf = $conf;
         $this->name = isset($args["name"]) ? $args["name"] : $args["title"];
         $this->title = isset($args["title"]) ? $args["title"] : $args["name"];
         $this->message_title = get($args, "message_title", $this->title);
@@ -386,12 +391,14 @@ class PaperOption implements Abbreviator {
     static function make($args, $conf) {
         if (is_object($args))
             $args = get_object_vars($args);
-        if (($factory = get($args, "factory")))
-            return call_user_func($factory, $args, $conf);
-        $fclass = get($args, "factory_class");
-        $fclass = $fclass ? : get(self::$factory_class_map, get($args, "type"));
-        $fclass = $fclass ? : "PaperOption";
-        return new $fclass($args, $conf);
+        $callback = get($args, "callback");
+        $callback = $callback ? : get(self::$callback_map, get($args, "type"));
+        $callback = $callback ? : "+PaperOption";
+        if ($callback[0] === "+") {
+            $class = substr($callback, 1);
+            return new $class($conf, $args);
+        } else
+            return call_user_func($callback, $conf, $args);
     }
 
     static function compare($a, $b) {
@@ -504,8 +511,8 @@ class PaperOption implements Abbreviator {
     static function list_subform_options(&$options, PaperOption $o = null) {
     }
 
-    static function factory_classes() {
-        return array_values(array_unique(self::$factory_class_map));
+    static function callback_map() {
+        return self::$callback_map;
     }
 
     function expand_values(&$values, &$data_array) {
@@ -614,8 +621,8 @@ class PaperOption implements Abbreviator {
 }
 
 class CheckboxPaperOption extends PaperOption {
-    function __construct($args, $conf) {
-        parent::__construct($args, $conf);
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
     }
 
     static function list_subform_options(&$options, PaperOption $o = null) {
@@ -672,8 +679,8 @@ class CheckboxPaperOption extends PaperOption {
 }
 
 class SelectorPaperOption extends PaperOption {
-    function __construct($args, $conf) {
-        parent::__construct($args, $conf);
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
     }
 
     static function list_subform_options(&$options, PaperOption $o = null) {
@@ -764,8 +771,8 @@ class SelectorPaperOption extends PaperOption {
 }
 
 class DocumentPaperOption extends PaperOption {
-    function __construct($args, $conf) {
-        parent::__construct($args, $conf);
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
     }
 
     static function list_subform_options(&$options, PaperOption $o = null) {
@@ -882,8 +889,8 @@ class DocumentPaperOption extends PaperOption {
 }
 
 class NumericPaperOption extends PaperOption {
-    function __construct($args, $conf) {
-        parent::__construct($args, $conf);
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
     }
 
     static function list_subform_options(&$options, PaperOption $o = null) {
@@ -953,8 +960,8 @@ class NumericPaperOption extends PaperOption {
 }
 
 class TextPaperOption extends PaperOption {
-    function __construct($args, $conf) {
-        parent::__construct($args, $conf);
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
     }
 
     static function list_subform_options(&$options, PaperOption $o = null) {
@@ -1043,8 +1050,8 @@ class TextPaperOption extends PaperOption {
 }
 
 class AttachmentsPaperOption extends PaperOption {
-    function __construct($args, $conf) {
-        parent::__construct($args, $conf);
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
     }
 
     static function list_subform_options(&$options, PaperOption $o = null) {
@@ -1201,8 +1208,8 @@ class AttachmentsPaperOption extends PaperOption {
 }
 
 class UnknownPaperOption extends PaperOption {
-    function __construct($id, $conf) {
-        parent::__construct(["id" => $id, "name" => "__unknown{$id}__", "type" => "__unknown{$id}__"], $conf);
+    function __construct(Conf $conf, $id) {
+        parent::__construct($conf, ["id" => $id, "name" => "__unknown{$id}__", "type" => "__unknown{$id}__"]);
     }
 
     function takes_multiple() {
