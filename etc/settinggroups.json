@@ -2,7 +2,7 @@
     {
         "name": "basics", "synonym": ["info"], "position": 0,
         "title": "Basics",
-        "renderer": "Basics_SettingRenderer::render"
+        "render_callback": "Basics_SettingRenderer::render"
     },
 
     {
@@ -12,79 +12,79 @@
     {
         "name": "decisions/responses", "synonym": ["responses"], "position": 10,
         "title": "Responses",
-        "renderer": "Responses_SettingParser::render"
+        "render_callback": "Responses_SettingParser::render"
     },
     {
         "name": "decisions/review-visibility", "position": 20,
         "title": "Review and decision visibility",
-        "renderer": "ReviewVisibility_SettingParser::render",
-        "crosschecker": "ReviewVisibility_SettingParser::crosscheck"
+        "render_callback": "ReviewVisibility_SettingParser::render",
+        "crosscheck_callback": "ReviewVisibility_SettingParser::crosscheck"
     },
     {
         "name": "decisions/decision-types", "position": 30,
         "title": "Decision types",
-        "renderer": "Decisions_SettingParser::render"
+        "render_callback": "Decisions_SettingParser::render"
     },
     {
         "name": "decisions/final-versions", "position": 100,
         "title": "Final versions",
-        "renderer": "FinalVersions_SettingParser::render",
-        "crosschecker": "FinalVersions_SettingParser::crosscheck"
+        "render_callback": "FinalVersions_SettingParser::render",
+        "crosscheck_callback": "FinalVersions_SettingParser::crosscheck"
     },
 
     {
         "name": "msg", "position": 200,
         "title": "Messages",
-        "renderer": "Messages_SettingRenderer::render"
+        "render_callback": "Messages_SettingRenderer::render"
     },
     {
         "name": "reviewform", "synonym": ["rfo"], "position": 600,
         "title": "Review form",
-        "renderer": "ReviewForm_SettingRenderer::render"
+        "render_callback": "ReviewForm_SettingRenderer::render"
     },
     {
         "name": "reviews", "synonym": ["rev", "review"], "position": 500,
         "title": "Reviews",
-        "crosschecker": "Reviews_SettingRenderer::crosscheck",
-        "renderer": "Reviews_SettingRenderer::render"
+        "crosscheck_callback": "Reviews_SettingRenderer::crosscheck",
+        "render_callback": "Reviews_SettingRenderer::render"
     },
     {
         "name": "sub", "position": 300,
         "title": "Submissions",
-        "crosschecker": "Submissions_SettingRenderer::crosscheck",
-        "renderer": "Submissions_SettingRenderer::render"
+        "crosscheck_callback": "Submissions_SettingRenderer::crosscheck",
+        "render_callback": "Submissions_SettingRenderer::render"
     },
     {
         "name": "subform", "position": 400,
         "title": "Submission form",
-        "renderer": "SubForm_SettingRenderer::render"
+        "render_callback": "SubForm_SettingRenderer::render"
     },
     {
         "name": "options", "group": "subform", "synonym": ["opt"], "position": 440,
-        "crosschecker": "Options_SettingRenderer::crosscheck",
-        "renderer": "Options_SettingRenderer::render"
+        "crosscheck_callback": "Options_SettingRenderer::crosscheck",
+        "render_callback": "Options_SettingRenderer::render"
     },
     {
         "name": "topics", "group": "subform", "position": 480,
-        "renderer": "Topics_SettingRenderer::render"
+        "render_callback": "Topics_SettingRenderer::render"
     },
     {
         "name": "tags", "position": 700,
         "title": "Tags &amp; tracks",
-        "renderer": "Tags_SettingRenderer::render"
+        "render_callback": "Tags_SettingRenderer::render"
     },
     {
         "name": "tagstyles", "group": "tags", "position": 720,
-        "renderer": "Tags_SettingRenderer::render_styles"
+        "render_callback": "Tags_SettingRenderer::render_styles"
     },
     {
         "name": "tracks", "group": "tags", "position": 750,
-        "crosschecker": "Tracks_SettingRenderer::crosscheck",
-        "renderer": "Tracks_SettingRenderer::render"
+        "crosscheck_callback": "Tracks_SettingRenderer::crosscheck",
+        "render_callback": "Tracks_SettingRenderer::render"
     },
     {
         "name": "users", "position": 100,
         "title": "Accounts",
-        "renderer": "Users_SettingRenderer::render"
+        "render_callback": "Users_SettingRenderer::render"
     }
 ]

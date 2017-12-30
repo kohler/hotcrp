@@ -16,7 +16,7 @@ class Si {
     public $values;
     public $size;
     public $placeholder;
-    public $parser;
+    public $parser_class;
     public $novalue = false;
     public $disabled = false;
     public $invalid_value = null;
@@ -55,7 +55,7 @@ class Si {
     function __construct($j) {
         assert(!preg_match('/_(?:\$|n|m?\d+)\z/', $j->name));
         $this->name = $this->title = $j->name;
-        foreach (["title", "type", "storage", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
+        foreach (["title", "type", "storage", "parser_class", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
             $this->store($k, $j, $k, "is_string");
         foreach (["internal", "optional", "novalue", "disabled", "autogrow"] as $k)
             $this->store($k, $j, $k, "is_bool");
@@ -82,7 +82,7 @@ class Si {
             }
         }
 
-        if (!$this->type && $this->parser)
+        if (!$this->type && $this->parser_class)
             $this->type = "special";
         $s = $this->storage ? : $this->name;
         $pfx = substr($s, 0, 4);
@@ -209,7 +209,7 @@ class Si {
                     ++$i;
                 }
                 Conf::xt_resolve_require($j);
-                $class = get_s($j, "factory_class", "Si");
+                $class = get_s($j, "setting_class", "Si");
                 $all[$j->name] = new $class($j);
             }
         }
@@ -344,9 +344,9 @@ class SettingValues extends MessageSet {
     }
     function crosscheck() {
         foreach ($this->gxt()->all() as $gj) {
-            if (isset($gj->crosschecker)) {
+            if (isset($gj->crosscheck_callback)) {
                 Conf::xt_resolve_require($gj);
-                call_user_func($gj->crosschecker, $this, $gj);
+                call_user_func($gj->crosscheck_callback, $this, $gj);
             }
         }
     }
@@ -362,9 +362,9 @@ class SettingValues extends MessageSet {
                 echo '>', $gj->title, "</h3>\n";
                 $last_title = $gj->title;
             }
-            if (isset($gj->renderer)) {
+            if (isset($gj->render_callback)) {
                 Conf::xt_resolve_require($gj);
-                call_user_func($gj->renderer, $this, $gj);
+                call_user_func($gj->render_callback, $this, $gj);
             }
         }
     }
@@ -410,9 +410,9 @@ class SettingValues extends MessageSet {
             Conf::msg_warning($msgs, true);
     }
     function parser(Si $si) {
-        if (($class = $si->parser)) {
+        if (($class = $si->parser_class)) {
             if (!isset($this->parsers[$class]))
-                $this->parsers[$class] = new $class($this);
+                $this->parsers[$class] = new $class($this, $si);
             return $this->parsers[$class];
         } else
             return null;
@@ -463,7 +463,7 @@ class SettingValues extends MessageSet {
         $xsis = [];
         foreach (get($this->has_req, $xname, []) as $suffix) {
             $xsi = $this->si($si->name . $suffix);
-            if ($xsi->parser)
+            if ($xsi->parser_class)
                 $has_value = $this->req_has($xname, $suffix);
             else
                 $has_value = isset($this->req["$xname$suffix"])
@@ -643,7 +643,7 @@ class SettingValues extends MessageSet {
                 $v = $this->si_render_date_value($v, $si);
             else if ($si->type === "grace")
                 $v = $this->si_render_grace_value($v, $si);
-            if ($si->parser)
+            if ($si->parser_class)
                 $t = Ht::hidden("has_$name", 1);
         }
         return Ht::entry($name, $v, $this->sjs($name, $js)) . $t;
@@ -686,7 +686,7 @@ class SettingValues extends MessageSet {
     function render_select($name, $values, $js = []) {
         $v = $this->curv($name);
         $t = "";
-        if (($si = $this->si($name)) && $si->parser)
+        if (($si = $this->si($name)) && $si->parser_class)
             $t = Ht::hidden("has_$name", 1);
         return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($name, $js)) . $t;
     }
@@ -701,7 +701,7 @@ class SettingValues extends MessageSet {
                 $js["placeholder"] = $si->placeholder;
             if ($si->autogrow || $si->autogrow === null)
                 $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
-            if ($si->parser)
+            if ($si->parser_class)
                 $t = Ht::hidden("has_$name", 1);
         }
         if (!isset($js["rows"]))
@@ -889,7 +889,7 @@ class SettingValues extends MessageSet {
         foreach ($this->req_si($si1) as $si) {
             if ($si->disabled || $si->novalue || !$si->type || $si->type === "none") {
                 /* ignore changes to disabled/novalue settings */;
-            } else if ($si->parser) {
+            } else if ($si->parser_class) {
                 if ($this->parser($si)->parse($this, $si)) {
                     $this->saved_si[] = $si;
                 }

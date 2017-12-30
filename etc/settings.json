@@ -20,7 +20,7 @@
         "type": "checkbox"
     },
     "decisions": {
-        "parser": "Decisions_SettingParser"
+        "parser_class": "Decisions_SettingParser"
     },
     "extrev_approve": {
         "title": "External reviews must be approved by their requesters",
@@ -37,7 +37,7 @@
     },
     "extrev_roundtag": {
         "title": "External assignment review round",
-        "type": "tag", "parser": "Round_SettingParser"
+        "type": "tag", "parser_class": "Round_SettingParser"
     },
     "extrev_soft": {
         "title": "External reviewer soft review deadline", "group": "reviews",
@@ -146,7 +146,7 @@
         "require": "src/settings/s_basics.php"
     },
     "options": {
-        "parser": "Options_SettingParser", "group": "subform",
+        "parser_class": "Options_SettingParser", "group": "subform",
         "type": "string"
     },
     "options_nextid": {
@@ -206,7 +206,7 @@
         "type": "date", "extensible": true
     },
     "resp_rounds": {
-        "parser": "Responses_SettingParser",
+        "parser_class": "Responses_SettingParser",
         "type": "string"
     },
     "resp_roundname": {
@@ -238,10 +238,10 @@
     },
     "rev_roundtag": {
         "title": "Assignment review round",
-        "type": "tag", "parser": "Round_SettingParser"
+        "type": "tag", "parser_class": "Round_SettingParser"
     },
     "review_form": {
-        "parser": "ReviewForm_SettingParser",
+        "parser_class": "ReviewForm_SettingParser",
         "type": "string"
     },
     "roundname": {
@@ -259,7 +259,7 @@
         "type": "checkbox"
     },
     "sub_banal": {
-        "type": "checkbox", "parser": "Banal_SettingParser",
+        "type": "checkbox", "parser_class": "Banal_SettingParser",
         "storage": "val.sub_banal", "extensible": true
     },
     "sub_banal_data": {
@@ -352,24 +352,24 @@
     },
     "tag_approval": {
         "title": "Approval voting tags",
-        "type": "taglist", "parser": "Tags_SettingParser", "size": 50, "autogrow": true
+        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "tag_au_seerev": {
         "title": "Review visibility tags", "group": "decisions",
-        "type": "taglist", "parser": "Tags_SettingParser", "size": 24
+        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 24
     },
     "tag_chair": {
         "title": "Chair-only tags", "group": "tags",
-        "type": "taglist", "parser": "Tags_SettingParser", "size": 50, "autogrow": true
+        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "tag_color": {
         "title": "Tag colors",
-        "type": "taglist", "parser": "Tags_SettingParser", "size": 40, "autogrow": true,
+        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 40, "autogrow": true,
         "extensible": "word"
     },
     "tag_rank": {
         "title": "Ranking tags",
-        "type": "taglist", "parser": "Tags_SettingParser", "size": 50, "autogrow": true
+        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "tag_rounds": {
         "internal": true, "type": "taglist"
@@ -380,17 +380,17 @@
     },
     "tag_sitewide": {
         "title": "Site-wide tags", "group": "tags",
-        "type": "taglist", "parser": "Tags_SettingParser", "size": 50, "autogrow": true
+        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "tag_vote": {
         "title": "Allotment voting tags",
-        "type": "taglist", "parser": "Tags_SettingParser", "size": 50, "autogrow": true
+        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "topics": {
-        "parser": "Topics_SettingParser", "require": "src/settings/s_topics.php"
+        "parser_class": "Topics_SettingParser", "require": "src/settings/s_topics.php"
     },
     "tracks": {
-        "parser": "Tracks_SettingParser", "group": "tracks",
+        "parser_class": "Tracks_SettingParser", "group": "tracks",
         "type": "string"
     }
 }
