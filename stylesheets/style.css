@@ -1177,7 +1177,7 @@ dl.spaced > dt {
 
 /* vertically arranged forms */
 .f-i, .f-ii {
-	margin: 0.5em 0;
+	margin: 1em 0;
 	width: auto;
 }
 .f-i:first-child {
