@@ -26,16 +26,18 @@ class Contact {
     public $firstName = "";
     public $lastName = "";
     public $unaccentedName = "";
-    public $nameAmbiguous = null;
+    public $nameAmbiguous;
     public $email = "";
     public $preferredEmail = "";
     public $sorter = "";
-    public $sort_position = null;
+    public $sort_position;
 
     public $affiliation = "";
-    public $country = null;
+    public $country;
     public $collaborators;
     public $voicePhoneNumber;
+    public $birthday;
+    public $gender;
 
     private $password = "";
     private $passwordTime = 0;
@@ -143,8 +145,8 @@ class Contact {
             $this->unaccentedName = $name->unaccentedName;
         else
             $this->unaccentedName = Text::unaccented_name($name);
-        foreach (array("email", "preferredEmail", "affiliation",
-                       "voicePhoneNumber", "country") as $k)
+        foreach (["email", "preferredEmail", "affiliation", "voicePhoneNumber",
+                  "country", "birthday", "gender"] as $k)
             if (isset($user->$k))
                 $this->$k = simplify_whitespace($user->$k);
         if (isset($user->collaborators))
@@ -219,8 +221,8 @@ class Contact {
     }
 
     function merge_secondary_properties($x) {
-        foreach (["preferredEmail", "voicePhoneNumber", "country",
-                  "password", "collaborators"] as $k)
+        foreach (["preferredEmail", "voicePhoneNumber", "country", "password",
+                  "collaborators", "birthday", "gender"] as $k)
             if (isset($x->$k))
                 $this->$k = $x->$k;
         foreach (["passwordTime", "passwordUseTime", "creationTime",
@@ -485,7 +487,8 @@ class Contact {
         return Dbl::fetch_first_object(self::contactdb(),
             "select ContactInfo.contactDbId, firstName, lastName, email,
             affiliation, password, passwordTime, updateTime, country,
-            collaborators, Conferences.confid, roles, Roles.disabled
+            collaborators, birthday, gender,
+            Conferences.confid, roles, Roles.disabled
             from ContactInfo
             left join Conferences on (Conferences.`dbname`=?)
             left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
@@ -509,7 +512,7 @@ class Contact {
 
         $cdbur = $this->contactdb_user_with_roles();
         if (!$cdbur) {
-            Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?, password=?, passwordTime=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators, $update_password, $update_passwordTime);
+            Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?, password=?, passwordTime=?, birthday=?, gender=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators, $update_password, $update_passwordTime, $this->birthday, $this->gender);
             $cdbur = $this->contactdb_user_with_roles();
             $this->contactdb_user_ = false;
         } else {
@@ -554,7 +557,8 @@ class Contact {
     function update_trueuser($always) {
         if (($trueuser = get($_SESSION, "trueuser"))
             && strcasecmp($trueuser->email, $this->email) == 0) {
-            foreach (array("firstName", "lastName", "affiliation", "country") as $k)
+            foreach (["firstName", "lastName", "affiliation", "country",
+                      "birthday", "gender"] as $k)
                 if ($this->$k && ($always || !get($trueuser, $k)))
                     $trueuser->$k = $this->$k;
             return true;
@@ -929,18 +933,28 @@ class Contact {
     }
 
 
-    static private $save_fields = array("firstName" => 6, "lastName" => 6, "email" => 1, "affiliation" => 6, "country" => 6, "preferredEmail" => 1, "voicePhoneNumber" => 1, "unaccentedName" => 0, "collaborators" => 12);
+    static private $cdb_fields = [
+        "firstName" => true, "lastName" => true, "affiliation" => true,
+        "country" => true, "collaborators" => true, "birthday" => true,
+        "gender" => true
+    ];
+    static private $no_clean_fields = [
+        "defaultWatch" => true, "contactTags" => true
+    ];
 
     private function _save_assign_field($k, $v, Contact_Update $cu) {
-        $fieldtype = get_i(self::$save_fields, $k);
-        if ($fieldtype & 2)
-            $v = simplify_whitespace($v);
-        else if ($fieldtype & 1)
-            $v = trim($v);
-        else if ($fieldtype & 8)
+        if ($k === "collaborators")
             $v = self::clean_collaborator_lines($v);
+        else if ($k === "gender")
+            $v = self::clean_gender($v);
+        else if (!isset(self::$no_clean_fields[$k])) {
+            $v = simplify_whitespace($v);
+            if ($k === "birthday" && !$v)
+                $v = null;
+        }
         // change contactdb
-        if (($fieldtype & 4) && ($this->$k !== $v || $cu->changing_email))
+        if (isset(self::$cdb_fields[$k])
+            && ($this->$k !== $v || $cu->changing_email))
             $cu->cdb_qf[] = $k;
         // change local version
         if ($this->$k !== $v || !$this->contactId)
@@ -979,10 +993,11 @@ class Contact {
             $changing_other = true;
 
         // Main fields
-        foreach (array("firstName", "lastName", "email", "affiliation",
-                       "collaborators", "preferredEmail", "country") as $k)
+        foreach (["firstName", "lastName", "email", "affiliation", "collaborators",
+                  "preferredEmail", "country", "birthday", "gender"] as $k) {
             if (isset($cj->$k))
                 $this->_save_assign_field($k, $cj->$k, $cu);
+        }
         if (isset($cj->preferred_email) && !isset($cj->preferredEmail))
             $this->_save_assign_field("preferredEmail", $cj->preferred_email, $cu);
         if (isset($cj->phone))
@@ -3349,6 +3364,15 @@ class Contact {
     static function suspect_collaborator_one_line($s) {
         return $s !== "" && ($n = substr_count($s, "\n")) < 4
             && $n < 0.75 * preg_match_all('/[,;]/', $s);
+    }
+
+    static function clean_gender($s) {
+        $s = simplicy_whitespace($s);
+        if (strcasecmp("male", $s) === 0 || strcasecmp("man", $s) === 0)
+            $s = "M";
+        else if (strcasecmp("female", $s) === 0 || strcasecmp("woman", $s) === 0)
+            $s = "F";
+        return $s === "" ? null : $s;
     }
 
     function aucollab_matchers() {
