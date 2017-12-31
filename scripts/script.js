@@ -842,7 +842,9 @@ function render_xmsg(status, msg) {
 var handle_ui = (function ($) {
 var callbacks = {};
 function handle_ui(event) {
-    if (event.target && hasClass(event.target, "ui")) {
+    var e = event.target;
+    if ((e && hasClass(e, "ui"))
+        || (this.tagName === "A" && hasClass(this, "ui"))) {
         event.preventDefault();
     }
     var k = classList(this);
@@ -2440,7 +2442,6 @@ handle_ui.on("js-assignment-fold", function (event) {
         form_highlight($a.closest("form")[0]);
         $a.addClass("foldc").removeClass("foldo");
     }
-    event.preventDefault();
     event.stopPropagation();
 });
 })($);
