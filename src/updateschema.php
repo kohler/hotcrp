@@ -1291,6 +1291,14 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 180
         && $conf->ql("alter table ActionLog change `ipaddr` `ipaddr` varbinary(39) DEFAULT NULL"))
         $conf->update_schema_version(181);
+    if ($conf->sversion == 181
+        && $conf->ql("alter table ContactInfo change `firstName` `firstName` varbinary(120) NOT NULL DEFAULT ''")
+        && $conf->ql("alter table ContactInfo change `lastName` `lastName` varbinary(120) NOT NULL DEFAULT ''")
+        && $conf->ql("alter table ContactInfo change `unaccentedName` `unaccentedName` varbinary(240) NOT NULL DEFAULT ''")
+        && $conf->ql("alter table DeletedContactInfo change `firstName` `firstName` varbinary(120) NOT NULL")
+        && $conf->ql("alter table DeletedContactInfo change `lastName` `lastName` varbinary(120) NOT NULL")
+        && $conf->ql("alter table DeletedContactInfo change `unaccentedName` `unaccentedName` varbinary(240) NOT NULL"))
+        $conf->update_schema_version(182);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

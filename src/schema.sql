@@ -40,9 +40,9 @@ CREATE TABLE `Capability` (
 DROP TABLE IF EXISTS `ContactInfo`;
 CREATE TABLE `ContactInfo` (
   `contactId` int(11) NOT NULL AUTO_INCREMENT,
-  `firstName` varchar(60) NOT NULL DEFAULT '',
-  `lastName` varchar(60) NOT NULL DEFAULT '',
-  `unaccentedName` varchar(120) NOT NULL DEFAULT '',
+  `firstName` varbinary(120) NOT NULL DEFAULT '',
+  `lastName` varbinary(120) NOT NULL DEFAULT '',
+  `unaccentedName` varbinary(240) NOT NULL DEFAULT '',
   `email` varchar(120) NOT NULL,
   `preferredEmail` varchar(120) DEFAULT NULL,
   `affiliation` varbinary(2048) NOT NULL DEFAULT '',
@@ -75,9 +75,9 @@ CREATE TABLE `ContactInfo` (
 DROP TABLE IF EXISTS `DeletedContactInfo`;
 CREATE TABLE `DeletedContactInfo` (
   `contactId` int(11) NOT NULL,
-  `firstName` varchar(60) NOT NULL,
-  `lastName` varchar(60) NOT NULL,
-  `unaccentedName` varchar(120) NOT NULL,
+  `firstName` varbinary(120) NOT NULL,
+  `lastName` varbinary(120) NOT NULL,
+  `unaccentedName` varbinary(240) NOT NULL,
   `email` varchar(120) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -487,7 +487,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 181);
+insert into Settings (name, value) values ('allowPaperOption', 182);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

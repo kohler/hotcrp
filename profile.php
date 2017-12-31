@@ -683,9 +683,9 @@ else if (!$newProfile) {
               Ht::entry("preferredEmail", contact_value("preferredEmail"), ["size" => 52]));
 }
 
-echofield(1, "firstName", "First&nbsp;name",
+echofield(1, "firstName", "First name",
           Ht::entry("firstName", contact_value("firstName"), ["size" => 24, "autocomplete" => "given-name"]));
-echofield(3, "lastName", "Last&nbsp;name",
+echofield(3, "lastName", "Last name",
           Ht::entry("lastName", contact_value("lastName"), ["size" => 24, "autocomplete" => "family-name"]));
 echofield(0, "affiliation", "Affiliation",
           Ht::entry("affiliation", contact_value("affiliation"), ["size" => 52, "autocomplete" => "organization"]));
