@@ -867,26 +867,24 @@ $(document).on("click", ".ui", handle_ui);
 
 
 // rangeclick
-function rangeclick(evt, elt, kind) {
-    elt = elt || this;
-    var jelt = jQuery(elt), jform = jelt.closest("form"), kindsearch;
-    if ((kind = kind || jelt.attr("data-range-type")))
-        kindsearch = "[data-range-type~='" + kind + "']";
-    else
-        kindsearch = "[name='" + elt.name + "']";
-    var cbs = jform.find("input[type=checkbox]" + kindsearch);
+$(document).on("click", ".js-range-click", function (event) {
+    var $self = jQuery(this), $f = $self.closest("form"),
+        kind = this.getAttribute("data-range-type"),
+        kindsearch = kind ? "[data-range-type~='" + kind + "']" : "[name='" + this.name + "']",
+        $cbs = $f.find("input[type=checkbox]" + kindsearch);
 
-    var lastelt = jform.data("rangeclick_last_" + kindsearch),
-        thispos, lastpos, i, j, x;
-    for (i = 0; i != cbs.length; ++i) {
-        if (cbs[i] == elt)
+    var rangeclick_last = $f.data("rangeClickLast") || {};
+    var lastelt = rangeclick_last[kindsearch], thispos, lastpos, i, j;
+    for (i = 0; i != $cbs.length; ++i) {
+        if ($cbs[i] == this)
             thispos = i;
-        if (cbs[i] == lastelt)
+        if ($cbs[i] == lastelt)
             lastpos = i;
     }
-    jform.data("rangeclick_last_" + kindsearch, elt);
+    rangeclick_last[kindsearch] = this;
+    $f.data("rangeClickLast", rangeclick_last);
 
-    if (evt.shiftKey && lastelt) {
+    if (event.shiftKey && lastelt) {
         if (lastpos <= thispos) {
             i = lastpos;
             j = thispos - 1;
@@ -895,11 +893,9 @@ function rangeclick(evt, elt, kind) {
             j = lastpos;
         }
         for (; i <= j; ++i)
-            cbs[i].checked = elt.checked;
+            $cbs[i].checked = this.checked;
     }
-}
-
-$(document).on("click", "input.js-range-click", rangeclick);
+});
 
 
 // bubbles and tooltips
