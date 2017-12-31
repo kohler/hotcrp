@@ -161,7 +161,7 @@ if ($Graph == "formula") {
     // Series
     echo '<tr><td class="lcaption"><label for="q">Search</label></td>',
         '<td class="lentry">',
-        '<table><tbody id="qcontainer" class="js-row-order" data-row-template="',
+        '<table class="js-row-order"><tbody id="qcontainer" data-row-template="',
         htmlspecialchars(formulas_qrow('$', "", "by-tag", false)), '">';
     for ($i = 0; $i < count($styles); ++$i)
         echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fg && get($fg->errf, "q$i"));

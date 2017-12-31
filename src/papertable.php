@@ -682,8 +682,8 @@ class PaperTable {
         $hint .= " Any author with an account on this site can edit the submission.";
         echo $this->field_hint("Authors", $hint),
             $this->messages_for("authors"),
-            '<div class="papev"><table id="auedittable" class="auedittable">',
-            '<tbody class="js-row-order need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
+            '<div class="papev"><table id="auedittable" class="auedittable js-row-order">',
+            '<tbody class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
             'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', null, $max_authors)), '">';
 
@@ -1028,34 +1028,33 @@ class PaperTable {
             $checked = !$this->useRequest || $this->qreq["newcontact_active_{$num}"];
             $email = (string) ($this->useRequest ? $this->qreq["newcontact_email_{$num}"] : "");
             $name = (string) ($this->useRequest ? $this->qreq["newcontact_name_{$num}"] : "");
-            $cerror =$this->has_problem_at("contactAuthor") || $this->has_problem_at("contacts");
+            $cerror = $this->has_problem_at("contactAuthor") || $this->has_problem_at("contacts");
         }
         $email = $email === "Email" ? "" : $email;
         $name = $name === "Name" ? "" : $name;
 
-        return '<tr><td class="nb">'
+        return '<div class="checki"><span class="checkc">'
                 . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => 1])
-                . ' </td><td class="lentry">'
+                . ' </span>'
                 . Ht::entry("newcontact_name_{$num}", $name, ["size" => 30, "placeholder" => "Name", "class" => ($cerror ? "error " : "") . "want-focus"])
                 . '  '
                 . Ht::entry("newcontact_email_{$num}", $email, ["size" => 20, "placeholder" => "Email", "class" => $cerror ? "error" : null])
-                . '</td></tr>';
+                . '</div>';
     }
 
     private function echo_editable_new_contact_author() {
         echo $this->editable_papt("contactAuthor", $this->field_name("Contact")),
-            '<div class="papev">';
-        echo '<table><tbody class="js-row-order" data-row-template="',
+            '<div class="papev js-row-order">';
+        echo '<div data-row-template="',
             htmlspecialchars($this->editable_contact_row('$')),
             '">';
         if ($this->useRequest) {
             for ($i = 1; isset($this->qreq["newcontact_email_{$i}"]); ++$i)
                 echo $this->editable_contact_row($i);
         }
-        echo '</tbody><tbody><tr><td colspan="2" class="ug">',
+        echo '</div><div class="ug">',
             Ht::button("Add contact", ["class" => "ui btn row-order-ui addrow"]),
-            '</td></tr></tbody></table>',
-            "</div></div>\n\n";
+            "</div></div></div>\n\n";
     }
 
     private function echo_editable_contact_author() {
@@ -1077,8 +1076,7 @@ class PaperTable {
         echo '<div class="paphint">',
             'Contacts are HotCRP users who can edit the submission and view reviews. Authors with HotCRP accounts are always contacts, but you can add additional contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.',
             '</div>';
-        echo '<div class="papev">';
-        echo '<table><tbody>';
+        echo '<div class="papev js-row-order"><div>';
 
         $req_cemail = [];
         if ($this->useRequest) {
@@ -1101,26 +1099,25 @@ class PaperTable {
                     . Ht::checkbox("contact_active_{$cidx}", 1, $this->useRequest && isset($req_cemail[strtolower($au->email)]), ["data-default-checked" => ""]);
             } else
                 continue;
-            echo '<tr><td class="nb">', $ctl, ' </td>',
-                '<td>', Ht::label(Text::user_html_nolink($au)),
+            echo '<label><div class="checki"><span class="checkc">', $ctl, ' </span>',
+                Text::user_html_nolink($au),
                 ($au->nonauthor ? " (<em>non-author</em>)" : "");
             if ($this->user->privChair && $au->contactId
                 && $au->contactId != $this->user->contactId)
                 echo '&nbsp;', actas_link($au);
-            echo '</td></tr>';
+            echo '</div></label>';
             ++$cidx;
         }
-        echo '</tbody><tbody class="js-row-order" data-row-template="',
+        echo '</div><div data-row-template="',
             htmlspecialchars($this->editable_contact_row('$')),
             '">';
         if ($this->useRequest) {
             for ($i = 1; isset($this->qreq["newcontact_email_{$i}"]); ++$i)
                 echo $this->editable_contact_row($i);
         }
-        echo '</tbody><tbody><tr><td colspan="2" class="ug">',
+        echo '</div><div class="ug">',
             Ht::button("Add contact", ["class" => "ui btn row-order-ui addrow"]),
-            '</td></tr></tbody></table>',
-            "</div></div>\n\n";
+            "</div></div></div>\n\n";
     }
 
     private function echo_editable_anonymity() {

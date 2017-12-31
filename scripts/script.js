@@ -2448,15 +2448,15 @@ var row_order_ui = (function ($) {
 
 function row_order_change(e, delta, action) {
     var $r, $tbody;
-    if (action > 0 && e.tagName === "TBODY")
+    if (action > 0)
         $tbody = $(e);
     else {
         $r = $(e).closest("tr");
         $tbody = $r.closest("tbody");
     }
-    var max_rows = +$tbody.data("maxRows") || 0,
-        min_rows = Math.max(+$tbody.data("minRows") || 0, 1),
-        autogrow = $tbody.data("rowOrderAutogrow");
+    var max_rows = +$tbody.attr("data-max-rows") || 0,
+        min_rows = Math.max(+$tbody.attr("data-min-rows") || 0, 1),
+        autogrow = $tbody.attr("data-row-order-autogrow");
 
     if (action < 0) {
         $r.remove();
@@ -2492,7 +2492,7 @@ function row_order_change(e, delta, action) {
             || (autogrow && any_interesting(trs[trs.length - 1]))
             || action > 0)
            && (max_rows <= 0 || trs.length < max_rows)) {
-        var $newtr = $($tbody.data("rowTemplate")).appendTo($tbody);
+        var $newtr = $($tbody[0].getAttribute("data-row-template")).appendTo($tbody);
         mktemptext($newtr);
         suggest($newtr.find(".hotcrp_searchbox"), taghelp_q);
         trs = $tbody.children();
@@ -2522,17 +2522,21 @@ function row_order_ui(event) {
         row_order_change(this, 1, 0);
     else if (hasClass(this, "delete"))
         row_order_change(this, 0, -1);
-    else if (hasClass(this, "addrow"))
-        row_order_change($(this).closest("table").children("tbody.js-row-order")[0], 0, 1);
+    else if (hasClass(this, "addrow")) {
+        var $parent = $(this).closest(".js-row-order"),
+            $child = $parent.children().filter("[data-row-template]");
+        $child.length && row_order_change($child[0], 0, 1);
+    }
 }
 handle_ui.on("row-order-ui", row_order_ui);
 
 row_order_ui.autogrow = function ($j) {
     $j = $j || $(this);
-    if (!$j.data("rowOrderAutogrow")) {
-        $j.data("rowOrderAutogrow", true).removeClass("need-row-order-autogrow")
+    if (!$j.attr("data-row-order-autogrow")) {
+        $j.attr("data-row-order-autogrow", true)
+            .removeClass("need-row-order-autogrow")
             .on("input change", "input, select, textarea", function () {
-                row_order_change(this, 0);
+                row_order_change(this, 0, 0);
             });
     }
 };
