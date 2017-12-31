@@ -30,6 +30,7 @@ a > img {
 html {
 	font-family: "Helvetica Neue", Helvetica, Arial, verdana, tahoma, sans-serif;
 	font-size: 91.667%; /* 11pt; `rem` units relative to this */
+	line-height: 1.35;
 }
 body {
 	color: #333333;
@@ -1066,7 +1067,6 @@ div.aab + h3.settings {
 .settingtext {
 	max-width: 800px;
 	margin: 0.65em 0;
-	line-height: 1.35;
 }
 h4.helppage {
 	margin: 0.8em 0 0;
@@ -1079,12 +1079,10 @@ th.settings-simplehead {
 .settings-p, .settings-radioheading {
 	max-width: 800px;
 	margin: 1em 0 0.35em;
-	line-height: 1.35;
 }
 .settings-ap {
 	max-width: 800px;
 	margin: 0.35em 0 1em;
-	line-height: 1.35;
 }
 .settings-g, .settings-radio {
 	margin: 1em 0 2em;
@@ -1189,10 +1187,6 @@ td.settings-track-perm {
 }
 .profiletext, .settingstext {
 	max-width: 640px;
-	line-height: 1.35;
-}
-#helpcontent {
-	line-height: 1.35;
 }
 #helpcontent > p {
 	max-width: 640px;
@@ -1576,7 +1570,6 @@ table.reviewers, div.revnotes {
 	margin-bottom: 0.5em;
 }
 table.reviewers {
-	line-height: 1.35;
 	margin-left: -6px;
 }
 td.rl:first-child {
@@ -2739,7 +2732,6 @@ body#offline .revcard {
 }
 .paphint, .revhint {
 	max-width: 640px;
-	line-height: 1.35;
 	font-size: smaller;
 	color: #555555;
 	margin: 0.25em 0;
@@ -2949,7 +2941,6 @@ body#offline .revcard {
 	padding-left: 0.5em;
 }
 .pavb, .revtext, .cmttext {
-	line-height: 1.35;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
 }
@@ -3165,7 +3156,6 @@ body {
 }
 
 #trackertable {
-	line-height: 1.35;
 	font-size: larger;
 }
 .trackertable0 {
