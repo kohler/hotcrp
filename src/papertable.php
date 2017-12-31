@@ -475,14 +475,15 @@ class PaperTable {
         echo '<div class="ready-container ',
             (($this->prow && $this->prow->paperStorageId > 1)
              || $this->conf->opt("noPapers") ? "foldo" : "foldc"),
-            '"><table class="fx"><tr><td class="nw">',
-            Ht::checkbox("submitpaper", 1, $checked, ["class" => "js-check-submittable"]), "&nbsp;";
+            '"><div class="checki fx"><span class="checkc">',
+            Ht::checkbox("submitpaper", 1, $checked, ["class" => "js-check-submittable"]),
+            " </span>";
         if ($this->conf->setting("sub_freeze"))
-            echo "</td><td>", Ht::label("<strong>" . $this->conf->_("The submission is complete.") . "</strong>"),
-                "</td></tr><tr><td></td><td><small>You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</small>";
+            echo Ht::label("<strong>" . $this->conf->_("The submission is complete.") . "</strong>"),
+                '<p class="settings-ap hint">You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</p>';
         else
             echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review.") . "</strong>");
-        echo "</td></tr></table></div>\n";
+        echo "</div></div>\n";
     }
 
     static function document_upload_input($inputid, $dtype, $accepts) {
@@ -1237,9 +1238,9 @@ class PaperTable {
         foreach ($this->conf->topic_map() as $tid => $tname) {
             $pchecked = isset($ptopics[$tid]);
             $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
-            echo '<div class="ctelt"><div class="ctelti"><table><tr><td class="nw">',
-                Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked]),
-                '&nbsp;</td><td>', Ht::label($tname), "</td></tr></table></div></div>\n";
+            echo '<div class="ctelt"><label><div class="ctelti checki"><span class="checkc">',
+                Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked, "data-range-type" => "topic", "class" => "js-range-click"]),
+                ' </span>', $tname, '</div></label></div>';
         }
         echo "</div></div></div>\n\n";
     }
@@ -1296,13 +1297,17 @@ class PaperTable {
                 $ct = $pct;
 
             $label = Ht::label($this->user->name_html_for($p), "pcc$id", array("class" => "taghl"));
+            $label = '<span class="taghl">' . $this->user->name_html_for($p) . '</span>';
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
             if ($this->prow && $pct < CONFLICT_AUTHOR
                 && ($pcconfmatch = $this->prow->potential_conflict_html($p, $pct <= 0)))
                 $label .= $pcconfmatch;
 
-            echo '<div class="ctelt"><div class="ctelti clearfix';
+            echo '<div class="ctelt"><label><div class="ctelti';
+            if (!$selectors)
+                echo ' checki';
+            echo ' clearfix';
             if ($show_colors && ($classes = $p->viewable_color_classes($this->user)))
                 echo ' ', $classes;
             if ($pct)
@@ -1324,12 +1329,14 @@ class PaperTable {
             } else {
                 $js["disabled"] = $disabled;
                 $js["data-default-checked"] = $pct > 0;
-                echo '<table><tr><td class="nb">',
+                $js["data-range-type"] = "pcc";
+                $js["class"] = "js-range-click";
+                echo '<span class="checkc">',
                     Ht::checkbox("pcc$id", $ct > 0 ? $ct : CONFLICT_AUTHORMARK,
                                  $ct > 0, $js),
-                    ' </td><td>', $label, '</td></tr></table>';
+                    ' </span>', $label;
             }
-            echo "</div></div>";
+            echo "</div></label></div>";
         }
         echo "</div>\n</div></div>\n\n";
     }
@@ -1865,7 +1872,7 @@ class PaperTable {
     function echoActions($top) {
         if ($this->admin && !$top) {
             $v = (string) $this->qreq->emailNote;
-            echo "<div>", Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), "&nbsp;",
+            echo '<div class="checki"><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), " </span>",
                 Ht::label("Email authors, including:"), "&nbsp; ",
                 Ht::entry("emailNote", $v, ["id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff"]),
                 "</div>\n";

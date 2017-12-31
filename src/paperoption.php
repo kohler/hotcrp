@@ -717,9 +717,10 @@ class SelectorPaperOption extends PaperOption {
                 ["data-default-value" => $ov->value]);
         else
             foreach ($this->selector as $val => $text) {
-                echo Ht::radio("opt$this->id", $val, $val == $reqv,
-                    ["data-default-checked" => $val == $ov->value]),
-                    "&nbsp;", Ht::label(htmlspecialchars($text)), "<br />\n";
+                echo '<label><div class="checki"><span class="checkc">',
+                    Ht::radio("opt$this->id", $val, $val == $reqv,
+                        ["data-default-checked" => $val == $ov->value]),
+                    ' </span>', htmlspecialchars($text), '</div></label>';
             }
         echo "</div></div>\n\n";
     }

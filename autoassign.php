@@ -654,16 +654,16 @@ $tagger = new Tagger($Me);
 $nrev = new AssignmentCountSet($Conf);
 $nrev->load_rev();
 foreach ($Conf->pc_members() as $id => $p) {
-    $t = '<div class="ctelt"><div class="ctelti';
+    $t = '<div class="ctelt"><label><div class="ctelti checki';
     if (($k = $p->viewable_color_classes($Me)))
         $t .= ' ' . $k;
-    $t .= '"><table><tr><td class="nw">'
+    $t .= '"><span class="checkc">'
         . Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),
                        ["id" => "pcc$id", "class" => "js-range-click js-pcsel-tag"])
-        . '&nbsp;</td><td>'
-        . Ht::label($Me->name_html_for($p), "pcc$id", ["class" => "taghl"])
+        . ' </span>'
+        . '<span class="taghl">' . $Me->name_html_for($p) . '</span>'
         . AssignmentSet::review_count_report($nrev, null, $p, "")
-        . "</td></tr></table><hr class=\"c\" />\n</div></div>";
+        . "</div></label></div>";
     $summary[] = $t;
 }
 echo '<div class="pc_ctable" style="margin-top:0.5em">', join("", $summary), "</div>\n",

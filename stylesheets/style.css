@@ -1494,6 +1494,10 @@ pre.email {
 .ctelti {
 	padding: 0 6px;
 }
+.checki.ctelti {
+	margin: 0;
+	padding: 0 6px 0 26px;
+}
 .has-assignment.foldo {
 	margin-bottom: 0.5rem;
 }
@@ -2729,14 +2733,12 @@ body#offline .revcard {
 .papev, .revev {
 	margin: 5px 0;
 }
-.revhint {
+.paphint, .revhint {
 	max-width: 640px;
 	line-height: 1.35;
-}
-.paphint, .revhint {
-	font-size: 90%;
+	font-size: smaller;
 	color: #555555;
-	margin: 2px 0;
+	margin: 0.25em 0;
 }
 .paphint > p:first-child, .revhint > p:first-child {
 	margin-top: 0;
