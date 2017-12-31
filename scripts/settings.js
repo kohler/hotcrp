@@ -688,7 +688,7 @@ function settings_add_resp_round() {
     var i, j;
     for (i = 1; jQuery("#response_" + i).length; ++i)
         /* do nothing */;
-    jQuery("#response_n").before("<div id=\"response_" + i + "\" style=\"padding-top:1em\"></div>");
+    jQuery("#response_n").before("<div id=\"response_" + i + "\" class=\"settings-g\"></div>");
     j = jQuery("#response_" + i);
     j.html(jQuery("#response_n").html().replace(/_n\"/g, "_" + i + "\""));
     mktemptext(j);
@@ -697,10 +697,14 @@ function settings_add_resp_round() {
 }
 
 
-function settings_radio_table(name) {
-    var $j = $("#" + name + "_table");
-    fold($j.find("tr"), true);
-    var value = $j.find("input[name=" + name + "]:checked").val();
-    if (value != null)
-        fold($("#" + name + "_row_" + value), false);
+(function ($) {
+function handle() {
+    var $self = $(this);
+    fold($self.find(".settings-radioitem"), true);
+    fold($self.find(".js-settings-radio:checked").closest(".settings-radioitem"), false);
 }
+$(document).on("change", ".js-settings-radio", function (event) {
+    handle.call($(event.target).closest(".settings-radio")[0]);
+});
+$(function () { $(".settings-radio").each(handle); });
+})($);

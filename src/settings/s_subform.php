@@ -10,20 +10,16 @@ class BanalSettings {
             $sv->set_oldv("sub_banal_$k$suffix", $val == "" ? "N/A" : $val);
         }
 
-        echo '<table class="has-fold ', ($sv->curv("sub_banal$suffix") ? "foldo" : "foldc"), '">';
-        $sv->echo_checkbox_row("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "js-foldup"]);
-        echo '<tr class="fx"><td></td><td class="top">',
-            Ht::hidden("has_sub_banal$suffix", 1),
-            '<table><tbody class="secondary-settings">';
-        $sv->echo_entry_row("sub_banal_papersize$suffix", "Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”");
-        $sv->echo_entry_row("sub_banal_pagelimit$suffix", "Page limit");
-        $sv->echo_entry_row("sub_banal_textblock$suffix", "Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
-        echo '</tbody></table></td><td><span class="sep"></span></td>',
-            '<td class="top"><table><tbody class="secondary-settings">';
-        $sv->echo_entry_row("sub_banal_bodyfontsize$suffix", "Minimum body font size", null, ["after_entry" => "&nbsp;pt"]);
-        $sv->echo_entry_row("sub_banal_bodylineheight$suffix", "Minimum line height", null, ["after_entry" => "&nbsp;pt"]);
-        $sv->echo_entry_row("sub_banal_columns$suffix", "Columns");
-        echo "</tbody></table></td></tr></table>";
+        $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "js-foldup", "item_class" => "settings-g has-fold fold" . ($sv->curv("sub_banal$suffix") ? "o" : "c"), "item_open" => true]);
+        echo Ht::hidden("has_sub_banal$suffix", 1),
+            '<div class="settings-2col fx">';
+        $sv->echo_entry_group("sub_banal_papersize$suffix", "Paper size", ["horizontal" => true], "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”, “letter OR A4”");
+        $sv->echo_entry_group("sub_banal_pagelimit$suffix", "Page limit", ["horizontal" => true]);
+        $sv->echo_entry_group("sub_banal_textblock$suffix", "Text block", ["horizontal" => true], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
+        $sv->echo_entry_group("sub_banal_bodyfontsize$suffix", "Body font size", ["horizontal" => true, "after_entry" => "&nbsp;pt"]);
+        $sv->echo_entry_group("sub_banal_bodylineheight$suffix", "Line height", ["horizontal" => true, "after_entry" => "&nbsp;pt"]);
+        $sv->echo_entry_group("sub_banal_columns$suffix", "Columns", ["horizontal" => true]);
+        echo "</div></div>\n";
         Ht::stash_script('$(function(){foldup.call($$("cbsub_banal' . $suffix . '"),null)})');
     }
     static private function cf_status(CheckFormat $cf) {
@@ -208,22 +204,23 @@ class SubForm_SettingRenderer {
         Ht::stash_script('function sub_nopapers_change() { var v = $("#sub_nopapers").val(); fold("pdfupload",v==1,2); fold("pdfupload",v!=0,3); } $("#sub_nopapers").on("change", sub_nopapers_change); $(sub_nopapers_change)');
 
         echo "<h3 class=\"settings\">Conflicts and collaborators</h3>\n",
-            "<table id=\"foldpcconf\" class=\"fold",
-            ($sv->curv("sub_pcconf") ? "o" : "c"), " g\">\n";
-        $sv->echo_checkbox_row("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "js-foldup"]);
-        echo "<tr class='fx'><td></td><td>";
+            '<div id="foldpcconf" class="settings-g fold',
+            ($sv->curv("sub_pcconf") ? "o" : "c"), "\">\n";
+        $sv->echo_checkbox("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "js-foldup"]);
         $cflt = array();
-        foreach (Conflict::$type_descriptions as $n => $d)
+        foreach (Conflict::$type_descriptions as $n => $d) {
             if ($n)
                 $cflt[] = "“{$d}”";
-        $sv->echo_checkbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($cflt, "or") . ")");
-        echo "</td></tr>\n";
-        $sv->echo_checkbox_row("sub_collab", "Collect authors’ other collaborators as text");
-        echo "</table>\n";
+        }
+        $sv->echo_checkbox("sub_pcconfsel", "Collect PC conflict descriptions (" . commajoin($cflt, "or") . ")", ["item_class" => "fx"]);
+        $sv->echo_checkbox("sub_collab", "Collect authors’ other collaborators as text");
+        echo "</div>\n";
 
+        echo '<div class="settings-g">';
         $sv->echo_message_minor("msg.conflictdef", "Definition of conflict of interest");
+        echo "</div>\n";
 
-        echo '<div class="g">', $sv->label("sub_pcconfhide", "When can reviewers see conflict information?"),
+        echo '<div class="settings-g">', $sv->label("sub_pcconfhide", "When can reviewers see conflict information?"),
             '&nbsp; ',
             $sv->render_select("sub_pcconfvis", [1 => "Never", 0 => "When authors or tracker are visible", 2 => "Always"]),
             '</div>';

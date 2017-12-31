@@ -59,16 +59,16 @@ class Reviews_SettingRenderer {
     }
 
 static function render(SettingValues $sv) {
+    echo '<div class="settings-g">';
     $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
     $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
+    echo "</div>\n";
 
-    echo "<div class='g'></div>\n";
-    echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
     $sv->echo_radio_table("rev_blind", array(Conf::BLIND_ALWAYS => "Yes, reviews are anonymous",
                                Conf::BLIND_NEVER => "No, reviewer names are visible to authors",
-                               Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"));
+                               Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"),
+        '<strong>Review anonymity:</strong> Are reviewer names hidden from authors?');
 
-    echo "<div class='g'></div>\n";
     $sv->echo_checkbox('rev_notifychair', 'Notify PC chairs of newly submitted reviews by email');
 
 
@@ -143,61 +143,63 @@ static function render(SettingValues $sv) {
 
 
     // PC reviews
-    echo "<h3 class=\"settings g\" id=\"pcreviews\">PC reviews</h3>\n";
-    echo '<table><tbody>';
-    $sv->echo_checkbox_row('pcrev_any', "PC members can review any submitted paper");
+    echo "<h3 class=\"settings\" id=\"pcreviews\">PC reviews</h3>\n";
+    echo '<div class="settings-g">';
+    $hint = "";
     if ($sv->conf->setting("pcrev_any")
         && $sv->conf->check_track_sensitivity(Track::UNASSREV))
-        echo '<tr><td></td><td class="hint">', Ht::link("Current track settings", hoturl("settings", "group=tracks")), ' may restrict self-assigned reviews.</td></tr>';
-    echo "</tbody></table>\n";
+        $hint = Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict self-assigned reviews.';
+    $sv->echo_checkbox('pcrev_any', "PC members can review any submitted paper", ["class" => "js-foldup", "item_class" => "has-fold foldo", "hint_class" => "fx"], $hint);
+    Ht::stash_script('$("#pcrev_any").change()');
+    echo "</div>\n";
 
-    echo "<div class=\"g\">Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
+    $hint = "";
     if ($sv->conf->has_any_metareviews())
-        echo "<div class=\"hint\">Metareviewers can always see their papers’ reviews and reviewer names.</div>\n";
+        $hint = '<p class="settings-ag hint">Metareviewers can always see their papers’ reviews and reviewer names.</p>';
     $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
                                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
                                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviews.</div>"));
-    echo "</div>\n";
+                                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviews.</div>"),
+        'Can PC members <strong>see all reviews</strong> except for conflicts?' . $hint);
 
-    echo "<div class=\"g\">Can PC members see <strong>comments and reviewer names</strong> except for conflicts?<br />\n";
+
     $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
-                                    1 => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviewer names.</div>"));
-    echo "</div>\n";
+                                    1 => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviewer names.</div>"),
+        'Can PC members see <strong>comments and reviewer names</strong> except for conflicts?');
 
 
     // External reviews
     echo "<h3 class=\"settings g\">External reviews</h3>\n";
 
     echo '<p class="settingtext">Any PC reviewer can propose an external review; secondary PC reviewers can delegate their reviews to external reviewers.</p>', "\n";
-    echo '<table id="foldpcrev_editdelegate" class="fold2o"><tbody>';
-    $sv->echo_checkbox_row("extrev_chairreq", "PC chair must approve all external reviewers");
-    $sv->echo_checkbox_row("pcrev_editdelegate", "PC members can edit delegated external reviews (and other external reviews they requested)");
+    echo '<div id="foldpcrev_editdelegate" class="settings-g fold2o">';
+    $sv->echo_checkbox("extrev_chairreq", "PC chair must approve all external reviewers");
+    $sv->echo_checkbox("pcrev_editdelegate", "PC members can edit delegated external reviews (and other external reviews they requested)");
     Ht::stash_script('function pcrev_editdelegate_change() { fold("pcrev_editdelegate",!$$("cbpcrev_editdelegate").checked,2); } $("#cbpcrev_editdelegate").on("change", pcrev_editdelegate_change); $(pcrev_editdelegate_change)');
-    echo '<tr class="fx2"><td></td><td>';
-    $sv->echo_checkbox("extrev_approve", "Requesters must approve external reviews after they are submitted");
-    echo '</tr></tbody></table>';
+    $sv->echo_checkbox("extrev_approve", "Requesters must approve external reviews after they are submitted", ["item_class" => "fx2"]);
+    echo "</div>\n";
 
-    echo "<div class='g'></div>\n";
     $t = SettingParser::expand_mail_template("requestreview", false);
-    echo "<table id='foldmailbody_requestreview' class='",
+    echo '<div id="foldmailbody_requestreview" class="settings-g ',
         ($t == SettingParser::expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
-        "'><tr><td>", foldupbutton(), "</td>",
-        "<td><a class='ui q js-foldup' href='#'>Mail template for external review requests</a>",
-        " <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed; set to empty for default)<br /></span>
-<textarea class='tt fx need-autogrow' name='mailbody_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea>",
-        "</td></tr></table>\n";
+        '">';
+    echo '<div class="f-i"><div class="f-cn">',
+        '<a class="ui q js-foldup" href="">', expander(null, 0),
+        'Mail template for external review requests</a>',
+        '<span class="fx"> (<a href="', hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
+        '<div class="f-e">',
+        '<textarea class="tt fx need-autogrow" name="mailbody_requestreview" cols="80" rows="20">', htmlspecialchars($t["body"]), "</textarea>",
+        "</div></div></div>\n";
 
-    echo "<div class='g'></div>";
-    echo "Can external reviewers see reviews and comments for their assigned papers, once they’ve submitted a review?<br />\n";
-    $sv->echo_radio_table("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"));
+    $sv->echo_radio_table("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"),
+        'Can external reviewers see reviews and comments for their assigned papers, once they’ve submitted a review?');
 
 
     // Review ratings
-    echo "<h3 class=\"settings g\">Review ratings</h3>\n";
+    echo "<h3 class=\"settings\">Review ratings</h3>\n";
 
-    echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='", hoturl("help", "t=revrate"), "'>(Learn more)</a><br />\n";
-    $sv->echo_radio_table("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
+    $sv->echo_radio_table("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"),
+        'Should HotCRP collect ratings of reviews?   <a class="hint" href="' . hoturl("help", "t=revrate") . '">Learn more</a>');
 }
 
     static function crosscheck(SettingValues $sv) {

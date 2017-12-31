@@ -437,11 +437,11 @@ class SettingValues extends MessageSet {
         }
         return $html;
     }
-    function sjs($name, $extra = array()) {
+    function sjs($name, $js = array()) {
         $x = ["id" => $name];
         if (Si::get($name, "disabled"))
             $x["disabled"] = true;
-        foreach ($extra as $k => $v)
+        foreach ($js as $k => $v)
             $x[$k] = $v;
         if ($this->has_problem_at($name))
             $x["class"] = trim("setting_error " . (get($x, "class") ? : ""));
@@ -597,37 +597,42 @@ class SettingValues extends MessageSet {
             $this->conf->msg($xtype[$status], $msgs);
         }
     }
-    function echo_checkbox_only($name, $extra = null) {
-        $extra["id"] = "cb$name";
+    function echo_checkbox_only($name, $js = null) {
+        $js["id"] = "cb$name";
         $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
-            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $extra));
+            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js));
     }
-    function echo_checkbox($name, $text, $extra = null) {
-        $this->echo_checkbox_only($name, $extra);
-        echo "&nbsp;", $this->label($name, $text, true), "<br />\n";
+    function echo_checkbox($name, $text, $js = null, $hint = null) {
+        $item_class = get($js, "item_class");
+        $hint_class = get($js, "hint_class");
+        $item_open = get($js, "item_open");
+        unset($js["item_class"], $js["hint_class"], $js["item_open"]);
+
+        echo '<div class="checki', ($item_class ? " " . $item_class : ""),
+            '"><span class="checkc">';
+        $this->echo_checkbox_only($name, $js);
+        echo ' </span>', $this->label($name, $text, true);
+        if ($hint)
+            echo '<p class="settings-ap hint', ($hint_class ? " " . $hint_class : ""), '">', $hint, '</p>';
+        if (!$item_open)
+            echo "</div>\n";
     }
-    function echo_checkbox_row($name, $text, $extra = null) {
-        echo '<tr><td class="nb">';
-        $this->echo_checkbox_only($name, $extra);
-        echo '&nbsp;</td><td>', $this->label($name, $text, true), "</td></tr>\n";
-    }
-    function echo_radio_table($name, $varr) {
+    function echo_radio_table($name, $varr, $heading = null) {
         $x = $this->curv($name);
         if ($x === null || !isset($varr[$x]))
             $x = 0;
-        echo "<table style=\"margin-top:0.25em\" id=\"{$name}_table\">\n";
+        echo '<div class="settings-radio">';
+        if ($heading)
+            echo '<div class="settings-radioheading">', $heading, '</div>';
         foreach ($varr as $k => $text) {
-            echo "<tr id=\"{$name}_row_{$k}\" class=\"foldc\"><td class=\"nb\">",
-                Ht::radio($name, $k, $k == $x, $this->sjs($name, ["id" => "{$name}_{$k}"])),
-                "&nbsp;</td><td>",
-                $this->label($name, $text, true),
-                "</td></tr>\n";
+            echo '<div class="settings-radioitem checki ',
+                ($k == $x ? "foldo" : "foldc"), '"><span class="checkc">',
+                Ht::radio($name, $k, $k == $x,
+                          $this->sjs($name, ["id" => "{$name}_{$k}", "class" => "js-settings-radio"])),
+                '</span>', $this->label($name, $text, true), '</div>';
         }
-        echo "</table>\n";
-        $changejs = "settings_radio_table(" . json_encode_browser($name) . ")";
-        Ht::stash_script('$(' . json_encode_browser("#{$name}") . ').on("change", "input[type=radio]", function () { ' . $changejs . ' })');
-        echo Ht::unstash_script($changejs);
+        echo "</div>\n";
     }
     function render_entry($name, $js = []) {
         $v = $this->curv($name);
@@ -651,37 +656,30 @@ class SettingValues extends MessageSet {
     function echo_entry($name) {
         echo $this->render_entry($name);
     }
-    function echo_entry_row($name, $description, $hint = null, $js = []) {
-        $after_entry = null;
-        if (isset($js["after_entry"])) {
-            $after_entry = $js["after_entry"];
-            unset($js["after_entry"]);
+    function echo_entry_group($name, $description, $js = null, $hint = null) {
+        $after_entry = get($js, "after_entry");
+        $horizontal = get($js, "horizontal");
+        $item_open = get($js, "item_open");
+        unset($js["after_entry"], $js["horizontal"], $js["item_open"]);
+
+        echo ($horizontal ? '<div class="entryi"><div class="entryc">' : '<div class="f-i"><div class="f-c">'),
+            $this->label($name, $description),
+            ($horizontal ? '</div>' : '</div><div class="f-e">'),
+            $this->render_entry($name, $js), ($after_entry ? : ""),
+            ($horizontal ? '' : '</div>');
+        $thint = null;
+        if (($si = $this->si($name)))
+            $thint = $this->type_hint($si->type);
+        if ($hint || $thint) {
+            echo '<div class="f-h">';
+            if ($hint)
+                echo '<div>', $hint, '</div>';
+            if ($thint)
+                echo '<div>', $thint, '</div>';
+            echo '</div>';
         }
-        echo '<tr><td class="lcaption nb">', $this->label($name, $description),
-            '</td><td class="lentry">', $this->render_entry($name, $js);
-        if ($after_entry)
-            echo $after_entry;
-        if (($si = $this->si($name)) && ($thint = $this->type_hint($si->type)))
-            $hint = ($hint ? $hint . "<br />" : "") . $thint;
-        if ($hint)
-            echo '<br /><span class="hint">', $hint, "</span>";
-        echo "</td></tr>\n";
-    }
-    function echo_entry_pair($name, $description, $hint = null, $js = []) {
-        $after_entry = null;
-        if (isset($js["after_entry"])) {
-            $after_entry = $js["after_entry"];
-            unset($js["after_entry"]);
-        }
-        echo '<div class="f-i"><div class="f-c">', $this->label($name, $description),
-            '</div><div class="f-e">', $this->render_entry($name, $js);
-        if ($after_entry)
-            echo $after_entry;
-        if (($si = $this->si($name)) && ($thint = $this->type_hint($si->type)))
-            $hint = ($hint ? $hint . "<br />" : "") . $thint;
-        if ($hint)
-            echo '<br /><span class="hint">', $hint, "</span>";
-        echo "</div></div>\n";
+        if (!$item_open)
+            echo "</div>\n";
     }
     function render_select($name, $values, $js = []) {
         $v = $this->curv($name);
@@ -714,7 +712,7 @@ class SettingValues extends MessageSet {
         $si = $this->si($name);
         $si->default_value = $this->conf->message_default_html($name);
         $current = $this->curv($name);
-        $description = '<a class="ui q js-foldup" href="#">'
+        $description = '<a class="ui q js-foldup" href="">'
             . expander(null, 0) . $description . '</a>';
         echo '<div class="has-fold fold', ($current == $si->default_value ? "c" : "o"), '">',
             '<div class="', $class, ' ui js-foldup">',

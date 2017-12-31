@@ -5,18 +5,17 @@
 class FinalVersions_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
         $sv->echo_messages_near("final_open");
-        echo '<div class="settings-g has-fold fold2o">';
-        echo '<table>';
-        $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx2">:</span></b>', ["class" => "js-foldup"]);
-        echo '<tr class="fx2"><td></td><td><table><tbody class="secondary-settings">';
-        $sv->echo_entry_row("final_soft", "Deadline");
-        $sv->echo_entry_row("final_done", "Hard deadline");
-        $sv->echo_entry_row("final_grace", "Grace period");
-        echo "</tbody></table><div class='g'></div>";
+        echo '<div class="has-fold fold2o">';
+        $sv->echo_checkbox('final_open', '<strong>Collect final versions of accepted papers</strong>', ["class" => "js-foldup", "item_class" => "settings-g"]);
+        echo '<div class="fx2"><div class="settings-g">';
+        $sv->echo_entry_group("final_soft", "Deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("final_done", "Hard deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("final_grace", "Grace period", ["horizontal" => true]);
+        echo '</div><div class="settings-g">';
         $sv->echo_message_minor("msg.finalsubmit", "Instructions");
-        echo '<div class="g"></div>';
+        echo '</div>';
         BanalSettings::render("_m1", $sv);
-        echo "</td></tr></table>",
+        echo "</div>",
             "<p class=\"settingtext\">To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</p>",
             "</div>\n\n";
         Ht::stash_script("foldup.call(\$\$('cbfinal_open'), null)");

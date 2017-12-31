@@ -5,10 +5,10 @@
 class Responses_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
         // Authors' response
-        echo '<div class="settings-g"><table id="foldauresp" class="fold2o">';
-        $sv->echo_checkbox_row('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>");
+        echo '<div id="foldauresp" class="settings-g fold2o">';
+        $sv->echo_checkbox('resp_active', "<strong>Collect authors’ responses to the reviews<span class='fx2'>:</span></strong>", ["item_open" => true]);
         Ht::stash_script('$(function () { $("#cbresp_active").on("change", function () { fold("auresp",!$$("cbresp_active").checked,2); }).trigger("change"); })');
-        echo '<tr class="fx2"><td></td><td><div id="auresparea">',
+        echo '<div id="auresparea" class="fx2">',
             Ht::hidden("has_resp_rounds", 1);
 
         // Response rounds
@@ -28,27 +28,25 @@ class Responses_SettingParser extends SettingParser {
             }
             $sv->set_oldv("resp_roundname$isuf", $rname);
 
-            echo '<div id="response', $isuf;
-            if ($i)
-                echo '" style="padding-top:1em';
+            echo '<div id="response', $isuf, '" class="settings-g';
             if ($i === "n")
-                echo ';display:none';
-            echo '"><table><tbody class="secondary-settings">';
-            $sv->echo_entry_row("resp_roundname$isuf", "Response name");
+                echo ' hidden';
+            echo '">';
+            $sv->echo_entry_group("resp_roundname$isuf", "Response name", ["horizontal" => true]);
             if ($sv->curv("resp_open$isuf") === 1 && ($x = $sv->curv("resp_done$isuf")))
                 $sv->conf->settings["resp_open$isuf"] = $x - 7 * 86400;
-            $sv->echo_entry_row("resp_open$isuf", "Start time");
-            $sv->echo_entry_row("resp_done$isuf", "Hard deadline");
-            $sv->echo_entry_row("resp_grace$isuf", "Grace period");
-            $sv->echo_entry_row("resp_words$isuf", "Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
-            echo '</tbody></table><div style="padding-top:4px">';
+            $sv->echo_entry_group("resp_open$isuf", "Start time", ["horizontal" => true]);
+            $sv->echo_entry_group("resp_done$isuf", "Hard deadline", ["horizontal" => true]);
+            $sv->echo_entry_group("resp_grace$isuf", "Grace period", ["horizontal" => true]);
+            $sv->echo_entry_group("resp_words$isuf", "Word limit", ["horizontal" => true], $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
+            echo '<div style="padding-top:4px">';
             $sv->echo_message_minor("msg.resp_instrux$isuf", "Instructions");
             echo '</div></div>', "\n";
         }
 
-        echo '</div><div class="settings-g">',
+        echo '<div class="settings-g">',
             Ht::button("Add response round", ["class" => "btn", "id" => "resp_round_add"]),
-            '</div></td></tr></table></div>';
+            '</div></div></div></div>';
         Ht::stash_script('$("#resp_round_add").on("click", settings_add_resp_round)');
     }
 

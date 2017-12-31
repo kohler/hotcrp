@@ -13,29 +13,31 @@ class Tags_SettingRenderer {
         // Tags
         $tagmap = $sv->conf->tags();
         echo "<h3 class=\"settings\">Tags</h3>\n";
-        echo "<table><tbody class=\"secondary-settings\">";
+
+        echo '<div class="settings-g">';
         $sv->set_oldv("tag_chair", self::render_tags($tagmap->filter("chair")));
-        $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.", ["class" => "need-tagcompletion"]);
+        $sv->echo_entry_group("tag_chair", "Chair-only tags", ["class" => "need-tagcompletion"], "PC members can view these tags, but only administrators can change them.");
 
         $sv->set_oldv("tag_sitewide", self::render_tags($tagmap->filter("sitewide")));
         if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
-            $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Administrators can view and change these tags for every paper.", ["class" => "need-tagcompletion"]);
+            $sv->echo_entry_group("tag_sitewide", "Site-wide tags", ["class" => "need-tagcompletion"], "Administrators can view and change these tags for every paper.");
 
         $sv->set_oldv("tag_approval", self::render_tags($tagmap->filter("approval")));
-        $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>", ["class" => "need-tagcompletion"]);
+        $sv->echo_entry_group("tag_approval", "Approval voting tags", ["class" => "need-tagcompletion"], "<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>");
 
         $x = [];
         foreach ($tagmap->filter("vote") as $t)
             $x[] = "{$t->tag}#{$t->vote}";
         $sv->set_oldv("tag_vote", join(" ", $x));
-        $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>)", ["class" => "need-tagcompletion"]);
+        $sv->echo_entry_group("tag_vote", "Allotment voting tags", ["class" => "need-tagcompletion"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>)");
 
         $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
-        $sv->echo_entry_row("tag_rank", "Ranking tag", "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href='" . hoturl("help", "t=ranking") . "'>Help</a>)");
-        echo "</tbody></table>";
+        $sv->echo_entry_group("tag_rank", "Ranking tag", null, "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href='" . hoturl("help", "t=ranking") . "'>Help</a>)");
+        echo "</div>\n";
 
-        echo "<div class='g'></div>\n";
+        echo '<div class="settings-g">';
         $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
+        echo "</div>\n";
 
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
     }

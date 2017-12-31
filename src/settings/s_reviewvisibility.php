@@ -4,8 +4,6 @@
 
 class ReviewVisibility_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
-        echo '<div class="settings-g">';
-        echo '<p class="settings-p">Can <b>authors see reviews and author-visible comments</b> for their papers?</p>';
         $no_text = "No, unless authors can edit responses";
         if (!$sv->conf->setting("au_seerev", 0)) {
             if ($sv->conf->timeAuthorViewReviews())
@@ -21,26 +19,24 @@ class ReviewVisibility_SettingParser extends SettingParser {
         if ($sv->conf->opt("allow_auseerev_unlessincomplete"))
             $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
         $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev");
-        $sv->echo_radio_table("au_seerev", $opts);
+        $sv->echo_radio_table("au_seerev", $opts,
+            'Can <strong>authors see reviews and author-visible comments</strong> for their papers?');
         echo Ht::hidden("has_tag_au_seerev", 1);
         Ht::stash_script('$("#tag_au_seerev").on("input", function () { $("#au_seerev_' . Conf::AUSEEREV_TAGS . '").click(); })');
+
+        echo '<div class="settings-g">';
+        $sv->echo_checkbox("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers when reviews are visible");
         echo "</div>\n";
 
-        echo '<table class="settings-g">';
-        $sv->echo_checkbox_row("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers when reviews are visible");
-        echo "</table>\n";
-
-        echo '<div class="settings-g"><p class="settings-p">',
-            "Who can see paper <b>decisions</b> (accept/reject)?</p>\n";
         $sv->echo_radio_table("seedec", array(Conf::SEEDEC_ADMIN => "Only administrators",
                                 Conf::SEEDEC_NCREV => "Reviewers and non-conflicted PC members",
                                 Conf::SEEDEC_REV => "Reviewers and <em>all</em> PC members",
-                                Conf::SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"));
-        echo "</div>\n";
+                                Conf::SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"),
+            'Who can see paper <strong>decisions</strong> (accept/reject)?');
 
-        echo "<table class=\"settings-g\">";
-        $sv->echo_checkbox_row("shepherd_hide", "Hide shepherd names from authors");
-        echo "</table>\n";
+        echo '<div class="settings-g">';
+        $sv->echo_checkbox("shepherd_hide", "Hide shepherd names from authors");
+        echo "</div>\n";
     }
 
     static function crosscheck(SettingValues $sv) {
