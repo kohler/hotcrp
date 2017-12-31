@@ -86,5 +86,5 @@ $Sv->echo_topic($Group);
 doActionArea(false);
 echo "</div></div></form>\n";
 
-Ht::stash_script("hiliter_children('#settingsform')");
+Ht::stash_script('hiliter_children("#settingsform", true)');
 $Conf->footer();
