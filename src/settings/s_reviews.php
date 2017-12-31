@@ -42,20 +42,12 @@ class Reviews_SettingRenderer {
         $si = $sv->si("extrev_hard$dlsuf");
         $si->date_backup = "pcrev_hard$dlsuf";
 
-        echo '<table style="margin-left:3em">';
-        echo '<tr><td>', $sv->label("pcrev_soft$entrysuf", "PC deadline"), ' &nbsp;</td>',
-            '<td class="lentry" style="padding-right:3em">',
-            $sv->render_entry("pcrev_soft$entrysuf"),
-            '</td><td class="lentry">', $sv->label("pcrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
-            $sv->render_entry("pcrev_hard$entrysuf"),
-            '</td></tr>';
-        echo '<tr><td>', $sv->label("extrev_soft$entrysuf", "External deadline"), ' &nbsp;</td>',
-            '<td class="lentry" style="padding-right:3em">',
-            $sv->render_entry("extrev_soft$entrysuf"),
-            '</td><td class="lentry">', $sv->label("extrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
-            $sv->render_entry("extrev_hard$entrysuf"),
-            '</td></tr>';
-        echo '</table></div>', "\n";
+        echo '<div class="settings-2col" style="margin-left:3em">';
+        $sv->echo_entry_group("pcrev_soft$entrysuf", "PC deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("pcrev_hard$entrysuf", "Hard deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("extrev_soft$entrysuf", "External deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("extrev_hard$entrysuf", "Hard deadline", ["horizontal" => true]);
+        echo "</div></div>\n";
     }
 
 static function render(SettingValues $sv) {

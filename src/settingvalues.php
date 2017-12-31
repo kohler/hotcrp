@@ -441,7 +441,7 @@ class SettingValues extends MessageSet {
         $x = ["id" => $name];
         if (Si::get($name, "disabled"))
             $x["disabled"] = true;
-        foreach ($js as $k => $v)
+        foreach ($js ? : [] as $k => $v)
             $x[$k] = $v;
         if ($this->has_problem_at($name))
             $x["class"] = trim("setting_error " . (get($x, "class") ? : ""));
