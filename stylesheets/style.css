@@ -208,13 +208,13 @@ span.nb {
 	padding-left: 20px;
 }
 .checkc {
-	float: left;
+	display: inline-block;
 	margin-left: -20px;
+	width: 20px;
 }
 .checkc > input {
 	margin-left: 0;
 	padding-left: 0;
-	vertical-align: 2px;
 }
 .entryi {
 	margin: 0.5em 0;
