@@ -2032,6 +2032,10 @@ hr.c {
 	font-size: larger;
 	font-weight: bold;
 }
+.checki > .rev_num {
+	display: inline-block;
+	min-width: 1em;
+}
 
 .pl_sort {
 	-webkit-text-decoration-line: none;

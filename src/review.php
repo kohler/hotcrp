@@ -570,7 +570,6 @@ class ReviewForm implements JsonSerializable {
 
             echo '<div class="revev">';
             if ($f->has_options) {
-                echo "<table><tbody>\n";
                 // Keys to $f->options are string if option_letter, else int.
                 // Need to match exactly.
                 if (!$f->parse_value($fval, true))
@@ -578,18 +577,15 @@ class ReviewForm implements JsonSerializable {
                 else if (!$f->option_letter)
                     $fval = (int) $fval;
                 foreach ($f->options as $num => $what) {
-                    echo '<tr><td class="nw">',
+                    echo '<label><div class="checki"><span class="checkc">',
                         Ht::radio($fid, $num, $fval === $num, ["id" => $fid . "_" . $num]),
-                        '&nbsp;</td>',
-                        '<td class="nw">', Ht::label($f->unparse_value($num, ReviewField::VALUE_REV_NUM) . '&nbsp;'), '</td>',
-                        '<td>', Ht::label(htmlspecialchars($what)), "</td></tr>\n";
+                        ' </span>', $f->unparse_value($num, ReviewField::VALUE_REV_NUM),
+                        ' ', htmlspecialchars($what), '</div></label>';
                 }
                 if ($f->allow_empty)
-                    echo '<tr><td class="nw">',
+                    echo '<label><div class="checki g"><span class="checkc">',
                         Ht::radio($fid, 0, $fval === 0, ["id" => $fid . "_0"]),
-                        '&nbsp;</td>',
-                        '<td colspan="2">', Ht::label("No entry"), "</td></tr>\n";
-                echo "</tbody></table>";
+                        ' </span>No entry</div></label>';
             } else {
                 echo $format_description;
                 echo Ht::textarea($fid, (string) $fval,
