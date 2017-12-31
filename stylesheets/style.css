@@ -211,6 +211,7 @@ span.nb {
 	display: inline-block;
 	margin-left: -20px;
 	width: 20px;
+	white-space: nowrap;
 }
 .checkc > input {
 	margin-left: 0;
