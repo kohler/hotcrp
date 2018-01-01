@@ -168,6 +168,8 @@ class Contact {
             $this->activity_at = (int) $user->activity_at;
         else if (isset($user->lastLogin))
             $this->activity_at = (int) $user->lastLogin;
+        if (isset($user->birthday))
+            $this->birthday = (int) $user->birthday;
         if (isset($user->data) && $user->data)
             // this works even if $user->data is a JSON string
             // (array_to_object_recursive($str) === $str)
@@ -207,6 +209,8 @@ class Contact {
             $this->$k = (int) $this->$k;
         if (!$this->activity_at && isset($this->lastLogin))
             $this->activity_at = (int) $this->lastLogin;
+        if (isset($this->birthday))
+            $this->birthday = (int) $this->birthday;
         if ($this->data)
             // this works even if $user->data is a JSON string
             // (array_to_object_recursive($str) === $str)
