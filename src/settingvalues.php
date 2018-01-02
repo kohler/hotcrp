@@ -421,7 +421,13 @@ class SettingValues extends MessageSet {
         return isset($this->interesting_groups[$g]);
     }
 
-    function label($name, $html, $label_id = null, $label_js = null) {
+    function sclass($name, $class = null) {
+        if ($this->has_problem_at($name))
+            return $class ? $class . " has-error" : "has-error";
+        else
+            return $class;
+    }
+    function label($name, $html, $label_js = null) {
         $name1 = is_array($name) ? $name[0] : $name;
         if (!$label_js || !get($label_js, "class")) {
             foreach (is_array($name) ? $name : array($name) as $n)
@@ -430,14 +436,10 @@ class SettingValues extends MessageSet {
                     break;
                 }
         }
-        if ($label_id !== false) {
-            $label_id = $label_id ? : $name1;
-            $post = "";
-            if (($pos = strpos($html, "<input")) !== false)
-                list($html, $post) = [substr($html, 0, $pos), substr($html, $pos)];
-            $html = Ht::label($html, $label_id, $label_js) . $post;
-        }
-        return $html;
+        $post = "";
+        if (($pos = strpos($html, "<input")) !== false)
+            list($html, $post) = [substr($html, 0, $pos), substr($html, $pos)];
+        return Ht::label($html, $name1, $label_js) . $post;
     }
     function sjs($name, $js = array()) {
         $x = ["id" => $name];
@@ -445,8 +447,6 @@ class SettingValues extends MessageSet {
             $x["disabled"] = true;
         foreach ($js ? : [] as $k => $v)
             $x[$k] = $v;
-        if ($this->has_problem_at($name))
-            $x["class"] = trim("setting_error " . (get($x, "class") ? : ""));
         return $x;
     }
 
@@ -614,7 +614,7 @@ class SettingValues extends MessageSet {
         echo '<div class="checki', ($item_class ? " " . $item_class : ""),
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, $js);
-        echo ' </span>', $this->label($name, $text, true);
+        echo ' </span>', $this->label($name, $text, ["for" => "cb$name"]);
         if ($hint)
             echo '<p class="settings-ap hint', ($hint_class ? " " . $hint_class : ""), '">', $hint, '</p>';
         if (!$item_open)
@@ -632,7 +632,7 @@ class SettingValues extends MessageSet {
                 ($k == $x ? "foldo" : "foldc"), '"><span class="checkc">',
                 Ht::radio($name, $k, $k == $x,
                           $this->sjs($name, ["id" => "{$name}_{$k}", "class" => "js-settings-radio"])),
-                '</span>', $this->label($name, $text, true), '</div>';
+                '</span>', $this->label($name, $text, ["for" => "{$name}_{$k}"]), '</div>';
         }
         echo "</div>\n";
     }
@@ -670,7 +670,7 @@ class SettingValues extends MessageSet {
             $description = $si->title;
 
         echo '<div class="', $prefix, "i", ($problem ? " has-error" : ""), '">',
-            $this->label($name, $description, null, ["class" => $prefix . "c"]),
+            $this->label($name, $description, ["class" => $prefix . "c"]),
             $this->render_entry($name, $js), ($after_entry ? : "");
         $thint = $si ? $this->type_hint($si->type) : null;
         if ($hint || $thint) {

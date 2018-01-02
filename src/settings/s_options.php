@@ -50,18 +50,17 @@ class Options_SettingRenderer {
         echo '<div class="f-horizontal">';
 
         echo '<div class="f-ig">',
-            '<div class="f-i"><div class="f-c">',
-            $sv->label("optn_$xpos", "Option name"), '</div>',
+            '<div class="', $sv->sclass("optn_$xpos", "f-i"), '">',
+            $sv->label("optn_$xpos", "Option name", ["class" => "f-c"]),
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", array("placeholder" => "(Enter new option)", "size" => 50, "id" => "optn_$xpos"))),
             Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings-opt-id"]),
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
             '</div>';
 
-        echo '<div class="f-i"><div class="f-c">',
-            $sv->label("optd_$xpos", "Description"), '</div>',
+        echo '<div class="', $sv->sclass("optd_$xpos", "f-i"), '">',
+            $sv->label("optd_$xpos", "Description", ["class" => "f-c"]),
             Ht::textarea("optd_$xpos", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd_$xpos", "class" => "need-autogrow")),
-            '</div>',
-            '</div>';
+            '</div></div>';
 
         if ($o->id && ($examples = $o->example_searches())) {
             echo '<div class="f-i"><div class="f-c">',
@@ -91,18 +90,18 @@ class Options_SettingRenderer {
         Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings-optvt", settings_option_type); $("#settings_opts").on("click", "button", settings_option_move); settings_option_move_enable(); $("select.settings-optvt").each(settings_option_type); })', 'settings_optvt');
 
         echo '<div class="f-horizontal">';
-        echo '<div class="f-i"><div class="f-c">',
-            $sv->label("optvt_$xpos", "Type"), '</div>',
+        echo '<div class="', $sv->sclass("optvt_$xpos", "f-i"), '">',
+            $sv->label("optvt_$xpos", "Type", ["class" => "f-c"]),
             Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "settings-optvt", "id" => "optvt_$xpos"]),
             "</div>\n";
 
-        echo '<div class="f-i fn2"><div class="f-c">',
-            $sv->label("optp_$xpos", "Visibility"), '</div>',
+        echo '<div class="', $sv->sclass("optp_$xpos", "f-i fn2"), '">',
+            $sv->label("optp_$xpos", "Visibility", ["class" => "f-c"]),
             Ht::select("optp_$xpos", ["admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"], $o->visibility, ["id" => "optp_$xpos"]),
             "</div>\n";
 
-        echo '<div class="f-i fn3"><div class="f-c">',
-            $sv->label("optdt_$xpos", "Display"), '</div>',
+        echo '<div class="', $sv->sclass("optdt_$xpos", "f-i fn3"), '">',
+            $sv->label("optdt_$xpos", "Display", ["class" => "f-c"]),
             Ht::select("optdt_$xpos", ["default" => "Default",
                                        "prominent" => "Prominent",
                                        "topics" => "With topics",
@@ -121,7 +120,8 @@ class Options_SettingRenderer {
             $rows = max(count($o->selector), 3);
         } else
             $value = "";
-        echo '<div class="f-i fx4"><div class="f-c">Choices</div>',
+        echo '<div class="', $sv->sclass("optv_$xpos", "f-i fx4"), '">',
+            $sv->label("optv_$xpos", "Choices", ["class" => "f-c"]),
             Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", array("rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "need-autogrow"))),
             '<div class="f-h">Enter choices one per line.  The first choice will be the default.</div></div>', "\n";
 

@@ -16,23 +16,23 @@ class Tags_SettingRenderer {
 
         echo '<div class="settings-g">';
         $sv->set_oldv("tag_chair", self::render_tags($tagmap->filter("chair")));
-        $sv->echo_entry_group("tag_chair", "Chair-only tags", ["class" => "need-tagcompletion"], "PC members can view these tags, but only administrators can change them.");
+        $sv->echo_entry_group("tag_chair", null, ["class" => "need-tagcompletion"], "PC members can view these tags, but only administrators can change them.");
 
         $sv->set_oldv("tag_sitewide", self::render_tags($tagmap->filter("sitewide")));
         if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
-            $sv->echo_entry_group("tag_sitewide", "Site-wide tags", ["class" => "need-tagcompletion"], "Administrators can view and change these tags for every paper.");
+            $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-tagcompletion"], "Administrators can view and change these tags for every paper.");
 
         $sv->set_oldv("tag_approval", self::render_tags($tagmap->filter("approval")));
-        $sv->echo_entry_group("tag_approval", "Approval voting tags", ["class" => "need-tagcompletion"], "<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>");
+        $sv->echo_entry_group("tag_approval", null, ["class" => "need-tagcompletion"], "<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>");
 
         $x = [];
         foreach ($tagmap->filter("vote") as $t)
             $x[] = "{$t->tag}#{$t->vote}";
         $sv->set_oldv("tag_vote", join(" ", $x));
-        $sv->echo_entry_group("tag_vote", "Allotment voting tags", ["class" => "need-tagcompletion"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>)");
+        $sv->echo_entry_group("tag_vote", null, ["class" => "need-tagcompletion"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>)");
 
         $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
-        $sv->echo_entry_group("tag_rank", "Ranking tag", null, "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href='" . hoturl("help", "t=ranking") . "'>Help</a>)");
+        $sv->echo_entry_group("tag_rank", null, null, "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href='" . hoturl("help", "t=ranking") . "'>Help</a>)");
         echo "</div>\n";
 
         echo '<div class="settings-g">';
