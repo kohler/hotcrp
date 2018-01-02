@@ -530,9 +530,11 @@ function ficlass($field = false) {
         return "f-i";
 }
 
-function echofield($type, $classname, $captiontext, $entrytext) {
+function echofield($classname, $captiontext, $entrytext) {
     echo '<div class="', ficlass($classname), '">',
-        '<div class="f-c">', $captiontext, '</div>',
+        ($classname
+         ? Ht::label($captiontext, $classname, ["class" => "f-c"])
+         : '<div class="f-c">' . $captiontext . '</div>'),
         $entrytext, "</div>\n";
 }
 
@@ -657,28 +659,28 @@ $actas = "";
 if ($Acct !== $Me && $Acct->email && $Me->privChair)
     $actas = '<div class="floatright">&nbsp;' . actas_link($Acct) . '</div>';
 if (!$Conf->external_login()) {
-    echofield(0, "uemail", "Email",
-        $actas . Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus fullw", "size" => 52]));
+    echofield("uemail", "Email",
+        $actas . Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail"]));
 } else if (!$newProfile) {
-    echofield(0, "uemail", "Username",
+    echofield(false, "Username",
         $actas . htmlspecialchars(contact_value("uemail", "email")));
-    echofield(0, "preferredEmail", "Email",
-        Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "want-focus fullw", "size" => 52]));
+    echofield("preferredEmail", "Email",
+        Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail"]));
 } else {
-    echofield(0, "uemail", "Username",
-        Ht::entry("newUsername", contact_value("newUsername", false), ["class" => "want-focus fullw", "size" => 52]));
-    echofield(0, "preferredEmail", "Email",
-              Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "fullw", "size" => 52]));
+    echofield("uemail", "Username",
+        Ht::entry("newUsername", contact_value("newUsername", false), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail"]));
+    echofield("preferredEmail", "Email",
+              Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "fullw", "size" => 52, "id" => "preferredEmail"]));
 }
 
 echo '<div class="f-2col">';
-echofield(1, "firstName", "First name",
-          Ht::entry("firstName", contact_value("firstName"), ["size" => 24, "autocomplete" => "given-name", "class" => "fullw"]));
-echofield(3, "lastName", "Last name",
-          Ht::entry("lastName", contact_value("lastName"), ["size" => 24, "autocomplete" => "family-name", "class" => "fullw"]));
+echofield("firstName", "First name",
+          Ht::entry("firstName", contact_value("firstName"), ["size" => 24, "autocomplete" => "given-name", "class" => "fullw", "id" => "firstName"]));
+echofield("lastName", "Last name",
+          Ht::entry("lastName", contact_value("lastName"), ["size" => 24, "autocomplete" => "family-name", "class" => "fullw", "id" => "lastName"]));
 echo '</div>';
-echofield(0, "affiliation", "Affiliation",
-          Ht::entry("affiliation", contact_value("affiliation"), ["size" => 52, "autocomplete" => "organization", "class" => "fullw"]));
+echofield("affiliation", "Affiliation",
+          Ht::entry("affiliation", contact_value("affiliation"), ["size" => 52, "autocomplete" => "organization", "class" => "fullw", "id" => "affiliation"]));
 
 if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct)) {
     echo '<div id="foldpassword" class="foldc ',
@@ -724,27 +726,27 @@ if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct))
 echo "</div>\n\n"; // .profile-g
 
 
-echofield(0, false, "Country", Countries::selector("country", contact_value("country")));
+echofield("country", "Country", Countries::selector("country", contact_value("country"), ["id" => "country"]));
 
 $data = $Acct->data();
 $any_address = $data && (get($data, "address") || get($data, "city") || get($data, "state") || get($data, "zip"));
 if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
     echo "<div style='margin-top:20px'></div>\n";
     $address = get($data, "address");
-    echofield(0, false, "Address line 1",
-              Ht::entry("addressLine1", value("addressLine1", $address ? $address[0] : null), ["size" => 52, "autocomplete" => "address-line1"]));
-    echofield(0, false, "Address line 2",
-              Ht::entry("addressLine2", value("addressLine2", $address ? $address[1] : null), ["size" => 52, "autocomplete" => "address-line2"]));
-    echofield(0, false, "City",
-              Ht::entry("city", value("city", get($data, "city")), ["size" => 52, "autocomplete" => "address-level2"]));
+    echofield("addressLine1", "Address line 1",
+              Ht::entry("addressLine1", value("addressLine1", $address ? $address[0] : null), ["size" => 52, "autocomplete" => "address-line1", "id" => "addressLine1"]));
+    echofield("addressLine2", "Address line 2",
+              Ht::entry("addressLine2", value("addressLine2", $address ? $address[1] : null), ["size" => 52, "autocomplete" => "address-line2", "id" => "addressLine2"]));
+    echofield("city", "City",
+              Ht::entry("city", value("city", get($data, "city")), ["size" => 52, "autocomplete" => "address-level2", "id" => "city"]));
     echo '<div class="f-2col">';
-    echofield(1, false, "State/Province/Region",
-              Ht::entry("state", value("state", get($data, "state")), ["size" => 24, "autocomplete" => "address-level1"]));
-    echofield(3, false, "ZIP/Postal code",
-              Ht::entry("zipCode", value("zipCode", get($data, "zip")), ["size" => 12, "autocomplete" => "postal-code"]));
+    echofield("state", "State/Province/Region",
+              Ht::entry("state", value("state", get($data, "state")), ["size" => 24, "autocomplete" => "address-level1", "id" => "state"]));
+    echofield("zipCode", "ZIP/Postal code",
+              Ht::entry("zipCode", value("zipCode", get($data, "zip")), ["size" => 12, "autocomplete" => "postal-code", "id" => "zipCode"]));
     echo '</div>';
-    echofield(0, false, "Phone <span class='n'>(optional)</span>",
-              Ht::entry("voicePhoneNumber", contact_value("voicePhoneNumber"), ["size" => 24, "autocomplete" => "tel"]));
+    echofield("voicePhoneNumber", "Phone <span class='n'>(optional)</span>",
+              Ht::entry("voicePhoneNumber", contact_value("voicePhoneNumber"), ["size" => 24, "autocomplete" => "tel", "id" => "voicePhoneNumber"]));
 }
 
 
