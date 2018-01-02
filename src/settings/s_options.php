@@ -51,28 +51,24 @@ class Options_SettingRenderer {
 
         echo '<div class="f-ig">',
             '<div class="f-i"><div class="f-c">',
-            $sv->label("optn_$xpos", "Option name"),
-            '</div><div class="f-e">',
+            $sv->label("optn_$xpos", "Option name"), '</div>',
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", array("placeholder" => "(Enter new option)", "size" => 50, "id" => "optn_$xpos"))),
             Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings-opt-id"]),
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
-            '</div></div>';
+            '</div>';
 
         echo '<div class="f-i"><div class="f-c">',
-            $sv->label("optd_$xpos", "Description"),
-            '</div><div class="f-e">',
+            $sv->label("optd_$xpos", "Description"), '</div>',
             Ht::textarea("optd_$xpos", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd_$xpos", "class" => "need-autogrow")),
-            '</div></div>',
+            '</div>',
             '</div>';
 
         if ($o->id && ($examples = $o->example_searches())) {
             echo '<div class="f-i"><div class="f-c">',
-                'Example ', pluralx($examples, "search"),
-                '</div><div class="f-e">',
+                'Example ', pluralx($examples, "search"), '</div>',
                 join("<br />", array_map(function ($ex) {
                     return Ht::link(htmlspecialchars($ex[0]), hoturl("search", ["q" => $ex[0]]));
-                }, $examples)),
-                "</div></div>";
+                }, $examples)), '</div>';
         }
         echo "</div>\n";
 
@@ -96,26 +92,23 @@ class Options_SettingRenderer {
 
         echo '<div class="f-horizontal">';
         echo '<div class="f-i"><div class="f-c">',
-            $sv->label("optvt_$xpos", "Type"),
-            '</div><div class="f-e">',
+            $sv->label("optvt_$xpos", "Type"), '</div>',
             Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "settings-optvt", "id" => "optvt_$xpos"]),
-            "</div></div>\n";
+            "</div>\n";
 
         echo '<div class="f-i fn2"><div class="f-c">',
-            $sv->label("optp_$xpos", "Visibility"),
-            '</div><div class="f-e">',
+            $sv->label("optp_$xpos", "Visibility"), '</div>',
             Ht::select("optp_$xpos", ["admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"], $o->visibility, ["id" => "optp_$xpos"]),
-            "</div></div>\n";
+            "</div>\n";
 
         echo '<div class="f-i fn3"><div class="f-c">',
-            $sv->label("optdt_$xpos", "Display"),
-            '</div><div class="f-e">',
+            $sv->label("optdt_$xpos", "Display"), '</div>',
             Ht::select("optdt_$xpos", ["default" => "Default",
                                        "prominent" => "Prominent",
                                        "topics" => "With topics",
                                        "submission" => "Near submission"],
                        $o->display_name(), ["id" => "optdt_$xpos"]),
-            "</div></div>";
+            "</div>";
 
         if (isset($otypes["pdf:final"]))
             echo '<hr class="c fx2"><div class="f-h fx2">Final version options are set by accepted authors during the final version submission period. They are always visible to PC and reviewers.</div>';
@@ -129,9 +122,8 @@ class Options_SettingRenderer {
         } else
             $value = "";
         echo '<div class="f-i fx4"><div class="f-c">Choices</div>',
-            '<div class="f-e">',
             Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", array("rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "need-autogrow"))),
-            '</div><div class="f-h">Enter choices one per line.  The first choice will be the default.</div></div>', "\n";
+            '<div class="f-h">Enter choices one per line.  The first choice will be the default.</div></div>', "\n";
 
         $delete_text = "Delete from form";
         if ($o->id) {
@@ -144,11 +136,11 @@ class Options_SettingRenderer {
                 $delete_text = "Delete from form and submissions";
         }
 
-        echo '<div class="f-i"><div class="f-e">',
+        echo '<div class="f-i">',
             Ht::button("Move up", ["class" => "btn settings-opt-moveup"]),
             Ht::button("Move down", ["class" => "btn settings-opt-movedown", "style" => "margin-left: 1em"]),
             Ht::button($delete_text, ["class" => "btn settings-opt-delete", "style" => "margin-left: 1em"]),
-            "</div></div>\n";
+            "</div>\n";
 
         echo '</div>';
     }

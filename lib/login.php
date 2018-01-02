@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
 
 class LoginHelper {
-
     static function logout($explicit) {
         global $Me, $Conf;
         if (!$Me->is_empty() && $explicit && !$Conf->opt("httpAuthLogin"))
@@ -72,14 +71,14 @@ class LoginHelper {
     }
 
     static private function login() {
-        global $Conf, $Now, $email_class, $password_class;
+        global $Conf, $Now;
         $external_login = $Conf->external_login();
 
         // In all cases, we need to look up the account information
         // to determine if the user is registered
         if (!isset($_REQUEST["email"])
             || ($_REQUEST["email"] = trim($_REQUEST["email"])) == "") {
-            $email_class = " error";
+            Ht::error_at("email");
             if ($Conf->opt("ldapLogin"))
                 return Conf::msg_error("Enter your LDAP username.");
             else
@@ -140,7 +139,7 @@ class LoginHelper {
 
         // if no user found, then fail
         if (!$user && (!$cdb_user || !$cdb_user->allow_contactdb_password())) {
-            $email_class = " error";
+            Ht::error_at("email");
             return Conf::msg_error("No account for " . htmlspecialchars($_REQUEST["email"]) . ". Did you enter the correct email address?");
         }
 
@@ -164,12 +163,12 @@ class LoginHelper {
         // check password
         if (!$external_login) {
             if (($password = trim(req_s("password"))) === "") {
-                $password_class = " error";
+                Ht::error_at("password");
                 return Conf::msg_error("Password missing.");
             }
 
             if (!$xuser->check_password($password)) {
-                $password_class = " error";
+                Ht::error_at("password");
                 return Conf::msg_error("Incorrect password. You may want to use the “Forgot your password?” link.");
             }
         }
@@ -219,19 +218,19 @@ class LoginHelper {
     }
 
     static private function create_account($user, $cdb_user) {
-        global $Conf, $email_class;
+        global $Conf;
 
         // check for errors
         if ($user && $user->has_database_account() && $user->activity_at > 0) {
-            $email_class = " error";
+            Ht::error_at("email");
             return Conf::msg_error("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". Enter your password or select “Forgot your password?” to reset it.");
         } else if ($cdb_user && $cdb_user->allow_contactdb_password()
                    && $cdb_user->activity_at > 0) {
             $desc = opt("contactdb_description") ? : "HotCRP";
-            $email_class = " error";
+            Ht::error_at("email");
             return Conf::msg_error("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . " on $desc. Sign in using your $desc password or select “Forgot your password?” to reset it.");
         } else if (!validate_email($_REQUEST["email"])) {
-            $email_class = " error";
+            Ht::error_at("email");
             return Conf::msg_error("“" . htmlspecialchars($_REQUEST["email"]) . "” is not a valid email address.");
         }
 

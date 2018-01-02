@@ -3,7 +3,7 @@
 // Copyright (c) 2009-2017 Eddie Kohler; see LICENSE.
 
 function ldapLoginBindFailure($ldapc) {
-    global $Conf, $email_class, $password_class;
+    global $Conf;
 
     // connection failed, report error
     $lerrno = ldap_errno($ldapc);
@@ -14,12 +14,13 @@ function ldapLoginBindFailure($ldapc) {
     if ($lerrno < 5)
         return Conf::msg_error("LDAP protocol error.  Logins will fail until this error is fixed.$suffix");
     else if (req_s("password") == "") {
-        $password_class = " error";
+        Ht::error_at("password");
         if ($lerrno == 53)
             $suffix = "";
         return Conf::msg_error("Enter your LDAP password.$suffix");
     } else {
-        $email_class = $password_class = " error";
+        Ht::error_at("email");
+        Ht::error_at("password");
         return Conf::msg_error("Those credentials are invalid.  Please use your LDAP username and password.$suffix");
     }
 }

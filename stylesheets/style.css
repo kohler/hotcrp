@@ -3,6 +3,12 @@
 /* Copyright (c) 2006-2017 Eddie Kohler; see LICENSE. */
 
 /* generic styles */
+html {
+	box-sizing: border-box;
+}
+*, *:before, *:after {
+	box-sizing: inherit;
+}
 table, tr, td, th {
 	padding: 0;
 	border-spacing: 0;
@@ -24,11 +30,9 @@ select {
 a > img {
 	border: none;
 }
-html {
-	box-sizing: border-box;
-}
-*, *:before, *:after {
-	box-sizing: inherit;
+input[type=text], input[type=password], textarea {
+	border: 1px solid silver;
+	padding: 3px 5px;
 }
 
 
@@ -1334,6 +1338,15 @@ h2.error, h3.error, h4.error, h5.error, h6.error {
 	color: #ff0000;
 }
 
+.has-error > .f-c {
+	color: #ff0000;
+}
+.has-error > input[type=text], .has-error > input[type=password],
+.has-error > textarea {
+	border: 1px solid red;
+}
+
+
 
 .helpside {
 	float: right;
@@ -1397,7 +1410,7 @@ input.textlite-tt, textarea.tt {
 .papertext {
 	width: 96%;
 }
-.wide-control, .reviewtext, div#popup_ref textarea {
+.reviewtext, div#popup_ref textarea {
 	width: 99%;
 }
 .papertext, .reviewtext {

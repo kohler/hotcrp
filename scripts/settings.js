@@ -324,7 +324,7 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
 </a></td><td>\
 <div id="revfieldview_$" class="settings-revfieldview fn2 ui js-foldup"></div>\
 <div id="revfieldedit_$" class="settings-revfieldedit fx2">\
-  <div class="f-i errloc_shortName_$">\
+  <div class="f-i">\
     <input name="shortName_$" id="shortName_$" type="text" size="50" style="font-weight:bold" placeholder="Field name" />\
   </div>\
   <div class="f-horizontal">\
@@ -347,11 +347,11 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
       <select name="round_list_$" id="round_list_$" class="reviewfield_round_list"></select>\
     </div>\
   </div>\
-  <div class="f-i errloc_description_$">\
+  <div class="f-i">\
     <label class="f-c" for="description_$">Description</label>\
     <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea>\
   </div>\
-  <div class="f-i errloc_options_$ reviewrow_options">\
+  <div class="f-i reviewrow_options">\
     <label class="f-c" for="options_$">Options</label>\
     <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea>\
   </div>\
@@ -548,8 +548,10 @@ function rfs(data) {
         }
     }
     for (i in data.errf || {}) {
-        $j = $(".errloc_" + i);
-        $j.addClass("error");
+        $j = $("#" + i).closest(".f-i");
+        if (!$j.length)
+            $j = $(".errloc_" + i);
+        $j.addClass("has-error");
         foldup.call($j[0], null, {n: 2, f: false});
     }
 };

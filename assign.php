@@ -552,28 +552,23 @@ echo "any eventual decision.  Before requesting an external review,
 if ($Me->allow_administer($prow))
     echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
 echo '</div></div><div class="revcard_body">';
-echo '<div class="f-horizontal">',
-    '<div class="f-i"><div class="f-c">',
-    Ht::label("Name", "revreq_name"),
-    '</div><div class="f-e">',
+echo '<div class="f-horizontal"><div class="f-i">',
+    Ht::label("Name", "revreq_name", ["class" => "f-c"]),
     Ht::entry("name", get($_REQUEST, "name", ""), ["id" => "revreq_name", "size" => 32]),
-    '</div></div>',
-    '<div class="f-i"><div class="f-c', (isset($Error["email"]) ? " error" : ""), '">',
-    Ht::label("Email", "revreq_email"),
-    '</div><div class="f-e">',
+    '</div><div class="f-i', (isset($Error["email"]) ? ' has-error' : ''), '">',
+    Ht::label("Email", "revreq_email", ["class" => "f-c"]),
     Ht::entry("email", get($_REQUEST, "email", ""), ["id" => "revreq_email", "size" => 28]),
-    '</div></div></div>', "\n\n";
+    '</div>', "\n\n";
 
 // reason area
 $null_mailer = new HotCRPMailer;
 $reqbody = $null_mailer->expand_template("requestreview", false);
 if (strpos($reqbody["body"], "%REASON%") !== false) {
-    echo '<div class="f-i"><div class="f-c">',
-        Ht::label('Note to reviewer <span class="n">(optional)</span>', "revreq_reason"),
-        '</div><div class="f-e">',
+    echo '<div class="f-i">',
+        Ht::label('Note to reviewer <span class="n">(optional)</span>', "revreq_reason", ["class" => "f-c"]),
         Ht::textarea("reason", req("reason"),
                 ["class" => "papertext", "rows" => 2, "cols" => 60, "spellcheck" => "true", "id" => "revreq_reason"]),
-        "</div></div>\n\n";
+        "</div>\n\n";
 }
 
 echo "<div class='f-i'>\n",

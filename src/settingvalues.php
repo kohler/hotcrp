@@ -423,11 +423,13 @@ class SettingValues extends MessageSet {
 
     function label($name, $html, $label_id = null, $label_js = null) {
         $name1 = is_array($name) ? $name[0] : $name;
-        foreach (is_array($name) ? $name : array($name) as $n)
-            if ($this->has_problem_at($n)) {
-                $html = '<span class="setting_error">' . $html . '</span>';
-                break;
-            }
+        if (!$label_js || !get($label_js, "class")) {
+            foreach (is_array($name) ? $name : array($name) as $n)
+                if ($this->has_problem_at($n)) {
+                    $html = '<span class="setting_error">' . $html . '</span>';
+                    break;
+                }
+        }
         if ($label_id !== false) {
             $label_id = $label_id ? : $name1;
             $post = "";
@@ -661,12 +663,12 @@ class SettingValues extends MessageSet {
         $horizontal = get($js, "horizontal");
         $item_open = get($js, "item_open");
         unset($js["after_entry"], $js["horizontal"], $js["item_open"]);
+        $problem = $this->has_problem_at($name);
+        $prefix = $horizontal ? "entry" : "f-";
 
-        echo ($horizontal ? '<div class="entryi"><div class="entryc">' : '<div class="f-i"><div class="f-c">'),
-            $this->label($name, $description),
-            ($horizontal ? '</div>' : '</div><div class="f-e">'),
-            $this->render_entry($name, $js), ($after_entry ? : ""),
-            ($horizontal ? '' : '</div>');
+        echo '<div class="', $prefix, "i", ($problem ? " has-error" : ""), '">',
+            $this->label($name, $description, null, ["class" => $prefix . "c"]),
+            $this->render_entry($name, $js), ($after_entry ? : "");
         $thint = null;
         if (($si = $this->si($name)))
             $thint = $this->type_hint($si->type);
@@ -718,11 +720,8 @@ class SettingValues extends MessageSet {
             '<div class="f-c', $xclass, ' ui js-foldup">',
             $this->label($name, $description),
             ' <span class="n fx">(HTML allowed)</span></div>',
-            '<div class="f-e fx">',
-            $this->render_textarea($name),
-            '</div>',
-            $hint,
-            "</div>\n";
+            $this->render_textarea($name, ["class" => "fx"]),
+            $hint, "</div>\n";
     }
     function echo_message($name, $description, $hint = "") {
         $this->echo_message_base($name, $description, $hint, "");

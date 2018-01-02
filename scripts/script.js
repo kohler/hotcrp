@@ -3149,7 +3149,6 @@ function render_editing(hc, cj) {
         // visibility
         hc.push('<div class="cmteditinfo fold2o">', '</div>');
         hc.push('<div class="f-i"><div class="f-c">Visibility</div>', '</div>');
-        hc.push('<div class="f-e">', '</div>');
         hc.push('<select name="visibility">', '</select>');
         hc.push('<option value="au">' + au_option + '</option>');
         hc.push('<option value="rev">Hidden from authors</option>');
@@ -3162,7 +3161,7 @@ function render_editing(hc, cj) {
             hc.push('<input type="checkbox" name="blind" value="1" id="' + idctr + '" />&nbsp;<label for="' + idctr + '">Anonymous to authors</label><br />\n');
         }
         hc.push(au_description);
-        hc.pop_n(3);
+        hc.pop_n(2);
 
         // tags
         hc.push('<div class="f-i"><div class="f-c">Tags</div>', '</div>')
@@ -5908,8 +5907,8 @@ function transfer_form_values($dst, $src, names) {
 handle_ui.on("js-forgot-password", function (event) {
     var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "forgot"}), maxWidth: "25rem"});
     hc.push('<p>Enter your email and we’ll send you instructions for signing in.</p>');
-    hc.push('<div class="f-i"><label class="f-c" for="forgotpassword_email">Email</label><div class="f-e">', '</div></div>');
-    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" autocomplete="username" id="forgotpassword_email" />');
+    hc.push('<div class="f-i"><label class="f-c" for="forgotpassword_email">Email</label>', '</div>');
+    hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="username" id="forgotpassword_email" />');
     hc.push_actions(['<button type="submit" class="btn btn-default">Reset password</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
     var $d = hc.show();
@@ -5920,8 +5919,8 @@ handle_ui.on("js-create-account", function (event) {
     var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "new"}), maxWidth: "25rem"});
     hc.push('<h2>Create account</h2>');
     hc.push('<p>Enter your email and we’ll create an account and send you an initial password.</p>')
-    hc.push('<div class="f-i"><label class="f-c" for="createaccount_email">Email</label><div class="f-e">', '</div></div>');
-    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" autocomplete="email" id="createaccount_email" />');
+    hc.push('<div class="f-i"><label class="f-c" for="createaccount_email">Email</label>', '</div>');
+    hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="email" id="createaccount_email" />');
     hc.push_actions(['<button type="submit" class="btn btn-default">Create account</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
     var $d = hc.show();
@@ -6415,20 +6414,20 @@ handle_ui.on("js-edit-formulas", function () {
     function push_formula(hc, f) {
         ++nformulas;
         hc.push('<div class="editformulas-formula" data-formula-number="' + nformulas + '">', '</div>');
-        hc.push('<div class="f-i"><div class="f-c">Name</div><div class="f-e">');
+        hc.push('<div class="f-i"><div class="f-c">Name</div>');
         if (f.editable) {
             hc.push('<div style="float:right"><a class="ui closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete formula">x</a></div>');
             hc.push('<textarea class="editformulas-name" name="formulaname_' + nformulas + '" rows="1" cols="60" style="width:37.5rem;width:calc(99% - 2.5em)">' + escape_entities(f.name) + '</textarea>');
             hc.push('<hr class="c" />');
         } else
             hc.push(escape_entities(f.name));
-        hc.push('</div></div><div class="f-i"><div class="f-c">Expression</div><div class="f-e">');
+        hc.push('</div><div class="f-i"><div class="f-c">Expression</div>');
         if (f.editable)
             hc.push('<textarea class="editformulas-expression" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(f.expression) + '</textarea>')
                 .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '" />');
         else
             hc.push(escape_entities(f.expression));
-        hc.push_pop('</div></div>');
+        hc.push_pop('</div>');
     }
     function click(event) {
         if (this.name === "add") {
@@ -6500,10 +6499,10 @@ handle_ui.on("js-edit-view-options", function () {
         var hc = popup_skeleton();
         hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
         hc.push('<h2>View options</h2>');
-        hc.push('<div class="f-i"><div class="f-c">Default view options</div><div class="f-e">', '</div></div>');
+        hc.push('<div class="f-i"><div class="f-c">Default view options</div>', '</div>');
         hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "") + '</div>');
         hc.pop();
-        hc.push('<div class="f-i"><div class="f-c">Current view options</div><div class="f-e">', '</div></div>');
+        hc.push('<div class="f-i"><div class="f-c">Current view options</div>', '</div>');
         hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(display_current || "") + '</textarea>');
         hc.pop();
         hc.push_actions(['<button type="submit" name="save" class="btn btn-default">Save options as default</button>', '<button type="button" name="cancel" class="btn">Cancel</button>']);

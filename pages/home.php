@@ -4,9 +4,6 @@
 
 require_once("src/initweb.php");
 
-$email_class = "";
-$password_class = "";
-
 // signin links
 // auto-signin when email & password set
 if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
@@ -182,7 +179,7 @@ Welcome to the ', htmlspecialchars($Conf->full_name()), " submissions site.";
 }
 if (!$Me->has_email() || isset($_REQUEST["signin"])) {
     echo '<div class="homegrp">', $Conf->_("Sign in to submit or review papers."), '</div>';
-    $passwordFocus = ($email_class == "" && $password_class != "");
+    $passwordFocus = !Ht::control_class("email") && Ht::control_class("password");
     echo '<hr class="home" />
 <div class="homegrp foldo" id="homeacct">',
         Ht::form(hoturl_post("index")),
@@ -196,23 +193,18 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         $password_reset = null;
         $Conf->save_session("password_reset", null);
     }
-    echo '<div class="f-i">
-  <div class="f-c', $email_class, '">',
-        ($Conf->opt("ldapLogin") ? "Username" : "Email"),
-        '</div>
-  <div class="f-e', $email_class, '">',
+    echo '<div class="', Ht::control_class("email", "f-i"), '">',
+        Ht::label($Conf->opt("ldapLogin") ? "Username" : "Email", "signin_email", ["class" => "f-c"]),
         Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
-                  ["size" => 36, "id" => "signin_email", "class" => "wide-control", "autocomplete" => "username", "tabindex" => 1]),
+                  ["size" => 36, "id" => "signin_email", "class" => "fullw", "autocomplete" => "username", "tabindex" => 1]),
         '</div>
-</div>
-<div class="f-i fx">
-  <div class="f-c', $password_class, '">';
+<div class="', Ht::control_class("password", "f-i fx"), '">';
     if (!$Conf->opt("ldapLogin"))
         echo '<div class="floatright"><a href="" class="n x ui js-forgot-password">Forgot your password?</a></div>';
-    echo 'Password</div><div class="f-e">',
+    echo Ht::label("Password", "signin_password", ["class" => "f-c"]),
         Ht::password("password", "",
-                     ["size" => 36, "id" => "signin_password", "class" => "wide-control", "autocomplete" => "current-password", "tabindex" => 1]),
-        "</div>\n</div>\n";
+                     ["size" => 36, "id" => "signin_password", "class" => "fullw", "autocomplete" => "current-password", "tabindex" => 1]),
+        "</div>\n";
     if ($password_reset)
         echo Ht::unstash_script("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode_browser($password_reset->password) . ")})");
     if ($Conf->opt("ldapLogin"))

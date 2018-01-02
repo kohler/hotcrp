@@ -522,26 +522,18 @@ function contact_value($key, $field = null) {
         return "";
 }
 
-function fcclass($field = false) {
+function ficlass($field = false) {
     global $UserStatus;
     if ($field && $UserStatus->has_problem_at($field))
-        return "f-c error";
+        return "f-i has-error";
     else
-        return "f-c";
-}
-
-function feclass($field = false) {
-    global $UserStatus;
-    if ($field && $UserStatus->has_problem_at($field))
-        return "f-e error";
-    else
-        return "f-e";
+        return "f-i";
 }
 
 function echofield($type, $classname, $captiontext, $entrytext) {
-    echo '<div class="f-i">';
-    echo '<div class="', fcclass($classname), '">', $captiontext, "</div>",
-        '<div class="', feclass($classname), '">', $entrytext, "</div></div>\n";
+    echo '<div class="', ficlass($classname), '">',
+        '<div class="f-c">', $captiontext, '</div>',
+        $entrytext, "</div>\n";
 }
 
 function textinput($name, $value, $size, $id = false, $password = false) {
@@ -698,23 +690,22 @@ if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct))
     echo '<div class="fx3">';
     if (!$Me->can_change_password(null)) {
         echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
-        echo '<div class="f-i"><div class="', fcclass("password"), '">Current password</div>',
-            '<div class="', feclass("password"), '">', Ht::password("oldpassword", "", ["size" => 36, "autocomplete" => "current-password"]), '</div>',
+        echo '<div class="', ficlass("password"), '"><div class="f-c">Current password</div>',
+            Ht::password("oldpassword", "", ["size" => 36, "autocomplete" => "current-password"]),
             '</div>';
     }
     if ($Conf->opt("contactdb_dsn") && $Conf->opt("contactdb_loginFormHeading"))
         echo $Conf->opt("contactdb_loginFormHeading");
-    echo '<div class="f-i">
-  <div class="', fcclass("password"), '">New password</div>
-  <div class="', feclass("password"), '">', Ht::password("upassword", "", ["size" => 36, "class" => "fn", "autocomplete" => "new-password"]);
+    echo '<div class="', ficlass("password"), '">
+  <div class="f-c">New password</div>',
+        Ht::password("upassword", "", ["size" => 36, "class" => "fn", "autocomplete" => "new-password"]);
     if ($Acct->plaintext_password() && $Me->privChair) {
         echo Ht::entry("upasswordt", contact_value("upasswordt", "password"), ["size" => 36, "class" => "fx", "autocomplete" => "new-password"]);
     }
     echo '</div>
-</div><div class="fn f-i">
-  <div class="', fcclass("password"), '">Repeat new password</div>
-  <div class="', feclass("password"), '">', Ht::password("upassword2", "", array("size" => 36)), "</div>
-</div>\n";
+<div class="', ficlass("password"), ' fn">
+  <div class="f-c">Repeat new password</div>',
+        Ht::password("upassword2", "", array("size" => 36)), "</div>\n";
     if ($Acct->plaintext_password()
         && ($Me->privChair || Contact::password_storage_cleartext())) {
         echo "  <div class=\"f-h\">";
@@ -727,7 +718,7 @@ if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct))
         }
         echo "</div>\n";
     }
-    echo "</div></div>";
+    echo "</div></div>"; // .fx3 #foldpassword
 }
 
 echo "</div>\n\n"; // .profile-g
@@ -756,9 +747,6 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
               Ht::entry("voicePhoneNumber", contact_value("voicePhoneNumber"), ["size" => 24, "autocomplete" => "tel"]));
 }
 
-
-
-echo "</div>\n"; // f-contain
 
 
 echo '<h3 class="profile">Email notification</h3>';
@@ -841,7 +829,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
             $tags = array();
         echo "<h3 class=\"profile\">Tags</h3>\n";
         if ($Me->privChair) {
-            echo "<div class='", feclass("contactTags"), "'>",
+            echo '<div class="', ficlass("contactTags"), '">',
                 Ht::entry("contactTags", join(" ", $tags), ["size" => 60]),
                 "</div>
   <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=tags"), "'>tag colors</a> to highlight subgroups in review lists.</div>\n";
@@ -911,10 +899,10 @@ if ($newProfile) {
         $bulkentry = $session_bulkentry[1];
         $Conf->save_session("profile_bulkentry", null);
     }
-    echo '<div class="f-contain"><div class="f-i"><div class="f-e">',
+    echo '<div class="f-contain"><div class="f-i">',
         Ht::textarea("bulkentry", $bulkentry,
                      ["rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line", "class" => "want-focus"]),
-        '</div></div></div>';
+        '</div></div>';
 
     echo '<div class="g"><strong>OR</strong> &nbsp;',
         '<input type="file" name="bulk" size="30" /></div>';

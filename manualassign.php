@@ -234,29 +234,26 @@ if ($reviewer) {
         $interest[$ti > 0 ? 1 : 0][$topic] = $ti;
     if (!empty($interest[1]) && $qreq->kind !== "c")
         echo '<div class="f-i"><div class="f-c">High interest topics</div>',
-            '<div class="f-e">',
             PaperInfo::unparse_topic_list_html($Conf, $interest[1]),
-            "</div></div>";
+            "</div>";
     if (!empty($interest[0]) && $qreq->kind !== "c")
         echo '<div class="f-i"><div class="f-c">Low interest topics</div>',
-            '<div class="f-e">',
             PaperInfo::unparse_topic_list_html($Conf, $interest[0]),
-            "</div></div>";
+            "</div>";
 
     // Conflict information
     if ($reviewer->collaborators) {
-        echo '<div class="f-i"><div class="f-c">Collaborators</div>',
-            '<div class="f-e">';
+        echo '<div class="f-i"><div class="f-c">Collaborators</div>';
         $cos = [];
         foreach (explode("\n", $reviewer->collaborators) as $co)
             if ($co !== "")
                 $cos[] = htmlspecialchars(trim($co));
-        echo join("; ", $cos), '</div></div>';
+        echo join("; ", $cos), '</div>';
     }
 
-    echo '<div class="f-i"><div class="f-e">',
+    echo '<div class="f-i">',
         '<a href="', hoturl("search", "q=" . urlencode(join(" OR ", $hlsearch) . " show:au" . ($Conf->setting("sub_collab") ? " show:co" : "")) . '&amp;linkto=assign'),
-        '">Search for potential conflicts</a></div></div>';
+        '">Search for potential conflicts</a></div>';
 
     // main assignment form
     $search = new PaperSearch($Me, ["t" => $qreq->t, "q" => $qreq->q,

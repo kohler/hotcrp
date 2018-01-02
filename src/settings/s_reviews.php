@@ -179,9 +179,8 @@ static function render(SettingValues $sv) {
         '<a class="ui q js-foldup" href="">', expander(null, 0),
         'Mail template for external review requests</a>',
         '<span class="fx"> (<a href="', hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
-        '<div class="f-e">',
         '<textarea class="tt fx need-autogrow" name="mailbody_requestreview" cols="80" rows="20">', htmlspecialchars($t["body"]), "</textarea>",
-        "</div></div></div>\n";
+        "</div></div>\n";
 
     $sv->echo_radio_table("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"),
         'Can external reviewers see reviews and comments for their assigned papers, once they’ve submitted a review?');

@@ -192,10 +192,10 @@ echo Ht::form_div(hoturl_post("bulkassign", "upload=1"),
                   array("divstyle" => "margin-top:1em"));
 
 // Upload
-echo '<div class="f-contain"><div class="f-i"><div class="f-e">',
+echo '<div class="f-contain"><div class="f-i">',
     Ht::textarea("bulkentry", req_s("bulkentry"),
                  ["rows" => 1, "cols" => 80, "placeholder" => "Enter assignments", "class" => "need-autogrow"]),
-    '</div></div></div>';
+    '</div></div>';
 
 echo '<div class="g"><strong>OR</strong> &nbsp;',
     '<input type="file" name="bulk" accept="text/plain,text/csv" size="30" /></div>';

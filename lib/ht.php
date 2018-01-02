@@ -11,7 +11,8 @@ class Ht {
     private static $_lastcontrolid = 0;
     private static $_stash = "";
     private static $_stash_inscript = false;
-    private static $_stash_map = array();
+    private static $_stash_map = [];
+    private static $_control_classes = [];
     const ATTR_SKIP = 1;
     const ATTR_BOOL = 2;
     const ATTR_BOOLTEXT = 3;
@@ -448,5 +449,21 @@ class Ht {
         return '<div class="xmsg x' . $type . '"><div class="xmsg0"></div>'
             . '<div class="xmsgc">' . $content . '</div>'
             . '<div class="xmsg1"></div></div>';
+    }
+
+
+    static function control_class($name, $rest = false) {
+        if (isset(self::$_control_classes[$name])) {
+            $c = self::$_control_classes[$name];
+            return $rest ? $rest . " " . $c : $c;
+        } else {
+            return $rest;
+        }
+    }
+    static function set_control_class($name, $class) {
+        self::$_control_classes[$name] = $class ? " " . $class : "";
+    }
+    static function error_at($name) {
+        self::$_control_classes[$name] = " has-error";
     }
 }

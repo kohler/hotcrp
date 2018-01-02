@@ -29,7 +29,6 @@ if (!$Acct)
 // don't show information about the current user, if there is one
 $Me = new Contact;
 
-$password_class = "";
 if (isset($_POST["go"]) && check_post()) {
     $_POST["password"] = trim((string) @$_POST["password"]);
     $_POST["password2"] = trim((string) @$_POST["password2"]);
@@ -52,7 +51,7 @@ if (isset($_POST["go"]) && check_post()) {
         $Conf->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $_POST["password"]));
         go(hoturl("index"));
     }
-    $password_class = " error";
+    Ht::error_at("password");
 }
 
 $Conf->header("Reset password", "resetpassword", false);
@@ -80,14 +79,12 @@ echo '<table style="margin-bottom:2em">',
     '<tr><td class="lcaption">Your email</td><td>', htmlspecialchars($Acct->email), '</td></tr>
 <tr><td class="lcaption">Suggested password</td><td>', htmlspecialchars($_POST["autopassword"]), '</td></tr></table>';
 //Our suggested replacement password password for <b>", htmlspecialchars($Acct->email), "</b>. Use our suggested replacement password, or choose your own.</p>",
-echo '<div class="f-i">
-  <div class="f-c', $password_class, '">New password</div>
-  <div class="f-e">', Ht::password("password", "", array("class" => "want-focus", "tabindex" => 1, "size" => 36)), '</div>
-</div>
-<div class="f-i">
-  <div class="f-c', $password_class, '">New password (again)</div>
-  <div class="f-e">', Ht::password("password2", "", array("tabindex" => 1, "size" => 36)), '</div>
-</div>
+echo '<div class="', Ht::control_class("password", "f-i"), '">
+  <label class="f-c" for="reset_password">New password</label>',
+    Ht::password("password", "", ["class" => "want-focus", "tabindex" => 1, "size" => 36, "id" => "reset_password"]), '</div>
+<div class="', Ht::control_class("password", "f-i"), '">
+  <label class="f-c" for="reset_password2">New password (again)</label>',
+    Ht::password("password2", "", ["tabindex" => 1, "size" => 36, "id" => "reset_password2"]), '</div>
 <div class="f-i" style="margin-top:2em">',
     Ht::submit("go", "Reset password", array("tabindex" => 1)),
     "</div>
