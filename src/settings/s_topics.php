@@ -26,7 +26,7 @@ class Topics_SettingRenderer {
             if ($sv->use_req() && isset($sv->req["top$tid"]))
                 $tname = $sv->req["top$tid"];
             echo '<tr>', $td1, '<td class="lentry">',
-                Ht::entry("top$tid", $tname, array("size" => 40, "style" => "width:20em", "class" => $sv->has_problem_at("top$tid") ? "setting_error" : null)),
+                Ht::entry("top$tid", $tname, array("size" => 40, "style" => "width:20em", "class" => $sv->has_problem_at("top$tid") ? "has-error" : null)),
                 '</td>';
 
             $tinterests = defval($interests, $tid, array());
@@ -52,7 +52,7 @@ class Topics_SettingRenderer {
             $td1 = "<td></td>";
         }
         echo '<tr><td class="lcaption top">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
-            Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em", "class" => ($sv->has_problem_at("topnew") ? "setting_error " : "") . "need-autogrow")),
+            Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em", "class" => ($sv->has_problem_at("topnew") ? "has-error " : "") . "need-autogrow")),
             '</td></tr></table>';
     }
 }

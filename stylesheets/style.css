@@ -1341,8 +1341,8 @@ h2.error, h3.error, h4.error, h5.error, h6.error {
 .has-error > .f-c {
 	color: #ff0000;
 }
-.has-error > input[type=text], .has-error > input[type=password],
-.has-error > textarea {
+.has-error > input[type=text], .has-error > input[type=password], .has-error > textarea,
+input[type=text].has-error, input[type=password].has-error, textarea.has-error {
 	border: 1px solid red;
 }
 

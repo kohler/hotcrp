@@ -32,7 +32,7 @@ function settings_option_move() {
             $(odiv).remove();
         else {
             $(odiv).find(".settings-opt-fp").val("deleted").change();
-            $(odiv).find(".f-i, .f-ix").each(function () {
+            $(odiv).find(".f-i").each(function () {
                 if (!$(this).find(".settings-opt-fp").length)
                     $(this).remove();
             });
