@@ -133,7 +133,7 @@
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     "opt.emailReplyTo": {
-        "title": "Reply-To for email",
+        "title": "Reply-To field for email",
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     "opt.longName": {
