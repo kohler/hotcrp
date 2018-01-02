@@ -46,7 +46,7 @@ class UserStatus extends MessageSet {
     }
 
     function user_to_json($user) {
-        global $Conf, $Me;
+        global $Me;
         if (!$user)
             return null;
 
@@ -95,8 +95,8 @@ class UserStatus extends MessageSet {
         }
 
         if ($user->contactId
-            && ($tm = $Conf->topic_map())) {
-            $result = $Conf->qe_raw("select topicId, interest from TopicInterest where contactId=$user->contactId");
+            && ($tm = $user->conf->topic_map())) {
+            $result = $user->conf->qe_raw("select topicId, interest from TopicInterest where contactId=$user->contactId");
             $topics = (object) array();
             while (($row = edb_row($result))) {
                 $k = $row[0];

@@ -327,9 +327,9 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
   <div class="f-i errloc_shortName_$">\
     <input name="shortName_$" id="shortName_$" type="text" size="50" style="font-weight:bold" placeholder="Field name" />\
   </div>\
-  <div class="f-i">\
-    <div class="f-ix">\
-      <div class="f-c">Visibility</div>\
+  <div class="f-horizontal">\
+    <div class="f-i">\
+      <label class="f-c" for="authorView_$">Visibility</label>\
       <select name="authorView_$" id="authorView_$" class="reviewfield_authorView">\
         <option value="au">Shown to authors</option>\
         <option value="pc">Hidden from authors</option>\
@@ -337,23 +337,22 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
         <option value="admin">Shown only to administrators</option>\
       </select>\
     </div>\
-    <div class="f-ix reviewrow_options">\
-      <div class="f-c">Colors</div>\
+    <div class="f-i reviewrow_options">\
+      <label class="f-c" for="option_class_prefix_$">Colors</label>\
       <select name="option_class_prefix_$" id="option_class_prefix_$" class="reviewfield_option_class_prefix"></select>\
 <input type="hidden" name="option_class_prefix_flipped_$" id="option_class_prefix_flipped_$" value="" />\
     </div>\
-    <div class="f-ix reviewrow_rounds">\
-      <div class="f-c">Rounds</div>\
+    <div class="f-i reviewrow_rounds">\
+      <label class="f-c" for="round_list_$">Rounds</label>\
       <select name="round_list_$" id="round_list_$" class="reviewfield_round_list"></select>\
     </div>\
-    <hr class="c" />\
   </div>\
   <div class="f-i errloc_description_$">\
-    <div class="f-c">Description</div>\
+    <label class="f-c" for="description_$">Description</label>\
     <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea>\
   </div>\
   <div class="f-i errloc_options_$ reviewrow_options">\
-    <div class="f-c">Options</div>\
+    <label class="f-c" for="options_$">Options</label>\
     <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea>\
   </div>\
   <div class="f-i">\
@@ -362,7 +361,7 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
 <button id="remove_$" class="btn revfield_remove" type="button">Delete from form</button><span class="sep"></span>\
 <input type="hidden" name="order_$" id="order_$" class="revfield_order" value="0" />\
   </div>\
-</div><hr class="c" />\
+</div>\
 </td></tr></tbody></table>';
 
 var revfieldview_template = '<div style="line-height:1.35">\

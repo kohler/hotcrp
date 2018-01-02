@@ -3148,7 +3148,7 @@ function render_editing(hc, cj) {
 
         // visibility
         hc.push('<div class="cmteditinfo fold2o">', '</div>');
-        hc.push('<div class="f-ii"><div class="f-c">Visibility</div>', '</div>');
+        hc.push('<div class="f-i"><div class="f-c">Visibility</div>', '</div>');
         hc.push('<div class="f-e">', '</div>');
         hc.push('<select name="visibility">', '</select>');
         hc.push('<option value="au">' + au_option + '</option>');
@@ -4794,7 +4794,7 @@ function tag_dragto(l) {
             m += ';font-weight:bold';
         m += '">#' + dragtag + '#' + tagvalue_unparse(newval) + '</span>';
     } else
-        m += '<div class="hint">Drag up to set order</div>';
+        m += '<div class="hint">Untagged · Drag up to set order</div>';
     if (dragindex == srcindex)
         y = rowanal[srcindex].middle();
     else if (dragindex < rowanal.length)

@@ -708,25 +708,27 @@ class SettingValues extends MessageSet {
             $js["cols"] = 80;
         return Ht::textarea($name, $v, $this->sjs($name, $js)) . $t;
     }
-    private function echo_message_base($name, $description, $hint, $class) {
+    private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
         $si->default_value = $this->conf->message_default_html($name);
         $current = $this->curv($name);
         $description = '<a class="ui q js-foldup" href="">'
             . expander(null, 0) . $description . '</a>';
-        echo '<div class="has-fold fold', ($current == $si->default_value ? "c" : "o"), '">',
-            '<div class="', $class, ' ui js-foldup">',
+        echo '<div class="f-i has-fold fold', ($current == $si->default_value ? "c" : "o"), '">',
+            '<div class="f-c', $xclass, ' ui js-foldup">',
             $this->label($name, $description),
-            ' <span class="f-cx fx">(HTML allowed)</span></div>',
+            ' <span class="n fx">(HTML allowed)</span></div>',
+            '<div class="f-e fx">',
+            $this->render_textarea($name),
+            '</div>',
             $hint,
-            $this->render_textarea($name, ["class" => "fx"]),
-            '</div><div class="g"></div>', "\n";
+            "</div>\n";
     }
     function echo_message($name, $description, $hint = "") {
-        $this->echo_message_base($name, $description, $hint, "f-cl");
+        $this->echo_message_base($name, $description, $hint, "");
     }
     function echo_message_minor($name, $description, $hint = "") {
-        $this->echo_message_base($name, $description, $hint, "f-cn");
+        $this->echo_message_base($name, $description, $hint, " n");
     }
 
     private function si_render_date_value($v, Si $si) {

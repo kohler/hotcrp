@@ -539,14 +539,9 @@ function feclass($field = false) {
 }
 
 function echofield($type, $classname, $captiontext, $entrytext) {
-    if ($type <= 1)
-        echo '<div class="f-i">';
-    if ($type >= 1)
-        echo '<div class="f-ix">';
+    echo '<div class="f-i">';
     echo '<div class="', fcclass($classname), '">', $captiontext, "</div>",
         '<div class="', feclass($classname), '">', $entrytext, "</div></div>\n";
-    if ($type > 2)
-        echo '<hr class="c" />', "</div>\n";
 }
 
 function textinput($name, $value, $size, $id = false, $password = false) {
@@ -665,30 +660,79 @@ echo '<div id="foldaccount" class="aahc profiletext', ($need_highlight ? " alert
     " fold1", ($pcrole == "no" ? "c" : "o"), " fold2",
     ($Qreq->bulkregister ? "o" : "c"), "\">\n";
 
-echo '<div class="f-contain">', "\n\n";
+echo '<div class="profile-g">', "\n";
 $actas = "";
 if ($Acct !== $Me && $Acct->email && $Me->privChair)
-    $actas = '&nbsp;' . actas_link($Acct);
-if (!$Conf->external_login())
+    $actas = '<div class="floatright">&nbsp;' . actas_link($Acct) . '</div>';
+if (!$Conf->external_login()) {
     echofield(0, "uemail", "Email",
-              Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus", "size" => 52]) . $actas);
-else if (!$newProfile) {
-    echofield(0, "uemail", "Username", htmlspecialchars(contact_value("uemail", "email")) . $actas);
+        $actas . Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus fullw", "size" => 52]));
+} else if (!$newProfile) {
+    echofield(0, "uemail", "Username",
+        $actas . htmlspecialchars(contact_value("uemail", "email")));
     echofield(0, "preferredEmail", "Email",
-              Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "want-focus", "size" => 52]));
+        Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "want-focus fullw", "size" => 52]));
 } else {
     echofield(0, "uemail", "Username",
-              Ht::entry("newUsername", contact_value("newUsername", false), ["class" => "want-focus", "size" => 52]));
+        Ht::entry("newUsername", contact_value("newUsername", false), ["class" => "want-focus fullw", "size" => 52]));
     echofield(0, "preferredEmail", "Email",
-              Ht::entry("preferredEmail", contact_value("preferredEmail"), ["size" => 52]));
+              Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "fullw", "size" => 52]));
 }
 
+echo '<div class="f-2col">';
 echofield(1, "firstName", "First name",
-          Ht::entry("firstName", contact_value("firstName"), ["size" => 24, "autocomplete" => "given-name"]));
+          Ht::entry("firstName", contact_value("firstName"), ["size" => 24, "autocomplete" => "given-name", "class" => "fullw"]));
 echofield(3, "lastName", "Last name",
-          Ht::entry("lastName", contact_value("lastName"), ["size" => 24, "autocomplete" => "family-name"]));
+          Ht::entry("lastName", contact_value("lastName"), ["size" => 24, "autocomplete" => "family-name", "class" => "fullw"]));
+echo '</div>';
 echofield(0, "affiliation", "Affiliation",
-          Ht::entry("affiliation", contact_value("affiliation"), ["size" => 52, "autocomplete" => "organization"]));
+          Ht::entry("affiliation", contact_value("affiliation"), ["size" => 52, "autocomplete" => "organization", "class" => "fullw"]));
+
+if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct)) {
+    echo '<div id="foldpassword" class="foldc ',
+        ($UserStatus->has_problem_at("password") ? "fold3o" : "fold3c"),
+        '">';
+    // Hit a button to change your password
+    echo Ht::button("Change password", ["class" => "btn ui js-foldup fn3 g", "data-fold-target" => "3o"]);
+    // Display the following after the button is clicked
+    echo '<div class="fx3">';
+    if (!$Me->can_change_password(null)) {
+        echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
+        echo '<div class="f-i"><div class="', fcclass("password"), '">Current password</div>',
+            '<div class="', feclass("password"), '">', Ht::password("oldpassword", "", ["size" => 36, "autocomplete" => "current-password"]), '</div>',
+            '</div>';
+    }
+    if ($Conf->opt("contactdb_dsn") && $Conf->opt("contactdb_loginFormHeading"))
+        echo $Conf->opt("contactdb_loginFormHeading");
+    echo '<div class="f-i">
+  <div class="', fcclass("password"), '">New password</div>
+  <div class="', feclass("password"), '">', Ht::password("upassword", "", ["size" => 36, "class" => "fn", "autocomplete" => "new-password"]);
+    if ($Acct->plaintext_password() && $Me->privChair) {
+        echo Ht::entry("upasswordt", contact_value("upasswordt", "password"), ["size" => 36, "class" => "fx", "autocomplete" => "new-password"]);
+    }
+    echo '</div>
+</div><div class="fn f-i">
+  <div class="', fcclass("password"), '">Repeat new password</div>
+  <div class="', feclass("password"), '">', Ht::password("upassword2", "", array("size" => 36)), "</div>
+</div>\n";
+    if ($Acct->plaintext_password()
+        && ($Me->privChair || Contact::password_storage_cleartext())) {
+        echo "  <div class=\"f-h\">";
+        if (Contact::password_storage_cleartext())
+            echo "The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
+        if ($Me->privChair) {
+            if (Contact::password_storage_cleartext())
+                echo " <span class=\"sep\"></span>";
+            echo '<span class="n"><a class="ui js-plaintext-password" href=""><span class="fn">Show password</span><span class="fx">Hide password</span></a></span>';
+        }
+        echo "</div>\n";
+    }
+    echo "</div></div>";
+}
+
+echo "</div>\n\n"; // .profile-g
+
+
 echofield(0, false, "Country", Countries::selector("country", contact_value("country")));
 
 $data = $Acct->data();
@@ -702,56 +746,17 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
               Ht::entry("addressLine2", value("addressLine2", $address ? $address[1] : null), ["size" => 52, "autocomplete" => "address-line2"]));
     echofield(0, false, "City",
               Ht::entry("city", value("city", get($data, "city")), ["size" => 52, "autocomplete" => "address-level2"]));
+    echo '<div class="f-2col">';
     echofield(1, false, "State/Province/Region",
               Ht::entry("state", value("state", get($data, "state")), ["size" => 24, "autocomplete" => "address-level1"]));
     echofield(3, false, "ZIP/Postal code",
               Ht::entry("zipCode", value("zipCode", get($data, "zip")), ["size" => 12, "autocomplete" => "postal-code"]));
-    echofield(0, false, "Phone <span class='f-cx'>(optional)</span>",
+    echo '</div>';
+    echofield(0, false, "Phone <span class='n'>(optional)</span>",
               Ht::entry("voicePhoneNumber", contact_value("voicePhoneNumber"), ["size" => 24, "autocomplete" => "tel"]));
 }
 
 
-if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct)) {
-    echo '<div id="foldpassword" class="foldc ',
-        ($UserStatus->has_problem_at("password") ? "fold3o" : "fold3c"),
-        '" style="margin-top:20px">';
-    // Hit a button to change your password
-    echo Ht::button("Change password", ["class" => "btn ui js-foldup fn3", "data-fold-target" => "3o"]);
-    // Display the following after the button is clicked
-    echo '<div class="fx3">';
-    if (!$Me->can_change_password(null)) {
-        echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
-        echo '<div class="f-i"><div class="', fcclass("password"), '">Current password</div>',
-            '<div class="', feclass("password"), '">', Ht::password("oldpassword", "", ["size" => 24, "autocomplete" => "current-password"]), '</div>',
-            '</div>';
-    }
-    if ($Conf->opt("contactdb_dsn") && $Conf->opt("contactdb_loginFormHeading"))
-        echo $Conf->opt("contactdb_loginFormHeading");
-    echo '<div class="f-i"><div class="f-ix">
-  <div class="', fcclass("password"), '">New password</div>
-  <div class="', feclass("password"), '">', Ht::password("upassword", "", ["size" => 24, "class" => "fn", "autocomplete" => "new-password"]);
-    if ($Acct->plaintext_password() && $Me->privChair)
-        echo Ht::entry("upasswordt", contact_value("upasswordt", "password"), ["size" => 24, "class" => "fx", "autocomplete" => "new-password"]);
-    echo '</div>
-</div><div class="fn f-ix">
-  <div class="', fcclass("password"), '">Repeat new password</div>
-  <div class="', feclass("password"), '">', Ht::password("upassword2", "", array("size" => 24)), "</div>
-</div>\n";
-    if ($Acct->plaintext_password()
-        && ($Me->privChair || Contact::password_storage_cleartext())) {
-        echo "  <div class=\"f-h\">";
-        if (Contact::password_storage_cleartext())
-            echo "The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
-        if ($Me->privChair) {
-            if (Contact::password_storage_cleartext())
-                echo " <span class=\"sep\"></span>";
-            echo '<span class="f-cx"><a class="ui js-plaintext-password" href=""><span class="fn">Show password</span><span class="fx">Hide password</span></a></span>';
-        }
-        echo "</div>\n";
-    }
-    echo '  <hr class="c" />';
-    echo "</div></div></div>\n\n";
-}
 
 echo "</div>\n"; // f-contain
 

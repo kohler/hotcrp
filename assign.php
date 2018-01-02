@@ -552,28 +552,32 @@ echo "any eventual decision.  Before requesting an external review,
 if ($Me->allow_administer($prow))
     echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
 echo '</div></div><div class="revcard_body">';
-echo "<div class='f-i'><div class='f-ix'>
-  <div class='f-c'>Name</div>
-  <div class='f-e'><input type='text' name='name' value=\"", htmlspecialchars(defval($_REQUEST, "name", "")), "\" size='32' tabindex='1' /></div>
-</div><div class='f-ix'>
-  <div class='f-c", (isset($Error["email"]) ? " error" : ""), "'>Email</div>
-  <div class='f-e'><input type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
-</div><hr class=\"c\" /></div>\n\n";
+echo '<div class="f-horizontal">',
+    '<div class="f-i"><div class="f-c">',
+    Ht::label("Name", "revreq_name"),
+    '</div><div class="f-e">',
+    Ht::entry("name", get($_REQUEST, "name", ""), ["id" => "revreq_name", "size" => 32]),
+    '</div></div>',
+    '<div class="f-i"><div class="f-c', (isset($Error["email"]) ? " error" : ""), '">',
+    Ht::label("Email", "revreq_email"),
+    '</div><div class="f-e">',
+    Ht::entry("email", get($_REQUEST, "email", ""), ["id" => "revreq_email", "size" => 28]),
+    '</div></div></div>', "\n\n";
 
 // reason area
 $null_mailer = new HotCRPMailer;
 $reqbody = $null_mailer->expand_template("requestreview", false);
 if (strpos($reqbody["body"], "%REASON%") !== false) {
-    echo "<div class='f-i'>
-  <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'>",
+    echo '<div class="f-i"><div class="f-c">',
+        Ht::label('Note to reviewer <span class="n">(optional)</span>', "revreq_reason"),
+        '</div><div class="f-e">',
         Ht::textarea("reason", req("reason"),
-                array("class" => "papertext", "rows" => 2, "cols" => 60, "tabindex" => 1, "spellcheck" => "true")),
-        "</div><hr class=\"c\" /></div>\n\n";
+                ["class" => "papertext", "rows" => 2, "cols" => 60, "spellcheck" => "true", "id" => "revreq_reason"]),
+        "</div></div>\n\n";
 }
 
 echo "<div class='f-i'>\n",
-    Ht::submit("add", "Request review", array("tabindex" => 2)),
+    Ht::submit("add", "Request review", ["class" => "btn btn-default"]),
     "</div>\n\n";
 
 

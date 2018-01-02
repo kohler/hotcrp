@@ -46,30 +46,35 @@ class Options_SettingRenderer {
 
         echo '<div class="settings-opt has-fold fold2c fold3o ',
             (PaperOption::type_has_selector($optvt) ? "fold4o" : "fold4c"), '">';
-        echo '<div class="f-ix"><div class="f-i">',
-            '<div class="f-c">',
+
+        echo '<div class="f-horizontal">';
+
+        echo '<div class="f-ig">',
+            '<div class="f-i"><div class="f-c">',
             $sv->label("optn_$xpos", "Option name"),
             '</div><div class="f-e">',
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", array("placeholder" => "(Enter new option)", "size" => 50, "id" => "optn_$xpos"))),
             Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings-opt-id"]),
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
-            '</div></div><div class="f-i"><div class="f-c">',
+            '</div></div>';
+
+        echo '<div class="f-i"><div class="f-c">',
             $sv->label("optd_$xpos", "Description"),
             '</div><div class="f-e">',
             Ht::textarea("optd_$xpos", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd_$xpos", "class" => "need-autogrow")),
-            "</div></div></div>\n";
+            '</div></div>',
+            '</div>';
 
         if ($o->id && ($examples = $o->example_searches())) {
-            echo '<div class="f-ix"><div class="f-i"><div class="f-c">',
+            echo '<div class="f-i"><div class="f-c">',
                 'Example ', pluralx($examples, "search"),
                 '</div><div class="f-e">',
                 join("<br />", array_map(function ($ex) {
                     return Ht::link(htmlspecialchars($ex[0]), hoturl("search", ["q" => $ex[0]]));
                 }, $examples)),
-                "</div></div></div>\n";
+                "</div></div>";
         }
-
-        echo '<hr class="c" />';
+        echo "</div>\n";
 
         $show_final = $sv->conf->collectFinalPapers();
         foreach ($sv->conf->paper_opts->nonfixed_option_list() as $ox)
@@ -87,22 +92,22 @@ class Options_SettingRenderer {
             foreach ($otlist as $ot)
                 $otypes[$ot[1] . ":final"] = $ot[2] . " (final version)";
         }
+        Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings-optvt", settings_option_type); $("#settings_opts").on("click", "button", settings_option_move); settings_option_move_enable(); $("select.settings-optvt").each(settings_option_type); })', 'settings_optvt');
 
-        echo '<div class="f-ix"><div class="f-ii"><div class="f-c">',
+        echo '<div class="f-horizontal">';
+        echo '<div class="f-i"><div class="f-c">',
             $sv->label("optvt_$xpos", "Type"),
             '</div><div class="f-e">',
             Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "settings-optvt", "id" => "optvt_$xpos"]),
-            "</div></div></div>\n";
+            "</div></div>\n";
 
-        Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings-optvt", settings_option_type); $("#settings_opts").on("click", "button", settings_option_move); settings_option_move_enable(); $("select.settings-optvt").each(settings_option_type); })', 'settings_optvt');
-
-        echo '<div class="f-ix fn2"><div class="f-ii"><div class="f-c">',
+        echo '<div class="f-i fn2"><div class="f-c">',
             $sv->label("optp_$xpos", "Visibility"),
             '</div><div class="f-e">',
             Ht::select("optp_$xpos", ["admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"], $o->visibility, ["id" => "optp_$xpos"]),
-            "</div></div></div>\n";
+            "</div></div>\n";
 
-        echo '<div class="f-ix fn3"><div class="f-ii"><div class="f-c">',
+        echo '<div class="f-i fn3"><div class="f-c">',
             $sv->label("optdt_$xpos", "Display"),
             '</div><div class="f-e">',
             Ht::select("optdt_$xpos", ["default" => "Default",
@@ -110,13 +115,12 @@ class Options_SettingRenderer {
                                        "topics" => "With topics",
                                        "submission" => "Near submission"],
                        $o->display_name(), ["id" => "optdt_$xpos"]),
-            "</div></div></div>\n";
+            "</div></div>";
 
         if (isset($otypes["pdf:final"]))
-            echo '<div class="f-ix fx2"><div class="f-ii"><div class="f-c">&nbsp;</div>',
-                '<div class="f-e hint" style="margin-top:0.7ex">',
-                '(Set by accepted authors during final version submission period)',
-                "</div></div></div>\n";
+            echo '<hr class="c fx2"><div class="f-h fx2">Final version options are set by accepted authors during the final version submission period. They are always visible to PC and reviewers.</div>';
+
+        echo "</div>\n\n";
 
         $rows = 3;
         if (PaperOption::type_has_selector($optvt) && count($o->selector)) {
@@ -124,10 +128,10 @@ class Options_SettingRenderer {
             $rows = max(count($o->selector), 3);
         } else
             $value = "";
-        echo '<div class="f-ix fx4 c">',
-            '<div class="hint" style="margin-top:1ex">Enter choices one per line.  The first choice will be the default.</div>',
+        echo '<div class="f-i fx4"><div class="f-c">Choices</div>',
+            '<div class="f-e">',
             Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", array("rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "need-autogrow"))),
-            "</div>\n";
+            '</div><div class="f-h">Enter choices one per line.  The first choice will be the default.</div></div>', "\n";
 
         $delete_text = "Delete from form";
         if ($o->id) {
@@ -140,13 +144,13 @@ class Options_SettingRenderer {
                 $delete_text = "Delete from form and submissions";
         }
 
-        echo '<hr class="c" /><div class="f-i"><div class="f-e">',
+        echo '<div class="f-i"><div class="f-e">',
             Ht::button("Move up", ["class" => "btn settings-opt-moveup"]),
             Ht::button("Move down", ["class" => "btn settings-opt-movedown", "style" => "margin-left: 1em"]),
             Ht::button($delete_text, ["class" => "btn settings-opt-delete", "style" => "margin-left: 1em"]),
             "</div></div>\n";
 
-        echo '<hr class="c" /></div>';
+        echo '</div>';
     }
 
     static function render(SettingValues $sv) {

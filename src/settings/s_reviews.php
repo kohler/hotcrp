@@ -175,7 +175,7 @@ static function render(SettingValues $sv) {
     echo '<div id="foldmailbody_requestreview" class="settings-g ',
         ($t == SettingParser::expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
         '">';
-    echo '<div class="f-i"><div class="f-cn">',
+    echo '<div class="f-i"><div class="f-c n">',
         '<a class="ui q js-foldup" href="">', expander(null, 0),
         'Mail template for external review requests</a>',
         '<span class="fx"> (<a href="', hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',

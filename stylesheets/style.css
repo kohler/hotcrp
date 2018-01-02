@@ -24,6 +24,12 @@ select {
 a > img {
 	border: none;
 }
+html {
+	box-sizing: border-box;
+}
+*, *:before, *:after {
+	box-sizing: inherit;
+}
 
 
 /* page background */
@@ -234,6 +240,12 @@ span.nb {
 	page-break-inside: avoid;
 	break-inside: avoid;
 }
+.fullw {
+	width: 100%;
+}
+.n {
+	font-weight: normal;
+}
 
 
 /* generic vertical styles */
@@ -263,7 +275,7 @@ td.ug {
 }
 .clearfix:after, .pst:after, .pavt:after, .papet:after, .submission_modes:after,
 .revvt:after, .revet:after, .rvg:after, .cmteditinfo:after, .aa:after, .aab:after,
-.entryi:after, .checki:after, .popup-actions:after {
+.entryi:after, .checki:after, .popup-actions:after, .f-horizontal:after {
 	clear: both;
 	content: "";
 	display: block;
@@ -1188,6 +1200,13 @@ td.settings-track-perm {
 .profiletext, .settingstext {
 	max-width: 640px;
 }
+.profile-g {
+	max-width: 640px;
+	margin: 2em 0;
+}
+h3 + .profile-g {
+	margin-top: 1em;
+}
 #helpcontent > p {
 	max-width: 640px;
 }
@@ -1218,14 +1237,16 @@ dl.spaced > dt {
 
 
 /* vertically arranged forms */
-.f-i, .f-ii {
+.f-i {
 	margin: 1em 0;
-	width: auto;
 }
-.f-i:first-child {
+.f-horizontal {
+	margin: 1em -18px 1em 0;
+}
+.f-i:first-child, .f-horizontal:first-child {
 	margin-top: 0;
 }
-.f-i:last-child {
+.f-i:last-child, .f-horizontal:last-child {
 	margin-bottom: 0;
 }
 .f-ix {
@@ -1233,11 +1254,15 @@ dl.spaced > dt {
 	width: auto;
 	float: left;
 }
-.f-c, .f-cl {
-	font-weight: bold;
+label.f-c {
+	display: block;
 }
-.f-c, .f-cl, .f-cn {
-	margin-bottom: 0.25em;
+.f-c {
+	font-weight: bold;
+	margin-bottom: 0.25rem;
+}
+.f-c.n {
+	font-weight: normal;
 }
 th.f-c {
 	text-align: left;
@@ -1246,16 +1271,32 @@ th.f-c {
 	font-size: smaller;
 	color: #555555;
 	clear: both;
-	margin-top: 0.25em;
+	margin-top: 0.25rem;
 }
-.f-cx, .f-cxr {
-	font-weight: normal;
+.f-2col {
+	margin: -1em 0;
+	padding: 0.5em 0;
+	-webkit-columns: 300px 2;
+	-moz-columns: 300px 2;
+	columns: 300px 2;
+	-webkit-column-gap: 18px;
+	-moz-column-gap: 18px;
+	column-gap: 18px;
 }
-.f-cxr {
-	float: right;
+.f-2col > .f-i {
+	margin: 0;
+	padding: 0.5em 0;
+	-webkit-column-break-inside: avoid;
+	page-break-inside: avoid;
+	break-inside: avoid;
 }
-.f-cl .f-cx {
-	font-size: smaller;
+.f-horizontal > .f-i, .f-horizontal > .f-ig {
+	float: left;
+	width: auto;
+	margin: 0 18px 0 0;
+}
+.f-horizontal > .f-h {
+	margin-right: 18px;
 }
 
 
