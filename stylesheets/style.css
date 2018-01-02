@@ -215,7 +215,6 @@ span.nb {
 	cursor: wait !important;
 }
 .checki {
-	margin: 0.25em 0;
 	padding-left: 20px;
 }
 .checkc {
@@ -2778,7 +2777,7 @@ body#offline .revcard {
 }
 .paphint, .revhint {
 	max-width: 640px;
-	font-size: smaller;
+	font-size: 92%;
 	color: #555555;
 	margin: 0.25em 0;
 }
