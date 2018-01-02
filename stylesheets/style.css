@@ -1253,11 +1253,6 @@ dl.spaced > dt {
 .f-i:last-child, .f-horizontal:last-child {
 	margin-bottom: 0;
 }
-.f-ix {
-	margin: 0 1em 0 0;
-	width: auto;
-	float: left;
-}
 label.f-c {
 	display: block;
 }
