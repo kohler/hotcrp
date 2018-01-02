@@ -2619,7 +2619,6 @@ div.pst span.hint {
 .pavt {
 	margin: 0 -5px;
 	padding: 0.25em 5px 0.15em;
-	font-size: smaller;
 }
 .papfn, .pavfn, .psfn, .revfn {
 	font-weight: bold;
@@ -2744,9 +2743,6 @@ body#offline .revcard {
 	padding: 0 0.5em 0 0;
 }
 .revinfo {
-	font-size: smaller;
-}
-.revvt {
 	font-size: smaller;
 }
 .rvg .revvt {
