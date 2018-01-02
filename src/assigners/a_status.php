@@ -1,6 +1,6 @@
 <?php
 // a_status.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Status_AssignmentParser extends UserlessAssignmentParser {
     private $xtype;

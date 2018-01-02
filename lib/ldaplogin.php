@@ -1,6 +1,6 @@
 <?php
 // ldaplogin.php -- HotCRP helper function for LDAP login
-// Copyright (c) 2009-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2018 Eddie Kohler; see LICENSE.
 
 function ldapLoginBindFailure($ldapc) {
     global $Conf;

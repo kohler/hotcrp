@@ -1,6 +1,6 @@
 <?php
 // countmatcher.php -- HotCRP helper class for textual comparators
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class CountMatcher {
     private $_countexpr;

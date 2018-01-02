@@ -1,6 +1,6 @@
 <?php
 // search/st_option.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class OptionMatcher {
     public $option;

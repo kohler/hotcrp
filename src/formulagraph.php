@@ -1,6 +1,6 @@
 <?php
 // formulagraph.php -- HotCRP class for drawing graphs
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class FormulaGraph {
     const SCATTER = 1;

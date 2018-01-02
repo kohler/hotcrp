@@ -1,6 +1,6 @@
 <?php
 // comment.php -- HotCRP paper comment display/edit page
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 $Error = array();
 require_once("src/initweb.php");

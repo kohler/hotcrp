@@ -1,6 +1,6 @@
 <?php
 // search/st_reviewtoken.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class ReviewToken_SearchTerm extends SearchTerm {
     private $any;

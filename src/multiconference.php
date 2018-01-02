@@ -1,6 +1,6 @@
 <?php
 // multiconference.php -- HotCRP multiconference installations
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Multiconference {
     static private $original_opt = null;

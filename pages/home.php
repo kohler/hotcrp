@@ -1,6 +1,6 @@
 <?php
 // home.php -- HotCRP home page
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
 

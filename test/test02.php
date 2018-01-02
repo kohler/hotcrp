@@ -1,6 +1,6 @@
 <?php
 // test02.php -- HotCRP S3 and database unit tests
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 global $ConfSitePATH;
 $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);

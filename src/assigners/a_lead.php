@@ -1,6 +1,6 @@
 <?php
 // a_lead.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Lead_AssignmentParser extends AssignmentParser {
     private $key;

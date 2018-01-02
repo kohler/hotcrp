@@ -1,6 +1,6 @@
 <?php
 // searchaction.php -- HotCRP helper class for paper search actions
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class SearchResult {
 }

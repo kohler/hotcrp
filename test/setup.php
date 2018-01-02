@@ -1,6 +1,6 @@
 <?php
 // test/setup.php -- HotCRP helper file to initialize tests
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 global $ConfSitePATH;
 $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);

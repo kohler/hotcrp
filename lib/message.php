@@ -1,6 +1,6 @@
 <?php
 // message.php -- HotCRP message support
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Message {
     private static $messages = null;

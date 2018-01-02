@@ -1,6 +1,6 @@
 <?php
 // src/settings/s_subform.php -- HotCRP settings > submission form page
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class BanalSettings {
     static public function render($suffix, $sv) {

@@ -1,6 +1,6 @@
 <?php
 // paperlist.php -- HotCRP helper class for producing paper lists
-// Copyright (c) 2006-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class PaperListRenderState {
     public $row_folded = null;

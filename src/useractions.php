@@ -1,6 +1,6 @@
 <?php
 // useractions.php -- HotCRP helpers for user actions
-// Copyright (c) 2008-2017 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2018 Eddie Kohler; see LICENSE.
 
 class UserActions {
     static private function modify_password_mail($where, $dopassword, $sendtype, $ids) {
