@@ -5907,9 +5907,9 @@ function transfer_form_values($dst, $src, names) {
 // login UI
 handle_ui.on("js-forgot-password", function (event) {
     var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "forgot"}), maxWidth: "25rem"});
-    hc.push('<p>Enter your email and we’ll send you instructions.</p>');
-    hc.push('<p><div class="f-c">Email</div><div class="f-e">', '</div></p>');
-    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" autocomplete="username" />');
+    hc.push('<p>Enter your email and we’ll send you instructions for signing in.</p>');
+    hc.push('<div class="f-i"><label class="f-c" for="forgotpassword_email">Email</label><div class="f-e">', '</div></div>');
+    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" autocomplete="username" id="forgotpassword_email" />');
     hc.push_actions(['<button type="submit" class="btn btn-default">Reset password</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
     var $d = hc.show();
@@ -5919,8 +5919,9 @@ handle_ui.on("js-forgot-password", function (event) {
 handle_ui.on("js-create-account", function (event) {
     var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "new"}), maxWidth: "25rem"});
     hc.push('<h2>Create account</h2>');
-    hc.push('<p><div class="f-c">Email</div><div class="f-e">', '</div></p>');
-    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" autocomplete="email" />');
+    hc.push('<p>Enter your email and we’ll create an account and send you an initial password.</p>')
+    hc.push('<div class="f-i"><label class="f-c" for="createaccount_email">Email</label><div class="f-e">', '</div></div>');
+    hc.push_pop('<input type="text" name="email" size="36" class="wide-control" autocomplete="email" id="createaccount_email" />');
     hc.push_actions(['<button type="submit" class="btn btn-default">Create account</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
     var $d = hc.show();
