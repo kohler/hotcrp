@@ -321,11 +321,9 @@ function decorateNumber($n) {
 class SessionList {
     public $listid;
     public $ids;
-    public $cid;
     public $description;
     public $url;
     public $urlbase;
-    public $timestamp;
     public $highlight;
     static private $active_listid = null;
     static private $active_list = null;
@@ -393,13 +391,11 @@ class SessionList {
         }
         return $url;
     }
-    function info_string($minimal = false) {
+    function info_string() {
         $j = ["ids" => self::encode_ids($this->ids)];
         $urlkey = $this->urlbase ? "urlbase" : "url";
         foreach (get_object_vars($this) as $k => $v)
-            if ($v != null
-                && $k !== "ids" && $k !== "cid" && $k !== "timestamp" && $k !== "id_position"
-                && (!$minimal || $k === "listid" || $k === "description" || $k === $urlkey))
+            if ($v != null && $k !== "ids" && $k !== "id_position")
                 $j[$k] = $v;
         return json_encode_browser($j);
     }
@@ -408,10 +404,8 @@ class SessionList {
         $lx = new SessionList;
         $lx->listid = $listid;
         $lx->ids = $ids;
-        $lx->cid = $Me ? $Me->contactId : 0;
         $lx->description = $description;
         $lx->urlbase = $urlbase;
-        $lx->timestamp = $Now;
         return $lx;
     }
     static private function try_list($opt, $listtype, $sort = null) {
@@ -515,10 +509,8 @@ class SessionList {
             $list = null;
 
         // completion
-        if ($list) {
-            $list->timestamp = $Now;
+        if ($list)
             $list->id_position = $k;
-        }
         self::$active_listid = $listid;
         self::$active_list = $list;
         return $list;
