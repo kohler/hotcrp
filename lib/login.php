@@ -46,7 +46,7 @@ class LoginHelper {
 
         // check HTTP auth
         if (!isset($_SERVER["REMOTE_USER"]) || !$_SERVER["REMOTE_USER"]) {
-            $Conf->header("Error", "home", actionBar());
+            $Conf->header("Error", "home");
             Conf::msg_error("This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.");
             $Conf->footer();
             exit;

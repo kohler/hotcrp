@@ -907,8 +907,11 @@ function actionBar($mode = null, $prow = null) {
     $x = '<table class="vbar"><tr>';
 
     // quicklinks
-    if ($prow
-        && ($list = SessionList::active($listtype, $listtype === "u" ? $prow->contactId : $prow->paperId))) {
+    $prow_id = 0;
+    if ($prow)
+        $prow_id = $listtype === "u" ? $prow->contactId : $prow->paperId;
+    if ($prow_id
+        && ($list = SessionList::active($listtype, $prow_id))) {
         $x .= '<td class="vbar quicklinks">';
         if ($list->id_position > 0)
             $x .= _one_quicklink($list->ids[$list->id_position - 1], $goBase, $xmode, $listtype, true);

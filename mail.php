@@ -112,9 +112,9 @@ if (isset($papersel) && count($papersel) == 0
 }
 
 if (isset($_REQUEST["monreq"]))
-    $Conf->header("Monitor external reviews", "mail", actionBar());
+    $Conf->header("Monitor external reviews", "mail");
 else
-    $Conf->header("Mail", "mail", actionBar());
+    $Conf->header("Mail", "mail");
 
 $subjectPrefix = "[" . $Conf->short_name . "] ";
 

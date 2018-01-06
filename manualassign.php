@@ -129,7 +129,7 @@ else if ($qreq->update)
     Conf::msg_error("You need to select a reviewer.");
 
 
-$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Manual</strong>", "assignpc", actionBar());
+$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Manual</strong>", "assignpc");
 echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmodex"><a href="', hoturl("manualassign"), '">Manual</a></div>',

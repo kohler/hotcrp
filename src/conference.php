@@ -2998,10 +2998,10 @@ class Conf {
             echo '<div id="maindeadline">&nbsp;</div>';
         else
             echo '<div id="maindeadline" style="display:none"></div>';
-        echo '</div>', $title_div, $actions_html;
+        echo '</div>', ($title_div ? : ""), ($actions_html ? : "");
     }
 
-    function header_body($title, $id, $actionBar, $title_div = null) {
+    function header_body($title, $id, $extra = null) {
         global $ConfSitePATH, $Me, $Now;
         echo "<body";
         if ($id)
@@ -3089,10 +3089,17 @@ class Conf {
                 $profile_html .= join(' <span class="barsep">·</span> ', $profile_parts);
         }
 
-        if (!$title_div && $title && $title !== "Home")
-            $title_div = '<div id="header_page"><h1>' . $title . '</h1></div>';
-        if (!$title_div && $actionBar)
-            $title_div = '<hr class="c" />';
+        $action_bar = get($extra, "action_bar");
+        if ($action_bar === null)
+            $action_bar = actionBar();
+
+        $title_div = get($extra, "title_div");
+        if (!$title_div) {
+            if ($title && $title !== "Home")
+                $title_div = '<div id="header_page"><h1>' . $title . '</h1></div>';
+            else if ($action_bar)
+                $title_div = '<hr class="c" />';
+        }
 
         $renderf = $this->opt("headerRenderer");
         if (!$renderf)
@@ -3101,7 +3108,7 @@ class Conf {
             require_once($renderf[0]);
             $renderf = $renderf[1];
         }
-        call_user_func($renderf, $this, $is_home, $site_div, $title_div, $profile_html, $actionBar, $my_deadlines);
+        call_user_func($renderf, $this, $is_home, $site_div, $title_div, $profile_html, $action_bar, $my_deadlines);
 
         echo "  <hr class=\"c\" /></div>\n";
 
@@ -3151,11 +3158,10 @@ class Conf {
         }
     }
 
-    function header($title, $id, $actionBar, $title_div = null) {
-        global $ConfSitePATH, $Me, $Now;
+    function header($title, $id, $extra = null) {
         if (!$this->headerPrinted) {
             $this->header_head($title);
-            $this->header_body($title, $id, $actionBar, $title_div);
+            $this->header_body($title, $id, $extra);
         }
     }
 

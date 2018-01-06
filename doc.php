@@ -17,7 +17,7 @@ function document_error($status, $msg) {
     if (isset($_GET["fn"]))
         json_exit(["ok" => false, "error" => $msg ? : "Internal error."]);
     else {
-        $Conf->header("Download", null, actionBar());
+        $Conf->header("Download", null);
         $msg && Conf::msg_error($msg);
         $Conf->footer();
         exit;

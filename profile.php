@@ -563,10 +563,15 @@ function echo_modes($hlbulk) {
 }
 
 
-if ($newProfile)
-    $Conf->header("User update", "account", actionBar("account"));
-else
-    $Conf->header($Me->email == $Acct->email ? "Profile" : "Account profile", "account", actionBar("account", $Acct));
+if ($newProfile) {
+    $title = "User update";
+} else if (strcasecmp($Me->email, $Acct->email) == 0) {
+    $title = "Profile";
+} else {
+    $title = "Account profile";
+}
+$Conf->header($title, "account", ["action_bar" => actionBar("account", $Acct)]);
+
 $useRequest = !$Acct->has_database_account() && isset($Qreq->watchcomment);
 if ($UserStatus->has_error())
     $need_highlight = $useRequest = true;

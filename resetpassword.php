@@ -54,7 +54,7 @@ if (isset($_POST["go"]) && check_post()) {
     Ht::error_at("password");
 }
 
-$Conf->header("Reset password", "resetpassword", false);
+$Conf->header("Reset password", "resetpassword", ["action_bar" => false]);
 
 if (!isset($_POST["autopassword"])
     || trim($_POST["autopassword"]) != $_POST["autopassword"]

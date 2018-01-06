@@ -281,7 +281,7 @@ else if (str_starts_with($_REQUEST["t"], "#"))
     $title = "#" . substr($_REQUEST["t"], 1) . " program committee";
 else
     $title = "Users";
-$Conf->header($title, "accounts", actionBar());
+$Conf->header($title, "accounts");
 
 
 $pl = new ContactList($Me, true);

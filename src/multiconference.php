@@ -84,7 +84,7 @@ class Multiconference {
                 $Conf = Conf::$g = new Conf($Opt, false);
             $Me = null;
             header("HTTP/1.1 404 Not Found");
-            $Conf->header("HotCRP Error", "", false);
+            $Conf->header("HotCRP Error", "", ["action_bar" => false]);
             foreach ($errors as $i => &$e)
                 $e = ($i ? "<div class=\"hint\">" : "<p>") . htmlspecialchars($e) . ($i ? "</div>" : "</p>");
             echo join("", $errors);

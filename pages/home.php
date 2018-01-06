@@ -39,7 +39,7 @@ if ($Me->is_empty() || isset($_REQUEST["signin"]))
 
 // disabled users
 if (!$Me->is_empty() && $Me->disabled) {
-    $Conf->header("Account disabled", "home", false);
+    $Conf->header("Account disabled", "home", ["action_bar" => false]);
     echo Conf::msg_info("Your account on this site has been disabled by an administrator. Please contact the site administrators with questions.");
     echo "<hr class=\"c\" />\n";
     $Conf->footer();
@@ -111,7 +111,7 @@ if ($Me->privChair)
 
 
 $title = ($Me->is_empty() || isset($_REQUEST["signin"]) ? "Sign in" : "Home");
-$Conf->header($title, "home", actionBar());
+$Conf->header($title, "home");
 $xsep = " <span class='barsep'>·</span> ";
 
 if ($Me->privChair)

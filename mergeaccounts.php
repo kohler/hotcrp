@@ -68,7 +68,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
     }
 }
 
-$Conf->header("Merge accounts", "mergeaccounts", actionBar());
+$Conf->header("Merge accounts", "mergeaccounts");
 
 
 if ($MergeError)

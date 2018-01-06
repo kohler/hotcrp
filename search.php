@@ -18,7 +18,7 @@ if (isset($Qreq->default) && $Qreq->defaultact)
 // paper group
 $tOpt = PaperSearch::search_types($Me, $Qreq->t);
 if (empty($tOpt)) {
-    $Conf->header("Search", "search", actionBar());
+    $Conf->header("Search", "search");
     Conf::msg_error("You are not allowed to search for papers.");
     exit;
 }
@@ -144,7 +144,7 @@ if ($Me->privChair && !isset($Qreq->forceShow)
 
 
 // search
-$Conf->header("Search", "search", actionBar());
+$Conf->header("Search", "search");
 echo Ht::unstash(); // need the JS right away
 if (isset($Qreq->q))
     $Search = new PaperSearch($Me, $Qreq);

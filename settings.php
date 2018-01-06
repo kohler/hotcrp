@@ -54,7 +54,7 @@ if (isset($_REQUEST["cancel"]) && check_post())
 $Sv->crosscheck();
 
 $group_titles = $Sv->group_titles();
-$Conf->header("Settings &nbsp;&#x2215;&nbsp; <strong>" . $group_titles[$Group] . "</strong>", "settings", actionBar());
+$Conf->header("Settings &nbsp;&#x2215;&nbsp; <strong>" . $group_titles[$Group] . "</strong>", "settings");
 echo Ht::unstash(); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 

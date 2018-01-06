@@ -178,7 +178,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
         if ($assignset->execute(true))
             redirectSelf();
     } else {
-        $Conf->header("Review preferences", "revpref", actionBar());
+        $Conf->header("Review preferences", "revpref");
         if ($assignset->has_error())
             pref_xmsgc($assignset->errors_div_html(true));
 
@@ -235,7 +235,7 @@ if (isset($Qreq->redisplay)) {
 
 
 // Header and body
-$Conf->header("Review preferences", "revpref", actionBar());
+$Conf->header("Review preferences", "revpref");
 $Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 

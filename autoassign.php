@@ -128,7 +128,7 @@ if (isset($Qreq->saveassignment) && isset($Qreq->download)
 $Error = array();
 
 
-$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Automatic</strong>", "autoassign", actionBar());
+$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Automatic</strong>", "autoassign");
 echo '<div class="psmode">',
     '<div class="papmodex"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',

@@ -32,7 +32,7 @@ if (!$Graph || !isset($Graphs[$Graph]))
     redirectSelf(array("g" => key($Graphs)));
 
 // Header and body
-$Conf->header("Graphs", "graphbody", actionBar());
+$Conf->header("Graphs", "graphbody");
 echo Ht::unstash();
 echo $Conf->make_script_file("scripts/d3-hotcrp.min.js", true);
 echo $Conf->make_script_file("scripts/graph.js");

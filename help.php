@@ -21,7 +21,7 @@ if ($want_topic !== $topic)
 $topicj = $help_topics->get($topic);
 
 $Conf->header_head($topic === "topics" ? "Help" : "Help - {$topicj->title}");
-$Conf->header_body("Help", "help", actionBar());
+$Conf->header_body("Help", "help");
 
 class HtHead extends Ht {
     public $conf;

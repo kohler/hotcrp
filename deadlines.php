@@ -15,7 +15,7 @@ if (req("ajax")) {
 
 
 // header and script
-$Conf->header("Deadlines", "deadlines", actionBar());
+$Conf->header("Deadlines", "deadlines");
 
 if ($Me->privChair)
     echo "<p>As PC chair, you can <a href='", hoturl("settings"), "'>change the deadlines</a>.</p>\n";

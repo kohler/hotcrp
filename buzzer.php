@@ -68,7 +68,7 @@ if (!$Me->isPC && !$Me->tracker_kiosk_state)
     $Me->escape();
 
 
-$Conf->header("Discussion status", "buzzer", false);
+$Conf->header("Discussion status", "buzzer", ["action_bar" => false]);
 
 echo '<div id="trackertable" class="demargin" style="margin-top:1em"></div>';
 echo "<audio id=\"buzzersound\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";

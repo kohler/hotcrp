@@ -6,7 +6,7 @@ require_once("src/initweb.php");
 if (!$Me->is_manager())
     $Me->escape();
 
-$Conf->header("Log", "actionlog", actionBar());
+$Conf->header("Log", "actionlog");
 unset($_GET["forceShow"], $_POST["forceShow"], $_REQUEST["forceShow"]);
 global $Qreq;
 $Qreq = make_qreq();
