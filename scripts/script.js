@@ -1550,7 +1550,7 @@ function tracker_window_state() {
     var ts = wstorage.json(true, "hotcrp-tracking");
     if (ts && !ts[2] && dl.tracker && dl.tracker.trackerid == ts[1] && dl.tracker.start_at) {
         ts = [ts[0], ts[1], dl.tracker.start_at, ts[3]];
-        wstorage.json(true, "hotcrp-tracking", ts);
+        wstorage(true, "hotcrp-tracking", ts);
     }
     return ts;
 }
