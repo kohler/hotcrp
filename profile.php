@@ -52,14 +52,27 @@ if ($Me->privChair && $Qreq->new)
 
 // Load user.
 $Acct = $Me;
-if ($Me->privChair && $Qreq->u) {
+if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
     if ($Qreq->u === "new") {
         $Acct = new Contact;
         $newProfile = true;
     } else if (($id = cvtint($Qreq->u)) > 0)
         $Acct = $Conf->user_by_id($id);
-    else
+    else if ($Qreq->u === "" && $Qreq->search)
+        Navigation::redirect_site("users");
+    else {
         $Acct = $Conf->user_by_email($Qreq->u);
+        if (!$Acct && $Qreq->search) {
+            $cs = new ContactSearch(ContactSearch::F_USER, $Qreq->u, $Me);
+            if ($cs->ids) {
+                $Acct = $Conf->user_by_id($cs->ids[0]);
+                $list = new SessionList("u/all/" . urlencode($Qreq->search), $cs->ids, "“" . htmlspecialchars($Qreq->u) . "”", hoturl_site_relative_raw("users", ["t" => "all"]));
+                $list->set_cookie();
+                $_REQUEST["u"] = $_GET["u"] = $_PUT["u"] = $Qreq->u = $Acct->email;
+                redirectSelf();
+            }
+        }
+    }
 }
 
 // Redirect if requested user isn't loaded user.

@@ -692,6 +692,7 @@ function actionBar($mode = null) {
         $listtype = "u";
         if ($Me->privChair) {
             $goBase = "profile";
+            $xmode["search"] = 1;
         }
     } else if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
         $xmode["m"] = $wantmode;
