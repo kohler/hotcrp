@@ -332,9 +332,9 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
     }
     return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
         . "\" class=\"x\" href=\"" . hoturl($baseUrl, $urlrest) . "\">"
-        . ($isprev ? Icons::ui_linkarrow(3) : "")
+        . ($isprev ? Icons::ui_linkarrow(3) : " ")
         . $paperText
-        . ($isprev ? "" : Icons::ui_linkarrow(1))
+        . ($isprev ? " " : Icons::ui_linkarrow(1))
         . "</a>";
 }
 
@@ -705,17 +705,14 @@ function actionBar($mode = null) {
         if (($prev = $list->neighbor_id(-1)) !== false)
             $x .= _one_quicklink($prev, $goBase, $xmode, $listtype, true);
         if ($list->description) {
-            $x .= ($prev !== false ? "&nbsp;&nbsp;" : "");
             $url = $list->full_site_relative_url();
             if ($url)
                 $x .= '<a id="quicklink_list" class="x" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $list->description . "</a>";
             else
                 $x .= '<span id="quicklink_list">' . $list->description . '</span>';
         }
-        if (($next = $list->neighbor_id(1)) !== false) {
-            $x .= ($prev !== false || $list->description ? "&nbsp;&nbsp;" : "");
+        if (($next = $list->neighbor_id(1)) !== false)
             $x .= _one_quicklink($next, $goBase, $xmode, $listtype, false);
-        }
         $x .= '</td>';
 
         if ($Me->privChair && $listtype == "p")

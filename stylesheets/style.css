@@ -142,6 +142,12 @@ td.quicklinks, #trackerconnect {
 	vertical-align: middle;
 	padding: 4px 0.75em 4px 0.5em;
 }
+#quicklink_prev {
+	padding-right: 0.5em;
+}
+#quicklink_next {
+	padding-left: 0.5em;
+}
 #quicksearchq {
 	min-width: 72px;
 	width: 72px;
