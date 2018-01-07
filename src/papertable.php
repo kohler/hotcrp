@@ -92,16 +92,55 @@ class PaperTable {
         if (isset($ms["re"]) && isset($this->qreq->reviewId))
             $this->mode = "re";
 
+        // choose list
+        $this->conf->set_active_list(self::find_session_list($prow->paperId));
+
         $this->matchPreg = [];
-        if (($l = SessionList::active()) && $l->highlight
-            && preg_match('_\Ap/([^/]*)/([^/]*)(?:/|\z)_', $l->listid, $m)) {
-            $hlquery = is_string($l->highlight) ? $l->highlight : urldecode($m[2]);
+        if (($list = $this->conf->active_list()) && $list->highlight
+            && preg_match('_\Ap/([^/]*)/([^/]*)(?:/|\z)_', $list->listid, $m)) {
+            $hlquery = is_string($list->highlight) ? $list->highlight : urldecode($m[2]);
             $ps = new PaperSearch($user, ["t" => $m[1], "q" => $hlquery]);
             foreach ($ps->field_highlighters() as $k => $v)
                 $this->matchPreg[$k] = $v;
         }
         if (empty($this->matchPreg))
             $this->matchPreg = null;
+    }
+    private static function find_session_list($pid) {
+        global $Me;
+
+        if (isset($_COOKIE["hotlist-info"])
+            && ($list = SessionList::decode_info_string($_COOKIE["hotlist-info"]))
+            && $list->list_type() === "p"
+            && $list->set_current_id($pid))
+            return $list;
+
+        // look up list description
+        $list = null;
+        $listdesc = req("ls");
+        if ($listdesc) {
+            if (preg_match('{\Ap/([^/]*)/([^/]*)}', $listdesc, $m))
+                $list = self::try_list(["t" => $m[1], "q" => urldecode($m[2])], $pid);
+            if (!$list && preg_match('{\A(all|s):(.*)\z}s', $listdesc, $m))
+                $list = self::try_list(["t" => $m[1], "q" => $m[2]], $pid);
+            if (!$list && preg_match('{\A[a-z]+\z}', $listdesc))
+                $list = self::try_list(["t" => $listdesc], $pid);
+            if (!$list)
+                $list = self::try_list(["q" => $listdesc], $pid);
+        }
+
+        // default lists
+        if (!$list)
+            $list = self::try_list([], $pid);
+        if (!$list && $Me->privChair)
+            $list = self::try_list(["t" => "all"], $pid);
+
+        return $list;
+    }
+    private static function try_list($opt, $pid) {
+        global $Me;
+        $list = (new PaperSearch($Me, $opt))->session_list_object();
+        return $list->set_current_id($pid);
     }
 
     private static function _combine_match_preg($m1, $m) {
@@ -190,7 +229,7 @@ class PaperTable {
         if ($paperTable && $prow)
             $t .= $paperTable->_paptabBeginKnown();
 
-        $Conf->header($title, $id, ["action_bar" => actionBar($action_mode, $prow), "title_div" => $t]);
+        $Conf->header($title, $id, ["action_bar" => actionBar($action_mode), "title_div" => $t, "class" => "paper"]);
         if ($format)
             echo Ht::unstash_script("render_text.on_page()");
     }
@@ -2396,12 +2435,12 @@ class PaperTable {
         $search = new PaperSearch($Me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
         $ps = $search->paper_ids();
         if (count($ps) == 1) {
-            $slo = $search->session_list_object();
+            $list = $search->session_list_object();
             $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] =
-                $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = $slo->ids[0];
+                $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = $list->ids[0];
             // DISABLED: check if the paper is in the current list
             unset($_REQUEST["ls"], $_GET["ls"], $_POST["ls"]);
-            $slo->set_cookie();
+            $list->set_cookie();
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
             return true;

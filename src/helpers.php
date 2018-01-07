@@ -318,205 +318,6 @@ function decorateNumber($n) {
 }
 
 
-class SessionList {
-    public $listid;
-    public $ids;
-    public $description;
-    public $url;
-    public $urlbase;
-    public $highlight;
-    static private $active_listid = null;
-    static private $active_list = null;
-    static private $requested_list = false;
-    static function decode_ids($ids) {
-        if (strpos($ids, "-") === false && ($a = json_decode($ids)) !== null)
-            return is_array($a) ? $a : [$a];
-        $a = [];
-        preg_match_all('/[-\d]+/', $ids, $m);
-        foreach ($m[0] as $p)
-            if (($pos = strpos($p, "-"))) {
-                $j = (int) substr($p, $pos + 1);
-                for ($i = (int) substr($p, 0, $pos); $i <= $j; ++$i)
-                    $a[] = $i;
-            } else
-                $a[] = (int) $p;
-        return $a;
-    }
-    static function encode_ids($ids) {
-        $a = array();
-        $p0 = $p1 = -100;
-        foreach ($ids as $p) {
-            if ($p1 + 1 != $p) {
-                if ($p0 > 0)
-                    $a[] = ($p0 == $p1 ? $p0 : "$p0-$p1");
-                $p0 = $p;
-            }
-            $p1 = $p;
-        }
-        if ($p0 > 0)
-            $a[] = ($p0 == $p1 ? $p0 : "$p0-$p1");
-        return join("'", $a);
-    }
-    static function decode_info_string($info) {
-        if (($j = json_decode($info)) && isset($j->ids)) {
-            $list = new SessionList;
-            foreach ($j as $key => $value)
-                $list->$key = $value;
-            if (is_string($list->ids))
-                $list->ids = self::decode_ids($list->ids);
-            return $list;
-        } else
-            return null;
-    }
-    function full_site_relative_url() {
-        $args = Conf::$hoturl_defaults ? : [];
-        if ($this->url)
-            $url = $this->url;
-        else if ($this->urlbase) {
-            $url = $this->urlbase;
-            if (preg_match(',\Ap/[^/]*/([^/]*)(?:|/([^/]*))\z,', $this->listid, $m)) {
-                if ($m[1] !== "" || str_starts_with($url, "search"))
-                    $url .= (strpos($url, "?") ? "&" : "?") . "q=" . $m[1];
-                if (isset($m[2]) && $m[2] !== "")
-                    foreach (explode("&", $m[2]) as $kv) {
-                        $eq = strpos($kv, "=");
-                        $args[substr($kv, 0, $eq)] = substr($kv, $eq + 1);
-                    }
-            }
-        } else
-            return null;
-        foreach ($args as $k => $v) {
-            if (!preg_match('{\A[&?]' . preg_quote($k) . '=}', $url))
-                $url .= (strpos($url, "?") ? "&" : "?") . $k . "=" . $v;
-        }
-        return $url;
-    }
-    function info_string() {
-        $j = ["ids" => self::encode_ids($this->ids)];
-        $urlkey = $this->urlbase ? "urlbase" : "url";
-        foreach (get_object_vars($this) as $k => $v)
-            if ($v != null && $k !== "ids" && $k !== "id_position")
-                $j[$k] = $v;
-        return json_encode_browser($j);
-    }
-    static function create($listid, $ids, $description, $urlbase) {
-        global $Me, $Now;
-        $lx = new SessionList;
-        $lx->listid = $listid;
-        $lx->ids = $ids;
-        $lx->description = $description;
-        $lx->urlbase = $urlbase;
-        return $lx;
-    }
-    static private function try_list($opt, $listtype, $sort = null) {
-        global $Conf, $Me;
-        if ($listtype == "u" && $Me->privChair) {
-            $searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
-            $q = "select contactId from ContactInfo";
-            if ($searchtype == "pc")
-                $q .= " where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
-            $result = Dbl::ql("$q order by lastName, firstName, email");
-            $a = array();
-            while (($row = edb_row($result)))
-                $a[] = (int) $row[0];
-            Dbl::free($result);
-            return self::create("u/" . $searchtype, $a,
-                                ($searchtype == "pc" ? "Program committee" : "Users"),
-                                hoturl_site_relative_raw("users", "t=$searchtype"));
-        } else {
-            return (new PaperSearch($Me, $opt))->session_list_object($sort);
-        }
-    }
-    function set_cookie() {
-        global $Now;
-        $s = $this->info_string();
-        if (strlen($s) > 1500)
-            $s = $this->info_string(true);
-        setcookie("hotlist-info", $s, $Now + 20, Navigation::site_path());
-    }
-    static function clear_cookie() {
-        global $Now;
-        if (isset($_COOKIE["hotlist-info"]))
-            setcookie("hotlist-info", "", $Now - 86400, Navigation::site_path());
-    }
-    static function requested() {
-        global $Me;
-        if (self::$requested_list !== false)
-            return self::$requested_list;
-
-        if (isset($_COOKIE["hotlist-info"])
-            && ($list = self::decode_info_string($_COOKIE["hotlist-info"])))
-            return (self::$requested_list = $list);
-
-        // look up list description
-        $list = null;
-        $listdesc = req("ls");
-        if (!$listdesc && isset($_COOKIE["hotlist-info"]))
-            $listdesc = $_COOKIE["hotlist-info"];
-        else if (!$listdesc && isset($_COOKIE["hotcrp_ls"]))
-            $listdesc = $_COOKIE["hotcrp_ls"];
-        if ($listdesc) {
-            $listtype = "p";
-            if (Navigation::page() === "profile" || Navigation::page() === "users")
-                $listtype = "u";
-            if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $listdesc, $m))
-                $list = self::try_list(["t" => $m[1], "q" => urldecode($m[2])],
-                                       "p", $m[3]);
-            if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m))
-                $list = self::try_list(["t" => $m[1], "q" => $m[2]], "p");
-            if (!$list && preg_match('/\A[a-z]+\z/', $listdesc))
-                $list = self::try_list(["t" => $listdesc], $listtype);
-            if (!$list)
-                $list = self::try_list(["q" => $listdesc], $listtype);
-        }
-
-        return (self::$requested_list = $list);
-    }
-    static function active($listtype = null, $id = null) {
-        global $Conf, $Me, $Now;
-
-        // check current-list cache
-        if (!$listtype && self::$active_list)
-            return self::$active_list;
-        else if (!$listtype) {
-            $listtype = "p";
-            $id = $Conf->paper ? $Conf->paper->paperId : null;
-        }
-        if (!$id)
-            return null;
-        $listid = "$id/$listtype";
-        if (self::$active_listid === $listid)
-            return self::$active_list;
-
-        // start with requested list
-        $list = self::requested();
-        if ($list && !str_starts_with(get_s($list, "listid"), $listtype))
-            $list = null;
-
-        // look up ID in list; try new lists if not found
-        $k = false;
-        if ($list)
-            $k = array_search($id, $list->ids);
-        if ($k === false) {
-            $list = self::try_list([], $listtype);
-            $k = array_search($id, $list->ids);
-        }
-        if ($k === false && $Me->privChair) {
-            $list = self::try_list(["t" => "all"], $listtype);
-            $k = array_search($id, $list->ids);
-        }
-        if ($k === false)
-            $list = null;
-
-        // completion
-        if ($list)
-            $list->id_position = $k;
-        self::$active_listid = $listid;
-        self::$active_list = $list;
-        return $list;
-    }
-}
-
 function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
     global $Conf;
     if ($listtype == "u") {
@@ -541,7 +342,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
     global $Conf, $Me;
     if ($Me->is_empty())
         return "";
-    $list = SessionList::active();
+    $list = $Conf->active_list();
     $x = Ht::form_div(hoturl($baseUrl ? : "paper", ["ls" => null]), ["method" => "get", "class" => "gopaper"]);
     if ($baseUrl == "profile")
         $x .= Ht::entry("u", "", array("id" => "quicksearchq", "size" => 10, "placeholder" => "(User)", "class" => "need-autogrow"));
@@ -874,7 +675,7 @@ function whyNotHtmlToText($e) {
     return preg_replace('|<.*?>|', "", $e);
 }
 
-function actionBar($mode = null, $prow = null) {
+function actionBar($mode = null) {
     global $Me, $Conf;
     $forceShow = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 
@@ -889,35 +690,30 @@ function actionBar($mode = null, $prow = null) {
         $goBase = "review";
     else if ($mode == "account") {
         $listtype = "u";
-        if ($Me->privChair)
+        if ($Me->privChair) {
             $goBase = "profile";
-        else
-            $prow = null;
+        }
     } else if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
         $xmode["m"] = $wantmode;
 
     $x = '<table class="vbar"><tr>';
 
     // quicklinks
-    $prow_id = 0;
-    if ($prow)
-        $prow_id = $listtype === "u" ? $prow->contactId : $prow->paperId;
-    if ($prow_id
-        && ($list = SessionList::active($listtype, $prow_id))) {
+    if (($list = $Conf->active_list())) {
         $x .= '<td class="vbar quicklinks">';
-        if ($list->id_position > 0)
-            $x .= _one_quicklink($list->ids[$list->id_position - 1], $goBase, $xmode, $listtype, true);
+        if (($prev = $list->neighbor_id(-1)) !== false)
+            $x .= _one_quicklink($prev, $goBase, $xmode, $listtype, true);
         if ($list->description) {
-            $x .= ($list->id_position > 0 ? "&nbsp;&nbsp;" : "");
+            $x .= ($prev !== false ? "&nbsp;&nbsp;" : "");
             $url = $list->full_site_relative_url();
             if ($url)
                 $x .= '<a id="quicklink_list" class="x" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $list->description . "</a>";
             else
                 $x .= '<span id="quicklink_list">' . $list->description . '</span>';
         }
-        if (isset($list->ids[$list->id_position + 1])) {
-            $x .= ($list->id_position > 0 || $list->description ? "&nbsp;&nbsp;" : "");
-            $x .= _one_quicklink($list->ids[$list->id_position + 1], $goBase, $xmode, $listtype, false);
+        if (($next = $list->neighbor_id(1)) !== false) {
+            $x .= ($prev !== false || $list->description ? "&nbsp;&nbsp;" : "");
+            $x .= _one_quicklink($next, $goBase, $xmode, $listtype, false);
         }
         $x .= '</td>';
 

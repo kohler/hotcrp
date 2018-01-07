@@ -563,6 +563,15 @@ function echo_modes($hlbulk) {
 }
 
 
+// set session list
+if (!$newProfile
+    && isset($_COOKIE["hotlist-info"])
+    && ($list = SessionList::decode_info_string($_COOKIE["hotlist-info"]))
+    && $list->list_type() === "u"
+    && $list->set_current_id($Acct->contactId)) {
+    $Conf->set_active_list($list);
+}
+
 if ($newProfile) {
     $title = "User update";
 } else if (strcasecmp($Me->email, $Acct->email) == 0) {
@@ -570,7 +579,7 @@ if ($newProfile) {
 } else {
     $title = "Account profile";
 }
-$Conf->header($title, "account", ["action_bar" => actionBar("account", $Acct)]);
+$Conf->header($title, "account", ["action_bar" => actionBar("account")]);
 
 $useRequest = !$Acct->has_database_account() && isset($Qreq->watchcomment);
 if ($UserStatus->has_error())

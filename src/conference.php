@@ -99,6 +99,7 @@ class Conf {
     public $_file_filters = null; // maintained externally
 
     public $paper = null; // current paper row
+    private $_active_list = false;
 
     static public $g;
     static public $no_invalidate_caches = false;
@@ -2792,6 +2793,17 @@ class Conf {
     // Conference header, footer
     //
 
+    function active_list() {
+        if ($this->_active_list === false)
+            $this->_active_list = null;
+        return $this->_active_list;
+    }
+
+    function set_active_list(SessionList $list = null) {
+        assert($this->_active_list === false);
+        $this->_active_list = $list;
+    }
+
     function make_css_link($url, $media = null) {
         global $ConfSitePATH;
         if (str_starts_with($url, "<meta"))
@@ -2865,10 +2877,10 @@ class Conf {
     }
 
     function header_head($title) {
-        global $Me, $ConfSitePATH;
-        // load session list and clear its cookie
-        $list = SessionList::active();
-        SessionList::clear_cookie();
+        global $Me, $Now, $ConfSitePATH;
+        // clear session list cookie
+        if (isset($_COOKIE["hotlist-info"]))
+            setcookie("hotlist-info", "", $Now - 86400, Navigation::site_path());
 
         echo "<!DOCTYPE html>
 <html lang=\"en\">
@@ -3004,17 +3016,13 @@ class Conf {
         echo "<body";
         if ($id)
             echo ' id="', $id, '"';
-        $list = null;
-        $ispaper = ($id === "paper_view" || $id === "paper_edit" || $id === "review" || $id === "assign");
-        if ($ispaper || $id === "account")
-            $list = SessionList::active();
+        $class = get($extra, "class");
+        if (($list = $this->active_list()))
+            $class = ($class ? $class . " " : "") . "has-hotlist";
+        if ($class)
+            echo ' class="', $class, '"';
         if ($list)
-            echo ' class="', ($ispaper ? "paper " : ""), 'has-hotlist" data-hotlist="',
-                htmlspecialchars($list->info_string()), '"';
-        else if ($ispaper)
-            echo ' class="paper"';
-        else if ($id === "buzzer")
-            echo ' class="hide-tracker"';
+            echo ' data-hotlist="', htmlspecialchars($list->info_string()), '"';
         echo ">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
