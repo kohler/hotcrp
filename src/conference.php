@@ -2997,7 +2997,7 @@ class Conf {
         if ($my_deadlines && $conf->has_interesting_deadline($my_deadlines))
             echo '<div id="maindeadline">&nbsp;</div>';
         else
-            echo '<div id="maindeadline" style="display:none"></div>';
+            echo '<div id="maindeadline" class="hidden"></div>';
         echo '</div>', ($title_div ? : ""), ($actions_html ? : "");
     }
 

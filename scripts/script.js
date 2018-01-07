@@ -1533,7 +1533,7 @@ function display_main(is_initial) {
     }
 
     elt.innerHTML = s;
-    elt.style.display = s ? (elt.tagName == "SPAN" ? "inline" : "block") : "none";
+    s ? removeClass(elt, "hidden") : addClass(elt, "hidden");
 
     if (!redisplay_timeout && dlname) {
         if (!dltime || dltime - now < 180.5)
