@@ -9,6 +9,7 @@ class SessionList {
     public $url;
     public $urlbase;
     public $highlight;
+    public $digest;
     public $id_position = false;
 
     function __construct($listid = null, $ids = null, $description = null, $urlbase = null) {
@@ -52,7 +53,8 @@ class SessionList {
         return join("'", $a);
     }
     static function decode_info_string($info) {
-        if (($j = json_decode($info)) && isset($j->ids)) {
+        if (($j = json_decode($info))
+            && (isset($j->ids) || isset($j->digest))) {
             $list = new SessionList;
             foreach ($j as $key => $value)
                 $list->$key = $value;
@@ -86,8 +88,9 @@ class SessionList {
         return $url;
     }
     function info_string() {
-        $j = ["ids" => self::encode_ids($this->ids)];
-        $urlkey = $this->urlbase ? "urlbase" : "url";
+        $j = [];
+        if ($this->ids !== null)
+            $j["ids"] = self::encode_ids($this->ids);
         foreach (get_object_vars($this) as $k => $v)
             if ($v != null && $k !== "ids" && $k !== "id_position")
                 $j[$k] = $v;
@@ -95,10 +98,7 @@ class SessionList {
     }
     function set_cookie() {
         global $Now;
-        $s = $this->info_string();
-        if (strlen($s) > 1500)
-            $s = $this->info_string(true);
-        setcookie("hotlist-info", $s, $Now + 20, Navigation::site_path());
+        setcookie("hotlist-info", $this->info_string(), $Now + 20, Navigation::site_path());
     }
     function set_current_id($id) {
         $this->id_position = array_search($id, $this->ids);
