@@ -4387,7 +4387,7 @@ function sorter_toggle_reverse(sorter, toggle) {
 function search_sort_success(tbl, href, data) {
     reorder(tbl, data.ids, data.groups, true);
     $(tbl).data("groups", data.groups);
-    tbl.setAttribute("data-hotlist", data.hotlist_info || "");
+    tbl.setAttribute("data-hotlist", data.hotlist || "");
     var want_sorter = data.fwd_sorter || href_sorter(href),
         want_fwd_sorter = want_sorter && sorter_toggle_reverse(want_sorter, false);
     var $sorters = $(tbl).children("thead").find("a.pl_sort");
@@ -4427,7 +4427,7 @@ $(document).on("collectState", function (event, state) {
         groups = JSON.parse(groups);
     var data = state.sortpl = {
         ids: table_ids(tbl), groups: groups,
-        hotlist_info: tbl.getAttribute("data-hotlist")
+        hotlist: tbl.getAttribute("data-hotlist")
     };
     if (!href_sorter(state.href)) {
         var active_href = $(tbl).children("thead").find("a.pl_sorting_fwd").attr("href");

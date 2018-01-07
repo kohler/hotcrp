@@ -29,7 +29,7 @@ class Search_API {
         $pl = new PaperList($search, ["sort" => true], $qreq);
         $ih = $pl->ids_and_groups();
         return ["ok" => true, "ids" => $ih[0], "groups" => $ih[1],
-                "hotlist_info" => $pl->session_list_object()->info_string()];
+                "hotlist" => $pl->session_list_object()->info_string()];
     }
 
     static function fieldhtml(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
