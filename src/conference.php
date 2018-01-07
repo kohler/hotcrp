@@ -2817,7 +2817,7 @@ class Conf {
             $t .= "?mtime=$mtime";
         if ($media)
             $t .= '" media="' . $media;
-        return $t . '" />';
+        return $t . '">';
     }
 
     function make_script_file($url, $no_strict = false, $integrity = null) {
@@ -2885,10 +2885,10 @@ class Conf {
         echo "<!DOCTYPE html>
 <html lang=\"en\">
 <head>
-<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
-<meta name=\"google\" content=\"notranslate\" />\n";
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
+<meta name=\"google\" content=\"notranslate\">\n";
         if (!$this->opt("allowIndexPapers") && $this->paper)
-            echo "<meta name=\"robots\" content=\"noindex,noarchive\" />\n";
+            echo "<meta name=\"robots\" content=\"noindex,noarchive\">\n";
 
         if (($font_script = $this->opt("fontScript"))) {
             if (!str_starts_with($font_script, "<script"))
@@ -2916,13 +2916,13 @@ class Conf {
                     $favicon = Navigation::siteurl() . $favicon;
             }
             if (substr($favicon, -4) == ".png")
-                echo "<link rel=\"icon\" type=\"image/png\" href=\"$favicon\" />\n";
+                echo "<link rel=\"icon\" type=\"image/png\" href=\"$favicon\">\n";
             else if (substr($favicon, -4) == ".ico")
-                echo "<link rel=\"shortcut icon\" href=\"$favicon\" />\n";
+                echo "<link rel=\"shortcut icon\" href=\"$favicon\">\n";
             else if (substr($favicon, -4) == ".gif")
-                echo "<link rel=\"icon\" type=\"image/gif\" href=\"$favicon\" />\n";
+                echo "<link rel=\"icon\" type=\"image/gif\" href=\"$favicon\">\n";
             else
-                echo "<link rel=\"icon\" href=\"$favicon\" />\n";
+                echo "<link rel=\"icon\" href=\"$favicon\">\n";
         }
 
         // title
@@ -3104,7 +3104,7 @@ class Conf {
             if ($title && $title !== "Home")
                 $title_div = '<div id="header_page"><h1>' . $title . '</h1></div>';
             else if ($action_bar)
-                $title_div = '<hr class="c" />';
+                $title_div = '<hr class="c">';
         }
 
         $renderf = $this->opt("headerRenderer");
@@ -3116,7 +3116,7 @@ class Conf {
         }
         call_user_func($renderf, $this, $is_home, $site_div, $title_div, $profile_html, $action_bar, $my_deadlines);
 
-        echo "  <hr class=\"c\" /></div>\n";
+        echo "  <hr class=\"c\"></div>\n";
 
         echo "<div id=\"initialmsgs\">\n";
         if (($x = $this->opt("maintenance")))
@@ -3193,7 +3193,7 @@ class Conf {
             } else
                 echo "<!-- Version ", HOTCRP_VERSION, " -->";
         }
-        echo "</div>\n  <hr class=\"c\" /></div>\n";
+        echo "</div>\n  <hr class=\"c\"></div>\n";
         echo Ht::unstash(), "</body>\n</html>\n";
     }
 
