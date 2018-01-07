@@ -549,13 +549,6 @@ unparse_interval.SHORT = 4;
 
 
 // events
-function event_stop(evt) {
-    if (evt.stopPropagation)
-        evt.stopPropagation();
-    else
-        evt.cancelBubble = true;
-}
-
 function event_prevent(evt) {
     if (evt.preventDefault)
         evt.preventDefault();
@@ -2177,7 +2170,7 @@ function foldup(event, opts) {
         $(e).trigger("fold", opts);
     }
     if (event && typeof event === "object" && event.type === "click") {
-        event_stop(event);
+        event.stopPropagation();
         event.preventDefault(); // needed for expanders despite handle_ui!
     }
 }
@@ -2335,7 +2328,7 @@ $(document).on("keypress", "input.js-autosubmit", function (event) {
         defaulte.click();
     }
     if (defaulte || !type) {
-        event_stop(event);
+        event.stopPropagation();
         event_prevent(event);
     }
 });
@@ -3610,7 +3603,7 @@ function make_selector_shortcut(type) {
             this.blur();
         return false;
     }
-    return function (evt) {
+    return function (event) {
         var e = $$("fold" + type);
         if (e) {
             e.className += " psfocus";
@@ -3621,7 +3614,7 @@ function make_selector_shortcut(type) {
                 e.addEventListener("blur", end, false);
                 e.addEventListener("change", end, false);
             }
-            event_stop(evt);
+            event.stopPropagation();
             return true;
         }
         return false;
@@ -4760,7 +4753,7 @@ function tag_mousemove(evt) {
         l = srcindex;
     if (l !== dragindex) {
         tag_dragto(l);
-        event_stop(evt);
+        evt.stopPropagation();
     }
 }
 
@@ -4984,7 +4977,7 @@ function tag_mousedown(evt) {
         dragging.attachEvent("onmouseup", tag_mouseup);
         dragging.attachEvent("onmousecapture", tag_mouseup);
     }
-    event_stop(evt);
+    evt.stopPropagation();
     event_prevent(evt);
 }
 
@@ -5797,7 +5790,7 @@ plinfo.a_click = function (event) {
         for (var i = 0; i != type.length; ++i)
             if (type[i])
                 plinfo(type[i], null);
-        event_stop(event);
+        event.stopPropagation();
         event_prevent(event);
     }
 };
