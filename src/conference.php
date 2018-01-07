@@ -2943,8 +2943,6 @@ class Conf {
         Ht::stash_script("siteurl=" . json_encode_browser(Navigation::siteurl()) . ";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
         if (session_id() !== "")
             Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
-        if ($list)
-            Ht::stash_script("hotcrp_list=" . json_encode_browser(["id" => $list->listid, "info" => $list->info_string()]) . ";");
         if (($urldefaults = hoturl_defaults()))
             Ht::stash_script("siteurl_defaults=" . json_encode_browser($urldefaults) . ";");
         Ht::stash_script("assetsurl=" . json_encode_browser($this->opt["assetsUrl"]) . ";");

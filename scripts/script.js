@@ -3,7 +3,7 @@
 
 var siteurl, siteurl_postvalue, siteurl_suffix, siteurl_defaults,
     siteurl_absolute_base, assetsurl,
-    hotcrp_paperid, hotcrp_list, hotcrp_status, hotcrp_user, hotcrp_pc,
+    hotcrp_paperid, hotcrp_status, hotcrp_user, hotcrp_pc,
     hotcrp_want_override_conflict;
 
 function $$(id) {
@@ -1722,7 +1722,8 @@ function tracker_ui(event) {
             tstate = null;
         if (event && (!tstate || !is_my_tracker())) {
             tstate = [hoturl_absolute_base(), Math.floor(Math.random() * 100000), null, null];
-            hotcrp_list && (tstate[3] = hotcrp_list.info);
+            if (document.body.hasAttribute("data-hotlist"))
+                tstate[3] = document.body.getAttribute("data-hotlist");
         }
         if (tstate) {
             var req = "track=" + tstate[1] + "%20x", reqdata = {};
@@ -6663,8 +6664,9 @@ function handle_list(e, href) {
     }
 }
 function unload_list() {
-    if (hotcrp_list && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
-        set_cookie(hotcrp_list.info);
+    if (document.body.hasAttribute("data-hotlist")
+        && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
+        set_cookie(document.body.getAttribute("data-hotlist"));
 }
 function row_click(evt) {
     var $tgt = $(evt.target);
@@ -6702,7 +6704,7 @@ $(document).on("submit", "form", function (evt) {
         handle_list(this, this.getAttribute("action"));
 });
 $(document).on("click", "tr.pl", row_click);
-hotcrp_list && $(window).on("beforeunload", unload_list);
+$(window).on("beforeunload", unload_list);
 })($);
 
 
