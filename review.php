@@ -159,10 +159,11 @@ if (isset($_REQUEST["deletereview"]) && check_post()
     if (!$paperTable->editrrow)
         Conf::msg_error("No review to delete.");
     else {
-        $result = Dbl::qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
+        $result = $Conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
         if ($result) {
             $Me->log_activity("$editRrowLogname deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
+            $Conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
             if ($paperTable->editrrow->reviewToken != 0)
                 $Conf->update_rev_tokens_setting(-1);
 
