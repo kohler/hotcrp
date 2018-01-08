@@ -115,30 +115,6 @@ if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
     $_REQUEST["ready"] = $_POST["ready"] = 1;
 
 
-// review rating action
-if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
-    if (!$Me->can_rate_review($prow, $paperTable->rrow)
-        || !$Me->can_view_review($prow, $paperTable->rrow))
-        Conf::msg_error("You can’t rate that review.");
-    else if (!isset(ReviewForm::$rating_types[$_REQUEST["rating"]]))
-        Conf::msg_error("Invalid rating.");
-    else if ($_REQUEST["rating"] == "n")
-        $Conf->qe("delete from ReviewRating where paperId=? and reviewId=? and contactId=?",
-                  $paperTable->prow->paperId, $paperTable->rrow->reviewId, $Me->contactId);
-    else
-        $Conf->qe("insert into ReviewRating set paperId=?, reviewId=?, contactId=?, rating=? on duplicate key update rating=?",
-                  $paperTable->prow->paperId, $paperTable->rrow->reviewId, $Me->contactId, $_REQUEST["rating"], $_REQUEST["rating"]);
-    if (defval($_REQUEST, "ajax", 0))
-        json_exit(["ok" => !Dbl::has_error(), "result" => "Thanks! Your feedback has been recorded."]);
-    if (isset($_REQUEST["allr"])) {
-        $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $paperTable->rrow->paperId;
-        unset($_REQUEST["reviewId"], $_GET["reviewId"], $_POST["reviewId"]);
-        unset($_REQUEST["r"], $_GET["r"], $_POST["r"]);
-    }
-    loadRows();
-}
-
-
 // update review action
 if (isset($_REQUEST["update"]) && check_post()) {
     $tf = new ReviewValues($rf);
