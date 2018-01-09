@@ -572,14 +572,7 @@ class ReviewRating_SearchAdjustment {
         else if ($this->type === "not")
             return !$this->arg->_test($ratings);
         else {
-            if ($this->type === "good")
-                $n = count(array_filter($ratings, function ($r) { return $r > 0; }));
-            else if ($this->type === "bad")
-                $n = count(array_filter($ratings, function ($r) { return $r <= 0; }));
-            else if ($this->type === "any")
-                $n = count($ratings);
-            else
-                $n = count(array_filter($ratings, function ($r) { return $r == $this->type; }));
+            $n = count(array_filter($ratings, function ($r) { return ($r & $this->type) !== 0; }));
             return $this->arg->test($n);
         }
     }
@@ -641,24 +634,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
                 $compar = ($m[3] == 0 ? "=0" : ">=" . $m[3]);
             else
                 $compar = $m[2] . $m[3];
-            // resolve rating type
-            if (strcasecmp($m[1], "any") == 0)
-                $rate = "any";
-            else if ($m[1] === "+" || strcasecmp($m[1], "good") == 0
-                     || strcasecmp($m[1], "yes") == 0)
-                $rate = "good";
-            else if ($m[1] === "-" || strcasecmp($m[1], "bad") == 0
-                     || strcasecmp($m[1], "no") == 0
-                     || $m[1] === "\xE2\x88\x92" /* unicode MINUS */)
-                $rate = "bad";
-            else {
-                $x = Text::simple_search($m[1], ReviewForm::$rating_types);
-                unset($x["n"]); // can't search for “average”
-                if (count($x) == 1) {
-                    reset($x);
-                    $rate = key($x);
-                }
-            }
+            $rate = self::parse_rate_name($m[1]);
         }
         if ($rate === null) {
             $srch->warn("Bad review rating query “" . htmlspecialchars($word) . "”.");
@@ -669,6 +645,26 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
             $qv->ratings = new ReviewRating_SearchAdjustment($rate, new CountMatcher($compar));
             return $qv;
         }
+    }
+    static private function parse_rate_name($s) {
+        if (strcasecmp($s, "any") == 0)
+            return ReviewInfo::RATING_GOODMASK | ReviewInfo::RATING_BADMASK;
+        if ($s === "+" || strcasecmp($s, "good") == 0 || strcasecmp($s, "yes") == 0)
+            return ReviewInfo::RATING_GOODMASK;
+        if ($s === "-" || strcasecmp($s, "bad") == 0 || strcasecmp($s, "no") == 0
+            || $s === "\xE2\x88\x92" /* unicode MINUS */)
+            return ReviewInfo::RATING_BADMASK;
+        foreach (ReviewInfo::$rating_bits as $bit => $name) {
+            if (strcasecmp($s, $name) === 0)
+                return $bit;
+        }
+        $x = Text::simple_search($s, ReviewInfo::$rating_options);
+        unset($x[0]); // can't search for “average”
+        if (count($x) == 1) {
+            reset($x);
+            return key($x);
+        } else
+            return null;
     }
 
     function merge(ReviewAdjustment_SearchTerm $x = null) {

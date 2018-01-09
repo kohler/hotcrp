@@ -346,7 +346,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
         } else if ($style == 2) {
             $retstr = "<div class=\"sc\">"
                 . "<div class=\"need-scorechart\" style=\"width:64px;height:8px\" data-scorechart=\"$args&amp;s=2\" title=\"$avgtext\"></div>"
-                . "<br />";
+                . "<br>";
             if ($this->option_letter) {
                 for ($key = $max; $key >= 1; --$key)
                     $retstr .= ($key < $max ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
@@ -354,7 +354,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
                 for ($key = 1; $key <= $max; ++$key)
                     $retstr .= ($key > 1 ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
             }
-            $retstr .= '<br /><span class="sc_sum">' . $avgtext . "</span></div>";
+            $retstr .= '<br><span class="sc_sum">' . $avgtext . "</span></div>";
         }
         Ht::stash_script("$(scorechart)", "scorechart");
 
@@ -393,16 +393,6 @@ class ReviewForm implements JsonSerializable {
     static public $revtype_names = [
         "None", "External", "PC", "Secondary", "Primary", "Meta"
     ];
-
-    // XXX all negative ratings should have negative numbers
-    // values are HTML
-    static public $rating_types = array("n" => "average",
-                                        1 => "very helpful",
-                                        0 => "too short",
-                                        -1 => "too vague",
-                                        -4 => "too narrow",
-                                        -2 => "not constructive",
-                                        -3 => "not correct");
 
     static private $review_author_seen = null;
 
@@ -512,20 +502,9 @@ class ReviewForm implements JsonSerializable {
     }
 
 
-    static function parse_rating($rating) {
-        if (isset(self::$rating_types[$rating]))
-            return $rating === "n" ? null : intval($rating);
-        else if ($rating === null)
-            return $rating;
-        else if (($k = array_search($rating, self::$rating_types)) !== false)
-            return $k === "n" ? null : $k;
-        else
-            return false;
-    }
-
     function unparse_rating_types_json() {
-        $rt = self::$rating_types;
-        $rt["order"] = array_keys(self::$rating_types);
+        $rt = ReviewInfo::$rating_options;
+        $rt["order"] = array_keys(ReviewInfo::$rating_options);
         return $rt;
     }
 
@@ -1101,21 +1080,6 @@ $blind\n";
     const RJ_ALL_RATINGS = 8;
     const RJ_NO_REVIEWERONLY = 16;
 
-    static private function unparse_rating($rating, $flags) {
-        if (($flags & self::RJ_UNPARSE_RATINGS)
-            && ($n = get(self::$rating_types, $rating === null ? "n" : $rating)) !== null)
-            return $n;
-        else
-            return $rating;
-    }
-
-    static function unparse_ratings_json(ReviewInfo $rrow, $flags) {
-        $ratings = [];
-        foreach ($rrow->ratings() as $rating)
-            $ratings[] = self::unparse_rating($rating, $flags);
-        return $ratings;
-    }
-
     function unparse_review_json(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
                                  $forceShow = null, $flags = 0) {
         self::check_review_author_seen($prow, $rrow, $contact);
@@ -1161,10 +1125,16 @@ $blind\n";
 
         // ratings
         if ((string) $rrow->allRatings !== ""
-            && $contact->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0))
-            $rj["ratings"] = self::unparse_ratings_json($rrow, $flags);
-        if ($editable && $contact->can_rate_review($prow, $rrow))
-            $rj["user_rating"] = self::unparse_rating($rrow->rating_of_user($contact), $flags);
+            && $contact->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0)) {
+            $rj["ratings"] = array_values($rrow->ratings());
+            if ($flags & self::RJ_UNPARSE_RATINGS)
+                $rj["ratings"] = array_map("ReviewInfo::unparse_rating", $rj["ratings"]);
+        }
+        if ($editable && $contact->can_rate_review($prow, $rrow)) {
+            $rj["user_rating"] = $rrow->rating_of_user($contact);
+            if ($flags & self::RJ_UNPARSE_RATINGS)
+                $rj["user_rating"] = ReviewInfo::unparse_rating($rj["user_rating"]);
+        }
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
@@ -1208,7 +1178,7 @@ $blind\n";
         }
         if ($contact->can_view_review_identity($prow, $rrow, false))
             $t .= $barsep . "<span class='hint'>review by</span> " . $contact->reviewer_html_for($rrow);
-        $t .= "</small><br />";
+        $t .= "</small><br>";
 
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         if ($rrow->reviewSubmitted) {
@@ -1340,7 +1310,7 @@ class ReviewValues extends MessageSet {
                 if (preg_match('{\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z}', $line, $m)
                     && $m[1] != $this->conf->short_name) {
                     $this->check_garbage();
-                    $this->rmsg("confid", "Ignoring review form, which appears to be for a different conference.<br />(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)", self::ERROR);
+                    $this->rmsg("confid", "Ignoring review form, which appears to be for a different conference.<br>(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)", self::ERROR);
                     return false;
                 } else if (preg_match('/^==\+== Begin Review/i', $line)) {
                     if ($nfields > 0)

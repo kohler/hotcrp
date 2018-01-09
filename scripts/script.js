@@ -2886,15 +2886,22 @@ function render_review_body(rrow) {
 }
 
 function unparse_ratings(ratings) {
-    var ratecount = {}, ratetext = [], i, ratekey;
-    for (i = 0; i < ratings.length; ++i) {
-        ratekey = ratings[i];
-        ratecount[ratekey] = (ratecount[ratekey] || 0) + 1;
+    var ratetext = [], allrates = 0;
+    for (var i = 0; i < ratings.length; ++i) {
+        allrates |= ratings[i];
     }
-    for (i = 0; i < ratingsj.order.length; ++i) {
-        ratekey = ratingsj.order[i];
-        if (ratecount[ratekey])
-            ratetext.push(ratecount[ratekey] + " “" + ratingsj[ratekey] + "”");
+    if (allrates) {
+        for (i = 0; i < ratingsj.order.length; ++i) {
+            var ratekey = ratingsj.order[i];
+            if (allrates & ratekey) {
+                var n = 0;
+                for (var j = 0; j < ratings.length; ++j) {
+                    if (ratings[j] & ratekey)
+                        ++n;
+                }
+                ratetext.push(n + " “" + ratingsj[ratekey] + "”");
+            }
+        }
     }
     return ratetext.join(", ");
 }
@@ -2973,7 +2980,7 @@ function add_review(rrow) {
         rhc.push('<select name="rating">', '</select>');
         for (i = 0; i !== ratingsj.order.length; ++i) {
             ratekey = ratingsj.order[i];
-            selected = rrow.user_rating === null ? ratekey === "n" : ratekey === rrow.user_rating;
+            selected = ratekey === (rrow.user_rating || 0);
             rhc.push('<option value="' + ratekey + '"' + (selected ? ' selected="selected"' : '') + '>' + ratingsj[ratekey] + '</option>');
         }
         rhc.pop_n(2);

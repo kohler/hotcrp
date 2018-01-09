@@ -1303,6 +1303,11 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table ContactInfo add `birthday` int(11) DEFAULT NULL")
         && $conf->ql("alter table ContactInfo add `gender` varbinary(24) DEFAULT NULL"))
         $conf->update_schema_version(183);
+    if ($conf->sversion == 183
+        // good=1,1; too short=0,4; too vague=-1,8; too narrow=-4,16;
+        // not constructive=-2,32; not correct=-3,64
+        && $conf->ql("update ReviewRating set rating=case rating when 0 then 4 when -1 then 8 when -4 then 16 when -2 then 32 when -3 then 64 else if(rating<0,2,1) end"))
+        $conf->update_schema_version(184);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

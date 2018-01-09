@@ -10,7 +10,7 @@ their reviews.  The interface appears above each visible review:</p>
 
 <p><div class='rev_rating'>
   How helpful is this review? &nbsp;<form class><div class=\"inline\">",
-            Ht::select("rating", ReviewForm::$rating_types, "n"),
+            Ht::select("rating", ReviewInfo::$rating_options, "n"),
             "</div></form>
 </div></p>
 
@@ -46,11 +46,11 @@ their reviews.  The interface appears above each visible review:</p>
   never shows rating counts to authors.</p>
 
 <p>To find which of your reviews might need work, simply ",
-$hth->search_link("search for “rate:&minus;”", "rate:-"), ".
+$hth->search_link("search for “rate:bad”", "rate:bad"), ".
 To find all reviews with positive ratings, ",
-$hth->search_link("search for “re:any&nbsp;rate:+”", "re:any rate:+"), ".
+$hth->search_link("search for “re:any&nbsp;rate:good”", "re:any rate:good"), ".
 You may also search for reviews with specific ratings; for instance, ",
-$hth->search_link("search for “rate:helpful”", "rate:helpful"), ".</p>";
+$hth->search_link("search for “rate:short”", "rate:short"), ".</p>";
 
         if ($hth->conf->setting("rev_ratings") == REV_RATINGS_PC)
             $what = "only PC members";

@@ -140,10 +140,12 @@ class ContactList {
     }
 
     function _sortReviewRatings($a, $b) {
-        if ((int) $a->sumRatings != (int) $b->sumRatings)
-            return ($a->sumRatings > $b->sumRatings ? -1 : 1);
-        if ((int) $a->numRatings != (int) $b->numRatings)
-            return ($a->numRatings > $b->numRatings ? 1 : -1);
+        list($ag, $ab) = [(int) $a->numGoodRatings, (int) $a->numBadRatings];
+        list($bg, $bb) = [(int) $b->numGoodRatings, (int) $b->numBadRatings];
+        if ($ag - $ab != $bg - $bb)
+            return $ag - $ab > $bg - $bb ? -1 : 1;
+        if ($ag + $ab != $bg + $bb)
+            return $ag + $ab < $bg + $bb ? -1 : 1;
         return $this->_sortBase($a, $b);
     }
 
@@ -331,17 +333,17 @@ class ContactList {
             return "<a href=\"" . hoturl("search", "t=s&amp;q=shepherd:" . urlencode($row->email)) . "\">$row->numShepherds</a>";
         case self::FIELD_REVIEW_RATINGS:
             if ((!$row->numReviews && !$row->numReviewsSubmitted)
-                || !$row->numRatings)
+                || (!$row->numGoodRatings && !$row->numBadRatings))
                 return "";
             $a = array();
             $b = array();
-            if ($row->sumRatings > 0) {
-                $a[] = $row->sumRatings . " positive";
-                $b[] = "<a href=\"" . hoturl("search", "q=re:" . urlencode($row->email) . "+rate:%2B") . "\">+" . $row->sumRatings . "</a>";
+            if ($row->numGoodRatings > 0) {
+                $a[] = $row->numGoodRatings . " positive";
+                $b[] = "<a href=\"" . hoturl("search", "q=re:" . urlencode($row->email) . "+rate:good") . "\">+" . $row->numGoodRatings . "</a>";
             }
-            if ($row->sumRatings < $row->numRatings) {
-                $a[] = ($row->numRatings - $row->sumRatings) . " negative";
-                $b[] = "<a href=\"" . hoturl("search", "q=re:" . urlencode($row->email) . "+rate:-") . "\">&minus;" . ($row->numRatings - $row->sumRatings) . "</a>";
+            if ($row->numBadRatings > 0) {
+                $a[] = $row->numBadRatings . " negative";
+                $b[] = "<a href=\"" . hoturl("search", "q=re:" . urlencode($row->email) . "+rate:bad") . "\">&minus;" . $row->numBadRatings . "</a>";
             }
             return "<span class='hastitle' title='" . join(", ", $a) . "'>" . join(" ", $b) . "</span>";
         case self::FIELD_PAPERS:
@@ -517,7 +519,7 @@ class ContactList {
             $pq .= ", numReviews, numReviewsSubmitted";
         }
         if (isset($queryOptions["revratings"]))
-            $pq .= ", numRatings, sumRatings";
+            $pq .= ", numGoodRatings, numBadRatings";
         if (isset($queryOptions["leads"]))
             $pq .= ",\n    (select count(paperId) from Paper where leadContactId=u.contactId" . $this->_pid_restriction() . ") numLeads";
         if (isset($queryOptions["shepherds"]))
@@ -555,7 +557,9 @@ class ContactList {
             $pq .= " group by r.contactId) as r on (r.contactId=u.contactId)\n";
         }
         if (isset($queryOptions["revratings"])) {
-            $pq .= "    left join (select PaperReview.contactId, count(rating) numRatings, sum(if(rating>0,1,0)) sumRatings
+            $pq .= "    left join (select PaperReview.contactId,
+                sum((rating&" . ReviewInfo::RATING_GOODMASK . ")!=0) numGoodRatings,
+                sum((rating&" . ReviewInfo::RATING_BADMASK . ")!=0) numBadRatings
                 from ReviewRating
                 join PaperReview on (PaperReview.paperId=ReviewRating.paperId and PaperReview.reviewId=ReviewRating.reviewId)";
             $jwhere = [];

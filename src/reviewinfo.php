@@ -54,6 +54,18 @@ class ReviewInfo {
     ];
     const MIN_SFIELD = 12;
 
+    const RATING_GOODMASK = 1;
+    const RATING_BADMASK = 126;
+    static public $rating_options = [
+        0 => "average", 1 => "very helpful",
+        4 => "too short", 8 => "too vague", 16 => "too narrow",
+        32 => "not constructive", 64 => "not correct"
+    ];
+    static public $rating_bits = [
+        1 => "good", 2 => "bad", 4 => "short", 8 => "vague",
+        16 => "narrow", 32 => "not-constructive", 64 => "wrong"
+    ];
+
     private function merge(Conf $conf) {
         $this->conf = $conf;
         foreach (["paperId", "reviewId", "contactId", "reviewType",
@@ -229,5 +241,35 @@ class ReviewInfo {
         if ($pos !== false)
             return intval(substr($this->allRatings, $pos + strlen($str) - 1));
         return null;
+    }
+
+    static function unparse_rating($rating) {
+        if (isset(self::$rating_bits[$rating]))
+            return self::$rating_bits[$rating];
+        else if (!$rating)
+            return "none";
+        else {
+            $a = [];
+            foreach (self::$rating_bits as $k => $v)
+                if ($rating & $k)
+                    $a[] = $v;
+            return join(" ", $a);
+        }
+    }
+
+    static function parse_rating($s) {
+        if (ctype_digit($s)) {
+            $n = intval($s);
+            if ($n >= 0 && $n < 127)
+                return $n ? : null;
+        }
+        $n = 0;
+        foreach (preg_split('/\s+/', $s) as $word) {
+            if (($k = array_search($word, ReviewInfo::$rating_bits)) !== false)
+                $n |= $k;
+            else if ($word !== "" && $word !== "none")
+                return false;
+        }
+        return $n;
     }
 }

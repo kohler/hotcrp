@@ -358,7 +358,7 @@ class PaperApi {
         $editable = $user->can_rate_review($prow, $rrow);
         if ($qreq->method() !== "GET") {
             if (!isset($qreq->rating)
-                || ($rating = ReviewForm::parse_rating($qreq->rating)) === false)
+                || ($rating = ReviewInfo::parse_rating($qreq->rating)) === false)
                 return new JsonResult(400, "Parameter error.");
             else if (!$editable)
                 return new JsonResult(403, "Permission error.");
@@ -369,11 +369,11 @@ class PaperApi {
             $rrow = $prow->fresh_review_of_id($rrow->reviewId);
         }
         $rating = $rrow->rating_of_user($user);
-        $jr = new JsonResult(["ok" => true, "rating" => $rating, "rating_html" => ReviewForm::$rating_types[$rating ? : "n"]]);
+        $jr = new JsonResult(["ok" => true, "rating" => $rating]);
         if ($editable)
             $jr->content["editable"] = true;
         if ($user->can_view_review_ratings($prow, $rrow))
-            $jr->content["ratings"] = ReviewForm::unparse_ratings_json($rrow, 0);
+            $jr->content["ratings"] = array_values($rrow->ratings());
         return $jr;
     }
 

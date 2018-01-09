@@ -417,20 +417,17 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     if ($myrow && $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
         $badratings = PaperSearch::unusableRatings($Me);
         $qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
-        $result = Dbl::qe_raw("select rating, count(PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->contactId and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc");
-        if (edb_nrows($result)) {
-            $a = array();
-            while (($row = edb_row($result)))
-                if (isset(ReviewForm::$rating_types[$row[0]]))
-                    $a[] = "<a href=\"" . hoturl("search", "q=re:me+rate:%22" . urlencode(ReviewForm::$rating_types[$row[0]]) . "%22") . "\" title='List rated reviews'>$row[1] &ldquo;" . htmlspecialchars(ReviewForm::$rating_types[$row[0]]) . "&rdquo; " . pluralx($row[1], "rating") . "</a>";
-            if (count($a) > 0) {
-                echo "<div class='hint g'>\nYour reviews have received ",
-                    commajoin($a);
-                if (count($a) > 1)
-                    echo " (these sets might overlap)";
-                echo ".<a class='help' href='", hoturl("help", "t=revrate"), "' title='About ratings'>?</a></div>\n";
-            }
-        }
+        $result = $Conf->qe_raw("select sum((rating&" . ReviewInfo::RATING_GOODMASK . ")!=0), sum((rating&" . ReviewInfo::RATING_BADMASK . ")!=0) from PaperReview join ReviewRating using (reviewId) where PaperReview.contactId={$Me->contactId} $qx");
+        $row = edb_row($result);
+        Dbl::free($result);
+
+        $a = [];
+        if ($row[0])
+            $a[] = Ht::link(plural($row[0], "positive rating"), hoturl("search", "q=re:me+rate:good"));
+        if ($row[1])
+            $a[] = Ht::link(plural($row[1], "negative rating"), hoturl("search", "q=re:me+rate:bad"));
+        if (!empty($a))
+            echo '<div class="hint g">Your reviews have received ', commajoin($a), '.</div>';
     }
 
     if ($Me->has_review()) {
