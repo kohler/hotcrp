@@ -440,18 +440,16 @@ class Ht {
 
     static function xmsg($type, $content) {
         if (is_int($type))
-            $type = $type >= 2 ? "merror" : ($type > 0 ? "warning" : "info");
+            $type = $type >= 2 ? "error" : ($type > 0 ? "warning" : "info");
         if (substr($type, 0, 1) === "x")
             $type = substr($type, 1);
-        if ($type === "error")
-            $type = "merror";
+        if ($type === "merror")
+            $type = "error";
         if (is_array($content))
-            $content = join('</div><div class="xmsgc">', $content);
+            $content = '<p>' . join('</p><p>', $content) . '</p>';
         if ($content === "")
             return "";
-        return '<div class="xmsg x' . $type . '"><div class="xmsg0"></div>'
-            . '<div class="xmsgc">' . $content . '</div>'
-            . '<div class="xmsg1"></div></div>';
+        return '<div class="msg msg-' . $type . '">' . $content . '</div>';
     }
 
 

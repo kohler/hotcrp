@@ -823,11 +823,13 @@ function render_xmsg(status, msg) {
         msg = msg === "" ? [] : [msg];
     if (msg.length === 0)
         return '';
+    else if (msg.length === 1)
+        msg = msg[0];
+    else
+        msg = '<p>' + msg.join('</p><p>') + '</p>';
     if (status === 0 || status === 1 || status === 2)
-        status = ["info", "warning", "merror"][status];
-    return '<div class="xmsg x' + status + '"><div class="xmsg0"></div>' +
-        '<div class="xmsgc">' + msg.join('</div><div class="xmsgc">') +
-        '</div><div class="xmsg1"></div></div>';
+        status = ["info", "warning", "error"][status];
+    return '<div class="msg msg-' + status + '">' + msg + '</div>';
 }
 
 
@@ -3377,7 +3379,7 @@ function render_cmt(j, cj, editing, msg) {
     if (msg)
         hc.push(msg);
     else if (cj.response && cj.draft && cj.text)
-        hc.push('<div class="xmsg xwarning">This is a draft response. Reviewers won’t see it until you submit.</div>');
+        hc.push('<div class="msg msg-warning">This is a draft response. Reviewers won’t see it until you submit.</div>');
     hc.pop();
     if (editing)
         render_editing(hc, cj);
@@ -6233,7 +6235,7 @@ function save_pstags(evt) {
         method: "POST", data: $f.serialize(), timeout: 4000,
         success: function (data) {
             $f.find("input").prop("disabled", false);
-            $f.find(".xmerror").remove();
+            $f.find(".msg-error").remove();
             if (data.ok) {
                 foldup.call($f[0], null, {f: true});
                 var evt = new $.Event("hotcrptags");
@@ -6447,11 +6449,11 @@ handle_ui.on("js-edit-formulas", function () {
                 if (data.ok)
                     location.reload(true);
                 else {
-                    $d.find(".xmerror").remove();
+                    $d.find(".msg-error").remove();
                     $d.find(".editformulas").prepend($(render_xmsg(2, data.error)));
-                    $d.find(".error").removeClass("error");
+                    $d.find(".has-error").removeClass("has-error");
                     for (var f in data.errf || {}) {
-                        $d.find("input, textarea").filter("[name='" + f + "']").addClass("error");
+                        $d.find("input, textarea").filter("[name='" + f + "']").addClass("has-error");
                     }
                 }
             });

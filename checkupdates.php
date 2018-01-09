@@ -46,7 +46,7 @@ if ($Me->privChair && isset($_REQUEST["data"])
         if ($errid && $Conf->setting("ignoreupdate_$errid", 0) > time())
             $ok = false;
         if ($ok) {
-            $m = "<div class='xmerror'";
+            $m = "<div class='msg msg-error'";
             if ($errid)
                 $m .= " id='softwareupdate_$errid'";
             $m .= " style='font-size:smaller'><div class='dod'><strong>WARNING: Upgrade your HotCRP installation.</strong>";
