@@ -101,7 +101,7 @@ class SessionList {
         setcookie("hotlist-info", $this->info_string(), $Now + 20, Navigation::site_path());
     }
     function set_current_id($id) {
-        $this->id_position = array_search($id, $this->ids);
+        $this->id_position = $this->ids ? array_search($id, $this->ids) : false;
         return $this->id_position === false ? null : $this;
     }
     function neighbor_id($delta) {
