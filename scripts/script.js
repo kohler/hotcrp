@@ -6193,6 +6193,7 @@ function prepare_pstags() {
     }));
     $f.find("input[name=cancel]").on("click", function (evt) {
         $ta.val($ta.prop("defaultValue"));
+        $f.find(".msg-error").remove();
         foldup.call($ta[0], evt, {f: true});
     });
     $f.on("submit", save_pstags);
