@@ -398,7 +398,10 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	max-width: 800px;
 }
 .xmsgs-atbody {
-	margin: 12px -24px 24px;
+	margin: 12px 0 24px;
+}
+.xmsgs-atbody > .msg {
+	max-width: initial;
 }
 .leftmenu-content > .xmsg {
 	margin-left: -16px;
