@@ -2786,7 +2786,7 @@ $(function () {
 
 // reviews
 window.review_form = (function ($) {
-var formj, ratingsj, form_order;
+var formj, form_order;
 var rtype_info = {
     "-3": ["−" /* &minus; */, "Refused"], "-2": ["A", "Author"],
     "-1": ["C", "Conflict"], 1: ["E", "External review"],
@@ -2880,42 +2880,131 @@ function render_review_body(rrow) {
     return t;
 }
 
-function unparse_ratings(ratings) {
-    var ratetext = [], allrates = 0;
+function ratings_counts(ratings) {
+    var ct = [0, 0, 0, 0, 0, 0, 0];
     for (var i = 0; i < ratings.length; ++i) {
-        allrates |= ratings[i];
-    }
-    if (allrates) {
-        for (i = 0; i < ratingsj.order.length; ++i) {
-            var ratekey = ratingsj.order[i];
-            if (allrates & ratekey) {
-                var n = 0;
-                for (var j = 0; j < ratings.length; ++j) {
-                    if (ratings[j] & ratekey)
-                        ++n;
-                }
-                ratetext.push(n + " “" + ratingsj[ratekey] + "”");
-            }
+        for (var j = 0; ratings[i] >= (1 << j); ++j) {
+            ct[j] += ratings[i] & (1 << j) ? 1 : 0;
         }
     }
-    return ratetext.join(", ");
+    return ct;
 }
 
-function ratereviewform_change() {
-    var $form = $(this).closest("form"), $card = $form.closest(".revcard");
-    $.post(hoturl_post("api", {p: $card.attr("data-pid"), r: $card.attr("data-rid"),
+function unparse_ratings(ratings, user_rating, editable) {
+    if (!editable && !ratings.length) {
+        return "";
+    }
+    var ct = ratings_counts(ratings);
+
+    var rating_names = ["Good review", "Needs work", "Too short", "Too vague",
+                        "Too narrow", "Not constructive", "Not correct"];
+    var t = [];
+    t.push('<span class="revrating-group flag fn">'
+           + (editable ? '<a href="" class="qq ui js-revrating-unfold">' : '<a href="' + hoturl("help", {t: "revrate"}) + '" class="qq">')
+           + '&#x2691;</a></span>');
+    for (var i = 0; i < rating_names.length; ++i) {
+        if (editable) {
+            var klass = "revrating-choice", bklass = "";
+            if (!ct[i] && (i >= 2 || ratings.length))
+                klass += " fx";
+            if (user_rating && (user_rating & (1 << i)))
+                klass += " revrating-active";
+            if (user_rating
+                ? (user_rating & ((1 << (i + 1)) - 1)) === (1 << i)
+                : !i)
+                bklass += " want-focus";
+            t.push('<span class="' + klass + '" data-revrating-bit="' + i + '"><button class="ui js-revrating' + bklass + '">' + rating_names[i] + '</button><span class="ct">' + (ct[i] ? ' ' + ct[i] : '') + '</span></span>');
+        } else if (ct[i]) {
+            t.push('<span class="revrating-group">' + rating_names[i] + '<span class="ct"> ' + ct[i] + '</span></span>');
+        }
+    }
+
+    if (editable) {
+        t.push('<span class="revrating-group fn"><button class="ui js-foldup">…</button></span>');
+        return '<div class="revrating editable has-fold foldc ui js-revrating-unfold' + (user_rating === 2 ? ' want-revrating-generalize' : '') + '">'
+            + '<div class="f-c fx"><a href="' + hoturl("help", {t: "revrate"}) + '" class="qq">Review ratings <span class="n">(anonymous reviewer feedback)</span></a></div>'
+            + t.join(" ") + '</div>';
+    } else if (t) {
+        return '<div class="revrating">' + t.join(" ") + '</div>';
+    } else {
+        return "";
+    }
+}
+
+handle_ui.on("js-revrating-unfold", function (event) {
+    if (event.target === this)
+        foldup.call(this, null, {f: false});
+});
+
+handle_ui.on("js-revrating", function () {
+    var off = 0, on = 0, current = 0, $rr = $(this).closest(".revrating");
+    $rr.find(".revrating-choice").each(function () {
+        if (hasClass(this, "revrating-active"))
+            current |= 1 << this.getAttribute("data-revrating-bit");
+    });
+    var mygrp = this.parentNode;
+    if (hasClass(mygrp, "revrating-active")) {
+        off = 1 << mygrp.getAttribute("data-revrating-bit");
+    } else {
+        on = 1 << mygrp.getAttribute("data-revrating-bit");
+        off = on === 1 ? 126 : 1;
+        if (on >= 4 && $rr.hasClass("want-revrating-generalize"))
+            off |= 2;
+    }
+    if (current <= 1 && on === 2)
+        $rr.addClass("want-revrating-generalize");
+    else
+        $rr.removeClass("want-revrating-generalize");
+    if (on === 2) {
+        $rr.find(".want-focus").removeClass("want-focus");
+        addClass(mygrp, "want-focus");
+        fold($rr[0], false);
+    }
+    var $card = $(this).closest(".revcard");
+    $.post(hoturl_post("api", {p: $card.attr("data-pid"), r: $card.data("rid"),
                                fn: "reviewrating"}),
-        $form.serialize(),
+        {user_rating: (current & ~off) | on},
         function (data, status, jqxhr) {
             var result = data && data.ok ? "Feedback saved." : (data && data.error ? data.error : "Internal error.");
-            $form.find(".result").remove();
-            $form.find("div.inline").append('<span class="result"> &nbsp;<span class="barsep">·</span>&nbsp; ' + result + '</span>');
-            if (data && data.ratings) {
-                var $p = $form.parent(), t = unparse_ratings(data.ratings);
-                $p.find(".rev_rating_data").html(t);
-                $p.find(".rev_rating_summary").toggle(!!data.ratings.length);
+            if (data && "user_rating" in data) {
+                $rr.find(".revrating-choice").each(function () {
+                    var bit = this.getAttribute("data-revrating-bit");
+                    toggleClass(this, "revrating-active", data.user_rating & (1 << bit));
+                });
+            }
+            if (data && "ratings" in data) {
+                var ct = ratings_counts(data.ratings);
+                $rr.find(".revrating-choice").each(function () {
+                    var bit = this.getAttribute("data-revrating-bit");
+                    if (ct[bit]) {
+                        this.lastChild.innerText = " " + ct[bit];
+                        removeClass(this, "fx");
+                    } else {
+                        this.lastChild.innerText = "";
+                        bit >= 2 && addClass(this, "fx");
+                    }
+                });
             }
         });
+});
+
+function revrating_key(event) {
+    var k = event_key(event);
+    if ((k === "ArrowLeft" || k === "ArrowRight") && !event_modkey(event)) {
+        foldup.call(this, null, {f: false});
+        var wantbit = $(this).closest(".revrating-choice").attr("data-revrating-bit");
+        if (wantbit != null) {
+            if (k === "ArrowLeft" && wantbit > 0)
+                --wantbit;
+            else if (k === "ArrowRight" && wantbit < 6)
+                ++wantbit;
+            $(this).closest(".revrating").find(".revrating-choice").each(function () {
+                if (this.getAttribute("data-revrating-bit") == wantbit)
+                    this.firstChild.focus();
+            });
+        }
+        event.preventDefault();
+    }
 }
 
 function add_review(rrow) {
@@ -2964,50 +3053,25 @@ function add_review(rrow) {
         hc.push(' <span class="revinfo">' + revinfo.join(' <span class="barsep">·</span> ') + '</span>');
     }
 
-    // ratings
-    has_user_rating = "user_rating" in rrow;
-    var rateinfo = [];
-    if ((rrow.ratings && rrow.ratings.length) || has_user_rating) {
-        var ratetext = unparse_ratings(rrow.ratings || []);
-        rateinfo.push('<span class="rev_rating_summary">Ratings: <span class="rev_rating_data">' + ratetext + '</span>' + (has_user_rating ? ' <span class="barsep">·</span> ' : '') + '</span>');
-    }
-    if (has_user_rating) {
-        var rhc = new HtmlCollector;
-        rhc.push('<form method="post" class="ratereviewform"><div class="inline">', '</div></form>');
-        rhc.push('How helpful is this review? &nbsp;');
-        rhc.push('<select name="rating">', '</select>');
-        for (i = 0; i !== ratingsj.order.length; ++i) {
-            ratekey = ratingsj.order[i];
-            selected = ratekey === (rrow.user_rating || 0);
-            rhc.push('<option value="' + ratekey + '"' + (selected ? ' selected="selected"' : '') + '>' + ratingsj[ratekey] + '</option>');
-        }
-        rhc.pop_n(2);
-        rhc.push(' <span class="barsep">·</span> ');
-        rhc.push('<a href="' + hoturl_html("help", "t=revrate") + '">What is this?</a>');
-        rateinfo.push(rhc.render());
-    }
-    if (rateinfo.length) {
-        hc.push('<div class="rev_rating">', '</div>');
-        hc.push_pop(rateinfo.join(""));
-    }
-
     if (rrow.message_html)
         hc.push('<div class="hint">' + rrow.message_html + '</div>');
-
     hc.push_pop('<hr class="c">');
 
     // body
     hc.push('<div class="revcard_body">', '</div>');
     hc.push_pop(render_review_body(rrow));
 
+    // ratings
+    has_user_rating = "user_rating" in rrow;
+    if ((rrow.ratings && rrow.ratings.length) || has_user_rating) {
+        hc.push('<div class="revcard_rating">', '</div>');
+        hc.push(unparse_ratings(rrow.ratings || [], rrow.user_rating || 0, has_user_rating));
+    }
+
     // complete render
     var $j = $(hc.render()).appendTo($("#body"));
-    if (has_user_rating) {
-        $j.find(".ratereviewform select").change(ratereviewform_change);
-        $j.find(".ratereviewform").on("submit", ratereviewform_change);
-        if (!rrow.ratings || !rrow.ratings.length)
-            $j.find(".rev_rating_summary").hide();
-    }
+    if (has_user_rating)
+        $j.find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
     score_header_tooltips($j);
 }
 
@@ -3024,9 +3088,6 @@ return {
         }
         form_order = $.map(formj, function (v) { return v; });
         form_order.sort(function (a, b) { return a.position - b.position; });
-    },
-    set_ratings: function (j) {
-        ratingsj = j;
     },
     add_review: add_review
 };

@@ -4,28 +4,24 @@
 
 class RevRate_HelpTopic {
     static function render($hth) {
-        echo "<p>PC members and, optionally, external reviewers can rate one another’s
-reviews.  We hope this feedback will help reviewers improve the quality of
-their reviews.  The interface appears above each visible review:</p>
-
-<p><div class='rev_rating'>
-  How helpful is this review? &nbsp;<form class><div class=\"inline\">",
-            Ht::select("rating", ReviewInfo::$rating_options, "n"),
-            "</div></form>
-</div></p>
+        $what = "PC members";
+        if ($hth->conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
+            $what = "PC members and external reviewers";
+        echo "<p>{$what} can anonymously rate one another’s
+reviews. We hope this feedback will help reviewers improve the quality of
+their reviews.</p>
 
 <p>When rating a review, please consider its value for both the program
   committee and the authors.  Helpful reviews are specific, clear, technically
-  focused, and, when possible, provide direction for the authors’ future work.
+  focused, and provide direction for the authors’ future work.
   The rating options are:</p>
 
 <dl>
-<dt><strong>Average</strong></dt>
-<dd>The review has acceptable quality.  This is the default, and should be
-  used for most reviews.</dd>
-<dt><strong>Very helpful</strong></dt>
-<dd>Great review.  Thorough, clear, constructive, and gives
-  good ideas for next steps.</dd>
+<dt><strong>Good review</strong></dt>
+<dd>Thorough, clear, constructive, and gives good ideas for next steps.</dd>
+<dt><strong>Needs work</strong></dt>
+<dd>The review needs revision. If possible, indicate why using a more-specific
+rating.</dd>
 <dt><strong>Too short</strong></dt>
 <dd>The review is incomplete or too terse.</dd>
 <dt><strong>Too vague</strong></dt>
@@ -41,9 +37,9 @@ their reviews.  The interface appears above each visible review:</p>
 <dd>The review misunderstands the paper.</dd>
 </dl>
 
-<p>HotCRP reports the numbers of non-average ratings for each review.
+<p>HotCRP reports aggregate ratings for each review.
   It does not report who gave the ratings, and it
-  never shows rating counts to authors.</p>
+  never shows review ratings to authors.</p>
 
 <p>To find which of your reviews might need work, simply ",
 $hth->search_link("search for “rate:bad”", "rate:bad"), ".

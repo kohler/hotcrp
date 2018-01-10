@@ -502,12 +502,6 @@ class ReviewForm implements JsonSerializable {
     }
 
 
-    function unparse_rating_types_json() {
-        $rt = ReviewInfo::$rating_options;
-        $rt["order"] = array_keys(ReviewInfo::$rating_options);
-        return $rt;
-    }
-
     private function format_info($rrow) {
         $format = $rrow ? $rrow->reviewFormat : null;
         if ($format === null)

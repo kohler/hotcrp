@@ -56,8 +56,9 @@ class ReviewInfo {
 
     const RATING_GOODMASK = 1;
     const RATING_BADMASK = 126;
+    // See also script.js:unparse_ratings
     static public $rating_options = [
-        0 => "average", 1 => "very helpful",
+        1 => "good review", 2 => "needs work",
         4 => "too short", 8 => "too vague", 16 => "too narrow",
         32 => "not constructive", 64 => "not correct"
     ];

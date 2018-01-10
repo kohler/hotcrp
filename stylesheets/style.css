@@ -1485,6 +1485,60 @@ div.formatdescription {
 	margin: 0;
 }
 
+.revrating {
+	padding: 4px 12px 0;
+}
+.revrating.editable {
+	padding-left: 7px;
+}
+.revrating > .f-c {
+	padding-left: 5px;
+}
+.revrating-group.flag {
+	padding-right: 0.333em;
+}
+.revrating.editable > .revrating-group.flag {
+	padding-left: 5px;
+	padding-right: 0;
+}
+.revrating-choice > button, .revrating-group > button {
+	border-radius: 4px;
+	display: inline-block;
+	border: 1px solid transparent;
+	background: transparent;
+	padding: 0 4px 1px;
+	font-family: inherit;
+	font-size: 100%;
+	white-space: nowrap;
+	text-indent: 0;
+	color: inherit;
+}
+.revrating-active > button {
+	border: 1px solid #6b73b5;
+	background: #8089d1;
+	background-image: linear-gradient(#9ca3d6, #8089d1);
+	border: 1px solid #cc0000;
+	background: #ff0000;
+	background-image: linear-gradient(#ff4040, #ff0000);
+	color: white;
+}
+.revrating-choice:hover > button, .revrating-group:hover > button {
+	color: #c45500;
+}
+.revrating-choice, .revrating-group {
+	white-space: nowrap;
+}
+.revrating-choice > .ct, .revrating-group > .ct {
+	display: inline-block;
+	padding-left: 0.8em;
+	min-width: 2em;
+	font-weight: bold;
+	font-size: 92%;
+}
+.revrating-choice > .ct {
+	padding-left: 0.333em;
+}
+
 h2 {
 	margin-top: 0;
 	font-size: larger;
@@ -2950,16 +3004,6 @@ body#offline .revcard {
 	margin-left: 2rem;
 }
 }
-
-/* review ratings */
-.rev_rating {
-	font-size: 69%;
-	padding: 0.4em 0.8em 0.4em 0;
-}
-.rev_rating_summary {
-	font-weight: bold;
-}
-
 
 /* comments */
 .cmtcard {
