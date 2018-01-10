@@ -26,17 +26,21 @@ function serialize_object(x) {
 if (!window.JSON || !window.JSON.parse)
     window.JSON = {parse: $.parseJSON};
 
-var hasClass, addClass, removeClass, classList;
+var hasClass, addClass, removeClass, toggleClass, classList;
 if ("classList" in document.createElement("span")
     && !/MSIE|rv:11\.0/.test(navigator.userAgent || "")) {
     hasClass = function (e, k) {
-        return e.classList.contains(k);
+        var l = e.classList;
+        return l && l.contains(k);
     };
     addClass = function (e, k) {
         e.classList.add(k);
     };
     removeClass = function (e, k) {
         e.classList.remove(k);
+    };
+    toggleClass = function (e, k, v) {
+        e.classList.toggle(k, v);
     };
     classList = function (e) {
         return e.classList;
@@ -50,6 +54,9 @@ if ("classList" in document.createElement("span")
     };
     removeClass = function (e, k) {
         $(e).removeClass(k);
+    };
+    toggleClass = function (e, k, v) {
+        $(e).toggleClass(k, v);
     };
     classList = function (e) {
         var k = $.trim(e.className);
@@ -2026,8 +2033,7 @@ function hiliter(elt, off) {
         elt = document.getElementById(elt);
     else if (!elt || elt.preventDefault)
         elt = this;
-    while (elt && elt.tagName
-           && (elt.tagName != "DIV" || !hasClass(elt, "aahc")))
+    while (elt && (elt.tagName !== "DIV" || !hasClass(elt, "aahc")))
         elt = elt.parentNode;
     if (elt && elt.tagName) {
         removeClass(elt, "alert");
@@ -2159,8 +2165,9 @@ function foldup(event, opts) {
         && this.tagName === "INPUT"
         && input_is_checkboxlike(this))
         opts.f = !this.checked;
-    while (e && (!e.id || e.id.substr(0, 4) != "fold") && !hasClass(e, "has-fold"))
+    while (e && (!e.id || e.id.substr(0, 4) != "fold") && !hasClass(e, "has-fold")) {
         e = e.parentNode;
+    }
     if (!e)
         return true;
     if (!opts.n && (m = e.className.match(/\bfold(\d*)[oc]\b/)))
