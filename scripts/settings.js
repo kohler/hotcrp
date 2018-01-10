@@ -249,34 +249,6 @@ function option_class_prefix(fieldj) {
     return sv;
 }
 
-function check_change(fid) {
-    var fieldj = original[fid] || {}, j, sv;
-    function ch(why) {
-        hiliter("reviewform_container");
-        return true;
-    }
-    if ($.trim($("#shortName_" + fid).val()) != fieldj.name)
-        return ch("shortName");
-    if ($("#order_" + fid).val() != (fieldj.position || 0))
-        return ch("order");
-    if (!text_eq($("#description_" + fid).val(), fieldj.description))
-        return ch("description");
-    if ($("#authorView_" + fid).val() != (fieldj.visibility || "pc"))
-        return ch("authorView");
-    if (!text_eq($.trim($("#options_" + fid).val()), $.trim(options_to_text(fieldj))))
-        return ch("options");
-    if ((j = $("#option_class_prefix_" + fid)) && j.length
-        && j.val() != option_class_prefix(fieldj))
-        return ch("option_class_prefix");
-    if (($("#round_list_" + fid).val() || "") != (fieldj.round_list || []).join(" "))
-        return ch("round_list");
-    return false;
-}
-
-function check_this_change() {
-    check_change(get_fid(this));
-}
-
 function fill_order() {
     var i, c = $("#reviewform_container")[0], n;
     for (i = 1, n = c.firstChild; n; ++i, n = n.nextSibling)
@@ -284,6 +256,7 @@ function fill_order() {
     c = $("#reviewform_removedcontainer")[0];
     for (n = c.firstChild; n; n = n.nextSibling)
         $(n).find(".revfield_order").val(0);
+    form_highlight("#settingsform");
 }
 
 function fill_field1(sel, value, order) {
@@ -304,7 +277,6 @@ function fill_field(fid, fieldj, order) {
     $("#revfield_" + fid + " textarea").trigger("change");
     $("#revfieldview_" + fid).html("").append(create_field_view(fid, fieldj));
     $("#remove_" + fid).html(fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
-    check_change(fid);
     return false;
 }
 
@@ -313,7 +285,6 @@ function remove() {
         fid = $f.attr("data-revfield");
     $f.find(".revfield_order").val(0);
     $f.detach().hide().appendTo("#reviewform_removedcontainer");
-    check_change(fid);
     $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings-revfieldremoved"><span class="settings-revfn" style="text-decoration:line-through">' + escape_entities($f.find("#shortName_" + fid).val()) + '</span>&nbsp; (field removed)</div>');
     fill_order();
 }
@@ -456,7 +427,6 @@ function move_field(event) {
         /* nada */;
     $c.insertBefore($f[0], $n);
     fill_order();
-    check_change(fid);
 }
 
 function append_field(fid, pos) {
@@ -502,7 +472,6 @@ function append_field(fid, pos) {
 
     $f.find(".revfield_remove").on("click", remove);
     $f.find(".revfield_moveup, .revfield_movedown").on("click", move_field);
-    $f.find("input, textarea, select").on("change input", check_this_change);
     $f.appendTo("#reviewform_container");
 
     fill_field(fid, original[fid], true);
@@ -543,7 +512,6 @@ function rfs(data) {
         $j = $("#" + i);
         if (!text_eq($j.val(), data.req[i])) {
             $j.val(data.req[i]);
-            hiliter("reviewform_container");
             foldup.call($j[0], null, {n: 2, f: false});
         }
     }
@@ -554,6 +522,7 @@ function rfs(data) {
         $j.addClass("has-error");
         foldup.call($j[0], null, {n: 2, f: false});
     }
+    form_highlight("#settingsform");
 };
 
 function add_field(fid) {
@@ -562,7 +531,8 @@ function add_field(fid) {
     original[fid].position = fieldorder.length;
     append_field(fid, fieldorder.length);
     foldup.call($("#revfield_" + fid)[0], null, {n: 2, f: false});
-    hiliter("reviewform_container");
+    $("#order_" + fid).attr("data-default-value", "0");
+    form_highlight("#settingsform");
     return true;
 }
 
