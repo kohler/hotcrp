@@ -33,6 +33,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
     $hideUnviewable = ($cflttype > 0 && !$admin)
         || (!$Me->act_pc($prow) && !$conf->setting("extrev_view"));
     $show_colors = $Me->can_view_reviewer_tags($prow);
+    $show_ratings = $Me->can_view_review_ratings($prow);
     $tagger = $show_colors ? new Tagger($Me) : null;
     $xsep = ' <span class="barsep">·</span> ';
     $want_scores = $mode !== "assign" && $mode !== "edit" && $mode !== "re";
@@ -84,17 +85,29 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 $id = "Your $id";
             $t .= '<a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '" class="q"><b>' . $id . '</b></a>';
         } else if (!$canView
-                   || ($rr->reviewModified <= 1 && !$Me->can_review($prow, $rr)))
+                   || ($rr->reviewModified <= 1 && !$Me->can_review($prow, $rr))) {
             $t .= $id;
-        else if ($rrow
-                 || $rr->reviewModified <= 1
-                 || (($mode === "re" || $mode === "assign")
-                     && $Me->can_review($prow, $rr)))
+        } else if ($rrow
+                   || $rr->reviewModified <= 1
+                   || (($mode === "re" || $mode === "assign")
+                       && $Me->can_review($prow, $rr))) {
             $t .= '<a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '">' . $id . '</a>';
-        else if (Navigation::page() !== "paper")
+        } else if (Navigation::page() !== "paper") {
             $t .= '<a href="' . hoturl("paper", "p=$prow->paperId#r$rlink") . '">' . $id . '</a>';
-        else
+        } else {
             $t .= '<a href="#r' . $rlink . '">' . $id . '</a>';
+            if ($show_ratings
+                && $Me->can_view_review_ratings($prow, $rr)
+                && ($ratings = $rr->ratings())) {
+                $all = 0;
+                foreach ($ratings as $r)
+                    $all |= $r;
+                if ($all & 126)
+                    $t .= " &#x2691;";
+                else if ($all & 1)
+                    $t .= " &#x2690;";
+            }
+        }
         $t .= '</td>';
 
         // primary/secondary glyph
