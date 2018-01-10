@@ -212,7 +212,7 @@ echo Ht::radio("kind", "a", $qreq->kind == "a"),
     "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
 
 echo '<tr><td colspan="2"><div class="aab aabr">',
-    '<div class="aabut">', Ht::submit("Go", ["class" => "btn btn-default"]), '</div>',
+    '<div class="aabut">', Ht::submit("Go", ["class" => "btn btn-primary"]), '</div>',
     '</div></td></tr>',
     "</table>\n</div></form></div></td></tr></table>\n";
 

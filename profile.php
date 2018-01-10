@@ -871,7 +871,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 }
 
 
-$buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-default"]),
+$buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-primary"]),
     Ht::submit("cancel", "Cancel", ["class" => "btn"])];
 
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {

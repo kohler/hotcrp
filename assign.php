@@ -528,7 +528,7 @@ if ($Me->can_administer($prow)) {
 
     echo "</div>\n",
         '<div class="aab aabr aabig">',
-        '<div class="aabut">', Ht::submit("update", "Save assignments", ["class" => "btn btn-default"]), '</div>',
+        '<div class="aabut">', Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]), '</div>',
         '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
         '<div id="assresult" class="aabut"></div>',
         '</div>',
@@ -572,7 +572,7 @@ if (strpos($reqbody["body"], "%REASON%") !== false) {
 }
 
 echo "<div class='f-i'>\n",
-    Ht::submit("add", "Request review", ["class" => "btn btn-default"]),
+    Ht::submit("add", "Request review", ["class" => "btn btn-primary"]),
     "</div>\n\n";
 
 

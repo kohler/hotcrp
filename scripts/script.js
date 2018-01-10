@@ -810,7 +810,7 @@ function hoturl_go(page, options) {
 }
 
 function hoturl_post_go(page, options) {
-    var $form = $('<form method="POST" enctype="multipart/form-data" accept-charset="UTF-8"><div><input type="hidden" name="____empty____" value="1" /></div></form>');
+    var $form = $('<form method="POST" enctype="multipart/form-data" accept-charset="UTF-8"><div><input type="hidden" name="____empty____" value="1"></div></form>');
     $form[0].action = hoturl_post(page, options);
     $form.appendTo(document.body);
     $form.submit();
@@ -1628,7 +1628,7 @@ function tracker_html(mytracker) {
             t += "</tr><tr class=\"tracker" + i + "\">" + tracker_paper_columns(i, dl.tracker.papers[i]);
         t += "</tr></tbody></table>";
     }
-    return t + '<hr class="c" />';
+    return t + '<hr class="c">';
 }
 
 function display_tracker() {
@@ -2346,7 +2346,7 @@ function make_radio(name, value, html, revtype) {
         t += ' want-focus" checked';
     else
         t += '"';
-    t += ' />&nbsp;<label for="' + id + '">';
+    t += '>&nbsp;<label for="' + id + '">';
     if (value != 0)
         t += '<span class="rto rt' + value + '"><span class="rti">' + ["C", "", "E", "P", "2", "1", "M"][value + 1] + '</span></span>&nbsp;';
     if (value == revtype)
@@ -2856,26 +2856,29 @@ function render_review_body(rrow) {
         if (last_display != 1 && f.options && nextf && nextf.options) {
             display = 1;
             t += '<div class="rvg">';
-        } else
+        } else {
             display = last_display == 1 ? 2 : 0;
+        }
 
         t += '<div class="rv rv' + "glr".charAt(display) + '" data-rf="' + f.uid +
             '"><div class="revvt"><div class="revfn">' + f.name_html;
-        if (f.visibility != "au" && f.visibility != "audec")
+        if (f.visibility != "au" && f.visibility != "audec") {
             t += '<div class="revvis">(' +
                 (({secret: "secret", admin: "shown only to chairs",
                    pc: "hidden from authors"})[f.visibility] || f.visibility) +
                 ')</div>';
+        }
         t += '</div></div><div class="revv revv' + "glr".charAt(display);
 
         if (!f.options) {
             x = render_text(rrow.format, rrow[f.uid], f.uid);
             t += ' revtext format' + (x.format || 0) + '">' + x.content;
-        } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid])))
+        } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid]))) {
             t += '"><table><tr><td class="nw">' + f.score_info.unparse_revnum(x) +
                 "&nbsp;</td><td>" + escape_entities(f.options[x - 1]) + "</td></tr></table>";
-        else
+        } else {
             t += ' rev_unknown">' + (f.allow_empty ? "No entry" : "Unknown");
+        }
 
         t += '</div></div>';
         if (display == 2)
@@ -2938,7 +2941,7 @@ function add_review(rrow) {
     // edit/text links
     if (rrow.editable)
         hc.push('<div class="floatright"><a class="xx" href="' + hoturl_html("review", rlink) + '">'
-                + '<img class="b" src="' + assetsurl + 'images/edit48.png" alt="[Edit]" width="16" height="16" />'
+                + '<img class="b" src="' + assetsurl + 'images/edit48.png" alt="[Edit]" width="16" height="16">'
                 + '&nbsp;<u>Edit</u></a></div>');
 
     hc.push('<h3><a class="u" href="' + hoturl_html("review", rlink) + '">'
@@ -2947,24 +2950,27 @@ function add_review(rrow) {
     // author info
     var revinfo = [], rtype_text = "";
     if (rrow.rtype) {
-        rtype_text = ' &nbsp;<span class="rto rt' + rrow.rtype + (rrow.submitted ? "" : "n") +
-            '" title="' + rtype_info[rrow.rtype][1] + '"><span class="rti">' +
-            rtype_info[rrow.rtype][0] + '</span></span>';
+        rtype_text = ' &nbsp;<span class="rto rt' + rrow.rtype +
+            (rrow.submitted ? "" : "n") + '" title="' + rtype_info[rrow.rtype][1] +
+            '"><span class="rti">' + rtype_info[rrow.rtype][0] + '</span></span>';
         if (rrow.round)
             rtype_text += '&nbsp;<span class="revround">' + escape_entities(rrow.round) + '</span>';
     }
-    if (rrow.review_token)
+    if (rrow.review_token) {
         revinfo.push('Review token ' + rrow.review_token + rtype_text);
-    else if (rrow.reviewer && rrow.blind)
+    } else if (rrow.reviewer && rrow.blind) {
         revinfo.push('[' + rrow.reviewer + ']' + rtype_text);
-    else if (rrow.reviewer)
+    } else if (rrow.reviewer) {
         revinfo.push(rrow.reviewer + rtype_text);
-    else if (rtype_text)
+    } else if (rtype_text) {
         revinfo.push(rtype_text.substr(7));
-    if (rrow.modified_at)
+    }
+    if (rrow.modified_at) {
         revinfo.push('Updated ' + rrow.modified_at_text);
-    if (revinfo.length)
+    }
+    if (revinfo.length) {
         hc.push(' <span class="revinfo">' + revinfo.join(' <span class="barsep">·</span> ') + '</span>');
+    }
 
     // ratings
     has_user_rating = "user_rating" in rrow;
@@ -2996,9 +3002,9 @@ function add_review(rrow) {
     if (rrow.message_html)
         hc.push('<div class="hint">' + rrow.message_html + '</div>');
 
-    hc.push_pop('<hr class="c" />');
+    hc.push_pop('<hr class="c">');
 
-    // BODY
+    // body
     hc.push('<div class="revcard_body">', '</div>');
     hc.push_pop(render_review_body(rrow));
 
@@ -3131,7 +3137,7 @@ function render_editing(hc, cj) {
         bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form class="shortcutok"><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
     if (cj.review_token)
-        hc.push('<input type="hidden" name="review_token" value="' + escape_entities(cj.review_token) + '" />');
+        hc.push('<input type="hidden" name="review_token" value="' + escape_entities(cj.review_token) + '">');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
     if (fmt.has_preview)
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
@@ -3161,7 +3167,7 @@ function render_editing(hc, cj) {
         hc.push('<div class="fx2 hint">', '</div>');
         if (hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true) {
             var idctr = hc.next_htctl_id();
-            hc.push('<input type="checkbox" name="blind" value="1" id="' + idctr + '" />&nbsp;<label for="' + idctr + '">Anonymous to authors</label><br />\n');
+            hc.push('<input type="checkbox" name="blind" value="1" id="' + idctr + '">&nbsp;<label for="' + idctr + '">Anonymous to authors</label><br>\n');
         }
         hc.push(au_description);
         hc.pop_n(2);
@@ -3172,16 +3178,16 @@ function render_editing(hc, cj) {
         hc.pop(2);
 
         // actions
-        actions.push('<button type="button" name="bsubmit" class="btn btn-default">Save</button>' + bnote);
+        actions.push('<button type="button" name="bsubmit" class="btn btn-primary">Save</button>' + bnote);
     } else {
         // actions
         // XXX allow_administer
         if (cj.response) {
-            hc.push('<input type="hidden" name="response" value="' + cj.response + '" />');
+            hc.push('<input type="hidden" name="response" value="' + cj.response + '">');
             if (cj.is_new || cj.draft)
                 actions.push('<button type="button" name="savedraft" class="btn">Save draft</button>' + bnote);
         }
-        actions.push('<button type="button" name="bsubmit" class="btn btn-default">Submit</button>' + bnote);
+        actions.push('<button type="button" name="bsubmit" class="btn btn-primary">Submit</button>' + bnote);
     }
     actions.push('<button type="button" name="cancel" class="btn">Cancel</button>');
     if (!cj.is_new) {
@@ -3266,7 +3272,7 @@ function save_editor(elt, action, really) {
     }
     $f.find("input[name=draft]").remove();
     if (action === "savedraft")
-        $f.children("div").append('<input type="hidden" name="draft" value="1" />');
+        $f.children("div").append('<input type="hidden" name="draft" value="1">');
     var carg = {p: hotcrp_paperid};
     if ($c.c.cid)
         carg.c = $c.c.cid;
@@ -5049,7 +5055,7 @@ function edit_anno(locator) {
     function ondeleteclick() {
         var $div = $(this).closest(".settings-revfield"), annoid = $div.attr("data-anno-id");
         $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
-        $div.append('<input type="hidden" name="deleted_' + annoid + '" value="1" />');
+        $div.append('<input type="hidden" name="deleted_' + annoid + '" value="1">');
         $div.find("input[name='heading_" + annoid + "']").prop("disabled", true);
         tooltip.erase.call(this);
         $(this).remove();
@@ -5069,8 +5075,8 @@ function edit_anno(locator) {
         if (annoid == null)
             annoid = "n" + (last_newannoid += 1);
         hc.push('<div class="settings-revfield" data-anno-id="' + annoid + '"><table><tbody>', '</tbody></table></div>');
-        hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32" /></td></tr>');
-        hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" />', '</td></tr>');
+        hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32"></td></tr>');
+        hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5">', '</td></tr>');
         if (anno.annoid)
             hc.push(' <a class="ui closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete group">x</a>');
         hc.pop_n(2);
@@ -5086,7 +5092,7 @@ function edit_anno(locator) {
             add_anno(hc, annos[i]);
         hc.pop();
         hc.push('<div class="g"><button type="button" name="add" class="btn">Add group</button></div>');
-        hc.push_actions(['<button type="submit" name="save" class="btn btn-default">Save changes</button>', '<button type="button" name="cancel" class="btn">Cancel</button>']);
+        hc.push_actions(['<button type="submit" name="save" class="btn btn-primary">Save changes</button>', '<button type="button" name="cancel" class="btn">Cancel</button>']);
         $d = hc.show();
         for (var i = 0; i < annos.length; ++i) {
             $d.find("input[name='heading_" + annos[i].annoid + "']").val(annos[i].heading);
@@ -5216,7 +5222,7 @@ function override_deadlines(callback) {
     var djq = $('<div class="popupbg"><div class="popupo"><p>'
                 + (ejq.attr("data-override-text") || "Are you sure you want to override the deadline?")
                 + '</p><form><div class="popup-actions">'
-                + '<button type="button" name="bsubmit" class="btn btn-default"></button>'
+                + '<button type="button" name="bsubmit" class="btn btn-primary"></button>'
                 + '<button type="button" name="cancel" class="btn">Cancel</button>'
                 + '</div></form></div></div>');
     djq.find("button[name=cancel]").on("click", function () {
@@ -5229,7 +5235,7 @@ function override_deadlines(callback) {
             callback();
         else {
             var fjq = ejq.closest("form");
-            fjq.children("div").first().append('<input type="hidden" name="' + ejq.attr("data-override-submit") + '" value="1" /><input type="hidden" name="override" value="1" />');
+            fjq.children("div").first().append('<input type="hidden" name="' + ejq.attr("data-override-submit") + '" value="1"><input type="hidden" name="override" value="1">');
             fjq.addClass("submitting");
             fjq[0].submit();
         }
@@ -5899,7 +5905,7 @@ function transfer_form_values($dst, $src, names) {
             $d.remove();
         else {
             if (!$d.length)
-                $d = $('<input type="hidden" name="' + n + '" />').appendTo($dst);
+                $d = $('<input type="hidden" name="' + n + '">').appendTo($dst);
             $d.val(v);
         }
     }
@@ -5911,8 +5917,8 @@ handle_ui.on("js-forgot-password", function (event) {
     var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "forgot"}), maxWidth: "25rem"});
     hc.push('<p>Enter your email and we’ll send you instructions for signing in.</p>');
     hc.push('<div class="f-i"><label class="f-c" for="forgotpassword_email">Email</label>', '</div>');
-    hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="username" id="forgotpassword_email" />');
-    hc.push_actions(['<button type="submit" class="btn btn-default">Reset password</button>',
+    hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="username" id="forgotpassword_email">');
+    hc.push_actions(['<button type="submit" class="btn btn-primary">Reset password</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);
@@ -5923,8 +5929,8 @@ handle_ui.on("js-create-account", function (event) {
     hc.push('<h2>Create account</h2>');
     hc.push('<p>Enter your email and we’ll create an account and send you an initial password.</p>')
     hc.push('<div class="f-i"><label class="f-c" for="createaccount_email">Email</label>', '</div>');
-    hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="email" id="createaccount_email" />');
-    hc.push_actions(['<button type="submit" class="btn btn-default">Create account</button>',
+    hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="email" id="createaccount_email">');
+    hc.push_actions(['<button type="submit" class="btn btn-primary">Create account</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);
@@ -5985,14 +5991,14 @@ handle_ui.on("js-add-attachment", function () {
         });
     } while (name === false);
     var $na = $('<div class="has-document document-new-instance hidden" data-document-name="' + name + '">'
-        + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="document-uploader" /></div>'
+        + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="document-uploader"></div>'
         + '<div class="document-stamps"></div>'
         + '<div class="document-actions"><a href="" class="ui js-remove-document document-action">Delete</a></div>'
         + '</div>');
     $ei.length ? $na.insertAfter($ei[$ei.length - 1]) : $na.prependTo($ea);
     $na.find("input[type=file]").on("change", function () {
         $(this).closest(".has-document").removeClass("hidden");
-        $ea.append('<input type="hidden" name="has_' + name + '" value="1" />');
+        $ea.append('<input type="hidden" name="has_' + name + '" value="1">');
     })[0].click();
 });
 
@@ -6022,7 +6028,7 @@ handle_ui.on("js-remove-document", function (event) {
         $ei.remove();
     } else {
         if (!$r.length)
-            $r = $('<input type="hidden" class="document-remover" name="remove_' + $ei.data("documentName") + '" data-default-value="" value="1" />').appendTo($ei.find(".document-actions"));
+            $r = $('<input type="hidden" class="document-remover" name="remove_' + $ei.data("documentName") + '" data-default-value="" value="1">').appendTo($ei.find(".document-actions"));
         $r.val(1);
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
@@ -6044,7 +6050,7 @@ handle_ui.on("js-withdraw", function (event) {
     hc.push('<textarea name="reason" rows="3" cols="40" style="width:99%" placeholder="Optional explanation" spellcheck="true"></textarea>');
     if (!this.hasAttribute("data-withdrawable")) {
         var idctr = hc.next_htctl_id();
-        hc.push('<div><input type="checkbox" name="override" value="1" id="' + idctr + '" />&nbsp;<label for="' + idctr + '">Override deadlines</label></div>');
+        hc.push('<div><input type="checkbox" name="override" value="1" id="' + idctr + '">&nbsp;<label for="' + idctr + '">Override deadlines</label></div>');
     }
     hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn">Withdraw</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
@@ -6298,7 +6304,7 @@ function save_pstagindex(event) {
         if (data.ok)
             $s.delay(1000).fadeOut();
         if (message.length) {
-            make_bubble(message.join("<br />"), "errorbubble").dir("l")
+            make_bubble(message.join("<br>"), "errorbubble").dir("l")
                 .near($(inputs[0]).is(":visible") ? inputs[0] : $f.find(".psfn")[0])
                 .removeOn($f.find("input"), "input")
                 .removeOn(document.body, "fold");
@@ -6397,7 +6403,7 @@ handle_ui.on("js-decline-review", function () {
         hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
     hc.push('<textarea name="reason" rows="3" cols="40" style="width:99%" placeholder="Optional explanation" spellcheck="true"></textarea>');
-    hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn btn-default">Decline review</button>',
+    hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn btn-primary">Decline review</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
     hc.show();
 });
@@ -6422,13 +6428,13 @@ handle_ui.on("js-edit-formulas", function () {
         if (f.editable) {
             hc.push('<div style="float:right"><a class="ui closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete formula">x</a></div>');
             hc.push('<textarea class="editformulas-name" name="formulaname_' + nformulas + '" rows="1" cols="60" style="width:37.5rem;width:calc(99% - 2.5em)">' + escape_entities(f.name) + '</textarea>');
-            hc.push('<hr class="c" />');
+            hc.push('<hr class="c">');
         } else
             hc.push(escape_entities(f.name));
         hc.push('</div><div class="f-i"><div class="f-c">Expression</div>');
         if (f.editable)
             hc.push('<textarea class="editformulas-expression" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(f.expression) + '</textarea>')
-                .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '" />');
+                .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '">');
         else
             hc.push(escape_entities(f.expression));
         hc.push_pop('</div>');
@@ -6447,7 +6453,7 @@ handle_ui.on("js-edit-formulas", function () {
         var $x = $(this).closest(".editformulas-formula");
         $x.find(".editformulas-expression").closest(".f-i").addClass("hidden");
         $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
-        $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1" />');
+        $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1">');
     }
     function submit(event) {
         event.preventDefault();
@@ -6475,7 +6481,7 @@ handle_ui.on("js-edit-formulas", function () {
         for (i in formulas || [])
             push_formula(hc, formulas[i]);
         hc.pop_push('<button type="button" name="add" class="btn">Add named formula</button>');
-        hc.push_actions(['<button type="submit" name="saveformulas" value="1" class="btn btn-default">Save</button>', '<button type="button" name="cancel" class="btn">Cancel</button>']);
+        hc.push_actions(['<button type="submit" name="saveformulas" value="1" class="btn btn-primary">Save</button>', '<button type="button" name="cancel" class="btn">Cancel</button>']);
         $d = hc.show();
         $d.on("click", "button", click);
         $d.on("click", "a.delete-link", ondelete);
@@ -6509,7 +6515,7 @@ handle_ui.on("js-edit-view-options", function () {
         hc.push('<div class="f-i"><div class="f-c">Current view options</div>', '</div>');
         hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(display_current || "") + '</textarea>');
         hc.pop();
-        hc.push_actions(['<button type="submit" name="save" class="btn btn-default">Save options as default</button>', '<button type="button" name="cancel" class="btn">Cancel</button>']);
+        hc.push_actions(['<button type="submit" name="save" class="btn btn-primary">Save options as default</button>', '<button type="button" name="cancel" class="btn">Cancel</button>']);
         $d = hc.show();
         $d.on("submit", "form", submit);
     }
@@ -6573,7 +6579,7 @@ function paperlist_submit(event) {
         var subbtn = fn && $self.find("input[type=submit], button[type=submit]").filter("[value=" + fn + "]");
         if (subbtn && subbtn.length == 1 && subbtn.data("defaultSubmitAll")) {
             var values = $self.find("input[name='pap[]']").map(function () { return this.value; }).get();
-            $self.append('<div class="js-default-submit-values"><input type="hidden" name="pap" value="' + values.join(" ") + '" /></div>');
+            $self.append('<div class="js-default-submit-values"><input type="hidden" name="pap" value="' + values.join(" ") + '"></div>');
         } else {
             alert("Select one or more papers first.");
             event.preventDefault();

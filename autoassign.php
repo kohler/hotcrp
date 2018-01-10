@@ -742,7 +742,7 @@ if ($Conf->opt("autoassignReviewGadget") === "expertise") {
 
 
 // Create assignment
-echo '<div style="margin-top:2em">', Ht::submit("assign", "Prepare assignments", ["class" => "btn btn-default"]),
+echo '<div style="margin-top:2em">', Ht::submit("assign", "Prepare assignments", ["class" => "btn btn-primary"]),
     ' &nbsp; <span class="hint">You’ll be able to check the assignment before it is saved.</span>',
     '</div>';
 

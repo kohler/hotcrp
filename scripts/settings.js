@@ -638,7 +638,7 @@ function add_dialog(fid, focus) {
         hc.push('<td style="text-align:right"><button name="next" type="button" class="btn need-tooltip" data-tooltip="Next template">&gt;</button></td>');
         hc.pop();
         hc.push('<div class="newreviewfield-template" style="width:500px;max-width:90%;min-height:6em"></div>');
-        hc.push_actions(['<button type="submit" name="add" class="btn btn-default want-focus">Create field</button>',
+        hc.push_actions(['<button type="submit" name="add" class="btn btn-primary want-focus">Create field</button>',
             '<button type="button" name="cancel" class="btn">Cancel</button>']);
         $d = hc.show();
         render_template();

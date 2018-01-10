@@ -210,7 +210,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
     if ($Conf->opt("ldapLogin"))
         echo Ht::hidden("action", "login");
     echo '<div class="popup-actions">',
-        Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn btn-default"]),
+        Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn btn-primary"]),
         '</div><p class="hint">New to the site? <a href="" class="ui js-create-account">Create an account</a></p></div></form></div>
 <hr class="home" />';
     Ht::stash_script("focus_within(\$(\"#login\"));window.scroll(0,0)");

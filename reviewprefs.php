@@ -185,7 +185,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
         echo Ht::form_div(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]));
 
         $actions = '<div class="aab aabr aabig">'
-            . '<div class="aabut">' . Ht::submit("Save changes", ["class" => "btn btn-default"]) . '</div>'
+            . '<div class="aabut">' . Ht::submit("Save changes", ["class" => "btn btn-primary"]) . '</div>'
             . '<div class="aabut">' . Ht::submit("cancel", "Cancel") . '</div>'
             . '<hr class="c" /></div>';
         if (count($assignset->assigned_pids()) >= 4)

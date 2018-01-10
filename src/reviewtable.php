@@ -325,7 +325,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
         }
     }
 
-    $t = "";
+    $t = [];
     $dlimgjs = ["class" => "dlimg", "width" => 24, "height" => 24];
 
     // see all reviews
@@ -333,17 +333,15 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
         && ($mode !== "p" || $rrow)) {
         $allreviewslink = true;
-        $x = '<a href="' . hoturl("paper", "p=$prow->paperId") . '" class="xx">'
+        $t[] = '<a href="' . hoturl("paper", "p=$prow->paperId") . '" class="xx revlink">'
             . Ht::img("view48.png", "[All reviews]", $dlimgjs) . "&nbsp;<u>All reviews</u></a>";
-        $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     // edit paper
     if ($mode !== "edit" && $prow->conflictType >= CONFLICT_AUTHOR
         && !$Me->can_administer($prow)) {
-        $x = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;m=edit") . '" class="xx">'
+        $t[] = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;m=edit") . '" class="xx revlink">'
             . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>Edit submission</strong></u></a>";
-        $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     // edit review
@@ -351,32 +349,29 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
         /* no link */;
     else if ($myrr && $rrow != $myrr) {
         $myrlink = unparseReviewOrdinal($myrr);
-        $a = '<a href="' . hoturl("review", "p=$prow->paperId&r=$myrlink") . '" class="xx">';
+        $a = '<a href="' . hoturl("review", "p=$prow->paperId&r=$myrlink") . '" class="xx revlink">';
         if ($Me->can_review($prow, $myrr))
             $x = $a . Ht::img("review48.png", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u></a>";
         else
             $x = $a . Ht::img("review48.png", "[Your review]", $dlimgjs) . "&nbsp;<u><b>Your review</b></u></a>";
-        $t .= ($t === "" ? "" : $xsep) . $x;
+        $t[] = $x;
     } else if (!$myrr && !$rrow && $Me->can_review($prow, null)) {
-        $x = '<a href="' . hoturl("review", "p=$prow->paperId&amp;m=re") . '" class="xx">'
+        $t[] = '<a href="' . hoturl("review", "p=$prow->paperId&amp;m=re") . '" class="xx revlink">'
             . Ht::img("review48.png", "[Write review]", $dlimgjs) . "&nbsp;<u><b>Write review</b></u></a>";
-        $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     // review assignments
     if ($mode !== "assign" && $mode !== "edit"
         && $Me->can_request_review($prow, true)) {
-        $x = '<a href="' . hoturl("assign", "p=$prow->paperId") . '" class="xx">'
+        $t[] = '<a href="' . hoturl("assign", "p=$prow->paperId") . '" class="xx revlink">'
             . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
-        $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     // new comment
     $nocmt = preg_match('/\A(?:assign|contact|edit|re)\z/', $mode);
     if (!$allreviewslink && !$nocmt && $Me->can_comment($prow, null)) {
-        $x = '<a class="ui xx js-edit-comment" href="#cnew">'
+        $t[] = '<a class="ui js-edit-comment xx revlink" href="#cnew">'
             . Ht::img("comment48.png", "[Add comment]", $dlimgjs) . "&nbsp;<u>Add comment</u></a>";
-        $t .= ($t === "" ? "" : $xsep) . $x;
         $any_comments = true;
     }
 
@@ -394,27 +389,25 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
                         if ($cr->commentType & COMMENTTYPE_DRAFT)
                             $what = "Edit draft";
                     }
-            $x = '<a class="ui xx js-edit-comment" href="#' . $cid . '">'
+            $t[] = '<a class="ui js-edit-comment xx revlink" href="#' . $cid . '">'
                 . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
                 . ($cflttype >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
                 . $what . ($i ? " $rname" : "") . ' response</u></a>';
-            $t .= ($t === "" ? "" : $xsep) . $x;
             $any_comments = true;
         }
 
     // override conflict
     if ($allow_admin && !$admin) {
-        $x = '<a href="' . selfHref(array("forceShow" => 1)) . '" class="xx">'
-            . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing";
-        $t .= ($t === "" ? "" : $xsep) . $x;
+        $t[] = '<span class="revlink"><a href="' . selfHref(array("forceShow" => 1)) . '" class="xx">'
+            . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing</span>";
     } else if ($Me->privChair && !$allow_admin) {
-        $x = "You can’t override your conflict because this submission has an administrator.";
-        $t .= ($t === "" ? "" : $xsep) . $x;
+        $x = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
     }
 
     if ($any_comments)
         CommentInfo::echo_script($prow);
 
+    $t = empty($t) ? "" : '<p class="xd">' . join("", $t) . '</p>';
     if ($prow->has_author($Me))
         $t = '<p class="xd">' . $conf->_('You are an <span class="author">author</span> of this submission.') . '</p>' . $t;
     else if ($prow->has_conflict($Me))

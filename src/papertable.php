@@ -1513,7 +1513,7 @@ class PaperTable {
                 $tagger->unparse($editable),
                 "</textarea></div>",
                 '<div class="aab aabr"><div class="aabut">',
-                Ht::submit("save", "Save", ["class" => "btn btn-default"]),
+                Ht::submit("save", "Save", ["class" => "btn btn-primary"]),
                 '</div><div class="aabut">',
                 Ht::submit("cancel", "Cancel"),
                 "</div></div>",
@@ -1864,12 +1864,12 @@ class PaperTable {
             // produce button
             $save_name = $this->is_ready() ? "Save and resubmit" : "Save draft";
             if (!$whyNot)
-                $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn btn-default btn-savepaper"]), "");
+                $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn btn-primary btn-savepaper"]), "");
             else if ($this->admin) {
                 $revWhyNot = filter_whynot($whyNot, ["deadline", "rejected"]);
                 $x = whyNotText($revWhyNot, $prow ? "update" : "register")
                     . " Are you sure you want to override the deadline?";
-                $buttons[] = array(Ht::button($save_name, ["class" => "btn btn-default btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
+                $buttons[] = array(Ht::button($save_name, ["class" => "btn btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($prow)) {
                 $buttons[] = array(Ht::submit("update", $save_name, ["class" => "btn btn-savepaper"]));
