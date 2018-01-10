@@ -936,7 +936,7 @@ $blind\n";
         $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
 
         echo Ht::form($reviewPostLink, array("class" => "editrevform")),
-            '<div class="aahc">',
+            '<div>',
             Ht::hidden_default_submit("default", "");
         if ($rrow)
             echo Ht::hidden("version", defval($rrow, "reviewEditVersion", 0) + 1);

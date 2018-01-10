@@ -2028,27 +2028,12 @@ function form_highlight(form, elt) {
     $f.toggleClass("alert", (elt && form_differs(elt)) || form_differs($f));
 }
 
-function hiliter(elt, off) {
-    if (typeof elt === "string")
-        elt = document.getElementById(elt);
-    else if (!elt || elt.preventDefault)
-        elt = this;
-    while (elt && (elt.tagName !== "DIV" || !hasClass(elt, "aahc")))
-        elt = elt.parentNode;
-    if (elt && elt.tagName) {
-        removeClass(elt, "alert");
-        if (!off)
-            addClass(elt, "alert");
-    }
-}
-
 function hiliter_children(form, on_unload) {
-    on_unload && (form = $(form)[0]);
-    function hilite() {
-        if (!hasClass(this, "ignore-diff"))
+    form = $(form)[0];
+    $(form).on("change input", "input, select, textarea", function () {
+        if (!hasClass(this, "ignore-diff") && !hasClass(form, "ignore-diff"))
             form_highlight(form, this);
-    }
-    $(form).on("change input", "input, select, textarea", hilite);
+    });
     if (on_unload) {
         $(form).on("submit", function () {
             $(this).addClass("submitting");
@@ -2918,7 +2903,7 @@ function unparse_ratings(ratings) {
 
 function ratereviewform_change() {
     var $form = $(this).closest("form"), $card = $form.closest(".revcard");
-    $.post(hoturl_post("api", {p: $card.data("pid"), r: $card.data("rid"),
+    $.post(hoturl_post("api", {p: $card.attr("data-pid"), r: $card.attr("data-rid"),
                                fn: "reviewrating"}),
         $form.serialize(),
         function (data, status, jqxhr) {
@@ -3142,7 +3127,7 @@ function render_editing(hc, cj) {
 
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
-    hc.push('<form class="shortcutok"><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
+    hc.push('<form><div style="font-weight:normal;font-style:normal">', '</div></form>');
     if (cj.review_token)
         hc.push('<input type="hidden" name="review_token" value="' + escape_entities(cj.review_token) + '">');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
@@ -3661,16 +3646,6 @@ function shortcut(top_elt) {
                         && (target.type == "file" || target.type == "password"
                             || target.type == "text")))))
             return true;
-        // reject if any forms have outstanding data
-        x = document.getElementsByTagName("form");
-        for (i = 0; i < x.length; ++i)
-            for (j = 0; j < x[i].childNodes.length; ++j) {
-                a = x[i].childNodes[j];
-                if (a.nodeType == 1 && a.tagName == "DIV"
-                    && a.className.match(/\baahc\b.*\balert\b/)
-                    && !x[i].className.match(/\bshortcutok\b/))
-                    return true;
-            }
         // call function
         var keymap, time = now_msec();
         if (current_keys && last_key_at && time - last_key_at <= 600)
@@ -3765,7 +3740,8 @@ var alltags = new HPromise().onThen(function (p) {
 });
 
 tooltip.add_builder("votereport", function (info) {
-    var pid = $(this).data("pid") || hotcrp_paperid, tag = $(this).data("tag");
+    var pid = $(this).attr("data-pid") || hotcrp_paperid,
+        tag = $(this).attr("data-tag");
     if (pid && tag)
         info.content = new HPromise().onThen(function (p) {
             $.get(hoturl("api/votereport", {p: pid, tag: tag}), function (rv) {
@@ -4144,7 +4120,7 @@ $(function () { suggest($(".hotcrp_searchbox"), taghelp_q); });
 // review preferences
 function setfollow() {
     var $self = $(this);
-    $.post(hoturl_post("api/follow", {p: $self.data("pid") || hotcrp_paperid}),
+    $.post(hoturl_post("api/follow", {p: $self.attr("data-pid") || hotcrp_paperid}),
            {following: this.checked, reviewer: $self.data("reviewer") || hotcrp_user.email},
            function (rv) {
                setajaxcheck($self[0], rv);
@@ -4196,7 +4172,6 @@ var add_revpref_ajax = (function () {
                     self.value = rv.value === "0" ? "" : rv.value;
             },
             complete: function (xhr, status) {
-                hiliter(self);
                 --outstanding;
                 then && then();
             }
@@ -6101,7 +6076,7 @@ handle_ui.on("js-clickthrough", function (event) {
 handle_ui.on("js-follow-change", function (event) {
     var self = this;
     $.post(hoturl_post("api/follow",
-        {p: $(self).data("pid") || hotcrp_paperid}),
+        {p: $(self).attr("data-pid") || hotcrp_paperid}),
         {following: this.checked, reviewer: $(self).data("reviewer") || hotcrp_user.email},
         function (rv) {
             setajaxcheck(self, rv);
@@ -6222,7 +6197,7 @@ function prepare_pstags() {
             $f.data("everOpened", true);
             $f.find("input").prop("disabled", false);
             if (!$f.data("noTagReport")) {
-                $.get(hoturl("api/tagreport", {p: $f.data("pid")}), handle_tag_report);
+                $.get(hoturl("api/tagreport", {p: $f.attr("data-pid")}), handle_tag_report);
             }
             $f.removeData("noTagReport");
             $ta.autogrow();
@@ -6230,7 +6205,7 @@ function prepare_pstags() {
         }
     });
     $(window).on("hotcrptags", function (evt, data) {
-        if (data.pid == $f.data("pid")) {
+        if (data.pid == $f.attr("data-pid")) {
             var h = data.tags_view_html == "" ? "None" : data.tags_view_html,
                 $p = $(self).find(".js-tag-result").first();
             if ($p.html() !== h)
@@ -6252,7 +6227,7 @@ function save_pstags(evt) {
     var $f = $(this);
     evt.preventDefault();
     $f.find("input").prop("disabled", true);
-    $.ajax(hoturl_post("api/settags", {p: $f.data("pid")}), {
+    $.ajax(hoturl_post("api/settags", {p: $f.attr("data-pid")}), {
         method: "POST", data: $f.serialize(), timeout: 4000,
         success: function (data) {
             $f.find("input").prop("disabled", false);
@@ -6317,7 +6292,7 @@ function save_pstagindex(event) {
                 .removeOn(document.body, "fold");
         }
     }
-    $.post(hoturl_post("api/settags", {p: $f.data("pid")}),
+    $.post(hoturl_post("api/settags", {p: $f.attr("data-pid")}),
             {"addtags": tags.join(" ")}, done);
 }
 

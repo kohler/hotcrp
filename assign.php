@@ -542,7 +542,7 @@ echo "</div></div>\n";
 $req = "Request an external review";
 if (!$Me->allow_administer($prow) && $Conf->setting("extrev_chairreq"))
     $req = "Propose an external review";
-echo Ht::form($loginUrl), '<div class="aahc revcard"><div class="revcard_head">',
+echo Ht::form($loginUrl), '<div class="revcard"><div class="revcard_head">',
     "<h3>", $req, "</h3>\n",
     "<div class='hint'>External reviewers may view their assigned papers, including ";
 if ($Conf->setting("extrev_view") >= 2)
@@ -558,7 +558,7 @@ echo '<div class="f-horizontal"><div class="f-i">',
     '</div><div class="f-i', (isset($Error["email"]) ? ' has-error' : ''), '">',
     Ht::label("Email", "revreq_email", ["class" => "f-c"]),
     Ht::entry("email", get($_REQUEST, "email", ""), ["id" => "revreq_email", "size" => 28]),
-    '</div>', "\n\n";
+    '</div></div>', "\n\n";
 
 // reason area
 $null_mailer = new HotCRPMailer;

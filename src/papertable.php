@@ -2012,7 +2012,7 @@ class PaperTable {
     static private function _echo_clickthrough($ctype) {
         global $Conf, $Now;
         $data = $Conf->message_html("clickthrough_$ctype");
-        echo Ht::form(["class" => "ui"]), '<div class="aahc">', $data;
+        echo Ht::form(["class" => "ui"]), '<div>', $data;
         $buttons = [Ht::submit("Agree", ["class" => "btn btnbig btn-highlight ui js-clickthrough"])];
         echo Ht::hidden("clickthrough_type", $ctype),
             Ht::hidden("clickthrough_id", sha1($data)),
@@ -2054,7 +2054,7 @@ class PaperTable {
             && $this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_submit_final_paper", $this->prow);
 
         $this->_echo_editable_form();
-        echo '<div class="aahc">';
+        echo '<div>';
 
         if (($m = $this->editMessage()))
             echo $m, '<div class="g"></div>';

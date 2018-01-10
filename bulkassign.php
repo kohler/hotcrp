@@ -160,7 +160,7 @@ if (isset($_GET["upload"]) && check_post()
             $assignset->echo_unparse_display();
 
             echo '<div class="g"></div>',
-                '<div class="aahc"><div class="aa">',
+                '<div><div class="aa">',
                 Ht::submit("Apply changes"),
                 ' &nbsp;', Ht::submit("cancel", "Cancel"),
                 Ht::hidden("default_action", get($defaults, "action", "guess")),

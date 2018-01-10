@@ -677,7 +677,7 @@ if ($UserStatus->has_messages()) {
     echo '<div class="xmsgs-atbody">', Ht::xmsg($status, join("", $msgs)), "</div>\n";
 }
 
-echo '<div id="foldaccount" class="aahc profiletext', ($need_highlight ? " alert" : ""),
+echo '<div id="foldaccount" class="profiletext', ($need_highlight ? " alert" : ""),
     " fold1", ($pcrole == "no" ? "c" : "o"), " fold2",
     ($Qreq->bulkregister ? "o" : "c"), "\">\n";
 
@@ -914,7 +914,7 @@ if ($newProfile) {
     echo '</div><div class="fx9">';
     echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
                   array("id" => "accountform", "autocomplete" => "off")),
-        "<div class='profiletext aahc", ($UserStatus->has_error() ? " alert" : ""), "'>\n",
+        "<div class='profiletext", ($UserStatus->has_error() ? " alert" : ""), "'>\n",
         // Don't want chrome to autofill the password changer.
         // But chrome defaults to autofilling the password changer
         // unless we supply an earlier password input.

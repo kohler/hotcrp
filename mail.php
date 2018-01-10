@@ -488,7 +488,7 @@ if (isset($_REQUEST["monreq"])) {
 echo Ht::form_div(hoturl_post("mail", "check=1")),
     Ht::hidden_default_submit("default", 1), "
 
-<div class='aa aahc' style='padding-left:8px'>
+<div class='aa' style='padding-left:8px'>
   <strong>Template:</strong> &nbsp;";
 $tmpl = array();
 foreach ($mailTemplates as $k => $v) {

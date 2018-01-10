@@ -168,7 +168,7 @@ else
 
 
 // Change PC member
-echo "<table><tr><td><div class='aahc assignpc_pcsel'>",
+echo "<table><tr><td><div class='assignpc_pcsel'>",
     Ht::form_div(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
 Ht::stash_script('hiliter_children("#selectreviewerform")');
 
@@ -262,7 +262,7 @@ if ($reviewer) {
     if (!empty($hlsearch))
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
     $paperList = new PaperList($search, ["sort" => true, "display" => ($qreq->kind == "c" ? "show:topics" : "show:topics show:reviewers")], make_qreq());
-    echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "kind" => $qreq->kind, "sort" => $qreq->sort]),
+    echo "<form class='assignpc' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "kind" => $qreq->kind, "sort" => $qreq->sort]),
         "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
         Ht::hidden("t", $qreq->t),
         Ht::hidden("q", $qreq->q),
@@ -286,9 +286,10 @@ if ($reviewer) {
         "</span></div>\n",
         $paperList->table_html(($qreq->kind == "c" ? "conflict" : "reviewAssignment"),
                                ["header_links" => true, "nofooter" => true, "list" => true]),
-        "<div class='aa'>",
-        Ht::submit("update", "Save assignments"),
-        "</div></div></form></div>\n";
+        '<div class="aab aabr aabig"><div class="aabut">',
+        Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]),
+        "</div></div></div></form>\n";
+    Ht::stash_script('hiliter_children("form.assignpc")');
 }
 
 echo '<hr class="c" />';

@@ -309,7 +309,7 @@ class Ht {
             if (is_array($a)) {
                 $t .= $a[0];
                 if (count($a) > 1)
-                    $t .= '<br /><span class="hint">' . $a[1] . '</span>';
+                    $t .= '<div class="hint">' . $a[1] . '</div>';
             } else
                 $t .= $a;
             $t .= '</div>';

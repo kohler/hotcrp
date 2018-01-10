@@ -295,7 +295,7 @@ class AutoassignerInterface {
         }
 
         echo "<div class='g'></div>",
-            "<div class='aahc'><div class='aa'>\n",
+            "<div><div class='aa'>\n",
             Ht::submit("submit", "Apply changes"), "\n&nbsp;",
             Ht::submit("download", "Download assignment file"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
@@ -465,7 +465,7 @@ Types of PC review:
 echo Ht::unstash_script("hiliter_children(\"#autoassignform\")");
 
 // paper selection
-echo divClass("pap", "aahc"), "<h3>Paper selection</h3>";
+echo divClass("pap"), "<h3>Paper selection</h3>";
 if (!isset($Qreq->q)) // XXX redundant
     $Qreq->q = join(" ", $SSel->selection());
 echo Ht::entry("q", $Qreq->q,

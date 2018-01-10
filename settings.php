@@ -69,7 +69,7 @@ foreach ($group_titles as $name => $title) {
             '<a href="', hoturl("settings", "group={$name}"), '">', $title, '</a></div>';
 }
 echo "</div></div>\n",
-    '<div class="leftmenu-content-container"><div class="leftmenu-content aahc">';
+    '<div class="leftmenu-content-container"><div class="leftmenu-content">';
 
 function doActionArea($top) {
     echo '<div class="aab aabr aabig">',
