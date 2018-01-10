@@ -605,12 +605,10 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
         return true;
     }
     function header(PaperList $pl, $is_text) {
-        if ($this->contact === $pl->reviewer_user())
-            return "Assignment";
-        else if ($is_text)
-            return $pl->user->name_text_for($this->contact) . " Assignment";
+        if ($is_text)
+            return $pl->user->name_text_for($this->contact) . " assignment";
         else
-            return $pl->user->name_html_for($this->contact) . "<br />Assignment";
+            return $pl->user->name_html_for($this->contact) . "<br />assignment";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->allow_administer($row);

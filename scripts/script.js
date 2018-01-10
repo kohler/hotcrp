@@ -6522,20 +6522,26 @@ var paperlist_ui = (function ($) {
 function assrev_change(event) {
     var self = this, m = /^assrev(\d+)u(\d+)$/.exec(this.name);
     if (m) {
-        var immediate = $$("assrevimmediate"), data;
+        var immediate = $$("assrevimmediate"), data, value;
         if (!immediate || immediate.checked) {
-            if (this.tagName === "SELECT") {
+            if (self.tagName === "SELECT") {
                 var round = $$("assrevround");
                 data = {kind: "a", rev_round: round ? round.value : ""};
-                data["pcs" + m[2]] = this.value;
+                value = self.value;
             } else {
                 data = {kind: "c"};
-                data["pcs" + m[2]] = this.checked ? -1 : 0;
+                value = self.checked ? -1 : 0;
             }
+            data["pcs" + m[2]] = value;
             $.post(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}),
-                data, function (rv) { setajaxcheck(self, rv); });
-        } else {
-            hiliter(this);
+                data, function (rv) {
+                    if (self.tagName === "SELECT")
+                        self.setAttribute("data-default-value", value);
+                    else
+                        self.setAttribute("data-default-checked", !!value);
+                    setajaxcheck(self, rv);
+                    form_highlight($(self).closest("form"), self);
+                });
         }
     }
 }

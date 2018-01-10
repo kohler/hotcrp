@@ -262,34 +262,34 @@ if ($reviewer) {
     if (!empty($hlsearch))
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
     $paperList = new PaperList($search, ["sort" => true, "display" => ($qreq->kind == "c" ? "show:topics" : "show:topics show:reviewers")], make_qreq());
-    echo "<form class='assignpc' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "kind" => $qreq->kind, "sort" => $qreq->sort]),
+    echo "<form class='assignpc ignore-diff' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "kind" => $qreq->kind, "sort" => $qreq->sort]),
         "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
         Ht::hidden("t", $qreq->t),
         Ht::hidden("q", $qreq->q),
         Ht::hidden("papx", join(" ", $search->paper_ids())),
-        "<div class=\"aa\">",
-        Ht::submit("update", "Save assignments");
+        "<div class=\"aab aabr aabig\">",
+        '<div class="aabut aabutsp">', Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]), '</div>';
     if ($qreq->kind != "c") {
         $rev_rounds = $Conf->round_selector_options(false);
         if (count($rev_rounds) > 1)
-            echo '<span style="padding-left:2em">Review round: &nbsp;',
-                Ht::select("rev_round", $rev_rounds, $qreq->rev_round ? : "unnamed", array("id" => "assrevround")),
-                '</span>';
+            echo '<div class="aabut aabutsp">Review round: &nbsp;',
+                Ht::select("rev_round", $rev_rounds, $qreq->rev_round ? : "unnamed", ["id" => "assrevround", "class" => "ignore-diff"]),
+                '</div>';
         else if (!get($rev_rounds, "unnamed"))
-            echo '<span style="padding-left:2em">Review round: ', $Conf->assignment_round_name(false), '</span>';
+            echo '<div class="aabut aabutsp">Review round: ', $Conf->assignment_round_name(false), '</div>';
     }
     $paperList->set_table_id_class("foldpl", "pltable_full");
     $paperList->set_view("allrevtopicpref", false);
-    echo "<span style='padding-left:2em'>",
-        Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
-        "&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
-        "</span></div>\n",
+    echo '<div class="aabut aabutsp"><label>',
+        Ht::checkbox(false, false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),
+        "&nbsp;Automatically save assignments</label></div></div>\n",
         $paperList->table_html(($qreq->kind == "c" ? "conflict" : "reviewAssignment"),
                                ["header_links" => true, "nofooter" => true, "list" => true]),
         '<div class="aab aabr aabig"><div class="aabut">',
         Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]),
         "</div></div></div></form>\n";
     Ht::stash_script('hiliter_children("form.assignpc")');
+    Ht::stash_script('$("#assrevimmediate").on("change", function () { var $f = $(this).closest("form").toggleClass("ignore-diff", this.checked); form_highlight($f); })');
 }
 
 echo '<hr class="c" />';
