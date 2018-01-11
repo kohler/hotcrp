@@ -37,8 +37,7 @@ class Tracks_SettingRenderer {
             echo "<td class=\"lxcaption\" colspan=\"2\" style=\"padding-top:0.5em\">";
         else
             echo "<td style=\"width:2em\"></td><td class=\"lxcaption\">";
-        echo $sv->label(["{$type}_track$tnum", "{$type}tag_track$tnum"],
-                        $question, "{$type}_track$tnum"),
+        echo $sv->label(["{$type}_track$tnum", "{$type}tag_track$tnum"], $question),
             "</td><td class=\"settings-track-perm\">",
             Ht::select("{$type}_track$tnum", $perm, $tclass,
                        $sv->sjs("{$type}_track$tnum", ["class" => "js-track-perm"])),
