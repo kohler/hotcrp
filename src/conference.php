@@ -2806,14 +2806,14 @@ class Conf {
 
     function make_css_link($url, $media = null) {
         global $ConfSitePATH;
-        if (str_starts_with($url, "<meta"))
+        if (str_starts_with($url, "<meta") || str_starts_with($url, "<link"))
             return $url;
         $t = '<link rel="stylesheet" type="text/css" href="';
-        if (str_starts_with($url, "stylesheets/")
-            || !preg_match(',\A(?:https?:|/),i', $url))
+        $absolute = preg_match(',\A(?:https:?:|/),i', $url);
+        if (!$absolute)
             $t .= $this->opt["assetsUrl"];
-        $t .= $url;
-        if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
+        $t .= htmlspecialchars($url);
+        if (!$absolute && ($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
             $t .= "?mtime=$mtime";
         if ($media)
             $t .= '" media="' . $media;
