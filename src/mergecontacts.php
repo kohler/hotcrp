@@ -86,21 +86,6 @@ class MergeContacts extends MessageSet {
             $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $qv);
         $this->conf->qe("delete from PaperConflict where contactId=?", $this->oldu->contactId);
 
-        // merge user data via Contact::save_json
-        $cj = $this->basic_user_json();
-
-        if (($this->oldu->roles | $this->newu->roles) != $this->newu->roles)
-            $cj->roles = UserStatus::unparse_roles_json($this->oldu->roles | $this->newu->roles);
-
-        $cj->tags = [];
-        foreach (TagInfo::split_unpack($this->newu->contactTags) as $ti)
-            $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
-        foreach (TagInfo::split_unpack($this->oldu->contactTags) as $ti)
-            if ($this->newu->tag_value($ti[0]) === false)
-                $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
-
-        $this->newu->save_json($cj, null, false);
-
         // merge more things
         $this->merge1("ActionLog", "contactId");
         $this->merge1_ignore("TopicInterest", "contactId");
@@ -116,14 +101,30 @@ class MergeContacts extends MessageSet {
         $this->merge1_ignore("PaperWatch", "contactId");
         $this->merge1_ignore("ReviewRating", "contactId");
 
+        $this->conf->qe_raw("unlock tables");
+        Contact::update_rights();
+
+        // merge user data via Contact::save_json
+        $cj = $this->basic_user_json();
+
+        if (($this->oldu->roles | $this->newu->roles) != $this->newu->roles)
+            $cj->roles = UserStatus::unparse_roles_json($this->oldu->roles | $this->newu->roles);
+
+        $cj->tags = [];
+        foreach (TagInfo::split_unpack($this->newu->contactTags) as $ti)
+            $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
+        foreach (TagInfo::split_unpack($this->oldu->contactTags) as $ti)
+            if ($this->newu->tag_value($ti[0]) === false)
+                $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
+
+        $this->newu->save_json($cj, null, false);
+
         // Remove the old contact record
         if (!$this->has_error()) {
             $this->conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?", $this->oldu->contactId, $this->oldu->firstName, $this->oldu->lastName, $this->oldu->unaccentedName, $this->oldu->email);
             if (!$this->conf->q("delete from ContactInfo where contactId=?", $this->oldu->contactId))
                 $this->add_error($this->conf->db_error_html(true));
         }
-
-        $this->conf->qe_raw("unlock tables");
     }
 
     function run() {
