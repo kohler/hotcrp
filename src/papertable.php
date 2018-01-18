@@ -510,6 +510,11 @@ class PaperTable {
     }
 
     private function echo_editable_complete() {
+        if ($this->canUploadFinal) {
+            echo Ht::hidden("submitpaper", 1);
+            return;
+        }
+
         $checked = $this->is_ready_checked();
         echo '<div class="ready-container ',
             (($this->prow && $this->prow->paperStorageId > 1)
@@ -604,9 +609,6 @@ class PaperTable {
         } else {
             echo '<div class="document-upload">', $upload_input, '</div>';
         }
-
-        if ($dtype == DTYPE_FINAL)
-            echo Ht::hidden("submitpaper", 1);
 
         echo "</div>";
     }

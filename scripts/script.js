@@ -6147,7 +6147,8 @@ handle_ui.on("js-follow-change", function (event) {
 
 var edit_paper_ui = (function ($) {
 function check_still_ready(event) {
-    if (this.submitpaper && !this.submitpaper.checked) {
+    var sub = this.submitpaper;
+    if (sub && sub.type === "checkbox" && !this.submitpaper.checked) {
         if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered."))
             event.preventDefault();
     }
