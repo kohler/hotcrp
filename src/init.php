@@ -125,7 +125,7 @@ class SiteLoader {
         "ReviewSearchMatcher" => "src/search/st_review.php",
         "ReviewValues" => "src/review.php",
         "SearchAction" => "src/listaction.php",
-        "SearchTerm" => "src/search.php",
+        "SearchTerm" => "src/papersearch.php",
         "TagAnno" => "lib/tagger.php",
         "TagInfo" => "lib/tagger.php",
         "TagMap" => "lib/tagger.php",
