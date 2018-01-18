@@ -184,15 +184,15 @@ class SubForm_SettingRenderer {
         echo "<h3 class=\"settings\">Abstract and PDF</h3>\n";
 
         echo '<div id="foldpdfupload" class="fold2o fold3o">';
-        echo '<div>', $sv->label("sub_noabstract", "Is an abstract required to register a submission?"),
-            '&nbsp; ',
-            $sv->render_select("sub_noabstract", [0 => "Abstract required", 2 => "Abstract optional", 1 => "No abstract"]),
+        echo '<div class="f-i">',
+            $sv->label("sub_noabstract", "Abstract requirement", ["class" => "n"]),
+            $sv->render_select("sub_noabstract", [0 => "Abstract required to register submission", 2 => "Abstract optional", 1 => "No abstract"]),
             '</div>';
 
-        echo '<div>', $sv->label("sub_nopapers", "Is a PDF required to complete a submission?"),
-            '&nbsp; ',
-            $sv->render_select("sub_nopapers", [0 => "PDF required", 2 => "PDF optional", 1 => "No PDF allowed"]),
-            '<div class="hint fx3">Submission registration never requires a PDF.</div></div>';
+        echo '<div class="f-i">',
+            $sv->label("sub_nopapers", "PDF requirement", ["class" => "n"]),
+            $sv->render_select("sub_nopapers", [0 => "PDF required to complete submission", 2 => "PDF optional", 1 => "No PDF allowed"]),
+            '<div class="f-h fx3">Registering a submission never requires a PDF.</div></div>';
 
         if (is_executable("src/banal")) {
             echo '<div class="g fx2">';
