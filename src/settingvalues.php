@@ -616,7 +616,7 @@ class SettingValues extends MessageSet {
         $this->echo_checkbox_only($name, $js);
         echo ' </span>', $this->label($name, $text, ["for" => "cb$name"]);
         if ($hint)
-            echo '<p class="settings-ap hint', ($hint_class ? " " . $hint_class : ""), '">', $hint, '</p>';
+            echo '<p class="settings-ap f-h', ($hint_class ? " " . $hint_class : ""), '">', $hint, '</p>';
         if (!$item_open)
             echo "</div>\n";
     }

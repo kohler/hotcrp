@@ -3133,12 +3133,15 @@ function comment_identity_time(cj) {
         t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
                + '<a class="ui q js-foldup" href="#" data-fold-target="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
                + cj.author + '</span></div>');
-    else if (cj.author && cj.blind && cj.visibility == "au")
-        t.push('<div class="cmtname">[' + cj.author + ']</div>');
-    else if (cj.author)
-        t.push('<div class="cmtname">' + cj.author + '</div>');
-    else if (cj.by_author && !cj.is_new)
-        t.push('<div class="cmtname">[Anonymous author]</div>');
+    else if (cj.author) {
+        x = cj.author;
+        if (cj.blind && cj.visibility === "au")
+            x = "[" + x + "]";
+        if (cj.author_pseudonym)
+            x = cj.author_pseudonym + '  ' + x;
+        t.push('<div class="cmtname">' + x + '</div>');
+    } else if (cj.author_pseudonym)
+        t.push('<div class="cmtname">' + cj.author_pseudonym + '</div>');
     if (cj.modified_at)
         t.push('<div class="cmttime">' + cj.modified_at_text + '</div>');
     if (!cj.response && cj.tags) {

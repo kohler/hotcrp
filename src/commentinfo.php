@@ -285,6 +285,17 @@ class CommentInfo {
                     }
             }
         }
+        if (!$idable
+            && ($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR))) {
+            $cj->author_pseudonym = "Author";
+        } else if ((!$idable
+                    || $this->commentType == (COMMENTTYPE_AUTHOR | COMMENTTYPE_BLIND))
+                   && $this->conf->setting("cmt_author")
+                   && ($rrow = $this->prow->review_of_user($this->contactId))
+                   && $rrow->reviewOrdinal
+                   && $contact->can_view_review($this->prow, $rrow)) {
+            $cj->author_pseudonym = "Reviewer " . unparseReviewOrdinal($rrow->reviewOrdinal);
+        }
         if ($this->timeModified > 0 && $idable_override) {
             $cj->modified_at = (int) $this->timeModified;
             $cj->modified_at_text = $this->conf->printableTime($cj->modified_at);
