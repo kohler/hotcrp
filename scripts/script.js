@@ -3164,7 +3164,7 @@ function edit_allowed(cj) {
 }
 
 function render_editing(hc, cj) {
-    var bnote = "", i, x, actions = [];
+    var bnote = "", i, x, actions = [], cid = cj_cid(cj);
 
     var msgx = [];
     if (cj.response && resp_rounds[cj.response].instrux)
@@ -3191,11 +3191,12 @@ function render_editing(hc, cj) {
     hc.push('<form><div style="font-weight:normal;font-style:normal">', '</div></form>');
     if (cj.review_token)
         hc.push('<input type="hidden" name="review_token" value="' + escape_entities(cj.review_token) + '">');
+    hc.push('<div class="f-i">', '</div>');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
     if (fmt.has_preview)
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
-    hc.push('<textarea name="comment" class="reviewtext cmttext c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
+    hc.push_pop('<textarea name="comment" class="reviewtext cmttext c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
     if (!cj.response && !cj.by_author) {
         var au_option, au_description;
         if (hotcrp_status.myperm.some_author_can_view_review) {
@@ -3210,14 +3211,14 @@ function render_editing(hc, cj) {
 
         // visibility
         hc.push('<div class="cmteditinfo fold2o">', '</div>');
-        hc.push('<div class="f-i"><div class="f-c">Visibility</div>', '</div>');
-        hc.push('<select name="visibility">', '</select>');
+        hc.push('<div class="f-i"><label for="' + cid + '-visibility">Visibility</label>', '</div>');
+        hc.push('<select id="' + cid + '-visibility" name="visibility">', '</select>');
         hc.push('<option value="au">' + au_option + '</option>');
         hc.push('<option value="rev">Hidden from authors</option>');
         hc.push('<option value="pc">Hidden from authors and external reviewers</option>');
         hc.push('<option value="admin">Administrators only</option>');
         hc.pop();
-        hc.push('<div class="fx2 hint">', '</div>');
+        hc.push('<p class="fx2 f-h">', '</p>');
         if (hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true) {
             var idctr = hc.next_htctl_id();
             hc.push('<input type="checkbox" name="blind" value="1" id="' + idctr + '">&nbsp;<label for="' + idctr + '">Anonymous to authors</label><br>\n');
@@ -3226,8 +3227,8 @@ function render_editing(hc, cj) {
         hc.pop_n(2);
 
         // tags
-        hc.push('<div class="f-i"><div class="f-c">Tags</div>', '</div>')
-        hc.push('<textarea name="commenttags" cols="40" rows="1" class="reviewtext" style="font-size:smaller"></textarea>');
+        hc.push('<div class="f-i"><label for="' + cid + '-tags">Tags</label>', '</div>')
+        hc.push('<input id="' + cid + '-tags" name="commenttags" size="40" class="reviewtext" style="font-size:smaller">');
         hc.pop(2);
 
         // actions
