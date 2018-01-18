@@ -389,6 +389,8 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
         return self::make((object) ["firstName" => "", "lastName" => "", "email" => "", "affiliation" => $x], $nonauthor);
     }
 
+    const MATCH_NAME = 1;
+    const MATCH_AFFILIATION = 2;
     function test($au) {
         if (!$this->general_pregexes) {
             return false;
@@ -408,12 +410,12 @@ class PaperInfo_AuthorMatcher extends PaperInfo_Author {
             && ($au->firstName === ""
                 || !$this->firstName_matcher
                 || Text::match_pregexes($this->firstName_matcher, $au->firstName, $au->firstName_deaccent))) {
-            return true;
+            return self::MATCH_NAME;
         }
         if ($this->affiliation_matcher
             && $au->affiliation !== ""
             && $this->test_affiliation($au->affiliation_deaccent)) {
-            return true;
+            return self::MATCH_AFFILIATION;
         }
         return false;
     }
@@ -864,10 +866,16 @@ class PaperInfo {
         if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
             foreach ($this->author_list() as $n => $au)
                 foreach ($user->aucollab_matchers() as $matcher) {
-                    if ($matcher->test($au)) {
+                    if (($why = $matcher->test($au))) {
                         if (!$full_info)
                             return true;
-                        $details[] = ["#" . ($n + 1), '<div class="mmm">Author ' . $matcher->highlight($au) . '<br />matches ' . ($matcher->nonauthor ? "PC’s collaborator " : "PC member ") . $matcher->nameaff_html() . '</div>'];
+                        if ($matcher->nonauthor)
+                            $what = "PC’s collaborator ";
+                        else if ($why == PaperInfo_AuthorMatcher::MATCH_AFFILIATION)
+                            $what = "PC affiliation ";
+                        else
+                            $what = "PC member ";
+                        $details[] = ["#" . ($n + 1), '<div class="mmm">Author ' . $matcher->highlight($au) . '<br />matches ' . $what . $matcher->nameaff_html() . '</div>'];
                     }
                 }
         }
