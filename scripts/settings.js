@@ -300,7 +300,7 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
   </div>\
   <div class="f-horizontal">\
     <div class="f-i">\
-      <label class="f-c" for="authorView_$">Visibility</label>\
+      <label for="authorView_$">Visibility</label>\
       <select name="authorView_$" id="authorView_$" class="reviewfield_authorView">\
         <option value="au">Shown to authors</option>\
         <option value="pc">Hidden from authors</option>\
@@ -309,21 +309,21 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
       </select>\
     </div>\
     <div class="f-i reviewrow_options">\
-      <label class="f-c" for="option_class_prefix_$">Colors</label>\
+      <label for="option_class_prefix_$">Colors</label>\
       <select name="option_class_prefix_$" id="option_class_prefix_$" class="reviewfield_option_class_prefix"></select>\
 <input type="hidden" name="option_class_prefix_flipped_$" id="option_class_prefix_flipped_$" value="" />\
     </div>\
     <div class="f-i reviewrow_rounds">\
-      <label class="f-c" for="round_list_$">Rounds</label>\
+      <label for="round_list_$">Rounds</label>\
       <select name="round_list_$" id="round_list_$" class="reviewfield_round_list"></select>\
     </div>\
   </div>\
   <div class="f-i">\
-    <label class="f-c" for="description_$">Description</label>\
+    <label for="description_$">Description</label>\
     <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea>\
   </div>\
   <div class="f-i reviewrow_options">\
-    <label class="f-c" for="options_$">Options</label>\
+    <label for="options_$">Options</label>\
     <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea>\
   </div>\
   <div class="f-i">\

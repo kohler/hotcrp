@@ -1282,7 +1282,7 @@ dl.spaced > dt {
 
 
 /* vertically arranged forms */
-.f-i {
+.f-i, .f-checkbox {
 	margin: 1em 0;
 }
 .f-horizontal {
@@ -1294,14 +1294,14 @@ dl.spaced > dt {
 .f-i:last-child, .f-horizontal:last-child {
 	margin-bottom: 0;
 }
-label.f-c {
+label.f-c, .f-i > label {
 	display: block;
 }
-.f-c {
+.f-c, .f-i > label {
 	font-weight: bold;
 	margin-bottom: 0.25rem;
 }
-.f-c.n {
+.f-c.n, .f-i > label.n {
 	font-weight: normal;
 }
 .f-h {

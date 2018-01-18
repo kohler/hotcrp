@@ -565,7 +565,7 @@ $null_mailer = new HotCRPMailer;
 $reqbody = $null_mailer->expand_template("requestreview", false);
 if (strpos($reqbody["body"], "%REASON%") !== false) {
     echo '<div class="f-i">',
-        Ht::label('Note to reviewer <span class="n">(optional)</span>', "revreq_reason", ["class" => "f-c"]),
+        Ht::label('Note to reviewer <span class="n">(optional)</span>', "revreq_reason"),
         Ht::textarea("reason", req("reason"),
                 ["class" => "papertext", "rows" => 2, "cols" => 60, "spellcheck" => "true", "id" => "revreq_reason"]),
         "</div>\n\n";
@@ -577,7 +577,7 @@ echo "<div class='f-i'>\n",
 
 
 if ($Me->can_administer($prow))
-    echo "<div class='f-i'>\n  ", Ht::checkbox("override"), "&nbsp;", Ht::label("Override deadlines and any previous refusal"), "\n</div>\n";
+    echo "<div class='f-checkbox'>\n  ", Ht::checkbox("override"), "&nbsp;", Ht::label("Override deadlines and any previous refusal"), "\n</div>\n";
 
 echo "</div></div></form>\n";
 

@@ -546,7 +546,7 @@ function ficlass($field = false) {
 function echofield($classname, $captiontext, $entrytext) {
     echo '<div class="', ficlass($classname), '">',
         ($classname
-         ? Ht::label($captiontext, $classname, ["class" => "f-c"])
+         ? Ht::label($captiontext, $classname)
          : '<div class="f-c">' . $captiontext . '</div>'),
         $entrytext, "</div>\n";
 }
@@ -928,10 +928,10 @@ if ($newProfile) {
         $bulkentry = $session_bulkentry[1];
         $Conf->save_session("profile_bulkentry", null);
     }
-    echo '<div class="f-contain"><div class="f-i">',
+    echo '<div class="f-i">',
         Ht::textarea("bulkentry", $bulkentry,
                      ["rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line", "class" => "want-focus"]),
-        '</div></div>';
+        '</div>';
 
     echo '<div class="g"><strong>OR</strong> &nbsp;',
         '<input type="file" name="bulk" size="30" /></div>';

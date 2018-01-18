@@ -233,17 +233,17 @@ if ($reviewer) {
     foreach ($reviewer->topic_interest_map() as $topic => $ti)
         $interest[$ti > 0 ? 1 : 0][$topic] = $ti;
     if (!empty($interest[1]) && $qreq->kind !== "c")
-        echo '<div class="f-i"><div class="f-c">High interest topics</div>',
+        echo '<div class="f-i"><label>High interest topics</label>',
             PaperInfo::unparse_topic_list_html($Conf, $interest[1]),
             "</div>";
     if (!empty($interest[0]) && $qreq->kind !== "c")
-        echo '<div class="f-i"><div class="f-c">Low interest topics</div>',
+        echo '<div class="f-i"><label>Low interest topics</label>',
             PaperInfo::unparse_topic_list_html($Conf, $interest[0]),
             "</div>";
 
     // Conflict information
     if ($reviewer->collaborators) {
-        echo '<div class="f-i"><div class="f-c">Collaborators</div>';
+        echo '<div class="f-i"><label>Collaborators</label>';
         $cos = [];
         foreach (explode("\n", $reviewer->collaborators) as $co)
             if ($co !== "")

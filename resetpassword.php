@@ -80,10 +80,10 @@ echo '<table style="margin-bottom:2em">',
 <tr><td class="lcaption">Suggested password</td><td>', htmlspecialchars($_POST["autopassword"]), '</td></tr></table>';
 //Our suggested replacement password password for <b>", htmlspecialchars($Acct->email), "</b>. Use our suggested replacement password, or choose your own.</p>",
 echo '<div class="', Ht::control_class("password", "f-i"), '">
-  <label class="f-c" for="reset_password">New password</label>',
+  <label for="reset_password">New password</label>',
     Ht::password("password", "", ["class" => "want-focus", "tabindex" => 1, "size" => 36, "id" => "reset_password"]), '</div>
 <div class="', Ht::control_class("password", "f-i"), '">
-  <label class="f-c" for="reset_password2">New password (again)</label>',
+  <label for="reset_password2">New password (again)</label>',
     Ht::password("password2", "", ["tabindex" => 1, "size" => 36, "id" => "reset_password2"]), '</div>
 <div class="f-i" style="margin-top:2em">',
     Ht::submit("go", "Reset password", array("tabindex" => 1)),

@@ -5959,7 +5959,7 @@ function transfer_form_values($dst, $src, names) {
 handle_ui.on("js-forgot-password", function (event) {
     var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "forgot"}), maxWidth: "25rem"});
     hc.push('<p>Enter your email and we’ll send you instructions for signing in.</p>');
-    hc.push('<div class="f-i"><label class="f-c" for="forgotpassword_email">Email</label>', '</div>');
+    hc.push('<div class="f-i"><label for="forgotpassword_email">Email</label>', '</div>');
     hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="username" id="forgotpassword_email">');
     hc.push_actions(['<button type="submit" class="btn btn-primary">Reset password</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
@@ -5971,7 +5971,7 @@ handle_ui.on("js-create-account", function (event) {
     var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "new"}), maxWidth: "25rem"});
     hc.push('<h2>Create account</h2>');
     hc.push('<p>Enter your email and we’ll create an account and send you an initial password.</p>')
-    hc.push('<div class="f-i"><label class="f-c" for="createaccount_email">Email</label>', '</div>');
+    hc.push('<div class="f-i"><label for="createaccount_email">Email</label>', '</div>');
     hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="email" id="createaccount_email">');
     hc.push_actions(['<button type="submit" class="btn btn-primary">Create account</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);

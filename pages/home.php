@@ -123,7 +123,7 @@ echo '<div class="homeside">';
 
 echo '<noscript><div class="homeinside"><strong>This site requires JavaScript.</strong> ',
     "Many features will work without JavaScript, but not all.<br />",
-    '<a style="font-size:smaller" href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>';
+    '<a class="small" href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>';
 
 // Conference management and information sidebar
 $inside_links = [];
@@ -194,14 +194,14 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         $Conf->save_session("password_reset", null);
     }
     echo '<div class="', Ht::control_class("email", "f-i"), '">',
-        Ht::label($Conf->opt("ldapLogin") ? "Username" : "Email", "signin_email", ["class" => "f-c"]),
+        Ht::label($Conf->opt("ldapLogin") ? "Username" : "Email", "signin_email"),
         Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
                   ["size" => 36, "id" => "signin_email", "class" => "fullw", "autocomplete" => "username", "tabindex" => 1]),
         '</div>
 <div class="', Ht::control_class("password", "f-i fx"), '">';
     if (!$Conf->opt("ldapLogin"))
-        echo '<div class="floatright"><a href="" class="n x ui js-forgot-password">Forgot your password?</a></div>';
-    echo Ht::label("Password", "signin_password", ["class" => "f-c"]),
+        echo '<div class="floatright"><a href="" class="n x small ui js-forgot-password">Forgot your password?</a></div>';
+    echo Ht::label("Password", "signin_password"),
         Ht::password("password", "",
                      ["size" => 36, "id" => "signin_password", "class" => "fullw", "autocomplete" => "current-password", "tabindex" => 1]),
         "</div>\n";
