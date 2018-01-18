@@ -397,9 +397,6 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	margin: 0.5em 8px;
 	max-width: 800px;
 }
-.xmsgs-atbody {
-	margin: 12px 0 24px;
-}
 .leftmenu-content > .xmsg {
 	margin-left: -16px;
 	margin-right: -16px;
@@ -415,17 +412,6 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 }
 .xmsgc > p:last-child {
 	margin-bottom: 0;
-}
-.xmsgs-atbody > .xmsg {
-	border-left-width: 0;
-	border-right-width: 0;
-}
-.xmsgs-atbody > .xmsg > .xmsgc {
-	padding-left: 24px;
-	padding-right: 24px;
-	margin-left: 0;
-	margin-right: 0;
-	max-width: none;
 }
 .xinfo {
 	background: #f9f9fd;
