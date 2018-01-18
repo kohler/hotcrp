@@ -1369,7 +1369,7 @@ input.error,
 div.error input, td.error input, tr.error input,
 div.error textarea, td.error textarea, tr.error textarea,
 div.error > div.f-c,
-span.error,
+span.error, strong.error,
 h2.error, h3.error, h4.error, h5.error, h6.error {
 	color: #ff0000;
 }
