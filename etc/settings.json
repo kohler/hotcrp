@@ -142,7 +142,7 @@
     },
     "opt.shortName": {
         "title": "Conference abbreviation",
-        "type": "simplestring", "size": 20,
+        "type": "simplestring", "size": 20, "autogrow": true,
         "require": "src/settings/s_basics.php"
     },
     "opt.timezone": {
