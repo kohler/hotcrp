@@ -3182,9 +3182,9 @@ class Conf {
     function footer() {
         global $Me, $ConfSitePATH;
         echo "</div>\n", // class='body'
-            "<div id='footer'>\n  <div id='footer_crp'>",
+            '<div id="footer"><div id="footer_crp">',
             $this->opt("extraFooter", ""),
-            "<a href='http://read.seas.harvard.edu/~kohler/hotcrp/'>HotCRP</a>";
+            '<a href="http://read.seas.harvard.edu/~kohler/hotcrp/">HotCRP</a>';
         if (!$this->opt("noFooterVersion")) {
             if ($Me && $Me->privChair) {
                 echo " v", HOTCRP_VERSION;
