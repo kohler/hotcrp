@@ -1374,7 +1374,7 @@ h2.error, h3.error, h4.error, h5.error, h6.error {
 	color: #ff0000;
 }
 
-.has-error > .f-c {
+.has-error > .f-c, .has-error > label {
 	color: #ff0000;
 }
 .has-error > input[type=text], .has-error > input[type=password], .has-error > textarea,
