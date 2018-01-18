@@ -186,14 +186,27 @@ class CommentInfo {
         return $result;
     }
 
+    private function unparse_user_pseudonym(Contact $user) {
+        if ($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR)) {
+            return "Author";
+        } else if ($this->conf->setting("cmt_author")
+                   && ($rrow = $this->prow->review_of_user($this->contactId))
+                   && $rrow->reviewOrdinal
+                   && $user->can_view_review($this->prow, $rrow)) {
+            return "Reviewer " . unparseReviewOrdinal($rrow->reviewOrdinal);
+        } else {
+            return false;
+        }
+    }
+
     function unparse_user_html(Contact $user, $forceShow = null) {
         if ($user->can_view_comment_identity($this->prow, $this, $forceShow))
             $n = Text::abbrevname_html($this->user());
         else
-            $n = "anonymous";
+            $n = $this->unparse_user_pseudonym($user) ? : "anonymous";
         if ($this->commentType & COMMENTTYPE_RESPONSE)
             $n = "<i>" . $this->unparse_response_text() . "</i>"
-                . ($n === "anonymous" ? "" : " ($n)");
+                . ($n === "Author" ? "" : " ($n)");
         return $n;
     }
 
@@ -201,10 +214,10 @@ class CommentInfo {
         if ($user->can_view_comment_identity($this->prow, $this, $forceShow))
             $n = Text::abbrevname_text($this->user());
         else
-            $n = "anonymous";
+            $n = $this->unparse_user_pseudonym($user) ? : "anonymous";
         if ($this->commentType & COMMENTTYPE_RESPONSE)
             $n = $this->unparse_response_text()
-                . ($n === "anonymous" ? "" : " ($n)");
+                . ($n === "Author" ? "" : " ($n)");
         return $n;
     }
 
@@ -285,16 +298,9 @@ class CommentInfo {
                     }
             }
         }
-        if (!$idable
-            && ($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR))) {
-            $cj->author_pseudonym = "Author";
-        } else if ((!$idable
-                    || $this->commentType == (COMMENTTYPE_AUTHOR | COMMENTTYPE_BLIND))
-                   && $this->conf->setting("cmt_author")
-                   && ($rrow = $this->prow->review_of_user($this->contactId))
-                   && $rrow->reviewOrdinal
-                   && $contact->can_view_review($this->prow, $rrow)) {
-            $cj->author_pseudonym = "Reviewer " . unparseReviewOrdinal($rrow->reviewOrdinal);
+        if ((!$idable || $this->commentType == (COMMENTTYPE_AUTHOR | COMMENTTYPE_BLIND))
+            && ($p = $this->unparse_user_pseudonym($contact))) {
+            $cj->author_pseudonym = $p;
         }
         if ($this->timeModified > 0 && $idable_override) {
             $cj->modified_at = (int) $this->timeModified;
@@ -324,8 +330,12 @@ class CommentInfo {
             $x = "$rname Response";
         else
             $x = "Response";
-        if ($contact->can_view_comment_identity($this->prow, $this, false))
+        if ($contact->can_view_comment_identity($this->prow, $this, false)) {
             $x .= " by " . Text::user_text($this->user());
+        } else if (($p = $this->unparse_user_pseudonym($contact))
+                   && ($p !== "Author" || !($this->commentType & COMMENTTYPE_RESPONSE))) {
+            $x .= " by " . $p;
+        }
         $x .= "\n" . str_repeat("=", 75) . "\n";
         if (!$no_title) {
             $prow = $this->prow;
