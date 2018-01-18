@@ -260,6 +260,7 @@ src/searchselection.php
 src/sessionlist.php
 src/settings/s_basics.php
 src/settings/s_decisions.php
+src/settings/s_decisionvisibility.php
 src/settings/s_finalversions.php
 src/settings/s_messages.php
 src/settings/s_options.php

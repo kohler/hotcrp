@@ -30,9 +30,15 @@
     },
     {
         "name": "decisions/review-visibility", "position": 20,
-        "title": "Review and decision visibility",
+        "title": "Review visibility",
         "render_callback": "ReviewVisibility_SettingParser::render",
         "crosscheck_callback": "ReviewVisibility_SettingParser::crosscheck"
+    },
+    {
+        "name": "decisions/decision-visibility", "position": 25,
+        "title": "Decision visibility",
+        "render_callback": "DecisionVisibility_SettingParser::render",
+        "crosscheck_callback": "DecisionVisibility_SettingParser::crosscheck"
     },
     {
         "name": "decisions/decision-types", "position": 30,
