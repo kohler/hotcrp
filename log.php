@@ -604,7 +604,7 @@ foreach ($visible_rows as $row) {
 }
 
 if (!$Me->privChair || !empty($exclude_pids)) {
-    echo '<div class="xmsgs-atbody">';
+    echo '<div class="msgs-wide">';
     if (!$Me->privChair)
         $Conf->msg("xinfo", "Only showing your actions and entries for papers you administer.");
     else if (!empty($exclude_pids)

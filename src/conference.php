@@ -3120,7 +3120,7 @@ class Conf {
 
         echo "<div id=\"initialmsgs\">\n";
         if (($x = $this->opt("maintenance")))
-            echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($x) ? $x : "Please check back later."), "</div>";
+            echo Ht::xmsg(2, is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.");
         $this->save_messages = false;
         if (($msgs = $this->session("msgs")) && count($msgs)) {
             $this->save_session("msgs", null);

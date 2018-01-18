@@ -133,7 +133,7 @@ function pref_xmsgc($msg) {
     if (!$Conf->headerPrinted)
         $Conf->warnMsg($msg);
     else
-        echo '<div class="xmsgs-atbody">', Ht::xmsg(1, $msg), '</div>';
+        echo '<div class="msgs-wide">', Ht::xmsg(1, $msg), '</div>';
 }
 
 function parseUploadedPreferences($text, $filename, $apply) {

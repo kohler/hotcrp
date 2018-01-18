@@ -674,7 +674,7 @@ if ($UserStatus->has_messages()) {
         $status = max($m[2], $status);
         $msgs[] = '<div class="mmm">' . $m[1] . '</div>';
     }
-    echo '<div class="xmsgs-atbody">', Ht::xmsg($status, join("", $msgs)), "</div>\n";
+    echo '<div class="msgs-wide">', Ht::xmsg($status, join("", $msgs)), "</div>\n";
 }
 
 echo '<div id="foldaccount" class="profiletext', ($need_highlight ? " alert" : ""),
