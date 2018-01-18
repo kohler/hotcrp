@@ -193,6 +193,10 @@ a.mailto:hover, a:hover u.x, .ul {
 a.small {
 	font-size: smaller;
 }
+.strut {
+	display: inline-block;
+	line-height: 1.8;
+}
 span.barsep {
 	opacity: 0.8;
 	padding: 0 0.5em;
@@ -237,17 +241,27 @@ span.nb {
 	margin: 0.5em 0;
 	padding-left: 9rem;
 }
-.entryc {
+.entryi > label {
 	float: left;
 	margin-left: -9rem;
 	width: 8rem;
-	padding-top: 0.2em;
 	text-align: right;
+}
+.entryi > label:before {
+	content: "";
+	line-height: 1.8;
 }
 .checki, .entryi {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
+}
+.entryi.wide {
+	padding-left: 20rem;
+}
+.entryi.wide > label {
+	margin-left: -20rem;
+	width: 19rem;
 }
 .fullw {
 	width: 100%;
@@ -1109,11 +1123,7 @@ th.settings-simplehead {
 	margin-top: 3em;
 }
 .settings-tracks {
-	margin-bottom: 1em;
-}
-td.settings-track-perm {
-	padding-top: 3px;
-	padding-bottom: 3px;
+	margin-bottom: 2em;
 }
 .settings-2col {
 	-webkit-columns: 20rem 2;
@@ -1249,7 +1259,6 @@ label.f-c, .f-i > label {
 .f-h {
 	font-size: 92%;
 	color: #555555;
-	clear: both;
 	margin-top: 0.25rem;
 }
 .f-2col {

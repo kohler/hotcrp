@@ -664,21 +664,21 @@ class SettingValues extends MessageSet {
         $item_open = get($js, "item_open");
         unset($js["after_entry"], $js["horizontal"], $js["item_open"]);
         $problem = $this->has_problem_at($name);
-        $prefix = $horizontal ? "entry" : "f-";
+        $klass = $horizontal ? "entryi" : "f-i";
         $si = $this->si($name);
         if ($description === null && $si)
             $description = $si->title;
 
-        echo '<div class="', $prefix, "i", ($problem ? " has-error" : ""), '">',
-            $this->label($name, $description, ["class" => $prefix . "c"]),
+        echo '<div class="', $klass, ($problem ? " has-error" : ""), '">',
+            $this->label($name, $description),
             $this->render_entry($name, $js), ($after_entry ? : "");
         $thint = $si ? $this->type_hint($si->type) : null;
         if ($hint || $thint) {
             echo '<div class="f-h">';
-            if ($hint)
-                echo '<div>', $hint, '</div>';
-            if ($thint)
-                echo '<div>', $thint, '</div>';
+            if ($hint && $thint)
+                echo '<div>', $hint, '</div><div>', $thint, '</div>';
+            else if ($hint || $thint)
+                echo $hint ? $hint : $thint;
             echo '</div>';
         }
         if (!$item_open)

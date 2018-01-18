@@ -28,38 +28,31 @@ class Tracks_SettingRenderer {
         if (is_array($question)) {
             list($question, $hint) = $question;
         }
-        if ($hint) {
-            $hint = '<p class="hint" style="margin:0;max-width:480px">' . $hint . '</p>';
-        }
 
-        echo "<tr class=\"has-fold fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">";
-        if ($type === "viewtracker")
-            echo "<td class=\"lxcaption\" colspan=\"2\" style=\"padding-top:0.5em\">";
-        else
-            echo "<td style=\"width:2em\"></td><td class=\"lxcaption\">";
-        echo $sv->label(["{$type}_track$tnum", "{$type}tag_track$tnum"], $question),
-            "</td><td class=\"settings-track-perm\">",
+        echo '<div class="entryi wide has-fold fold',
+            ($tclass == "" || $tclass === "none" ? "c" : "o"),
+            '">',
+            $sv->label(["{$type}_track$tnum", "{$type}tag_track$tnum"], $question),
+            '<span class="strut">',
             Ht::select("{$type}_track$tnum", $perm, $tclass,
                        $sv->sjs("{$type}_track$tnum", ["class" => "js-track-perm"])),
-            " &nbsp;</td><td class=\"settings-track-tag\">",
+            "</span> &nbsp;",
             Ht::entry("${type}tag_track$tnum", $ttag,
-                      $sv->sjs("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)"))),
-            "</td></tr>";
+                      $sv->sjs("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)")));
         if ($hint)
-            echo "<tr><td></td><td colspan=\"3\">", $hint, "</td></tr>";
+            echo '<div class="f-h">', $hint, '</div>';
+        echo "</div>";
     }
 
-    static private function do_track($sv, $trackname, $tnum) {
+    static private function do_track(SettingValues $sv, $trackname, $tnum) {
         echo "<div id=\"trackgroup$tnum\" class=\"mg\"",
             ($tnum ? "" : " style=\"display:none\""),
-            "><table class=\"settings-tracks\">";
-        echo "<tr><td colspan=\"4\" style=\"padding-bottom:3px\">";
+            "><div class=\"settings-tracks\">";
         if ($trackname === "_")
             echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
         else
             echo $sv->label("name_track$tnum", "For papers with tag &nbsp;"),
                 Ht::entry("name_track$tnum", $trackname, $sv->sjs("name_track$tnum", array("placeholder" => "(tag)"))), ":";
-        echo "</td></tr>\n";
 
         $t = $sv->conf->setting_json("tracks");
         $t = $t && $trackname !== "" ? get($t, $trackname) : null;
@@ -79,9 +72,16 @@ class Tracks_SettingRenderer {
             $hint = "The " . Ht::link("current settings", hoturl("settings", "group=reviews#pcreviews")) . " disable self-assignment.";
         self::do_track_permission($sv, "unassrev", ["Who can self-assign a review?", $hint], $tnum, $t);
         self::do_track_permission($sv, "admin", "Who can administer these papers?", $tnum, $t);
-        if ($trackname === "_")
-            self::do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", $tnum, $t);
-        echo "</table></div>\n\n";
+        echo "</div></div>\n\n";
+    }
+
+    static function do_cross_track(SettingValues $sv) {
+        echo "<div class=\"settings-tracks\">General permissions:";
+
+        $t = $sv->conf->setting_json("tracks");
+        $t = $t ? get($t, "_") : null;
+        self::do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", 1, $t);
+        echo "</div>\n\n";
     }
 
     static function render(SettingValues $sv) {
@@ -109,6 +109,7 @@ class Tracks_SettingRenderer {
             }
         // catchall track
         self::do_track($sv, "_", 1);
+        self::do_cross_track($sv);
         echo Ht::button("Add track", ["class" => "btn", "id" => "settings_track_add"]);
 
         Ht::stash_script('$("#settings_track_add").on("click", settings_add_track)');
