@@ -17,7 +17,7 @@ function settings_option_type() {
     var v = this.value;
     foldup.call(this, null, {n: 2, f: !/:final/.test(v)});
     foldup.call(this, null, {n: 3, f: v != "pdf:final"});
-    foldup.call(this, null, {n: 4, f: v != "selector" && v != "radio"});
+    foldup.call(this, null, {n: 4, f: !/^(?:selector|radio)/.test(v)});
     return true;
 }
 
