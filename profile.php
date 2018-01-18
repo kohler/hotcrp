@@ -590,7 +590,7 @@ if ($newProfile) {
 } else if (strcasecmp($Me->email, $Acct->email) == 0) {
     $title = "Profile";
 } else {
-    $title = "Account profile";
+    $title = $Me->name_html_for($Acct) . " profile";
 }
 $Conf->header($title, "account", ["action_bar" => actionBar("account")]);
 
@@ -684,13 +684,13 @@ echo '<div id="foldaccount" class="profiletext', ($need_highlight ? " alert" : "
 echo '<div class="profile-g">', "\n";
 $actas = "";
 if ($Acct !== $Me && $Acct->email && $Me->privChair)
-    $actas = '<div class="floatright">&nbsp;' . actas_link($Acct) . '</div>';
+    $actas = '&nbsp;' . actas_link($Acct);
 if (!$Conf->external_login()) {
-    echofield("uemail", "Email",
-        $actas . Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail"]));
+    echofield("uemail", "Email" . $actas,
+        Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail"]));
 } else if (!$newProfile) {
-    echofield(false, "Username",
-        $actas . htmlspecialchars(contact_value("uemail", "email")));
+    echofield(false, "Username" . $actas,
+        htmlspecialchars(contact_value("uemail", "email")));
     echofield("preferredEmail", "Email",
         Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail"]));
 } else {
