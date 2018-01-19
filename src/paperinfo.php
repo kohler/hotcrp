@@ -879,7 +879,8 @@ class PaperInfo {
                     }
                 }
         }
-        if ((string) $this->collaborators !== "") {
+        if ((string) $this->collaborators !== ""
+            && $user->aucollab_matchers()) {
             $au = $user->aucollab_matchers()[0];
             $autext = $au->nameaff_text();
             $autext_deaccent = false;
