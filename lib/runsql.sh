@@ -49,6 +49,9 @@ while [ $# -gt 0 ]; do
     --show-opt|--show-option)
         test "$#" -gt 1 -a -z "$mode" || usage
         optname="$2"; shift; mode=showopt;;
+    --json-dbvars)
+        test -z "$mode" || usage
+        mode=json_dbvars;;
     -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
@@ -82,11 +85,20 @@ while [ $# -gt 0 ]; do
 done
 
 if ! findoptions >/dev/null; then
-    echo "runsql.sh: Can't read options file! Is this a CRP directory?" 1>&2
+    echo "runsql.sh: No options file" 1>&2
     exit 1
 fi
 
 get_dboptions runsql.sh
+
+if test "$mode" = json_dbvars; then
+    echo_n '{'
+    eval "x=$dbname"; echo_n '"dbname":'; echo_n "$x" | json_quote
+    eval "x=$dbuser"; echo_n ',"dbuser":'; echo_n "$x" | json_quote
+    eval "x=$dbpass"; echo_n ',"dbpassword":'; echo_n "$x" | json_quote
+    eval "x=$dbhost"; echo_n ',"dbhost":'; echo_n "$x" | json_quote; echo '}'
+    exit
+fi
 
 check_mysqlish MYSQL mysql
 set_myargs "$dbuser" "$dbpass"

@@ -123,6 +123,13 @@ sql_quote () {
     sed -e 's,\([\\"'"'"']\),\\\1,g' | sed -e 's,,\\Z,g'
 }
 
+json_quote () {
+    echo_n '"'
+    perl -pe 's{([\\\"])}{\\$1}g;s{([\000-\017])}{sprintf("\\%03o", ord($1))}eg'
+    # sed -e 's,\([\\"]\),\\\1,g' | tr -d '\n'
+    echo_n '"'
+}
+
 check_mysqlish () {
     local m="`eval echo '$'$1`"
     if test -n "$m"; then :;
