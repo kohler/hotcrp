@@ -1,6 +1,11 @@
 HotCRP NEWS
 ===========
 
+## Version 2.102
+
+* Support integration with Lutz Prechelt’s [Review Quality Collector][].
+
+
 ## Version 2.101 - 18.Oct.2017
 
 * Support metareviewers.
@@ -1545,3 +1550,6 @@ HotCRP NEWS
 ## Version 2.0b1 - 28.Nov.2006
 
 * Initial release.
+
+
+[Review Quality Collector]: https://reviewqualitycollector.org
