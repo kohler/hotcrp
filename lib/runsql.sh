@@ -49,9 +49,9 @@ while [ $# -gt 0 ]; do
     --show-opt|--show-option)
         test "$#" -gt 1 -a -z "$mode" || usage
         optname="$2"; shift; mode=showopt;;
-    --json-dbvars)
+    --json-dbopt)
         test -z "$mode" || usage
-        mode=json_dbvars;;
+        mode=json_dbopt;;
     -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
@@ -91,12 +91,13 @@ fi
 
 get_dboptions runsql.sh
 
-if test "$mode" = json_dbvars; then
+if test "$mode" = json_dbopt; then
     echo_n '{'
-    eval "x=$dbname"; echo_n '"dbname":'; echo_n "$x" | json_quote
-    eval "x=$dbuser"; echo_n ',"dbuser":'; echo_n "$x" | json_quote
-    eval "x=$dbpass"; echo_n ',"dbpassword":'; echo_n "$x" | json_quote
-    eval "x=$dbhost"; echo_n ',"dbhost":'; echo_n "$x" | json_quote; echo '}'
+    eval "x=$dbname"; echo_n '"dbName":'; echo_n "$x" | json_quote
+    eval "x=$dbuser"; echo_n ',"dbUser":'; echo_n "$x" | json_quote
+    eval "x=$dbpass"; echo_n ',"dbPassword":'; echo_n "$x" | json_quote
+    eval "x=$dbhost"; echo_n ',"dbHost":'; if [ -z "$x" ]; then echo_n 'null'; else echo_n "$x" | json_quote; fi
+    echo '}'
     exit
 fi
 
