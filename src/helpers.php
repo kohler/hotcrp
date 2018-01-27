@@ -557,9 +557,9 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
     if (isset($whyNot["administer"]))
         $ms[] = $conf->_("You can’t administer submission #%d.", $paperId);
     if (isset($whyNot["permission"]))
-        $ms[] = $conf->_("You don’t have permission to $action submission #%d.", $paperId);
+        $ms[] = $conf->_c("eperm", "Permission error.", $whyNot["permission"], $paperId);
     if (isset($whyNot["pdfPermission"]))
-        $ms[] = $conf->_("You don’t have permission to view uploaded documents for submission #%d.", $paperId);
+        $ms[] = $conf->_c("eperm", "Permission error.", "view_pdf", $paperId);
     if (isset($whyNot["optionPermission"]))
         $ms[] = $conf->_("You don’t have permission to view the %2\$s for submission #%1\$d.", $paperId, $whyNot["optionPermission"]->message_title);
     if (isset($whyNot["optionNotAccepted"]))

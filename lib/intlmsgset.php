@@ -19,10 +19,18 @@ class IntlMsg {
         if (!$this->require)
             return 0;
         $nreq = 0;
-        foreach ($this->require as $req)
+        foreach ($this->require as $req) {
             if (preg_match('/\A\s*\$(\w+)\s*([=!<>]=?|≠|≤|≥)\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*\z/', $req, $m)) {
                 $arg = $this->arg($ms, $args, $m[1]);
-                if ((string) $arg === "" || !CountMatcher::compare((float) $arg, $m[2], (float) $m[3]))
+                if ((string) $arg === ""
+                    || !CountMatcher::compare((float) $arg, $m[2], (float) $m[3]))
+                    return false;
+                ++$nreq;
+            } else if (preg_match('/\A\s*\$(\w+)\s*([=!]=?)\s*(\S+)\s*\z/', $req, $m)) {
+                $arg = $this->arg($ms, $args, $m[1]);
+                $want = $m[2] === "!" ? false : true;
+                if ((string) $arg === ""
+                    || ($arg === $m[3]) !== $want)
                     return false;
                 ++$nreq;
             } else if (preg_match('/\A\s*(|!)\s*\$(\w+)\s*\z/', $req, $m)) {
@@ -32,6 +40,7 @@ class IntlMsg {
                     return false;
                 ++$nreq;
             }
+        }
         return $nreq;
     }
 }

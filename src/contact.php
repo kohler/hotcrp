@@ -2226,7 +2226,7 @@ class Contact {
         if (!$rights->allow_author_view
             && !$rights->review_status
             && !$rights->allow_pc_broad)
-            $whyNot["permission"] = 1;
+            $whyNot["permission"] = "view_paper";
         else {
             $explained = 0;
             if ($prow->timeWithdrawn > 0)
@@ -2544,16 +2544,16 @@ class Contact {
         $rrowSubmitted = !$rrow || $rrow->reviewSubmitted > 0;
         $rights = $this->rights($prow, $forceShow);
         $whyNot = $prow->initial_whynot();
-        if ($prow->timeWithdrawn > 0)
+        if ((!$rights->act_author_view
+             && !$rights->allow_pc
+             && !$rights->review_status)
+            || ($rights->allow_pc
+                && !$this->conf->check_tracks($prow, $this, Track::VIEWREV)))
+            $whyNot["permission"] = "view_review";
+        else if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
             $whyNot["notSubmitted"] = 1;
-        else if ((!$rights->act_author_view
-                  && !$rights->allow_pc
-                  && !$rights->review_status)
-                 || ($rights->allow_pc
-                     && !$this->conf->check_tracks($prow, $this, Track::VIEWREV)))
-            $whyNot["permission"] = 1;
         else if ($rights->act_author_view
                  && $this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
                  && $this->has_outstanding_review()
@@ -2561,7 +2561,7 @@ class Contact {
             $whyNot["reviewsOutstanding"] = 1;
         else if ($rights->act_author_view
                  && !$rrowSubmitted)
-            $whyNot["permission"] = 1;
+            $whyNot["permission"] = "view_review";
         else if ($rights->act_author_view)
             $whyNot["deadline"] = "au_seerev";
         else if ($rights->view_conflict_type)
@@ -2666,7 +2666,7 @@ class Contact {
                 || !isset($prow->leadContactId)
                 || $prow->leadContactId != $this->contactId)
             && !$rights->allow_administer)
-            $whyNot["permission"] = 1;
+            $whyNot["permission"] = "request_review";
         else {
             $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
             if ($rights->allow_administer)
@@ -2767,7 +2767,7 @@ class Contact {
             && !$rights->allow_administer)
             $whyNot["differentReviewer"] = 1;
         else if (!$rights->allow_pc && !$this->rights_owned_review($rights, $rrow))
-            $whyNot["permission"] = 1;
+            $whyNot["permission"] = "review";
         else if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
@@ -2919,7 +2919,7 @@ class Contact {
                  && !$rights->allow_review
                  && (!$rights->act_author
                      || $this->conf->setting("cmt_author", 0) <= 0))
-            $whyNot["permission"] = 1;
+            $whyNot["permission"] = "comment";
         else if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
@@ -2960,7 +2960,7 @@ class Contact {
         $whyNot = $prow->initial_whynot();
         if (!$rights->allow_administer
             && !$rights->act_author)
-            $whyNot["permission"] = 1;
+            $whyNot["permission"] = "respond";
         else if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
@@ -3287,7 +3287,7 @@ class Contact {
         $whyNot = $prow->initial_whynot();
         $whyNot["tag"] = $tag;
         if (!$this->isPC)
-            $whyNot["permission"] = true;
+            $whyNot["permission"] = "change_tag";
         else if ($rights->conflictType > 0) {
             $whyNot["conflict"] = true;
             if ($rights->allow_administer)

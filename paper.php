@@ -333,7 +333,7 @@ if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
         } else
             Conf::msg_error("<ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>");
     } else
-        Conf::msg_error(whyNotText(array("permission" => 1), "update contacts for"));
+        Conf::msg_error(whyNotText(array("permission" => "edit_contacts"), "update contacts for"));
 
     // use request?
     $useRequest = true;

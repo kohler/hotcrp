@@ -71,7 +71,7 @@ class Status_Assigner extends Assigner {
         else if ($this->item->get($type, "_submitted"))
             return "Submitted";
         else
-            return "Not ready";
+            return "Not ready";
     }
     function unparse_display(AssignmentSet $aset) {
         return '<del>' . $this->status_html(true) . '</del> '

@@ -38,5 +38,15 @@
     ["Ignored blank review forms %2$s.", "Ignored blank review form %2$s.", ["$1=1"]],
     ["Ignored blank review forms %2$s.", "Ignored blank review form.", ["$3"]],
 
-    ["Papers #%s are totally hidden when viewing the site as another user.", "Paper #%s is totally hidden when viewing the site as another user.", ["$2=1"]]
+    ["Papers #%s are totally hidden when viewing the site as another user.", "Paper #%s is totally hidden when viewing the site as another user.", ["$2=1"]],
+
+    ["eperm", "Permission error.", "Permission error: you can’t view submission #%2$d.", ["$1=view_paper"]],
+    ["eperm", "Permission error.", "Permission error: you can’t view uploaded documents for submission #%2$d.", ["$1=view_pdf"]],
+    ["eperm", "Permission error.", "Permission error: you can’t view reviews for submission #%2$d.", ["$1=view_review"]],
+    ["eperm", "Permission error.", "Permission error: you can’t request reviews for submission #%2$d.", ["$1=request_review"]],
+    ["eperm", "Permission error.", "Permission error: you can’t review submission #%2$d.", ["$1=review"]],
+    ["eperm", "Permission error.", "Permission error: you can’t comment on submission #%2$d.", ["$1=comment"]],
+    ["eperm", "Permission error.", "Permission error: you can’t respond to the reviews for submission #%2$d.", ["$1=respond"]],
+    ["eperm", "Permission error.", "Permission error: you can’t edit the contacts of submission #%2$d.", ["$1=edit_contacts"]],
+    ["eperm", "Permission error.", "Permission error: you can’t change tags for submission #%2$d.", ["$1=change_tag"]]
 ]
