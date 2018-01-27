@@ -794,11 +794,12 @@ class PaperStatus extends MessageSet {
             if ($noldcontacts)
                 $this->error_at("contacts", $this->_("Each submission must have at least one contact."));
         }
-        foreach ($pj->bad_contacts as $reg)
+        foreach ($pj->bad_contacts as $reg) {
             if (!isset($reg->email))
                 $this->error_at("contacts", $this->_("Contact %s has no associated email.", Text::user_html($reg)));
             else
                 $this->error_at("contacts", $this->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
+        }
         if (get($pj, "options"))
             $this->check_options($pj);
         if (!empty($pj->bad_topics))
@@ -841,7 +842,7 @@ class PaperStatus extends MessageSet {
 
     static private function contacts_array($pj) {
         $contacts = array();
-        foreach (get($pj, "authors") ? : array() as $au)
+        foreach (get($pj, "authors") ? : [] as $au)
             if (get($au, "email") && validate_email($au->email)) {
                 $c = clone $au;
                 $contacts[strtolower($c->email)] = $c;
@@ -856,24 +857,25 @@ class PaperStatus extends MessageSet {
     }
 
     function conflicts_array($pj, $old_pj) {
-        $x = array();
+        $cflts = array();
 
         if ($pj && isset($pj->pc_conflicts))
             $c = $pj->pc_conflicts;
         else
             $c = ($old_pj ? get($old_pj, "pc_conflicts") : null) ? : array();
         foreach ((array) $c as $email => $type)
-            $x[strtolower($email)] = $type;
+            $cflts[strtolower($email)] = $type;
 
         if ($pj && isset($pj->authors))
             $c = $pj->authors;
         else
             $c = $old_pj ? $old_pj->authors : array();
-        foreach ($c as $au)
+        foreach ($c as $au) {
             if (get($au, "email")) {
                 $lemail = strtolower($au->email);
-                $x[$lemail] = get($au, "contact") ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR;
+                $cflts[$lemail] = get($au, "contact") ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR;
             }
+        }
 
         if ($pj && isset($pj->contacts))
             $c = $pj->contacts;
@@ -881,7 +883,7 @@ class PaperStatus extends MessageSet {
             $c = $old_pj ? (get($old_pj, "contacts") ? : []) : [];
         foreach ($c as $v) {
             $lemail = strtolower($v->email);
-            $x[$lemail] = max((int) get($x, $lemail), CONFLICT_CONTACTAUTHOR);
+            $cflts[$lemail] = max((int) get($cflts, $lemail), CONFLICT_CONTACTAUTHOR);
         }
 
         if ($old_pj && get($old_pj, "pc_conflicts")) {
@@ -890,14 +892,14 @@ class PaperStatus extends MessageSet {
             foreach ($old_pj->pc_conflicts as $email => $type)
                 if ($type == CONFLICT_CHAIRMARK) {
                     $lemail = strtolower($email);
-                    if (get_i($x, $lemail) < CONFLICT_CHAIRMARK
+                    if (get_i($cflts, $lemail) < CONFLICT_CHAIRMARK
                         && !$can_administer)
-                        $x[$lemail] = CONFLICT_CHAIRMARK;
+                        $cflts[$lemail] = CONFLICT_CHAIRMARK;
                 }
         }
 
-        ksort($x);
-        return $x;
+        ksort($cflts);
+        return $cflts;
     }
 
     private function addf($f, $v) {
@@ -940,6 +942,7 @@ class PaperStatus extends MessageSet {
             $this->normalize($old_pj, null, true);
         if ($this->has_error())
             return false;
+
         $this->check_invariants($pj, $old_pj);
 
         // store documents (options already stored)
