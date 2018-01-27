@@ -298,6 +298,9 @@ class PaperTable {
     function error_class($f) {
         return $this->has_problem_at($f) ? " error" : "";
     }
+    function has_error_class($f) {
+        return $this->has_problem_at($f) ? " has-error" : "";
+    }
 
     private function editable_papt($what, $name, $extra = array()) {
         $id = get($extra, "id");
@@ -372,7 +375,7 @@ class PaperTable {
     }
 
     private function editable_textarea($fieldName) {
-        $js = ["class" => "papertext" . $this->error_class($fieldName),
+        $js = ["class" => "papertext" . $this->has_error_class($fieldName),
                "rows" => self::$textAreaRows[$fieldName], "cols" => 60];
         if ($fieldName === "abstract")
             $js["spellcheck"] = true;
@@ -684,7 +687,7 @@ class PaperTable {
             $val = (string) get($this->qreq, $n === "\$" ? "" : "$pfx$n");
         else
             $val = $auval;
-        $js["class"] = "need-autogrow e$pfx" . $this->error_class("$pfx$n");
+        $js["class"] = "need-autogrow e$pfx" . $this->has_error_class("$pfx$n");
         if ($val !== $auval)
             $js["data-default-value"] = $auval;
         return Ht::entry("$pfx$n", $val, $js);
