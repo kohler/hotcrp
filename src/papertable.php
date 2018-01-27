@@ -683,13 +683,16 @@ class PaperTable {
             $js = ["size" => "32", "placeholder" => "Affiliation"];
             $auval = $au ? $au->affiliation : "";
         }
-        if ($this->useRequest)
-            $val = (string) get($this->qreq, $n === "\$" ? "" : "$pfx$n");
-        else
-            $val = $auval;
+
+        $val = $auval;
+        if ($this->useRequest) {
+            $val = ($pfx === '$' ? "" : (string) $this->qreq["$pfx$n"]);
+        }
+
         $js["class"] = "need-autogrow e$pfx" . $this->has_error_class("$pfx$n");
-        if ($val !== $auval)
+        if ($val !== $auval) {
             $js["data-default-value"] = $auval;
+        }
         return Ht::entry("$pfx$n", $val, $js);
     }
     private function editable_authors_tr($n, $au, $max_authors) {
@@ -732,19 +735,34 @@ class PaperTable {
             'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', null, $max_authors)), '">';
 
         $aulist = $this->prow ? $this->prow->author_list() : array();
-        for ($n = 1;
-             $n <= count($aulist)
-             || ($this->useRequest
-                 && ((string) get($this->qreq, "auname$n") !== ""
-                     || (string) get($this->qreq, "auemail$n") !== ""
-                     || (string) get($this->qreq, "auaff$n") !== ""));
-             ++$n)
+        if ($this->useRequest) {
+            $n = $nonempty_n = 0;
+            while (1) {
+                $auname = $this->qreq["auname" . ($n + 1)];
+                $auemail = $this->qreq["auemail" . ($n + 1)];
+                $auaff = $this->qreq["auaff" . ($n + 1)];
+                if ($auname === null && $auemail === null && $auaff === null) {
+                    break;
+                }
+                ++$n;
+                if ((string) $auname !== "" || (string) $auemail !== "" || (string) $auaff !== "") {
+                    $nonempty_n = $n;
+                }
+            }
+            while (count($aulist) < $nonempty_n) {
+                $aulist[] = null;
+            }
+        }
+
+        for ($n = 1; $n <= count($aulist); ++$n) {
             echo $this->editable_authors_tr($n, get($aulist, $n - 1), $max_authors);
-        if ($max_authors <= 0 || $n <= $max_authors)
+        }
+        if ($max_authors <= 0 || $n <= $max_authors) {
             do {
                 echo $this->editable_authors_tr($n, null, $max_authors);
                 ++$n;
             } while ($n <= $min_authors);
+        }
         echo "</tbody></table></div></div>\n\n";
     }
 

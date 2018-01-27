@@ -95,9 +95,11 @@ class Default_PaperSaver extends PaperSaver {
             if (preg_match('/\Aau(name|email|aff)(\d+)\z/', $k, $m)
                 && ($v = simplify_whitespace($v)) !== ""
                 && $v !== $bad_author[$m[1]]) {
-                $au = $authors[$m[2]] = (get($authors, $m[2]) ? : (object) array());
                 $x = ($m[1] == "aff" ? "affiliation" : $m[1]);
-                $au->$x = $v;
+                if (!isset($authors[$m[2]])) {
+                    $authors[$m[2]] = (object) ["index" => intval($m[2])];
+                }
+                $authors[$m[2]]->$x = $v;
             }
         // some people are idiots
         foreach ($authors as $au)

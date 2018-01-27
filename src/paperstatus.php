@@ -436,7 +436,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function normalize_author($idx, $pj, $au, &$au_by_email, $old_au_by_email, $preserve) {
+    private function normalize_author($pj, $au, &$au_by_email, $old_au_by_email, $preserve) {
         if (!$preserve) {
             $aux = Text::analyze_name($au);
             $aux->first = simplify_whitespace($aux->firstName);
@@ -449,7 +449,6 @@ class PaperStatus extends MessageSet {
                 if (!isset($aux->$k))
                     $aux->$k = "";
         }
-        $aux->__author_index = $idx;
         // borrow from old author information
         if ($aux->email && $aux->first === "" && $aux->last === ""
             && ($old_au = get($old_au_by_email, strtolower($aux->email)))) {
@@ -458,14 +457,18 @@ class PaperStatus extends MessageSet {
             if ($aux->affiliation === "")
                 $aux->affiliation = get($old_au, "affiliation", "");
         }
+        if (is_object($au) && isset($au->contact))
+            $aux->contact = !!$au->contact;
+        if (is_object($au) && isset($au->index) && is_int($au->index))
+            $aux->index = $au->index;
+        else
+            $aux->index = count($pj->authors) + count($pj->bad_authors);
+
         if ($aux->first !== "" || $aux->last !== ""
             || $aux->email !== "" || $aux->affiliation !== "")
             $pj->authors[] = $aux;
         else
             $pj->bad_authors[] = $aux;
-        $aux->index = count($pj->authors) + count($pj->bad_authors);
-        if (is_object($au) && isset($au->contact))
-            $aux->contact = !!$au->contact;
         if ($aux->email) {
             $lemail = strtolower($aux->email);
             $au_by_email[$lemail] = $aux;
@@ -607,7 +610,7 @@ class PaperStatus extends MessageSet {
             $pj->authors = array();
             foreach ($curau as $k => $au) {
                 if (is_string($au) || is_object($au))
-                    $this->normalize_author($k, $pj, $au, $au_by_email, $old_au_by_email, $preserve);
+                    $this->normalize_author($pj, $au, $au_by_email, $old_au_by_email, $preserve);
                 else
                     $this->error_at("authors", "Format error [authors]");
             }
@@ -776,7 +779,7 @@ class PaperStatus extends MessageSet {
             $this->error_at("authors", $this->_("Some authors ignored."));
         foreach ($pj->bad_email_authors as $aux) {
             $this->error_at("authors", null);
-            $this->error_at("auemail" . ($aux->__author_index + 1), $this->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
+            $this->error_at("auemail" . $aux->index, $this->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
         }
         $ncontacts = 0;
         foreach ($this->conflicts_array($pj, $old_pj) as $c)
