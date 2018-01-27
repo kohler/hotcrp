@@ -48,5 +48,6 @@
     ["eperm", "Permission error.", "Permission error: you can’t comment on submission #%2$d.", ["$1=comment"]],
     ["eperm", "Permission error.", "Permission error: you can’t respond to the reviews for submission #%2$d.", ["$1=respond"]],
     ["eperm", "Permission error.", "Permission error: you can’t edit the contacts of submission #%2$d.", ["$1=edit_contacts"]],
-    ["eperm", "Permission error.", "Permission error: you can’t change tags for submission #%2$d.", ["$1=change_tag"]]
+    ["eperm", "Permission error.", "Permission error: you can’t change tags for submission #%2$d.", ["$1=change_tag"]],
+    ["eperm", "You are not signed in.", "You are viewing this submission via an “author view” link. To modify the submission, you must sign in to your HotCRP account.", ["$1=edit_paper"]]
 ]

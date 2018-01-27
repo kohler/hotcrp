@@ -2065,7 +2065,7 @@ class Contact {
         $rights = $this->rights($prow, "any");
         $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
-            $whyNot["signin"] = 1;
+            $whyNot["signin"] = "edit_paper";
         else if (!$rights->allow_author)
             $whyNot["author"] = 1;
         if ($prow->timeWithdrawn > 0)
@@ -2094,7 +2094,7 @@ class Contact {
         $rights = $this->rights($prow, "any");
         $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
-            $whyNot["signin"] = 1;
+            $whyNot["signin"] = "edit_paper";
         else if (!$rights->allow_author)
             $whyNot["author"] = 1;
         if ($prow->timeWithdrawn > 0)
@@ -2123,7 +2123,7 @@ class Contact {
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         if (!$rights->allow_author && $rights->allow_author_view)
-            $whyNot["signin"] = 1;
+            $whyNot["signin"] = "edit_paper";
         else if (!$rights->allow_author)
             $whyNot["author"] = 1;
         else if ($prow->outcome != 0 && !$this->override_deadlines($rights))
@@ -2146,7 +2146,7 @@ class Contact {
         $rights = $this->rights($prow, "any");
         $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
-            $whyNot["signin"] = 1;
+            $whyNot["signin"] = "edit_paper";
         else if (!$rights->allow_author)
             $whyNot["author"] = 1;
         if ($prow->timeWithdrawn <= 0)
@@ -2175,7 +2175,7 @@ class Contact {
         $rights = $this->rights($prow, "any");
         $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
-            $whyNot["signin"] = 1;
+            $whyNot["signin"] = "edit_paper";
         else if (!$rights->allow_author)
             $whyNot["author"] = 1;
         if ($prow->timeWithdrawn > 0)

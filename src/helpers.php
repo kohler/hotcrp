@@ -565,7 +565,7 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
     if (isset($whyNot["optionNotAccepted"]))
         $ms[] = $conf->_("Non-accepted submission #%d can have no %s.", $paperId, $whyNot["optionNotAccepted"]->message_title);
     if (isset($whyNot["signin"]))
-        $ms[] = $conf->_("You must sign in to $action submission #%d.", $paperId);
+        $ms[] = $conf->_c("eperm", "You are not signed in.", $whyNot["signin"], $paperId);
     if (isset($whyNot["withdrawn"]))
         $ms[] = $conf->_("Submission #%d has been withdrawn.", $paperId);
     if (isset($whyNot["notWithdrawn"]))
