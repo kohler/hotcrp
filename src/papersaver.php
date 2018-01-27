@@ -89,40 +89,54 @@ class Default_PaperSaver extends PaperSaver {
                 $pj->$k = UnicodeHelper::remove_f_ligatures($qreq[$k]);
 
         // Authors
-        $bad_author = ["name" => "Name", "email" => "Email", "aff" => "Affiliation"];
-        $authors = array();
-        foreach ($qreq as $k => $v)
-            if (preg_match('/\Aau(name|email|aff)(\d+)\z/', $k, $m)
-                && ($v = simplify_whitespace($v)) !== ""
-                && $v !== $bad_author[$m[1]]) {
-                $x = ($m[1] == "aff" ? "affiliation" : $m[1]);
-                if (!isset($authors[$m[2]])) {
-                    $authors[$m[2]] = (object) ["index" => intval($m[2])];
+        $aukeys = ["name" => "Name", "email" => "Email", "aff" => "Affiliation"];
+        $authors = [];
+        for ($n = 1; true; ++$n) {
+            $au = (object) ["index" => $n];
+            $isnull = $isempty = true;
+            foreach ($aukeys as $k => $defaultv) {
+                $v = $qreq["au" . $k . $n];
+                if ($v !== null) {
+                    $isnull = false;
+                    $v = simplify_whitespace($v);
+                    if ($v !== "" && $v !== $defaultv) {
+                        if ($k === "aff") {
+                            $k = "affiliation";
+                        }
+                        $au->$k = $v;
+                        $isempty = false;
+                    }
                 }
-                $authors[$m[2]]->$x = $v;
             }
-        // some people are idiots
-        foreach ($authors as $au)
+
+            if ($isnull) {
+                break;
+            } else if ($isempty) {
+                continue;
+            }
+
+            // some people enter email in the affiliation slot
             if (isset($au->affiliation) && validate_email($au->affiliation)) {
-                $aff = $au->affiliation;
                 if (!isset($au->email)) {
-                    $au->email = $aff;
+                    $au->email = $au->affiliation;
                     unset($au->affiliation);
                 } else if (!validate_email($au->email)) {
                     if (!isset($au->name) || strpos($au->name, " ") === false) {
                         $au->name = trim(get($au, "name", "") . " " . $au->email);
-                        $au->email = $aff;
+                        $au->email = $au->affiliation;
                         unset($au->affiliation);
                     } else {
+                        $x = $au->affiliation;
                         $au->affiliation = $au->email;
-                        $au->email = $aff;
+                        $au->email = $x;
                     }
                 }
             }
-        if (!empty($authors)) {
-            ksort($authors, SORT_NUMERIC);
-            $pj->authors = array_values($authors);
+
+            $authors[] = $au;
         }
+        if ($n !== 1)
+            $pj->authors = $authors;
 
         // Contacts
         if ($qreq->setcontacts || $qreq->has_contacts)
