@@ -732,7 +732,9 @@ class PaperTable {
         for ($n = 1;
              $n <= count($aulist)
              || ($this->useRequest
-                 && (isset($this->qreq["auname$n"]) || isset($this->qreq["auemail$n"]) || isset($this->qreq["auaff$n"])));
+                 && ((string) get($this->qreq, "auname$n") !== ""
+                     || (string) get($this->qreq, "auemail$n") !== ""
+                     || (string) get($this->qreq, "auaff$n") !== ""));
              ++$n)
             echo $this->editable_authors_tr($n, get($aulist, $n - 1), $max_authors);
         if ($max_authors <= 0 || $n <= $max_authors)

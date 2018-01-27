@@ -436,7 +436,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function normalize_author($pj, $au, &$au_by_email, $old_au_by_email, $preserve) {
+    private function normalize_author($idx, $pj, $au, &$au_by_email, $old_au_by_email, $preserve) {
         if (!$preserve) {
             $aux = Text::analyze_name($au);
             $aux->first = simplify_whitespace($aux->firstName);
@@ -449,6 +449,7 @@ class PaperStatus extends MessageSet {
                 if (!isset($aux->$k))
                     $aux->$k = "";
         }
+        $aux->__author_index = $idx;
         // borrow from old author information
         if ($aux->email && $aux->first === "" && $aux->last === ""
             && ($old_au = get($old_au_by_email, strtolower($aux->email)))) {
@@ -604,11 +605,12 @@ class PaperStatus extends MessageSet {
             // new author information
             $curau = is_array($pj->authors) ? $pj->authors : array();
             $pj->authors = array();
-            foreach ($curau as $k => $au)
+            foreach ($curau as $k => $au) {
                 if (is_string($au) || is_object($au))
-                    $this->normalize_author($pj, $au, $au_by_email, $old_au_by_email, $preserve);
+                    $this->normalize_author($k, $pj, $au, $au_by_email, $old_au_by_email, $preserve);
                 else
                     $this->error_at("authors", "Format error [authors]");
+            }
         }
 
         // Status
@@ -772,9 +774,9 @@ class PaperStatus extends MessageSet {
             $this->error_at("authors", $this->_("Each submission can have at most %d authors.", $max_authors));
         if (!empty($pj->bad_authors))
             $this->error_at("authors", $this->_("Some authors ignored."));
-        foreach ($pj->bad_email_authors as $k => $aux) {
+        foreach ($pj->bad_email_authors as $aux) {
             $this->error_at("authors", null);
-            $this->error_at("auemail" . ($k + 1), $this->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
+            $this->error_at("auemail" . ($aux->__author_index + 1), $this->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
         }
         $ncontacts = 0;
         foreach ($this->conflicts_array($pj, $old_pj) as $c)
