@@ -61,7 +61,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
         return "Paper.{$this->fieldname}" . ($this->present ? ">1" : "<=1");
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        if (($this->dtype === DTYPE_FINAL && !$srch->user->can_view_decision($row, true))
+        if (($this->dtype === DTYPE_FINAL && !$srch->user->can_view_decision($row))
             || ($row->{$this->fieldname} > 1) !== $this->present)
             return false;
         if ($this->format !== null) {
@@ -102,7 +102,8 @@ class Pages_SearchTerm extends SearchTerm {
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $dtype = DTYPE_SUBMISSION;
-        if ($srch->user->can_view_decision($row, true) && $row->outcome > 0
+        if ($srch->user->can_view_decision($row)
+            && $row->outcome > 0
             && $row->finalPaperStorageId > 1)
             $dtype = DTYPE_FINAL;
         return ($doc = $row->document($dtype))

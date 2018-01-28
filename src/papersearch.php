@@ -1970,6 +1970,7 @@ class PaperSearch {
         $this->highlightmap = array();
         $this->_matches = array();
         if ($need_filter) {
+            $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             $tag_order = [];
             foreach ($rowset->all() as $row) {
                 if (!$this->test_limit($row))
@@ -1999,8 +2000,10 @@ class PaperSearch {
                         $tag_order[] = [$row->paperId, TAG_INDEXBOUND];
                 }
             }
-        } else
+            $this->user->set_overrides($old_overrides);
+        } else {
             $this->_matches = $rowset->paper_ids();
+        }
 
         // add deleted papers explicitly listed by number (e.g. action log)
         if ($this->_allow_deleted)
@@ -2064,12 +2067,12 @@ class PaperSearch {
             return $prow->timeSubmitted > 0;
         case "acc":
             return $prow->timeSubmitted > 0
-                && $this->user->can_view_decision($prow, true)
+                && $this->user->can_view_decision($prow)
                 && $prow->outcome > 0;
         case "und":
             return $prow->timeSubmitted > 0
                 && ($prow->outcome == 0
-                    || !$this->user->can_view_decision($prow, true));
+                    || !$this->user->can_view_decision($prow));
         case "unm":
             return $prow->timeSubmitted > 0 && $prow->managerContactId == 0;
         case "rable":
@@ -2120,8 +2123,11 @@ class PaperSearch {
     }
 
     function test(PaperInfo $prow) {
+        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $qe = $this->prepare_term();
-        return $this->test_limit($prow) && $qe->exec($prow, $this);
+        $x = $this->test_limit($prow) && $qe->exec($prow, $this);
+        $this->user->set_overrides($old_overrides);
+        return $x;
     }
 
     function simple_search_options() {
@@ -2405,7 +2411,8 @@ class PaperSearch {
     }
 
     function search_completion($category = "") {
-        $res = array();
+        $res = [];
+        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
         if ($this->amPC && (!$category || $category === "ss")) {
             foreach ($this->conf->saved_searches() as $k => $v)
@@ -2415,7 +2422,8 @@ class PaperSearch {
         array_push($res, "has:submission", "has:abstract");
         if ($this->amPC && $this->conf->has_any_manager())
             $res[] = "has:admin";
-        if ($this->conf->has_any_lead_or_shepherd() && $this->user->can_view_lead(null, true))
+        if ($this->conf->has_any_lead_or_shepherd()
+            && $this->user->can_view_lead(null))
             $res[] = "has:lead";
         if ($this->user->can_view_some_decision()) {
             $res[] = "has:decision";
@@ -2428,7 +2436,8 @@ class PaperSearch {
             if ($this->conf->setting("final_open"))
                 $res[] = "has:final";
         }
-        if ($this->conf->has_any_lead_or_shepherd() && $this->user->can_view_shepherd(null, true))
+        if ($this->conf->has_any_lead_or_shepherd()
+            && $this->user->can_view_shepherd(null))
             $res[] = "has:shepherd";
         if ($this->user->is_reviewer())
             array_push($res, "has:review", "has:creview", "has:ireview", "has:preview", "has:primary", "has:secondary", "has:external", "has:comment", "has:aucomment");
@@ -2507,6 +2516,7 @@ class PaperSearch {
             array_push($res, "show:compact", "show:statistics", "show:rownumbers");
         }
 
+        $this->user->set_overrides($old_overrides);
         return $res;
     }
 }

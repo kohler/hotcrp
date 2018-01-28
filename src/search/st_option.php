@@ -46,7 +46,7 @@ class OptionMatcher {
     }
     function exec(PaperInfo $prow, Contact $user) {
         $ov = null;
-        if ($user->can_view_paper_option($prow, $this->option, true))
+        if ($user->can_view_paper_option($prow, $this->option))
             $ov = $prow->option($this->option->id);
         if (!$this->kind) {
             if (!$ov)

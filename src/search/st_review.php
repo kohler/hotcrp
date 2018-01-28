@@ -160,14 +160,14 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             // XXX can_view_review_round?
             return false;
         if ($this->fieldsql || $this->rfield || $this->wordcountexpr || $this->ratings
-            ? !$user->can_view_review($prow, $rrow, true)
-            : !$user->can_view_review_assignment($prow, $rrow, true))
+            ? !$user->can_view_review($prow, $rrow)
+            : !$user->can_view_review_assignment($prow, $rrow))
             return false;
         if ($this->has_contacts()) {
             if (!$this->test_contact($rrow->contactId)
                 && (!$this->tokens || !in_array($rrow->reviewToken, $this->tokens)))
                 return false;
-            if (!$user->can_view_review_identity($prow, $rrow, true))
+            if (!$user->can_view_review_identity($prow, $rrow))
                 return false;
         } else if ($rrow->reviewSubmitted <= 0 && $rrow->reviewNeedsSubmit <= 0)
             // don't count delegated reviews unless contacts given
@@ -177,7 +177,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             return false;
         if ($this->requester !== null
             && ($rrow->requestedBy != $this->requester
-                || !$user->can_view_review_requester($prow, $rrow, true)))
+                || !$user->can_view_review_requester($prow, $rrow)))
             return false;
         if ($this->ratings !== null
             && !$this->ratings->test($user, $prow, $rrow))

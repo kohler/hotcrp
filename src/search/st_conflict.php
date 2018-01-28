@@ -38,7 +38,7 @@ class Conflict_SearchTerm extends SearchTerm {
         }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        $can_view = $srch->user->can_view_conflicts($row, true);
+        $can_view = $srch->user->can_view_conflicts($row);
         $n = 0;
         foreach ($this->csm->contact_set() as $cid) {
             if (($cid == $srch->cid || $can_view)
