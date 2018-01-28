@@ -3,8 +3,8 @@
 // Copyright (c) 2008-2018 Eddie Kohler; see LICENSE.
 
 class PaperStatus extends MessageSet {
-    private $conf;
-    private $contact;
+    public $conf;
+    public $user;
     private $uploaded_documents;
     private $no_email = false;
     private $forceShow = null;
@@ -15,7 +15,7 @@ class PaperStatus extends MessageSet {
     private $allow_any_content_file = false;
     private $content_file_prefix = false;
     private $add_topics = false;
-    private $prow;
+    public $prow;
     private $paperid;
     private $_on_document_export = [];
     private $_on_document_import = [];
@@ -24,9 +24,9 @@ class PaperStatus extends MessageSet {
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
 
-    function __construct(Conf $conf, Contact $contact = null, $options = array()) {
+    function __construct(Conf $conf, Contact $user = null, $options = array()) {
         $this->conf = $conf;
-        $this->contact = $contact;
+        $this->user = $user;
         foreach (array("no_email", "forceShow", "export_ids", "hide_docids",
                        "export_content", "disable_users",
                        "allow_any_content_file", "content_file_prefix",
@@ -54,7 +54,7 @@ class PaperStatus extends MessageSet {
     }
 
     function user() {
-        return $this->contact;
+        return $this->user;
     }
 
     function paper_row() {
@@ -109,12 +109,12 @@ class PaperStatus extends MessageSet {
 
     function paper_json($prow, $args = array()) {
         if (is_int($prow))
-            $prow = $this->conf->paperRow(["paperId" => $prow, "topics" => true, "options" => true], $this->contact);
-        $contact = $this->contact;
+            $prow = $this->conf->paperRow(["paperId" => $prow, "topics" => true, "options" => true], $this->user);
+        $user = $this->user;
         if (get($args, "forceShow"))
-            $contact = null;
+            $user = null;
 
-        if (!$prow || ($contact && !$contact->can_view_paper($prow)))
+        if (!$prow || ($user && !$user->can_view_paper($prow)))
             return null;
         $was_no_msgs = $this->ignore_msgs;
         $this->ignore_msgs = !get($args, "msgs");
@@ -128,7 +128,7 @@ class PaperStatus extends MessageSet {
 
         $submitted_status = "submitted";
         if ($prow->outcome != 0
-            && (!$contact || $contact->can_view_decision($prow, $this->forceShow))) {
+            && (!$user || $user->can_view_decision($prow, $this->forceShow))) {
             $pj->decision = $this->conf->decision_name($prow->outcome);
             if ($pj->decision === false) {
                 $pj->decision = (int) $prow->outcome;
@@ -157,8 +157,8 @@ class PaperStatus extends MessageSet {
         else if ($prow->timeSubmitted < -100 && $prow->timeWithdrawn > 0)
             $pj->submitted_at = -$prow->timeSubmitted;
 
-        $can_view_authors = !$contact
-            || $contact->can_view_authors($prow, $this->forceShow);
+        $can_view_authors = !$user
+            || $user->can_view_authors($prow, $this->forceShow);
         if ($can_view_authors) {
             $contacts = array();
             foreach ($prow->named_contacts() as $cflt)
@@ -213,12 +213,12 @@ class PaperStatus extends MessageSet {
             $pj->topics = (object) $topics;
 
         if ($prow->paperStorageId > 1
-            && (!$contact || $contact->can_view_pdf($prow))
+            && (!$user || $user->can_view_pdf($prow))
             && ($doc = $this->document_to_json(DTYPE_SUBMISSION, (int) $prow->paperStorageId)))
             $pj->submission = $doc;
 
         if ($prow->finalPaperStorageId > 1
-            && (!$contact || $contact->can_view_pdf($prow))
+            && (!$user || $user->can_view_pdf($prow))
             && ($doc = $this->document_to_json(DTYPE_FINAL, (int) $prow->finalPaperStorageId)))
             $pj->final = $doc;
         if ($prow->timeFinalSubmitted > 0) {
@@ -228,10 +228,10 @@ class PaperStatus extends MessageSet {
 
         $options = array();
         foreach ($this->conf->paper_opts->option_list() as $o) {
-            if ($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
+            if ($user && !$user->can_view_paper_option($prow, $o, $this->forceShow))
                 continue;
             $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
-            $oj = $o->unparse_json($ov, $this, $contact);
+            $oj = $o->unparse_json($ov, $this, $user);
             if ($oj !== null)
                 $options[$this->export_ids ? $o->id : $o->json_key()] = $oj;
         }
@@ -272,7 +272,7 @@ class PaperStatus extends MessageSet {
         if (!$this->ignore_msgs
             && $can_view_authors
             && $this->conf->setting("sub_collab")
-            && ($prow->outcome <= 0 || ($contact && !$contact->can_view_decision($prow)))) {
+            && ($prow->outcome <= 0 || ($user && !$user->can_view_decision($prow)))) {
             $field = $this->_($this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
             if (!$prow->collaborators)
                 $this->warning_at("collaborators", $this->_("Enter the authors’ external conflicts of interest in the %s field. If none of the authors have external conflicts, enter “None”.", $field));
@@ -286,7 +286,7 @@ class PaperStatus extends MessageSet {
         if (!$this->ignore_msgs
             && $can_view_authors
             && $this->conf->setting("sub_pcconf")
-            && ($prow->outcome <= 0 || ($contact && !$contact->can_view_decision($prow)))) {
+            && ($prow->outcome <= 0 || ($user && !$user->can_view_decision($prow)))) {
             foreach ($this->conf->full_pc_members() as $p)
                 if (!$prow->has_conflict($p)
                     && $prow->potential_conflict($p)) {
@@ -887,8 +887,8 @@ class PaperStatus extends MessageSet {
         }
 
         if ($old_pj && get($old_pj, "pc_conflicts")) {
-            $can_administer = !$this->contact
-                || $this->contact->can_administer($this->prow, $this->forceShow);
+            $can_administer = !$this->user
+                || $this->user->can_administer($this->prow, $this->forceShow);
             foreach ($old_pj->pc_conflicts as $email => $type)
                 if ($type == CONFLICT_CHAIRMARK) {
                     $lemail = strtolower($email);
@@ -929,10 +929,10 @@ class PaperStatus extends MessageSet {
         $this->prow = $old_pj = null;
         $this->paperId = $paperid ? : -1;
         if ($paperid)
-            $this->prow = $this->conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true], $this->contact);
+            $this->prow = $this->conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true], $this->user);
         if ($this->prow)
             $old_pj = $this->paper_json($this->prow, ["forceShow" => true]);
-        if ($pj && $old_pj && $paperid != $old_pj->pid) {
+        if ($pj && $this->prow && $paperid !== $this->prow->paperId) {
             $this->error_at("pid", $this->_("Saving submission with different ID"));
             return false;
         }
