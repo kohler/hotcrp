@@ -4,7 +4,7 @@
 
 class Decide_ListAction extends ListAction {
     function allow(Contact $user) {
-        return $user->can_set_some_decision(true) && Navigation::page() !== "reviewprefs";
+        return $user->can_set_some_decision() && Navigation::page() !== "reviewprefs";
     }
     static function render(PaperList $pl) {
         return ["Set to &nbsp;"

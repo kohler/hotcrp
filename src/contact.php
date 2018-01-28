@@ -2439,12 +2439,12 @@ class Contact {
                     && $this->conf->setting("pcrev_editdelegate")));
     }
 
-    function can_view_review_assignment(PaperInfo $prow, $rrow, $forceShow = null) {
-        $rights = $this->rights($prow, $forceShow);
+    function can_view_review_assignment(PaperInfo $prow, $rrow) {
+        $rights = $this->rights($prow);
         return $rights->allow_administer
             || $rights->allow_pc
             || $rights->review_status != 0
-            || $this->can_view_review($prow, $rrow, $forceShow);
+            || $this->can_view_review($prow, $rrow);
     }
 
     static function can_some_author_view_submitted_review(PaperInfo $prow) {
@@ -2622,26 +2622,26 @@ class Contact {
         return $this->can_view_review_identity($prow, null);
     }
 
-    function can_view_review_round(PaperInfo $prow, ReviewInfo $rrow = null, $forceShow = null) {
-        $rights = $this->rights($prow, $forceShow);
+    function can_view_review_round(PaperInfo $prow, ReviewInfo $rrow = null) {
+        $rights = $this->rights($prow);
         return $rights->can_administer
             || $rights->allow_pc
             || $rights->allow_review;
     }
 
-    function can_view_review_time(PaperInfo $prow, ReviewInfo $rrow = null, $forceShow = null) {
-        $rights = $this->rights($prow, $forceShow);
+    function can_view_review_time(PaperInfo $prow, ReviewInfo $rrow = null) {
+        $rights = $this->rights($prow);
         return !$rights->act_author_view
             || ($rrow && $rrow->reviewAuthorSeen
                 && $rrow->reviewAuthorSeen <= $rrow->reviewAuthorModified);
     }
 
-    function can_view_review_requester(PaperInfo $prow, ReviewInfo $rrow = null, $forceShow = null) {
-        $rights = $this->rights($prow, $forceShow);
+    function can_view_review_requester(PaperInfo $prow, ReviewInfo $rrow = null) {
+        $rights = $this->rights($prow);
         return $rights->can_administer
             || ($rrow && $rrow->requestedBy == $this->contactId && $rights->allow_pc)
             || ($rrow && $this->is_owned_review($rrow))
-            || ($rights->allow_pc && $this->can_view_review_identity($prow, $rrow, $forceShow));
+            || ($rights->allow_pc && $this->can_view_review_identity($prow, $rrow));
     }
 
     function can_request_review(PaperInfo $prow, $check_time) {
@@ -3045,8 +3045,8 @@ class Contact {
         return $this->can_view_comment_identity($prow, $crow, true);
     }
 
-    function can_view_comment_tags(PaperInfo $prow, $crow, $forceShow = null) {
-        $rights = $this->rights($prow, $forceShow);
+    function can_view_comment_tags(PaperInfo $prow, $crow) {
+        $rights = $this->rights($prow);
         return $rights->allow_pc || $rights->review_status != 0;
     }
 
@@ -3077,12 +3077,12 @@ class Contact {
         return $this->conf->can_some_author_view_decision();
     }
 
-    function can_set_decision(PaperInfo $prow, $forceShow = null) {
-        return $this->can_administer($prow, $forceShow);
+    function can_set_decision(PaperInfo $prow) {
+        return $this->can_administer($prow);
     }
 
-    function can_set_some_decision($forceShow = null) {
-        return $this->can_administer(null, $forceShow);
+    function can_set_some_decision() {
+        return $this->can_administer(null);
     }
 
     function can_view_formula(Formula $formula, $as_author = false) {
@@ -3319,18 +3319,18 @@ class Contact {
         return $whyNot;
     }
 
-    function can_change_some_tag(PaperInfo $prow = null, $forceShow = null) {
+    function can_change_some_tag(PaperInfo $prow = null) {
         if (!$prow)
             return $this->isPC;
         else
-            return $this->can_change_tag($prow, null, null, null, $forceShow);
+            return $this->can_change_tag($prow, null, null, null);
     }
 
-    function perm_change_some_tag(PaperInfo $prow, $forceShow = null) {
-        return $this->perm_change_tag($prow, null, null, null, $forceShow);
+    function perm_change_some_tag(PaperInfo $prow) {
+        return $this->perm_change_tag($prow, null, null, null);
     }
 
-    function can_change_tag_anno($tag, $forceShow = null) {
+    function can_change_tag_anno($tag) {
         $twiddle = strpos($tag, "~");
         return $this->privChair
             || ($this->isPC

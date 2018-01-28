@@ -196,7 +196,7 @@ class GetScores_ListAction extends ListAction {
                             $b[$f->search_keyword()] = $f->unparse_value($rrow->$field);
                             $any_scores[$f->search_keyword()] = $this_scores = true;
                         }
-                    if ($user->can_view_review_identity($row, $rrow, null)) {
+                    if ($user->can_view_review_identity($row, $rrow)) {
                         $any_reviewer_identity = true;
                         $b["reviewername"] = trim($rrow->firstName . " " . $rrow->lastName);
                         $b["email"] = $rrow->email;

@@ -83,7 +83,7 @@ class Comment_SearchTerm extends SearchTerm {
         return "coalesce($thistab.count,0)" . $this->csm->conservative_nonnegative_countexpr();
     }
     private function _check_tags(CommentInfo $crow, Contact $user) {
-        $tags = $crow->viewable_tags($user, true);
+        $tags = $crow->viewable_tags($user);
         if ($this->tags[0] === "none")
             return (string) $tags === "";
         else if ($this->tags[0] === "any")

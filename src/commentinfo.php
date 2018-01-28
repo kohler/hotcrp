@@ -150,11 +150,10 @@ class CommentInfo {
             return null;
     }
 
-    static function group_by_identity($crows, Contact $user, $separateColors,
-                                      $forceShow = null) {
+    static function group_by_identity($crows, Contact $user, $separateColors) {
         $known_cids = $result = [];
         foreach ($crows as $cr) {
-            $open = $user->can_view_comment_identity($cr->prow, $cr, $forceShow);
+            $open = $user->can_view_comment_identity($cr->prow, $cr);
             $cid = $open ? $cr->contactId : 0;
             if ($cr->commentType & COMMENTTYPE_RESPONSE) {
                 if (!empty($result))
@@ -169,7 +168,7 @@ class CommentInfo {
                 $record = true;
             }
             if ($separateColors
-                && ($tags = $cr->viewable_tags($user, $forceShow))
+                && ($tags = $cr->viewable_tags($user))
                 && ($color = $cr->conf->tags()->color_classes($tags))) {
                 $include = true;
                 $record = false;
@@ -199,8 +198,8 @@ class CommentInfo {
         }
     }
 
-    function unparse_user_html(Contact $user, $forceShow = null) {
-        if ($user->can_view_comment_identity($this->prow, $this, $forceShow))
+    function unparse_user_html(Contact $user) {
+        if ($user->can_view_comment_identity($this->prow, $this))
             $n = Text::abbrevname_html($this->user());
         else
             $n = $this->unparse_user_pseudonym($user) ? : "anonymous";
@@ -210,8 +209,8 @@ class CommentInfo {
         return $n;
     }
 
-    function unparse_user_text(Contact $user, $forceShow = null) {
-        if ($user->can_view_comment_identity($this->prow, $this, $forceShow))
+    function unparse_user_text(Contact $user) {
+        if ($user->can_view_comment_identity($this->prow, $this))
             $n = Text::abbrevname_text($this->user());
         else
             $n = $this->unparse_user_pseudonym($user) ? : "anonymous";
@@ -221,17 +220,17 @@ class CommentInfo {
         return $n;
     }
 
-    function viewable_tags(Contact $user, $forceShow = null) {
+    function viewable_tags(Contact $user) {
         if ($this->commentTags
-            && $user->can_view_comment_tags($this->prow, $this, null))
+            && $user->can_view_comment_tags($this->prow, $this))
             return Tagger::strip_nonviewable($this->commentTags, $user);
         else
             return null;
     }
 
-    function viewable_nonresponse_tags(Contact $user, $forceShow = null) {
+    function viewable_nonresponse_tags(Contact $user) {
         if ($this->commentTags
-            && $user->can_view_comment_tags($this->prow, $this, null)) {
+            && $user->can_view_comment_tags($this->prow, $this)) {
             $tags = Tagger::strip_nonviewable($this->commentTags, $user);
             if ($this->commentType & COMMENTTYPE_RESPONSE)
                 $tags = trim(preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", " $tags "));

@@ -132,7 +132,7 @@ class PaperEvents {
             $prow = $this->prows->get($crow->paperId);
             if (!$this->user->act_author_view($prow)
                 && (!$this->watch || $prow->watching(WATCHTYPE_REVIEW, $this->user))
-                && $this->user->can_view_comment($prow, $crow, null)) {
+                && $this->user->can_view_comment($prow, $crow)) {
                 $crow->eventTime = (int) $crow->eventTime;
                 return $crow;
             }

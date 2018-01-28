@@ -153,7 +153,7 @@ class GetAbstract_ListAction extends ListAction {
         $text = "";
         foreach ($prow->options() as $ov) {
             if ($ov->option->display() === $display
-                && $user->can_view_paper_option($prow, $ov->option, null)
+                && $user->can_view_paper_option($prow, $ov->option)
                 && ($otxt = $ov->option->unparse_page_text($prow, $ov)))
                 $text .= self::render_option($ov->option, $otxt);
         }

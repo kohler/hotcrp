@@ -958,14 +958,14 @@ $blind\n";
         $xsep = " <span class='barsep'>·</span> ";
         $showtoken = $rrow && $Me->review_token_cid($prow, $rrow);
         $type = "";
-        if ($rrow && $Me->can_view_review_round($prow, $rrow, null)) {
+        if ($rrow && $Me->can_view_review_round($prow, $rrow)) {
             $type = review_type_icon($rrow->reviewType);
-            if ($rrow->reviewRound > 0 && $Me->can_view_review_round($prow, $rrow, null))
+            if ($rrow->reviewRound > 0 && $Me->can_view_review_round($prow, $rrow))
                 $type .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
                     . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
                     . "</span>";
         }
-        if ($rrow && $Me->can_view_review_identity($prow, $rrow, null)
+        if ($rrow && $Me->can_view_review_identity($prow, $rrow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
             echo $sep, ($rrow->reviewBlind ? "[" : ""), Text::user_html($rrow),
                 ($rrow->reviewBlind ? "]" : ""), " &nbsp;", $type;
@@ -1075,7 +1075,7 @@ $blind\n";
     const RJ_NO_REVIEWERONLY = 16;
 
     function unparse_review_json(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
-                                 $forceShow = null, $flags = 0) {
+                                 $flags = 0) {
         self::check_review_author_seen($prow, $rrow, $contact);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         $editable = !($flags & self::RJ_NO_EDITABLE);
@@ -1083,7 +1083,7 @@ $blind\n";
         $rj = array("pid" => $prow->paperId, "rid" => (int) $rrow->reviewId);
         if ($rrow->reviewOrdinal)
             $rj["ordinal"] = unparseReviewOrdinal($rrow->reviewOrdinal);
-        if ($contact->can_view_review_round($prow, $rrow, $forceShow)) {
+        if ($contact->can_view_review_round($prow, $rrow)) {
             $rj["rtype"] = (int) $rrow->reviewType;
             if (($round = $this->conf->round_name($rrow->reviewRound)))
                 $rj["round"] = $round;
@@ -1103,7 +1103,7 @@ $blind\n";
 
         // identity and time
         $showtoken = $editable && $contact->review_token_cid($prow, $rrow);
-        if ($contact->can_view_review_identity($prow, $rrow, $forceShow)
+        if ($contact->can_view_review_identity($prow, $rrow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
             $rj["reviewer"] = Text::user_html($rrow);
             $rj["reviewer_name"] = Text::name_text($rrow);

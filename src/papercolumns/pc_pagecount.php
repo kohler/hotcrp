@@ -13,8 +13,9 @@ class PageCount_PaperColumn extends PaperColumn {
         if (!$user->can_view_pdf($row))
             return null;
         $dtype = DTYPE_SUBMISSION;
-        if ($row->finalPaperStorageId > 0 && $row->outcome > 0
-            && $user->can_view_decision($row, null))
+        if ($row->finalPaperStorageId > 0
+            && $row->outcome > 0
+            && $user->can_view_decision($row))
             $dtype = DTYPE_FINAL;
         $doc = $row->document($dtype);
         return $doc ? $doc->npages() : null;
