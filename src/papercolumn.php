@@ -510,9 +510,9 @@ class ReviewerType_PaperColumn extends PaperColumn {
     const F_CONFLICT = 1;
     const F_LEAD = 2;
     const F_SHEPHERD = 4;
-    private function analysis(PaperList $pl, PaperInfo $row, $forceShow = null) {
+    private function analysis(PaperList $pl, PaperInfo $row) {
         $rrow = $row->review_of_user($this->contact);
-        if ($rrow && (!$this->not_me || $pl->user->can_view_review_identity($row, $rrow, $forceShow)))
+        if ($rrow && (!$this->not_me || $pl->user->can_view_review_identity($row, $rrow)))
             $ranal = $pl->make_review_analysis($rrow, $row);
         else
             $ranal = null;
@@ -520,20 +520,20 @@ class ReviewerType_PaperColumn extends PaperColumn {
             $pl->mark_has("need_review");
         $flags = 0;
         if ($row->conflict_type($this->contact)
-            && (!$this->not_me || $pl->user->can_view_conflicts($row, $forceShow)))
+            && (!$this->not_me || $pl->user->can_view_conflicts($row)))
             $flags |= self::F_CONFLICT;
         if ($row->leadContactId == $this->contact->contactId
-            && (!$this->not_me || $pl->user->can_view_lead($row, $forceShow)))
+            && (!$this->not_me || $pl->user->can_view_lead($row)))
             $flags |= self::F_LEAD;
         if ($row->shepherdContactId == $this->contact->contactId
-            && (!$this->not_me || $pl->user->can_view_shepherd($row, $forceShow)))
+            && (!$this->not_me || $pl->user->can_view_shepherd($row)))
             $flags |= self::F_SHEPHERD;
         return [$ranal, $flags];
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         $k = $sorter->uid;
         foreach ($rows as $row) {
-            list($ranal, $flags) = $this->analysis($pl, $row, true);
+            list($ranal, $flags) = $this->analysis($pl, $row);
             if ($ranal && $ranal->rrow->reviewType) {
                 $row->$k = 2 * $ranal->rrow->reviewType;
                 if ($ranal->rrow->reviewSubmitted)
