@@ -535,13 +535,13 @@ class ReviewerType_PaperColumn extends PaperColumn {
         foreach ($rows as $row) {
             list($ranal, $flags) = $this->analysis($pl, $row, true);
             if ($ranal && $ranal->rrow->reviewType) {
-                $row->$k = 16 * $ranal->rrow->reviewType;
+                $row->$k = 2 * $ranal->rrow->reviewType;
                 if ($ranal->rrow->reviewSubmitted)
-                    $row->$k += 8;
+                    $row->$k += 1;
             } else
-                $row->$k = ($flags & self::F_CONFLICT ? -16 : 0);
+                $row->$k = ($flags & self::F_CONFLICT ? -2 : 0);
             if ($flags & self::F_LEAD)
-                $row->$k += 4;
+                $row->$k += 30;
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
