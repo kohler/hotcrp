@@ -312,7 +312,7 @@ class Contact {
 
         // new account must exist
         $u = $this->conf->user_by_email($email);
-        if (!$u && validate_email($email) && get($this->opt, "debugShowSensitiveEmail"))
+        if (!$u && validate_email($email) && get($this->conf->opt, "debugShowSensitiveEmail"))
             $u = Contact::create($this->conf, ["email" => $email]);
         if (!$u)
             return $this;
