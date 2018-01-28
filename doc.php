@@ -207,7 +207,7 @@ function document_download() {
     } else {
         $prow = $Conf->paperRow($dr->paperId, $Me, $whyNot);
         if (!$prow)
-            document_error("404 Not Found", whyNotText($whyNot));
+            document_error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", whyNotText($whyNot));
         else if (($whyNot = $Me->perm_view_pdf($prow)))
             document_error("403 Forbidden", whyNotText($whyNot));
         else if ($dr->dtype > 0
