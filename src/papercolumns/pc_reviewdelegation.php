@@ -21,12 +21,13 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
         global $Now;
         $rx = [];
         $row->ensure_reviewer_names();
+        $old_overrides = $pl->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         foreach ($row->reviews_by_display() as $rrow) {
             if ($rrow->reviewType == REVIEW_EXTERNAL
                 && $rrow->requestedBy == $this->requester->contactId) {
-                if (!$pl->user->can_view_review($row, $rrow, true))
+                if (!$pl->user->can_view_review($row, $rrow))
                     continue;
-                if ($pl->user->can_view_review_identity($row, $rrow, true))
+                if ($pl->user->can_view_review_identity($row, $rrow))
                     $t = $pl->user->reviewer_html_for($rrow);
                 else
                     $t = "review";
@@ -51,6 +52,7 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
                 $rx[] = $t;
             }
         }
+        $pl->user->set_overrides($old_overrides);
         return join('; ', $rx);
     }
 }
