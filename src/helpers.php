@@ -585,7 +585,7 @@ function whyNotText($whyNot, $suggest_redirection = false) {
     if (isset($whyNot["responseNotReady"]))
         $ms[] = $conf->_("The authors’ response is not yet ready for reviewers to view.");
     if (isset($whyNot["reviewsOutstanding"]))
-        $ms[] = $conf->_("You will get access to the reviews once you complete <a href=\"%s\">your assigned reviews</a>. If you can’t complete your reviews, please let the organizers know via the “Refuse review” links.", hoturl("search", "q=&amp;t=r"));
+        $ms[] = $conf->_("You will get access to the reviews once you complete your assigned reviews. If you can’t complete your reviews, please let the organizers know via the “Refuse review” links. <a href=\"%s\">List assigned reviews</a>", hoturl("search", "q=&amp;t=r"));
     if (isset($whyNot["reviewNotAssigned"]))
         $ms[] = $conf->_("You are not assigned to review submission #%d.", $paperId);
     if (isset($whyNot["deadline"])) {
@@ -600,7 +600,7 @@ function whyNotText($whyNot, $suggest_redirection = false) {
         $end = $conf->setting($dname, -1);
         if ($dname == "au_seerev") {
             if ($conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE)
-                $ms[] = $conf->_("Authors who are also reviewers can’t see reviews for their papers while they still have <a href=\"%s\">incomplete reviews</a> of their own.", hoturl("search", "t=rout&amp;q="));
+                $ms[] = $conf->_("You will get access to the reviews for this submission when you have completed your own reviews. <a href=\"%s\">List your incomplete reviews</a>", hoturl("search", "t=rout&amp;q="));
             else
                 $ms[] = $conf->_c("etime", "Action not available.", $dname, $paperId);
         } else if ($start <= 0 || $start == $end) {
@@ -640,9 +640,9 @@ function whyNotText($whyNot, $suggest_redirection = false) {
         $ms[] = $conf->_("Tag “#%s” cannot be changed since the system sets it automatically.", htmlspecialchars($whyNot["tag"]));
     // finish it off
     if (isset($whyNot["forceShow"]))
-        $ms[] = $conf->_("(<a class=\"nw\" href=\"%s\">Override conflict</a>)", selfHref(array("forceShow" => 1)));
+        $ms[] = $conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", selfHref(array("forceShow" => 1)));
     if (!empty($ms) && $suggest_redirection)
-        $ms[] = $conf->_("Enter a submission number above, or <a href=\"%s\">list the submissions you can view</a>.", hoturl("search", "q="));
+        $ms[] = $conf->_("<a href=\"%s\">List the submissions you can view</a>", hoturl("search", "q="));
     return join(" ", $ms);
 }
 
