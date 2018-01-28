@@ -745,7 +745,7 @@ class PaperStatus extends MessageSet {
                 $result = $o->store_json($oj, $this);
             if ($result === null || $result === false)
                 $result = [];
-            if (!is_array($result))
+            else if (!is_array($result))
                 $result = [[$result]];
             else if (count($result) == 2 && !is_int($result[1]))
                 $result = [$result];
@@ -844,17 +844,42 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function options_sql($pj, $paperid) {
-        $q = [];
-        foreach ($pj->parsed_options as $id => $ovs)
-            foreach ($ovs as $ov) {
-                if (is_int($ov))
-                    $q[] = "($paperid,$id,$ov,null)";
-                else
-                    $q[] = Dbl::format_query($this->conf->dblink, "($paperid,$id,?,?)", $ov[0], get($ov, 1));
+    static function save_options(PaperStatus $ps, $pj) {
+        if (!isset($pj->options))
+            return;
+
+        $delid = $qv = [];
+        foreach ($pj->parsed_options as $id => $parsed_vs) {
+            // old values
+            $ov = $od = [];
+            if ($ps->prow) {
+                list($ov, $od) = $ps->prow->option_value_data($id);
             }
-        sort($q);
-        return join(", ", $q);
+
+            // new values
+            $nv = $nd = [];
+            foreach ($parsed_vs as $vx) {
+                $nv[] = is_int($vx) ? $vx : $vx[0];
+                $nd[] = is_int($vx) ? null : get($vx, 1);
+            }
+
+            // save difference
+            if ($ov !== $nv || $od !== $nd) {
+                $delid[] = $id;
+                for ($i = 0; $i < count($nv); ++$i) {
+                    $qv0 = [$ps->paperId, $id, $nv[$i], null, null];
+                    if ($nd[$i] !== null) {
+                        $qv0[strlen($nd[$i]) < 32768 ? 3 : 4] = $nd[$i];
+                    }
+                    $qv[] = $qv0;
+                }
+            }
+        }
+
+        if (!empty($delid))
+            $ps->conf->qe("delete from PaperOption where paperId=? and optionId?a", $ps->paperId, $delid);
+        if (!empty($qv))
+            $ps->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $qv);
     }
 
     static private function contacts_array($pj) {
@@ -1167,23 +1192,8 @@ class PaperStatus extends MessageSet {
                 $this->conf->update_papersub_setting($is_submitted ? 1 : -1);
         }
 
-        // update PaperTopics
         self::save_topics($this, $pj);
-
-        // update PaperOption
-        if (get($pj, "options")) {
-            $options = convert_to_utf8($this->options_sql($pj, $paperid));
-            if ($old_pj && isset($old_pj->options)) {
-                $this->check_options($old_pj);
-                $old_options = $this->options_sql($old_pj, $paperid);
-            } else
-                $old_options = "";
-            if ($options !== $old_options) {
-                $this->conf->qe("delete from PaperOption where paperId=? and optionId?a", $paperid, array_keys($pj->parsed_options));
-                if ($options)
-                    $this->conf->qe_raw("insert into PaperOption (paperId,optionId,value,data) values $options");
-            }
-        }
+        self::save_options($this, $pj);
 
         // update PaperConflict
         $conflict = $this->conflicts_array($pj);

@@ -17,12 +17,15 @@ class PaperOptionValue {
         $this->prow = $prow;
         $this->id = $o->id;
         $this->option = $o;
-        $this->assign($values, $data_array);
+        $this->assign_value_data([$values, $data_array]);
     }
-    function assign($values, $data_array) {
+    function assign($values, $data_array) { // XXX backwards compat
+        $this->assign_value_data([$values, $data_array]);
+    }
+    function assign_value_data($value_data) {
         $old_values = $this->_values;
-        $this->_values = $values;
-        $this->_data_array = $data_array;
+        $this->_values = $value_data[0];
+        $this->_data_array = $value_data[1];
         if (count($this->_values) > 1 && $this->_data_array !== null)
             $this->option->expand_values($this->_values, $this->_data_array);
         if (count($this->_values) == 1 || !$this->option->takes_multiple()) {
@@ -85,16 +88,17 @@ class PaperOptionValue {
     }
     function sorted_values() {
         if ($this->_data_array === null && count($this->_values) > 1)
-            $this->prow->_assign_option_value($this);
+            $this->assign_value_data($this->prow->option_value_data($this->id));
         return $this->_values;
     }
     function data() {
         if ($this->_data_array === null)
-            $this->prow->_assign_option_value($this);
+            $this->assign_value_data($this->prow->option_value_data($this->id));
         return $this->_data;
     }
     function invalidate() {
-        $this->prow->_reload_option_value($this);
+        $this->prow->invalidate_options(true);
+        $this->assign_value_data($this->prow->option_value_data($this->id));
     }
 }
 
@@ -1006,7 +1010,7 @@ class TextPaperOption extends PaperOption {
 
     function store_json($pj, PaperStatus $ps) {
         if (is_string($pj))
-            return $pj === "" ? null : [1, $pj];
+            return $pj === "" ? null : [1, convert_to_utf8($pj)];
         else if ($pj !== null)
             $ps->error_at_option($this, "Option should be a string.");
     }

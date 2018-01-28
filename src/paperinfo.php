@@ -1346,19 +1346,11 @@ class PaperInfo {
         return $option_array;
     }
 
-    function _assign_option_value(PaperOptionValue $ov) {
+    function option_value_data($id) {
         if ($this->_option_data === null)
             $this->load_options(false, true);
-        $ov->assign(get($this->_option_values, $ov->id, []),
-                    get($this->_option_data, $ov->id, []));
-    }
-
-    function _reload_option_value(PaperOptionValue $ov) {
-        unset($this->optionIds);
-        $this->_option_values = $this->_option_data = null;
-        $this->load_options(true, true);
-        $ov->assign(get($this->_option_values, $ov->id, []),
-                    get($this->_option_data, $ov->id, []));
+        return [get($this->_option_values, $id, []),
+                get($this->_option_data, $id, [])];
     }
 
     function options() {
@@ -1381,10 +1373,12 @@ class PaperInfo {
         return get($this->all_options(), $id);
     }
 
-    function invalidate_options() {
+    function invalidate_options($reload = false) {
         unset($this->optionIds);
         $this->_option_array = $this->_all_option_array =
             $this->_option_values = $this->_option_data = null;
+        if ($reload)
+            $this->load_options(true, true);
     }
 
     private function _add_documents($dids) {
