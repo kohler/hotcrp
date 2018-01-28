@@ -550,8 +550,6 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
     }
     if (isset($whyNot["noPaper"]))
         $ms[] = $conf->_("No such submission #%d.", $paperId);
-    if (isset($whyNot["noReview"]))
-        $ms[] = $conf->_("No such review #%s.", $reviewId);
     if (isset($whyNot["dbError"]))
         $ms[] = $whyNot["dbError"];
     if (isset($whyNot["administer"]))
@@ -628,8 +626,6 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
         $ms[] = $conf->_("You didn’t write this review, so you can’t change it.");
     if (isset($whyNot["unacceptableReviewer"]))
         $ms[] = $conf->_("That user can’t be assigned to review #%d.", $paperId);
-    if (isset($whyNot["reviewToken"]))
-        $ms[] = $conf->_("If you know a valid review token, enter it above to edit that review.");
     if (isset($whyNot["clickthrough"]))
         $ms[] = $conf->_("You can’t do that until you agree to the terms.");
     if (isset($whyNot["otherTwiddleTag"]))
@@ -643,11 +639,7 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
     if (isset($whyNot["autosearchTag"]))
         $ms[] = $conf->_("Tag “#%s” cannot be changed since the system sets it automatically.", htmlspecialchars($whyNot["tag"]));
     // finish it off
-    if (isset($whyNot["chairMode"]))
-        $ms[] = $conf->_("(<a class=\"nw\" href=\"%s\">" . ucfirst($action) . " anyway</a>)", selfHref(["forceShow" => 1]));
-    if (isset($whyNot["forceShow"]) && $whyNot["forceShow"] === true)
-        $ms[] = $conf->_("(As an administrator, you can override your conflict.)");
-    else if (isset($whyNot["forceShow"]))
+    if (isset($whyNot["forceShow"]))
         $ms[] = $conf->_("(<a class=\"nw\" href=\"%s\">Override conflict</a>)", selfHref(array("forceShow" => 1)));
     if (!empty($ms) && $suggest_redirection)
         $ms[] = $conf->_("Enter a submission number above, or <a href=\"%s\">list the submissions you can view</a>.", hoturl("search", "q="));

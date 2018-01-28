@@ -2785,7 +2785,7 @@ class Contact {
                 $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
             if ($rights->allow_administer
                 && ($rights->conflictType || $prow->timeSubmitted <= 0))
-                $whyNot["chairMode"] = 1;
+                $whyNot["forceShow"] = 1;
             if ($rights->allow_administer && isset($whyNot["deadline"]))
                 $whyNot["override"] = 1;
         }
@@ -2822,7 +2822,7 @@ class Contact {
                 $whyNot["deadline"] = ($user->isPC ? "pcrev_hard" : "extrev_hard");
             if ($rights->allow_administer
                 && ($rights->conflictType || $prow->timeSubmitted <= 0))
-                $whyNot["chairMode"] = 1;
+                $whyNot["forceShow"] = 1;
             if ($rights->allow_administer && isset($whyNot["deadline"]))
                 $whyNot["override"] = 1;
         }
@@ -2930,7 +2930,7 @@ class Contact {
             else
                 $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
             if ($rights->allow_administer && $rights->conflictType)
-                $whyNot["chairMode"] = 1;
+                $whyNot["forceShow"] = 1;
             if ($rights->allow_administer && isset($whyNot['deadline']))
                 $whyNot["override"] = 1;
         }
@@ -2970,7 +2970,7 @@ class Contact {
             if ($crow && (int) $crow->commentRound)
                 $whyNot["deadline"] .= "_" . $crow->commentRound;
             if ($rights->allow_administer && $rights->conflictType)
-                $whyNot["chairMode"] = 1;
+                $whyNot["forceShow"] = 1;
             if ($rights->allow_administer)
                 $whyNot["override"] = 1;
         }
