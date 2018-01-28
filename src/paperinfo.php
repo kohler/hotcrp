@@ -627,6 +627,8 @@ class PaperInfo {
     private $_comment_skeleton_array = null;
     public $_row_set;
 
+    const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
+
     function __construct($p = null, $contact = null, Conf $conf = null) {
         $this->merge($p, $contact, $conf);
     }
@@ -924,6 +926,18 @@ class PaperInfo {
                 $this->$field_deaccent = false;
         }
         return Text::match_pregexes($reg, $data, $this->$field_deaccent);
+    }
+
+    function submitted_at() {
+        if ($this->timeSubmitted > 0)
+            return (int) $this->timeSubmitted;
+        if ($this->timeWithdrawn > 0) {
+            if ($this->timeSubmitted == -100)
+                return self::SUBMITTED_AT_FOR_WITHDRAWN;
+            if ($this->timeSubmitted < -100)
+                return -(int) $this->timeSubmitted;
+        }
+        return 0;
     }
 
     function can_author_view_decision() {
@@ -1431,6 +1445,9 @@ class PaperInfo {
         if ($did > 0 && !isset($this->_document_array[$did]))
             $this->_add_documents([$did]);
         return $did > 0 ? get($this->_document_array, $did) : null;
+    }
+    function joindoc() {
+        return $this->document($this->finalPaperStorageId > 0 ? DTYPE_FINAL : DTYPE_SUBMISSION);
     }
     function is_joindoc(DocumentInfo $doc) {
         return $doc->paperStorageId > 1

@@ -22,8 +22,6 @@ class PaperStatus extends MessageSet {
     private $qf;
     private $qv;
 
-    const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
-
     function __construct(Conf $conf, Contact $user = null, $options = array()) {
         $this->conf = $conf;
         $this->user = $user;
@@ -61,7 +59,7 @@ class PaperStatus extends MessageSet {
         return $this->prow;
     }
 
-    private function _() {
+    function _() {
         return call_user_func_array([$this->conf->ims(), "x"], func_get_args());
     }
 
@@ -150,12 +148,8 @@ class PaperStatus extends MessageSet {
             $pj->status = "inprogress";
             $pj->draft = true;
         }
-        if ($prow->timeSubmitted > 0)
-            $pj->submitted_at = (int) $prow->timeSubmitted;
-        else if ($prow->timeSubmitted == -100 && $prow->timeWithdrawn > 0)
-            $pj->submitted_at = self::SUBMITTED_AT_FOR_WITHDRAWN;
-        else if ($prow->timeSubmitted < -100 && $prow->timeWithdrawn > 0)
-            $pj->submitted_at = -$prow->timeSubmitted;
+        if (($t = $prow->submitted_at()))
+            $pj->submitted_at = $t;
 
         $can_view_authors = !$user
             || $user->can_view_authors($prow, $this->forceShow);
@@ -577,7 +571,8 @@ class PaperStatus extends MessageSet {
     private function valid_contact($lemail, $old_contacts) {
         global $Me;
         return $lemail
-            && (get($old_contacts, $lemail) || validate_email($lemail)
+            && (get($old_contacts, $lemail)
+                || validate_email($lemail)
                 || strcasecmp($lemail, $Me->email) == 0);
     }
 
@@ -698,7 +693,7 @@ class PaperStatus extends MessageSet {
                 $this->error_at("contacts", "Format error [contacts]");
                 $contacts = array();
             }
-            $pj->contacts = array();
+            $pj->contacts = [];
             // verify emails on explicitly named contacts
             foreach ($contacts as $k => $v) {
                 if (!$v)
@@ -759,40 +754,45 @@ class PaperStatus extends MessageSet {
         ksort($pj->parsed_options);
     }
 
-    private function check_invariants($pj, $old_pj) {
-        // Errors don't prevent saving
-        if (get($pj, "title") === ""
-            || (get($pj, "title") === null && (!$old_pj || !$old_pj->title)))
-            $this->error_at("title", $this->_("Each submission must have a title."));
-        if (get($pj, "abstract") === ""
-            || (get($pj, "abstract") === null && (!$old_pj || !get($old_pj, "abstract")))) {
-            if (!$this->conf->opt("noAbstract"))
-                $this->error_at("abstract", $this->_("Each submission must have an abstract."));
+    static function validate_title(PaperStatus $ps, $pj) {
+        $title = get($pj, "title");
+        if ($title === ""
+            || ($title === null && (!$ps->prow || (string) $ps->prow->title === "")))
+            $ps->error_at("title", $ps->_("Each submission must have a title."));
+    }
+
+    static function validate_abstract(PaperStatus $ps, $pj) {
+        $abstract = get($pj, "abstract");
+        if ($abstract === ""
+            || ($abstract === null && (!$ps->prow || (string) $ps->prow->abstract === ""))) {
+            if (!$ps->conf->opt("noAbstract"))
+                $ps->error_at("abstract", $ps->_("Each submission must have an abstract."));
         }
-        if ((is_array(get($pj, "authors")) && empty($pj->authors))
-            || (get($pj, "authors") === null && (!$old_pj || empty($old_pj->authors))))
-            $this->error_at("authors", $this->_("Each submission must have at least one author."));
-        $max_authors = $this->conf->opt("maxAuthors");
-        if ($max_authors > 0 && is_array(get($pj, "authors")) && count($pj->authors) > $max_authors)
-            $this->error_at("authors", $this->_("Each submission can have at most %d authors.", $max_authors));
+    }
+
+    static function validate_authors(PaperStatus $ps, $pj) {
+        $authors = get($pj, "authors");
+        if ((is_array($authors) && empty($authors))
+            || ($authors === null && (!$ps->prow || !$ps->prow->author_list())))
+            $ps->error_at("authors", $ps->_("Each submission must have at least one author."));
+        $max_authors = $ps->conf->opt("maxAuthors");
+        if ($max_authors > 0 && is_array($authors) && count($authors) > $max_authors)
+            $ps->error_at("authors", $ps->_("Each submission can have at most %d authors.", $max_authors));
         if (!empty($pj->bad_authors))
-            $this->error_at("authors", $this->_("Some authors ignored."));
+            $ps->error_at("authors", $ps->_("Some authors ignored."));
         foreach ($pj->bad_email_authors as $aux) {
-            $this->error_at("authors", null);
-            $this->error_at("auemail" . $aux->index, $this->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
+            $ps->error_at("authors", null);
+            $ps->error_at("auemail" . $aux->index, $ps->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
         }
-        $ncontacts = 0;
-        foreach ($this->conflicts_array($pj, $old_pj) as $c)
-            if ($c >= CONFLICT_CONTACTAUTHOR)
-                ++$ncontacts;
-        if (!$ncontacts && $old_pj) {
-            $noldcontacts = 0;
-            foreach (self::contacts_array($old_pj) as $c) {
-                if (isset($c->contact) && $c->contact)
-                    ++$noldcontacts;
-            }
-            if ($noldcontacts)
-                $this->error_at("contacts", $this->_("Each submission must have at least one contact."));
+    }
+
+    static function validate_contacts(PaperStatus $ps, $pj) {
+        if (!isset($pj->contacts))
+            return;
+        if (!array_filter($ps->conflicts_array($pj), function ($cflt) { return $cflt >= CONFLICT_CONTACTAUTHOR; })
+            && $ps->prow
+            && array_filter($ps->prow->contacts(), function ($cflt) { return $cflt->conflictType >= CONFLICT_CONTACTAUTHOR; })) {
+            $this->error_at("contacts", $this->_("Each submission must have at least one contact."));
         }
         foreach ($pj->bad_contacts as $reg) {
             if (!isset($reg->email))
@@ -800,6 +800,14 @@ class PaperStatus extends MessageSet {
             else
                 $this->error_at("contacts", $this->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
         }
+    }
+
+    private function check_invariants($pj) {
+        // Errors don't prevent saving
+        self::validate_title($this, $pj);
+        self::validate_abstract($this, $pj);
+        self::validate_authors($this, $pj);
+        self::validate_contacts($this, $pj);
         if (get($pj, "options"))
             $this->check_options($pj);
         if (!empty($pj->bad_topics))
@@ -856,46 +864,56 @@ class PaperStatus extends MessageSet {
         return $contacts;
     }
 
-    function conflicts_array($pj, $old_pj) {
-        $cflts = array();
+    function conflicts_array($pj) {
+        $cflts = [];
 
-        if ($pj && isset($pj->pc_conflicts))
-            $c = $pj->pc_conflicts;
-        else
-            $c = ($old_pj ? get($old_pj, "pc_conflicts") : null) ? : array();
-        foreach ((array) $c as $email => $type)
-            $cflts[strtolower($email)] = $type;
+        if (isset($pj->pc_conflicts)) {
+            foreach ((array) $pj->pc_conflicts as $email => $type)
+                $cflts[strtolower($email)] = $type;
+        } else if ($this->prow) {
+            foreach ($this->prow->conflicts(true) as $cflt)
+                if ($cflt->conflictType < CONFLICT_AUTHOR)
+                    $cflts[strtolower($cflt->email)] = $cflt->conflictType;
+        }
 
-        if ($pj && isset($pj->authors))
-            $c = $pj->authors;
-        else
-            $c = $old_pj ? $old_pj->authors : array();
-        foreach ($c as $au) {
-            if (get($au, "email")) {
-                $lemail = strtolower($au->email);
-                $cflts[$lemail] = get($au, "contact") ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR;
+        if (isset($pj->authors)) {
+            foreach ($pj->authors as $aux) {
+                if (isset($aux->email)) {
+                    $cflt = get($aux, "contact") ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR;
+                    $cflts[strtolower($aux->email)] = $cflt;
+                }
+            }
+        } else if ($this->prow) {
+            foreach ($this->prow->contacts(true) as $cflt)
+                $cflts[strtolower($cflt->email)] = $cflt->conflictType;
+            foreach ($this->prow->author_list() as $au)
+                if ($au->email !== "") {
+                    $lemail = strtolower($au->email);
+                    $cflts[$lemail] = max(get_i($cflts, $lemail), CONFLICT_AUTHOR);
+                }
+        }
+
+        if (isset($pj->contacts)) {
+            foreach ($pj->contacts as $aux) {
+                $cflts[strtolower($aux->email)] = CONFLICT_CONTACTAUTHOR;
+            }
+        } else if ($this->prow) {
+            foreach ($this->prow->contacts(true) as $cflt) {
+                if ($cflt->conflictType == CONFLICT_CONTACTAUTHOR)
+                    $cflts[strtolower($cflt->email)] = CONFLICT_CONTACTAUTHOR;
             }
         }
 
-        if ($pj && isset($pj->contacts))
-            $c = $pj->contacts;
-        else
-            $c = $old_pj ? (get($old_pj, "contacts") ? : []) : [];
-        foreach ($c as $v) {
-            $lemail = strtolower($v->email);
-            $cflts[$lemail] = max((int) get($cflts, $lemail), CONFLICT_CONTACTAUTHOR);
-        }
-
-        if ($old_pj && get($old_pj, "pc_conflicts")) {
-            $can_administer = !$this->user
-                || $this->user->can_administer($this->prow, $this->forceShow);
-            foreach ($old_pj->pc_conflicts as $email => $type)
-                if ($type == CONFLICT_CHAIRMARK) {
-                    $lemail = strtolower($email);
+        if ($this->prow) {
+            foreach ($this->prow->conflicts(true) as $cflt) {
+                if ($cflt->conflictType == CONFLICT_CHAIRMARK) {
+                    $lemail = strtolower($cflt->email);
                     if (get_i($cflts, $lemail) < CONFLICT_CHAIRMARK
-                        && !$can_administer)
+                        && $this->user
+                        && !$this->user->can_administer($this->prow, $this->forceShow))
                         $cflts[$lemail] = CONFLICT_CHAIRMARK;
                 }
+            }
         }
 
         ksort($cflts);
@@ -943,7 +961,7 @@ class PaperStatus extends MessageSet {
         if ($this->has_error())
             return false;
 
-        $this->check_invariants($pj, $old_pj);
+        $this->check_invariants($pj);
 
         // store documents (options already stored)
         if (isset($pj->submission) && $pj->submission)
@@ -968,36 +986,35 @@ class PaperStatus extends MessageSet {
         $this->qf = $this->qv = [];
         foreach (array("title", "abstract", "collaborators") as $k) {
             $v = convert_to_utf8((string) get($pj, $k));
-            if (!$old_pj || (isset($pj->$k) && $v !== (string) get($old_pj, $k)))
+            if (!$this->prow || (isset($pj->$k) && $v !== (string) $this->prow->$k))
                 $this->addf($k, $v);
         }
 
-        if (!$old_pj || isset($pj->authors)) {
+        if (!$this->prow || isset($pj->authors)) {
             $autext = convert_to_utf8(self::author_information($pj));
-            $old_autext = self::author_information($old_pj);
-            if ($autext !== $old_autext || !$old_pj)
+            if (!$this->prow || $autext !== $this->prow->authorInformation)
                 $this->addf("authorInformation", $autext);
         }
 
         if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL
-            && (!$old_pj || (isset($pj->nonblind) && !$pj->nonblind != !$old_pj->nonblind)))
+            && (!$this->prow
+                || (isset($pj->nonblind) && !$pj->nonblind !== !!$this->prow->blind))) {
             $this->addf("blind", get($pj, "nonblind") ? 0 : 1);
+        }
 
         $newPaperStorageId = null;
-        if (!$old_pj || isset($pj->submission)) {
+        if (!$this->prow || isset($pj->submission)) {
             $new_id = get($pj, "submission") ? $pj->submission->docid : 1;
-            $old_id = $old_pj && get($old_pj, "submission") ? $old_pj->submission->docid : 1;
-            if (!$old_pj || $new_id != $old_id) {
+            if (!$this->prow || $new_id != $this->prow->paperStorageId) {
                 $this->addf("paperStorageId", $new_id);
                 $newPaperStorageId = $new_id;
             }
         }
 
         $newFinalPaperStorageId = null;
-        if (!$old_pj || isset($pj->final)) {
+        if (!$this->prow || isset($pj->final)) {
             $new_id = get($pj, "final") ? $pj->final->docid : 0;
-            $old_id = $old_pj && get($old_pj, "final") ? $old_pj->final->docid : 0;
-            if (!$old_pj || $new_id != $old_id) {
+            if (!$this->prow || $new_id != $this->prow->finalPaperStorageId) {
                 $this->addf("finalPaperStorageId", $new_id);
                 $newFinalPaperStorageId = $new_id;
             }
@@ -1022,9 +1039,14 @@ class PaperStatus extends MessageSet {
                 $submitted = $pj_submitted;
             else if ($pj_draft !== null)
                 $submitted = !$pj_draft;
-            else if ($old_pj)
-                $submitted = get($old_pj, "submitted_at") > 0;
-            $submitted_at = get($pj, "submitted_at", get($old_pj, "submitted_at", 0));
+            else if ($this->prow)
+                $submitted = $this->prow->timeSubmitted != 0;
+            if (isset($pj->submitted_at))
+                $submitted_at = $pj->submitted_at;
+            else if ($this->prow)
+                $submitted_at = $this->prow->submitted_at();
+            else
+                $submitted_at = 0;
             if ($pj_withdrawn) {
                 if ($submitted && $submitted_at <= 0)
                     $submitted_at = -100;
@@ -1032,20 +1054,20 @@ class PaperStatus extends MessageSet {
                     $submitted_at = 0;
                 else
                     $submitted_at = -$submitted_at;
-                if (!$old_pj || !get($old_pj, "withdrawn")) {
+                if (!$this->prow || $this->prow->timeWithdrawn <= 0) {
                     $this->addf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now);
                     $this->addf("timeSubmitted", $submitted_at);
-                } else if ((get($old_pj, "submitted_at") > 0) !== $submitted)
+                } else if (($this->prow->submitted_at() > 0) !== $submitted)
                     $this->addf("timeSubmitted", $submitted_at);
             } else if ($submitted) {
-                if (!$old_pj || !get($old_pj, "submitted")) {
-                    if ($submitted_at <= 0 || $submitted_at === self::SUBMITTED_AT_FOR_WITHDRAWN)
+                if (!$this->prow || $this->prow->timeSubmitted != 0) {
+                    if ($submitted_at <= 0 || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN)
                         $submitted_at = $Now;
                     $this->addf("timeSubmitted", $submitted_at);
                 }
-                if ($old_pj && get($old_pj, "withdrawn"))
+                if ($this->prow && $this->prow->timeWithdrawn != 0)
                     $this->addf("timeWithdrawn", 0);
-            } else if ($old_pj && (get($old_pj, "withdrawn") || get($old_pj, "submitted"))) {
+            } else if ($this->prow && ($this->prow->timeWithdrawn != 0 || $this->prow->timeSubmitted > 0)) {
                 $this->addf("timeSubmitted", 0);
                 $this->addf("timeWithdrawn", 0);
             }
@@ -1056,7 +1078,7 @@ class PaperStatus extends MessageSet {
                 $time = get($pj, "final_submitted_at") ? : $Now;
             else
                 $time = 0;
-            if (!$old_pj || get($old_pj, "final_submitted_at") != $time)
+            if (!$this->prow || $this->prow->timeFinalSubmitted != $time)
                 $this->addf("timeFinalSubmitted", $time);
         }
 
@@ -1066,31 +1088,39 @@ class PaperStatus extends MessageSet {
             else if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL)
                 $this->addf("blind", 1);
 
-            if ($old_pj && isset($old_pj->final))
-                $old_joindoc = $old_pj->final;
-            else if ($old_pj && isset($old_pj->submission))
-                $old_joindoc = $old_pj->submission;
-            else
-                $old_joindoc = null;
+            $old_joindoc = $this->prow ? $this->prow->joindoc() : null;
+            $old_joinid = $old_joindoc ? $old_joindoc->paperStorageId : 0;
+
             if ($newFinalPaperStorageId > 0)
                 $new_joindoc = $pj->final;
-            else if ($newFinalPaperStorageId === null && $old_pj && isset($old_pj->final))
-                $new_joindoc = $old_pj->final;
+            else if ($newFinalPaperStorageId === null
+                     && $this->prow
+                     && $this->prow->finalPaperStorageId > 0)
+                $new_joindoc = $this->prow->document(DTYPE_FINAL);
             else if ($newPaperStorageId > 1)
                 $new_joindoc = $pj->submission;
-            else if ($newPaperStorageId === null && $old_pj && isset($old_pj->submission))
-                $new_joindoc = $old_pj->submission;
+            else if ($newPaperStorageId === null
+                     && $this->prow
+                     && $this->prow->paperStorageId > 1)
+                $new_joindoc = $this->prow->document(DTYPE_SUBMISSION);
             else
                 $new_joindoc = null;
-            if ($new_joindoc
-                && (!$old_joindoc || $old_joindoc->docid != $new_joindoc->docid)) {
+            if ($new_joindoc && $new_joindoc instanceof DocumentInfo)
+                $new_joinid = $new_joindoc->paperStorageId;
+            else
+                $new_joinid = $new_joindoc ? (int) $new_joindoc->docid : 0;
+
+            if ($new_joindoc && $new_joinid != $old_joinid) {
                 $this->addf("size", $new_joindoc->size);
                 $this->addf("mimetype", $new_joindoc->mimetype);
-                $this->addf("sha1", Filer::hash_as_binary($new_joindoc->hash));
+                if ($new_joindoc instanceof DocumentInfo)
+                    $this->addf("sha1", $new_joindoc->binary_hash());
+                else
+                    $this->addf("sha1", Filer::hash_as_binary($new_joindoc->hash));
                 $this->addf("timestamp", $new_joindoc->timestamp);
                 if ($this->conf->sversion >= 145)
                     $this->addf("pdfFormatStatus", 0);
-            } else if (!$paperid || ($new_joindoc && !$old_joindoc)) {
+            } else if (!$this->prow || $new_joinid != $old_joinid) {
                 $this->addf("size", 0);
                 $this->addf("mimetype", "");
                 $this->addf("sha1", "");
@@ -1119,7 +1149,7 @@ class PaperStatus extends MessageSet {
 
             // maybe update `papersub` settings
             $is_submitted = !$pj_withdrawn && $submitted;
-            $was_submitted = $old_pj && !get($old_pj, "withdrawn") && get($old_pj, "submitted");
+            $was_submitted = $this->prow && $this->prow->timeWithdrawn <= 0 && $this->prow->timeSubmitted > 0;
             if ($is_submitted != $was_submitted)
                 $this->conf->update_papersub_setting($is_submitted ? 1 : -1);
         }
@@ -1151,8 +1181,8 @@ class PaperStatus extends MessageSet {
         }
 
         // update PaperConflict
-        $conflict = $this->conflicts_array($pj, $old_pj);
-        $old_conflict = $this->conflicts_array($old_pj, null);
+        $conflict = $this->conflicts_array($pj);
+        $old_conflict = $this->conflicts_array((object) []);
         if (join(",", array_keys($conflict)) !== join(",", array_keys($old_conflict))
             || join(",", array_values($conflict)) !== join(",", array_values($old_conflict))) {
             $ins = array();
