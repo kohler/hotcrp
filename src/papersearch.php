@@ -2183,8 +2183,11 @@ class PaperSearch {
     }
 
     function alternate_query() {
-        if ($this->q !== "" && $this->q[0] !== "#"
-            && preg_match('/\A' . TAG_REGEX . '\z/', $this->q)) {
+        if ($this->q !== ""
+            && $this->q[0] !== "#"
+            && preg_match('/\A' . TAG_REGEX . '\z/', $this->q)
+            && $this->user->can_view_tags(null)
+            && in_array($this->limit(), ["s", "all", "r"])) {
             if ($this->q[0] === "~")
                 return "#" . $this->q;
             $result = $this->conf->qe("select paperId from PaperTag where tag=? limit 1", $this->q);
