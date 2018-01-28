@@ -2244,7 +2244,7 @@ class PaperTable {
                 break;
             }
         foreach ($this->crows as $cr)
-            if ($this->user->can_view_comment($prow, $cr, null)) {
+            if ($this->user->can_view_comment($prow, $cr)) {
                 $viewable[] = "comments";
                 break;
             }

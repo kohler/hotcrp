@@ -2841,7 +2841,7 @@ class Contact {
     function can_view_review_ratings(PaperInfo $prow, ReviewInfo $rrow = null, $override_self = false) {
         $rs = $this->conf->setting("rev_ratings");
         $rights = $this->rights($prow);
-        if (!$this->can_view_review($prow, $rrow, null)
+        if (!$this->can_view_review($prow, $rrow)
             || (!$rights->allow_pc && !$rights->allow_review)
             || ($rs != REV_RATINGS_PC && $rs != REV_RATINGS_PC_EXTERNAL))
             return false;

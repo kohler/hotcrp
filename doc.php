@@ -203,7 +203,7 @@ function document_download() {
         $prow = new PaperInfo(["paperId" => -2], null, $Conf);
         if (($dr->opt->visibility === "admin" && !$Me->privChair)
             || ($dr->opt->visibility !== "all" && !$Me->isPC))
-            document_error("403 Forbidden", "You don’t have permission to view this document.");
+            document_error("403 Forbidden", "You aren’t allowed to view this document.");
     } else {
         $prow = $Conf->paperRow($dr->paperId, $Me, $whyNot);
         if (!$prow)
@@ -212,7 +212,7 @@ function document_download() {
             document_error("403 Forbidden", whyNotText($whyNot));
         else if ($dr->dtype > 0
                  && !$Me->can_view_paper_option($prow, $dr->dtype, true))
-            document_error("403 Forbidden", "You don’t have permission to view this document.");
+            document_error("403 Forbidden", "You aren’t allowed to view this document.");
     }
 
     // history

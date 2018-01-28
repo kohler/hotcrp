@@ -990,8 +990,8 @@ class PaperInfo {
         return false;
     }
 
-    function has_viewable_tag($tag, Contact $user, $forceShow = null) {
-        $tags = $this->viewable_tags($user, $forceShow);
+    function has_viewable_tag($tag, Contact $user) {
+        $tags = $this->viewable_tags($user);
         return $tags !== "" && stripos(" " . $tags, " $tag#") !== false;
     }
 
@@ -1889,10 +1889,10 @@ class PaperInfo {
         return $this->_comment_skeleton_array;
     }
 
-    function viewable_comment_skeletons(Contact $user, $forceShow) {
+    function viewable_comment_skeletons(Contact $user) {
         $crows = [];
         foreach ($this->all_comment_skeletons() as $cid => $crow)
-            if ($user->can_view_comment($this, $crow, $forceShow))
+            if ($user->can_view_comment($this, $crow))
                 $crows[$cid] = $crow;
         return $crows;
     }
@@ -2001,8 +2001,12 @@ class PaperInfo {
         $cimap = $this->replace_contact_info_map(null);
 
         foreach ($watchers as $minic) {
+            if ($minic->overrides()) // XXX remove soon
+                error_log("surprise overrides");
+            $old_overrides = $minic->set_overrides(0);
             $this->load_my_contact_info($minic->contactId, $minic);
             call_user_func($callback, $this, $minic);
+            $minic->set_overrides($old_overrides);
         }
 
         $this->replace_contact_info_map($cimap);

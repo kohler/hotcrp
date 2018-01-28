@@ -240,7 +240,7 @@ class CommentInfo {
     }
 
     function unparse_json(Contact $contact) {
-        if ($this->commentId && !$contact->can_view_comment($this->prow, $this, null))
+        if ($this->commentId && !$contact->can_view_comment($this->prow, $this))
             return false;
 
         // placeholder for new comment
@@ -544,7 +544,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $tmpl = "@responsenotify";
         else
             $tmpl = "@commentnotify";
-        if ($minic->can_view_comment($prow, self::$watching, false)
+        if ($minic->can_view_comment($prow, self::$watching)
             // Don't send notifications about draft responses to the chair,
             // even though the chair can see draft responses.
             && ($tmpl !== "@responsedraftnotify" || $minic->act_author_view($prow)))

@@ -1994,7 +1994,7 @@ class PaperSearch {
                             $this->highlightmap[$row->paperId][] = $qe->highlight_types[$j - $qe->nthen];
                 }
                 if ($order_anno_tag) {
-                    if ($row->has_viewable_tag($order_anno_tag->tag, $this->user, true))
+                    if ($row->has_viewable_tag($order_anno_tag->tag, $this->user))
                         $tag_order[] = [$row->paperId, $row->tag_value($order_anno_tag->tag)];
                     else
                         $tag_order[] = [$row->paperId, TAG_INDEXBOUND];
