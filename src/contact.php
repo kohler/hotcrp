@@ -2275,28 +2275,28 @@ class Contact {
             || ($rights->potential_reviewer && !$this->conf->opt("hideManager"));
     }
 
-    function can_view_lead(PaperInfo $prow = null, $forceShow = null) {
+    function can_view_lead(PaperInfo $prow = null) {
         if ($prow) {
-            $rights = $this->rights($prow, $forceShow);
+            $rights = $this->rights($prow);
             return $rights->can_administer
                 || ($this->contactId > 0
                     && isset($prow->leadContactId)
                     && $prow->leadContactId == $this->contactId)
                 || (($rights->allow_pc || $rights->allow_review)
-                    && $this->can_view_review_identity($prow, null, $forceShow));
+                    && $this->can_view_review_identity($prow, null));
         } else
             return $this->isPC;
     }
 
-    function can_view_shepherd(PaperInfo $prow = null, $forceShow = null) {
+    function can_view_shepherd(PaperInfo $prow = null) {
         // XXX Allow shepherd view when outcome == 0 && can_view_decision.
         // This is a mediocre choice, but people like to reuse the shepherd field
         // for other purposes, and I might hear complaints.
         if ($prow) {
-            return $this->act_pc($prow, $forceShow)
+            return $this->act_pc($prow)
                 || (!$this->conf->setting("shepherd_hide")
-                    && $this->can_view_decision($prow, $forceShow)
-                    && $this->can_view_review($prow, null, $forceShow));
+                    && $this->can_view_decision($prow)
+                    && $this->can_view_review($prow, null));
         } else {
             return $this->isPC
                 || (!$this->conf->setting("shepherd_hide")
@@ -2342,15 +2342,15 @@ class Contact {
                     || $this->conf->time_reviewer_view_accepted_authors()));
     }
 
-    function can_view_conflicts(PaperInfo $prow, $forceShow = null) {
-        $rights = $this->rights($prow, $forceShow);
+    function can_view_conflicts(PaperInfo $prow) {
+        $rights = $this->rights($prow);
         if ($rights->allow_administer || $rights->act_author_view)
             return true;
         if (!$rights->allow_pc_broad && !$rights->potential_reviewer)
             return false;
         $pccv = $this->conf->setting("sub_pcconfvis");
         return $pccv == 2
-            || (!$pccv && $this->can_view_authors($prow, $forceShow))
+            || (!$pccv && $this->can_view_authors($prow))
             || (!$pccv && $this->conf->setting("tracker")
                 && MeetingTracker::is_paper_tracked($prow)
                 && $this->can_view_tracker());

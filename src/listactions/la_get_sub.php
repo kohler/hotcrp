@@ -288,8 +288,9 @@ class GetPcconflicts_ListAction extends ListAction {
         $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact";
         $pcm = $user->conf->pc_members();
         $texts = array();
-        foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow)
-            if ($user->can_view_conflicts($prow, true)) {
+        $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow) {
+            if ($user->can_view_conflicts($prow)) {
                 $m = [];
                 foreach ($prow->conflicts() as $cid => $c)
                     if (isset($pcm[$cid])) {
@@ -301,6 +302,8 @@ class GetPcconflicts_ListAction extends ListAction {
                     $texts[$prow->paperId] = $m;
                 }
             }
+        }
+        $user->set_overrides($old_overrides);
         return new Csv_SearchResult("pcconflicts", ["paper", "title", "first", "last", "email", "conflicttype"], $ssel->reorder($texts));
     }
 }

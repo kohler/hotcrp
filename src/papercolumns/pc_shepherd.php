@@ -8,7 +8,7 @@ class Shepherd_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_FOLD;
     }
     function prepare(PaperList $pl, $visible) {
-        return $pl->user->can_view_shepherd(null, true)
+        return $pl->user->can_view_shepherd(null)
             && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
     static private function cid(PaperList $pl, PaperInfo $row) {
