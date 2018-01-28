@@ -797,7 +797,7 @@ class PaperInfo {
 
     function author_by_email($email) {
         foreach ($this->author_list() as $a)
-            if (strcasecmp($a, $email) == 0)
+            if (strcasecmp($a->email, $email) == 0 && (string) $email !== "")
                 return $a;
         return null;
     }
