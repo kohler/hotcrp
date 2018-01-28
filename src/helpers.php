@@ -593,42 +593,26 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
     if (isset($whyNot["deadline"])) {
         $dname = $whyNot["deadline"];
         if ($dname[0] == "s")
-            $start = $conf->setting("sub_open", -1);
+            $open_dname = "sub_open";
         else if ($dname[0] == "p" || $dname[0] == "e")
-            $start = $conf->setting("rev_open", -1);
+            $open_dname = "rev_open";
         else
-            $start = 1;
+            $open_dname = false;
+        $start = $open_dname ? $conf->setting($open_dname, -1) : 1;
         $end = $conf->setting($dname, -1);
         if ($dname == "au_seerev") {
             if ($conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE)
                 $ms[] = $conf->_("Authors who are also reviewers can’t see reviews for their papers while they still have <a href=\"%s\">incomplete reviews</a> of their own.", hoturl("search", "t=rout&amp;q="));
             else
-                $ms[] = $conf->_("Authors can’t view reviews at the moment.");
+                $ms[] = $conf->_c("etime", "Action not available.", $dname, $paperId);
         } else if ($start <= 0 || $start == $end) {
-            if ($dname[0] == "p" || $dname[0] == "e")
-                $ms[] = $conf->_("You can’t $action submission #%d because the site is not open for reviewing.", $paperId);
-            else
-                $ms[] = $conf->_("You can’t $action submission #%d yet.", $paperId);
-        } else if ($start > 0 && $Now < $start)
-            $ms[] = $conf->_("You can’t $action submission #%d until %s.", $paperId, $conf->printableTime($start, "span"));
-        else if ($end > 0 && $Now > $end) {
-            if ($dname == "sub_reg")
-                $ms[] = $conf->_("The registration deadline has passed.");
-            else if ($dname == "sub_update")
-                $ms[] = $conf->_("The update deadline has passed.");
-            else if ($dname == "sub_sub")
-                $ms[] = $conf->_("The submission deadline has passed.");
-            else if ($dname == "extrev_hard")
-                $ms[] = $conf->_("The external review deadline has passed.");
-            else if ($dname == "pcrev_hard")
-                $ms[] = $conf->_("The PC review deadline has passed.");
-            else if ($dname == "final_done")
-                $ms[] = $conf->_("The deadline to update final versions has passed.");
-            else
-                $ms[] = $conf->_("The deadline to $action submission #%d has passed.", $paperId);
-            $ms[] = $conf->_("It was %s.", $conf->printableTime($end, "span"));
+            $ms[] = $conf->_c("etime", "Action not available.", $open_dname, $paperId);
+        } else if ($start > 0 && $Now < $start) {
+            $ms[] = $conf->_c("etime", "Action not available until %3$s.", $open_dname, $paperId, $conf->printableTime($start, "span"));
+        } else if ($end > 0 && $Now > $end) {
+            $ms[] = $conf->_c("etime", "Deadline passed.", $dname, $paperId, $conf->printableTime($end, "span"));
         } else
-            $ms[] = $conf->_("You can’t $action submission #%d at the moment.", $paperId);
+            $ms[] = $conf->_c("etime", "Action not available.", "", $paperId);
     }
     if (isset($whyNot["override"]))
         $ms[] = $conf->_("“Override deadlines” can override this restriction.");

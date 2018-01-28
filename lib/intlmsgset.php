@@ -26,13 +26,21 @@ class IntlMsg {
                     || !CountMatcher::compare((float) $arg, $m[2], (float) $m[3]))
                     return false;
                 ++$nreq;
-            } else if (preg_match('/\A\s*\$(\w+)\s*([=!]=?)\s*(\S+)\s*\z/', $req, $m)) {
+            } else if (preg_match('/\A\s*\$(\w+)\s*([=!]=?|≠|!?\^=)\s*(\S+)\s*\z/', $req, $m)) {
                 $arg = $this->arg($ms, $args, $m[1]);
-                $want = $m[2] === "!" ? false : true;
-                if ((string) $arg === ""
-                    || ($arg === $m[3]) !== $want)
+                if ((string) $arg === "")
                     return false;
-                ++$nreq;
+                if ($m[2] === "^=" || $m[2] === "!^=") {
+                    $have = str_starts_with($arg, $m[3]);
+                    $weight = 0.9;
+                } else {
+                    $have = $arg === $m[3];
+                    $weight = 1;
+                }
+                $want = ($m[2] === "=" || $m[2] === "==" || $m[2] === "^=");
+                if ($have !== $want)
+                    return false;
+                $nreq += $weight;
             } else if (preg_match('/\A\s*(|!)\s*\$(\w+)\s*\z/', $req, $m)) {
                 $arg = $this->arg($ms, $args, $m[2]);
                 $bool_arg = (string) $arg !== "" && $arg !== 0;

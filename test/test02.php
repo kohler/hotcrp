@@ -531,6 +531,9 @@ $ms->add("ax", "a");
 $ms->add("ax", "b");
 $ms->add("bx", "a", 2);
 $ms->add("bx", "b");
+$ms->add(["fart", "fart example A", ["$1=bob"]]);
+$ms->add(["fart", "fart example B", ["$1^=bob"]]);
+$ms->add(["fart", "fart example C"]);
 $ms->set("FOO", 100);
 xassert_eqq($ms->x("Hello"), "Bonjour");
 xassert_eqq($ms->x("%d friend", 1), "1 ami");
@@ -541,6 +544,9 @@ xassert_eqq($ms->x("ax"), "b");
 xassert_eqq($ms->x("bx"), "a");
 xassert_eqq($ms->x("%FOO% friend"), "100 friend");
 xassert_eqq($ms->x("%xOOB%x friend", 10, 11), "aOOBb friend");
+xassert_eqq($ms->x("fart"), "fart example C");
+xassert_eqq($ms->x("fart", "bobby"), "fart example B");
+xassert_eqq($ms->x("fart", "bob"), "fart example A");
 
 // MIME types
 xassert_eqq(Mimetype::content_type("%PDF-3.0\nwhatever\n"), Mimetype::PDF_TYPE);

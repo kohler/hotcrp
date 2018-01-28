@@ -2102,7 +2102,7 @@ class Contact {
         if ($prow->timeSubmitted > 0)
             $whyNot["updateSubmitted"] = 1;
         if (!$this->conf->timeFinalizePaper($prow) && !$this->override_deadlines($rights))
-            $whyNot["deadline"] = "finalizePaperSubmission";
+            $whyNot["deadline"] = "sub_sub";
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
         return $whyNot;
