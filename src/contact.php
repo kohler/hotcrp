@@ -3095,7 +3095,7 @@ class Contact {
     }
 
     // A review field is visible only if its view_score > view_score_bound.
-    function view_score_bound(PaperInfo $prow, ReviewInfo $rrow = null, $forceShow = null) {
+    function view_score_bound(PaperInfo $prow, ReviewInfo $rrow = null) {
         // Returns the maximum view_score for an invisible review
         // field. Values are:
         //   VIEWSCORE_ADMINONLY     admin can view
@@ -3105,16 +3105,16 @@ class Contact {
         //   VIEWSCORE_AUTHOR        ... and authors can view
         // So returning -3 means all scores are visible.
         // Deadlines are not considered.
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         if ($rights->can_administer)
             return VIEWSCORE_ADMINONLY - 1;
         else if ($rrow ? $this->is_owned_review($rrow) : $rights->allow_review)
             return VIEWSCORE_REVIEWERONLY - 1;
-        else if (!$this->can_view_review($prow, $rrow, $forceShow))
+        else if (!$this->can_view_review($prow, $rrow))
             return VIEWSCORE_MAX + 1;
         else if ($rights->act_author_view
                  && $prow->outcome
-                 && $this->can_view_decision($prow, $forceShow))
+                 && $this->can_view_decision($prow))
             return VIEWSCORE_AUTHORDEC - 1;
         else if ($rights->act_author_view)
             return VIEWSCORE_AUTHOR - 1;
@@ -3176,8 +3176,8 @@ class Contact {
                         || $this->conf->tags()->is_votish(substr($tag, $twiddle + 1)))));
     }
 
-    function can_view_peruser_tags(PaperInfo $prow, $tag, $forceShow = null) {
-        return $this->can_view_tag($prow, ($this->contactId + 1) . "~$tag", $forceShow);
+    function can_view_peruser_tags(PaperInfo $prow, $tag) {
+        return $this->can_view_tag($prow, ($this->contactId + 1) . "~$tag");
     }
 
     function can_view_any_peruser_tags($tag) {

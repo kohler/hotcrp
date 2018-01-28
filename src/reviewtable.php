@@ -50,7 +50,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
             $want_my_scores = true;
             $foundMyReview++;
         }
-        $canView = $Me->can_view_review($prow, $rr, null);
+        $canView = $Me->can_view_review($prow, $rr);
 
         // skip unsubmitted reviews
         if (!$canView && $hideUnviewable) {
@@ -124,7 +124,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
 
         // reviewer identity
         $showtoken = $rr->reviewToken && $Me->can_review($prow, $rr);
-        if (!$Me->can_view_review_identity($prow, $rr, null)) {
+        if (!$Me->can_view_review_identity($prow, $rr)) {
             $t .= ($rtype ? '<td class="rl">' . $rtype . '</td>' : '<td></td>');
         } else {
             if (!$showtoken || !Contact::is_anonymous_email($rr->email))
@@ -147,7 +147,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 && !$showtoken
                 && $rr->requestedBy
                 && $rr->requestedBy != $rr->contactId
-                && $Me->can_view_review_requester($prow, $rr, null)) {
+                && $Me->can_view_review_requester($prow, $rr)) {
                 $t .= '<td class="rl" style="font-size:smaller">';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
@@ -244,7 +244,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
     // unfinished review notification
     $notetxt = "";
     if ($cflttype >= CONFLICT_AUTHOR && !$admin && $notShown
-        && $Me->can_view_review($prow, null, null)) {
+        && $Me->can_view_review($prow, null)) {
         if ($notShown == 1)
             $t = "1 review remains outstanding.";
         else
@@ -303,7 +303,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     $myrr = null;
     if ($rrows)
         foreach ($rrows as $rr) {
-            if ($Me->can_view_review($prow, $rr, null))
+            if ($Me->can_view_review($prow, $rr))
                 $nvisible++;
             if ($rr->contactId == $Me->contactId
                 || (!$myrr && $Me->is_my_review($rr)))
@@ -314,7 +314,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     $pret = "";
     if ($crows && !empty($crows) && !$rrow && $mode !== "edit") {
         $tagger = new Tagger($Me);
-        $viewable_crows = array_filter($crows, function ($cr) use ($Me) { return $Me->can_view_comment($cr->prow, $cr, null); });
+        $viewable_crows = array_filter($crows, function ($cr) use ($Me) { return $Me->can_view_comment($cr->prow, $cr); });
         $cxs = CommentInfo::group_by_identity($viewable_crows, $Me, true);
         if (!empty($cxs)) {
             $count = array_reduce($cxs, function ($n, $cx) { return $n + $cx[1]; }, 0);
