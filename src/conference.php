@@ -2663,7 +2663,7 @@ class Conf {
 
     function paperRow($sel, Contact $contact = null, &$whyNot = null) {
         $ret = null;
-        $whyNot = array();
+        $whyNot = ["conf" => $this];
 
         if (!is_array($sel))
             $sel = array("paperId" => $sel);
@@ -2672,20 +2672,23 @@ class Conf {
         if (isset($sel["reviewId"]))
             $whyNot["reviewId"] = $sel["reviewId"];
 
-        if (isset($sel['paperId']) && cvtint($sel['paperId']) < 0)
-            $whyNot['invalidId'] = 'paper';
-        else if (isset($sel['reviewId']) && cvtint($sel['reviewId']) < 0
-                 && !preg_match('/^\d+[A-Z][A-Z]?$/i', $sel['reviewId']))
-            $whyNot['invalidId'] = 'review';
+        if (isset($sel["paperId"]) && cvtint($sel["paperId"]) < 0)
+            $whyNot["invalidId"] = "paper";
+        else if (isset($sel["reviewId"]) && cvtint($sel["reviewId"]) < 0
+                 && !preg_match('/^\d+[A-Z][A-Z]?$/i', $sel["reviewId"]))
+            $whyNot["invalidId"] = "review";
         else {
             $q = $this->paperQuery($contact, $sel);
             $result = $this->qe_raw($q);
 
             if (!$result)
                 $whyNot["dbError"] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
-            else if ($result->num_rows == 0)
-                $whyNot["noPaper"] = 1;
-            else
+            else if ($result->num_rows == 0) {
+                if (!$contact || $contact->isPC)
+                    $whyNot["noPaper"] = 1;
+                else
+                    $whyNot["permission"] = "view_paper";
+            } else
                 $ret = PaperInfo::fetch($result, $contact, $this);
 
             Dbl::free($result);
