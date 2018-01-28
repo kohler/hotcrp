@@ -584,14 +584,14 @@ class PaperStatus extends MessageSet {
             $pj->collaborators = Contact::clean_collaborator_lines($pj->collaborators);
 
         // Authors
-        $au_by_lemail = array();
-        $pj->bad_authors = $pj->bad_email_authors = array();
+        $au_by_lemail = [];
+        $pj->bad_authors = $pj->bad_email_authors = [];
         if (isset($pj->authors)) {
             if (!is_array($pj->authors))
                 $this->error_at("authors", "Format error [authors]");
-            $curau = is_array($pj->authors) ? $pj->authors : array();
-            $pj->authors = array();
-            foreach ($curau as $k => $au) {
+            $input_authors = is_array($pj->authors) ? $pj->authors : [];
+            $pj->authors = [];
+            foreach ($input_authors as $k => $au) {
                 if (is_string($au) || is_object($au))
                     $this->normalize_author($pj, $au, $au_by_lemail);
                 else
@@ -668,7 +668,7 @@ class PaperStatus extends MessageSet {
                 $contacts = (array) $contacts;
             else {
                 $this->error_at("contacts", "Format error [contacts]");
-                $contacts = array();
+                $contacts = [];
             }
             $pj->contacts = [];
             // verify emails on explicitly named contacts
@@ -687,9 +687,8 @@ class PaperStatus extends MessageSet {
                 if (is_object($v) && !get($v, "email") && is_string($k))
                     $v->email = $k;
                 if (is_object($v) && get($v, "email")) {
-                    $lemail = strtolower($v->email);
-                    if ($this->valid_contact($lemail))
-                        $pj->contacts[] = (object) array_merge((array) get($au_by_lemail, $lemail), (array) $v);
+                    if ($this->valid_contact($v->email))
+                        $pj->contacts[] = (object) array_merge((array) get($au_by_lemail, strtolower($v->email)), (array) $v);
                     else
                         $pj->bad_contacts[] = $v;
                 } else
@@ -704,6 +703,22 @@ class PaperStatus extends MessageSet {
                     && ($aux = get($au_by_lemail, strtolower($cflt->email)))
                     && !isset($aux->contact))
                     $aux->contact = true;
+        }
+        // If user modifies paper, make them a contact (not just an author)
+        if ($this->prow
+            && $this->user
+            && !$this->user->allow_administer($this->prow)
+            && $this->prow->conflict_type($this->user) === CONFLICT_AUTHOR) {
+            if (!isset($pj->contacts)) {
+                $pj->contacts = [];
+                foreach ($this->prow->contacts(true) as $cflt)
+                    if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR)
+                        $pj->contacts[] = (object) ["email" => $cflt->email];
+            }
+            if (!array_filter($pj->contacts, function ($cflt) {
+                    return strcasecmp($this->user->email, $cflt->email) === 0;
+                }))
+                $pj->contacts[] = (object) ["email" => $this->user->email];
         }
     }
 
@@ -760,16 +775,23 @@ class PaperStatus extends MessageSet {
     static function validate_contacts(PaperStatus $ps, $pj) {
         if (!isset($pj->contacts))
             return;
-        if (!array_filter($ps->conflicts_array($pj), function ($cflt) { return $cflt >= CONFLICT_CONTACTAUTHOR; })
+        $cflts = $ps->conflicts_array($pj);
+        if (!array_filter($cflts, function ($cflt) { return $cflt >= CONFLICT_CONTACTAUTHOR; })
             && $ps->prow
             && array_filter($ps->prow->contacts(), function ($cflt) { return $cflt->conflictType >= CONFLICT_CONTACTAUTHOR; })) {
-            $this->error_at("contacts", $this->_("Each submission must have at least one contact."));
+            $ps->error_at("contacts", $ps->_("Each submission must have at least one contact."));
+        }
+        if ($ps->prow
+            && $ps->user
+            && !$ps->user->allow_administer($ps->prow)
+            && get($cflts, strtolower($ps->user->email), 0) < CONFLICT_AUTHOR) {
+            $ps->error_at("contacts", $ps->_("You can’t remove yourself as submission contact. (Ask another contact to remove you.)"));
         }
         foreach ($pj->bad_contacts as $reg) {
             if (!isset($reg->email))
-                $this->error_at("contacts", $this->_("Contact %s has no associated email.", Text::user_html($reg)));
+                $ps->error_at("contacts", $ps->_("Contact %s has no associated email.", Text::user_html($reg)));
             else
-                $this->error_at("contacts", $this->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
+                $ps->error_at("contacts", $ps->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
         }
     }
 
@@ -882,24 +904,6 @@ class PaperStatus extends MessageSet {
                     $cflts[strtolower($cflt->email)] = $cflt->conflictType;
         }
 
-        // extract authors
-        if (isset($pj->authors)) {
-            foreach ($pj->authors as $aux) {
-                if (isset($aux->email)) {
-                    $cflt = get($aux, "contact") ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR;
-                    $cflts[strtolower($aux->email)] = $cflt;
-                }
-            }
-        } else if ($this->prow) {
-            foreach ($this->prow->contacts(true) as $cflt)
-                $cflts[strtolower($cflt->email)] = $cflt->conflictType;
-            foreach ($this->prow->author_list() as $au)
-                if ($au->email !== "") {
-                    $lemail = strtolower($au->email);
-                    $cflts[$lemail] = max(get_i($cflts, $lemail), CONFLICT_AUTHOR);
-                }
-        }
-
         // extract contacts
         if (isset($pj->contacts)) {
             foreach ($pj->contacts as $aux) {
@@ -910,6 +914,30 @@ class PaperStatus extends MessageSet {
                 if ($cflt->conflictType == CONFLICT_CONTACTAUTHOR)
                     $cflts[strtolower($cflt->email)] = CONFLICT_CONTACTAUTHOR;
             }
+        }
+
+        // extract authors
+        if (isset($pj->authors)) {
+            foreach ($pj->authors as $aux) {
+                if (isset($aux->email)) {
+                    $lemail = strtolower($aux->email);
+                    if (!isset($aux->contact))
+                        $ctype = max(get_i($cflts, $lemail), CONFLICT_AUTHOR);
+                    else
+                        $ctype = $aux->contact ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR;
+                    $cflts[$lemail] = $ctype;
+                }
+            }
+        } else if ($this->prow) {
+            foreach ($this->prow->contacts(true) as $cflt) {
+                $lemail = strtolower($cflt->email);
+                $cflts[$lemail] = max(get_i($cflts, $lemail), $cflt->conflictType);
+            }
+            foreach ($this->prow->author_list() as $au)
+                if ($au->email !== "") {
+                    $lemail = strtolower($au->email);
+                    $cflts[$lemail] = max(get_i($cflts, $lemail), CONFLICT_AUTHOR);
+                }
         }
 
         // chair conflicts cannot be overridden
@@ -962,13 +990,15 @@ class PaperStatus extends MessageSet {
             return false;
         }
 
+        // normalize and check format
         $this->normalize($pj);
         if ($this->has_error())
             return false;
 
+        // validate
         $this->validate($pj);
 
-        // store documents (options already stored)
+        // store documents (XXX should attach to paper even if error)
         if (isset($pj->submission) && $pj->submission)
             $pj->submission = $this->upload_document($pj->submission, $this->conf->paper_opts->get(DTYPE_SUBMISSION));
         if (isset($pj->final) && $pj->final)

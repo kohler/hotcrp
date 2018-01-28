@@ -1083,7 +1083,7 @@ class PaperTable {
         }
     }
 
-    private function editable_contact_row($num) {
+    private function editable_newcontact_row($num) {
         if ($num === '$') {
             $checked = true;
             $name = $email = "";
@@ -1110,11 +1110,11 @@ class PaperTable {
         echo $this->editable_papt("contactAuthor", $this->field_name("Contact")),
             '<div class="papev js-row-order">';
         echo '<div data-row-template="',
-            htmlspecialchars($this->editable_contact_row('$')),
+            htmlspecialchars($this->editable_newcontact_row('$')),
             '">';
         if ($this->useRequest) {
             for ($i = 1; isset($this->qreq["newcontact_email_{$i}"]); ++$i)
-                echo $this->editable_contact_row($i);
+                echo $this->editable_newcontact_row($i);
         }
         echo '</div><div class="ug">',
             Ht::button("Add contact", ["class" => "ui btn row-order-ui addrow"]),
@@ -1151,7 +1151,8 @@ class PaperTable {
 
         $cidx = 1;
         foreach ($contacts as $au) {
-            if ($au->nonauthor) {
+            if ($au->nonauthor
+                && (strcasecmp($this->user->email, $au->email) != 0 || $this->allow_admin)) {
                 $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
                     . Ht::checkbox("contact_active_{$cidx}", 1, !$this->useRequest || isset($req_cemail[strtolower($au->email)]), ["data-default-checked" => true]);
             } else if ($au->contactId) {
@@ -1173,11 +1174,11 @@ class PaperTable {
             ++$cidx;
         }
         echo '</div><div data-row-template="',
-            htmlspecialchars($this->editable_contact_row('$')),
+            htmlspecialchars($this->editable_newcontact_row('$')),
             '">';
         if ($this->useRequest) {
             for ($i = 1; isset($this->qreq["newcontact_email_{$i}"]); ++$i)
-                echo $this->editable_contact_row($i);
+                echo $this->editable_newcontact_row($i);
         }
         echo '</div><div class="ug">',
             Ht::button("Add contact", ["class" => "ui btn row-order-ui addrow"]),
