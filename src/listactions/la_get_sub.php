@@ -83,7 +83,7 @@ class GetDocument_ListAction extends ListAction {
         $opt = $user->conf->paper_opts->get($this->dt);
         foreach ($user->paper_set($ssel) as $row)
             if (($whyNot = $user->perm_view_paper_option($row, $opt, true)))
-                $errors[] = self::error_document($opt, $row, whyNotText($whyNot, "view"));
+                $errors[] = self::error_document($opt, $row, whyNotText($whyNot));
             else if (($doc = $row->document($opt->id)))
                 $downloads[] = $doc;
             else
@@ -199,7 +199,7 @@ class GetAbstract_ListAction extends ListAction {
         $texts = array();
         foreach ($user->paper_set($ssel, ["topics" => 1]) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow)))
-                Conf::msg_error(whyNotText($whyNot, "view"));
+                Conf::msg_error(whyNotText($whyNot));
             else {
                 defappend($texts[$prow->paperId], $this->render($prow, $user));
                 $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");

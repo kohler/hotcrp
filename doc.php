@@ -207,9 +207,9 @@ function document_download() {
     } else {
         $prow = $Conf->paperRow($dr->paperId, $Me, $whyNot);
         if (!$prow)
-            document_error("404 Not Found", whyNotText($whyNot, "view"));
+            document_error("404 Not Found", whyNotText($whyNot));
         else if (($whyNot = $Me->perm_view_pdf($prow)))
-            document_error("403 Forbidden", whyNotText($whyNot, "view"));
+            document_error("403 Forbidden", whyNotText($whyNot));
         else if ($dr->dtype > 0
                  && !$Me->can_view_paper_option($prow, $dr->dtype, true))
             document_error("403 Forbidden", "You don’t have permission to view this document.");

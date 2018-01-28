@@ -32,9 +32,9 @@ function loadRows() {
     global $prow, $rrows, $Conf, $Me;
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
-        errorMsgExit(whyNotText($whyNot, "view", true));
+        errorMsgExit(whyNotText($whyNot, true));
     if (($whyNot = $Me->perm_request_review($prow, false))) {
-        $wnt = whyNotText($whyNot, "request reviews for");
+        $wnt = whyNotText($whyNot);
         error_go(hoturl("paper", ["p" => $prow->paperId]), $wnt);
     }
     $rrows = $prow->reviews_by_id();
@@ -343,7 +343,7 @@ function createAnonymousReview() {
 
 if (isset($_REQUEST["add"]) && check_post()) {
     if (($whyNot = $Me->perm_request_review($prow, true)))
-        Conf::msg_error(whyNotText($whyNot, "request reviews for"));
+        Conf::msg_error(whyNotText($whyNot));
     else if (!isset($_REQUEST["email"]) || !isset($_REQUEST["name"]))
         Conf::msg_error("An email address is required to request a review.");
     else if (trim($_REQUEST["email"]) === "" && trim($_REQUEST["name"]) === ""

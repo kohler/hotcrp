@@ -533,11 +533,11 @@ function filter_whynot($whyNot, $keys) {
     return $revWhyNot;
 }
 
-function whyNotText($whyNot, $action, $suggest_redirection = false) {
+function whyNotText($whyNot, $suggest_redirection = false) {
     global $Conf, $Now;
-    $conf = get($whyNot, "conf") ? : $Conf;
-    if (!is_array($whyNot))
+    if (is_string($whyNot))
         $whyNot = array($whyNot => 1);
+    $conf = get($whyNot, "conf") ? : $Conf;
     $paperId = (isset($whyNot["paperId"]) ? $whyNot["paperId"] : -1);
     $reviewId = (isset($whyNot["reviewId"]) ? $whyNot["reviewId"] : -1);
     $ms = [];

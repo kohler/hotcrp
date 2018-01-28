@@ -95,10 +95,10 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
             $whyNot = $user->perm_review($row, null);
             if ($whyNot && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"]))
-                $errors[whyNotText($whyNot, "review")] = true;
+                $errors[whyNotText($whyNot)] = true;
             else {
                 if ($whyNot) {
-                    $t = whyNotText($whyNot, "review");
+                    $t = whyNotText($whyNot);
                     $errors[$t] = false;
                     if (!isset($whyNot["deadline"]))
                         defappend($texts[$row->paperId], prefix_word_wrap("==-== ", strtoupper(whyNotHtmlToText($t)) . "\n\n", "==-== "));
@@ -128,7 +128,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
         $errors = $texts = [];
         foreach ($user->paper_set($ssel) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
-                $errors["#$prow->paperId: " . whyNotText($whyNot, "view")] = true;
+                $errors["#$prow->paperId: " . whyNotText($whyNot)] = true;
                 continue;
             }
             $rctext = "";
@@ -151,7 +151,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                 }
                 $texts[$prow->paperId] = $rctext;
             } else if (($whyNot = $user->perm_review($prow, null, null)))
-                $errors["#$prow->paperId: " . whyNotText($whyNot, "view review")] = true;
+                $errors["#$prow->paperId: " . whyNotText($whyNot)] = true;
         }
         $texts = $ssel->reorder($texts);
         $first = true;
@@ -178,9 +178,9 @@ class GetScores_ListAction extends ListAction {
         $any_decision = $any_reviewer_identity = false;
         foreach ($user->paper_set($ssel) as $row) {
             if (($whyNot = $user->perm_view_paper($row)))
-                $errors[] = "#$row->paperId: " . whyNotText($whyNot, "view");
+                $errors[] = "#$row->paperId: " . whyNotText($whyNot);
             else if (($whyNot = $user->perm_view_review($row, null, null)))
-                $errors[] = "#$row->paperId: " . whyNotText($whyNot, "view review");
+                $errors[] = "#$row->paperId: " . whyNotText($whyNot);
             else {
                 $row->ensure_full_reviews();
                 $a = ["paper" => $row->paperId, "title" => $row->title];

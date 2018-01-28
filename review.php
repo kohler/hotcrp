@@ -49,7 +49,7 @@ function loadRows() {
     global $Conf, $Me, $prow, $paperTable, $editRrowLogname, $Error;
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
-        errorMsgExit(whyNotText($whyNot, "view", true));
+        errorMsgExit(whyNotText($whyNot, true));
     $paperTable = new PaperTable($prow, make_qreq());
     $paperTable->resolveReview(true);
 
@@ -120,7 +120,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
     $tf = new ReviewValues($rf);
     $tf->paperId = $prow->paperId;
     if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
-        $tf->msg(null, whyNotText($whyNot, "review"), MessageSet::ERROR);
+        $tf->msg(null, whyNotText($whyNot), MessageSet::ERROR);
     else if ($tf->parse_web(make_qreq(), req("forceShow"))
              && $tf->check_and_save($Me, $prow, $paperTable->editrrow)
              && !$tf->has_problem_at("ready")) {
@@ -139,7 +139,7 @@ if (isset($_REQUEST["adoptreview"]) && check_post()) {
     $tf->paperId = $prow->paperId;
     $my_rrow = $prow->review_of_user($Me);
     if (($whyNot = $Me->perm_submit_review($prow, $my_rrow)))
-        $tf->msg(null, whyNotText($whyNot, "review"), MessageSet::ERROR);
+        $tf->msg(null, whyNotText($whyNot), MessageSet::ERROR);
     else if ($tf->parse_web(make_qreq(), req("forceShow"))
              && $tf->unset_ready()
              && $tf->check_and_save($Me, $prow, $my_rrow)
@@ -211,8 +211,8 @@ function download_all_text_reviews() {
         $lastrc = $rc;
     }
     if ($text === "") {
-        $whyNot = $Me->perm_view_review($prow, null);
-        return Conf::msg_error(whyNotText($whyNot ? : array("fail" => 1), "review"));
+        $whyNot = $Me->perm_view_review($prow, null) ? : $prow->make_whynot();
+        return Conf::msg_error(whyNotText($whyNot));
     }
     $text = $Conf->short_name . " Paper #2 Reviews and Comments\n"
         . str_repeat("=", 75) . "\n"
@@ -324,10 +324,10 @@ $editAny = $Me->can_review($prow, null);
 // can we see any reviews?
 if (!$viewAny && !$editAny) {
     if (($whyNotPaper = $Me->perm_view_paper($prow)))
-        errorMsgExit(whyNotText($whyNotPaper, "view", true));
+        errorMsgExit(whyNotText($whyNotPaper, true));
     if (req("reviewId") === null) {
         Conf::msg_error("You can’t see the reviews for this paper. "
-                        . whyNotText($Me->perm_view_review($prow, null), "review"));
+                        . whyNotText($Me->perm_view_review($prow, null)));
         go(hoturl("paper", "p=$prow->paperId"));
     }
 }

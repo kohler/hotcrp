@@ -1892,8 +1892,7 @@ class PaperTable {
                 $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn btn-primary btn-savepaper"]), "");
             else if ($this->admin) {
                 $revWhyNot = filter_whynot($whyNot, ["deadline", "rejected"]);
-                $x = whyNotText($revWhyNot, $prow ? "update" : "register")
-                    . " Are you sure you want to override the deadline?";
+                $x = whyNotText($revWhyNot) . " Are you sure you want to override the deadline?";
                 $buttons[] = array(Ht::button($save_name, ["class" => "btn btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($prow)) {
@@ -2330,7 +2329,7 @@ class PaperTable {
         $m = array();
         if ($this->all_rrows
             && ($whyNot = $this->user->perm_view_review($this->prow, null)))
-            $m[] = "You can’t see the reviews for this submission. " . whyNotText($whyNot, "review");
+            $m[] = "You can’t see the reviews for this submission. " . whyNotText($whyNot);
         if ($this->prow
             && !$this->conf->time_review_open()
             && $this->prow->review_type($this->user)) {

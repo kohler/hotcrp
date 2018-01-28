@@ -69,7 +69,7 @@ function loadRows() {
     global $prow, $Conf;
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
-        errorMsgExit(whyNotText($whyNot, "view", true));
+        errorMsgExit(whyNotText($whyNot, true));
 }
 $prow = null;
 if (!$newPaper)
@@ -120,7 +120,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         $Me->log_activity("Withdrew", $prow->paperId);
         redirectSelf();
     } else
-        Conf::msg_error(whyNotText($whyNot, "withdraw"));
+        Conf::msg_error(whyNotText($whyNot));
 }
 if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
@@ -130,7 +130,7 @@ if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
         $Me->log_activity("Revived", $prow->paperId);
         redirectSelf();
     } else
-        Conf::msg_error(whyNotText($whyNot, "revive"));
+        Conf::msg_error(whyNotText($whyNot));
 }
 
 
@@ -303,11 +303,7 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
         if (update_paper($ps, $pj, $opj, $Qreq, $action, $diffs))
             redirectSelf(array("p" => $prow->paperId, "m" => "edit"));
     } else {
-        if ($action == "final")
-            $adescription = "submit final version for";
-        else
-            $adescription = $prow ? "update" : "register";
-        Conf::msg_error(whyNotText($whyNot, $adescription));
+        Conf::msg_error(whyNotText($whyNot));
     }
 
     // If we get here, we failed to update.
@@ -332,8 +328,9 @@ if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
             redirectSelf();
         } else
             Conf::msg_error("<ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>");
-    } else
-        Conf::msg_error(whyNotText(array("permission" => "edit_contacts"), "update contacts for"));
+    } else {
+        Conf::msg_error(whyNotText($prow->make_whynot(["permission" => "edit_contacts"])));
+    }
 
     // use request?
     $useRequest = true;

@@ -26,7 +26,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
         else if (!$this->iscontact
                  && !$state->user->can_administer($prow)
                  && ($whyNot = $state->user->perm_update_paper($prow)))
-            return whyNotText($whyNot, "edit");
+            return whyNotText($whyNot);
         else
             return true;
     }

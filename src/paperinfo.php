@@ -675,8 +675,8 @@ class PaperInfo {
         return "PaperComment";
     }
 
-    function initial_whynot() {
-        return ["fail" => true, "paperId" => $this->paperId, "conf" => $this->conf];
+    function make_whynot($rest = []) {
+        return ["fail" => true, "paperId" => $this->paperId, "conf" => $this->conf] + $rest;
     }
 
 

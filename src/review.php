@@ -859,7 +859,7 @@ $blind\n";
         $my_review = !$rrow || $Me->is_my_review($rrow);
         if (!$this->conf->time_review($rrow, $Me->act_pc($prow, true), true)) {
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
-            $override_text = whyNotText($whyNot, "review") . " Are you sure you want to override the deadline?";
+            $override_text = whyNotText($whyNot) . " Are you sure you want to override the deadline?";
             if (!$submitted) {
                 $buttons[] = array(Ht::button("Submit review", ["class" => "btn btn-primary ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
                 $buttons[] = array(Ht::button("Save changes", ["class" => "btn ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
@@ -1529,7 +1529,7 @@ class ReviewValues extends MessageSet {
             }
             $prow = $this->conf->paperRow($this->paperId, $user, $whyNot);
             if (!$prow) {
-                $this->rmsg("paperNumber", whyNotText($whyNot, "review"), self::ERROR);
+                $this->rmsg("paperNumber", whyNotText($whyNot), self::ERROR);
                 return false;
             }
         }
@@ -1570,7 +1570,7 @@ class ReviewValues extends MessageSet {
         if (!$rrow && $user !== $reviewer) {
             if (($whyNot = $user->perm_create_review_from($prow, $reviewer))) {
                 $this->reviewer_error(null);
-                $this->reviewer_error(whyNotText($whyNot, "review"));
+                $this->reviewer_error(whyNotText($whyNot));
                 return false;
             }
             $extra = [];
@@ -1588,7 +1588,7 @@ class ReviewValues extends MessageSet {
         $whyNot = $user->perm_submit_review($prow, $rrow);
         if ($whyNot) {
             if ($user === $reviewer || $user->can_view_review_identity($prow, $rrow))
-                $this->rmsg(null, whyNotText($whyNot, "review"), self::ERROR);
+                $this->rmsg(null, whyNotText($whyNot), self::ERROR);
             else
                 $this->reviewer_error(null);
             return false;
