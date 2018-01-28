@@ -16,7 +16,7 @@ class PaperStatus extends MessageSet {
     private $content_file_prefix = false;
     private $add_topics = false;
     public $prow;
-    private $paperid;
+    public $paperId;
     private $_on_document_export = [];
     private $_on_document_import = [];
     private $qf;
@@ -803,7 +803,6 @@ class PaperStatus extends MessageSet {
     }
 
     private function check_invariants($pj) {
-        // Errors don't prevent saving
         self::validate_title($this, $pj);
         self::validate_abstract($this, $pj);
         self::validate_authors($this, $pj);
@@ -827,12 +826,22 @@ class PaperStatus extends MessageSet {
         return $x;
     }
 
-    static function topics_sql($pj, $paperid) {
-        $x = array();
-        foreach (($pj ? (array) get($pj, "topics") : array()) as $id => $v)
-            $x[] = "($id,$paperid)";
-        sort($x);
-        return join(",", $x);
+    static function save_topics(PaperStatus $ps, $pj) {
+        if (!isset($pj->topics))
+            return;
+        $old_topics = $ps->prow ? $ps->prow->topic_list() : [];
+        $new_topics = array_map("intval", array_keys((array) $pj->topics));
+        sort($old_topics);
+        sort($new_topics);
+        if ($old_topics !== $new_topics) {
+            $ps->conf->qe_raw("delete from PaperTopic where paperId={$ps->paperId}");
+            if ($new_topics) {
+                $ps->conf->qe("insert into PaperTopic (paperId,topicId) values ?v",
+                    array_map(function ($x) use ($ps) {
+                        return [$ps->paperId, $x];
+                    }, $new_topics));
+            }
+        }
     }
 
     private function options_sql($pj, $paperid) {
@@ -867,6 +876,7 @@ class PaperStatus extends MessageSet {
     function conflicts_array($pj) {
         $cflts = [];
 
+        // extract PC conflicts
         if (isset($pj->pc_conflicts)) {
             foreach ((array) $pj->pc_conflicts as $email => $type)
                 $cflts[strtolower($email)] = $type;
@@ -876,6 +886,7 @@ class PaperStatus extends MessageSet {
                     $cflts[strtolower($cflt->email)] = $cflt->conflictType;
         }
 
+        // extract authors
         if (isset($pj->authors)) {
             foreach ($pj->authors as $aux) {
                 if (isset($aux->email)) {
@@ -893,6 +904,7 @@ class PaperStatus extends MessageSet {
                 }
         }
 
+        // extract contacts
         if (isset($pj->contacts)) {
             foreach ($pj->contacts as $aux) {
                 $cflts[strtolower($aux->email)] = CONFLICT_CONTACTAUTHOR;
@@ -904,6 +916,7 @@ class PaperStatus extends MessageSet {
             }
         }
 
+        // chair conflicts cannot be overridden
         if ($this->prow) {
             foreach ($this->prow->conflicts(true) as $cflt) {
                 if ($cflt->conflictType == CONFLICT_CHAIRMARK) {
@@ -1140,9 +1153,9 @@ class PaperStatus extends MessageSet {
                     $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $this->qf) . ", paperId=?", $this->qv);
             } else {
                 $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $this->qf), $this->qv);
-                if (!$result
-                    || !($paperid = $pj->pid = $result->insert_id))
+                if (!$result || !$result->insert_id)
                     return $this->error_at(false, $this->_("Could not create paper."));
+                $paperid = $pj->pid = $this->paperId = (int) $result->insert_id;
                 if (!empty($this->uploaded_documents))
                     $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $paperid, $this->uploaded_documents);
             }
@@ -1155,15 +1168,7 @@ class PaperStatus extends MessageSet {
         }
 
         // update PaperTopics
-        if (get($pj, "topics")) {
-            $topics = self::topics_sql($pj, $paperid);
-            $old_topics = self::topics_sql($old_pj, $paperid);
-            if ($topics !== $old_topics) {
-                $this->conf->qe_raw("delete from PaperTopic where paperId=$paperid");
-                if ($topics)
-                    $this->conf->qe_raw("insert into PaperTopic (topicId, paperId) values $topics");
-            }
-        }
+        self::save_topics($this, $pj);
 
         // update PaperOption
         if (get($pj, "options")) {
