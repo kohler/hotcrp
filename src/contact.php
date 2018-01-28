@@ -311,7 +311,10 @@ class Contact {
             return $this;
 
         // new account must exist
-        if (!($u = $this->conf->user_by_email($email)))
+        $u = $this->conf->user_by_email($email);
+        if (!$u && validate_email($email) && get($this->opt, "debugShowSensitiveEmail"))
+            $u = Contact::create($this->conf, ["email" => $email]);
+        if (!$u)
             return $this;
 
         // cannot turn into a manager of conflicted papers
