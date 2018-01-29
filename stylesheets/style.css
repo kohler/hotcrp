@@ -1425,27 +1425,17 @@ div.formatdescription {
 }
 
 .revrating {
-	padding: 4px 12px 0;
-}
-.revrating.editable {
-	padding-left: 7px;
-}
-.revrating > .f-c {
-	padding-left: 5px;
+	padding: 6px 12px 0;
 }
 .revrating-group.flag {
 	padding-right: 0.333em;
 }
-.revrating.editable > .revrating-group.flag {
-	padding-left: 5px;
-	padding-right: 0;
-}
 .revrating-choice > button, .revrating-group > button {
 	border-radius: 4px;
 	display: inline-block;
-	border: 1px solid transparent;
+	border: 1px solid rgba(191, 153, 153, 0.3);
 	background: transparent;
-	padding: 0 4px 1px;
+	padding: 1px 6px 2px;
 	font-family: inherit;
 	font-size: 100%;
 	white-space: nowrap;
@@ -1463,19 +1453,23 @@ div.formatdescription {
 }
 .revrating-choice:hover > button, .revrating-group:hover > button {
 	color: #c45500;
+	border-color: rgba(196, 85, 0, 0.5);
 }
 .revrating-choice, .revrating-group {
 	white-space: nowrap;
 }
 .revrating-choice > .ct, .revrating-group > .ct {
 	display: inline-block;
-	padding-left: 0.8em;
+	padding-left: 0.5em;
 	min-width: 2em;
 	font-weight: bold;
 	font-size: 92%;
 }
 .revrating-choice > .ct {
 	padding-left: 0.333em;
+}
+.revrating-choice.revrating-unused > .ct {
+	min-width: 1em;
 }
 
 h2 {

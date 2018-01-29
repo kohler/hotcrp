@@ -2907,6 +2907,8 @@ function unparse_ratings(ratings, user_rating, editable) {
             var klass = "revrating-choice", bklass = "";
             if (!ct[i] && (i >= 2 || ratings.length))
                 klass += " fx";
+            if (!ct[i])
+                klass += " revrating-unused";
             if (user_rating && (user_rating & (1 << i)))
                 klass += " revrating-active";
             if (user_rating
@@ -2970,6 +2972,8 @@ handle_ui.on("js-revrating", function () {
                 $rr.find(".revrating-choice").each(function () {
                     var bit = this.getAttribute("data-revrating-bit");
                     toggleClass(this, "revrating-active", data.user_rating & (1 << bit));
+                    if (bit < 2 && data.user_rating <= 2)
+                        removeClass(this, "fx");
                 });
             }
             if (data && "ratings" in data) {
@@ -2979,9 +2983,11 @@ handle_ui.on("js-revrating", function () {
                     if (ct[bit]) {
                         this.lastChild.innerText = " " + ct[bit];
                         removeClass(this, "fx");
+                        removeClass(this, "revrating-unused");
                     } else {
                         this.lastChild.innerText = "";
                         bit >= 2 && addClass(this, "fx");
+                        addClass(this, "revrating-unused");
                     }
                 });
             }
