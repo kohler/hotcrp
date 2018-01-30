@@ -473,6 +473,20 @@ class TagMap implements IteratorAggregate {
     }
 
 
+    function strip_nonviewable($tags, Contact $user = null, PaperInfo $prow = null) {
+        if (strpos($tags, "~") !== false) {
+            $re = "{ (?:";
+            if ($user && $user->contactId)
+                $re .= "(?!" . $user->contactId . "~)";
+            $re .= "\\d+~";
+            if (!($user && $user->privChair))
+                $re .= "|~+";
+            $tags = trim(preg_replace($re . ")\\S+}", "", " $tags "));
+        }
+        return $tags;
+    }
+
+
     static function make(Conf $conf) {
         $map = new TagMap($conf);
         $ct = $conf->setting_data("tag_chair", "");

@@ -223,7 +223,7 @@ class CommentInfo {
     function viewable_tags(Contact $user) {
         if ($this->commentTags
             && $user->can_view_comment_tags($this->prow, $this))
-            return Tagger::strip_nonviewable($this->commentTags, $user);
+            return $this->conf->tags()->strip_nonviewable($this->commentTags, $user, $this->prow);
         else
             return null;
     }
@@ -231,7 +231,7 @@ class CommentInfo {
     function viewable_nonresponse_tags(Contact $user) {
         if ($this->commentTags
             && $user->can_view_comment_tags($this->prow, $this)) {
-            $tags = Tagger::strip_nonviewable($this->commentTags, $user);
+            $tags = $this->conf->tags()->strip_nonviewable($this->commentTags, $user, $this->prow);
             if ($this->commentType & COMMENTTYPE_RESPONSE)
                 $tags = trim(preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", " $tags "));
             return $tags;

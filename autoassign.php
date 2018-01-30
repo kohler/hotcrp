@@ -586,7 +586,7 @@ if (!empty($pctags)) {
         $tagsjson[$pc->contactId] = " " . trim(strtolower($pc->viewable_tags($Me))) . " ";
     Ht::stash_script("var hotcrp_pc_tags=" . json_encode($tagsjson) . ";");
     foreach ($pctags as $tagname => $pctag)
-        if ($tagname !== "pc" && Tagger::strip_nonviewable($tagname, $Me))
+        if ($tagname !== "pc" && $Conf->tags()->strip_nonviewable($tagname, $Me, null))
             $pctyp_sel[] = [$pctag, "#$pctag"];
 }
 $pctyp_sel[] = array("__flip__", "flip");

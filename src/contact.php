@@ -794,7 +794,7 @@ class Contact {
     function viewable_tags(Contact $viewer) {
         if ($viewer->can_view_contact_tags() || $viewer->contactId == $this->contactId) {
             $tags = $this->all_contact_tags();
-            return Tagger::strip_nonviewable($tags, $viewer);
+            return $this->conf->tags()->strip_nonviewable($tags, $viewer, null);
         } else
             return "";
     }
@@ -3266,7 +3266,8 @@ class Contact {
                 return !$dt || !$dt->autosearch;
             }
         }
-        if ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId
+        if ($twiddle > 0
+            && substr($tag, 0, $twiddle) != $this->contactId
             && !$rights->can_administer)
             return false;
         if ($twiddle !== false) {

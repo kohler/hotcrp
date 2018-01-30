@@ -1034,12 +1034,15 @@ class PaperInfo {
 
     function viewable_tags(Contact $user, $forceShow = null) {
         // see also Contact::can_view_tag()
-        if ($user->can_view_most_tags($this, $forceShow))
-            return Tagger::strip_nonviewable($this->all_tags_text(), $user);
-        else if ($user->privChair && $user->can_view_tags($this, $forceShow))
-            return Tagger::strip_nonsitewide($this->all_tags_text(), $user);
-        else
-            return "";
+        $tags = (string) $this->all_tags_text();
+        if ($tags !== "" && $user->isPC) {
+            $dt = $this->conf->tags();
+            if ($user->can_view_most_tags($this, $forceShow))
+                $tags = $dt->strip_nonviewable($tags, $user, $this);
+            else if ($dt->has_sitewide && $user->can_view_tags($this, $forceShow))
+                $tags = Tagger::strip_nonsitewide($tags, $user);
+        }
+        return $tags;
     }
 
     function editable_tags(Contact $user) {
