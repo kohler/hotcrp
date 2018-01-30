@@ -422,7 +422,7 @@ assert_search_papers($user_varghese, "#chairtest1", "1");
 $Conf->save_setting("tag_approval", 1, "chair*");
 $Conf->invalidate_caches(["taginfo" => true]);
 $ct = $Conf->tags()->check("chairtest0");
-xassert($ct && $ct->chair && $ct->approval);
+xassert($ct && $ct->readonly && $ct->approval);
 
 // numeric order sort
 assert_search_papers($user_chair, "13 10 8 9 12", "13 10 8 9 12");

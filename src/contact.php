@@ -3284,7 +3284,7 @@ class Contact {
             else
                 return $rights->can_administer
                     || ($this->privChair && $t->sitewide)
-                    || (!$t->chair && !$t->rank);
+                    || (!$t->readonly && !$t->rank);
         }
     }
 
@@ -3342,7 +3342,7 @@ class Contact {
         $twiddle = strpos($tag, "~");
         return $this->privChair
             || ($this->isPC
-                && !$this->conf->tags()->is_chair($tag)
+                && !$this->conf->tags()->is_readonly($tag)
                 && ($twiddle === false
                     || ($twiddle === 0 && $tag[1] !== "~")
                     || ($twiddle > 0 && substr($tag, 0, $twiddle) == $this->contactId)));

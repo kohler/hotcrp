@@ -14,6 +14,7 @@ class TagMapItem {
     public $pattern_version = 0;
     public $is_private = false;
     public $chair = false;
+    public $readonly = false;
     public $track = false;
     public $votish = false;
     public $vote = false;
@@ -41,7 +42,7 @@ class TagMapItem {
             $this->is_private = true;
     }
     function merge(TagMapItem $t) {
-        foreach (["chair", "track", "votish", "vote", "approval", "sitewide", "rank", "autosearch"] as $property)
+        foreach (["chair", "readonly", "track", "votish", "vote", "approval", "sitewide", "rank", "autosearch"] as $property)
             if ($t->$property)
                 $this->$property = $t->$property;
         foreach (["colors", "badges", "emoji"] as $property)
@@ -146,6 +147,7 @@ class TagMap implements IteratorAggregate {
     public $conf;
     public $has_pattern = false;
     public $has_chair = true;
+    public $has_readonly = true;
     public $has_votish = false;
     public $has_vote = false;
     public $has_approval = false;
@@ -317,6 +319,9 @@ class TagMap implements IteratorAggregate {
         else
             return !!$this->check_property($tag, "chair");
     }
+    function is_readonly($tag) {
+        return !!$this->check_property($tag, "readonly");
+    }
     function is_sitewide($tag) {
         return !!$this->check_property($tag, "sitewide");
     }
@@ -471,11 +476,13 @@ class TagMap implements IteratorAggregate {
     static function make(Conf $conf) {
         $map = new TagMap($conf);
         $ct = $conf->setting_data("tag_chair", "");
-        foreach (TagInfo::split_unpack($ct) as $ti)
-            $map->add($ti[0])->chair = true;
+        foreach (TagInfo::split_unpack($ct) as $ti) {
+            $t = $map->add($ti[0]);
+            $t->chair = $t->readonly = true;
+        }
         foreach ($conf->track_tags() as $tn) {
             $t = $map->add(TagInfo::base($tn));
-            $t->chair = $t->track = true;
+            $t->chair = $t->readonly = $t->track = true;
         }
         $ct = $conf->setting_data("tag_sitewide", "");
         foreach (TagInfo::split_unpack($ct) as $ti)
@@ -528,7 +535,9 @@ class TagMap implements IteratorAggregate {
                 foreach (json_decode($ods) as $tag => $data) {
                     $t = $map->add($tag);
                     if (get($data, "chair"))
-                        $t->chair = $map->has_chair = true;
+                        $t->chair = $t->readonly = true;
+                    if (get($data, "readonly"))
+                        $t->readonly = true;
                     if (get($data, "sitewide"))
                         $t->sitewide = $map->has_sitewide = true;
                     if (($x = get($data, "autosearch"))) {
