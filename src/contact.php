@@ -2475,7 +2475,7 @@ class Contact {
         $round = $rrow ? $rrow->reviewRound : "max";
         if ($rights->allow_pc) {
             if ($this->conf->check_required_tracks($prow, $this, Track::VIEWREVOVERRIDE))
-                return true;
+                return Conf::PCSEEREV_YES;
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREV))
                 return $this->conf->round_setting("pc_seeallrev", $round);
         } else {
@@ -2489,7 +2489,7 @@ class Contact {
         $round = $rrow ? $rrow->reviewRound : "max";
         if ($rights->allow_pc) {
             if ($this->conf->check_required_tracks($prow, $this, Track::VIEWREVOVERRIDE))
-                return true;
+                return Conf::PCSEEREV_YES;
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
                 $s = $this->conf->round_setting("pc_seeblindrev", $round);
                 if ($s >= 0)
