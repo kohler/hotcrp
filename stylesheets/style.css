@@ -1267,6 +1267,9 @@ label.f-c, .f-i > label {
 	color: #555555;
 	margin-top: 0.25rem;
 }
+p.f-h {
+	margin-bottom: 0.25rem;
+}
 .f-2col {
 	margin: -1em 0;
 	padding: 0.5em 0;
