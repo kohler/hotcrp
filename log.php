@@ -481,7 +481,7 @@ if (!empty($unknown_cids)) {
 
 // render rows
 function render_users($users) {
-    global $Conf, $Me;
+    global $Conf, $Me, $count;
     $all_pc = true;
     $ts = [];
     usort($users, "Contact::compare");
@@ -495,7 +495,7 @@ function render_users($users) {
             if ($user->disabled === "deleted")
                 $t = "<del>" . $t . " &lt;" . htmlspecialchars($user->email) . "&gt;</del>";
             else {
-                $t = '<a href="' . hoturl("profile", "u=" . urlencode($user->email)) . '">' . $t . '</a>';
+                $t = '<a href="' . hoturl("log", "q=&amp;acct=" . urlencode($user->email)) . '&amp;n=' . $count . '">' . $t . '</a>';
                 if (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE))
                     $t .= ' &lt;' . htmlspecialchars($user->email) . '&gt;';
                 if (isset($user->roles) && ($rolet = $user->role_html()))
