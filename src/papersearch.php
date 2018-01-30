@@ -1099,6 +1099,10 @@ class PaperSearch {
         return $this->_active_limit;
     }
 
+    function limit_submitted() {
+        return !in_array($this->_active_limit, ["a", "ar", "act", "all", "unsub"]);
+    }
+
     function reviewer_user() {
         return $this->_reviewer_user ? : $this->user;
     }
@@ -1186,18 +1190,23 @@ class PaperSearch {
     }
 
     static function status_field_matcher(Conf $conf, $word, $quoted = null) {
-        if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
-            return ["timeWithdrawn", ">0"];
-        else if (strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
-            return ["timeSubmitted", ">0"];
-        else if (strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
-            return ["timeSubmitted", "<=0", "timeWithdrawn", "<=0"];
-        else if (strcasecmp($word, "active") == 0)
-            return ["timeWithdrawn", "<=0"];
-        else {
-            $flag = $quoted ? Text::SEARCH_NO_SPECIAL : Text::SEARCH_UNPRIVILEGE_EXACT;
-            return ["outcome", self::decision_matchexpr($conf, $word, $flag)];
+        if (strlen($word) >= 3
+            && ($k = Text::simple_search($word, ["w0" => "withdrawn", "s0" => "submitted", "s1" => "ready", "u0" => "in progress", "u1" => "unsubmitted", "u2" => "not ready", "a0" => "active"]))) {
+            $k = array_map(function ($x) { return $x[0]; }, array_keys($k));
+            $k = array_unique($k);
+            if (count($k) === 1) {
+                if ($k[0] === "w")
+                    return ["timeWithdrawn", ">0"];
+                else if ($k[0] === "s")
+                    return ["timeSubmitted", ">0"];
+                else if ($k[0] === "u")
+                    return ["timeSubmitted", "<=0", "timeWithdrawn", "<=0"];
+                else
+                    return ["timeWithdrawn", "<=0"];
+            }
         }
+        $flag = $quoted ? Text::SEARCH_NO_SPECIAL : Text::SEARCH_UNPRIVILEGE_EXACT;
+        return ["outcome", self::decision_matchexpr($conf, $word, $flag)];
     }
 
     static function parse_reconflict($word, SearchWord $sword, PaperSearch $srch) {
