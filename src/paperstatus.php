@@ -1095,14 +1095,14 @@ class PaperStatus extends MessageSet {
                 } else if (($this->prow->submitted_at() > 0) !== $submitted)
                     $this->addf("timeSubmitted", $submitted_at);
             } else if ($submitted) {
-                if (!$this->prow || $this->prow->timeSubmitted != 0) {
+                if (!$this->prow || $this->prow->timeSubmitted <= 0) {
                     if ($submitted_at <= 0 || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN)
                         $submitted_at = $Now;
                     $this->addf("timeSubmitted", $submitted_at);
                 }
                 if ($this->prow && $this->prow->timeWithdrawn != 0)
                     $this->addf("timeWithdrawn", 0);
-            } else if ($this->prow && ($this->prow->timeWithdrawn != 0 || $this->prow->timeSubmitted > 0)) {
+            } else if ($this->prow && ($this->prow->timeWithdrawn > 0 || $this->prow->timeSubmitted > 0)) {
                 $this->addf("timeSubmitted", 0);
                 $this->addf("timeWithdrawn", 0);
             }
