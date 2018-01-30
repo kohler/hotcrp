@@ -3167,21 +3167,34 @@ class Contact {
             || ($rights->allow_pc_broad && $this->conf->tag_seeall);
     }
 
+    function can_view_hidden_tags(PaperInfo $prow = null, $forceShow = null) {
+        if (!$prow)
+            return $this->privChair;
+        $rights = $this->rights($prow, $forceShow);
+        return $rights->can_administer
+            || $this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG);
+    }
+
     function can_view_tag(PaperInfo $prow, $tag, $forceShow = null) {
         if ($forceShow !== false && ($this->overrides_ & self::OVERRIDE_TAG_CHECKS))
             return true;
         $rights = $this->rights($prow, $forceShow);
         $tag = TagInfo::base($tag);
         $twiddle = strpos($tag, "~");
+        $dt = $this->conf->tags();
         return ($rights->allow_pc
                 || ($rights->allow_pc_broad && $this->conf->tag_seeall)
-                || ($this->privChair && $this->conf->tags()->is_sitewide($tag)))
+                || ($this->privChair && $dt->is_sitewide($tag)))
             && ($rights->allow_administer
                 || $twiddle === false
                 || ($twiddle === 0 && $tag[1] !== "~")
                 || ($twiddle > 0
                     && (substr($tag, 0, $twiddle) == $this->contactId
-                        || $this->conf->tags()->is_votish(substr($tag, $twiddle + 1)))));
+                        || $dt->is_votish(substr($tag, $twiddle + 1)))))
+            && ($twiddle !== false
+                || !$dt->has_hidden
+                || !$dt->is_hidden($tag)
+                || $this->can_view_hidden_tags($prow, $forceShow));
     }
 
     function can_view_peruser_tags(PaperInfo $prow, $tag) {
@@ -3280,6 +3293,7 @@ class Contact {
             else if ($t->vote
                      || $t->approval
                      || ($t->track && !$this->privChair)
+                     || ($t->hidden && !$this->can_view_hidden_tags($prow, $forceShow))
                      || $t->autosearch)
                 return false;
             else
@@ -3340,13 +3354,15 @@ class Contact {
     }
 
     function can_change_tag_anno($tag) {
+        if ($this->privChair)
+            return true;
         $twiddle = strpos($tag, "~");
-        return $this->privChair
-            || ($this->isPC
-                && !$this->conf->tags()->is_readonly($tag)
-                && ($twiddle === false
-                    || ($twiddle === 0 && $tag[1] !== "~")
-                    || ($twiddle > 0 && substr($tag, 0, $twiddle) == $this->contactId)));
+        $t = $this->conf->tags()->check($tag);
+        return $this->isPC
+            && (!$t || (!$t->readonly && !$t->hidden))
+            && ($twiddle === false
+                || ($twiddle === 0 && $tag[1] !== "~")
+                || ($twiddle > 0 && substr($tag, 0, $twiddle) == $this->contactId));
     }
 
     function can_view_reviewer_tags(PaperInfo $prow = null) {

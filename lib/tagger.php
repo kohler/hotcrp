@@ -15,6 +15,7 @@ class TagMapItem {
     public $is_private = false;
     public $chair = false;
     public $readonly = false;
+    public $hidden = false;
     public $track = false;
     public $votish = false;
     public $vote = false;
@@ -42,7 +43,7 @@ class TagMapItem {
             $this->is_private = true;
     }
     function merge(TagMapItem $t) {
-        foreach (["chair", "readonly", "track", "votish", "vote", "approval", "sitewide", "rank", "autosearch"] as $property)
+        foreach (["chair", "readonly", "hidden", "track", "votish", "vote", "approval", "sitewide", "rank", "autosearch"] as $property)
             if ($t->$property)
                 $this->$property = $t->$property;
         foreach (["colors", "badges", "emoji"] as $property)
@@ -148,6 +149,7 @@ class TagMap implements IteratorAggregate {
     public $has_pattern = false;
     public $has_chair = true;
     public $has_readonly = true;
+    public $has_hidden = false;
     public $has_votish = false;
     public $has_vote = false;
     public $has_approval = false;
@@ -167,6 +169,7 @@ class TagMap implements IteratorAggregate {
     private $color_re = null;
     private $badge_re = null;
     private $emoji_re = null;
+    private $hidden_re = null;
     private $sitewide_re_part = null;
 
     const STYLE_FG = 1;
@@ -322,6 +325,9 @@ class TagMap implements IteratorAggregate {
     function is_readonly($tag) {
         return !!$this->check_property($tag, "readonly");
     }
+    function is_hidden($tag) {
+        return !!$this->check_property($tag, "hidden");
+    }
     function is_sitewide($tag) {
         return !!$this->check_property($tag, "sitewide");
     }
@@ -357,6 +363,16 @@ class TagMap implements IteratorAggregate {
             $this->sitewide_re_part = join("|", $x);
         }
         return $this->sitewide_re_part;
+    }
+
+    function hidden_regex_part() {
+        if ($this->hidden_re === null) {
+            $x = [];
+            foreach ($this->filter("hidden") as $t)
+                $x[] = $t->tag_regex();
+            $this->hidden_re = join("|", $x);
+        }
+        return $this->hidden_re;
     }
 
 
@@ -474,14 +490,19 @@ class TagMap implements IteratorAggregate {
 
 
     function strip_nonviewable($tags, Contact $user = null, PaperInfo $prow = null) {
-        if (strpos($tags, "~") !== false) {
-            $re = "{ (?:";
+        if ($this->has_hidden || strpos($tags, "~") !== false) {
+            $re = "(?:";
             if ($user && $user->contactId)
                 $re .= "(?!" . $user->contactId . "~)";
             $re .= "\\d+~";
             if (!($user && $user->privChair))
                 $re .= "|~+";
-            $tags = trim(preg_replace($re . ")\\S+}", "", " $tags "));
+            $re .= ")\\S+";
+            if ($this->has_hidden
+                && $user
+                && !($prow ? $user->can_view_hidden_tags($prow) : $user->privChair))
+                $re = "(?:" . $re . "|(?:" . $this->hidden_regex_part() . ")(?:#\\S+|(?= )))";
+            $tags = trim(preg_replace("{ " . $re . "}i", "", " $tags "));
         }
         return $tags;
     }
@@ -498,6 +519,9 @@ class TagMap implements IteratorAggregate {
             $t = $map->add(TagInfo::base($tn));
             $t->chair = $t->readonly = $t->track = true;
         }
+        $ct = $conf->setting_data("tag_hidden", "");
+        foreach (TagInfo::split_unpack($ct) as $ti)
+            $map->add($ti[0])->hidden = $map->has_hidden = true;
         $ct = $conf->setting_data("tag_sitewide", "");
         foreach (TagInfo::split_unpack($ct) as $ti)
             $map->add($ti[0])->sitewide = $map->has_sitewide = true;
@@ -552,6 +576,8 @@ class TagMap implements IteratorAggregate {
                         $t->chair = $t->readonly = true;
                     if (get($data, "readonly"))
                         $t->readonly = true;
+                    if (get($data, "hidden"))
+                        $t->hidden = $map->has_hidden = true;
                     if (get($data, "sitewide"))
                         $t->sitewide = $map->has_sitewide = true;
                     if (($x = get($data, "autosearch"))) {
@@ -733,19 +759,6 @@ class Tagger {
             return VIEWSCORE_PC;
     }
 
-
-    static function strip_nonviewable($tags, Contact $user = null) {
-        if (strpos($tags, "~") !== false) {
-            $re = "{ (?:";
-            if ($user && $user->contactId)
-                $re .= "(?!" . $user->contactId . "~)";
-            $re .= "\\d+~";
-            if (!($user && $user->privChair))
-                $re .= "|~+";
-            $tags = trim(preg_replace($re . ")\\S+}", "", " $tags "));
-        }
-        return $tags;
-    }
 
     static function strip_nonsitewide($tags, Contact $user) {
         $re = "{ (?:(?!" . $user->contactId . "~)\\d+~|~+|(?!"
