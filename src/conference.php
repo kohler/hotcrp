@@ -11,6 +11,11 @@ class Track {
     const UNASSREV = 5;
     const VIEWTRACKER = 6;
     const ADMIN = 7;
+
+    const BITS_VIEW = 0x1;    // 1 << VIEW
+    const BITS_REVIEW = 0x30; // (1 << ASSREV) | (1 << UNASSREV)
+    const BITS_ADMIN = 0x80;  // 1 << ADMIN
+
     static public $map = [
         "view" => 0, "viewpdf" => 1, "viewrev" => 2, "viewrevid" => 3,
         "assrev" => 4, "unassrev" => 5, "viewtracker" => 6, "admin" => 7
@@ -62,9 +67,7 @@ class Conf {
     private $tracks = null;
     private $_taginfo = null;
     private $_track_tags = null;
-    private $_track_view_sensitivity = false;
-    private $_track_review_sensitivity = false;
-    private $_track_admin_sensitivity = false;
+    private $_track_sensitivity = 0;
     private $_decisions = null;
     private $_topic_map = null;
     private $_topic_order_map = null;
@@ -312,8 +315,7 @@ class Conf {
 
         // tracks settings
         $this->tracks = $this->_track_tags = null;
-        $this->_track_view_sensitivity = $this->_track_review_sensitivity =
-            $this->_track_admin_sensitivity = false;
+        $this->_track_sensitivity = 0;
         if (($j = get($this->settingTexts, "tracks")))
             $this->crosscheck_track_settings($j);
 
@@ -356,18 +358,14 @@ class Conf {
                 $v->viewpdf = $v->view;
             $t = Track::$zero;
             foreach (Track::$map as $tname => $idx)
-                if (isset($v->$tname))
+                if (isset($v->$tname)) {
                     $t[$idx] = $v->$tname;
+                    $this->_track_sensitivity |= 1 << $idx;
+                }
             if ($k === "_")
                 $default_track = $t;
             else
                 $this->tracks[$k] = $t;
-            if ($t[Track::VIEW])
-                $this->_track_view_sensitivity = true;
-            if ($t[Track::UNASSREV] || $t[Track::ASSREV])
-                $this->_track_review_sensitivity = true;
-            if ($t[Track::ADMIN])
-                $this->_track_admin_sensitivity = true;
         }
         $this->tracks["_"] = $default_track;
     }
@@ -1139,17 +1137,21 @@ class Conf {
         return $unmatched;
     }
 
-    function check_admin_tracks(PaperInfo $prow, Contact $contact) {
-        if ($this->_track_admin_sensitivity) {
+    function check_required_tracks(PaperInfo $prow, Contact $contact, $type) {
+        if ($this->_track_sensitivity & (1 << $type)) {
             $unmatched = true;
             foreach ($this->tracks as $t => $tr)
                 if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
                     $unmatched = false;
-                    if ($tr[Track::ADMIN] && Track::match_perm($contact, $tr[Track::ADMIN]))
+                    if ($tr[$type] && Track::match_perm($contact, $tr[$type]))
                         return true;
                 }
         }
         return false;
+    }
+
+    function check_admin_tracks(PaperInfo $prow, Contact $contact) {
+        return $this->check_required_tracks($prow, $contact, Track::ADMIN);
     }
 
     function check_default_track(Contact $contact, $type) {
@@ -1167,7 +1169,7 @@ class Conf {
     }
 
     function check_any_admin_tracks(Contact $contact) {
-        if ($this->_track_admin_sensitivity)
+        if ($this->_track_sensitivity & Track::BITS_ADMIN)
             foreach ($this->tracks as $t => $tr)
                 if ($tr[Track::ADMIN] && Track::match_perm($contact, $tr[Track::ADMIN]))
                     return true;
@@ -1193,11 +1195,19 @@ class Conf {
     }
 
     function check_track_view_sensitivity() {
-        return $this->_track_view_sensitivity;
+        return ($this->_track_sensitivity & Track::BITS_VIEW) != 0;
     }
 
     function check_track_review_sensitivity() {
-        return $this->_track_review_sensitivity;
+        return ($this->_track_sensitivity & Track::BITS_REVIEW) != 0;
+    }
+
+    function track_permission($tag, $type) {
+        if ($this->tracks)
+            foreach ($this->tracks as $t => $tr)
+                if (strcasecmp($t, $tag) == 0)
+                    return $tr[$type];
+        return null;
     }
 
 
@@ -2226,7 +2236,8 @@ class Conf {
     }
 
     function has_any_manager() {
-        return $this->_track_admin_sensitivity || !!get($this->settings, "papermanager");
+        return ($this->_track_sensitivity & Track::BITS_ADMIN)
+            || !!get($this->settings, "papermanager");
     }
 
     function has_any_metareviews() {
