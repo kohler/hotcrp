@@ -94,6 +94,26 @@
         "render_callback": "Tags_SettingRenderer::render"
     },
     {
+        "name": "tags/main/chair", "position": 10,
+        "render_callback": "Tags_SettingRenderer::render_tag_chair"
+    },
+    {
+        "name": "tags/main/sitewide", "position": 20,
+        "render_callback": "Tags_SettingRenderer::render_tag_sitewide"
+    },
+    {
+        "name": "tags/main/approval", "position": 30,
+        "render_callback": "Tags_SettingRenderer::render_tag_approval"
+    },
+    {
+        "name": "tags/main/vote", "position": 40,
+        "render_callback": "Tags_SettingRenderer::render_tag_vote"
+    },
+    {
+        "name": "tags/main/rank", "position": 50,
+        "render_callback": "Tags_SettingRenderer::render_tag_rank"
+    },
+    {
         "name": "tagstyles", "group": "tags", "position": 720,
         "render_callback": "Tags_SettingRenderer::render_styles"
     },

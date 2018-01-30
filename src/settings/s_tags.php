@@ -9,30 +9,37 @@ class Tags_SettingRenderer {
         });
         return join(" ", array_map(function ($t) { return $t->tag; }, $tl));
     }
+    static function render_tag_chair(SettingValues $sv) {
+        $sv->set_oldv("tag_chair", self::render_tags($sv->conf->tags()->filter("chair")));
+        $sv->echo_entry_group("tag_chair", null, ["class" => "need-tagcompletion"], "PC members can view these tags, but only administrators can change them.");
+    }
+    static function render_tag_sitewide(SettingValues $sv) {
+        $sv->set_oldv("tag_sitewide", self::render_tags($sv->conf->tags()->filter("sitewide")));
+        if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
+            $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-tagcompletion"], "Administrators can view and change these tags for every paper.");
+    }
+    static function render_tag_approval(SettingValues $sv) {
+        $sv->set_oldv("tag_approval", self::render_tags($sv->conf->tags()->filter("approval")));
+        $sv->echo_entry_group("tag_approval", null, ["class" => "need-tagcompletion"], "<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>");
+    }
+    static function render_tag_vote(SettingValues $sv) {
+        $x = [];
+        foreach ($sv->conf->tags()->filter("vote") as $t)
+            $x[] = "{$t->tag}#{$t->vote}";
+        $sv->set_oldv("tag_vote", join(" ", $x));
+        $sv->echo_entry_group("tag_vote", null, ["class" => "need-tagcompletion"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>)");
+    }
+    static function render_tag_rank(SettingValues $sv) {
+        $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
+        $sv->echo_entry_group("tag_rank", null, null, "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href='" . hoturl("help", "t=ranking") . "'>Help</a>)");
+    }
     static function render(SettingValues $sv) {
         // Tags
         $tagmap = $sv->conf->tags();
         echo "<h3 class=\"settings\">Tags</h3>\n";
 
         echo '<div class="settings-g">';
-        $sv->set_oldv("tag_chair", self::render_tags($tagmap->filter("chair")));
-        $sv->echo_entry_group("tag_chair", null, ["class" => "need-tagcompletion"], "PC members can view these tags, but only administrators can change them.");
-
-        $sv->set_oldv("tag_sitewide", self::render_tags($tagmap->filter("sitewide")));
-        if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
-            $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-tagcompletion"], "Administrators can view and change these tags for every paper.");
-
-        $sv->set_oldv("tag_approval", self::render_tags($tagmap->filter("approval")));
-        $sv->echo_entry_group("tag_approval", null, ["class" => "need-tagcompletion"], "<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>");
-
-        $x = [];
-        foreach ($tagmap->filter("vote") as $t)
-            $x[] = "{$t->tag}#{$t->vote}";
-        $sv->set_oldv("tag_vote", join(" ", $x));
-        $sv->echo_entry_group("tag_vote", null, ["class" => "need-tagcompletion"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>)");
-
-        $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
-        $sv->echo_entry_group("tag_rank", null, null, "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href='" . hoturl("help", "t=ranking") . "'>Help</a>)");
+        $sv->echo_topic("tags/main");
         echo "</div>\n";
 
         echo '<div class="settings-g">';
