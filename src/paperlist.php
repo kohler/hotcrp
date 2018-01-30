@@ -327,6 +327,7 @@ class PaperList {
             $code .= "if ((\$x = \$a->_then_sort_info - \$b->_then_sort_info)) return \$x < 0 ? -1 : 1;\n";
         }
 
+        $old_overrides = $this->user->add_overrides($this->_view_force ? Contact::OVERRIDE_CONFLICT : 0);
         self::$magic_sort_info = $this->sorters;
         foreach ($this->sorters as $s) {
             $s->assign_uid();
@@ -342,6 +343,7 @@ class PaperList {
             $code .= " { \$s = PaperList::\$magic_sort_info[$i]; "
                 . "\$x = $rev\$s->field->compare(\$a, \$b, \$s); }\n";
         }
+        $this->user->set_overrides($old_overrides);
 
         $code .= "if (!\$x) \$x = \$a->paperId - \$b->paperId;\n";
         $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";

@@ -4550,6 +4550,20 @@ function search_scoresort_change(evt) {
     return false;
 }
 
+function search_showforce_click() {
+    var re = /&forceShow=[^&#]*/, forced = this.checked;
+    $("#foldpl > thead").find("a.pl_sort").each(function () {
+        var href = this.getAttribute("href").replace(re, "");
+        if (forced)
+            href = href.replace(/^(.*?)(#.*|)$/, "$1&forceShow=1$2");
+        this.setAttribute("href", href);
+        if (/\bpl_sorting_(?:fwd|rev)/.test(this.className)) {
+            var sorter = href_sorter(href);
+            search_sort_url(this, href_sorter(href, sorter_toggle_reverse(sorter)));
+        }
+    });
+}
+
 if ("pushState" in window.history) {
     $(document).on("click", "a.pl_sort", search_sort_click);
     $(window).on("popstate", function (evt) {
@@ -4557,7 +4571,10 @@ if ("pushState" in window.history) {
         if (state && state.sortpl && (tbl = document.getElementById("foldpl")))
             search_sort_success(tbl, state.href, state.sortpl);
     });
-    $(function () { $("#scoresort").on("change", search_scoresort_change) });
+    $(function () {
+        $("#scoresort").on("change", search_scoresort_change);
+        $("#showforce").on("click", search_showforce_click);
+    });
 }
 
 
