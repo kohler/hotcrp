@@ -1862,7 +1862,7 @@ class PaperTable {
         if ($prow && $prow->timeWithdrawn > 0) {
             $revivable = $this->conf->timeFinalizePaper($prow);
             if ($revivable)
-                $b = Ht::submit("revive", "Revive submission", ["class" => "btn"]);
+                $b = Ht::submit("revive", "Revive submission", ["class" => "btn btn-primary"]);
             else {
                 $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn submissions has passed. Are you sure you want to override it?";
                 if ($this->admin)
