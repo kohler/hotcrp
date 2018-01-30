@@ -71,7 +71,7 @@ class Tracks_SettingRenderer {
                 Ht::entry("name_track$tnum", $trackname, $sv->sjs("name_track$tnum", array("placeholder" => "(tag)"))), ":";
 
         $t = null;
-        foreach ($sv->conf->setting_json("tracks") as $tname => $tval)
+        foreach ($sv->conf->setting_json("tracks") ? : [] as $tname => $tval)
             if ($trackname !== "" && strcasecmp($tname, $trackname) === 0)
                 $t = $tval;
         foreach ($sv->group_members("tracks/permissions") as $gj) {
