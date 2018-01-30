@@ -31,7 +31,7 @@ class Track {
             return true;
     }
     static function permission_required($perm) {
-        return $perm === self::ADMIN;
+        return $perm === self::ADMIN || $perm === self::VIEWREVOVERRIDE;
     }
 }
 
