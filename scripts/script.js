@@ -4557,7 +4557,8 @@ function search_showforce_click() {
         if (forced)
             href = href.replace(/^(.*?)(#.*|)$/, "$1&forceShow=1$2");
         this.setAttribute("href", href);
-        if (/\bpl_sorting_(?:fwd|rev)/.test(this.className)) {
+        if (/\bpl_sorting_(?:fwd|rev)/.test(this.className)
+            && !$(this).closest("th").hasClass("pl_id")) {
             var sorter = href_sorter(href);
             search_sort_url(this, href_sorter(href, sorter_toggle_reverse(sorter)));
         }
