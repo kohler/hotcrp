@@ -335,8 +335,11 @@ class SettingValues extends MessageSet {
     function group_titles() {
         return array_map(function ($gj) { return $gj->title; }, $this->gxt()->groups());
     }
+    function group_members($g) {
+        return $this->gxt()->members(strtolower($g));
+    }
     function mark_interesting_group($g) {
-        foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+        foreach ($this->group_members($g) as $gj) {
             $this->interesting_groups[$gj->name] = true;
             foreach ($gj->synonym as $syn)
                 $this->interesting_groups[$syn] = true;
@@ -352,7 +355,7 @@ class SettingValues extends MessageSet {
     }
     function echo_topic($g) {
         $last_title = null;
-        foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+        foreach ($this->group_members($g) as $gj) {
             if (isset($gj->title)
                 && $gj->title !== $last_title
                 && $gj->group !== $gj->name) {

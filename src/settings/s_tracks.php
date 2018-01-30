@@ -3,11 +3,12 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Tracks_SettingRenderer {
-    static private function do_track_permission($sv, $type, $question, $tnum, $thistrack) {
+    static function do_track_permission($sv, $type, $question, $tnum, $thistrack,
+                                        $gj = null) {
         $tclass = $ttag = "";
         if ($sv->use_req()) {
-            $tclass = defval($sv->req, "${type}_track$tnum", "");
-            $ttag = defval($sv->req, "${type}tag_track$tnum", "");
+            $tclass = defval($sv->req, "{$type}_track{$tnum}", "");
+            $ttag = defval($sv->req, "{$type}tag_track{$tnum}", "");
         } else if ($thistrack && get($thistrack, $type)) {
             if ($thistrack->$type == "+none")
                 $tclass = "none";
@@ -18,8 +19,10 @@ class Tracks_SettingRenderer {
         }
 
         $perm = ["" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"];
-        if ($type === "admin") {
-            $perm[""] = (object) ["label" => "Whole PC", "disabled" => true];
+        if ($gj && get($gj, "permission_required")) {
+            $perm = ["none" => $perm["none"], "+" => $perm["+"], "-" => $perm["-"]];
+            if (get($gj, "permission_required") === "show_none")
+                $perm["none"] = "None";
             if ($tclass === "")
                 $tclass = "none";
         }
@@ -44,6 +47,19 @@ class Tracks_SettingRenderer {
         echo "</div>";
     }
 
+    static function render_view_permission(SettingValues $sv, $tnum, $t) {
+        self::do_track_permission($sv, "view",
+            "Who can see these papers?", $tnum, $t);
+    }
+
+    static function render_viewrev_permission(SettingValues $sv, $tnum, $t) {
+        $hint = "";
+        if ($sv->conf->setting("pc_seeallrev") == 0)
+            $hint = "In the " . Ht::link("current settings", hoturl("settings", "group=reviews#pcreviews")) . ", only PC members that have completed a review for the same paper can see reviews.";
+        self::do_track_permission($sv, "viewrev",
+            ["Who can see reviews?", $hint], $tnum, $t);
+    }
+
     static private function do_track(SettingValues $sv, $trackname, $tnum) {
         echo "<div id=\"trackgroup$tnum\" class=\"mg\"",
             ($tnum ? "" : " style=\"display:none\""),
@@ -54,24 +70,16 @@ class Tracks_SettingRenderer {
             echo $sv->label("name_track$tnum", "For papers with tag &nbsp;"),
                 Ht::entry("name_track$tnum", $trackname, $sv->sjs("name_track$tnum", array("placeholder" => "(tag)"))), ":";
 
-        $t = $sv->conf->setting_json("tracks");
-        $t = $t && $trackname !== "" ? get($t, $trackname) : null;
-        self::do_track_permission($sv, "view", "Who can see these papers?", $tnum, $t);
-        self::do_track_permission($sv, "viewpdf", ["Who can see PDFs?", "Assigned reviewers can always see PDFs."], $tnum, $t);
-        $hint = "";
-        if ($sv->conf->setting("pc_seeallrev") == 0)
-            $hint = "In the " . Ht::link("current settings", hoturl("settings", "group=reviews#pcreviews")) . ", only PC members that have completed a review for the same paper can see reviews.";
-        self::do_track_permission($sv, "viewrev", ["Who can see reviews?", $hint], $tnum, $t);
-        $hint = "";
-        if ($sv->conf->setting("pc_seeblindrev"))
-            $hint = "In the " . Ht::link("current settings", hoturl("settings", "group=reviews#pcreviews")) . ", only PC members that have completed a review for the same paper can see reviewer names.";
-        self::do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
-        self::do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
-        $hint = "";
-        if (!$sv->conf->setting("pcrev_any"))
-            $hint = "The " . Ht::link("current settings", hoturl("settings", "group=reviews#pcreviews")) . " disable self-assignment.";
-        self::do_track_permission($sv, "unassrev", ["Who can self-assign a review?", $hint], $tnum, $t);
-        self::do_track_permission($sv, "admin", "Who can administer these papers?", $tnum, $t);
+        $t = null;
+        foreach ($sv->conf->setting_json("tracks") as $tname => $tval)
+            if ($trackname !== "" && strcasecmp($tname, $trackname) === 0)
+                $t = $tval;
+        foreach ($sv->group_members("tracks/permissions") as $gj) {
+            if (isset($gj->render_track_permission_callback)) {
+                Conf::xt_resolve_require($gj);
+                call_user_func($gj->render_track_permission_callback, $sv, $tnum, $t, $gj);
+            }
+        }
         echo "</div></div>\n\n";
     }
 
@@ -155,9 +163,9 @@ class Tracks_SettingParser extends SettingParser {
                 continue;
             }
             $t = (object) array();
-            foreach (Track::$map as $type => $value)
-                if (($ttype = get($sv->req, "${type}_track$i", "")) === "+"
-                    || $ttype === "-") {
+            foreach (Track::$map as $type => $perm) {
+                $ttype = get($sv->req, "{$type}_track{$i}");
+                if ($ttype === "+" || $ttype === "-") {
                     $ttag = trim(get($sv->req, "${type}tag_track$i", ""));
                     if ($ttag === "" || $ttag === "(tag)") {
                         $sv->error_at("{$type}_track$i", "Tag missing for track setting.");
@@ -169,8 +177,15 @@ class Tracks_SettingParser extends SettingParser {
                         $sv->error_at("{$type}_track$i", $tagger->error_html);
                         $sv->error_at("tracks");
                     }
-                } else if ($ttype == "none" && $type !== "admin")
-                    $t->$type = "+none";
+                } else if ($ttype === "none") {
+                    if (!Track::permission_required($perm))
+                        $t->$type = "+none";
+                } else if ($ttype === null) {
+                    // track permission not in UI; preserve current permission
+                    if (($perm = $sv->conf->track_permission($trackname, $perm)))
+                        $t->$type = $perm;
+                }
+            }
             if (count((array) $t) || get($tracks, "_"))
                 $tracks->$trackname = $t;
         }

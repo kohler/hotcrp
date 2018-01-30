@@ -28,6 +28,9 @@ class Track {
         } else
             return true;
     }
+    static function permission_required($perm) {
+        return $perm === self::ADMIN;
+    }
 }
 
 class Conf {
