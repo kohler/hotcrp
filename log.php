@@ -92,10 +92,14 @@ if ($Qreq->acct !== "") {
 if ($Qreq->q !== "") {
     $where = array();
     $str = $Qreq->q;
-    while (($str = ltrim($str)) != "") {
-        preg_match('/^("[^"]+"?|[^"\s]+)/s', $str, $m);
-        $str = substr($str, strlen($m[0]));
-        $where[] = "action like " . Dbl::utf8ci("'%" . sqlq_for_like($m[0]) . "%'");
+    while (($str = ltrim($str)) !== "") {
+        if ($str[0] === '"')
+            preg_match('/\A"([^"]*)"?/', $str, $m);
+        else
+            preg_match('/\A([^"\s]+)/', $str, $m);
+        $str = (string) substr($str, strlen($m[0]));
+        if ($m[1] !== "")
+            $where[] = "action like " . Dbl::utf8ci("'%" . sqlq_for_like($m[1]) . "%'");
     }
     $wheres[] = "(" . join(" or ", $where) . ")";
 }
