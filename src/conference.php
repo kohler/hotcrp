@@ -11,6 +11,7 @@ class Track {
     const UNASSREV = 5;
     const VIEWTRACKER = 6;
     const ADMIN = 7;
+    const VIEWREVOVERRIDE = 8;
 
     const BITS_VIEW = 0x1;    // 1 << VIEW
     const BITS_REVIEW = 0x30; // (1 << ASSREV) | (1 << UNASSREV)
@@ -18,9 +19,10 @@ class Track {
 
     static public $map = [
         "view" => 0, "viewpdf" => 1, "viewrev" => 2, "viewrevid" => 3,
-        "assrev" => 4, "unassrev" => 5, "viewtracker" => 6, "admin" => 7
+        "assrev" => 4, "unassrev" => 5, "viewtracker" => 6, "admin" => 7,
+        "viewrevover" => 8
     ];
-    static public $zero = [null, null, null, null, null, null, null, null];
+    static public $zero = [null, null, null, null, null, null, null, null, null];
     static function match_perm(Contact $user, $perm) {
         if ($perm) {
             $has_tag = $user->has_tag(substr($perm, 1));
