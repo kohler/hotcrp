@@ -1191,7 +1191,7 @@ class PaperSearch {
 
     static function status_field_matcher(Conf $conf, $word, $quoted = null) {
         if (strlen($word) >= 3
-            && ($k = Text::simple_search($word, ["w0" => "withdrawn", "s0" => "submitted", "s1" => "ready", "u0" => "in progress", "u1" => "unsubmitted", "u2" => "not ready", "a0" => "active"]))) {
+            && ($k = Text::simple_search($word, ["w0" => "withdrawn", "s0" => "submitted", "s1" => "ready", "u0" => "in progress", "u1" => "unsubmitted", "u2" => "not ready", "a0" => "active", "x0" => "no submission"]))) {
             $k = array_map(function ($x) { return $x[0]; }, array_keys($k));
             $k = array_unique($k);
             if (count($k) === 1) {
@@ -1201,6 +1201,8 @@ class PaperSearch {
                     return ["timeSubmitted", ">0"];
                 else if ($k[0] === "u")
                     return ["timeSubmitted", "<=0", "timeWithdrawn", "<=0"];
+                else if ($k[0] === "x")
+                    return ["timeSubmitted", "<=0", "timeWithdrawn", "<=0", "paperStorageId", "<=1"];
                 else
                     return ["timeWithdrawn", "<=0"];
             }
