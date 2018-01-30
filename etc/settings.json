@@ -362,7 +362,7 @@
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 24
     },
     "tag_chair": {
-        "title": "Chair-only tags", "group": "tags",
+        "title": "Read-only tags", "group": "tags",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     "tag_color": {
