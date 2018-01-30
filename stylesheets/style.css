@@ -27,6 +27,15 @@ select {
 	font-family: inherit;
 	font-size: 92%;
 }
+dl {
+	margin: 1em 0;
+}
+dt {
+	font-weight: bolder;
+}
+dd {
+	margin: 0 0 0.5em 0;
+}
 a > img {
 	border: none;
 }
@@ -713,7 +722,7 @@ span.hastitle {
 }
 .homeside ul {
 	margin: 0;
-	padding: 0 0 0 2em;
+	padding: 0 0 0 1em;
 	list-style-type: none;
 }
 hr.home {
@@ -1204,18 +1213,18 @@ th.settings-simplehead {
 h3 + .profile-g {
 	margin-top: 1em;
 }
-#helpcontent > p {
+#helpcontent > p, #helpcontent > dl {
 	max-width: 640px;
 }
-#helpcontent > ul, #helpcontent > ol, #helpcontent li,
-#helpcontent > dl > dt, #helpcontent > dl > dd {
+#helpcontent > ul, #helpcontent > ol {
 	max-width: 612px;
 }
 #helpcontent > ul, #helpcontent > ol {
 	padding-left: 28px;
 }
-#helpcontent > dl > dd {
-	margin-left: 28px;
+#helpcontent > ul.xd {
+	max-width: 640px;
+	padding-left: 0;
 }
 .helplist-item {
 	padding: 3px 0;
@@ -1227,9 +1236,6 @@ ul.compact {
 	margin-top: 0.5em;
 	margin-bottom: 0;
 	padding-left: 1em;
-}
-dl.spaced > dt {
-	margin-top: 1em;
 }
 
 
@@ -1606,6 +1612,7 @@ input.assignment-ui-radio {
 	border-width: 1px;
 	position: relative;
 	bottom: -0.0625em;
+	font-weight: normal;
 }
 del .rto {
 	background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M0,5l10,0'%20fill='none'%20stroke='black'%20/%3E%3C/svg%3E");
@@ -2471,6 +2478,14 @@ div.pst span.hint {
 }
 .xd:last-child {
 	margin-bottom: 0;
+}
+ul.xd {
+	margin: 1em 0 1em 40px;
+}
+ul.xd > li {
+	margin: 0.25em 0;
+	text-indent: -40px;
+	list-style-type: none;
 }
 .archiveexpansion {
 	font-size: smaller;

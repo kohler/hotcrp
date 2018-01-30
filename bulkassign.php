@@ -288,7 +288,7 @@ as a primary reviewer for all papers tagged #manny or #ramirez.</p>
 
 <p>Assignment types are:</p>
 
-<dl class=\"spaced\">
+<dl>
 <dt><code>review</code></dt>
 
 <dd>Assign a review. The <code>email</code> and/or <code>name</code> columns

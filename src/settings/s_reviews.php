@@ -147,7 +147,7 @@ static function render(SettingValues $sv) {
 
     $hint = "";
     if ($sv->conf->has_any_metareviews())
-        $hint = '<p class="settings-ag hint">Metareviewers can always see their papers’ reviews and reviewer names.</p>';
+        $hint = '<p class="settings-ag f-h">Metareviewers can always see their papers’ reviews and reviewer names.</p>';
     $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
                                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
                                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",

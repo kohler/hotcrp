@@ -16,26 +16,20 @@ their reviews.</p>
   focused, and provide direction for the authors’ future work.
   The rating options are:</p>
 
-<dl>
-<dt><strong>Good review</strong></dt>
-<dd>Thorough, clear, constructive, and gives good ideas for next steps.</dd>
-<dt><strong>Needs work</strong></dt>
-<dd>The review needs revision. If possible, indicate why using a more-specific
-rating.</dd>
-<dt><strong>Too short</strong></dt>
-<dd>The review is incomplete or too terse.</dd>
-<dt><strong>Too vague</strong></dt>
-<dd>The review’s arguments are weak, mushy, or otherwise technically
-  unconvincing.</dd>
-<dt><strong>Too narrow</strong></dt>
-<dd>The review’s perspective seems limited; for instance, it might
-  overly privilege the reviewer’s own work.</dd>
-<dt><strong>Not constructive</strong></dt>
-<dd>The review’s tone is unnecessarily aggressive or gives little useful
-  direction.</dd>
-<dt><strong>Not correct</strong></dt>
-<dd>The review misunderstands the paper.</dd>
-</dl>
+<ul class=\"xd\">
+<li><strong>Good review</strong>: Thorough, clear, constructive, and gives good
+  ideas for next steps.</li>
+<li><strong>Needs work</strong>: The review needs revision. If possible,
+  indicate why using a more-specific rating.</li>
+<li><strong>Too short</strong>: The review is incomplete or too terse.</li>
+<li><strong>Too vague</strong>: The review’s arguments are weak, mushy, or
+  otherwise technically unconvincing.</li>
+<li><strong>Too narrow</strong>: The review’s perspective seems limited; for
+  instance, it might overly privilege the reviewer’s own work.</li>
+<li><strong>Not constructive</strong>: The review’s tone is unnecessarily
+  aggressive or gives little useful direction.</li>
+<li><strong>Not correct</strong>: The review misunderstands the paper.</li>
+</ul>
 
 <p>HotCRP reports aggregate ratings for each review.
   It does not report who gave the ratings, and it
