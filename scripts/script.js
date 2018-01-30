@@ -1986,8 +1986,8 @@ function input_default_value(elt) {
     }
 }
 
-function form_differs(form) {
-    var same = true, $f = $(form).find("input, select, textarea");
+function form_differs(form, want_ediff) {
+    var ediff = null, $f = $(form).find("input, select, textarea");
     if (!$f.length)
         $f = $(form).filter("input, select, textarea");
     $f.each(function () {
@@ -1995,15 +1995,17 @@ function form_differs(form) {
         if ($me.hasClass("ignore-diff"))
             return true;
         var expected = input_default_value(this);
-        if (input_is_checkboxlike(this))
-            same = this.checked === expected;
-        else {
+        if (input_is_checkboxlike(this)) {
+            if (this.checked !== expected)
+                ediff = this;
+        } else {
             var current = this.tagName === "SELECT" ? $me.val() : this.value;
-            same = text_eq(current, expected);
+            if (!text_eq(current, expected))
+                ediff = this;
         }
-        return same;
+        return !ediff;
     });
-    return !same;
+    return want_ediff ? ediff : !!ediff;
 }
 
 function form_defaults(form, values) {
