@@ -214,7 +214,6 @@ class Countries {
         if (($x = get(self::$synonyms, strtolower($country))))
             $country = $x;
         foreach (self::$list as $c) {
-            $t .= "<option";
             if ($country && !strcasecmp($country, $c)) {
                 $sel_country = $c;
                 $country = null;
