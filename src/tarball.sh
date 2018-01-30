@@ -185,7 +185,6 @@ src/help/h_revround.php
 src/help/h_scoresort.php
 src/help/h_search.php
 src/help/h_tags.php
-src/help/h_tracks.php
 src/help/h_votetags.php
 src/helpers.php
 src/hotcrpdocument.php

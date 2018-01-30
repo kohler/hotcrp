@@ -223,12 +223,6 @@
         "callback": "*Tags_HelpTopic::render_example_decisions"
     },
     {
-        "name": "tracks", "title": "Tracks",
-        "description": "How tags can control PC access to papers.",
-        "callback": "Tracks_HelpTopic::render",
-        "position": 4000
-    },
-    {
         "name": "scoresort", "title": "Sorting scores",
         "description": "How scores are sorted in paper lists.",
         "callback": "ScoreSort_HelpTopic::render",
