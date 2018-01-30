@@ -1140,10 +1140,10 @@ class PaperStatus extends MessageSet {
                 $new_joindoc = $this->prow->document(DTYPE_SUBMISSION);
             else
                 $new_joindoc = null;
-            if ($new_joindoc && $new_joindoc instanceof DocumentInfo)
-                $new_joinid = $new_joindoc->paperStorageId;
+            if ($new_joindoc && isset($new_joindoc->docid))
+                $new_joinid = $new_joindoc->docid;
             else
-                $new_joinid = $new_joindoc ? (int) $new_joindoc->docid : 0;
+                $new_joinid = $new_joindoc ? $new_joindoc->paperStorageId : 0;
 
             if ($new_joindoc && $new_joinid != $old_joinid) {
                 $this->addf("size", $new_joindoc->size);
