@@ -106,8 +106,7 @@ handle_ui.on("js-settings-delete-autosearch", function (event) {
     $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
 });
 
-
-function settings_add_track() {
+handle_ui.on("js-settings-add-track", function () {
     for (var i = 1; jQuery("#trackgroup" + i).length; ++i)
         /* do nothing */;
     $("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\" class=\"mg\"></div>");
@@ -115,7 +114,7 @@ function settings_add_track() {
     $j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
     mktemptext($j);
     $j.find("input[name^=name]").focus();
-}
+});
 
 
 window.review_round_settings = (function ($) {
