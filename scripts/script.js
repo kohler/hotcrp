@@ -7343,13 +7343,13 @@ function make_input_autogrower($self) {
     return function (event) {
         if (event === false)
             return remover($self, shadow);
-        var width = $self.width(), ws;
+        var width = $self.outerWidth(), ws;
         if (width <= 0)
             return;
         if (!shadow) {
             shadow = textarea_shadow($self, width);
             var p = $self.css(["paddingRight", "paddingLeft", "borderLeftWidth", "borderRightWidth"]);
-            shadow.css({width: "auto", display: "table-cell", paddingLeft: $self.css("paddingLeft"), paddingLeft: (parseFloat(p.paddingRight) + parseFloat(p.paddingLeft) + parseFloat(p.borderLeftWidth) + parseFloat(p.borderRightWidth)) + "px"});
+            shadow.css({width: "auto", display: "table-cell", paddingLeft: p.paddingLeft, paddingLeft: (parseFloat(p.paddingRight) + parseFloat(p.paddingLeft) + parseFloat(p.borderLeftWidth) + parseFloat(p.borderRightWidth)) + "px"});
             ws = $self.css(["minWidth", "maxWidth"]);
             if (ws.minWidth == "0px")
                 $self.css("minWidth", width + "px");
