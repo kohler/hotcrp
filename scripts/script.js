@@ -4044,8 +4044,13 @@ function suggest(elt, suggestions_promise, options) {
             ++i;
             if (cinfo || i == suggdata.promises.length)
                 finish_display(cinfo);
-            var promise = suggdata.promises[i](elt, suggdata.options);
-            (promise || new HPromise(null)).then(next);
+            else {
+                var promise = suggdata.promises[i](elt, suggdata.options);
+                if (promise && $.isFunction(promise.then))
+                    promise.then(next);
+                else
+                    next(promise);
+            }
         }
         next(null);
     }
