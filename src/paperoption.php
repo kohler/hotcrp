@@ -645,7 +645,7 @@ class CheckboxPaperOption extends PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
         $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->formid, "data-default-checked" => !!$ov->value]);
-        $pt->echo_editable_option_papt($this, $cb . "&nbsp;" . Ht::label(htmlspecialchars($this->title)));
+        $pt->echo_editable_option_papt($this, $cb . "&nbsp;" . htmlspecialchars($this->title), true);
         echo "</div>\n\n";
         Ht::stash_script("jQuery('#{$this->formid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
@@ -719,7 +719,7 @@ class SelectorPaperOption extends PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = $reqv === null ? $ov->value : $reqv;
         $reqv = isset($this->selector[$reqv]) ? $reqv : 0;
-        $pt->echo_editable_option_papt($this);
+        $pt->echo_editable_option_papt($this, null, $this->type === "selector");
         echo '<div class="papev">';
         if ($this->type === "selector")
             echo Ht::select($this->formid, $this->selector, $reqv,
@@ -1111,7 +1111,7 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
-        $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="papfnh">(max ' . ini_get("upload_max_filesize") . "B per file)</span>");
+        $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", false);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '">';
         $docclass = new HotCRPDocument($this->conf, $this->id, $this);
         foreach ($ov->documents() as $doc) {

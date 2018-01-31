@@ -302,12 +302,13 @@ class PaperTable {
         return $this->has_problem_at($f) ? " has-error" : "";
     }
 
-    private function editable_papt($what, $name, $extra = array()) {
+    private function editable_papt($what, $heading, $extra = array()) {
         $id = get($extra, "id");
-        return '<div class="papeg' . ($id ? " papg_$id" : "")
-            . '"><div class="papet' . $this->error_class($what)
-            . ($id ? "\" id=\"$id" : "")
-            . '"><span class="papfn">' . $name . '</span></div>';
+        return '<div class="papeg">'
+            . '<div class="papet' . $this->error_class($what)
+            . ($id ? "\" id=\"$id" : "") . '">'
+            . Ht::label($heading, get($extra, "for", false), ["class" => "papfn"])
+            . '</div>';
     }
 
     function messages_for($field) {
@@ -412,7 +413,7 @@ class PaperTable {
     }
 
     private function echo_editable_title() {
-        echo $this->editable_papt("title", $this->field_name("Title")),
+        echo $this->editable_papt("title", $this->field_name("Title"), ["for" => "title"]),
             $this->messages_for("title"),
             $this->field_hint("Title"),
             '<div class="papev">', $this->editable_textarea("title"), "</div></div>\n\n";
@@ -565,7 +566,8 @@ class PaperTable {
         if ($accepts)
             $msgs[] = htmlspecialchars(Mimetype::description($accepts));
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
-        echo $this->editable_papt($field, $this->field_name(htmlspecialchars($docx->title)) . ' <span class="papfnh">(' . join(", ", $msgs) . ")</span>");
+        $heading = $this->field_name(htmlspecialchars($docx->title)) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
+        echo $this->editable_papt($field, $heading, ["for" => $doc ? false : $inputid]);
         echo $this->field_hint(htmlspecialchars($docx->title), $docx->description);
         echo $this->messages_for($field);
 
@@ -633,8 +635,8 @@ class PaperTable {
     private function echo_editable_abstract() {
         $title = $this->field_name("Abstract");
         if ($this->conf->opt("noAbstract") === 2)
-            $title .= ' <span class="papfnh">(optional)</span>';
-        echo $this->editable_papt("abstract", $title),
+            $title .= ' <span class="n">(optional)</span>';
+        echo $this->editable_papt("abstract", $title, ["for" => "abstract"]),
             $this->field_hint("Abstract"),
             $this->messages_for("abstract"),
             '<div class="papev abstract">';
@@ -1192,9 +1194,8 @@ class PaperTable {
         assert(!!$this->editable);
         $pblind = !$this->prow || $this->prow->blind;
         $blind = $this->useRequest ? !!$this->qreq->blind : $pblind;
-        echo $this->editable_papt("blind",
-            Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind])
-                . "&nbsp;" . Ht::label($this->field_name("Anonymous submission"))),
+        $heading = Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "&nbsp;" . $this->field_name("Anonymous submission");
+        echo $this->editable_papt("blind", $heading, ["for" => false]),
             $this->field_hint("Anonymous submission", "Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"),
             $this->messages_for("blind"),
             "</div>\n\n";
@@ -1206,7 +1207,7 @@ class PaperTable {
         $sub_pcconf = $this->conf->setting("sub_pcconf");
         assert(!!$this->editable);
 
-        echo $this->editable_papt("collaborators", $this->field_name($sub_pcconf ? "Other conflicts" : "Potential conflicts")),
+        echo $this->editable_papt("collaborators", $this->field_name($sub_pcconf ? "Other conflicts" : "Potential conflicts"), ["for" => "collaborators"]),
             '<div class="paphint"><div class="mmm">';
         if ($this->conf->setting("sub_pcconf"))
             echo "List <em>other</em> people and institutions with which
@@ -1310,11 +1311,14 @@ class PaperTable {
         echo "</div></div></div>\n\n";
     }
 
-    function echo_editable_option_papt(PaperOption $o, $label = null) {
-        echo $this->editable_papt($o->formid, $label ? : $this->field_name(htmlspecialchars($o->title)),
-                                  ["id" => "{$o->formid}_div"]);
+    function echo_editable_option_papt(PaperOption $o, $heading = null, $for = null) {
+        if (!$heading)
+            $heading = $this->field_name(htmlspecialchars($o->title));
+        if ($for === null || $for === true)
+            $for = $o->formid;
+        echo $this->editable_papt($o->formid, $heading, ["id" => "{$o->formid}_div", "for" => $for]);
         echo $this->field_hint(htmlspecialchars($o->title), $o->description);
-        echo $this->messages_for($o->formid, Ht::hidden("has_{$o->formid}", 1);
+        echo $this->messages_for($o->formid), Ht::hidden("has_{$o->formid}", 1);
     }
 
     private function make_echo_editable_option($o) {
