@@ -264,7 +264,7 @@ class PaperOptionList {
                     && ($o = $this->get($id))) {
                     assert($o->nonpaper);
                     $this->nonpaper_am->add($o->name, $o);
-                    $this->nonpaper_am->add("opt$o->id", $o);
+                    $this->nonpaper_am->add($o->formid, $o);
                 }
         }
         return $this->nonpaper_am;
@@ -302,6 +302,7 @@ class PaperOption implements Abbreviator {
     const MINFIXEDID = 1000000;
 
     public $id;
+    public $formid;
     public $conf;
     public $name;
     public $title;
@@ -368,6 +369,10 @@ class PaperOption implements Abbreviator {
             $this->position = 999;
         $this->final = !!get($args, "final");
         $this->nonpaper = !!get($args, "nonpaper");
+        if ($this->id <= 0)
+            $this->formid = $this->_json_key;
+        else
+            $this->formid = "opt" . $this->id;
 
         $vis = get($args, "visibility") ? : get($args, "view_type");
         if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin")
@@ -442,12 +447,12 @@ class PaperOption implements Abbreviator {
                 $this->_search_keyword = $am->unique_abbreviation($this->name, $this, $aclass);
             }
             if (!$this->_search_keyword)
-                $this->_search_keyword = "opt{$this->id}";
+                $this->_search_keyword = $this->formid;
         }
         return $this->_search_keyword;
     }
     function field_key() {
-        return $this->id <= 0 ? $this->_json_key : "opt" . $this->id;
+        return $this->formid;
     }
     function json_key() {
         if ($this->_json_key === null) {
@@ -457,7 +462,7 @@ class PaperOption implements Abbreviator {
             $aclass->nwords = 4;
             $this->_json_key = $am->unique_abbreviation($this->name, $this, $aclass);
             if (!$this->_json_key)
-                $this->_json_key = "opt{$this->id}";
+                $this->_json_key = $this->formid;
         }
         return $this->_json_key;
     }
@@ -639,10 +644,10 @@ class CheckboxPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
-        $cb = Ht::checkbox("opt{$this->id}", 1, $reqv, ["data-default-checked" => !!$ov->value]);
+        $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->formid, "data-default-checked" => !!$ov->value]);
         $pt->echo_editable_option_papt($this, $cb . "&nbsp;" . Ht::label(htmlspecialchars($this->title)));
         echo "</div>\n\n";
-        Ht::stash_script("jQuery('#opt{$this->id}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
+        Ht::stash_script("jQuery('#{$this->formid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
@@ -650,7 +655,7 @@ class CheckboxPaperOption extends PaperOption {
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
-        return $qreq["opt$this->id"] > 0;
+        return $qreq[$this->formid] > 0;
     }
 
     function store_json($pj, PaperStatus $ps) {
@@ -717,12 +722,12 @@ class SelectorPaperOption extends PaperOption {
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">';
         if ($this->type === "selector")
-            echo Ht::select("opt$this->id", $this->selector, $reqv,
-                ["data-default-value" => $ov->value]);
+            echo Ht::select($this->formid, $this->selector, $reqv,
+                ["id" => $this->formid, "data-default-value" => $ov->value]);
         else
             foreach ($this->selector as $val => $text) {
                 echo '<label><div class="checki"><span class="checkc">',
-                    Ht::radio("opt$this->id", $val, $val == $reqv,
+                    Ht::radio($this->formid, $val, $val == $reqv,
                         ["data-default-checked" => $val == $ov->value]),
                     ' </span>', htmlspecialchars($text), '</div></label>';
             }
@@ -734,7 +739,7 @@ class SelectorPaperOption extends PaperOption {
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
-        $v = trim((string) $qreq["opt$this->id"]);
+        $v = trim((string) $qreq[$this->formid]);
         if ($v === "")
             return null;
         else if (ctype_digit($v)) {
@@ -825,9 +830,9 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
-        if ($qreq->has_file("opt$this->id"))
-            return DocumentInfo::make_file_upload($pj->pid, $this->id, $qreq->file("opt$this->id"));
-        else if ($qreq["remove_opt$this->id"])
+        if ($qreq->has_file($this->formid))
+            return DocumentInfo::make_file_upload($pj->pid, $this->id, $qreq->file($this->formid));
+        else if ($qreq["remove_{$this->formid}"])
             return null;
         else
             return $opt_pj;
@@ -916,7 +921,7 @@ class NumericPaperOption extends PaperOption {
         $reqv = (string) ($reqv === null ? $ov->value : $reqv);
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
-            Ht::entry("opt$this->id", $reqv, ["size" => 8, "class" => trim($pt->error_class("opt$this->id")), "data-default-value" => $ov->value]),
+            Ht::entry($this->formid, $reqv, ["id" => $this->formid, "size" => 8, "class" => trim($pt->has_error_class($this->formid)), "data-default-value" => $ov->value]),
             "</div></div>\n\n";
     }
 
@@ -925,7 +930,7 @@ class NumericPaperOption extends PaperOption {
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
-        $v = trim((string) $qreq["opt$this->id"]);
+        $v = trim((string) $qreq[$this->formid]);
         if ($v === "")
             return null;
         else if (is_numeric($v)) {
@@ -994,7 +999,7 @@ class TextPaperOption extends PaperOption {
         $fi = $pt->prow ? $pt->prow->edit_format() : $pt->conf->format_info(null);
         echo '<div class="papev">',
             ($fi ? $fi->description_preview_html() : ""),
-            Ht::textarea("opt$this->id", $reqv, ["class" => "papertext" . $pt->error_class("opt$this->id"), "rows" => max($this->display_space, 1), "cols" => 60, "spellcheck" => "true", "data-default-value" => $ov->data()]),
+            Ht::textarea($this->formid, $reqv, ["id" => $this->formid, "class" => "papertext" . $pt->has_error_class($this->formid), "rows" => max($this->display_space, 1), "cols" => 60, "spellcheck" => "true", "data-default-value" => $ov->data()]),
             "</div></div>\n\n";
     }
 
@@ -1004,7 +1009,7 @@ class TextPaperOption extends PaperOption {
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
-        $x = trim((string) $qreq["opt$this->id"]);
+        $x = trim((string) $qreq[$this->formid]);
         return $x !== "" ? $x : null;
     }
 
@@ -1107,7 +1112,7 @@ class AttachmentsPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="papfnh">(max ' . ini_get("upload_max_filesize") . "B per file)</span>");
-        echo '<div class="papev has-editable-attachments" data-document-prefix="opt', $this->id, '">';
+        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '">';
         $docclass = new HotCRPDocument($this->conf, $this->id, $this);
         foreach ($ov->documents() as $doc) {
             $oname = "opt" . $this->id . "_" . $doc->paperStorageId;
@@ -1135,13 +1140,13 @@ class AttachmentsPaperOption extends PaperOption {
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
         $attachments = $opt_pj ? : [];
-        for ($i = 1; isset($qreq["has_opt{$this->id}_new_$i"]); ++$i) {
-            if (($f = $qreq->file("opt{$this->id}_new_$i")))
+        for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
+            if (($f = $qreq->file("{$this->formid}_new_$i")))
                 $attachments[] = DocumentInfo::make_file_upload($pj->pid, $this->id, $f);
         }
         for ($i = 0; $i < count($attachments); ++$i) {
             if (isset($attachments[$i]->docid)
-                && $qreq["remove_opt{$this->id}_{$attachments[$i]->docid}"]) {
+                && $qreq["remove_{$this->formid}_{$attachments[$i]->docid}"]) {
                 array_splice($attachments, $i, 1);
                 --$i;
             }

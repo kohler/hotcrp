@@ -375,7 +375,8 @@ class PaperTable {
     }
 
     private function editable_textarea($fieldName) {
-        $js = ["class" => "papertext" . $this->has_error_class($fieldName),
+        $js = ["id" => $fieldName,
+               "class" => "papertext" . $this->has_error_class($fieldName),
                "rows" => self::$textAreaRows[$fieldName], "cols" => 60];
         if ($fieldName === "abstract")
             $js["spellcheck"] = true;
@@ -1310,10 +1311,10 @@ class PaperTable {
     }
 
     function echo_editable_option_papt(PaperOption $o, $label = null) {
-        echo $this->editable_papt("opt$o->id", $label ? : $this->field_name(htmlspecialchars($o->title)),
-                                  ["id" => "opt{$o->id}_div"]);
+        echo $this->editable_papt($o->formid, $label ? : $this->field_name(htmlspecialchars($o->title)),
+                                  ["id" => "{$o->formid}_div"]);
         echo $this->field_hint(htmlspecialchars($o->title), $o->description);
-        echo $this->messages_for("opt$o->id"), Ht::hidden("has_opt$o->id", 1);
+        echo $this->messages_for($o->formid, Ht::hidden("has_{$o->formid}", 1);
     }
 
     private function make_echo_editable_option($o) {
@@ -1322,7 +1323,7 @@ class PaperTable {
             if ($this->prow)
                 $ov = $this->prow->option($o->id);
             $ov = $ov ? : new PaperOptionValue($this->prow, $o);
-            $o->echo_editable_html($ov, $this->useRequest ? $this->qreq["opt$o->id"] : null, $this);
+            $o->echo_editable_html($ov, $this->useRequest ? $this->qreq[$o->formid] : null, $this);
         };
     }
 
