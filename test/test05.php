@@ -120,4 +120,68 @@ xassert_eqq($paper3->document(DTYPE_SUBMISSION)->text_hash(), "sha2-38b74d4ab9d3
 $paper3b = $ps->paper_json(3);
 xassert_eqq($paper3b->submission->hash, "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
 
+// test submitting a new paper
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "auname1" => "Bobby Flay", "auemail1" => "flay@_.com"]), null, $user_estrin, "update");
+$ps = new PaperStatus($Conf, $user_estrin);
+xassert($ps->prepare_save_paper_json($pj));
+xassert($ps->diffs["title"]);
+xassert($ps->diffs["abstract"]);
+xassert($ps->diffs["authors"]);
+xassert($ps->execute_save_paper_json($pj));
+xassert(!$ps->has_error());
+
+$newpaper = $Conf->paperRow($ps->paperId, $user_estrin);
+xassert($newpaper);
+xassert_eqq($newpaper->title, "New paper");
+xassert_eqq($newpaper->abstract, "This is an abstract");
+xassert_eqq(count($newpaper->author_list()), 1);
+$aus = $newpaper->author_list();
+xassert_eqq($aus[0]->firstName, "Bobby");
+xassert_eqq($aus[0]->lastName, "Flay");
+xassert_eqq($aus[0]->email, "flay@_.com");
+xassert($newpaper->timeSubmitted <= 0);
+xassert($newpaper->timeWithdrawn <= 0);
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1]), $newpaper, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+xassert($ps->prepare_save_paper_json($pj));
+xassert_eqq(count($ps->diffs), 1);
+xassert($ps->diffs["status"]);
+xassert($ps->execute_save_paper_json($pj));
+xassert(!$ps->has_error());
+
+$newpaper = $Conf->paperRow($ps->paperId, $user_estrin);
+xassert($newpaper);
+xassert_eqq($newpaper->title, "New paper");
+xassert_eqq($newpaper->abstract, "This is an abstract");
+xassert_eqq(count($newpaper->author_list()), 1);
+$aus = $newpaper->author_list();
+xassert_eqq($aus[0]->firstName, "Bobby");
+xassert_eqq($aus[0]->lastName, "Flay");
+xassert_eqq($aus[0]->email, "flay@_.com");
+xassert($newpaper->timeSubmitted > 0);
+xassert($newpaper->timeWithdrawn <= 0);
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "opt1" => "10", "has_opt1" => "1"]), $newpaper, $user_estrin, "update");
+$ps = new PaperStatus($Conf, $user_estrin);
+xassert($ps->prepare_save_paper_json($pj));
+xassert_eqq(count($ps->diffs), 2);
+xassert($ps->diffs["status"]);
+xassert($ps->diffs["calories"]);
+xassert($ps->execute_save_paper_json($pj));
+xassert(!$ps->has_error());
+
+$newpaper = $Conf->paperRow($ps->paperId, $user_estrin);
+xassert($newpaper);
+xassert_eqq($newpaper->title, "New paper");
+xassert_eqq($newpaper->abstract, "This is an abstract");
+xassert_eqq(count($newpaper->author_list()), 1);
+$aus = $newpaper->author_list();
+xassert_eqq($aus[0]->firstName, "Bobby");
+xassert_eqq($aus[0]->lastName, "Flay");
+xassert_eqq($aus[0]->email, "flay@_.com");
+xassert($newpaper->timeSubmitted <= 0);
+xassert($newpaper->timeWithdrawn <= 0);
+xassert_eqq($newpaper->option(1)->value, 10);
+
 xassert_exit();
