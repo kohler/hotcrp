@@ -22,6 +22,7 @@ tr, textarea, select {
 input, textarea, button {
 	font-family: inherit;
 	font-size: 100%;
+	line-height: 1.35;
 }
 select {
 	font-family: inherit;
