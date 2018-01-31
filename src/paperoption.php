@@ -584,7 +584,7 @@ class PaperOption implements Abbreviator {
         return null;
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
         return null;
     }
 
@@ -654,7 +654,7 @@ class CheckboxPaperOption extends PaperOption {
         return $ov->value ? true : false;
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
         return $qreq[$this->formid] > 0;
     }
 
@@ -738,7 +738,7 @@ class SelectorPaperOption extends PaperOption {
         return get($this->selector, $ov->value, null);
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
         $v = trim((string) $qreq[$this->formid]);
         if ($v === "")
             return null;
@@ -829,10 +829,11 @@ class DocumentPaperOption extends PaperOption {
             return false;
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
-        if ($qreq->has_file($this->formid))
-            return DocumentInfo::make_file_upload($pj->pid, $this->id, $qreq->file($this->formid));
-        else if ($qreq["remove_{$this->formid}"])
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
+        if ($qreq->has_file($this->formid)) {
+            $pid = $prow ? $prow->paperId : -1;
+            return DocumentInfo::make_file_upload($pid, $this->id, $qreq->file($this->formid));
+        } else if ($qreq["remove_{$this->formid}"])
             return null;
         else
             return $opt_pj;
@@ -929,7 +930,7 @@ class NumericPaperOption extends PaperOption {
         return $ov->value;
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
         $v = trim((string) $qreq[$this->formid]);
         if ($v === "")
             return null;
@@ -1008,7 +1009,7 @@ class TextPaperOption extends PaperOption {
         return $x !== "" ? $x : null;
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
         $x = trim((string) $qreq[$this->formid]);
         return $x !== "" ? $x : null;
     }
@@ -1138,11 +1139,12 @@ class AttachmentsPaperOption extends PaperOption {
         return empty($attachments) ? null : $attachments;
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $pj) {
+    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
+        $pid = $prow ? $prow->paperId : -1;
         $attachments = $opt_pj ? : [];
         for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
             if (($f = $qreq->file("{$this->formid}_new_$i")))
-                $attachments[] = DocumentInfo::make_file_upload($pj->pid, $this->id, $f);
+                $attachments[] = DocumentInfo::make_file_upload($pid, $this->id, $f);
         }
         for ($i = 0; $i < count($attachments); ++$i) {
             if (isset($attachments[$i]->docid)
