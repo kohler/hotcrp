@@ -384,6 +384,8 @@ class PaperTable {
         $value = $pvalue = $this->prow ? $this->prow->$fieldName : "";
         if ($this->useRequest && isset($this->qreq[$fieldName])) {
             $value = cleannl($this->qreq[$fieldName]);
+            if (self::$textAreaRows[$fieldName] === 1)
+                $value = trim($value);
             if ($value !== $pvalue)
                 $js["data-default-value"] = $pvalue;
         }
