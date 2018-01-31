@@ -19,7 +19,7 @@ class PaperSaver {
         if (!isset($pj->pid))
             $pj->pid = -1;
         foreach (self::$list as $fn)
-            $fn[2]->apply($user, $pj, $prow, $opj, $qreq, $action);
+            $fn[2]->apply($pj, $qreq, $prow, $user, $action);
         return $pj;
     }
     static function diffs_all(Contact $user, $pj1, $pj2) {
@@ -29,7 +29,7 @@ class PaperSaver {
         return $diffs;
     }
 
-    function apply(Contact $user, $pj, $prow, $opj, Qrequest $qreq, $action) {
+    function apply($pj, Qrequest $qreq, PaperInfo $prow = null, Contact $user, $action) {
     }
     function diffs(&$diffs, Contact $user, $pj1, $pj2) {
     }
@@ -62,7 +62,7 @@ class PaperSaver {
 }
 
 class Default_PaperSaver extends PaperSaver {
-    function apply(Contact $user, $pj, $prow, $opj, Qrequest $qreq, $action) {
+    function apply($pj, Qrequest $qreq, PaperInfo $prow = null, Contact $user, $action) {
         $admin = $prow ? $user->can_administer($prow) : $user->privChair;
 
         // Title, abstract, collaborators
@@ -123,7 +123,7 @@ class Default_PaperSaver extends PaperSaver {
         // Contacts
         if ($qreq->setcontacts || $qreq->has_contacts)
             PaperSaver::replace_contacts($pj, $qreq);
-        else if (!$opj)
+        else if (!$prow)
             $pj->contacts = array($user);
 
         // Status
