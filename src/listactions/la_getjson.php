@@ -18,13 +18,14 @@ class GetJson_ListAction extends ListAction {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {
+        $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $pj = [];
-        $ps = new PaperStatus($user->conf, $user, ["forceShow" => true, "hide_docids" => true]);
+        $ps = new PaperStatus($user->conf, $user, ["hide_docids" => true]);
         if ($this->iszip) {
             $this->zipdoc = new ZipDocument($user->conf->download_prefix . "data.zip");
             $ps->on_document_export([$this, "document_callback"]);
         }
-        foreach ($user->paper_set($ssel, ["topics" => true, "options" => true]) as $prow)
+        foreach ($user->paper_set($ssel, ["topics" => true, "options" => true]) as $prow) {
             if ($user->allow_administer($prow))
                 $pj[$prow->paperId] = $ps->paper_json($prow);
             else {
@@ -32,6 +33,8 @@ class GetJson_ListAction extends ListAction {
                 if ($this->iszip)
                     $this->zipdoc->warnings[] = "#$prow->paperId: You don’t have permission to administer this paper.";
             }
+        }
+        $user->set_overrides($old_overrides);
         $pj = array_values($ssel->reorder($pj));
         if (count($pj) == 1) {
             $pj = $pj[0];

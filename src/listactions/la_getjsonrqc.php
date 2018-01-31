@@ -14,7 +14,7 @@ class GetJsonRQC_ListAction extends ListAction {
         $rf = $user->conf->review_form();
         $results["reviewform"] = $rf->unparse_json(0, VIEWSCORE_REVIEWERONLY);
         $pj = [];
-        $ps = new PaperStatus($user->conf, $user, ["forceShow" => true, "hide_docids" => true]);
+        $ps = new PaperStatus($user->conf, $user, ["hide_docids" => true]);
         foreach ($user->paper_set($ssel, ["topics" => true, "options" => true]) as $prow) {
             if ($user->allow_administer($prow)) {
                 $pj[$prow->paperId] = $j = $ps->paper_json($prow);

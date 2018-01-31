@@ -7,7 +7,6 @@ class PaperStatus extends MessageSet {
     public $user;
     private $uploaded_documents;
     private $no_email = false;
-    private $forceShow = null;
     private $export_ids = false;
     private $hide_docids = false;
     private $export_content = false;
@@ -25,7 +24,7 @@ class PaperStatus extends MessageSet {
     function __construct(Conf $conf, Contact $user = null, $options = array()) {
         $this->conf = $conf;
         $this->user = $user;
-        foreach (array("no_email", "forceShow", "export_ids", "hide_docids",
+        foreach (array("no_email", "export_ids", "hide_docids",
                        "export_content", "disable_users",
                        "allow_any_content_file", "content_file_prefix",
                        "add_topics") as $k)
@@ -126,7 +125,7 @@ class PaperStatus extends MessageSet {
 
         $submitted_status = "submitted";
         if ($prow->outcome != 0
-            && (!$user || $user->can_view_decision($prow, $this->forceShow))) {
+            && (!$user || $user->can_view_decision($prow))) {
             $pj->decision = $this->conf->decision_name($prow->outcome);
             if ($pj->decision === false) {
                 $pj->decision = (int) $prow->outcome;
@@ -152,7 +151,7 @@ class PaperStatus extends MessageSet {
             $pj->submitted_at = $t;
 
         $can_view_authors = !$user
-            || $user->can_view_authors($prow, $this->forceShow);
+            || $user->can_view_authors($prow);
         if ($can_view_authors) {
             $contacts = array();
             foreach ($prow->named_contacts() as $cflt)
@@ -222,7 +221,7 @@ class PaperStatus extends MessageSet {
 
         $options = array();
         foreach ($this->conf->paper_opts->option_list() as $o) {
-            if ($user && !$user->can_view_paper_option($prow, $o, $this->forceShow))
+            if ($user && !$user->can_view_paper_option($prow, $o))
                 continue;
             $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
             $oj = $o->unparse_json($ov, $this, $user);
@@ -947,7 +946,7 @@ class PaperStatus extends MessageSet {
                     $lemail = strtolower($cflt->email);
                     if (get_i($cflts, $lemail) < CONFLICT_CHAIRMARK
                         && $this->user
-                        && !$this->user->can_administer($this->prow, $this->forceShow))
+                        && !$this->user->can_administer($this->prow))
                         $cflts[$lemail] = CONFLICT_CHAIRMARK;
                 }
             }

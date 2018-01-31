@@ -382,9 +382,11 @@ $paperTable->initialize($editable, $editable && $useRequest);
 if ($ps && $paperTable->mode === "edit")
     $paperTable->set_edit_status($ps);
 else if ($prow && $paperTable->mode === "edit") {
-    $ps = new PaperStatus($Conf, $Me, ["forceShow" => true]);
+    $old_overrides = $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
+    $ps = new PaperStatus($Conf, $Me);
     $ps->paper_json($prow, ["msgs" => true]);
     $paperTable->set_edit_status($ps);
+    $Me->set_overrides($old_overrides);
 }
 
 // produce paper table
