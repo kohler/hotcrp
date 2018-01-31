@@ -213,9 +213,10 @@ class Ht {
         if ($js && isset($js["for"])) {
             $id = $js["for"];
             unset($js["for"]);
-        } else if (!$id || $id === true)
+        } else if ($id === null || $id === true)
             $id = self::$_lastcontrolid;
-        return '<label for="' . $id . '"' . self::extra($js) . '>' . $html . "</label>";
+        return '<label' . ($id ? ' for="' . $id . '"' : '')
+            . self::extra($js) . '>' . $html . "</label>";
     }
 
     static function button($html, $js = null) {
