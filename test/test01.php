@@ -6,6 +6,8 @@ global $ConfSitePATH;
 $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 
 require_once("$ConfSitePATH/test/setup.php");
+$Conf->check_invariants();
+
 $Conf->save_setting("sub_open", 1);
 $Conf->save_setting("sub_update", $Now + 10);
 $Conf->save_setting("sub_sub", $Now + 10);
