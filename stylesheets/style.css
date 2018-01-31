@@ -1262,11 +1262,13 @@ label.f-c, .f-i > label {
 .f-c.n, .f-i > label.n {
 	font-weight: normal;
 }
-.f-h {
-	font-size: 92%;
+.f-d, .f-h {
 	color: #555555;
 	margin-top: 0.25rem;
 	margin-bottom: 0.25rem;
+}
+.f-h {
+	font-size: 92%;
 }
 .f-2col {
 	margin: -1em 0;
@@ -2836,9 +2838,8 @@ body#offline .revcard {
 }
 .paphint, .revhint {
 	max-width: 640px;
-	font-size: 92%;
 	color: #555555;
-	margin: 0.25em 0;
+	margin: 0.25rem 0;
 }
 .paphint > p:first-child, .revhint > p:first-child {
 	margin-top: 0;

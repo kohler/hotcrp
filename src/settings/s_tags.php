@@ -11,12 +11,12 @@ class Tags_SettingRenderer {
     }
     static function render_tag_chair(SettingValues $sv) {
         $sv->set_oldv("tag_chair", self::render_tags($sv->conf->tags()->filter("chair")));
-        $sv->echo_entry_group("tag_chair", null, ["class" => "need-tagcompletion"], "PC members can view these tags, but only administrators can change them.");
+        $sv->echo_entry_group("tag_chair", null, ["class" => "need-tagcompletion"], "PC members can see these tags, but only administrators can change them.");
     }
     static function render_tag_sitewide(SettingValues $sv) {
         $sv->set_oldv("tag_sitewide", self::render_tags($sv->conf->tags()->filter("sitewide")));
         if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
-            $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-tagcompletion"], "Administrators can view and change these tags for every paper.");
+            $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-tagcompletion"], "Administrators can see and change these tags for every paper.");
     }
     static function render_tag_approval(SettingValues $sv) {
         $sv->set_oldv("tag_approval", self::render_tags($sv->conf->tags()->filter("approval")));
