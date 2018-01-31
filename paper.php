@@ -143,20 +143,45 @@ function final_submit_watch_callback($prow, $minic) {
         HotCRPMailer::send_to($minic, "@finalsubmitnotify", $prow);
 }
 
-function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
-    global $Conf, $Me, $prow;
+function update_paper(Qrequest $qreq, $action) {
+    global $Conf, $Me, $prow, $newPaper;
     // XXX lock tables
+    $wasSubmitted = $prow && $prow->timeSubmitted > 0;
 
-    $saved = $ps->save_paper_json($pj);
+    $pj = PaperSaver::apply_all($qreq, $prow, $Me, $action);
 
-    if (!$saved && !$prow && $qreq->has_files())
-        $ps->error_at("paper", "<strong>Your uploaded files were ignored.</strong>");
+    $ps = new PaperStatus($Conf, $Me);
+    $prepared = $ps->prepare_save_paper_json($pj);
 
-    if (!$saved) {
+    if (!$prepared) {
+        if (!$prow && $qreq->has_files())
+            $ps->error_at("paper", "<strong>Your uploaded files were ignored.</strong>");
         $emsg = $ps->messages();
         Conf::msg_error(space_join($Conf->_("There were errors in saving your paper."), $Conf->_("Please fix them and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
         return false;
     }
+
+    // check deadlines
+    if ($newPaper)
+        // we know that can_start_paper implies can_finalize_paper
+        $whyNot = $Me->perm_start_paper();
+    else if ($action == "final")
+        $whyNot = $Me->perm_submit_final_paper($prow);
+    else {
+        $whyNot = $Me->perm_update_paper($prow);
+        if ($whyNot
+            && $action == "submit"
+            && !count(array_diff($ps->diffs, ["contacts", "status"])))
+            $whyNot = $Me->perm_finalize_paper($prow);
+    }
+
+    // actually update
+    if ($whyNot) {
+        Conf::msg_error(whyNotText($whyNot));
+        return $whyNot;
+    }
+
+    $ps->execute_save_paper_json($pj);
 
     // submit paper if no error so far
     $_REQUEST["paperId"] = $_GET["paperId"] = $qreq->paperId = $pj->pid;
@@ -168,7 +193,6 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
         $submitkey = "timeSubmitted";
         $storekey = "paperStorageId";
     }
-    $wasSubmitted = $opj && get($opj, "submitted");
     if (get($pj, "submitted") || $Conf->can_pc_see_all_submissions())
         $Conf->update_papersub_setting(1);
 
@@ -179,17 +203,17 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     } else if (get($pj, "submitted") && !$wasSubmitted) {
         $actiontext = "Submitted";
         $template = "@submitpaper";
-    } else if (!$opj) {
+    } else if ($newPaper) {
         $actiontext = "Registered";
         $template = "@registerpaper";
     } else {
         $actiontext = "Updated";
         $template = "@updatepaper";
     }
-    if ($opj)
-        $difftext = join(", ", array_keys($diffs));
+    if (!$newPaper)
+        $difftext = join(", ", array_keys($ps->diffs));
     else // only mark submission
-        $difftext = join(", ", array_intersect(array_keys($diffs), ["submission", "final"]));
+        $difftext = join(", ", array_intersect(array_keys($ps->diffs), ["submission", "final"]));
 
     // additional information
     $notes = array();
@@ -231,14 +255,11 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     if (count($ps->messages()))
         $webnotes .= " <ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>";
 
-    if ($wasSubmitted != get($pj, "submitted"))
-        $diffs["ready"] = true;
-
     $logtext = $actiontext . ($difftext ? " $difftext" : "");
     $Me->log_activity($logtext, $prow->paperId);
 
     // HTML confirmation
-    if (empty($diffs))
+    if (empty($ps->diffs))
         $webmsg = $Conf->_("No changes to submission #%d.", $prow->paperId);
     else
         $webmsg = $Conf->_("$actiontext submission #%d.", $prow->paperId);
@@ -246,25 +267,24 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
         $webmsg .= " " . $notes . $webnotes;
     $Conf->msg($prow->$submitkey > 0 ? "confirm" : "warning", $webmsg);
 
-    // No mail if no change
-    if (empty($diffs))
-        return true;
+    // mail confirmation to all contact authors if changed
+    if (!empty($ps->diffs)) {
+        if (!$Me->privChair || $qreq->doemail > 0) {
+            $options = array("infoNames" => 1);
+            if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
+                $options["adminupdate"] = true;
+            if ($Me->privChair && isset($qreq->emailNote))
+                $options["reason"] = $qreq->emailNote;
+            if ($notes !== "")
+                $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
+            HotCRPMailer::send_contacts($template, $prow, $options);
+        }
 
-    // mail confirmation to all contact authors
-    if (!$Me->privChair || $qreq->doemail > 0) {
-        $options = array("infoNames" => 1);
-        if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
-            $options["adminupdate"] = true;
-        if ($Me->privChair && isset($qreq->emailNote))
-            $options["reason"] = $qreq->emailNote;
-        if ($notes !== "")
-            $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
-        HotCRPMailer::send_contacts($template, $prow, $options);
+        // other mail confirmations
+        if ($action == "final" && !Dbl::has_error() && !$ps->has_error())
+            $prow->notify(WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
     }
 
-    // other mail confirmations
-    if ($action == "final" && !Dbl::has_error() && !$ps->has_error())
-        $prow->notify(WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
     return true;
 }
 
@@ -280,31 +300,9 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
                  || opt("noPapers")))
         $action = "submit";
 
-    $ps = new PaperStatus($Conf, $Me);
-    $opj = $prow ? $ps->paper_json($prow, ["forceShow" => true]) : null;
-    $pj = PaperSaver::apply_all($Me, $prow, $opj, $Qreq, $action);
-    $diffs = PaperSaver::diffs_all($Me, $pj, $opj);
-
-    // check deadlines
-    if ($newPaper)
-        // we know that can_start_paper implies can_finalize_paper
-        $whyNot = $Me->perm_start_paper();
-    else if ($action == "final")
-        $whyNot = $Me->perm_submit_final_paper($prow);
-    else {
-        $whyNot = $Me->perm_update_paper($prow);
-        if ($whyNot && $action == "submit"
-            && (empty($diffs) || join(" ", array_keys($diffs)) === "contacts"))
-            $whyNot = $Me->perm_finalize_paper($prow);
-    }
-
-    // actually update
-    if (!$whyNot) {
-        if (update_paper($ps, $pj, $opj, $Qreq, $action, $diffs))
-            redirectSelf(array("p" => $prow->paperId, "m" => "edit"));
-    } else {
-        Conf::msg_error(whyNotText($whyNot));
-    }
+    $whyNot = update_paper($Qreq, $action);
+    if ($whyNot === true)
+        redirectSelf(["p" => $prow->paperId, "m" => "edit"]);
 
     // If we get here, we failed to update.
     // Use the request unless the request failed because updates
@@ -316,18 +314,19 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
 
 if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
     if ($Me->can_administer($prow) || $Me->act_author_view($prow)) {
+        $pj = PaperSaver::apply_all($Qreq, $prow, $Me, "updatecontacts");
         $ps = new PaperStatus($Conf, $Me);
-        $opj = $ps->paper_json($prow, ["forceShow" => true]);
-        $pj = PaperStatus::clone_json($opj);
-        PaperSaver::replace_contacts($pj, $Qreq);
-        if (!PaperSaver::diffs_all($Me, $pj, $opj))
-            Conf::msg_warning($Conf->_("No changes to submission #%d.", $prow->paperId));
-        else if ($ps->save_paper_json($pj, $opj)) {
-            Conf::msg_confirm($Conf->_("Updated contacts for submission #%d.", $prow->paperId));
-            $Me->log_activity("Updated contacts", $prow->paperId);
-            redirectSelf();
-        } else
+        if ($ps->prepare_save_paper_json($pj)) {
+            if (!$ps->diffs)
+                Conf::msg_warning($Conf->_("No changes to submission #%d.", $prow->paperId));
+            else if ($ps->execute_save_paper_json($pj)) {
+                Conf::msg_confirm($Conf->_("Updated contacts for submission #%d.", $prow->paperId));
+                $Me->log_activity("Updated contacts", $prow->paperId);
+                redirectSelf();
+            }
+        } else {
             Conf::msg_error("<ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>");
+        }
     } else {
         Conf::msg_error(whyNotText($prow->make_whynot(["permission" => "edit_contacts"])));
     }

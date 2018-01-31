@@ -14,31 +14,17 @@ class PaperSaver {
                 return $a[1] - $b[1];
         });
     }
-    static function apply_all(Contact $user, $prow, $opj, Qrequest $qreq, $action) {
-        $pj = PaperStatus::clone_json($opj);
+    static function apply_all(Qrequest $qreq, PaperInfo $prow = null, Contact $user, $action) {
+        $ps = new PaperStatus($user->conf);
+        $pj = (object) $ps->paper_json($prow);
         if (!isset($pj->pid))
             $pj->pid = -1;
         foreach (self::$list as $fn)
             $fn[2]->apply($pj, $qreq, $prow, $user, $action);
         return $pj;
     }
-    static function diffs_all(Contact $user, $pj1, $pj2) {
-        $diffs = [];
-        foreach (self::$list as $fn)
-            $fn[2]->diffs($diffs, $user, $pj1, $pj2);
-        return $diffs;
-    }
 
     function apply($pj, Qrequest $qreq, PaperInfo $prow = null, Contact $user, $action) {
-    }
-    function diffs(&$diffs, Contact $user, $pj1, $pj2) {
-    }
-
-    static function json_encode_nonempty($j) {
-        $j = json_encode_db($j);
-        if ($j === "{}")
-            $j = "null";
-        return $j;
     }
 
     static function replace_contacts($pj, $qreq) {
@@ -64,6 +50,14 @@ class PaperSaver {
 class Default_PaperSaver extends PaperSaver {
     function apply($pj, Qrequest $qreq, PaperInfo $prow = null, Contact $user, $action) {
         $admin = $prow ? $user->can_administer($prow) : $user->privChair;
+
+        // Contacts
+        if ($qreq->setcontacts || $qreq->has_contacts || $action === "updatecontacts")
+            PaperSaver::replace_contacts($pj, $qreq);
+        else if (!$prow)
+            $pj->contacts = array($user);
+        if ($action === "updatecontacts")
+            return;
 
         // Title, abstract, collaborators
         foreach (array("title", "abstract", "collaborators") as $k)
@@ -120,12 +114,6 @@ class Default_PaperSaver extends PaperSaver {
         if ($n !== 1)
             $pj->authors = $authors;
 
-        // Contacts
-        if ($qreq->setcontacts || $qreq->has_contacts)
-            PaperSaver::replace_contacts($pj, $qreq);
-        else if (!$prow)
-            $pj->contacts = array($user);
-
         // Status
         if ($action === "submit")
             $pj->submitted = true;
@@ -179,94 +167,6 @@ class Default_PaperSaver extends PaperSaver {
                 }
             }
         }
-    }
-
-    function diffs(&$diffs, Contact $user, $pj1, $pj2) {
-        if (!$pj1 && !$pj2)
-            return;
-        else if (!$pj1) {
-            $diffs["deleted"] = true;
-            return;
-        } else if (!$pj2) {
-            $diffs["new"] = true;
-            $pj2 = (object) [];
-        }
-
-        foreach (array("title", "abstract", "collaborators") as $k)
-            if (get_s($pj1, $k) !== get_s($pj2, $k))
-                $diffs[$k] = true;
-
-        if (!$this->same_authors($pj1, $pj2))
-            $diffs["authors"] = true;
-
-        if (self::json_encode_nonempty(get($pj1, "topics"))
-            !== self::json_encode_nonempty(get($pj2, "topics")))
-            $diffs["topics"] = true;
-
-        $opt1 = get($pj1, "options", (object) []);
-        $opt2 = get($pj2, "options", (object) []);
-        foreach ($user->conf->paper_opts->option_list() as $o) {
-            $oabbr = $o->json_key();
-            if (isset($opt1->$oabbr)) {
-                $same = isset($opt2->$oabbr)
-                    && json_encode_db($opt1->$oabbr) === json_encode_db($opt2->$oabbr);
-            } else
-                $same = !isset($opt2->$oabbr);
-            if (!$same)
-                $diffs[$oabbr] = true;
-        }
-
-        if ($user->conf->subBlindOptional()
-            && !get($pj1, "nonblind") !== !get($pj2, "nonblind"))
-            $diffs["nonblind"] = true;
-
-        if (self::pc_conflicts($pj1, $user) !== self::pc_conflicts($pj2, $user))
-            $diffs["pc_conflicts"] = true;
-
-        if (json_encode(get($pj1, "submission")) !== json_encode(get($pj2, "submission")))
-            $diffs["submission"] = true;
-        if (json_encode(get($pj1, "final")) !== json_encode(get($pj2, "final")))
-            $diffs["final"] = true;
-
-        if (self::contact_emails($pj1) !== self::contact_emails($pj2))
-            $diffs["contacts"] = true;
-    }
-
-    private function same_authors($pj1, $pj2) {
-        $ct1 = count(get($pj1, "authors", []));
-        if ($ct1 != count(get($pj2, "authors", [])))
-            return false;
-        for ($i = 0; $i != $ct1; ++$i) {
-            $au1 = $pj1->authors[$i];
-            $au2 = $pj2->authors[$i];
-            if (strcasecmp(get_s($au1, "email"), get_s($au2, "email")) !== 0
-                || get_s($au1, "affiliation") !== get_s($au2, "affiliation")
-                || Text::name_text($au1) !== Text::name_text($au2))
-                return false;
-        }
-        return true;
-    }
-
-    private function contact_emails($pj) {
-        $c = [];
-        foreach (get($pj, "contacts", []) as $v)
-            $c[strtolower(is_string($v) ? $v : $v->email)] = true;
-        foreach (get($pj, "authors", []) as $au)
-            if (get($au, "contact"))
-                $c[strtolower($au->email)] = true;
-        ksort($c);
-        return array_keys($c);
-    }
-
-    private function pc_conflicts($pj, Contact $user) {
-        $c = [];
-        foreach (get($pj, "pc_conflicts", []) as $e => $t)
-            $c[strtolower($e)] = $t;
-        foreach (self::contact_emails($pj) as $e)
-            if ($user->conf->pc_member_by_email($e))
-                $c[$e] = "author";
-        ksort($c);
-        return $c;
     }
 }
 

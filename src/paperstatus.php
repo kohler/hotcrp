@@ -18,8 +18,15 @@ class PaperStatus extends MessageSet {
     public $paperId;
     private $_on_document_export = [];
     private $_on_document_import = [];
-    private $qf;
-    private $qv;
+
+    public $diffs;
+    private $_paper_qf;
+    private $_paper_qv;
+    private $_topic_ins;
+    private $_option_delid;
+    private $_option_ins;
+    private $_conflict_ins;
+    private $_paper_submitted;
 
     function __construct(Conf $conf, Contact $user = null, $options = array()) {
         $this->conf = $conf;
@@ -290,17 +297,6 @@ class PaperStatus extends MessageSet {
 
         $this->ignore_msgs = $was_no_msgs;
         return $pj;
-    }
-
-
-    static function clone_json($pj) {
-        $x = (object) [];
-        foreach ($pj ? get_object_vars($pj) : [] as $k => $v)
-            if (is_object($v))
-                $x->$k = self::clone_json($v);
-            else
-                $x->$k = $v;
-        return $x;
     }
 
 
@@ -807,6 +803,7 @@ class PaperStatus extends MessageSet {
             $this->warning_at("options", $this->_("Unknown options ignored (%2\$s).", count($pj->bad_options), htmlspecialchars(join("; ", array_keys($pj->bad_options)))));
     }
 
+
     static private function author_information($pj) {
         $x = "";
         foreach (($pj && get($pj, "authors") ? $pj->authors : array()) as $au) {
@@ -818,7 +815,8 @@ class PaperStatus extends MessageSet {
         return $x;
     }
 
-    static function save_topics(PaperStatus $ps, $pj) {
+    static function prepare_topics(PaperStatus $ps, $pj) {
+        $ps->_topic_ins = null;
         if (!isset($pj->topics))
             return;
         $old_topics = $ps->prow ? $ps->prow->topic_list() : [];
@@ -826,21 +824,26 @@ class PaperStatus extends MessageSet {
         sort($old_topics);
         sort($new_topics);
         if ($old_topics !== $new_topics) {
-            $ps->conf->qe_raw("delete from PaperTopic where paperId={$ps->paperId}");
-            if ($new_topics) {
-                $ps->conf->qe("insert into PaperTopic (paperId,topicId) values ?v",
-                    array_map(function ($x) use ($ps) {
-                        return [$ps->paperId, $x];
-                    }, $new_topics));
+            $ps->diffs["topics"] = true;
+            $ps->_topic_ins = array_map(function ($x) { return [-1, $x]; }, $new_topics);
+        }
+    }
+
+    static function execute_topics(PaperStatus $ps) {
+        if (isset($ps->_topic_ins)) {
+            $ps->conf->qe("delete from PaperTopic where paperId=?", $ps->paperId);
+            if (!empty($ps->_topic_ins)) {
+                foreach ($ps->_topic_ins as &$p)
+                    $p[0] = $ps->paperId;
+                $ps->conf->qe("insert into PaperTopic (paperId,topicId) values ?v", $ps->_topic_ins);
             }
         }
     }
 
-    static function save_options(PaperStatus $ps, $pj) {
+    static function prepare_options(PaperStatus $ps, $pj) {
+        $ps->_option_ins = $ps->_option_delid = [];
         if (!isset($pj->options))
             return;
-
-        $delid = $qv = [];
         foreach ($pj->parsed_options as $id => $parsed_vs) {
             // old values
             $ov = $od = [];
@@ -857,21 +860,27 @@ class PaperStatus extends MessageSet {
 
             // save difference
             if ($ov !== $nv || $od !== $nd) {
-                $delid[] = $id;
+                $ps->_option_delid[] = $id;
+                $ps->diffs[$ps->conf->paper_opts->get($id)->json_key()] = true;
                 for ($i = 0; $i < count($nv); ++$i) {
-                    $qv0 = [$ps->paperId, $id, $nv[$i], null, null];
+                    $qv0 = [-1, $id, $nv[$i], null, null];
                     if ($nd[$i] !== null) {
                         $qv0[strlen($nd[$i]) < 32768 ? 3 : 4] = $nd[$i];
                     }
-                    $qv[] = $qv0;
+                    $ps->_option_ins[] = $qv0;
                 }
             }
         }
+    }
 
-        if (!empty($delid))
-            $ps->conf->qe("delete from PaperOption where paperId=? and optionId?a", $ps->paperId, $delid);
-        if (!empty($qv))
-            $ps->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $qv);
+    static function execute_options(PaperStatus $ps) {
+        if (!empty($ps->_option_delid))
+            $ps->conf->qe("delete from PaperOption where paperId=? and optionId?a", $ps->paperId, $ps->_option_delid);
+        if (!empty($ps->_option_ins)) {
+            foreach ($ps->_option_ins as &$x)
+                $x[0] = $ps->paperId;
+            $ps->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $ps->_option_ins);
+        }
     }
 
     static private function contacts_array($pj) {
@@ -956,12 +965,53 @@ class PaperStatus extends MessageSet {
         return $cflts;
     }
 
-    private function addf($f, $v) {
-        $this->qf[] = "$f=?";
-        $this->qv[] = $v;
+    static function prepare_conflicts(PaperStatus $ps, $pj) {
+        $new_cflts = $ps->conflicts_array($pj);
+        $old_cflts = $ps->conflicts_array((object) []);
+        $diff = false;
+        foreach ($new_cflts + $old_cflts as $lemail => $v) {
+            $new_ctype = get_i($new_cflts, $lemail);
+            $old_ctype = get_i($old_cflts, $lemail);
+            if ($new_ctype !== $old_ctype) {
+                if ($new_ctype >= CONFLICT_AUTHOR || $old_ctype >= CONFLICT_AUTHOR)
+                    $diff = $ps->diffs["contacts"] = true;
+                if (($new_ctype > 0 && $new_ctype < CONFLICT_AUTHOR)
+                    || ($old_ctype > 0 && $old_ctype < CONFLICT_AUTHOR))
+                    $diff = $ps->diffs["pc_conflicts"] = true;
+            }
+        }
+
+        $ps->_conflict_ins = null;
+        if ($diff) {
+            $ps->_conflict_ins = array();
+            if (!empty($new_cflts)) {
+                $result = $ps->conf->qe("select contactId, email from ContactInfo where email?a", array_keys($new_cflts));
+                while (($row = edb_row($result)))
+                    $ps->_conflict_ins[] = [-1, $row[0], $new_cflts[strtolower($row[1])]];
+                Dbl::free($result);
+            }
+        }
     }
 
-    function save_paper_json($pj) {
+    static function execute_conflicts(PaperStatus $ps) {
+        if ($ps->_conflict_ins !== null) {
+            $ps->conf->qe("delete from PaperConflict where paperId=?", $ps->paperId);
+            foreach ($ps->_conflict_ins as &$x)
+                $x[0] = $ps->paperId;
+            if (!empty($ps->_conflict_ins))
+                $ps->conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values ?v", $ps->_conflict_ins);
+        }
+    }
+
+    private function save_paperf($f, $v, $diff = null) {
+        assert(!isset($this->_paper_qv[$f]));
+        $this->_paper_qf[] = "$f=?";
+        $this->_paper_qv[$f] = $v;
+        if ($diff)
+            $this->diffs[$diff] = true;
+    }
+
+    function prepare_save_paper_json($pj) {
         global $Now;
         assert(!$this->hide_docids);
         assert(is_object($pj));
@@ -1016,42 +1066,38 @@ class PaperStatus extends MessageSet {
         if ($this->has_error())
             return false;
 
+        $this->diffs = [];
+
         // update Paper table
-        $this->qf = $this->qv = [];
+        $this->_paper_qf = $this->_paper_qv = [];
         foreach (array("title", "abstract", "collaborators") as $k) {
             $v = convert_to_utf8((string) get($pj, $k));
             if (!$this->prow || (isset($pj->$k) && $v !== (string) $this->prow->$k))
-                $this->addf($k, $v);
+                $this->save_paperf($k, $v, $k);
         }
 
         if (!$this->prow || isset($pj->authors)) {
             $autext = convert_to_utf8(self::author_information($pj));
             if (!$this->prow || $autext !== $this->prow->authorInformation)
-                $this->addf("authorInformation", $autext);
+                $this->save_paperf("authorInformation", $autext, "authors");
         }
 
         if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL
             && (!$this->prow
                 || (isset($pj->nonblind) && !$pj->nonblind !== !!$this->prow->blind))) {
-            $this->addf("blind", get($pj, "nonblind") ? 0 : 1);
+            $this->save_paperf("blind", get($pj, "nonblind") ? 0 : 1, "nonblind");
         }
 
-        $newPaperStorageId = null;
         if (!$this->prow || isset($pj->submission)) {
             $new_id = get($pj, "submission") ? $pj->submission->docid : 1;
-            if (!$this->prow || $new_id != $this->prow->paperStorageId) {
-                $this->addf("paperStorageId", $new_id);
-                $newPaperStorageId = $new_id;
-            }
+            if (!$this->prow || $new_id != $this->prow->paperStorageId)
+                $this->save_paperf("paperStorageId", $new_id, "submission");
         }
 
-        $newFinalPaperStorageId = null;
         if (!$this->prow || isset($pj->final)) {
             $new_id = get($pj, "final") ? $pj->final->docid : 0;
-            if (!$this->prow || $new_id != $this->prow->finalPaperStorageId) {
-                $this->addf("finalPaperStorageId", $new_id);
-                $newFinalPaperStorageId = $new_id;
-            }
+            if (!$this->prow || $new_id != $this->prow->finalPaperStorageId)
+                $this->save_paperf("finalPaperStorageId", $new_id, "final");
         }
 
         $pj_withdrawn = get($pj, "withdrawn");
@@ -1089,23 +1135,24 @@ class PaperStatus extends MessageSet {
                 else
                     $submitted_at = -$submitted_at;
                 if (!$this->prow || $this->prow->timeWithdrawn <= 0) {
-                    $this->addf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now);
-                    $this->addf("timeSubmitted", $submitted_at);
+                    $this->save_paperf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now, "status");
+                    $this->save_paperf("timeSubmitted", $submitted_at);
                 } else if (($this->prow->submitted_at() > 0) !== $submitted)
-                    $this->addf("timeSubmitted", $submitted_at);
+                    $this->save_paperf("timeSubmitted", $submitted_at, "status");
             } else if ($submitted) {
                 if (!$this->prow || $this->prow->timeSubmitted <= 0) {
                     if ($submitted_at <= 0 || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN)
                         $submitted_at = $Now;
-                    $this->addf("timeSubmitted", $submitted_at);
+                    $this->save_paperf("timeSubmitted", $submitted_at, "status");
                 }
                 if ($this->prow && $this->prow->timeWithdrawn != 0)
-                    $this->addf("timeWithdrawn", 0);
+                    $this->save_paperf("timeWithdrawn", 0, "status");
             } else if ($this->prow && ($this->prow->timeWithdrawn > 0 || $this->prow->timeSubmitted > 0)) {
-                $this->addf("timeSubmitted", 0);
-                $this->addf("timeWithdrawn", 0);
+                $this->save_paperf("timeSubmitted", 0, "status");
+                $this->save_paperf("timeWithdrawn", 0);
             }
         }
+        $this->_paper_submitted = !$pj_withdrawn && $submitted;
 
         if (isset($pj->final_submitted)) {
             if ($pj->final_submitted)
@@ -1113,27 +1160,39 @@ class PaperStatus extends MessageSet {
             else
                 $time = 0;
             if (!$this->prow || $this->prow->timeFinalSubmitted != $time)
-                $this->addf("timeFinalSubmitted", $time);
+                $this->save_paperf("timeFinalSubmitted", $time, "final_status");
         }
 
-        if (!empty($this->qf)) {
+        self::prepare_topics($this, $pj);
+        self::prepare_options($this, $pj);
+        self::prepare_conflicts($this, $pj);
+
+        return true;
+    }
+
+    function execute_save_paper_json($pj) {
+        global $Now;
+        if (!empty($this->_paper_qf)) {
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER)
-                $this->addf("blind", 0);
+                $this->save_paperf("blind", 0);
             else if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL)
-                $this->addf("blind", 1);
+                $this->save_paperf("blind", 1);
 
             $old_joindoc = $this->prow ? $this->prow->joindoc() : null;
             $old_joinid = $old_joindoc ? $old_joindoc->paperStorageId : 0;
 
-            if ($newFinalPaperStorageId > 0)
+            $new_final_docid = get($this->_paper_qv, "finalPaperStorageId");
+            $new_sub_docid = get($this->_paper_qv, "paperStorageId");
+
+            if ($new_final_docid > 0)
                 $new_joindoc = $pj->final;
-            else if ($newFinalPaperStorageId === null
+            else if ($new_final_docid === null
                      && $this->prow
                      && $this->prow->finalPaperStorageId > 0)
                 $new_joindoc = $this->prow->document(DTYPE_FINAL);
-            else if ($newPaperStorageId > 1)
+            else if ($new_sub_docid > 1)
                 $new_joindoc = $pj->submission;
-            else if ($newPaperStorageId === null
+            else if ($new_sub_docid === null
                      && $this->prow
                      && $this->prow->paperStorageId > 1)
                 $new_joindoc = $this->prow->document(DTYPE_SUBMISSION);
@@ -1145,71 +1204,67 @@ class PaperStatus extends MessageSet {
                 $new_joinid = $new_joindoc ? $new_joindoc->paperStorageId : 0;
 
             if ($new_joindoc && $new_joinid != $old_joinid) {
-                $this->addf("size", $new_joindoc->size);
-                $this->addf("mimetype", $new_joindoc->mimetype);
+                $this->save_paperf("size", $new_joindoc->size);
+                $this->save_paperf("mimetype", $new_joindoc->mimetype);
                 if ($new_joindoc instanceof DocumentInfo)
-                    $this->addf("sha1", $new_joindoc->binary_hash());
+                    $this->save_paperf("sha1", $new_joindoc->binary_hash());
                 else
-                    $this->addf("sha1", Filer::hash_as_binary($new_joindoc->hash));
-                $this->addf("timestamp", $new_joindoc->timestamp);
+                    $this->save_paperf("sha1", Filer::hash_as_binary($new_joindoc->hash));
+                $this->save_paperf("timestamp", $new_joindoc->timestamp);
                 if ($this->conf->sversion >= 145)
-                    $this->addf("pdfFormatStatus", 0);
+                    $this->save_paperf("pdfFormatStatus", 0);
             } else if (!$this->prow || $new_joinid != $old_joinid) {
-                $this->addf("size", 0);
-                $this->addf("mimetype", "");
-                $this->addf("sha1", "");
-                $this->addf("timestamp", 0);
+                $this->save_paperf("size", 0);
+                $this->save_paperf("mimetype", "");
+                $this->save_paperf("sha1", "");
+                $this->save_paperf("timestamp", 0);
                 if ($this->conf->sversion >= 145)
-                    $this->addf("pdfFormatStatus", 0);
+                    $this->save_paperf("pdfFormatStatus", 0);
             }
 
-            $this->addf("timeModified", $Now);
+            $this->save_paperf("timeModified", $Now);
 
-            if ($paperid) {
-                $this->qv[] = $paperid;
-                $result = $this->conf->qe_apply("update Paper set " . join(", ", $this->qf) . " where paperId=?", $this->qv);
+            $need_insert = $this->paperId <= 0;
+            if (!$need_insert) {
+                $this->_paper_qv[] = $this->paperId;
+                $result = $this->conf->qe_apply("update Paper set " . join(", ", $this->_paper_qf) . " where paperId=?", array_values($this->_paper_qv));
                 if ($result
                     && $result->affected_rows === 0
-                    && edb_nrows($this->conf->qe("select paperId from Paper where paperId=?", $paperid)) === 0)
-                    $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $this->qf) . ", paperId=?", $this->qv);
-            } else {
-                $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $this->qf), $this->qv);
+                    && !$this->conf->fetch_value("select paperId from Paper where paperId=?", $this->paperId)) {
+                    $this->_paper_qf[] = "paperId=?";
+                    $need_insert = true;
+                }
+            }
+            if ($need_insert) {
+                $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $this->_paper_qf), array_values($this->_paper_qv));
                 if (!$result || !$result->insert_id)
                     return $this->error_at(false, $this->_("Could not create paper."));
-                $paperid = $pj->pid = $this->paperId = (int) $result->insert_id;
+                $pj->pid = $this->paperId = (int) $result->insert_id;
                 if (!empty($this->uploaded_documents))
-                    $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $paperid, $this->uploaded_documents);
+                    $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $this->paperId, $this->uploaded_documents);
             }
 
             // maybe update `papersub` settings
-            $is_submitted = !$pj_withdrawn && $submitted;
             $was_submitted = $this->prow && $this->prow->timeWithdrawn <= 0 && $this->prow->timeSubmitted > 0;
-            if ($is_submitted != $was_submitted)
-                $this->conf->update_papersub_setting($is_submitted ? 1 : -1);
+            if ($this->_paper_submitted != $was_submitted)
+                $this->conf->update_papersub_setting($this->_paper_submitted ? 1 : -1);
         }
 
-        self::save_topics($this, $pj);
-        self::save_options($this, $pj);
-
-        // update PaperConflict
-        $conflict = $this->conflicts_array($pj);
-        $old_conflict = $this->conflicts_array((object) []);
-        if (join(",", array_keys($conflict)) !== join(",", array_keys($old_conflict))
-            || join(",", array_values($conflict)) !== join(",", array_values($old_conflict))) {
-            $ins = array();
-            if (!empty($conflict)) {
-                $result = $this->conf->qe("select contactId, email from ContactInfo where email?a", array_keys($conflict));
-                while (($row = edb_row($result)))
-                    $ins[] = "($paperid,$row[0]," . $conflict[strtolower($row[1])] . ")";
-            }
-            $this->conf->qe("delete from PaperConflict where paperId=?", $paperid);
-            if (!empty($ins))
-                $this->conf->qe_raw("insert into PaperConflict (paperId,contactId,conflictType) values " . join(",", $ins));
-        }
+        self::execute_topics($this);
+        self::execute_options($this);
+        self::execute_conflicts($this);
 
         // update autosearch
-        $this->conf->update_autosearch_tags($paperid);
+        $this->conf->update_autosearch_tags($this->paperId);
 
-        return $paperid;
+        return true;
+    }
+
+    function save_paper_json($pj) {
+        if ($this->prepare_save_paper_json($pj)) {
+            $this->execute_save_paper_json($pj);
+            return $this->paperId;
+        } else
+            return false;
     }
 }
