@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Tracks_SettingRenderer {
-    static public $nperm_rendered;
+    static public $nperm_rendered_folded;
 
     static function unparse_perm($perm, $type) {
         if ($perm === "none"
@@ -24,7 +24,8 @@ class Tracks_SettingRenderer {
         $curv = self::unparse_perm(get_s($trackinfo["cur"], $type), $type);
         $defclass = Track::permission_required(Track::$map[$type]) ? "none" : "";
         $unfolded = $curv[0] !== $defclass || $reqv[0] !== $defclass
-            || ($trackinfo["nunfolded"] === 0 && $gj && get($gj, "default_unfolded"));
+            || (empty($trackinfo["unfolded"]) && $gj && get($gj, "default_unfolded"));
+        self::$nperm_rendered_folded += !$unfolded;
 
         $permts = ["" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"];
         if (Track::permission_required(Track::$map[$type])) {
@@ -52,7 +53,6 @@ class Tracks_SettingRenderer {
         if ($hint)
             echo '<div class="f-h">', $hint, '</div>';
         echo "</div>";
-        ++self::$nperm_rendered;
     }
 
     static function render_view_permission(SettingValues $sv, $tnum, $t, $gj) {
@@ -87,12 +87,12 @@ class Tracks_SettingRenderer {
             }
         }
         // Check fold status
-        $nunfolded = 0;
+        $unfolded = [];
         foreach (Track::$map as $type => $perm) {
             if (!$curtrack || get_s($reqtrack, $type) !== "")
-                ++$nunfolded;
+                $unfolded[$type] = true;
         }
-        return ["cur" => $curtrack, "req" => $reqtrack, "nunfolded" => $nunfolded];
+        return ["cur" => $curtrack, "req" => $reqtrack, "unfolded" => $unfolded];
     }
 
     static private function do_track(SettingValues $sv, $trackname, $tnum) {
@@ -112,7 +112,7 @@ class Tracks_SettingRenderer {
                 Ht::entry("name_track$tnum", $req_trackname, $sv->sjs("name_track$tnum", ["placeholder" => "(tag)", "data-default-value" => $trackname, "class" => "settings-track-name"])), ":";
         }
 
-        self::$nperm_rendered = 0;
+        self::$nperm_rendered_folded = 0;
         foreach ($sv->group_members("tracks/permissions") as $gj) {
             if (isset($gj->render_track_permission_callback)) {
                 Conf::xt_resolve_require($gj);
@@ -120,8 +120,7 @@ class Tracks_SettingRenderer {
             }
         }
 
-        if ($trackinfo["nunfolded"] < count(Track::$map)
-            && $trackinfo["nunfolded"] < self::$nperm_rendered) {
+        if (self::$nperm_rendered_folded) {
             echo '<div class="entryi wide fn3"><a href="" class="ui js-foldup" data-fold-target="3">Show all permissions</a></div>';
         }
         echo "</div></div>\n\n";
