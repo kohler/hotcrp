@@ -1335,13 +1335,21 @@ h2.error, h3.error, h4.error, h5.error, h6.error {
 	color: #ff0000;
 }
 
-.has-error > .f-c, .has-error > label {
-	color: #ff0000;
+.has-error > .f-c, .has-error > label, label.has-error {
+	color: #ee0000;
 }
 .has-error > input[type=text], .has-error > input[type=password], .has-error > textarea,
 input[type=text].has-error, input[type=password].has-error, textarea.has-error {
 	border: 1px solid red;
 }
+.has-warning > .f-c, .has-warning > label, label.has-warning {
+	color: #dd5500;
+}
+.has-warning > input[type=text], .has-warning > input[type=password], .has-warning > textarea,
+input[type=text].has-warning, input[type=password].has-warning, textarea.has-warning {
+	border: 1px solid #856404;
+}
+
 
 
 

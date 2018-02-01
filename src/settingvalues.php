@@ -425,17 +425,20 @@ class SettingValues extends MessageSet {
     }
 
     function sclass($name, $class = null) {
-        if ($this->has_problem_at($name))
+        $ps = $this->problem_status_at($name);
+        if ($ps > 1)
             return $class ? $class . " has-error" : "has-error";
+        else if ($ps > 0)
+            return $class ? $class . " has-warning" : "has-warning";
         else
             return $class;
     }
     function label($name, $html, $label_js = null) {
         $name1 = is_array($name) ? $name[0] : $name;
-        if (!$label_js || !get($label_js, "class")) {
+        if (!$label_js || get($label_js, "class") === null) {
             foreach (is_array($name) ? $name : array($name) as $n)
-                if ($this->has_problem_at($n)) {
-                    $html = '<span class="setting_error">' . $html . '</span>';
+                if (($sc = $this->sclass($n))) {
+                    $label_js["class"] = $sc;
                     break;
                 }
         }
@@ -450,10 +453,8 @@ class SettingValues extends MessageSet {
             $x["disabled"] = true;
         foreach ($js ? : [] as $k => $v)
             $x[$k] = $v;
-        if ($this->has_problem_at($name)) {
-            $class = get($x, "class");
-            $x["class"] = $class ? $class . " has-error" : "has-error";
-        }
+        if ($this->has_problem_at($name))
+            $x["class"] = $this->sclass($name, get($x, "class"));
         return $x;
     }
 
@@ -670,14 +671,13 @@ class SettingValues extends MessageSet {
         $horizontal = get($js, "horizontal");
         $item_open = get($js, "item_open");
         unset($js["after_entry"], $js["horizontal"], $js["item_open"]);
-        $problem = $this->has_problem_at($name);
         $klass = $horizontal ? "entryi" : "f-i";
         $si = $this->si($name);
         if ($description === null && $si)
             $description = $si->title;
 
-        echo '<div class="', $klass, ($problem ? " has-error" : ""), '">',
-            $this->label($name, $description),
+        echo '<div class="', $this->sclass($name, $klass), '">',
+            $this->label($name, $description, ["class" => false]),
             $this->render_entry($name, $js), ($after_entry ? : "");
         $thint = $si ? $this->type_hint($si->type) : null;
         if ($hint || $thint) {

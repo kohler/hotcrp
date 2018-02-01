@@ -104,6 +104,10 @@ class MessageSet {
         $this->canonfield && ($field = $this->canonical_field($field));
         return get($this->errf, $field, 0) > 0;
     }
+    function problem_status_at($field) {
+        $this->canonfield && ($field = $this->canonical_field($field));
+        return get($this->errf, $field, 0);
+    }
 
     static private function filter_msgs($ms, $include_fields) {
         if ($include_fields || empty($ms))
