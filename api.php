@@ -53,8 +53,12 @@ if (!$Me->has_database_account()
 }
 if ($qreq->p && ctype_digit($qreq->p)) {
     $Conf->paper = $Conf->paperRow(array("paperId" => intval($qreq->p)), $Me);
-    if ($Conf->paper && !$Me->can_view_paper($Conf->paper))
+    if (!$Conf->paper && $Me->privChair)
+        $qreq->set_attachment("paper_permission_error", "No such submission #{$qreq->p}.");
+    else if (!$Conf->paper || !$Me->can_view_paper($Conf->paper)) {
+        $qreq->set_attachment("paper_permission_error", $Conf->_c("eperm", "Permission error.", "view_paper", $qreq->p));
         $Conf->paper = null;
+    }
 }
 
 // requests
