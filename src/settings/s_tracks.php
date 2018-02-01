@@ -3,11 +3,16 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Tracks_SettingRenderer {
+    static public $nperm_rendered;
+
     static function unparse_perm($perm, $type) {
-        if ($perm === "none" || $perm === "+none"
+        if ($perm === "none"
+            || $perm === "+none"
             || ($perm === "" && Track::permission_required(Track::$map[$type])))
             return ["none", ""];
-        else if ($perm !== "" && ($perm[0] === "+" || $perm[0] === "-"))
+        else if ($perm !== ""
+                 && ($perm[0] === "+" || $perm[0] === "-")
+                 && ($perm !== "+pc" || Track::permission_required(Track::$map[$type])))
             return [$perm[0], (string) substr($perm, 1)];
         else
             return ["", ""];
@@ -47,6 +52,7 @@ class Tracks_SettingRenderer {
         if ($hint)
             echo '<div class="f-h">', $hint, '</div>';
         echo "</div>";
+        ++self::$nperm_rendered;
     }
 
     static function render_view_permission(SettingValues $sv, $tnum, $t, $gj) {
@@ -106,17 +112,16 @@ class Tracks_SettingRenderer {
                 Ht::entry("name_track$tnum", $req_trackname, $sv->sjs("name_track$tnum", ["placeholder" => "(tag)", "data-default-value" => $trackname, "class" => "settings-track-name"])), ":";
         }
 
-        $nperm_rendered = 0;
+        self::$nperm_rendered = 0;
         foreach ($sv->group_members("tracks/permissions") as $gj) {
             if (isset($gj->render_track_permission_callback)) {
                 Conf::xt_resolve_require($gj);
                 call_user_func($gj->render_track_permission_callback, $sv, $tnum, $trackinfo, $gj);
-                ++$nperm_rendered;
             }
         }
 
         if ($trackinfo["nunfolded"] < count(Track::$map)
-            && $trackinfo["nunfolded"] < $nperm_rendered) {
+            && $trackinfo["nunfolded"] < self::$nperm_rendered) {
             echo '<div class="entryi wide fn3"><a href="" class="ui js-foldup" data-fold-target="3">Show all permissions</a></div>';
         }
         echo "</div></div>\n\n";
