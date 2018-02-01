@@ -1017,7 +1017,10 @@ class PaperTable {
             else if ($k < 1 && strlen($tname) > 20 && UnicodeHelper::utf8_glyphlen($tname) > 20)
                 $k = 1;
         }
-        $k = get(["short", "medium", "long"], $k);
+        if (count($ts) < 4)
+            $k = "long";
+        else
+            $k = get(["short", "medium", "long"], $k);
         return '<ul class="topict topict-' . $k . '">' . join("", $ts) . '</ul>';
     }
 
