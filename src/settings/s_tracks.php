@@ -71,8 +71,9 @@ class Tracks_SettingRenderer {
     static private function get_trackinfo(SettingValues $sv, $trackname, $tnum) {
         // Find current track data
         $curtrack = null;
-        if ($trackname !== "")
-            $curtrack = get($sv->conf->setting_json("tracks"), $trackname);
+        if ($trackname !== ""
+            && ($tjson = $sv->conf->setting_json("tracks")))
+            $curtrack = get($tjson, $trackname);
         // Find request track data
         $reqtrack = $curtrack;
         if ($sv->use_req()) {
