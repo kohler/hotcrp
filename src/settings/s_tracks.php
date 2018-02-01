@@ -131,7 +131,6 @@ class Tracks_SettingRenderer {
     }
 
     static function render(SettingValues $sv) {
-        echo '<h3 class="settings g">Tracks</h3>', "\n";
         echo "<p class=\"settingtext\">Tracks control the PC members allowed to view or review different sets of papers. <span class=\"nw\">(<a href=\"" . hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
             Ht::hidden("has_tracks", 1),
             "<div class=\"smg\"></div>\n";

@@ -120,7 +120,8 @@
     {
         "name": "tracks", "group": "tags", "position": 750,
         "crosscheck_callback": "Tracks_SettingRenderer::crosscheck",
-        "render_callback": "Tracks_SettingRenderer::render"
+        "render_callback": "Tracks_SettingRenderer::render",
+        "title": "Tracks", "anchorid": "tracks"
     },
     {
         "name": "tracks/permissions/view", "position": 10,
