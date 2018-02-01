@@ -109,11 +109,13 @@ handle_ui.on("js-settings-delete-autosearch", function (event) {
 handle_ui.on("js-settings-add-track", function () {
     for (var i = 1; jQuery("#trackgroup" + i).length; ++i)
         /* do nothing */;
-    $("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\" class=\"mg\"></div>");
+    $("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\" class=\"mg has-fold fold3o\"></div>");
     var $j = jQuery("#trackgroup" + i);
     $j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
     mktemptext($j);
     $j.find("input[name^=name]").focus();
+    suggest($j.find(".settings-track-name"), taghelp_tset);
+    suggest($j.find(".settings-track-perm-tag"), pc_tag_completion);
 });
 
 

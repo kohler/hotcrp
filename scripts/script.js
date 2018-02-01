@@ -3897,6 +3897,15 @@ function taghelp_q(elt, options) {
         return null;
 }
 
+function pc_tag_completion(elt, options) {
+    var x = completion_split(elt), m, n;
+    if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/)) && window.hotcrp_pctags) {
+        n = x[1].match(/^(\S*)/);
+        return make_suggestions(m[2], n[1], options)(hotcrp_pctags);
+    } else
+        return null;
+}
+
 function comment_completion_q(elt, options) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[\s,;])@([-\w_.]*)$/))) {

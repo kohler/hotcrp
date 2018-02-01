@@ -124,11 +124,13 @@
     },
     {
         "name": "tracks/permissions/view", "position": 10,
-        "render_track_permission_callback": "Tracks_SettingRenderer::render_view_permission"
+        "render_track_permission_callback": "Tracks_SettingRenderer::render_view_permission",
+        "default_unfolded": true
     },
     {
         "name": "tracks/permissions/viewrev", "position": 30,
-        "render_track_permission_callback": "Tracks_SettingRenderer::render_viewrev_permission"
+        "render_track_permission_callback": "Tracks_SettingRenderer::render_viewrev_permission",
+        "default_unfolded": true
     },
     {
         "name": "users", "position": 100,
