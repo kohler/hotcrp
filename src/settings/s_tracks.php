@@ -43,7 +43,7 @@ class Tracks_SettingRenderer {
                        $sv->sjs("{$type}_track$tnum", ["class" => "js-track-perm", "data-default-value" => $curv[0]])),
             "</span> &nbsp;",
             Ht::entry("${type}_tag_track$tnum", $reqv[1],
-                      $sv->sjs("{$type}_tag_track$tnum", array("class" => "fx settings-track-perm-tag", "placeholder" => "(tag)", "data-default-value" => $curv[1])));
+                      $sv->sjs("{$type}_tag_track$tnum", ["class" => "fx settings-track-perm-tag", "placeholder" => "(tag)", "data-default-value" => $curv[1]]));
         if ($hint)
             echo '<div class="f-h">', $hint, '</div>';
         echo "</div>";
@@ -184,6 +184,7 @@ class Tracks_SettingParser extends SettingParser {
         $missing_tags = false;
         for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
             $trackname = trim($sv->req["name_track$i"]);
+            $ok = true;
             if ($trackname === "" || $trackname === "(tag)")
                 continue;
             else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
@@ -193,7 +194,7 @@ class Tracks_SettingParser extends SettingParser {
                 else
                     $sv->error_at("name_track$i", "Track name “_” is reserved.");
                 $sv->error_at("tracks");
-                continue;
+                $ok = false;
             }
             $t = (object) array();
             foreach (Track::$map as $type => $perm) {
@@ -202,12 +203,14 @@ class Tracks_SettingParser extends SettingParser {
                     $ttag = trim(get($sv->req, "${type}_tag_track$i", ""));
                     if ($ttag === "" || $ttag === "(tag)") {
                         $sv->error_at("{$type}_track$i", "Tag missing for track setting.");
+                        $sv->error_at("{$type}_tag_track$i");
                         $sv->error_at("tracks");
                     } else if (($ttype == "+" && strcasecmp($ttag, "none") == 0)
                                || $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                         $t->$type = $ttype . $ttag;
                     else {
-                        $sv->error_at("{$type}_track$i", $tagger->error_html);
+                        $sv->error_at("{$type}_track$i", "Track permission tag: " . $tagger->error_html);
+                        $sv->error_at("{$type}_tag_track$i");
                         $sv->error_at("tracks");
                     }
                 } else if ($ttype === "none") {
@@ -219,7 +222,7 @@ class Tracks_SettingParser extends SettingParser {
                         $t->$type = $perm;
                 }
             }
-            if (count((array) $t) || get($tracks, "_"))
+            if ($ok && (count((array) $t) || get($tracks, "_")))
                 $tracks->$trackname = $t;
         }
         $sv->save("tracks", count((array) $tracks) ? json_encode_db($tracks) : null);

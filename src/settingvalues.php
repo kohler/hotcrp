@@ -450,6 +450,10 @@ class SettingValues extends MessageSet {
             $x["disabled"] = true;
         foreach ($js ? : [] as $k => $v)
             $x[$k] = $v;
+        if ($this->has_problem_at($name)) {
+            $class = get($x, "class");
+            $x["class"] = $class ? $class . " has-error" : "has-error";
+        }
         return $x;
     }
 

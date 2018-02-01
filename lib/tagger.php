@@ -696,8 +696,13 @@ class Tagger {
             $tag = substr($tag, 1);
         if ((string) $tag === "")
             return $this->set_error_html("Tag missing.");
-        if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-?\d+(?:\.\d*)?|-?\.\d+|))\z/', $tag, $m))
-            return $this->set_error_html("Invalid tag.");
+        if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-?\d+(?:\.\d*)?|-?\.\d+|))\z/', $tag, $m)) {
+            if (preg_match('/\A([-a-zA-Z0-9!@*_:.\/#=]+)[\s,]+\S+/', $tag, $m)
+                && $this->check($m[1], $flags))
+                return $this->set_error_html("Expected a single tag.");
+            else
+                return $this->set_error_html("Invalid tag.");
+        }
         if (!($flags & self::ALLOWSTAR) && strpos($tag, "*") !== false)
             return $this->set_error_html("Wildcards aren’t allowed in tag names.");
         // After this point we know `$tag` contains no HTML specials
