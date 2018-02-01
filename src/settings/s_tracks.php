@@ -71,7 +71,7 @@ class Tracks_SettingRenderer {
         $reqtrack = $curtrack;
         if ($sv->use_req()) {
             $reqtrack = (object) [];
-            foreach (Track::map as $type => $perm) {
+            foreach (Track::$map as $type => $perm) {
                 $tclass = get($sv->req, "{$type}_track$tnum", "");
                 if ($tclass === "none") {
                     if (!Track::permission_required($perm))
