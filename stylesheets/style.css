@@ -1708,11 +1708,8 @@ td.revscore {
 	color: red;
 }
 .revlink {
-	padding-left: 1.5em;
-	white-space: nowrap;
-}
-.revlink:first-child {
-	padding-left: 0;
+	display: inline-block;
+	margin-right: 1.5em;
 }
 
 
@@ -2482,14 +2479,17 @@ div.pst span.hint {
 	margin: 0 0 0 1.5em;
 	text-indent: -1.5em;
 }
+.sd {
+	margin: 0.5em 0;
+}
 .xd {
 	margin: 0.5em 0 0.5em 1.5em;
 	text-indent: -1.5em;
 }
-.xd:first-child {
+.xd:first-child, .sd:first-child {
 	margin-top: 0;
 }
-.xd:last-child {
+.xd:last-child, .sd:last-child {
 	margin-bottom: 0;
 }
 ul.xd {

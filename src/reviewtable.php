@@ -420,10 +420,10 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     if ($any_comments)
         CommentInfo::echo_script($prow);
 
-    $t = empty($t) ? "" : '<p class="xd">' . join("", $t) . '</p>';
+    $t = empty($t) ? "" : '<p class="sd">' . join("", $t) . '</p>';
     if ($prow->has_author($Me))
-        $t = '<p class="xd">' . $conf->_('You are an <span class="author">author</span> of this submission.') . '</p>' . $t;
+        $t = '<p class="sd">' . $conf->_('You are an <span class="author">author</span> of this submission.') . '</p>' . $t;
     else if ($prow->has_conflict($Me))
-        $t = '<p class="xd">' . $conf->_('You have a <span class="conflict">conflict</span> with this submission.') . '</p>' . $t;
+        $t = '<p class="sd">' . $conf->_('You have a <span class="conflict">conflict</span> with this submission.') . '</p>' . $t;
     return $pret . $t;
 }
