@@ -73,22 +73,10 @@ if ($qreq->p && ctype_digit($qreq->p)) {
 if ($Conf->has_api($qreq->fn))
     $Conf->call_api_exit($qreq->fn, $Me, $qreq, $Conf->paper);
 
-if ($qreq->fn === "setsession") {
-    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|scoresort)(|\..*)\z/', (string) $qreq->var, $m)) {
-        $val = $qreq->val;
-        if ($m[2]) {
-            $on = !($val !== null && intval($val) > 0);
-            if ($m[1] === "pldisplay" || $m[1] === "pfdisplay")
-                PaperList::change_display($Me, substr($m[1], 0, 2), substr($m[2], 1), $on);
-            else if (preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2]))
-                displayOptionsSet($m[1], substr($m[2], 1), $on);
-            else
-                json_exit(["ok" => false]);
-        } else
-            $Conf->save_session($m[1], $val !== null ? intval($val) : null);
-        json_exit(["ok" => true]);
-    } else
-        json_exit(["ok" => false]);
+if ($qreq->fn === "setsession" && check_post($qreq)) {
+    if (!isset($qreq->v))
+        $qreq->v = $qreq->var . "=" . $qreq->val;
+    json_exit(["ok" => $Me->setsession_api($qreq->v)]);
 }
 
 if ($qreq->fn === "events" && $Me->is_reviewer()) {

@@ -39,22 +39,30 @@ class Search_API {
         } else if (!$fdef || !isset($fdef[0]->fold) || !$fdef[0]->fold) {
             return new JsonResult(404, "No such field.");
         }
-        $fdef = PaperColumn::make($user->conf, $fdef[0]);
-        if ($qreq->f == "au" || $qreq->f == "authors")
-            PaperList::change_display($user, "pl", "aufull", (int) $qreq->aufull);
+
         if (!isset($qreq->q) && $prow) {
             $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
             $qreq->q = $prow->paperId;
         } else if (!isset($qreq->q))
             $qreq->q = "";
+        if ($qreq->f == "au" || $qreq->f == "authors")
+            $qreq->q = ((int) $qreq->aufull ? "show" : "hide") . ":aufull " . $qreq->q;
         $reviewer = null;
         if ($qreq->reviewer && $user->email !== $qreq->reviewer)
             $reviewer = $user->conf->user_by_email($qreq->reviewer);
         unset($qreq->reviewer);
         $search = new PaperSearch($user, $qreq, $reviewer);
-        $pl = new PaperList($search, ["report" => "pl"]);
+
+        $report = "pl";
+        if ($qreq->session && str_starts_with($qreq->session, "pf"))
+            $report = "pf";
+        $pl = new PaperList($search, ["report" => $report]);
         $response = $pl->column_json($qreq->f);
         $response["ok"] = !empty($response);
+
+        if ($qreq->session && check_post($qreq))
+            $user->setsession_api($qreq->session);
+
         return $response;
     }
 }

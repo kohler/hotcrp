@@ -2124,7 +2124,7 @@ function fold(elt, dofold, foldnum) {
                 ses = ses[foldnum];
             }
             if (ses) {
-                $.post(hoturl("api/setsession", {var: ses, val: isopen ? 1 : 0}));
+                $.post(hoturl_post("api/setsession", {v: ses + (isopen ? "=1" : "=0")}));
             }
         }
     }
@@ -4550,7 +4550,7 @@ function search_sort_click(evt) {
 function search_scoresort_change(evt) {
     var scoresort = $(this).val(),
         re = / (?:counts|average|median|variance|maxmin|my)\b/;
-    $.post(hoturl("api/setsession"), {var: "scoresort", val: scoresort});
+    $.post(hoturl_post("api/setsession"), {v: "scoresort=" + scoresort});
     plinfo.set_scoresort(scoresort);
     $("#foldpl > thead").find("a.pl_sort").each(function () {
         var href = this.getAttribute("href"), sorter = href_sorter(href);
@@ -5770,24 +5770,32 @@ function plinfo(type, dofold) {
         fold(self, dofold, foldmap(type));
 
     // may need to load information by ajax
+    var ses = $(self).attr("data-fold-session-prefix");
     if (type === "aufull" && aufull[!!dofold]) {
         make_callback(dofold, type)(aufull[!!dofold]);
-        var ses = $(self).data("foldSessionPrefix");
-        if (ses)
-            $.post(hoturl("api/setsession", {var: ses + "aufull", val: dofold ? 1 : 0}));
     } else if ((!dofold && f.loadable && type !== "anonau") || type === "aufull") {
         // set up "loading" display
         setTimeout(show_loading(f), 750);
 
         // initiate load
         var loadargs = $.extend({fn: "fieldhtml", f: type}, hotlist_search_params(self, true));
+        if (ses) {
+            loadargs.session = ses + type + (dofold ? "=1" : "=0");
+            ses = false;
+        }
         if (type === "au" || type === "aufull") {
             loadargs.f = "authors";
-            if (type === "aufull" ? !dofold : (elt = $$("showaufull")) && elt.checked)
-                loadargs.aufull = 1;
+            if (type === "aufull")
+                loadargs.aufull = dofold ? 0 : 1;
+            else if ((elt = $$("showaufull")))
+                loadargs.aufull = elt.checked ? 1 : 0;
         }
         $.get(hoturl_post("api", loadargs), make_callback(dofold, type));
     }
+
+    // inform back end about folds
+    if (ses)
+        $.post(hoturl_post("api/setsession", {v: ses + type + (dofold ? "=1" : "=0")}));
 
     // show or hide statistics rows
     var statistics = false;
