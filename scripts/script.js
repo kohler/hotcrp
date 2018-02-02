@@ -5876,7 +5876,7 @@ function fold_override(checkbox) {
             while (pl.nodeType !== 1 || /^plx/.test(pl.className))
                 pl = pl.previousSibling;
             var a = pl.getAttribute("data-color-classes" + (on ? "" : "-conflicted")) || "";
-            this.className = this.className.replace(/ *(?:\S*tag|k1)(?= |$)/g, "").trim() + " " + a;
+            this.className = this.className.replace(/(?:^|\s+)(?:\S*tag|k[01]|tagbg)(?= |$)/g, "").trim() + (a ? " " + a : "");
         });
     });
 };

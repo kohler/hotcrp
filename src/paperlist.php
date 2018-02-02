@@ -844,6 +844,7 @@ class PaperList {
                         $trclass[] = "colorconflict";
                     }
                     $cc = $this->_view_force ? $cco : $ccx;
+                    $rstate->hascolors = $rstate->hascolors || str_ends_with($cco, " tagbg");
                 }
             } else if (($vt = $row->viewable_tags($this->user)))
                 $cc = $row->conf->tags()->color_classes($vt);
