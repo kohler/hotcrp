@@ -17,19 +17,26 @@ $useRequest = isset($_REQUEST["after_login"]) && isset($_REQUEST["title"]);
 foreach (array("emailNote", "reason") as $x)
     if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")
         unset($_REQUEST[$x], $_GET[$x], $_POST[$x]);
-if (!isset($_REQUEST["p"]) && !isset($_REQUEST["paperId"])
-    && preg_match(',\A(?:new|\d+)\z,i', Navigation::path_component(0))) {
-    $_REQUEST["p"] = $_GET["p"] = Navigation::path_component(0);
-    if (!isset($_REQUEST["m"]) && ($x = Navigation::path_component(1)))
-        $_REQUEST["m"] = $_GET["m"] = $x;
-    if (isset($_REQUEST["m"]) && $_REQUEST["m"] === "api"
-        && !isset($_REQUEST["fn"])
-        && ($x = Navigation::path_component(2)))
-        $_REQUEST["fn"] = $_GET["fn"] = $x;
-} else if (!Navigation::path() && isset($_REQUEST["p"])
-           && $_REQUEST["p"] && ctype_digit($_REQUEST["p"])
-           && !check_post())
+if (isset($_GET["p"])
+    && ctype_digit($_GET["p"])
+    && !Navigation::path()
+    && !check_post()) {
     go(selfHref());
+}
+if (!isset($_GET["p"])
+    && !isset($_GET["paperId"])
+    && ($x = Navigation::path_component(0)) !== null) {
+    if (preg_match(',\A(?:new|\d+)\z,i', $x)) {
+        $_REQUEST["p"] = $_GET["p"] = $x;
+        if (!isset($_REQUEST["m"]) && ($x = Navigation::path_component(1)))
+            $_REQUEST["m"] = $_GET["m"] = $x;
+        if (isset($_REQUEST["m"])
+            && $_REQUEST["m"] === "api"
+            && !isset($_REQUEST["fn"])
+            && ($x = Navigation::path_component(2)))
+            $_REQUEST["fn"] = $_GET["fn"] = $x;
+    }
+}
 
 
 // header

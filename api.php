@@ -53,12 +53,20 @@ if (!$Me->has_database_account()
 }
 if ($qreq->p && ctype_digit($qreq->p)) {
     $Conf->paper = $Conf->paperRow(array("paperId" => intval($qreq->p)), $Me);
-    if (!$Conf->paper && $Me->privChair)
-        $qreq->set_attachment("paper_permission_error", "No such submission #{$qreq->p}.");
-    else if (!$Conf->paper || !$Me->can_view_paper($Conf->paper)) {
-        $qreq->set_attachment("paper_permission_error", $Conf->_c("eperm", "Permission error.", "view_paper", $qreq->p));
+    if (!$Conf->paper || !$Me->can_view_paper($Conf->paper)) {
+        $whynot = ["conf" => $Conf, "paperId" => $qreq->p];
+        if (!$Conf->paper && $Me->privChair)
+            $whynot["noPaper"] = true;
+        else {
+            $whynot["permission"] = "view_paper";
+            if ($Me->is_empty())
+                $whynot["signin"] = "view_paper";
+        }
         $Conf->paper = null;
+        $qreq->set_attachment("paper_whynot", $whynot);
     }
+} else if ($qreq->p) {
+    $qreq->set_attachment("paper_whynot", ["conf" => $Conf, "invalidId" => "paper", "paperId" => $qreq->p]);
 }
 
 // requests

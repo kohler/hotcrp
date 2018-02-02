@@ -3448,10 +3448,17 @@ class Conf {
                 return new JsonResult(404, ["ok" => false, "error" => "Function not found."]);
         }
         if (!$prow && get($uf, "paper")) {
-            if ($qreq->attachment("paper_permission_error"))
-                return new JsonResult(403, ["ok" => false, "error" => $qreq->attachment("paper_permission_error")]);
-            else
-                return new JsonResult(400, ["ok" => false, "error" => "No paper specified."]);
+            $result = ["ok" => false];
+            if (($whynot = $qreq->attachment("paper_whynot"))) {
+                $status = isset($result["noPaper"]) ? 404 : 403;
+                $result["error"] = whyNotText($whynot, true);
+                if (isset($whynot["signin"]))
+                    $result["loggedout"] = true;
+            } else {
+                $status = 400;
+                $result["error"] = "No paper specified.";
+            }
+            return new JsonResult($status, $result);
         }
         self::xt_resolve_require($uf);
         return call_user_func($uf->callback, $user, $qreq, $prow, $uf);

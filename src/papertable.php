@@ -2501,7 +2501,7 @@ class PaperTable {
         else if (!isset($_REQUEST["paperId"]) && ($pc = Navigation::path_component(0)))
             $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $pc;
         if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["reviewId"])
-            && preg_match('/^(\d+)[A-Z]+$/', $_REQUEST["reviewId"], $m))
+            && preg_match('/^(\d+)[A-Z]+$/i', $_REQUEST["reviewId"], $m))
             $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $m[1];
     }
 
