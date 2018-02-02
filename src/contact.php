@@ -3147,38 +3147,38 @@ class Contact {
         }
     }
 
-    function can_view_tags(PaperInfo $prow = null, $forceShow = null) {
+    function can_view_tags(PaperInfo $prow = null) {
         // see also PaperApi::alltags,
         // Contact::list_submitted_papers_with_viewable_tags
         if (!$prow)
             return $this->isPC;
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         return $rights->allow_pc
             || ($rights->allow_pc_broad && $this->conf->tag_seeall)
             || (($this->privChair || $rights->allow_administer)
                 && $this->conf->tags()->has_sitewide);
     }
 
-    function can_view_most_tags(PaperInfo $prow = null, $forceShow = null) {
+    function can_view_most_tags(PaperInfo $prow = null) {
         if (!$prow)
             return $this->isPC;
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         return $rights->allow_pc
             || ($rights->allow_pc_broad && $this->conf->tag_seeall);
     }
 
-    function can_view_hidden_tags(PaperInfo $prow = null, $forceShow = null) {
+    function can_view_hidden_tags(PaperInfo $prow = null) {
         if (!$prow)
             return $this->privChair;
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         return $rights->can_administer
             || $this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG);
     }
 
-    function can_view_tag(PaperInfo $prow, $tag, $forceShow = null) {
-        if ($forceShow !== false && ($this->overrides_ & self::OVERRIDE_TAG_CHECKS))
+    function can_view_tag(PaperInfo $prow, $tag) {
+        if ($this->overrides_ & self::OVERRIDE_TAG_CHECKS)
             return true;
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         $tag = TagInfo::base($tag);
         $twiddle = strpos($tag, "~");
         $dt = $this->conf->tags();
@@ -3194,7 +3194,7 @@ class Contact {
             && ($twiddle !== false
                 || !$dt->has_hidden
                 || !$dt->is_hidden($tag)
-                || $this->can_view_hidden_tags($prow, $forceShow));
+                || $this->can_view_hidden_tags($prow));
     }
 
     function can_view_peruser_tags(PaperInfo $prow, $tag) {
@@ -3247,11 +3247,11 @@ class Contact {
         return $pids;
     }
 
-    function can_change_tag(PaperInfo $prow, $tag, $previndex, $index, $forceShow = null) {
-        if (($forceShow !== false && ($this->overrides_ & self::OVERRIDE_TAG_CHECKS))
+    function can_change_tag(PaperInfo $prow, $tag, $previndex, $index) {
+        if (($this->overrides_ & self::OVERRIDE_TAG_CHECKS)
             || $this->is_site_contact)
             return true;
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         $tagmap = $this->conf->tags();
         if (!($rights->allow_pc
               && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false)))) {
@@ -3293,7 +3293,7 @@ class Contact {
             else if ($t->vote
                      || $t->approval
                      || ($t->track && !$this->privChair)
-                     || ($t->hidden && !$this->can_view_hidden_tags($prow, $forceShow))
+                     || ($t->hidden && !$this->can_view_hidden_tags($prow))
                      || $t->autosearch)
                 return false;
             else
@@ -3303,10 +3303,10 @@ class Contact {
         }
     }
 
-    function perm_change_tag(PaperInfo $prow, $tag, $previndex, $index, $forceShow = null) {
-        if ($this->can_change_tag($prow, $tag, $previndex, $index, $forceShow))
+    function perm_change_tag(PaperInfo $prow, $tag, $previndex, $index) {
+        if ($this->can_change_tag($prow, $tag, $previndex, $index))
             return null;
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         $whyNot["tag"] = $tag;
         if (!$this->isPC)

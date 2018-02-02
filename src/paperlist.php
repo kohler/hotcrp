@@ -101,6 +101,8 @@ class PaperList {
     public $tbody_attr;
     public $row_attr;
     public $row_overridable;
+    public $row_tags;
+    public $row_tags_overridable;
     public $need_render;
     public $has_editable_tags = false;
 
@@ -830,24 +832,33 @@ class PaperList {
         $this->row_attr = [];
         $this->row_overridable = $row->conflictType > 0 && $this->user->allow_administer($row);
 
+        $this->row_tags = $this->row_tags_overridable = null;
+        if (isset($row->paperTags) && $row->paperTags !== "") {
+            if ($this->row_overridable) {
+                $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+                $this->row_tags_overridable = $row->viewable_tags($this->user);
+                $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
+                $this->row_tags = $row->viewable_tags($this->user);
+                $this->user->set_overrides($old_overrides);
+            } else
+                $this->row_tags = $row->viewable_tags($this->user);
+        }
+
         $trclass = [];
         $cc = "";
         if (get($row, "paperTags")) {
-            if ($this->row_overridable) {
-                if (($vto = $row->viewable_tags($this->user, true))
-                    && ($cco = $row->conf->tags()->color_classes($vto))) {
-                    $vtx = $row->viewable_tags($this->user, false);
-                    $ccx = $row->conf->tags()->color_classes($vtx);
-                    if ($cco !== $ccx) {
-                        $this->row_attr["data-color-classes"] = $cco;
-                        $this->row_attr["data-color-classes-conflicted"] = $ccx;
-                        $trclass[] = "colorconflict";
-                    }
-                    $cc = $this->_view_force ? $cco : $ccx;
-                    $rstate->hascolors = $rstate->hascolors || str_ends_with($cco, " tagbg");
+            if ($this->row_tags_overridable
+                && ($cco = $row->conf->tags()->color_classes($this->row_tags_overridable))) {
+                $ccx = $row->conf->tags()->color_classes($this->row_tags);
+                if ($cco !== $ccx) {
+                    $this->row_attr["data-color-classes"] = $cco;
+                    $this->row_attr["data-color-classes-conflicted"] = $ccx;
+                    $trclass[] = "colorconflict";
                 }
-            } else if (($vt = $row->viewable_tags($this->user)))
-                $cc = $row->conf->tags()->color_classes($vt);
+                $cc = $this->_view_force ? $cco : $ccx;
+                $rstate->hascolors = $rstate->hascolors || str_ends_with($cco, " tagbg");
+            } else if ($this->row_tags)
+                $cc = $row->conf->tags()->color_classes($this->row_tags);
         }
         if ($cc) {
             $trclass[] = $cc;

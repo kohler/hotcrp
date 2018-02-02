@@ -208,20 +208,17 @@ class TitlePaperColumn extends PaperColumn {
             . $pl->_contentDownload($row);
 
         if ($this->has_decoration && (string) $row->paperTags !== "") {
-            if ($pl->row_overridable) {
-                if (($vto = $row->viewable_tags($pl->user, true))
-                    && ($deco = $pl->tagger->unparse_decoration_html($vto))) {
-                    $vtx = $row->viewable_tags($pl->user, false);
-                    $decx = $pl->tagger->unparse_decoration_html($vtx);
-                    if ($deco !== $decx) {
-                        if ($decx)
-                            $t .= '<span class="fn5">' . $decx . '</span>';
-                        $t .= '<span class="fx5">' . $deco . '</span>';
-                    } else
-                        $t .= $deco;
-                }
-            } else if (($vt = $row->viewable_tags($pl->user)))
-                $t .= $pl->tagger->unparse_decoration_html($vt);
+            if ($pl->row_tags_overridable
+                && ($deco = $pl->tagger->unparse_decoration_html($pl->row_tags_overridable))) {
+                $decx = $pl->tagger->unparse_decoration_html($pl->row_tags);
+                if ($deco !== $decx) {
+                    if ($decx)
+                        $t .= '<span class="fn5">' . $decx . '</span>';
+                    $t .= '<span class="fx5">' . $deco . '</span>';
+                } else
+                    $t .= $deco;
+            } else if ($pl->row_tags)
+                $t .= $pl->tagger->unparse_decoration_html($pl->row_tags);
         }
 
         return $t;
@@ -823,11 +820,11 @@ class TagList_PaperColumn extends PaperColumn {
         return !$pl->user->can_view_tags($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($row->paperTags && $pl->row_overridable) {
-            $viewable = trim($row->viewable_tags($pl->user, true));
-            $pl->row_attr["data-tags-conflicted"] = trim($row->viewable_tags($pl->user, false));
+        if ($pl->row_tags_overridable) {
+            $viewable = trim($pl->row_tags_overridable);
+            $pl->row_attr["data-tags-conflicted"] = trim($pl->row_tags);
         } else
-            $viewable = trim($row->viewable_tags($pl->user));
+            $viewable = trim($pl->row_tags);
         $pl->row_attr["data-tags"] = $viewable;
         if ($this->editable)
             $pl->row_attr["data-tags-editable"] = 1;
@@ -888,12 +885,11 @@ class Tag_PaperColumn extends PaperColumn {
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         $k = $sorter->uid;
-        $careful = !$pl->user->privChair && !$pl->conf->tag_seeall;
         $unviewable = $empty = TAG_INDEXBOUND * ($sorter->reverse ? -1 : 1);
         if ($this->editable)
             $empty = (TAG_INDEXBOUND - 1) * ($sorter->reverse ? -1 : 1);
         foreach ($rows as $row) {
-            if ($careful && !$pl->user->can_view_tag($row, $this->ltag, true))
+            if (!$pl->user->can_view_tag($row, $this->ltag))
                 $row->$k = $unviewable;
             else if (($row->$k = $row->tag_value($this->ltag)) === false)
                 $row->$k = $empty;
@@ -1001,7 +997,7 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
         $v = $row->tag_value($this->ltag);
         if ($this->editsort && !isset($pl->row_attr["data-tags"]))
             $pl->row_attr["data-tags"] = $this->dtag . "#" . $v;
-        if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0, true))
+        if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0))
             return $this->is_value ? (string) $v : ($v === false ? "" : "&#x2713;");
         if (!$this->is_value)
             return '<input type="checkbox" class="edittag" name="tag:' . "$this->dtag $row->paperId" . '" value="x" tabindex="2"'

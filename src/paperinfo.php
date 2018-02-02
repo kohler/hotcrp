@@ -1032,16 +1032,16 @@ class PaperInfo {
             return $this->viewable_tags($user);
     }
 
-    function viewable_tags(Contact $user, $forceShow = null) {
+    function viewable_tags(Contact $user) {
         // see also Contact::can_view_tag()
         $tags = "";
         if ($user->isPC)
             $tags = (string) $this->all_tags_text();
         if ($tags !== "") {
             $dt = $this->conf->tags();
-            if ($user->can_view_most_tags($this, $forceShow))
+            if ($user->can_view_most_tags($this))
                 $tags = $dt->strip_nonviewable($tags, $user, $this);
-            else if ($dt->has_sitewide && $user->can_view_tags($this, $forceShow))
+            else if ($dt->has_sitewide && $user->can_view_tags($this))
                 $tags = Tagger::strip_nonsitewide($tags, $user);
             else
                 $tags = "";
@@ -1050,14 +1050,18 @@ class PaperInfo {
     }
 
     function editable_tags(Contact $user) {
-        $tags = $this->viewable_tags($user);
+        $tags = $this->all_tags_text();
         if ($tags !== "") {
-            $privChair = $user->allow_administer($this);
-            $etags = array();
-            foreach (explode(" ", $tags) as $tag)
-                if ($tag !== "" && $user->can_change_tag($this, $tag, 0, 1, true))
-                    $etags[] = $tag;
-            $tags = join(" ", $etags);
+            $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+            $tags = $this->viewable_tags($user);
+            if ($tags !== "") {
+                $etags = [];
+                foreach (explode(" ", $tags) as $tag)
+                    if ($tag !== "" && $user->can_change_tag($this, $tag, 0, 1))
+                        $etags[] = $tag;
+                $tags = join(" ", $etags);
+            }
+            $user->set_overrides($old_overrides);
         }
         return $tags;
     }
