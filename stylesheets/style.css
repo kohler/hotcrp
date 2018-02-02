@@ -2269,6 +2269,10 @@ tr.plx {
 	box-shadow: -0.2em 0 0 #c4d2ff, 0.2em 0 0 0 #c4d2ff;
 }
 
+.tagemoji > sup {
+	line-height: 1;
+}
+
 .badge {
 	display: inline-block;
 	font-size: 69%;
