@@ -49,7 +49,7 @@ function loadRows() {
     global $Conf, $Me, $prow, $paperTable, $editRrowLogname, $Error;
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
-        errorMsgExit(whyNotText($whyNot, true));
+        errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
     $paperTable = new PaperTable($prow, make_qreq());
     $paperTable->resolveReview(true);
 
@@ -324,7 +324,7 @@ $editAny = $Me->can_review($prow, null);
 // can we see any reviews?
 if (!$viewAny && !$editAny) {
     if (($whyNotPaper = $Me->perm_view_paper($prow)))
-        errorMsgExit(whyNotText($whyNotPaper, true));
+        errorMsgExit(whyNotText($whyNotPaper + ["listViewable" => true]));
     if (req("reviewId") === null) {
         Conf::msg_error("You can’t see the reviews for this paper. "
                         . whyNotText($Me->perm_view_review($prow, null)));

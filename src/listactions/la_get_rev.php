@@ -25,15 +25,17 @@ class GetReviewBase_ListAction extends ListAction {
         if (empty($texts)) {
             if (empty($errors))
                 Conf::msg_error("No papers selected.");
-            else
-                Conf::msg_error(join("<br />\n", array_keys($errors)) . "<br />\nNothing to download.");
+            else {
+                $errors = array_map("htmlspecialchars", array_keys($errors));
+                Conf::msg_error(join("<br>", $errors) . "<br>Nothing to download.");
+            }
             return;
         }
 
         $warnings = array();
         $nerrors = 0;
         foreach ($errors as $ee => $iserror) {
-            $warnings[] = whyNotHtmlToText($ee);
+            $warnings[] = $ee;
             if ($iserror)
                 $nerrors++;
         }
@@ -56,7 +58,7 @@ class GetReviewBase_ListAction extends ListAction {
             $text = $header;
             if (!empty($warnings) && $this->isform) {
                 foreach ($warnings as $w)
-                    $text .= prefix_word_wrap("==-== ", whyNotHtmlToText($w), "==-== ");
+                    $text .= prefix_word_wrap("==-== ", $w, "==-== ");
                 $text .= "\n";
             } else if (!empty($warnings))
                 $text .= join("\n", $warnings) . "\n\n";
@@ -95,13 +97,13 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
             $whyNot = $user->perm_review($row, null);
             if ($whyNot && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"]))
-                $errors[whyNotText($whyNot)] = true;
+                $errors[whyNotText($whyNot, true)] = true;
             else {
                 if ($whyNot) {
-                    $t = whyNotText($whyNot);
+                    $t = whyNotText($whyNot, true);
                     $errors[$t] = false;
                     if (!isset($whyNot["deadline"]))
-                        defappend($texts[$row->paperId], prefix_word_wrap("==-== ", strtoupper(whyNotHtmlToText($t)) . "\n\n", "==-== "));
+                        defappend($texts[$row->paperId], prefix_word_wrap("==-== ", strtoupper($t) . "\n\n", "==-== "));
                 }
                 $rrow = $row->full_review_of_user($user);
                 defappend($texts[$row->paperId], $rf->textForm($row, $rrow, $user, null) . "\n");
@@ -128,7 +130,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
         $errors = $texts = [];
         foreach ($user->paper_set($ssel) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
-                $errors["#$prow->paperId: " . whyNotText($whyNot)] = true;
+                $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
                 continue;
             }
             $rctext = "";
@@ -151,7 +153,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                 }
                 $texts[$prow->paperId] = $rctext;
             } else if (($whyNot = $user->perm_review($prow, null, null)))
-                $errors["#$prow->paperId: " . whyNotText($whyNot)] = true;
+                $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
         }
         $texts = $ssel->reorder($texts);
         $first = true;
@@ -219,7 +221,7 @@ class GetScores_ListAction extends ListAction {
         } else {
             if (empty($errors))
                 $errors[] = "No papers selected.";
-            Conf::msg_error(join("<br />", $errors));
+            Conf::msg_error(join("<br>", $errors));
         }
     }
 }

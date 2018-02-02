@@ -533,7 +533,7 @@ function filter_whynot($whyNot, $keys) {
     return $revWhyNot;
 }
 
-function whyNotText($whyNot, $suggest_redirection = false) {
+function whyNotText($whyNot, $text_only = false) {
     global $Conf, $Now;
     if (is_string($whyNot))
         $whyNot = array($whyNot => 1);
@@ -541,10 +541,11 @@ function whyNotText($whyNot, $suggest_redirection = false) {
     $paperId = (isset($whyNot["paperId"]) ? $whyNot["paperId"] : -1);
     $reviewId = (isset($whyNot["reviewId"]) ? $whyNot["reviewId"] : -1);
     $ms = [];
+    $quote = $text_only ? function ($x) { return $x; } : "htmlspecialchars";
     if (isset($whyNot["invalidId"])) {
         $x = $whyNot["invalidId"] . "Id";
         if (isset($whyNot[$x]))
-            $ms[] = $conf->_("Invalid " . $whyNot["invalidId"] . " number “%s”.", htmlspecialchars($whyNot[$x]));
+            $ms[] = $conf->_("Invalid " . $whyNot["invalidId"] . " number “%s”.", $quote($whyNot[$x]));
         else
             $ms[] = $conf->_("Invalid " . $whyNot["invalidId"] . " number.");
     }
@@ -563,7 +564,7 @@ function whyNotText($whyNot, $suggest_redirection = false) {
     if (isset($whyNot["optionNotAccepted"]))
         $ms[] = $conf->_("Non-accepted submission #%d can have no %s.", $paperId, $whyNot["optionNotAccepted"]->message_title);
     if (isset($whyNot["signin"]))
-        $ms[] = $conf->_c("eperm", "You are not signed in.", $whyNot["signin"], $paperId);
+        $ms[] = $conf->_c("eperm", "You have been signed out.", $whyNot["signin"], $paperId);
     if (isset($whyNot["withdrawn"]))
         $ms[] = $conf->_("Submission #%d has been withdrawn.", $paperId);
     if (isset($whyNot["notWithdrawn"]))
@@ -584,8 +585,11 @@ function whyNotText($whyNot, $suggest_redirection = false) {
         $ms[] = $conf->_("Your own review for #%d is not complete, so you can’t view other people’s reviews.", $paperId);
     if (isset($whyNot["responseNotReady"]))
         $ms[] = $conf->_("The authors’ response is not yet ready for reviewers to view.");
-    if (isset($whyNot["reviewsOutstanding"]))
-        $ms[] = $conf->_("You will get access to the reviews once you complete your assigned reviews. If you can’t complete your reviews, please let the organizers know via the “Refuse review” links. <a href=\"%s\">List assigned reviews</a>", hoturl("search", "q=&amp;t=r"));
+    if (isset($whyNot["reviewsOutstanding"])) {
+        $ms[] = $conf->_("You will get access to the reviews once you complete your assigned reviews. If you can’t complete your reviews, please let the organizers know via the “Refuse review” links.");
+        if (!$text_only)
+            $ms[] = $conf->_("<a href=\"%s\">List assigned reviews</a>", hoturl("search", "q=&amp;t=r"));
+    }
     if (isset($whyNot["reviewNotAssigned"]))
         $ms[] = $conf->_("You are not assigned to review submission #%d.", $paperId);
     if (isset($whyNot["deadline"])) {
@@ -599,9 +603,11 @@ function whyNotText($whyNot, $suggest_redirection = false) {
         $start = $open_dname ? $conf->setting($open_dname, -1) : 1;
         $end = $conf->setting($dname, -1);
         if ($dname == "au_seerev") {
-            if ($conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE)
-                $ms[] = $conf->_("You will get access to the reviews for this submission when you have completed your own reviews. <a href=\"%s\">List your incomplete reviews</a>", hoturl("search", "t=rout&amp;q="));
-            else
+            if ($conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE) {
+                $ms[] = $conf->_("You will get access to the reviews for this submission when you have completed your own reviews.");
+                if (!$text_only)
+                    $ms[] = $conf->_("<a href=\"%s\">List your incomplete reviews</a>", hoturl("search", "t=rout&amp;q="));
+            } else
                 $ms[] = $conf->_c("etime", "Action not available.", $dname, $paperId);
         } else if ($start <= 0 || $start == $end) {
             $ms[] = $conf->_c("etime", "Action not available.", $open_dname, $paperId);
@@ -629,26 +635,21 @@ function whyNotText($whyNot, $suggest_redirection = false) {
     if (isset($whyNot["clickthrough"]))
         $ms[] = $conf->_("You can’t do that until you agree to the terms.");
     if (isset($whyNot["otherTwiddleTag"]))
-        $ms[] = $conf->_("Tag “#%s” doesn’t belong to you.", htmlspecialchars($whyNot["tag"]));
+        $ms[] = $conf->_("Tag “#%s” doesn’t belong to you.", $quote($whyNot["tag"]));
     if (isset($whyNot["chairTag"]))
-        $ms[] = $conf->_("Tag “#%s” can only be changed by administrators.", htmlspecialchars($whyNot["tag"]));
+        $ms[] = $conf->_("Tag “#%s” can only be changed by administrators.", $quote($whyNot["tag"]));
     if (isset($whyNot["voteTag"]))
-        $ms[] = $conf->_("The voting tag “#%s” shouldn’t be changed directly. To vote for this paper, change the “#~%1\$s” tag.", htmlspecialchars($whyNot["tag"]));
+        $ms[] = $conf->_("The voting tag “#%s” shouldn’t be changed directly. To vote for this paper, change the “#~%1\$s” tag.", $quote($whyNot["tag"]));
     if (isset($whyNot["voteTagNegative"]))
         $ms[] = $conf->_("Negative votes aren’t allowed.");
     if (isset($whyNot["autosearchTag"]))
-        $ms[] = $conf->_("Tag “#%s” cannot be changed since the system sets it automatically.", htmlspecialchars($whyNot["tag"]));
+        $ms[] = $conf->_("Tag “#%s” cannot be changed since the system sets it automatically.", $quote($whyNot["tag"]));
     // finish it off
-    if (isset($whyNot["forceShow"]))
+    if (isset($whyNot["forceShow"]) && !$text_only)
         $ms[] = $conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", selfHref(array("forceShow" => 1)));
-    if (!empty($ms) && $suggest_redirection)
+    if (!empty($ms) && isset($whyNot["listViewable"]) && !$text_only)
         $ms[] = $conf->_("<a href=\"%s\">List the submissions you can view</a>", hoturl("search", "q="));
     return join(" ", $ms);
-}
-
-function whyNotHtmlToText($e) {
-    $e = preg_replace('|\(?<a.*?</a>\)?\s*\z|i', "", $e);
-    return preg_replace('|<.*?>|', "", $e);
 }
 
 function actionBar($mode = null) {

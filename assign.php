@@ -32,7 +32,7 @@ function loadRows() {
     global $prow, $rrows, $Conf, $Me;
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
-        errorMsgExit(whyNotText($whyNot, true));
+        errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
     if (($whyNot = $Me->perm_request_review($prow, false))) {
         $wnt = whyNotText($whyNot);
         error_go(hoturl("paper", ["p" => $prow->paperId]), $wnt);

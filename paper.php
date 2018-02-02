@@ -69,7 +69,7 @@ function loadRows() {
     global $prow, $Conf;
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
-        errorMsgExit(whyNotText($whyNot, true));
+        errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
 }
 $prow = null;
 if (!$newPaper)
