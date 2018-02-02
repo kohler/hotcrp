@@ -2167,7 +2167,7 @@ hr.c {
 .k1, .topicinterest > tbody > tr:nth-child(even) {
 	background-color: #f1f8fc;
 }
-.pltable_colored > .k1, .pltable_colored > .k1 {
+.pltable_colored > .k1 {
 	background-color: inherit;
 }
 tr.pl {
