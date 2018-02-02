@@ -1456,10 +1456,10 @@ class PaperTable {
         $p = $this->conf->pc_member_by_id($value);
         $n = $p ? $this->user->name_html_for($p) : ($value ? "Unknown!" : "");
         $text = '<p class="fn odname js-psedit-result">' . $n . '</p>';
+        echo '<div class="pcopen taghh';
         if ($p && ($classes = $this->user->user_color_classes_for($p)))
-            echo '<div class="pscopen taghh ', $classes, '">', $text, '</div>';
-        else
-            echo $text;
+            echo ' ', $classes;
+        echo '">', $text, '</div>';
 
         if ($editable) {
             $selopt = [0];
