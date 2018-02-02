@@ -226,24 +226,6 @@ class GetScores_ListAction extends ListAction {
     }
 }
 
-class GetVotes_ListAction extends ListAction {
-    function allow(Contact $user) {
-        return $user->isPC;
-    }
-    function run(Contact $user, $qreq, $ssel) {
-        $tagger = new Tagger($user);
-        if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
-            $showtag = trim($qreq->tag); // no "23~" prefix
-            $texts = array();
-            foreach ($user->paper_set($ssel) as $prow)
-                if ($user->can_view_tags($prow, true))
-                    arrayappend($texts[$prow->paperId], array($showtag, (float) $prow->tag_value($tag), $prow->paperId, $prow->title));
-            return new Csv_SearchResult("votes", ["tag", "votes", "paper", "title"], $ssel->reorder($texts));
-        } else
-            Conf::msg_error($tagger->error_html);
-    }
-}
-
 class GetRank_ListAction extends ListAction {
     function allow(Contact $user) {
         return $user->conf->setting("tag_rank") && $user->is_reviewer();

@@ -109,12 +109,6 @@
         "callback": "+GetScores_ListAction"
     },
     {
-        "name": "get/votes", "get": true,
-        "allow_if": "pc", "display_if": false,
-        "require": "src/listactions/la_get_rev.php",
-        "callback": "+GetVotes_ListAction"
-    },
-    {
         "name": "get/rank", "get": true,
         "allow_if": ["tag_rank", "reviewer"], "display_if": false,
         "require": "src/listactions/la_get_rev.php",
