@@ -1416,7 +1416,7 @@ class AssignmentSet {
             assert(is_int($p));
             $prow = $this->astate->prow($p);
             if (!$prow) {
-                $this->astate->error_here("Submission #$p does not exist.");
+                $this->error_here("Submission #$p does not exist.");
                 continue;
             }
 
