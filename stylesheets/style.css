@@ -1709,6 +1709,7 @@ td.revscore {
 }
 .revlink {
 	padding-left: 1.5em;
+	white-space: nowrap;
 }
 .revlink:first-child {
 	padding-left: 0;
