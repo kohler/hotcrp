@@ -34,8 +34,12 @@ class PaperTable {
     private $watchCheckbox = WATCHTYPE_COMMENT;
     private $entryMatches;
     private $canUploadFinal;
+
     private $allow_admin;
     private $admin;
+    private $view_authors = 0;
+    private $view_options = [];
+
     private $cf = null;
     private $quit = false;
 
@@ -56,6 +60,30 @@ class PaperTable {
             return;
         }
 
+        // calculate visibility of authors and options
+        // 0: not visible; 1: fold (admin only); 2: visible
+        if ($this->allow_admin)
+            $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+
+        if ($user->can_view_authors($prow))
+            $this->view_authors = 2;
+        foreach ($prow->options() as $ov) {
+            if ($user->can_view_paper_option($prow, $ov->option))
+                $this->view_options[$ov->id] = 2;
+        }
+
+        if ($this->allow_admin) {
+            $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
+            if ($this->view_authors && !$user->can_view_authors($prow))
+                $this->view_authors = 1;
+            foreach ($prow->options() as $ov)
+                if (isset($this->view_options[$ov->id])
+                    && !$user->can_view_paper_option($prow, $ov->option))
+                    $this->view_options[$ov->id] = 1;
+            $user->set_overrides($overrides);
+        }
+
+        // enumerate allowed modes
         $ms = array();
         if ($user->can_view_review($prow, null)
             || $prow->review_submitted($user))
@@ -259,11 +287,9 @@ class PaperTable {
         // collect folders
         $folders = array("clearfix");
         if ($this->prow) {
-            $ever_viewable = $this->user->allow_view_authors($this->prow);
-            $viewable = $ever_viewable && $this->user->can_view_authors($this->prow, false);
-            if ($ever_viewable && !$viewable)
+            if ($this->view_authors == 1)
                 $folders[] = $folds["a"] ? "fold8c" : "fold8o";
-            if ($ever_viewable && $this->allFolded)
+            if ($this->view_authors && $this->allFolded)
                 $folders[] = $folds["p"] ? "fold9c" : "fold9o";
         }
         $folders[] = $folds["t"] ? "fold5c" : "fold5o";
@@ -475,13 +501,11 @@ class PaperTable {
                 $out[] = '<p class="xd">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
             }
 
-            $force = $this->get_option_force();
             foreach ($prow ? $prow->options() : [] as $ov) {
                 $o = $ov->option;
                 if ($o->display() === PaperOption::DISP_SUBMISSION
-                    && $this->user->can_view_paper_option($prow, $o, $force)
-                    && ($oh = $this->unparse_option_html($ov, $force))) {
-                    $aufold = $force && !$this->user->can_view_paper_option($prow, $o, false);
+                    && get($this->view_options, $o->id)
+                    && ($oh = $this->unparse_option_html($ov))) {
                     $out = array_merge($out, $oh);
                 }
             }
@@ -860,8 +884,7 @@ class PaperTable {
     }
 
     private function paptabAuthors($skip_contacts) {
-        $viewable = $this->user->can_view_authors($this->prow, false);
-        if (!$viewable && !$this->user->allow_view_authors($this->prow)) {
+        if ($this->view_authors == 0) {
             echo '<div class="pg">',
                 $this->papt("authorInformation", "Authors"),
                 '<div class="pavb"><i>Hidden for blind review</i></div>',
@@ -874,7 +897,7 @@ class PaperTable {
 
         // "author" or "authors"?
         $auname = pluralx(count($aulist), "Author");
-        if (!$viewable)
+        if ($this->view_authors == 1)
             $auname .= " (deblinded)";
         else if ($this->user->act_author_view($this->prow)) {
             $sb = $this->conf->submission_blindness();
@@ -889,24 +912,24 @@ class PaperTable {
         echo '<div class="pg">',
             '<div class="pavt ui js-aufoldup', $this->error_class("authors"),
             '"><span class="pavfn">';
-        if (!$viewable || $this->allFolded)
+        if ($this->view_authors == 1 || $this->allFolded)
             echo '<a class="q ui js-aufoldup" href="" title="Toggle author display">';
-        if (!$viewable)
+        if ($this->view_authors == 1)
             echo '<span class="fn8">Authors</span><span class="fx8">';
         if ($this->allFolded)
             echo expander(null, 9);
-        else if (!$viewable)
+        else if ($this->view_authors == 1)
             echo expander(false);
         echo $auname;
-        if (!$viewable)
+        if ($this->view_authors == 1)
             echo '</span>';
-        if (!$viewable || $this->allFolded)
+        if ($this->view_authors == 1 || $this->allFolded)
             echo '</a>';
         echo '</span></div>';
 
         // contents
         echo '<div class="pavb">';
-        if (!$viewable)
+        if ($this->view_authors == 1)
             echo '<a class="q fn8 ui js-aufoldup" href="" title="Toggle author display">',
                 '+&nbsp;<i>Hidden for blind review</i>',
                 '</a><div class="fx8">';
@@ -918,13 +941,13 @@ class PaperTable {
         echo $this->authorData($aulist, "col", $this->user);
         if ($this->allFolded)
             echo '</div>';
-        if (!$viewable)
+        if ($this->view_authors == 1)
             echo '</div>';
         echo "</div></div>\n\n";
 
         // contacts
         if (count($contacts) > 0 && !$skip_contacts) {
-            echo "<div class='pg fx9", ($viewable ? "" : " fx8"), "'>",
+            echo "<div class='pg fx9", ($this->view_authors > 1 ? "" : " fx8"), "'>",
                 $this->papt("authorInformation", pluralx(count($contacts), "Contact")),
                 "<div class='pavb'>",
                 $this->authorData($contacts, "col", $this->user),
@@ -932,20 +955,13 @@ class PaperTable {
         }
     }
 
-    private function get_option_force() {
-        if ($this->allow_admin && !$this->user->can_view_authors($this->prow, false))
-            return true;
-        else
-            return null;
-    }
-
-    private function unparse_option_html(PaperOptionValue $ov, $force) {
+    private function unparse_option_html(PaperOptionValue $ov) {
         $o = $ov->option;
         $phtml = $o->unparse_page_html($this->prow, $ov);
         if (!$phtml || count($phtml) <= 1)
             return [];
         $phtype = array_shift($phtml);
-        $aufold = $force && !$this->user->can_view_paper_option($this->prow, $o, false);
+        $aufold = $this->view_options[$o->id] == 1;
 
         $ts = [];
         if ($o->display() === PaperOption::DISP_SUBMISSION) {
@@ -1028,15 +1044,14 @@ class PaperTable {
         $topicdata = $this->paptab_topics();
         $optt = $optp = [];
         $optp_nfold = $optt_ndoc = $optt_nfold = 0;
-        $force = $this->get_option_force();
 
         foreach ($this->prow->options() as $ov) {
             $o = $ov->option;
             if ($o->display() !== PaperOption::DISP_SUBMISSION
                 && $o->display() >= 0
-                && $this->user->can_view_paper_option($this->prow, $o, $force)
-                && ($oh = $this->unparse_option_html($ov, $force))) {
-                $aufold = $force && !$this->user->can_view_paper_option($this->prow, $o, false);
+                && get($this->view_options, $o->id)
+                && ($oh = $this->unparse_option_html($ov))) {
+                $aufold = $this->view_options[$o->id] == 1;
                 if ($o->display() === PaperOption::DISP_TOPICS) {
                     $optt = array_merge($optt, $oh);
                     if ($aufold)
@@ -2121,7 +2136,7 @@ class PaperTable {
             $this->add_edit_field(61000, [$this, "echo_editable_collaborators"], "collaborators");
         }
         foreach ($this->canUploadFinal ? $this->conf->paper_opts->option_list() : $this->conf->paper_opts->nonfinal_option_list() as $opt)
-            if (!$this->prow || $this->user->can_view_paper_option($this->prow, $opt, true))
+            if (!$this->prow || get($this->view_options, $opt->id))
                 $this->add_edit_field($opt->form_position(), $this->make_echo_editable_option($opt), $opt);
         usort($this->edit_fields, function ($a, $b) {
             return $a[0] - $b[0] ? : $a[1] - $b[1];

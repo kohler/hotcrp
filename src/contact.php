@@ -1957,6 +1957,14 @@ class Contact {
             return $this->privChair;
     }
 
+    function can_meaningfully_override(PaperInfo $prow) {
+        if ($this->is_manager()) {
+            $rights = $this->rights($prow, "any");
+            return $rights->allow_administer && $rights->conflictType > 0;
+        } else
+            return false;
+    }
+
     function can_change_password($acct) {
         if ($this->conf->opt("chairHidePasswords"))
             return get($_SESSION, "trueuser") && $acct && $acct->email

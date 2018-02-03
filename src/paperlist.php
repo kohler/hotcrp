@@ -830,7 +830,7 @@ class PaperList {
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
         $this->row_attr = [];
-        $this->row_overridable = $row->conflictType > 0 && $this->user->allow_administer($row);
+        $this->row_overridable = $this->user->can_meaningfully_override($row);
 
         $this->row_tags = $this->row_tags_overridable = null;
         if (isset($row->paperTags) && $row->paperTags !== "") {
@@ -1049,7 +1049,7 @@ class PaperList {
             $classes[] = "fold3c";
         if ($has_sel)
             $classes[] = "fold6" . ($this->_view_row_numbers ? "o" : "c");
-        if ($this->user->privChair)
+        if ($this->user->is_track_manager())
             $classes[] = "fold5" . ($this->_view_force ? "o" : "c");
         $classes[] = "fold7" . ($this->_view_statistics ? "o" : "c");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
@@ -1602,7 +1602,7 @@ class PaperList {
         foreach ($rows as $row) {
             ++$this->count;
             $this->row_attr = [];
-            $this->row_overridable = $row->conflictType > 0 && $this->user->allow_administer($row);
+            $this->row_overridable = $this->user->can_meaningfully_override($row);
             list($empty, $content) = $this->_row_field_content($fdef, $row);
             $m[$row->paperId] = $content;
             foreach ($this->row_attr as $k => $v) {
@@ -1642,7 +1642,7 @@ class PaperList {
         foreach ($rows as $row) {
             $p = array("id" => $row->paperId);
             ++$this->count;
-            $this->row_overridable = $row->conflictType > 0 && $this->user->allow_administer($row);
+            $this->row_overridable = $this->user->can_meaningfully_override($row);
             foreach ($field_list as $fdef) {
                 if ($fdef->viewable()
                     && !$fdef->content_empty($this, $row)
@@ -1661,7 +1661,7 @@ class PaperList {
             $this->mark_has("abstract");
         if (!empty($this->_any_option_checks))
             $this->_check_option_presence($row);
-        $this->row_overridable = $row->conflictType > 0 && $this->user->allow_administer($row);
+        $this->row_overridable = $this->user->can_meaningfully_override($row);
         $csv = [];
         foreach ($fieldDef as $fdef) {
             $empty = $fdef->content_empty($this, $row);
