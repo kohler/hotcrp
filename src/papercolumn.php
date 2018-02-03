@@ -235,12 +235,12 @@ class StatusPaperColumn extends PaperColumn {
         $this->is_long = $cj->name === "statusfull";
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
-        $force = $pl->search->limitName != "a" && $pl->user->privChair;
-        foreach ($rows as $row)
-            if ($row->outcome && $pl->user->can_view_decision($row, $force))
+        foreach ($rows as $row) {
+            if ($row->outcome && $pl->user->can_view_decision($row))
                 $row->_status_sort_info = $row->outcome;
             else
                 $row->_status_sort_info = -10000;
+        }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $x = $b->_status_sort_info - $a->_status_sort_info;

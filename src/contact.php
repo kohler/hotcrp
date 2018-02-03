@@ -2193,7 +2193,9 @@ class Contact {
             $whyNot["withdrawn"] = 1;
         // NB logic order here is important elsewhere
         // Don’t report “rejected” error to admins
-        if ($prow->outcome <= 0 || !$this->can_view_decision($prow, true))
+        if ($prow->outcome <= 0
+            || (!$prow->allow_administer
+                && !$this->can_view_decision($prow)))
             $whyNot["rejected"] = 1;
         else if (!$this->conf->collectFinalPapers())
             $whyNot["deadline"] = "final_open";
@@ -2369,18 +2371,18 @@ class Contact {
                 && $this->can_view_tracker());
     }
 
-    function can_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
+    function can_view_paper_option(PaperInfo $prow, $opt) {
         if (!is_object($opt) && !($opt = $this->conf->paper_opts->get($opt)))
             return false;
         if (!$this->can_view_paper($prow, $opt->has_document()))
             return false;
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         $oview = $opt->visibility;
         if ($opt->final
-            && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
+            && ($prow->outcome <= 0 || !$this->can_view_decision($prow)))
             return false;
         if ($rights->allow_administer)
-            return $oview !== "nonblind" || $this->can_view_authors($prow, $forceShow);
+            return $oview !== "nonblind" || $this->can_view_authors($prow);
         else
             return $rights->act_author_view
                 || (($rights->review_status != 0
@@ -2388,7 +2390,7 @@ class Contact {
                     && (!$oview
                         || $oview == "rev"
                         || ($oview == "nonblind"
-                            && $this->can_view_authors($prow, $forceShow))));
+                            && $this->can_view_authors($prow))));
     }
 
     function user_option_list() {
@@ -2398,28 +2400,28 @@ class Contact {
             return $this->conf->paper_opts->nonfinal_option_list();
     }
 
-    function perm_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
-        if ($this->can_view_paper_option($prow, $opt, $forceShow))
+    function perm_view_paper_option(PaperInfo $prow, $opt) {
+        if ($this->can_view_paper_option($prow, $opt))
             return null;
         if (!is_object($opt) && !($opt = $this->conf->paper_opts->get($opt)))
             return $prow->make_whynot();
         if (($whyNot = $this->perm_view_paper($prow, $opt->has_document())))
             return $whyNot;
         $whyNot = $prow->make_whynot();
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         $oview = $opt->visibility;
         if ($rights->allow_administer
             ? $oview === "nonblind"
-              && !$this->can_view_authors($prow, $forceShow)
+              && !$this->can_view_authors($prow)
             : !$rights->act_author_view
               && ($oview === "admin"
                   || ((!$oview || $oview == "rev")
                       && !$rights->review_status
                       && !$rights->allow_pc_broad)
                   || ($oview == "nonblind"
-                      && !$this->can_view_authors($prow, $forceShow))))
+                      && !$this->can_view_authors($prow))))
             $whyNot["optionPermission"] = $opt;
-        else if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
+        else if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow)))
             $whyNot["optionNotAccepted"] = $opt;
         else
             $whyNot["optionPermission"] = $opt;
