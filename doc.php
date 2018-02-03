@@ -208,11 +208,8 @@ function document_download() {
         $prow = $Conf->paperRow($dr->paperId, $Me, $whyNot);
         if (!$prow)
             document_error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", whyNotText($whyNot));
-        else if (($whyNot = $Me->perm_view_pdf($prow)))
+        else if (($whyNot = $Me->perm_view_paper_option($prow, $dr->dtype)))
             document_error("403 Forbidden", whyNotText($whyNot));
-        else if ($dr->dtype > 0
-                 && !$Me->can_view_paper_option($prow, $dr->dtype, true))
-            document_error("403 Forbidden", "You aren’t allowed to view this document.");
     }
 
     // history
@@ -303,4 +300,5 @@ function document_download() {
     document_error("500 Server Error", null);
 }
 
+$Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 document_download();

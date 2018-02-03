@@ -426,7 +426,7 @@ class Contact {
     function remove_overrides($overrides) {
         return $this->set_overrides($this->overrides_ & ~$overrides);
     }
-    function call_with_overrides($overrides, $method /* arguments */) {
+    function call_with_overrides($overrides, $method /* , arguments... */) {
         $old_overrides = $this->set_overrides($overrides);
         $result = call_user_func_array([$this, $method], array_slice(func_get_args(), 2));
         $this->overrides_ = $old_overrides;
@@ -2234,20 +2234,22 @@ class Contact {
             return null;
         $rights = $this->rights($prow, "any");
         $whyNot = $prow->make_whynot();
+        $base_count = count($whyNot);
         if (!$rights->allow_author_view
             && !$rights->review_status
             && !$rights->allow_pc_broad)
             $whyNot["permission"] = "view_paper";
         else {
-            $explained = 0;
             if ($prow->timeWithdrawn > 0)
-                $whyNot["withdrawn"] = $explained = 1;
+                $whyNot["withdrawn"] = 1;
             else if ($prow->timeSubmitted <= 0)
-                $whyNot["notSubmitted"] = $explained = 1;
+                $whyNot["notSubmitted"] = 1;
             if ($rights->allow_pc_broad
-                && !$this->conf->timePCViewPaper($prow, $pdf))
-                $whyNot["deadline"] = $explained = "sub_sub";
-            if (!$explained)
+                && !$this->conf->timePCViewPaper($prow, false))
+                $whyNot["deadline"] = "sub_sub";
+            if ($pdf
+                && count($whyNot) == $base_count
+                && $this->can_view_paper($prow))
                 $whyNot["pdfPermission"] = 1;
         }
         return $whyNot;

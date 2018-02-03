@@ -644,6 +644,8 @@ function whyNotText($whyNot, $text_only = false) {
         $ms[] = $conf->_("Negative votes aren’t allowed.");
     if (isset($whyNot["autosearchTag"]))
         $ms[] = $conf->_("Tag “#%s” cannot be changed since the system sets it automatically.", $quote($whyNot["tag"]));
+    if (empty($ms) && isset($whyNot["fail"]))
+        $ms[] = $conf->_c("eperm", "Permission error.", "unknown", $paperId);
     // finish it off
     if (isset($whyNot["forceShow"]) && !$text_only)
         $ms[] = $conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", selfHref(array("forceShow" => 1)));
