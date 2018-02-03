@@ -80,20 +80,23 @@ class GetDocument_ListAction extends ListAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $downloads = $errors = [];
+        $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $opt = $user->conf->paper_opts->get($this->dt);
-        foreach ($user->paper_set($ssel) as $row)
-            if (($whyNot = $user->perm_view_paper_option($row, $opt, true)))
+        foreach ($user->paper_set($ssel) as $row) {
+            if (($whyNot = $user->perm_view_paper_option($row, $opt)))
                 $errors[] = self::error_document($opt, $row, whyNotText($whyNot));
             else if (($doc = $row->document($opt->id)))
                 $downloads[] = $doc;
             else
                 $errors[] = self::error_document($opt, $row);
-        if (count($downloads)) {
+        }
+        $user->set_overrides($old_overrides);
+        if (!empty($downloads)) {
             session_write_close(); // it can take a while to generate the download
             $downloads = array_merge($downloads, $errors);
             if ($user->conf->download_documents($downloads, true))
                 exit;
-        } else if (count($errors))
+        } else if (!empty($errors))
             Conf::msg_error("Nothing to download.<br />" . join("<br />", array_map(function ($ed) { return $ed->error_html; }, $errors)));
         // XXX how to return errors?
     }
