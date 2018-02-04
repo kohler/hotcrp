@@ -329,16 +329,16 @@ class Contact {
         return $u;
     }
 
-    function activate() {
+    function activate($qreq) {
         global $Now;
         $this->activated_ = true;
         $trueuser = get($_SESSION, "trueuser");
         $truecontact = null;
 
         // Handle actas requests
-        $actas = req("actas");
-        if ($actas && $trueuser) {
-            unset($_GET["actas"], $_POST["actas"], $_REQUEST["actas"]);
+        if ($qreq && $qreq->actas && $trueuser) {
+            $actas = $qreq->actas;
+            unset($qreq->actas, $_GET["actas"], $_POST["actas"], $_REQUEST["actas"]);
             $actascontact = $this->actas_user($actas, $trueuser);
             if ($actascontact !== $this) {
                 if ($actascontact->email !== $trueuser->email) {
@@ -347,24 +347,14 @@ class Contact {
                 }
                 if ($this->privChair)
                     self::$trueuser_privChair = $actascontact;
-                return $actascontact->activate();
+                return $actascontact->activate($qreq);
             }
         }
 
         // Handle invalidate-caches requests
-        if (req("invalidatecaches") && $this->privChair) {
-            unset($_GET["invalidatecaches"], $_POST["invalidatecaches"], $_REQUEST["invalidatecaches"]);
+        if ($qreq && $qreq->invalidatecaches && $this->privChair) {
+            unset($qreq->invalidatecaches);
             $this->conf->invalidate_caches();
-        }
-
-        // If validatorContact is set, use it
-        if ($this->contactId <= 0 && req("validator")
-            && ($vc = $this->conf->opt("validatorContact"))) {
-            unset($_GET["validator"], $_POST["validator"], $_REQUEST["validator"]);
-            if (($newc = $this->conf->user_by_email($vc))) {
-                $this->activated_ = false;
-                return $newc->activate();
-            }
         }
 
         // Add capabilities from session and request
@@ -373,8 +363,8 @@ class Contact {
                 $this->capabilities = $caps;
                 ++self::$rights_version;
             }
-            if (isset($_REQUEST["cap"]) || isset($_REQUEST["testcap"]))
-                $this->activate_capabilities();
+            if ($qreq && (isset($qreq->cap) || isset($qreq->testcap)))
+                $this->activate_capabilities($qreq);
         }
 
         // Add review tokens from session
@@ -384,17 +374,19 @@ class Contact {
         }
 
         // Maybe auto-create a user
-        if ($trueuser && $this->update_trueuser(false)
+        if ($trueuser
+            && $this->update_trueuser(false)
             && !$this->has_database_account()
             && $this->conf->session("trueuser_author_check", 0) + 600 < $Now) {
             $this->conf->save_session("trueuser_author_check", $Now);
             $aupapers = self::email_authored_papers($this->conf, $trueuser->email, $trueuser);
             if (!empty($aupapers))
-                return $this->activate_database_account();
+                $this->activate_database_account();
         }
 
         // Maybe set up the shared contacts database
-        if ($this->conf->opt("contactdb_dsn") && $this->has_database_account()
+        if ($this->conf->opt("contactdb_dsn")
+            && $this->has_database_account()
             && $this->conf->session("contactdb_roles", 0) != $this->contactdb_roles()) {
             if ($this->contactdb_update())
                 $this->conf->save_session("contactdb_roles", $this->contactdb_roles());
@@ -402,9 +394,9 @@ class Contact {
 
         // Check forceShow
         $this->overrides_ = 0;
-        if ($this->privChair && req("forceShow"))
+        if ($qreq && $qreq->forceShow && $this->privChair)
             $this->overrides_ |= self::OVERRIDE_CONFLICT;
-        if (req("override"))
+        if ($qreq && $qreq->override)
             $this->overrides_ |= self::OVERRIDE_TIME;
 
         return $this;
@@ -442,10 +434,9 @@ class Contact {
             $reg->email = $this->email;
             if (($c = Contact::create($this->conf, $reg))) {
                 $this->load_by_id($c->contactId);
-                $this->activate();
+                $this->activate(null);
             }
         }
-        return $this;
     }
 
     static function contactdb() {
@@ -573,24 +564,24 @@ class Contact {
             return false;
     }
 
-    private function activate_capabilities() {
+    private function activate_capabilities($qreq) {
         // Add capabilities from arguments
-        if (($cap_req = req("cap"))) {
+        if (($cap_req = $qreq->cap)) {
             foreach (preg_split(',\s+,', $cap_req) as $cap)
                 $this->apply_capability_text($cap);
-            unset($_REQUEST["cap"], $_GET["cap"], $_POST["cap"]);
+            unset($qreq->cap, $_REQUEST["cap"], $_GET["cap"], $_POST["cap"]);
         }
 
         // Support capability testing
         if ($this->conf->opt("testCapabilities")
-            && ($cap_req = req("testcap"))
+            && ($cap_req = $qreq->testcap)
             && preg_match_all('/([-+]?)([1-9]\d*)([A-Za-z]+)/',
                               $cap_req, $m, PREG_SET_ORDER)) {
             foreach ($m as $mm) {
                 $c = ($mm[3] == "a" ? self::CAP_AUTHORVIEW : 0);
                 $this->change_paper_capability((int) $mm[2], $c, $mm[1] !== "-");
             }
-            unset($_REQUEST["testcap"], $_GET["testcap"], $_POST["testcap"]);
+            unset($qreq->testcap, $_REQUEST["testcap"], $_GET["testcap"], $_POST["testcap"]);
         }
     }
 

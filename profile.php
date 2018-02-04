@@ -26,7 +26,7 @@ function change_email_by_capability($Qreq) {
 
     $Conf->confirmMsg("Your email address has been changed.");
     if (!$Me->has_database_account() || $Me->contactId == $Acct->contactId)
-        $Me = $Acct->activate();
+        $Me = $Acct->activate($Qreq);
 }
 if ($Qreq->changeemail)
     change_email_by_capability($Qreq);

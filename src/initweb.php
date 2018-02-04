@@ -77,7 +77,7 @@ function initialize_user() {
         $Me = $Conf->user_by_email($trueuser->email);
     if (!$Me)
         $Me = new Contact($trueuser);
-    $Me = $Me->activate();
+    $Me = $Me->activate($Qreq);
 
     // redirect if disabled
     if ($Me->disabled) {

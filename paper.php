@@ -10,7 +10,7 @@ if ($Me->is_empty())
     $Me->escape();
 if ($Qreq->post_ok() && !$Me->has_database_account()) {
     if (isset($Qreq->update) && $Me->can_start_paper())
-        $Me = $Me->activate_database_account();
+        $Me->activate_database_account();
     else
         $Me->escape();
 }

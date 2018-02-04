@@ -145,7 +145,7 @@ class SelfHref {
             "g" => true,
             "q" => true, "t" => true, "qa" => true, "qo" => true, "qx" => true, "qt" => true,
             "fx" => true, "fy" => true,
-            "forceShow" => true, "validator" => true, "ls" => true,
+            "forceShow" => true, "ls" => true,
             "tab" => true, "atab" => true, "sort" => true,
             "group" => true, "monreq" => true, "noedit" => true,
             "contact" => true, "reviewer" => true,
@@ -264,7 +264,7 @@ class JsonResultException extends Exception {
 }
 
 function json_exit($json, $arg2 = null) {
-    global $Conf;
+    global $Conf, $Qreq;
     $json = JsonResult::make($json, $Conf, $arg2);
     if (JsonResultException::$capturing)
         throw new JsonResultException($json);
@@ -275,7 +275,7 @@ function json_exit($json, $arg2 = null) {
             header("Content-Type: text/plain");
         else
             header("Content-Type: application/json");
-        if (check_post())
+        if ($Qreq && $Qreq->post_ok())
             header("Access-Control-Allow-Origin: *");
         echo json_encode_browser($json->content);
         exit;
