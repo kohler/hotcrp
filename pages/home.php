@@ -26,9 +26,9 @@ else if (isset($Qreq->signin) && !$Conf->opt("httpAuthLogin"))
     LoginHelper::logout(false);
 // signin
 if ($Conf->opt("httpAuthLogin"))
-    LoginHelper::check_http_auth();
+    LoginHelper::check_http_auth($Qreq);
 else if (isset($Qreq->signin))
-    LoginHelper::check_login();
+    LoginHelper::check_login($Qreq);
 else if ((isset($Qreq->signin) || isset($Qreq->signout))
          && isset($Qreq->post))
     SelfHref::redirect($Qreq);

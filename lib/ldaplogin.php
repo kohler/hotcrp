@@ -2,7 +2,7 @@
 // ldaplogin.php -- HotCRP helper function for LDAP login
 // Copyright (c) 2009-2018 Eddie Kohler; see LICENSE.
 
-function ldapLoginBindFailure($ldapc) {
+function ldapLoginBindFailure(Qrequest $qreq, $ldapc) {
     global $Conf;
 
     // connection failed, report error
@@ -13,7 +13,7 @@ function ldapLoginBindFailure($ldapc) {
 
     if ($lerrno < 5)
         return Conf::msg_error("LDAP protocol error.  Logins will fail until this error is fixed.$suffix");
-    else if (req_s("password") == "") {
+    else if ((string) $qreq->password === "") {
         Ht::error_at("password");
         if ($lerrno == 53)
             $suffix = "";
@@ -25,7 +25,7 @@ function ldapLoginBindFailure($ldapc) {
     }
 }
 
-function ldapLoginAction() {
+function ldapLoginAction(Qrequest $qreq) {
     global $Conf;
 
     if (!preg_match('/\A\s*(\S+)\s+(\d+\s+)?([^*]+)\*(.*?)\s*\z/s', opt("ldapLogin"), $m))
@@ -40,16 +40,16 @@ function ldapLoginAction() {
         return Conf::msg_error("Internal error: ldap_connect.  Logins disabled until this error is fixed.");
     @ldap_set_option($ldapc, LDAP_OPT_PROTOCOL_VERSION, 3);
 
-    $qemail = addcslashes(req_s("email"), ',=+<>#;\"');
+    $qemail = addcslashes((string) $qreq->email, ',=+<>#;\"');
     $dn = $m[3] . $qemail . $m[4];
 
-    $success = @ldap_bind($ldapc, $dn, req_s("password"));
+    $success = @ldap_bind($ldapc, $dn, (string) $qreq->password);
     if (!$success && @ldap_errno($ldapc) == 2) {
         @ldap_set_option($ldapc, LDAP_OPT_PROTOCOL_VERSION, 2);
-        $success = @ldap_bind($ldapc, $dn, req_s("password"));
+        $success = @ldap_bind($ldapc, $dn, (string) $qreq->password);
     }
     if (!$success)
-        return ldapLoginBindFailure($ldapc);
+        return ldapLoginBindFailure($qreq, $ldapc);
 
     // use LDAP information to prepopulate the database with names
     $sr = @ldap_search($ldapc, $dn, "(cn=*)",
@@ -58,15 +58,15 @@ function ldapLoginAction() {
         $e = @ldap_get_entries($ldapc, $sr);
         $e = ($e["count"] == 1 ? $e[0] : array());
         if (isset($e["cn"]) && $e["cn"]["count"] == 1)
-            list($_REQUEST["firstName"], $_REQUEST["lastName"]) = Text::split_name($e["cn"][0]);
+            list($qreq->firstName, $qreq->lastName) = Text::split_name($e["cn"][0]);
         if (isset($e["sn"]) && $e["sn"]["count"] == 1)
-            $_REQUEST["lastName"] = $e["sn"][0];
+            $qreq->lastName = $e["sn"][0];
         if (isset($e["givenname"]) && $e["givenname"]["count"] == 1)
-            $_REQUEST["firstName"] = $e["givenname"][0];
+            $qreq->firstName = $e["givenname"][0];
         if (isset($e["mail"]) && $e["mail"]["count"] == 1)
-            $_REQUEST["preferredEmail"] = $e["mail"][0];
+            $qreq->preferredEmail = $e["mail"][0];
         if (isset($e["telephonenumber"]) && $e["telephonenumber"]["count"] == 1)
-            $_REQUEST["voicePhoneNumber"] = $e["telephonenumber"][0];
+            $qreq->voicePhoneNumber = $e["telephonenumber"][0];
     }
 
     ldap_close($ldapc);
