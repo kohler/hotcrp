@@ -26,7 +26,7 @@ if ($Qreq->reviewer && $Me->privChair
         }
 } else if (!$Qreq->reviewer && !($Me->roles & Contact::ROLE_PC)) {
     foreach ($Conf->pc_members() as $pcm) {
-        redirectSelf(["reviewer" => $pcm->email]);
+        SelfHref::redirect($Qreq, ["reviewer" => $pcm->email]);
         // in case redirection fails:
         $reviewer = $pcm;
         break;
@@ -98,8 +98,8 @@ function savePreferences($Qreq, $reset_p) {
     if ($aset->execute()) {
         Conf::msg_confirm("Preferences saved.");
         if ($reset_p)
-            unset($_REQUEST["p"], $_GET["p"], $_POST["p"], $_REQUEST["pap"], $_GET["pap"], $_POST["pap"]);
-        redirectSelf();
+            unset($Qreq->p, $Qreq->pap);
+        SelfHref::redirect($Qreq);
     } else
         Conf::msg_error(join("<br />", $aset->errors_html()));
 }
@@ -176,7 +176,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
             pref_xmsgc("Preferences unchanged.\n" . $assignset->errors_div_html(true));
     } else if ($apply) {
         if ($assignset->execute(true))
-            redirectSelf();
+            SelfHref::redirect($Qreq);
     } else {
         $Conf->header("Review preferences", "revpref");
         if ($assignset->has_error())
@@ -230,7 +230,7 @@ if (isset($Qreq->redisplay)) {
         if (substr($k, 0, 4) == "show" && $v)
             $pfd .= substr($k, 4) . " ";
     $Conf->save_session("pfdisplay", $pfd);
-    redirectSelf();
+    SelfHref::redirect($Qreq);
 }
 
 

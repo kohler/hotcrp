@@ -68,8 +68,8 @@ if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
                 $Acct = $Conf->user_by_id($cs->ids[0]);
                 $list = new SessionList("u/all/" . urlencode($Qreq->search), $cs->ids, "“" . htmlspecialchars($Qreq->u) . "”", hoturl_site_relative_raw("users", ["t" => "all"]));
                 $list->set_cookie();
-                $_REQUEST["u"] = $_GET["u"] = $_PUT["u"] = $Qreq->u = $Acct->email;
-                redirectSelf();
+                $Qreq->u = $Acct->email;
+                SelfHref::redirect($Qreq);
             }
         }
     }

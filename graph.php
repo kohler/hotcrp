@@ -29,7 +29,7 @@ $GraphSynonym = array("reviewerlameness" => "procrastination");
 if ($Graph && isset($GraphSynonym[$Graph]))
     $Graph = $GraphSynonym[$Graph];
 if (!$Graph || !isset($Graphs[$Graph]))
-    redirectSelf(array("g" => key($Graphs)));
+    SelfHref::redirect($Qreq, ["g" => key($Graphs)]);
 
 // Header and body
 $Conf->header("Graphs", "graphbody");
