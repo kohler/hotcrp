@@ -3,38 +3,39 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
+$Qreq = make_qreq();
 
 // signin links
 // auto-signin when email & password set
-if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
-    $_REQUEST["action"] = get($_REQUEST, "action", "login");
-    $_REQUEST["signin"] = get($_REQUEST, "signin", "go");
+if (isset($Qreq->email) && isset($Qreq->password)) {
+    $Qreq->action = $Qreq->get("action", "login");
+    $Qreq->signin = $Qreq->get("signin", "go");
 }
 // CSRF protection: ignore unvalidated signin/signout for known users
-if (!$Me->is_empty() && !check_post())
-    unset($_REQUEST["signout"]);
+if (!$Me->is_empty() && !$Qreq->post_ok())
+    unset($Qreq->signout);
 if ($Me->has_email()
-    && (!check_post() || strcasecmp($Me->email, trim(req("email"))) == 0))
-    unset($_REQUEST["signin"]);
-if (!isset($_REQUEST["email"]) || !isset($_REQUEST["action"]))
-    unset($_REQUEST["signin"]);
+    && (!$Qreq->post_ok() || strcasecmp($Me->email, trim($Qreq->email)) == 0))
+    unset($Qreq->signin);
+if (!isset($Qreq->email) || !isset($Qreq->action))
+    unset($Qreq->signin);
 // signout
-if (isset($_REQUEST["signout"]))
+if (isset($Qreq->signout))
     LoginHelper::logout(true);
-else if (isset($_REQUEST["signin"]) && !$Conf->opt("httpAuthLogin"))
+else if (isset($Qreq->signin) && !$Conf->opt("httpAuthLogin"))
     LoginHelper::logout(false);
 // signin
 if ($Conf->opt("httpAuthLogin"))
     LoginHelper::check_http_auth();
-else if (isset($_REQUEST["signin"]))
+else if (isset($Qreq->signin))
     LoginHelper::check_login();
-else if ((isset($_REQUEST["signin"]) || isset($_REQUEST["signout"]))
-         && isset($_REQUEST["post"]))
-    redirectSelf();
+else if ((isset($Qreq->signin) || isset($Qreq->signout))
+         && isset($Qreq->post))
+    SelfHref::redirect($Qreq);
 
 // set a session variable to test that their browser supports cookies
 // NB need to do this whenever we'll send a "testsession=1" param
-if ($Me->is_empty() || isset($_REQUEST["signin"]))
+if ($Me->is_empty() || isset($Qreq->signin))
     $_SESSION["testsession"] = true;
 
 // disabled users
@@ -71,11 +72,11 @@ if ($Me->has_database_account() && $Conf->session("freshlogin") === true) {
 
 
 // review tokens
-function change_review_tokens() {
+function change_review_tokens($qreq) {
     global $Conf, $Me;
     $cleared = $Me->change_review_token(false, false);
     $tokeninfo = array();
-    foreach (preg_split('/\s+/', $_REQUEST["token"]) as $x)
+    foreach (preg_split('/\s+/', $qreq->token) as $x)
         if ($x == "")
             /* no complaints */;
         else if (!($token = decode_token($x, "V")))
@@ -97,12 +98,12 @@ function change_review_tokens() {
         $tokeninfo[] = "Review tokens cleared.";
     if (count($tokeninfo))
         $Conf->infoMsg(join("<br />\n", $tokeninfo));
-    redirectSelf();
+    SelfHref::redirect($qreq);
 }
 
-if (isset($_REQUEST["token"]) && check_post() && !$Me->is_empty())
-    change_review_tokens();
-if (isset($_REQUEST["cleartokens"]))
+if (isset($Qreq->token) && $Qreq->post_ok() && !$Me->is_empty())
+    change_review_tokens($Qreq);
+if (isset($Qreq->cleartokens) && $Qreq->post_ok())
     $Me->change_review_token(false, false);
 
 
@@ -110,7 +111,7 @@ if ($Me->privChair)
     require_once("adminhome.php");
 
 
-$title = ($Me->is_empty() || isset($_REQUEST["signin"]) ? "Sign in" : "Home");
+$title = ($Me->is_empty() || isset($Qreq->signin) ? "Sign in" : "Home");
 $Conf->header($title, "home");
 $xsep = " <span class='barsep'>·</span> ";
 
@@ -177,14 +178,14 @@ Welcome to the ', htmlspecialchars($Conf->full_name()), " submissions site.";
         echo " For general conference information, see <a href=\"", htmlspecialchars($Conf->opt("conferenceSite")), "\">", htmlspecialchars($Conf->opt("conferenceSite")), "</a>.";
     echo '</div>';
 }
-if (!$Me->has_email() || isset($_REQUEST["signin"])) {
+if (!$Me->has_email() || isset($Qreq->signin)) {
     echo '<div class="homegrp">', $Conf->_("Sign in to submit or review papers."), '</div>';
     $passwordFocus = !Ht::control_class("email") && Ht::control_class("password");
     echo '<hr class="home" />
 <div class="homegrp foldo" id="homeacct">',
         Ht::form(hoturl_post("index")),
         '<div class="f-contain">';
-    if ($Me->is_empty() || isset($_REQUEST["signin"]))
+    if ($Me->is_empty() || isset($Qreq->signin))
         echo Ht::hidden("testsession", 1);
     if ($Conf->opt("contactdb_dsn") && $Conf->opt("contactdb_loginFormHeading"))
         echo $Conf->opt("contactdb_loginFormHeading");
@@ -195,7 +196,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
     }
     echo '<div class="', Ht::control_class("email", "f-i"), '">',
         Ht::label($Conf->opt("ldapLogin") ? "Username" : "Email", "signin_email"),
-        Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
+        Ht::entry("email", $Qreq->get("email", $password_reset ? $password_reset->email : ""),
                   ["size" => 36, "id" => "signin_email", "class" => "fullw", "autocomplete" => "username", "tabindex" => 1]),
         '</div>
 <div class="', Ht::control_class("password", "f-i fx"), '">';
@@ -231,7 +232,7 @@ if ($homelist) {
         '<h4><a class="qq" href="', hoturl("search"), '">Search</a>: &nbsp;&nbsp;</h4>';
 
     $tOpt = PaperSearch::search_types($Me);
-    echo Ht::entry("q", req("q"),
+    echo Ht::entry("q", (string) $Qreq->q,
                    array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
                          "class" => "hotcrp_searchbox", "placeholder" => "(All)")),
         " &nbsp;in&nbsp; ",

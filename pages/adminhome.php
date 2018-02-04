@@ -75,11 +75,15 @@ function admin_home_messages() {
 
 assert($Me->privChair);
 
-if (isset($_REQUEST["clearbug"]) && check_post())
-    $Conf->save_setting("bug_" . $_REQUEST["clearbug"], null);
-if (isset($_REQUEST["clearnewpcrev"]) && ctype_digit($_REQUEST["clearnewpcrev"])
-    && check_post() && $Conf->setting("pcrev_informtime", 0) <= $_REQUEST["clearnewpcrev"])
-    $Conf->save_setting("pcrev_informtime", $_REQUEST["clearnewpcrev"]);
-if (isset($_REQUEST["clearbug"]) || isset($_REQUEST["clearnewpcrev"]))
-    redirectSelf(array("clearbug" => null, "clearnewpcrev" => null));
+if (isset($Qreq->clearbug) && $Qreq->post_ok())
+    $Conf->save_setting("bug_" . $Qreq->clearbug, null);
+if (isset($Qreq->clearnewpcrev)
+    && ctype_digit($Qreq->clearnewpcrev)
+    && $Qreq->post_ok()
+    && $Conf->setting("pcrev_informtime", 0) <= $Qreq->clearnewpcrev)
+    $Conf->save_setting("pcrev_informtime", $Qreq->clearnewpcrev);
+if (isset($Qreq->clearbug) || isset($Qreq->clearnewpcrev)) {
+    unset($Qreq->clearbug, $Qreq->clearnewpcrev);
+    SelfHref::redirect($Qreq);
+}
 admin_home_messages();
