@@ -29,7 +29,7 @@
     ["Draft reviews for papers %2$s saved.", "Draft review for paper %2$s saved.", ["$1=1"]],
     ["Draft reviews for papers %2$s saved.", "Draft review saved. The review will not be visible to others until it is submitted.", ["$3"]],
     ["Draft reviews for papers %2$s saved.", "Review saved. The review will not be visible to others until it is approved.", ["$3=3"]],
-    ["Authors were notified about updated reviews %2$s.", "Authors were notified about update review %2$s.", ["$1=1"]],
+    ["Authors were notified about updated reviews %2$s.", "Authors were notified about updated review %2$s.", ["$1=1"]],
     ["Authors were notified about updated reviews %2$s.", "Authors were notified.", ["$3"]],
     ["Reviews %2$s unchanged.", "Review %2$s unchanged.", ["$1=1"]],
     ["Reviews %2$s unchanged.", "Review unchanged.", ["$3"]],
