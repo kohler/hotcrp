@@ -3,9 +3,11 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
+    // NB see also count()
     private $____method;
     private $____files = [];
     private $____x = [];
+    private $____post_ok = false;
     function __construct($method, $data = null) {
         $this->____method = $method;
         if ($data)
@@ -54,7 +56,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $default;
     }
     function count() {
-        return count(get_object_vars($this)) - 3;
+        return count(get_object_vars($this)) - 4;
     }
     function jsonSerialize() {
         return $this->make_array();
@@ -119,5 +121,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function attachments() {
         return $this->____x;
+    }
+    function approve_post() {
+        $this->____post_ok = true;
+    }
+    function post_ok() {
+        return $this->____post_ok;
     }
 }

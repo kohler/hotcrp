@@ -307,6 +307,13 @@ function make_qreq() {
     if (!empty($errors) && Conf::$g)
         Conf::msg_error("<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>");
 
+    // check CSRF
+    if ($qreq->post && ($sid = session_id())) {
+        if ((isset($_SESSION["post"]) && $qreq->post === $_SESSION["post"])
+            || $qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, 8))
+            $qreq->approve_post();
+    }
+
     return $qreq;
 }
 

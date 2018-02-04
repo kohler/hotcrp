@@ -272,5 +272,4 @@ class LoginHelper {
         $Conf->confirmMsg($msg);
         return $user;
     }
-
 }
