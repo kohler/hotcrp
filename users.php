@@ -4,11 +4,12 @@
 
 require_once("src/initweb.php");
 require_once("src/contactlist.php");
+$Qreq = make_qreq();
 $getaction = "";
-if (isset($_REQUEST["get"]))
-    $getaction = $_REQUEST["get"];
-else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
-    $getaction = $_REQUEST["getaction"];
+if (isset($Qreq->get))
+    $getaction = $Qreq->get;
+else if (isset($Qreq->getgo) && isset($Qreq->getaction))
+    $getaction = $Qreq->getaction;
 
 
 // list type
@@ -43,21 +44,21 @@ if ($Me->privChair) {
 }
 if (empty($tOpt))
     $Me->escape();
-if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
-    if (str_starts_with($_REQUEST["t"], "pc:")
-        && isset($tOpt["#" . substr($_REQUEST["t"], 3)]))
-        $_REQUEST["t"] = "#" . substr($_REQUEST["t"], 3);
-    else if (isset($tOpt["#" . $_REQUEST["t"]]))
-        $_REQUEST["t"] = "#" . $_REQUEST["t"];
-    else if ($_REQUEST["t"] == "#pc")
-        $_REQUEST["t"] = "pc";
+if (isset($Qreq->t) && !isset($tOpt[$Qreq->t])) {
+    if (str_starts_with($Qreq->t, "pc:")
+        && isset($tOpt["#" . substr($Qreq->t, 3)]))
+        $Qreq->t = "#" . substr($Qreq->t, 3);
+    else if (isset($tOpt["#" . $Qreq->t]))
+        $Qreq->t = "#" . $Qreq->t;
+    else if ($Qreq->t == "#pc")
+        $Qreq->t = "pc";
     else {
         Conf::msg_error("Unknown user collection.");
-        unset($_REQUEST["t"]);
+        unset($Qreq->t);
     }
 }
-if (!isset($_REQUEST["t"]))
-    $_REQUEST["t"] = key($tOpt);
+if (!isset($Qreq->t))
+    $Qreq->t = key($tOpt);
 
 
 // paper selection and download actions
@@ -65,20 +66,20 @@ function paperselPredicate($papersel) {
     return "ContactInfo.contactId" . sql_in_numeric_set($papersel);
 }
 
-if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
-    $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
-if ((isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]))
-    || ($getaction && !isset($_REQUEST["pap"]))) {
+if (isset($Qreq->pap) && is_string($Qreq->pap))
+    $Qreq->pap = preg_split('/\s+/', $Qreq->pap);
+if ((isset($Qreq->pap) && is_array($Qreq->pap))
+    || ($getaction && !isset($Qreq->pap))) {
     $allowed_papers = array();
     $pl = new ContactList($Me, true);
     // Ensure that we only select contacts we're allowed to see.
-    if (($rows = $pl->rows($_REQUEST["t"]))) {
+    if (($rows = $pl->rows($Qreq->t))) {
         foreach ($rows as $row)
             $allowed_papers[$row->contactId] = true;
     }
     $papersel = array();
-    if (isset($_REQUEST["pap"])) {
-        foreach ($_REQUEST["pap"] as $p)
+    if (isset($Qreq->pap)) {
+        foreach ($Qreq->pap as $p)
             if (($p = cvtint($p)) > 0 && isset($allowed_papers[$p]))
                 $papersel[] = $p;
     } else
@@ -183,25 +184,25 @@ function modify_confirm($j, $ok_message, $ok_message_optional) {
         $Conf->confirmMsg($ok_message);
 }
 
-if ($Me->privChair && @$_REQUEST["modifygo"] && check_post() && isset($papersel)) {
-    if (@$_REQUEST["modifytype"] == "disableaccount")
+if ($Me->privChair && $Qreq->modifygo && $Qreq->post_ok() && isset($papersel)) {
+    if ($Qreq->modifytype == "disableaccount")
         modify_confirm(UserActions::disable($papersel, $Me), "Accounts disabled.", true);
-    else if (@$_REQUEST["modifytype"] == "enableaccount")
+    else if ($Qreq->modifytype == "enableaccount")
         modify_confirm(UserActions::enable($papersel, $Me), "Accounts enabled.", true);
-    else if (@$_REQUEST["modifytype"] == "resetpassword")
-        modify_confirm(UserActions::reset_password($papersel, $Me), "Passwords reset. <a href=\"" . hoturl_post("users", "t=" . urlencode($_REQUEST["t"]) . "&amp;modifygo=1&amp;modifytype=sendaccount&amp;pap=" . join("+", $papersel)) . "\">Send account information to those accounts</a>", false);
-    else if (@$_REQUEST["modifytype"] == "sendaccount")
+    else if ($Qreq->modifytype == "resetpassword")
+        modify_confirm(UserActions::reset_password($papersel, $Me), "Passwords reset. <a href=\"" . hoturl_post("users", "t=" . urlencode($Qreq->t) . "&amp;modifygo=1&amp;modifytype=sendaccount&amp;pap=" . join("+", $papersel)) . "\">Send account information to those accounts</a>", false);
+    else if ($Qreq->modifytype == "sendaccount")
         modify_confirm(UserActions::send_account_info($papersel, $Me), "Account information sent.", false);
     redirectSelf(array("modifygo" => null, "modifytype" => null));
 }
 
-function do_tags() {
+function do_tags($qreq) {
     global $Conf, $Me, $papersel;
     // check tags
     $tagger = new Tagger($Me);
     $t1 = array();
     $errors = array();
-    foreach (preg_split('/[\s,]+/', (string) @$_REQUEST["tag"]) as $t)
+    foreach (preg_split('/[\s,]+/', (string) $qreq->tag) as $t) {
         if ($t === "")
             /* nada */;
         else if (!($t = $tagger->check($t, Tagger::NOPRIVATE)))
@@ -210,6 +211,7 @@ function do_tags() {
             $errors[] = "The “pc” user tag is set automatically for all PC members.";
         else
             $t1[] = $t;
+    }
     if (count($errors))
         return Conf::msg_error(join("<br>", $errors));
     else if (!count($t1))
@@ -219,7 +221,7 @@ function do_tags() {
     Dbl::qe("lock tables ContactInfo write");
     Conf::$no_invalidate_caches = true;
     $users = array();
-    if ($_REQUEST["tagtype"] === "s") {
+    if ($qreq->tagtype === "s") {
         // erase existing tags
         $likes = array();
         $removes = array();
@@ -232,7 +234,7 @@ function do_tags() {
             $users[(int) $cid] = (object) array("id" => (int) $cid, "add_tags" => [], "remove_tags" => $removes);
     }
     // account for request
-    $key = $_REQUEST["tagtype"] === "d" ? "remove_tags" : "add_tags";
+    $key = $qreq->tagtype === "d" ? "remove_tags" : "add_tags";
     foreach ($papersel as $cid) {
         if (!isset($users[(int) $cid]))
             $users[(int) $cid] = (object) array("id" => (int) $cid, "add_tags" => [], "remove_tags" => []);
@@ -255,38 +257,38 @@ function do_tags() {
         Conf::msg_error(join("<br>", $errors));
 }
 
-if ($Me->privChair && @$_REQUEST["tagact"] && check_post() && isset($papersel)
-    && preg_match('/\A[ads]\z/', (string) @$_REQUEST["tagtype"]))
-    do_tags();
+if ($Me->privChair && $Qreq->tagact && $Qreq->post_ok() && isset($papersel)
+    && preg_match('/\A[ads]\z/', (string) $Qreq->tagtype))
+    do_tags($Qreq);
 
 
 // set scores to view
-if (isset($_REQUEST["redisplay"])) {
+if (isset($Qreq->redisplay)) {
     $Conf->save_session("uldisplay", "");
     foreach (ContactList::$folds as $key)
-        displayOptionsSet("uldisplay", $key, defval($_REQUEST, "show$key", 0));
+        displayOptionsSet("uldisplay", $key, $Qreq->get("show$key", 0));
     foreach ($Conf->all_review_fields() as $f)
         if ($f->has_options)
-            displayOptionsSet("uldisplay", $f->id, defval($_REQUEST, "show{$f->id}", 0));
+            displayOptionsSet("uldisplay", $f->id, $Qreq->get("show{$f->id}", 0));
 }
-if (isset($_REQUEST["scoresort"]))
-    $_REQUEST["scoresort"] = ListSorter::canonical_short_score_sort($_REQUEST["scoresort"]);
-if (isset($_REQUEST["scoresort"]))
-    $Conf->save_session("scoresort", $_REQUEST["scoresort"]);
+if (isset($Qreq->scoresort))
+    $Qreq->scoresort = ListSorter::canonical_short_score_sort($Qreq->scoresort);
+if (isset($Qreq->scoresort))
+    $Conf->save_session("scoresort", $Qreq->scoresort);
 
 
-if ($_REQUEST["t"] == "pc")
+if ($Qreq->t === "pc")
     $title = "Program committee";
-else if (str_starts_with($_REQUEST["t"], "#"))
-    $title = "#" . substr($_REQUEST["t"], 1) . " program committee";
+else if (str_starts_with($Qreq->t, "#"))
+    $title = "#" . substr($Qreq->t, 1) . " program committee";
 else
     $title = "Users";
 $Conf->header($title, "accounts");
 
 
 $pl = new ContactList($Me, true);
-$pl_text = $pl->table_html($_REQUEST["t"], hoturl("users", ["t" => $_REQUEST["t"]]),
-                     $tOpt[$_REQUEST["t"]], 'uldisplay.');
+$pl_text = $pl->table_html($Qreq->t, hoturl("users", ["t" => $Qreq->t]),
+                     $tOpt[$Qreq->t], 'uldisplay.');
 
 
 // form
@@ -296,9 +298,9 @@ if (count($tOpt) > 1) {
 <tr><td><div class='tlx'><div class='tld1'>";
 
     echo Ht::form_div(hoturl("users"), array("method" => "get"));
-    if (isset($_REQUEST["sort"]))
-        echo Ht::hidden("sort", $_REQUEST["sort"]);
-    echo Ht::select("t", $tOpt, $_REQUEST["t"], ["class" => "want-focus"]),
+    if (isset($Qreq->sort))
+        echo Ht::hidden("sort", $Qreq->sort);
+    echo Ht::select("t", $tOpt, $Qreq->t, ["class" => "want-focus"]),
         " &nbsp;", Ht::submit("Go"), "</div></form>";
 
     echo "</div><div class='tld2'>";
@@ -306,8 +308,8 @@ if (count($tOpt) > 1) {
     // Display options
     echo Ht::form_div(hoturl("users"), array("method" => "get"));
     foreach (array("t", "sort") as $x)
-        if (isset($_REQUEST[$x]))
-            echo Ht::hidden($x, $_REQUEST[$x]);
+        if (isset($Qreq[$x]))
+            echo Ht::hidden($x, $Qreq[$x]);
 
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
@@ -356,16 +358,16 @@ if (count($tOpt) > 1) {
 }
 
 
-if ($Me->privChair && $_REQUEST["t"] == "pc")
+if ($Me->privChair && $Qreq->t == "pc")
     $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new&amp;role=pc") . "' class='btn'>Add PC member</a></p><p>Select a PC member’s name to edit their profile or remove them from the PC.</p>");
-else if ($Me->privChair && $_REQUEST["t"] == "all")
+else if ($Me->privChair && $Qreq->t == "all")
     $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new") . "' class='btn'>Create account</a></p><p>Select a user to edit their profile.  Select " . Ht::img("viewas.png", "[Act as]") . " to view the site as that user would see it.</p>");
 
 
 if (isset($pl->any->sel)) {
-    echo Ht::form(hoturl_post("users", ["t" => $_REQUEST["t"]])), "<div>";
-    if (isset($_REQUEST["sort"]))
-        echo Ht::hidden("sort", $_REQUEST["sort"]);
+    echo Ht::form(hoturl_post("users", ["t" => $Qreq->t])), "<div>";
+    if (isset($Qreq->sort))
+        echo Ht::hidden("sort", $Qreq->sort);
 }
 echo $pl_text;
 if (isset($pl->any->sel))
