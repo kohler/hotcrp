@@ -14,8 +14,8 @@ $Conf->site_contact();
 
 // header
 function confHeader() {
-    global $paperTable;
-    PaperTable::do_header($paperTable, "assign", "assign");
+    global $paperTable, $Qreq;
+    PaperTable::do_header($paperTable, "assign", "assign", $Qreq);
 }
 
 function errorMsgExit($msg) {

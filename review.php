@@ -31,8 +31,8 @@ $rf = $Conf->review_form();
 
 // header
 function confHeader() {
-    global $paperTable;
-    PaperTable::do_header($paperTable, "review", $_REQUEST["mode"]);
+    global $paperTable, $Qreq;
+    PaperTable::do_header($paperTable, "review", $Qreq->mode, $Qreq);
 }
 
 function errorMsgExit($msg) {

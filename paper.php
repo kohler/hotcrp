@@ -41,9 +41,9 @@ if (!isset($Qreq->p)
 
 // header
 function confHeader() {
-    global $paperTable;
+    global $paperTable, $Qreq;
     $mode = $paperTable ? $paperTable->mode : "p";
-    PaperTable::do_header($paperTable, "paper_" . ($mode == "edit" ? "edit" : "view"), $mode);
+    PaperTable::do_header($paperTable, "paper_" . ($mode == "edit" ? "edit" : "view"), $mode, $Qreq);
 }
 
 function errorMsgExit($msg) {

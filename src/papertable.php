@@ -203,7 +203,7 @@ class PaperTable {
         return $this->can_view_reviews;
     }
 
-    static function do_header($paperTable, $id, $action_mode) {
+    static function do_header($paperTable, $id, $action_mode, $qreq) {
         global $Conf, $Me;
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
@@ -211,7 +211,7 @@ class PaperTable {
         $t = '<div id="header_page" class="header_page_submission"><div id="header_page_submission_inner"><h1 class="paptitle';
 
         if (!$paperTable && !$prow) {
-            if (($pid = req("paperId")) && ctype_digit($pid))
+            if (($pid = $qreq->paperId) && ctype_digit($pid))
                 $title = "#$pid";
             else
                 $title = $Conf->_c("paper_title", "Submission");
