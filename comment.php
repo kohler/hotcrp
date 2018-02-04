@@ -49,7 +49,7 @@ loadRows();
 
 
 // general error messages
-if (isset($Qreq->post) && $Qreq->post && !count($_POST))
+if ($Qreq->post && $Qreq->post_empty())
     $Conf->post_missing_msg();
 
 

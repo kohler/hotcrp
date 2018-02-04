@@ -8,6 +8,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $____files = [];
     private $____x = [];
     private $____post_ok = false;
+    private $____post_empty = false;
     function __construct($method, $data = null) {
         $this->____method = $method;
         if ($data)
@@ -127,5 +128,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function post_ok() {
         return $this->____post_ok;
+    }
+    function set_post_empty() {
+        $this->____post_empty = true;
+    }
+    function post_empty() {
+        return $this->____post_empty;
     }
 }

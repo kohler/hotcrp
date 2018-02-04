@@ -290,6 +290,8 @@ function make_qreq() {
         $qreq[$k] = $v;
     foreach ($_POST as $k => $v)
         $qreq[$k] = $v;
+    if (empty($_POST))
+        $qreq->set_post_empty();
 
     // $_FILES requires special processing since we want error messages.
     $errors = [];

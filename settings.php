@@ -30,7 +30,7 @@ function choose_setting_group($qreq, SettingValues $sv) {
     }
     if (!$want_group)
         $Me->escape();
-    if ($want_group !== $req_group && empty($_POST) && !$qreq->post)
+    if ($want_group !== $req_group && !$qreq->post && $qreq->post_empty())
         SelfHref::redirect($qreq, ["group" => $want_group]);
     $sv->mark_interesting_group($want_group);
     return $want_group;
