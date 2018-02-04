@@ -193,10 +193,6 @@ function selfHref($params = [], $options = null) {
     return SelfHref::make(null, $params, $options);
 }
 
-function redirectSelf($params = []) {
-    SelfHref::redirect(null, $params);
-}
-
 class JsonResult {
     public $status;
     public $content;
