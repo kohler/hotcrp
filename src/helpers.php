@@ -153,19 +153,19 @@ class SelfHref {
         ];
     }
     static function make(Qrequest $qreq = null, $params = [], $options = null) {
+        global $Qreq;
+        $qreq = $qreq ? : $Qreq;
         if (self::$argmap === null)
             self::set_argmap();
 
         $x = [];
-        $args = $qreq ? $qreq->make_array() : $_REQUEST;
-        foreach ($args as $k => $v) {
+        foreach ($qreq->make_array() as $k => $v) {
             $ak = get(self::$argmap, $k);
             if ($ak === true)
                 $ak = $k;
             if ($ak
-                && ($ak === $k || !isset($args[$ak]))
+                && ($ak === $k || !isset($qreq[$ak]))
                 && !array_key_exists($ak, $params)
-                && ($qreq || isset($_GET[$k]) || isset($_POST[$k]))
                 && !is_array($v))
                 $x[$ak] = $v;
         }
@@ -650,7 +650,7 @@ function whyNotText($whyNot, $text_only = false) {
     return join(" ", $ms);
 }
 
-function actionBar($mode = null) {
+function actionBar($mode = null, $qreq = null) {
     global $Me, $Conf;
     $forceShow = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 
@@ -669,8 +669,8 @@ function actionBar($mode = null) {
             $goBase = "profile";
             $xmode["search"] = 1;
         }
-    } else if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
-        $xmode["m"] = $wantmode;
+    } else if ($qreq && ($qreq->m || $qreq->mode))
+        $xmode["m"] = $qreq->m ? : $qreq->mode;
 
     $x = '<table class="vbar"><tr>';
 

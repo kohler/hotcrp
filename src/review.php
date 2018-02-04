@@ -838,7 +838,7 @@ $blind\n";
             $buttons = [];
             $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn btn-highlight"]);
             $buttons[] = Ht::button("Decline", ["class" => "ui btn js-decline-review"]);
-            // Also see $_REQUEST["refuse"] case in review.php.
+            // Also see $qreq->refuse case in review.php.
             if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy)))
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
             else

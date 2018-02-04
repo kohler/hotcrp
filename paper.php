@@ -185,7 +185,7 @@ function update_paper(Qrequest $qreq, $action) {
     $ps->execute_save_paper_json($pj);
 
     // submit paper if no error so far
-    $_REQUEST["paperId"] = $_GET["paperId"] = $qreq->paperId = $pj->pid;
+    $_GET["paperId"] = $qreq->paperId = $pj->pid;
     loadRows();
     if ($action === "final") {
         $submitkey = "timeFinalSubmitted";

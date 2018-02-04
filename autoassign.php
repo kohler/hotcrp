@@ -11,7 +11,6 @@ if (!$Me->is_manager())
 // paper selection
 if (!isset($Qreq->q) || trim($Qreq->q) === "(All)")
     $Qreq->q = "";
-$_REQUEST["q"] = $_GET["q"] = $_POST["q"] = $Qreq->q;
 if ($Qreq->post_ok())
     header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 
@@ -24,7 +23,6 @@ if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t])) {
     reset($tOpt);
     $Qreq->t = key($tOpt);
 }
-$_REQUEST["t"] = $_GET["t"] = $_POST["t"] = $Qreq->t;
 
 // PC selection
 if (isset($Qreq->pcs) && is_string($Qreq->pcs))

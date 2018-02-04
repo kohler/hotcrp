@@ -338,7 +338,7 @@ class Contact {
         // Handle actas requests
         if ($qreq && $qreq->actas && $trueuser) {
             $actas = $qreq->actas;
-            unset($qreq->actas, $_GET["actas"], $_POST["actas"], $_REQUEST["actas"]);
+            unset($qreq->actas, $_GET["actas"], $_POST["actas"]);
             $actascontact = $this->actas_user($actas, $trueuser);
             if ($actascontact !== $this) {
                 if ($actascontact->email !== $trueuser->email) {
@@ -569,7 +569,7 @@ class Contact {
         if (($cap_req = $qreq->cap)) {
             foreach (preg_split(',\s+,', $cap_req) as $cap)
                 $this->apply_capability_text($cap);
-            unset($qreq->cap, $_REQUEST["cap"], $_GET["cap"], $_POST["cap"]);
+            unset($qreq->cap, $_GET["cap"], $_POST["cap"]);
         }
 
         // Support capability testing
@@ -581,7 +581,7 @@ class Contact {
                 $c = ($mm[3] == "a" ? self::CAP_AUTHORVIEW : 0);
                 $this->change_paper_capability((int) $mm[2], $c, $mm[1] !== "-");
             }
-            unset($qreq->testcap, $_REQUEST["testcap"], $_GET["testcap"], $_POST["testcap"]);
+            unset($qreq->testcap, $_GET["testcap"], $_POST["testcap"]);
         }
     }
 

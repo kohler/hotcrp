@@ -56,7 +56,7 @@ if (!isset($Qreq->fn) && isset($Qreq->default))
 if ($Qreq->fn === "get"
     && ($Qreq->getfn === "revpref" || $Qreq->getfn === "revprefx")
     && !isset($Qreq->pap) && !isset($Qreq->p))
-    $Qreq->p = $_REQUEST["p"] = "all";
+    $Qreq->p = "all";
 
 function prefs_hoturl_args() {
     global $Me, $reviewer;
