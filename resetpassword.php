@@ -7,7 +7,7 @@ require_once("src/initweb.php");
 if ($Conf->external_login())
     error_go(false, "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
 
-$resetcap = req("resetcap");
+$resetcap = $Qreq->resetcap;
 if ($resetcap === null && preg_match(',\A/(U?1[-\w]+)(?:/|\z),i', Navigation::path(), $m))
     $resetcap = $m[1];
 if (!$resetcap)
@@ -29,26 +29,26 @@ if (!$Acct)
 // don't show information about the current user, if there is one
 $Me = new Contact;
 
-if (isset($_POST["go"]) && check_post()) {
-    $_POST["password"] = trim((string) @$_POST["password"]);
-    $_POST["password2"] = trim((string) @$_POST["password2"]);
-    if ($_POST["password"] == "")
+if (isset($Qreq->go) && $Qreq->post_ok()) {
+    $Qreq->password = trim((string) $Qreq->password);
+    $Qreq->password2 = trim((string) $Qreq->password2);
+    if ($Qreq->password == "") {
         Conf::msg_error("You must enter a password.");
-    else if ($_POST["password"] !== $_POST["password2"])
-        Conf::msg_error("The two passwords you entered did not match.");
-    else if (!Contact::valid_password($_POST["password"]))
+    } else if (!Contact::valid_password($Qreq->password)) {
         Conf::msg_error("Invalid password.");
-    else {
+    } else if ($Qreq->password !== $Qreq->password2) {
+        Conf::msg_error("The two passwords you entered did not match.");
+    } else {
         $flags = 0;
-        if ($_POST["password"] === @$_POST["autopassword"])
+        if ($Qreq->password === $Qreq->autopassword)
             $flags |= Contact::CHANGE_PASSWORD_PLAINTEXT;
-        $Acct->change_password(null, $_POST["password"], $flags);
+        $Acct->change_password(null, $Qreq->password, $flags);
         if (!$iscdb || !($log_acct = $Conf->user_by_email($Acct->email)))
             $log_acct = $Acct;
         $log_acct->log_activity("Password reset via " . substr($resetcap, 0, 8) . "...");
         $Conf->confirmMsg("Your password has been changed. You may now sign in to the conference site.");
         $capmgr->delete($capdata);
-        $Conf->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $_POST["password"]));
+        $Conf->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $Qreq->password));
         go(hoturl("index"));
     }
     Ht::error_at("password");
@@ -56,16 +56,16 @@ if (isset($_POST["go"]) && check_post()) {
 
 $Conf->header("Reset password", "resetpassword", ["action_bar" => false]);
 
-if (!isset($_POST["autopassword"])
-    || trim($_POST["autopassword"]) != $_POST["autopassword"]
-    || strlen($_POST["autopassword"]) < 16
-    || !preg_match("/\\A[-0-9A-Za-z@_+=]*\\z/", $_POST["autopassword"]))
-    $_POST["autopassword"] = Contact::random_password();
+if (!isset($Qreq->autopassword)
+    || trim($Qreq->autopassword) !== $Qreq->autopassword
+    || strlen($Qreq->autopassword) < 16
+    || !preg_match("/\\A[-0-9A-Za-z@_+=]*\\z/", $Qreq->autopassword))
+    $Qreq->autopassword = Contact::random_password();
 
 echo "<div class='homegrp'>
 Welcome to the ", htmlspecialchars($Conf->full_name()), " submissions site.";
-if (opt("conferenceSite"))
-    echo " For general information about ", htmlspecialchars($Conf->short_name), ", see <a href=\"", htmlspecialchars(opt("conferenceSite")), "\">the conference site</a>.";
+if ($Conf->opt("conferenceSite"))
+    echo " For general information about ", htmlspecialchars($Conf->short_name), ", see <a href=\"", htmlspecialchars($Conf->opt("conferenceSite")), "\">the conference site</a>.";
 
 echo "</div>
 <hr class='home' />
@@ -73,12 +73,11 @@ echo "</div>
     Ht::form(hoturl_post("resetpassword")),
     '<div class="f-contain">',
     Ht::hidden("resetcap", $resetcap),
-    Ht::hidden("autopassword", $_POST["autopassword"]),
-    "<p>Use this form to reset your password. You may want to use the random password we’ve chosen.</p>";
-echo '<table style="margin-bottom:2em">',
-    '<tr><td class="lcaption">Your email</td><td>', htmlspecialchars($Acct->email), '</td></tr>
-<tr><td class="lcaption">Suggested password</td><td>', htmlspecialchars($_POST["autopassword"]), '</td></tr></table>';
-//Our suggested replacement password password for <b>", htmlspecialchars($Acct->email), "</b>. Use our suggested replacement password, or choose your own.</p>",
+    Ht::hidden("autopassword", $Qreq->autopassword),
+    "<p>Use this form to reset your password. You may want to use the random password we’ve chosen.</p>",
+    '<div class="f-i"><label>Email</label>', htmlspecialchars($Acct->email), '</div>',
+    '<div class="f-i"><label>Suggested password</label>',
+    htmlspecialchars($Qreq->autopassword), '</div>';
 echo '<div class="', Ht::control_class("password", "f-i"), '">
   <label for="reset_password">New password</label>',
     Ht::password("password", "", ["class" => "want-focus", "tabindex" => 1, "size" => 36, "id" => "reset_password"]), '</div>
@@ -86,7 +85,7 @@ echo '<div class="', Ht::control_class("password", "f-i"), '">
   <label for="reset_password2">New password (again)</label>',
     Ht::password("password2", "", ["tabindex" => 1, "size" => 36, "id" => "reset_password2"]), '</div>
 <div class="f-i" style="margin-top:2em">',
-    Ht::submit("go", "Reset password", array("tabindex" => 1)),
+    Ht::submit("go", "Reset password", ["class" => "btn btn-primary"]),
     "</div>
 </div></form>
 <hr class='home' /></div>\n";
