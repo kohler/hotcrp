@@ -17,14 +17,14 @@ if ($Qreq->post_ok())
     header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 
 
-function assignment_defaults() {
+function assignment_defaults($qreq) {
     $defaults = [];
-    if (($action = req("default_action")) && $action !== "guess")
+    if (($action = $qreq->default_action) && $action !== "guess")
         $defaults["action"] = $action;
-    $defaults["round"] = req("rev_round");
-    if (req("requestreview_notify") && req("requestreview_body"))
-        $defaults["extrev_notify"] = ["subject" => req("requestreview_subject"),
-                                      "body" => req("requestreview_body")];
+    $defaults["round"] = $qreq->rev_round;
+    if ($qreq->requestreview_notify && $qreq->requestreview_body)
+        $defaults["extrev_notify"] = ["subject" => $qreq->requestreview_subject,
+                                      "body" => $qreq->requestreview_body];
     return $defaults;
 }
 
@@ -66,29 +66,29 @@ function finish_browser_alive() {
         echo Ht::unstash_script("fold('mail',null)");
 }
 
-function complete_assignment($callback) {
+function complete_assignment($qreq, $callback) {
     global $Me;
-    $SSel = SearchSelection::make(make_qreq(), $Me);
+    $SSel = SearchSelection::make($qreq, $Me);
     $assignset = new AssignmentSet($Me, true);
     $assignset->enable_papers($SSel->selection());
-    $assignset->parse($_POST["file"], get($_POST, "filename"),
-                      assignment_defaults(), $callback);
+    $assignset->parse($qreq->file, $qreq->filename,
+                      assignment_defaults($qreq), $callback);
     return $assignset->execute(true);
 }
 
 
 // redirect if save cancelled
-if (isset($_REQUEST["saveassignment"]) && isset($_POST["cancel"])) {
+if (isset($Qreq->saveassignment) && isset($Qreq->cancel)) {
     redirectSelf(); // should not return
-    unset($_REQUEST["saveassignment"], $_GET["saveassignment"], $_POST["saveassignment"]);
+    unset($Qreq->saveassignment);
 }
 
 // perform quick assignments all at once
-if (isset($_REQUEST["saveassignment"])
-    && check_post()
-    && isset($_POST["file"])
-    && get($_POST, "assignment_size_estimate") < 1000
-    && complete_assignment(null))
+if (isset($Qreq->saveassignment)
+    && $Qreq->post_ok()
+    && isset($Qreq->file)
+    && $Qreq->assignment_size_estimate < 1000
+    && complete_assignment($Qreq, null))
     redirectSelf();
 
 
@@ -118,26 +118,26 @@ Types of PC review:
 
 
 // upload review form action
-if (isset($_POST["bulkentry"]) && trim($_POST["bulkentry"]) === "Enter assignments")
-    unset($_POST["bulkentry"]);
-if (isset($_GET["upload"]) && check_post()
-    && ((isset($_POST["bulkentry"]) && $_POST["bulkentry"])
-        || file_uploaded($_FILES["bulk"]))) {
+if (isset($Qreq->bulkentry) && trim($Qreq->bulkentry) === "Enter assignments")
+    unset($Qreq->bulkentry);
+if (isset($Qreq->upload)
+    && $Qreq->post_ok()
+    && ($Qreq->bulkentry || $Qreq->has_file("bulk"))) {
     flush();
     while (@ob_end_flush())
         /* do nothing */;
-    if (file_uploaded($_FILES["bulk"])) {
-        $text = file_get_contents($_FILES["bulk"]["tmp_name"]);
-        $filename = $_FILES["bulk"]["name"];
+    if ($Qreq->has_file("bulk")) {
+        $text = $Qreq->file_contents("bulk");
+        $filename = $Qreq->file_filename("bulk");
     } else {
-        $text = $_POST["bulkentry"];
+        $text = $Qreq->bulkentry;
         $filename = "";
     }
     if ($text === false)
         Conf::msg_error("Internal error: cannot read file.");
     else {
         $assignset = new AssignmentSet($Me, true);
-        $defaults = assignment_defaults();
+        $defaults = assignment_defaults($Qreq);
         $text = convert_to_utf8($text);
         $assignset->parse($text, $filename, $defaults, "keep_browser_alive");
         finish_browser_alive();
@@ -155,35 +155,35 @@ if (isset($_GET["upload"]) && check_post()
             echo Ht::form_div(hoturl_post("bulkassign",
                                           ["saveassignment" => 1,
                                            "assigntypes" => join(" ", $atypes),
-                                           "assignpids" => join(" ", $apids)]));
-
-            $assignset->echo_unparse_display();
-
-            echo '<div class="g"></div>',
-                '<div><div class="aa">',
-                Ht::submit("Apply changes"),
-                ' &nbsp;', Ht::submit("cancel", "Cancel"),
+                                           "assignpids" => join(" ", $apids)])),
                 Ht::hidden("default_action", get($defaults, "action", "guess")),
                 Ht::hidden("rev_round", $defaults["round"]),
                 Ht::hidden("file", $text),
                 Ht::hidden("assignment_size_estimate", $csv_lineno),
                 Ht::hidden("filename", $filename),
-                Ht::hidden("requestreview_notify", req("requestreview_notify")),
-                Ht::hidden("requestreview_subject", req("requestreview_subject")),
-                Ht::hidden("requestreview_body", req("requestreview_body")),
-                Ht::hidden("bulkentry", req("bulkentry")),
-                '</div></div></div></form>', "\n";
+                Ht::hidden("requestreview_notify", $Qreq->requestreview_notify),
+                Ht::hidden("requestreview_subject", $Qreq->requestreview_subject),
+                Ht::hidden("requestreview_body", $Qreq->requestreview_body),
+                Ht::hidden("bulkentry", $Qreq->bulkentry),
+
+            $assignset->echo_unparse_display();
+
+            echo Ht::actions([
+                Ht::submit("Apply changes", ["class" => "btn btn-primary"]),
+                Ht::submit("cancel", "Cancel")
+            ], ["class" => "aab aabig"]),
+                "</div></form>\n";
             $Conf->footer();
             exit;
         }
     }
 }
 
-if (isset($_REQUEST["saveassignment"])
-    && check_post()
-    && isset($_POST["file"])
-    && get($_POST, "assignment_size_estimate") >= 1000) {
-    complete_assignment("keep_browser_alive");
+if (isset($Qreq->saveassignment)
+    && $Qreq->post_ok()
+    && isset($Qreq->file)
+    && $Qreq->assignment_size_estimate >= 1000) {
+    complete_assignment($Qreq, "keep_browser_alive");
     finish_browser_alive();
 }
 
@@ -193,7 +193,7 @@ echo Ht::form_div(hoturl_post("bulkassign", "upload=1"),
 
 // Upload
 echo '<div class="f-i">',
-    Ht::textarea("bulkentry", req_s("bulkentry"),
+    Ht::textarea("bulkentry", (string) $Qreq->bulkentry,
                  ["rows" => 1, "cols" => 80, "placeholder" => "Enter assignments", "class" => "need-autogrow"]),
     '</div>';
 
@@ -214,7 +214,7 @@ echo '<div id="foldoptions" class="lg foldc fold2c fold3c">',
                                        "tag" => "add tags",
                                        "settag" => "replace tags",
                                        "preference" => "set reviewer preferences"),
-               defval($_REQUEST, "default_action", "guess"),
+               $Qreq->get("default_action", "guess"),
                ["id" => "tsel"]);
 Ht::stash_script('$(function(){
 $("#tsel").on("change",function(){
@@ -224,7 +224,7 @@ foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this
 $rev_rounds = $Conf->round_selector_options(null);
 if (count($rev_rounds) > 1)
     echo '<span class="fx2">&nbsp; in round &nbsp;',
-        Ht::select("rev_round", $rev_rounds, $_REQUEST["rev_round"] ? : "unnamed"),
+        Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed"),
         '</span>';
 else if (!get($rev_rounds, "unnamed"))
     echo '<span class="fx2">&nbsp; in round ', $Conf->assignment_round_name(false), '</span>';
@@ -232,8 +232,8 @@ echo '<div class="g"></div>', "\n";
 
 $requestreview_template = $null_mailer->expand_template("requestreview");
 echo Ht::hidden("requestreview_subject", $requestreview_template["subject"]);
-if (isset($_REQUEST["requestreview_body"]))
-    $t = $_REQUEST["requestreview_body"];
+if (isset($Qreq->requestreview_body))
+    $t = $Qreq->requestreview_body;
 else
     $t = $requestreview_template["body"];
 echo "<table class='fx'><tr><td>",
