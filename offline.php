@@ -9,29 +9,29 @@ $rf = $Conf->review_form();
 
 
 // general error messages
-if (defval($_REQUEST, "post") && !count($_POST))
+if ($Qreq->post && $Qreq->post_empty())
     $Conf->post_missing_msg();
 
 
 // download blank review form action
-if (isset($_REQUEST["downloadForm"])) {
+if (isset($Qreq->downloadForm)) {
     $text = $rf->textFormHeader("blank") . $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, "review");
 }
 
 
 // upload review form action
-if (isset($_REQUEST["uploadForm"])
-    && file_uploaded($_FILES["uploadedFile"])
-    && check_post()) {
-    $tf = ReviewValues::make_text($rf, file_get_contents($_FILES["uploadedFile"]["tmp_name"]),
-                         $_FILES["uploadedFile"]["name"]);
-    while ($tf->parse_text(req("override")))
+if (isset($Qreq->uploadForm)
+    && $Qreq->has_file("uploadedFile")
+    && $Qreq->post_ok()) {
+    $tf = ReviewValues::make_text($rf, $Qreq->file_contents("uploadedFile"),
+                        $Qreq->file_filename("uploadedFile"));
+    while ($tf->parse_text($Qreq->override))
         $tf->check_and_save($Me, null, null);
     $tf->report();
     // Uploading forms may have completed the reviewer's task; recheck roles.
     Contact::update_rights();
-} else if (isset($_REQUEST["uploadForm"]))
+} else if (isset($Qreq->uploadForm))
     Conf::msg_error("Choose a file first.");
 
 
@@ -79,20 +79,20 @@ function check_tag_index_line(&$line) {
 function setTagIndexes() {
     global $Conf, $Me, $Error;
     $filename = null;
-    if (isset($_REQUEST["upload"]) && file_uploaded($_FILES["file"])) {
-        if (($text = file_get_contents($_FILES["file"]["tmp_name"])) === false) {
+    if (isset($Qreq->upload) && $Qreq->has_file("file")) {
+        if (($text = $Qreq->file_contents("tmp_name")) === false) {
             Conf::msg_error("Internal error: cannot read file.");
             return;
         }
-        $filename = @$_FILES["file"]["name"];
-    } else if (!($text = defval($_REQUEST, "data"))) {
+        $filename = $Qreq->file_filename("tmp_name");
+    } else if (!($text = $Qreq->data)) {
         Conf::msg_error("Choose a file first.");
         return;
     }
 
     $RealMe = $Me;
     $tagger = new Tagger;
-    if (($tag = defval($_REQUEST, "tag")))
+    if (($tag = $Qreq->tag))
         $tag = $tagger->check($tag, Tagger::NOVALUE);
     $curIndex = 0;
     $lineno = 1;
@@ -139,15 +139,16 @@ function setTagIndexes() {
     }
     if (isset($Error["tags"]))
         Conf::msg_error($Error["tags"]);
-    else if (isset($_REQUEST["setvote"]))
+    else if (isset($Qreq->setvote))
         $Conf->confirmMsg("Votes saved.");
     else {
         $dtag = $tagger->unparse($tag);
         $Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($dtag)) . "'>search for “order:{$dtag}”</a>.");
     }
 }
-if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
-    && $Me->is_reviewer() && check_post())
+if ((isset($Qreq->setvote) || isset($Qreq->setrank))
+    && $Me->is_reviewer()
+    && $Qreq->post_ok())
     setTagIndexes();
 
 
