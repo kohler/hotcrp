@@ -7,7 +7,7 @@ if (!$Me->email)
     $Me->escape();
 $MergeError = "";
 
-function crpmerge($MiniMe) {
+function crpmerge($qreq, $MiniMe) {
     global $Conf, $Me, $MergeError;
 
     if (!$MiniMe->contactId && !$Me->contactId)
@@ -19,7 +19,7 @@ function crpmerge($MiniMe) {
         return ($MergeError = "Attempt to merge a locked account.");
 
     // determine old & new users
-    if (req("prefer"))
+    if ($qreq->prefer)
         $merger = new MergeContacts($Me, $MiniMe);
     else
         $merger = new MergeContacts($MiniMe, $Me);
@@ -49,22 +49,26 @@ function crpmerge($MiniMe) {
     }
 }
 
-if (isset($_REQUEST["merge"]) && check_post()) {
-    if (!$_REQUEST["email"])
+if (isset($Qreq->merge) && $Qreq->post_ok()) {
+    if (!$Qreq->email) {
         $MergeError = "Enter an email address to merge.";
-    else if (!$_REQUEST["password"])
+        Ht::set_control_class("email", "has-error");
+    } else if (!$Qreq->password) {
         $MergeError = "Enter the password of the account to merge.";
-    else {
-        $MiniMe = $Conf->user_by_email($_REQUEST["email"]);
-        if (!$MiniMe)
-            $MergeError = "No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?";
-        else if (!$MiniMe->check_password($_REQUEST["password"]))
+        Ht::set_control_class("password", "has-error");
+    } else {
+        $MiniMe = $Conf->user_by_email($Qreq->email);
+        if (!$MiniMe) {
+            $MergeError = "No account for " . htmlspecialchars($Qreq->email) . " exists.  Did you enter the correct email address?";
+            Ht::set_control_class("email", "has-error");
+        } else if (!$MiniMe->check_password($Qreq->password)) {
             $MergeError = "That password is incorrect.";
-        else if ($MiniMe->contactId == $Me->contactId) {
+            Ht::set_control_class("password", "has-error");
+        } else if ($MiniMe->contactId == $Me->contactId) {
             $Conf->confirmMsg("Accounts successfully merged.");
             go(hoturl("index"));
         } else
-            crpmerge($MiniMe);
+            crpmerge($Qreq, $MiniMe);
     }
 }
 
@@ -85,40 +89,31 @@ else
 . "that account into this one. "
 );
 
-echo "<form method='post' action=\"", hoturl_post("mergeaccounts"), "\" accept-charset='UTF-8'>\n";
+echo Ht::form_div(hoturl_post("mergeaccounts"));
 
 // Try to prevent glasses interactions from screwing up merges
 echo Ht::hidden("actas", $Me->contactId);
-?>
 
-<table class='form'>
-
-<tr>
-  <td class='caption'>Email</td>
-  <td class='entry'><input type='text' name='email' size='50'
-    <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
-  /></td>
-</tr>
-
-<tr>
-  <td class='caption'>Password</td>
-  <td class='entry'><input type='password' name='password' size='50' /></td>
-</tr>
-
-<tr>
-  <td class='caption'></td>
-  <td class='entry'><?php
-    echo Ht::radio("prefer", 0, true), "&nbsp;", Ht::label("Keep my current account (" . htmlspecialchars($Me->email) . ")"), "<br />\n",
-        Ht::radio("prefer", 1), "&nbsp;", Ht::label("Keep the account named above and delete my current account");
-  ?></td>
-</tr>
-
-<tr><td class='caption'></td><td class='entry'><?php
-    echo Ht::submit("merge", "Merge accounts");
-?></td></tr>
-<tr class='last'><td class='caption'></td></tr>
-</table>
-</form>
+echo '<div class="', Ht::control_class("email", "f-i"), '">',
+    Ht::label("Other email", "merge_email"),
+    Ht::entry("email", (string) $Qreq->email,
+              ["size" => 36, "id" => "merge_email", "autocomplete" => "username", "tabindex" => 1]),
+    '</div>
+<div class="', Ht::control_class("password", "f-i fx"), '">',
+    Ht::label("Other password", "merge_password"),
+    Ht::password("password", "",
+                 ["size" => 36, "id" => "merge_password", "autocomplete" => "current-password", "tabindex" => 1]),
+    '</div>
+<div class="f-i">',
+    '<div class="checki"><label><span class="checkc">',
+    Ht::radio("prefer", 0, true), '</span>',
+    "Keep my current account (", htmlspecialchars($Me->email), ")</label></div>",
+    '<div class="checki"><label><span class="checkc">',
+    Ht::radio("prefer", 1), '</span>',
+    "Keep the account named above and delete my current account</label></div>",
+    '</div>',
+    Ht::actions([Ht::submit("merge", "Merge accounts", ["class" => "btn btn-primary"])]),
+    '</div></form>';
 
 
-<?php $Conf->footer();
+$Conf->footer();
