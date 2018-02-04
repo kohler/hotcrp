@@ -7,27 +7,28 @@ require_once("src/initweb.php");
 require_once("src/papertable.php");
 if (!$Me->email)
     $Me->escape();
+$Qreq = make_qreq();
 
 
 // header
 function exit_to_paper() {
-    global $prow;
-    go(hoturl("paper", ["p" => $prow ? $prow->paperId : req("p"),
-                        "c" => req("c"), "response" => req("response")]));
+    global $prow, $Qreq;
+    go(hoturl("paper", ["p" => $prow ? $prow->paperId : $Qreq->p,
+                        "c" => $Qreq->c, "response" => $Qreq->response]));
 }
 
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $prow, $paperTable, $crow, $Error;
+    global $Conf, $Me, $Qreq, $prow, $paperTable, $crow, $Error;
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
         exit_to_paper();
-    $paperTable = new PaperTable($prow, make_qreq());
+    $paperTable = new PaperTable($prow, $Qreq);
     $paperTable->resolveReview(false);
     $paperTable->resolveComments();
 
-    $cid = defval($_GET, "commentId", "xxx");
+    $cid = $Qreq->get("commentId", "xxx");
     $crow = null;
     foreach ($paperTable->crows as $row) {
         if ($row->commentId == $cid
@@ -48,29 +49,29 @@ loadRows();
 
 
 // general error messages
-if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
+if (isset($Qreq->post) && $Qreq->post && !count($_POST))
     $Conf->post_missing_msg();
 
 
 // update comment action
-function save_comment($text, $is_response, $roundnum) {
+function save_comment($qreq, $text, $is_response, $roundnum) {
     global $Me, $Conf, $prow, $crow;
     if ($crow)
         $roundnum = (int) $crow->commentRound;
 
     // If I have a review token for this paper, save under that anonymous user.
     $user = $Me;
-    if (($token = req("review_token"))
+    if (($token = $qreq->review_token)
         && ($token = decode_token($token, "V"))
         && in_array($token, $Me->review_tokens())
         && ($rrow = $prow->review_of_token($token)))
         $user = $Conf->user_by_id($rrow->contactId);
 
-    $req = array("visibility" => req("visibility"),
-                 "submit" => $is_response && !req("draft"),
-                 "text" => $text,
-                 "tags" => req("commenttags"),
-                 "blind" => req("blind"));
+    $req = ["visibility" => $qreq->visibility,
+            "submit" => $is_response && !$qreq->draft,
+            "text" => $text,
+            "tags" => $qreq->commenttags,
+            "blind" => $qreq->blind];
     if ($is_response && !$crow)
         $cinfo = new CommentInfo((object) array("commentType" => COMMENTTYPE_RESPONSE,
                                                 "commentRound" => $roundnum), $prow);
@@ -117,9 +118,9 @@ function save_comment($text, $is_response, $roundnum) {
     json_exit($j);
 }
 
-function handle_response() {
+function handle_response($qreq) {
     global $Conf, $Me, $prow, $crow;
-    $rname = trim((string) req("response"));
+    $rname = trim((string) $qreq->response);
     $rnum = $Conf->resp_round_number($rname);
     if ($rnum === false && $rname)
         return Conf::msg_error("No such response round “" . htmlspecialchars($rname) . "”.");
@@ -135,43 +136,43 @@ function handle_response() {
     if (($whyNot = $Me->perm_respond($prow, $xcrow, true)))
         return Conf::msg_error(whyNotText($whyNot));
 
-    $text = rtrim((string) req("comment"));
+    $text = rtrim((string) $qreq->comment);
     if ($text === "" && !$crow)
         return Conf::msg_error("Enter a response.");
 
-    save_comment($text, true, $rnum);
+    save_comment($qreq, $text, true, $rnum);
 }
 
-if (req("savedraftresponse"))
-    $_POST["draft"] = $_REQUEST["draft"] = 1;
-if (req("savedraftresponse") || req("submitresponse"))
-    $_GET["submitcomment"] = $_REQUEST["submitcomment"] = 1;
+if ($Qreq->savedraftresponse)
+    $Qreq->draft = 1;
+if ($Qreq->savedraftresponse || $Qreq->submitresponse)
+    $Qreq->submitcomment = 1;
 
-if (!check_post())
+if (!$Qreq->post_ok())
     /* do nothing */;
-else if (req("submitcomment") && req("response")) {
-    handle_response();
-    if (req("ajax"))
+else if ($Qreq->submitcomment && $Qreq->response) {
+    handle_response($Qreq);
+    if ($Qreq->ajax)
         json_exit(["ok" => false]);
-} else if (req("submitcomment")) {
-    $text = rtrim((string) req("comment"));
+} else if ($Qreq->submitcomment) {
+    $text = rtrim((string) $Qreq->comment);
     if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
         Conf::msg_error(whyNotText($whyNot));
     else if ($text === "" && !$crow)
         Conf::msg_error("Enter a comment.");
     else
-        save_comment($text, false, 0);
-    if (req("ajax"))
+        save_comment($Qreq, $text, false, 0);
+    if ($Qreq->ajax)
         json_exit(["ok" => false]);
-} else if ((req("deletecomment") || req("deleteresponse")) && $crow) {
+} else if (($Qreq->deletecomment || $Qreq->deleteresponse) && $crow) {
     if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
         Conf::msg_error(whyNotText($whyNot));
     else
-        save_comment("", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0, $crow->commentRound);
-    if (req("ajax"))
+        save_comment($Qreq, "", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0, $crow->commentRound);
+    if ($Qreq->ajax)
         json_exit(["ok" => false]);
-} else if (req("cancel") && $crow)
-    $_REQUEST["noedit"] = $_GET["noedit"] = $_POST["noedit"] = 1;
+} else if ($Qreq->cancel && $crow)
+    $Qreq->noedit = 1;
 
 
 exit_to_paper();
