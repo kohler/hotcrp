@@ -5,7 +5,6 @@
 require_once("src/initweb.php");
 if (!$Me->privChair)
     $Me->escape();
-$Qreq = make_qreq();
 
 require_once("src/settingvalues.php");
 $Sv = SettingValues::make_request($Me, $_POST, $_FILES);

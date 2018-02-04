@@ -9,7 +9,6 @@ if (!$Me->is_manager())
 // clean request
 
 // paper selection
-$Qreq = make_qreq();
 if (!isset($Qreq->q) || trim($Qreq->q) === "(All)")
     $Qreq->q = "";
 $_REQUEST["q"] = $_GET["q"] = $_POST["q"] = $Qreq->q;

@@ -22,7 +22,7 @@ class LoginHelper {
             }
         }
         $Me = new Contact;
-        $Me = $Me->activate();
+        $Me = $Me->activate(null);
     }
 
     static function check_http_auth(Qrequest $qreq) {
@@ -67,7 +67,7 @@ class LoginHelper {
     static function check_login(Qrequest $qreq) {
         global $Me;
         if (($user = self::login($qreq)))
-            $Me = $user->activate();
+            $Me = $user->activate($qreq);
     }
 
     static private function login(Qrequest $qreq) {
@@ -178,7 +178,7 @@ class LoginHelper {
         $xuser->mark_login();
 
         // activate and redirect
-        $user = $xuser->activate();
+        $user = $xuser->activate($qreq);
         unset($_SESSION["testsession"]);
         $_SESSION["trueuser"] = (object) array("email" => $user->email);
         $Conf->save_session("freshlogin", true);

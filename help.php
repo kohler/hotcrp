@@ -9,7 +9,6 @@ $help_topics = new GroupedExtensions($Me, [
     "etc/helptopics.json"
 ], $Conf->opt("helpTopics"));
 
-$Qreq = make_qreq();
 if (!$Qreq->t && preg_match(',\A/(\w+)\z,i', Navigation::path()))
     $Qreq->t = substr(Navigation::path(), 1);
 $topic = $Qreq->t ? : "topics";

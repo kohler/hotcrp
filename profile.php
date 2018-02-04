@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-$Qreq = make_qreq();
 
 // check for change-email capabilities
 function change_email_by_capability($Qreq) {

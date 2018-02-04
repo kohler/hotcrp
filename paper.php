@@ -8,14 +8,13 @@ require_once("src/initweb.php");
 require_once("src/papertable.php");
 if ($Me->is_empty())
     $Me->escape();
-$Qreq = make_qreq();
 if ($Qreq->post_ok() && !$Me->has_database_account()) {
     if (isset($Qreq->update) && $Me->can_start_paper())
         $Me = $Me->activate_database_account();
     else
         $Me->escape();
 }
-$useRequest = isset($Qreq->after_login) && isset($Qreq->title);
+$useRequest = isset($Qreq->title) && $qreq->has_attachment("after_login");
 foreach (["emailNote", "reason"] as $x)
     if ($Qreq[$x] === "Optional explanation")
         unset($Qreq[$x]);

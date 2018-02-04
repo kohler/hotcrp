@@ -5,7 +5,6 @@
 $Error = array();
 require_once("src/initweb.php");
 require_once("src/papertable.php");
-$Qreq = make_qreq();
 
 // special case: if "accept" or "refuse" is set, and "email" and "password"
 // are both set, vector through the signin page

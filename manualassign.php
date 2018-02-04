@@ -9,33 +9,31 @@ if (!$Me->is_manager())
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 
 // request cleaning
-$qreq = make_qreq();
-
 $tOpt = PaperSearch::manager_search_types($Me);
-if (!$qreq->t || !isset($tOpt[$qreq->t])) {
+if (!$Qreq->t || !isset($tOpt[$Qreq->t])) {
     reset($tOpt);
-    $qreq->t = key($tOpt);
+    $Qreq->t = key($tOpt);
 }
 
-if ($qreq->kind != "a" && $qreq->kind != "c")
-    $qreq->kind = "a";
+if ($Qreq->kind != "a" && $Qreq->kind != "c")
+    $Qreq->kind = "a";
 
-if (!$qreq->q || trim($qreq->q) == "(All)")
-    $qreq->q = "";
+if (!$Qreq->q || trim($Qreq->q) == "(All)")
+    $Qreq->q = "";
 
-if (!$qreq->p && $qreq->pap)
-    $qreq->p = $qreq->pap;
-if (is_string($qreq->p))
-    $qreq->p = preg_split('/\s+/', $qreq->p);
+if (!$Qreq->p && $Qreq->pap)
+    $Qreq->p = $Qreq->pap;
+if (is_string($Qreq->p))
+    $Qreq->p = preg_split('/\s+/', $Qreq->p);
 
-if (is_string($qreq->papx))
-    $qreq->papx = preg_split('/\s+/', $qreq->papx);
+if (is_string($Qreq->papx))
+    $Qreq->papx = preg_split('/\s+/', $Qreq->papx);
 
 $reviewer = $Me;
-if (isset($qreq->reviewer)) {
+if (isset($Qreq->reviewer)) {
     foreach ($Conf->full_pc_members() as $pcm)
-        if (strcasecmp($pcm->email, $qreq->reviewer) == 0
-            || (string) $pcm->contactId === $qreq->reviewer) {
+        if (strcasecmp($pcm->email, $Qreq->reviewer) == 0
+            || (string) $pcm->contactId === $Qreq->reviewer) {
             $reviewer = $pcm;
             break;
         }
@@ -43,29 +41,29 @@ if (isset($qreq->reviewer)) {
 if (!($reviewer->roles & Contact::ROLE_PC))
     $reviewer = null;
 
-$qreq->assrev = array();
-foreach ($qreq as $k => $v)
+$Qreq->assrev = array();
+foreach ($Qreq as $k => $v)
     if (str_starts_with($k, "assrev")) {
         $suf = substr($k, 6);
         if (($upos = strpos($suf, "u")) !== false
             && substr($suf, $upos + 1) == $reviewer->contactId)
             $suf = substr($suf, 0, $upos);
         if (($p = cvtint($suf)) > 0)
-            $qreq->assrev[$p] = $v;
+            $Qreq->assrev[$p] = $v;
     }
-if (is_array($qreq->papx)) {
-    foreach ($qreq->papx as $p)
-        if (($p = cvtint($p)) > 0 && !isset($qreq->assrev[$p]))
-            $qreq->assrev[$p] = 0;
+if (is_array($Qreq->papx)) {
+    foreach ($Qreq->papx as $p)
+        if (($p = cvtint($p)) > 0 && !isset($Qreq->assrev[$p]))
+            $Qreq->assrev[$p] = 0;
 }
 
-if (is_array($qreq->p) && $qreq->kind == "c") {
-    foreach ($qreq->p as $p)
+if (is_array($Qreq->p) && $Qreq->kind == "c") {
+    foreach ($Qreq->p as $p)
         if (($p = cvtint($p)) > 0)
-            $qreq->assrev[$p] = -1;
+            $Qreq->assrev[$p] = -1;
 }
 
-$qreq->rev_round = (string) $Conf->sanitize_round_name($qreq->rev_round);
+$Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
 
 
 function saveAssignments($qreq, $reviewer) {
@@ -123,9 +121,9 @@ function saveAssignments($qreq, $reviewer) {
 }
 
 
-if ($qreq->update && $reviewer && check_post())
-    saveAssignments($qreq, $reviewer);
-else if ($qreq->update)
+if ($Qreq->update && $reviewer && $Qreq->post_ok())
+    saveAssignments($Qreq, $reviewer);
+else if ($Qreq->update)
     Conf::msg_error("You need to select a reviewer.");
 
 
@@ -146,7 +144,7 @@ Assignment methods:
  <li><a href='", hoturl("bulkassign"), "'>Bulk update</a></li>
 </ul>
 <hr class='hr' />\n";
-if ($qreq->kind == "a")
+if ($Qreq->kind == "a")
     echo "Types of PC review:
 <dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory review</dd>
   <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>May be delegated to external reviewers</dd>
@@ -154,7 +152,7 @@ if ($qreq->kind == "a")
   <dt>" . review_type_icon(REVIEW_META) . " Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
 <hr class='hr' />\n";
 echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
-if ($qreq->kind == "a")
+if ($Qreq->kind == "a")
     echo "<dt>Preference</dt><dd><a href='", hoturl("reviewprefs"), "'>Review preference</a></dd>
   <dt>Topic score</dt><dd>High value means PC member has interest in many paper topics</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>\n";
@@ -195,20 +193,20 @@ echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
 
 // Paper selection
 echo "<tr><td>Paper selection: &nbsp;</td><td>",
-    Ht::entry("q", $qreq->q,
+    Ht::entry("q", $Qreq->q,
               ["id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
                "title" => "Paper numbers or search terms"]),
     " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
-    echo Ht::select("t", $tOpt, $qreq->t);
+    echo Ht::select("t", $tOpt, $Qreq->t);
 else
     echo join("", $tOpt);
 echo "</td></tr>\n",
     "<tr><td colspan='2'><div class='g'></div>\n";
 
-echo Ht::radio("kind", "a", $qreq->kind == "a"),
+echo Ht::radio("kind", "a", $Qreq->kind == "a"),
     "&nbsp;", Ht::label("Assign reviews and/or conflicts"), "<br />\n",
-    Ht::radio("kind", "c", $qreq->kind == "c"),
+    Ht::radio("kind", "c", $Qreq->kind == "c"),
     "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
 
 echo '<tr><td colspan="2"><div class="aab aabr">',
@@ -232,11 +230,11 @@ if ($reviewer) {
     $interest = [[], []];
     foreach ($reviewer->topic_interest_map() as $topic => $ti)
         $interest[$ti > 0 ? 1 : 0][$topic] = $ti;
-    if (!empty($interest[1]) && $qreq->kind !== "c")
+    if (!empty($interest[1]) && $Qreq->kind !== "c")
         echo '<div class="f-i"><label>High interest topics</label>',
             PaperInfo::unparse_topic_list_html($Conf, $interest[1]),
             "</div>";
-    if (!empty($interest[0]) && $qreq->kind !== "c")
+    if (!empty($interest[0]) && $Qreq->kind !== "c")
         echo '<div class="f-i"><label>Low interest topics</label>',
             PaperInfo::unparse_topic_list_html($Conf, $interest[0]),
             "</div>";
@@ -256,24 +254,24 @@ if ($reviewer) {
         '">Search for potential conflicts</a></div>';
 
     // main assignment form
-    $search = new PaperSearch($Me, ["t" => $qreq->t, "q" => $qreq->q,
+    $search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q,
                                     "urlbase" => hoturl_site_relative_raw("manualassign", ["reviewer" => $reviewer->email])],
                               $reviewer);
     if (!empty($hlsearch))
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
-    $paperList = new PaperList($search, ["sort" => true, "display" => ($qreq->kind == "c" ? "show:topics" : "show:topics show:reviewers")], make_qreq());
-    echo "<form class='assignpc ignore-diff' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "kind" => $qreq->kind, "sort" => $qreq->sort]),
+    $paperList = new PaperList($search, ["sort" => true, "display" => ($Qreq->kind == "c" ? "show:topics" : "show:topics show:reviewers")], $Qreq);
+    echo "<form class='assignpc ignore-diff' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "kind" => $Qreq->kind, "sort" => $Qreq->sort]),
         "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
-        Ht::hidden("t", $qreq->t),
-        Ht::hidden("q", $qreq->q),
+        Ht::hidden("t", $Qreq->t),
+        Ht::hidden("q", $Qreq->q),
         Ht::hidden("papx", join(" ", $search->paper_ids())),
         "<div class=\"aab aabr aabig\">",
         '<div class="aabut aabutsp">', Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]), '</div>';
-    if ($qreq->kind != "c") {
+    if ($Qreq->kind != "c") {
         $rev_rounds = $Conf->round_selector_options(false);
         if (count($rev_rounds) > 1)
             echo '<div class="aabut aabutsp">Review round: &nbsp;',
-                Ht::select("rev_round", $rev_rounds, $qreq->rev_round ? : "unnamed", ["id" => "assrevround", "class" => "ignore-diff"]),
+                Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed", ["id" => "assrevround", "class" => "ignore-diff"]),
                 '</div>';
         else if (!get($rev_rounds, "unnamed"))
             echo '<div class="aabut aabutsp">Review round: ', $Conf->assignment_round_name(false), '</div>';
@@ -283,7 +281,7 @@ if ($reviewer) {
     echo '<div class="aabut aabutsp"><label>',
         Ht::checkbox(false, false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),
         "&nbsp;Automatically save assignments</label></div></div>\n",
-        $paperList->table_html(($qreq->kind == "c" ? "conflict" : "reviewAssignment"),
+        $paperList->table_html(($Qreq->kind == "c" ? "conflict" : "reviewAssignment"),
                                ["header_links" => true, "nofooter" => true, "list" => true]),
         '<div class="aab aabr aabig"><div class="aabut">',
         Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]),

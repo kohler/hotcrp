@@ -7,10 +7,6 @@ require_once("src/papersearch.php");
 if ($Me->is_empty())
     $Me->escape();
 
-global $Qreq;
-if (!$Qreq)
-    $Qreq = make_qreq();
-
 if (isset($Qreq->default) && $Qreq->defaultact)
     $Qreq->fn = $Qreq->defaultact;
 

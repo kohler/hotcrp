@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-$Qreq = make_qreq();
 
 // signin links
 // auto-signin when email & password set

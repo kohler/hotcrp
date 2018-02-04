@@ -37,9 +37,8 @@ if ($_GET["fn"] === "trackerstatus") {
 // initialization
 require_once("src/initweb.php");
 
-$qreq = make_qreq();
-if ($qreq->base !== null)
-    $Conf->set_siteurl($qreq->base);
+if ($Qreq->base !== null)
+    $Conf->set_siteurl($Qreq->base);
 if (!$Me->has_database_account()
     && ($key = $Me->capability("tracker_kiosk"))) {
     $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
@@ -51,10 +50,10 @@ if (!$Me->has_database_account()
         $Me->tracker_kiosk_state = $kiosks->$key->show_papers ? 2 : 1;
     }
 }
-if ($qreq->p && ctype_digit($qreq->p)) {
-    $Conf->paper = $Conf->paperRow(array("paperId" => intval($qreq->p)), $Me);
+if ($Qreq->p && ctype_digit($Qreq->p)) {
+    $Conf->paper = $Conf->paperRow(array("paperId" => intval($Qreq->p)), $Me);
     if (!$Conf->paper || !$Me->can_view_paper($Conf->paper)) {
-        $whynot = ["conf" => $Conf, "paperId" => $qreq->p];
+        $whynot = ["conf" => $Conf, "paperId" => $Qreq->p];
         if (!$Conf->paper && $Me->privChair)
             $whynot["noPaper"] = true;
         else {
@@ -63,24 +62,24 @@ if ($qreq->p && ctype_digit($qreq->p)) {
                 $whynot["signin"] = "view_paper";
         }
         $Conf->paper = null;
-        $qreq->set_attachment("paper_whynot", $whynot);
+        $Qreq->set_attachment("paper_whynot", $whynot);
     }
-} else if ($qreq->p) {
-    $qreq->set_attachment("paper_whynot", ["conf" => $Conf, "invalidId" => "paper", "paperId" => $qreq->p]);
+} else if ($Qreq->p) {
+    $Qreq->set_attachment("paper_whynot", ["conf" => $Conf, "invalidId" => "paper", "paperId" => $Qreq->p]);
 }
 
 // requests
-if ($Conf->has_api($qreq->fn))
-    $Conf->call_api_exit($qreq->fn, $Me, $qreq, $Conf->paper);
+if ($Conf->has_api($Qreq->fn))
+    $Conf->call_api_exit($Qreq->fn, $Me, $Qreq, $Conf->paper);
 
-if ($qreq->fn === "setsession" && $qreq->post_ok()) {
-    if (!isset($qreq->v))
-        $qreq->v = $qreq->var . "=" . $qreq->val;
-    json_exit(["ok" => $Me->setsession_api($qreq->v)]);
+if ($Qreq->fn === "setsession" && $Qreq->post_ok()) {
+    if (!isset($Qreq->v))
+        $Qreq->v = $Qreq->var . "=" . $Qreq->val;
+    json_exit(["ok" => $Me->setsession_api($Qreq->v)]);
 }
 
-if ($qreq->fn === "events" && $Me->is_reviewer()) {
-    $from = $qreq->from;
+if ($Qreq->fn === "events" && $Me->is_reviewer()) {
+    $from = $Qreq->from;
     if (!$from || !ctype_digit($from))
         $from = $Now;
     $when = $from;
@@ -96,22 +95,22 @@ if ($qreq->fn === "events" && $Me->is_reviewer()) {
     }
     json_exit(["ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
                "rows" => $rows]);
-} else if ($qreq->fn === "events")
+} else if ($Qreq->fn === "events")
     json_exit(["ok" => false]);
 
-if ($qreq->fn === "searchcompletion") {
+if ($Qreq->fn === "searchcompletion") {
     $s = new PaperSearch($Me, "");
     json_exit(["ok" => true, "searchcompletion" => $s->search_completion()]);
 }
 
 
 // from here on: `status` and `track` requests
-if ($qreq->fn === "track")
-    MeetingTracker::track_api($Me, $qreq); // may fall through to act like `status`
+if ($Qreq->fn === "track")
+    MeetingTracker::track_api($Me, $Qreq); // may fall through to act like `status`
 
 $j = $Me->my_deadlines($Conf->paper);
 
-if ($qreq->conflist && $Me->has_email() && ($cdb = Contact::contactdb())) {
+if ($Qreq->conflist && $Me->has_email() && ($cdb = Contact::contactdb())) {
     $j->conflist = array();
     $result = Dbl::ql($cdb, "select c.confid, siteclass, shortName, url
         from Roles r join Conferences c on (c.confid=r.confid)

@@ -7,10 +7,6 @@ require_once("src/papersearch.php");
 if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
 
-global $Qreq;
-if (!$Qreq)
-    $Qreq = make_qreq();
-
 // set reviewer
 $reviewer = $Me;
 $incorrect_reviewer = false;

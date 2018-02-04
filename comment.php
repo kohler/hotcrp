@@ -7,7 +7,6 @@ require_once("src/initweb.php");
 require_once("src/papertable.php");
 if (!$Me->email)
     $Me->escape();
-$Qreq = make_qreq();
 
 
 // header

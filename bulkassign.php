@@ -11,7 +11,6 @@ $null_mailer = new HotCRPMailer(null, null, array("requester_contact" => $Me,
                                                   "width" => false));
 $Error = array();
 
-$Qreq = make_qreq();
 $Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
 if ($Qreq->post_ok())
     header("X-Accel-Buffering: no");  // NGINX: do not hold on to file

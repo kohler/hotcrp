@@ -5,7 +5,6 @@
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
 
-$Qreq = make_qreq();
 $Graph = $Qreq->g;
 if (!$Graph
     && preg_match(',\A/(\w+)(/|\z),', Navigation::path(), $m))

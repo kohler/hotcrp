@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 require_once("init.php");
-global $Conf, $Me, $Opt;
+global $Conf, $Me, $Opt, $Qreq;
 
 // Check method: GET/HEAD/POST only, except OPTIONS is allowed for API calls
 if ($_SERVER["REQUEST_METHOD"] !== "GET"
@@ -15,12 +15,15 @@ if ($_SERVER["REQUEST_METHOD"] !== "GET"
     exit;
 }
 
+// Collect $Qreq
+$Qreq = make_qreq();
+
 // Check for obsolete pages
 // These are pages that we've removed from the source. But some user might
 // have an old version of the page lying around their directory. Don't run
 // that code; redirect to index.
-if (array_search(Navigation::page(),
-                 ["account", "contactauthors", "contacts", "login", "logout"]) !== false)
+if (in_array(Navigation::page(),
+             ["account", "contactauthors", "contacts", "login", "logout"]))
     go();
 
 // Check for redirect to https
@@ -49,16 +52,23 @@ if ($Me === false)
     return;
 
 
-// Set up session
-$Opt["globalSessionLifetime"] = ini_get("session.gc_maxlifetime");
-if (!isset($Opt["sessionLifetime"]))
-    $Opt["sessionLifetime"] = 86400;
-ini_set("session.gc_maxlifetime", $Opt["sessionLifetime"]);
-ensure_session();
-
 // Initialize user
 function initialize_user() {
-    global $Conf, $Me;
+    global $Conf, $Me, $Opt, $Qreq;
+
+    // set up session
+    $Opt["globalSessionLifetime"] = ini_get("session.gc_maxlifetime");
+    if (!isset($Opt["sessionLifetime"]))
+        $Opt["sessionLifetime"] = 86400;
+    ini_set("session.gc_maxlifetime", $Opt["sessionLifetime"]);
+    ensure_session();
+
+    // check CSRF token
+    if ($Qreq->post && ($sid = session_id())) {
+        if ((isset($_SESSION["post"]) && $Qreq->post === $_SESSION["post"])
+            || $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, 8))
+            $Qreq->approve_post();
+    }
 
     // load current user
     $Me = null;
@@ -83,9 +93,9 @@ function initialize_user() {
         $lb = $_SESSION["login_bounce"];
         if ($lb[0] == $Conf->dsn && $lb[2] !== "index" && $lb[2] == Navigation::page()) {
             foreach ($lb[3] as $k => $v)
-                if (!isset($_GET[$k]))
-                    $_REQUEST[$k] = $_GET[$k] = $v;
-            $_REQUEST["after_login"] = $_GET["after_login"] = 1;
+                if (!isset($Qreq[$k]))
+                    $Qreq[$k] = $v;
+            $Qreq->set_attachment("after_login", true);
         }
         unset($_SESSION["login_bounce"]);
     }

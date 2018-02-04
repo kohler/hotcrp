@@ -8,8 +8,6 @@ if (!$Me->is_manager())
 
 $Conf->header("Log", "actionlog");
 unset($_GET["forceShow"], $_POST["forceShow"], $_REQUEST["forceShow"]);
-global $Qreq;
-$Qreq = make_qreq();
 $Eclass = [];
 $nlinks = 6;
 

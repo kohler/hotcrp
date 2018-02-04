@@ -11,7 +11,6 @@ $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 $Error = array();
 // ensure site contact exists before locking tables
 $Conf->site_contact();
-$Qreq = make_qreq();
 
 // header
 function confHeader() {

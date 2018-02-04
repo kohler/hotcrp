@@ -5,11 +5,9 @@
 
 require_once("src/initweb.php");
 $show_papers = true;
-$Qreq = null;
 
 // kiosk mode
 if ($Me->privChair) {
-    $Qreq = make_qreq();
     $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : array());
     uasort($kiosks, function ($a, $b) {
         return $a->update_at - $b->update_at;

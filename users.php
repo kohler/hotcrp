@@ -4,7 +4,7 @@
 
 require_once("src/initweb.php");
 require_once("src/contactlist.php");
-$Qreq = make_qreq();
+
 $getaction = "";
 if (isset($Qreq->get))
     $getaction = $Qreq->get;
