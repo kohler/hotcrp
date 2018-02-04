@@ -905,10 +905,13 @@ class Contact {
         return $d === "{}" ? null : $d;
     }
 
-    function escape() {
-        if (req("ajax")) {
+    function escape($qreq = null) {
+        global $Qreq;
+        $qreq = $qreq ? : $Qreq;
+
+        if ($qreq->ajax) {
             if ($this->is_empty())
-                json_exit(["ok" => false, "error" => "You have been logged out.", "loggedout" => true]);
+                json_exit(["ok" => false, "error" => "You have been signed out.", "loggedout" => true]);
             else
                 json_exit(["ok" => false, "error" => "You don’t have permission to access that page."]);
         }
@@ -918,12 +921,12 @@ class Contact {
             $x = array();
             if (Navigation::path())
                 $x["__PATH__"] = preg_replace(",^/+,", "", Navigation::path());
-            if (req("anchor"))
+            if ($qreq->anchor)
                 $x["anchor"] = req("anchor");
-            $url = selfHref($x, array("raw" => true, "site_relative" => true));
+            $url = SelfHref::make($qreq, $x, ["raw" => true, "site_relative" => true]);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST];
-            if (check_post())
-                error_go(false, "You’ve been logged out due to inactivity, so your changes have not been saved. After logging in, you may submit them again.");
+            if ($qreq->post_ok())
+                error_go(false, "You’ve been signed out due to inactivity, so your changes have not been saved. After signing in, you may submit them again.");
             else
                 error_go(false, "You must sign in to access that page.");
         } else

@@ -3,20 +3,19 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-if (isset($_GET["text"]) && $_GET["text"])
-    header("Content-Type: text/plain");
-else
-    header("Content-Type: application/json");
+header("Content-Type: " . ($Qreq->text ? "text/plain" : "application/json"));
 
-if ($Me->privChair && check_post() && isset($_REQUEST["ignore"])) {
+if ($Me->privChair && $Qreq->post_ok() && isset($Qreq->ignore)) {
     $when = time() + 86400 * 2;
-    $Conf->qe_raw("insert into Settings (name, value) values ('ignoreupdate_" . sqlq($_REQUEST["ignore"]) . "', $when) on duplicate key update value=$when");
+    $Conf->qe("insert into Settings (name, value) values (?, ?) on duplicate key update value=?", "ignoreupdate_" . $Qreq->ignore, $when, $when);
 }
 
 $messages = array();
-if ($Me->privChair && isset($_REQUEST["data"])
-    && ($data = json_decode($_REQUEST["data"], true))
-    && isset($data["updates"]) && is_array($data["updates"])) {
+if ($Me->privChair
+    && isset($Qreq->data)
+    && ($data = json_decode($Qreq->data, true))
+    && isset($data["updates"])
+    && is_array($data["updates"])) {
     foreach ($data["updates"] as $update) {
         $ok = true;
         if (isset($update["opt"]) && is_array($update["opt"]))
