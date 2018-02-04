@@ -60,7 +60,7 @@ class Search_API {
         $response = $pl->column_json($qreq->f);
         $response["ok"] = !empty($response);
 
-        if ($qreq->session && check_post($qreq))
+        if ($qreq->session && $qreq->post_ok())
             $user->setsession_api($qreq->session);
 
         return $response;

@@ -73,7 +73,7 @@ if ($qreq->p && ctype_digit($qreq->p)) {
 if ($Conf->has_api($qreq->fn))
     $Conf->call_api_exit($qreq->fn, $Me, $qreq, $Conf->paper);
 
-if ($qreq->fn === "setsession" && check_post($qreq)) {
+if ($qreq->fn === "setsession" && $qreq->post_ok()) {
     if (!isset($qreq->v))
         $qreq->v = $qreq->var . "=" . $qreq->val;
     json_exit(["ok" => $Me->setsession_api($qreq->v)]);

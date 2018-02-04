@@ -123,7 +123,7 @@ function savesearch() {
     }
 }
 
-if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && check_post($Qreq)) {
+if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && $Qreq->post_ok()) {
     savesearch();
     $Qreq->tab = "savedsearches";
 }

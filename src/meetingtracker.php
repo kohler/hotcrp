@@ -250,7 +250,7 @@ class MeetingTracker {
     }
 
     static function track_api(Contact $user, $qreq) {
-        if (!$user->privChair || !check_post($qreq))
+        if (!$user->privChair || !$qreq->post_ok())
             json_exit(["ok" => false]);
         // argument: IDENTIFIER LISTNUM [POSITION] -OR- stop
         if ($qreq->track === "stop") {

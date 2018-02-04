@@ -296,7 +296,7 @@ function update_paper(Qrequest $qreq, $action) {
 }
 
 
-if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
+if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
     // choose action
     $action = "update";
     if ($Qreq->submitfinal && !$newPaper)
@@ -319,7 +319,7 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
              && $Me->can_finalize_paper($prow));
 }
 
-if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
+if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
     if ($Me->can_administer($prow) || $Me->act_author_view($prow)) {
         $pj = PaperSaver::apply_all($Qreq, $prow, $Me, "updatecontacts");
         $ps = new PaperStatus($Conf, $Me);
@@ -344,7 +344,7 @@ if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
 
 
 // delete action
-if ($Qreq->delete && check_post()) {
+if ($Qreq->delete && $Qreq->post_ok()) {
     if ($newPaper)
         $Conf->confirmMsg("Paper deleted.");
     else if (!$Me->privChair)

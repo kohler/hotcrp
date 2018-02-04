@@ -389,7 +389,7 @@ function parseBulkFile($text, $filename) {
     return count($errors) == 0;
 }
 
-if (!check_post($Qreq))
+if (!$Qreq->post_ok())
     /* do nothing */;
 else if ($Qreq->bulkregister && $newProfile && $Qreq->has_file("bulk")) {
     if (($text = $Qreq->file_contents("bulk")) === false)
@@ -479,7 +479,7 @@ function textArrayPapers($pids) {
     return commajoin(preg_replace('/(\d+)/', "<a href='" . hoturl("paper", "p=\$1&amp;ls=" . join("+", $pids)) . "'>\$1</a>", $pids));
 }
 
-if (isset($Qreq->delete) && !Dbl::has_error() && check_post($Qreq)) {
+if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
     if (!$Me->privChair)
         Conf::msg_error("Only administrators can delete accounts.");
     else if ($Acct->contactId == $Me->contactId)

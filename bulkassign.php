@@ -5,16 +5,16 @@
 require_once("src/initweb.php");
 if (!$Me->is_manager())
     $Me->escape();
-if (check_post())
-    header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 $null_mailer = new HotCRPMailer(null, null, array("requester_contact" => $Me,
                                                   "other_contact" => $Me /* backwards compat */,
                                                   "reason" => "",
                                                   "width" => false));
 $Error = array();
 
-$_GET["rev_round"] = $_POST["rev_round"] = $_REQUEST["rev_round"] =
-    (string) $Conf->sanitize_round_name(req("rev_round"));
+$Qreq = make_qreq();
+$Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
+if ($Qreq->post_ok())
+    header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 
 
 function assignment_defaults() {

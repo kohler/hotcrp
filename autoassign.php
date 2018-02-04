@@ -5,8 +5,6 @@
 require_once("src/initweb.php");
 if (!$Me->is_manager())
     $Me->escape();
-if (check_post())
-    header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 
 // clean request
 
@@ -15,6 +13,8 @@ $Qreq = make_qreq();
 if (!isset($Qreq->q) || trim($Qreq->q) === "(All)")
     $Qreq->q = "";
 $_REQUEST["q"] = $_GET["q"] = $_POST["q"] = $Qreq->q;
+if ($Qreq->post_ok())
+    header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 
 $tOpt = PaperSearch::manager_search_types($Me);
 if ($Me->privChair && !isset($Qreq->t)
@@ -56,7 +56,7 @@ if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && $Qreq->method() !== "POS
         }
     if ($Conf->setting("autoassign_badpairs"))
         $Qreq->badpairs = 1;
-} else if ($Me->privChair && isset($Qreq->assign) && check_post()) {
+} else if ($Me->privChair && isset($Qreq->assign) && $Qreq->post_ok()) {
     $x = array();
     for ($i = 1; isset($Qreq["bpa$i"]); ++$i)
         if ($Qreq["bpa$i"] && $Qreq["bpb$i"]
@@ -400,13 +400,13 @@ class AutoassignerInterface {
 }
 
 if (isset($Qreq->assign) && isset($Qreq->a)
-    && isset($Qreq->pctyp) && check_post()) {
+    && isset($Qreq->pctyp) && $Qreq->post_ok()) {
     $ai = new AutoassignerInterface($Me, $Qreq);
     if ($ai->check())
         $ai->run();
     ensure_session();
 } else if ($Qreq->saveassignment && $Qreq->submit
-           && isset($Qreq->assignment) && check_post()) {
+           && isset($Qreq->assignment) && $Qreq->post_ok()) {
     $assignset = new AssignmentSet($Me, true);
     $assignset->enable_papers($SSel->selection());
     $assignset->parse($Qreq->assignment);
