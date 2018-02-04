@@ -945,50 +945,6 @@ a.closebtn {
 }
 
 
-/* Normal captions and entries */
-td.caption {
-	text-align: right;
-	padding: 2px 0.5em 4px 0.5em;
-	margin: 0;
-	font-weight: bold;
-	color: #555555;
-	width: 11em;
-	background: #fffdf0;
-	border-left: 1px solid #ccb7a3; /* #9999cc; */
-	border-right: 1px solid #ccb7a3; /* #9999cc; */
-}
-tr:first-child > td.caption {
-	border-top: 1px solid #ccb7a3; /* #9999cc; */
-}
-tr:last-child > td.caption {
-	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
-}
-tr.topspace > td.caption {
-	padding: 7px 0.5em 3px 4px;
-}
-tr.id > td.caption {
-	border: 0 none;
-	background: #ffffff;
-	color: black;
-}
-tr.last > td.caption, tr.last > td.entry {
-	padding: 1px 0;
-}
-tr.last > td.caption {
-	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
-}
-
-td.entry, th.entry {
-	padding: 2px 1em 4px 0.5em;
-}
-tr.last > td.entry {
-	padding: 0 1em 0 0.5em;
-}
-tr.rev_reviewers_hdr > td.entry {
-	padding: 1px 1em 3px 0.5em;
-}
-
-
 /* Other types of captions and entries */
 table.paper, table.settings {
 	width: 100%;
@@ -1062,9 +1018,6 @@ div.hint {
 }
 .hint {
 	font-size: smaller;
-}
-td.caption span.hint {
-	font-weight: normal;
 }
 
 

@@ -492,7 +492,6 @@ if (isset($Qreq->requery) || isset($Qreq->haspap)) {
         Ht::hidden("haspap", 1);
 }
 echo "</div>\n";
-// echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
 
 
 // action
