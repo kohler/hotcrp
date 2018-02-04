@@ -267,10 +267,6 @@ function req($idx, $default = null) {
         return $default;
 }
 
-function req_s($idx, $default = null) {
-    return (string) req($idx, $default);
-}
-
 function uploaded_file_error($finfo) {
     $e = $finfo["error"];
     $name = get($finfo, "name") ? "<span class=\"lineno\">" . htmlspecialchars($finfo["name"]) . ":</span> " : "";
