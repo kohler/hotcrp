@@ -2,39 +2,40 @@
 // paper.php -- HotCRP paper view and edit page
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
+global $Qreq;
 $ps = null;
 require_once("src/initweb.php");
 require_once("src/papertable.php");
 if ($Me->is_empty())
     $Me->escape();
-if (check_post() && !$Me->has_database_account()) {
-    if (isset($_REQUEST["update"]) && $Me->can_start_paper())
+$Qreq = make_qreq();
+if ($Qreq->post_ok() && !$Me->has_database_account()) {
+    if (isset($Qreq->update) && $Me->can_start_paper())
         $Me = $Me->activate_database_account();
     else
         $Me->escape();
 }
-$useRequest = isset($_REQUEST["after_login"]) && isset($_REQUEST["title"]);
-foreach (array("emailNote", "reason") as $x)
-    if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")
-        unset($_REQUEST[$x], $_GET[$x], $_POST[$x]);
-if (isset($_GET["p"])
-    && ctype_digit($_GET["p"])
+$useRequest = isset($Qreq->after_login) && isset($Qreq->title);
+foreach (["emailNote", "reason"] as $x)
+    if ($Qreq[$x] === "Optional explanation")
+        unset($Qreq[$x]);
+if (isset($Qreq->p)
+    && ctype_digit($Qreq->p)
     && !Navigation::path()
-    && !check_post()) {
-    go(selfHref());
+    && !$Qreq->post_ok()) {
+    go(SelfHref::make($Qreq));
 }
-if (!isset($_GET["p"])
-    && !isset($_GET["paperId"])
+if (!isset($Qreq->p)
+    && !isset($Qreq->paperId)
     && ($x = Navigation::path_component(0)) !== null) {
     if (preg_match(',\A(?:new|\d+)\z,i', $x)) {
-        $_REQUEST["p"] = $_GET["p"] = $x;
-        if (!isset($_REQUEST["m"]) && ($x = Navigation::path_component(1)))
-            $_REQUEST["m"] = $_GET["m"] = $x;
-        if (isset($_REQUEST["m"])
-            && $_REQUEST["m"] === "api"
-            && !isset($_REQUEST["fn"])
+        $Qreq->p = $x;
+        if (!isset($Qreq->m) && ($x = Navigation::path_component(1)))
+            $Qreq->m = $x;
+        if ($Qreq->m === "api"
+            && !isset($Qreq->fn)
             && ($x = Navigation::path_component(2)))
-            $_REQUEST["fn"] = $_GET["fn"] = $x;
+            $Qreq->fn = $x;
     }
 }
 
@@ -47,8 +48,8 @@ function confHeader() {
 }
 
 function errorMsgExit($msg) {
-    global $Conf;
-    if (req("ajax")) {
+    global $Conf, $Qreq;
+    if ($Qreq->ajax) {
         Conf::msg_error($msg);
         json_exit(["ok" => false]);
     } else {
@@ -62,12 +63,11 @@ function errorMsgExit($msg) {
 
 
 // collect paper ID: either a number or "new"
-$newPaper = (defval($_REQUEST, "p") == "new"
-             || defval($_REQUEST, "paperId") == "new");
+$newPaper = $Qreq->p === "new" || $Qreq->paperId === "new";
 
 
 // general error messages
-if (isset($_GET["post"]) && $_GET["post"] && !count($_POST))
+if ($Qreq->post && $Qreq->post_empty())
     $Conf->post_missing_msg();
 
 
@@ -84,25 +84,23 @@ if (!$newPaper)
 
 
 // paper actions
-if ($prow && isset($_GET["m"]) && $_GET["m"] === "api"
-    && isset($_GET["fn"]) && $Conf->has_api($_GET["fn"])) {
-    $Qreq = make_qreq();
+if ($prow && $Qreq->m === "api" && isset($Qreq->fn) && $Conf->has_api($Qreq->fn)) {
     $Conf->call_api_exit($Qreq->fn, $Me, $Qreq, $prow);
 }
 
 
 // withdraw and revive actions
-if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
+if (isset($Qreq->withdraw) && !$newPaper && $Qreq->post_ok()) {
     if (!($whyNot = $Me->perm_withdraw_paper($prow))) {
-        $reason = defval($_REQUEST, "reason", "");
-        if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
-            $reason = defval($_REQUEST, "emailNote", "");
+        $reason = (string) $Qreq->reason;
+        if ($reason === "" && $Me->privChair && $Qreq->doemail > 0)
+            $reason = (string) $Qreq->emailNote;
         Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-timeSubmitted,0), withdrawReason=? where paperId=$prow->paperId", $reason != "" ? $reason : null);
         $Conf->update_papersub_setting(-1);
         loadRows();
 
         // email contact authors themselves
-        if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
+        if (!$Me->privChair || $Qreq->doemail > 0)
             HotCRPMailer::send_contacts(($prow->conflictType >= CONFLICT_AUTHOR ? "@authorwithdraw" : "@adminwithdraw"),
                                         $prow, array("reason" => $reason, "infoNames" => 1));
 
@@ -125,26 +123,23 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         }
 
         $Me->log_activity("Withdrew", $prow->paperId);
-        redirectSelf();
+        SelfHref::redirect($Qreq);
     } else
         Conf::msg_error(whyNotText($whyNot));
 }
-if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
+if (isset($Qreq->revive) && !$newPaper && $Qreq->post_ok()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
         Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,if(timeSubmitted<-100,-timeSubmitted,0)), withdrawReason=null where paperId=$prow->paperId");
         $Conf->update_papersub_setting(0);
         loadRows();
         $Me->log_activity("Revived", $prow->paperId);
-        redirectSelf();
+        SelfHref::redirect($Qreq);
     } else
         Conf::msg_error(whyNotText($whyNot));
 }
 
 
 // send watch messages
-global $Qreq;
-$Qreq = make_qreq();
-
 function final_submit_watch_callback($prow, $minic) {
     if ($minic->can_view_paper($prow))
         HotCRPMailer::send_to($minic, "@finalsubmitnotify", $prow);
@@ -309,7 +304,7 @@ if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
 
     $whyNot = update_paper($Qreq, $action);
     if ($whyNot === true)
-        redirectSelf(["p" => $prow->paperId, "m" => "edit"]);
+        SelfHref::redirect($Qreq, ["p" => $prow->paperId, "m" => "edit"]);
 
     // If we get here, we failed to update.
     // Use the request unless the request failed because updates
@@ -329,7 +324,7 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
             else if ($ps->execute_save_paper_json($pj)) {
                 Conf::msg_confirm($Conf->_("Updated contacts for submission #%d.", $prow->paperId));
                 $Me->log_activity("Updated contacts", $prow->paperId);
-                redirectSelf();
+                SelfHref::redirect($Qreq);
             }
         } else {
             Conf::msg_error("<ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>");
@@ -412,10 +407,10 @@ else {
         $paperTable->paptabComments();
     }
     // restore comment across logout bounce
-    if (req("editcomment")) {
-        $cid = req("c");
+    if ($Qreq->editcomment) {
+        $cid = $Qreq->c;
         $preferred_resp_round = false;
-        if (($x = req("response")))
+        if (($x = $Qreq->response))
             $preferred_resp_round = $Conf->resp_round_number($x);
         if ($preferred_resp_round === false)
             $preferred_resp_round = $Me->preferred_resp_round_number($prow);
@@ -434,13 +429,13 @@ else {
             if ($preferred_resp_round !== false)
                 $j->response = $Conf->resp_round_name($preferred_resp_round);
         }
-        if (($x = req("comment")) !== null) {
+        if (($x = $Qreq->comment) !== null) {
             $j->text = $x;
-            $j->visibility = req("visibility");
-            $tags = trim((string) req("commenttags"));
+            $j->visibility = $Qreq->visibility;
+            $tags = trim((string) $Qreq->commenttags);
             $j->tags = $tags === "" ? [] : preg_split('/\s+/', $tags);
-            $j->blind = !!req("blind");
-            $j->draft = !!req("draft");
+            $j->blind = !!$Qreq->blind;
+            $j->draft = !!$Qreq->draft;
         }
         Ht::stash_script("papercomment.edit(" . json_encode_browser($j) . ")");
     }

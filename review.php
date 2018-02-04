@@ -33,7 +33,7 @@ $rf = $Conf->review_form();
 // header
 function confHeader() {
     global $paperTable;
-    PaperTable::do_header($paperTable, "review", req("mode"));
+    PaperTable::do_header($paperTable, "review", $_REQUEST["mode"]);
 }
 
 function errorMsgExit($msg) {
@@ -331,7 +331,7 @@ $editAny = $Me->can_review($prow, null);
 if (!$viewAny && !$editAny) {
     if (($whyNotPaper = $Me->perm_view_paper($prow)))
         errorMsgExit(whyNotText($whyNotPaper + ["listViewable" => true]));
-    if (req("reviewId") === null) {
+    if (isset($Qreq->reviewId)) {
         Conf::msg_error("You can’t see the reviews for this paper. "
                         . whyNotText($Me->perm_view_review($prow, null)));
         go(hoturl("paper", "p=$prow->paperId"));
