@@ -215,7 +215,7 @@ class FormulaGraph {
                     $c = [];
                     if ($prow->paperTags)
                         $c = $this->conf->tags()->styles($prow->viewable_tags($this->user), TagMap::STYLE_BG);
-                    if ($qcolors[$qi] !== null)
+                    if ($qcolors[$qi] !== null && !empty($c))
                         $c = array_values(array_intersect($qcolors[$qi], $c));
                     if (empty($c)) {
                         $qcolors[$qi] = "";
