@@ -184,8 +184,8 @@ class LoginHelper {
         $Conf->save_session("freshlogin", true);
         $Conf->save_session("password_reset", null);
 
-        if (isset($_REQUEST["go"]))
-            $where = $_REQUEST["go"];
+        if (isset($qreq->go))
+            $where = $qreq->go;
         else if (isset($_SESSION["login_bounce"])
                  && $_SESSION["login_bounce"][0] == $Conf->dsn)
             $where = $_SESSION["login_bounce"][1];

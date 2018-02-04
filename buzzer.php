@@ -38,7 +38,7 @@ if ($Me->privChair) {
 
 if ($Me->privChair && $Qreq->signout_to_kiosk && $Qreq->post_ok()) {
     LoginHelper::logout(false);
-    $Me->set_capability("tracker_kiosk", $kiosk_keys[get($_POST, "buzzer_showpapers") ? 1 : 0]);
+    $Me->set_capability("tracker_kiosk", $kiosk_keys[$Qreq->buzzer_showpapers ? 1 : 0]);
     SelfHref::redirect($Qreq);
 }
 
