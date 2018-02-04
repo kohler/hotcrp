@@ -11,7 +11,7 @@ $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 $Error = array();
 // ensure site contact exists before locking tables
 $Conf->site_contact();
-
+$Qreq = make_qreq();
 
 // header
 function confHeader() {
@@ -50,13 +50,6 @@ function rrow_by_reviewid($rid) {
 
 
 loadRows();
-
-
-
-if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST)
-    && !isset($_REQUEST["retract"]) && !isset($_REQUEST["add"])
-    && !isset($_REQUEST["deny"]))
-    $Conf->post_missing_msg();
 
 
 
@@ -115,8 +108,8 @@ function retractRequest($email, $prow, $confirm = true) {
         $Conf->confirmMsg("Removed request that " . Text::user_html($row ? $row : $row2) . " review paper #$prow->paperId.");
 }
 
-if (isset($_REQUEST["retract"]) && check_post()) {
-    retractRequest($_REQUEST["retract"], $prow);
+if (isset($Qreq->retract) && $Qreq->post_ok()) {
+    retractRequest($Qreq->retract, $prow);
     $Conf->qe("unlock tables");
     if ($Conf->setting("rev_tokens") === -1)
         $Conf->update_rev_tokens_setting(0);
@@ -179,7 +172,7 @@ function pcAssignments($qreq) {
     $aset->enable_papers($prow);
     $aset->parse(join("", $t));
     if ($aset->execute()) {
-        if (req("ajax"))
+        if ($qreq->ajax)
             json_exit(["ok" => true]);
         else {
             $Conf->confirmMsg("Assignments saved." . $aset->errors_div_html());
@@ -188,16 +181,16 @@ function pcAssignments($qreq) {
             loadRows();
         }
     } else {
-        if (req("ajax"))
+        if ($qreq->ajax)
             json_exit(["ok" => false, "error" => join("<br />", $aset->errors_html())]);
         else
             $Conf->errorMsg(join("<br />", $aset->errors_html()));
     }
 }
 
-if (isset($_REQUEST["update"]) && $Me->allow_administer($prow) && check_post())
-    pcAssignments(make_qreq());
-else if (isset($_REQUEST["update"]) && defval($_REQUEST, "ajax"))
+if (isset($Qreq->update) && $Me->allow_administer($prow) && $Qreq->post_ok())
+    pcAssignments($Qreq);
+else if (isset($Qreq->update) && $Qreq->ajax)
     json_exit(["ok" => false, "error" => "Only administrators can assign papers."]);
 
 
@@ -228,10 +221,11 @@ function requestReviewChecks($themHtml, $reqId) {
     return true;
 }
 
-function requestReview($email) {
+function requestReview($qreq) {
     global $Conf, $Me, $Error, $prow;
 
-    $Them = Contact::create($Conf, ["name" => req("name"), "email" => $email]);
+    $email = $qreq->email;
+    $Them = Contact::create($Conf, ["name" => $qreq->name, "email" => $email]);
     if (!$Them) {
         if (trim($email) === "" || !validate_email($email)) {
             Conf::msg_error("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
@@ -241,11 +235,11 @@ function requestReview($email) {
         return false;
     }
 
-    $reason = trim(defval($_REQUEST, "reason", ""));
+    $reason = trim((string) $qreq->reason);
 
     $round = null;
-    if (isset($_REQUEST["round"]) && $_REQUEST["round"] != ""
-        && ($rname = $Conf->sanitize_round_name($_REQUEST["round"])) !== false)
+    if (isset($qreq->round) && $qreq->round != ""
+        && ($rname = $Conf->sanitize_round_name($qreq->round)) !== false)
         $round = (int) $Conf->round_number($rname, false);
 
     // look up the requester
@@ -292,12 +286,12 @@ function delegate_review_round() {
     return $round;
 }
 
-function proposeReview($email, $round) {
+function proposeReview($qreq, $round) {
     global $Conf, $Me, $Now, $prow, $rrows;
 
-    $email = trim($email);
-    $name = trim($_REQUEST["name"]);
-    $reason = trim($_REQUEST["reason"]);
+    $email = trim($qreq->email);
+    $name = trim($qreq->name);
+    $reason = trim($qreq->reason);
     $reqId = $Conf->user_id_by_email($email);
 
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read");
@@ -341,27 +335,28 @@ function createAnonymousReview() {
         $Conf->errorMsg(join("<br />", $aset->errors_html()));
 }
 
-if (isset($_REQUEST["add"]) && check_post()) {
+if (isset($Qreq->add) && $Qreq->post_ok()) {
     if (($whyNot = $Me->perm_request_review($prow, true)))
         Conf::msg_error(whyNotText($whyNot));
-    else if (!isset($_REQUEST["email"]) || !isset($_REQUEST["name"]))
+    else if (!isset($Qreq->email) || !isset($Qreq->name))
         Conf::msg_error("An email address is required to request a review.");
-    else if (trim($_REQUEST["email"]) === "" && trim($_REQUEST["name"]) === ""
+    else if (trim($Qreq->email) === ""
+             && trim($Qreq->name) === ""
              && $Me->allow_administer($prow)) {
         if (!createAnonymousReview())
             Dbl::qx_raw("unlock tables");
-        unset($_REQUEST["reason"], $_GET["reason"], $_POST["reason"]);
+        unset($Qreq->reason);
         loadRows();
-    } else if (trim($_REQUEST["email"]) === "")
+    } else if (trim($Qreq->email) === "")
         Conf::msg_error("An email address is required to request a review.");
     else {
         if ($Conf->setting("extrev_chairreq") && !$Me->allow_administer($prow))
-            $ok = proposeReview($_REQUEST["email"], delegate_review_round());
+            $ok = proposeReview($Qreq, delegate_review_round());
         else
-            $ok = requestReview($_REQUEST["email"]);
+            $ok = requestReview($Qreq);
         if ($ok) {
             foreach (["email", "name", "round", "reason"] as $k)
-                unset($_REQUEST[$k], $_GET[$k], $_POST[$k]);
+                unset($Qreq->$k);
             redirectSelf();
         } else
             Dbl::qx_raw("unlock tables");
@@ -371,8 +366,10 @@ if (isset($_REQUEST["add"]) && check_post()) {
 
 
 // deny review request
-if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
-    && ($email = trim(defval($_REQUEST, "email", "")))) {
+if (isset($Qreq->deny)
+    && $Me->allow_administer($prow)
+    && $Qreq->post_ok()
+    && ($email = trim($Qreq->email))) {
     $Conf->qe("lock tables ReviewRequest write, ContactInfo read, PaperConflict read, PaperReview read, PaperReviewRefused write");
     // Need to be careful and not expose inappropriate information:
     // this email comes from the chair, who can see all, but goes to a PC
@@ -386,19 +383,18 @@ if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
 
         // send anticonfirmation email
         HotCRPMailer::send_to($Requester, "@denyreviewrequest", $prow,
-                              array("reviewer_contact" => (object) array("fullName" => trim(defval($_REQUEST, "name", "")), "email" => $email)));
+                              array("reviewer_contact" => (object) array("fullName" => trim($Qreq->name), "email" => $email)));
 
         $Conf->confirmMsg("Proposed reviewer denied.");
     } else
         Conf::msg_error("No one has proposed that " . htmlspecialchars($email) . " review this paper.");
     Dbl::qx_raw("unlock tables");
-    unset($_REQUEST["email"], $_GET["email"], $_POST["email"]);
-    unset($_REQUEST["name"], $_GET["name"], $_POST["name"]);
+    unset($Qreq->email, $Qreq->name);
 }
 
 
 // paper table
-$paperTable = new PaperTable($prow, make_qreq(), "assign");
+$paperTable = new PaperTable($prow, $Qreq, "assign");
 $paperTable->initialize(false, false);
 $paperTable->resolveReview(false);
 
@@ -554,10 +550,10 @@ if ($Me->allow_administer($prow))
 echo '</div></div><div class="revcard_body">';
 echo '<div class="f-horizontal"><div class="f-i">',
     Ht::label("Name", "revreq_name", ["class" => "f-c"]),
-    Ht::entry("name", get($_REQUEST, "name", ""), ["id" => "revreq_name", "size" => 32]),
+    Ht::entry("name", (string) $Qreq->name, ["id" => "revreq_name", "size" => 32]),
     '</div><div class="f-i', (isset($Error["email"]) ? ' has-error' : ''), '">',
     Ht::label("Email", "revreq_email", ["class" => "f-c"]),
-    Ht::entry("email", get($_REQUEST, "email", ""), ["id" => "revreq_email", "size" => 28]),
+    Ht::entry("email", (string) $Qreq->email, ["id" => "revreq_email", "size" => 28]),
     '</div></div>', "\n\n";
 
 // reason area
@@ -566,7 +562,7 @@ $reqbody = $null_mailer->expand_template("requestreview", false);
 if (strpos($reqbody["body"], "%REASON%") !== false) {
     echo '<div class="f-i">',
         Ht::label('Note to reviewer <span class="n">(optional)</span>', "revreq_reason"),
-        Ht::textarea("reason", req("reason"),
+        Ht::textarea("reason", $Qreq->reason,
                 ["class" => "papertext", "rows" => 2, "cols" => 60, "spellcheck" => "true", "id" => "revreq_reason"]),
         "</div>\n\n";
 }
