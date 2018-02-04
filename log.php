@@ -7,7 +7,7 @@ if (!$Me->is_manager())
     $Me->escape();
 
 $Conf->header("Log", "actionlog");
-unset($_GET["forceShow"], $_POST["forceShow"]);
+unset($Qreq->forceShow, $_GET["forceShow"], $_POST["forceShow"]);
 $Eclass = [];
 $nlinks = 6;
 
