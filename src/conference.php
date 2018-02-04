@@ -2897,7 +2897,7 @@ class Conf {
         }
     }
 
-    function header_head($title) {
+    function header_head($title, $extra = null) {
         global $Me, $Now, $ConfSitePATH;
         // clear session list cookie
         if (isset($_COOKIE["hotlist-info"]))
@@ -2988,7 +2988,7 @@ class Conf {
             $huser->cid = $Me->contactId;
         Ht::stash_script("hotcrp_user=" . json_encode_browser($huser) . ";");
 
-        $pid = get($_REQUEST, "paperId");
+        $pid = $extra ? get($extra, "paperId") : null;
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
         if (!$pid && $this->paper)
             $pid = $this->paper->paperId;
@@ -3187,7 +3187,7 @@ class Conf {
 
     function header($title, $id, $extra = null) {
         if (!$this->headerPrinted) {
-            $this->header_head($title);
+            $this->header_head($title, $extra);
             $this->header_body($title, $id, $extra);
         }
     }

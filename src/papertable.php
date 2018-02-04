@@ -257,7 +257,7 @@ class PaperTable {
         if ($paperTable && $prow)
             $t .= $paperTable->_paptabBeginKnown();
 
-        $Conf->header($title, $id, ["action_bar" => actionBar($action_mode), "title_div" => $t, "class" => "paper"]);
+        $Conf->header($title, $id, ["action_bar" => actionBar($action_mode), "title_div" => $t, "class" => "paper", "paperId" => $qreq->paperId]);
         if ($format)
             echo Ht::unstash_script("render_text.on_page()");
     }
