@@ -998,7 +998,9 @@ class PaperSearch {
         $ptype = get_s($options, "t");
         if ($ptype === 0)
             $ptype = "";
-        if ($this->privChair && !$ptype && $this->conf->timeUpdatePaper())
+        if ($ptype === "vis")
+            $this->limitName = "vis";
+        else if ($this->privChair && !$ptype && $this->conf->timeUpdatePaper())
             $this->limitName = "all";
         else if (($user->privChair && $ptype === "act")
                  || ($user->isPC
@@ -2062,7 +2064,7 @@ class PaperSearch {
 
     function trivial_limit() {
         $limit = $this->limit();
-        if ($limit === "und" || $limit === "acc")
+        if ($limit === "und" || $limit === "acc" || $limit === "vis")
             return $this->privChair;
         else if ($limit === "rable")
             return false;
@@ -2127,6 +2129,7 @@ class PaperSearch {
                     return true;
             return false;
         case "all":
+        case "vis":
             return true;
         default:
             return false;
@@ -2143,7 +2146,8 @@ class PaperSearch {
 
     function simple_search_options() {
         $limit = $xlimit = $this->limit();
-        if ($this->q === "re:me" && ($xlimit === "s" || $xlimit === "act" || $xlimit === "rout" || $xlimit === "rable"))
+        if ($this->q === "re:me"
+            && ($xlimit === "s" || $xlimit === "act" || $xlimit === "rout" || $xlimit === "rable"))
             $xlimit = "r";
         if ($this->q !== "" && ($this->q !== "re:me" || $xlimit !== "r"))
             return false;
@@ -2192,7 +2196,8 @@ class PaperSearch {
             $queryOptions["myLead"] = 1;
         else if ($limit === "unm")
             $queryOptions["finalized"] = $queryOptions["unmanaged"] = 1;
-        else if ($limit !== "all")
+        else if ($limit !== "all"
+                 && ($limit !== "vis" || !$this->privChair))
             return false; /* don't understand limit */
         if ($this->q === "re:me" && $limit !== "rout")
             $queryOptions["myReviews"] = 1;
@@ -2267,7 +2272,9 @@ class PaperSearch {
                 $limit = "r";
             $lx = $this->conf->_c("search_types", get(self::$search_type_names, $limit, "Papers"));
         }
-        if ($this->q === "" || ($this->q === "re:me" && ($this->limit() === "s" || $this->limit() === "act")))
+        if ($this->q === ""
+            || ($this->q === "re:me" && $this->limit() === "s")
+            || ($this->q === "re:me" && $this->limit() === "act"))
             return $lx;
         else if (($td = $this->_tag_description()))
             return "$td in $lx";
