@@ -922,7 +922,7 @@ class Contact {
             if (Navigation::path())
                 $x["__PATH__"] = preg_replace(",^/+,", "", Navigation::path());
             if ($qreq->anchor)
-                $x["anchor"] = req("anchor");
+                $x["anchor"] = $qreq->anchor;
             $url = SelfHref::make($qreq, $x, ["raw" => true, "site_relative" => true]);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST];
             if ($qreq->post_ok())

@@ -190,14 +190,13 @@ class Search_DisplayOptions {
     }
     function checkbox_item($column, $type, $title, $options = []) {
         global $pl;
-        $checked = !$pl->is_folded($type);
         $x = '<div class="dispopt-checkitem"';
         if (get($options, "indent"))
             $x .= ' style="padding-left:2em"';
         unset($options["indent"]);
         $options["class"] = "dispopt-checkctrl paperlist-display";
         $x .= '><span class="dispopt-check">'
-            . Ht::checkbox("show$type", 1, $checked, $options)
+            . Ht::checkbox("show$type", 1, !$pl->is_folded($type), $options)
             . '&nbsp;</span>' . Ht::label($title) . '</div>';
         $this->item($column, $x);
     }

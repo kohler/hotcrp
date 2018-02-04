@@ -184,9 +184,6 @@ class Ht {
         if (!get($js, "id"))
             $js["id"] = "htctl" . ++self::$_controlid;
         self::$_lastcontrolid = $js["id"];
-        assert($checked !== null);
-        if ($checked === null)
-            $checked = isset($_REQUEST[$name]) && $_REQUEST[$name] === $value;
         if (isset($js["data-default-checked"]) || isset($js["data-default-value"])) {
             $dc = get($js, "data-default-checked");
             if ($dc === null)
