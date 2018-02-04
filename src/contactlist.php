@@ -28,6 +28,7 @@ class ContactList {
 
     public $conf;
     public $user;
+    public $qreq;
     var $showHeader = true;
     var $sortField = null;
     var $reverseSort;
@@ -41,13 +42,16 @@ class ContactList {
     var $contactLinkArgs;
     private $_cfltpids = null;
 
-    function __construct(Contact $user, $sortable = true) {
+    function __construct(Contact $user, $sortable = true, $qreq = null) {
         global $contactListFields;
 
         $this->conf = $user->conf;
         $this->user = $user;
+        if (!$qreq || !($qreq instanceof Qrequest))
+            $qreq = new Qrequest("GET", $qreq);
+        $this->qreq = $qreq;
 
-        $s = ($sortable ? defval($_REQUEST, "sort", "") : "");
+        $s = ($sortable ? (string) $this->qreq->sort : "");
         $x = (strlen($s) ? $s[strlen($s)-1] : "");
         $this->reverseSort = ($x == "R");
         if ($x == "R" || $x == "N")
@@ -467,9 +471,9 @@ class ContactList {
 
         if ($this->user->privChair) {
             $lllgroups[] = ["", "Tag",
-                Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), req("tagtype"))
+                Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), $this->qreq->tagtype)
                 . ' &nbsp;tag(s) &nbsp;'
-                . Ht::entry("tag", req("tag"), ["size" => 15, "class" => "want-focus js-autosubmit", "data-autosubmit-type" => "tagact"])
+                . Ht::entry("tag", $this->qreq->tag, ["size" => 15, "class" => "want-focus js-autosubmit", "data-autosubmit-type" => "tagact"])
                 . ' &nbsp;' . Ht::submit("tagact", "Go")];
 
             $lllgroups[] = ["", "Modify",

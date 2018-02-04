@@ -84,7 +84,7 @@ if ((isset($Qreq->pap) && is_array($Qreq->pap))
                 $papersel[] = $p;
     } else
         $papersel = array_keys($allowed_papers);
-    if (count($papersel) == 0)
+    if (empty($papersel))
         unset($papersel);
 }
 
@@ -288,7 +288,7 @@ else
 $Conf->header($title, "accounts");
 
 
-$pl = new ContactList($Me, true);
+$pl = new ContactList($Me, true, $Qreq);
 $pl_text = $pl->table_html($Qreq->t, hoturl("users", ["t" => $Qreq->t]),
                      $tOpt[$Qreq->t], 'uldisplay.');
 
