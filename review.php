@@ -12,7 +12,7 @@ $Qreq = make_qreq();
 if (isset($Qreq->email)
     && isset($Qreq->password)
     && (isset($Qreq->accept) || isset($Qreq->refuse) || isset($Qreq->decline))) {
-    PaperTable::cleanRequest();
+    PaperTable::clean_request($Qreq);
     $after = "";
     foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v) {
         if (isset($Qreq[$k]) && !isset($Qreq[$v]))
@@ -49,7 +49,7 @@ function errorMsgExit($msg) {
 // collect paper ID
 function loadRows() {
     global $Conf, $Me, $Qreq, $prow, $paperTable, $editRrowLogname, $Error;
-    $Conf->paper = $prow = PaperTable::paperRow($whyNot);
+    $Conf->paper = $prow = PaperTable::paperRow($Qreq, $whyNot);
     if (!$prow)
         errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
     $paperTable = new PaperTable($prow, $Qreq);

@@ -29,8 +29,8 @@ function errorMsgExit($msg) {
 
 // grab paper row
 function loadRows() {
-    global $prow, $rrows, $Conf, $Me;
-    $Conf->paper = $prow = PaperTable::paperRow($whyNot);
+    global $prow, $rrows, $Conf, $Me, $Qreq;
+    $Conf->paper = $prow = PaperTable::paperRow($Qreq, $whyNot);
     if (!$prow)
         errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
     if (($whyNot = $Me->perm_request_review($prow, false))) {

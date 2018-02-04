@@ -121,7 +121,7 @@ class PaperTable {
             $this->mode = "re";
 
         // choose list
-        $this->conf->set_active_list(self::find_session_list($prow->paperId));
+        $this->conf->set_active_list($this->find_session_list($prow->paperId));
 
         $this->matchPreg = [];
         if (($list = $this->conf->active_list()) && $list->highlight
@@ -134,7 +134,7 @@ class PaperTable {
         if (empty($this->matchPreg))
             $this->matchPreg = null;
     }
-    private static function find_session_list($pid) {
+    private function find_session_list($pid) {
         global $Me;
 
         if (isset($_COOKIE["hotlist-info"])
@@ -145,7 +145,7 @@ class PaperTable {
 
         // look up list description
         $list = null;
-        $listdesc = req("ls");
+        $listdesc = $this->qreq->ls;
         if ($listdesc) {
             if (preg_match('{\Ap/([^/]*)/([^/]*)}', $listdesc, $m))
                 $list = self::try_list(["t" => $m[1], "q" => urldecode($m[2])], $pid);
@@ -368,7 +368,7 @@ class PaperTable {
             $n = (is_array($name) ? $name[0] : $name);
             if ($editfolder)
                 $c .= "<a class=\"q fn ui js-foldup\" "
-                    . "href=\"" . selfHref(array("atab" => $what))
+                    . "href=\"" . SelfHref::make($this->qreq, ["atab" => $what])
                     . "\"" . $foldnumclass . ">" . $n
                     . "</a><span class=\"fx\">" . $n . "</span>";
             else
@@ -389,7 +389,8 @@ class PaperTable {
         $c .= "</span>";
         if ($editfolder) {
             $c .= "<span class=\"pstedit fn\">"
-                . "<a class=\"ui xx need-tooltip js-foldup\" href=\"" . selfHref(array("atab" => $what))
+                . "<a class=\"ui xx need-tooltip js-foldup\" href=\""
+                . SelfHref::make($this->qreq, ["atab" => $what])
                 . "\"" . $foldnumclass . " data-tooltip=\"Edit\">"
                 . "<span class=\"psteditimg\">"
                 . Ht::img("edit48.png", "[Edit]", "editimg")
@@ -832,7 +833,7 @@ class PaperTable {
                 $t = trim($t);
                 if ($au->email !== "" && $au->contactId
                     && $viewAs !== null && $viewAs->email !== $au->email && $viewAs->privChair)
-                    $t .= " <a href=\"" . selfHref(array("actas" => $au->email)) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($au))) . "</a>";
+                    $t .= " <a href=\"" . SelfHref::make($this->qreq, ["actas" => $au->email]) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($au))) . "</a>";
                 $names[] = '<p class="odname">' . $t . '</p>';
             }
             return join("\n", $names);
@@ -1771,7 +1772,7 @@ class PaperTable {
     }
     private function _forceShow_message() {
         if (!$this->admin && $this->allow_admin)
-            return " " . Ht::link("(Override your conflict)", selfHref(["forceShow" => 1]), ["class" => "nw"]);
+            return " " . Ht::link("(Override your conflict)", SelfHref::make($this->qreq, ["forceShow" => 1]), ["class" => "nw"]);
         else
             return "";
     }
@@ -2237,7 +2238,7 @@ class PaperTable {
     }
 
     function _privilegeMessage() {
-        $a = "<a href=\"" . selfHref(array("forceShow" => 0)) . "\">";
+        $a = "<a href=\"" . SelfHref::make($this->qreq, ["forceShow" => 0]) . "\">";
         return $a . Ht::img("override24.png", "[Override]", "dlimg")
             . "</a>&nbsp;You have used administrator privileges to view and edit reviews for this submission. (" . $a . "Unprivileged view</a>)";
     }
@@ -2441,29 +2442,26 @@ class PaperTable {
 
     // Functions for loading papers
 
-    static private function _maybeSearchPaperId() {
+    static private function _maybeSearchPaperId($qreq) {
         global $Conf, $Me, $Now;
 
         // if a number, don't search
-        if (isset($_REQUEST["paperId"]) && $_REQUEST["paperId"] != "") {
-            if (ctype_digit($_REQUEST["paperId"])
-                && $_REQUEST["paperId"][0] != "0")
+        if ((string) $qreq->paperId !== "") {
+            if (ctype_digit($qreq->paperId) && $qreq->paperId[0] !== "0")
                 return false;
-            if (preg_match('/^\s*#?([1-9]\d*)\s*$/s', $_REQUEST["paperId"], $m)) {
-                $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $m[1];
+            if (preg_match('/^\s*#?([1-9]\d*)\s*$/s', $qreq->paperId, $m)) {
+                $qreq->paperId = $m[1];
                 return false;
             }
         }
 
         // if a complex request, or a form upload, don't search
-        foreach ($_REQUEST as $k => $v)
-            if ($k !== "p" && $k !== "paperId" && $k !== "m" && $k !== "mode"
-                && $k !== "forceShow" && $k !== "go" && $k !== "actas" && $k !== "t"
-                && !isset($_COOKIE[$k]))
+        foreach ($qreq->keys() as $k)
+            if (!in_array($k, ["p", "paperId", "m", "mode", "forceShow", "go", "actas", "t"]))
                 return false;
 
         // if no paper ID set, find one
-        if (!isset($_REQUEST["paperId"])) {
+        if (!isset($qreq->paperId)) {
             $q = "select min(Paper.paperId) from Paper ";
             if ($Me->isPC)
                 $q .= "where timeSubmitted>0";
@@ -2473,7 +2471,7 @@ class PaperTable {
                 $q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$Me->contactId and ContactInfo.conflictType>=" . CONFLICT_AUTHOR . ")";
             $result = $Conf->q_raw($q);
             if (($paperId = edb_row($result)))
-                $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $paperId[0];
+                $qreq->paperId = $paperId[0];
             return false;
         }
 
@@ -2482,60 +2480,59 @@ class PaperTable {
             return false;
 
         // actually try to search
-        if ($_REQUEST["paperId"] === "(All)")
-            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = "";
-        $search = new PaperSearch($Me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
+        if ($qreq->paperId === "(All)")
+            $qreq->paperId = "";
+        $search = new PaperSearch($Me, ["q" => $qreq->paperId, "t" => $qreq->get("t", 0)]);
         $ps = $search->paper_ids();
         if (count($ps) == 1) {
             $list = $search->session_list_object();
-            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] =
-                $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = $list->ids[0];
+            $qreq->paperId = $qreq->p = $list->ids[0];
             // DISABLED: check if the paper is in the current list
-            unset($_REQUEST["ls"], $_GET["ls"], $_POST["ls"]);
+            unset($qreq->ls);
             $list->set_cookie();
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
-            redirectSelf();
+            SelfHref::redirect($qreq);
             return true;
         } else {
-            $t = (defval($_REQUEST, "t", 0) ? "&t=" . urlencode($_REQUEST["t"]) : "");
-            go(hoturl("search", "q=" . urlencode($_REQUEST["paperId"]) . $t));
+            $t = $qreq->t ? "&t=" . urlencode($qreq->t) : "";
+            go(hoturl("search", "q=" . urlencode($qreq->paperId) . $t));
             exit;
         }
     }
 
-    static function cleanRequest() {
-        if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["p"]))
-            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $_REQUEST["p"];
-        if (!isset($_REQUEST["reviewId"]) && isset($_REQUEST["r"]))
-            $_REQUEST["reviewId"] = $_GET["reviewId"] = $_POST["reviewId"] = $_REQUEST["r"];
-        if (!isset($_REQUEST["commentId"]) && isset($_REQUEST["c"]))
-            $_REQUEST["commentId"] = $_GET["commentId"] = $_POST["commentId"] = $_REQUEST["c"];
-        if (!isset($_REQUEST["reviewId"])
+    static function clean_request(Qrequest $qreq) {
+        if (!isset($qreq->paperId) && isset($qreq->p))
+            $qreq->paperId = $qreq->p;
+        if (!isset($qreq->reviewId) && isset($qreq->r))
+            $qreq->reviewId = $qreq->r;
+        if (!isset($qreq->commentId) && isset($qreq->c))
+            $qreq->commentId = $qreq->c;
+        if (!isset($qreq->reviewId)
             && preg_match(',\A/\d+[A-Z]+\z,i', Navigation::path()))
-            $_REQUEST["reviewId"] = $_GET["reviewId"] = $_POST["reviewId"] = substr(Navigation::path(), 1);
-        else if (!isset($_REQUEST["paperId"]) && ($pc = Navigation::path_component(0)))
-            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $pc;
-        if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["reviewId"])
-            && preg_match('/^(\d+)[A-Z]+$/i', $_REQUEST["reviewId"], $m))
-            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $m[1];
+            $qreq->reviewId = substr(Navigation::path(), 1);
+        else if (!isset($qreq->paperId) && ($pc = Navigation::path_component(0)))
+            $qreq->paperId = $pc;
+        if (!isset($qreq->paperId) && isset($qreq->reviewId)
+            && preg_match('/^(\d+)[A-Z]+$/i', $qreq->reviewId, $m))
+            $qreq->paperId = $m[1];
     }
 
-    static function paperRow(&$whyNot) {
+    static function paperRow(Qrequest $qreq, &$whyNot) {
         global $Conf, $Me;
 
-        self::cleanRequest();
-        if (isset($_REQUEST["paperId"]) && $_REQUEST["paperId"] === "new")
+        self::clean_request($qreq);
+        if (isset($qreq->paperId) && $qreq->paperId === "new")
             return null;
 
         $sel = array();
-        if (isset($_REQUEST["paperId"])
-            || (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["commentId"]))) {
-            self::_maybeSearchPaperId();
-            $sel["paperId"] = defval($_REQUEST, "paperId", 1);
-        } else if (isset($_REQUEST["reviewId"]))
-            $sel["reviewId"] = $_REQUEST["reviewId"];
-        else if (isset($_REQUEST["commentId"]))
-            $sel["commentId"] = $_REQUEST["commentId"];
+        if (isset($qreq->paperId)
+            || (!isset($qreq->reviewId) && !isset($qreq->commentId))) {
+            self::_maybeSearchPaperId($qreq);
+            $sel["paperId"] = $qreq->get("paperId", 1);
+        } else if (isset($qreq->reviewId))
+            $sel["reviewId"] = $qreq->reviewId;
+        else if (isset($qreq->commentId))
+            $sel["commentId"] = $qreq->commentId;
 
         $sel["topics"] = $sel["options"] = true;
         if (($Me->isPC && $Conf->timePCReviewPreferences()) || $Me->privChair)
@@ -2549,16 +2546,16 @@ class PaperTable {
         if (isset($sel["reviewId"]))
             $rrow = $prow->review_of_id($sel["reviewId"]);
         if (($whyNot = $Me->perm_view_paper($prow))
-            || (!isset($_REQUEST["paperId"])
+            || (!isset($qreq->paperId)
                 && !$Me->can_view_review($prow, $rrow)
                 && !$Me->privChair)) {
             // Don't allow querier to probe review/comment<->paper mapping
-            if (!isset($_REQUEST["paperId"]))
+            if (!isset($qreq->paperId))
                 $whyNot = array("invalidId" => "paper");
             return null;
         }
-        if (!isset($_REQUEST["paperId"]))
-            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $prow->paperId;
+        if (!isset($qreq->paperId))
+            $qreq->paperId = $prow->paperId;
         return $prow;
     }
 
@@ -2579,7 +2576,7 @@ class PaperTable {
         $rf = $this->conf->review_form();
         Ht::stash_script("review_form.set_form(" . json_encode_browser($rf->unparse_json($round_mask, $min_view_score)) . ")");
 
-        $rrid = strtoupper(defval($_REQUEST, "reviewId", ""));
+        $rrid = strtoupper((string) $this->qreq->reviewId);
         while ($rrid !== "" && $rrid[0] === "0")
             $rrid = substr($rrid, 1);
 

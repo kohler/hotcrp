@@ -73,8 +73,8 @@ if ($Qreq->post && $Qreq->post_empty())
 
 // grab paper row
 function loadRows() {
-    global $prow, $Conf;
-    $Conf->paper = $prow = PaperTable::paperRow($whyNot);
+    global $prow, $Conf, $Qreq;
+    $Conf->paper = $prow = PaperTable::paperRow($Qreq, $whyNot);
     if (!$prow)
         errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
 }
