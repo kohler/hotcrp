@@ -7,13 +7,6 @@ require_once("src/initweb.php");
 // *** NB If you change this script, also change the logic in index.php ***
 // *** that hides the link when there are no deadlines to show.         ***
 
-$dl = $Me->my_deadlines();
-if (req("ajax")) {
-    $dl->ok = true;
-    json_exit($dl);
-}
-
-
 // header and script
 $Conf->header("Deadlines", "deadlines");
 
@@ -28,6 +21,8 @@ function printDeadline($time, $phrase, $description) {
     echo "<dt><strong>", $phrase, "</strong>: ", $Conf->printableTime($time, "span") , "</dt>\n",
         "<dd>", $description, ($description ? "<br />" : ""), "</dd>";
 }
+
+$dl = $Me->my_deadlines();
 
 // If you change these, also change Contact::has_reportable_deadline().
 if (get($dl->sub, "reg"))
