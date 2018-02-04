@@ -113,7 +113,7 @@ if (isset($Qreq->retract) && $Qreq->post_ok()) {
     $Conf->qe("unlock tables");
     if ($Conf->setting("rev_tokens") === -1)
         $Conf->update_rev_tokens_setting(0);
-    redirectSelf();
+    SelfHref::redirect($Qreq);
     loadRows();
 }
 
@@ -176,8 +176,8 @@ function pcAssignments($qreq) {
             json_exit(["ok" => true]);
         else {
             $Conf->confirmMsg("Assignments saved." . $aset->errors_div_html());
-            redirectSelf();
-            // NB normally redirectSelf() does not return
+            SelfHref::redirect($qreq);
+            // NB normally SelfHref::redirect() does not return
             loadRows();
         }
     } else {
@@ -355,9 +355,8 @@ if (isset($Qreq->add) && $Qreq->post_ok()) {
         else
             $ok = requestReview($Qreq);
         if ($ok) {
-            foreach (["email", "name", "round", "reason"] as $k)
-                unset($Qreq->$k);
-            redirectSelf();
+            unset($Qreq->email, $Qreq->name, $Qreq->round, $Qreq->reason);
+            SelfHref::redirect($Qreq);
         } else
             Dbl::qx_raw("unlock tables");
         loadRows();

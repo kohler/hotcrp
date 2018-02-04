@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-if (isset($_REQUEST["text"]) && $_REQUEST["text"])
+if (isset($_GET["text"]) && $_GET["text"])
     header("Content-Type: text/plain");
 else
     header("Content-Type: application/json");

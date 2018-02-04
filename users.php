@@ -193,7 +193,8 @@ if ($Me->privChair && $Qreq->modifygo && $Qreq->post_ok() && isset($papersel)) {
         modify_confirm(UserActions::reset_password($papersel, $Me), "Passwords reset. <a href=\"" . hoturl_post("users", "t=" . urlencode($Qreq->t) . "&amp;modifygo=1&amp;modifytype=sendaccount&amp;pap=" . join("+", $papersel)) . "\">Send account information to those accounts</a>", false);
     else if ($Qreq->modifytype == "sendaccount")
         modify_confirm(UserActions::send_account_info($papersel, $Me), "Account information sent.", false);
-    redirectSelf(array("modifygo" => null, "modifytype" => null));
+    unset($Qreq->modifygo, $Qreq->modifytype);
+    SelfHref::redirect($Qreq);
 }
 
 function do_tags($qreq) {
@@ -252,7 +253,8 @@ function do_tags($qreq) {
     // report
     if (!count($errors)) {
         $Conf->confirmMsg("Tags saved.");
-        redirectSelf(array("tagact" => null, "tag" => null));
+        unset($Qreq->tagact, $Qreq->tag);
+        SelfHref::redirect($Qreq);
     } else
         Conf::msg_error(join("<br>", $errors));
 }

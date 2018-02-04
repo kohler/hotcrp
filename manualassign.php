@@ -119,7 +119,7 @@ function saveAssignments($qreq, $reviewer) {
 
     if ($Conf->setting("pcrev_assigntime") == $Now)
         $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
-    redirectSelf(["kind" => $qreq->kind]);
+    SelfHref::redirect($qreq);
 }
 
 

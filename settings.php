@@ -5,14 +5,15 @@
 require_once("src/initweb.php");
 if (!$Me->privChair)
     $Me->escape();
+$Qreq = make_qreq();
 
 require_once("src/settingvalues.php");
 $Sv = SettingValues::make_request($Me, $_POST, $_FILES);
 $Sv->session_highlight();
 
-function choose_setting_group(SettingValues $sv) {
+function choose_setting_group($qreq, SettingValues $sv) {
     global $Me;
-    $req_group = req("group");
+    $req_group = $qreq->group;
     if (!$req_group && preg_match(',\A/\w+\z,', Navigation::path()))
         $req_group = substr(Navigation::path(), 1);
     $want_group = $req_group;
@@ -29,15 +30,15 @@ function choose_setting_group(SettingValues $sv) {
     }
     if (!$want_group)
         $Me->escape();
-    if ($want_group !== $req_group && empty($_POST) && !req("post"))
-        redirectSelf(["group" => $want_group]);
+    if ($want_group !== $req_group && empty($_POST) && !$qreq->post)
+        SelfHref::redirect($qreq, ["group" => $want_group]);
     $sv->mark_interesting_group($want_group);
     return $want_group;
 }
-$Group = $_REQUEST["group"] = $_GET["group"] = choose_setting_group($Sv);
+$Group = $Qreq->group = choose_setting_group($Qreq, $Sv);
 $_SESSION["sg"] = $Group;
 
-if (isset($_REQUEST["update"]) && check_post()) {
+if (isset($Qreq->update) && $Qreq->post_ok()) {
     if ($Sv->execute()) {
         $Sv->conf->save_session("settings_highlight", $Sv->message_field_map());
         if (!empty($Sv->changes))
@@ -45,11 +46,11 @@ if (isset($_REQUEST["update"]) && check_post()) {
         else
             $Sv->conf->warnMsg("No changes.");
         $Sv->report();
-        redirectSelf();
+        SelfHref::redirect($Qreq);
     }
 }
-if (isset($_REQUEST["cancel"]) && check_post())
-    redirectSelf();
+if (isset($Qreq->cancel) && $Qreq->post_ok())
+    SelfHref::redirect($Qreq);
 
 $Sv->crosscheck();
 
@@ -80,7 +81,7 @@ function doActionArea($top) {
 
 doActionArea(true);
 
-$Sv->report(isset($_REQUEST["update"]) && check_post());
+$Sv->report(isset($Qreq->update) && $Qreq->post_ok());
 $Sv->echo_topic($Group);
 
 doActionArea(false);

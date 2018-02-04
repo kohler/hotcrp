@@ -51,7 +51,8 @@ function kiosk_lookup($key) {
 }
 
 $kiosk = null;
-if (!$Me->has_email() && !$Me->capability("tracker_kiosk")
+if (!$Me->has_email()
+    && !$Me->capability("tracker_kiosk")
     && ($key = Navigation::path_component(0))
     && ($kiosk = kiosk_lookup($key)))
     $Me->set_capability("tracker_kiosk", $key);

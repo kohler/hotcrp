@@ -79,8 +79,8 @@ function complete_assignment($qreq, $callback) {
 
 // redirect if save cancelled
 if (isset($Qreq->saveassignment) && isset($Qreq->cancel)) {
-    redirectSelf(); // should not return
     unset($Qreq->saveassignment);
+    SelfHref::redirect($Qreq); // should not return
 }
 
 // perform quick assignments all at once
@@ -88,8 +88,9 @@ if (isset($Qreq->saveassignment)
     && $Qreq->post_ok()
     && isset($Qreq->file)
     && $Qreq->assignment_size_estimate < 1000
-    && complete_assignment($Qreq, null))
-    redirectSelf();
+    && complete_assignment($Qreq, null)) {
+    SelfHref::redirect($Qreq);
+}
 
 
 $Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Bulk update</strong>", "bulkassign");
