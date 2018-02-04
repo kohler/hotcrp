@@ -57,7 +57,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $default;
     }
     function count() {
-        return count(get_object_vars($this)) - 4;
+        return count(get_object_vars($this)) - 5;
     }
     function jsonSerialize() {
         return $this->make_array();
@@ -67,6 +67,13 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         foreach (get_object_vars($this) as $k => $v)
             if (substr($k, 0, 4) !== "____")
                 $d[$k] = $v;
+        return $d;
+    }
+    function keys() {
+        $d = [];
+        foreach (array_keys(get_object_vars($this)) as $k)
+            if (substr($k, 0, 4) !== "____")
+                $d[] = $k;
         return $d;
     }
     function make_object() {
