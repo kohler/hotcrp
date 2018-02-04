@@ -271,10 +271,6 @@ function req_s($idx, $default = null) {
     return (string) req($idx, $default);
 }
 
-function set_req($idx, $value) {
-    $_GET[$idx] = $_POST[$idx] = $_REQUEST[$idx] = $value;
-}
-
 function uploaded_file_error($finfo) {
     $e = $finfo["error"];
     $name = get($finfo, "name") ? "<span class=\"lineno\">" . htmlspecialchars($finfo["name"]) . ":</span> " : "";
