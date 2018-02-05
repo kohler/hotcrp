@@ -31,11 +31,8 @@ else if (isset($Qreq->signin))
 else if ((isset($Qreq->signin) || isset($Qreq->signout))
          && isset($Qreq->post))
     SelfHref::redirect($Qreq);
-
-// set a session variable to test that their browser supports cookies
-// NB need to do this whenever we'll send a "testsession=1" param
-if ($Me->is_empty() || isset($Qreq->signin))
-    $_SESSION["testsession"] = true;
+else if (isset($Qreq->postlogin))
+    LoginHelper::check_postlogin($Qreq);
 
 // disabled users
 if (!$Me->is_empty() && $Me->disabled) {
@@ -184,8 +181,6 @@ if (!$Me->has_email() || isset($Qreq->signin)) {
 <div class="homegrp foldo" id="homeacct">',
         Ht::form(hoturl_post("index")),
         '<div class="f-contain">';
-    if ($Me->is_empty() || isset($Qreq->signin))
-        echo Ht::hidden("testsession", 1);
     if ($Conf->opt("contactdb_dsn") && $Conf->opt("contactdb_loginFormHeading"))
         echo $Conf->opt("contactdb_loginFormHeading");
     $password_reset = $Conf->session("password_reset");

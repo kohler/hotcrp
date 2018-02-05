@@ -93,7 +93,9 @@ function initialize_user() {
     }
 
     // if bounced through login, add post data
-    if (isset($_SESSION["login_bounce"]) && !$Me->is_empty()) {
+    if (!$Me->is_empty()
+        && isset($_SESSION["login_bounce"])
+        && !isset($_SESSION["testsession"])) {
         $lb = $_SESSION["login_bounce"];
         if ($lb[0] == $Conf->dsn && $lb[2] !== "index" && $lb[2] == Navigation::page()) {
             foreach ($lb[3] as $k => $v)

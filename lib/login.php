@@ -8,7 +8,7 @@ class LoginHelper {
         if (!$Me->is_empty() && $explicit && !$Conf->opt("httpAuthLogin"))
             $Conf->confirmMsg("You have been signed out. Thanks for using the system.");
         unset($_SESSION["trueuser"], $_SESSION["last_actas"],
-              $_SESSION["updatecheck"]);
+              $_SESSION["updatecheck"], $_SESSION["sg"]);
         // clear all conference session info, except maybe capabilities
         $capabilities = $Conf->session("capabilities");
         unset($_SESSION[$Conf->dsn]);
@@ -84,20 +84,6 @@ class LoginHelper {
             else
                 return Conf::msg_error("Enter your email address.");
         }
-
-        // Check for the cookie
-        if (isset($_SESSION["testsession"]))
-            /* Session cookie set */;
-        else if (!isset($qreq->testsession)) {
-            // set a cookie to test that their browser supports cookies
-            $_SESSION["testsession"] = true;
-            $url = "testsession=1";
-            foreach (["email", "password", "action", "go", "signin"] as $a)
-                if (isset($qreq[$a]))
-                    $url .= "&$a=" . urlencode($qreq[$a]);
-            Navigation::redirect("?" . $url);
-        } else
-            return Conf::msg_error("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
         // do LDAP login before validation, since we might create an account
         if ($Conf->opt("ldapLogin")) {
@@ -179,11 +165,24 @@ class LoginHelper {
 
         // activate and redirect
         $user = $xuser->activate($qreq);
-        unset($_SESSION["testsession"]);
         $_SESSION["trueuser"] = (object) array("email" => $user->email);
         $Conf->save_session("freshlogin", true);
         $Conf->save_session("password_reset", null);
+        $_SESSION["testsession"] = true;
 
+        go(hoturl("index", ["go" => $qreq->go, "postlogin" => 1]));
+        exit;
+    }
+
+    static function check_postlogin(Qrequest $qreq) {
+        global $Conf;
+        // Check for the cookie
+        if (!isset($_SESSION["testsession"]) || !$_SESSION["testsession"]) {
+            return Conf::msg_error("You appear to have disabled cookies in your browser. This site requires cookies to function.");
+        }
+        unset($_SESSION["testsession"]);
+
+        // Go places
         if (isset($qreq->go))
             $where = $qreq->go;
         else if (isset($_SESSION["login_bounce"])
