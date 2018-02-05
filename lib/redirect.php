@@ -17,31 +17,33 @@ function session_name_fixer($m) {
     return "Z" . dechex(ord($m[0]));
 }
 
-function make_session_name($n) {
-    if (($n === "" || $n === null || $n === true) && opt("dbName"))
-        $n = opt("dbName");
-    if (opt("confid"))
-        $n = preg_replace(',\*|\$\{confid\}|\$confid\b,', opt("confid"), $n);
+function make_session_name($conf, $n) {
+    if (($n === "" || $n === null || $n === true)
+        && ($x = $conf->opt("dbName")))
+        $n = $x;
+    if (($x = $conf->opt("confid")))
+        $n = preg_replace(',\*|\$\{confid\}|\$confid\b,', $x, $n);
     return preg_replace_callback(',[^A-Ya-z0-9],', "session_name_fixer", $n);
 }
 
 function ensure_session() {
+    global $Conf;
     if (session_id() !== "")
         return true;
-    if (!($sn = make_session_name(opt("sessionName"))))
+    if (!($sn = make_session_name($Conf, $Conf->opt("sessionName"))))
         return false;
+    $secure = $Conf->opt("sessionSecure");
+    $domain = $Conf->opt("sessionDomain");
     // maybe upgrade from an old session name to this one
     if (!isset($_COOKIE[$sn])
-        && ($upgrade_sn = opt("sessionUpgrade"))
-        && ($upgrade_sn = make_session_name($upgrade_sn))
+        && ($upgrade_sn = $Conf->opt("sessionUpgrade"))
+        && ($upgrade_sn = make_session_name($Conf, $upgrade_sn))
         && isset($_COOKIE[$upgrade_sn])) {
         session_id($_COOKIE[$upgrade_sn]);
         setcookie($upgrade_sn, "", time() - 3600, "/",
-                  opt("sessionUpgradeDomain", opt("sessionDomain", "")),
-                  opt("sessionSecure", false));
+                  $Conf->opt("sessionUpgradeDomain", $domain ? : ""),
+                  $secure ? : false);
     }
-    $secure = opt("sessionSecure");
-    $domain = opt("sessionDomain");
     if ($secure !== null || $domain !== null) {
         $params = session_get_cookie_params();
         if ($secure !== null)
@@ -53,9 +55,22 @@ function ensure_session() {
     }
     session_name($sn);
     session_cache_limiter("");
-    if (isset($_COOKIE[$sn]) && !preg_match(';\A[-a-zA-Z0-9,]{1,128}\z;', $_COOKIE[$sn]))
+
+    // initiate session
+    $has_cookie = isset($_COOKIE[$sn]);
+    if ($has_cookie && !preg_match(';\A[-a-zA-Z0-9,]{1,128}\z;', $_COOKIE[$sn])) {
         unset($_COOKIE[$sn]);
+        $has_cookie = false;
+    }
     session_start();
+
+    // avoid session fixation
+    if (empty($_SESSION)) {
+        if ($has_cookie)
+            session_regenerate_id();
+        $_SESSION["testsession"] = 0;
+    }
+
     return true;
 }
 
