@@ -1629,8 +1629,11 @@ class Conf {
     function save_session($name, $value) {
         if ($value !== null)
             $_SESSION[$this->dsn][$name] = $value;
-        else
+        else if (isset($_SESSION[$this->dsn])) {
             unset($_SESSION[$this->dsn][$name]);
+            if (empty($_SESSION[$this->dsn]))
+                unset($_SESSION[$this->dsn]);
+        }
     }
 
     function capability_text($prow, $capType) {
