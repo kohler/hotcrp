@@ -61,6 +61,10 @@ function initialize_user() {
     if (!isset($Opt["sessionLifetime"]))
         $Opt["sessionLifetime"] = 86400;
     ini_set("session.gc_maxlifetime", $Opt["sessionLifetime"]);
+    if (isset($Opt["sessionHandler"])) {
+        $sh = $Opt["sessionHandler"];
+        session_set_save_handler(new $sh);
+    }
     ensure_session();
 
     // check CSRF token
