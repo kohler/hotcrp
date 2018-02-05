@@ -122,8 +122,6 @@ if (isset($Qreq->saveassignment) && isset($Qreq->download)
     downloadCSV($x->data, $x->header, "assignments", ["selection" => true, "sort" => SORT_NATURAL]);
 }
 
-$Error = array();
-
 
 $Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Automatic</strong>", "autoassign");
 echo '<div class="psmode">',
@@ -190,14 +188,14 @@ class AutoassignerInterface {
                 && $r != REVIEW_SECONDARY && $r != REVIEW_PC
                 && $r !== "conflict"
                 && $r !== "lead" && $r !== "shepherd")
-                $this->errors["clear"] = "Malformed request!";
+                $this->errors["a-clear"] = "Malformed request!";
         }
         $this->reviewtype = $r;
 
         if ($this->atype_review) {
             $this->reviewcount = cvtint($qreq[$this->atype . "ct"], -1);
             if ($this->reviewcount <= 0)
-                $this->errors[$this->atype] = "You must assign at least one review.";
+                $this->errors[$this->atype . "ct"] = "You must assign at least one review.";
 
             $this->reviewround = $qreq->rev_round;
             if ($this->reviewround !== ""
@@ -219,10 +217,10 @@ class AutoassignerInterface {
     }
 
     function check() {
-        global $Error;
-        $Error = $this->errors;
-        foreach ($this->errors as $etype => $msg)
+        foreach ($this->errors as $etype => $msg) {
             Conf::msg_error($msg);
+            Ht::error_at($etype);
+        }
         return $this->ok;
     }
 
@@ -412,14 +410,13 @@ if (isset($Qreq->assign) && isset($Qreq->a)
 
 
 function echo_radio_row($name, $value, $text, $extra = null) {
-    global $Error, $Qreq;
+    global $Qreq;
     if (($checked = (!isset($Qreq[$name]) || $Qreq[$name] === $value)))
         $Qreq[$name] = $value;
     $extra = ($extra ? $extra : array());
     $extra["id"] = "${name}_$value";
-    echo '<tr class="js-radio-focus',
-        isset($Error[$value]) ? " error" : "",
-        '"><td class="nw">',
+    $k = Ht::control_class("{$name}-{$value}");
+    echo '<tr class="js-radio-focus', $k, '"><td class="nw">',
         Ht::radio($name, $value, $checked, $extra), "&nbsp;</td><td>";
     if ($text !== "")
         echo Ht::label($text, "${name}_$value");
@@ -435,11 +432,8 @@ function doSelect($name, $opts, $extra = null) {
 }
 
 function divClass($name, $classes = null) {
-    global $Error;
-    if (isset($Error[$name]))
-        $classes = ($classes ? $classes . " " : "") . "error";
-    if ($classes)
-        return '<div class="' . $classes . '">';
+    if (($c = Ht::control_class($name, $classes)))
+        return '<div class="' . $c . '">';
     else
         return '<div>';
 }
@@ -468,7 +462,7 @@ if (!isset($Qreq->q)) // XXX redundant
 echo Ht::entry("q", $Qreq->q,
                array("id" => "autoassignq", "placeholder" => "(All)",
                      "size" => 40, "title" => "Enter paper numbers or search terms",
-                     "class" => "hotcrp_searchbox js-autosubmit",
+                     "class" => Ht::control_class("q", "hotcrp_searchbox js-autosubmit"),
                      "data-autosubmit-type" => "requery")), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
     echo Ht::select("t", $tOpt, $Qreq->t);
@@ -499,14 +493,14 @@ echo '<table>';
 echo_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revct", get($Qreq, "revct", 1),
-              array("size" => 3, "class" => "js-autosubmit")), "&nbsp; ";
+              ["size" => 3, "class" => Ht::control_class("revct", "js-autosubmit")]), "&nbsp; ";
 doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s)</td></tr>\n";
 
 echo_radio_row("a", "revadd", "Assign", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revaddct", get($Qreq, "revaddct", 1),
-              array("size" => 3, "class" => "js-autosubmit")),
+              ["size" => 3, "class" => Ht::control_class("revaddct", "js-autosubmit")]),
     "&nbsp; <i>additional</i>&nbsp; ";
 doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s) per selected paper</td></tr>\n";
@@ -514,7 +508,7 @@ echo "&nbsp; review(s) per selected paper</td></tr>\n";
 echo_radio_row("a", "revpc", "Assign each PC member", ["open" => true]);
 echo "&nbsp; ",
     Ht::entry("revpcct", get($Qreq, "revpcct", 1),
-              array("size" => 3, "class" => "js-autosubmit")),
+              ["size" => 3, "class" => Ht::control_class("revpcct", "js-autosubmit")]),
     "&nbsp; additional&nbsp; ";
 doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"));
 echo "&nbsp; review(s) from this paper selection</td></tr>\n";
@@ -523,8 +517,8 @@ echo "&nbsp; review(s) from this paper selection</td></tr>\n";
 $rev_rounds = $Conf->round_selector_options(null);
 if (count($rev_rounds) > 1 || !get($rev_rounds, "unnamed")) {
     echo '<tr><td></td><td';
-    if (isset($Error["rev_round"]))
-        echo ' class="error"';
+    if (($c = Ht::control_class("rev_round")))
+        echo ' class="', trim($c), '"';
     echo ' style="font-size:smaller">Review round: ';
     if (count($rev_rounds) > 1)
         echo '&nbsp;', Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed");
@@ -561,7 +555,7 @@ echo '<tr><td colspan="2" class="mg"></td></tr>';
 // discussion order
 echo_radio_row("a", "discorder", "Create discussion order in tag #", ["open" => true]);
 echo Ht::entry("discordertag", get($Qreq, "discordertag", "discuss"),
-               array("size" => 12, "class" => "js-autosubmit")),
+               ["size" => 12, "class" => Ht::control_class("discordertag", "js-autosubmit")]),
     ", grouping papers with similar PC conflicts</td></tr>";
 
 echo "</table>\n";

@@ -454,7 +454,9 @@ class Ht {
     static function control_class($name, $rest = false) {
         if (isset(self::$_control_classes[$name])) {
             $c = self::$_control_classes[$name];
-            return $rest ? $rest . " " . $c : $c;
+            if ($rest && $c && $c[0] !== " ")
+                $rest .= " ";
+            return $rest ? $rest . $c : $c;
         } else {
             return $rest;
         }

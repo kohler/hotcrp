@@ -122,11 +122,3 @@ function initialize_user() {
 }
 
 initialize_user();
-
-
-// Extract an error that we redirected through
-if (isset($_SESSION["redirect_error"])) {
-    global $Error;
-    $Error = $_SESSION["redirect_error"];
-    unset($_SESSION["redirect_error"]);
-}

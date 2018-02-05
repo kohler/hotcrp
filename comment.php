@@ -2,7 +2,6 @@
 // comment.php -- HotCRP paper comment display/edit page
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
-$Error = array();
 require_once("src/initweb.php");
 require_once("src/papertable.php");
 if (!$Me->email)
@@ -19,7 +18,7 @@ function exit_to_paper() {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $Qreq, $prow, $paperTable, $crow, $Error;
+    global $Conf, $Me, $Qreq, $prow, $paperTable, $crow;
     $Conf->paper = $prow = PaperTable::paperRow($Qreq, $whyNot);
     if (!$prow)
         exit_to_paper();
@@ -40,8 +39,6 @@ function loadRows() {
         Conf::msg_error("No such comment.");
         json_exit(["ok" => false]);
     }
-    if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
-        $Error = array();
 }
 
 loadRows();

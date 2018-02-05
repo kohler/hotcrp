@@ -37,7 +37,7 @@ if (isset($Qreq->uploadForm)
 
 // upload tag indexes action
 function saveTagIndexes($tag, $filename, &$settings, &$titles, &$linenos, &$errors) {
-    global $Conf, $Me, $Error;
+    global $Conf, $Me;
 
     foreach ($Me->paper_set(array_keys($settings)) as $row) {
         if ($settings[$row->paperId] !== null
@@ -47,11 +47,11 @@ function saveTagIndexes($tag, $filename, &$settings, &$titles, &$linenos, &$erro
         } else if ($titles[$row->paperId] !== ""
                    && strcmp($row->title, $titles[$row->paperId]) != 0
                    && strcasecmp($row->title, simplify_whitespace($titles[$row->paperId])) != 0)
-            $errors[$linenos[$row->paperId]] = "Warning: Title doesn’t match";
+            $errors[$linenos[$row->paperId]] = "Warning: Title doesn’t match.";
     }
 
     if (!$tag)
-        defappend($Error["tags"], "No tag defined");
+        $errors["0tag"] = "Tag missing.";
     else if (count($settings)) {
         $x = array("paper,tag,lineno");
         foreach ($settings as $pid => $value)
@@ -77,7 +77,7 @@ function check_tag_index_line(&$line) {
 }
 
 function setTagIndexes() {
-    global $Conf, $Me, $Error;
+    global $Conf, $Me;
     $filename = null;
     if (isset($Qreq->upload) && $Qreq->has_file("file")) {
         if (($text = $Qreq->file_contents("tmp_name")) === false) {
@@ -132,16 +132,16 @@ function setTagIndexes() {
 
     if (count($errors)) {
         ksort($errors);
-        if ($filename)
-            foreach ($errors as $lineno => &$error)
+        foreach ($errors as $lineno => &$error) {
+            if ($filename && $lineno)
                 $error = '<span class="lineno">' . htmlspecialchars($filename) . ':' . $lineno . ':</span> ' . $error;
-        $Error["tags"] = '<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . '</p></div>';
-    }
-    if (isset($Error["tags"]))
-        Conf::msg_error($Error["tags"]);
-    else if (isset($Qreq->setvote))
+            else if ($filename)
+                $error = '<span class="lineno">' . htmlspecialchars($filename) . ':</span> ' . $error;
+        }
+        Conf::msg_error('<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . '</p></div>');
+    } else if (isset($Qreq->setvote)) {
         $Conf->confirmMsg("Votes saved.");
-    else {
+    } else {
         $dtag = $tagger->unparse($tag);
         $Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($dtag)) . "'>search for “order:{$dtag}”</a>.");
     }

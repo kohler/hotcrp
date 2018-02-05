@@ -9,7 +9,6 @@ $null_mailer = new HotCRPMailer(null, null, array("requester_contact" => $Me,
                                                   "other_contact" => $Me /* backwards compat */,
                                                   "reason" => "",
                                                   "width" => false));
-$Error = array();
 
 $Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
 if ($Qreq->post_ok())

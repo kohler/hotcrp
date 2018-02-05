@@ -8,7 +8,6 @@ require_once("src/reviewtable.php");
 if (!$Me->email)
     $Me->escape();
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
-$Error = array();
 // ensure site contact exists before locking tables
 $Conf->site_contact();
 
@@ -221,14 +220,14 @@ function requestReviewChecks($themHtml, $reqId) {
 }
 
 function requestReview($qreq) {
-    global $Conf, $Me, $Error, $prow;
+    global $Conf, $Me, $prow;
 
     $email = $qreq->email;
     $Them = Contact::create($Conf, ["name" => $qreq->name, "email" => $email]);
     if (!$Them) {
         if (trim($email) === "" || !validate_email($email)) {
             Conf::msg_error("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
-            $Error["email"] = true;
+            Ht::error_at("email");
         } else
             Conf::msg_error("Error while finding account for “" . htmlspecialchars(trim($email)) . ".”");
         return false;
@@ -549,7 +548,7 @@ echo '</div></div><div class="revcard_body">';
 echo '<div class="f-horizontal"><div class="f-i">',
     Ht::label("Name", "revreq_name", ["class" => "f-c"]),
     Ht::entry("name", (string) $Qreq->name, ["id" => "revreq_name", "size" => 32]),
-    '</div><div class="f-i', (isset($Error["email"]) ? ' has-error' : ''), '">',
+    '</div><div class="', Ht::control_class("email", "f-i"), '">',
     Ht::label("Email", "revreq_email", ["class" => "f-c"]),
     Ht::entry("email", (string) $Qreq->email, ["id" => "revreq_email", "size" => 28]),
     '</div></div>', "\n\n";

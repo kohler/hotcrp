@@ -7,7 +7,6 @@ require_once("src/papersearch.php");
 require_once("src/mailclasses.php");
 if (!$Me->is_manager() && !$Me->isPC)
     $Me->escape();
-$Error = array();
 
 // load mail from log
 if (isset($Qreq->fromlog) && ctype_digit($Qreq->fromlog)
@@ -335,7 +334,7 @@ class MailSender {
     }
 
     private function run() {
-        global $Conf, $Me, $Error, $subjectPrefix, $mailer_options;
+        global $Conf, $Me, $subjectPrefix, $mailer_options;
 
         $subject = trim((string) $this->qreq->subject);
         if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
@@ -391,7 +390,7 @@ class MailSender {
             if ($prep->errors) {
                 foreach ($prep->errors as $lcfield => $hline) {
                     $reqfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
-                    $Error[$reqfield] = true;
+                    Ht::error_at($reqfield);
                     $emsg = Mailer::$email_fields[$lcfield] . " destination isn’t a valid email list: <blockquote><tt>" . htmlspecialchars($hline) . "</tt></blockquote> Make sure email address are separated by commas; put names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
                     if (!isset($preperrors[$emsg]))
                         Conf::msg_error($emsg);
@@ -514,7 +513,7 @@ echo Ht::select("template", $tmpl, $Qreq->template),
 <div class='mail' style='float:left;margin:4px 1em 12px 0'><table id=\"foldpsel\" class=\"fold8c fold9o fold10c\">\n";
 
 // ** TO
-echo '<tr><td class="mhnp nw">To:</td><td class="mhdd">',
+echo '<tr><td class="mhnp nw"><label for="recipients">To:</label></td><td class="mhdd">',
     $recip->selectors(),
     "<div class='g'></div>\n";
 
@@ -580,18 +579,19 @@ if ($Me->is_manager()) {
     foreach (Mailer::$email_fields as $lcfield => $field)
         if ($lcfield !== "to" && $lcfield !== "bcc") {
             $xfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
-            $ec = (isset($Error[$xfield]) ? " error" : "");
-            echo "  <tr><td class='mhnp$ec nw'>$field:</td><td class='mhdp$ec'>",
-                "<input type='text' class='textlite-tt' name='$xfield' value=\"",
-                htmlspecialchars($Qreq[$xfield]), "\" size='64' />",
+            $ec = Ht::control_class($xfield);
+            echo "  <tr><td class=\"mhnp nw$ec\"><label for=\"$xfield\">$field:</label></td><td class='mhdp'>",
+                Ht::entry($xfield, $Qreq[$xfield], ["size" => 64, "class" => "textlite-tt$ec", "id" => $xfield]),
                 ($xfield == "replyto" ? "<div class='g'></div>" : ""),
                 "</td></tr>\n\n";
         }
 }
 
 // ** SUBJECT
-echo "  <tr><td class='mhnp nw'>Subject:</td><td class='mhdp'>",
-    "<tt>[", htmlspecialchars($Conf->short_name), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($Qreq->subject), "\" size='64' /></td></tr>
+echo "  <tr><td class='mhnp nw'><label for=\"subject\">Subject:</label></td><td class='mhdp'>",
+    "<tt>[", htmlspecialchars($Conf->short_name), "]&nbsp;</tt>",
+    Ht::entry("subject", $Qreq->subject, ["size" => 64, "class" => Ht::control_class("subject", "textlite-tt"), "id" => "subject"]),
+    "</td></tr>
 
  <tr><td></td><td class='mhb'>\n",
     Ht::textarea("emailBody", $Qreq->emailBody,

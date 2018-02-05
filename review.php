@@ -2,7 +2,6 @@
 // review.php -- HotCRP paper review display/edit page
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
-$Error = array();
 require_once("src/initweb.php");
 require_once("src/papertable.php");
 
@@ -47,7 +46,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $Qreq, $prow, $paperTable, $editRrowLogname, $Error;
+    global $Conf, $Me, $Qreq, $prow, $paperTable, $editRrowLogname;
     $Conf->paper = $prow = PaperTable::paperRow($Qreq, $whyNot);
     if (!$prow)
         errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
@@ -58,8 +57,6 @@ function loadRows() {
         $editRrowLogname = "Review " . $paperTable->editrrow->reviewId;
     else if ($paperTable->editrrow)
         $editRrowLogname = "Review " . $paperTable->editrrow->reviewId . " by " . $paperTable->editrrow->email;
-    if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
-        $Error = array();
 }
 
 loadRows();
