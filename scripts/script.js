@@ -3108,7 +3108,7 @@ window.papercomment = (function ($) {
 var vismap = {rev: "hidden from authors",
               pc: "hidden from authors and external reviewers",
               admin: "shown only to administrators"};
-var cmts = {}, has_unload = false;
+var cmts = {}, newcmt, has_unload = false;
 var resp_rounds = {}, detwiddle;
 if (hotcrp_user && hotcrp_user.cid)
     detwiddle = new RegExp("^" + hotcrp_user.cid + "~");
@@ -3374,10 +3374,8 @@ function save_editor(elt, action, really) {
             var data_cid = cj_cid(data.cmt);
             if (cid !== data_cid) {
                 $c.closest(".cmtid")[0].id = data_cid;
-                if (cid !== "cnew")
-                    delete cmts[cid];
-                else if (cmts.cnew)
-                    papercomment.add(cmts.cnew);
+                delete cmts[cid];
+                newcmt && papercomment.add(newcmt);
             }
             render_cmt($c, data.cmt, editing_response, data.msg);
         } else
@@ -3433,7 +3431,7 @@ function render_cmt(j, cj, editing, msg) {
     // header
     hc.push('<div class="cmtt">', '</div>');
     if (cj.is_new && !editing) {
-        hc.push('<h3><a class="q ui fn cmteditor" href="#">+&nbsp;', '</a></h3>');
+        hc.push('<h3><a class="q ui fn cmteditor" href="">+&nbsp;', '</a></h3>');
         if (cj.response)
             hc.push_pop(cj.response == "1" ? "Add Response" : "Add " + cj.response + " Response");
         else
@@ -3441,7 +3439,7 @@ function render_cmt(j, cj, editing, msg) {
     } else if (cj.is_new && !cj.response)
         hc.push('<h3>Add Comment</h3>');
     else if (cj.editable && !editing) {
-        t = '<div class="cmtinfo floatright"><a class="xx ui editor cmteditor" href="#"><u>Edit</u></a></div>';
+        t = '<div class="cmtinfo floatright"><a class="xx ui editor cmteditor" href=""><u>Edit</u></a></div>';
         cj.response ? $(t).prependTo(chead) : hc.push(t);
     }
     t = comment_identity_time(cj);
@@ -3536,6 +3534,8 @@ function add(cj, editing) {
     }
     if (editing == null && cj.response && cj.draft && cj.editable)
         editing = true;
+    if (!newcmt && cid === "cnew")
+        newcmt = cj;
     render_cmt(j, cj, editing);
     return $$(cid);
 }
@@ -3557,7 +3557,7 @@ function edit(cj) {
     $c.scrollIntoView();
     var te = $c.find("textarea[name=comment]")[0];
     te.setSelectionRange && te.setSelectionRange(te.value.length, te.value.length);
-    $(function(){ te.focus(); });
+    $(function () { te.focus(); });
     has_unload || $(window).on("beforeunload.papercomment", beforeunload);
     has_unload = true;
     return false;
