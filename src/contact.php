@@ -926,7 +926,7 @@ class Contact {
             $url = SelfHref::make($qreq, $x, ["raw" => true, "site_relative" => true]);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST];
             if ($qreq->post_ok())
-                error_go(false, "You’ve been signed out due to inactivity, so your changes have not been saved. After signing in, you may submit them again.");
+                error_go(false, "You’ve been signed out, so your changes were not saved. After signing in, you may submit them again.");
             else
                 error_go(false, "You must sign in to access that page.");
         } else

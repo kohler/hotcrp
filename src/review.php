@@ -379,6 +379,27 @@ class ReviewField implements Abbreviator, JsonSerializable {
         else
             return (int) $text;
     }
+
+    function normalize_fvalue($fval) {
+        if ($this->parse_value($fval, true))
+            return $this->option_letter ? $fval : (int) $fval;
+        else
+            return 0;
+    }
+
+    function unparse_web_control($subtype, $fval, $rval) {
+        if ($this->has_options) {
+            $opt = ["id" => "{$this->id}_{$subtype}"];
+            if ($fval !== $rval)
+                $opt["data-default-checked"] = $rval === $num;
+            return Ht::radio($this->id, $subtype, $fval === $subtype, $opt);
+        } else {
+            $opt = ["class" => "reviewtext need-autogrow", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
+            if ($fval !== $rval)
+                $opt["data-default-value"] = (string) $rval;
+            return Ht::textarea($this->id, (string) $fval, $opt);
+        }
+    }
 }
 
 class ReviewForm implements JsonSerializable {
@@ -520,23 +541,24 @@ class ReviewForm implements JsonSerializable {
                 || ($f->round_mask && !$f->is_round_visible($rrow)))
                 continue;
 
-            $fval = "";
+            $rval = "";
+            if ($rrow)
+                $rval = $f->unparse_value(get($rrow, $fid), ReviewField::VALUE_STRING);
+            $fval = $rval;
             if ($rvalues && isset($rvalues->req[$fid]))
                 $fval = $rvalues->req[$fid];
-            else if ($rrow)
-                $fval = $f->unparse_value(get($rrow, $fid), ReviewField::VALUE_STRING);
 
             echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="revet';
             if ($rvalues && $rvalues->has_problem_at($fid))
-                echo " error";
-            echo '"><div class="revfn">', $f->name_html;
+                echo " has-error";
+            echo '"><label class="revfn" for="', $fid, '">', $f->name_html;
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
                 echo '<div class="revvis">(secret)</div>';
             else if ($f->view_score < VIEWSCORE_PC)
                 echo '<div class="revvis">(shown only to chairs)</div>';
             else if ($f->view_score < VIEWSCORE_AUTHOR)
                 echo '<div class="revvis">(hidden from authors)</div>';
-            echo '</div></div>';
+            echo '</label></div>';
 
             if ($f->description)
                 echo '<div class="revhint">', $f->description, "</div>";
@@ -545,25 +567,21 @@ class ReviewForm implements JsonSerializable {
             if ($f->has_options) {
                 // Keys to $f->options are string if option_letter, else int.
                 // Need to match exactly.
-                if (!$f->parse_value($fval, true))
-                    $fval = 0;
-                else if (!$f->option_letter)
-                    $fval = (int) $fval;
+                $fval = $f->normalize_fvalue($fval);
+                $rval = $f->normalize_fvalue($rval);
                 foreach ($f->options as $num => $what) {
                     echo '<label><div class="checki"><span class="checkc">',
-                        Ht::radio($fid, $num, $fval === $num, ["id" => $fid . "_" . $num]),
+                        $f->unparse_web_control($num, $fval, $rval),
                         ' </span>', $f->unparse_value($num, ReviewField::VALUE_REV_NUM),
                         ' ', htmlspecialchars($what), '</div></label>';
                 }
-                if ($f->allow_empty)
+                if ($f->allow_empty) {
                     echo '<label><div class="checki g"><span class="checkc">',
-                        Ht::radio($fid, 0, $fval === 0, ["id" => $fid . "_0"]),
+                        $f->unparse_web_control(0, $fval, $rval),
                         ' </span>No entry</div></label>';
+                }
             } else {
-                echo $format_description;
-                echo Ht::textarea($fid, (string) $fval,
-                        array("class" => "reviewtext need-autogrow", "rows" => $f->display_space,
-                              "cols" => 60, "spellcheck" => "true"));
+                echo $format_description, $f->unparse_web_control(null, $fval, $rval);
             }
             echo "</div></div>\n";
         }
@@ -1066,7 +1084,7 @@ $blind\n";
         }
 
         echo "</div></div></div></form>\n\n";
-        Ht::stash_script('hiliter_children(".editrevform")', "form_revcard");
+        Ht::stash_script('hiliter_children(".editrevform", true)', "form_revcard");
     }
 
     const RJ_NO_EDITABLE = 2;

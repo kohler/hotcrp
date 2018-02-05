@@ -2032,6 +2032,7 @@ function form_highlight(form, elt) {
 
 function hiliter_children(form, on_unload) {
     form = $(form)[0];
+    form_highlight(form);
     $(form).on("change input", "input, select, textarea", function () {
         if (!hasClass(this, "ignore-diff") && !hasClass(form, "ignore-diff"))
             form_highlight(form, this);
