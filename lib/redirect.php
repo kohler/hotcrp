@@ -68,7 +68,7 @@ function ensure_session() {
         if (empty($_SESSION)) {
             if ($has_cookie)
                 session_regenerate_id();
-            $_SESSION["testsession"] = 0;
+            $_SESSION["testsession"] = false;
         }
     }
 }
@@ -77,8 +77,9 @@ function post_value() {
     ensure_session();
     if (($sid = session_id()) !== "") {
         if (strlen($sid) > 16)
-            $sid = substr($sid, 8);
-        $sid = substr($sid, 0, 8);
+            $sid = substr($sid, 8, 12);
+        else
+            $sid = substr($sid, 0, 12);
     } else
         $sid = "1";
     return urlencode($sid);

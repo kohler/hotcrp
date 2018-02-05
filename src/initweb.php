@@ -70,7 +70,8 @@ function initialize_user() {
     // check CSRF token, using old value of session ID
     if ($Qreq->post && ($sn = session_name()) && isset($_COOKIE[$sn])) {
         $sid = $_COOKIE[$sn];
-        if ($Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, 8))
+        $l = strlen($Qreq->post);
+        if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l))
             $Qreq->approve_post();
     }
     ensure_session();
