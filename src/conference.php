@@ -1619,7 +1619,8 @@ class Conf {
     // session data
 
     function session($name, $defval = null) {
-        if (isset($_SESSION[$this->dsn][$name]))
+        if (isset($_SESSION[$this->dsn])
+            && isset($_SESSION[$this->dsn][$name]))
             return $_SESSION[$this->dsn][$name];
         else
             return $defval;

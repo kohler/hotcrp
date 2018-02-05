@@ -102,12 +102,17 @@ function initialize_user() {
 
     // set $_SESSION["addrs"]
     if ($_SERVER["REMOTE_ADDR"]
-        && (!is_array(get($_SESSION, "addrs")) || get($_SESSION["addrs"], 0) !== $_SERVER["REMOTE_ADDR"])) {
-        $as = array($_SERVER["REMOTE_ADDR"]);
-        if (is_array(get($_SESSION, "addrs")))
+        && (!$Me->is_empty()
+            || isset($_SESSION["addrs"]))
+        && (!isset($_SESSION["addrs"])
+            || !is_array($_SESSION["addrs"])
+            || $_SESSION["addrs"][0] !== $_SERVER["REMOTE_ADDR"])) {
+        $as = [$_SERVER["REMOTE_ADDR"]];
+        if (isset($_SESSION["addrs"]) && is_array($_SESSION["addrs"])) {
             foreach ($_SESSION["addrs"] as $a)
                 if ($a !== $_SERVER["REMOTE_ADDR"] && count($as) < 5)
                     $as[] = $a;
+        }
         $_SESSION["addrs"] = $as;
     }
 }

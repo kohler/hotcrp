@@ -7,8 +7,8 @@ class LoginHelper {
         global $Me, $Conf;
         if (!$Me->is_empty() && $explicit && !$Conf->opt("httpAuthLogin"))
             $Conf->confirmMsg("You have been signed out. Thanks for using the system.");
-        unset($_SESSION["trueuser"]);
-        unset($_SESSION["last_actas"]);
+        unset($_SESSION["trueuser"], $_SESSION["last_actas"],
+              $_SESSION["updatecheck"]);
         // clear all conference session info, except maybe capabilities
         $capabilities = $Conf->session("capabilities");
         unset($_SESSION[$Conf->dsn]);
