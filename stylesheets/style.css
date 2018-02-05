@@ -1350,8 +1350,12 @@ img.check {
 	position: absolute;
 	background: white;
 	color: #333333;
-	outline: 0.25rem solid white;
 	border-radius: 5px;
+	padding-top: 8px;
+	padding-bottom: 8px;
+	margin-top: -8px;
+	margin-bottom: -8px;
+	padding-right: 1em;
 }
 .checksum:hover > .checksum-abbreviation {
 	visibility: hidden;
