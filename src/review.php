@@ -391,7 +391,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
         if ($this->has_options) {
             $opt = ["id" => "{$this->id}_{$subtype}"];
             if ($fval !== $rval)
-                $opt["data-default-checked"] = $rval === $num;
+                $opt["data-default-checked"] = $rval === $subtype;
             return Ht::radio($this->id, $subtype, $fval === $subtype, $opt);
         } else {
             $opt = ["class" => "reviewtext need-autogrow", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
