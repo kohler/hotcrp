@@ -54,7 +54,7 @@ if ($Me === false)
 
 // Initialize user
 function initialize_user() {
-    global $Conf, $Me, $Opt, $Qreq;
+    global $Conf, $Me, $Now, $Opt, $Qreq;
 
     // set up session
     $Opt["globalSessionLifetime"] = ini_get("session.gc_maxlifetime");
@@ -95,11 +95,17 @@ function initialize_user() {
     }
 
     // if bounced through login, add post data
+    if (isset($_SESSION["login_bounce"][4])
+        && $_SESSION["login_bounce"][4] <= $Now)
+        unset($_SESSION["login_bounce"]);
+
     if (!$Me->is_empty()
         && isset($_SESSION["login_bounce"])
         && !isset($_SESSION["testsession"])) {
         $lb = $_SESSION["login_bounce"];
-        if ($lb[0] == $Conf->dsn && $lb[2] !== "index" && $lb[2] == Navigation::page()) {
+        if ($lb[0] == $Conf->dsn
+            && $lb[2] !== "index"
+            && $lb[2] == Navigation::page()) {
             foreach ($lb[3] as $k => $v)
                 if (!isset($Qreq[$k]))
                     $Qreq[$k] = $v;

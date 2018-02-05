@@ -906,7 +906,7 @@ class Contact {
     }
 
     function escape($qreq = null) {
-        global $Qreq;
+        global $Qreq, $Now;
         $qreq = $qreq ? : $Qreq;
 
         if ($qreq->ajax) {
@@ -924,7 +924,7 @@ class Contact {
             if ($qreq->anchor)
                 $x["anchor"] = $qreq->anchor;
             $url = SelfHref::make($qreq, $x, ["raw" => true, "site_relative" => true]);
-            $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST];
+            $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, $Now + 120];
             if ($qreq->post_ok())
                 error_go(false, "You’ve been signed out, so your changes were not saved. After signing in, you may submit them again.");
             else
