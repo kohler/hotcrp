@@ -65,14 +65,15 @@ function initialize_user() {
         $sh = $Opt["sessionHandler"];
         session_set_save_handler(new $sh);
     }
-    ensure_session();
+    set_session_name($Conf);
 
-    // check CSRF token
-    if ($Qreq->post && ($sid = session_id())) {
-        if ((isset($_SESSION["post"]) && $Qreq->post === $_SESSION["post"])
-            || $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, 8))
+    // check CSRF token, using old value of session ID
+    if ($Qreq->post && ($sn = session_name()) && isset($_COOKIE[$sn])) {
+        $sid = $_COOKIE[$sn];
+        if ($Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, 8))
             $Qreq->approve_post();
     }
+    ensure_session();
 
     // load current user
     $Me = null;

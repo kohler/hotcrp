@@ -26,22 +26,19 @@ function make_session_name($conf, $n) {
     return preg_replace_callback(',[^A-Ya-z0-9],', "session_name_fixer", $n);
 }
 
-function ensure_session() {
-    global $Conf;
-    if (session_id() !== "")
-        return true;
-    if (!($sn = make_session_name($Conf, $Conf->opt("sessionName"))))
+function set_session_name(Conf $conf) {
+    if (!($sn = make_session_name($conf, $conf->opt("sessionName"))))
         return false;
-    $secure = $Conf->opt("sessionSecure");
-    $domain = $Conf->opt("sessionDomain");
+    $secure = $conf->opt("sessionSecure");
+    $domain = $conf->opt("sessionDomain");
     // maybe upgrade from an old session name to this one
     if (!isset($_COOKIE[$sn])
-        && ($upgrade_sn = $Conf->opt("sessionUpgrade"))
-        && ($upgrade_sn = make_session_name($Conf, $upgrade_sn))
+        && ($upgrade_sn = $conf->opt("sessionUpgrade"))
+        && ($upgrade_sn = make_session_name($conf, $upgrade_sn))
         && isset($_COOKIE[$upgrade_sn])) {
         session_id($_COOKIE[$upgrade_sn]);
         setcookie($upgrade_sn, "", time() - 3600, "/",
-                  $Conf->opt("sessionUpgradeDomain", $domain ? : ""),
+                  $conf->opt("sessionUpgradeDomain", $domain ? : ""),
                   $secure ? : false);
     }
     if ($secure !== null || $domain !== null) {
@@ -55,23 +52,25 @@ function ensure_session() {
     }
     session_name($sn);
     session_cache_limiter("");
+}
 
-    // initiate session
-    $has_cookie = isset($_COOKIE[$sn]);
-    if ($has_cookie && !preg_match(';\A[-a-zA-Z0-9,]{1,128}\z;', $_COOKIE[$sn])) {
-        unset($_COOKIE[$sn]);
-        $has_cookie = false;
+function ensure_session() {
+    if (session_id() === "") {
+        $sn = session_name();
+        $has_cookie = isset($_COOKIE[$sn]);
+        if ($has_cookie && !preg_match(';\A[-a-zA-Z0-9,]{1,128}\z;', $_COOKIE[$sn])) {
+            unset($_COOKIE[$sn]);
+            $has_cookie = false;
+        }
+        session_start();
+
+        // avoid session fixation
+        if (empty($_SESSION)) {
+            if ($has_cookie)
+                session_regenerate_id();
+            $_SESSION["testsession"] = 0;
+        }
     }
-    session_start();
-
-    // avoid session fixation
-    if (empty($_SESSION)) {
-        if ($has_cookie)
-            session_regenerate_id();
-        $_SESSION["testsession"] = 0;
-    }
-
-    return true;
 }
 
 function post_value() {
