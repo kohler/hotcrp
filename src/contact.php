@@ -3696,9 +3696,9 @@ class Contact {
     }
 
     function paper_status_info(PaperInfo $row, $forceShow = null) {
-        if ($row->timeWithdrawn > 0)
+        if ($row->timeWithdrawn > 0) {
             return array("pstat_with", "Withdrawn");
-        else if ($row->outcome && $this->can_view_decision($row, $forceShow)) {
+        } else if ($row->outcome && $this->can_view_decision($row, $forceShow)) {
             $data = get(self::$status_info_cache, $row->outcome);
             if (!$data) {
                 $decclass = ($row->outcome > 0 ? "pstat_decyes" : "pstat_decno");
@@ -3715,12 +3715,13 @@ class Contact {
                 $data = self::$status_info_cache[$row->outcome] = array($decclass, $decname);
             }
             return $data;
-        } else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1)
+        } else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1) {
             return array("pstat_noup", "No submission");
-        else if ($row->timeSubmitted > 0)
+        } else if ($row->timeSubmitted > 0) {
             return array("pstat_sub", "Submitted");
-        else
+        } else {
             return array("pstat_prog", "Not ready");
+        }
     }
 
 

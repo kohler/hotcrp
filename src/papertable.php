@@ -55,6 +55,10 @@ class PaperTable {
         $this->admin = $user->can_administer($prow);
         $this->qreq = $qreq;
 
+        $this->canUploadFinal = $this->prow
+            && $this->prow->outcome > 0
+            && $this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_submit_final_paper", $this->prow);
+
         if ($this->prow == null) {
             $this->mode = "edit";
             return;
@@ -67,19 +71,20 @@ class PaperTable {
 
         if ($user->can_view_authors($prow))
             $this->view_authors = 2;
-        foreach ($prow->options() as $ov) {
-            if ($user->can_view_paper_option($prow, $ov->option))
-                $this->view_options[$ov->id] = 2;
+        $olist = $this->conf->paper_opts->option_list_type(!$this->canUploadFinal);
+        foreach ($olist as $o) {
+            if ($user->can_view_paper_option($prow, $o))
+                $this->view_options[$o->id] = 2;
         }
 
         if ($this->allow_admin) {
             $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
             if ($this->view_authors && !$user->can_view_authors($prow))
                 $this->view_authors = 1;
-            foreach ($prow->options() as $ov)
-                if (isset($this->view_options[$ov->id])
-                    && !$user->can_view_paper_option($prow, $ov->option))
-                    $this->view_options[$ov->id] = 1;
+            foreach ($olist as $o)
+                if (isset($this->view_options[$o->id])
+                    && !$user->can_view_paper_option($prow, $o))
+                    $this->view_options[$o->id] = 1;
             $user->set_overrides($overrides);
         }
 
@@ -2105,10 +2110,6 @@ class PaperTable {
     }
 
     private function _echo_editable_body() {
-        $this->canUploadFinal = $this->prow
-            && $this->prow->outcome > 0
-            && $this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_submit_final_paper", $this->prow);
-
         $this->_echo_editable_form();
         echo '<div>';
 
@@ -2139,7 +2140,8 @@ class PaperTable {
             $this->add_edit_field(60000, [$this, "echo_editable_pc_conflicts"], "pc_conflicts");
             $this->add_edit_field(61000, [$this, "echo_editable_collaborators"], "collaborators");
         }
-        foreach ($this->canUploadFinal ? $this->conf->paper_opts->option_list() : $this->conf->paper_opts->nonfinal_option_list() as $opt)
+        $olist = $this->conf->paper_opts->option_list_type(!$this->canUploadFinal);
+        foreach ($olist as $opt)
             if (!$this->prow || get($this->view_options, $opt->id))
                 $this->add_edit_field($opt->form_position(), $this->make_echo_editable_option($opt), $opt);
         usort($this->edit_fields, function ($a, $b) {
