@@ -548,12 +548,14 @@ class Contact {
 
     function is_actas_user() {
         return $this->activated_
-            && ($trueuser = get($_SESSION, "trueuser"))
+            && isset($_SESSION)
+            && ($trueuser = $_SESSION["trueuser"])
             && strcasecmp($trueuser->email, $this->email) !== 0;
     }
 
     function update_trueuser($always) {
-        if (($trueuser = get($_SESSION, "trueuser"))
+        if (isset($_SESSION)
+            && ($trueuser = $_SESSION["trueuser"])
             && strcasecmp($trueuser->email, $this->email) == 0) {
             foreach (["firstName", "lastName", "affiliation", "country",
                       "birthday", "gender"] as $k)
