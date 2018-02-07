@@ -253,8 +253,8 @@ function do_tags($qreq) {
     // report
     if (!count($errors)) {
         $Conf->confirmMsg("Tags saved.");
-        unset($Qreq->tagact, $Qreq->tag);
-        SelfHref::redirect($Qreq);
+        unset($qreq->tagact, $qreq->tag);
+        SelfHref::redirect($qreq);
     } else
         Conf::msg_error(join("<br>", $errors));
 }
