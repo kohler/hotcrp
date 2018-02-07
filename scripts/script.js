@@ -4859,7 +4859,8 @@ function tag_mousemove(evt) {
         l = srcindex;
     if (l !== dragindex) {
         tag_dragto(l);
-        evt.stopPropagation();
+        if (evt.type === "mousemove")
+            evt.stopPropagation();
     }
 }
 
