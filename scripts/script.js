@@ -870,10 +870,13 @@ $(document).on("click", ".ui", handle_ui);
 
 // rangeclick
 $(document).on("click", ".js-range-click", function (event) {
-    var $self = jQuery(this), $f = $self.closest("form"),
-        kind = this.getAttribute("data-range-type"),
+    var $f = $(this).closest("form");
+    if ($f[0].hasAttribute("data-range-clicking"))
+        return;
+
+    var kind = this.getAttribute("data-range-type"),
         kindsearch = kind ? "[data-range-type~='" + kind + "']" : "[name='" + this.name + "']",
-        $cbs = $f.find("input[type=checkbox]" + kindsearch);
+        $cbs = $f.find("input[type=" + this.type + "]" + kindsearch);
 
     var rangeclick_last = $f.data("rangeClickLast") || {};
     var lastelt = rangeclick_last[kindsearch], thispos, lastpos, i, j;
@@ -894,8 +897,12 @@ $(document).on("click", ".js-range-click", function (event) {
             i = thispos + 1;
             j = lastpos;
         }
-        for (; i <= j; ++i)
-            $cbs[i].checked = this.checked;
+        $f[0].setAttribute("data-range-clicking", "y");
+        for (; i <= j; ++i) {
+            if ($cbs[i].checked !== this.checked)
+                $($cbs[i]).trigger("click");
+        }
+        $f[0].removeAttribute("data-range-clicking");
     }
 });
 
