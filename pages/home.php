@@ -179,7 +179,7 @@ if (!$Me->has_email() || isset($Qreq->signin)) {
     $passwordFocus = !Ht::control_class("email") && Ht::control_class("password");
     echo '<hr class="home" />
 <div class="homegrp foldo" id="homeacct">',
-        Ht::form(hoturl_post("index")),
+        Ht::form(hoturl("index", ["post" => post_value(true)])),
         '<div class="f-contain">';
     if ($Conf->opt("contactdb_dsn") && $Conf->opt("contactdb_loginFormHeading"))
         echo $Conf->opt("contactdb_loginFormHeading");

@@ -69,13 +69,17 @@ function initialize_user() {
     $sn = session_name();
 
     // check CSRF token, using old value of session ID
-    if ($Qreq->post && $sn && isset($_COOKIE[$sn])) {
-        $sid = $_COOKIE[$sn];
-        $l = strlen($Qreq->post);
-        if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l))
+    if ($Qreq->post && $sn) {
+        if (isset($_COOKIE[$sn])) {
+            $sid = $_COOKIE[$sn];
+            $l = strlen($Qreq->post);
+            if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l))
+                $Qreq->approve_post();
+        } else if ($Qreq->post === "<empty-session>") {
             $Qreq->approve_post();
+        }
     }
-    ensure_session();
+    ensure_session(true);
 
     // load current user
     $Me = null;

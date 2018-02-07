@@ -52,35 +52,37 @@ function set_session_name(Conf $conf) {
     }
     session_name($sn);
     session_cache_limiter("");
+    if (isset($_COOKIE[$sn])
+        && !preg_match(';\A[-a-zA-Z0-9,]{1,128}\z;', $_COOKIE[$sn]))
+        unset($_COOKIE[$sn]);
 }
 
-function ensure_session() {
+function ensure_session($only_nonempty = false) {
     if (session_id() === "") {
         $sn = session_name();
         $has_cookie = isset($_COOKIE[$sn]);
-        if ($has_cookie && !preg_match(';\A[-a-zA-Z0-9,]{1,128}\z;', $_COOKIE[$sn])) {
-            unset($_COOKIE[$sn]);
-            $has_cookie = false;
-        }
-        session_start();
+        if (!$only_nonempty || $has_cookie) {
+            session_start();
 
-        // avoid session fixation
-        if (empty($_SESSION)) {
-            if ($has_cookie)
-                session_regenerate_id();
-            $_SESSION["testsession"] = false;
+            // avoid session fixation
+            if (empty($_SESSION)) {
+                if ($has_cookie)
+                    session_regenerate_id();
+                $_SESSION["testsession"] = false;
+            }
         }
     }
 }
 
-function post_value() {
-    ensure_session();
+function post_value($allow_empty = false) {
+    if (!$allow_empty)
+        ensure_session();
     if (($sid = session_id()) !== "") {
         if (strlen($sid) > 16)
             $sid = substr($sid, 8, 12);
         else
             $sid = substr($sid, 0, 12);
     } else
-        $sid = "1";
+        $sid = "<empty-session>";
     return urlencode($sid);
 }
