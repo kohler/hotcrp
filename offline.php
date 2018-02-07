@@ -76,23 +76,23 @@ function check_tag_index_line(&$line) {
         return false;
 }
 
-function setTagIndexes() {
+function setTagIndexes($qreq) {
     global $Conf, $Me;
     $filename = null;
-    if (isset($Qreq->upload) && $Qreq->has_file("file")) {
-        if (($text = $Qreq->file_contents("tmp_name")) === false) {
+    if (isset($qreq->upload) && $qreq->has_file("file")) {
+        if (($text = $qreq->file_contents("tmp_name")) === false) {
             Conf::msg_error("Internal error: cannot read file.");
             return;
         }
-        $filename = $Qreq->file_filename("tmp_name");
-    } else if (!($text = $Qreq->data)) {
+        $filename = $qreq->file_filename("tmp_name");
+    } else if (!($text = $qreq->data)) {
         Conf::msg_error("Choose a file first.");
         return;
     }
 
     $RealMe = $Me;
     $tagger = new Tagger;
-    if (($tag = $Qreq->tag))
+    if (($tag = $qreq->tag))
         $tag = $tagger->check($tag, Tagger::NOVALUE);
     $curIndex = 0;
     $lineno = 1;
@@ -139,7 +139,7 @@ function setTagIndexes() {
                 $error = '<span class="lineno">' . htmlspecialchars($filename) . ':</span> ' . $error;
         }
         Conf::msg_error('<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . '</p></div>');
-    } else if (isset($Qreq->setvote)) {
+    } else if (isset($qreq->setvote)) {
         $Conf->confirmMsg("Votes saved.");
     } else {
         $dtag = $tagger->unparse($tag);
@@ -149,7 +149,7 @@ function setTagIndexes() {
 if ((isset($Qreq->setvote) || isset($Qreq->setrank))
     && $Me->is_reviewer()
     && $Qreq->post_ok())
-    setTagIndexes();
+    setTagIndexes($Qreq);
 
 
 $pastDeadline = !$Conf->time_review(null, $Me->isPC, true);
