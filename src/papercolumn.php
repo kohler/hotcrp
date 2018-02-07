@@ -995,8 +995,8 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $v = $row->tag_value($this->ltag);
-        if ($this->editsort && !isset($pl->row_attr["data-tags"]))
-            $pl->row_attr["data-tags"] = $this->dtag . "#" . $v;
+        if ($this->editsort && !isset($pl->row_attr["data-tags"]) && $v !== false)
+            $pl->row_attr["data-tags"] = $this->ltag . "#" . $v;
         if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0))
             return $this->is_value ? (string) $v : ($v === false ? "" : "&#x2713;");
         if (!$this->is_value)
