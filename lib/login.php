@@ -168,7 +168,7 @@ class LoginHelper {
 
         // activate and redirect
         ensure_session();
-        $_SESSION["trueuser"] = (object) array("email" => $user->email);
+        $_SESSION["trueuser"] = (object) array("email" => $xuser->email);
         $_SESSION["testsession"] = true;
         $user = $xuser->activate($qreq);
         $Conf->save_session("freshlogin", true);

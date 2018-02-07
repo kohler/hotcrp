@@ -4829,9 +4829,12 @@ function tag_mousemove(evt) {
     }
 
     // if dragging a group, restrict to groups
-    if (rowanal[srcindex].isgroup && rowanal[srcindex + 1] && !rowanal[srcindex + 1].isgroup)
+    if (rowanal[srcindex].isgroup
+        && rowanal[srcindex + 1]
+        && !rowanal[srcindex + 1].isgroup) {
         while (l > 0 && l < rowanal.length && !rowanal[l].isgroup)
             --l;
+    }
     r = endgroup_index(l);
 
     // if below middle, insert at next location
