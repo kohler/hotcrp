@@ -366,13 +366,13 @@ else if ($Me->privChair && $Qreq->t == "all")
     $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new") . "' class='btn'>Create account</a></p><p>Select a user to edit their profile.  Select " . Ht::img("viewas.png", "[Act as]") . " to view the site as that user would see it.</p>");
 
 
-if (isset($pl->any->sel)) {
+if ($pl->any->sel) {
     echo Ht::form(hoturl_post("users", ["t" => $Qreq->t])), "<div>";
     if (isset($Qreq->sort))
         echo Ht::hidden("sort", $Qreq->sort);
 }
 echo $pl_text;
-if (isset($pl->any->sel))
+if ($pl->any->sel)
     echo "</div></form>";
 
 
