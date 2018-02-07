@@ -332,7 +332,7 @@ class Contact {
     function activate($qreq) {
         global $Now;
         $this->activated_ = true;
-        $trueuser = get($_SESSION, "trueuser");
+        $trueuser = isset($_SESSION["trueuser"]) ? $_SESSION["trueuser"] : null;
         $truecontact = null;
 
         // Handle actas requests
@@ -918,6 +918,7 @@ class Contact {
 
         if ($this->is_empty()) {
             // Preserve post values across session expiration.
+            ensure_session();
             $x = array();
             if (Navigation::path())
                 $x["__PATH__"] = preg_replace(",^/+,", "", Navigation::path());

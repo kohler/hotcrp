@@ -1627,9 +1627,11 @@ class Conf {
     }
 
     function save_session($name, $value) {
-        if ($value !== null)
+        if ($value !== null) {
+            if (empty($_SESSION))
+                ensure_session();
             $_SESSION[$this->dsn][$name] = $value;
-        else if (isset($_SESSION[$this->dsn])) {
+        } else if (isset($_SESSION[$this->dsn])) {
             unset($_SESSION[$this->dsn][$name]);
             if (empty($_SESSION[$this->dsn]))
                 unset($_SESSION[$this->dsn]);

@@ -7,14 +7,17 @@ class LoginHelper {
         global $Me, $Conf;
         if (!$Me->is_empty() && $explicit && !$Conf->opt("httpAuthLogin"))
             $Conf->confirmMsg("You have been signed out. Thanks for using the system.");
-        unset($_SESSION["trueuser"], $_SESSION["last_actas"],
-              $_SESSION["updatecheck"], $_SESSION["sg"]);
+        if (isset($_SESSION))
+            unset($_SESSION["trueuser"], $_SESSION["last_actas"],
+                  $_SESSION["updatecheck"], $_SESSION["sg"]);
         // clear all conference session info, except maybe capabilities
         $capabilities = $Conf->session("capabilities");
-        unset($_SESSION[$Conf->dsn]);
+        if (isset($_SESSION))
+            unset($_SESSION[$Conf->dsn]);
         if (!$explicit && $capabilities)
             $Conf->save_session("capabilities", $capabilities);
         if ($explicit) {
+            ensure_session();
             unset($_SESSION["login_bounce"]);
             if ($Conf->opt("httpAuthLogin")) {
                 $_SESSION["reauth"] = true;
@@ -164,11 +167,12 @@ class LoginHelper {
         $xuser->mark_login();
 
         // activate and redirect
-        $user = $xuser->activate($qreq);
+        ensure_session();
         $_SESSION["trueuser"] = (object) array("email" => $user->email);
+        $_SESSION["testsession"] = true;
+        $user = $xuser->activate($qreq);
         $Conf->save_session("freshlogin", true);
         $Conf->save_session("password_reset", null);
-        $_SESSION["testsession"] = true;
 
         go(hoturl("index", ["go" => $qreq->go, "postlogin" => 1]));
         exit;

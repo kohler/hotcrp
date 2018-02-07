@@ -66,9 +66,10 @@ function initialize_user() {
         session_set_save_handler(new $sh);
     }
     set_session_name($Conf);
+    $sn = session_name();
 
     // check CSRF token, using old value of session ID
-    if ($Qreq->post && ($sn = session_name()) && isset($_COOKIE[$sn])) {
+    if ($Qreq->post && $sn && isset($_COOKIE[$sn])) {
         $sid = $_COOKIE[$sn];
         $l = strlen($Qreq->post);
         if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l))
@@ -78,7 +79,7 @@ function initialize_user() {
 
     // load current user
     $Me = null;
-    $trueuser = get($_SESSION, "trueuser");
+    $trueuser = isset($_SESSION["trueuser"]) ? $_SESSION["trueuser"] : null;
     if ($trueuser && $trueuser->email)
         $Me = $Conf->user_by_email($trueuser->email);
     if (!$Me)

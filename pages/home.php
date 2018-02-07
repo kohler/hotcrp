@@ -515,7 +515,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
         else if ($startable || $Me->privChair)
             echo "<br />";
         echo "<span class='deadline'>",
-            join("</span><br />\n<span class='deadline'>", $deadlines),
+            join("</span><br>\n<span class='deadline'>", $deadlines),
             "</span>";
     }
 
