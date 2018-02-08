@@ -548,9 +548,8 @@ class Contact {
 
     function is_actas_user() {
         return $this->activated_
-            && isset($_SESSION)
-            && ($trueuser = $_SESSION["trueuser"])
-            && strcasecmp($trueuser->email, $this->email) !== 0;
+            && isset($_SESSION["trueuser"])
+            && strcasecmp($_SESSION["trueuser"]->email, $this->email) !== 0;
     }
 
     function update_trueuser($always) {
