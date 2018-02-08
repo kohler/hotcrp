@@ -2190,7 +2190,7 @@ class Contact {
         // NB logic order here is important elsewhere
         // Don’t report “rejected” error to admins
         if ($prow->outcome <= 0
-            || (!$prow->allow_administer
+            || (!$rights->allow_administer
                 && !$this->can_view_decision($prow)))
             $whyNot["rejected"] = 1;
         else if (!$this->conf->collectFinalPapers())
