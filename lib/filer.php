@@ -584,7 +584,7 @@ class Filer {
         }
 
         // Print paper
-        header("Content-Type: " . Mimetype::type($doc->mimetype));
+        header("Content-Type: " . Mimetype::type_with_charset($doc->mimetype));
         $attachment = null;
         if (is_bool($opts))
             $attachment = $opts;

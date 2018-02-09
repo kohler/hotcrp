@@ -27,7 +27,7 @@ class Mimetype {
     private static $tmap = [];
 
     private static $tinfo = [
-        self::TXT_TYPE =>     [".txt", "text", self::FLAG_INLINE | self::FLAG_UTF8],
+        self::TXT_TYPE =>     [".txt", "text", self::FLAG_INLINE],
         self::PDF_TYPE =>     [".pdf", "PDF", self::FLAG_INLINE],
         self::PS_TYPE =>      [".ps", "PostScript", 0],
         self::PPT_TYPE =>     [".ppt", "PowerPoint", 0, "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
