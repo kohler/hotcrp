@@ -16,38 +16,39 @@ class Mimetype {
     const ZIP_TYPE = "application/zip";
     const RAR_TYPE = "application/x-rar-compressed";
 
-    public $mimetypeid;
+    const FLAG_INLINE = 1;
+    const FLAG_UTF8 = 2;
+
     public $mimetype;
     public $extension;
     public $description;
-    public $inline;
+    public $flags;
 
     private static $tmap = [];
 
     private static $tinfo = [
-        self::TXT_TYPE =>     [1, 1, ".txt", "text"],
-        self::PDF_TYPE =>     [2, 1, ".pdf", "PDF"],
-        self::PS_TYPE =>      [3, 0, ".ps", "PostScript"],
-        self::PPT_TYPE =>     [4, 0, ".ppt", "PowerPoint", "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
+        self::TXT_TYPE =>     [".txt", "text", self::FLAG_INLINE | self::FLAG_UTF8],
+        self::PDF_TYPE =>     [".pdf", "PDF", self::FLAG_INLINE],
+        self::PS_TYPE =>      [".ps", "PostScript", 0],
+        self::PPT_TYPE =>     [".ppt", "PowerPoint", 0, "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
         "application/vnd.openxmlformats-officedocument.presentationml.presentation" =>
-                              [5, 0, ".pptx", "PowerPoint"],
-        "video/mp4" =>        [6, 0, ".mp4", null],
-        "video/x-msvideo" =>  [7, 0, ".avi", null],
-        self::JSON_TYPE =>    [8, 0, ".json", "JSON"],
-        self::JPG_TYPE =>     [9, 1, ".jpg", "JPEG", ".jpeg"],
-        self::PNG_TYPE =>     [10, 1, ".png", "PNG"]
+                              [".pptx", "PowerPoint", 0],
+        "video/mp4" =>        [".mp4", null, 0],
+        "video/x-msvideo" =>  [".avi", null, 0],
+        self::JSON_TYPE =>    [".json", "JSON", self::FLAG_UTF8],
+        self::JPG_TYPE =>     [".jpg", "JPEG", self::FLAG_INLINE, ".jpeg"],
+        self::PNG_TYPE =>     [".png", "PNG", self::FLAG_INLINE]
     ];
 
     private static $mime_types = null;
     private static $finfo = null;
 
-    function __construct($mimetype, $extension, $mimetypeid = 0,
-                         $description = null, $inline = false) {
+    function __construct($mimetype, $extension,
+                         $description = null, $flags = 0) {
         $this->mimetype = $mimetype;
         $this->extension = $extension;
-        $this->mimetypeid = $mimetypeid;
         $this->description = $description;
-        $this->inline = !!$inline;
+        $this->flags = !!$flags;
     }
 
     static function lookup($type, $nocreate = false) {
@@ -58,10 +59,9 @@ class Mimetype {
             return $type;
         if (empty(self::$tmap))
             foreach (self::$tinfo as $xtype => $data) {
-                $m = new Mimetype($xtype, $data[2], $data[0], $data[3], $data[1]);
-                self::$tmap[$xtype] = self::$tmap[$m->mimetypeid] =
-                    self::$tmap[$m->extension] = $m;
-                for ($i = 4; $i < count($data); ++$i)
+                $m = new Mimetype($xtype, $data[0], $data[1], $data[2]);
+                self::$tmap[$xtype] = self::$tmap[$m->extension] = $m;
+                for ($i = 3; $i < count($data); ++$i)
                     self::$tmap[$data[$i]] = $m;
             }
         if (array_key_exists($type, self::$tmap))
@@ -100,6 +100,16 @@ class Mimetype {
             return $type;
     }
 
+    static function type_with_charset($type) {
+        if (($x = self::lookup($type, true))) {
+            if ($x->flags & self::FLAG_UTF8)
+                return $x->mimetype . "; charset=utf-8";
+            else
+                return $x->mimetype;
+        } else
+            return $type;
+    }
+
     static function type_equals($typea, $typeb) {
         return self::type($typea) == self::type($typeb);
     }
@@ -131,7 +141,7 @@ class Mimetype {
 
     static function disposition_inline($type) {
         $x = self::lookup($type, true);
-        return $x && $x->inline;
+        return $x && ($x->flags & self::FLAG_INLINE) !== 0;
     }
 
     static function builtins() {
