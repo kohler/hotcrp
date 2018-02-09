@@ -143,7 +143,7 @@ function setTagIndexes($qreq) {
         $Conf->confirmMsg("Votes saved.");
     } else {
         $dtag = $tagger->unparse($tag);
-        $Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($dtag)) . "'>search for “order:{$dtag}”</a>.");
+        $Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=" . urlencode("editsort:#{$dtag}")) . "'>search for “editsort:#{$dtag}”</a>.");
     }
 }
 if ((isset($Qreq->setvote) || isset($Qreq->setrank))
