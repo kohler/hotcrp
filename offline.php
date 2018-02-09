@@ -80,11 +80,11 @@ function setTagIndexes($qreq) {
     global $Conf, $Me;
     $filename = null;
     if (isset($qreq->upload) && $qreq->has_file("file")) {
-        if (($text = $qreq->file_contents("tmp_name")) === false) {
+        if (($text = $qreq->file_contents("file")) === false) {
             Conf::msg_error("Internal error: cannot read file.");
             return;
         }
-        $filename = $qreq->file_filename("tmp_name");
+        $filename = $qreq->file_filename("file");
     } else if (!($text = $qreq->data)) {
         Conf::msg_error("Choose a file first.");
         return;
