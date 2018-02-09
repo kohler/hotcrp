@@ -200,15 +200,6 @@ function update_schema_bad_comment_timeDisplayed($conf) {
     return !count($badids) || $conf->ql("update PaperComment set timeDisplayed=0 where commentId ?a", $badids);
 }
 
-function update_schema_builtin_mimetypes($conf) {
-    $qs = $qvs = [];
-    foreach (Mimetype::builtins() as $m) {
-        $qs[] = "(?, ?, ?, ?, ?)";
-        array_push($qvs, $m->mimetypeid, $m->mimetype, $m->extension, $m->description, $m->inline ? 1 : 0);
-    }
-    return $conf->ql_apply("insert ignore into Mimetype (mimetypeid, mimetype, extension, description, inline) values " . join(", ", $qs), $qvs);
-}
-
 function update_schema_drop_keys_if_exist($conf, $table, $key) {
     $indexes = Dbl::fetch_first_columns($conf->dblink, "select distinct index_name from information_schema.statistics where table_schema=database() and `table_name`='$table'");
     $drops = [];
@@ -1049,7 +1040,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
   UNIQUE KEY `mimetype` (`mimetype`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
         $conf->update_schema_version(133);
-    if ($conf->sversion == 133 && update_schema_builtin_mimetypes($conf))
+    if ($conf->sversion == 133)
         $conf->update_schema_version(134);
     if ($conf->sversion == 134) {
         foreach (Dbl::fetch_first_columns($conf->dblink, "select distinct mimetype from PaperStorage") as $mt)
@@ -1066,7 +1057,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperStorage drop key `mimetype`")
         && $conf->ql("alter table PaperStorage add key `byPaper` (`paperId`,`documentType`,`timestamp`,`paperStorageId`)"))
         $conf->update_schema_version(137);
-    if ($conf->sversion == 137 && update_schema_builtin_mimetypes($conf))
+    if ($conf->sversion == 137)
         $conf->update_schema_version(138);
     if (($conf->sversion == 138 || $conf->sversion == 139)
         && $conf->ql("DROP TABLE IF EXISTS `FilteredDocument`")
