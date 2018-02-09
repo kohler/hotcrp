@@ -27,7 +27,7 @@ class GetJsonRQC_ListAction extends ListAction {
         $user->set_overrides($old_overrides);
         $pj = array_values($ssel->reorder($pj));
         $results["papers"] = $pj;
-        header("Content-Type: application/json");
+        header("Content-Type: application/json; charset=utf-8");
         header("Content-Disposition: attachment; filename=" . mime_quote_string($user->conf->download_prefix . "rqc.json"));
         echo json_encode($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
         exit;

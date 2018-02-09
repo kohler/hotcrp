@@ -267,10 +267,10 @@ function json_exit($json, $arg2 = null) {
     else {
         if ($json->status)
             http_response_code($json->status);
-        if (isset($_GET["jsontext"]) && $_GET["jsontext"])
-            header("Content-Type: text/plain");
+        if (isset($_GET["text"]) && $_GET["text"])
+            header("Content-Type: text/plain; charset=utf-8");
         else
-            header("Content-Type: application/json");
+            header("Content-Type: application/json; charset=utf-8");
         if ($Qreq && $Qreq->post_ok())
             header("Access-Control-Allow-Origin: *");
         echo json_encode_browser($json->content);

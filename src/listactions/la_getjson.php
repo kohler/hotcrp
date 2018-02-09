@@ -45,7 +45,7 @@ class GetJson_ListAction extends ListAction {
             $this->zipdoc->add(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
             $this->zipdoc->download();
         } else {
-            header("Content-Type: application/json");
+            header("Content-Type: application/json; charset=utf-8");
             header("Content-Disposition: attachment; filename=" . mime_quote_string($pj_filename));
             echo json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
         }

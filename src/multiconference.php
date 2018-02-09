@@ -74,7 +74,8 @@ class Multiconference {
             fwrite(STDERR, join("\n", $errors) . "\n");
             exit(1);
         } else if (get($_GET, "ajax")) {
-            header("Content-Type: " . (get($_GET, "jsontext") ? "text/plain" : "application/json"));
+            $ctype = get($_GET, "text") ? "text/plain" : "application/json";
+            header("Content-Type: $ctype; charset=utf-8");
             if (get($Opt, "maintenance"))
                 echo "{\"error\":\"maintenance\"}\n";
             else
