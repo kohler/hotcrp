@@ -6761,12 +6761,12 @@ function decode_ids(str) {
     return a;
 }
 function update_digest(info) {
-    var add = typeof info === "string",
+    var add = typeof info === "string" ? 1 : 0,
         digests = wstorage.json(false, "list_digests") || [],
         found = -1, now = now_msec();
     for (var i = 0; i < digests.length; ++i) {
         var digest = digests[i];
-        if (digest[add ? 1 : 0] === info)
+        if (digest[add] === info)
             found = i;
         else if (digest[2] < now - 30000) {
             digests.splice(i, 1);
@@ -6782,7 +6782,7 @@ function update_digest(info) {
     }
     wstorage(false, "list_digests", digests);
     if (found >= 0)
-        return digests[found][add ? 0 : 1];
+        return digests[found][1 - add];
     else
         return false;
 }
@@ -6803,8 +6803,10 @@ function make_digest(info, pid) {
     return info;
 }
 function resolve_digest(info) {
-    var m = /^(.*)"digest":"listdigest([0-9]+)(".*)$/.exec(info), ids;
-    if (m && !/"ids":/.test(info) && (ids = update_digest(+m[2])) !== false)
+    var m, ids;
+    if (info.indexOf('"ids":') < 0
+        && (m = /^(.*)"digest":"listdigest([0-9]+)(".*)$/.exec(info))
+        && (ids = update_digest(+m[2])) !== false)
         return m[1] + '"ids":"' + ids + m[3];
     else
         return info;
@@ -6903,8 +6905,10 @@ $(function () {
     // resolve list digests
     $(".has-hotlist").each(function () {
         var info = this.getAttribute("data-hotlist");
-        if (info && (info = resolve_digest(info)))
+        if (info && (info = resolve_digest(info))) {
             this.setAttribute("data-hotlist", info);
+            had_digests = true;
+        }
     });
     // having resolved digests, insert quicklinks
     if (had_digests && hotcrp_paperid
