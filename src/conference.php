@@ -2980,8 +2980,17 @@ class Conf {
 
         // Javascript settings to set before script.js
         Ht::stash_script("siteurl=" . json_encode_browser(Navigation::siteurl()) . ";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
-        if (session_id() !== "")
-            Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
+        if (session_id() !== "") {
+            $params = session_get_cookie_params();
+            $p = "";
+            if ($params["path"] && $params["path"] !== "/")
+                $p .= "; path=" . $params["path"];
+            if ($params["domain"])
+                $p .= "; domain=" . $params["domain"];
+            if ($params["secure"])
+                $p .= "; secure";
+            Ht::stash_script("siteurl_postvalue=" . json_encode(post_value()) . ";siteurl_cookie_params=" . json_encode($p));
+        }
         if (($urldefaults = hoturl_defaults()))
             Ht::stash_script("siteurl_defaults=" . json_encode_browser($urldefaults) . ";");
         Ht::stash_script("assetsurl=" . json_encode_browser($this->opt["assetsUrl"]) . ";");

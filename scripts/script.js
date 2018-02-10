@@ -2,7 +2,7 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 var siteurl, siteurl_postvalue, siteurl_suffix, siteurl_defaults,
-    siteurl_absolute_base, assetsurl,
+    siteurl_absolute_base, siteurl_cookie_params, assetsurl,
     hotcrp_paperid, hotcrp_status, hotcrp_user, hotcrp_pc,
     hotcrp_want_override_conflict;
 
@@ -6761,15 +6761,12 @@ function digestify(info) {
     return info;
 }
 function set_cookie(info) {
-    var p = "", m;
-    if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
-        p = "; path=" + m[1];
     if (info) {
         if (info.length > 1500) {
             info = digestify(info);
         }
         cookie_set_at = now_msec();
-        document.cookie = "hotlist-info=" + encodeURIComponent(info) + "; max-age=20" + p;
+        document.cookie = "hotlist-info=" + encodeURIComponent(info) + "; max-age=20" + siteurl_cookie_params;
     }
 }
 function is_listable(href) {
