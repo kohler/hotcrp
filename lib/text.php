@@ -282,6 +282,13 @@ class Text {
         return $ret;
     }
 
+    static function split_first_prefix($first) {
+        if (preg_match('%\A((?:dr\.?|mr\.?|mrs\.?|ms\.?|prof\.?)\s+)(?=\S)%i', $first, $m))
+            return [$m[2], $m[1]];
+        else
+            return [$first, ""];
+    }
+
     static function split_first_middle($first) {
         if (preg_match('%\A((?:\pL\.\s*)*\pL[^\s.]\S*)\s+(.*)\z%', $first, $m)
             || preg_match('%\A(\pL[^\s.]\S*)\s*(.*)\z%', $first, $m))
