@@ -97,8 +97,8 @@ class SessionList {
         return json_encode_browser($j);
     }
     function set_cookie() {
-        global $Now;
-        setcookie("hotlist-info", $this->info_string(), $Now + 20, Navigation::site_path());
+        global $Conf, $Now;
+        $Conf->set_cookie("hotlist-info", $this->info_string(), $Now + 20);
     }
     function set_current_id($id) {
         $this->id_position = $this->ids ? array_search($id, $this->ids) : false;

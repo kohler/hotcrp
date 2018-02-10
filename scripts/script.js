@@ -6766,7 +6766,10 @@ function set_cookie(info) {
             info = digestify(info);
         }
         cookie_set_at = now_msec();
-        document.cookie = "hotlist-info=" + encodeURIComponent(info) + "; max-age=20" + siteurl_cookie_params;
+        var p = "; max-age=20", m;
+        if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
+            p += "; path=" + m[1];
+        document.cookie = "hotlist-info=" + encodeURIComponent(info) + siteurl_cookie_params + p;
     }
 }
 function is_listable(href) {

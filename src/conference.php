@@ -2903,11 +2903,16 @@ class Conf {
         }
     }
 
+    function set_cookie($name, $value, $expires_at) {
+        setcookie($name, $value, $expires_at, Navigation::site_path(),
+                  $this->opt("sessionDomain", ""), $this->opt("sessionSecure", false));
+    }
+
     function header_head($title, $extra = null) {
         global $Me, $Now, $ConfSitePATH;
         // clear session list cookie
         if (isset($_COOKIE["hotlist-info"]))
-            setcookie("hotlist-info", "", $Now - 86400, Navigation::site_path());
+            $this->set_cookie("hotlist-info", "", $Now - 86400);
 
         echo "<!DOCTYPE html>
 <html lang=\"en\">
@@ -2981,13 +2986,10 @@ class Conf {
         // Javascript settings to set before script.js
         Ht::stash_script("siteurl=" . json_encode_browser(Navigation::siteurl()) . ";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
         if (session_id() !== "") {
-            $params = session_get_cookie_params();
             $p = "";
-            if ($params["path"] && $params["path"] !== "/")
-                $p .= "; path=" . $params["path"];
-            if ($params["domain"])
-                $p .= "; domain=" . $params["domain"];
-            if ($params["secure"])
+            if (($x = $this->opt("sessionDomain")))
+                $p .= "; domain=" . $x;
+            if ($this->opt("sessionSecure"))
                 $p .= "; secure";
             Ht::stash_script("siteurl_postvalue=" . json_encode(post_value()) . ";siteurl_cookie_params=" . json_encode($p));
         }
