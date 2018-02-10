@@ -278,6 +278,12 @@ function json_exit($json, $arg2 = null) {
     }
 }
 
+function csv_exit(CsvGenerator $csv) {
+    $csv->download_headers();
+    $csv->download();
+    exit;
+}
+
 function foldupbutton($foldnum = 0, $content = "", $js = null) {
     if ($foldnum)
         $js["data-fold-target"] = $foldnum;
@@ -737,7 +743,9 @@ function downloadCSV($info, $header, $filename, $options = array()) {
         $csvg->set_header($header, true);
     if (get($options, "selection"))
         $csvg->set_selection($options["selection"] === true ? $header : $options["selection"]);
-    $csvg->download_headers($Conf->download_prefix . $filename . $csvg->extension(), !get($options, "inline"));
+    $csvg->set_filename($Conf->download_prefix . $filename . $csvg->extension());
+    $csvg->set_inline(!!get($options, "inline"));
+    $csvg->download_headers();
     if ($info === false)
         return $csvg;
     else {
@@ -752,7 +760,9 @@ function downloadCSV($info, $header, $filename, $options = array()) {
 function downloadText($text, $filename, $inline = false) {
     global $Conf;
     $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);
-    $csvg->download_headers($Conf->download_prefix . $filename . $csvg->extension(), !$inline);
+    $csvg->set_filename($Conf->download_prefix . $filename . $csvg->extension());
+    $csvg->set_inline($inline);
+    $csvg->download_headers();
     if ($text !== false) {
         $csvg->add_string($text);
         $csvg->download();

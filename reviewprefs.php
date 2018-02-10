@@ -74,23 +74,23 @@ function savePreferences($Qreq, $reset_p) {
         return;
     }
 
-    $csv = new CsvGenerator;
-    $csv->set_header(["paper", "email", "preference"]);
+    $csvg = new CsvGenerator;
+    $csvg->select(["paper", "email", "preference"]);
     $suffix = "u" . $reviewer->contactId;
     foreach ($Qreq as $k => $v)
         if (strlen($k) > 7 && substr($k, 0, 7) == "revpref") {
             if (str_ends_with($k, $suffix))
                 $k = substr($k, 0, -strlen($suffix));
             if (($p = cvtint(substr($k, 7))) > 0)
-                $csv->add([$p, $reviewer->email, $v]);
+                $csvg->add([$p, $reviewer->email, $v]);
         }
-    if ($csv->is_empty()) {
+    if ($csvg->is_empty()) {
         Conf::msg_error("No reviewer preferences to update.");
         return;
     }
 
     $aset = new AssignmentSet($Me, true);
-    $aset->parse($csv->unparse());
+    $aset->parse($csvg->unparse());
     if ($aset->execute()) {
         Conf::msg_confirm("Preferences saved.");
         if ($reset_p)

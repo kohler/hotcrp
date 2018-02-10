@@ -448,10 +448,7 @@ class AssignmentCsv {
     }
     function unparse() {
         $csvg = new CsvGenerator;
-        $csvg->set_header($this->header, true);
-        $csvg->set_selection($this->header);
-        $csvg->add($this->data);
-        return $csvg->unparse();
+        return $csvg->select($this->header)->add($this->data)->unparse();
     }
 }
 

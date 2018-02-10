@@ -273,18 +273,11 @@ class CsvGenerator {
     private $lines_length = 0;
     public $headerline = "";
     private $selection = null;
+    private $selection_is_names = false;
     private $lf = "\n";
     private $comment;
-
-    function __construct($type = self::TYPE_COMMA, $comment = false) {
-        $this->type = $type & self::FLAG_TYPE;
-        $this->flags = $type;
-        if ($this->flags & self::FLAG_CRLF)
-            $this->lf = "\r\n";
-        else if ($this->flags & self::FLAG_CR)
-            $this->lf = "\r";
-        $this->comment = $comment;
-    }
+    private $inline = null;
+    private $filename;
 
     static function always_quote($text) {
         return '"' . str_replace('"', '""', $text) . '"';
@@ -299,90 +292,45 @@ class CsvGenerator {
             return self::always_quote($text);
     }
 
-    function is_empty() {
-        return empty($this->lines);
+
+    function __construct($flags = self::TYPE_COMMA, $comment = false) {
+        $this->type = $flags & self::FLAG_TYPE;
+        $this->flags = $flags;
+        if ($this->flags & self::FLAG_CRLF)
+            $this->lf = "\r\n";
+        else if ($this->flags & self::FLAG_CR)
+            $this->lf = "\r";
+        $this->comment = $comment;
     }
 
-    function is_csv() {
-        return $this->type == self::TYPE_COMMA;
-    }
-
-    function extension() {
-        return $this->type == self::TYPE_COMMA ? ".csv" : ".txt";
-    }
-
-    function select($row) {
-        if (!$this->selection)
-            return $row;
-        $selected = array();
-        $i = 0;
-        foreach ($this->selection as $key) {
-            $val = get($row, $key);
-            if ($val !== null) {
-                while (count($selected) < $i)
-                    $selected[] = "";
-                $selected[] = $val;
-            }
-            ++$i;
-        }
-        if (empty($selected) && is_array($row) && !empty($row))
-            for ($i = 0;
-                 array_key_exists($i, $row) && $i != count($this->selection);
-                 ++$i)
-                $selected[] = $row[$i];
-        return $selected;
-    }
-
-    function add_string($text) {
-        $this->lines[] = $text;
-        $this->lines_length += strlen($text);
-    }
-
-    function add_comment($text) {
-        preg_match_all('/([^\r\n]*)(?:\r\n?|\n|\z)/', $text, $m);
-        if ($m[1][count($m[1]) - 1] === "")
-            array_pop($m[1]);
-        foreach ($m[1] as $x)
-            $this->add_string($this->comment . $x . $this->lf);
-    }
-
-    function add($row) {
-        if (is_string($row)) {
-            error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            $this->add_string($row);
-            return;
-        } else if ($row === null)
-            return;
-        reset($row);
-        if (!empty($row) && (is_array(current($row)) || is_object(current($row)))) {
-            foreach ($row as $x)
-                $this->add($x);
+    function select($selection, $header = null) {
+        assert(empty($this->lines) && $this->headerline === "");
+        if ($header === false || $header === []) {
+            $this->selection = $selection;
+        } else if ($header !== null) {
+            assert(is_array($selection) && !is_associative_array($selection)
+                   && is_array($header) && !is_associative_array($header)
+                   && count($selection) === count($header));
+            $this->add($header);
+            $this->selection = $selection;
+        } else if (is_associative_array($selection)) {
+            $this->add(array_values($selection));
+            $this->selection = array_keys($selection);
         } else {
-            if ($this->comment && $this->selection
-                && ($cmt = get($row, "__precomment__")) !== null
-                && (string) $cmt !== "")
-                $this->add_comment($cmt);
-            $srow = $this->selection ? $this->select($row) : $row;
-            if ($this->type == self::TYPE_COMMA) {
-                if ($this->flags & self::FLAG_ALWAYS_QUOTE) {
-                    foreach ($srow as &$x)
-                        $x = self::always_quote($x);
-                } else {
-                    foreach ($srow as &$x)
-                        $x = self::quote($x);
-                }
-                $this->add_string(join(",", $srow) . $this->lf);
-            } else if ($this->type == self::TYPE_TAB)
-                $this->add_string(join("\t", $srow) . $this->lf);
-            else
-                $this->add_string(join("|", $srow) . $this->lf);
-            if ($this->comment && $this->selection
-                && ($cmt = get($row, "__postcomment__")) !== null
-                && (string) $cmt !== "") {
-                $this->add_comment($cmt);
-                $this->add_string($this->lf);
-            }
+            $this->add($selection);
+            $this->selection = $selection;
         }
+        $this->selection_is_names = true;
+        foreach ($this->selection as $s) {
+            if (ctype_digit($s))
+                $this->selection_is_names = false;
+        }
+        if (!empty($this->lines)) {
+            $this->headerline = $this->lines[0];
+            $this->lines = [];
+            $this->lines_length = 0;
+        }
+        return $this;
     }
 
     function set_header($header, $comment = false) {
@@ -404,26 +352,141 @@ class CsvGenerator {
             $this->selection = $selection;
     }
 
-    function download_headers($downloadname = null, $attachment = null) {
-        if ($this->is_csv())
-            header("Content-Type: text/csv; charset=utf-8; header=" . ($this->headerline !== "" ? "present" : "absent"));
-        else
-            header("Content-Type: text/plain; charset=utf-8");
-        if ($attachment === null)
-            $attachment = !Mimetype::disposition_inline($this->is_csv() ? "text/csv" : "text/plain");
-        if (!$downloadname)
-            $downloadname = "data" . $this->extension();
-        header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
-        // reduce likelihood of XSS attacks in IE
-        header("X-Content-Type-Options: nosniff");
+    function set_filename($filename) {
+        $this->filename = $filename;
+    }
+
+    function set_inline($inline) {
+        $this->inline = $inline;
+    }
+
+
+    function is_empty() {
+        return empty($this->lines);
+    }
+
+    function is_csv() {
+        return $this->type == self::TYPE_COMMA;
+    }
+
+    function extension() {
+        return $this->type == self::TYPE_COMMA ? ".csv" : ".txt";
+    }
+
+    private function apply_selection($row, $is_array) {
+        if (!$this->selection
+            || empty($row)
+            || ($this->selection_is_names
+                && $is_array
+                && !is_associative_array($row)
+                && count($row) <= count($this->selection))) {
+            return $row;
+        }
+        $selected = array();
+        $i = 0;
+        foreach ($this->selection as $key) {
+            if (isset($row[$key])) {
+                while (count($selected) < $i)
+                    $selected[] = "";
+                $selected[] = $row[$key];
+            }
+            ++$i;
+        }
+        if (empty($selected) && $is_array) {
+            for ($i = 0;
+                 array_key_exists($i, $row) && $i != count($this->selection);
+                 ++$i)
+                $selected[] = $row[$i];
+        }
+        return $selected;
+    }
+
+    function add_string($text) {
+        $this->lines[] = $text;
+        $this->lines_length += strlen($text);
+        return $this;
+    }
+
+    function add_comment($text) {
+        preg_match_all('/([^\r\n]*)(?:\r\n?|\n|\z)/', $text, $m);
+        if ($m[1][count($m[1]) - 1] === "")
+            array_pop($m[1]);
+        foreach ($m[1] as $x)
+            $this->add_string($this->comment . $x . $this->lf);
+        return $this;
+    }
+
+    function add($row) {
+        if (is_string($row)) {
+            error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            $this->add_string($row);
+            return $this;
+        } else if (empty($row))
+            return $this;
+        reset($row);
+        if (is_array(current($row)) || is_object(current($row))) {
+            foreach ($row as $x)
+                $this->add($x);
+        } else {
+            $is_array = is_array($row);
+            if (!$is_array)
+                $row = (array) $row;
+            if ($this->comment
+                && $this->selection
+                && isset($row["__precomment__"])
+                && ($cmt = (string) $row["__precomment__"]) !== "")
+                $this->add_comment($cmt);
+            $srow = $row;
+            if ($this->selection)
+                $srow = $this->apply_selection($srow, $is_array);
+            if ($this->type == self::TYPE_COMMA) {
+                if ($this->flags & self::FLAG_ALWAYS_QUOTE) {
+                    foreach ($srow as &$x)
+                        $x = self::always_quote($x);
+                } else {
+                    foreach ($srow as &$x)
+                        $x = self::quote($x);
+                }
+                $this->add_string(join(",", $srow) . $this->lf);
+            } else if ($this->type == self::TYPE_TAB)
+                $this->add_string(join("\t", $srow) . $this->lf);
+            else
+                $this->add_string(join("|", $srow) . $this->lf);
+            if ($this->comment
+                && $this->selection
+                && isset($row["__postcomment__"])
+                && ($cmt = (string) $row["__postcomment__"]) !== "") {
+                $this->add_comment($cmt);
+                $this->add_string($this->lf);
+            }
+        }
+        return $this;
     }
 
     function sort($flags = SORT_NORMAL) {
         sort($this->lines, $flags);
+        return $this;
     }
+
 
     function unparse() {
         return $this->headerline . join("", $this->lines);
+    }
+
+    function download_headers() {
+        if ($this->is_csv())
+            header("Content-Type: text/csv; charset=utf-8; header=" . ($this->headerline !== "" ? "present" : "absent"));
+        else
+            header("Content-Type: text/plain; charset=utf-8");
+        $inline = $this->inline;
+        if ($inline === null)
+            $inline = Mimetype::disposition_inline($this->is_csv() ? "text/csv" : "text/plain");
+        $filename = $this->filename;
+        if (!$filename)
+            $filename = "data" . $this->extension();
+        header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=" . mime_quote_string($filename));
+        // reduce likelihood of XSS attacks in IE
+        header("X-Content-Type-Options: nosniff");
     }
 
     function download() {

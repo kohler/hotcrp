@@ -196,8 +196,6 @@ $Opt["passwordHmacKey"] = null;
 //                   alphabetically after B (i.e., C or D).
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   strictJavascript  If true, send Javascript with "use strict".
-//   disableCsv      Set to true if downloaded information files should be
-//                   tab-separated rather than CSV.
 //   hideManager     If set, PC members are not shown paper managers.
 //   disableCapabilities If set, emails to authors will not have a
 //                   token enabling them to view their papers without logging in.
