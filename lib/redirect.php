@@ -41,15 +41,13 @@ function set_session_name(Conf $conf) {
                   $conf->opt("sessionUpgradeDomain", $domain ? : ""),
                   $secure ? : false);
     }
-    if ($secure !== null || $domain !== null) {
-        $params = session_get_cookie_params();
-        if ($secure !== null)
-            $params["secure"] = !!$secure;
-        if ($domain !== null)
-            $params["domain"] = $domain;
-        session_set_cookie_params($params["lifetime"], $params["path"],
-                                  $params["domain"], $params["secure"]);
-    }
+    $params = session_get_cookie_params();
+    if ($secure !== null)
+        $params["secure"] = !!$secure;
+    if ($domain !== null)
+        $params["domain"] = $domain;
+    session_set_cookie_params($params["lifetime"], $params["path"],
+                              $params["domain"], $params["secure"], true);
     session_name($sn);
     session_cache_limiter("");
     if (isset($_COOKIE[$sn])
