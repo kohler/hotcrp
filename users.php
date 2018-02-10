@@ -91,8 +91,9 @@ if ((isset($Qreq->pap) && is_array($Qreq->pap))
 if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
     $result = $Conf->qe_raw("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email");
     $people = edb_orows($result);
-    downloadCSV($people, array("first", "last", "email", "affiliation"), "users",
-                array("selection" => true));
+    csv_exit($Conf->make_csvg("users")
+             ->select(["first", "last", "email", "affiliation"])
+             ->add($people));
 }
 
 function urlencode_matches($m) {
@@ -171,7 +172,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
             $selection[] = $k;
         }
     }
-    downloadCSV($people, $header, "pcinfo", array("selection" => $selection));
+    csv_exit($Conf->make_csvg("pcinfo")->select($selection, $header)->add($people));
 }
 
 

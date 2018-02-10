@@ -114,12 +114,14 @@ if ($scoreselector["+overAllMerit"] === "")
 $scoreselector["x"] = "(no score preference)";
 
 // download proposed assignment
-if (isset($Qreq->saveassignment) && isset($Qreq->download)
+if (isset($Qreq->saveassignment)
+    && isset($Qreq->download)
     && isset($Qreq->assignment)) {
     $assignset = new AssignmentSet($Me, true);
     $assignset->parse($Qreq->assignment);
     $x = $assignset->unparse_csv();
-    downloadCSV($x->data, $x->header, "assignments", ["selection" => true, "sort" => SORT_NATURAL]);
+    csv_exit($Conf->make_csvg("assignments")->select($x->header)
+             ->add($x->data)->sort(SORT_NATURAL));
 }
 
 

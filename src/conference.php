@@ -3553,7 +3553,7 @@ class Conf {
         return self::xt_resolve_require($uf);
     }
 
-    function make_base_csvg($basename, $flags = 0) {
+    function make_csvg($basename, $flags = 0) {
         $csv = new CsvGenerator($flags, "# ");
         $csv->set_filename($this->download_prefix . $basename . $csv->extension());
         return $csv;

@@ -31,13 +31,14 @@ class GetAllRevpref_ListAction extends ListAction {
             }
         }
 
-        $headers = array("paper", "title", "first", "last", "email", "preference");
+        $headers = ["paper", "title", "first", "last", "email", "preference"];
         if ($has_expertise)
             $headers[] = "expertise";
         if ($has_topic_score)
             $headers[] = "topic_score";
         if ($has_conflict)
             $headers[] = "conflict";
-        return new Csv_SearchResult("allprefs", $headers, $ssel->reorder($texts), true);
+        return $user->conf->make_csvg("allprefs")->select($headers)
+            ->add($ssel->reorder($texts));
     }
 }

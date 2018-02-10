@@ -68,8 +68,11 @@ class ListAction {
                 Conf::msg_error($res->content["error"]);
             else
                 json_exit($res);
-        } else if ($res instanceof Csv_SearchResult)
+        } else if ($res instanceof Csv_SearchResult) {
             downloadCSV($res->items, $res->header, $res->name, $res->options);
+        } else if ($res instanceof CsvGenerator) {
+            csv_exit($res);
+        }
     }
 
 

@@ -108,7 +108,8 @@ class GetCheckFormat_ListAction extends ListAction {
         foreach ($user->paper_set($ssel) as $prow)
             if ($user->can_view_pdf($prow))
                 $papers[$prow->paperId] = $prow;
-        $csvg = downloadCSV(false, ["paper", "title", "pages", "format"], "formatcheck");
+        $csvg = $user->conf->make_csvg("formatcheck")->select(["paper", "title", "pages", "format"]);
+        $csvg->download_headers();
         echo $csvg->headerline;
         $cf = new CheckFormat;
         foreach ($ssel->reorder($papers) as $prow) {
@@ -258,7 +259,8 @@ class GetAuthors_ListAction extends ListAction {
         $header = ["paper", "title", "first", "last", "email", "affiliation"];
         if ($want_contacttype)
             $header[] = "iscontact";
-        return new Csv_SearchResult("authors", $header, $ssel->reorder($texts));
+        return $user->conf->make_csvg("authors")->select($header)
+            ->add($ssel->reorder($texts));
     }
 }
 
@@ -276,7 +278,9 @@ class GetContacts_ListAction extends ListAction {
                     $aa = $prow->author_by_email($a->email) ? : $a;
                     arrayappend($texts[$prow->paperId], [$prow->paperId, $prow->title, $aa->firstName, $aa->lastName, $aa->email, $aa->affiliation]);
                 }
-        return new Csv_SearchResult("contacts", ["paper", "title", "first", "last", "email", "affiliation"], $ssel->reorder($texts));
+        return $user->conf->make_csvg("contacts")
+            ->select(["paper", "title", "first", "last", "email", "affiliation"])
+            ->add($ssel->reorder($texts));
     }
 }
 
@@ -307,7 +311,9 @@ class GetPcconflicts_ListAction extends ListAction {
             }
         }
         $user->set_overrides($old_overrides);
-        return new Csv_SearchResult("pcconflicts", ["paper", "title", "first", "last", "email", "conflicttype"], $ssel->reorder($texts));
+        return $user->conf->make_csvg("pcconflicts")
+            ->select(["paper", "title", "first", "last", "email", "conflicttype"])
+            ->add($ssel->reorder($texts));
     }
 }
 
@@ -323,7 +329,9 @@ class GetTopics_ListAction extends ListAction {
                     $out[] = [$row->paperId, $row->title, "<none>"];
                 arrayappend($texts[$row->paperId], $out);
             }
-        return new Csv_SearchResult("topics", ["paper", "title", "topic"], $ssel->reorder($texts));
+        return $user->conf->make_csvg("topics")
+            ->select(["paper", "title", "topic"])
+            ->add($ssel->reorder($texts));
     }
 }
 
@@ -334,6 +342,6 @@ class GetCSV_ListAction extends ListAction {
         $pl->set_selection($ssel, true);
         $pl->set_view("sel", false);
         list($header, $data) = $pl->text_csv($search->limitName);
-        return new Csv_SearchResult("data", $header, $data);
+        return $user->conf->make_csvg("data")->select($header)->add($data);
     }
 }

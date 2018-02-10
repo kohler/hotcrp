@@ -8,7 +8,7 @@ class GetPcassignments_ListAction extends ListAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         list($header, $items) = ListAction::pcassignments_csv_data($user, $ssel->selection());
-        return new Csv_SearchResult("pcassignments", $header, $items, true);
+        return $user->conf->make_csvg("pcassignments")->select($header)->add($items);
     }
 }
 
@@ -211,13 +211,14 @@ class GetScores_ListAction extends ListAction {
         $user->set_overrides($overrides);
 
         if (!empty($texts)) {
-            $header = array("paper", "title");
+            $header = ["paper", "title"];
             if ($any_decision)
                 $header[] = "decision";
             if ($any_reviewer_identity)
                 array_push($header, "reviewername", "email");
-            $header = array_merge($header, array_keys($any_scores));
-            return new Csv_SearchResult("scores", $header, $ssel->reorder($texts), true);
+            return $user->conf->make_csvg("scores")
+                ->select(array_merge($header, array_keys($any_scores)))
+                ->add($ssel->reorder($texts));
         } else {
             if (empty($errors))
                 $errors[] = "No papers selected.";
@@ -287,6 +288,8 @@ class GetLead_ListAction extends ListAction {
                 $name = $user->name_object_for($row->$key);
                 arrayappend($texts[$row->paperId], [$row->paperId, $row->title, $name->firstName, $name->lastName, $name->email]);
             }
-        return new Csv_SearchResult("{$this->type}s", ["paper", "title", "first", "last", "{$this->type}email"], $ssel->reorder($texts));
+        return $user->conf->make_csvg($this->type . "s")
+            ->select(["paper", "title", "first", "last", "{$this->type}email"])
+            ->add($ssel->reorder($texts));
     }
 }
