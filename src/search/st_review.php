@@ -272,7 +272,7 @@ class Review_SearchTerm extends SearchTerm {
         if ($contacts) {
             $rsm->set_contacts($srch->matching_reviewers($contacts, $quoted, $rsm->only_pc()));
             if (strcasecmp($contacts, "me") == 0)
-                $rsm->tokens = $srch->reviewer_user()->review_tokens();
+                $rsm->tokens = $srch->user->review_tokens();
         }
         return new Review_SearchTerm($rsm);
     }
