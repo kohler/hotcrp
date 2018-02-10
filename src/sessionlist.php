@@ -10,6 +10,9 @@ class SessionList {
     public $urlbase;
     public $highlight;
     public $digest;
+    public $curid;
+    public $previd;
+    public $nextid;
     public $id_position = false;
 
     function __construct($listid = null, $ids = null, $description = null, $urlbase = null) {
@@ -92,7 +95,8 @@ class SessionList {
         if ($this->ids !== null)
             $j["ids"] = self::encode_ids($this->ids);
         foreach (get_object_vars($this) as $k => $v)
-            if ($v != null && $k !== "ids" && $k !== "id_position")
+            if ($v != null
+                && !in_array($k, ["ids", "id_position", "curid", "previd", "nextid"]))
                 $j[$k] = $v;
         return json_encode_browser($j);
     }
@@ -101,6 +105,8 @@ class SessionList {
         $Conf->set_cookie("hotlist-info", $this->info_string(), $Now + 20);
     }
     function set_current_id($id) {
+        if ($this->curid !== $id)
+            $this->curid = $this->previd = $this->nextid = null;
         $this->id_position = $this->ids ? array_search($id, $this->ids) : false;
         return $this->id_position === false ? null : $this;
     }
@@ -109,6 +115,10 @@ class SessionList {
             $pos = $this->id_position + $delta;
             if ($pos >= 0 && isset($this->ids[$pos]))
                 return $this->ids[$pos];
+        } else if ($delta === -1 && $this->previd !== null) {
+            return $this->previd;
+        } else if ($delta === 1 && $this->nextid !== null) {
+            return $this->nextid;
         }
         return false;
     }

@@ -956,7 +956,7 @@ class PaperSearch {
     public $is_order_anno = false;
     public $highlightmap = null;
     public $viewmap;
-    public $sorters;
+    public $sorters = [];
     private $_highlight_tags = null;
 
     private $_matches = null; // list of ints
@@ -1042,7 +1042,7 @@ class PaperSearch {
         // default, then it must be the only default or query construction
         // will break.
         $this->fields = array();
-        $qtype = defval($options, "qt", "n");
+        $qtype = get($options, "qt", "n");
         if ($qtype === "n" || $qtype === "ti")
             $this->fields["ti"] = 1;
         if ($qtype === "n" || $qtype === "ab")
@@ -1076,7 +1076,7 @@ class PaperSearch {
         else if (get($options, "reviewer"))
             error_log("PaperSearch::\$reviewer set: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
 
-        $this->_allow_deleted = defval($options, "allow_deleted", false);
+        $this->_allow_deleted = get($options, "allow_deleted", false);
 
         $this->_active_limit = $this->limitName;
         if ($this->_active_limit === "editpref")
@@ -2024,7 +2024,6 @@ class PaperSearch {
 
         // view and sort information
         $this->viewmap = $qe->get_float("view", array());
-        $this->sorters = [];
         $this->_add_sorters($qe, null);
         if ($qe->type === "then")
             for ($i = 0; $i < $qe->nthen; ++$i)
@@ -2290,6 +2289,21 @@ class PaperSearch {
             $rest[] = "sort=" . urlencode($sort);
         return "p/" . $this->limitName . "/" . urlencode($this->q)
             . ($rest ? "/" . join("&", $rest) : "");
+    }
+
+    static function unparse_listid($listid) {
+        if (preg_match('{\Ap/([^/]+)/([^/]*)(?:|/([^/]*))\z}', $listid, $m)) {
+            $args = ["t" => $m[1], "q" => urldecode($m[2])];
+            if ($m[3]) {
+                foreach (explode("&", $m[3]) as $arg) {
+                    if (str_starts_with($arg, "sort="))
+                        $args["sort"] = urldecode(substr($arg, 5));
+                    // XXX `reviewer`
+                }
+            }
+            return $args;
+        } else
+            return null;
     }
 
     function create_session_list_object($ids, $listname, $sort = null) {

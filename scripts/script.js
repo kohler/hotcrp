@@ -3621,7 +3621,7 @@ function quicklink_shortcut(evt, key) {
     if (a && a.focus) {
         // focus (for visual feedback), call callback
         a.focus();
-        add_revpref_ajax.then(make_link_callback(a));
+        add_revpref_ajax.then(function () { a.click(); });
         return true;
     } else if ($$("quicklink_list")) {
         // at end of list
@@ -6743,28 +6743,78 @@ return paperlist_ui;
 // list management, conflict management
 (function ($) {
 var cookie_set_at;
-function digestify(info) {
-    var m = /^(.*)"ids":"([-0-9']+)(".*)/.exec(info);
-    if (m && wstorage()) {
-        var list_digests = wstorage.json(false, "list_digests") || [],
-            now = now_msec(), new_digests = [];
-        for (var i = 0; i < list_digests.length; ++i) {
-            if (list_digests[i][0] >= now - 20000)
-                new_digests.push(list_digests[i]);
-            if (list_digests[i][0] >= now)
-                now = list_digests[i][0] + 1;
+function decode_ids(str) {
+    if ($.isArray(str))
+        return str;
+    var a = [], m = str.match(/[-\d]+/g);
+    if (!m)
+        return false;
+    for (var i = 0; i < m.length; ++i) {
+        var p = m[i].indexOf("-");
+        if (p >= 0) {
+            var x, y = +m[i].substr(p + 1);
+            for (x = +m[i].substr(0, p); x <= y; ++x)
+                a.push(x);
+        } else
+            a.push(+m[i]);
+    }
+    return a;
+}
+function update_digest(info) {
+    var add = typeof info === "string",
+        digests = wstorage.json(false, "list_digests") || [],
+        found = -1, now = now_msec();
+    for (var i = 0; i < digests.length; ++i) {
+        var digest = digests[i];
+        if (digest[add ? 1 : 0] === info)
+            found = i;
+        else if (digest[2] < now - 30000) {
+            digests.splice(i, 1);
+            --i;
+        } else if (now <= digest[0])
+            now = digest[0] + 1;
+    }
+    if (found >= 0)
+        digests[found][2] = now;
+    else if (add) {
+        digests.push([now, info, now]);
+        found = digests.length - 1;
+    }
+    wstorage(false, "list_digests", digests);
+    if (found >= 0)
+        return digests[found][add ? 0 : 1];
+    else
+        return false;
+}
+function make_digest(info, pid) {
+    var m = /^(.*)"ids":"([-0-9']+)"(.*)/.exec(info), digest;
+    if (m && wstorage() && (digest = update_digest(m[2]))) {
+        info = m[1] + '"digest":"listdigest' + digest + '"';
+        if (pid) {
+            var ids = decode_ids(m[2]), pos;
+            if (ids && (pos = ids.indexOf(pid)) >= 0) {
+                info += ',"curid":' + pid
+                    + ',"previd":' + (pos > 0 ? ids[pos - 1] : 'false')
+                    + ',"nextid":' + (pos < ids.length - 1 ? ids[pos + 1] : 'false');
+            }
         }
-        new_digests.push([now, m[2]]);
-        wstorage(false, "list_digests", new_digests);
-        info = m[1] + '"digest":"listdigest' + now + m[3];
+        info += m[3];
     }
     return info;
 }
-function set_cookie(info) {
+function resolve_digest(info) {
+    var m = /^(.*)"digest":"listdigest([0-9]+)(".*)$/.exec(info), ids;
+    if (m && !/"ids":/.test(info) && (ids = update_digest(+m[2])) !== false)
+        return m[1] + '"ids":"' + ids + m[3];
+    else
+        return info;
+}
+function set_cookie(info, pid) {
     if (info) {
-        if (info.length > 1500) {
-            info = digestify(info);
-        }
+        if (/"digest":/.test(info))
+            info = resolve_digest(info);
+        if (info.length > 1500)
+            info = make_digest(info, pid);
         cookie_set_at = now_msec();
         var p = "; max-age=20", m;
         if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
@@ -6772,8 +6822,8 @@ function set_cookie(info) {
         document.cookie = "hotlist-info=" + encodeURIComponent(info) + siteurl_cookie_params + p;
     }
 }
-function is_listable(href) {
-    return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(href.substring(siteurl.length));
+function is_listable(sitehref) {
+    return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(sitehref);
 }
 function set_list_order(info, tbody) {
     var p0 = -100, p1 = -100, pid, l = [];
@@ -6792,17 +6842,17 @@ function set_list_order(info, tbody) {
     return info.replace(/"ids":"[-0-9']+"/, '"ids":"' + l.join("'") + '"');
 }
 function handle_list(e, href) {
+    var $hl, sitehref, m;
     if (href
         && href.substring(0, siteurl.length) === siteurl
-        && is_listable(href)) {
-        var $hl = $(e).closest(".has-hotlist");
-        if ($hl.length) {
-            var info = $hl.attr("data-hotlist");
-            if ($hl.is("table.pltable") && document.getElementById("footer"))
-                // Existence of `#footer` checks that the table is fully loaded
-                info = set_list_order(info, $hl.children("tbody.pltable")[0]);
-            set_cookie(info);
-        }
+        && is_listable((sitehref = href.substring(siteurl.length)))
+        && ($hl = $(e).closest(".has-hotlist")).length) {
+        var info = $hl.attr("data-hotlist");
+        if ($hl.is("table.pltable") && document.getElementById("footer"))
+            // Existence of `#footer` checks that the table is fully loaded
+            info = set_list_order(info, $hl.children("tbody.pltable")[0]);
+        m = /^[^\/]*\/(\d+)(?:$|[a-zA-Z]*\/)/.exec(sitehref);
+        set_cookie(info, m ? +m[1] : null);
     }
 }
 function unload_list() {
@@ -6848,50 +6898,13 @@ $(document).on("submit", "form", function (evt) {
 $(document).on("click", "tr.pl", row_click);
 $(window).on("beforeunload", unload_list);
 
-function decode_ids(str) {
-    if ($.isArray(str))
-        return str;
-    var a = [], m = str.match(/[-\d]+/g);
-    if (!m)
-        return false;
-    for (var i = 0; i < m.length; ++i) {
-        var p = m[i].indexOf("-");
-        if (p >= 0) {
-            var x, y = +m[i].substr(p + 1);
-            for (x = +m[i].substr(0, p); x <= y; ++x)
-                a.push(x);
-        } else
-            a.push(+m[i]);
-    }
-    return a;
-}
-function resolve_digest(digest) {
-    var list_digests = wstorage.json(false, "list_digests") || [],
-        new_digests = [], result = false;
-    for (var i = 0; i < list_digests.length; ++i) {
-        if (digest === list_digests[i][0]) {
-            result = list_digests[i][1];
-        } else {
-            new_digests.push(list_digests[i]);
-        }
-    }
-    if (list_digests.length !== new_digests.length) {
-        wstorage(false, "list_digests", new_digests.length ? new_digests : null);
-    }
-    return result;
-}
 $(function () {
     var had_digests = false;
     // resolve list digests
     $(".has-hotlist").each(function () {
-        var info = this.getAttribute("data-hotlist"), m, v;
-        if (info
-            && (m = /^(.*)"digest":"listdigest([0-9]+)(".*)$/.exec(info))
-            && !/"ids":/.test(info)
-            && (v = resolve_digest(+m[2]))) {
-            had_digests = true;
-            this.setAttribute("data-hotlist", m[1] + '"ids":"' + v + m[3]);
-        }
+        var info = this.getAttribute("data-hotlist");
+        if (info && (info = resolve_digest(info)))
+            this.setAttribute("data-hotlist", info);
     });
     // having resolved digests, insert quicklinks
     if (had_digests && hotcrp_paperid

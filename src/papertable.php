@@ -140,39 +140,37 @@ class PaperTable {
             $this->matchPreg = null;
     }
     private function find_session_list($pid) {
-        global $Me;
-
         if (isset($_COOKIE["hotlist-info"])
             && ($list = SessionList::decode_info_string($_COOKIE["hotlist-info"]))
             && $list->list_type() === "p"
-            && $list->set_current_id($pid))
+            && ($list->set_current_id($pid) || $list->digest))
             return $list;
 
         // look up list description
         $list = null;
         $listdesc = $this->qreq->ls;
         if ($listdesc) {
-            if (preg_match('{\Ap/([^/]*)/([^/]*)}', $listdesc, $m))
-                $list = self::try_list(["t" => $m[1], "q" => urldecode($m[2])], $pid);
+            if (($opt = PaperSearch::unparse_listid($listdesc)))
+                $list = $this->try_list($opt, $pid);
             if (!$list && preg_match('{\A(all|s):(.*)\z}s', $listdesc, $m))
-                $list = self::try_list(["t" => $m[1], "q" => $m[2]], $pid);
+                $list = $this->try_list(["t" => $m[1], "q" => $m[2]], $pid);
             if (!$list && preg_match('{\A[a-z]+\z}', $listdesc))
-                $list = self::try_list(["t" => $listdesc], $pid);
+                $list = $this->try_list(["t" => $listdesc], $pid);
             if (!$list)
-                $list = self::try_list(["q" => $listdesc], $pid);
+                $list = $this->try_list(["q" => $listdesc], $pid);
         }
 
         // default lists
         if (!$list)
-            $list = self::try_list([], $pid);
-        if (!$list && $Me->privChair)
-            $list = self::try_list(["t" => "all"], $pid);
+            $list = $this->try_list([], $pid);
+        if (!$list && $this->user->privChair)
+            $list = $this->try_list(["t" => "all"], $pid);
 
         return $list;
     }
-    private static function try_list($opt, $pid) {
-        global $Me;
-        $list = (new PaperSearch($Me, $opt))->session_list_object();
+    private function try_list($opt, $pid) {
+        $srch = new PaperSearch($this->user, $opt);
+        $list = $srch->session_list_object(get($opt, "sort"));
         return $list->set_current_id($pid);
     }
 
