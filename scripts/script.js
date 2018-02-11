@@ -6792,7 +6792,7 @@ function make_digest(info, pid) {
         info = m[1] + '"digest":"listdigest' + digest + '"';
         if (pid) {
             var ids = decode_ids(m[2]), pos;
-            if (ids && (pos = ids.indexOf(pid)) >= 0) {
+            if (ids && (pos = $.inArray(pid, ids)) >= 0) {
                 info += ',"curid":' + pid
                     + ',"previd":' + (pos > 0 ? ids[pos - 1] : 'false')
                     + ',"nextid":' + (pos < ids.length - 1 ? ids[pos + 1] : 'false');
@@ -6920,7 +6920,7 @@ $(function () {
             if (info
                 && info.ids
                 && (ids = decode_ids(info.ids))
-                && (pos = ids.indexOf(hotcrp_paperid)) >= 0) {
+                && (pos = $.inArray(hotcrp_paperid, ids)) >= 0) {
                 if (pos > 0)
                     $(this).prepend('<a id="quicklink_prev" class="x" href="' + hoturl_html("paper", {p: ids[pos - 1]}) + '">&lt; #' + ids[pos - 1] + '</a> ');
                 if (pos < ids.length - 1)
