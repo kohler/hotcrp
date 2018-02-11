@@ -106,7 +106,7 @@ class PaperTable {
             $ms["p"] = true;
         if ($prow->has_author($user) || $this->allow_admin)
             $ms["edit"] = true;
-        if ($prow->myReviewType >= REVIEW_SECONDARY || $this->allow_admin)
+        if ($prow->review_type($user) >= REVIEW_SECONDARY || $this->allow_admin)
             $ms["assign"] = true;
         if (!$mode)
             $mode = $this->qreq->m ? : $this->qreq->mode;
