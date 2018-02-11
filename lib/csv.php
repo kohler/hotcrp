@@ -276,7 +276,7 @@ class CsvGenerator {
     private $selection = null;
     private $selection_is_names = false;
     private $lf = "\n";
-    private $comment;
+    private $comment = "# ";
     private $inline = null;
     private $filename;
 
@@ -294,14 +294,13 @@ class CsvGenerator {
     }
 
 
-    function __construct($flags = self::TYPE_COMMA, $comment = false) {
+    function __construct($flags = self::TYPE_COMMA) {
         $this->type = $flags & self::FLAG_TYPE;
         $this->flags = $flags;
         if ($this->flags & self::FLAG_CRLF)
             $this->lf = "\r\n";
         else if ($this->flags & self::FLAG_CR)
             $this->lf = "\r";
-        $this->comment = $comment;
     }
 
     function select($selection, $header = null) {
@@ -332,25 +331,6 @@ class CsvGenerator {
             $this->lines_length = 0;
         }
         return $this;
-    }
-
-    function set_header($header, $comment = false) {
-        assert(empty($this->lines) && $this->headerline === "");
-        $this->add($header);
-        if ($this->type == self::TYPE_TAB && $comment)
-            $this->lines[0] = "#" . $this->lines[0];
-        if ($this->selection === null && is_associative_array($header))
-            $this->selection = array_keys($header);
-        $this->headerline = $this->lines[0];
-        $this->lines = [];
-        $this->lines_length = 0;
-    }
-
-    function set_selection($selection) {
-        if (is_associative_array($selection))
-            $this->selection = array_keys($selection);
-        else
-            $this->selection = $selection;
     }
 
     function set_filename($filename) {

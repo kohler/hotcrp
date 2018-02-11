@@ -728,35 +728,6 @@ function unparseReviewOrdinal($ord) {
         return chr(intval(($ord - 1) / 26) + 64) . chr((($ord - 1) % 26) + 65);
 }
 
-function downloadCSV($info, $header, $filename, $options = array()) {
-    global $Conf;
-    if (defval($options, "type", "csv") == "csv" && !opt("disableCsv"))
-        $csvt = CsvGenerator::TYPE_COMMA;
-    else
-        $csvt = CsvGenerator::TYPE_TAB;
-    if (get($options, "always_quote"))
-        $csvt |= CsvGenerator::FLAG_ALWAYS_QUOTE;
-    if (get($options, "crlf"))
-        $csvt |= CsvGenerator::FLAG_CRLF;
-    $csvg = new CsvGenerator($csvt, "# ");
-    if ($header)
-        $csvg->set_header($header, true);
-    if (get($options, "selection"))
-        $csvg->set_selection($options["selection"] === true ? $header : $options["selection"]);
-    $csvg->set_filename($Conf->download_prefix . $filename . $csvg->extension());
-    $csvg->set_inline(!!get($options, "inline"));
-    $csvg->download_headers();
-    if ($info === false)
-        return $csvg;
-    else {
-        $csvg->add($info);
-        if (get($options, "sort"))
-            $csvg->sort($options["sort"]);
-        $csvg->download();
-        exit;
-    }
-}
-
 function downloadText($text, $filename, $inline = false) {
     global $Conf;
     $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);

@@ -2,25 +2,6 @@
 // searchaction.php -- HotCRP helper class for paper search actions
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
-class SearchResult {
-}
-
-class Csv_SearchResult extends SearchResult {
-    public $name;
-    public $header;
-    public $items;
-    public $options = [];
-    function __construct($name, $header, $items, $selection = false) {
-        $this->name = $name;
-        $this->header = $header;
-        $this->items = $items;
-        if (is_array($selection))
-            $this->options = $selection;
-        else if ($selection)
-            $this->options["selection"] = true;
-    }
-}
-
 class ListAction {
     public $subname;
     const ENOENT = "No such search action.";
@@ -68,8 +49,6 @@ class ListAction {
                 Conf::msg_error($res->content["error"]);
             else
                 json_exit($res);
-        } else if ($res instanceof Csv_SearchResult) {
-            downloadCSV($res->items, $res->header, $res->name, $res->options);
         } else if ($res instanceof CsvGenerator) {
             csv_exit($res);
         }
