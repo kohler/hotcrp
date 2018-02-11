@@ -571,7 +571,7 @@ class PaperOption implements Abbreviator {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         return null;
     }
 
@@ -637,7 +637,7 @@ class CheckboxPaperOption extends PaperOption {
         Ht::stash_script("jQuery('#{$this->formid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         return $ov->value ? true : false;
     }
 
@@ -716,7 +716,7 @@ class SelectorPaperOption extends PaperOption {
         echo "</div></div>\n\n";
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         return get($this->selector, $ov->value, null);
     }
 
@@ -795,7 +795,7 @@ class DocumentPaperOption extends PaperOption {
         echo "</div>\n\n";
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         if (!$ov->value)
             return null;
         else if (($doc = $ps->document_to_json($this->id, $ov->value)))
@@ -897,7 +897,7 @@ class NumericPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         return $ov->value;
     }
 
@@ -975,7 +975,7 @@ class TextPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         $x = $ov->data();
         return $x !== "" ? $x : null;
     }
@@ -1098,7 +1098,7 @@ class AttachmentsPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         $attachments = array();
         foreach ($ov->documents() as $doc)
             if (($doc = $ps->document_to_json($this->id, $doc)))

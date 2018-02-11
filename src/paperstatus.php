@@ -114,13 +114,14 @@ class PaperStatus extends MessageSet {
     function paper_json($prow, $args = array()) {
         if (is_int($prow))
             $prow = $this->conf->paperRow(["paperId" => $prow, "topics" => true, "options" => true], $this->user);
-        $user = $this->user;
+        $original_user = $user = $this->user;
         if (get($args, "forceShow"))
             $user = null;
 
         if (!$prow || ($user && !$user->can_view_paper($prow)))
             return null;
-        $was_no_msgs = $this->ignore_msgs;
+        $this->user = $user;
+        $original_no_msgs = $this->ignore_msgs;
         $this->ignore_msgs = !get($args, "msgs");
 
         $this->prow = $prow;
@@ -295,7 +296,8 @@ class PaperStatus extends MessageSet {
                 }
         }
 
-        $this->ignore_msgs = $was_no_msgs;
+        $this->ignore_msgs = $original_no_msgs;
+        $this->user = $original_user;
         return $pj;
     }
 
