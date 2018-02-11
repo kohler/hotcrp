@@ -1400,7 +1400,7 @@ div.formatdescription {
 }
 
 .revrating {
-	padding: 6px 12px 0;
+	padding: 6px 16px 0;
 }
 .revrating-group.flag {
 	padding-right: 0.333em;
@@ -2723,7 +2723,7 @@ ul.xd > li {
 }
 .papcard_body, .pedcard_body {
 	background: #ffffff;
-	padding: 8px 12px;
+	padding: 8px 16px;
 	border-radius: 2px;
 }
 .papcard_sep {
@@ -2731,7 +2731,7 @@ ul.xd > li {
 	margin: 1em 0;
 }
 .pedcard_head {
-	padding: 3px 12px 4px;
+	padding: 3px 16px 4px;
 }
 .pedcard_head h2 {
 	display: inline;
@@ -2744,7 +2744,7 @@ ul.xd > li {
 	position: relative;
 }
 .notecard_body {
-	padding: 0 12px;
+	padding: 0 16px;
 }
 
 /* reviews */
@@ -2760,17 +2760,17 @@ body#offline .revcard {
 	margin: 16px 7em;
 }
 .revcard_head {
-	padding: 3px 12px 4px;
+	padding: 3px 16px 4px;
 }
 .revcard_body {
 	background: #ffffff;
-	padding: 10px 12px;
+	padding: 10px 16px;
 	border-radius: 2px;
 }
 .revcard_bodyinsert {
 	background: #ffebeb;
-	padding: 10px 12px;
-	margin: -10px -12px 10px -12px;
+	padding: 10px 16px;
+	margin: -10px -16px 10px;
 	border-top-left-radius: 2px;
 	border-top-right-radius: 2px;
 }
@@ -2830,8 +2830,8 @@ body#offline .revcard {
 	margin: 16px 0 24px;
 }
 .papegroup {
-	margin: 12px -12px;
-	padding: 12px 12px;
+	margin: 12px -16px;
+	padding: 12px 16px;
 	background: #eae8f2;
 	background: linear-gradient(to bottom, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%),
 		linear-gradient(to top, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%);
@@ -2939,11 +2939,11 @@ body#offline .revcard {
 	background: #ffddc1;
 }
 .cmtcard_head {
-	padding: 0 12px 4px;
+	padding: 0 16px 4px;
 }
 .cmtcard_body {
 	background: #ffffff;
-	padding: 0 12px;
+	padding: 0 16px;
 	border-radius: 2px;
 }
 .cmtcard h3 {
@@ -2966,10 +2966,10 @@ body#offline .revcard {
 	color: #666666;
 }
 .cmtcard_link:first-child {
-	padding: 0 12px 4px;
+	padding: 0 16px 4px;
 }
 .cmtcard_link:last-child {
-	padding: 4px 12px 0;
+	padding: 4px 16px 0;
 }
 .cmtfn > .barsep {
 	color: #eadeb7;
