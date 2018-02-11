@@ -266,6 +266,7 @@ class CsvGenerator {
     const FLAG_CRLF = 8;
     const FLAG_CR = 16;
     const FLAG_LF = 0;
+    const FLAG_ITEM_COMMENTS = 32;
 
     private $type;
     private $flags;
@@ -431,7 +432,7 @@ class CsvGenerator {
             $is_array = is_array($row);
             if (!$is_array)
                 $row = (array) $row;
-            if ($this->comment
+            if (($this->flags & self::FLAG_ITEM_COMMENTS)
                 && $this->selection
                 && isset($row["__precomment__"])
                 && ($cmt = (string) $row["__precomment__"]) !== "")
@@ -452,7 +453,7 @@ class CsvGenerator {
                 $this->add_string(join("\t", $srow) . $this->lf);
             else
                 $this->add_string(join("|", $srow) . $this->lf);
-            if ($this->comment
+            if (($this->flags & self::FLAG_ITEM_COMMENTS)
                 && $this->selection
                 && isset($row["__postcomment__"])
                 && ($cmt = (string) $row["__postcomment__"]) !== "") {

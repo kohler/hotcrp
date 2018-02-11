@@ -342,6 +342,7 @@ class GetCSV_ListAction extends ListAction {
         $pl->set_selection($ssel, true);
         $pl->set_view("sel", false);
         list($header, $data) = $pl->text_csv($search->limitName);
-        return $user->conf->make_csvg("data")->select($header)->add($data);
+        return $user->conf->make_csvg("data", CsvGenerator::FLAG_ITEM_COMMENTS)
+            ->select($header)->add($data);
     }
 }

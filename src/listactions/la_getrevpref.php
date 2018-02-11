@@ -65,6 +65,7 @@ class GetRevpref_ListAction extends ListAction {
         $title = "revprefs";
         if ($not_me)
             $title .= "-" . (preg_replace('/@.*|[^\w@.]/', "", $Rev->email) ? : "user");
-        return $user->conf->make_csvg($title)->select($fields)->add($ssel->reorder($texts));
+        return $user->conf->make_csvg($title, CsvGenerator::FLAG_ITEM_COMMENTS)
+            ->select($fields)->add($ssel->reorder($texts));
     }
 }
