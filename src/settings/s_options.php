@@ -39,13 +39,14 @@ class Options_SettingRenderer {
         }
 
         $optvt = $o->type;
-        if ($optvt == "text" && $o->display_space > 3)
+        if ($optvt === "text" && $o->display_space > 3)
             $optvt .= ":ds_" . $o->display_space;
+        $jtype = $sv->conf->option_type($optvt) ? : (object) [];
         if ($o->final)
             $optvt .= ":final";
 
         echo '<div class="settings-opt has-fold fold2c fold3o ',
-            (PaperOption::type_has_selector($optvt) ? "fold4o" : "fold4c"), '">';
+            (get($jtype, "has_selector") ? "fold4o" : "fold4c"), '">';
 
         echo '<div class="f-horizontal">';
 
@@ -75,17 +76,34 @@ class Options_SettingRenderer {
         foreach ($sv->conf->paper_opts->nonfixed_option_list() as $ox)
             $show_final = $show_final || $ox->final;
 
-        $otlist = $sv->conf->paper_opts->list_subform_options($o);
+        $jtypes = $sv->conf->option_type_map();
+        if (isset($jtype->name)
+            && (!isset($jtypes[$jtype->name])
+                || Conf::xt_priority_compare($jtype, $jtypes[$jtype->name]) <= 0))
+            $jtypes[$jtype->name] = $jtype;
+        uasort($jtypes, "Conf::xt_position_compare");
 
-        $otypes = array();
-        if ($show_final)
-            $otypes["xxx1"] = array("optgroup", "Options for submissions");
-        foreach ($otlist as $ot)
-            $otypes[$ot[1]] = $ot[2];
-        if ($show_final) {
-            $otypes["xxx2"] = array("optgroup", "Options for final versions");
-            foreach ($otlist as $ot)
-                $otypes[$ot[1] . ":final"] = $ot[2] . " (final version)";
+        $sotypes = $fotypes = [];
+        foreach ($jtypes as $uf) {
+            if (isset($uf->display_if)
+                && !$this->conf->xt_check($uf->display_if, $uf, $sv->user))
+                continue;
+            if (get($uf, "submission") !== false)
+                $sotypes[$uf->name] = get($uf, "title", $uf->name);
+            if (get($uf, "final") !== false)
+                $fotypes[$uf->name] = get($uf, "title", $uf->name);
+        }
+
+        $otypes = [];
+        if ($sotypes) {
+            if ($show_final)
+                $otypes["__submission_options__"] = ["optgroup", "Options for submissions"];
+            $otypes = array_merge($otypes, $sotypes);
+        }
+        if ($fotypes && $show_final) {
+            $otypes["__final_options__"] = ["optgroup", "Options for final versions"];
+            foreach ($fotypes as $name => $title)
+                $otypes["{$name}:final"] = "{$title} (final version)";
         }
         Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings-optvt", settings_option_type); $("#settings_opts").on("click", "button", settings_option_move); settings_option_move_enable(); $("select.settings-optvt").each(settings_option_type); })', 'settings_optvt');
 
@@ -115,7 +133,7 @@ class Options_SettingRenderer {
         echo "</div>\n\n";
 
         $rows = 3;
-        if (PaperOption::type_has_selector($optvt) && count($o->selector)) {
+        if ($jtype && get($jtype, "has_selector") && count($o->selector)) {
             $value = join("\n", $o->selector) . "\n";
             $rows = max(count($o->selector), 3);
         } else
@@ -221,7 +239,8 @@ class Options_SettingParser extends SettingParser {
         } else
             $oarg["type"] = "checkbox";
 
-        if (PaperOption::type_has_selector($oarg["type"])) {
+        $jtype = $sv->conf->option_type($oarg["type"]);
+        if ($jtype && get($jtype, "has_selector")) {
             $oarg["selector"] = array();
             $seltext = trim(cleannl(defval($sv->req, "optv_$xpos", "")));
             if ($seltext != "") {

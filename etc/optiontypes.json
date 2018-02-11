@@ -1,0 +1,48 @@
+[
+    {
+        "name": "checkbox", "title": "Checkbox", "position": 100,
+        "callback": "+CheckboxPaperOption"
+    },
+    {
+        "name": "selector", "title": "Selector", "position": 200,
+        "has_selector": true, "callback": "+SelectorPaperOption"
+    },
+    {
+        "name": "radio", "title": "Radio buttons", "position": 300,
+        "has_selector": true, "callback": "+SelectorPaperOption"
+    },
+    {
+        "name": "numeric", "title": "Numeric", "position": 400,
+        "callback": "+NumericPaperOption"
+    },
+    {
+        "name": "text", "title": "Text", "position": 500,
+        "callback": "+TextPaperOption"
+    },
+    {
+        "name": "text:ds_5", "title": "Multiline text", "position": 550,
+        "callback": "+TextPaperOption"
+    },
+    {
+        "match": "text:ds_(\\d+)",
+        "title": "Multiline text", "position": 550,
+        "callback": "+TextPaperOption", "priority": -1,
+        "expand_callback": "TextPaperOption::expand"
+    },
+    {
+        "name": "pdf", "title": "PDF", "position": 600,
+        "callback": "+DocumentPaperOption"
+    },
+    {
+        "name": "slides", "title": "Slides", "position": 610,
+        "callback": "+DocumentPaperOption"
+    },
+    {
+        "name": "document", "title": "File upload", "position": 699,
+        "callback": "+DocumentPaperOption"
+    },
+    {
+        "name": "attachments", "title": "Attachments", "position": 700,
+        "callback": "+AttachmentsPaperOption"
+    }
+]

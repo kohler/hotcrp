@@ -106,6 +106,8 @@ class Conf {
     private $_list_action_factories = null;
     private $_paper_column_map = null;
     private $_paper_column_factories = null;
+    private $_option_type_map = null;
+    private $_option_type_factories = null;
     public $_file_filters = null; // maintained externally
 
     public $paper = null; // current paper row
@@ -3597,5 +3599,43 @@ class Conf {
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $checkf);
         $expansions = $this->xt_search_factories($this->_paper_column_factories, $name, $checkf, $uf, $user, "i");
         return array_filter($expansions ? : [$uf], "Conf::xt_enabled");
+    }
+
+
+    // Option types
+    function _add_option_type_json($fj) {
+        if (isset($fj->name) && is_string($fj->name)
+            && isset($fj->callback) && is_string($fj->callback))
+            return self::xt_add($this->_option_type_map, $fj->name, $fj);
+        else if (isset($fj->match) && is_string($fj->match)
+                 && isset($fj->expand_callback) && is_string($fj->expand_callback)) {
+            $this->_option_type_factories[] = $fj;
+            return true;
+        } else
+            return false;
+    }
+    function option_type_map() {
+        if ($this->_option_type_map === null) {
+            require_once("paperoption.php");
+            $this->_option_type_map = $this->_option_type_factories = [];
+            expand_json_includes_callback(["etc/optiontypes.json"], [$this, "_add_option_type_json"]);
+            if (($olist = $this->opt("optionTypes")))
+                expand_json_includes_callback($olist, [$this, "_add_option_type_json"]);
+            usort($this->_option_type_factories, "Conf::xt_priority_compare");
+            // option types are global (cannot be allowed per user)
+            $m = [];
+            foreach (array_keys($this->_option_type_map) as $name) {
+                if (($uf = $this->xt_search_name($this->_option_type_map, $name, [$this, "xt_allowed"])))
+                    $m[$name] = $uf;
+            }
+            $this->_option_type_map = $m;
+        }
+        return $this->_option_type_map;
+    }
+    function option_type($name) {
+        $uf = get($this->option_type_map(), $name);
+        if (($expansions = $this->xt_search_factories($this->_option_type_factories, $name, [$this, "xt_allowed"], $uf, null, "i")))
+            $uf = $expansions[0];
+        return $uf;
     }
 }

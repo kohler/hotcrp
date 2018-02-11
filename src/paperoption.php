@@ -286,20 +286,6 @@ class PaperOptionList {
         reset($omap);
         return count($omap) == 1 ? current($omap) : null;
     }
-
-    function list_subform_options(PaperOption $o = null) {
-        $callbacks = array_values(PaperOption::callback_map());
-        foreach ($this->option_json_list() as $x) {
-            if (isset($x->callback) && $x->callback[0] === "+")
-                $callbacks[] = $x->callback;
-        }
-        foreach (array_unique($callbacks) as $callback) {
-            $class = substr($callback, 1);
-            $class::list_subform_options($options, $o);
-        }
-        usort($options, function ($a, $b) { return $a[0] - $b[0]; });
-        return $options;
-    }
 }
 
 class PaperOption implements Abbreviator {
@@ -405,13 +391,25 @@ class PaperOption implements Abbreviator {
         if (is_object($args))
             $args = get_object_vars($args);
         $callback = get($args, "callback");
-        $callback = $callback ? : get(self::$callback_map, get($args, "type"));
-        $callback = $callback ? : "+PaperOption";
+        $jtype = null;
+        if (!$callback) {
+            $type = get($args, "type");
+            if ($type && isset(self::$callback_map[$type]))
+                $callback = self::$callback_map[$type];
+            if ($type
+                && (!$callback || isset($conf->opt["optionTypes"]))
+                && ($jtype = $conf->option_type($type))) {
+                error_log(var_export($jtype, true));
+                $callback = $jtype->callback;
+            }
+        }
+        if (!$callback)
+            $callback = "+PaperOption";
         if ($callback[0] === "+") {
             $class = substr($callback, 1);
-            return new $class($conf, $args);
+            return new $class($conf, $args, $jtype);
         } else
-            return call_user_func($callback, $conf, $args);
+            return call_user_func($callback, $conf, $args, $jtype);
     }
 
     static function compare($a, $b) {
@@ -421,10 +419,6 @@ class PaperOption implements Abbreviator {
             return $ap < $bp ? -1 : 1;
         else
             return $a->id - $b->id;
-    }
-
-    static function type_has_selector($type) {
-        return $type === "radio" || $type === "selector";
     }
 
     function fixed() {
@@ -519,13 +513,6 @@ class PaperOption implements Abbreviator {
 
     function attachment(PaperOptionValue $ov, $name) {
         return null;
-    }
-
-    static function list_subform_options(&$options, PaperOption $o = null) {
-    }
-
-    static function callback_map() {
-        return self::$callback_map;
     }
 
     function expand_values(&$values, &$data_array) {
@@ -638,10 +625,6 @@ class CheckboxPaperOption extends PaperOption {
         parent::__construct($conf, $args);
     }
 
-    static function list_subform_options(&$options, PaperOption $o = null) {
-        $options[] = [100, "checkbox", "Checkbox"];
-    }
-
     function value_compare($av, $bv) {
         return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
     }
@@ -694,11 +677,6 @@ class CheckboxPaperOption extends PaperOption {
 class SelectorPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-    }
-
-    static function list_subform_options(&$options, PaperOption $o = null) {
-        $options[] = [200, "selector", "Selector"];
-        $options[] = [300, "radio", "Radio buttons"];
     }
 
     function has_selector() {
@@ -787,13 +765,6 @@ class SelectorPaperOption extends PaperOption {
 class DocumentPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-    }
-
-    static function list_subform_options(&$options, PaperOption $o = null) {
-        $options[] = [600, "pdf", "PDF"];
-        $options[] = [610, "slides", "Slides"];
-        $options[] = [620, "video", "Video"];
-        $options[] = [699, "document", "File upload"];
     }
 
     function is_document() {
@@ -908,10 +879,6 @@ class NumericPaperOption extends PaperOption {
         parent::__construct($conf, $args);
     }
 
-    static function list_subform_options(&$options, PaperOption $o = null) {
-        $options[] = [400, "numeric", "Numeric"];
-    }
-
     function example_searches() {
         $x = parent::example_searches();
         $x["numeric"] = array("{$this->search_keyword()}:>100", $this);
@@ -978,13 +945,13 @@ class TextPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
     }
-
-    static function list_subform_options(&$options, PaperOption $o = null) {
-        $options[] = [500, "text", "Text"];
-        $mtype = "text:ds_5";
-        if ($o && $o->display_space > 3)
-            $mtype = "text:ds_" . $o->display_space;
-        $options[] = [550, $mtype, "Multiline text"];
+    static function expand($name, Conf $conf, $fxt, $m) {
+        $xt = clone $fxt;
+        unset($xt->match);
+        $xt->name = $name;
+        $xt->display_space = +$m[1];
+        $xt->title = "Multiline text ({$m[1]} lines)";
+        return $xt;
     }
 
     function value_compare($av, $bv) {
@@ -1067,10 +1034,6 @@ class TextPaperOption extends PaperOption {
 class AttachmentsPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-    }
-
-    static function list_subform_options(&$options, PaperOption $o = null) {
-        $options[] = [700, "attachments", "Attachments"];
     }
 
     function has_document() {

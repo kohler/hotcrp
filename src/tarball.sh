@@ -97,6 +97,7 @@ etc/formulafunctions.json
 etc/helptopics.json
 etc/listactions.json
 etc/msgs.json
+etc/optiontypes.json
 etc/papercolumns.json
 etc/reviewformlibrary.json
 etc/searchkeywords.json
