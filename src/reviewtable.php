@@ -351,7 +351,8 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     }
 
     // edit paper
-    if ($mode !== "edit" && $prow->conflictType >= CONFLICT_AUTHOR
+    if ($mode !== "edit"
+        && $prow->has_author($Me)
         && !$Me->can_administer($prow)) {
         $t[] = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;m=edit") . '" class="xx revlink">'
             . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>Edit submission</strong></u></a>";
@@ -390,7 +391,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
 
     // new response
     if (!$nocmt
-        && ($prow->conflictType >= CONFLICT_AUTHOR || $allow_admin)
+        && ($prow->has_author($Me) || $allow_admin)
         && ($rrounds = $conf->time_author_respond()))
         foreach ($rrounds as $i => $rname) {
             $cid = ($i ? $rname : "") . "response";

@@ -92,20 +92,21 @@ if ($prow && $Qreq->m === "api" && isset($Qreq->fn) && $Conf->has_api($Qreq->fn)
 if (isset($Qreq->withdraw) && !$newPaper && $Qreq->post_ok()) {
     if (!($whyNot = $Me->perm_withdraw_paper($prow))) {
         $reason = (string) $Qreq->reason;
-        if ($reason === "" && $Me->privChair && $Qreq->doemail > 0)
+        if ($reason === "" && $Me->can_administer($prow) && $Qreq->doemail > 0)
             $reason = (string) $Qreq->emailNote;
         Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-timeSubmitted,0), withdrawReason=? where paperId=$prow->paperId", $reason != "" ? $reason : null);
         $Conf->update_papersub_setting(-1);
         loadRows();
 
         // email contact authors themselves
-        if (!$Me->privChair || $Qreq->doemail > 0)
-            HotCRPMailer::send_contacts(($prow->conflictType >= CONFLICT_AUTHOR ? "@authorwithdraw" : "@adminwithdraw"),
-                                        $prow, array("reason" => $reason, "infoNames" => 1));
+        if (!$Me->can_administer($prow) || $Qreq->doemail > 0) {
+            $tmpl = $prow->has_author($Me) ? "@authorwithdraw" : "@adminwithdraw";
+            HotCRPMailer::send_contacts($tmpl, $prow, ["reason" => $reason, "infoNames" => 1]);
+        }
 
         // email reviewers
         if ($prow->reviews_by_id())
-            HotCRPMailer::send_reviewers("@withdrawreviewer", $prow, array("reason" => $reason));
+            HotCRPMailer::send_reviewers("@withdrawreviewer", $prow, ["reason" => $reason]);
 
         // remove voting tags so people don't have phantom votes
         if ($Conf->tags()->has_vote) {
@@ -270,12 +271,14 @@ function update_paper(Qrequest $qreq, $action) {
 
     // mail confirmation to all contact authors if changed
     if (!empty($ps->diffs)) {
-        if (!$Me->privChair || $qreq->doemail > 0) {
+        if (!$Me->can_administer($prow) || $qreq->doemail > 0) {
             $options = array("infoNames" => 1);
-            if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
-                $options["adminupdate"] = true;
-            if ($Me->privChair && isset($qreq->emailNote))
-                $options["reason"] = $qreq->emailNote;
+            if ($Me->can_administer($prow)) {
+                if (!$prow->has_author($Me))
+                    $options["adminupdate"] = true;
+                if (isset($qreq->emailNote))
+                    $options["reason"] = $qreq->emailNote;
+            }
             if ($notes !== "")
                 $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
             HotCRPMailer::send_contacts($template, $prow, $options);
@@ -341,11 +344,11 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
 if ($Qreq->delete && $Qreq->post_ok()) {
     if ($newPaper)
         $Conf->confirmMsg("Paper deleted.");
-    else if (!$Me->privChair)
+    else if (!$Me->can_administer($prow))
         Conf::msg_error("Only the program chairs can permanently delete papers. Authors can withdraw papers, which is effectively the same.");
     else {
         // mail first, before contact info goes away
-        if (!$Me->privChair || $Qreq->doemail > 0)
+        if (!$Me->can_administer($prow) || $Qreq->doemail > 0)
             HotCRPMailer::send_contacts("@deletepaper", $prow, array("reason" => (string) $Qreq->emailNote, "infoNames" => 1));
         if ($prow->delete_from_database($Me))
             $Conf->confirmMsg("Paper #{$prow->paperId} deleted.");

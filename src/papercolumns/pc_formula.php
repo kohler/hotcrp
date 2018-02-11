@@ -75,7 +75,8 @@ class Formula_PaperColumn extends PaperColumn {
             if ($isreal && !$this->real_format && is_float($v)
                 && round($v * 100) % 100 != 0)
                 $this->real_format = "%.2f";
-            if ($row->conflictType > 0 && $pl->user->allow_administer($row))
+            if ($row->has_conflict($pl->user)
+                && $pl->user->allow_administer($row))
                 $override_rows[] = $row;
         }
         if ($override_rows) {

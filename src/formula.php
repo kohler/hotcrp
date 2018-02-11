@@ -838,10 +838,10 @@ class Conflict_Fexpr extends Sub_Fexpr {
     function compile(FormulaCompiler $state) {
         // XXX the actual search is different
         $state->datatype |= self::ACONF;
-        if ($state->looptype == self::LMY)
-            $rt = $state->user->isPC ? "!!\$prow->conflictType" : "false";
-        else {
-            $idx = $state->_rrow_cid();
+        $idx = $state->_rrow_cid();
+        if ($state->looptype == self::LMY) {
+            $rt = "\$prow->has_conflict($idx)";
+        } else {
             $rt = "!!get(" . $state->_add_conflicts() . ", " . $idx . ")";
             if ($this->ispc)
                 $rt = "(get(" . $state->_add_pc() . ", " . $idx . ") ? $rt : null)";
