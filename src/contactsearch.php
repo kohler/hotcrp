@@ -151,7 +151,7 @@ class ContactSearch {
                 $q .= " union select contactId, firstName, lastName, unaccentedName, email, 0 roles from DeletedContactInfo where " . join(" or ", $where);
             $result = $this->conf->qe_raw($q);
             $cs = array();
-            while ($result && ($row = Contact::fetch($result))) {
+            while (($row = Contact::fetch($result, $this->conf))) {
                 $cs[$row->contactId] = $row;
             }
         }

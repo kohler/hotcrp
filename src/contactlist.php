@@ -608,7 +608,7 @@ class ContactList {
         // fetch data
         Contact::$allow_nonexistent_properties = true;
         $rows = array();
-        while (($row = Contact::fetch($result)))
+        while (($row = Contact::fetch($result, $this->conf)))
             $rows[] = $row;
         Contact::$allow_nonexistent_properties = false;
         if (isset($queryOptions["topics"]))

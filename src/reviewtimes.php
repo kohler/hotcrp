@@ -100,7 +100,7 @@ class ReviewTimes {
                 $need_contacts[] = $cid;
         if (count($need_contacts)) {
             $result = $this->conf->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where contactId ?a", $need_contacts);
-            while ($result && ($row = Contact::fetch($result)))
+            while (($row = Contact::fetch($result, $this->conf)))
                 $contacts[$row->contactId] = $row;
         }
 

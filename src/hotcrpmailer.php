@@ -458,7 +458,7 @@ class HotCRPMailer extends Mailer {
 
         $preps = $contacts = array();
         $rest["combination_type"] = 1;
-        while ($result && ($contact = Contact::fetch($result))) {
+        while (($contact = Contact::fetch($result, $Conf))) {
             $row->load_my_contact_info($contact->contactId, $contact);
             if (($p = self::prepare_to($contact, $template, $row, $rest))) {
                 $preps[] = $p;
@@ -501,7 +501,7 @@ class HotCRPMailer extends Mailer {
         $contact_info_map = $row->replace_contact_info_map(null);
 
         $preps = $contacts = array();
-        while ($result && ($contact = Contact::fetch($result))) {
+        while (($contact = Contact::fetch($result, $Conf))) {
             $row->load_my_contact_info($contact->contactId, $contact);
             $rest["combination_type"] = $contact->can_view_review_identity($row, null, true) ? 1 : 0;
             if (($p = self::prepare_to($contact, $template, $row, $rest))) {

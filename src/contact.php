@@ -111,9 +111,7 @@ class Contact {
             $this->disabled = true;
     }
 
-    static function fetch($result, Conf $conf = null) {
-        global $Conf;
-        $conf = $conf ? : $Conf;
+    static function fetch($result, Conf $conf) {
         $user = $result ? $result->fetch_object("Contact", [null, $conf]) : null;
         if ($user && !is_int($user->contactId)) {
             $user->conf = $conf;
@@ -449,20 +447,22 @@ class Contact {
     }
 
     static function contactdb_find_by_email($email) {
+        global $Conf;
         $acct = null;
         if (($cdb = self::contactdb())) {
             $result = Dbl::ql($cdb, "select * from ContactInfo where email=?", $email);
-            $acct = self::fetch($result);
+            $acct = self::fetch($result, $Conf);
             Dbl::free($result);
         }
         return $acct;
     }
 
     static function contactdb_find_by_id($cid) {
+        global $Conf;
         $acct = null;
         if (($cdb = self::contactdb())) {
             $result = Dbl::ql($cdb, "select * from ContactInfo where contactDbId=?", $cid);
-            $acct = self::fetch($result);
+            $acct = self::fetch($result, $Conf);
             Dbl::free($result);
         }
         return $acct;

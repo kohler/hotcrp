@@ -244,7 +244,7 @@ function requestReview($qreq) {
     $Requester = $Me;
     if ($Conf->setting("extrev_chairreq")) {
         $result = Dbl::qe("select firstName, lastName, u.email, u.contactId from ReviewRequest rr join ContactInfo u on (u.contactId=rr.requestedBy) where paperId=$prow->paperId and rr.email=?", $Them->email);
-        if ($result && ($recorded_requester = Contact::fetch($result)))
+        if (($recorded_requester = Contact::fetch($result, $Conf)))
             $Requester = $recorded_requester;
     }
 

@@ -2003,7 +2003,7 @@ class PaperInfo {
         $result = $this->conf->qe_raw($q);
         $watchers = array();
         $lastContactId = 0;
-        while ($result && ($row = Contact::fetch($result))) {
+        while (($row = Contact::fetch($result, $this->conf))) {
             if ($row->contactId == $lastContactId
                 || ($contact && $row->contactId == $contact->contactId)
                 || Contact::is_anonymous_email($row->email))
