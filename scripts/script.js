@@ -1730,9 +1730,8 @@ function tracker_ui(event) {
         if (tstate && tstate[0] != hoturl_absolute_base())
             tstate = null;
         if (event && (!tstate || !is_my_tracker())) {
-            tstate = [hoturl_absolute_base(), Math.floor(Math.random() * 100000), null, null];
-            if (document.body.hasAttribute("data-hotlist"))
-                tstate[3] = document.body.getAttribute("data-hotlist");
+            tstate = [hoturl_absolute_base(), Math.floor(Math.random() * 100000), null,
+                document.body.getAttribute("data-hotlist") || null];
         }
         if (tstate) {
             var req = "track=" + tstate[1] + "%20x", reqdata = {};
@@ -6858,9 +6857,9 @@ function handle_list(e, href) {
     }
 }
 function unload_list() {
-    if (document.body.hasAttribute("data-hotlist")
-        && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
-        set_cookie(document.body.getAttribute("data-hotlist"));
+    var hl = document.body.getAttribute("data-hotlist");
+    if (hl && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
+        set_cookie(hl);
 }
 function row_click(evt) {
     var $tgt = $(evt.target);
