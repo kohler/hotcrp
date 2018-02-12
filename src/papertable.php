@@ -727,7 +727,7 @@ class PaperTable {
             $val = ($pfx === '$' ? "" : (string) $this->qreq["$pfx$n"]);
         }
 
-        $js["class"] = "need-autogrow e$pfx" . $this->has_error_class("$pfx$n");
+        $js["class"] = "need-autogrow js-autosubmit e$pfx" . $this->has_error_class("$pfx$n");
         if ($val !== $auval) {
             $js["data-default-value"] = $auval;
         }
@@ -1132,9 +1132,9 @@ class PaperTable {
         return '<div class="checki"><span class="checkc">'
                 . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => 1])
                 . ' </span>'
-                . Ht::entry("newcontact_name_{$num}", $name, ["size" => 30, "placeholder" => "Name", "class" => ($cerror ? "error " : "") . "want-focus"])
+                . Ht::entry("newcontact_name_{$num}", $name, ["size" => 30, "placeholder" => "Name", "class" => ($cerror ? "has-error " : "") . "want-focus js-autosubmit"])
                 . '  '
-                . Ht::entry("newcontact_email_{$num}", $email, ["size" => 20, "placeholder" => "Email", "class" => $cerror ? "error" : null])
+                . Ht::entry("newcontact_email_{$num}", $email, ["size" => 20, "placeholder" => "Email", "class" => ($cerror ? "has-error " : "") . "js-autosubmit"])
                 . '</div>';
     }
 
@@ -1969,7 +1969,7 @@ class PaperTable {
             $v = (string) $this->qreq->emailNote;
             echo '<div class="checki"><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), " </span>",
                 Ht::label("Email authors, including:"), "&nbsp; ",
-                Ht::entry("emailNote", $v, ["id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff"]),
+                Ht::entry("emailNote", $v, ["id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit"]),
                 "</div>\n";
         }
 
