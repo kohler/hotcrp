@@ -898,7 +898,7 @@ class PaperStatus extends MessageSet {
                 $ti = array_map(function ($tid) use ($ps) {
                     return [$ps->paperId, $tid];
                 }, $ps->_topic_ins);
-                $ps->conf->qe("insert into PaperTopic (paperId,topicId) values ?v", $ps->_topic_ins);
+                $ps->conf->qe("insert into PaperTopic (paperId,topicId) values ?v", $ti);
             }
         }
     }
