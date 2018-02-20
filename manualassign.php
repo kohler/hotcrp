@@ -21,11 +21,11 @@ if ($Qreq->kind != "a" && $Qreq->kind != "c")
 if (!$Qreq->q || trim($Qreq->q) == "(All)")
     $Qreq->q = "";
 
+$Qreq->allow_a("p", "pap", "papx");
 if (!$Qreq->p && $Qreq->pap)
     $Qreq->p = $Qreq->pap;
 if (is_string($Qreq->p))
     $Qreq->p = preg_split('/\s+/', $Qreq->p);
-
 if (is_string($Qreq->papx))
     $Qreq->papx = preg_split('/\s+/', $Qreq->papx);
 

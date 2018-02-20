@@ -66,6 +66,7 @@ function paperselPredicate($papersel) {
     return "ContactInfo.contactId" . sql_in_numeric_set($papersel);
 }
 
+$Qreq->allow_a("pap");
 if (isset($Qreq->pap) && is_string($Qreq->pap))
     $Qreq->pap = preg_split('/\s+/', $Qreq->pap);
 if ((isset($Qreq->pap) && is_array($Qreq->pap))

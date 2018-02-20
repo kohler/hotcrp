@@ -25,6 +25,7 @@ if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t])) {
 }
 
 // PC selection
+$Qreq->allow_a("pcs", "pap", "p");
 if (isset($Qreq->pcs) && is_string($Qreq->pcs))
     $Qreq->pcs = preg_split('/\s+/', $Qreq->pcs);
 if (isset($Qreq->pcs) && is_array($Qreq->pcs)) {

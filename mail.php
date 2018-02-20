@@ -49,6 +49,7 @@ if (isset($Qreq->template) && !isset($Qreq->check))
 // paper selection
 if (!isset($Qreq->q) || trim($Qreq->q) == "(All)")
     $Qreq->q = "";
+$Qreq->allow_a("p", "pap");
 if (!isset($Qreq->p) && isset($Qreq->pap)) // support p= and pap=
     $Qreq->p = $Qreq->pap;
 if (isset($Qreq->p) && is_string($Qreq->p))

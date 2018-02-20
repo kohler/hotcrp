@@ -17,12 +17,11 @@ class SearchSelection {
 
     static function make($qreq, Contact $user = null, $key = null) {
         $ps = null;
-        if ($key !== null && isset($qreq[$key]))
-            $ps = $qreq[$key];
-        else if ($key === null && isset($qreq["p"]))
-            $ps = $qreq["p"];
-        else if ($key === null && isset($qreq["pap"]))
-            $ps = $qreq["pap"];
+        if ($key !== null) {
+            $ps = $qreq->get_a($key);
+        } else {
+            $ps = $qreq->get_a(isset($qreq["p"]) ? "p" : "pap");
+        }
         if ($user && $ps === "all") {
             $ps = (new PaperSearch($user, $qreq))->sorted_paper_ids();
         } else if ($ps === "all")

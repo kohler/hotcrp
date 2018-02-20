@@ -274,20 +274,24 @@ function uploaded_file_error($finfo) {
 function make_qreq() {
     $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
     foreach ($_GET as $k => $v)
-        $qreq[$k] = $v;
+        $qreq->set_req($k, $v);
     foreach ($_POST as $k => $v)
-        $qreq[$k] = $v;
+        $qreq->set_req($k, $v);
     if (empty($_POST))
         $qreq->set_post_empty();
 
     // $_FILES requires special processing since we want error messages.
     $errors = [];
-    foreach ($_FILES as $f => $finfo) {
-        if ($finfo["error"] == UPLOAD_ERR_OK) {
-            if (is_uploaded_file($finfo["tmp_name"]))
-                $qreq->set_file($f, $finfo);
-        } else if (($err = uploaded_file_error($finfo)))
-            $errors[] = $err;
+    foreach ($_FILES as $f => $finfos) {
+        $is_array = !isset($finfos["name"]);
+        foreach ($is_array ? $finfos : [$finfos] as $i => $finfo) {
+            $name = $is_array ? "$f.$i" : $f;
+            if ($finfo["error"] == UPLOAD_ERR_OK) {
+                if (is_uploaded_file($finfo["tmp_name"]))
+                    $qreq->set_file($name, $finfo);
+            } else if (($err = uploaded_file_error($finfo)))
+                $errors[] = $err;
+        }
     }
     if (!empty($errors) && Conf::$g)
         Conf::msg_error("<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>");

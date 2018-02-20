@@ -5,6 +5,7 @@
 class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
     // NB see also count()
     private $____method;
+    private $____a = [];
     private $____files = [];
     private $____x = [];
     private $____post_ok = false;
@@ -29,6 +30,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function offsetSet($offset, $value) {
         $this->$offset = $value;
+        unset($this->____a[$offset]);
     }
     function offsetUnset($offset) {
         unset($this->$offset);
@@ -38,6 +40,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function __set($name, $value) {
         $this->$name = $value;
+        unset($this->____a[$name]);
     }
     function& __get($name) {
         $x = null;
@@ -56,8 +59,34 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             $default = $this->$name;
         return $default;
     }
+    function get_a($name, $default = null) {
+        if (property_exists($this, $name)) {
+            $default = $this->$name;
+            if ($default === "__array__" && isset($this->____a[$name]))
+                $default = $this->____a[$name];
+        }
+        return $default;
+    }
+    function allow_a(/* ... */) {
+        foreach (func_get_args() as $name) {
+            if (property_exists($this, $name)
+                && $this->$name === "__array__"
+                && isset($this->____a[$name])) {
+                $this->$name = $this->____a[$name];
+                unset($this->____a[$name]);
+            }
+        }
+    }
+    function set_req($name, $value) {
+        if (is_array($value)) {
+            $this->$name = "__array__";
+            $this->____a[$name] = $value;
+        } else {
+            $this->$name = $value;
+        }
+    }
     function count() {
-        return count(get_object_vars($this)) - 5;
+        return count(get_object_vars($this)) - 6;
     }
     function jsonSerialize() {
         return $this->make_array();
