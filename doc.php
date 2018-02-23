@@ -12,7 +12,7 @@ function document_error($status, $msg) {
     }
 
     $navpath = Navigation::path();
-    error_log($Conf->dbname . ": bad doc $status $msg " . json_encode($Qreq) . ($navpath ? " @$navpath" : "") . ($Me ? " {$Me->email}" : ""));
+    error_log($Conf->dbname . ": bad doc $status $msg " . json_encode($Qreq) . ($navpath ? " @$navpath" : "") . ($Me ? " {$Me->email}" : "") . (empty($_SERVER["HTTP_REFERER"]) ? "" : " R[" . $_SERVER["HTTP_REFERER"] . "]"));
     header("HTTP/1.1 $status");
     if (isset($Qreq->fn))
         json_exit(["ok" => false, "error" => $msg ? : "Internal error."]);
