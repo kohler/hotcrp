@@ -282,14 +282,20 @@ function make_qreq() {
 
     // $_FILES requires special processing since we want error messages.
     $errors = [];
-    foreach ($_FILES as $f => $finfos) {
-        $is_array = !isset($finfos["name"]);
-        foreach ($is_array ? $finfos : [$finfos] as $i => $finfo) {
-            $name = $is_array ? "$f.$i" : $f;
-            if ($finfo["error"] == UPLOAD_ERR_OK) {
-                if (is_uploaded_file($finfo["tmp_name"]))
-                    $qreq->set_file($name, $finfo);
-            } else if (($err = uploaded_file_error($finfo)))
+    foreach ($_FILES as $nx => $fix) {
+        if (is_array($fix["error"])) {
+            $fis = [];
+            foreach (array_keys($fix["error"]) as $i) {
+                $fis[$i ? "$nx.$i" : $nx] = ["name" => $fix["name"][$i], "type" => $fix["type"][$i], "size" => $fix["size"][$i], "tmp_name" => $fix["tmp_name"][$i], "error" => $fix["error"][$i]];
+            }
+        } else {
+            $fis = [$nx => $fix];
+        }
+        foreach ($fis as $n => $fi) {
+            if ($fi["error"] == UPLOAD_ERR_OK) {
+                if (is_uploaded_file($fi["tmp_name"]))
+                    $qreq->set_file($n, $fi);
+            } else if (($err = uploaded_file_error($fi)))
                 $errors[] = $err;
         }
     }
