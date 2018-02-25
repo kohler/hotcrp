@@ -824,7 +824,8 @@ class PaperList {
         return [$empty, $content];
     }
 
-    private function _row_content($rstate, PaperInfo $row, $fieldDef) {
+    private function _row_setup(PaperInfo $row) {
+        ++$this->count;
         if ((string) $row->abstract !== "")
             $this->mark_has("abstract");
         if (!empty($this->_any_option_checks))
@@ -843,7 +844,9 @@ class PaperList {
             } else
                 $this->row_tags = $row->viewable_tags($this->user);
         }
+    }
 
+    private function _row_content($rstate, PaperInfo $row, $fieldDef) {
         $trclass = [];
         $cc = "";
         if (get($row, "paperTags")) {
@@ -1419,7 +1422,7 @@ class PaperList {
         $grouppos = empty($this->groups) ? -1 : 0;
         $need_render = false;
         foreach ($rows as $row) {
-            ++$this->count;
+            $this->_row_setup($row);
             if ($grouppos >= 0)
                 $grouppos = $this->_groups_for($grouppos, $rstate, $body, false);
             $body[] = $this->_row_content($rstate, $row, $fieldDef);
@@ -1600,9 +1603,7 @@ class PaperList {
             $data["{$fdef->name}.headerhtml"] = $x;
         $m = array();
         foreach ($rows as $row) {
-            ++$this->count;
-            $this->row_attr = [];
-            $this->row_overridable = $this->user->can_meaningfully_override($row);
+            $this->_row_setup($row);
             list($empty, $content) = $this->_row_field_content($fdef, $row);
             $m[$row->paperId] = $content;
             foreach ($this->row_attr as $k => $v) {
@@ -1640,9 +1641,8 @@ class PaperList {
 
         $x = array();
         foreach ($rows as $row) {
+            $this->_row_setup($row);
             $p = array("id" => $row->paperId);
-            ++$this->count;
-            $this->row_overridable = $this->user->can_meaningfully_override($row);
             foreach ($field_list as $fdef) {
                 if ($fdef->viewable()
                     && !$fdef->content_empty($this, $row)
@@ -1656,12 +1656,6 @@ class PaperList {
     }
 
     private function _row_text_csv_data(PaperInfo $row, $fieldDef) {
-        ++$this->count;
-        if ((string) $row->abstract !== "")
-            $this->mark_has("abstract");
-        if (!empty($this->_any_option_checks))
-            $this->_check_option_presence($row);
-        $this->row_overridable = $this->user->can_meaningfully_override($row);
         $csv = [];
         foreach ($fieldDef as $fdef) {
             $empty = $fdef->content_empty($this, $row);
@@ -1710,6 +1704,7 @@ class PaperList {
         $body = array();
         $grouppos = empty($this->groups) ? -1 : 0;
         foreach ($rows as $row) {
+            $this->_row_setup($row);
             $csv = $this->_row_text_csv_data($row, $fieldDef);
             if ($grouppos >= 0)
                 $grouppos = $this->_groups_for_csv($grouppos, $csv);
