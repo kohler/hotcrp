@@ -4,16 +4,18 @@
 
 class UserStatus extends MessageSet {
     public $conf;
+    public $viewer;
     private $errf;
     public $send_email = null;
     private $no_deprivilege_self = false;
 
-    static private $field_synonym_map = array("preferredEmail" => "preferred_email",
-                       "voicePhoneNumber" => "phone",
-                       "addressLine1" => "address",
-                       "addressLine2" => "address",
-                       "zipCode" => "zip", "postal_code" => "zip",
-                       "contactTags" => "tags", "uemail" => "email");
+    static private $field_synonym_map = [
+        "preferredEmail" => "preferred_email",
+        "voicePhoneNumber" => "phone",
+        "addressLine1" => "address", "addressLine2" => "address",
+        "zipCode" => "zip", "postal_code" => "zip",
+        "contactTags" => "tags", "uemail" => "email"
+    ];
 
     static public $topic_interest_name_map = [
         "low" => -2,
@@ -47,36 +49,42 @@ class UserStatus extends MessageSet {
             return null;
     }
 
-    function user_to_json($user) {
+    function user_json($user, $args = []) {
         global $Me;
         if (!$user)
             return null;
 
         $cj = (object) array();
-        if ($user->contactId)
+        if ($user->contactId > 0)
             $cj->id = $user->contactId;
 
         // keys that might come from user or contactdb
         $cdb_user = $user->contactdb_user();
         foreach (["email", "firstName", "lastName", "affiliation",
-                  "collaborators", "country"] as $k)
+                  "collaborators", "country"] as $k) {
             if ($user->$k !== null && $user->$k !== "")
                 $cj->$k = $user->$k;
             else if ($cdb_user && $cdb_user->$k !== null && $cdb_user->$k !== "")
                 $cj->$k = $cdb_user->$k;
+        }
 
         // keys that come from user
         foreach (["preferredEmail" => "preferred_email",
-                  "voicePhoneNumber" => "phone"] as $uk => $jk)
+                  "voicePhoneNumber" => "phone"] as $uk => $jk) {
             if ($user->$uk !== null && $user->$uk !== "")
                 $cj->$jk = $user->$uk;
+        }
 
         if ($user->disabled)
             $cj->disabled = true;
 
-        foreach (array("address", "city", "state", "zip", "country") as $k)
+        foreach (array("address", "city", "state", "zip", "country") as $k) {
             if (($x = $user->data($k)))
                 $cj->$k = $x;
+        }
+
+        if (get($args, "include_password") && ($pw = $user->plaintext_password()))
+            $cj->__passwords = ["", "", $pw];
 
         if ($user->roles)
             $cj->roles = self::unparse_roles_json($user->roles);
@@ -92,7 +100,7 @@ class UserStatus extends MessageSet {
         }
 
         if (($tags = $user->viewable_tags($Me))) {
-            $tagger = new Tagger;
+            $tagger = new Tagger($Me);
             $cj->tags = explode(" ", $tagger->unparse($tags));
         }
 
@@ -411,5 +419,281 @@ class UserStatus extends MessageSet {
             return $user;
         else
             return false;
+    }
+
+
+    static function parse_request($cj, Qrequest $qreq, Contact $acct, UserStatus $us, $uf) {
+        // email
+        if (!$us->conf->external_login())
+            $cj->email = trim((string) $qreq->uemail);
+        else if ($acct->is_empty())
+            $cj->email = trim((string) $qreq->newUsername);
+        else
+            $cj->email = $Acct->email;
+
+        // normal fields
+        foreach (["firstName", "lastName", "preferredEmail", "affiliation",
+                  "collaborators", "addressLine1", "addressLine2",
+                  "city", "state", "zipCode", "country", "voicePhoneNumber"] as $k) {
+            $v = $qreq[$k];
+            if ($v !== null && ($cj->id !== "new" || trim($v) !== ""))
+                $cj->$k = $v;
+        }
+
+        // password
+        if (!$us->conf->external_login()
+            && !$acct->is_empty()
+            && $us->viewer->can_change_password($acct)
+            && (isset($qreq->upassword) || isset($qreq->upasswordt))) {
+            if ($qreq->whichpassword === "t" && $qreq->upasswordt)
+                $pw = $pw2 = trim($qreq->upasswordt);
+            else {
+                $pw = trim((string) $qreq->upassword);
+                $pw2 = trim((string) $qreq->upassword2);
+            }
+            $cj->__passwords = [(string) $qreq->upassword, (string) $qreq->upassword2, (string) $qreq->upasswordt];
+            if ($pw === "" && $pw2 === "")
+                /* do nothing */;
+            else if ($pw !== $pw2)
+                $us->error_at("password", "Those passwords do not match.");
+            else if (!Contact::valid_password($pw))
+                $us->error_at("password", "Invalid new password.");
+            else if ($us->viewer->can_change_password(null)) {
+                $cj->old_password = null;
+                $cj->new_password = $pw;
+            } else {
+                $cj->old_password = trim((string) $qreq->oldpassword);
+                if ($acct->check_password($cj->old_password))
+                    $cj->new_password = $pw;
+                else
+                    $us->error_at("password", "Incorrect current password. New password ignored.");
+            }
+        }
+
+        // PC components
+        if (isset($qreq->pctype) && $us->viewer->privChair) {
+            $cj->roles = (object) array();
+            $pctype = $qreq->pctype;
+            if ($pctype === "chair")
+                $cj->roles->chair = $cj->roles->pc = true;
+            if ($pctype === "pc")
+                $cj->roles->pc = true;
+            if ($qreq->ass)
+                $cj->roles->sysadmin = true;
+        }
+
+        $follow = [];
+        if ($qreq->has_watchcomment)
+            $follow["reviews"] = !!$qreq->watchcomment;
+        if ($qreq->has_watchcommentall && ($us->viewer->privChair || $acct->isPC))
+            $follow["allreviews"] = !!$qreq->watchcommentall;
+        if ($qreq->has_watchfinalall && $us->viewer->privChair)
+            $follow["allfinal"] = !!$qreq->watchfinalall;
+        if (!empty($follow))
+            $cj->follow = (object) $follow;
+
+        if (isset($qreq->contactTags) && $us->viewer->privChair)
+            $cj->tags = explode(" ", simplify_whitespace($qreq->contactTags));
+
+        if (isset($qreq->has_ti) && $us->viewer->isPC) {
+            $topics = array();
+            foreach ($us->conf->topic_map() as $id => $t)
+                if (isset($qreq["ti$id"]) && is_numeric($qreq["ti$id"]))
+                    $topics[$id] = (int) $qreq["ti$id"];
+            $cj->topics = (object) $topics;
+        }
+    }
+
+
+    function render_field($field, $caption, $entry) {
+        echo '<div class="', $this->control_class($field, "f-i"), '">',
+            ($field ? Ht::label($caption, $field) : '<div class="f-c">' . $caption . '</div>'),
+            $entry, "</div>";
+    }
+
+    static function pcrole_text($cj) {
+        if (isset($cj->roles)) {
+            if (isset($cj->roles->chair) && $cj->roles->chair)
+                return "chair";
+            else if (isset($cj->roles->pc) && $cj->roles->pc)
+                return "pc";
+        }
+        return "no";
+    }
+
+    static function render(UserStatus $us, $cj, $reqj, Contact $acct, $uf) {
+        echo '<div class="profile-g">', "\n";
+        $actas = "";
+        if ($acct !== $us->viewer && $acct->email && $us->viewer->privChair)
+            $actas = '&nbsp;' . actas_link($acct);
+        if (!$us->conf->external_login()) {
+            $us->render_field("uemail", "Email" . $actas,
+                Ht::entry("uemail", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "data-default-value" => get_s($cj, "email")]));
+        } else if (!$acct->is_empty()) {
+            $us->render_field(false, "Username" . $actas,
+                htmlspecialchars(get_s($cj, "email")));
+            $us->render_field("preferredEmail", "Email",
+                Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail", "data-default-value" => get_s($cj, "preferred_email")]));
+        } else {
+            $us->render_field("uemail", "Username",
+                Ht::entry("newUsername", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "data-default-value" => get_s($cj, "email")]));
+            $us->render_field("preferredEmail", "Email",
+                      Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "data-default-value" => get_s($cj, "preferred_email")]));
+        }
+
+        echo '<div class="f-2col">';
+        $us->render_field("firstName", "First name",
+                  Ht::entry("firstName", get_s($reqj, "firstName"), ["size" => 24, "autocomplete" => "given-name", "class" => "fullw", "id" => "firstName", "data-default-value" => get_s($cj, "firstName")]));
+        $us->render_field("lastName", "Last name",
+                  Ht::entry("lastName", get_s($reqj, "lastName"), ["size" => 24, "autocomplete" => "family-name", "class" => "fullw", "id" => "lastName", "data-default-value" => get_s($cj, "lastName")]));
+        echo '</div>';
+
+        $us->render_field("affiliation", "Affiliation",
+                  Ht::entry("affiliation", get_s($reqj, "affiliation"), ["size" => 52, "autocomplete" => "organization", "class" => "fullw", "id" => "affiliation", "data-default-value" => get_s($cj, "affiliation")]));
+
+        if (!$acct->is_empty()
+            && !$us->conf->external_login()
+            && $us->viewer->can_change_password($acct)) {
+            echo '<div id="foldpassword" class="foldc ',
+                ($us->has_problem_at("password") ? "fold3o" : "fold3c"),
+                '">';
+            $pws = get($reqj, "__passwords", ["", "", ""]);
+            // Hit a button to change your password
+            echo Ht::button("Change password", ["class" => "btn ui js-foldup fn3 g", "data-fold-target" => "3o"]);
+            // Display the following after the button is clicked
+            echo '<div class="fx3">';
+            if (!$us->viewer->can_change_password(null)) {
+                echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
+                echo '<div class="', $us->control_class("password", "f-i"), '"><div class="f-c">Current password</div>',
+                    Ht::password("oldpassword", "", ["size" => 36, "autocomplete" => "current-password"]),
+                    '</div>';
+            }
+            if ($us->conf->opt("contactdb_dsn") && $us->conf->opt("contactdb_loginFormHeading"))
+                echo $us->conf->opt("contactdb_loginFormHeading");
+            echo '<div class="', $us->control_class("password", "f-i"), '">
+          <div class="f-c">New password</div>',
+                Ht::password("upassword", $pws[0], ["size" => 36, "class" => "fn", "autocomplete" => "new-password"]);
+            if ($acct->plaintext_password() && $us->viewer->privChair) {
+                echo Ht::entry("upasswordt", $pws[2], ["size" => 36, "class" => "fx", "autocomplete" => "new-password"]);
+            }
+            echo '</div>
+        <div class="', $us->control_class("password", "f-i"), ' fn">
+          <div class="f-c">Repeat new password</div>',
+                Ht::password("upassword2", $pws[1], array("size" => 36)), "</div>\n";
+            if ($acct->plaintext_password()
+                && ($us->viewer->privChair || Contact::password_storage_cleartext())) {
+                echo "  <div class=\"f-h\">";
+                if (Contact::password_storage_cleartext())
+                    echo "The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
+                if ($us->viewer->privChair) {
+                    if (Contact::password_storage_cleartext())
+                        echo " <span class=\"sep\"></span>";
+                    echo '<span class="n"><a class="ui js-plaintext-password" href=""><span class="fn">Show password</span><span class="fx">Hide password</span></a></span>';
+                }
+                echo "</div>\n";
+            }
+            echo "</div></div>"; // .fx3 #foldpassword
+        }
+
+        echo "</div>\n\n"; // .profile-g
+
+
+        $us->render_field("country", "Country", Countries::selector("country", get_s($reqj, "country"), ["id" => "country", "data-default-value" => get_s($cj, "country")]));
+
+
+        echo '<h3 class="profile">Email notification</h3>';
+        $follow = isset($reqj->follow) ? $reqj->follow : (object) [];
+        $cfollow = isset($cj->follow) ? $cj->follow : (object) [];
+        echo Ht::hidden("has_watchcomment", 1);
+        if ($acct->is_empty() ? $us->viewer->privChair : $acct->isPC) {
+            echo Ht::hidden("has_watchcommentall", 1);
+            echo "<table><tr><td>Send mail for: &nbsp;</td>",
+                "<td>", Ht::checkbox("watchcomment", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]), "&nbsp;",
+                Ht::label($us->conf->_("Reviews and comments on authored or reviewed papers")), "</td></tr>",
+                "<tr><td></td><td>", Ht::checkbox("watchcommentall", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]), "&nbsp;",
+                Ht::label($us->conf->_("Reviews and comments on <i>any</i> paper")), "</td></tr>";
+            if (!$acct->is_empty() && $acct->privChair) {
+                echo "<tr><td></td><td>", Ht::checkbox("watchfinalall", 1, !!get($follow, "allfinal"), ["data-default-checked" => !!get($cfollow, "allfinal")]), "&nbsp;",
+                    Ht::label($us->conf->_("Updates to final versions")),
+                    Ht::hidden("has_watchfinalall", 1), "</td></tr>";
+            }
+            echo "</table>";
+        } else
+            echo Ht::checkbox("watchcomment", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]), "&nbsp;",
+                Ht::label($us->conf->_("Send mail for new comments on authored or reviewed papers"));
+
+
+        if ($us->viewer->privChair) {
+            echo '<h3 class="profile">Roles</h3>', "\n",
+              "<table><tr><td class=\"nw\">\n";
+            $pcrole = self::pcrole_text($reqj);
+            $cpcrole = self::pcrole_text($cj);
+            foreach (["chair" => "PC chair", "pc" => "PC member",
+                      "no" => "Not on the PC"] as $k => $v) {
+                echo Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role", "data-default-checked" => $cpcrole === $k]),
+                    "&nbsp;", Ht::label($v), "<br />\n";
+            }
+            Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
+
+            echo "</td><td><span class='sep'></span></td><td class='nw'>";
+            $is_ass = isset($reqj->roles) && get($reqj->roles, "sysadmin");
+            $cis_ass = isset($cj->roles) && get($cj->roles, "sysadmin");
+            echo Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass]),
+                "&nbsp;</td><td>", Ht::label("Sysadmin"), "<br/>",
+                '<div class="hint">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</div></td></tr></table>', "\n";
+        }
+
+
+        if ($acct->isPC || $us->viewer->privChair) {
+            echo '<div class="fx1"><div class="g"></div>', "\n";
+
+            echo '<h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
+                "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
+                $us->conf->message_html("conflictdef"),
+                " <p>List one conflict per line, using parentheses for affiliations.<br />
+            Examples: “Ping Yen Zhang (INRIA)”, “University College London”</p></div>
+            <textarea name=\"collaborators\" rows=\"5\" cols=\"80\"";
+            if (($className = $us->control_class("collaborators")))
+                echo ' class="', $className, '"';
+            echo ">", htmlspecialchars(get_s($cj, "collaborators")), "</textarea>\n";
+
+            $topics = $us->conf->topic_map();
+            if (!empty($topics)) {
+                echo '<div id="topicinterest"><h3 class="profile">Topic interests</h3>', "\n",
+                    '<p>Please indicate your interest in reviewing papers on these conference
+topics. We use this information to help match papers to reviewers.</p>',
+                    Ht::hidden("has_ti", 1),
+                    '  <table class="topicinterest"><thead>
+    <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest">High</th></tr></thead><tbody>', "\n";
+
+                $ibound = [-INF, -1.5, -0.5, 0.5, 1.5, INF];
+                $reqj_topics = get($reqj, "topics", []);
+                foreach ($topics as $id => $name) {
+                    echo "      <tr><td class=\"ti_topic\">", htmlspecialchars($name), "</td>";
+                    $ival = (float) get($reqj_topics, $id);
+                    for ($j = -2; $j <= 2; ++$j) {
+                        $checked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
+                        echo '<td class="ti_interest">', Ht::radio("ti$id", $j, $checked, ["class" => "js-range-click", "data-range-type" => "topicinterest$j"]), "</td>";
+                    }
+                    echo "</tr>\n";
+                }
+                echo "    </tbody></table></div>\n";
+            }
+
+
+            if ($us->viewer->privChair || !empty($reqj->tags)) {
+                $tags = isset($reqj->tags) && is_array($reqj->tags) ? $reqj->tags : [];
+                echo "<h3 class=\"profile\">Tags</h3>\n";
+                if ($us->viewer->privChair) {
+                    echo '<div class="', $us->control_class("contactTags", "f-i"), '">',
+                        Ht::entry("contactTags", join(" ", $tags), ["size" => 60]),
+                        "</div>
+          <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=tags"), "'>tag colors</a> to highlight subgroups in review lists.</div>\n";
+                } else {
+                    echo join(" ", $tags), "<div class='hint'>Tags represent PC subgroups and are set by administrators.</div>\n";
+                }
+            }
+            echo "</div>\n"; // fx1
+        }
     }
 }

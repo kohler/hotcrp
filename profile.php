@@ -36,6 +36,7 @@ if (!$Me->has_email())
 $newProfile = false;
 $useRequest = false;
 $UserStatus = new UserStatus($Conf);
+$UserStatus->viewer = $Me;
 
 if ($Qreq->u === null) {
     if ($Qreq->user)
@@ -53,7 +54,7 @@ if ($Me->privChair && $Qreq->new)
 $Acct = $Me;
 if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
     if ($Qreq->u === "new") {
-        $Acct = new Contact;
+        $Acct = new Contact(null, $Conf);
         $newProfile = true;
     } else if (($id = cvtint($Qreq->u)) > 0)
         $Acct = $Conf->user_by_id($id);
@@ -115,88 +116,6 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_database_account())
             }
 }
 
-
-function pc_request_as_json($cj) {
-    global $Conf, $Me, $Acct, $Qreq;
-    if ($Me->privChair && isset($Qreq->pctype)) {
-        $cj->roles = (object) array();
-        $pctype = $Qreq->pctype;
-        if ($pctype === "chair")
-            $cj->roles->chair = $cj->roles->pc = true;
-        if ($pctype === "pc")
-            $cj->roles->pc = true;
-        if ($Qreq->ass)
-            $cj->roles->sysadmin = true;
-    }
-    $cj->follow = (object) array();
-    if ($Qreq->watchcomment)
-        $cj->follow->reviews = true;
-    if (($Me->privChair || $Acct->isPC) && $Qreq->watchcommentall)
-        $cj->follow->allreviews = true;
-    if ($Me->privChair && $Qreq->watchfinalall)
-        $cj->follow->allfinal = true;
-    if ($Me->privChair && isset($Qreq->contactTags))
-        $cj->tags = explode(" ", simplify_whitespace($Qreq->contactTags));
-    if ($Me->privChair ? get($cj->roles, "pc") : $Me->isPC) {
-        $topics = (object) array();
-        foreach ($Conf->topic_map() as $id => $t)
-            if (isset($Qreq["ti$id"]) && is_numeric($Qreq["ti$id"]))
-                $topics->$id = (int) $Qreq["ti$id"];
-        if (count(get_object_vars($topics)))
-            $cj->topics = (object) $topics;
-    }
-    return $cj;
-}
-
-function web_request_as_json($cj) {
-    global $Conf, $Me, $Acct, $Qreq, $newProfile, $UserStatus;
-
-    if ($newProfile || !$Acct->has_database_account())
-        $cj->id = "new";
-    else
-        $cj->id = $Acct->contactId;
-
-    if (!$Conf->external_login())
-        $cj->email = trim((string) $Qreq->uemail);
-    else if ($newProfile)
-        $cj->email = trim((string) $Qreq->newUsername);
-    else
-        $cj->email = $Acct->email;
-
-    foreach (array("firstName", "lastName", "preferredEmail", "affiliation",
-                   "collaborators", "addressLine1", "addressLine2",
-                   "city", "state", "zipCode", "country", "voicePhoneNumber") as $k) {
-        $v = $Qreq[$k];
-        if ($v !== null && ($cj->id !== "new" || trim($v) !== ""))
-            $cj->$k = $v;
-    }
-
-    if (!$Conf->external_login() && !$newProfile
-        && $Me->can_change_password($Acct)) {
-        if ($Qreq->whichpassword === "t" && $Qreq->upasswordt)
-            $pw = $pw2 = trim($Qreq->upasswordt);
-        else {
-            $pw = trim((string) $Qreq->upassword);
-            $pw2 = trim((string) $Qreq->upassword2);
-        }
-        if ($pw === "" && $pw2 === "")
-            /* do nothing */;
-        else if ($pw !== $pw2)
-            $UserStatus->error_at("password", "Those passwords do not match.");
-        else if (!Contact::valid_password($pw))
-            $UserStatus->error_at("password", "Invalid new password.");
-        else if (!$Acct || $Me->can_change_password(null)) {
-            $cj->old_password = null;
-            $cj->new_password = $pw;
-        } else {
-            $cj->old_password = trim((string) $Qreq->oldpassword);
-            if ($Acct->check_password($cj->old_password))
-                $cj->new_password = $pw;
-            else
-                $UserStatus->error_at("password", "Incorrect current password. New password ignored.");
-        }
-    }
-}
 
 function save_user($cj, $user_status, $Acct, $allow_modification) {
     global $Conf, $Me, $Now, $newProfile;
@@ -306,7 +225,6 @@ function parseBulkFile($text, $filename) {
 
     }
 
-    $cj_template = (object) array();
     $topic_revmap = array();
     foreach ($Conf->topic_map() as $id => $name)
         $topic_revmap[strtolower($name)] = $id;
@@ -319,7 +237,7 @@ function parseBulkFile($text, $filename) {
             "postalcode", "zip", "zipCode", "country"]);
 
     while (($line = $csv->next()) !== false) {
-        $cj = clone $cj_template;
+        $cj = (object) [];
         foreach ($line as $k => $v)
             if ($v !== "" || !isset($ignore_empty[$k]))
                 $cj->$k = $v;
@@ -405,15 +323,13 @@ else if ($Qreq->bulkregister && $newProfile && $Qreq->has_file("bulk")) {
         $Conf->save_session("profile_bulkentry", array($Now, $Qreq->bulkentry));
     SelfHref::redirect($Qreq, ["anchor" => "bulk"]);
 } else if (isset($Qreq->register)) {
-    $cj = (object) array();
-    web_request_as_json($cj);
-    pc_request_as_json($cj);
+    assert($Acct->is_empty() === $newProfile);
+    $cj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
+    UserStatus::parse_request($cj, $Qreq, $Acct, $UserStatus, null);
     if ($newProfile)
         $UserStatus->send_email = true;
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
-    if ($UserStatus->has_error())
-        Conf::msg_error('<div class="mmm">' . join('</div><div class="mmm">', $UserStatus->errors()) . "</div>");
-    else {
+    if (!$UserStatus->has_error()) {
         if ($newProfile)
             $Conf->confirmMsg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.");
         else {
@@ -512,50 +428,6 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
     }
 }
 
-function value($key, $value) {
-    global $useRequest, $Qreq;
-    if ($useRequest && isset($Qreq[$key]))
-        return htmlspecialchars($Qreq[$key]);
-    else
-        return $value ? htmlspecialchars($value) : "";
-}
-
-function contact_value($key, $field = null) {
-    global $Acct, $useRequest, $Qreq;
-    if ($useRequest && isset($Qreq[$key]))
-        return $Qreq[$key];
-    else if ($field == "password") {
-        $v = $Acct->plaintext_password();
-        return $v ? : "";
-    } else if ($field !== false) {
-        $v = $field ? $Acct->$field : $Acct->$key;
-        return $v !== null ? $v : "";
-    } else
-        return "";
-}
-
-function ficlass($field = false) {
-    global $UserStatus;
-    if ($field && $UserStatus->has_problem_at($field))
-        return "f-i has-error";
-    else
-        return "f-i";
-}
-
-function echofield($classname, $captiontext, $entrytext) {
-    echo '<div class="', ficlass($classname), '">',
-        ($classname
-         ? Ht::label($captiontext, $classname)
-         : '<div class="f-c">' . $captiontext . '</div>'),
-        $entrytext, "</div>\n";
-}
-
-function textinput($name, $value, $size, $id = false, $password = false) {
-    return '<input type="' . ($password ? "password" : "text")
-        . '" name="' . $name . '" ' . ($id ? "id=\"$id\" " : "")
-        . 'size="' . $size . '" value="' . $value . '" />';
-}
-
 function echo_modes($hlbulk) {
     global $Me, $Acct, $newProfile;
     echo '<div class="psmode">',
@@ -620,24 +492,19 @@ if (!$newProfile) {
 }
 
 
+$userj = $UserStatus->user_json($Acct, ["include_password" => true]);
+if (!$useRequest && $Me->privChair && $Acct->is_empty()
+    && ($Qreq->role === "chair" || $Qreq->role === "pc"))
+    $userj->roles = (object) [$Qreq->role => true];
+
 if ($useRequest) {
-    $formcj = (object) array();
-    pc_request_as_json($formcj);
+    $UserStatus->ignore_msgs = true;
+    $formcj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
+    UserStatus::parse_request($formcj, $Qreq, $Acct, $UserStatus, null);
 } else if (($formcj = $Conf->session("profile_redirect")))
     $Conf->save_session("profile_redirect", null);
 else
-    $formcj = $UserStatus->user_to_json($Acct);
-$pcrole = "no";
-if (isset($formcj->roles)) {
-    if (get($formcj->roles, "chair"))
-        $pcrole = "chair";
-    else if (get($formcj->roles, "pc"))
-        $pcrole = "pc";
-}
-if (!$useRequest && $Me->privChair && $newProfile
-    && ($Qreq->role == "chair" || $Qreq->role == "pc"))
-    $pcrole = $Qreq->role;
-
+    $formcj = $userj;
 
 $form_params = array();
 if ($newProfile)
@@ -676,198 +543,15 @@ if ($UserStatus->has_messages()) {
     echo '<div class="msgs-wide">', Ht::xmsg($status, join("", $msgs)), "</div>\n";
 }
 
-echo '<div id="foldaccount" class="profiletext', ($need_highlight ? " alert" : ""),
-    " fold1", ($pcrole == "no" ? "c" : "o"), " fold2",
-    ($Qreq->bulkregister ? "o" : "c"), "\">\n";
-
-echo '<div class="profile-g">', "\n";
-$actas = "";
-if ($Acct !== $Me && $Acct->email && $Me->privChair)
-    $actas = '&nbsp;' . actas_link($Acct);
-if (!$Conf->external_login()) {
-    echofield("uemail", "Email" . $actas,
-        Ht::entry("uemail", contact_value("uemail", "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail"]));
-} else if (!$newProfile) {
-    echofield(false, "Username" . $actas,
-        htmlspecialchars(contact_value("uemail", "email")));
-    echofield("preferredEmail", "Email",
-        Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail"]));
-} else {
-    echofield("uemail", "Username",
-        Ht::entry("newUsername", contact_value("newUsername", false), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail"]));
-    echofield("preferredEmail", "Email",
-              Ht::entry("preferredEmail", contact_value("preferredEmail"), ["class" => "fullw", "size" => 52, "id" => "preferredEmail"]));
-}
-
-echo '<div class="f-2col">';
-echofield("firstName", "First name",
-          Ht::entry("firstName", contact_value("firstName"), ["size" => 24, "autocomplete" => "given-name", "class" => "fullw", "id" => "firstName"]));
-echofield("lastName", "Last name",
-          Ht::entry("lastName", contact_value("lastName"), ["size" => 24, "autocomplete" => "family-name", "class" => "fullw", "id" => "lastName"]));
-echo '</div>';
-echofield("affiliation", "Affiliation",
-          Ht::entry("affiliation", contact_value("affiliation"), ["size" => 52, "autocomplete" => "organization", "class" => "fullw", "id" => "affiliation"]));
-
-if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct)) {
-    echo '<div id="foldpassword" class="foldc ',
-        ($UserStatus->has_problem_at("password") ? "fold3o" : "fold3c"),
-        '">';
-    // Hit a button to change your password
-    echo Ht::button("Change password", ["class" => "btn ui js-foldup fn3 g", "data-fold-target" => "3o"]);
-    // Display the following after the button is clicked
-    echo '<div class="fx3">';
-    if (!$Me->can_change_password(null)) {
-        echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
-        echo '<div class="', ficlass("password"), '"><div class="f-c">Current password</div>',
-            Ht::password("oldpassword", "", ["size" => 36, "autocomplete" => "current-password"]),
-            '</div>';
-    }
-    if ($Conf->opt("contactdb_dsn") && $Conf->opt("contactdb_loginFormHeading"))
-        echo $Conf->opt("contactdb_loginFormHeading");
-    echo '<div class="', ficlass("password"), '">
-  <div class="f-c">New password</div>',
-        Ht::password("upassword", "", ["size" => 36, "class" => "fn", "autocomplete" => "new-password"]);
-    if ($Acct->plaintext_password() && $Me->privChair) {
-        echo Ht::entry("upasswordt", contact_value("upasswordt", "password"), ["size" => 36, "class" => "fx", "autocomplete" => "new-password"]);
-    }
-    echo '</div>
-<div class="', ficlass("password"), ' fn">
-  <div class="f-c">Repeat new password</div>',
-        Ht::password("upassword2", "", array("size" => 36)), "</div>\n";
-    if ($Acct->plaintext_password()
-        && ($Me->privChair || Contact::password_storage_cleartext())) {
-        echo "  <div class=\"f-h\">";
-        if (Contact::password_storage_cleartext())
-            echo "The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
-        if ($Me->privChair) {
-            if (Contact::password_storage_cleartext())
-                echo " <span class=\"sep\"></span>";
-            echo '<span class="n"><a class="ui js-plaintext-password" href=""><span class="fn">Show password</span><span class="fx">Hide password</span></a></span>';
-        }
-        echo "</div>\n";
-    }
-    echo "</div></div>"; // .fx3 #foldpassword
-}
-
-echo "</div>\n\n"; // .profile-g
+echo '<div id="foldaccount" class="profiletext', ($need_highlight ? " alert" : "");
+if (isset($formcj->roles) && (isset($formcj->roles->pc) || isset($formcj->roles->chair)))
+    echo " fold1o";
+else
+    echo " fold1c";
+echo " fold2", ($Qreq->bulkregister ? "o" : "c"), "\">\n";
 
 
-echofield("country", "Country", Countries::selector("country", contact_value("country"), ["id" => "country"]));
-
-$data = $Acct->data();
-$any_address = $data && (get($data, "address") || get($data, "city") || get($data, "state") || get($data, "zip"));
-if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
-    echo "<div style='margin-top:20px'></div>\n";
-    $address = get($data, "address");
-    echofield("addressLine1", "Address line 1",
-              Ht::entry("addressLine1", value("addressLine1", $address ? $address[0] : null), ["size" => 52, "autocomplete" => "address-line1", "id" => "addressLine1"]));
-    echofield("addressLine2", "Address line 2",
-              Ht::entry("addressLine2", value("addressLine2", $address ? $address[1] : null), ["size" => 52, "autocomplete" => "address-line2", "id" => "addressLine2"]));
-    echofield("city", "City",
-              Ht::entry("city", value("city", get($data, "city")), ["size" => 52, "autocomplete" => "address-level2", "id" => "city"]));
-    echo '<div class="f-2col">';
-    echofield("state", "State/Province/Region",
-              Ht::entry("state", value("state", get($data, "state")), ["size" => 24, "autocomplete" => "address-level1", "id" => "state"]));
-    echofield("zipCode", "ZIP/Postal code",
-              Ht::entry("zipCode", value("zipCode", get($data, "zip")), ["size" => 12, "autocomplete" => "postal-code", "id" => "zipCode"]));
-    echo '</div>';
-    echofield("voicePhoneNumber", "Phone <span class='n'>(optional)</span>",
-              Ht::entry("voicePhoneNumber", contact_value("voicePhoneNumber"), ["size" => 24, "autocomplete" => "tel", "id" => "voicePhoneNumber"]));
-}
-
-
-
-echo '<h3 class="profile">Email notification</h3>';
-$follow = isset($formcj->follow) ? $formcj->follow : (object) [];
-if ($newProfile ? $Me->privChair : $Acct->isPC) {
-    echo "<table><tr><td>Send mail for: &nbsp;</td>",
-        "<td>", Ht::checkbox("watchcomment", 1, !!get($follow, "reviews")), "&nbsp;",
-        Ht::label($Conf->_("Reviews and comments on authored or reviewed papers")), "</td></tr>",
-        "<tr><td></td><td>", Ht::checkbox("watchcommentall", 1, !!get($follow, "allreviews")), "&nbsp;",
-        Ht::label($Conf->_("Reviews and comments on <i>any</i> paper")), "</td></tr>";
-    if (!$newProfile && $Acct->privChair)
-        echo "<tr><td></td><td>", Ht::checkbox("watchfinalall", 1, !!get($follow, "allfinal")), "&nbsp;",
-            Ht::label($Conf->_("Updates to final versions")), "</td></tr>";
-    echo "</table>";
-} else
-    echo Ht::checkbox("watchcomment", 1, !!get($follow, "reviews")), "&nbsp;",
-        Ht::label($Conf->_("Send mail for new comments on authored or reviewed papers"));
-
-
-if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
-    echo '<h3 class="profile">Roles</h3>', "\n",
-      "<table><tr><td class=\"nw\">\n";
-    foreach (array("chair" => "PC chair",
-                   "pc" => "PC member",
-                   "no" => "Not on the PC") as $k => $v) {
-        echo Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role"]),
-            "&nbsp;", Ht::label($v), "<br />\n";
-    }
-    Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
-
-    echo "</td><td><span class='sep'></span></td><td class='nw'>";
-    $is_ass = isset($formcj->roles) && get($formcj->roles, "sysadmin");
-    echo Ht::checkbox("ass", 1, $is_ass), "&nbsp;</td>",
-        "<td>", Ht::label("Sysadmin"), "<br/>",
-        '<div class="hint">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</div></td></tr></table>', "\n";
-}
-
-
-if ($newProfile || $Acct->isPC || $Me->privChair) {
-    echo '<div class="fx1"><div class="g"></div>', "\n";
-
-    $className = $UserStatus->has_problem_at("collaborators") ? " error" : "";
-    echo '<h3 class="profile', $className, '">Collaborators and other affiliations</h3>', "\n",
-        "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
-        $Conf->message_html("conflictdef"),
-        " <p>List one conflict per line, using parentheses for affiliations.<br />
-    Examples: “Ping Yen Zhang (INRIA)”, “University College London”</p></div>
-    <textarea name=\"collaborators\" rows=\"5\" cols=\"60\"",
-        ($className ? " class=\"" . ltrim($className) . "\"" : ""),
-        ">", htmlspecialchars(contact_value("collaborators")), "</textarea>\n";
-
-    $topics = $Conf->topic_map();
-    if (!empty($topics)) {
-        echo '<div id="topicinterest"><h3 class="profile">Topic interests</h3>', "\n",
-            '<p>
-    Please indicate your interest in reviewing papers on these conference
-    topics. We use this information to help match papers to reviewers.</p>
-    <table class="topicinterest"><thead>
-       <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest">High</th></tr></thead><tbody>', "\n";
-
-        $ibound = [-INF, -1.5, -0.5, 0.5, 1.5, INF];
-        $formcj_topics = get($formcj, "topics", []);
-        foreach ($topics as $id => $name) {
-            echo "      <tr><td class=\"ti_topic\">", htmlspecialchars($name), "</td>";
-            $ival = (float) get($formcj_topics, $id);
-            for ($j = -2; $j <= 2; ++$j) {
-                $checked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
-                echo '<td class="ti_interest">', Ht::radio("ti$id", $j, $checked, ["class" => "js-range-click", "data-range-type" => "topicinterest$j"]), "</td>";
-            }
-            echo "</tr>\n";
-        }
-        echo "    </tbody></table></div>\n";
-    }
-
-
-    if ($Me->privChair || isset($formcj->tags)) {
-        if (isset($formcj->tags) && is_array($formcj->tags))
-            $tags = $formcj->tags;
-        else
-            $tags = array();
-        echo "<h3 class=\"profile\">Tags</h3>\n";
-        if ($Me->privChair) {
-            echo '<div class="', ficlass("contactTags"), '">',
-                Ht::entry("contactTags", join(" ", $tags), ["size" => 60]),
-                "</div>
-  <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=tags"), "'>tag colors</a> to highlight subgroups in review lists.</div>\n";
-        } else {
-            echo join(" ", $tags), "
-  <div class='hint'>Tags represent PC subgroups and are set by administrators.</div>\n";
-        }
-    }
-    echo "</div>\n"; // fx1
-}
+UserStatus::render($UserStatus, $userj, $formcj, $Acct, null);
 
 
 $buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-primary"]),

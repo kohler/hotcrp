@@ -108,6 +108,15 @@ class MessageSet {
         $this->canonfield && ($field = $this->canonical_field($field));
         return get($this->errf, $field, 0);
     }
+    function control_class($field, $rest = "") {
+        $x = $field ? get($this->errf, $field, 0) : 0;
+        if ($x >= self::ERROR)
+            return $rest === "" ? "has-error" : $rest . " has-error";
+        else if ($x === self::WARNING)
+            return $rest === "" ? "has-warning" : $rest . " has-warning";
+        else
+            return $rest;
+    }
 
     static private function filter_msgs($ms, $include_fields) {
         if ($include_fields || empty($ms))

@@ -1254,9 +1254,9 @@ class PaperStatus extends MessageSet {
                 $this->conf->update_papersub_setting($this->_paper_submitted ? 1 : -1);
         }
 
+        self::execute_conflicts($this);
         self::execute_topics($this);
         self::execute_options($this);
-        self::execute_conflicts($this);
 
         // update autosearch
         $this->conf->update_autosearch_tags($this->paperId);
