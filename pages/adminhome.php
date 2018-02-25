@@ -12,9 +12,9 @@ function admin_home_messages() {
     $max_file_size = ini_get_bytes("upload_max_filesize");
     if (($row = edb_row($result))
         && $row[1] < $max_file_size
-        && !opt("dbNoPapers"))
+        && !$Conf->opt("dbNoPapers"))
         $m[] = $errmarker . "MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.";
-    if ($max_file_size < ini_get_bytes(null, opt("upload_max_filesize", "10M")))
+    if ($max_file_size < ini_get_bytes(null, $Conf->opt("upload_max_filesize", "10M")))
         $m[] = $errmarker . "PHP’s <code>upload_max_filesize</code> setting, which is <code>" . htmlspecialchars(ini_get("upload_max_filesize")) . "</code>, will limit submissions to at most $max_file_size&nbsp;bytes. Usually a larger limit, such as <code>10M</code>, is appropriate. Change this setting in HotCRP’s <code>.htaccess</code> and <code>.user.ini</code> files, change it in your global <code>php.ini</code> file, or silence this message by setting <code>\$Opt[\"upload_max_filesize\"] = \"" . htmlspecialchars(ini_get("upload_max_filesize")) . "\"</code> in <code>conf/options.php</code>.";
     $post_max_size = ini_get_bytes("post_max_size");
     if ($post_max_size < $max_file_size)
@@ -28,12 +28,13 @@ function admin_home_messages() {
         $m[] = $errmarker . "The PHP <code>magic_quotes_runtime</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP’s <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_runtime</code> in your <code>php.ini</code> configuration file.";
     if (defined("JSON_HOTCRP"))
         $m[] = "Your PHP was built without JSON functionality. HotCRP is using its built-in replacements; the native functions would be faster.";
-    if ((int) opt("globalSessionLifetime") < opt("sessionLifetime"))
-        $m[] = "PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars(opt("globalSessionLifetime")) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . opt("sessionLifetime") . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.";
+    if ((int) ini_get("session.gc_maxlifetime") < $Conf->opt("sessionLifetime", 86400)
+        && !isset($Conf->opt["sessionHandler"]))
+        $m[] = "PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars(ini_get("session.gc_maxlifetime")) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . $Conf->opt("sessionLifetime", 86400) . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.";
     if (!function_exists("imagecreate") && $Conf->setting("__gd_required"))
         $m[] = $errmarker . "This PHP installation lacks support for the GD library, so HotCRP can’t generate backup score charts for old browsers. Some of your users require this backup. You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php" . PHP_MAJOR_VERSION . "-gd</code> package.";
     // Conference names
-    if (opt("shortNameDefaulted"))
+    if ($Conf->opt("shortNameDefaulted"))
         $m[] = "<a href=\"" . hoturl("settings", "group=basics") . "\">Set the conference abbreviation</a> to a short name for your conference, such as “OSDI ’14”.";
     else if (simplify_whitespace($Conf->short_name) != $Conf->short_name)
         $m[] = "The <a href=\"" . hoturl("settings", "group=basics") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more).";
@@ -46,8 +47,9 @@ function admin_home_messages() {
         $m[] = "PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. <a href='" . hoturl_post("autoassign", "a=prefconflict&amp;assign=1") . "' class='nw'>Confirm these conflicts</a>";
     // Weird URLs?
     foreach (array("conferenceSite", "paperSite") as $k)
-        if (opt($k) && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', opt($k)))
-            $m[] = $errmarker . "The <code>\$Opt[\"$k\"]</code> setting, ‘<code>" . htmlspecialchars(opt($k)) . "</code>’, is not a valid URL.  Edit the <code>conf/options.php</code> file to fix this problem.";
+        if (($url = $Conf->opt($k))
+            && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $url))
+            $m[] = $errmarker . "The <code>\$Opt[\"$k\"]</code> setting, ‘<code>" . htmlspecialchars($url) . "</code>’, is not a valid URL.  Edit the <code>conf/options.php</code> file to fix this problem.";
     // Unnotified reviews?
     if ($Conf->setting("pcrev_assigntime", 0) > $Conf->setting("pcrev_informtime", 0)) {
         $assigntime = $Conf->setting("pcrev_assigntime");

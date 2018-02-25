@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 require_once("init.php");
-global $Conf, $Me, $Opt, $Qreq;
+global $Conf, $Me, $Qreq;
 
 // Check method: GET/HEAD/POST only, except OPTIONS is allowed for API calls
 if ($_SERVER["REQUEST_METHOD"] !== "GET"
@@ -27,8 +27,8 @@ if (in_array(Navigation::page(),
     go();
 
 // Check for redirect to https
-if (get($Opt, "redirectToHttps"))
-    Navigation::redirect_http_to_https(get($Opt, "allowLocalHttp"));
+if ($Conf->opt("redirectToHttps"))
+    Navigation::redirect_http_to_https($Conf->opt("allowLocalHttp"));
 
 // Check and fix zlib output compression
 global $zlib_output_compression;
