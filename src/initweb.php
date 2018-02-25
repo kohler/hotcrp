@@ -54,16 +54,13 @@ if ($Me === false)
 
 // Initialize user
 function initialize_user() {
-    global $Conf, $Me, $Now, $Opt, $Qreq;
+    global $Conf, $Me, $Now, $Qreq;
 
     // set up session
-    $Opt["globalSessionLifetime"] = ini_get("session.gc_maxlifetime");
-    if (!isset($Opt["sessionLifetime"]))
-        $Opt["sessionLifetime"] = 86400;
-    ini_set("session.gc_maxlifetime", $Opt["sessionLifetime"]);
-    if (isset($Opt["sessionHandler"])) {
-        $sh = $Opt["sessionHandler"];
-        session_set_save_handler(new $sh);
+    if (isset($Conf->opt["sessionHandler"])) {
+        $sh = $Conf->opt["sessionHandler"];
+        $Conf->_session_handler = new $sh($Conf);
+        session_set_save_handler($Conf->_session_handler, true);
     }
     set_session_name($Conf);
     $sn = session_name();

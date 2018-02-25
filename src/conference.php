@@ -64,6 +64,7 @@ class Conf {
 
     public $headerPrinted = false;
     private $_save_logs = false;
+    public $_session_handler;
 
     private $usertimeId = 1;
 
