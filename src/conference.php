@@ -62,8 +62,7 @@ class Conf {
     private $_opt_timestamp = null;
     public $paper_opts;
 
-    private $save_messages = true;
-    var $headerPrinted = false;
+    public $headerPrinted = false;
     private $_save_logs = false;
 
     private $usertimeId = 1;
@@ -2756,7 +2755,7 @@ class Conf {
             else if ($type === "xwarning" || $type === "warning"
                      || !defined("HOTCRP_TESTHARNESS"))
                 fwrite(STDOUT, "$text\n");
-        } else if ($conf && $conf->save_messages) {
+        } else if ($conf && !$conf->headerPrinted) {
             ensure_session();
             $_SESSION[$conf->dsn]["msgs"][] = [$type, $text];
         } else if ($type[0] == "x")
@@ -3158,18 +3157,17 @@ class Conf {
 
         echo "  <hr class=\"c\"></div>\n";
 
+        $this->headerPrinted = true;
         echo "<div id=\"initialmsgs\">\n";
         if (($x = $this->opt("maintenance")))
             echo Ht::xmsg(2, is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.");
-        $this->save_messages = false;
-        if (($msgs = $this->session("msgs")) && count($msgs)) {
+        if (($msgs = $this->session("msgs")) && !empty($msgs)) {
             $this->save_session("msgs", null);
             foreach ($msgs as $m)
                 $this->msg($m[0], $m[1]);
         }
         echo "</div>\n";
 
-        $this->headerPrinted = true;
         echo "</div>\n<div id=\"body\" class=\"body\">\n";
 
         // If browser owns tracker, send it the script immediately
