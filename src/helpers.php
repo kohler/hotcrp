@@ -303,7 +303,6 @@ function expander($open, $foldnum = null) {
 }
 
 function actas_link($cid, $contact = null) {
-    global $Conf;
     $contact = !$contact && is_object($cid) ? $cid : $contact;
     $cid = is_object($contact) ? $contact->email : $cid;
     return '<a href="' . selfHref(array("actas" => $cid))
@@ -321,7 +320,6 @@ function decorateNumber($n) {
 
 
 function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
-    global $Conf;
     if ($listtype == "u") {
         $result = Dbl::ql("select email from ContactInfo where contactId=?", $id);
         $row = edb_row($result);

@@ -107,7 +107,6 @@ class PaperRank {
     }
 
     function irv() {
-        global $Conf;
         if (!count($this->papersel))
             return;
 
@@ -136,7 +135,6 @@ class PaperRank {
             uasort($papervotes, array("PaperRank", "_comparRankIRV"));
             // the loser is the first paper in the sort order
             $loser = key($papervotes);
-            //$Conf->infoMsg("choose $loser");
             $reverseorder[] = $loser;
             unset($papervotes[$loser]);
             // redistribute votes for the loser
@@ -159,8 +157,6 @@ class PaperRank {
 
     // global rank calculation by conversion of ranks to range values
     function rangevote() {
-        global $Conf;
-
         // calculate $minuserrank, $maxuserrank
         $minuserrank = $maxuserrank = array();
         foreach ($this->userrank as $user => &$ranks) {
@@ -194,8 +190,6 @@ class PaperRank {
 
     // global rank calculation by range values (1-99)
     function rawrangevote() {
-        global $Conf;
-
         // calculate $minuserrank, $maxuserrank
         $minuserrank = $maxuserrank = array();
         foreach ($this->userrank as $user => &$ranks) {
