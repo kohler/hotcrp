@@ -269,7 +269,7 @@ if ($pl_text) {
             $opt["indent"] = true;
             foreach ($Conf->tags() as $t)
                 if ($t->vote || $t->approval || $t->rank)
-                    $display_options->checkbox_item(20, "tagrep:{$t->tag}", "#~{$t->tag} report", $opt);
+                    $display_options->checkbox_item(20, "tagreport:{$t->tag}", "#~{$t->tag} report", $opt);
         }
     }
 
