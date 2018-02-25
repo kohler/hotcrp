@@ -41,7 +41,7 @@ $json = json_decode(file_get_contents("$ConfSitePATH/test/db.json"));
 if (!$json)
     die_hard("* test/testdb.json error: " . json_last_error_msg() . "\n");
 foreach ($json->contacts as $c) {
-    $us = new UserStatus;
+    $us = new UserStatus($Conf);
     if (!$us->save($c))
         die_hard("* failed to create user $c->email\n");
 }

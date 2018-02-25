@@ -3,6 +3,7 @@
 // Copyright (c) 2008-2018 Eddie Kohler; see LICENSE.
 
 class UserStatus extends MessageSet {
+    public $conf;
     private $errf;
     public $send_email = null;
     private $no_deprivilege_self = false;
@@ -22,7 +23,8 @@ class UserStatus extends MessageSet {
         "high" => 4
     ];
 
-    function __construct($options = array()) {
+    function __construct(Conf $conf, $options = array()) {
+        $this->conf = $conf;
         parent::__construct();
         foreach (array("send_email", "no_deprivilege_self") as $k)
             if (array_key_exists($k, $options))
@@ -156,7 +158,7 @@ class UserStatus extends MessageSet {
 
     private function normalize($cj, $old_user) {
         // Errors prevent saving
-        global $Conf, $Me, $Now;
+        global $Me, $Now;
 
         // Canonicalize keys
         foreach (array("preferredEmail" => "preferred_email",
@@ -188,7 +190,7 @@ class UserStatus extends MessageSet {
 
         // ID
         if (get($cj, "id") === "new") {
-            if (get($cj, "email") && $Conf->user_id_by_email($cj->email)) {
+            if (get($cj, "email") && $this->conf->user_id_by_email($cj->email)) {
                 $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use.");
                 $this->error_at("email_inuse", false);
             }
@@ -199,7 +201,7 @@ class UserStatus extends MessageSet {
                 $this->error_at("id", "Format error [id]");
             if ($old_user && get($cj, "email")
                 && strtolower($old_user->email) !== strtolower($cj->email)
-                && $Conf->user_id_by_email($cj->email))
+                && $this->conf->user_id_by_email($cj->email))
                 $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
         }
 
@@ -288,7 +290,10 @@ class UserStatus extends MessageSet {
                     && $k !== "no")
                     $cj->bad_roles[] = $k;
             if ($old_user
-                && (($this->no_deprivilege_self && $Me && $Me->contactId == $old_user->contactId)
+                && (($this->no_deprivilege_self
+                     && $Me
+                     && $Me->conf === $this->conf
+                     && $Me->contactId == $old_user->contactId)
                     || $old_user->data("locked"))
                 && Contact::parse_roles_json($cj->roles) < $old_user->roles) {
                 unset($cj->roles);
@@ -333,7 +338,7 @@ class UserStatus extends MessageSet {
         // Topics
         if (isset($cj->topics)) {
             $topics = $this->make_keyed_object($cj->topics, "topics");
-            $topic_map = $Conf->topic_map();
+            $topic_map = $this->conf->topic_map();
             $cj->topics = (object) array();
             $cj->bad_topics = array();
             foreach ((array) $topics as $k => $v) {
@@ -371,14 +376,14 @@ class UserStatus extends MessageSet {
 
 
     function save($cj, $old_user = null, $actor = null) {
-        global $Conf, $Me, $Now;
+        global $Now;
         assert(is_object($cj));
         self::normalize_name($cj);
 
         if (!$old_user && is_int(get($cj, "id")) && $cj->id)
-            $old_user = $Conf->user_by_id($cj->id);
+            $old_user = $this->conf->user_by_id($cj->id);
         else if (!$old_user && is_string(get($cj, "email")) && $cj->email)
-            $old_user = $Conf->user_by_email($cj->email);
+            $old_user = $this->conf->user_by_email($cj->email);
         if (!get($cj, "id"))
             $cj->id = $old_user ? $old_user->contactId : "new";
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {
@@ -399,7 +404,7 @@ class UserStatus extends MessageSet {
             return false;
         $this->check_invariants($cj);
 
-        $user = $user ? : new Contact;
+        $user = $user ? : new Contact(null, $this->conf);
         if (($send = $this->send_email) === null)
             $send = !$old_cdb_user;
         if ($user->save_json($cj, $actor, $send))

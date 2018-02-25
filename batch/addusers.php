@@ -57,7 +57,7 @@ if (!is_array($content))
     $content = array($content);
 $status = 0;
 foreach ($content as $email => $cj) {
-    $us = new UserStatus(array("send_email" => !isset($arg["no-email"])));
+    $us = new UserStatus($Conf, ["send_email" => !isset($arg["no-email"])]);
     if (!isset($cj->id) && !isset($arg["m"]))
         $cj->id = "new";
     if (!isset($cj->email) && validate_email($email))

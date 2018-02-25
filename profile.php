@@ -35,7 +35,7 @@ if (!$Me->has_email())
     $Me->escape();
 $newProfile = false;
 $useRequest = false;
-$UserStatus = new UserStatus;
+$UserStatus = new UserStatus($Conf);
 
 if ($Qreq->u === null) {
     if ($Qreq->user)
@@ -361,7 +361,7 @@ function parseBulkFile($text, $filename) {
         }
         $cj->id = "new";
 
-        $ustatus = new UserStatus(array("send_email" => true, "no_deprivilege_self" => true));
+        $ustatus = new UserStatus($Conf, ["send_email" => true, "no_deprivilege_self" => true]);
         if (($saved_user = save_user($cj, $ustatus, null, true)))
             $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
                 . Text::user_html_nolink($saved_user) . "</a>";

@@ -245,7 +245,7 @@ function do_tags($qreq) {
     }
     // apply modifications
     foreach ($users as $cid => $cj) {
-        $us = new UserStatus(array("send_email" => false));
+        $us = new UserStatus($Conf, ["send_email" => false]);
         if (!$us->save($cj))
             $errors = array_merge($errors, $us->errors());
     }
