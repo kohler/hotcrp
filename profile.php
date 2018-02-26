@@ -442,7 +442,7 @@ function echo_modes($hlbulk) {
     if ($newProfile)
         echo Ht::link("Bulk update", "#bulk", ["class" => "ui tla has-focus-history", "data-fold-target" => "9o"]);
     else
-        echo Ht::link("Bulk update", hoturl("profile", "u=new&amp;bulkregister=1"));
+        echo Ht::link("Bulk update", hoturl("profile", "u=new#bulk"));
     echo '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";
 }
 
@@ -619,7 +619,7 @@ if ($newProfile) {
     echo '<div class="g"><strong>OR</strong> &nbsp;',
         '<input type="file" name="bulk" size="30" /></div>';
 
-    echo '<div>', Ht::submit("bulkregister", "Save accounts"), '</div>';
+    echo '<div>', Ht::submit("bulkregister", "Save accounts", ["class" => "btn btn-primary"]), '</div>';
 
     echo "<p>Enter or upload CSV user data with header. For example:</p>\n",
         '<pre class="entryexample">
