@@ -8,6 +8,7 @@ class UserStatus extends MessageSet {
     private $errf;
     public $send_email = null;
     private $no_deprivilege_self = false;
+    public $unknown_topics = null;
 
     static private $field_synonym_map = [
         "preferredEmail" => "preferred_email",
@@ -78,7 +79,7 @@ class UserStatus extends MessageSet {
         if ($user->disabled)
             $cj->disabled = true;
 
-        foreach (array("address", "city", "state", "zip", "country") as $k) {
+        foreach (["address", "city", "state", "zip", "country"] as $k) {
             if (($x = $user->data($k)))
                 $cj->$k = $x;
         }
@@ -104,17 +105,8 @@ class UserStatus extends MessageSet {
             $cj->tags = explode(" ", $tagger->unparse($tags));
         }
 
-        if ($user->contactId
-            && ($tm = $user->conf->topic_map())) {
-            $result = $user->conf->qe_raw("select topicId, interest from TopicInterest where contactId=$user->contactId");
-            $topics = (object) array();
-            while (($row = edb_row($result))) {
-                $k = $row[0];
-                $topics->$k = (int) $row[1];
-            }
-            if (count(get_object_vars($topics)))
-                $cj->topics = $topics;
-        }
+        if ($user->contactId && ($tm = $user->topic_interest_map()))
+            $cj->topics = (object) $tm;
 
         return $cj;
     }
@@ -257,7 +249,7 @@ class UserStatus extends MessageSet {
         foreach ($address as $a)
             if (!is_string($a))
                 $this->error_at("address", "Format error [address]");
-        if (count($address))
+        if (!empty($address))
             $cj->address = $address;
 
         // Collaborators
@@ -344,16 +336,19 @@ class UserStatus extends MessageSet {
         }
 
         // Topics
-        if (isset($cj->topics)) {
-            $topics = $this->make_keyed_object($cj->topics, "topics");
-            $topic_map = $this->conf->topic_map();
-            $cj->topics = (object) array();
+        $in_topics = null;
+        if (isset($cj->topics))
+            $in_topics = $this->make_keyed_object($cj->topics, "topics");
+        else if (isset($cj->change_topics))
+            $in_topics = $this->make_keyed_object($cj->change_topics, "change_topics");
+        if ($in_topics !== null) {
+            $topics = !isset($cj->topics) && $old_user ? $old_user->topic_interest_map() : [];
             $cj->bad_topics = array();
-            foreach ((array) $topics as $k => $v) {
-                if (get($topic_map, $k))
-                    /* OK */;
-                else if (($x = array_search($k, $topic_map, true)) !== false)
-                    $k = $x;
+            foreach ((array) $in_topics as $k => $v) {
+                if (get($this->conf->topic_map(), $k))
+                    $k = (int) $k;
+                else if (($tid = $this->conf->topic_abbrev_matcher()->find1($k)))
+                    $k = $tid;
                 else {
                     $cj->bad_topics[] = $k;
                     continue;
@@ -368,9 +363,9 @@ class UserStatus extends MessageSet {
                     $this->error_at("topics", "Topic interest format error");
                     continue;
                 }
-                $k = (string) $k;
-                $cj->topics->$k = $v;
+                $topics[$k] = $v;
             }
+            $cj->topics = (object) $topics;
         }
     }
 
@@ -501,6 +496,54 @@ class UserStatus extends MessageSet {
                 if (isset($qreq["ti$id"]) && is_numeric($qreq["ti$id"]))
                     $topics[$id] = (int) $qreq["ti$id"];
             $cj->topics = (object) $topics;
+        }
+    }
+
+    static private $csv_keys = [
+        ["email"],
+        ["user"],
+        ["firstName", "firstname", "first"],
+        ["lastName", "lastname", "last"],
+        ["name"],
+        ["preferred_email", "preferredEmail", "preferred email"],
+        ["affiliation"],
+        ["collaborators"],
+        ["address1", "addressLine1"],
+        ["address2", "addressLine2"],
+        ["city"],
+        ["state", "province", "region"],
+        ["zip", "zipcode", "zipCode", "zip_code", "postalcode", "postal_code"],
+        ["country"],
+        ["roles"],
+        ["follow"],
+        ["tags"]
+    ];
+
+    static function parse_csv($cj, $line, Contact $acct, UserStatus $us, $uf) {
+        foreach (self::$csv_keys as $ks) {
+            foreach ($ks as $k)
+                if (isset($line[$k]) && ($v = trim($line[$k])) !== "") {
+                    $kx = $ks[0];
+                    $cj->$kx = $v;
+                    break;
+                }
+        }
+        if (isset($line["address"]) && ($v = trim($line["address"])) !== "")
+            $cj->address = explode("\n", cleannl($line["address"]));
+
+        // topics
+        if ($us->conf->has_topics()) {
+            $topics = [];
+            foreach ($line as $k => $v)
+                if (preg_match('/^topic[:\s]\s*(.*?)\s*$/i', $k, $m)) {
+                    if (($tid = $us->conf->topic_abbrev_matcher()->find1($m[1]))) {
+                        $v = trim($v);
+                        $topics[$tid] = $v === "" ? 0 : $v;
+                    } else
+                        $us->unknown_topics[$m[1]] = true;
+                }
+            if (!empty($topics))
+                $cj->change_topics = (object) $topics;
         }
     }
 
@@ -657,8 +700,7 @@ class UserStatus extends MessageSet {
                 echo ' class="', $className, '"';
             echo ">", htmlspecialchars(get_s($cj, "collaborators")), "</textarea>\n";
 
-            $topics = $us->conf->topic_map();
-            if (!empty($topics)) {
+            if ($us->conf->has_topics()) {
                 echo '<div id="topicinterest"><h3 class="profile">Topic interests</h3>', "\n",
                     '<p>Please indicate your interest in reviewing papers on these conference
 topics. We use this information to help match papers to reviewers.</p>',
@@ -667,8 +709,8 @@ topics. We use this information to help match papers to reviewers.</p>',
     <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest">High</th></tr></thead><tbody>', "\n";
 
                 $ibound = [-INF, -1.5, -0.5, 0.5, 1.5, INF];
-                $reqj_topics = get($reqj, "topics", []);
-                foreach ($topics as $id => $name) {
+                $reqj_topics = (array) get($reqj, "topics", []);
+                foreach ($us->conf->topic_map() as $id => $name) {
                     echo "      <tr><td class=\"ti_topic\">", htmlspecialchars($name), "</td>";
                     $ival = (float) get($reqj_topics, $id);
                     for ($j = -2; $j <= 2; ++$j) {

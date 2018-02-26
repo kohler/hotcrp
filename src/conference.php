@@ -79,6 +79,7 @@ class Conf {
     private $_topic_map = null;
     private $_topic_order_map = null;
     private $_topic_separator_cache = null;
+    private $_topic_abbrev_matcher = null;
     private $_pc_members_cache = null;
     private $_pc_tags_cache = null;
     private $_pc_members_and_admins_cache = null;
@@ -1019,6 +1020,15 @@ class Conf {
         return $this->_topic_order_map;
     }
 
+    function topic_abbrev_matcher() {
+        if ($this->_topic_abbrev_matcher === null) {
+            $this->_topic_abbrev_matcher = new AbbreviationMatcher;
+            foreach ($this->topic_map() as $tid => $tname)
+                $this->_topic_abbrev_matcher->add($tname, $tid);
+        }
+        return $this->_topic_abbrev_matcher;
+    }
+
     function has_topics() {
         return get($this->settings, "has_topics", 0) !== 0;
     }
@@ -1041,7 +1051,7 @@ class Conf {
 
     function invalidate_topics() {
         $this->_topic_map = $this->_topic_order_map = null;
-        $this->_topic_separator_cache = null;
+        $this->_topic_separator_cache = $this->_topic_abbrev_matcher = null;
     }
 
 

@@ -1797,7 +1797,7 @@ class Contact {
         global $Me;
         if ($this->topic_interest_map_ !== null)
             return $this->topic_interest_map_;
-        if ($this->contactId <= 0)
+        if ($this->contactId <= 0 || !$this->conf->has_topics())
             return array();
         if (($this->roles & self::ROLE_PCLIKE)
             && $this !== $Me

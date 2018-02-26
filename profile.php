@@ -175,7 +175,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
 
 
 function parseBulkFile($text, $filename) {
-    global $Conf;
+    global $Conf, $Me;
     $text = cleannl($text);
     if (!is_valid_utf8($text))
         $text = windows_1252_to_utf8($text);
@@ -225,70 +225,34 @@ function parseBulkFile($text, $filename) {
 
     }
 
-    $topic_revmap = array();
-    foreach ($Conf->topic_map() as $id => $name)
-        $topic_revmap[strtolower($name)] = $id;
-    $unknown_topics = array();
-
-    $ignore_empty = array_flip(["firstname", "first", "firstName",
-            "lastname", "last", "lastName", "fullname", "fullName", "name",
-            "voice", "voicePhoneNumber", "phone", "address1", "addressLine1",
-            "address2", "addressLine2", "province", "state", "region",
-            "postalcode", "zip", "zipCode", "country"]);
+    $saved_users = $unknown_topics = [];
 
     while (($line = $csv->next()) !== false) {
-        $cj = (object) [];
-        foreach ($line as $k => $v)
-            if ($v !== "" || !isset($ignore_empty[$k]))
-                $cj->$k = $v;
-        foreach (array("firstname" => "firstName", "first" => "firstName",
-                       "lastname" => "lastName", "last" => "lastName",
-                       "fullname" => "name", "fullName" => "name",
-                       "voice" => "voicePhoneNumber", "phone" => "voicePhoneNumber",
-                       "address1" => "addressLine1", "province" => "state", "region" => "state",
-                       "address2" => "addressLine2", "postalcode" => "zipCode",
-                       "zip" => "zipCode") as $k => $xk)
-            if (isset($cj->$k)) {
-                if (!isset($cj->$xk))
-                    $cj->$xk = $cj->$k;
-                unset($cj->$k);
-            }
-        // clean up name
-        if (isset($cj->name) && !isset($cj->firstName) && !isset($cj->lastName))
-            list($cj->firstName, $cj->lastName) = Text::split_name($cj->name);
-        // thou shalt not set passwords by bulk update
-        unset($cj->password, $cj->password_plaintext, $cj->new_password);
-        // topics
-        if (!empty($topic_revmap)) {
-            foreach (array_keys($line) as $k)
-                if (preg_match('/^topic:\s*(.*?)\s*$/i', $k, $m)) {
-                    if (($ti = get($topic_revmap, strtolower($m[1]))) !== null) {
-                        $x = $line[$k];
-                        if (strtolower($x) === "low")
-                            $x = -2;
-                        else if (strtolower($x) === "high")
-                            $x = 2;
-                        else if (!is_numeric($x))
-                            $x = 0;
-                        if (!isset($cj->topics))
-                            $cj->topics = (object) array();
-                        $cj->topics->$ti = $x;
-                    } else
-                        $unknown_topics[$m[1]] = true;
-                }
-        }
-        $cj->id = "new";
-
         $ustatus = new UserStatus($Conf, ["send_email" => true, "no_deprivilege_self" => true]);
+        $ustatus->viewer = $Me;
+        $cj = (object) ["id" => null];
+        $acct = new Contact(null, $Conf);
+        UserStatus::parse_csv($cj, $line, $acct, $ustatus, null);
+
+        if (isset($cj->email) && isset($saved_users[strtolower($cj->email)])) {
+            $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> Already saved a user with email “" . htmlspecialchars($cj->email) . "”.";
+            $errors[] = '<span class="lineno">' . $filename . $saved_users[strtolower($cj->email)] . ":</span> (That user was saved here.)";
+            continue;
+        }
+
+        if (isset($cj->email) && $cj->email !== "")
+            $saved_users[strtolower($cj->email)] = $csv->lineno();
         if (($saved_user = save_user($cj, $ustatus, null, true)))
             $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
                 . Text::user_html_nolink($saved_user) . "</a>";
         foreach ($ustatus->errors() as $e)
-            $errors[] = "<span class='lineno'>" . $filename . $csv->lineno() . ":</span> " . $e;
+            $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> " . $e;
+        if ($ustatus->unknown_topics)
+            $unknown_topics += $ustatus->unknown_topics;
     }
 
-    if (count($unknown_topics))
-        $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin($unknown_topics)) . ").";
+    if (!empty($unknown_topics))
+        $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin(array_keys($unknown_topics))) . ").";
     if (count($success) == 1)
         $successMsg = "Saved account " . $success[0] . ".";
     else if (count($success))
@@ -613,7 +577,7 @@ if ($newProfile) {
     }
     echo '<div class="f-i">',
         Ht::textarea("bulkentry", $bulkentry,
-                     ["rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line", "class" => "want-focus"]),
+                     ["rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line", "class" => "want-focus need-autogrow"]),
         '</div>';
 
     echo '<div class="g"><strong>OR</strong> &nbsp;',
@@ -653,8 +617,8 @@ John Adams,john@earbox.org,UC Berkeley,pc
 }
 
 
-Ht::stash_script('hiliter_children("#accountform",true);$("textarea").autogrow()');
 Ht::stash_script('focus_within($("#accountform"))');
+Ht::stash_script('hiliter_children("#accountform",true)');
 if ($newProfile)
     Ht::stash_script("focus_fold.hash(true)");
 $Conf->footer();
