@@ -24,12 +24,11 @@ software:
 * Apache, http://apache.org/ or Nginx, http://nginx.org/
   (You may be able to use another web server that works with PHP.)
 * PHP version 5.6 or higher, http://php.net/
-  - Including MySQL and GD support
+  - Including MySQL support
 * MySQL version 5 or higher, http://mysql.org/
 * The zip compressor, http://www.info-zip.org/
-* Poppler’s version of pdftohtml, http://poppler.freedesktop.org/ (Only
-  required for format checking. Recent pdftohtml versions are suitable for
-  HotCRP; most versions released before 2013 aren’t.)
+* Poppler’s version of pdftohtml, http://poppler.freedesktop.org/ (only
+  required for format checking)
 
 Apache is preloaded on most Linux distributions. You may need to install
 additional packages for PHP and MySQL, such as:
@@ -37,7 +36,7 @@ additional packages for PHP and MySQL, such as:
 * Fedora Linux: php-mysql, php-gd, zip, (poppler-utils)
 * Ubuntu Linux: php-common, php-gd, php-mysql, libapache2-mod-php (or
   libapache-mod-php for Apache 1.x), zip, (poppler-utils), and a package for
-  SMTP support, such as sendmail or postfix
+  SMTP support, such as postfix
 
 You may need to restart the Apache web server after installing these
 packages (`sudo apachectl graceful` or `sudo apache2ctl graceful`). If
@@ -66,8 +65,8 @@ depends on which server you’re running.
     **Nginx**: Configure Nginx to access `php-fpm` for anything under
 the HotCRP URL path. All accesses should be redirected to `index.php`.
 This example, which would go in a `server` block, makes `/testconf`
-point at a HotCRP installation in /home/kohler/hotcrp (assuming that
-the running `php-fpm` is listening on port 9000):
+point at a HotCRP installation in /home/kohler/hotcrp (assuming
+`php-fpm` is listening on port 9000):
 
         location /testconf/ {
             fastcgi_pass 127.0.0.1:9000;
