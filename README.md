@@ -21,7 +21,7 @@ Prerequisites
 HotCRP runs on Unix, including Mac OS X. It requires the following
 software:
 
-* Apache, http://apache.org/ or Nginx, http://nginx.org/
+* Nginx, http://nginx.org/ or Apache, http://apache.org/
   (You may be able to use another web server that works with PHP.)
 * PHP version 5.6 or higher, http://php.net/
   - Including MySQL support
@@ -31,16 +31,10 @@ software:
   required for format checking)
 
 Apache is preloaded on most Linux distributions. You may need to install
-additional packages for PHP and MySQL, such as:
-
-* Fedora Linux: php-mysql, php-gd, zip, (poppler-utils)
-* Ubuntu Linux: php-common, php-gd, php-mysql, libapache2-mod-php (or
-  libapache-mod-php for Apache 1.x), zip, (poppler-utils), and a package for
-  SMTP support, such as postfix
-
-You may need to restart the Apache web server after installing these
-packages (`sudo apachectl graceful` or `sudo apache2ctl graceful`). If
-using nginx, you will need the php-fpm package.
+additional packages, such as php71, php71-fpm, php71-mysqlnd, zip,
+poppler-utils, and sendmail or postfix. You may need to restart the Apache web
+server after installing these packages (`sudo apachectl graceful` or `sudo
+apache2ctl graceful`). If using nginx, you will need php-fpm.
 
 Installation
 ------------
@@ -151,7 +145,10 @@ MySQL setups, such as on Mac OS X, may not have a my.cnf by default;
 just create one. If you edit my.cnf, also restart the mysqld server.
 On Linux try something like `sudo /etc/init.d/mysql restart`.
 
-6. Sign in to the site to create an account. The first account created
+6. Enable a mail transport agent, such as Postfix or Sendmail. You may need
+help from an administrator to ensure HotCRP can send mail.
+
+7. Sign in to the site to create an account. The first account created
 automatically receives system administrator privilege.
 
 You can set up everything else through the web site itself.
