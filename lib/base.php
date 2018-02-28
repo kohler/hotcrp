@@ -20,8 +20,8 @@ function stri_ends_with($haystack, $needle) {
 }
 
 function cleannl($text) {
-    if (substr($str, 0, 3) === "\xEF\xBB\xBF")
-        $str = substr($str, 3);
+    if (substr($text, 0, 3) === "\xEF\xBB\xBF")
+        $text = substr($text, 3);
     if (strpos($text, "\r") !== false) {
         $text = str_replace("\r\n", "\n", $text);
         $text = strtr($text, "\r", "\n");
