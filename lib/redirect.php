@@ -86,9 +86,12 @@ function ensure_session($only_nonempty = false) {
 }
 
 function post_value($allow_empty = false) {
-    if (!$allow_empty)
+    $sid = session_id();
+    if ($sid === "" && !$allow_empty) {
         ensure_session();
-    if (($sid = session_id()) !== "") {
+        $sid = session_id();
+    }
+    if ($sid !== "") {
         if (strlen($sid) > 16)
             $sid = substr($sid, 8, 12);
         else
