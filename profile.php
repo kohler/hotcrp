@@ -176,9 +176,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
 
 function parseBulkFile($text, $filename) {
     global $Conf, $Me;
-    $text = cleannl($text);
-    if (!is_valid_utf8($text))
-        $text = windows_1252_to_utf8($text);
+    $text = cleannl(convert_to_utf8($text));
     $filename = $filename ? "$filename:" : "line ";
     $success = $errors = array();
 

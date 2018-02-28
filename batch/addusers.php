@@ -33,7 +33,7 @@ if ($content === false) {
     fwrite(STDERR, "$file: Read error\n");
     exit(1);
 } else if (!preg_match(',\A\s*[\[\{],i', $content)) {
-    $csv = new CsvParser($content);
+    $csv = new CsvParser(cleannl(convert_to_utf8($content)));
     $csv->set_comment_chars("#%");
     $line = $csv->next();
     if ($line && array_search("email", $line) !== false)

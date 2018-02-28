@@ -20,6 +20,8 @@ function stri_ends_with($haystack, $needle) {
 }
 
 function cleannl($text) {
+    if (substr($str, 0, 3) === "\xEF\xBB\xBF")
+        $str = substr($str, 3);
     if (strpos($text, "\r") !== false) {
         $text = str_replace("\r\n", "\n", $text);
         $text = strtr($text, "\r", "\n");
@@ -69,6 +71,8 @@ if (!function_exists("mac_os_roman_to_utf8")) {
 }
 
 function convert_to_utf8($str) {
+    if (substr($str, 0, 3) === "\xEF\xBB\xBF")
+        $str = substr($str, 3);
     if (is_valid_utf8($str))
         return $str;
     $pfx = substr($str, 0, 5000);
