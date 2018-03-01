@@ -72,7 +72,8 @@ function initialize_user() {
             $l = strlen($Qreq->post);
             if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l))
                 $Qreq->approve_post();
-        } else if ($Qreq->post === "<empty-session>") {
+        } else if ($Qreq->post === "<empty-session>"
+                   || $Qreq->post === ".empty") {
             $Qreq->approve_post();
         }
     }

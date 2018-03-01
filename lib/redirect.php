@@ -97,6 +97,6 @@ function post_value($allow_empty = false) {
         else
             $sid = substr($sid, 0, 12);
     } else
-        $sid = "<empty-session>";
+        $sid = ".empty";
     return urlencode($sid);
 }
