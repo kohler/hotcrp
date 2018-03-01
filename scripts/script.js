@@ -2116,11 +2116,12 @@ function fold(elt, dofold, foldnum) {
         // perform fold
         if (isopen) {
             elt.className = elt.className.replace(opentxt, closetxt);
-            refocus_within(elt);
         } else {
             elt.className = elt.className.replace(closetxt, opentxt);
-            focus_within(elt) || refocus_within(elt);
         }
+        var focused = document.activeElement;
+        if (!focused || !hasClass(focused, "keep-focus"))
+            (!isopen && focus_within(elt)) || refocus_within(elt);
 
         // check for session
         var ses = elt.getAttribute("data-fold-session");
@@ -2169,7 +2170,7 @@ function foldup(event, opts) {
     dofold = !(new RegExp("\\bfold" + (opts.n || "") + "c\\b")).test(e.className);
     if (!("f" in opts) || !!opts.f !== !dofold) {
         opts.f = dofold;
-        fold(e, dofold, opts.n || 0, opts.st);
+        fold(e, dofold, opts.n || 0);
         $(e).trigger("fold", opts);
     }
     if (event && typeof event === "object" && event.type === "click") {
