@@ -40,7 +40,7 @@ dd {
 a > img {
 	border: none;
 }
-input[type=text], input[type=password], textarea {
+input[type=text], input[type=password], input[type=date], textarea {
 	border: 1px solid silver;
 	padding: 3px 5px;
 }
@@ -1291,15 +1291,27 @@ h2.error, h3.error, h4.error, h5.error, h6.error {
 .has-error > .f-c, .has-error > label, label.has-error, h3.has-error {
 	color: #ee0000;
 }
-.has-error > input[type=text], .has-error > input[type=password], .has-error > textarea,
-input[type=text].has-error, input[type=password].has-error, textarea.has-error {
+.has-error > input[type=text],
+.has-error > input[type=password],
+.has-error > input[type=date],
+.has-error > textarea,
+input[type=text].has-error,
+input[type=password].has-error,
+input[type=date].has-error,
+textarea.has-error {
 	border: 1px solid red;
 }
 .has-warning > .f-c, .has-warning > label, label.has-warning, h3.has-warning {
 	color: #c07700;
 }
-.has-warning > input[type=text], .has-warning > input[type=password], .has-warning > textarea,
-input[type=text].has-warning, input[type=password].has-warning, textarea.has-warning {
+.has-warning > input[type=text],
+.has-warning > input[type=password],
+.has-warning > input[type=date],
+.has-warning > textarea,
+input[type=text].has-warning,
+input[type=password].has-warning,
+input[type=date].has-warning,
+textarea.has-warning {
 	border: 1px solid #855c04;
 }
 
