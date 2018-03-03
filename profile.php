@@ -227,10 +227,10 @@ function parseBulkFile($text, $filename) {
 
     while (($line = $csv->next()) !== false) {
         $ustatus = new UserStatus($Conf, ["send_email" => true, "no_deprivilege_self" => true]);
+        $ustatus->user = new Contact(null, $Conf);
         $ustatus->viewer = $Me;
         $cj = (object) ["id" => null];
-        $acct = new Contact(null, $Conf);
-        UserStatus::parse_csv($cj, $line, $acct, $ustatus, null);
+        UserStatus::parse_csv($ustatus, $cj, $line, null);
 
         if (isset($cj->email) && isset($saved_users[strtolower($cj->email)])) {
             $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> Already saved a user with email “" . htmlspecialchars($cj->email) . "”.";
@@ -287,7 +287,8 @@ else if ($Qreq->bulkregister && $newProfile && $Qreq->has_file("bulk")) {
 } else if (isset($Qreq->register)) {
     assert($Acct->is_empty() === $newProfile);
     $cj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
-    UserStatus::parse_request($cj, $Qreq, $Acct, $UserStatus, null);
+    $UserStatus->user = $Acct;
+    UserStatus::parse_request($UserStatus, $cj, $Qreq, null);
     if ($newProfile)
         $UserStatus->send_email = true;
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
@@ -461,8 +462,9 @@ if (!$useRequest && $Me->privChair && $Acct->is_empty()
 
 if ($useRequest) {
     $UserStatus->ignore_msgs = true;
+    $UserStatus->user = $Acct;
     $formcj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
-    UserStatus::parse_request($formcj, $Qreq, $Acct, $UserStatus, null);
+    UserStatus::parse_request($UserStatus, $formcj, $Qreq, null);
 } else if (($formcj = $Conf->session("profile_redirect")))
     $Conf->save_session("profile_redirect", null);
 else
@@ -513,7 +515,8 @@ else
 echo " fold2", ($Qreq->bulkregister ? "o" : "c"), "\">\n";
 
 
-UserStatus::render($UserStatus, $userj, $formcj, $Acct, null);
+$UserStatus->user = $Acct;
+UserStatus::render($UserStatus, $userj, $formcj, null);
 
 
 $buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-primary"]),

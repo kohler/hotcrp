@@ -4,6 +4,7 @@
 
 class UserStatus extends MessageSet {
     public $conf;
+    public $user;
     public $viewer;
     private $errf;
     public $send_email = null;
@@ -417,14 +418,14 @@ class UserStatus extends MessageSet {
     }
 
 
-    static function parse_request($cj, Qrequest $qreq, Contact $acct, UserStatus $us, $uf) {
+    static function parse_request(UserStatus $us, $cj, Qrequest $qreq, $uf) {
         // email
         if (!$us->conf->external_login())
             $cj->email = trim((string) $qreq->uemail);
-        else if ($acct->is_empty())
+        else if ($us->user->is_empty())
             $cj->email = trim((string) $qreq->newUsername);
         else
-            $cj->email = $Acct->email;
+            $cj->email = $us->user->email;
 
         // normal fields
         foreach (["firstName", "lastName", "preferredEmail", "affiliation",
@@ -437,8 +438,8 @@ class UserStatus extends MessageSet {
 
         // password
         if (!$us->conf->external_login()
-            && !$acct->is_empty()
-            && $us->viewer->can_change_password($acct)
+            && !$us->user->is_empty()
+            && $us->viewer->can_change_password($us->user)
             && (isset($qreq->upassword) || isset($qreq->upasswordt))) {
             if ($qreq->whichpassword === "t" && $qreq->upasswordt)
                 $pw = $pw2 = trim($qreq->upasswordt);
@@ -458,7 +459,7 @@ class UserStatus extends MessageSet {
                 $cj->new_password = $pw;
             } else {
                 $cj->old_password = trim((string) $qreq->oldpassword);
-                if ($acct->check_password($cj->old_password))
+                if ($us->user->check_password($cj->old_password))
                     $cj->new_password = $pw;
                 else
                     $us->error_at("password", "Incorrect current password. New password ignored.");
@@ -480,7 +481,7 @@ class UserStatus extends MessageSet {
         $follow = [];
         if ($qreq->has_watchcomment)
             $follow["reviews"] = !!$qreq->watchcomment;
-        if ($qreq->has_watchcommentall && ($us->viewer->privChair || $acct->isPC))
+        if ($qreq->has_watchcommentall && ($us->viewer->privChair || $us->user->isPC))
             $follow["allreviews"] = !!$qreq->watchcommentall;
         if ($qreq->has_watchfinalall && $us->viewer->privChair)
             $follow["allfinal"] = !!$qreq->watchfinalall;
@@ -519,7 +520,7 @@ class UserStatus extends MessageSet {
         ["tags"]
     ];
 
-    static function parse_csv($cj, $line, Contact $acct, UserStatus $us, $uf) {
+    static function parse_csv(UserStatus $us, $cj, $line, $uf) {
         foreach (self::$csv_keys as $ks) {
             foreach ($ks as $k)
                 if (isset($line[$k]) && ($v = trim($line[$k])) !== "") {
@@ -564,16 +565,18 @@ class UserStatus extends MessageSet {
         return "no";
     }
 
-    static function render_main(UserStatus $us, $cj, $reqj, Contact $acct, $uf) {
+    static function render_main(UserStatus $us, $cj, $reqj, $uf) {
         $actas = "";
-        if ($acct !== $us->viewer && $acct->email && $us->viewer->privChair)
-            $actas = '&nbsp;' . actas_link($acct);
+        if ($us->user !== $us->viewer
+            && $us->user->email
+            && $us->viewer->privChair)
+            $actas = '&nbsp;' . actas_link($us->user);
 
         echo "<div class=\"profile-g\">\n";
         if (!$us->conf->external_login()) {
             $us->render_field("uemail", "Email" . $actas,
                 Ht::entry("uemail", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "data-default-value" => get_s($cj, "email")]));
-        } else if (!$acct->is_empty()) {
+        } else if (!$us->user->is_empty()) {
             $us->render_field(false, "Username" . $actas,
                 htmlspecialchars(get_s($cj, "email")));
             $us->render_field("preferredEmail", "Email",
@@ -598,10 +601,10 @@ class UserStatus extends MessageSet {
         echo "</div>\n\n"; // .profile-g
     }
 
-    static function render_password(UserStatus $us, $cj, $reqj, Contact $acct, $uf) {
-        if ($acct->is_empty()
+    static function render_password(UserStatus $us, $cj, $reqj, $uf) {
+        if ($us->user->is_empty()
             || $us->conf->external_login()
-            || !$us->viewer->can_change_password($acct))
+            || !$us->viewer->can_change_password($us->user))
             return;
 
         echo '<div id="foldpassword" class="profile-g foldc ',
@@ -623,14 +626,14 @@ class UserStatus extends MessageSet {
         echo '<div class="', $us->control_class("password", "f-i"), '">
       <div class="f-c">New password</div>',
             Ht::password("upassword", $pws[0], ["size" => 52, "class" => "fn", "autocomplete" => "new-password"]);
-        if ($acct->plaintext_password() && $us->viewer->privChair) {
+        if ($us->user->plaintext_password() && $us->viewer->privChair) {
             echo Ht::entry("upasswordt", $pws[2], ["size" => 52, "class" => "fx", "autocomplete" => "new-password"]);
         }
         echo '</div>
     <div class="', $us->control_class("password", "f-i"), ' fn">
       <div class="f-c">Repeat new password</div>',
             Ht::password("upassword2", $pws[1], ["size" => 52]), "</div>\n";
-        if ($acct->plaintext_password()
+        if ($us->user->plaintext_password()
             && ($us->viewer->privChair || Contact::password_storage_cleartext())) {
             echo "  <div class=\"f-h\">";
             if (Contact::password_storage_cleartext())
@@ -645,23 +648,23 @@ class UserStatus extends MessageSet {
         echo "</div></div>"; // .fx3 #foldpassword
     }
 
-    static function render_demographics(UserStatus $us, $cj, $reqj, Contact $acct, $uf) {
+    static function render_demographics(UserStatus $us, $cj, $reqj, $uf) {
         $us->render_field("country", "Country", Countries::selector("country", get_s($reqj, "country"), ["id" => "country", "data-default-value" => get_s($cj, "country")]));
     }
 
-    static function render_follow(UserStatus $us, $cj, $reqj, Contact $acct, $uf) {
+    static function render_follow(UserStatus $us, $cj, $reqj, $uf) {
         echo '<h3 class="profile">Email notification</h3>';
         $follow = isset($reqj->follow) ? $reqj->follow : (object) [];
         $cfollow = isset($cj->follow) ? $cj->follow : (object) [];
         echo Ht::hidden("has_watchcomment", 1);
-        if ($acct->is_empty() ? $us->viewer->privChair : $acct->isPC) {
+        if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
             echo Ht::hidden("has_watchcommentall", 1);
             echo "<table><tr><td>Send mail for: &nbsp;</td>",
                 "<td>", Ht::checkbox("watchcomment", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]), "&nbsp;",
                 Ht::label($us->conf->_("Reviews and comments on authored or reviewed papers")), "</td></tr>",
                 "<tr><td></td><td>", Ht::checkbox("watchcommentall", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]), "&nbsp;",
                 Ht::label($us->conf->_("Reviews and comments on <i>any</i> paper")), "</td></tr>";
-            if (!$acct->is_empty() && $acct->privChair) {
+            if (!$us->user->is_empty() && $us->user->privChair) {
                 echo "<tr><td></td><td>", Ht::checkbox("watchfinalall", 1, !!get($follow, "allfinal"), ["data-default-checked" => !!get($cfollow, "allfinal")]), "&nbsp;",
                     Ht::label($us->conf->_("Updates to final versions")),
                     Ht::hidden("has_watchfinalall", 1), "</td></tr>";
@@ -672,7 +675,7 @@ class UserStatus extends MessageSet {
                 Ht::label($us->conf->_("Send mail for new comments on authored or reviewed papers"));
     }
 
-    static function render_roles(UserStatus $us, $cj, $reqj, Contact $acct, $uf) {
+    static function render_roles(UserStatus $us, $cj, $reqj, $uf) {
         if (!$us->viewer->privChair)
             return;
         echo '<h3 class="profile">Roles</h3>', "\n",
@@ -694,8 +697,8 @@ class UserStatus extends MessageSet {
             '<div class="hint">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</div></td></tr></table>', "\n";
     }
 
-    static function render_collaborators(UserStatus $us, $cj, $reqj, Contact $acct, $uf) {
-        if (!$acct->isPC && !$us->viewer->privChair)
+    static function render_collaborators(UserStatus $us, $cj, $reqj, $uf) {
+        if (!$us->user->isPC && !$us->viewer->privChair)
             return;
         echo '<div class="fx1">',
             '<h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
@@ -709,8 +712,8 @@ class UserStatus extends MessageSet {
         echo ">", htmlspecialchars(get_s($cj, "collaborators")), "</textarea></div>\n";
     }
 
-    static function render_topics(UserStatus $us, $cj, $reqj, Contact $acct, $uf) {
-        if ((!$acct->isPC && !$us->viewer->privChair)
+    static function render_topics(UserStatus $us, $cj, $reqj, $uf) {
+        if ((!$us->user->isPC && !$us->viewer->privChair)
             || !$us->conf->has_topics())
             return;
         echo '<div id="topicinterest" class="fx1">',
@@ -735,8 +738,8 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo "    </tbody></table></div>\n";
     }
 
-    static function render_tags(UserStatus $us, $cj, $reqj, Contact $acct, $uf) {
-        if ((!$acct->isPC || empty($reqj->tags)) && !$us->viewer->privChair)
+    static function render_tags(UserStatus $us, $cj, $reqj, $uf) {
+        if ((!$us->user->isPC || empty($reqj->tags)) && !$us->viewer->privChair)
             return;
         $tags = isset($reqj->tags) && is_array($reqj->tags) ? $reqj->tags : [];
         echo "<div class=\"fx1\"><h3 class=\"profile\">Tags</h3>\n";
@@ -751,14 +754,14 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo "</div>\n";
     }
 
-    static function render(UserStatus $us, $cj, $reqj, Contact $acct, $uf) {
-        self::render_main($us, $cj, $reqj, $acct, $uf);
-        self::render_password($us, $cj, $reqj, $acct, $uf);
-        self::render_demographics($us, $cj, $reqj, $acct, $uf);
-        self::render_follow($us, $cj, $reqj, $acct, $uf);
-        self::render_roles($us, $cj, $reqj, $acct, $uf);
-        self::render_collaborators($us, $cj, $reqj, $acct, $uf);
-        self::render_topics($us, $cj, $reqj, $acct, $uf);
-        self::render_tags($us, $cj, $reqj, $acct, $uf);
+    static function render(UserStatus $us, $cj, $reqj, $uf) {
+        self::render_main($us, $cj, $reqj, $uf);
+        self::render_password($us, $cj, $reqj, $uf);
+        self::render_demographics($us, $cj, $reqj, $uf);
+        self::render_follow($us, $cj, $reqj, $uf);
+        self::render_roles($us, $cj, $reqj, $uf);
+        self::render_collaborators($us, $cj, $reqj, $uf);
+        self::render_topics($us, $cj, $reqj, $uf);
+        self::render_tags($us, $cj, $reqj, $uf);
     }
 }
