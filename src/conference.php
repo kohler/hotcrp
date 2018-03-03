@@ -792,6 +792,12 @@ class Conf {
         return $xt && (!isset($xt->allow_if)
                        || $this->xt_check($xt->allow_if, $xt, $user));
     }
+    static function xt_allow_list($xt) {
+        if ($xt && isset($xt->allow_if))
+            return is_array($xt->allow_if) ? $xt->allow_if : [$xt->allow_if];
+        else
+            return [];
+    }
     function xt_search_name($map, $name, $checkf, $found = null) {
         foreach (get($map, $name, []) as $xt)
             if (self::xt_priority_compare($xt, $found) <= 0

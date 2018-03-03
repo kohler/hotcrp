@@ -22,11 +22,11 @@
         "render_callback": "UserStatus::render_roles"
     },
     {
-        "name": "collaborators", "position": 500,
+        "name": "collaborators", "position": 500, "allow_if": "pc",
         "render_callback": "UserStatus::render_collaborators"
     },
     {
-        "name": "topics", "position": 600,
+        "name": "topics", "position": 600, "allow_if": ["pc", "has_topics"],
         "render_callback": "UserStatus::render_topics"
     },
     {

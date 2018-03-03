@@ -729,10 +729,7 @@ class UserStatus extends MessageSet {
     }
 
     static function render_collaborators(UserStatus $us, $cj, $reqj, $uf) {
-        if (!$us->user->isPC && !$us->viewer->privChair)
-            return;
-        echo '<div class="fx1">',
-            '<h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
+        echo '<h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
             "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
             $us->conf->message_html("conflictdef"),
             " <p>List one conflict per line, using parentheses for affiliations.<br />
@@ -740,13 +737,10 @@ class UserStatus extends MessageSet {
         <textarea name=\"collaborators\" rows=\"5\" cols=\"80\"";
         if (($className = $us->control_class("collaborators")))
             echo ' class="', $className, '"';
-        echo ">", htmlspecialchars(get_s($cj, "collaborators")), "</textarea></div>\n";
+        echo ">", htmlspecialchars(get_s($cj, "collaborators")), "</textarea>\n";
     }
 
     static function render_topics(UserStatus $us, $cj, $reqj, $uf) {
-        if ((!$us->user->isPC && !$us->viewer->privChair)
-            || !$us->conf->has_topics())
-            return;
         echo '<div id="topicinterest" class="fx1">',
             '<h3 class="profile">Topic interests</h3>', "\n",
             '<p>Please indicate your interest in reviewing papers on these conference
@@ -788,11 +782,18 @@ topics. We use this information to help match papers to reviewers.</p>',
     function render_topic($g, $cj, $reqj) {
         $last_title = null;
         foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+            $pc = array_search("pc", Conf::xt_allow_list($gj)) !== false;
+            if ($pc && !$this->user->isPC && !$this->viewer->privChair)
+                continue;
+            if ($pc)
+                echo '<div class="fx1">';
             GroupedExtensions::render_heading($gj, $last_title, 3, "profile");
             if (isset($gj->render_callback)) {
                 Conf::xt_resolve_require($gj);
                 call_user_func($gj->render_callback, $this, $cj, $reqj, $gj);
             }
+            if ($pc)
+                echo '</div>';
         }
     }
 }
