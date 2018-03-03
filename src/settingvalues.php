@@ -353,7 +353,7 @@ class SettingValues extends MessageSet {
             }
         }
     }
-    function echo_topic($g) {
+    function render_topic($g) {
         $last_title = null;
         foreach ($this->group_members($g) as $gj) {
             if (isset($gj->title)

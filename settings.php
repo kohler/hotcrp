@@ -81,7 +81,7 @@ function doActionArea($top) {
 doActionArea(true);
 
 $Sv->report(isset($Qreq->update) && $Qreq->post_ok());
-$Sv->echo_topic($Group);
+$Sv->render_topic($Group);
 
 doActionArea(false);
 echo "</div></div></form>\n";

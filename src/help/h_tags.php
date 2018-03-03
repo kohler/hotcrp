@@ -154,7 +154,7 @@ gray.</p>\n";
     function render_examples() {
         echo $this->hth->subhead("Examples");
         echo "<p>Here are some example ways to use tags.</p>\n";
-        $this->hth->echo_topic("tagexamples");
+        $this->hth->render_topic("tagexamples");
     }
 
     function render_example_r1reject() {

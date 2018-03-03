@@ -7,7 +7,7 @@ class ChairsGuide_HelpTopic {
         if (!isset($gj->index)) {
             echo $hth->subhead("Submission time");
             echo "<p>Follow these steps to prepare to accept paper submissions.</p>\n\n<ol>\n";
-            $hth->echo_topic("chair/presubmission/*");
+            $hth->render_topic("chair/presubmission/*");
             echo "</ol>\n\n";
 
         } else if ($gj->index === 1) {
@@ -86,7 +86,7 @@ form also can include:</p>
         if (!isset($gj->index)) {
             echo $hth->subhead("Assignments");
             echo "<p>After the submission deadline has passed:</p>\n<ol>\n";
-            $hth->echo_topic("chair/assignments/*");
+            $hth->render_topic("chair/assignments/*");
             echo "</ol>\n\n";
 
         } else if ($gj->index === 1) {
@@ -218,7 +218,7 @@ administrator’s identity.</p>\n\n";
         if (!isset($gj->index)) {
             echo $hth->subhead("Before the meeting");
             echo "<ol>\n";
-            $hth->echo_topic("chair/premeeting/*");
+            $hth->render_topic("chair/premeeting/*");
             echo "</ol>\n\n";
 
         } else if ($gj->index === 1) {
@@ -281,7 +281,7 @@ administrator’s identity.</p>\n\n";
         if (!isset($gj->index)) {
             echo $hth->subhead("At the meeting");
             echo "<ol>\n";
-            $hth->echo_topic("chair/atmeeting/*");
+            $hth->render_topic("chair/atmeeting/*");
             echo "</ol>\n\n";
 
         } else if ($gj->index === 1) {
@@ -319,7 +319,7 @@ administrator’s identity.</p>\n\n";
         if (!isset($gj->index)) {
             echo $hth->subhead("After the meeting");
             echo "<ol>\n";
-            $hth->echo_topic("chair/postmeeting/*");
+            $hth->render_topic("chair/postmeeting/*");
             echo "</ol>\n\n";
 
         } else if ($gj->index === 1) {
