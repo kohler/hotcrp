@@ -40,8 +40,8 @@ $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC,
 $json = json_decode(file_get_contents("$ConfSitePATH/test/db.json"));
 if (!$json)
     die_hard("* test/testdb.json error: " . json_last_error_msg() . "\n");
+$us = new UserStatus($Conf->site_contact());
 foreach ($json->contacts as $c) {
-    $us = new UserStatus($Conf);
     if (!$us->save($c))
         die_hard("* failed to create user $c->email\n");
 }

@@ -115,7 +115,7 @@ xassert(!!$u);
 xassert_eqq($u->firstName, "Te");
 
 // inserting them should succeed and borrow their data
-$us = new UserStatus($Conf, ["send_email" => false]);
+$us = new UserStatus($Conf->site_contact(), ["send_email" => false]);
 $acct = $us->save((object) array("email" => "te@_.com"));
 xassert(!!$acct);
 $te = user("te@_.com");

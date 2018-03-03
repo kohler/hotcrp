@@ -35,8 +35,7 @@ if (!$Me->has_email())
     $Me->escape();
 $newProfile = false;
 $useRequest = false;
-$UserStatus = new UserStatus($Conf);
-$UserStatus->viewer = $Me;
+$UserStatus = new UserStatus($Me);
 
 if ($Qreq->u === null) {
     if ($Qreq->user)
@@ -223,12 +222,12 @@ function parseBulkFile($text, $filename) {
 
     }
 
-    $saved_users = $unknown_topics = [];
+    $saved_users = [];
+    $ustatus = new UserStatus($Me, ["send_email" => true, "no_deprivilege_self" => true]);
 
     while (($line = $csv->next()) !== false) {
-        $ustatus = new UserStatus($Conf, ["send_email" => true, "no_deprivilege_self" => true]);
         $ustatus->user = new Contact(null, $Conf);
-        $ustatus->viewer = $Me;
+        $ustatus->clear_messages();
         $cj = (object) ["id" => null];
         UserStatus::parse_csv($ustatus, $cj, $line, null);
 
@@ -245,12 +244,10 @@ function parseBulkFile($text, $filename) {
                 . Text::user_html_nolink($saved_user) . "</a>";
         foreach ($ustatus->errors() as $e)
             $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> " . $e;
-        if ($ustatus->unknown_topics)
-            $unknown_topics += $ustatus->unknown_topics;
     }
 
-    if (!empty($unknown_topics))
-        $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin(array_keys($unknown_topics))) . ").";
+    if (!empty($ustatus->unknown_topics))
+        $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin(array_keys($ustatus->unknown_topics))) . ").";
     if (count($success) == 1)
         $successMsg = "Saved account " . $success[0] . ".";
     else if (count($success))

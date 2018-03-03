@@ -244,21 +244,20 @@ function do_tags($qreq) {
         $users[(int) $cid]->$key = array_merge($users[(int) $cid]->$key, $t1);
     }
     // apply modifications
+    $us = new UserStatus($Me, ["send_email" => false]);
     foreach ($users as $cid => $cj) {
-        $us = new UserStatus($Conf, ["send_email" => false]);
-        if (!$us->save($cj))
-            $errors = array_merge($errors, $us->errors());
+        $us->save($cj);
     }
     Dbl::qe("unlock tables");
     Conf::$no_invalidate_caches = false;
     $Conf->invalidate_caches(["pc" => true]);
     // report
-    if (!count($errors)) {
+    if (!$us->has_error()) {
         $Conf->confirmMsg("Tags saved.");
         unset($qreq->tagact, $qreq->tag);
         SelfHref::redirect($qreq);
     } else
-        Conf::msg_error(join("<br>", $errors));
+        Conf::msg_error($us->errors());
 }
 
 if ($Me->privChair && $Qreq->tagact && $Qreq->post_ok() && isset($papersel)

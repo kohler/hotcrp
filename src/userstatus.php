@@ -6,7 +6,6 @@ class UserStatus extends MessageSet {
     public $conf;
     public $user;
     public $viewer;
-    private $errf;
     public $send_email = null;
     private $no_deprivilege_self = false;
     public $unknown_topics = null;
@@ -27,14 +26,19 @@ class UserStatus extends MessageSet {
         "high" => 4
     ];
 
-    function __construct(Conf $conf, $options = array()) {
-        $this->conf = $conf;
+    function __construct(Contact $viewer, $options = array()) {
+        $this->conf = $viewer->conf;
+        $this->viewer = $viewer;
         parent::__construct();
         foreach (array("send_email", "no_deprivilege_self") as $k)
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
         foreach (self::$field_synonym_map as $src => $dst)
             $this->translate_field($src, $dst);
+    }
+    function clear() {
+        $this->clear_messages();
+        $this->unknown_topics = null;
     }
 
     static function unparse_roles_json($roles) {
@@ -383,6 +387,7 @@ class UserStatus extends MessageSet {
         global $Now;
         assert(is_object($cj));
         self::normalize_name($cj);
+        $nerrors = $this->nerrors();
 
         if (!$old_user && is_int(get($cj, "id")) && $cj->id)
             $old_user = $this->conf->user_by_id($cj->id);
@@ -404,7 +409,7 @@ class UserStatus extends MessageSet {
         $user = $old_user ? : $old_cdb_user;
 
         $this->normalize($cj, $user);
-        if ($this->has_error())
+        if ($this->nerrors() > $nerrors)
             return false;
         $this->check_invariants($cj);
 

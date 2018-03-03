@@ -19,9 +19,12 @@ class MessageSet {
     function __construct() {
         $this->clear();
     }
-    function clear() {
+    function clear_messages() {
         $this->errf = $this->msgs = [];
         $this->has_warning = $this->has_error = 0;
+    }
+    function clear() {
+        $this->clear_messages();
     }
 
     function translate_field($src, $dst) {
