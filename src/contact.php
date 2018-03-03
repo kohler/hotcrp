@@ -948,8 +948,6 @@ class Contact {
     private function _save_assign_field($k, $v, Contact_Update $cu) {
         if ($k === "collaborators")
             $v = self::clean_collaborator_lines($v);
-        else if ($k === "gender")
-            $v = self::clean_gender($v);
         else if (!isset(self::$no_clean_fields[$k])) {
             $v = simplify_whitespace($v);
             if ($k === "birthday" && !$v)
@@ -3401,15 +3399,6 @@ class Contact {
     static function suspect_collaborator_one_line($s) {
         return $s !== "" && ($n = substr_count($s, "\n")) < 4
             && $n < 0.75 * preg_match_all('/[,;]/', $s);
-    }
-
-    static function clean_gender($s) {
-        $s = simplicy_whitespace($s);
-        if (strcasecmp("male", $s) === 0 || strcasecmp("man", $s) === 0)
-            $s = "M";
-        else if (strcasecmp("female", $s) === 0 || strcasecmp("woman", $s) === 0)
-            $s = "F";
-        return $s === "" ? null : $s;
     }
 
     function aucollab_matchers() {

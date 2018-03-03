@@ -208,9 +208,9 @@ class Countries {
         "us" => "united states of america",
         "usa" => "united states of america");
 
-    public static function selector($name, $country, $extra = []) {
+    static function selector($name, $country, $extra = []) {
         $sel_country = "";
-        $opts = ["<option" . ($country ? '' : ' selected') . ' value="">(Select one)</option>'];
+        $opts = ["<option" . ($country ? '' : ' selected') . ' value="">(select one)</option>'];
         if (($x = get(self::$synonyms, strtolower($country))))
             $country = $x;
         foreach (self::$list as $c) {

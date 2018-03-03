@@ -41,6 +41,11 @@ class UserStatus extends MessageSet {
         $this->clear_messages();
         $this->unknown_topics = null;
     }
+    private function gxt() {
+        if ($this->_gxt === null)
+            $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
+        return $this->_gxt;
+    }
 
     static function unparse_roles_json($roles) {
         if ($roles) {
@@ -56,16 +61,9 @@ class UserStatus extends MessageSet {
             return null;
     }
 
-    function user_json($user, $args = []) {
-        global $Me;
-        if (!$user)
-            return null;
-
-        $cj = (object) array();
-        if ($user->contactId > 0)
-            $cj->id = $user->contactId;
-
+    static function unparse_json_main(UserStatus $us, $cj, $args) {
         // keys that might come from user or contactdb
+        $user = $us->user;
         $cdb_user = $user->contactdb_user();
         foreach (["email", "firstName", "lastName", "affiliation",
                   "collaborators", "country"] as $k) {
@@ -90,7 +88,8 @@ class UserStatus extends MessageSet {
                 $cj->$k = $x;
         }
 
-        if (get($args, "include_password") && ($pw = $user->plaintext_password()))
+        if (get($args, "include_password")
+            && ($pw = $user->plaintext_password()))
             $cj->__passwords = ["", "", $pw];
 
         if ($user->roles)
@@ -106,16 +105,31 @@ class UserStatus extends MessageSet {
                 $cj->follow->allfinal = true;
         }
 
-        if (($tags = $user->viewable_tags($Me))) {
-            $tagger = new Tagger($Me);
+        if (($tags = $user->viewable_tags($us->viewer))) {
+            $tagger = new Tagger($us->viewer);
             $cj->tags = explode(" ", $tagger->unparse($tags));
         }
 
         if ($user->contactId && ($tm = $user->topic_interest_map()))
             $cj->topics = (object) $tm;
-
-        return $cj;
     }
+
+    function user_json($args = []) {
+        if ($this->user) {
+            $cj = (object) [];
+            if ($this->user->contactId > 0)
+                $cj->id = $this->user->contactId;
+            foreach ($this->gxt()->groups() as $gj)
+                if (isset($gj->unparse_json_callback)) {
+                    Conf::xt_resolve_require($gj);
+                    call_user_func($gj->unparse_json_callback, $this, $cj, $args);
+                }
+            return $cj;
+        } else {
+            return null;
+        }
+    }
+
 
     private function make_keyed_object($x, $field) {
         if (is_string($x))
@@ -423,12 +437,6 @@ class UserStatus extends MessageSet {
             return false;
     }
 
-
-    private function gxt() {
-        if ($this->_gxt === null)
-            $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
-        return $this->_gxt;
-    }
 
     static function parse_request_main(UserStatus $us, $cj, Qrequest $qreq, $uf) {
         // email

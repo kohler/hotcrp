@@ -1,6 +1,7 @@
 [
     {
         "name": "main", "position": 0,
+        "unparse_json_callback": "UserStatus::unparse_json_main",
         "render_callback": "UserStatus::render_main",
         "parse_request_callback": "UserStatus::parse_request_main",
         "parse_csv_callback": "UserStatus::parse_csv_main"

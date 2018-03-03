@@ -452,14 +452,14 @@ if (!$newProfile) {
 }
 
 
-$userj = $UserStatus->user_json($Acct, ["include_password" => true]);
+$UserStatus->user = $Acct;
+$userj = $UserStatus->user_json(["include_password" => true]);
 if (!$useRequest && $Me->privChair && $Acct->is_empty()
     && ($Qreq->role === "chair" || $Qreq->role === "pc"))
     $userj->roles = (object) [$Qreq->role => true];
 
 if ($useRequest) {
     $UserStatus->ignore_msgs = true;
-    $UserStatus->user = $Acct;
     $formcj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
     $UserStatus->parse_request_topic("", $formcj, $Qreq);
 } else if (($formcj = $Conf->session("profile_redirect")))
