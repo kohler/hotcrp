@@ -356,15 +356,7 @@ class SettingValues extends MessageSet {
     function render_topic($g) {
         $last_title = null;
         foreach ($this->group_members($g) as $gj) {
-            if (isset($gj->title)
-                && $gj->title !== $last_title
-                && $gj->group !== $gj->name) {
-                echo '<h3 class="settings"';
-                if (isset($gj->anchorid))
-                    echo ' id="', htmlspecialchars($gj->anchorid), '"';
-                echo '>', $gj->title, "</h3>\n";
-                $last_title = $gj->title;
-            }
+            GroupedExtensions::render_heading($gj, $last_title, 3, "settings");
             if (isset($gj->render_callback)) {
                 Conf::xt_resolve_require($gj);
                 call_user_func($gj->render_callback, $this, $gj);

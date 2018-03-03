@@ -69,6 +69,8 @@ class GroupedExtensions {
         return $gj ? $gj->group : false;
     }
     function members($name) {
+        if ((string) $name === "")
+            return $this->groups();
         if (($subgroup = str_ends_with($name, "/*")))
             $name = substr($name, 0, -2);
         if (($gj = $this->get($name)))
@@ -84,5 +86,19 @@ class GroupedExtensions {
         return array_filter($this->_subgroups, function ($gj) {
             return $gj->name === $gj->group;
         });
+    }
+    static function render_heading($gj, &$last_title = null,
+                                   $h = 3, $className = null) {
+        if (isset($gj->title)
+            && $gj->title !== $last_title
+            && $gj->group !== $gj->name) {
+            echo '<h', $h;
+            if ($className)
+                echo ' class="', $className, '"';
+            if (isset($gj->anchorid))
+                echo ' id="', htmlspecialchars($gj->anchorid), '"';
+            echo '>', $gj->title, "</h$h>\n";
+            $last_title = $gj->title;
+        }
     }
 }

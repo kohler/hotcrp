@@ -9,6 +9,7 @@ class UserStatus extends MessageSet {
     public $send_email = null;
     private $no_deprivilege_self = false;
     public $unknown_topics = null;
+    private $_gxt;
 
     static private $field_synonym_map = [
         "preferredEmail" => "preferred_email",
@@ -423,7 +424,13 @@ class UserStatus extends MessageSet {
     }
 
 
-    static function parse_request(UserStatus $us, $cj, Qrequest $qreq, $uf) {
+    private function gxt() {
+        if ($this->_gxt === null)
+            $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
+        return $this->_gxt;
+    }
+
+    static function parse_request_main(UserStatus $us, $cj, Qrequest $qreq, $uf) {
         // email
         if (!$us->conf->external_login())
             $cj->email = trim((string) $qreq->uemail);
@@ -505,6 +512,16 @@ class UserStatus extends MessageSet {
         }
     }
 
+    function parse_request_topic($g, $cj, Qrequest $qreq) {
+        foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+            if (isset($gj->parse_request_callback)) {
+                Conf::xt_resolve_require($gj);
+                call_user_func($gj->parse_request_callback, $this, $cj, $qreq, $gj);
+            }
+        }
+    }
+
+
     static private $csv_keys = [
         ["email"],
         ["user"],
@@ -525,7 +542,7 @@ class UserStatus extends MessageSet {
         ["tags"]
     ];
 
-    static function parse_csv(UserStatus $us, $cj, $line, $uf) {
+    static function parse_csv_main(UserStatus $us, $cj, $line, $uf) {
         foreach (self::$csv_keys as $ks) {
             foreach ($ks as $k)
                 if (isset($line[$k]) && ($v = trim($line[$k])) !== "") {
@@ -550,6 +567,15 @@ class UserStatus extends MessageSet {
                 }
             if (!empty($topics))
                 $cj->change_topics = (object) $topics;
+        }
+    }
+
+    function parse_csv_topic($g, $cj, $line) {
+        foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+            if (isset($gj->parse_csv_callback)) {
+                Conf::xt_resolve_require($gj);
+                call_user_func($gj->parse_csv_callback, $this, $cj, $line, $gj);
+            }
         }
     }
 
@@ -759,14 +785,14 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo "</div>\n";
     }
 
-    static function render(UserStatus $us, $cj, $reqj, $uf) {
-        self::render_main($us, $cj, $reqj, $uf);
-        self::render_password($us, $cj, $reqj, $uf);
-        self::render_demographics($us, $cj, $reqj, $uf);
-        self::render_follow($us, $cj, $reqj, $uf);
-        self::render_roles($us, $cj, $reqj, $uf);
-        self::render_collaborators($us, $cj, $reqj, $uf);
-        self::render_topics($us, $cj, $reqj, $uf);
-        self::render_tags($us, $cj, $reqj, $uf);
+    function render_topic($g, $cj, $reqj) {
+        $last_title = null;
+        foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+            GroupedExtensions::render_heading($gj, $last_title, 3, "profile");
+            if (isset($gj->render_callback)) {
+                Conf::xt_resolve_require($gj);
+                call_user_func($gj->render_callback, $this, $cj, $reqj, $gj);
+            }
+        }
     }
 }

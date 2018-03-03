@@ -1,0 +1,36 @@
+[
+    {
+        "name": "main", "position": 0,
+        "render_callback": "UserStatus::render_main",
+        "parse_request_callback": "UserStatus::parse_request_main",
+        "parse_csv_callback": "UserStatus::parse_csv_main"
+    },
+    {
+        "name": "password", "position": 100,
+        "render_callback": "UserStatus::render_password"
+    },
+    {
+        "name": "demographics", "position": 200,
+        "render_callback": "UserStatus::render_demographics"
+    },
+    {
+        "name": "follow", "position": 300,
+        "render_callback": "UserStatus::render_follow"
+    },
+    {
+        "name": "roles", "position": 400,
+        "render_callback": "UserStatus::render_roles"
+    },
+    {
+        "name": "collaborators", "position": 500,
+        "render_callback": "UserStatus::render_collaborators"
+    },
+    {
+        "name": "topics", "position": 600,
+        "render_callback": "UserStatus::render_topics"
+    },
+    {
+        "name": "tags", "position": 700,
+        "render_callback": "UserStatus::render_tags"
+    }
+]

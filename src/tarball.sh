@@ -99,6 +99,7 @@ etc/listactions.json
 etc/msgs.json
 etc/optiontypes.json
 etc/papercolumns.json
+etc/profilegroups.json
 etc/reviewformlibrary.json
 etc/searchkeywords.json
 etc/settings.json

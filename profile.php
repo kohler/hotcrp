@@ -229,7 +229,7 @@ function parseBulkFile($text, $filename) {
         $ustatus->user = new Contact(null, $Conf);
         $ustatus->clear_messages();
         $cj = (object) ["id" => null];
-        UserStatus::parse_csv($ustatus, $cj, $line, null);
+        $ustatus->parse_csv_topic("", $cj, $line);
 
         if (isset($cj->email) && isset($saved_users[strtolower($cj->email)])) {
             $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> Already saved a user with email “" . htmlspecialchars($cj->email) . "”.";
@@ -285,7 +285,7 @@ else if ($Qreq->bulkregister && $newProfile && $Qreq->has_file("bulk")) {
     assert($Acct->is_empty() === $newProfile);
     $cj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
     $UserStatus->user = $Acct;
-    UserStatus::parse_request($UserStatus, $cj, $Qreq, null);
+    $UserStatus->parse_request_topic("", $cj, $Qreq);
     if ($newProfile)
         $UserStatus->send_email = true;
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
@@ -461,7 +461,7 @@ if ($useRequest) {
     $UserStatus->ignore_msgs = true;
     $UserStatus->user = $Acct;
     $formcj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
-    UserStatus::parse_request($UserStatus, $formcj, $Qreq, null);
+    $UserStatus->parse_request_topic("", $formcj, $Qreq);
 } else if (($formcj = $Conf->session("profile_redirect")))
     $Conf->save_session("profile_redirect", null);
 else
@@ -513,7 +513,7 @@ echo " fold2", ($Qreq->bulkregister ? "o" : "c"), "\">\n";
 
 
 $UserStatus->user = $Acct;
-UserStatus::render($UserStatus, $userj, $formcj, null);
+$UserStatus->render_topic("", $userj, $formcj);
 
 
 $buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-primary"]),
