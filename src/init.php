@@ -143,7 +143,8 @@ class SiteLoader {
         "_papercolumnfactory.php" => ["pc_", "papercolumns"],
         "_searchterm.php" => ["st_", "search"],
         "_settingrenderer.php" => ["s_", "settings"],
-        "_settingparser.php" => ["s_", "settings"]
+        "_settingparser.php" => ["s_", "settings"],
+        "_userinfo.php" => ["u_", "userinfo"]
     ];
 
     static function read_main_options() {

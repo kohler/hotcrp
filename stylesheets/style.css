@@ -1162,7 +1162,7 @@ th.settings-simplehead {
 }
 .profile-g {
 	max-width: 640px;
-	margin: 2em 0;
+	margin: 2em 0 3em;
 }
 h3 + .profile-g {
 	margin-top: 1em;
