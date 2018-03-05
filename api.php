@@ -107,6 +107,8 @@ if ($Qreq->fn === "searchcompletion") {
 // from here on: `status` and `track` requests
 if ($Qreq->fn === "track")
     MeetingTracker::track_api($Me, $Qreq); // may fall through to act like `status`
+else if ($Qreq->fn !== "status")
+    error_log("unknown request " . json_encode($Qreq));
 
 $j = $Me->my_deadlines($Conf->paper);
 
