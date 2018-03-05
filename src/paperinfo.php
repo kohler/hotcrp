@@ -1522,9 +1522,9 @@ class PaperInfo {
         }
         Dbl::free($result);
 
-        $this->ensure_reviewer_names();
+        $this->ensure_reviewer_names_set($row_set);
         if (get($had, "lastLogin"))
-            $this->ensure_reviewer_last_login();
+            $this->ensure_reviewer_last_login_set($row_set);
     }
 
     private function parse_textual_id($textid) {
@@ -1726,27 +1726,46 @@ class PaperInfo {
             $this->load_reviews(true);
     }
 
+    private function ensure_reviewer_names_set($row_set) {
+        $pcm = $this->conf->pc_members();
+        $missing = [];
+        foreach ($row_set as $prow) {
+            $prow->_reviews_have["names"] = true;
+            foreach ($prow->reviews_by_id() as $rrow)
+                if (($c = get($pcm, $rrow->contactId)))
+                    $rrow->assign_name($c);
+                else
+                    $missing[$rrow->contactId][] = $rrow;
+        }
+        if (!empty($missing)) {
+            $result = $this->conf->qe("select contactId, firstName, lastName, email from ContactInfo where contactId?a", array_keys($missing));
+            while ($result && ($c = $result->fetch_object()))
+                foreach (get($missing, $c->contactId, []) as $rrow)
+                    $rrow->assign_name($c);
+            Dbl::free($result);
+        }
+    }
+
     function ensure_reviewer_names() {
         $this->ensure_reviews();
         if (!empty($this->_review_array)
-            && !isset($this->_reviews_have["names"])) {
-            $row_set = $this->_row_set ? : new PaperInfoSet($this);
-            $pcm = $this->conf->pc_members();
-            $missing = [];
+            && !isset($this->_reviews_have["names"]))
+            $this->ensure_reviewer_names_set($this->_row_set ? : new PaperInfoSet($this));
+    }
+
+    private function ensure_reviewer_last_login_set($row_set) {
+        $users = [];
+        foreach ($row_set as $prow) {
+            $prow->_reviews_have["lastLogin"] = true;
+            foreach ($prow->reviews_by_id() as $rrow)
+                $users[$rrow->contactId] = true;
+        }
+        if (!empty($users)) {
+            $result = $this->conf->qe("select contactId, lastLogin from ContactInfo where contactId?a", array_keys($users));
+            $users = Dbl::fetch_iimap($result);
             foreach ($row_set as $prow) {
-                $prow->_reviews_have["names"] = true;
                 foreach ($prow->reviews_by_id() as $rrow)
-                    if (($c = get($pcm, $rrow->contactId)))
-                        $rrow->assign_name($c);
-                    else
-                        $missing[$rrow->contactId][] = $rrow;
-            }
-            if (!empty($missing)) {
-                $result = $this->conf->qe("select contactId, firstName, lastName, email from ContactInfo where contactId?a", array_keys($missing));
-                while ($result && ($c = $result->fetch_object()))
-                    foreach (get($missing, $c->contactId, []) as $rrow)
-                        $rrow->assign_name($c);
-                Dbl::free($result);
+                    $rrow->reviewLastLogin = $users[$rrow->contactId];
             }
         }
     }
@@ -1754,23 +1773,8 @@ class PaperInfo {
     function ensure_reviewer_last_login() {
         $this->ensure_reviews();
         if (!empty($this->_review_array)
-            && !isset($this->_reviews_have["lastLogin"])) {
-            $row_set = $this->_row_set ? : new PaperInfoSet($this);
-            $users = [];
-            foreach ($row_set as $prow) {
-                $prow->_reviews_have["lastLogin"] = true;
-                foreach ($prow->reviews_by_id() as $rrow)
-                    $users[$rrow->contactId] = true;
-            }
-            if (!empty($users)) {
-                $result = $this->conf->qe("select contactId, lastLogin from ContactInfo where contactId?a", array_keys($users));
-                $users = Dbl::fetch_iimap($result);
-                foreach ($row_set as $prow) {
-                    foreach ($prow->reviews_by_id() as $rrow)
-                        $rrow->reviewLastLogin = $users[$rrow->contactId];
-                }
-            }
-        }
+            && !isset($this->_reviews_have["lastLogin"]))
+            $this->ensure_reviewer_last_login_set($this->_row_set ? : new PaperInfoSet($this));
     }
 
     private function load_review_fields($fid, $maybe_null = false) {
