@@ -15,8 +15,10 @@ if (!isset($_GET["fn"])) {
         $_GET["fn"] = $fn;
     else if (isset($_GET["track"]))
         $_GET["fn"] = "track";
-    else
+    else {
+        error_log("missing fn");
         $_GET["fn"] = "status";
+    }
 }
 if ($_GET["fn"] === "deadlines")
     $_GET["fn"] = "status";
