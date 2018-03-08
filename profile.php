@@ -305,8 +305,13 @@ else if ($Qreq->bulkregister && $newProfile && $Qreq->has_file("bulk")) {
         if (isset($Qreq->redirect))
             go(hoturl("index"));
         else {
-            if ($newProfile)
-                $Conf->save_session("profile_redirect", $cj);
+            if ($newProfile) {
+                $xcj = (object) [];
+                foreach (["roles", "follow", "tags"] as $k)
+                    if (isset($cj->$k))
+                        $xcj->$k = $cj->$k;
+                $Conf->save_session("profile_redirect", $xcj);
+            }
             SelfHref::redirect($Qreq);
         }
     }
@@ -462,10 +467,11 @@ if ($useRequest) {
     $UserStatus->ignore_msgs = true;
     $formcj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
     $UserStatus->parse_request_topic("", $formcj, $Qreq);
-} else if (($formcj = $Conf->session("profile_redirect")))
+} else if (($formcj = $Conf->session("profile_redirect"))) {
     $Conf->save_session("profile_redirect", null);
-else
+} else {
     $formcj = $userj;
+}
 
 $form_params = array();
 if ($newProfile)
@@ -616,7 +622,8 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
 
 Ht::stash_script('focus_within($("#accountform"))');
-Ht::stash_script('hiliter_children("#accountform",true)');
 if ($newProfile)
     Ht::stash_script("focus_fold.hash(true)");
+else
+    Ht::stash_script('hiliter_children("#accountform",true)');
 $Conf->footer();

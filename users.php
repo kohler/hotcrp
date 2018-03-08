@@ -362,9 +362,9 @@ if (count($tOpt) > 1) {
 
 
 if ($Me->privChair && $Qreq->t == "pc")
-    $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new&amp;role=pc") . "' class='btn'>Add PC member</a></p><p>Select a PC member’s name to edit their profile or remove them from the PC.</p>");
+    $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new&amp;role=pc") . "' class='btn'>Create accounts</a></p><p>Select a PC member’s name to edit their profile or remove them from the PC.</p>");
 else if ($Me->privChair && $Qreq->t == "all")
-    $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new") . "' class='btn'>Create account</a></p><p>Select a user to edit their profile.  Select " . Ht::img("viewas.png", "[Act as]") . " to view the site as that user would see it.</p>");
+    $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new") . "' class='btn'>Create accounts</a></p><p>Select a user to edit their profile.  Select " . Ht::img("viewas.png", "[Act as]") . " to view the site as that user would see it.</p>");
 
 
 if ($pl->any->sel) {
