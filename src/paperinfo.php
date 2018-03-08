@@ -1443,13 +1443,12 @@ class PaperInfo {
             foreach ($this->options() as $oa)
                 if ($oa->option->has_document())
                     $x = array_merge($x, $oa->unsorted_values());
-            if ($did > 0)
-                $x[] = $did;
+            $x[] = $did;
             $this->_add_documents($x);
         }
-        if ($did > 0 && !isset($this->_document_array[$did]))
+        if (!isset($this->_document_array[$did]))
             $this->_add_documents([$did]);
-        return $did > 0 ? get($this->_document_array, $did) : null;
+        return get($this->_document_array, $did);
     }
     function joindoc() {
         return $this->document($this->finalPaperStorageId > 0 ? DTYPE_FINAL : DTYPE_SUBMISSION);
