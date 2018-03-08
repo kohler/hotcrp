@@ -2373,7 +2373,12 @@ class Contact {
         $rights = $this->rights($prow);
         $oview = $opt->visibility;
         if ($opt->final
-            && ($prow->outcome <= 0 || !$this->can_view_decision($prow)))
+            && ($prow->outcome <= 0
+                || !$this->can_view_decision($prow))
+            && (!$rights->act_author_view
+                || ($opt->optionId === DTYPE_FINAL
+                    ? $prow->finalPaperStorageId <= 1
+                    : !$prow->option($opt->optionId))))
             return false;
         if ($rights->allow_administer)
             return $oview !== "nonblind" || $this->can_view_authors($prow);
