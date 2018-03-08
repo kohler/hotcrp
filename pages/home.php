@@ -228,7 +228,7 @@ if ($homelist) {
     $tOpt = PaperSearch::search_types($Me);
     echo Ht::entry("q", (string) $Qreq->q,
                    array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
-                         "class" => "hotcrp_searchbox", "placeholder" => "(All)")),
+                         "class" => "papersearch", "placeholder" => "(All)")),
         " &nbsp;in&nbsp; ",
         PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; ", Ht::submit("Search"),

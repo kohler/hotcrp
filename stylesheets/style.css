@@ -163,6 +163,10 @@ td.quicklinks, #trackerconnect {
 	width: 72px;
 	max-width: 600px;
 }
+#quicksearchq.usersearch {
+	min-width: 96px;
+	width: 96px;
+}
 
 
 /* generic horizontal styles */

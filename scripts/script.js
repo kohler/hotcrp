@@ -2492,7 +2492,7 @@ function row_order_change(e, delta, action) {
            && (max_rows <= 0 || trs.length < max_rows)) {
         var $newtr = $($tbody[0].getAttribute("data-row-template")).appendTo($tbody);
         mktemptext($newtr);
-        suggest($newtr.find(".hotcrp_searchbox"), taghelp_q);
+        suggest($newtr.find(".papersearch"), taghelp_q);
         trs = $tbody.children();
         if (want_focus) {
             focus_within($newtr);
@@ -4209,7 +4209,7 @@ function suggest(elt, suggestions_promise, options) {
     }
 }
 
-$(function () { suggest($(".hotcrp_searchbox"), taghelp_q); });
+$(function () { suggest($(".papersearch"), taghelp_q); });
 
 
 // review preferences

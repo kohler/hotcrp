@@ -286,7 +286,7 @@ else if (str_starts_with($Qreq->t, "#"))
     $title = "#" . substr($Qreq->t, 1) . " program committee";
 else
     $title = "Users";
-$Conf->header($title, "accounts");
+$Conf->header($title, "accounts", ["action_bar" => actionBar("account")]);
 
 
 $pl = new ContactList($Me, true, $Qreq);

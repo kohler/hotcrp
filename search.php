@@ -313,7 +313,7 @@ echo '<div id="searchform" class="linelinks tablinks', $activetab, ' clearfix">'
 echo Ht::form_div(hoturl("search"), array("method" => "get")),
     Ht::entry("q", (string) $Qreq->q,
               ["size" => 40, "style" => "width:30em", "tabindex" => 1,
-               "class" => "hotcrp_searchbox want-focus",
+               "class" => "papersearch want-focus",
                "placeholder" => "(All)"]),
     " &nbsp;in &nbsp;$tselect &nbsp;\n",
     Ht::submit("Search", ["tabindex" => 1]),
