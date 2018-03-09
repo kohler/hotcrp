@@ -15,10 +15,8 @@ if (!isset($_GET["fn"])) {
         $_GET["fn"] = $fn;
     else if (isset($_GET["track"]))
         $_GET["fn"] = "track";
-    else {
-        error_log("missing fn");
-        $_GET["fn"] = "status";
-    }
+    else
+        json_exit(404, "API function missing");
 }
 if ($_GET["fn"] === "deadlines")
     $_GET["fn"] = "status";
@@ -110,7 +108,7 @@ if ($Qreq->fn === "searchcompletion") {
 if ($Qreq->fn === "track")
     MeetingTracker::track_api($Me, $Qreq); // may fall through to act like `status`
 else if ($Qreq->fn !== "status")
-    error_log("unknown request " . json_encode($Qreq));
+    json_exit(404, "Unknown request “" . $Qreq->fn . "”");
 
 $j = $Me->my_deadlines($Conf->paper);
 
