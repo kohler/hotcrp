@@ -209,7 +209,9 @@ class Mailer {
         }
 
         // expansions that require a recipient
-        if ($what == "%LOGINURL%" || $what == "%LOGINURLPARTS%" || $what == "%PASSWORD%") {
+        if ($what == "%LOGINURL%"
+            || $what == "%LOGINURLPARTS%"
+            || $what == "%PASSWORD%") {
             $password = false;
             if (!$external_password) {
                 $pwd_plaintext = $this->recipient->plaintext_password();

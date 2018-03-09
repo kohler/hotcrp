@@ -32,17 +32,10 @@ Your %CONTACTDBDESCRIPTION% account has been activated for the %CONFNAME% submis
 
         Site: %URL%/
        Email: %EMAIL%
-    Password: %OPT(PASSWORD)%
 
-%IF(PASSWORD)%Use the link below to sign in.
+Use the link above to sign in with your %CONTACTDBDESCRIPTION% password or to reset your password.
 
-%LOGINURL%
-
-%ELSE%Use the link below to sign in with your %CONTACTDBDESCRIPTION% password or to reset your password.
-
-%LOGINURL%
-
-%ENDIF%Contact %ADMIN% with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 %SIGNATURE%\n"),
 
