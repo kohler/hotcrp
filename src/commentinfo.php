@@ -153,8 +153,11 @@ class CommentInfo {
     static function group_by_identity($crows, Contact $user, $separateColors) {
         $known_cids = $result = [];
         foreach ($crows as $cr) {
-            $open = $user->can_view_comment_identity($cr->prow, $cr);
-            $cid = $open ? $cr->contactId : 0;
+            $cid = 0;
+            if ($user->can_view_comment_identity($cr->prow, $cr)
+                || $cr->unparse_user_pseudonym($user)) {
+                $cid = $cr->contactId;
+            }
             if ($cr->commentType & COMMENTTYPE_RESPONSE) {
                 if (!empty($result))
                     $result[count($result) - 1][2] = ";";
