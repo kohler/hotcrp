@@ -821,7 +821,9 @@ class PaperStatus extends MessageSet {
             if (isset($pj->$k) && $pj->$k) {
                 $pj->$k = $ps->upload_document($pj->$k, $ps->conf->paper_opts->get($i ? DTYPE_FINAL : DTYPE_SUBMISSION));
             }
-            if (!$ps->prow || isset($pj->$k)) {
+            if (!$ps->prow
+                || (isset($pj->$k)
+                    && !$ps->has_error_at($i ? "final" : "paper"))) {
                 $null_id = $i ? 0 : 1;
                 $new_id = isset($pj->$k) && $pj->$k ? $pj->$k->docid : $null_id;
                 $prowk = $i ? "finalPaperStorageId" : "paperStorageId";

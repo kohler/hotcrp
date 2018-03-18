@@ -887,12 +887,18 @@ for ($pid = 1; $pid <= 8; ++$pid) {
 }
 
 // check content upload
+$paper30 = $Conf->paperRow(30, $user_chair);
+$old_hash = $paper30->document(DTYPE_SUBMISSION)->text_hash();
 $ps = new PaperStatus($Conf);
 $ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"/etc/passwd","mimetype":"application/pdf"}}'));
 xassert($ps->has_error_at("paper"));
+$paper30 = $Conf->paperRow(30, $user_chair);
+xassert_eqq($paper30->document(DTYPE_SUBMISSION)->text_hash(), $old_hash);
 $ps->clear();
 $ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"./../../../../etc/passwd","mimetype":"application/pdf"}}'));
 xassert($ps->has_error_at("paper"));
+$paper30 = $Conf->paperRow(30, $user_chair);
+xassert_eqq($paper30->document(DTYPE_SUBMISSION)->text_hash(), $old_hash);
 
 // check accept invariant
 assert_search_papers($user_chair, "dec:yes", "");
