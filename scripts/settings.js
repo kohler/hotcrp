@@ -135,8 +135,6 @@ function add() {
     $("#round_container").show();
     $("#roundtable").append($("#newround").html().replace(/\$/g, i));
     var $mydiv = $("#roundname_" + i).closest(".js-settings-review-round");
-    if (++added == 1 && i == 1)
-        $mydiv.children().first().append('<div class="hint">Example name: “R1”</div>');
     $("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
     $("#extrev_roundtag").append('<option value="#' + i + '" id="extrev_roundtag_' + i + '">(new round)</option>');
     mktemptext($mydiv);
