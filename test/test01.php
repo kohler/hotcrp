@@ -888,10 +888,10 @@ for ($pid = 1; $pid <= 8; ++$pid) {
 
 // check content upload
 $ps = new PaperStatus($Conf);
-xassert(!$ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"/etc/passwd","mimetype":"application/pdf"}}')));
+$ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"/etc/passwd","mimetype":"application/pdf"}}'));
 xassert($ps->has_error_at("paper"));
 $ps->clear();
-xassert(!$ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"./../../../../etc/passwd","mimetype":"application/pdf"}}')));
+$ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"./../../../../etc/passwd","mimetype":"application/pdf"}}'));
 xassert($ps->has_error_at("paper"));
 
 // check accept invariant
