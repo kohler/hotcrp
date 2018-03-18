@@ -110,29 +110,6 @@ function hoturl_absolute_raw($page, $options = null) {
 }
 
 
-function file_uploaded(&$var) {
-    global $Conf;
-    if (!isset($var) || ($var['error'] != UPLOAD_ERR_OK && !$Conf))
-        return false;
-    switch ($var['error']) {
-    case UPLOAD_ERR_OK:
-        return is_uploaded_file($var['tmp_name'])
-            || (PHP_SAPI === "cli" && get($var, "tmp_name_safe"));
-    case UPLOAD_ERR_NO_FILE:
-        return false;
-    case UPLOAD_ERR_INI_SIZE:
-    case UPLOAD_ERR_FORM_SIZE:
-        Conf::msg_error("You tried to upload a file that’s too big for our system to accept.  The maximum size is " . ini_get("upload_max_filesize") . "B.");
-        return false;
-    case UPLOAD_ERR_PARTIAL:
-        Conf::msg_error("You appear to have interrupted the upload process; I am not storing that file.");
-        return false;
-    default:
-        Conf::msg_error("Internal upload error " . $var['error'] . "!");
-        return false;
-    }
-}
-
 class SelfHref {
     static private $argmap = null;
     static private function set_argmap() {

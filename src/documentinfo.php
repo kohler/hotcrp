@@ -90,10 +90,7 @@ class DocumentInfo implements JsonSerializable {
     }
 
     static function make_file_upload($paperId, $documentType, $upload) {
-        if (is_string($upload) && $upload)
-            $upload = $_FILES[$upload];
-        if (!$upload || !is_array($upload) || !file_uploaded($upload)
-            || !isset($upload["tmp_name"]))
+        if (!$upload || !is_array($upload))
             return null;
         $args = ["paperId" => $paperId,
                  "documentType" => $documentType,
@@ -102,7 +99,11 @@ class DocumentInfo implements JsonSerializable {
             && is_valid_utf8($upload["name"]))
             $args["filename"] = $upload["name"];
         $fnhtml = isset($args["filename"]) ? " “" . htmlspecialchars($args["filename"]) . "”" : "";
-        if (($content = file_get_contents($upload["tmp_name"])) === false)
+        if (isset($upload["content"]))
+            $content = $upload["content"];
+        else
+            $content = file_get_contents($upload["tmp_name"]);
+        if ($content === false)
             $args["error_html"] = "Uploaded file$fnhtml could not be read.";
         else if ($content === "")
             $args["error_html"] = "Uploaded file$fnhtml was empty, not saving.";

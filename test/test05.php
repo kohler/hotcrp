@@ -33,7 +33,7 @@ xassert_eqq(json_encode($paper1b), json_encode($paper1a));
 $doc = DocumentInfo::make_file_upload(-1, DTYPE_SUBMISSION, [
         "error" => UPLOAD_ERR_OK, "name" => "amazing-sample.pdf",
         "tmp_name" => "$ConfSitePATH/src/sample.pdf",
-        "tmp_name_safe" => true, "type" => "application/pdf"
+        "type" => "application/pdf"
     ]);
 $ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
 xassert(!$ps->has_error());
