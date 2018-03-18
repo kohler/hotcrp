@@ -171,7 +171,7 @@ static function render(SettingValues $sv) {
 
 
     echo '<div class="settings-g">';
-    $sv->echo_checkbox('cmt_revid', "Allow anonymous PC discussion", ["class" => "js-foldup", "data-fold-target" => "2"]);
+    $sv->echo_checkbox('cmt_revid', "Allow anonymous PC discussion in comments", ["class" => "js-foldup", "data-fold-target" => "2"]);
     Ht::stash_script('$("#cbcmt_revid").change()');
     echo "</div></div>\n";
 
