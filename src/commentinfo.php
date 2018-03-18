@@ -188,8 +188,7 @@ class CommentInfo {
     private function unparse_user_pseudonym(Contact $user) {
         if ($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR)) {
             return "Author";
-        } else if ($this->conf->setting("cmt_author")
-                   && ($rrow = $this->prow->review_of_user($this->contactId))
+        } else if (($rrow = $this->prow->review_of_user($this->contactId))
                    && $rrow->reviewOrdinal
                    && $user->can_view_review($this->prow, $rrow)) {
             return "Reviewer " . unparseReviewOrdinal($rrow->reviewOrdinal);
