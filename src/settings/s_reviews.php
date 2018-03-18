@@ -155,7 +155,7 @@ static function render(SettingValues $sv) {
     $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
                                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
                                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviews.</div>"),
+                                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper\n<div class='f-h fx'>Discussion leads can also see reviews.</div>"),
         'Can PC members <strong>see all reviews and comments</strong> except for conflicts?',
         $hint);
 
