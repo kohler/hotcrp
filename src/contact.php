@@ -3026,8 +3026,7 @@ class Contact {
                 && ($rights->allow_pc
                     ? $ctype >= COMMENTTYPE_PCONLY
                     : $ctype >= COMMENTTYPE_REVIEWER)
-                && $this->can_view_review($prow, null, $forceShow)
-                && $this->can_view_review_identity($prow, null, $forceShow));
+                && $this->can_view_review($prow, null, $forceShow));
     }
 
     function can_view_new_comment_ignore_conflict(PaperInfo $prow) {
@@ -3054,9 +3053,11 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         return $rights->can_administer
             || ($crow && $crow->contactId == $this->contactId)
-            || $rights->allow_pc
-            || ($rights->allow_review
-                && $this->conf->setting("extrev_view") >= 2)
+            || (($rights->allow_pc
+                 || ($rights->allow_review
+                     && $this->conf->setting("extrev_view") >= 2))
+                && ($this->can_view_review_identity($prow, null)
+                    || ($crow && $prow->can_view_review_identity_of($crow->commentId, $this))))
             || !$this->conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0);
     }
 

@@ -156,7 +156,7 @@ static function render(SettingValues $sv) {
                                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
                                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
                                   Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviews.</div>"),
-        'Can PC members <strong>see all reviews</strong> except for conflicts?',
+        'Can PC members <strong>see all reviews and comments</strong> except for conflicts?',
         $hint);
 
 
@@ -166,7 +166,7 @@ static function render(SettingValues $sv) {
         $hint = '<p class="settings-ag f-h">' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict reviewer name visibility.</p>';
     $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
                                     1 => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviewer names.</div>"),
-        'Can PC members see <strong>comments and reviewer names</strong> except for conflicts?',
+        'Can PC members see <strong>reviewer names</strong> except for conflicts?',
         $hint);
 
 
