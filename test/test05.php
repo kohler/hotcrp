@@ -184,4 +184,32 @@ xassert($newpaper->timeSubmitted <= 0);
 xassert($newpaper->timeWithdrawn <= 0);
 xassert_eqq($newpaper->option(1)->value, 10);
 
+$qreq = new Qrequest("POST", ["ready" => 1, "has_opt2" => "1", "has_opt2_new_1" => "1", "title" => "Paper about mantis shrimp", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
+$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$qreq->set_file("opt2_new_1", ["name" => "attachment1.pdf", "type" => "application/pdf", "content" => "%PDF-whatever\n", "error" => UPLOAD_ERR_OK]);
+$pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+xassert($ps->prepare_save_paper_json($pj));
+xassert($ps->diffs["title"]);
+xassert($ps->diffs["abstract"]);
+xassert($ps->diffs["authors"]);
+xassert($ps->execute_save_paper_json($pj));
+xassert(!$ps->has_error());
+
+$newpaper = $Conf->paperRow($ps->paperId, $user_estrin);
+xassert($newpaper);
+xassert_eqq($newpaper->title, "Paper about mantis shrimp");
+xassert_eqq($newpaper->abstract, "They see lots of colors.");
+xassert_eqq(count($newpaper->author_list()), 1);
+$aus = $newpaper->author_list();
+xassert_eqq($aus[0]->firstName, "David");
+xassert_eqq($aus[0]->lastName, "Attenborough");
+xassert_eqq($aus[0]->email, "atten@_.com");
+xassert($newpaper->timeSubmitted > 0);
+xassert($newpaper->timeWithdrawn <= 0);
+xassert(!$newpaper->option(1));
+xassert(!!$newpaper->option(2));
+xassert(count($newpaper->option(2)->documents()) == 1);
+xassert_eqq($newpaper->option(2)->document(0)->text_hash(), "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
+
 xassert_exit();
