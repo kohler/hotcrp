@@ -1,5 +1,6 @@
 [
-    ["Each submission can have at most %d authors.", "Each submission can have at most %d author.", ["$1=1"]],
+    ["Each submission must have at least one author.", "Each submission must have an author.", ["$1=1"]],
+    ["Each submission can have at most %d authors.", "Each submission can have at most one author.", ["$1=1"]],
 
     ["You can’t register submission #%d yet.", "You can’t register submissions yet.", ["$1<0"]],
     ["You can’t register submission #%d until %s.", "You can’t register submissions until %2$s.", ["$1<0"]],

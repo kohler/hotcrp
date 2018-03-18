@@ -196,7 +196,10 @@ class TitlePaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $t = '<a href="' . $pl->_paperLink($row) . '" class="ptitle taghl';
 
-        $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
+        if ($row->title !== "")
+            $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
+        else
+            $highlight_text = "[No title]";
 
         if (!$highlight_count && ($format = $row->title_format())) {
             $pl->need_render = true;

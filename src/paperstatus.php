@@ -260,9 +260,16 @@ class PaperStatus extends MessageSet {
 
         // Now produce messages.
         if (!$this->ignore_msgs
+            && $pj->title === "")
+            $this->error_at("title", $this->_("Each submission must have a title."));
+        if (!$this->ignore_msgs
+            && (!isset($pj->abstract) || $pj->abstract === "")
+            && !$this->conf->opt("noAbstract"))
+            $this->error_at("abstract", $this->_("Each submission must have an abstract."));
+        if (!$this->ignore_msgs
             && $can_view_authors) {
             $msg1 = $msg2 = false;
-            foreach ($prow->author_list() as $n => $au)
+            foreach ($prow->author_list() as $n => $au) {
                 if (strpos($au->email, "@") === false
                     && strpos($au->affiliation, "@") !== false) {
                     $msg1 = true;
@@ -272,6 +279,12 @@ class PaperStatus extends MessageSet {
                     $msg2 = true;
                     $this->warning_at("author" . ($n + 1), null);
                 }
+            }
+            $max_authors = $this->conf->opt("maxAuthors");
+            if (!$prow->author_list())
+                $this->error_at("authors", $this->_("Each submission must have at least one author.", $max_authors));
+            if ($max_authors > 0 && count($prow->author_list()) > $max_authors)
+                $this->error_at("authors", $this->_("Each submission can have at most %d authors.", $max_authors));
             if ($msg1)
                 $this->warning_at("authors", "You may have entered an email address in the wrong place. The first author field is for author name, the second for email address, and the third for affiliation.");
             if ($msg2)
@@ -312,7 +325,6 @@ class PaperStatus extends MessageSet {
     function error_at_option(PaperOption $o, $html) {
         $this->error_at($o->field_key(), htmlspecialchars($o->name) . ": " . $html);
     }
-
     function warning_at_option(PaperOption $o, $html) {
         $this->warning_at($o->field_key(), htmlspecialchars($o->name) . ": " . $html);
     }
@@ -731,7 +743,10 @@ class PaperStatus extends MessageSet {
         if ($v === ""
             && (isset($pj->title) || !$ps->prow || (string) $ps->prow->title === ""))
             $ps->error_at("title", $ps->_("Each submission must have a title."));
-        if (!$ps->prow || (isset($pj->title) && $v !== (string) $ps->prow->title))
+        if (!$ps->prow
+            || (!$ps->has_error_at("title")
+                && isset($pj->title)
+                && $v !== (string) $ps->prow->title))
             $ps->save_paperf("title", $v, "title");
     }
 
@@ -742,7 +757,10 @@ class PaperStatus extends MessageSet {
             if (!$ps->conf->opt("noAbstract"))
                 $ps->error_at("abstract", $ps->_("Each submission must have an abstract."));
         }
-        if (!$ps->prow || (isset($pj->abstract) && $v !== (string) $ps->prow->abstract))
+        if (!$ps->prow
+            || (!$ps->has_error_at("abstract")
+                && isset($pj->abstract)
+                && $v !== (string) $ps->prow->abstract))
             $ps->save_paperf("abstract", $v, "abstract");
     }
 
@@ -759,10 +777,10 @@ class PaperStatus extends MessageSet {
 
     static function check_authors(PaperStatus $ps, $pj) {
         $authors = get($pj, "authors");
+        $max_authors = $ps->conf->opt("maxAuthors");
         if ((is_array($authors) && empty($authors))
             || ($authors === null && (!$ps->prow || !$ps->prow->author_list())))
-            $ps->error_at("authors", $ps->_("Each submission must have at least one author."));
-        $max_authors = $ps->conf->opt("maxAuthors");
+            $ps->error_at("authors", $ps->_("Each submission must have at least one author.", $max_authors));
         if ($max_authors > 0 && is_array($authors) && count($authors) > $max_authors)
             $ps->error_at("authors", $ps->_("Each submission can have at most %d authors.", $max_authors));
         if (!empty($pj->bad_authors))
@@ -773,21 +791,26 @@ class PaperStatus extends MessageSet {
         }
         if (!$ps->prow || isset($pj->authors)) {
             $v = convert_to_utf8(self::author_information($pj));
-            if (!$ps->prow || $v !== $ps->prow->authorInformation)
+            if (!$ps->prow
+                || (!$ps->has_error_at("authors")
+                    && $v !== $ps->prow->authorInformation))
                 $ps->save_paperf("authorInformation", $v, "authors");
         }
     }
 
     static function check_collaborators(PaperStatus $ps, $pj) {
         $v = convert_to_utf8(get_s($pj, "collaborators"));
-        if (!$ps->prow || (isset($pj->collaborators) && $v !== (string) $ps->prow->collaborators))
+        if (!$ps->prow
+            || (isset($pj->collaborators)
+                && $v !== (string) $ps->prow->collaborators))
             $ps->save_paperf("collaborators", $v, "collaborators");
     }
 
     static function check_nonblind(PaperStatus $ps, $pj) {
         if ($ps->conf->submission_blindness() == Conf::BLIND_OPTIONAL
             && (!$ps->prow
-                || (isset($pj->nonblind) && !$pj->nonblind !== !!$ps->prow->blind))) {
+                || (isset($pj->nonblind)
+                    && !$pj->nonblind !== !!$ps->prow->blind))) {
             $ps->save_paperf("blind", get($pj, "nonblind") ? 0 : 1, "nonblind");
         }
     }
@@ -823,6 +846,10 @@ class PaperStatus extends MessageSet {
                 $pj_withdrawn = true;
             else if ($pj_status === "draft")
                 $pj_draft = true;
+        }
+        if ($ps->has_error() && ($pj_submitted || $pj_draft === false)) {
+            $pj_submitted = false;
+            $pj_draft = true;
         }
 
         $submitted = false;
@@ -924,7 +951,8 @@ class PaperStatus extends MessageSet {
                 $result = [[$result]];
             else if (count($result) == 2 && !is_int($result[1]))
                 $result = [$result];
-            $parsed_options[$o->id] = $result;
+            if (!$ps->has_error_at($o->field_key()))
+                $parsed_options[$o->id] = $result;
         }
 
         ksort($parsed_options);
@@ -1090,7 +1118,7 @@ class PaperStatus extends MessageSet {
     }
 
     static function postcheck_contacts(PaperStatus $ps, $pj) {
-        if (isset($ps->diffs["contacts"]) && !$ps->has_error()) {
+        if (isset($ps->diffs["contacts"]) && !$ps->has_error_at("contacts")) {
             foreach (self::contacts_array($pj) as $c) {
                 $c->only_if_contactdb = !get($c, "contact");
                 $c->disabled = !!$ps->disable_users;
@@ -1099,7 +1127,9 @@ class PaperStatus extends MessageSet {
                     $ps->error_at("contacts", $ps->_("Could not create an account for contact %s.", Text::user_html($c)));
             }
         }
-        if (isset($ps->diffs["contacts"]) || isset($ps->diffs["pc_conflicts"])) {
+        if ((isset($ps->diffs["contacts"]) || isset($ps->diffs["pc_conflicts"]))
+            && !$ps->has_error_at("contacts")
+            && !$ps->has_error_at("pc_conflicts")) {
             $ps->_conflict_ins = [];
             if (!empty($ps->_new_conflicts)) {
                 $result = $ps->conf->qe("select contactId, email from ContactInfo where email?a", array_keys($ps->_new_conflicts));
@@ -1168,13 +1198,12 @@ class PaperStatus extends MessageSet {
         self::check_nonblind($this, $pj);
         self::check_conflicts($this, $pj);
         self::check_pdfs($this, $pj);
-        self::check_status($this, $pj);
-        self::check_final_status($this, $pj);
         self::check_topics($this, $pj);
         self::check_options($this, $pj);
+        self::check_status($this, $pj);
+        self::check_final_status($this, $pj);
         self::postcheck_contacts($this, $pj);
-
-        return !$this->has_error();
+        return true;
     }
 
     function execute_save_paper_json($pj) {

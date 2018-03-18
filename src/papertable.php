@@ -246,6 +246,8 @@ class PaperTable {
                 $t .= '<span class="ptitle">';
             if ($highlight_text)
                 $t .= $highlight_text;
+            else if ($prow->title === "")
+                $t .= "[No title]";
             else
                 $t .= htmlspecialchars($prow->title);
 
@@ -681,8 +683,12 @@ class PaperTable {
 
     private function paptabAbstract() {
         $text = $this->entryData("abstract");
-        if (trim($text) === "" && $this->conf->opt("noAbstract"))
-            return false;
+        if (trim($text) === "") {
+            if ($this->conf->opt("noAbstract"))
+                return false;
+            else
+                $text = "[No abstract]";
+        }
         $extra = [];
         if ($this->allFolded && $this->abstract_foldable($text))
             $extra = ["fold" => "paper", "foldnum" => 6,
@@ -810,16 +816,17 @@ class PaperTable {
         else
             $highpreg = false;
         $this->entryMatches = 0;
+        $names = [];
 
-        $names = array();
-        if ($type === "last") {
+        if (empty($table)) {
+            return "[No authors]";
+        } else if ($type === "last") {
             foreach ($table as $au) {
                 $n = Text::abbrevname_text($au);
                 $names[] = Text::highlight($n, $highpreg, $nm);
                 $this->entryMatches += $nm;
             }
             return join(", ", $names);
-
         } else {
             foreach ($table as $au) {
                 $nm1 = $nm2 = $nm3 = 0;
