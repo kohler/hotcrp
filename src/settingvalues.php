@@ -292,10 +292,10 @@ class SettingValues extends MessageSet {
         // maybe set $Opt["contactName"] and $Opt["contactEmail"]
         $this->conf->site_contact();
     }
-    static function make_request(Contact $user, $post, $files = []) {
+    static function make_request(Contact $user, $qreq) {
         $sv = new SettingValues($user);
         $got = [];
-        foreach ($post as $k => $v) {
+        foreach ($qreq as $k => $v) {
             $sv->req[$k] = $v;
             if (preg_match('/\A(?:has_)?(\S+?)(|_n|_m?\d+)\z/', $k, $m)) {
                 if (!isset($sv->has_req[$m[1]]))
@@ -306,11 +306,10 @@ class SettingValues extends MessageSet {
                 }
             }
         }
-        foreach ($files as $f => $finfo)
-            if (($e = $finfo["error"]) == UPLOAD_ERR_OK) {
-                if (is_uploaded_file($finfo["tmp_name"]))
-                    $sv->req_files[$f] = $finfo;
-            }
+        if ($qreq instanceof Qrequest) {
+            foreach ($qreq->files() as $f => $finfo)
+                $sv->req_files[$f] = $finfo;
+        }
         return $sv;
     }
     function session_highlight() {
