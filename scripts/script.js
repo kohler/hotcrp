@@ -2160,7 +2160,12 @@ function foldup(event, opts) {
         && this.tagName === "INPUT"
         && input_is_checkboxlike(this))
         opts.f = !this.checked;
-    while (e && (!e.id || e.id.substr(0, 4) != "fold") && !hasClass(e, "has-fold")) {
+    while (e
+           && (!e.id || e.id.substr(0, 4) != "fold")
+           && !hasClass(e, "has-fold")
+           && (opts.n == null
+               || (!hasClass(e, "fold" + (opts.n || "") + "c")
+                   && !hasClass(e, "fold" + (opts.n || "") + "o")))) {
         e = e.parentNode;
     }
     if (!e)

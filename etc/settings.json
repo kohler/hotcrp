@@ -19,6 +19,10 @@
         "title": "Allow authors to post comments",
         "type": "checkbox"
     },
+    "cmt_revid": {
+        "title": "Anonymous PC discussion",
+        "type": "checkbox"
+    },
     "decisions": {
         "parser_class": "Decisions_SettingParser"
     },

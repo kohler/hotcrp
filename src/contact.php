@@ -3026,7 +3026,10 @@ class Contact {
                 && ($rights->allow_pc
                     ? $ctype >= COMMENTTYPE_PCONLY
                     : $ctype >= COMMENTTYPE_REVIEWER)
-                && $this->can_view_review($prow, null, $forceShow));
+                && $this->can_view_review($prow, null, $forceShow)
+                && ($this->conf->setting("cmt_revid")
+                    || $ctype >= COMMENTTYPE_AUTHOR
+                    || $this->can_view_review_identity($prow, null, $forceShow)));
     }
 
     function can_view_new_comment_ignore_conflict(PaperInfo $prow) {

@@ -136,13 +136,13 @@ static function render(SettingValues $sv) {
 
     // PC reviews
     echo "<h3 class=\"settings\" id=\"pcreviews\">PC reviews</h3>\n";
-    echo '<div class="settings-g">';
-    $hint = "";
+    echo '<div class="has-fold fold2c">';
+    echo '<div class="settings-g has-fold foldo">';
+    $sv->echo_checkbox('pcrev_any', "PC members can review any submitted paper", ["class" => "js-foldup"]);
     if ($sv->conf->setting("pcrev_any")
         && $sv->conf->check_track_sensitivity(Track::UNASSREV))
-        $hint = Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict self-assigned reviews.';
-    $sv->echo_checkbox('pcrev_any', "PC members can review any submitted paper", ["class" => "js-foldup", "item_class" => "has-fold foldo", "hint_class" => "fx"], $hint);
-    Ht::stash_script('$("#pcrev_any").change()');
+        echo '<p class="f-h fx">', Ht::link("Current track settings", hoturl("settings", "group=tracks")), ' may restrict self-assigned reviews.</p>';
+    Ht::stash_script('$("#cbpcrev_any").change()');
     echo "</div>\n";
 
     $hint = "";
@@ -156,7 +156,7 @@ static function render(SettingValues $sv) {
                                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
                                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
                                   Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper\n<div class='f-h fx'>Discussion leads can also see reviews.</div>"),
-        'Can PC members <strong>see all reviews and comments</strong> except for conflicts?',
+        'Can PC members <strong>see all reviews<span class="fx2"> and comments</span></strong> except for conflicts?',
         $hint);
 
 
@@ -166,8 +166,14 @@ static function render(SettingValues $sv) {
         $hint = '<p class="settings-ag f-h">' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict reviewer name visibility.</p>';
     $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
                                     1 => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviewer names.</div>"),
-        'Can PC members see <strong>reviewer names</strong> except for conflicts?',
+        'Can PC members see <strong><span class="fn2">comments and </span>reviewer names</strong> except for conflicts?',
         $hint);
+
+
+    echo '<div class="settings-g">';
+    $sv->echo_checkbox('cmt_revid', "Allow anonymous PC discussion", ["class" => "js-foldup", "data-fold-target" => "2"]);
+    Ht::stash_script('$("#cbcmt_revid").change()');
+    echo "</div></div>\n";
 
 
     // External reviews
