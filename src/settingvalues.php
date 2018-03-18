@@ -628,11 +628,14 @@ class SettingValues extends MessageSet {
         if ($heading)
             echo '<div class="settings-radioheading">', $heading, '</div>';
         foreach ($varr as $k => $text) {
+            $hint = "";
+            if (is_array($text))
+                list($text, $hint) = $text;
             echo '<div class="settings-radioitem checki ',
                 ($k == $x ? "foldo" : "foldc"), '"><label><span class="checkc">',
                 Ht::radio($name, $k, $k == $x,
                           $this->sjs($name, ["id" => "{$name}_{$k}", "class" => "js-settings-radio"])),
-                '</span>', $text, '</label></div>';
+                '</span>', $text, '</label>', $hint, '</div>';
         }
         if ($after)
             echo $after;

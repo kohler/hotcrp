@@ -1228,6 +1228,10 @@ label.f-c, .f-i > label {
 .f-h {
 	font-size: 92%;
 }
+.f-hx {
+	color: #555555;
+	font-size: 92%;
+}
 .f-2col {
 	margin: -1em 0;
 	padding: 0.5em 0;
