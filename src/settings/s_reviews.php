@@ -26,7 +26,7 @@ class Reviews_SettingRenderer {
                 '</div>';
         }
         if ($rnum === '$')
-            echo '<div class="hint">Names like “R1” and “R2” work well.</div>';
+            echo '<div class="f-h">Names like “R1” and “R2” work well.</div>';
         echo '</div>';
 
         // deadlines
@@ -67,7 +67,7 @@ static function render(SettingValues $sv) {
     // Deadlines
     echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";
     echo '<p class="settingtext">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>';
-    echo '<p class="hint">', ($sv->type_hint("date") ? : ""), '</p>';
+    echo '<p class="f-h">', ($sv->type_hint("date") ? : ""), '</p>';
 
     $rounds = $sv->conf->round_list();
     if ($sv->use_req()) {
@@ -147,17 +147,27 @@ static function render(SettingValues $sv) {
 
     $hint = "";
     if ($sv->conf->has_any_metareviews())
-        $hint = '<p class="settings-ag f-h">Metareviewers can always see their papers’ reviews and reviewer names.</p>';
+        $hint .= ' Metareviewers can always see their papers’ reviews and reviewer names.';
+    if ($sv->conf->check_track_sensitivity(Track::VIEWREV))
+        $hint .= ' ' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict review visibility.';
+    if ($hint !== "")
+        $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';
     $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
                                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
                                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
                                   Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviews.</div>"),
-        'Can PC members <strong>see all reviews</strong> except for conflicts?' . $hint);
+        'Can PC members <strong>see all reviews</strong> except for conflicts?',
+        $hint);
 
 
+    $hint = "";
+    if ($sv->conf->setting("pc_seeblindrev") == 0
+        && $sv->conf->check_track_sensitivity(Track::VIEWREVID))
+        $hint = '<p class="settings-ag f-h">' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict reviewer name visibility.</p>';
     $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
                                     1 => "Only after completing a review for the same paper\n<div class='hint fx'>Discussion leads can also see reviewer names.</div>"),
-        'Can PC members see <strong>comments and reviewer names</strong> except for conflicts?');
+        'Can PC members see <strong>comments and reviewer names</strong> except for conflicts?',
+        $hint);
 
 
     // External reviews

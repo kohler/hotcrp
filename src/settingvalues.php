@@ -620,7 +620,7 @@ class SettingValues extends MessageSet {
         if (!$item_open)
             echo "</div>\n";
     }
-    function echo_radio_table($name, $varr, $heading = null) {
+    function echo_radio_table($name, $varr, $heading = null, $after = null) {
         $x = $this->curv($name);
         if ($x === null || !isset($varr[$x]))
             $x = 0;
@@ -634,6 +634,8 @@ class SettingValues extends MessageSet {
                           $this->sjs($name, ["id" => "{$name}_{$k}", "class" => "js-settings-radio"])),
                 '</span>', $text, '</label></div>';
         }
+        if ($after)
+            echo $after;
         echo "</div>\n";
     }
     function render_entry($name, $js = []) {
