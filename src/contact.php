@@ -3641,7 +3641,7 @@ class Contact {
 
     function setsession_api($v) {
         $ok = true;
-        preg_match_all('/(?:\A|\s)(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|scoresort)(|\.[^=\s]*)(=\S*)?(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
+        preg_match_all('/(?:\A|\s)(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
         foreach ($ms as $m) {
             if ($m[2]) {
                 $on = intval(substr($m[3], 1) ? : "0") == 0;
