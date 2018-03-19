@@ -51,7 +51,7 @@ if (!$Me->has_database_account()
     }
 }
 if ($Qreq->p && ctype_digit($Qreq->p)) {
-    $Conf->paper = $Conf->paperRow(array("paperId" => intval($Qreq->p)), $Me);
+    $Conf->paper = $Conf->paperRow(["paperId" => intval($Qreq->p)], $Me);
     if (!$Conf->paper || !$Me->can_view_paper($Conf->paper)) {
         $whynot = ["conf" => $Conf, "paperId" => $Qreq->p];
         if (!$Conf->paper && $Me->privChair)
@@ -72,13 +72,17 @@ if ($Qreq->p && ctype_digit($Qreq->p)) {
 if ($Conf->has_api($Qreq->fn))
     $Conf->call_api_exit($Qreq->fn, $Me, $Qreq, $Conf->paper);
 
-if ($Qreq->fn === "setsession" && $Qreq->post_ok()) {
+if ($Qreq->fn === "setsession") {
+    if (!$Qreq->post_ok())
+        json_exit(403, ["ok" => false, "error" => "Missing credentials."]);
     if (!isset($Qreq->v))
         $Qreq->v = $Qreq->var . "=" . $Qreq->val;
     json_exit(["ok" => $Me->setsession_api($Qreq->v)]);
 }
 
-if ($Qreq->fn === "events" && $Me->is_reviewer()) {
+if ($Qreq->fn === "events") {
+    if (!$Me->is_reviewer())
+        json_exit(403, ["ok" => false]);
     $from = $Qreq->from;
     if (!$from || !ctype_digit($from))
         $from = $Now;
@@ -95,14 +99,12 @@ if ($Qreq->fn === "events" && $Me->is_reviewer()) {
     }
     json_exit(["ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
                "rows" => $rows]);
-} else if ($Qreq->fn === "events")
-    json_exit(["ok" => false]);
+}
 
 if ($Qreq->fn === "searchcompletion") {
     $s = new PaperSearch($Me, "");
     json_exit(["ok" => true, "searchcompletion" => $s->search_completion()]);
 }
-
 
 // from here on: `status` and `track` requests
 if ($Qreq->fn === "track")
