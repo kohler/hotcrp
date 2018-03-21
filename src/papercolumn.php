@@ -198,8 +198,10 @@ class TitlePaperColumn extends PaperColumn {
 
         if ($row->title !== "")
             $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
-        else
+        else {
             $highlight_text = "[No title]";
+            $highlight_count = 0;
+        }
 
         if (!$highlight_count && ($format = $row->title_format())) {
             $pl->need_render = true;
