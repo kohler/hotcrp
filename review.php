@@ -219,7 +219,7 @@ function download_all_text_reviews() {
         $whyNot = $Me->perm_view_review($prow, null) ? : $prow->make_whynot();
         return Conf::msg_error(whyNotText($whyNot));
     }
-    $text = $Conf->short_name . " Paper #2 Reviews and Comments\n"
+    $text = $Conf->short_name . " Paper #{$prow->paperId} Reviews and Comments\n"
         . str_repeat("=", 75) . "\n"
         . prefix_word_wrap("", "Paper #{$prow->paperId} {$prow->title}", 0, 75)
         . "\n\n" . $text;
