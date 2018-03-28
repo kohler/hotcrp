@@ -358,7 +358,7 @@ class Authors_PaperColumn extends PaperColumn {
         $nonempty_count = 0;
         $aff = [];
         foreach ($row->author_list() as $i => $au) {
-            if ($i && $au->affiliation === $aff[$i - 1])
+            if ($i != 0 && $au->affiliation === $aff[$i - 1])
                 $aff[$i - 1] = null;
             $aff[] = $au->affiliation;
             $nonempty_count += ($au->affiliation !== "");
@@ -399,7 +399,9 @@ class Authors_PaperColumn extends PaperColumn {
                 }
             }
             // $affout[0] === "" iff there are no nonempty affiliations
-            if (($any_affhl || $this->aufull) && $affout[0] !== "") {
+            if (($any_affhl || $this->aufull)
+                && !empty($out)
+                && $affout[0] !== "") {
                 foreach ($out as $i => &$x)
                     $x .= ' <span class="auaff">(' . $affout[$i] . ')</span>';
             }
