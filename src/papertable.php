@@ -503,7 +503,7 @@ class PaperTable {
                     $stamps = "<span class='sep'></span>" . $stamps;
                 if ($dtype == DTYPE_FINAL)
                     $dname = $this->conf->_c("paper_pdf_name", "Final version");
-                else if ($prow->timeSubmitted > 0)
+                else if ($prow->timeSubmitted != 0)
                     $dname = $this->conf->_c("paper_pdf_name", "Submission");
                 else
                     $dname = $this->conf->_c("paper_pdf_name", "Draft submission");
