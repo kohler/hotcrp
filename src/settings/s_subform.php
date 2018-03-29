@@ -173,8 +173,10 @@ class BanalSettings {
             return false;
         if ($check)
             self::check_banal($sv);
-        $spt = new FormatSpec($sv->oldv("sub_banal_data$suffix"))->unparse_banal();
-        $ospt = new FormatSpec($sv->newv("sub_banal_opt$suffix"))->unparse_banal();
+        $sp = new FormatSpec($sv->oldv("sub_banal_data$suffix"));
+        $spt = $sp->unparse_banal();
+        $osp = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
+        $ospt = $osp->unparse_banal();
         $sv->save("sub_banal_data$suffix", $spt !== $ospt ? $spt : "");
         if ($suffix === ""
             && !$sv->oldv("sub_banal_m1")
