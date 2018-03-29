@@ -169,16 +169,22 @@ class BanalSettings {
             }
         }
 
-        if (!$problem) {
-            if ($check)
-                self::check_banal($sv);
-            $sv->save("sub_banal_data$suffix", $cfs->unparse());
-            if ($suffix === "" && !$sv->oldv("sub_banal_m1")
-                && !isset($sv->req["has_sub_banal_m1"]))
-                $sv->save("sub_banal_data_m1", $cfs->unparse());
-            return true;
-        } else
+        if ($problem)
             return false;
+        if ($check)
+            self::check_banal($sv);
+        $spt = new FormatSpec($sv->oldv("sub_banal_data$suffix"))->unparse_banal();
+        $ospt = new FormatSpec($sv->newv("sub_banal_opt$suffix"))->unparse_banal();
+        $sv->save("sub_banal_data$suffix", $spt !== $ospt ? $spt : "");
+        if ($suffix === ""
+            && !$sv->oldv("sub_banal_m1")
+            && !isset($sv->req["has_sub_banal_m1"])) {
+            $m1spec = new FormatSpec($sv->oldv("sub_banal_opt_m1"));
+            if ($m1spec->is_banal_empty()) {
+                $sv->save("sub_banal_data_m1", $spt);
+            }
+        }
+        return true;
     }
 }
 

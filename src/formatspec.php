@@ -118,13 +118,17 @@ class FormatSpec {
                     $a[$k] = $v;
             return empty($a) ? "" : json_encode($a);
         } else {
-            $x = array_fill(0, 6, "");
-            foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $i => $k)
-                $x[$i] = $this->unparse_key($k);
-            while (!empty($x) && !$x[count($x) - 1])
-                array_pop($x);
-            return join(";", $x);
+            return $this->unparse_banal();
         }
+    }
+
+    function unparse_banal() {
+        $x = array_fill(0, 6, "");
+        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $i => $k)
+            $x[$i] = $this->unparse_key($k);
+        while (!empty($x) && !$x[count($x) - 1])
+            array_pop($x);
+        return join(";", $x);
     }
 
 
