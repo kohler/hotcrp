@@ -271,7 +271,7 @@
     },
     "sub_banal_data": {
         "internal": true, "type": "string",
-        "storage": "sub_banal", "extensible": true
+        "storage": "dat.sub_banal", "extensible": true
     },
     "sub_banal_opt": {
         "internal": true, "type": "string",

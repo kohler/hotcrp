@@ -59,7 +59,7 @@ class BanalSettings {
         }
     }
     static function parse($suffix, $sv, $check) {
-        global $ConfSitePATH;
+        global $ConfSitePATH, $Now;
         if (!isset($sv->req["sub_banal$suffix"])) {
             $fs = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
             $sv->save("sub_banal$suffix", $fs->is_banal_empty() ? 0 : -1);
@@ -69,6 +69,7 @@ class BanalSettings {
         // check banal subsettings
         $problem = false;
         $cfs = new FormatSpec($sv->oldv("sub_banal_data$suffix"));
+        $old_unparse = $cfs->unparse_banal();
         $cfs->papersize = [];
         if (($s = trim(defval($sv->req, "sub_banal_papersize$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
@@ -174,16 +175,17 @@ class BanalSettings {
             return false;
         if ($check)
             self::check_banal($sv);
-        $sp = new FormatSpec($sv->oldv("sub_banal_data$suffix"));
-        $spt = $sp->unparse_banal();
-        $osp = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
-        $ospt = $osp->unparse_banal();
-        if ($spt === $ospt)
-            $spt = "";
-        $sv->save("sub_banal_data$suffix", $spt !== $ospt ? $spt : "");
-        if ($sv->oldv("sub_banal_data$suffix") !== $spt
-            || $sv->oldv("sub_banal$suffix") <= 0) {
-            $sv->save("sub_banal$suffix", $Now);
+
+        $opt_spec = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
+        $opt_unparse = $opt_spec->unparse_banal();
+        $unparse = $cfs->unparse();
+        if ($unparse === $opt_unparse)
+            $unparse = "";
+        $sv->save("sub_banal_data$suffix", $unparse);
+        if ($old_unparse !== $unparse || $sv->oldv("sub_banal$suffix") <= 0) {
+            $sv->save("sub_banal$suffix", $unparse !== "" ? $Now : 0);
+        } else {
+            $sv->save("sub_banal$suffix", $unparse === "" ? 0 : $sv->oldv("sub_banal$suffix"));
         }
 
         if ($suffix === ""
@@ -249,26 +251,9 @@ class SubForm_SettingRenderer {
 
 class Banal_SettingParser extends SettingParser {
     function parse(SettingValues $sv, Si $si) {
-        if (substr($si->name, 0, 9) === "sub_banal")
+        if ($si->base_name === "sub_banal")
             return BanalSettings::parse(substr($si->name, 9), $sv, true);
         else
             return false;
-    }
-    function save(SettingValues $sv, Si $si) {
-        global $Now;
-        if ($si->base_name === "sub_banal") {
-            $suffix = substr($si->name, 9);
-            if ($sv->newv("sub_banal$suffix")) {
-                if ($sv->oldv("sub_banal_data$suffix") !== $sv->newv("sub_banal_data$suffix")
-                    || !$sv->oldv("sub_banal$suffix")) {
-                    $sv->save("sub_banal$suffix", $Now);
-                }
-            } else {
-                $fs = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
-                if (!$fs->is_banal_empty()) {
-                    $sv->save("sub_banal$suffix", -1);
-                }
-            }
-        }
     }
 }
