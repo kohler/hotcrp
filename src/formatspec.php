@@ -14,8 +14,8 @@ class FormatSpec {
     public $timestamp = 0;
     private $_is_banal_empty = true;
 
-    function __construct($str = null) {
-        if ((string) $str !== "")
+    function __construct(/* ... */) {
+        foreach (func_get_args() as $str)
             $this->merge($str);
     }
 
@@ -60,6 +60,13 @@ class FormatSpec {
             $this->$k = self::parse_range($v);
         else
             $this->$k = $v;
+    }
+
+    function clear_banal() {
+        $this->papersize = [];
+        $this->pagelimit = $this->columns = $this->textblock =
+            $this->bodyfontsize = $this->bodylineheight = null;
+        $this->_is_banal_empty = true;
     }
 
     function is_empty() {

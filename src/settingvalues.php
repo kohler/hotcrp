@@ -5,6 +5,7 @@
 // setting information
 class Si {
     public $name;
+    public $base_name;
     public $title;
     public $group;
     public $type;
@@ -54,7 +55,7 @@ class Si {
 
     function __construct($j) {
         assert(!preg_match('/_(?:\$|n|m?\d+)\z/', $j->name));
-        $this->name = $this->title = $j->name;
+        $this->name = $this->base_name = $this->title = $j->name;
         foreach (["title", "type", "storage", "parser_class", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
             $this->store($k, $j, $k, "is_string");
         foreach (["internal", "optional", "novalue", "disabled", "autogrow"] as $k)

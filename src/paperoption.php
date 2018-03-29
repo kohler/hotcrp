@@ -866,10 +866,12 @@ class DocumentPaperOption extends PaperOption {
         if ($this->id)
             $speckey .= ($this->id < 0 ? "_m" : "_") . abs($this->id);
         $fspec = new FormatSpec;
-        if (($spects = $this->conf->setting($speckey)))
-            $fspec->merge($this->conf->setting_data($speckey, ""), $spects);
         if (($xspec = $this->conf->opt($speckey)))
             $fspec->merge($xspec, $this->conf->opt_timestamp());
+        if (($spects = $this->conf->setting($speckey)) > 0)
+            $fspec->merge($this->conf->setting_data($speckey, ""), $spects);
+        else if ($spects < 0)
+            $fspec->clear_banal();
         return $fspec;
     }
 }
