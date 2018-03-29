@@ -61,7 +61,8 @@ class BanalSettings {
     static function parse($suffix, $sv, $check) {
         global $ConfSitePATH;
         if (!isset($sv->req["sub_banal$suffix"])) {
-            $sv->save("sub_banal$suffix", 0);
+            $fs = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
+            $sv->save("sub_banal$suffix", $fs->is_banal_empty() ? 0 : -1);
             return false;
         }
 
@@ -177,7 +178,14 @@ class BanalSettings {
         $spt = $sp->unparse_banal();
         $osp = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
         $ospt = $osp->unparse_banal();
+        if ($spt === $ospt)
+            $spt = "";
         $sv->save("sub_banal_data$suffix", $spt !== $ospt ? $spt : "");
+        if ($sv->oldv("sub_banal_data$suffix") !== $spt
+            || $sv->oldv("sub_banal$suffix") <= 0) {
+            $sv->save("sub_banal$suffix", $Now);
+        }
+
         if ($suffix === ""
             && !$sv->oldv("sub_banal_m1")
             && !isset($sv->req["has_sub_banal_m1"])) {
@@ -186,6 +194,7 @@ class BanalSettings {
                 $sv->save("sub_banal_data_m1", $spt);
             }
         }
+
         return true;
     }
 }
