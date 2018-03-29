@@ -3,14 +3,17 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class BanalSettings {
-    static public function render($suffix, $sv) {
-        $cfs = new FormatSpec($sv->curv("sub_banal_data$suffix"));
+    static function render($suffix, $sv) {
+        $cfs = new FormatSpec($sv->curv("sub_banal_opt$suffix"),
+                              $sv->curv("sub_banal_data$suffix"));
+        if (!$sv->oldv("sub_banal$suffix") && !$cfs->is_banal_empty())
+            $sv->set_oldv("sub_banal$suffix", 1);
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $k) {
             $val = $cfs->unparse_key($k);
             $sv->set_oldv("sub_banal_$k$suffix", $val == "" ? "N/A" : $val);
         }
 
-        $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "js-foldup", "item_class" => "settings-g has-fold fold" . ($sv->curv("sub_banal$suffix") ? "o" : "c"), "item_open" => true]);
+        $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "js-foldup", "item_class" => "settings-g has-fold fold" . ($sv->curv("sub_banal$suffix") > 0 ? "o" : "c"), "item_open" => true]);
         echo Ht::hidden("has_sub_banal$suffix", 1),
             '<div class="settings-2col fx">';
         $sv->echo_entry_group("sub_banal_papersize$suffix", "Paper size", ["horizontal" => true], "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”, “letter OR A4”");
@@ -55,16 +58,18 @@ class BanalSettings {
                 $sv->warning_at(null, "(Try setting <code>\$Opt[\"banalZoom\"]</code> to 1.)");
         }
     }
-    static public function parse($suffix, $sv, $check) {
-        global $ConfSitePATH;
+    static function parse($suffix, $sv, $check) {
+        global $ConfSitePATH, $Now;
         if (!isset($sv->req["sub_banal$suffix"])) {
-            $sv->save("sub_banal$suffix", 0);
+            $fs = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
+            $sv->save("sub_banal$suffix", $fs->is_banal_empty() ? 0 : -1);
             return false;
         }
 
         // check banal subsettings
         $problem = false;
         $cfs = new FormatSpec($sv->oldv("sub_banal_data$suffix"));
+        $old_unparse = $cfs->unparse_banal();
         $cfs->papersize = [];
         if (($s = trim(defval($sv->req, "sub_banal_papersize$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
@@ -166,16 +171,33 @@ class BanalSettings {
             }
         }
 
-        if (!$problem) {
-            if ($check)
-                self::check_banal($sv);
-            $sv->save("sub_banal_data$suffix", $cfs->unparse());
-            if ($suffix === "" && !$sv->oldv("sub_banal_m1")
-                && !isset($sv->req["has_sub_banal_m1"]))
-                $sv->save("sub_banal_data_m1", $cfs->unparse());
-            return true;
-        } else
+        if ($problem)
             return false;
+        if ($check)
+            self::check_banal($sv);
+
+        $opt_spec = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
+        $opt_unparse = $opt_spec->unparse_banal();
+        $unparse = $cfs->unparse();
+        if ($unparse === $opt_unparse)
+            $unparse = "";
+        $sv->save("sub_banal_data$suffix", $unparse);
+        if ($old_unparse !== $unparse || $sv->oldv("sub_banal$suffix") <= 0) {
+            $sv->save("sub_banal$suffix", $unparse !== "" ? $Now : 0);
+        } else {
+            $sv->save("sub_banal$suffix", $unparse === "" ? 0 : $sv->oldv("sub_banal$suffix"));
+        }
+
+        if ($suffix === ""
+            && !$sv->oldv("sub_banal_m1")
+            && !isset($sv->req["has_sub_banal_m1"])) {
+            $m1spec = new FormatSpec($sv->oldv("sub_banal_opt_m1"));
+            if ($m1spec->is_banal_empty()) {
+                $sv->save("sub_banal_data_m1", $spt);
+            }
+        }
+
+        return true;
     }
 }
 
@@ -229,19 +251,9 @@ class SubForm_SettingRenderer {
 
 class Banal_SettingParser extends SettingParser {
     function parse(SettingValues $sv, Si $si) {
-        if (substr($si->name, 0, 9) === "sub_banal")
+        if ($si->base_name === "sub_banal")
             return BanalSettings::parse(substr($si->name, 9), $sv, true);
         else
             return false;
-    }
-    function save(SettingValues $sv, Si $si) {
-        global $Now;
-        if (substr($si->name, 0, 9) === "sub_banal") {
-            $suffix = substr($si->name, 9);
-            if ($sv->newv("sub_banal$suffix")
-                && ($sv->oldv("sub_banal_data$suffix") !== $sv->newv("sub_banal_data$suffix")
-                    || !$sv->oldv("sub_banal$suffix")))
-                $sv->save("sub_banal$suffix", $Now);
-        }
     }
 }

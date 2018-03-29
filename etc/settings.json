@@ -270,7 +270,12 @@
         "storage": "val.sub_banal", "extensible": true
     },
     "sub_banal_data": {
-        "internal": true, "type": "string", "storage": "sub_banal", "extensible": true
+        "internal": true, "type": "string",
+        "storage": "dat.sub_banal", "extensible": true
+    },
+    "sub_banal_opt": {
+        "internal": true, "type": "string",
+        "storage": "opt.sub_banal", "novalue": true, "extensible": true
     },
     "sub_banal_bodyfontsize": {
         "title": "PDF format checker minimum body font size",

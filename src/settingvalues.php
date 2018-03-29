@@ -5,6 +5,7 @@
 // setting information
 class Si {
     public $name;
+    public $base_name;
     public $title;
     public $group;
     public $type;
@@ -54,7 +55,7 @@ class Si {
 
     function __construct($j) {
         assert(!preg_match('/_(?:\$|n|m?\d+)\z/', $j->name));
-        $this->name = $this->title = $j->name;
+        $this->name = $this->base_name = $this->title = $j->name;
         foreach (["title", "type", "storage", "parser_class", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
             $this->store($k, $j, $k, "is_string");
         foreach (["internal", "optional", "novalue", "disabled", "autogrow"] as $k)
@@ -521,20 +522,24 @@ class SettingValues extends MessageSet {
             return;
         }
         $s = $si->storage();
+        if ($value === $si->default_value
+            || ($value === "" && ($si->storage_type & Si::SI_DATA)))
+            $value = null;
         if ($si->storage_type & Si::SI_SLICE) {
-            if (!isset($this->savedv[$s]))
-                $this->savedv[$s] = [$this->conf->setting($s, 0), $this->conf->setting_data($s, null)];
+            if (!isset($this->savedv[$s])) {
+                if (!array_key_exists($s, $this->savedv))
+                    $this->savedv[$s] = [$this->conf->setting($s, 0), $this->conf->setting_data($s, null)];
+                else
+                    $this->savedv[$s] = [0, null];
+            }
             $idx = $si->storage_type & Si::SI_DATA ? 1 : 0;
             $this->savedv[$s][$idx] = $value;
             if ($this->savedv[$s][0] === 0 && $this->savedv[$s][1] === null)
                 $this->savedv[$s] = null;
-        } else if ($si->storage_type & Si::SI_DATA) {
-            if ($value === null || $value === "" || $value === $si->default_value)
-                $this->savedv[$s] = null;
-            else
-                $this->savedv[$s] = [1, $value];
-        } else if ($value === null || $value === $si->default_value)
+        } else if ($value === null)
             $this->savedv[$s] = null;
+        else if ($si->storage_type & Si::SI_DATA)
+            $this->savedv[$s] = [1, $value];
         else
             $this->savedv[$s] = [$value, null];
     }

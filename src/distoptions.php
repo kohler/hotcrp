@@ -66,7 +66,7 @@ $Opt["dbName"] = "FIXME";
 //   sendmailParam   Extra parameters to be passed to your mailer. The default
 //                   is derived from $Opt["emailSender"]. If your system's
 //                   mailer is not sendmail, you may need to change the
-//                   default value; see src/mailer.php.
+//                   default value; see lib/mailer.php.
 //   internalMailer  Set to true to use HotCRP's replacement for PHP's weirdo
 //                   mail() function, false to use PHP's mail() function.
 //                   Defaults to false on Windows, true elsewhere. A
