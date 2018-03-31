@@ -1437,7 +1437,7 @@ class Conf {
         return get($this->_format_info, $format);
     }
 
-    public function check_format($format, $text = null) {
+    function check_format($format, $text = null) {
         if ($format === null)
             $format = $this->default_format;
         if ($format && $text !== null && ($f = $this->format_info($format))
@@ -3358,7 +3358,7 @@ class Conf {
 
     // capabilities
 
-    public function capability_manager($for = null) {
+    function capability_manager($for = null) {
         if ($for && substr($for, 0, 1) === "U") {
             if (($cdb = Contact::contactdb()))
                 return new CapabilityManager($cdb, "U");
@@ -3371,7 +3371,7 @@ class Conf {
 
     // messages
 
-    public function message_name($name) {
+    function message_name($name) {
         if (str_starts_with($name, "msg."))
             $name = substr($name, 4);
         if ($name === "revprefdescription" && $this->has_topics())
@@ -3381,7 +3381,7 @@ class Conf {
         return $name;
     }
 
-    public function message_html($name, $expansions = null) {
+    function message_html($name, $expansions = null) {
         $name = $this->message_name($name);
         $html = get($this->settingTexts, "msg.$name");
         if ($html === null && ($p = strrpos($name, ".")) !== false)
@@ -3394,7 +3394,7 @@ class Conf {
         return $html;
     }
 
-    public function message_default_html($name) {
+    function message_default_html($name) {
         return Message::default_html($this->message_name($name));
     }
 

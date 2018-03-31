@@ -656,7 +656,7 @@ class ReviewForm implements JsonSerializable {
         }
     }
 
-    private static function rrow_modified_time($prow, $rrow, $contact, $revViewScore) {
+    static private function rrow_modified_time($prow, $rrow, $contact, $revViewScore) {
         if (!$prow || !$rrow || !$contact->can_view_review_time($prow, $rrow))
             return 0;
         else if ($revViewScore >= VIEWSCORE_AUTHORDEC - 1) {
@@ -1092,8 +1092,8 @@ $blind\n";
     const RJ_ALL_RATINGS = 8;
     const RJ_NO_REVIEWERONLY = 16;
 
-    function unparse_review_json(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
-                                 $flags = 0) {
+    function unparse_review_json(PaperInfo $prow, ReviewInfo $rrow,
+                                 Contact $contact, $flags = 0) {
         self::check_review_author_seen($prow, $rrow, $contact);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         $editable = !($flags & self::RJ_NO_EDITABLE);
@@ -1663,7 +1663,8 @@ class ReviewValues extends MessageSet {
                 unset($this->req[$fid]);
                 $unready = true;
             } else {
-                if (!$anydiff && $old_fval !== $fval
+                if (!$anydiff
+                    && $old_fval !== $fval
                     && ($f->has_options || cleannl($old_fval) !== cleannl($fval)))
                     $anydiff = true;
                 if ($f->has_options && $fval === 0 && !$f->allow_empty) {
@@ -1834,8 +1835,11 @@ class ReviewValues extends MessageSet {
         // potentially assign review ordinal (requires table locking since
         // mySQL is stupid)
         $locked = $newordinal = false;
-        if ((!$rrow && $newsubmit && $diff_view_score >= VIEWSCORE_AUTHORDEC)
-            || ($rrow && !$rrow->reviewOrdinal
+        if ((!$rrow
+             && $newsubmit
+             && $diff_view_score >= VIEWSCORE_AUTHORDEC)
+            || ($rrow
+                && !$rrow->reviewOrdinal
                 && ($rrow->reviewSubmitted > 0 || $newsubmit)
                 && ($diff_view_score >= VIEWSCORE_AUTHORDEC
                     || $this->rf->author_nonempty($rrow)))) {
@@ -1897,9 +1901,11 @@ class ReviewValues extends MessageSet {
             && $this->conf->opt("formatInfo")) {
             $fmt = null;
             foreach ($this->conf->opt("formatInfo") as $k => $f)
-                if (get($f, "name") && strcasecmp($f["name"], $this->req["reviewFormat"]) == 0)
+                if (get($f, "name")
+                    && strcasecmp($f["name"], $this->req["reviewFormat"]) == 0)
                     $fmt = (int) $k;
-            if (!$fmt && $this->req["reviewFormat"]
+            if (!$fmt
+                && $this->req["reviewFormat"]
                 && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $f["reviewFormat"]))
                 $fmt = 0;
             $qf[] = "reviewFormat=?";
@@ -1920,20 +1926,25 @@ class ReviewValues extends MessageSet {
             if ($diff_view_score >= VIEWSCORE_AUTHOR) {
                 $qf[] = "reviewAuthorModified=?";
                 $qv[] = $now;
-            } else if ($rrow && !$rrow->reviewAuthorModified
+            } else if ($rrow
+                       && !$rrow->reviewAuthorModified
                        && $rrow->reviewModified) {
                 $qf[] = "reviewAuthorModified=?";
                 $qv[] = $rrow->reviewModified;
             }
             // do not notify on updates within 3 hours
-            if ($submit && $diff_view_score > VIEWSCORE_ADMINONLY && !$this->no_notify) {
-                if (!$rrow || !$rrow->reviewNotified
+            if ($submit
+                && $diff_view_score > VIEWSCORE_ADMINONLY
+                && !$this->no_notify) {
+                if (!$rrow
+                    || !$rrow->reviewNotified
                     || $rrow->reviewNotified < $notification_bound) {
                     $qf[] = "reviewNotified=?";
                     $qv[] = $now;
                     $notify = true;
                 }
-                if ((!$rrow || !$rrow->reviewAuthorNotified
+                if ((!$rrow
+                     || !$rrow->reviewAuthorNotified
                      || $rrow->reviewAuthorNotified < $notification_bound)
                     && $diff_view_score >= VIEWSCORE_AUTHOR
                     && Contact::can_some_author_view_submitted_review($prow)) {
@@ -2002,7 +2013,9 @@ class ReviewValues extends MessageSet {
             if ($this->conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
             $prow->notify(WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $user);
-        } else if ($rrow && !$submit && $diff_fields
+        } else if ($rrow
+                   && !$submit
+                   && $diff_fields
                    && $rrow->timeApprovalRequested
                    && $rrow->requestedBy
                    && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy))
@@ -2027,17 +2040,23 @@ class ReviewValues extends MessageSet {
         unset($this->_mailer_info, $this->_mailer_preps);
 
         // if external, forgive the requestor from finishing their review
-        if ($rrow && $rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy && $submit)
+        if ($rrow
+            && $rrow->reviewType < REVIEW_SECONDARY
+            && $rrow->requestedBy
+            && $submit) {
             $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
+        }
 
         $what = "#$prow->paperId" . ($rrow && $rrow->reviewSubmitted ? unparseReviewOrdinal($rrow->reviewOrdinal) : "");
-        if ($newsubmit)
+        if ($newsubmit) {
             $this->newlySubmitted[] = $what;
-        else if ($diff_view_score > VIEWSCORE_FALSE && $submit)
+        } else if ($diff_view_score > VIEWSCORE_FALSE && $submit) {
             $this->updated[] = $what;
-        else if ($rrow && $rrow->timeApprovalRequested && $rrow->contactId == $user->contactId)
+        } else if ($rrow
+                   && $rrow->timeApprovalRequested
+                   && $rrow->contactId == $user->contactId) {
             $this->approvalRequested[] = $what;
-        else if ($diff_view_score > VIEWSCORE_FALSE) {
+        } else if ($diff_view_score > VIEWSCORE_FALSE) {
             $this->saved_draft[] = $what;
             if ($rrow && $rrow->timeApprovalRequested)
                 $this->saved_draft_approval[] = $what;

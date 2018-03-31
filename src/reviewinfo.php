@@ -175,7 +175,9 @@ class ReviewInfo {
     function unparse_sfields() {
         $data = null;
         foreach (get_object_vars($this) as $k => $v)
-            if (strlen($k) === 3 && $k[0] === "s" && (int) $v !== 0
+            if (strlen($k) === 3
+                && $k[0] === "s"
+                && (int) $v !== 0
                 && ($n = cvtint(substr($k, 1))) >= self::MIN_SFIELD)
                 $data[$k] = (int) $v;
         if ($data === null)
@@ -186,7 +188,10 @@ class ReviewInfo {
         global $Conf;
         $data = null;
         foreach (get_object_vars($this) as $k => $v)
-            if (strlen($k) === 3 && $k[0] === "t" && $v !== null && $v !== "")
+            if (strlen($k) === 3
+                && $k[0] === "t"
+                && $v !== null
+                && $v !== "")
                 $data[$k] = $v;
         if ($data === null)
             return null;
@@ -199,7 +204,8 @@ class ReviewInfo {
     static function compare($a, $b) {
         if ($a->paperId != $b->paperId)
             return (int) $a->paperId < (int) $b->paperId ? -1 : 1;
-        if ($a->reviewOrdinal && $b->reviewOrdinal
+        if ($a->reviewOrdinal
+            && $b->reviewOrdinal
             && $a->reviewOrdinal != $b->reviewOrdinal)
             return (int) $a->reviewOrdinal < (int) $b->reviewOrdinal ? -1 : 1;
         $asub = (int) $a->reviewSubmitted;
@@ -208,7 +214,8 @@ class ReviewInfo {
             return $asub > 0 ? -1 : 1;
         if ($asub != $bsub)
             return $asub < $bsub ? -1 : 1;
-        if (isset($a->sorter) && isset($b->sorter)
+        if (isset($a->sorter)
+            && isset($b->sorter)
             && ($x = strcmp($a->sorter, $b->sorter)) != 0)
             return $x;
         if ($a->reviewId != $b->reviewId)
