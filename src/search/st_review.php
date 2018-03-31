@@ -409,7 +409,7 @@ class Review_SearchTerm extends SearchTerm {
         parent::extract_metadata($top, $srch);
         if ($top) {
             $v = $this->rsm->contact_set();
-            $srch->mark_context_user(count($v) == 1 ? $v[0] : null);
+            $srch->mark_context_user($v !== null && count($v) == 1 ? $v[0] : null);
         }
     }
 }

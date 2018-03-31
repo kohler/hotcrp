@@ -161,7 +161,7 @@ class SiteLoader {
     }
 }
 
-function __autoload($class_name) {
+spl_autoload_register(function ($class_name) {
     global $ConfSitePATH;
     $f = null;
     if (isset(SiteLoader::$map[$class_name]))
@@ -170,7 +170,7 @@ function __autoload($class_name) {
         $f = strtolower($class_name) . ".php";
     foreach (expand_includes($f, ["autoload" => true]) as $fx)
         require_once($fx);
-}
+});
 
 require_once("$ConfSitePATH/lib/base.php");
 require_once("$ConfSitePATH/lib/redirect.php");

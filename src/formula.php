@@ -1696,7 +1696,7 @@ class Formula {
 
         $args = '$prow, $rrow_cid, $contact';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n");
-        return create_function($args, $t);
+        return eval("return function ($args) {\n  $t};");
     }
 
     function compile_function() {
@@ -1715,7 +1715,7 @@ class Formula {
             . "\n  return array_keys($g);\n";
         $args = '$prow, $contact';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  $t}\n");
-        return create_function($args, $t);
+        return eval("return function ($args) {\n  $t};");
     }
 
     function compile_combine_functions() {
@@ -1729,7 +1729,7 @@ class Formula {
             $t .= "  return [" . join(", ", $state->fragments) . "];\n";
         $args = '$prow, $rrow_cid, $contact';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // fragments " . simplify_whitespace($this->expression) . "\n  $t}\n");
-        $outf = create_function($args, $t);
+        $outf = eval("return function ($args) {\n  $t};");
 
         // regroup function
         $state->clear();
@@ -1738,7 +1738,7 @@ class Formula {
         $t = self::compile_body(null, $state, $expr);
         $args = '$groups';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // combine " . simplify_whitespace($this->expression) . "\n  $t}\n");
-        $inf = create_function($args, $t);
+        $inf = eval("return function ($args) {\n  $t};");
 
         return [$outf, $inf];
     }

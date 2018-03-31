@@ -350,7 +350,7 @@ class PaperList {
         $code .= "if (!\$x) \$x = \$a->paperId - \$b->paperId;\n";
         $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
 
-        usort($rows, create_function("\$a, \$b", $code));
+        usort($rows, eval("return function (\$a, \$b) { $code };"));
 
         self::$magic_sort_info = null;
         foreach ($this->sorters as $s)
