@@ -524,8 +524,9 @@ class Contact {
                         $qf[] = "$k=?";
                     $qv[] = $this->$k;
                 }
-            if ($update_password && $update_passwordTime > $cdbur->passwordTime
-                && (!$only_update_empty || (string) $cdbur->password === "")) {
+            if ($update_password
+                && $update_passwordTime > $cdbur->passwordTime
+                && (string) $cdbur->password === "") {
                 $qf[] = "password=?, passwordTime=?";
                 array_push($qv, $update_password, $update_passwordTime);
             }
@@ -539,8 +540,9 @@ class Contact {
         if (!$cdbur)
             return false;
 
-        if ($cdbur->confid && ((int) $cdbur->roles !== $this->contactdb_roles()
-                               || (int) $cdbur->disabled !== (int) $this->disabled))
+        if ($cdbur->confid
+            && ((int) $cdbur->roles !== $this->contactdb_roles()
+                || (int) $cdbur->disabled !== (int) $this->disabled))
             Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, disabled=?, updated_at=? on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $cdbur->contactDbId, $cdbur->confid, $this->contactdb_roles(), (int) $this->disabled, $Now);
 
         return (int) $cdbur->contactDbId;
@@ -1461,7 +1463,8 @@ class Contact {
 
         $cdbu = $this->contactdb_user();
         $cdbok = false;
-        if ($cdbu && ($hash = $cdbu->password)
+        if ($cdbu
+            && ($hash = $cdbu->password)
             && $cdbu->allow_contactdb_password()
             && ($cdbok = $this->check_hashed_password($input, $hash, $this->email))) {
             if ($this->check_password_encryption($hash, true)) {
@@ -1476,7 +1479,8 @@ class Contact {
         }
 
         $localok = false;
-        if ($this->contactId && ($hash = $this->password)
+        if ($this->contactId
+            && ($hash = $this->password)
             && ($localok = $this->check_hashed_password($input, $hash, $this->email))) {
             if ($this->check_password_encryption($hash, false)) {
                 $hash = $this->hash_password($input, false);
@@ -1509,7 +1513,8 @@ class Contact {
             && (!$old || $cdbu->password)
             && (!$old || $this->check_hashed_password($old, $cdbu->password, $this->email))) {
             $hash = $new;
-            if ($hash && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
+            if ($hash
+                && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && $this->check_password_encryption("", true))
                 $hash = $this->hash_password($hash, true);
             $cdbu->password = $hash;
@@ -1524,7 +1529,8 @@ class Contact {
         } else if ($this->contactId
                    && (!$old || $this->check_hashed_password($old, $this->password, $this->email))) {
             $hash = $new;
-            if ($hash && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
+            if ($hash
+                && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && $this->check_password_encryption("", false))
                 $hash = $this->hash_password($hash, false);
             $this->password = $hash;

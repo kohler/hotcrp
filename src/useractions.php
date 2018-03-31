@@ -3,17 +3,26 @@
 // Copyright (c) 2008-2018 Eddie Kohler; see LICENSE.
 
 class UserActions {
-    static private function modify_password_mail($where, $dopassword, $sendtype, $ids) {
+    const PWTYPE_NO = 0;
+    const PWTYPE_YES = 1;
+    const PWTYPE_LOCAL = 2;
+
+    static private function modify_password_mail($where, $pwtype, $sendtype, $ids) {
         global $Conf;
         $j = (object) array("ok" => true);
         $result = Dbl::qe("select * from ContactInfo where $where and contactId ?a", $ids);
         while (($Acct = Contact::fetch($result, $Conf))) {
-            if ($dopassword)
+            if ($pwtype === self::PWTYPE_YES
+                || ($pwtype === self::PWTYPE_LOCAL
+                    && (!($cdbu = $Acct->contactdb_user())
+                        || $cdbu->password !== ""))) {
                 $Acct->change_password(null, null, Contact::CHANGE_PASSWORD_NO_CDB);
-            if ($sendtype && !$Acct->disabled)
+            }
+            if ($sendtype && !$Acct->disabled) {
                 $Acct->sendAccountInfo($sendtype, false);
-            else if ($sendtype)
+            } else if ($sendtype) {
                 $j->warnings[] = "Not sending mail to disabled account " . htmlspecialchars($Acct->email) . ".";
+            }
         }
         return $j;
     }
@@ -46,26 +55,22 @@ class UserActions {
             Dbl::qe("update ContactInfo set disabled=0 where contactId ?a", $disabled_cids);
         if (Dbl::$nerrors > $old_nerrors)
             return (object) ["error" => true];
-        else if (!count($disabled_cids))
+        else if (empty($disabled_cids))
             return (object) ["ok" => true, "warnings" => ["Those accounts were already enabled."]];
         else {
             $Conf->save_logs(true);
             foreach ($disabled_cids as $cid)
                 $Conf->log_for($contact, $cid, "Account enabled");
             $Conf->save_logs(false);
-            return self::modify_password_mail("password='' and contactId!=" . $contact->contactId, true, "create", $disabled_cids);
+            return self::modify_password_mail("password='' and contactId!=" . $contact->contactId, self::PWTYPE_LOCAL, "create", $disabled_cids);
         }
     }
 
     static function reset_password($ids, $contact) {
-        global $Conf;
-        return self::modify_password_mail("contactId!=" . $contact->contactId, true, false, $ids);
-        $Conf->confirmMsg("Passwords reset. To send mail with the new passwords, <a href='" . hoturl_post("users", "modifygo=1&amp;modifytype=sendaccount&amp;pap[]=" . (is_array($ids) ? join("+", $ids) : $ids)) . "'>click here</a>.");
+        return self::modify_password_mail("contactId!=" . $contact->contactId, self::PWTYPE_YES, false, $ids);
     }
 
     static function send_account_info($ids, $contact) {
-        global $Conf;
-        return self::modify_password_mail("true", false, "send", $ids);
-        $Conf->confirmMsg("Account information sent.");
+        return self::modify_password_mail("true", self::PWTYPE_NO, "send", $ids);
     }
 }
