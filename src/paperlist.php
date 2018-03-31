@@ -141,7 +141,6 @@ class PaperList {
 
     static public $include_stash = true;
 
-    static public $magic_sort_info; // accessed by sort function during _sort
     static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P];
 
     function __construct(PaperSearch $search, $args = array(), $qreq = null) {
@@ -321,38 +320,51 @@ class PaperList {
         return get($this->find_columns($name), 0);
     }
 
+    function _sort_compare($a, $b) {
+        foreach ($this->sorters as $s) {
+            if (($x = $s->field->compare($a, $b, $s))) {
+                return $x < 0 === $s->reverse ? 1 : -1;
+            }
+        }
+        if ($a->paperId != $b->paperId) {
+            return $a->paperId < $b->paperId ? -1 : 1;
+        } else {
+            return 0;
+        }
+    }
+    function _then_sort_compare($a, $b) {
+        if (($x = $a->_then_sort_info - $b->_then_sort_info)) {
+            return $x < 0 ? -1 : 1;
+        }
+        foreach ($this->sorters as $s) {
+            if (($s->thenmap === null || $s->thenmap === $a->_then_sort_info)
+                && ($x = $s->field->compare($a, $b, $s))) {
+                return $x < 0 === $s->reverse ? 1 : -1;
+            }
+        }
+        if ($a->paperId != $b->paperId) {
+            return $a->paperId < $b->paperId ? -1 : 1;
+        } else {
+            return 0;
+        }
+    }
     private function _sort($rows) {
-        $code = "\$x = 0;\n";
         if (($thenmap = $this->search->thenmap)) {
             foreach ($rows as $row)
                 $row->_then_sort_info = $thenmap[$row->paperId];
-            $code .= "if ((\$x = \$a->_then_sort_info - \$b->_then_sort_info)) return \$x < 0 ? -1 : 1;\n";
         }
-
-        $overrides = $this->user->add_overrides($this->_view_force ? Contact::OVERRIDE_CONFLICT : 0);
-        self::$magic_sort_info = $this->sorters;
         foreach ($this->sorters as $s) {
             $s->assign_uid();
             $s->list = $this;
         }
-        foreach ($this->sorters as $i => $s) {
+        foreach ($this->sorters as $s) {
             $s->field->analyze_sort($this, $rows, $s);
-            $rev = ($s->reverse ? "-" : "");
-            if ($s->thenmap === null)
-                $code .= "if (!\$x)";
-            else
-                $code .= "if (!\$x && \$a->_then_sort_info == {$s->thenmap})";
-            $code .= " { \$s = PaperList::\$magic_sort_info[$i]; "
-                . "\$x = $rev\$s->field->compare(\$a, \$b, \$s); }\n";
         }
+        $overrides = $this->user->add_overrides($this->_view_force ? Contact::OVERRIDE_CONFLICT : 0);
         $this->user->set_overrides($overrides);
 
-        $code .= "if (!\$x) \$x = \$a->paperId - \$b->paperId;\n";
-        $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
+        usort($rows, [$this, $thenmap ? "_then_sort_compare" : "_sort_compare"]);
 
-        usort($rows, eval("return function (\$a, \$b) { $code };"));
-
-        self::$magic_sort_info = null;
         foreach ($this->sorters as $s)
             $s->list = null; // break circular ref
         return $rows;
