@@ -1748,8 +1748,7 @@ class ReviewValues extends MessageSet {
 
         $qf = $qv = [];
         $tfields = $sfields = $set_sfields = $set_tfields = null;
-        $diff_fields = [];
-        $diff_view_score = VIEWSCORE_FALSE;
+        $diffinfo = new ReviewDiffInfo($prow, $rrow);
         $wc = 0;
         foreach ($this->rf->forder as $fid => $f) {
             if ($f->json_storage && $rrow && isset($rrow->$fid)) {
@@ -1774,11 +1773,8 @@ class ReviewValues extends MessageSet {
                 $fval = convert_to_utf8($fval);
                 $fval_diffs = $fval !== $old_fval && cleannl($fval) !== cleannl($old_fval);
             }
-            if ($fval_diffs) {
-                $diff_view_score = max($diff_view_score, $f->view_score);
-                if ($rrow)
-                    $diff_fields[] = $f->search_keyword();
-            }
+            if ($fval_diffs)
+                $diffinfo->add_field($f, $fval);
             if ($fval_diffs || !$rrow) {
                 if ($f->main_storage) {
                     $qf[] = "{$f->main_storage}=?";
@@ -1831,11 +1827,11 @@ class ReviewValues extends MessageSet {
         $locked = $newordinal = false;
         if ((!$rrow
              && $newsubmit
-             && $diff_view_score >= VIEWSCORE_AUTHORDEC)
+             && $diffinfo->view_score >= VIEWSCORE_AUTHORDEC)
             || ($rrow
                 && !$rrow->reviewOrdinal
                 && ($rrow->reviewSubmitted > 0 || $newsubmit)
-                && ($diff_view_score >= VIEWSCORE_AUTHORDEC
+                && ($diffinfo->view_score >= VIEWSCORE_AUTHORDEC
                     || $this->rf->author_nonempty($rrow)))) {
             $table_suffix = "";
             if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
@@ -1865,7 +1861,7 @@ class ReviewValues extends MessageSet {
         $reviewBlind = $this->conf->is_review_blind(!!get($this->req, "blind"));
         if (!$rrow
             || $reviewBlind != $rrow->reviewBlind) {
-            $diff_view_score = max($diff_view_score, VIEWSCORE_ADMINONLY);
+            $diffinfo->add_view_score(VIEWSCORE_ADMINONLY);
             $qf[] = "reviewBlind=?";
             $qv[] = $reviewBlind ? 1 : 0;
         }
@@ -1878,14 +1874,14 @@ class ReviewValues extends MessageSet {
             $qv[] = REVIEW_PC;
         }
         if ($rrow
-            && $diff_view_score > VIEWSCORE_FALSE
+            && $diffinfo->nonempty()
             && isset($this->req["version"])
             && ctype_digit($this->req["version"])
             && $this->req["version"] > get($rrow, "reviewEditVersion")) {
             $qf[] = "reviewEditVersion=?";
             $qv[] = $this->req["version"] + 0;
         }
-        if ($diff_view_score > VIEWSCORE_FALSE
+        if ($diffinfo->nonempty()
             && $this->conf->sversion >= 98) {
             $qf[] = "reviewWordCount=?";
             $qv[] = $wc;
@@ -1907,17 +1903,14 @@ class ReviewValues extends MessageSet {
         }
 
         // notification
-        $notification_bound = $now - ReviewForm::NOTIFICATION_DELAY;
-        $notify = $notify_author = false;
-        if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome != 0
-            && $prow->can_author_view_decision())
-            $diff_view_score = VIEWSCORE_AUTHOR;
-        if ($diff_view_score > VIEWSCORE_FALSE) {
+        if ($diffinfo->nonempty()) {
             $qf[] = "reviewModified=?";
             $qv[] = $now;
         }
-        if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
-            if ($diff_view_score >= VIEWSCORE_AUTHOR) {
+        $notification_bound = $now - ReviewForm::NOTIFICATION_DELAY;
+        $notify = $notify_author = false;
+        if (!$rrow || $diffinfo->nonempty()) {
+            if ($diffinfo->view_score >= VIEWSCORE_AUTHOR) {
                 $qf[] = "reviewAuthorModified=?";
                 $qv[] = $now;
             } else if ($rrow
@@ -1928,7 +1921,7 @@ class ReviewValues extends MessageSet {
             }
             // do not notify on updates within 3 hours
             if ($submit
-                && $diff_view_score > VIEWSCORE_ADMINONLY
+                && $diffinfo->view_score > VIEWSCORE_ADMINONLY
                 && !$this->no_notify) {
                 if (!$rrow
                     || !$rrow->reviewNotified
@@ -1940,7 +1933,7 @@ class ReviewValues extends MessageSet {
                 if ((!$rrow
                      || !$rrow->reviewAuthorNotified
                      || $rrow->reviewAuthorNotified < $notification_bound)
-                    && $diff_view_score >= VIEWSCORE_AUTHOR
+                    && $diffinfo->view_score >= VIEWSCORE_AUTHOR
                     && Contact::can_some_author_view_submitted_review($prow)) {
                     $qf[] = "reviewAuthorNotified=?";
                     $qv[] = $now;
@@ -1981,10 +1974,12 @@ class ReviewValues extends MessageSet {
         $this->req["reviewId"] = $reviewId;
 
         // log updates -- but not if review token is used
-        if (!$usedReviewToken && $diff_view_score > VIEWSCORE_FALSE) {
+        if (!$usedReviewToken
+            && $diffinfo->nonempty()) {
             $text = "Review $reviewId "
-                . ($newsubmit ? "submitted" : ($submit ? "updated" : "updated draft"))
-                . ($diff_fields ? " " . join(", ", $diff_fields) : "");
+                . ($newsubmit ? "submitted" : ($submit ? "updated" : "updated draft"));
+            if ($diffinfo->fields())
+                $text .= " " . join(", ", array_map(function ($f) { return $f->search_keyword(); }, $diffinfo->fields()));
             $user->log_activity_for($rrow ? $rrow->contactId : $user->contactId, $text, $prow);
         }
 
@@ -2003,13 +1998,13 @@ class ReviewValues extends MessageSet {
         if ($rrow && $submit && ($notify || $notify_author)) {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $this->_mailer_always_combine = false;
-            $this->_mailer_diff_view_score = $diff_view_score;
+            $this->_mailer_diff_view_score = $diffinfo->view_score;
             if ($this->conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
             $prow->notify(WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $user);
         } else if ($rrow
                    && !$submit
-                   && $diff_fields
+                   && $diffinfo->fields()
                    && $rrow->timeApprovalRequested
                    && $rrow->requestedBy
                    && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy))
@@ -2044,13 +2039,13 @@ class ReviewValues extends MessageSet {
         $what = "#$prow->paperId" . ($rrow && $rrow->reviewSubmitted ? unparseReviewOrdinal($rrow->reviewOrdinal) : "");
         if ($newsubmit) {
             $this->newlySubmitted[] = $what;
-        } else if ($diff_view_score > VIEWSCORE_FALSE && $submit) {
+        } else if ($diffinfo->nonempty() && $submit) {
             $this->updated[] = $what;
         } else if ($rrow
                    && $rrow->timeApprovalRequested
                    && $rrow->contactId == $user->contactId) {
             $this->approvalRequested[] = $what;
-        } else if ($diff_view_score > VIEWSCORE_FALSE) {
+        } else if ($diffinfo->nonempty()) {
             $this->saved_draft[] = $what;
             if ($rrow && $rrow->timeApprovalRequested)
                 $this->saved_draft_approval[] = $what;

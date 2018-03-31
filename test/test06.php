@@ -11,6 +11,7 @@ require_once("$ConfSitePATH/src/settingvalues.php");
 // load users
 $user_chair = $Conf->user_by_email("chair@_.com");
 $user_mgbaker = $Conf->user_by_email("mgbaker@cs.stanford.edu"); // pc
+$user_diot = $Conf->user_by_email("christophe.diot@sophia.inria.fr"); // pc, red
 $Conf->save_setting("rev_open", 1);
 
 // 1-18 have 3 assignments, reset have 0
@@ -543,6 +544,57 @@ xassert_eqq($rrow17m->t01, "No summary\n");
 xassert_eqq($rrow17m->t02, "No comments\n");
 xassert_eqq($rrow17m->reviewOrdinal, 1);
 xassert($rrow17m->reviewSubmitted > 0);
+
+// Check review diffs
+$paper18 = fetch_paper(18, $user_diot);
+$tf = new ReviewValues($Conf->review_form());
+xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary", "comaut" => "No comments"]));
+xassert($tf->check_and_save($user_diot, $paper18));
+
+$rrow18d = fetch_review($paper18, $user_diot);
+$rd = new ReviewDiffInfo($paper18, $rrow18d);
+$rd->add_field($Conf->find_review_field("ovemer"), 3);
+$rd->add_field($Conf->find_review_field("papsum"), "There definitely is a summary in this position.");
+xassert_eqq(ReviewDiffInfo::unparse_patch($rd->make_patch()),
+            '{"s01":2,"t01":"No summary\\n"}');
+xassert_eqq(ReviewDiffInfo::unparse_patch($rd->make_patch(1)),
+            '{"s01":3,"t01":"There definitely is a summary in this position."}');
+
+$rrow18d2 = clone $rrow18d;
+xassert_eq($rrow18d2->overAllMerit, 2);
+xassert_eq($rrow18d2->reviewerQualification, 1);
+xassert_eqq($rrow18d2->t01, "No summary\n");
+ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch(1));
+xassert_eq($rrow18d2->overAllMerit, 3);
+xassert_eq($rrow18d2->reviewerQualification, 1);
+xassert_eqq($rrow18d2->t01, "There definitely is a summary in this position.");
+ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch());
+xassert_eq($rrow18d2->overAllMerit, 2);
+xassert_eq($rrow18d2->reviewerQualification, 1);
+xassert_eqq($rrow18d2->t01, "No summary\n");
+
+$tf = new ReviewValues($Conf->review_form());
+xassert($tf->parse_json(["papsum" =>
+    "Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.\n\
+\n\
+Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure. We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.\n\
+\n\
+But, in a larger sense, we can not dedicate -- we can not consecrate -- we can not hallow -- this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us -- that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion -- that we here highly resolve that these dead shall not have died in vain -- that this nation, under God, shall have a new birth of freedom -- and that government of the people, by the people, for the people, shall not perish from the earth.\n"]));
+xassert($tf->check_and_save($user_diot, $paper18));
+
+$rrow18d = fetch_review($paper18, $user_diot);
+$gettysburg = $rrow18d->t01;
+$gettysburg2 = str_replace("by the people", "near the people", $gettysburg);
+
+$rd = new ReviewDiffInfo($paper18, $rrow18d);
+$rd->add_field($Conf->find_review_field("papsum"), $gettysburg2);
+
+$rrow18d2 = clone $rrow18d;
+xassert_eqq($rrow18d2->t01, $gettysburg);
+ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch(1));
+xassert_eqq($rrow18d2->t01, $gettysburg2);
+ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch());
+xassert_eqq($rrow18d2->t01, $gettysburg);
 
 // check some review visibility policies
 $user_external = Contact::create($Conf, ["email" => "external@_.com", "name" => "External Reviewer"]);
