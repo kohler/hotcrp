@@ -1751,63 +1751,57 @@ class ReviewValues extends MessageSet {
         $diff_fields = [];
         $diff_view_score = VIEWSCORE_FALSE;
         $wc = 0;
-        foreach ($this->rf->forder as $fid => $f)
-            if (isset($this->req[$fid])
-                && (!$f->round_mask || $f->is_round_visible($rrow))) {
-                list($old_fval, $fval) = $this->fvalues($f, $rrow);
-                if ($fval === false)
-                    continue;
-                if ($f->has_options) {
-                    if ($fval === 0 && $rrow && !$f->allow_empty)
-                        $fval = $old_fval;
-                    $fval_diffs = $fval !== $old_fval;
-                } else {
-                    // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
-                    $fval = convert_to_utf8($fval);
-                    if ($f->include_word_count())
-                        $wc += count_words($fval);
-                    $fval_diffs = $fval !== $old_fval && cleannl($fval) !== cleannl($old_fval);
+        foreach ($this->rf->forder as $fid => $f) {
+            if ($f->json_storage && $rrow && isset($rrow->$fid)) {
+                if ($f->has_options && (int) $rrow->$fid !== 0) {
+                    $sfields[$f->json_storage] = (int) $rrow->$fid;
+                } else if (!$f->has_options && $rrow->$fid !== "") {
+                    $tfields[$f->json_storage] = $rrow->$fid;
                 }
-                if ($fval_diffs) {
-                    $diff_view_score = max($diff_view_score, $f->view_score);
-                    if ($rrow)
-                        $diff_fields[] = $f->search_keyword();
+            }
+            if ($f->round_mask && !$f->is_round_visible($rrow)) {
+                continue;
+            }
+            list($old_fval, $fval) = $this->fvalues($f, $rrow);
+            if ($fval === false)
+                $fval = $old_fval;
+            if ($f->has_options) {
+                if ($fval === 0 && $rrow && !$f->allow_empty)
+                    $fval = $old_fval;
+                $fval_diffs = $fval !== $old_fval;
+            } else {
+                // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
+                $fval = convert_to_utf8($fval);
+                $fval_diffs = $fval !== $old_fval && cleannl($fval) !== cleannl($old_fval);
+            }
+            if ($fval_diffs) {
+                $diff_view_score = max($diff_view_score, $f->view_score);
+                if ($rrow)
+                    $diff_fields[] = $f->search_keyword();
+            }
+            if ($fval_diffs || !$rrow) {
+                if ($f->main_storage) {
+                    $qf[] = "{$f->main_storage}=?";
+                    $qv[] = $fval;
                 }
-                if ($fval_diffs || !$rrow) {
-                    if ($f->main_storage) {
-                        $qf[] = "{$f->main_storage}=?";
-                        $qv[] = $fval;
-                    }
-                    if ($f->json_storage) {
-                        if ($f->has_options) {
-                            if ($fval != 0)
-                                $sfields[$f->json_storage] = $fval;
-                            $set_sfields[$fid] = true;
-                        } else {
-                            if ($fval !== "")
-                                $tfields[$f->json_storage] = $fval;
-                            $set_tfields[$fid] = true;
-                        }
+                if ($f->json_storage) {
+                    if ($f->has_options) {
+                        if ($fval != 0)
+                            $sfields[$f->json_storage] = $fval;
+                        else
+                            unset($sfields[$f->json_storage]);
+                        $set_sfields[$fid] = true;
+                    } else {
+                        if ($fval !== "")
+                            $tfields[$f->json_storage] = $fval;
+                        else
+                            unset($tfields[$f->json_storage]);
+                        $set_tfields[$fid] = true;
                     }
                 }
             }
-        // complete `sfields` and `tfields` with existing fields
-        if ($rrow) {
-            foreach ($this->rf->forder as $fid => $f)
-                if ($f->json_storage) {
-                    if ($f->has_options && $set_sfields && !isset($set_sfields[$fid])) {
-                        $fval = (int) get($rrow, $fid, 0);
-                        if ($fval !== 0)
-                            $sfields[$f->json_storage] = $fval;
-                    } else if (!$f->has_options && $set_tfields && !isset($set_tfields[$fid])) {
-                        $fval = get($rrow, $fid, "");
-                        if ($fval !== "") {
-                            $tfields[$f->json_storage] = $fval;
-                            if ($f->include_word_count())
-                                $wc += count_words($fval);
-                        }
-                    }
-                }
+            if (!$f->has_options && $f->include_word_count())
+                $wc += count_words($fval);
         }
         if ($set_sfields !== null) {
             $qf[] = "sfields=?";

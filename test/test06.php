@@ -490,6 +490,35 @@ assert_search_papers($user_chair, "tex9:tremolo", "1");
 assert_search_papers($user_chair, "tex10:none", "1");
 assert_search_papers($user_chair, "tex11:butt", "1");
 
+save_review(1, $user_mgbaker, [
+    "ovemer" => 3, "sco15" => 2,
+    "tex8" => "leopardino", "ready" => true
+]);
+
+assert_search_papers($user_chair, "sco3:1", "1");
+assert_search_papers($user_chair, "sco4:2", "1");
+assert_search_papers($user_chair, "sco5:3", "1");
+assert_search_papers($user_chair, "sco6:0", "1");
+assert_search_papers($user_chair, "sco7:1", "1");
+assert_search_papers($user_chair, "sco8:2", "1");
+assert_search_papers($user_chair, "sco9:3", "1");
+assert_search_papers($user_chair, "sco10:0", "1");
+assert_search_papers($user_chair, "sco11:2", "1");
+assert_search_papers($user_chair, "sco12:2", "1");
+assert_search_papers($user_chair, "sco13:3", "1");
+assert_search_papers($user_chair, "sco14:0", "1");
+assert_search_papers($user_chair, "sco15:2", "1");
+assert_search_papers($user_chair, "sco16:1", "1");
+assert_search_papers($user_chair, "tex4:bobcat", "1");
+assert_search_papers($user_chair, "tex5:none", "1");
+assert_search_papers($user_chair, "tex6:fisher*", "1");
+assert_search_papers($user_chair, "tex7:tiger", "1");
+assert_search_papers($user_chair, "tex8:leopard", "");
+assert_search_papers($user_chair, "tex8:leopardino", "1");
+assert_search_papers($user_chair, "tex9:tremolo", "1");
+assert_search_papers($user_chair, "tex10:none", "1");
+assert_search_papers($user_chair, "tex11:butt", "1");
+
 // simplify review form
 $sv = ["has_review_form" => 1];
 for ($i = 2; $i <= 16; ++$i)
