@@ -1908,7 +1908,6 @@ class ReviewValues extends MessageSet {
             $qv[] = $now;
         }
         $notification_bound = $now - ReviewForm::NOTIFICATION_DELAY;
-        $notify = $notify_author = false;
         if (!$rrow || $diffinfo->nonempty()) {
             if ($diffinfo->view_score >= VIEWSCORE_AUTHOR) {
                 $qf[] = "reviewAuthorModified=?";
@@ -1928,7 +1927,7 @@ class ReviewValues extends MessageSet {
                     || $rrow->reviewNotified < $notification_bound) {
                     $qf[] = "reviewNotified=?";
                     $qv[] = $now;
-                    $notify = true;
+                    $diffinfo->notify = true;
                 }
                 if ((!$rrow
                      || !$rrow->reviewAuthorNotified
@@ -1937,7 +1936,7 @@ class ReviewValues extends MessageSet {
                     && Contact::can_some_author_view_submitted_review($prow)) {
                     $qf[] = "reviewAuthorNotified=?";
                     $qv[] = $now;
-                    $notify_author = true;
+                    $diffinfo->notify_author = true;
                 }
             }
         }
@@ -1987,27 +1986,26 @@ class ReviewValues extends MessageSet {
         $reviewer = $user;
         if ($contactId != $user->contactId)
             $reviewer = $this->conf->cached_user_by_id($contactId);
-        if ($submit || $approval_requested || ($rrow && $rrow->timeApprovalRequested))
-            $rrow = $prow->fresh_review_of_id($reviewId);
+        $new_rrow = $prow->fresh_review_of_id($reviewId);
 
-        $this->_mailer_preps = [];
-        $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $reviewer,
+        $this->_mailer_info = ["rrow" => $new_rrow, "reviewer_contact" => $reviewer,
                                "check_function" => "HotCRPMailer::check_can_view_review"];
-        if ($submit && $rrow->reviewOrdinal)
-            $this->_mailer_info["reviewNumber"] = $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
-        if ($rrow && $submit && ($notify || $notify_author)) {
+        if ($new_rrow->reviewOrdinal)
+            $this->_mailer_info["reviewNumber"] = $prow->paperId . unparseReviewOrdinal($new_rrow->reviewOrdinal);
+        $this->_mailer_preps = [];
+        if ($new_rrow->reviewSubmitted
+            && ($diffinfo->notify || $diffinfo->notify_author)) {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $this->_mailer_always_combine = false;
             $this->_mailer_diff_view_score = $diffinfo->view_score;
             if ($this->conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
             $prow->notify(WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $user);
-        } else if ($rrow
-                   && !$submit
+        } else if (!$new_rrow->reviewSubmitted
                    && $diffinfo->fields()
-                   && $rrow->timeApprovalRequested
-                   && $rrow->requestedBy
-                   && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy))
+                   && $new_rrow->timeApprovalRequested
+                   && $new_rrow->requestedBy
+                   && ($requester = $this->conf->cached_user_by_id($new_rrow->requestedBy))
                    && !$this->no_notify) {
             if ($requester->contactId == $user->contactId)
                 $this->_mailer_template = "@reviewpreapprovaledit";
@@ -2029,35 +2027,33 @@ class ReviewValues extends MessageSet {
         unset($this->_mailer_info, $this->_mailer_preps);
 
         // if external, forgive the requestor from finishing their review
-        if ($rrow
-            && $rrow->reviewType < REVIEW_SECONDARY
-            && $rrow->requestedBy
+        if ($new_rrow->reviewType < REVIEW_SECONDARY
+            && $new_rrow->requestedBy
             && $submit) {
-            $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
+            $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId={$new_rrow->requestedBy} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
         }
 
-        $what = "#$prow->paperId" . ($rrow && $rrow->reviewSubmitted ? unparseReviewOrdinal($rrow->reviewOrdinal) : "");
+        $what = "#$prow->paperId" . ($new_rrow->reviewOrdinal ? unparseReviewOrdinal($new_rrow->reviewOrdinal) : "");
         if ($newsubmit) {
             $this->newlySubmitted[] = $what;
         } else if ($diffinfo->nonempty() && $submit) {
             $this->updated[] = $what;
-        } else if ($rrow
-                   && $rrow->timeApprovalRequested
-                   && $rrow->contactId == $user->contactId) {
+        } else if ($new_rrow->timeApprovalRequested
+                   && $new_rrow->contactId == $user->contactId) {
             $this->approvalRequested[] = $what;
         } else if ($diffinfo->nonempty()) {
             $this->saved_draft[] = $what;
-            if ($rrow && $rrow->timeApprovalRequested)
+            if ($new_rrow->timeApprovalRequested)
                 $this->saved_draft_approval[] = $what;
         } else {
             $this->unchanged[] = $what;
             if (!$submit) {
                 $this->unchanged_draft[] = $what;
-                if ($rrow && $rrow->timeApprovalRequested)
+                if ($new_rrow->timeApprovalRequested)
                     $this->unchanged_draft_approval[] = $what;
             }
         }
-        if ($notify_author)
+        if ($diffinfo->notify_author)
             $this->authorNotified[] = $what;
 
         return true;

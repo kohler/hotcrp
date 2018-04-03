@@ -9,6 +9,8 @@ class ReviewDiffInfo {
     private $fields = [];
     private $newv = [];
     public $view_score = VIEWSCORE_FALSE;
+    public $notify = false;
+    public $notify_author = false;
     static private $use_xdiff = null;
     static private $has_xpatch = null;
 
