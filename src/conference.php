@@ -3653,4 +3653,53 @@ class Conf {
             $uf = $expansions[0];
         return $uf;
     }
+
+
+    // Hooks
+    function _add_hook_json($fj) {
+        if (isset($fj->callback) && is_string($fj->callback) && !isset($fj->synonym)) {
+            if (isset($fj->event) && is_string($fj->event))
+                return self::xt_add($this->_hook_map, $fj->event, $fj);
+            else if (isset($fj->match) && is_string($fj->match)) {
+                $this->_hook_factories[] = $fj;
+                return true;
+            }
+        }
+        return false;
+    }
+    private function hook_map() {
+        if ($this->_hook_map === null) {
+            $this->_hook_map = $this->_hook_factories = [];
+            if (($hlist = $this->opt("hooks")))
+                expand_json_includes_callback($hlist, [$this, "_add_hook_json"]);
+        }
+        return $this->_hook_map;
+    }
+    function call_hooks($name, Contact $user = null /* ... args */) {
+        $hs = get($this->hook_map(), $name);
+        foreach ($this->_hook_factories as $fj) {
+            if ($fj->match === ".*"
+                || preg_match("\1\\A(?:{$fxt->match})\\z\1", $name, $fj->match_data))
+                $hs[] = clone $fj;
+        }
+        if ($hs !== null) {
+            $args = array_slice(func_get_args(), 1);
+            usort($hs, "Conf::xt_priority_compare");
+            $ids = [];
+            foreach ($hs as $fj) {
+                if ((!isset($fj->id) || !isset($ids[$fj->id]))
+                    && $this->xt_allowed($fj, $user)) {
+                    if (isset($fj->id))
+                        $ids[$fj->id] = true;
+                    if (!self::xt_disabled($fj)) {
+                        $fj->conf = $this;
+                        $fj->user = $user;
+                        $args[0] = $fj;
+                        call_user_func_array($fj->callback, $args);
+                        unset($fj->conf, $fj->user);
+                    }
+                }
+            }
+        }
+    }
 }
