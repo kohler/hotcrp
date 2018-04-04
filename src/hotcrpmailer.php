@@ -428,7 +428,7 @@ class HotCRPMailer extends Mailer {
 
     static function send_to($recipient, $template, $row, $rest = array()) {
         if (($prep = self::prepare_to($recipient, $template, $row, $rest)))
-            self::send_preparation($prep);
+            $prep->send();
     }
 
     static function send_contacts($template, $row, $rest = array()) {

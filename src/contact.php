@@ -1563,9 +1563,10 @@ class Contact {
 
         $mailer = new HotCRPMailer($this, null, $rest);
         $prep = $mailer->make_preparation($template, $rest);
-        if ($prep->sendable || !$sensitive
+        if ($prep->sendable
+            || !$sensitive
             || $this->conf->opt("debugShowSensitiveEmail")) {
-            Mailer::send_preparation($prep);
+            $prep->send();
             return $template;
         } else {
             Conf::msg_error("Mail cannot be sent to " . htmlspecialchars($this->email) . " at this time.");

@@ -255,7 +255,7 @@ class MailSender {
         self::fix_body($prep);
         ++$this->mcount;
         if ($this->sending) {
-            Mailer::send_preparation($prep);
+            $prep->send();
             foreach ($prep->contacts as $cid) {
                 // Log format matters
                 $Conf->log_for($Me, $cid, "Sent mail" . $this->mailid_text, $prep->paperId);

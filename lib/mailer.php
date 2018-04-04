@@ -28,6 +28,61 @@ class MailPreparation {
             || $this->to[count($this->to) - 1] != $to[0])
             $this->to = array_merge($this->to, $to);
     }
+    function send() {
+        $headers = $this->headers;
+        $eol = Mailer::eol();
+
+        // create valid To: header
+        $to = $this->to;
+        if (is_array($to))
+            $to = join(", ", $to);
+        $to = MimeText::encode_email_header("To: ", $to);
+        $headers["to"] = $to . $eol;
+
+        // set sendmail parameters
+        $extra = $this->conf->opt("sendmailParam");
+        if (($sender = $this->conf->opt("emailSender")) !== null) {
+            @ini_set("sendmail_from", $sender);
+            if ($extra === null)
+                $extra = "-f" . escapeshellarg($sender);
+        }
+
+        if ($this->sendable
+            && $this->conf->opt("internalMailer", strncasecmp(PHP_OS, "WIN", 3) != 0)
+            && ($sendmail = ini_get("sendmail_path"))) {
+            $htext = join("", $headers);
+            $f = popen($extra ? "$sendmail $extra" : $sendmail, "wb");
+            fwrite($f, $htext . $eol . $this->body);
+            $status = pclose($f);
+            if (pcntl_wifexitedsuccess($status))
+                return true;
+            else {
+                $this->conf->set_opt("internalMailer", false);
+                error_log("Mail " . $headers["to"] . " failed to send, falling back (status $status)");
+            }
+        }
+
+        if ($this->sendable) {
+            if (strpos($to, $eol) === false) {
+                unset($headers["to"]);
+                $to = substr($to, 4); // skip "To: "
+            } else
+                $to = "";
+            unset($headers["subject"]);
+            $htext = substr(join("", $headers), 0, -2);
+            return mail($to, $this->subject, $this->body, $htext, $extra);
+
+        } else if (!$this->conf->opt("sendEmail")
+                   && !preg_match('/\Aanonymous\d*\z/', $to)) {
+            unset($headers["mime-version"], $headers["content-type"]);
+            $text = join("", $headers) . $eol . $this->body;
+            if (PHP_SAPI != "cli")
+                $this->conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");
+            else if (!$this->conf->opt("disablePrintEmail"))
+                fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
+            return null;
+        }
+    }
 }
 
 class Mailer {
@@ -512,76 +567,17 @@ class Mailer {
             return $prep;
     }
 
-    static function send_preparation($prep) {
-        global $Conf;
-        if ($Conf->opt("internalMailer", null) === null)
-            $Conf->set_opt("internalMailer", strncasecmp(PHP_OS, "WIN", 3) != 0);
-        $headers = $prep->headers;
-        $eol = self::eol();
-
-        // create valid To: header
-        $to = $prep->to;
-        if (is_array($to))
-            $to = join(", ", $to);
-        $to = MimeText::encode_email_header("To: ", $to);
-        $headers["to"] = $to . $eol;
-
-        // set sendmail parameters
-        $extra = $Conf->opt("sendmailParam");
-        if (($sender = $Conf->opt("emailSender", null)) !== null) {
-            @ini_set("sendmail_from", $sender);
-            if ($extra === null)
-                $extra = "-f" . escapeshellarg($sender);
-        }
-
-        if ($prep->sendable && $Conf->opt("internalMailer")
-            && ($sendmail = ini_get("sendmail_path"))) {
-            $htext = join("", $headers);
-            $f = popen($extra ? "$sendmail $extra" : $sendmail, "wb");
-            fwrite($f, $htext . $eol . $prep->body);
-            $status = pclose($f);
-            if (pcntl_wifexitedsuccess($status))
-                return true;
-            else {
-                $Conf->set_opt("internalMailer", false);
-                error_log("Mail " . $headers["to"] . " failed to send, falling back (status $status)");
-            }
-        }
-
-        if ($prep->sendable) {
-            if (strpos($to, $eol) === false) {
-                unset($headers["to"]);
-                $to = substr($to, 4); // skip "To: "
-            } else
-                $to = "";
-            unset($headers["subject"]);
-            $htext = substr(join("", $headers), 0, -2);
-            return mail($to, $prep->subject, $prep->body, $htext, $extra);
-
-        } else if (!$Conf->opt("sendEmail")
-                   && !preg_match('/\Aanonymous\d*\z/', $to)) {
-            unset($headers["mime-version"], $headers["content-type"]);
-            $text = join("", $headers) . $eol . $prep->body;
-            if (PHP_SAPI != "cli")
-                $Conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");
-            else if (!$Conf->opt("disablePrintEmail"))
-                fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
-            return null;
-        }
-    }
-
     static function send_combined_preparations($preps) {
         $last_p = null;
-        foreach ($preps as $p)
+        foreach ($preps as $p) {
             if ($last_p && $last_p->can_merge($p))
                 $last_p->add_recipients($p->to);
             else {
-                if ($last_p)
-                    self::send_preparation($last_p);
+                $last_p && $last_p->send();
                 $last_p = $p;
             }
-        if ($last_p)
-            self::send_preparation($last_p);
+        }
+        $last_p && $last_p->send();
     }
 
 
