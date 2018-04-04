@@ -8,6 +8,19 @@ class HotCRPMailPreparation extends MailPreparation {
     public $paper_expansions = 0;
     public $combination_type = 0;
     public $fake = false;
+
+    function can_merge($p) {
+        return parent::can_merge($p)
+            && $this->combination_type == $p->combination_type
+            && (($this->combination_type == 2
+                 && !$this->paper_expansions
+                 && !$p->paper_expansions)
+                || ($this->conflictType == $p->conflictType
+                    && $this->combination_type != 0
+                    && $this->paperId == $p->paperId)
+                || ($this->conflictType == $p->conflictType
+                    && $this->to == $p->to));
+    }
 }
 
 class HotCRPMailer extends Mailer {
@@ -394,20 +407,6 @@ class HotCRPMailer extends Mailer {
         return $prep;
     }
 
-    static function preparation_differs($prep1, $prep2) {
-        if (parent::preparation_differs($prep1, $prep2)
-            || $prep1->combination_type != $prep2->combination_type)
-            return true;
-        // allow cross-paper combination in `combination_type 2` (e.g. "pc")
-        if ($prep1->combination_type == 2 && !$prep1->paper_expansions && !$prep2->paper_expansions)
-            return false;
-        return (($prep1->paperId != $prep2->paperId
-                 || $prep1->combination_type == 0)
-                && (count($prep1->to) != 1 || count($prep2->to) != 1
-                    || $prep1->to[0] !== $prep2->to[0]))
-            || $prep1->conflictType != $prep2->conflictType;
-    }
-
 
     static function check_can_view_review($recipient, $prow, $rrow) {
         return $recipient->can_view_review($prow, $rrow, false);
@@ -431,7 +430,7 @@ class HotCRPMailer extends Mailer {
     static function send_combined_preparations($preps) {
         $last_p = null;
         foreach ($preps as $p)
-            if ($last_p && !self::preparation_differs($last_p, $p))
+            if ($last_p && $last_p->can_merge($p))
                 self::merge_preparation_to($last_p, $p);
             else {
                 if ($last_p)

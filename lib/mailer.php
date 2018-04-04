@@ -10,6 +10,14 @@ class MailPreparation {
     public $sendable = false;
     public $headers = array();
     public $errors = array();
+
+    function can_merge($p) {
+        return $this->subject == $p->subject
+            && $this->body == $p->body
+            && get($this->headers, "cc") == get($p->headers, "cc")
+            && get($this->headers, "reply-to") == get($p->headers, "reply-to")
+            && $this->preparation_owner == $p->preparation_owner;
+    }
 }
 
 class Mailer {
@@ -491,14 +499,6 @@ class Mailer {
             return false;
         else
             return $prep;
-    }
-
-    static function preparation_differs($prep1, $prep2) {
-        return $prep1->subject != $prep2->subject
-            || $prep1->body != $prep2->body
-            || get($prep1->headers, "cc") != get($prep2->headers, "cc")
-            || get($prep1->headers, "reply-to") != get($prep2->headers, "reply-to")
-            || $prep1->preparation_owner != $prep2->preparation_owner;
     }
 
     static function merge_preparation_to($prep, $to) {

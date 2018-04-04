@@ -311,7 +311,7 @@ class MailSender {
         // Don't combine senders if anything differs. Also, don't combine
         // mails from different papers, unless those mails are to the same
         // person.
-        $mail_differs = HotCRPMailer::preparation_differs($prep, $last_prep);
+        $mail_differs = !$prep->can_merge($last_prep);
         $prep_to = $prep->to;
 
         if (!$mail_differs)
