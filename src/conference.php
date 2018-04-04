@@ -109,6 +109,8 @@ class Conf {
     private $_paper_column_factories = null;
     private $_option_type_map = null;
     private $_option_type_factories = null;
+    private $_hook_map = null;
+    private $_hook_factories = null;
     public $_file_filters = null; // maintained externally
 
     public $paper = null; // current paper row
@@ -3667,6 +3669,31 @@ class Conf {
         }
         return false;
     }
+    function add_hook($name, $callback = null, $priority = null) {
+        if ($this->_hook_map === null)
+            $this->hook_map();
+        $fj = is_object($name) ? $name : $callback;
+        if (is_string($fj))
+            $fj = (object) ["callback" => $fj];
+        if (is_string($name))
+            $fj->event = $name;
+        if ($priority !== null)
+            $fj->priority = $priority;
+        return $this->_add_hook_json($fj) ? $fj : false;
+    }
+    function remove_hook($fj) {
+        if (isset($fj->event) && is_string($fj->event)
+            && isset($this->_hook_map[$fj->event])
+            && ($i = array_search($fj, $this->_hook_map[$fj->event], true)) !== false) {
+            array_splice($this->_hook_map[$fj->event], $i, 1);
+            return true;
+        } else if (isset($fj->match) && is_string($fj->match)
+                   && ($i = array_search($fj, $this->_hook_factories, true)) !== false) {
+            array_splice($this->_hook_factories, $i, 1);
+            return true;
+        }
+        return false;
+    }
     private function hook_map() {
         if ($this->_hook_map === null) {
             $this->_hook_map = $this->_hook_factories = [];
@@ -3679,8 +3706,12 @@ class Conf {
         $hs = get($this->hook_map(), $name);
         foreach ($this->_hook_factories as $fj) {
             if ($fj->match === ".*"
-                || preg_match("\1\\A(?:{$fxt->match})\\z\1", $name, $fj->match_data))
-                $hs[] = clone $fj;
+                || preg_match("\1\\A(?:{$fxt->match})\\z\1", $name, $m)) {
+                $xfj = clone $fj;
+                $xfj->event = $name;
+                $xfj->match_data = $m;
+                $hs[] = $xfj;
+            }
         }
         if ($hs !== null) {
             $args = array_slice(func_get_args(), 1);
@@ -3695,8 +3726,10 @@ class Conf {
                         $fj->conf = $this;
                         $fj->user = $user;
                         $args[0] = $fj;
-                        call_user_func_array($fj->callback, $args);
+                        $x = call_user_func_array($fj->callback, $args);
                         unset($fj->conf, $fj->user);
+                        if ($x === false)
+                            return false;
                     }
                 }
             }

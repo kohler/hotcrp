@@ -29,6 +29,9 @@ class MailPreparation {
             $this->to = array_merge($this->to, $to);
     }
     function send() {
+        if ($this->conf->call_hooks("send_mail", null, $this) === false)
+            return false;
+
         $headers = $this->headers;
         $eol = Mailer::eol();
 
