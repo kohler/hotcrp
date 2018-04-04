@@ -7,6 +7,7 @@ php:
   - 5.6
   - 7.0
   - 7.1
+  - 7.2
 script:
   - php -d error_reporting=E_ALL test/test01.php
   - php -d error_reporting=E_ALL test/test02.php
