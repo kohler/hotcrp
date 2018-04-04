@@ -843,7 +843,7 @@ $blind\n";
                 $y = get($f->options, $fval, "");
                 $x .= prefix_word_wrap($fval . ". ", $y, strlen($fval) + 2);
             } else
-                $x .= preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
+                $x .= $fval . "\n";
         }
         return $x;
     }

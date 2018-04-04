@@ -126,7 +126,8 @@ class HotCRPMailer extends Mailer {
         $text = "";
         $rf = $Conf->review_form();
         foreach ($rrows as $rrow)
-            if (($rrow->reviewSubmitted || ($rrow == $this->rrow && $this->rrow_unsubmitted))
+            if (($rrow->reviewSubmitted
+                 || ($rrow == $this->rrow && $this->rrow_unsubmitted))
                 && $this->permissionContact->can_view_review($this->row, $rrow, false)) {
                 if ($text !== "")
                     $text .= "\n*" . str_repeat(" *", 37) . "\n\n\n";
@@ -147,14 +148,19 @@ class HotCRPMailer extends Mailer {
         if (!($au_seerev = $Conf->au_seerev))
             $Conf->au_seerev = Conf::AUSEEREV_YES;
 
+        $crows = array_filter($crows, function ($crow) use ($tag) {
+            return (!$tag || $crow->has_tag($tag))
+                && $this->permissionContact->can_view_comment($this->row, $crow, false);
+        });
+
         $text = "";
-        foreach ($crows as $crow)
-            if ((!$tag || ($crow->commentTags && stripos($crow->commentTags, " $tag ") !== false))
-                && $this->permissionContact->can_view_comment($this->row, $crow, false)) {
-                if ($text === "")
-                    $text .= "Comments\n" . str_repeat("=", 75) . "\n\n";
-                $text .= $crow->unparse_text($this->permissionContact, true) . "\n";
-            }
+        if (count($crows) > 1)
+            $text .= "Comments\n" . str_repeat("=", 75) . "\n";
+        foreach ($crows as $crow) {
+            if ($text !== "")
+                $text .= "\n";
+            $text .= $crow->unparse_text($this->permissionContact, true);
+        }
 
         $Conf->au_seerev = $au_seerev;
         return $text;

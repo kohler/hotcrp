@@ -342,7 +342,7 @@ class CommentInfo {
                    && ($p !== "Author" || !($this->commentType & COMMENTTYPE_RESPONSE))) {
             $x .= " by " . $p;
         }
-        $x .= "\n" . str_repeat("=", 75) . "\n";
+        $x .= "\n" . str_repeat("-", 75) . "\n";
         if (!$no_title) {
             $prow = $this->prow;
             $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2);
