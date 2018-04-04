@@ -8,6 +8,7 @@ define("HOTCRP_OPTIONS", "$ConfSitePATH/test/options.php");
 define("HOTCRP_TESTHARNESS", true);
 require_once("$ConfSitePATH/src/init.php");
 $Conf->set_opt("disablePrintEmail", true);
+$Conf->set_opt("postfixEOL", "\n");
 
 function die_hard($message) {
     fwrite(STDERR, $message);
@@ -94,10 +95,10 @@ class MailChecker {
             $haves[] = "To: " . join(", ", $prep->to) . "\n"
                 . "Subject: " . str_replace("\r", "", $prep->subject)
                 . "\n\n" . $prep->body;
+        sort($haves);
         $wants = [];
         foreach ($mdb as $m)
             $wants[] = preg_replace('/^X-Landmark:.*?\n/m', "", $m[0]) . $m[1];
-        sort($haves);
         sort($wants);
         foreach ($wants as $i => $want) {
             ++Xassert::$n;
@@ -106,13 +107,13 @@ class MailChecker {
                     || preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($want)) . "\\z=", $haves[$i])) {
                     ++Xassert::$nsuccess;
                 } else {
-                    fwrite(STDERR, "Mail assertion for $name failure: " . var_export($haves[$i], true) . " !== " . var_export($want, true) . "\n");
+                    fwrite(STDERR, "Mail assertion failure: " . var_export($haves[$i], true) . " !== " . var_export($want, true) . "\n");
                     $havel = explode("\n", $haves[$i]);
-                    foreach (explode("\n", $want) as $i => $wantl) {
-                        if (!isset($havel[$i])
-                            || ($havel[$i] !== $wantl
-                                && !preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($wantl, "#\"")) . "\\z=", $havel[$i]))) {
-                            fwrite(STDERR, "... line " . ($i + 1) . " differs near " . $havel[$i] . "\n"
+                    foreach (explode("\n", $want) as $j => $wantl) {
+                        if (!isset($havel[$j])
+                            || ($havel[$j] !== $wantl
+                                && !preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($wantl, "#\"")) . "\\z=", $havel[$j]))) {
+                            fwrite(STDERR, "... line " . ($j + 1) . " differs near " . $havel[$j] . "\n"
                                    . "... expected " . $wantl . "\n");
                             break;
                         }
