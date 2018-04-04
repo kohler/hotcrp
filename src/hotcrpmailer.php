@@ -130,8 +130,8 @@ class HotCRPMailer extends Mailer {
                  || ($rrow == $this->rrow && $this->rrow_unsubmitted))
                 && $this->permissionContact->can_view_review($this->row, $rrow, false)) {
                 if ($text !== "")
-                    $text .= "\n*" . str_repeat(" *", 37) . "\n\n\n";
-                $text .= $rf->pretty_text($this->row, $rrow, $this->permissionContact, $this->no_send, true) . "\n";
+                    $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
+                $text .= $rf->pretty_text($this->row, $rrow, $this->permissionContact, $this->no_send, true);
             }
 
         $Conf->au_seerev = $au_seerev;
