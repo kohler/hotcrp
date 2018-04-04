@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class MailPreparation {
+    public $conf;
     public $subject = "";
     public $body = "";
     public $preparation_owner = "";
@@ -11,6 +12,9 @@ class MailPreparation {
     public $headers = array();
     public $errors = array();
 
+    function __construct($conf) {
+        $this->conf = $conf;
+    }
     function can_merge($p) {
         return $this->subject == $p->subject
             && $this->body == $p->body
@@ -445,7 +449,8 @@ class Mailer {
     }
 
     function create_preparation() {
-        return new MailPreparation;
+        global $Conf;
+        return new MailPreparation($Conf);
     }
 
     function make_preparation($template, $rest = array()) {
@@ -563,6 +568,20 @@ class Mailer {
                 fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
             return null;
         }
+    }
+
+    static function send_combined_preparations($preps) {
+        $last_p = null;
+        foreach ($preps as $p)
+            if ($last_p && $last_p->can_merge($p))
+                $last_p->add_recipients($p->to);
+            else {
+                if ($last_p)
+                    self::send_preparation($last_p);
+                $last_p = $p;
+            }
+        if ($last_p)
+            self::send_preparation($last_p);
     }
 
 

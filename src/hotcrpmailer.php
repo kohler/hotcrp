@@ -9,6 +9,9 @@ class HotCRPMailPreparation extends MailPreparation {
     public $combination_type = 0;
     public $fake = false;
 
+    function __construct($conf) {
+        parent::__construct($conf);
+    }
     function can_merge($p) {
         return parent::can_merge($p)
             && $this->combination_type == $p->combination_type
@@ -398,7 +401,8 @@ class HotCRPMailer extends Mailer {
     }
 
     function create_preparation() {
-        $prep = new HotCRPMailPreparation;
+        global $Conf;
+        $prep = new HotCRPMailPreparation($Conf);
         if ($this->row && get($this->row, "paperId") > 0) {
             $prep->paperId = $this->row->paperId;
             $prep->conflictType = $this->row->has_author($this->recipient);
@@ -425,20 +429,6 @@ class HotCRPMailer extends Mailer {
     static function send_to($recipient, $template, $row, $rest = array()) {
         if (($prep = self::prepare_to($recipient, $template, $row, $rest)))
             self::send_preparation($prep);
-    }
-
-    static function send_combined_preparations($preps) {
-        $last_p = null;
-        foreach ($preps as $p)
-            if ($last_p && $last_p->can_merge($p))
-                $last_p->add_recipients($p->to);
-            else {
-                if ($last_p)
-                    self::send_preparation($last_p);
-                $last_p = $p;
-            }
-        if ($last_p)
-            self::send_preparation($last_p);
     }
 
     static function send_contacts($template, $row, $rest = array()) {
