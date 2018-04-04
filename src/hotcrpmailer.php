@@ -431,7 +431,7 @@ class HotCRPMailer extends Mailer {
         $last_p = null;
         foreach ($preps as $p)
             if ($last_p && $last_p->can_merge($p))
-                self::merge_preparation_to($last_p, $p);
+                $last_p->add_recipients($p->to);
             else {
                 if ($last_p)
                     self::send_preparation($last_p);

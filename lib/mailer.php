@@ -18,6 +18,12 @@ class MailPreparation {
             && get($this->headers, "reply-to") == get($p->headers, "reply-to")
             && $this->preparation_owner == $p->preparation_owner;
     }
+    function add_recipients($to) {
+        if (count($to) != 1
+            || count($this->to) == 0
+            || $this->to[count($this->to) - 1] != $to[0])
+            $this->to = array_merge($this->to, $to);
+    }
 }
 
 class Mailer {
@@ -499,14 +505,6 @@ class Mailer {
             return false;
         else
             return $prep;
-    }
-
-    static function merge_preparation_to($prep, $to) {
-        if (is_object($to) && isset($to->to))
-            $to = $to->to;
-        if (count($to) != 1 || count($prep->to) == 0
-            || $prep->to[count($prep->to) - 1] != $to[0])
-            $prep->to = array_merge($prep->to, $to);
     }
 
     static function send_preparation($prep) {

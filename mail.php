@@ -329,7 +329,7 @@ class MailSender {
         else {
             $last_prep->contacts[$row->contactId] = $row->contactId;
             $this->mrecipients[$row->contactId] = true;
-            HotCRPMailer::merge_preparation_to($last_prep, $prep_to);
+            $last_prep->add_recipients($prep_to);
             return true;
         }
     }
