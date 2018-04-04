@@ -31,6 +31,116 @@ if (($cdb = Contact::contactdb())) {
         Dbl::free($cdb->next_result());
 }
 
+// Record mail in MailChecker.
+class MailChecker {
+    static public $print = false;
+    static public $preps = [];
+    static public $messagedb = [];
+    static function send_hook($fh, $prep) {
+        global $ConfSitePATH;
+        $prep->landmark = "";
+        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $trace) {
+            if (isset($trace["file"]) && preg_match(',/test\d,', $trace["file"])) {
+                if (str_starts_with($trace["file"], $ConfSitePATH))
+                    $trace["file"] = substr($trace["file"], strlen($ConfSitePATH) + 1);
+                $prep->landmark = $trace["file"] . ":" . $trace["line"];
+                break;
+            }
+        }
+        self::$preps[] = $prep;
+        if (self::$print) {
+            fwrite(STDOUT, "********\n"
+                   . "To: " . join(", ", $prep->to) . "\n"
+                   . "Subject: " . str_replace("\r", "", $prep->subject) . "\n"
+                   . ($prep->landmark ? "X-Landmark: $landmark\n" : "") . "\n"
+                   . $prep->body);
+        }
+        return false;
+    }
+    static function check0() {
+        xassert_eqq(count(self::$preps), 0);
+        self::$preps = [];
+    }
+    static function check1($recipient, $template, $row = null, $rest = []) {
+        xassert_eqq(count(self::$preps), 1);
+        if (count(self::$preps) === 1) {
+            $mailer = new HotCRPMailer($recipient, $row, $rest);
+            $prep = $mailer->make_preparation($template, $rest);
+            xassert_eqq(self::$preps[0]->subject, $prep->subject);
+            xassert_eqq(self::$preps[0]->body, $prep->body);
+            xassert_eq(self::$preps[0]->to, $prep->to);
+        }
+        self::$preps = [];
+    }
+    static function check_db($name = null) {
+        if ($name) {
+            xassert(isset(self::$messagedb[$name]));
+            xassert_eqq(count(self::$preps), count(self::$messagedb[$name]));
+            $mdb = self::$messagedb[$name];
+        } else {
+            xassert(!empty(self::$preps));
+            $last_landmark = null;
+            $mdb = [];
+            foreach (self::$preps as $prep) {
+                xassert($prep->landmark && isset(self::$messagedb[$prep->landmark]));
+                if ($prep->landmark !== $last_landmark) {
+                    $mdb = array_merge($mdb, self::$messagedb[$prep->landmark]);
+                    $last_landmark = $prep->landmark;
+                }
+            }
+        }
+        $haves = [];
+        foreach (self::$preps as $prep)
+            $haves[] = "To: " . join(", ", $prep->to) . "\n"
+                . "Subject: " . str_replace("\r", "", $prep->subject)
+                . "\n\n" . $prep->body;
+        $wants = [];
+        foreach ($mdb as $m)
+            $wants[] = preg_replace('/^X-Landmark:.*?\n/m', "", $m[0]) . $m[1];
+        sort($haves);
+        sort($wants);
+        foreach ($wants as $i => $want) {
+            ++Xassert::$n;
+            if (isset($haves[$i])) {
+                if ($haves[$i] === $want
+                    || preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($want)) . "\\z=", $haves[$i])) {
+                    ++Xassert::$nsuccess;
+                } else {
+                    fwrite(STDERR, "Mail assertion for $name failure: " . var_export($haves[$i], true) . " !== " . var_export($want, true) . "\n");
+                    $havel = explode("\n", $haves[$i]);
+                    foreach (explode("\n", $want) as $i => $wantl) {
+                        if (!isset($havel[$i])
+                            || ($havel[$i] !== $wantl
+                                && !preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($wantl, "#\"")) . "\\z=", $havel[$i]))) {
+                            fwrite(STDERR, "... line " . ($i + 1) . " differs near " . $havel[$i] . "\n"
+                                   . "... expected " . $wantl . "\n");
+                            break;
+                        }
+                    }
+                    trigger_error("Assertion failed at " . assert_location() . "\n", E_USER_WARNING);
+                }
+            }
+        }
+        self::$preps = [];
+    }
+    static function clear() {
+        self::$preps = [];
+    }
+    static function add_messagedb($text) {
+        preg_match_all('/^\*\*\*\*\*\*\*\*(.*)\n([\s\S]*?\n\n)([\s\S]*?)(?=^\*\*\*\*\*\*\*\*|\z)/m', $text, $ms, PREG_SET_ORDER);
+        foreach ($ms as $m) {
+            $m[1] = trim($m[1]);
+            if ($m[1] === ""
+                && preg_match('/\nX-Landmark:\s*(\S+)/', $m[2], $mx))
+                $m[1] = $mx[1];
+            if ($m[1] !== "")
+                self::$messagedb[$m[1]][] = [$m[2], $m[3]];
+        }
+    }
+}
+MailChecker::add_messagedb(file_get_contents("$ConfSitePATH/test/emails.txt"));
+$Conf->add_hook((object) ["event" => "send_mail", "callback" => "MailChecker::send_hook", "priority" => 1000]);
+
 // Create initial administrator user.
 $Admin = Contact::create($Conf, ["email" => "chair@_.com", "name" => "Jane Chair",
                                  "password" => "testchair"]);
@@ -42,7 +152,10 @@ if (!$json)
     die_hard("* test/testdb.json error: " . json_last_error_msg() . "\n");
 $us = new UserStatus($Conf->site_contact());
 foreach ($json->contacts as $c) {
-    if (!$us->save($c))
+    $user = $us->save($c);
+    if ($user)
+        MailChecker::check_db("create-{$c->email}");
+    else
         die_hard("* failed to create user $c->email\n");
 }
 foreach ($json->papers as $p) {
@@ -292,4 +405,5 @@ function save_review($paper, $contact, $revreq) {
     return fetch_review($prow, $contact);
 }
 
+MailChecker::clear();
 echo "* Tests initialized.\n";

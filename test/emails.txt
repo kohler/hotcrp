@@ -1,0 +1,1547 @@
+******** create-huitema@bellcore.com
+To: Christian Huitema <huitema@bellcore.com>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: huitema@bellcore.com
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=huitema%40bellcore.com&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-christophe.diot@sophia.inria.fr
+To: Christophe Diot <christophe.diot@sophia.inria.fr>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: christophe.diot@sophia.inria.fr
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=christophe.diot%40sophia.inria.fr&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-estrin@usc.edu
+To: Deborah Estrin <estrin@usc.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: estrin@usc.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=estrin%40usc.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-kohler@seas.harvard.edu
+To: Eddie Kohler <kohler@seas.harvard.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: kohler@seas.harvard.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=kohler%40seas.harvard.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-varghese@ccrc.wustl.edu
+To: George Varghese <varghese@ccrc.wustl.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: varghese@ccrc.wustl.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=varghese%40ccrc.wustl.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-jj@cse.ucsc.edu
+To: "J. J. Garcia-Luna-Aceves" <jj@cse.ucsc.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: jj@cse.ucsc.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=jj%40cse.ucsc.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-jon@cs.ucl.ac.uk
+To: Jon Crowcroft <jon@cs.ucl.ac.uk>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: jon@cs.ucl.ac.uk
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=jon%40cs.ucl.ac.uk&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-lixia@cs.ucla.edu
+To: Lixia Zhang <lixia@cs.ucla.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: lixia@cs.ucla.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=lixia%40cs.ucla.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-marina@poema.ru
+To: Marina Tsvetaeva <marina@poema.ru>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: marina@poema.ru
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=marina%40poema.ru&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-mjh@isi.edu
+To: Mark Handley <mjh@isi.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: mjh@isi.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=mjh%40isi.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-mgbaker@cs.stanford.edu
+To: Mary Baker <mgbaker@cs.stanford.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: mgbaker@cs.stanford.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=mgbaker%40cs.stanford.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-pfrancis@ntt.jp
+To: Paul Francis <pfrancis@ntt.jp>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: pfrancis@ntt.jp
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=pfrancis%40ntt.jp&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-peter.danzig@usc.edu
+To: Peter Danzig <peter.danzig@usc.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: peter.danzig@usc.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=peter.danzig%40usc.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-pdruschel@cs.rice.edu
+To: Peter Druschel <pdruschel@cs.rice.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: pdruschel@cs.rice.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=pdruschel%40cs.rice.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-rguerin@ibm.com
+To: Roch Guerin <rguerin@ibm.com>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: rguerin@ibm.com
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=rguerin%40ibm.com&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-floyd@ee.lbl.gov
+To: Sally Floyd <floyd@ee.lbl.gov>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: floyd@ee.lbl.gov
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=floyd%40ee.lbl.gov&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-shenker@parc.xerox.com
+To: Scott Shenker <shenker@parc.xerox.com>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: shenker@parc.xerox.com
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=shenker%40parc.xerox.com&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-van@ee.lbl.gov
+To: Van Jacobson <van@ee.lbl.gov>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: van@ee.lbl.gov
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=van%40ee.lbl.gov&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-ojuelegba@gmail.com
+To: Wilma Ojuelegba <ojuelegba@gmail.com>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: ojuelegba@gmail.com
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=ojuelegba%40gmail.com&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-micke@cdt.luth.se
+To: Mikael Degermark <micke@cdt.luth.se>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: micke@cdt.luth.se
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=micke%40cdt.luth.se&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-sclin@leland.stanford.edu
+To: Steven Lin <sclin@leland.stanford.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: sclin@leland.stanford.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=sclin%40leland.stanford.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-waldvogel@tik.ee.ethz.ch
+To: Marcel Waldvogel <waldvogel@tik.ee.ethz.ch>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: waldvogel@tik.ee.ethz.ch
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=waldvogel%40tik.ee.ethz.ch&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-chane@ecse.ucsc.edu
+To: "Chane L. Fullmer" <chane@ecse.ucsc.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: chane@ecse.ucsc.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=chane%40ecse.ucsc.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-bnoble@cs.cmu.edu
+To: Brian Noble <bnoble@cs.cmu.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: bnoble@cs.cmu.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=bnoble%40cs.cmu.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-slu@crhc.uiuc.edu
+To: Songwu Lu <slu@crhc.uiuc.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: slu@crhc.uiuc.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=slu%40crhc.uiuc.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-sjhan@eecs.umich.edu
+To: Seungjae Han <sjhan@eecs.umich.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: sjhan@eecs.umich.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=sjhan%40eecs.umich.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-kienhua@cs.ucf.edu
+To: "Kien A. Hua" <kienhua@cs.ucf.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: kienhua@cs.ucf.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=kienhua%40cs.ucf.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-salex@dsl.cis.upenn.edu
+To: "D. Scott Alexander" <salex@dsl.cis.upenn.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: salex@dsl.cis.upenn.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=salex%40dsl.cis.upenn.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-labovit@eecs.umich.edu
+To: Craig Labovitz <labovit@eecs.umich.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: labovit@eecs.umich.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=labovit%40eecs.umich.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-rmalan@eecs.umich.edu
+To: "G. Robert Malan" <rmalan@eecs.umich.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: rmalan@eecs.umich.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=rmalan%40eecs.umich.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-farnam@eecs.umich.edu
+To: Farnam Jahanian <farnam@eecs.umich.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: farnam@eecs.umich.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=farnam%40eecs.umich.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-rtm@eecs.harvard.edu
+To: Robert Morris <rtm@eecs.harvard.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: rtm@eecs.harvard.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=rtm%40eecs.harvard.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-vern@ee.lbl.gov
+To: Vern Paxson <vern@ee.lbl.gov>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: vern@ee.lbl.gov
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=vern%40ee.lbl.gov&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-frystyk@w3.org
+To: Henrik Frystyk Nielsen <frystyk@w3.org>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: frystyk@w3.org
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=frystyk%40w3.org&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-mogul@wrl.dec.com
+To: "Jeffrey C. Mogul" <mogul@wrl.dec.com>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: mogul@wrl.dec.com
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=mogul%40wrl.dec.com&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-bala@research.att.com
+To: Balachander Krishnamurthy <bala@research.att.com>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: bala@research.att.com
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=bala%40research.att.com&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-cheshire@cs.stanford.edu
+To: Stuart Cheshire <cheshire@cs.stanford.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: cheshire@cs.stanford.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=cheshire%40cs.stanford.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-suvo@cs.stanford.edu
+To: Suvo Mittra <suvo@cs.stanford.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: suvo@cs.stanford.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=suvo%40cs.stanford.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-breslau@parc.xerox.com
+To: Lee Breslau <breslau@parc.xerox.com>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: breslau@parc.xerox.com
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=breslau%40parc.xerox.com&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-tripathi@cs.ucr.edu
+To: "Satish K. Tripathi" <tripathi@cs.ucr.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: tripathi@cs.ucr.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=tripathi%40cs.ucr.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-guerin@watson.ibm.com
+To: "R. Guérin" <guerin@watson.ibm.com>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: guerin@watson.ibm.com
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=guerin%40watson.ibm.com&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-sanjay@watson.ibm.com
+To: "S. Kamat" <sanjay@watson.ibm.com>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: sanjay@watson.ibm.com
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=sanjay%40watson.ibm.com&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-anja@research.att.com
+To: "A. Feldmann" <anja@research.att.com>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: anja@research.att.com
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=anja%40research.att.com&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-byers@icsi.berkeley.edu
+To: "John W. Byers" <byers@icsi.berkeley.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: byers@icsi.berkeley.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=byers%40icsi.berkeley.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-luby@icsi.berkeley.edu
+To: Michael Luby <luby@icsi.berkeley.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: luby@icsi.berkeley.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=luby%40icsi.berkeley.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-ckwong@cs.utexas.edu
+To: Chung Kei Wong <ckwong@cs.utexas.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: ckwong@cs.utexas.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=ckwong%40cs.utexas.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-whycu@ctr.columbia.edu
+To: Huayan Amy Wang <whycu@ctr.columbia.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: whycu@ctr.columbia.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=whycu%40ctr.columbia.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-kkumar@isi.edu
+To: Satish Kumar <kkumar@isi.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: kkumar@isi.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=kkumar%40isi.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** create-istoica@cs.cmu.edu
+To: Ion Stoica <istoica@cs.cmu.edu>
+Subject: [Testconf I] Account information
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+An account has been created for you at the Test Conference I (Testconf I)
+submissions site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: istoica@cs.cmu.edu
+    Password: {{}}
+
+Use the link below to sign in.
+
+http://hotcrp.lcdf.org/test/?email=istoica%40cs.cmu.edu&password={{}}
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** test01-save-review1B
+To: Mary Baker <mgbaker@cs.stanford.edu>
+Subject: [Testconf I] Submitted review #1B "Scalable Timers for Soft State
+ Protocols"
+X-Landmark: test/test01.php:236
+
+Greetings,
+
+Review #1B for Test Conference I (Testconf I) paper #1 has been submitted.
+The review is available at the paper site.
+
+  Paper site: http://hotcrp.lcdf.org/test/paper/1
+       Title: Scalable Timers for Soft State Protocols
+   Review by: Mark Handley <mjh@isi.edu>
+
+For the most up-to-date reviews and comments, or to unsubscribe from email
+notification, see the paper site.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Review #1B
+===========================================================================
+* Reviewer: Mark Handley <mjh@isi.edu>
+* Updated: {{}}
+
+Overall merit
+-------------
+5. Strong accept
+
+Reviewer expertise
+------------------
+4. Expert
+
+********
+To: Jane Chair <chair@_.com>
+Subject: [Testconf I] Comment for #2 "Small Forwarding Tables for Fast
+ Routing..."
+X-Landmark: test/test01.php:526
+
+A comment for Test Conference I (Testconf I) paper #2 has been posted. For
+the most up-to-date comments, or to unsubscribe from email notification,
+see the paper site.
+
+  Paper site: http://hotcrp.lcdf.org/test/paper/2
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Comment @1 by Mary Baker <mgbaker@cs.stanford.edu>
+---------------------------------------------------------------------------
+test
+
+********
+To: Jane Chair <chair@_.com>
+Subject: [Testconf I] Submitted review #2A "Small Forwarding Tables for Fast
+ Routing..."
+X-Landmark: test/test01.php:548
+
+Greetings,
+
+Review #2A for Test Conference I (Testconf I) paper #2 has been submitted.
+The review is available at the paper site.
+
+  Paper site: http://hotcrp.lcdf.org/test/paper/2
+       Title: Small Forwarding Tables for Fast Routing Lookups
+   Review by: Jon Crowcroft <jon@cs.ucl.ac.uk>
+
+For the most up-to-date reviews and comments, or to unsubscribe from email
+notification, see the paper site.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Review #2A
+===========================================================================
+* Reviewer: Jon Crowcroft <jon@cs.ucl.ac.uk>
+* Updated: {{}}
+
+Overall merit
+-------------
+5. Strong accept
+
+Reviewer expertise
+------------------
+4. Expert
+
+********
+To: Jon Crowcroft <jon@cs.ucl.ac.uk>
+Subject: [Testconf I] Submitted review #2B "Small Forwarding Tables for Fast
+ Routing..."
+X-Landmark: test/test01.php:555
+
+Greetings,
+
+Review #2B for Test Conference I (Testconf I) paper #2 has been submitted.
+The review is available at the paper site.
+
+  Paper site: http://hotcrp.lcdf.org/test/paper/2
+       Title: Small Forwarding Tables for Fast Routing Lookups
+   Review by: Peter Druschel <pdruschel@cs.rice.edu>
+
+For the most up-to-date reviews and comments, or to unsubscribe from email
+notification, see the paper site.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Review #2B
+===========================================================================
+* Reviewer: Peter Druschel <pdruschel@cs.rice.edu>
+* Updated: {{}}
+
+Overall merit
+-------------
+5. Strong accept
+
+Reviewer expertise
+------------------
+4. Expert
+
+********
+To: Jane Chair <chair@_.com>
+Subject: [Testconf I] Submitted review #2B "Small Forwarding Tables for Fast
+ Routing..."
+X-Landmark: test/test01.php:555
+
+Greetings,
+
+Review #2B for Test Conference I (Testconf I) paper #2 has been submitted.
+The review is available at the paper site.
+
+  Paper site: http://hotcrp.lcdf.org/test/paper/2
+       Title: Small Forwarding Tables for Fast Routing Lookups
+   Review by: Peter Druschel <pdruschel@cs.rice.edu>
+
+For the most up-to-date reviews and comments, or to unsubscribe from email
+notification, see the paper site.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Review #2B
+===========================================================================
+* Reviewer: Peter Druschel <pdruschel@cs.rice.edu>
+* Updated: {{}}
+
+Overall merit
+-------------
+5. Strong accept
+
+Reviewer expertise
+------------------
+4. Expert
+
+********
+To: Jon Crowcroft <jon@cs.ucl.ac.uk>
+Subject: [Testconf I] Submitted review #2C "Small Forwarding Tables for Fast
+ Routing..."
+X-Landmark: test/test01.php:573
+
+Greetings,
+
+Review #2C for Test Conference I (Testconf I) paper #2 has been submitted.
+The review is available at the paper site.
+
+  Paper site: http://hotcrp.lcdf.org/test/paper/2
+       Title: Small Forwarding Tables for Fast Routing Lookups
+   Review by: External Reviewer <external@_.com>
+
+For the most up-to-date reviews and comments, or to unsubscribe from email
+notification, see the paper site.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Review #2C
+===========================================================================
+* Reviewer: External Reviewer <external@_.com>
+* Updated: {{}}
+
+Overall merit
+-------------
+5. Strong accept
+
+Reviewer expertise
+------------------
+4. Expert
+
+********
+To: Jane Chair <chair@_.com>
+Subject: [Testconf I] Submitted review #2C "Small Forwarding Tables for Fast
+ Routing..."
+X-Landmark: test/test01.php:573
+
+Greetings,
+
+Review #2C for Test Conference I (Testconf I) paper #2 has been submitted.
+The review is available at the paper site.
+
+  Paper site: http://hotcrp.lcdf.org/test/paper/2
+       Title: Small Forwarding Tables for Fast Routing Lookups
+   Review by: External Reviewer <external@_.com>
+
+For the most up-to-date reviews and comments, or to unsubscribe from email
+notification, see the paper site.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Review #2C
+===========================================================================
+* Reviewer: External Reviewer <external@_.com>
+* Updated: {{}}
+
+Overall merit
+-------------
+5. Strong accept
+
+Reviewer expertise
+------------------
+4. Expert
+
+********
+To: Peter Druschel <pdruschel@cs.rice.edu>
+Subject: [Testconf I] Submitted review #2C "Small Forwarding Tables for Fast
+ Routing..."
+X-Landmark: test/test01.php:573
+
+Greetings,
+
+Review #2C for Test Conference I (Testconf I) paper #2 has been submitted.
+The review is available at the paper site.
+
+  Paper site: http://hotcrp.lcdf.org/test/paper/2
+       Title: Small Forwarding Tables for Fast Routing Lookups
+   Review by: External Reviewer <external@_.com>
+
+For the most up-to-date reviews and comments, or to unsubscribe from email
+notification, see the paper site.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Review #2C
+===========================================================================
+* Reviewer: External Reviewer <external@_.com>
+* Updated: {{}}
+
+Overall merit
+-------------
+5. Strong accept
+
+Reviewer expertise
+------------------
+4. Expert
+
