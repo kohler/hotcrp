@@ -241,6 +241,11 @@ class CommentInfo {
             return null;
     }
 
+    function has_tag($tag) {
+        return $this->commentTags
+            && stripos($this->commentTags, " $tag ") !== false;
+    }
+
     function unparse_json(Contact $contact) {
         if ($this->commentId && !$contact->can_view_comment($this->prow, $this))
             return false;
