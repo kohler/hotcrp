@@ -1086,7 +1086,7 @@ class Contact {
             $this->conf->qe_raw("delete from TopicInterest where contactId=$this->contactId");
             if (!empty($tf))
                 $this->conf->qe_raw("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $tf));
-            unset($this->topic_interest_map_);
+            $this->topic_interest_map_ = null;
         }
 
         // Roles
