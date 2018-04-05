@@ -193,6 +193,7 @@ $ps->save_paper_json((object) [
     "authors" => ["puneet@catarina.usc.edu", $user_estrin->email,
                   $user_floyd->email, $user_van->email, $anna]
 ]);
+MailChecker::check_db();
 
 $paper1 = $Conf->paperRow(1, $user_chair);
 $user_anna = user($anna);

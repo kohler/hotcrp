@@ -606,6 +606,7 @@ $Conf->save_setting("extrev_view", 0);
 save_review(17, $user_external, [
     "ovemer" => 2, "revexp" => 1, "papsum" => "Hi", "comaut" => "Bye", "ready" => true
 ]);
+MailChecker::check_db();
 xassert(!$user_external->can_view_review($paper17, $rrow17m));
 xassert(!$user_external->can_view_review_identity($paper17, $rrow17m));
 $Conf->save_setting("extrev_view", 1);
@@ -620,6 +621,7 @@ $user_lixia = $Conf->user_by_email("lixia@cs.ucla.edu");
 $tf = new ReviewValues($Conf->review_form());
 xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "Radical", "comaut" => "Nonradical"]));
 xassert($tf->check_and_save($user_lixia, $paper17));
+MailChecker::check_db();
 $rrow17h = fetch_review($paper17, $user_lixia);
 $rrow17x = fetch_review($paper17, $user_external);
 xassert_eqq($rrow17m->reviewRound, 3);

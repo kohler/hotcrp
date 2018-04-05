@@ -53,7 +53,7 @@ class MailChecker {
             fwrite(STDOUT, "********\n"
                    . "To: " . join(", ", $prep->to) . "\n"
                    . "Subject: " . str_replace("\r", "", $prep->subject) . "\n"
-                   . ($prep->landmark ? "X-Landmark: $landmark\n" : "") . "\n"
+                   . ($prep->landmark ? "X-Landmark: $prep->landmark\n" : "") . "\n"
                    . $prep->body);
         }
         return false;
@@ -83,10 +83,21 @@ class MailChecker {
             $last_landmark = null;
             $mdb = [];
             foreach (self::$preps as $prep) {
-                xassert($prep->landmark && isset(self::$messagedb[$prep->landmark]));
-                if ($prep->landmark !== $last_landmark) {
-                    $mdb = array_merge($mdb, self::$messagedb[$prep->landmark]);
-                    $last_landmark = $prep->landmark;
+                xassert($prep->landmark);
+                $landmark = $prep->landmark;
+                for ($delta = 0; $delta < 10 && !isset(self::$messagedb[$landmark]); ++$delta) {
+                    $colon = strpos($prep->landmark, ":");
+                    $landmark = substr($prep->landmark, 0, $colon + 1)
+                        . (intval(substr($prep->landmark, $colon + 1), 10)
+                           + ($delta & 1 ? ($delta + 1) / 2 : -$delta / 2 - 1));
+                }
+                if (isset(self::$messagedb[$landmark])) {
+                    if ($landmark !== $last_landmark) {
+                        $mdb = array_merge($mdb, self::$messagedb[$landmark]);
+                        $last_landmark = $landmark;
+                    }
+                } else {
+                    trigger_error("Found no database messages near {$prep->landmark}\n", E_USER_WARNING);
                 }
             }
         }
