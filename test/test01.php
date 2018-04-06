@@ -269,7 +269,6 @@ xassert($user_wilma->can_view_review($paper1, $review2, false));
 // set up some tags and tracks
 AssignmentSet::run($user_chair, "paper,tag\n3 9 13 17,green\n", true);
 $Conf->save_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
-$Conf->invalidate_caches(["tracks" => true]);
 $paper13 = $Conf->paperRow(13, $user_jon);
 xassert(!$paper13->has_author($user_jon));
 xassert(!$paper13->has_reviewer($user_jon));
@@ -397,7 +396,6 @@ xassert_assign($user_varghese, "paper,tag\n1,chairtest#clear\n");
 assert_search_papers($user_varghese, "#chairtest", "");
 
 $Conf->save_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest"));
-$Conf->invalidate_caches(["taginfo" => true]);
 xassert_assign($Admin, "paper,tag\n1,chairtest\n", true);
 assert_search_papers($user_chair, "#chairtest", "1");
 assert_search_papers($user_varghese, "#chairtest", "1");
@@ -411,7 +409,6 @@ xassert_assign($user_varghese, "paper,tag\n1,chairtest1#clear\n");
 assert_search_papers($user_varghese, "#chairtest1", "");
 
 $Conf->save_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest*"));
-$Conf->invalidate_caches(["taginfo" => true]);
 xassert($Conf->tags()->has_pattern);
 $ct = $Conf->tags()->check("chairtest0");
 xassert(!!$ct);
@@ -423,7 +420,6 @@ assert_search_papers($user_varghese, "#chairtest1", "1");
 
 // pattern tag merging
 $Conf->save_setting("tag_approval", 1, "chair*");
-$Conf->invalidate_caches(["taginfo" => true]);
 $ct = $Conf->tags()->check("chairtest0");
 xassert($ct && $ct->readonly && $ct->approval);
 
@@ -546,14 +542,14 @@ xassert($user_jon->can_view_review($paper2, $review2a, false));
 xassert(!$user_pdruschel->can_view_review($paper2, $review2a, false));
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
 $review2a = save_review(2, $user_jon, $revreq);
-MailChecker::check_db();
+MailChecker::check_db("test01-review2A");
 xassert($review2a->reviewSubmitted && !$review2a->reviewAuthorSeen);
 xassert($review2a->reviewOrdinal == 1);
 xassert($user_jon->can_view_review($paper2, $review2a, false));
 xassert(!$user_pdruschel->can_view_review($paper2, $review2a, false));
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
 $review2b = save_review(2, $user_pdruschel, $revreq);
-MailChecker::check_db();
+MailChecker::check_db("test01-review2B");
 xassert($user_jon->can_view_review($paper2, $review2a, false));
 xassert($user_pdruschel->can_view_review($paper2, $review2a, false));
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
@@ -571,7 +567,7 @@ xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
 $review2e = fetch_review($paper2, $user_external);
 xassert(!$user_mgbaker->can_view_review($paper2, $review2e, false));
 $review2e = save_review(2, $user_external, $revreq);
-MailChecker::check_db();
+MailChecker::check_db("test01-review2C");
 $review2d = fetch_review($paper2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == 0);
@@ -768,7 +764,6 @@ AssignmentSet::run($user_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true
 $Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+red\"}}");
 $Conf->save_setting("pc_seeallrev", 1);
 $Conf->save_setting("pc_seeblindrev", 0);
-$Conf->invalidate_caches(["tracks" => true]);
 xassert($user_jon->has_tag("red"));
 xassert(!$user_marina->has_tag("red"));
 
@@ -823,7 +818,6 @@ xassert_assign($user_chair, "paper,action,user\n14,primary,marina@poema.ru\n");
 xassert_assign($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n");
 
 $Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
-$Conf->invalidate_caches(["tracks" => true]);
 
 xassert(!$user_jon->can_view_paper($paper13));
 xassert(!$user_jon->can_view_pdf($paper13));
@@ -863,7 +857,6 @@ xassert_assign($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.
 
 // combinations of tracks
 $Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"red\":{\"view\":\"+red\"},\"blue\":{\"view\":\"+blue\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
-$Conf->invalidate_caches(["tracks" => true]);
 
 # 1: none; 2: red; 3: green; 4: red green; 5: blue; 6: red blue; 7: green blue; 8: red green blue
 xassert_assign($user_chair, "paper,tag\nall,-green\nall,-red\nall,-blue\n2 4 6 8,+red\n3 4 7 8,+green\n5 6 7 8,+blue\n");

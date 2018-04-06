@@ -225,7 +225,7 @@ class Conf {
         if (!isset($this->opt["conferenceKey"])) {
             if (!isset($this->settingTexts["conf_key"])
                 && ($key = random_bytes(32)) !== false)
-                $this->save_setting("conf_key", 1, $key);
+                $this->__save_setting("conf_key", 1, $key);
             $this->opt["conferenceKey"] = get($this->settingTexts, "conf_key", "");
         }
 
@@ -234,7 +234,7 @@ class Conf {
             && !get($this->opt, "disableCapabilities")
             && !(($key = random_bytes(16)) !== false
                  && ($key = base64_encode($key))
-                 && $this->save_setting("cap_key", 1, $key)))
+                 && $this->__save_setting("cap_key", 1, $key)))
             $this->opt["disableCapabilities"] = true;
 
         // GC old capabilities
@@ -278,35 +278,7 @@ class Conf {
         }
 
         // rounds
-        $this->rounds = [""];
-        if (isset($this->settingTexts["tag_rounds"])) {
-            foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)
-                if ($r != "")
-                    $this->rounds[] = $r;
-        }
-        $this->_round_settings = null;
-        if (isset($this->settingTexts["round_settings"])) {
-            $this->_round_settings = json_decode($this->settingTexts["round_settings"]);
-            $max_rs = [];
-            foreach ($this->_round_settings as $rs) {
-                if ($rs && isset($rs->pc_seeallrev)
-                    && self::pcseerev_compare($rs->pc_seeallrev, get($max_rs, "pc_seeallrev", 0)) > 0)
-                    $max_rs["pc_seeallrev"] = $rs->pc_seeallrev;
-                if ($rs && isset($rs->extrev_view)
-                    && $rs->extrev_view > get($max_rs, "extrev_view", 0))
-                    $max_rs["extrev_view"] = $rs->extrev_view;
-            }
-            $this->_round_settings["max"] = (object) $max_rs;
-        }
-
-        // review times
-        foreach ($this->rounds as $i => $rname) {
-            $suf = $i ? "_$i" : "";
-            if (!isset($this->settings["extrev_soft$suf"]) && isset($this->settings["pcrev_soft$suf"]))
-                $this->settings["extrev_soft$suf"] = $this->settings["pcrev_soft$suf"];
-            if (!isset($this->settings["extrev_hard$suf"]) && isset($this->settings["pcrev_hard$suf"]))
-                $this->settings["extrev_hard$suf"] = $this->settings["pcrev_hard$suf"];
-        }
+        $this->crosscheck_round_settings();
 
         // S3 settings
         foreach (array("s3_bucket", "s3_key", "s3_secret") as $k)
@@ -355,6 +327,38 @@ class Conf {
         if ($this->au_seerev == self::AUSEEREV_TAGS)
             $this->tag_au_seerev = explode(" ", get_s($this->settingTexts, "tag_au_seerev"));
         $this->tag_seeall = get($this->settings, "tag_seeall", 0) > 0;
+    }
+
+    private function crosscheck_round_settings() {
+        $this->rounds = [""];
+        if (isset($this->settingTexts["tag_rounds"])) {
+            foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)
+                if ($r != "")
+                    $this->rounds[] = $r;
+        }
+        $this->_round_settings = null;
+        if (isset($this->settingTexts["round_settings"])) {
+            $this->_round_settings = json_decode($this->settingTexts["round_settings"]);
+            $max_rs = [];
+            foreach ($this->_round_settings as $rs) {
+                if ($rs && isset($rs->pc_seeallrev)
+                    && self::pcseerev_compare($rs->pc_seeallrev, get($max_rs, "pc_seeallrev", 0)) > 0)
+                    $max_rs["pc_seeallrev"] = $rs->pc_seeallrev;
+                if ($rs && isset($rs->extrev_view)
+                    && $rs->extrev_view > get($max_rs, "extrev_view", 0))
+                    $max_rs["extrev_view"] = $rs->extrev_view;
+            }
+            $this->_round_settings["max"] = (object) $max_rs;
+        }
+
+        // review times
+        foreach ($this->rounds as $i => $rname) {
+            $suf = $i ? "_$i" : "";
+            if (!isset($this->settings["extrev_soft$suf"]) && isset($this->settings["pcrev_soft$suf"]))
+                $this->settings["extrev_soft$suf"] = $this->settings["pcrev_soft$suf"];
+            if (!isset($this->settings["extrev_hard$suf"]) && isset($this->settings["pcrev_hard$suf"]))
+                $this->settings["extrev_hard$suf"] = $this->settings["pcrev_hard$suf"];
+        }
     }
 
     private function crosscheck_track_settings($j) {
@@ -677,8 +681,8 @@ class Conf {
                 $this->_s3_document = new S3Document($opts);
                 list($scope, $signing_key) = $this->_s3_document->scope_and_signing_key($Now);
                 if ($opts["scope"] !== $scope || $opts["signing_key"] !== $signing_key) {
-                    $this->save_setting("__s3_scope", 1, $scope);
-                    $this->save_setting("__s3_signing_key", 1, $signing_key);
+                    $this->__save_setting("__s3_scope", 1, $scope);
+                    $this->__save_setting("__s3_signing_key", 1, $signing_key);
                 }
             } else
                 $this->_s3_document = null;
@@ -1342,7 +1346,8 @@ class Conf {
         if ($add && !self::round_name_error($rname)) {
             $rtext = $this->setting_data("tag_rounds", "");
             $rtext = ($rtext ? "$rtext$rname " : " $rname ");
-            $this->save_setting("tag_rounds", 1, $rtext);
+            $this->__save_setting("tag_rounds", 1, $rtext);
+            $this->crosscheck_round_settings();
             return $this->round_number($rname, false);
         } else
             return false;
@@ -1872,7 +1877,7 @@ class Conf {
     }
 
 
-    function save_setting($name, $value, $data = null) {
+    private function __save_setting($name, $value, $data = null) {
         $change = false;
         if ($value === null && $data === null) {
             if ($this->qe("delete from Settings where name=?", $name)) {
@@ -1890,16 +1895,24 @@ class Conf {
                 $change = true;
             }
         }
+        if ($change && str_starts_with($name, "opt.")) {
+            $oname = substr($name, 4);
+            if ($value === null && $data === null)
+                $this->opt[$oname] = get($this->opt_override, $oname);
+            else
+                $this->opt[$oname] = $data === null ? $value : $data;
+        }
+        return $change;
+    }
+
+    function save_setting($name, $value, $data = null) {
+        $change = $this->__save_setting($name, $value, $data);
         if ($change) {
             $this->crosscheck_settings();
-            if (str_starts_with($name, "opt.")) {
-                $oname = substr($name, 4);
-                if ($value === null && $data === null)
-                    $this->opt[$oname] = get($this->opt_override, $oname);
-                else
-                    $this->opt[$oname] = $data === null ? $value : $data;
+            if (str_starts_with($name, "opt."))
                 $this->crosscheck_options();
-            }
+            if (str_starts_with($name, "tag_") || $name === "tracks")
+                $this->invalidate_caches(["taginfo" => true, "tracks" => true]);
         }
         return $change;
     }
