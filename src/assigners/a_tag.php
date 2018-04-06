@@ -82,8 +82,15 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         return false;
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        if (!($tag = get($req, "tag")))
+        // tag argument (can have multiple space-separated tags)
+        if (($tag = trim(get($req, "tag", ""))) === "")
             return "Tag missing.";
+        $tags = preg_split('/\s+/', $tag);
+        while (count($tags) > 1) {
+            $req["tag"] = array_pop($tags);
+            $this->apply($prow, $contact, $req, $state);
+        }
+        $tag = $tags[0];
 
         // index argument
         $xindex = get($req, "index");
@@ -110,11 +117,11 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         if (preg_match(',\A(.*?)([=!<>]=?|#|≠|≤|≥)(.*?)\z,', $xtag, $xm))
             list($xtag, $m[3], $m[4]) = array($xm[1], $xm[2], strtolower($xm[3]));
         if (!preg_match(',\A(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm))
-            return "Invalid tag “" . htmlspecialchars($xtag) . "”.";
+            return "“" . htmlspecialchars($tag) . "”: Invalid tag.";
         else if ($m[3] && $m[4] === "")
-            return "Value missing.";
+            return "“" . htmlspecialchars($tag) . "”: Tag value missing.";
         else if ($m[3] && !preg_match(',\A([-+]?(?:\d+(?:\.\d*)?|\.\d+)|any|all|none|clear)\z,', $m[4]))
-            return "Value must be a number.";
+            return "“" . htmlspecialchars($tag) . "”: Tag value should be a number.";
         else
             list($m[1], $m[2]) = array($xm[1], $xm[2]);
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
