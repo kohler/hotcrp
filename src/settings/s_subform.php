@@ -193,7 +193,7 @@ class BanalSettings {
             && !isset($sv->req["has_sub_banal_m1"])) {
             $m1spec = new FormatSpec($sv->oldv("sub_banal_opt_m1"));
             if ($m1spec->is_banal_empty()) {
-                $sv->save("sub_banal_data_m1", $spt);
+                $sv->save("sub_banal_data_m1", $unparse);
             }
         }
 
