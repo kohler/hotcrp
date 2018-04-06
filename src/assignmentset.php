@@ -124,7 +124,7 @@ class AssignmentState {
         }
         return true;
     }
-    private function query_items($q) {
+    function query_items($q) {
         $res = [];
         foreach ($this->pid_keys($q) as $pid) {
             $st = $this->pidstate($pid);

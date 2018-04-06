@@ -94,7 +94,7 @@ if (isset($Qreq->withdraw) && !$newPaper && $Qreq->post_ok()) {
         $reason = (string) $Qreq->reason;
         if ($reason === "" && $Me->can_administer($prow) && $Qreq->doemail > 0)
             $reason = (string) $Qreq->emailNote;
-        Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-timeSubmitted,0), withdrawReason=? where paperId=$prow->paperId", $reason != "" ? $reason : null);
+        Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-timeSubmitted,0), withdrawReason=? where paperId=$prow->paperId", $reason !== "" ? $reason : null);
         $Conf->update_papersub_setting(-1);
         loadRows();
 

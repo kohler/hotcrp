@@ -60,13 +60,16 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     function expand_papers(&$req, AssignmentState $state) {
         return $this->isnext ? "ALL" : false;
     }
-    function load_state(AssignmentState $state) {
+    static function load_tag_state(AssignmentState $state) {
         if (!$state->mark_type("tag", ["pid", "ltag"], "Tag_Assigner::make"))
             return;
         $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag where paperId?a", $state->paper_ids());
         while (($row = edb_row($result)))
             $state->load(["type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => (float) $row[2]]);
         Dbl::free($result);
+    }
+    function load_state(AssignmentState $state) {
+        self::load_tag_state($state);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (($whyNot = $state->user->perm_change_some_tag($prow)))
