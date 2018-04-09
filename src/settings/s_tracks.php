@@ -23,7 +23,8 @@ class Tracks_SettingRenderer {
         $reqv = self::unparse_perm(get_s($trackinfo["req"], $type), $type);
         $curv = self::unparse_perm(get_s($trackinfo["cur"], $type), $type);
         $defclass = Track::permission_required(Track::$map[$type]) ? "none" : "";
-        $unfolded = $curv[0] !== $defclass || $reqv[0] !== $defclass
+        $unfolded = $curv[0] !== $defclass
+            || $reqv[0] !== $defclass
             || (empty($trackinfo["unfolded"]) && $gj && get($gj, "default_unfolded"));
         self::$nperm_rendered_folded += !$unfolded;
 
@@ -90,7 +91,7 @@ class Tracks_SettingRenderer {
         // Check fold status
         $unfolded = [];
         foreach (Track::$map as $type => $perm) {
-            if (!$curtrack || get_s($reqtrack, $type) !== "")
+            if ($tnum === 0 || get_s($reqtrack, $type) !== "")
                 $unfolded[$type] = true;
         }
         return ["cur" => $curtrack, "req" => $reqtrack, "unfolded" => $unfolded];
