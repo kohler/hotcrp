@@ -1889,7 +1889,7 @@ class Conf {
             $dval = $data;
             if (is_array($dval) || is_object($dval))
                 $dval = json_encode_db($dval);
-            if ($this->qe("insert into Settings (name, value, data) values (?, ?, ?) on duplicate key update value=values(value), data=values(data)", $name, $value, $dval)) {
+            if ($this->qe("insert into Settings (name, value, data) values (?, ?, ?) on duplicate key update value=values(value), data=values(data)", $name, (int) $value, $dval)) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $data;
                 $change = true;
