@@ -308,12 +308,16 @@ class PaperStatus extends MessageSet {
             && $can_view_authors
             && $this->conf->setting("sub_pcconf")
             && ($prow->outcome <= 0 || ($user && !$user->can_view_decision($prow)))) {
-            foreach ($this->conf->full_pc_members() as $p)
+            $pcs = [];
+            foreach ($this->conf->full_pc_members() as $p) {
                 if (!$prow->has_conflict($p)
-                    && $prow->potential_conflict($p)) {
-                    $this->warning_at("pcconf", $this->_("You may have missed some PC conflicts of interest. Please verify the highlighted PC members."));
-                    break;
-                }
+                    && $prow->potential_conflict($p))
+                    $pcs[] = Text::name_html($p);
+            }
+            if (!empty($pcs)) {
+                $this->warning_at("pcconf", $this->_("You may have missed conflicts of interest for %s (highlighted below). Please verify that all conflicts are correctly marked.", commajoin($pcs, "and"))
+                    . $this->_('<p class="hint">This warning will not prevent submission.</p>'));
+            }
         }
 
         $this->ignore_msgs = $original_no_msgs;
