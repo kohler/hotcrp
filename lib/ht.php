@@ -355,15 +355,13 @@ class Ht {
     static private function make_link($html, $href, $js) {
         if ($js === null)
             $js = [];
-        if ($href !== null && !isset($js["href"]))
-            $js["href"] = $href;
+        if (!isset($js["href"]))
+            $js["href"] = isset($href) ? $href : "";
         if (isset($js["onclick"]) && !preg_match('/(?:^return|;)/', $js["onclick"]))
             $js["onclick"] = "return " . $js["onclick"];
         if (isset($js["onclick"])
             && (!isset($js["class"]) || !preg_match('/(?:\A|\s)(?:ui|btn|tla)(?=\s|\z)/', $js["class"])))
             error_log(caller_landmark(2) . ": JS Ht::link lacks class");
-        if (get($js, "href") === null)
-            $js["href"] = "#";
         return "<a" . self::extra($js) . ">" . $html . "</a>";
     }
 
