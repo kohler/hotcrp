@@ -1659,7 +1659,7 @@ class ReviewValues extends MessageSet {
                 continue;
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if ($fval === false) {
-                $this->warning_at($fid, $this->conf->_("Bad %s value “%s”.", $f->name_html, htmlspecialchars(UnicodeHelper::utf8_abbreviate($fval, 100))));
+                $this->rmsg($fid, $this->conf->_("Bad %s value “%s”.", $f->name_html, htmlspecialchars(UnicodeHelper::utf8_abbreviate($fval, 100))), self::WARNING);
                 unset($this->req[$fid]);
                 $unready = true;
             } else {
@@ -1678,7 +1678,7 @@ class ReviewValues extends MessageSet {
         }
         if ($missingfields && $submit && $anydiff) {
             foreach ($missingfields as $f)
-                $this->warning_at($f->id, $this->conf->_("You must provide a value for %s in order to submit your review.", $f->name_html));
+                $this->rmsg($f->id, $this->conf->_("You must provide a value for %s in order to submit your review.", $f->name_html), self::WARNING);
         }
 
         if ($rrow
@@ -1689,7 +1689,7 @@ class ReviewValues extends MessageSet {
                 || strcasecmp($this->req["reviewerFirst"], $rrow->firstName) != 0
                 || strcasecmp($this->req["reviewerLast"], $rrow->lastName) != 0)) {
             $msg = $this->conf->_("The review form was meant for %s, but this review belongs to %s. If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", Text::user_html(["firstName" => get($this->req, "reviewerFirst"), "lastName" => get($this->req, "reviewerLast"), "email" => $this->req["reviewerEmail"]]), Text::user_html($rrow));
-            $this->error_at("reviewerEmail", $msg);
+            $this->rmsg("reviewerEmail", $msg, self::ERROR);
         } else if ($rrow
                    && $rrow->reviewEditVersion > get($this->req, "version", 0)
                    && $nokfields > 0
