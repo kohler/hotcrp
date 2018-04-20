@@ -1676,7 +1676,7 @@ class ReviewValues extends MessageSet {
                     ++$nokfields;
             }
         }
-        if ($missingfields && $submit && $anydiff) {
+        if ($missingfields && $submit) {
             foreach ($missingfields as $f)
                 $this->rmsg($f->id, $this->conf->_("You must provide a value for %s in order to submit your review.", $f->name_html), self::WARNING);
         }
