@@ -366,6 +366,11 @@ class ReviewField implements Abbreviator, JsonSerializable {
             || strcasecmp($text, "No entry") == 0;
     }
 
+    function parse_is_explicit_empty($text) {
+        return $this->has_options
+            && ($text === "0" || strcasecmp($text, "No entry") == 0);
+    }
+
     function parse_value($text, $strict) {
         if (!$strict && strlen($text) > 1
             && preg_match('/\A\s*([0-9]+|[A-Z])(?:\W|\z)/', $text, $m))
@@ -1645,12 +1650,18 @@ class ReviewValues extends MessageSet {
         return [$oldval, $newval];
     }
 
+    private function fvalue_nonempty(ReviewField $f, $fval) {
+        return $fval !== ""
+            && ($fval !== 0
+                || (isset($this->req[$f->id])
+                    && $f->parse_is_explicit_empty($this->req[$f->id])));
+    }
+
     private function check(ReviewInfo $rrow = null) {
         $submit = get($this->req, "ready");
         $before_nerrors = $this->nerrors();
-        $nokfields = 0;
         $missingfields = null;
-        $unready = $anydiff = false;
+        $unready = $anydiff = $anynonempty = false;
 
         foreach ($this->rf->forder as $fid => $f) {
             if (!isset($this->req[$fid])
@@ -1672,11 +1683,11 @@ class ReviewValues extends MessageSet {
                         $missingfields[] = $f;
                         $unready = $unready || $submit;
                     }
-                } else if ($fval !== "")
-                    ++$nokfields;
+                } else if ($this->fvalue_nonempty($f, $fval))
+                    $anynonempty = true;
             }
         }
-        if ($missingfields && $submit) {
+        if ($missingfields && $submit && $anynonempty) {
             foreach ($missingfields as $f)
                 $this->rmsg($f->id, $this->conf->_("You must provide a value for %s in order to submit your review.", $f->name_html), self::WARNING);
         }
@@ -1692,7 +1703,7 @@ class ReviewValues extends MessageSet {
             $this->rmsg("reviewerEmail", $msg, self::ERROR);
         } else if ($rrow
                    && $rrow->reviewEditVersion > get($this->req, "version", 0)
-                   && $nokfields > 0
+                   && $anydiff
                    && $this->text !== null) {
             $this->rmsg($this->firstLineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
         } else if ($unready) {
@@ -1703,7 +1714,7 @@ class ReviewValues extends MessageSet {
 
         if ($this->nerrors() !== $before_nerrors)
             return false;
-        else if ($nokfields > 0)
+        else if ($anynonempty)
             return true;
         else {
             $this->ignoredBlank[] = "#" . $this->paperId;
