@@ -112,7 +112,9 @@ foreach ($Conf->all_review_fields() as $f)
     }
 if ($scoreselector["+overAllMerit"] === "")
     unset($scoreselector["+overAllMerit"], $scoreselector["-overAllMerit"]);
-$scoreselector["x"] = "(no score preference)";
+$scoreselector["__break"] = null;
+$scoreselector["x"] = "random submitted reviews";
+$scoreselector["xa"] = "random reviews";
 
 // download proposed assignment
 if (isset($Qreq->saveassignment)

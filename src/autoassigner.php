@@ -232,66 +232,54 @@ class Autoassigner {
         $this->reset_prefs();
 
         $all_fields = $this->conf->all_review_fields();
+        $score = null;
         $scoredir = 1;
-        if ($scoreinfo === "x")
-            $score = "1";
-        else if ((substr($scoreinfo, 0, 1) === "-"
-                  || substr($scoreinfo, 0, 1) === "+")
-                 && isset($all_fields[substr($scoreinfo, 1)])) {
-            $score = "PaperReview." . substr($scoreinfo, 1);
+        if ((substr($scoreinfo, 0, 1) === "-"
+             || substr($scoreinfo, 0, 1) === "+")
+            && isset($all_fields[substr($scoreinfo, 1)])) {
+            $score = substr($scoreinfo, 1);
             $scoredir = substr($scoreinfo, 0, 1) === "-" ? -1 : 1;
-        } else
-            $score = "PaperReview.overAllMerit";
+        }
 
-        $query = "select Paper.paperId, ? contactId,
-            coalesce(PaperConflict.conflictType, 0) as conflictType,
-            coalesce(PaperReview.reviewType, 0) as myReviewType,
-            coalesce(PaperReview.reviewSubmitted, 0) as myReviewSubmitted,
-            coalesce($score, 0) as reviewScore,
-            Paper.outcome,
-            Paper.managerContactId
-        from Paper
-        left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=?)
-        left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=?)
-        where Paper.paperId ?a
-        group by Paper.paperId";
+        $result = $this->conf->paper_result(null, ["paperId" => $this->papersel, "allConflictType" => true, "reviewSignatures" => true, "scores" => $score ? [$score] : []]);
+        $set = new PaperInfoSet;
+        while (($prow = PaperInfo::fetch($result, null, $this->conf))) {
+            $set->add($prow);
+        }
+        Dbl::free($result);
 
-        $nmade = 0;
-        foreach ($this->pcm as $cid => $p) {
-            $result = $this->conf->qe($query, $cid, $cid, $cid, $this->papersel);
-
-            // First, collect score extremes
-            $scoreextreme = array();
-            $rows = array();
-            while (($row = edb_orow($result))) {
-                if ($row->conflictType > 0
-                    || $row->myReviewType == 0
-                    || $row->myReviewSubmitted == 0
-                    || $row->reviewScore == 0)
-                    $this->eass[$row->contactId][$row->paperId] = self::ENOASSIGN;
-                else {
-                    if (!isset($scoreextreme[$row->paperId])
-                        || $scoredir * $row->reviewScore > $scoredir * $scoreextreme[$row->paperId])
-                        $scoreextreme[$row->paperId] = $row->reviewScore;
-                    $rows[] = $row;
+        $scorearr = [];
+        foreach ($set as $prow) {
+            if ($score) {
+                $prow->ensure_review_score($score);
+            }
+            foreach ($this->pcm as $cid => $p) {
+                if ($prow->has_conflict($cid)
+                    || !($rrow = $prow->review_of_user($cid))
+                    || ($scoreinfo !== "xa" && $rrow->reviewSubmitted == 0)
+                    || ($score && !$rrow->$score)) {
+                    $scorearr[$prow->paperId][$cid] = -1;
+                } else {
+                    $s = $score ? $rrow->$score : 1;
+                    if ($scoredir == -1)
+                        $s = 1000 - $s;
+                    $scorearr[$prow->paperId][$cid] = $s;
                 }
             }
-            // Then, collect preferences; ignore score differences farther
-            // than 1 score away from the relevant extreme
-            foreach ($rows as $row) {
-                $scoredifference = $scoredir * ($row->reviewScore - $scoreextreme[$row->paperId]);
-                if ($scoredifference >= -1)
-                    $this->prefs[$row->contactId][$row->paperId] = $scoredifference;
-            }
-            unset($rows);        // don't need the memory any more
-
-            Dbl::free($result);
-            ++$nmade;
-            if ($nmade % 4 == 0)
-                $this->set_progress(sprintf("Loading reviewer preferences (%d%% done)", (int) ($nmade * 100 / count($this->pcm) + 0.5)));
         }
-        $this->make_pref_groups();
 
+        foreach ($scorearr as $pid => $carr) {
+            $extreme = max($carr);
+            foreach ($carr as $cid => $s) {
+                if ($s < 0) {
+                    $this->eass[$cid][$pid] = self::ENOASSIGN;
+                } else {
+                    $this->prefs[$cid][$pid] = max(0, $s - $extreme + 2);
+                }
+            }
+        }
+
+        $this->make_pref_groups();
         $this->profile["preferences"] = microtime(true) - $time;
     }
 
@@ -548,7 +536,9 @@ class Autoassigner {
                         $m->add_node($dst, "b");
                         $m->add_edge($dst, "p$pid", 1, 0);
                     }
-                } else if ($this->review_gadget == self::REVIEW_GADGET_EXPERTISE) {
+                } else if ($this->review_gadget == self::REVIEW_GADGET_EXPERTISE
+                           && isset($this->prefinfo[$cid][$pid])
+                           && is_array($this->prefinfo[$cid][$pid])) {
                     $exp = $this->prefinfo[$cid][$pid][1];
                     if ($exp > 0)
                         $dst = "p{$pid}x";
