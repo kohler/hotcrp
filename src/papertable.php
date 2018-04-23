@@ -191,7 +191,7 @@ class PaperTable {
         $this->useRequest = $useRequest;
         $this->allFolded = $this->mode === "re" || $this->mode === "assign"
             || ($this->mode !== "edit"
-                && (count($this->all_rrows) || count($this->crows)));
+                && (!empty($this->all_rrows) || !empty($this->crows)));
     }
 
     function set_edit_status(PaperStatus $status) {
