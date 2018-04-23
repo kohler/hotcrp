@@ -2088,7 +2088,9 @@ class PaperSearch {
 
     function trivial_limit() {
         $limit = $this->limit();
-        if ($limit === "und" || $limit === "acc" || $limit === "vis")
+        if ($this->user->has_hidden_papers())
+            return false;
+        else if ($limit === "und" || $limit === "acc" || $limit === "vis")
             return $this->privChair;
         else if ($limit === "rable")
             return false;
@@ -2173,15 +2175,17 @@ class PaperSearch {
         if ($this->q === "re:me"
             && ($xlimit === "s" || $xlimit === "act" || $xlimit === "rout" || $xlimit === "rable"))
             $xlimit = "r";
-        if ($this->q !== "" && ($this->q !== "re:me" || $xlimit !== "r"))
+        if (($this->q !== ""
+             && ($this->q !== "re:me" || $xlimit !== "r"))
+            || (!$this->privChair
+                && $this->reviewer_user() !== $this->user)
+            || ($this->conf->has_tracks()
+                && !$this->privChair
+                && !in_array($xlimit, ["a", "r", "ar"]))
+            || ($this->conf->has_tracks()
+                && $limit === "rable")
+            || $this->user->has_hidden_papers())
             return false;
-        if (!$this->privChair && $this->reviewer_user() !== $this->user)
-            return false;
-        if ($this->conf->has_tracks()) {
-            if ((!$this->privChair && $xlimit !== "a" && $xlimit !== "r" && $xlimit !== "ar")
-                || $limit === "rable")
-                return false;
-        }
         if ($limit === "rable") {
             if ($this->reviewer_user()->isPC)
                 $limit = $this->conf->can_pc_see_all_submissions() ? "act" : "s";
