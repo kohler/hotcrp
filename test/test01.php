@@ -298,12 +298,12 @@ assert_search_papers($user_jon, "#~vote≥10", "1");
 assert_search_papers($user_jon, "#~vote>10", "");
 assert_search_papers($user_jon, "#~vote=10", "1");
 assert_search_papers($user_jon, "#~vote<10", "");
-assert_search_papers($user_marina, "#~vote", "1 2");
+assert_search_papers($user_marina, "#~vote", "2 1");
 assert_search_papers($user_marina, "#~vote≥5", "1");
 assert_search_papers($user_marina, "#~vote>5", "");
 assert_search_papers($user_marina, "#~vote=5", "1");
 assert_search_papers($user_marina, "#~vote<5", "2");
-assert_search_papers($user_chair, "#marina~vote", "1 2");
+assert_search_papers($user_chair, "#marina~vote", "2 1");
 assert_search_papers($user_chair, "#red~vote", "1");
 
 // assign some tags using AssignmentSet interface
@@ -313,7 +313,7 @@ $assignset->parse("paper,action,tag,index
 2,tag,green,1\n");
 assert_search_papers($user_chair, "#green", "3 9 13 17");
 $assignset->execute();
-assert_search_papers($user_chair, "#green", "2 13 17");
+assert_search_papers($user_chair, "#green", "13 17 2");
 assert_search_papers($user_chair, "#green>0", "2");
 assert_search_papers($user_chair, "#green=1", "2");
 assert_search_papers($user_chair, "#green=0", "13 17");
@@ -474,7 +474,9 @@ assert_search_papers($user_chair, "10-12 THEN re:huitema THEN 5-6", "10 11 12 8 
 assert_search_papers($user_chair, "(10-12 THEN re:huitema) THEN 5-6", "10 11 12 8 13 5 6");
 
 // NOT searches
-assert_search_papers($user_chair, "#fart", "1 2 3 4 5 6 7 8");
+assert_search_papers($user_chair, "#fart", "7 8 1 2 3 6 5 4");
+assert_search_papers($user_chair, "tag:#fart", "1 2 3 4 5 6 7 8");
+assert_search_papers($user_chair, "tag:fart", "1 2 3 4 5 6 7 8");
 assert_search_papers($user_chair, "NOT #fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 assert_search_papers($user_chair, "-#fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 

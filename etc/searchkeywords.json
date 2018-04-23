@@ -116,22 +116,27 @@
     {
         "name": "tag",
         "parse_callback": "Tag_SearchTerm::parse",
-        "negated": false, "sorting": false, "has": "any"
+        "negated": false, "sorting": false, "is_hash": false, "has": "any"
+    },
+    {
+        "name": "hashtag",
+        "parse_callback": "Tag_SearchTerm::parse",
+        "negated": false, "sorting": false, "is_hash": true, "has": "any"
     },
     {
         "name": "notag",
         "parse_callback": "Tag_SearchTerm::parse",
-        "negated": true, "sorting": false, "has": "any"
+        "negated": true, "sorting": false, "is_hash": false, "has": "any"
     },
     {
         "name": "order",
         "parse_callback": "Tag_SearchTerm::parse",
-        "negated": false, "sorting": true, "revsort": false
+        "negated": false, "sorting": true, "is_hash": false, "revsort": false
     },
     {
         "name": "rorder",
         "parse_callback": "Tag_SearchTerm::parse",
-        "negated": false, "sorting": true, "revsort": true, "synonym": "revorder"
+        "negated": false, "sorting": true, "is_hash": false, "revsort": true, "synonym": "revorder"
     },
     {
         "name": "color",

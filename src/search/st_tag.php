@@ -61,10 +61,20 @@ class TagSearchMatcher {
         }
         return false;
     }
+    function single_tag() {
+        if (count($this->tags) == 1
+            && $this->tags[0] !== "any"
+            && strpos($this->tags[0], "*") === false)
+            return $this->tags[0];
+        else
+            return false;
+    }
 }
 
 class Tag_SearchTerm extends SearchTerm {
     private $tsm;
+    private $tag1;
+    private $tag1nz;
 
     function __construct(TagSearchMatcher $tsm) {
         parent::__construct("tag");
@@ -148,6 +158,10 @@ class Tag_SearchTerm extends SearchTerm {
         $term = $value->make_term()->negate_if($negated);
         if (!$negated && $sword->kwdef->sorting && !empty($value->tags))
             $term->set_float("sort", [($revsort ? "-#" : "#") . $value->tags[0]]);
+        if (!$negated && $sword->kwdef->is_hash && ($tag = $value->single_tag())) {
+            $term->tag1 = $tag;
+            $term->tag1nz = false;
+        }
         return $term;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -157,7 +171,22 @@ class Tag_SearchTerm extends SearchTerm {
         return 'exists (select * from PaperTag where paperId=Paper.paperId' . ($tm_sql ? : "") . ')';
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        return $this->tsm->evaluate($srch->user, $row->searchable_tags($srch->user));
+        $ok = $this->tsm->evaluate($srch->user, $row->searchable_tags($srch->user));
+        if ($ok && $this->tag1 && !$this->tag1nz)
+            $this->tag1nz = $row->tag_value($this->tag1) != 0;
+        return $ok;
+    }
+    function default_sorter($top, $thenmap, PaperSearch $srch) {
+        if ($top && $this->tag1) {
+            $dt = $srch->conf->tags()->check(TagInfo::base($this->tag1));
+            if (($dt && $dt->order_anno) || $this->tag1nz) {
+                $s = new ListSorter("#{$this->tag1}");
+                $s->reverse = $dt && $dt->votish;
+                $s->thenmap = $thenmap;
+                return $s;
+            }
+        }
+        return false;
     }
 }
 

@@ -153,6 +153,9 @@ class SearchTerm {
         if ($top && ($x = $this->get_float("contradiction_warning")))
             $srch->contradictions[$x] = true;
     }
+    function default_sorter($top, $thenmap, PaperSearch $srch) {
+        return false;
+    }
 }
 
 class False_SearchTerm extends SearchTerm {
@@ -369,6 +372,16 @@ class And_SearchTerm extends Op_SearchTerm {
         parent::extract_metadata($top, $srch);
         foreach ($this->child as $qv)
             $qv->extract_metadata($top, $srch);
+    }
+    function default_sorter($top, $thenmap, PaperSearch $srch) {
+        $s = false;
+        foreach ($this->child as $qv) {
+            $s1 = $qv->default_sorter($top, $thenmap, $srch);
+            if ($s && $s1)
+                return false;
+            $s = $s ? : $s1;
+        }
+        return $s;
     }
 }
 
@@ -787,6 +800,19 @@ class PaperID_SearchTerm extends SearchTerm {
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return in_array($row->paperId, $this->pids);
+    }
+    function in_order() {
+        $pods = $this->pids;
+        sort($pods, SORT_NUMERIC);
+        return $pods == $this->pids;
+    }
+    function default_sorter($top, $thenmap, PaperSearch $srch) {
+        if ($top && !$this->in_order()) {
+            $s = ListSorter::make_field(new NumericOrderPaperColumn($srch->conf, array_flip($this->pids)));
+            $s->thenmap = $thenmap;
+            return $s;
+        } else
+            return false;
     }
 }
 
@@ -1387,7 +1413,7 @@ class PaperSearch {
             return new PaperID_SearchTerm(range((int) $m[1], (int) $m[2]));
         } else if (substr($word, 0, 1) === "#") {
             ++$this->_quiet_count;
-            $qe = $this->_searchQueryWord("tag:" . substr($word, 1));
+            $qe = $this->_searchQueryWord("hashtag:" . substr($word, 1));
             --$this->_quiet_count;
             if (!$qe->is_false())
                 return $qe;
@@ -1731,14 +1757,13 @@ class PaperSearch {
     // BASIC QUERY FUNCTION
 
     private function _add_sorters($qe, $thenmap) {
-        foreach ($qe->get_float("sort", []) as $s)
-            if (($s = self::parse_sorter($s))) {
-                $s->thenmap = $thenmap;
-                $this->sorters[] = $s;
-            }
-        if (!$qe->get_float("sort") && $qe->type === "pn") {
-            $s = ListSorter::make_field(new NumericOrderPaperColumn($this->conf, array_flip($qe->pids)));
-            $s->thenmap = $thenmap;
+        if (($sorters = $qe->get_float("sort"))) {
+            foreach ($sorters as $s)
+                if (($s = self::parse_sorter($s))) {
+                    $s->thenmap = $thenmap;
+                    $this->sorters[] = $s;
+                }
+        } else if (($s = $qe->default_sorter(true, $thenmap, $this))) {
             $this->sorters[] = $s;
         }
     }
@@ -2028,6 +2053,8 @@ class PaperSearch {
         if ($qe->type === "then")
             for ($i = 0; $i < $qe->nthen; ++$i)
                 $this->_add_sorters($qe->child[$i], $this->thenmap ? $i : null);
+
+        // group information
         $this->groupmap = [];
         if (!$sole_qe) {
             for ($i = 0; $i < $qe->nthen; ++$i) {
