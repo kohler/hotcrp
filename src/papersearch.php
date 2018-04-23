@@ -1743,41 +1743,66 @@ class PaperSearch {
         }
     }
 
-    private function _check_sort_order_anno($sorters) {
-        $thetag = false;
-        foreach ($sorters as $sorter) {
-            $tag = Tagger::check_tag_keyword($sorter, $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID);
-            if (!$tag || ($thetag && $tag !== $thetag))
-                return false;
-            $thetag = $tag;
-        }
-        return $thetag;
-    }
-
-    private function _assign_order_anno_group($g, $order_anno_tag, $anno_index) {
-        if (($ta = $order_anno_tag->order_anno_entry($anno_index)))
+    private function _assign_order_anno_group($g, $dt, $anno_index) {
+        if (($ta = $dt->order_anno_entry($anno_index)))
             $this->groupmap[$g] = $ta;
         else if (!isset($this->groupmap[$g])) {
             $ta = new TagAnno;
-            $ta->tag = $order_anno_tag->tag;
+            $ta->tag = $dt->tag;
             $ta->heading = "";
             $this->groupmap[$g] = $ta;
         }
     }
 
-    private function _assign_order_anno($order_anno_tag, $tag_order) {
+    private function _find_order_anno_tag($qe) {
+        $thetag = null;
+        foreach ($this->sorters as $sorter) {
+            $tag = $sorter->type ? Tagger::check_tag_keyword($sorter->type, $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID) : false;
+            $ok = $tag && ($thetag === null || $thetag === $tag);
+            $thetag = $ok ? $tag : false;
+        }
+        if (!$thetag)
+            return false;
+        $dt = $this->conf->tags()->add(TagInfo::base($tag));
+        if ($dt->has_order_anno())
+            return $dt;
+        foreach ($qe->get_float("view", []) as $vk => $action) {
+            if ($action === "edit"
+                && ($t = Tagger::check_tag_keyword($vk, $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID | Tagger::NOTAGKEYWORD))
+                && strcasecmp($t, $dt->tag) == 0)
+                return $dt;
+        }
+        return false;
+    }
+
+    private function _check_order_anno($qe, $rowset) {
+        if (!($dt = $this->_find_order_anno_tag($qe)))
+            return false;
+        $this->is_order_anno = $dt->tag;
+
+        $tag_order = [];
+        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        foreach ($this->_matches as $pid) {
+            $row = $rowset->get($pid);
+            if ($row->has_viewable_tag($dt->tag, $this->user))
+                $tag_order[] = [$row->paperId, $row->tag_value($dt->tag)];
+            else
+                $tag_order[] = [$row->paperId, TAG_INDEXBOUND];
+        }
+        $this->user->set_overrides($old_overrides);
+        usort($tag_order, "TagInfo::id_index_compar");
+
         $this->thenmap = [];
-        $this->_assign_order_anno_group(0, $order_anno_tag, -1);
+        $this->_assign_order_anno_group(0, $dt, -1);
         $this->groupmap[0]->heading = "none";
         $cur_then = $aidx = $tidx = 0;
-        $alist = $order_anno_tag->order_anno_list();
-        usort($tag_order, "TagInfo::id_index_compar");
+        $alist = $dt->order_anno_list();
         while ($aidx < count($alist) || $tidx < count($tag_order)) {
             if ($tidx == count($tag_order)
                 || ($aidx < count($alist) && $alist[$aidx]->tagIndex <= $tag_order[$tidx][1])) {
                 if ($cur_then != 0 || $tidx != 0 || $aidx != 0)
                     ++$cur_then;
-                $this->_assign_order_anno_group($cur_then, $order_anno_tag, $aidx);
+                $this->_assign_order_anno_group($cur_then, $dt, $aidx);
                 ++$aidx;
             } else {
                 $this->thenmap[$tag_order[$tidx][0]] = $cur_then;
@@ -1894,30 +1919,13 @@ class PaperSearch {
             $sole_qe = $qe;
         else if ($qe->nthen == 1)
             $sole_qe = $qe->child[0];
-        $order_anno_tag = null;
-        if ($sole_qe
-            && ($sort = $sole_qe->get_float("sort"))
-            && ($tag = self::_check_sort_order_anno($sort))) {
-            $dt = $this->conf->tags()->add(TagInfo::base($tag));
-            $views = $sole_qe->get_float("view", []);
-            if ($dt->has_order_anno())
-                $order_anno_tag = $dt;
-            else {
-                foreach ($sole_qe->get_float("view", []) as $vk => $action)
-                    if ($action === "edit"
-                        && ($t = Tagger::check_tag_keyword($vk, $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID | Tagger::NOTAGKEYWORD))
-                        && strcasecmp($t, $dt->tag) == 0)
-                        $order_anno_tag = $dt;
-            }
-        }
 
         // add permissions tables if we will filter the results
         $need_filter = !$qe->trivial_rights($this->user, $this)
             || !$this->trivial_limit()
             || $this->conf->has_tracks() /* XXX probably only need check_track_view_sensitivity */
             || $qe->type === "then"
-            || $qe->get_float("heading")
-            || $order_anno_tag;
+            || $qe->get_float("heading");
         if ($need_filter) {
             $sqi->add_rights_columns();
             if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
@@ -1927,7 +1935,6 @@ class PaperSearch {
         // XXX some of this should be shared with paperQuery
         if (($need_filter && $this->conf->has_track_tags())
             || get($this->_query_options, "tags")
-            || $order_anno_tag
             || ($this->user->privChair
                 && $this->conf->has_any_manager()
                 && $this->conf->tags()->has_sitewide))
@@ -1984,7 +1991,6 @@ class PaperSearch {
         $this->_matches = array();
         if ($need_filter) {
             $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-            $tag_order = [];
             foreach ($rowset->all() as $row) {
                 if (!$this->test_limit($row))
                     $x = false;
@@ -2005,12 +2011,6 @@ class PaperSearch {
                         if ($qe->child[$j]->exec($row, $this)
                             && ($qe->highlights[$j - $qe->nthen] & (1 << $x)))
                             $this->highlightmap[$row->paperId][] = $qe->highlight_types[$j - $qe->nthen];
-                }
-                if ($order_anno_tag) {
-                    if ($row->has_viewable_tag($order_anno_tag->tag, $this->user))
-                        $tag_order[] = [$row->paperId, $row->tag_value($order_anno_tag->tag)];
-                    else
-                        $tag_order[] = [$row->paperId, TAG_INDEXBOUND];
                 }
             }
             $this->user->set_overrides($old_overrides);
@@ -2041,10 +2041,8 @@ class PaperSearch {
             }
         } else if (($h = $sole_qe->get_float("heading")))
             $this->groupmap[0] = TagAnno::make_heading($h);
-        else if ($order_anno_tag) {
-            $this->_assign_order_anno($order_anno_tag, $tag_order);
-            $this->is_order_anno = $order_anno_tag->tag;
-        }
+        else
+            $this->_check_order_anno($sole_qe, $rowset);
     }
 
     function paper_ids() {
