@@ -170,7 +170,7 @@ class PaperTable {
     }
     private function try_list($opt, $pid) {
         $srch = new PaperSearch($this->user, $opt);
-        $list = $srch->session_list_object(get($opt, "sort"));
+        $list = $srch->session_list_object();
         return $list->set_current_id($pid);
     }
 

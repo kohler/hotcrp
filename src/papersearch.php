@@ -983,6 +983,7 @@ class PaperSearch {
     public $highlightmap = null;
     public $viewmap;
     public $sorters = [];
+    private $_default_sort = null; // XXX should be used more often
     private $_highlight_tags = null;
 
     private $_matches = null; // list of ints
@@ -1097,12 +1098,14 @@ class PaperSearch {
         if (strpos($this->urlbase, "&amp;") !== false)
             trigger_error(caller_landmark() . " PaperSearch::urlbase should be a raw URL", E_USER_NOTICE);
 
+        // reviewer
         if ($reviewer)
             $this->_reviewer_user = $this->_context_user = $reviewer;
         else if (get($options, "reviewer"))
             error_log("PaperSearch::\$reviewer set: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
 
         $this->_allow_deleted = get($options, "allow_deleted", false);
+        $this->_default_sort = get($options, "sort");
 
         $this->_active_limit = $this->limitName;
         if ($this->_active_limit === "editpref")
@@ -2077,10 +2080,10 @@ class PaperSearch {
         return $this->_matches ? : array();
     }
 
-    function sorted_paper_ids($sort = null) {
+    function sorted_paper_ids() {
         $this->_prepare();
-        if ($sort || $this->sorters) {
-            $pl = new PaperList($this, ["sort" => $sort]);
+        if ($this->_default_sort || $this->sorters) {
+            $pl = new PaperList($this, ["sort" => $this->_default_sort]);
             return $pl->paper_ids();
         } else
             return $this->paper_ids();
@@ -2323,11 +2326,13 @@ class PaperSearch {
     static function unparse_listid($listid) {
         if (preg_match('{\Ap/([^/]+)/([^/]*)(?:|/([^/]*))\z}', $listid, $m)) {
             $args = ["t" => $m[1], "q" => urldecode($m[2])];
-            if ($m[3]) {
+            if (isset($m[3]) && $m[3] !== "") {
                 foreach (explode("&", $m[3]) as $arg) {
                     if (str_starts_with($arg, "sort="))
                         $args["sort"] = urldecode(substr($arg, 5));
-                    // XXX `reviewer`
+                    else
+                        // XXX `reviewer`
+                        error_log(caller_landmark() . ": listid includes $arg");
                 }
             }
             return $args;
@@ -2336,6 +2341,7 @@ class PaperSearch {
     }
 
     function create_session_list_object($ids, $listname, $sort = null) {
+        $sort = $sort !== null ? $sort : $this->_default_sort;
         $l = new SessionList($this->listid($sort), $ids,
                              $this->description($listname), $this->urlbase);
         if ($this->field_highlighters())
@@ -2343,8 +2349,8 @@ class PaperSearch {
         return $l;
     }
 
-    function session_list_object($sort = null) {
-        return $this->create_session_list_object($this->sorted_paper_ids($sort), null, $sort);
+    function session_list_object() {
+        return $this->create_session_list_object($this->sorted_paper_ids(), null);
     }
 
     function highlight_tags() {
