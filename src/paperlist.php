@@ -349,6 +349,8 @@ class PaperList {
         }
     }
     private function _sort($rows) {
+        $overrides = $this->user->add_overrides($this->_view_force ? Contact::OVERRIDE_CONFLICT : 0);
+
         if (($thenmap = $this->search->thenmap)) {
             foreach ($rows as $row)
                 $row->_then_sort_info = $thenmap[$row->paperId];
@@ -360,13 +362,12 @@ class PaperList {
         foreach ($this->sorters as $s) {
             $s->field->analyze_sort($this, $rows, $s);
         }
-        $overrides = $this->user->add_overrides($this->_view_force ? Contact::OVERRIDE_CONFLICT : 0);
-        $this->user->set_overrides($overrides);
 
         usort($rows, [$this, $thenmap ? "_then_sort_compare" : "_sort_compare"]);
 
         foreach ($this->sorters as $s)
             $s->list = null; // break circular ref
+        $this->user->set_overrides($overrides);
         return $rows;
     }
 
