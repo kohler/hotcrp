@@ -4583,7 +4583,7 @@ function search_showforce_click() {
     function apply_force(href) {
         href = href.replace(/&forceShow=[^&#]*/, "");
         if (forced)
-            href = href.replace(/^(.*?)(#.*|)$/, "$1&forceShow=1$2");
+            href = href.replace(/^([^#]*?)(#.*|)$/, "$1&forceShow=1$2");
         return href;
     }
     var xhref = apply_force(window.location.href);
