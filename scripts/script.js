@@ -4481,11 +4481,11 @@ function sorter_toggle_reverse(sorter, toggle) {
     return xsorter + (toggle ? " reverse" : "");
 }
 
-function search_sort_success(tbl, href, data) {
+function search_sort_success(tbl, data_href, data) {
     reorder(tbl, data.ids, data.groups, true);
     $(tbl).data("groups", data.groups);
     tbl.setAttribute("data-hotlist", data.hotlist || "");
-    var want_sorter = data.fwd_sorter || href_sorter(href),
+    var want_sorter = data.fwd_sorter || href_sorter(data_href),
         want_fwd_sorter = want_sorter && sorter_toggle_reverse(want_sorter, false);
     var $sorters = $(tbl).children("thead").find("a.pl_sort");
     $sorters.removeClass("pl_sorting_fwd pl_sorting_rev")
@@ -4534,15 +4534,15 @@ $(document).on("collectState", function (event, state) {
 });
 
 function search_sort_url(self, href) {
-    var urlparts = /search(?:\.php)?(\?[^#]*)/.exec(href)[1];
-    $.ajax(hoturl("api/search", urlparts), {
+    var hrefm = /^([^?#]*search(?:\.php)?)(\?[^#]*)/.exec(href);
+    $.ajax(hoturl("api/search", hrefm[2]), {
         method: "GET", cache: false,
         success: function (data) {
             var tbl = $(self).closest("table")[0];
             if (data.ok && data.ids && same_ids(tbl, data.ids)) {
                 push_history_state();
                 search_sort_success(tbl, href, data);
-                push_history_state(href + location.hash);
+                push_history_state(hrefm[1] + hrefm[2] + location.hash);
             } else {
                 window.location = href;
             }
