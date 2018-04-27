@@ -49,7 +49,7 @@ class MeetingTracker {
         $old_tracker = self::lookup($user->conf);
         if ($old_tracker->trackerid == $trackerid) {
             $start_at = $old_tracker->start_at;
-            if ($old_tracker->listid == $list->listid) {
+            if ($old_tracker->listid === $list->listid) {
                 if ($position === false)
                     $position = $old_tracker->position;
                 if ($old_tracker->position == $position)

@@ -4543,8 +4543,9 @@ function search_sort_url(self, href) {
                 push_history_state();
                 search_sort_success(tbl, href, data);
                 push_history_state(href + location.hash);
-            } else
+            } else {
                 window.location = href;
+            }
         }
     });
 }
@@ -4578,18 +4579,23 @@ function search_scoresort_change(evt) {
 }
 
 function search_showforce_click() {
-    var re = /&forceShow=[^&#]*/, forced = this.checked;
-    $("#foldpl > thead").find("a.pl_sort").each(function () {
-        var href = this.getAttribute("href").replace(re, "");
+    var forced = this.checked;
+    function apply_force(href) {
+        href = href.replace(/&forceShow=[^&#]*/, "");
         if (forced)
             href = href.replace(/^(.*?)(#.*|)$/, "$1&forceShow=1$2");
-        this.setAttribute("href", href);
+        return href;
+    }
+    var xhref = apply_force(window.location.href);
+    $("#foldpl > thead").find("a.pl_sort").each(function () {
+        var href = apply_force(this.getAttribute("href"));
         if (/\bpl_sorting_(?:fwd|rev)/.test(this.className)
             && !$(this).closest("th").hasClass("pl_id")) {
             var sorter = href_sorter(href);
-            search_sort_url(this, href_sorter(href, sorter_toggle_reverse(sorter)));
+            xhref = href_sorter(href, sorter_toggle_reverse(sorter));
         }
     });
+    search_sort_url($("#foldpl"), xhref);
 }
 
 if ("pushState" in window.history) {
