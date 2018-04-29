@@ -546,6 +546,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
                 $row->$k = ($flags & self::F_CONFLICT ? -2 : 0);
             if ($flags & self::F_LEAD)
                 $row->$k += 30;
+            if ($flags & self::F_SHEPHERD)
+                $row->$k += 60;
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
