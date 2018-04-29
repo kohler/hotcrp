@@ -118,7 +118,8 @@ class Autoassigner {
 
     function run_clear($reviewtype) {
         $papers = array_fill_keys($this->papersel, 1);
-        if ($reviewtype == REVIEW_PRIMARY
+        if ($reviewtype == REVIEW_META
+            || $reviewtype == REVIEW_PRIMARY
             || $reviewtype == REVIEW_SECONDARY
             || $reviewtype == REVIEW_PC) {
             $q = "select paperId, contactId from PaperReview where reviewType=" . $reviewtype;
@@ -644,13 +645,8 @@ class Autoassigner {
     }
 
     private function analyze_reviewtype($reviewtype, $round) {
-        if ($reviewtype == REVIEW_PRIMARY)
-            $action = "primary";
-        else if ($reviewtype == REVIEW_SECONDARY)
-            $action = "secondary";
-        else
-            $action = "pcreview";
-        return array($action, $round ? ",$round" : "");
+        return [ReviewInfo::unparse_assigner_action($reviewtype),
+                $round ? ",$round" : ""];
     }
 
     function run_reviews_per_pc($reviewtype, $round, $nass) {
