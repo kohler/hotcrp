@@ -61,7 +61,7 @@ static function render(SettingValues $sv) {
                                Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"),
         '<strong>Review anonymity:</strong> Are reviewer names hidden from authors?');
 
-    $sv->echo_checkbox('rev_notifychair', 'Notify PC chairs of newly submitted reviews by email');
+    $sv->echo_checkbox('rev_notifychair', 'Notify PC chairs of newly completed reviews by email');
 
 
     // Deadlines
@@ -138,7 +138,7 @@ static function render(SettingValues $sv) {
     echo "<h3 class=\"settings\" id=\"pcreviews\">PC reviews</h3>\n";
     echo '<div class="has-fold fold2c">';
     echo '<div class="settings-g has-fold foldo">';
-    $sv->echo_checkbox('pcrev_any', "PC members can review any submitted paper", ["class" => "js-foldup"]);
+    $sv->echo_checkbox('pcrev_any', "PC members can review any submission", ["class" => "js-foldup"]);
     if ($sv->conf->setting("pcrev_any")
         && $sv->conf->check_track_sensitivity(Track::UNASSREV))
         echo '<p class="f-h fx">', Ht::link("Current track settings", hoturl("settings", "group=tracks")), ' may restrict self-assigned reviews.</p>';
@@ -147,15 +147,15 @@ static function render(SettingValues $sv) {
 
     $hint = "";
     if ($sv->conf->has_any_metareviews())
-        $hint .= ' Metareviewers can always see their papers’ reviews and reviewer names.';
+        $hint .= ' Metareviewers can always see associated reviews and reviewer names.';
     if ($sv->conf->check_track_sensitivity(Track::VIEWREV))
         $hint .= ' ' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict review visibility.';
     if ($hint !== "")
         $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';
     $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
-                                  Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
+                                  Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
                                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                                  Conf::PCSEEREV_IFCOMPLETE => ["Only after completing a review for the same paper", '<div class="f-hx fx">Discussion leads can also see reviews.</div>']),
+                                  Conf::PCSEEREV_IFCOMPLETE => ["Only after completing a review for the same submission", '<div class="f-hx fx">Discussion leads can also see reviews.</div>']),
         'Can PC members <strong>see all reviews<span class="fx2"> and comments</span></strong> except for conflicts?',
         $hint);
 
@@ -165,7 +165,7 @@ static function render(SettingValues $sv) {
         && $sv->conf->check_track_sensitivity(Track::VIEWREVID))
         $hint = '<p class="settings-ag f-h">' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict reviewer name visibility.</p>';
     $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
-                                    1 => ["Only after completing a review for the same paper", '<div class="f-hx fx">Discussion leads can also see reviewer names.</div>']),
+                                    1 => ["Only after completing a review for the same submission", '<div class="f-hx fx">Discussion leads can also see reviewer names.</div>']),
         'Can PC members see <strong><span class="fn2">comments and </span>reviewer names</strong> except for conflicts?',
         $hint);
 
@@ -199,7 +199,7 @@ static function render(SettingValues $sv) {
         "</div></div>\n";
 
     $sv->echo_radio_table("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"),
-        'Can external reviewers see reviews and comments for their assigned papers, once they’ve submitted a review?');
+        'Can external reviewers see reviews and comments for their assigned submissions, once they’ve completed a review?');
 
 
     // Review ratings

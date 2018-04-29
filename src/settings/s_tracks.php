@@ -39,12 +39,15 @@ class Tracks_SettingRenderer {
         if (is_array($question)) {
             list($question, $hint) = $question;
         }
+        $ljs = [];
+        if ($gj && ($lc = get_s($gj, "label_class")))
+            $ljs["class"] = $lc;
 
         echo '<div class="entryi wide has-fold fold',
             ($reqv[0] == "" || $reqv[0] === "none" ? "c" : "o"),
             ($unfolded ? "" : " fx3"),
             '">',
-            $sv->label(["{$type}_track$tnum", "{$type}_tag_track$tnum"], $question),
+            $sv->label(["{$type}_track$tnum", "{$type}_tag_track$tnum"], $question, $ljs),
             '<span class="strut">',
             Ht::select("{$type}_track$tnum", $permts, $reqv[0],
                        $sv->sjs("{$type}_track$tnum", ["class" => "js-track-perm", "data-default-value" => $curv[0]])),
@@ -58,13 +61,11 @@ class Tracks_SettingRenderer {
 
     static function render_view_permission(SettingValues $sv, $tnum, $t, $gj) {
         self::do_track_permission($sv, "view",
-            "Who can see these papers?", $tnum, $t, $gj);
+            "Who can see these submissions?", $tnum, $t, $gj);
     }
 
     static function render_viewrev_permission(SettingValues $sv, $tnum, $t, $gj) {
-        $hint = "";
-        if ($sv->conf->setting("pc_seeallrev") == 0)
-            $hint = "In the " . Ht::link("current settings", hoturl("settings", "group=reviews#pcreviews")) . ", only PC members that have completed a review for the same paper can see reviews.";
+        $hint = "<span class=\"fx\">This setting constrains all users including co-reviewers.</span>";
         self::do_track_permission($sv, "viewrev",
             ["Who can see reviews?", $hint], $tnum, $t, $gj);
     }
@@ -108,9 +109,9 @@ class Tracks_SettingRenderer {
             ($tnum ? "c" : "o hidden"),
             "\"><div class=\"settings-tracks\">";
         if ($trackname === "_") {
-            echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
+            echo "For submissions not on other tracks:", Ht::hidden("name_track$tnum", "_");
         } else {
-            echo $sv->label("name_track$tnum", "For papers with tag &nbsp;"),
+            echo $sv->label("name_track$tnum", "For submissions with tag &nbsp;"),
                 Ht::entry("name_track$tnum", $req_trackname, $sv->sjs("name_track$tnum", ["placeholder" => "(tag)", "data-default-value" => $trackname, "class" => "settings-track-name"])), ":";
         }
 
@@ -137,7 +138,7 @@ class Tracks_SettingRenderer {
     }
 
     static function render(SettingValues $sv) {
-        echo "<p class=\"settingtext\">Tracks control the PC members allowed to view or review different sets of papers. <span class=\"nw\">(<a href=\"" . hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
+        echo "<p class=\"settingtext\">Tracks control the PC members allowed to view or review different sets of submissions. <span class=\"nw\">(<a href=\"" . hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
             Ht::hidden("has_tracks", 1),
             "<div class=\"smg\"></div>\n";
         self::do_track($sv, "", 0);
@@ -175,7 +176,7 @@ class Tracks_SettingRenderer {
                     && $unassrev !== "+none" && $t["viewpdf"] !== get($t, "view")) {
                     $tnum = ($trackname === "_" ? 1 : $tnum);
                     $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
-                    $sv->warning_at("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see PDFs should restrict who can self-assign papers in the same way.");
+                    $sv->warning_at("unassrev_track$tnum", "$tdesc: Generally, a track that restricts document visibility should restrict review self-assignment in the same way.");
                 }
                 $tracknum += ($trackname === "_" ? 0 : 1);
             }

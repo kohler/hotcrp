@@ -427,12 +427,13 @@ class SettingValues extends MessageSet {
     }
     function label($name, $html, $label_js = null) {
         $name1 = is_array($name) ? $name[0] : $name;
-        if (!$label_js || get($label_js, "class") === null) {
-            foreach (is_array($name) ? $name : array($name) as $n)
-                if (($sc = $this->sclass($n))) {
-                    $label_js["class"] = $sc;
-                    break;
-                }
+        foreach (is_array($name) ? $name : array($name) as $n) {
+            if (($sc = $this->sclass($n))) {
+                if ($label_js && ($ec = get_s($label_js, "class")) !== "")
+                    $sc = $ec . " " . $sc;
+                $label_js["class"] = $ec . " " . $sc;
+                break;
+            }
         }
         $post = "";
         if (($pos = strpos($html, "<input")) !== false)
