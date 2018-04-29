@@ -431,7 +431,7 @@ class SettingValues extends MessageSet {
             if (($sc = $this->sclass($n))) {
                 if ($label_js && ($ec = get_s($label_js, "class")) !== "")
                     $sc = $ec . " " . $sc;
-                $label_js["class"] = $ec . " " . $sc;
+                $label_js["class"] = $sc;
                 break;
             }
         }
