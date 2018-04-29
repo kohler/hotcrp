@@ -337,7 +337,9 @@ class GetTopics_ListAction extends ListAction {
 
 class GetCSV_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
-        $search = new PaperSearch($user, $qreq, $qreq->attachment("reviewer_contact"));
+        $search = new PaperSearch($user, $qreq);
+        if (($reviewer = $qreq->attachment("reviewer_contact")))
+            $search->set_reviewer($reviewer);
         $pl = new PaperList($search, ["sort" => true, "report" => "pl", "display" => $qreq->display], $qreq);
         $pl->set_selection($ssel, true);
         $pl->set_view("sel", false);

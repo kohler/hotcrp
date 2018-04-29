@@ -47,11 +47,12 @@ class Search_API {
             $qreq->q = "";
         if ($qreq->f == "au" || $qreq->f == "authors")
             $qreq->q = ((int) $qreq->aufull ? "show" : "hide") . ":aufull " . $qreq->q;
-        $reviewer = null;
-        if ($qreq->reviewer && $user->email !== $qreq->reviewer)
-            $reviewer = $user->conf->user_by_email($qreq->reviewer);
+        $reviewer = $qreq->reviewer;
         unset($qreq->reviewer);
-        $search = new PaperSearch($user, $qreq, $reviewer);
+        $search = new PaperSearch($user, $qreq);
+        if ($reviewer && $user->email !== $reviewer
+            && ($reviewer = $user->conf->user_by_email($reveiwer)))
+            $search->set_reviewer($reviewer);
 
         $report = "pl";
         if ($qreq->session && str_starts_with($qreq->session, "pf"))

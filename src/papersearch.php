@@ -1096,19 +1096,28 @@ class PaperSearch {
         if (strpos($this->urlbase, "&amp;") !== false)
             trigger_error(caller_landmark() . " PaperSearch::urlbase should be a raw URL", E_USER_NOTICE);
 
-        // reviewer
-        if ($reviewer)
-            $this->_reviewer_user = $this->_context_user = $reviewer;
-        else if (get($options, "reviewer"))
-            error_log("PaperSearch::\$reviewer set: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-
         $this->_allow_deleted = get($options, "allow_deleted", false);
         $this->_default_sort = get($options, "sort");
 
-        $this->_active_limit = $this->limitName;
+        $this->set_limit($this->limitName);
+        assert(!$reviewer);
+    }
+
+    function set_reviewer(Contact $reviewer = null) {
+        assert($this->_qe === null);
+        if ($reviewer && !$this->user->privChair && $reviewer !== $this->user)
+            trigger_error(caller_landmark() . ": set_reviewer for non-admin");
+        $this->_reviewer_user = $this->_context_user = $reviewer;
+        $this->set_limit($this->limitName);
+        return $this;
+    }
+
+    private function set_limit($limit) {
+        assert($this->_qe === null);
+        $this->_active_limit = $limit;
         if ($this->_active_limit === "editpref")
             $this->_active_limit = "rable";
-        if ($this->_active_limit === "reqrevs")
+        else if ($this->_active_limit === "reqrevs")
             $this->_active_limit = "req";
         if ($this->_active_limit === "rable") {
             $u = $this->reviewer_user();
