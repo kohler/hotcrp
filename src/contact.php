@@ -2491,10 +2491,16 @@ class Contact {
     private function seerev_setting(PaperInfo $prow, $rrow, $rights) {
         $round = $rrow ? $rrow->reviewRound : "max";
         if ($rights->allow_pc) {
+            $rs = $this->conf->round_setting("pc_seeallrev", $round);
+            if (!$this->conf->has_tracks())
+                return $rs;
             if ($this->conf->check_required_tracks($prow, $this, Track::VIEWREVOVERRIDE))
                 return Conf::PCSEEREV_YES;
-            if ($this->conf->check_tracks($prow, $this, Track::VIEWREV))
-                return $this->conf->round_setting("pc_seeallrev", $round);
+            if ($this->conf->check_tracks($prow, $this, Track::VIEWREV)) {
+                if (!$this->conf->check_tracks($prow, $this, Track::VIEWALLREV))
+                    $rs = 0;
+                return $rs;
+            }
         } else {
             if ($this->conf->round_setting("extrev_view", $round))
                 return 0;

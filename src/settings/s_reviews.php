@@ -148,7 +148,8 @@ static function render(SettingValues $sv) {
     $hint = "";
     if ($sv->conf->has_any_metareviews())
         $hint .= ' Metareviewers can always see associated reviews and reviewer names.';
-    if ($sv->conf->check_track_sensitivity(Track::VIEWREV))
+    if ($sv->conf->check_track_sensitivity(Track::VIEWREV)
+        || $sv->conf->check_track_sensitivity(Track::VIEWALLREV))
         $hint .= ' ' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict review visibility.';
     if ($hint !== "")
         $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';
