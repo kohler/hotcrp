@@ -91,7 +91,7 @@ class ListAction {
 
                     $round = $rrow->reviewRound;
                     $d = ["paper" => $prow->paperId,
-                          "action" => ReviewAssigner_Data::unparse_type($rrow->reviewType),
+                          "action" => ReviewInfo::unparse_assigner_action($rrow->reviewType),
                           "email" => $u->email,
                           "round" => $round ? $round_list[$round] : "none"];
                     if ($rrow->reviewToken)

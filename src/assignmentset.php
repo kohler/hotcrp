@@ -572,30 +572,6 @@ class ReviewAssigner_Data {
     public $newtype = null;
     public $creator = true;
     public $error = false;
-    static private $type_map = [
-        "meta" => REVIEW_META,
-        "primary" => REVIEW_PRIMARY, "pri" => REVIEW_PRIMARY,
-        "secondary" => REVIEW_SECONDARY, "sec" => REVIEW_SECONDARY,
-        "optional" => REVIEW_PC, "opt" => REVIEW_PC, "pc" => REVIEW_PC,
-        "external" => REVIEW_EXTERNAL, "ext" => REVIEW_EXTERNAL
-    ];
-    static private $type_revmap = [
-        REVIEW_EXTERNAL => "review", REVIEW_PC => "pcreview",
-        REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary",
-        REVIEW_META => "metareview"
-    ];
-    static function parse_type($str) {
-        $str = strtolower($str);
-        if ($str === "review" || $str === ""
-            || $str === "all" || $str === "any")
-            return null;
-        if (str_ends_with($str, "review"))
-            $str = substr($str, 0, -6);
-        return get(self::$type_map, $str, false);
-    }
-    static function unparse_type($rtype) {
-        return get(self::$type_revmap, $rtype, "clearreview");
-    }
     static function separate($key, $req, $state, $rtype) {
         $a0 = $a1 = trim(get_s($req, $key));
         $require_match = $rtype ? false : $a0 !== "";
@@ -621,10 +597,10 @@ class ReviewAssigner_Data {
     function __construct($req, AssignmentState $state, $rtype) {
         list($targ0, $targ1, $tmatch) = self::separate("reviewtype", $req, $state, $rtype);
         if ($targ0 !== null && $targ0 !== "" && $tmatch
-            && ($this->oldtype = self::parse_type($targ0)) === false)
+            && ($this->oldtype = ReviewInfo::parse_type($targ0)) === false)
             $this->error = "Invalid reviewtype.";
         if ($targ1 !== null && $targ1 !== "" && $rtype != 0
-            && ($this->newtype = self::parse_type($targ1)) === false)
+            && ($this->newtype = ReviewInfo::parse_type($targ1)) === false)
             $this->error = "Invalid reviewtype.";
         if ($this->newtype === null)
             $this->newtype = $rtype;
@@ -657,16 +633,10 @@ class ReviewAssigner_Data {
 
 class Review_AssignmentParser extends AssignmentParser {
     private $rtype;
-    static private function rtype_name($rtype) {
-        if ($rtype > 0)
-            return strtolower(ReviewForm::$revtype_names[$rtype]);
-        else
-            return $rtype < 0 ? "review" : "clearreview";
-    }
     function __construct(Conf $conf, $aj) {
         parent::__construct($aj->name);
         if ($aj->review_type)
-            $this->rtype = (int) ReviewAssigner_Data::parse_type($aj->review_type);
+            $this->rtype = (int) ReviewInfo::parse_type($aj->review_type);
         else
             $this->rtype = -1;
     }
@@ -852,11 +822,7 @@ class Review_Assigner extends Assigner {
         return $t;
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
-        if ($this->rtype > 0)
-            $rname = strtolower(ReviewForm::$revtype_names[$this->rtype]);
-        else
-            $rname = "clear";
-        $x = ["pid" => $this->pid, "action" => "{$rname}review",
+        $x = ["pid" => $this->pid, "action" => ReviewInfo::unparse_assigner_action($this->rtype),
               "email" => $this->contact->email, "name" => $this->contact->name_text()];
         if (($round = $this->item["_round"]))
             $x["round"] = $this->item["_round"];
@@ -944,7 +910,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         $targ0 = trim(get_s($req, "reviewtype"));
         $oldtype = null;
         if ($targ0 !== ""
-            && ($oldtype = ReviewAssigner_Data::parse_type($targ0)) === false)
+            && ($oldtype = ReviewInfo::parse_type($targ0)) === false)
             return "Invalid reviewtype.";
 
         // remove existing review

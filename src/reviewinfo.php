@@ -67,6 +67,31 @@ class ReviewInfo {
         16 => "narrow", 32 => "not-constructive", 64 => "wrong"
     ];
 
+    static private $type_map = [
+        "meta" => REVIEW_META,
+        "primary" => REVIEW_PRIMARY, "pri" => REVIEW_PRIMARY,
+        "secondary" => REVIEW_SECONDARY, "sec" => REVIEW_SECONDARY,
+        "optional" => REVIEW_PC, "opt" => REVIEW_PC, "pc" => REVIEW_PC,
+        "external" => REVIEW_EXTERNAL, "ext" => REVIEW_EXTERNAL
+    ];
+    static private $type_revmap = [
+        REVIEW_EXTERNAL => "review", REVIEW_PC => "pcreview",
+        REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary",
+        REVIEW_META => "metareview"
+    ];
+
+    static function parse_type($str) {
+        $str = strtolower($str);
+        if ($str === "review" || $str === "" || $str === "all" || $str === "any")
+            return null;
+        if (str_ends_with($str, "review"))
+            $str = substr($str, 0, -6);
+        return get(self::$type_map, $str, false);
+    }
+    static function unparse_assigner_action($type) {
+        return get(self::$type_revmap, $type, "clearreview");
+    }
+
     private function merge(Conf $conf) {
         $this->conf = $conf;
         foreach (["paperId", "reviewId", "contactId", "reviewType",
