@@ -889,8 +889,6 @@ class SearchQueryInfo {
         if ($this->_has_my_review)
             return;
         $this->_has_my_review = true;
-        if ($this->user->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
-            $this->columns["paperBlind"] = "Paper.blind";
         $tokens = $this->user->review_tokens();
         if (!$tokens && !$this->user->contactId) {
             $this->add_column("myReviewType", "null");
@@ -1954,12 +1952,9 @@ class PaperSearch {
             || $this->conf->has_tracks() /* XXX probably only need check_track_view_sensitivity */
             || $qe->type === "then"
             || $qe->get_float("heading");
-        if ($need_filter) {
-            $sqi->add_rights_columns();
-            if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
-                $sqi->add_column("paperBlind", "Paper.blind");
-        }
 
+        if ($need_filter)
+            $sqi->add_rights_columns();
         // XXX some of this should be shared with paperQuery
         if (($need_filter && $this->conf->has_track_tags())
             || get($this->_query_options, "tags")
@@ -1973,6 +1968,8 @@ class PaperSearch {
             $sqi->add_score_columns($f);
         if (get($this->_query_options, "reviewWordCounts"))
             $sqi->add_review_word_count_columns();
+        if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
+            $sqi->add_column("blind", "Paper.blind");
 
         // create query
         $q = "select ";

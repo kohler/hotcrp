@@ -1926,7 +1926,7 @@ class Contact {
             $bs = $this->conf->submission_blindness();
             $ci->nonblind = $bs == Conf::BLIND_NEVER
                 || ($bs == Conf::BLIND_OPTIONAL
-                    && !(isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind))
+                    && !$prow->blind)
                 || ($bs == Conf::BLIND_UNTILREVIEW
                     && $ci->review_status > 0)
                 || ($prow->outcome > 0
@@ -2647,7 +2647,7 @@ class Contact {
             "myReviewSubmitted" => 1,
             "myReviewNeedsSubmit" => 0,
             "paperId" => 1, "timeSubmitted" => 1,
-            "paperBlind" => false, "outcome" => 1,
+            "blind" => false, "outcome" => 1,
             "paperTags" => $tags
         ], $this);
         return $this->can_view_review_identity($prow, null);

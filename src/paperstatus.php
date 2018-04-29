@@ -209,7 +209,7 @@ class PaperStatus extends MessageSet {
         }
 
         if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
-            $pj->nonblind = !(isset($pj->paperBlind) ? $prow->paperBlind : $prow->blind);
+            $pj->nonblind = !$prow->blind;
 
         if ($prow->abstract !== "" || !$this->conf->opt("noAbstract"))
             $pj->abstract = $prow->abstract;
