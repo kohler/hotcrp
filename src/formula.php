@@ -660,17 +660,33 @@ class Tag_Fexpr extends Sub_Fexpr {
         $this->isvalue = $isvalue;
         $this->format_ = $isvalue ? null : self::FBOOL;
     }
+    static function parse_modifier(FormulaCall $ff, $arg) {
+        if (!$ff->args && $arg[0] !== ".") {
+            $ff->args[] = substr($arg, 1);
+            return true;
+        } else if (count($ff->args) === 1 && $arg[0] === ":") {
+            $ff->args[0] .= $arg;
+            return true;
+        } else
+            return false;
+    }
+    static function make(FormulaCall $ff) {
+        if (count($ff->args) !== 1
+            || !preg_match('/\A' . TAG_REGEX . '\z/', $ff->args[0]))
+            return null;
+        return new Tag_Fexpr($ff->args[0], $ff->kwdef->is_value);
+    }
     function view_score(Contact $user) {
         $tagger = new Tagger($user);
-        $e_tag = $tagger->check($this->tag);
+        $e_tag = $tagger->check($this->tag, Tagger::ALLOWSTAR);
         return $tagger->view_score($e_tag, $user);
     }
     function tag() {
         return $this->tag;
     }
     function compile(FormulaCompiler $state) {
-        $e_tag = $state->tagger->check($this->tag);
-        $t_tagval = $state->_add_tagval($this->tag);
+        $e_tag = $state->tagger->check($this->tag, Tagger::ALLOWSTAR);
+        $t_tagval = $state->_add_tagval($e_tag);
         if ($this->isvalue)
             return $t_tagval;
         else
@@ -1045,17 +1061,24 @@ class FormulaCompiler {
             $this->gstmt[] = "\$tags = \$contact->can_view_tags(\$prow) ? \$prow->all_tags_text() : \"\";";
         }
         if (!isset($this->known_tag_indexes[$tag])) {
-            $n = count($this->tagrefs);
-            $this->known_tag_indexes[$tag] = $n;
             $this->tagrefs[] = $tag;
+            $this->known_tag_indexes[$tag] = count($this->tagrefs) - 1;
         }
-        return $this->define_gvar("tagpos_$tag", "stripos(\$tags, \" $tag#\")");
+        if (strpos($tag, "*") === false)
+            $e = "stripos(\$tags, \" $tag#\")";
+        else
+            $e = "preg_matchpos(\"{ " . str_replace("\\*", "[^#\\s]*", preg_quote($tag)) . "#}i\", \$tags)";
+        return $this->define_gvar("tagpos_$tag", $e);
     }
     function _add_tagval($tag) {
         if ($tag === false)
             return "false";
         $t_tagpos = $this->_add_tagpos($tag);
-        return $this->define_gvar("tagval_$tag", "($t_tagpos !== false ? (float) substr(\$tags, $t_tagpos + " . (strlen($tag) + 2) . ") : false)");
+        if (strpos($tag, "*") === false)
+            $delta = "$t_tagpos + " . (strlen($tag) + 2);
+        else
+            $delta = "strpos(\$tags, \"#\", $t_tagpos) + 1";
+        return $this->define_gvar("tagval_$tag", "($t_tagpos !== false ? (float) substr(\$tags, $delta) : false)");
     }
     function known_tag_index($tag) {
         return $tag === false ? -1 : get($this->known_tag_indexes, $tag);
@@ -1215,7 +1238,7 @@ class Formula {
     private $_parse = null;
     private $_format;
     private $_tagrefs;
-    private $_error_html = array();
+    private $_error_html = [];
     private $_recursion;
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
@@ -1280,16 +1303,16 @@ class Formula {
         $this->user = $user;
     }
 
-    private function make_error_at($type, $pos1, $pos2) {
+    private function add_error_at($type, $pos1, $pos2, $rest) {
         $elen = strlen($this->expression);
         $h1 = htmlspecialchars(substr($this->expression, 0, $elen + $pos1));
-        $p2 = substr($this->expression, $elen + $pos1, $pos2 - $pos1);
-        $h2 = '<span class="error">☞<u>' . htmlspecialchars($p2) . '</u></span>';
-        $h3 = htmlspecialchars(substr($this->expression, $elen + $pos2));
         if ($pos1 == 0)
-            return "$type in formula “{$h1}” at end";
-        else
-            return "$type in formula “{$h1}{$h2}{$h3}”";
+            $rest = " at end" . $rest;
+        else {
+            $p2 = substr($this->expression, $elen + $pos1, $pos2 - $pos1);
+            $h1 .= '<span class="error">☞<u>' . htmlspecialchars($p2) . '</u></span>' . htmlspecialchars(substr($this->expression, $elen + $pos2));
+        }
+        $this->_error_html[] = "$type in formula “{$h1}”$rest";
     }
 
     private function parse_prefix(Contact $user = null, $allow_suffix) {
@@ -1303,9 +1326,10 @@ class Formula {
         }
         $e = $this->_parse_ternary($t, false);
         if (!$e || ($t !== "" && !$allow_suffix)) {
-            $this->_error_html[] = $this->make_error_at("Parse error", -strlen($t), 0) . ".";
+            if (!$this->_error_html)
+                $this->add_error_at("Parse error", -strlen($t), 0, ".");
         } else if (($err = $e->typecheck($this->conf))) {
-            $this->_error_html[] = $this->make_error_at("Type error", $err->expr->left_landmark, $err->expr->right_landmark) . ': ' . $err->error_html;
+            $this->add_error_at("Type error", $err->expr->left_landmark, $err->expr->right_landmark, ': ' . $err->error_html);
         } else {
             $state = new FormulaCompiler($this->user);
             $e->compile($state);
@@ -1371,9 +1395,26 @@ class Formula {
     }
 
     private function _parse_function_args(FormulaCall $ff, &$t) {
+        $argtype = $ff->kwdef->args;
         $t = ltrim($t);
         // collect arguments
-        if ($t !== "" && $t[0] === "(") {
+        if ($t !== "" && $t[0] === "(" && $argtype === "raw") {
+            $arg = "";
+            $t = substr($t, 1);
+            $depth = 1;
+            while ($t !== "") {
+                preg_match('/\A("[^"]+(?:"|\z)|\(|\)|[^()"]+)(.*)\z/s', $t, $m);
+                $t = $m[2];
+                if ($m[1] === ")") {
+                    if (--$depth === 0)
+                        break;
+                } else if ($m[1] === "(")
+                    ++$depth;
+                $arg .= $m[1];
+            }
+            $ff->args[] = $arg;
+            return true;
+        } else if ($t !== "" && $t[0] === "(") {
             while (1) {
                 $t = substr($t, 1);
                 if (!($e = $this->_parse_ternary($t, false)))
@@ -1387,11 +1428,14 @@ class Formula {
             }
             $t = substr($t, 1);
             return true;
+        } else if ($argtype === "optional" || !empty($ff->args)) {
+            return true;
         } else if (($e = $this->_parse_expr($t, self::$opprec["u+"], false))) {
             $ff->args[] = $e;
             return true;
-        } else
+        } else {
             return false;
+        }
     }
 
     static private function _pop_argument($t) {
@@ -1512,7 +1556,7 @@ class Formula {
             if (!($e = $this->_parse_expr($t, self::$opprec["u$op"], $in_qc)))
                 return null;
             $e = $op == "!" ? new NegateFexpr($e) : new Fexpr($op, $e);
-        } else if (preg_match('/\Anot([\s(].*|)\z/i', $t, $m)) {
+        } else if (preg_match('/\Anot([\s(].*|)\z/si', $t, $m)) {
             $t = $m[1];
             if (!($e = $this->_parse_expr($t, self::$opprec["u!"], $in_qc)))
                 return null;
@@ -1549,34 +1593,30 @@ class Formula {
         } else if (preg_match('/\A(?:is|status):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($this->conf, $m[1]));
             $t = $m[2];
-        } else if (preg_match('/\A(?:tag(?:\s*:\s*|\s+)|#)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
-                   || preg_match('/\Atag\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
-            $e = new Tag_Fexpr($m[1], false);
-            $t = $m[2];
-        } else if (preg_match('/\Atag(?:v|-?val|-?value)(?:\s*:\s*|\s+)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
-                   || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
-            $e = new Tag_Fexpr($m[1], true);
-            $t = $m[2];
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)?|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
             $t = ":" . $m[2];
             $e = $this->_reviewer_decoration($this->_reviewer_base($m[1]), $t);
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer)\b(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
-        } else if (preg_match('/\A([A-Za-z][A-Za-z_]*)(.*)\z/is', $t, $m)
+        } else if (preg_match('/\A(#|[A-Za-z][A-Za-z_]*)(.*)\z/is', $t, $m)
                    && ($kwdef = $this->conf->formula_function($m[1], $this->user))) {
-            $t = $m[2];
+            $pos1 = -strlen($t);
             $ff = new FormulaCall($kwdef, $m[1]);
+            if ($m[1] !== "#")
+                $t = $m[2];
             if (get($kwdef, "parse_modifier_callback")) {
-                while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-A-Za-z0-9_.#@]+))(.*)/s', $t, $m)
-                       && !preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1])
+                while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9!@*_:.\/#~]+))(.*)/s', $t, $m)
                        && (get($kwdef, "args") || !preg_match('/\A\s*\(/s', $m[2]))
                        && ($marg = call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this)))
                     $t = $m[2];
             }
-            if ((get($kwdef, "args") && !$this->_parse_function_args($ff, $t))
-                || !isset($kwdef->callback))
+            if (get($kwdef, "args") && !$this->_parse_function_args($ff, $t)) {
+                $this->add_error_at("Type error", $pos1, -strlen($t), ": function “" . htmlspecialchars($ff->name) . "” requires arguments.");
                 return null;
+            } else if (!isset($kwdef->callback)) {
+                return null;
+            }
             if ($kwdef->callback[0] === "+") {
                 $class = substr($kwdef->callback, 1);
                 $e = new $class($ff, $this);

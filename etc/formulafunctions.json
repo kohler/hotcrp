@@ -47,6 +47,9 @@
     {"name": "conf", "callback": "+Conflict_Fexpr", "is_pc": false, "synonym": "conflict"},
     {"name": "pcconf", "callback": "+Conflict_Fexpr", "is_pc": true, "synonym": "pcconflict"},
 
+    {"name": "tag", "args": "raw", "parse_modifier_callback": "Tag_Fexpr::parse_modifier", "callback": "Tag_Fexpr::make", "is_value": false, "synonym": "#"},
+    {"name": "tagval", "args": "raw", "parse_modifier_callback": "Tag_Fexpr::parse_modifier", "callback": "Tag_Fexpr::make", "is_value": true, "synonym": ["tagv", "tagvalue"]},
+
     {"name": "pref", "callback": "+Pref_Fexpr", "is_expertise": false, "synonym": "revpref"},
     {"name": "prefexp", "callback": "+Pref_Fexpr", "is_expertise": true,
                     "synonym": ["prefexpertise", "revprefexp", "revprefexpertise"]},
