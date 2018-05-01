@@ -1726,22 +1726,19 @@ class PaperInfo {
     }
 
     private function ensure_reviewer_names_set($row_set) {
-        $pcm = $this->conf->pc_members();
         $missing = [];
         foreach ($row_set as $prow) {
             $prow->_reviews_have["names"] = true;
             foreach ($prow->reviews_by_id() as $rrow)
-                if (($c = get($pcm, $rrow->contactId)))
-                    $rrow->assign_name($c);
+                if (($u = $this->conf->cached_user_by_id($rrow->contactId, true)))
+                    $rrow->assign_name($u);
                 else
-                    $missing[$rrow->contactId][] = $rrow;
+                    $missing[] = $rrow;
         }
-        if (!empty($missing)) {
-            $result = $this->conf->qe("select contactId, firstName, lastName, email from ContactInfo where contactId?a", array_keys($missing));
-            while ($result && ($c = $result->fetch_object()))
-                foreach (get($missing, $c->contactId, []) as $rrow)
-                    $rrow->assign_name($c);
-            Dbl::free($result);
+        if ($this->conf->load_missing_cached_users()) {
+            foreach ($missing as $rrow)
+                if (($u = $this->conf->cached_user_by_id($rrow->contactId, true)))
+                    $rrow->assign_name($u);
         }
     }
 

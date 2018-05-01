@@ -149,6 +149,7 @@ class ReviewInfo {
         $this->firstName = $c->firstName;
         $this->lastName = $c->lastName;
         $this->email = $c->email;
+        $this->sorter = $c->sorter;
     }
 
     static function field_info($id, Conf $conf) {
@@ -227,22 +228,28 @@ class ReviewInfo {
     }
 
     static function compare($a, $b) {
+        // 1. different papers
         if ($a->paperId != $b->paperId)
             return (int) $a->paperId < (int) $b->paperId ? -1 : 1;
+        // 2. different ordinals (both have ordinals)
         if ($a->reviewOrdinal
             && $b->reviewOrdinal
             && $a->reviewOrdinal != $b->reviewOrdinal)
             return (int) $a->reviewOrdinal < (int) $b->reviewOrdinal ? -1 : 1;
+        // 3. some submitted reviews have no ordinal (ordinal is reserved for
+        //    user-visible reviews)
         $asub = (int) $a->reviewSubmitted;
         $bsub = (int) $b->reviewSubmitted;
         if (($asub > 0) != ($bsub > 0))
             return $asub > 0 ? -1 : 1;
         if ($asub != $bsub)
             return $asub < $bsub ? -1 : 1;
+        // 4. reviewer
         if (isset($a->sorter)
             && isset($b->sorter)
             && ($x = strcmp($a->sorter, $b->sorter)) != 0)
             return $x;
+        // 5. review id
         if ($a->reviewId != $b->reviewId)
             return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
         return 0;

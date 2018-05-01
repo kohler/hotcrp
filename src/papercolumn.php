@@ -714,12 +714,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
         return "Reviewers";
     }
     private function reviews_with_names(PaperInfo $row) {
-        $row->ensure_reviewer_names();
-        $rrows = $row->reviews_by_id();
-        foreach ($rrows as $rrow)
-            Contact::set_sorter($rrow, $row->conf);
-        usort($rrows, "Contact::compare");
-        return $rrows;
+        return $row->reviews_by_display();
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_review_identity($row, null);

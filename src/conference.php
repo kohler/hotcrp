@@ -85,6 +85,8 @@ class Conf {
     private $_pc_tags_cache = null;
     private $_pc_members_and_admins_cache = null;
     private $_pc_members_fully_loaded = false;
+    private $_user_cache = null;
+    private $_user_cache_missing = null;
     private $_review_form_cache = null;
     private $_abbrev_matcher = null;
     private $_date_format_initialized = false;
@@ -1490,21 +1492,39 @@ class Conf {
     }
 
     function user_by_id($id) {
-        $result = $this->qe("select ContactInfo.* from ContactInfo where contactId=?", $id);
+        $result = $this->qe("select * from ContactInfo where contactId=?", $id);
         $acct = Contact::fetch($result, $this);
         Dbl::free($result);
         return $acct;
     }
 
-    function cached_user_by_id($id) {
+    function cached_user_by_id($id, $missing = false) {
         global $Me;
         if ($id && $Me && $Me->contactId == $id)
             return $Me;
-        else if ($this->_pc_members_cache
-                 && isset($this->_pc_members_and_admins_cache[$id]))
+        else if (isset($this->_pc_members_and_admins_cache[$id]))
             return $this->_pc_members_and_admins_cache[$id];
-        else
+        else if (isset($this->_user_cache[$id]))
+            return $this->_user_cache[$id];
+        else if ($missing) {
+            $this->_user_cache_missing[$id] = true;
+            return null;
+        } else
             return $this->user_by_id($id);
+    }
+
+    function load_missing_cached_users() {
+        $n = 0;
+        if ($this->_user_cache_missing) {
+            $result = $this->qe("select " . $this->_cached_user_query() . " from ContactInfo where contactId?a", array_keys($this->_user_cache_missing));
+            while ($result && ($u = Contact::fetch($result, $this))) {
+                $this->_user_cache[$u->contactId] = $u;
+                ++$n;
+            }
+            Dbl::free($result);
+            $this->_user_cache_missing = null;
+        }
+        return $n > 0;
     }
 
     function user_by_email($email) {
@@ -1534,13 +1554,17 @@ class Conf {
             return $this->user_by_email($email);
     }
 
+    private function _cached_user_query() {
+        if ($this->_pc_members_fully_loaded)
+            return "*";
+        else
+            return "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled";
+    }
+
     function pc_members() {
         if ($this->_pc_members_cache === null) {
-            $q = "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled";
-            if ($this->_pc_members_fully_loaded)
-                $q = "*";
             $pc = array();
-            $result = $this->q("select $q from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
+            $result = $this->q("select " . $this->_cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
             $by_name_text = array();
             $this->_pc_tags_cache = ["pc" => "pc"];
             while ($result && ($row = Contact::fetch($result, $this))) {
@@ -1598,6 +1622,7 @@ class Conf {
             Dbl::free($result);
         }
         $this->_pc_members_fully_loaded = true;
+        $this->_user_cache = null;
         return $this->pc_members();
     }
 
@@ -1933,7 +1958,7 @@ class Conf {
             if (is_string($caches))
                 $caches = [$caches => true];
             if (!$caches || isset($caches["pc"]))
-                $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_members_and_admins_cache = null;
+                $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_members_and_admins_cache = $this->_user_cache = null;
             if (!$caches || isset($caches["options"])) {
                 $this->paper_opts->invalidate_option_list();
                 $this->_docclass_cache = [];
