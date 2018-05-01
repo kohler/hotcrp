@@ -87,6 +87,7 @@ class FormulaGraph {
         if ($this->type !== self::CDF) {
             $fx->check($this->user);
         } else {
+            $this->fxs = [];
             while (1) {
                 $rest = $fx->check_prefix($this->user);
                 if ($rest === false)
