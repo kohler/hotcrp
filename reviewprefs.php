@@ -10,13 +10,14 @@ if (!$Me->privChair && !$Me->isPC)
 // set reviewer
 $reviewer = $Me;
 $incorrect_reviewer = false;
-if ($Qreq->reviewer && $Me->privChair
+if ($Qreq->reviewer
+    && $Me->privChair
     && $Qreq->reviewer !== $Me->email
     && $Qreq->reviewer !== $Me->contactId) {
     $incorrect_reviewer = true;
     foreach ($Conf->full_pc_members() as $pcm)
-        if (strcasecmp($pcm->email, $Qreq->reviewer) == 0
-            || (string) $pcm->contactId === $Qreq->reviewer) {
+        if (strcasecmp($Qreq->reviewer, $pcm->email) == 0
+            || $Qreq->reviewer === (string) $pcm->contactId) {
             $reviewer = $pcm;
             $incorrect_reviewer = false;
         }
