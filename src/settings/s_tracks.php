@@ -20,12 +20,15 @@ class Tracks_SettingRenderer {
 
     static function do_track_permission($sv, $type, $question, $tnum, $trackinfo,
                                         $gj = null) {
+        $track_ctl = "{$type}_track$tnum";
+        $tag_ctl = "{$type}_tag_track$tnum";
         $reqv = self::unparse_perm(get_s($trackinfo["req"], $type), $type);
         $curv = self::unparse_perm(get_s($trackinfo["cur"], $type), $type);
         $defclass = Track::permission_required(Track::$map[$type]) ? "none" : "";
         $unfolded = $curv[0] !== $defclass
             || $reqv[0] !== $defclass
-            || (empty($trackinfo["unfolded"]) && $gj && get($gj, "default_unfolded"));
+            || (empty($trackinfo["unfolded"]) && $gj && get($gj, "default_unfolded"))
+            || $sv->problem_status_at($track_ctl);
         self::$nperm_rendered_folded += !$unfolded;
 
         $permts = ["" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"];
@@ -43,17 +46,17 @@ class Tracks_SettingRenderer {
         if ($gj && ($lc = get_s($gj, "label_class")))
             $ljs["class"] = $lc;
 
-        echo '<div class="', $sv->sclass("{$type}_track$tnum", "entryi wide"),
+        echo '<div class="', $sv->sclass($track_ctl, "entryi wide"),
             ' has-fold fold', ($reqv[0] == "" || $reqv[0] === "none" ? "c" : "o"),
             ($unfolded ? "" : " fx3"),
             '">',
-            $sv->label(["{$type}_track$tnum", "{$type}_tag_track$tnum"], $question, $ljs),
+            $sv->label([$track_ctl, $tag_ctl], $question, $ljs),
             '<span class="strut">',
-            Ht::select("{$type}_track$tnum", $permts, $reqv[0],
-                       $sv->sjs("{$type}_track$tnum", ["class" => "js-track-perm", "data-default-value" => $curv[0]])),
+            Ht::select($track_ctl, $permts, $reqv[0],
+                       $sv->sjs($track_ctl, ["class" => "js-track-perm", "data-default-value" => $curv[0]])),
             "</span> &nbsp;",
-            Ht::entry("${type}_tag_track$tnum", $reqv[1],
-                      $sv->sjs("{$type}_tag_track$tnum", ["class" => "fx settings-track-perm-tag", "placeholder" => "(tag)", "data-default-value" => $curv[1]]));
+            Ht::entry($tag_ctl, $reqv[1],
+                      $sv->sjs($tag_ctl, ["class" => "fx settings-track-perm-tag", "placeholder" => "(tag)", "data-default-value" => $curv[1]]));
         if ($hint)
             echo '<div class="f-h">', $hint, '</div>';
         echo "</div>";
