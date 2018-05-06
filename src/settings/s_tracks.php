@@ -174,7 +174,7 @@ class Tracks_SettingRenderer {
                 $unassrev = get($t, "unassrev");
                 if (get($t, "viewpdf") && $t["viewpdf"] !== $unassrev
                     && $unassrev !== "+none" && $t["viewpdf"] !== get($t, "view")) {
-                    $tnum = ($trackname === "_" ? 1 : $tnum);
+                    $tnum = ($trackname === "_" ? 1 : $tracknum);
                     $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
                     $sv->warning_at("unassrev_track$tnum", "$tdesc: Generally, a track that restricts document visibility should restrict review self-assignment in the same way.");
                 }
