@@ -175,8 +175,11 @@ class Tracks_SettingRenderer {
             $tracknum = 2;
             foreach ($tracks as $trackname => $t) {
                 $unassrev = get($t, "unassrev");
-                if (get($t, "viewpdf") && $t["viewpdf"] !== $unassrev
-                    && $unassrev !== "+none" && $t["viewpdf"] !== get($t, "view")) {
+                if (get($t, "viewpdf")
+                    && $t["viewpdf"] !== $unassrev
+                    && $unassrev !== "+none"
+                    && $t["viewpdf"] !== get($t, "view")
+                    && $sv->newv("pcrev_any")) {
                     $tnum = ($trackname === "_" ? 1 : $tracknum);
                     $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
                     $sv->warning_at("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see documents should restrict review self-assignment in the same way.");
