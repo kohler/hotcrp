@@ -230,7 +230,7 @@ class MeetingTracker {
             $status->hide_conflicts = true;
         if ($status->position !== false)
             self::status_papers($status, $tracker, $acct);
-        if (!$acct->is_actas_user())
+        if (!$acct->is_actas_user() && false)
             $acct->conf->save_session("tracker", $status);
         return $status;
     }
