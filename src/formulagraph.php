@@ -159,7 +159,7 @@ class FormulaGraph {
     private function _cdf_data_one_fx($fx, $qcolors, $dashp, PaperInfoSet $rowset) {
         $data = [];
 
-        $fxf = $fx->compile_function();
+        $fxf = $fx->compile_json_function();
         $reviewf = null;
         if ($fx->is_indexed())
             $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes());
@@ -279,8 +279,8 @@ class FormulaGraph {
             && ($this->type & self::BOXPLOT))
             $this->_prepare_reviewer_color($this->user);
 
-        $fxf = $this->fx->compile_function();
-        $fyf = $this->fy->compile_function();
+        $fxf = $this->fx->compile_json_function();
+        $fyf = $this->fy->compile_json_function();
         $reviewf = null;
         if ($this->fx->is_indexed() || $this->fy->is_indexed())
             $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes() | $this->fy->datatypes());
@@ -345,7 +345,7 @@ class FormulaGraph {
         if ($this->fx->result_format() === Fexpr::FREVIEWER)
             $this->_prepare_reviewer_color($this->user);
 
-        $fxf = $this->fx->compile_function();
+        $fxf = $this->fx->compile_json_function();
         list($fytrack, $fycombine) = $this->fy->compile_combine_functions();
         $reviewf = null;
         if ($this->fx->is_indexed() || $this->fy->datatypes())

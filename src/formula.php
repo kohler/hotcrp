@@ -1712,16 +1712,21 @@ class Formula {
 
 
     private static function compile_body($user, FormulaCompiler $state, $expr,
-                                         $sortable = false) {
+                                         $sortable = 0) {
         $t = "";
         if ($user)
             $t .= "assert(\$contact->contactId == $user->contactId);\n  ";
         $t .= $state->statement_text();
-        if ($expr !== null && !$sortable)
-            $t .= "\n  return $expr;\n";
-        else if ($expr !== null) {
-            $t .= "\n  \$x = $expr;\n"
-                . "  return is_bool(\$x) ? (int) \$x : \$x;\n";
+        if ($expr !== null) {
+            if ($sortable & 3)
+                $t .= "\n  \$x = $expr;";
+            if ($sortable & 1)
+                $t .= "\n  \$x = is_bool(\$x) ? (int) \$x : \$x;";
+            if ($sortable & 2)
+                $t .= "\n  if (is_float(\$x) && !is_finite(\$x)) {\n"
+                    . "    \$x = is_infinite(\$x) ? (\$x < 0 ? -1e37 : 1e37) : 0;\n"
+                    . "  }";
+            $t .= "\n  return " . ($sortable & 3 ? "\$x" : $expr) . ";\n";
         }
         return $t;
     }
@@ -1730,7 +1735,7 @@ class Formula {
         if ($this->check()) {
             $state = new FormulaCompiler($this->user);
             $expr = $this->_parse->compile($state);
-            $t = self::compile_body($this->user, $state, $expr);
+            $t = self::compile_body($this->user, $state, $expr, $sortable);
         } else
             $t = "return 0;";
 
@@ -1740,11 +1745,15 @@ class Formula {
     }
 
     function compile_function() {
-        return $this->_compile_function(false);
+        return $this->_compile_function(0);
     }
 
     function compile_sortable_function() {
-        return $this->_compile_function(true);
+        return $this->_compile_function(1);
+    }
+
+    function compile_json_function() {
+        return $this->_compile_function(2);
     }
 
     static function compile_indexes_function(Contact $user, $datatypes) {
