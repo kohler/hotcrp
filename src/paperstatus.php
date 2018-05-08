@@ -844,7 +844,9 @@ class PaperStatus extends MessageSet {
         $pj_withdrawn = get($pj, "withdrawn");
         $pj_submitted = get($pj, "submitted");
         $pj_draft = get($pj, "draft");
-        if ($pj_withdrawn === null && $pj_submitted === null && $pj_draft === null) {
+        if ($pj_withdrawn === null
+            && $pj_submitted === null
+            && $pj_draft === null) {
             $pj_status = get($pj, "status");
             if ($pj_status === "submitted")
                 $pj_submitted = true;
@@ -853,13 +855,18 @@ class PaperStatus extends MessageSet {
             else if ($pj_status === "draft")
                 $pj_draft = true;
         }
-        if ($ps->has_error() && ($pj_submitted || $pj_draft === false)) {
+        if ($ps->has_error()
+            && ($pj_submitted || $pj_draft === false)
+            && !$pj_withdrawn
+            && (!$ps->prow || $ps->prow->timeSubmitted == 0)) {
             $pj_submitted = false;
             $pj_draft = true;
         }
 
         $submitted = false;
-        if ($pj_withdrawn !== null || $pj_submitted !== null || $pj_draft !== null) {
+        if ($pj_withdrawn !== null
+            || $pj_submitted !== null
+            || $pj_draft !== null) {
             if ($pj_submitted !== null)
                 $submitted = $pj_submitted;
             else if ($pj_draft !== null)
