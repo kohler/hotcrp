@@ -1724,8 +1724,7 @@ class Formula {
                 $t .= "\n  \$x = is_bool(\$x) ? (int) \$x : \$x;";
             if ($sortable & 2)
                 $t .= "\n  if (is_float(\$x) && !is_finite(\$x)) {\n"
-                    . "    \$x = is_infinite(\$x) ? (\$x < 0 ? -1e37 : 1e37) : 0;\n"
-                    . "  }";
+                    . "    \$x = null;\n  }";
             $t .= "\n  return " . ($sortable & 3 ? "\$x" : $expr) . ";\n";
         }
         return $t;
