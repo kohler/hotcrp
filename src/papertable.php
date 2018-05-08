@@ -572,7 +572,7 @@ class PaperTable {
 
     static function document_upload_input($inputid, $dtype, $accepts) {
         $t = '<input id="' . $inputid . '" type="file" name="' . $inputid . '"';
-        if (count($accepts) == 1)
+        if ($accepts !== null && count($accepts) == 1)
             $t .= ' accept="' . $accepts[0]->mimetype . '"';
         $t .= ' size="30" class="';
         $k = ["document-uploader"];
