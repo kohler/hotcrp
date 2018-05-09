@@ -6,17 +6,27 @@ class Multiconference {
     static private $original_opt = null;
 
     static function init() {
-        global $Opt;
+        global $Opt, $argv;
         assert(self::$original_opt === null);
         self::$original_opt = $Opt;
 
         $confid = get($Opt, "confid");
         if (!$confid && PHP_SAPI == "cli") {
-            $cliopt = getopt("n:", array("name:"));
-            if (get($cliopt, "n"))
-                $confid = $cliopt["n"];
-            else if (get($cliopt, "name"))
-                $confid = $cliopt["name"];
+            for ($i = 1; $i != count($argv); ++$i) {
+                if ($argv[$i] === "-n" || $argv[$i] === "--name") {
+                    if (isset($argv[$i + 1]))
+                        $confid = $argv[$i + 1];
+                    break;
+                } else if (substr($argv[$i], 0, 2) === "-n") {
+                    $confid = substr($argv[$i], 2);
+                    break;
+                } else if (substr($argv[$i], 0, 7) === "--name=") {
+                    $confid = substr($argv[$i], 7);
+                    break;
+                } else if ($argv[$i] === "--") {
+                    break;
+                }
+            }
         } else if (!$confid) {
             $base = Navigation::site_absolute(true);
             if (($multis = get($Opt, "multiconferenceAnalyzer"))) {
