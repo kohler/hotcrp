@@ -110,6 +110,3 @@ class ListAction {
         return [$header, $texts];
     }
 }
-
-class SearchAction extends ListAction {
-}
