@@ -197,6 +197,7 @@ src/listaction.php
 src/listactions/la_assign.php
 src/listactions/la_decide.php
 src/listactions/la_getallrevpref.php
+src/listactions/la_getdocument.php
 src/listactions/la_getjson.php
 src/listactions/la_getjsonrqc.php
 src/listactions/la_getrevpref.php

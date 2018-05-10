@@ -21,8 +21,7 @@
     },
     {
         "match": "get/.*", "paper": true, "get": true,
-        "expand_callback": "GetDocument_ListAction::expand",
-        "require": "src/listactions/la_get_sub.php"
+        "expand_callback": "GetDocument_ListAction::expand"
     },
     {
         "name": "get/json", "get": true,
@@ -157,7 +156,6 @@
         "name": "get/paper", "get": true,
         "selector": "Documents/Submissions",
         "position": 100, "display_if_list_has": "paper",
-        "require": "src/listactions/la_get_sub.php",
         "callback": "+GetDocument_ListAction",
         "dtype": 0
     },
@@ -165,7 +163,6 @@
         "name": "get/final", "get": true,
         "selector": "Documents/Final versions",
         "position": 0, "display_if_list_has": "final",
-        "require": "src/listactions/la_get_sub.php",
         "callback": "+GetDocument_ListAction",
         "dtype": -1
     },
