@@ -261,13 +261,18 @@ function update_paper(Qrequest $qreq, $action) {
     $Me->log_activity($logtext, $prow->paperId);
 
     // HTML confirmation
-    if (empty($ps->diffs))
+    if ($ps->has_error())
+        $webmsg = $Conf->_("There were errors while updating submission #%d.", $prow->paperId);
+    else if (empty($ps->diffs))
         $webmsg = $Conf->_("No changes to submission #%d.", $prow->paperId);
     else
         $webmsg = $Conf->_("$actiontext submission #%d.", $prow->paperId);
     if ($notes || $webnotes)
         $webmsg .= " " . $notes . $webnotes;
-    $Conf->msg($prow->$submitkey > 0 ? "confirm" : "warning", $webmsg);
+    if ($ps->has_error())
+        $Conf->msg("merror", $webmsg);
+    else
+        $Conf->msg($prow->$submitkey > 0 ? "confirm" : "warning", $webmsg);
 
     // mail confirmation to all contact authors if changed
     if (!empty($ps->diffs)) {
