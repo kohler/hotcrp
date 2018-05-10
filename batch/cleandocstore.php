@@ -1,11 +1,13 @@
 <?php
 
-$arg = getopt("hn:c:Vm:du:", ["help", "name:", "count:", "verbose", "match:", "dry-run", "max-usage:"]);
+$arg = getopt("hn:c:Vm:du:q", ["help", "name:", "count:", "verbose", "match:", "dry-run", "max-usage:", "quiet", "silent"]);
 foreach (["c" => "count", "V" => "verbose", "m" => "match", "d" => "dry-run",
-          "u" => "max-usage"] as $s => $l) {
+          "u" => "max-usage", "q" => "quiet"] as $s => $l) {
     if (isset($arg[$s]) && !isset($arg[$l]))
         $arg[$l] = $arg[$s];
 }
+if (isset($arg["silent"]))
+    $arg["quiet"] = false;
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n"
                  . "           [-n|--dry-run] [-u USAGELIMIT]\n");
@@ -91,11 +93,13 @@ if (!$dp) {
    fwrite(STDERR, "batch/cleandocstore.php: Conference doesn't use docstore\n");
    exit(1);
 }
+preg_match('{\A((?:/[^/%]*(?=/|\z))+)}', $dp, $m);
+$usage_directory = $m[1];
 
 $count = isset($arg["count"]) ? intval($arg["count"]) : 10;
 $verbose = isset($arg["verbose"]);
 $dry_run = isset($arg["dry-run"]);
-$usage_threshold = $usage_directory = null;
+$usage_threshold = null;
 if (isset($arg["match"]))
     Cleaner::set_match($arg["match"]);
 
@@ -106,22 +110,16 @@ if (isset($arg["max-usage"])) {
         fwrite(STDERR, "batch/cleandocstore.php: `-u` expects fraction between 0 and 1\n");
         exit(1);
     }
-    preg_match('{\A((?:/[^/%]*(?=/|\z))+)}', $dp, $m);
-    $usage_directory = $m[1];
     $ts = disk_total_space($usage_directory);
     $fs = disk_free_space($usage_directory);
     if ($ts === false || $fs === false) {
         fwrite(STDERR, "$usage_directory: cannot evaluate free space\n");
         exit(1);
-    } else if (($ts - $fs) / $ts <= (float) $arg["max-usage"]) {
-        if ($verbose) {
-            fwrite(STDOUT, "$usage_directory: free space above threshold\n");
-            exit(0);
-        }
-    } else if (!isset($arg["count"])) {
-        $count = 5000;
-        $usage_threshold = (1 - (float) $arg["max-usage"]) * $ts;
     }
+    $want_fs = $ts * (1 - (float) $arg["max-usage"]);
+    $usage_threshold = $want_fs - $fs;
+    if (!isset($arg["count"]))
+        $count = 5000;
 }
 
 class Fparts {
@@ -343,7 +341,7 @@ class Fmatch {
     public $fname = "";
     public $algohash;
     public $extension;
-    public $atime;
+    private $_atime;
 
     function is_complete() {
         return $this->algohash !== null;
@@ -379,9 +377,9 @@ class Fmatch {
         $this->idxes = $this->bdirs = [];
     }
     function atime() {
-        if ($this->atime === null)
-            $this->atime = fileatime($this->fname);
-        return $this->atime;
+        if ($this->_atime === null)
+            $this->_atime = fileatime($this->fname);
+        return $this->_atime;
     }
 }
 
@@ -411,9 +409,9 @@ function random_index($di) {
 
 
 $hotcrpdoc = new HotCRPDocument($Conf, DTYPE_SUBMISSION);
-$ndone = $nsuccess = 0;
+$ndone = $nsuccess = $bytesremoved = 0;
 
-while ($count > 0) {
+while ($count > 0 && ($usage_threshold === null || $bytesremoved < $usage_threshold)) {
     $x = [];
     for ($i = 0; $x ? count($x) < 5 && $i < 10 : $i < 10000; ++$i) {
         $fm = $fparts->random_match();
@@ -424,11 +422,6 @@ while ($count > 0) {
     }
     if (!$x) {
         fwrite(STDERR, "Can't find anything to delete.\n");
-        break;
-    }
-    if ($usage_threshold && disk_free_space($usage_directory) >= $usage_threshold) {
-        if ($verbose)
-            fwrite(STDOUT, "$usage_directory: free space above threshold\n");
         break;
     }
 
@@ -445,6 +438,7 @@ while ($count > 0) {
                              "mimetype" => Mimetype::type($fm->extension)]);
     $hashalg = $doc->hash_algorithm();
     $ok = false;
+    $size = 0;
     if ($hashalg === false)
         fwrite(STDERR, "{$fm->fname}: unknown hash\n");
     else if (($chash = hash_file($hashalg, $fm->fname, true)) === false)
@@ -452,6 +446,7 @@ while ($count > 0) {
     else if ($chash !== $doc->binary_hash_data())
         fwrite(STDERR, "{$fm->fname}: incorrect hash\n");
     else if ($hotcrpdoc->s3_check($doc)) {
+        $size = filesize($fm->fname);
         if ($dry_run) {
             if ($verbose)
                 fwrite(STDOUT, "{$fm->fname}: would remove\n");
@@ -466,7 +461,14 @@ while ($count > 0) {
         fwrite(STDERR, "{$fm->fname}: not on S3\n");
     --$count;
     ++$ndone;
-    $nsuccess += $ok ? 1 : 0;
+    if ($ok) {
+        ++$nsuccess;
+        $bytesremoved += $size;
+    }
 }
 
+if ($verbose && $usage_threshold !== null && $bytesremoved >= $usage_threshold)
+    fwrite(STDOUT, $usage_directory . ": free space above threshold\n");
+if (!isset($arg["quiet"]))
+    fwrite(STDOUT, $usage_directory . ": " . ($dry_run ? "would remove " : "removed ") . plural($nsuccess, "file") . ", " . plural($bytesremoved, "byte") . "\n");
 exit($nsuccess && $nsuccess == $ndone ? 0 : 1);
