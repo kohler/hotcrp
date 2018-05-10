@@ -4,7 +4,7 @@
 
 class ListAction {
     public $subname;
-    const ENOENT = "No such search action.";
+    const ENOENT = "No such action.";
     const EPERM = "Permission error.";
     function allow(Contact $user) {
         return true;
