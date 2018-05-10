@@ -1,5 +1,5 @@
 <?php
-// searchaction.php -- HotCRP helper class for paper search actions
+// listaction.php -- HotCRP helper class for paper search actions
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class ListAction {
