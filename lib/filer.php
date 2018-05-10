@@ -283,6 +283,12 @@ class Filer_UploadJson implements JsonSerializable {
     }
 }
 
+class Filer_StoreStatus {
+    public $error = false;
+    public $content_success = false;
+    public $error_html = null;
+}
+
 class Filer {
     static public $tempdir;
 
@@ -307,7 +313,7 @@ class Filer {
         // store the document in the database.
         return null;
     }
-    function store_other(DocumentInfo $doc) {
+    function store_other(DocumentInfo $doc, $storeinfo) {
         // store() callback. Store `$doc` elsewhere (e.g. S3) if appropriate.
     }
     function validate_upload(DocumentInfo $doc) {
@@ -389,7 +395,7 @@ class Filer {
         if (!$this->load($doc, false)
             || ($content = self::content($doc)) === null
             || $content === false
-            || get($doc, "error"))
+            || $doc->error)
             return false;
         // calculate hash, complain on mismatch
         if ($doc->has_hash()) {
@@ -403,16 +409,30 @@ class Filer {
             set_error_html($doc, "Document claims length " . $doc->size . ", but has length " . strlen($content) . ".");
         $doc->size = strlen($content);
         $content = null;
+
         // actually store
+        $storeinfo = new Filer_StoreStatus;
         if (($dbinfo = $this->dbstore($doc)))
-            $this->store_database($dbinfo, $doc);
-        $this->store_filestore($doc);
-        $this->store_other($doc);
-        return !get($doc, "error");
+            $this->store_database($dbinfo, $doc, $storeinfo);
+        $this->store_filestore($doc, $storeinfo);
+        $this->store_other($doc, $storeinfo);
+
+        if ($storeinfo->error || !$storeinfo->content_success || $storeinfo->error_html)
+            error_log($doc->conf->dbname . ": "
+                . ($storeinfo->content_success && !$storeinfo->error ? "Recoverable error" : "Error")
+                . " saving document " . $doc->filename() . ": "
+                . join("; ", $storeinfo->error_html ? : ["Unknown error"]));
+        if (!$storeinfo->error && $storeinfo->content_success)
+            return true;
+        else {
+            $doc->error = true;
+            $doc->error_html = rtrim("This document was not saved. " . join(" ", $storeinfo->error_html ? : []));
+            return false;
+        }
     }
 
     // dbstore functions
-    function store_database($dbinfo, DocumentInfo $doc) {
+    function store_database($dbinfo, DocumentInfo $doc, $storeinfo) {
         global $Conf;
         $N = 400000;
         $idcol = $dbinfo->id_column;
@@ -431,7 +451,8 @@ class Filer {
         } else
             $q = "insert into $dbinfo->table set " . join(", ", $qk);
         if (!($result = Dbl::qe_apply($dbinfo->dblink, $q, $qv))) {
-            set_error_html($doc, $Conf->db_error_html(true, $while));
+            $storeinfo->error = true;
+            $storeinfo->error_html[] = $Conf->db_error_html(true, $while);
             return;
         }
 
@@ -440,7 +461,8 @@ class Filer {
         else {
             $doc->$idcol = $result->insert_id;
             if (!$doc->$idcol) {
-                set_error_html($doc, $Conf->db_error_html(true, $while));
+                $storeinfo->error = true;
+                $storeinfo->error_html[] = $Conf->db_error_html(true, $while);
                 return;
             }
         }
@@ -457,16 +479,19 @@ class Filer {
             $q = "update $dbinfo->table set " . join(", ", $qk) . " where $idcol=?";
             $qv[] = $doc->$idcol;
             if (!Dbl::qe_apply($dbinfo->dblink, $q, $qv)) {
-                set_error_html($doc, $Conf->db_error_html(true, $while));
+                $storeinfo->error = true;
+                $storeinfo->error_html[] = $Conf->db_error_html(true, $while);
                 return;
             }
         }
 
         // check that paper storage succeeded
-        if ($dbinfo->check_contents) {
-            $len = Dbl::fetch_ivalue($dbinfo->dblink, "select length($dbinfo->check_contents) from $dbinfo->table where $idcol=?", $doc->$idcol);
-            if ($len != strlen(self::content($doc)))
-                set_error_html($doc, "Failed to store your document. Usually this is because the file you tried to upload was too big for our system. Please try again.");
+        if ($dbinfo->content_column) {
+            $len = Dbl::fetch_ivalue($dbinfo->dblink, "select length({$dbinfo->content_column}) from $dbinfo->table where $idcol=?", $doc->$idcol);
+            if ($len == strlen(self::content($doc)))
+                $storeinfo->content_success = true;
+            else
+                $storeinfo->error_html[] = "Failed to store your document. Usually this is because the file you tried to upload was too big for our system. Please try again.";
         }
     }
 
@@ -510,21 +535,21 @@ class Filer {
         }
         return true;
     }
-    function store_filestore(DocumentInfo $doc, $no_error = false) {
-        $flags = self::FPATH_MKDIR | ($no_error ? self::FPATH_QUIET : 0);
-        if (!($fspath = $this->filestore_path($doc, $flags)))
+    function store_filestore(DocumentInfo $doc, $storeinfo) {
+        if (!($fspath = $this->filestore_path($doc, self::FPATH_MKDIR, $storeinfo)))
             return false;
         $content = self::content($doc);
-        if (!is_readable($fspath) || file_get_contents($fspath) !== $content) {
-            if (file_put_contents($fspath, $content) != strlen($content)) {
+        if (!is_readable($fspath)
+            || file_get_contents($fspath) !== $content) {
+            if (file_put_contents($fspath, $content) !== strlen($content)) {
                 @unlink($fspath);
-                $no_error || set_error_html($doc, "Internal error: docstore failure.");
-                return false;
+                $storeinfo->error_html[] = "Error saving document to file system.";
+                return;
             }
             @chmod($fspath, 0660 & ~umask());
         }
         $doc->filestore = $fspath;
-        return true;
+        $storeinfo->content_success = true;
     }
 
     // download
@@ -738,8 +763,7 @@ class Filer {
     }
     const FPATH_EXISTS = 1;
     const FPATH_MKDIR = 2;
-    const FPATH_QUIET = 4;
-    function filestore_path(DocumentInfo $doc, $flags = 0) {
+    function filestore_path(DocumentInfo $doc, $flags = 0, $storeinfo = null) {
         if ($doc->error || !($pattern = $this->filestore_pattern($doc)))
             return null;
         if (!($f = $this->_expand_filestore($pattern, $doc, true)))
@@ -755,8 +779,8 @@ class Filer {
         }
         if (($flags & self::FPATH_MKDIR)
             && !self::prepare_filestore(self::docstore_fixed_prefix($pattern), $f)) {
-            if (!($flags & self::FPATH_QUIET))
-                set_error_html($doc, "Internal error: docstore cannot be initialized.");
+            if ($storeinfo)
+                $storeinfo->error_html[] = "File system storage cannot be initialized.";
             return false;
         }
         return $f;
@@ -903,13 +927,5 @@ class Filer_Dbstore {
     public $table;
     public $id_column;
     public $columns;
-    public $check_contents;
-
-    function __construct($dblink, $table, $id_column, $columns, $check_contents = null) {
-        $this->dblink = $dblink;
-        $this->table = $table;
-        $this->id_column = $id_column;
-        $this->columns = $columns;
-        $this->check_contents = $check_contents;
-    }
+    public $content_column;
 }

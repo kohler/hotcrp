@@ -100,7 +100,7 @@ class HotCRPDocument extends Filer {
                 && $s3->check($filename));
     }
 
-    function s3_store(DocumentInfo $doc, $trust_hash = false) {
+    function s3_store(DocumentInfo $doc, $storeinfo, $trust_hash = false) {
         if (!isset($doc->content) && !$this->load_to_memory($doc))
             return false;
         if (!$trust_hash) {
@@ -126,43 +126,54 @@ class HotCRPDocument extends Filer {
                   array("hotcrp" => json_encode_db($meta)));
         if ($s3->status != 200)
             error_log("S3 error: POST $filename: $s3->status $s3->status_text " . json_encode_db($s3->response_headers));
+        if ($storeinfo) {
+            if ($s3->status == 200)
+                $storeinfo->content_success = true;
+            else
+                $storeinfo->error_html[] = "Cannot upload document to S3.";
+        }
         return $s3->status == 200;
     }
 
-    function store_other(DocumentInfo $doc) {
+    function store_other(DocumentInfo $doc, $storeinfo) {
         if (($s3 = $this->conf->s3_docstore()))
-            $this->s3_store($doc, true);
+            $this->s3_store($doc, $storeinfo, true);
     }
 
     function dbstore(DocumentInfo $doc) {
         if ($this->no_database)
             return null;
         $doc->documentType = $this->dtype;
-        $columns = array("paperId" => $doc->paperId,
+        $dbstore = new Filer_Dbstore;
+        $dbstore->dblink = $this->conf->dblink;
+        $dbstore->table = "PaperStorage";
+        $dbstore->id_column = "paperStorageId";
+        $dbstore->columns = array("paperId" => $doc->paperId,
                          "timestamp" => $doc->timestamp,
                          "mimetype" => $doc->mimetype,
                          "sha1" => $doc->binary_hash(),
                          "documentType" => $doc->documentType,
                          "mimetype" => $doc->mimetype);
-        if (!$this->conf->opt("dbNoPapers"))
-            $columns["paper"] = $doc->content;
+        if (!$this->conf->opt("dbNoPapers")) {
+            $dbstore->columns["paper"] = $doc->content;
+            $dbstore->content_column = "paper";
+        }
         if (get($doc, "filename"))
-            $columns["filename"] = $doc->filename;
+            $dbstore->columns["filename"] = $doc->filename;
         $infoJson = get($doc, "infoJson");
         if (is_string($infoJson))
-            $columns["infoJson"] = $infoJson;
+            $dbstore->columns["infoJson"] = $infoJson;
         else if (is_object($infoJson) || is_associative_array($infoJson))
-            $columns["infoJson"] = json_encode_db($infoJson);
+            $dbstore->columns["infoJson"] = json_encode_db($infoJson);
         else if (is_object(get($doc, "metadata")))
-            $columns["infoJson"] = json_encode_db($doc->metadata);
+            $dbstore->columns["infoJson"] = json_encode_db($doc->metadata);
         if ($doc->size)
-            $columns["size"] = $doc->size;
+            $dbstore->columns["size"] = $doc->size;
         if ($doc->filterType)
-            $columns["filterType"] = $doc->filterType;
+            $dbstore->columns["filterType"] = $doc->filterType;
         if ($doc->originalStorageId)
-            $columns["originalStorageId"] = $doc->originalStorageId;
-        return new Filer_Dbstore($this->conf->dblink, "PaperStorage", "paperStorageId", $columns,
-                                 $this->conf->opt("dbNoPapers") ? null : "paper");
+            $dbstore->columns["originalStorageId"] = $doc->originalStorageId;
+        return $dbstore;
     }
 
     function filestore_pattern(DocumentInfo $doc) {
@@ -226,7 +237,7 @@ class HotCRPDocument extends Filer {
 
         $doc->size = strlen($doc->content);
         // store to filestore; silently does nothing if error || !filestore
-        $this->store_filestore($doc, true);
+        $this->store_filestore($doc, new Filer_StoreStatus);
         return $ok;
     }
 
