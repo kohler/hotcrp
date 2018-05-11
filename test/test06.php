@@ -12,6 +12,7 @@ require_once("$ConfSitePATH/src/settingvalues.php");
 $user_chair = $Conf->user_by_email("chair@_.com");
 $user_mgbaker = $Conf->user_by_email("mgbaker@cs.stanford.edu"); // pc
 $user_diot = $Conf->user_by_email("christophe.diot@sophia.inria.fr"); // pc, red
+$user_pdruschel = $Conf->user_by_email("pdruschel@cs.rice.edu"); // pc
 $Conf->save_setting("rev_open", 1);
 
 // 1-18 have 3 assignments, reset have 0
@@ -721,5 +722,15 @@ xassert(!$user_external->can_view_review_identity($paper17, $rrow17h));
 xassert($user_external->can_view_review_identity($paper17, $rrow17x));
 assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
 assert_search_papers($user_lixia, "re:mgbaker", "1");
+
+save_review(17, $user_external, [
+    "ovemer" => 1
+]);
+assert_search_papers($user_chair, "17 ovemer:2<=1", "");
+
+save_review(17, $user_pdruschel, [
+    "ready" => true, "ovemer" => 1, "revexp" => 1
+]);
+assert_search_papers($user_chair, "17 ovemer:2<=1", "17");
 
 xassert_exit();
