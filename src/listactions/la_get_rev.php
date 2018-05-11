@@ -68,7 +68,7 @@ class GetReviewBase_ListAction extends ListAction {
             $zip = new ZipDocument($user->conf->download_prefix . "reviews.zip");
             $zip->warnings = $warnings;
             foreach ($texts as $pid => $text)
-                $zip->add($header . $text, $user->conf->download_prefix . $rfname . $pid . ".txt");
+                $zip->add_as($header . $text, $user->conf->download_prefix . $rfname . $pid . ".txt");
             $result = $zip->download();
             if (!$result->error)
                 exit;

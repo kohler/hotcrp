@@ -229,7 +229,7 @@ class ZipDocument {
             return set_error_html("<code>zip</code> is not supported on this installation.");
         $this->_resolve_pending();
         if (count($this->warnings))
-            $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
+            $this->add_as(join("\n", $this->warnings) . "\n", "README-warnings.txt");
         $opts = ($this->recurse ? "-rq" : "-q");
         set_time_limit(60);
         $command = "cd $tmpdir; $zipcmd $opts " . escapeshellarg($this->filestore) . " " . join(" ", array_map("escapeshellarg", array_keys($this->files)));

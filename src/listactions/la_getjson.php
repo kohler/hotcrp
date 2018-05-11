@@ -42,7 +42,7 @@ class GetJson_ListAction extends ListAction {
         } else
             $pj_filename = $user->conf->download_prefix . "data.json";
         if ($this->iszip) {
-            $this->zipdoc->add(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
+            $this->zipdoc->add_as(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
             $this->zipdoc->download();
         } else {
             header("Content-Type: application/json; charset=utf-8");
