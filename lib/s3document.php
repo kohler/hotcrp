@@ -63,8 +63,7 @@ class S3Document {
         return array($this->s3_scope, $this->s3_signing_key);
     }
 
-    function signature($url, $hdr, $content = null) {
-        $verb = get($hdr, "method", "GET");
+    function signature($method, $url, $hdr, $content = null) {
         $current_time = $this->fixed_time ? : time();
 
         preg_match(',\Ahttps?://([^/?]*)([^?]*)(?:[?]?)(.*)\z,', $url, $m);
@@ -88,7 +87,7 @@ class S3Document {
 
         $chdr = array("Host" => $host);
         foreach ($hdr as $k => $v)
-            if (strcasecmp($k, "host") && strcasecmp($k, "method")) {
+            if (strcasecmp($k, "host")) {
                 $v = trim($v);
                 $chdr[$k] = $v;
             }
@@ -113,7 +112,7 @@ class S3Document {
             $chv .= $k . ":" . $v . "\n";
         }
 
-        $canonical_request = $verb . "\n"
+        $canonical_request = ($method ? : "GET") . "\n"
             . $resource . "\n"
             . $query . "\n"
             . $chv . "\n"
@@ -138,10 +137,9 @@ class S3Document {
         return ["headers" => $hdrarr, "signature" => $signature];
     }
 
-    private function stream_headers($filename, $method, $args) {
+    private function signed_headers($filename, $method, $args) {
         $url = "https://{$this->s3_bucket}.s3.amazonaws.com/{$filename}";
-        $hdr = ["method" => $method,
-                "Date" => gmdate("D, d M Y H:i:s", $this->fixed_time ? : time()) . " GMT"];
+        $hdr = ["Date" => gmdate("D, d M Y H:i:s", $this->fixed_time ? : time()) . " GMT"];
         $content = $content_type = null;
         foreach ($args as $key => $value) {
             if ($key === "user_data") {
@@ -157,15 +155,21 @@ class S3Document {
             else
                 $hdr[$key] = $value;
         }
-        $sig = $this->signature($url, $hdr, $content);
-        $hdr["header"] = join("\r\n", $sig["headers"]) . "\r\nConnection: close\r\n";
+        $sig = $this->signature($method, $url, $hdr, $content);
+        return [$url, $sig["headers"], $content, $content_type];
+    }
+
+    private function stream_headers($filename, $method, $args) {
+        list($url, $hdr, $content, $content_type) =
+            $this->signed_headers($filename, $method, $args);
+        $hdr[] = "Connection: close";
         $content_empty = (string) $content === "";
         if (!$content_empty && $content_type)
-            $hdr["header"] .= "Content-Type: $content_type\r\n";
-        $hdr["content"] = $content_empty ? "" : $content;
-        $hdr["protocol_version"] = 1.1;
-        $hdr["ignore_errors"] = true;
-        return array($url, $hdr);
+            $hdr[] = "Content-Type: $content_type";
+        return [$url,
+            ["header" => $hdr, "content" => $content_empty ? "" : $content,
+             "protocol_version" => 1.1, "ignore_errors" => true,
+             "method" => $method]];
     }
 
     private function parse_stream_response($url, $metadata) {
