@@ -95,7 +95,8 @@ class DocumentInfo implements JsonSerializable {
         $args = ["paperId" => $paperId,
                  "documentType" => $documentType,
                  "timestamp" => time()];
-        if (isset($upload["name"]) && strlen($upload["name"]) <= 255
+        if (isset($upload["name"])
+            && strlen($upload["name"]) <= 255
             && is_valid_utf8($upload["name"]))
             $args["filename"] = $upload["name"];
         $fnhtml = isset($args["filename"]) ? " “" . htmlspecialchars($args["filename"]) . "”" : "";

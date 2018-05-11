@@ -80,14 +80,16 @@ class ZipDocument {
         }
 
         // load document
-        if (!isset($doc->filestore) && !isset($doc->content)
+        if (!isset($doc->filestore)
+            && !isset($doc->content)
             && !$this->_add_load($doc, $filename, true))
             return false;
 
         // add document to filestore list
         if (is_array($this->_pending)
             && (isset($doc->filestore)
-                || (isset($doc->content) && $doc->content !== ""
+                || (isset($doc->content)
+                    && $doc->content !== ""
                     && strlen($doc->content) + $this->_pending_memory <= 4000000))
             && $doc->binary_hash() !== false) {
             $this->_pending[] = new DocumentInfo(["filename" => $filename, "filestore" => $doc->filestore, "sha1" => $doc->binary_hash(), "content" => $doc->content]);
@@ -417,14 +419,17 @@ class Filer {
         $this->store_filestore($doc, $storeinfo);
         $this->store_other($doc, $storeinfo);
 
-        if ($storeinfo->error || !$storeinfo->content_success || $storeinfo->error_html)
+        if ($storeinfo->error
+            || !$storeinfo->content_success
+            || $storeinfo->error_html) {
             error_log($doc->conf->dbname . ": "
                 . ($storeinfo->content_success && !$storeinfo->error ? "Recoverable error" : "Error")
                 . " saving document " . $doc->filename() . ": "
                 . join("; ", $storeinfo->error_html ? : ["Unknown error"]));
-        if (!$storeinfo->error && $storeinfo->content_success)
+        }
+        if (!$storeinfo->error && $storeinfo->content_success) {
             return true;
-        else {
+        } else {
             $doc->error = true;
             $doc->error_html = rtrim("This document was not saved. " . join(" ", $storeinfo->error_html ? : []));
             return false;
