@@ -152,7 +152,7 @@ class HtHead extends Ht {
                 return $this->search_link($t->tag, "#{$t->tag}");
             }, $vt)) . ")";
     }
-    function render_topic($topic) {
+    function render_group($topic) {
         foreach ($this->_help_topics->members($topic) as $gj) {
             Conf::xt_resolve_require($gj);
             if (isset($gj->callback)) {
@@ -223,7 +223,7 @@ echo "</div></div>\n",
     '<div class="leftmenu-content-container"><div id="helpcontent" class="leftmenu-content">';
 
 echo '<h2 class="helppage">', $topicj->title, '</h2>';
-$hth->render_topic($topic);
+$hth->render_group($topic);
 echo "</div></div>\n";
 
 

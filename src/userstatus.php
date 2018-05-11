@@ -520,7 +520,7 @@ class UserStatus extends MessageSet {
         }
     }
 
-    function parse_request_topic($g, $cj, Qrequest $qreq) {
+    function parse_request_group($g, $cj, Qrequest $qreq) {
         foreach ($this->gxt()->members(strtolower($g)) as $gj) {
             if (isset($gj->parse_request_callback)) {
                 Conf::xt_resolve_require($gj);
@@ -578,7 +578,7 @@ class UserStatus extends MessageSet {
         }
     }
 
-    function parse_csv_topic($g, $cj, $line) {
+    function parse_csv_group($g, $cj, $line) {
         foreach ($this->gxt()->members(strtolower($g)) as $gj) {
             if (isset($gj->parse_csv_callback)) {
                 Conf::xt_resolve_require($gj);
@@ -787,7 +787,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo "</div>\n";
     }
 
-    function render_topic($g, $cj, $reqj) {
+    function render_group($g, $cj, $reqj) {
         $last_title = null;
         foreach ($this->gxt()->members(strtolower($g)) as $gj) {
             $pc = array_search("pc", Conf::xt_allow_list($gj)) !== false;

@@ -39,7 +39,7 @@ class Tags_SettingRenderer {
         echo "<h3 class=\"settings\">Tags</h3>\n";
 
         echo '<div class="settings-g">';
-        $sv->render_topic("tags/main");
+        $sv->render_group("tags/main");
         echo "</div>\n";
 
         echo '<div class="settings-g">';

@@ -353,7 +353,7 @@ class SettingValues extends MessageSet {
             }
         }
     }
-    function render_topic($g) {
+    function render_group($g) {
         $last_title = null;
         foreach ($this->group_members($g) as $gj) {
             GroupedExtensions::render_heading($gj, $last_title, 3, "settings");
