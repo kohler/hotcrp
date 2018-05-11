@@ -22,6 +22,8 @@ if (!function_exists("imagecreate")) {
 
 // parse values
 $s = (isset($_GET["s"]) ? $_GET["s"] : 0);
+if ($s != 0 && $s != 1 && $s != 2)
+    $s = 2;
 $valMax = 1;
 $values = array();
 $maxY = $sum = 0;
