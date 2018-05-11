@@ -9,17 +9,18 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     const APPROVABLE = 8;
 
     private $review_type = 0;
-    public $completeness = 0;
-    private $fieldsql = null;
+    private $completeness = 0;
     public $view_score = null;
     public $round = null;
-    public $tokens = null;
-    public $wordcountexpr = null;
-    private $rfield = null;
+    private $tokens;
+    private $wordcountexpr;
+    private $rfield;
     private $rfield_score;
     private $rfield_text;
+    private $rfield_sqlonly;
     private $requester;
     private $ratings;
+    private $frozen = false;
 
     function __construct($countexpr = null, $contacts = null) {
         parent::__construct($countexpr, $contacts);
@@ -29,6 +30,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     }
     function review_type() {
         return $this->review_type;
+    }
+    function has_wordcount() {
+        return !!$this->wordcountexpr;
     }
     function apply_review_type($word, $allow_pc = false) {
         if ($word === "meta")
@@ -68,47 +72,44 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         } else
             return false;
     }
+    function adjust_round_list($rounds) {
+        if ($this->round === null)
+            $this->round = $rounds;
+    }
     function apply_requester($cid) {
         $this->requester = $cid;
     }
-    function adjust_rounds($rounds) {
-        if ($this->round === null)
-            $this->round = $rounds;
+    function apply_wordcount($wordcount) {
+        assert($this->wordcountexpr === null);
+        if ($wordcount) {
+            $this->wordcountexpr = $wordcount;
+            if ($this->completeness === 0)
+                $this->apply_completeness("complete");
+        }
+    }
+    function apply_tokens($tokens) {
+        assert($this->tokens === null);
+        $this->tokens = $tokens;
     }
     function adjust_ratings(ReviewRating_SearchAdjustment $rrsa) {
         if ($this->ratings === null)
             $this->ratings = $rrsa;
     }
     function make_field_term(ReviewField $field, $value) {
-        assert(!$this->rfield && !$this->fieldsql);
+        assert(!$this->rfield);
         if (!$this->completeness)
             $this->completeness = self::COMPLETE;
-        if ($field->has_options) {
-            if ($field->main_storage)
-                $this->fieldsql = $field->main_storage . $value;
-            else {
-                $this->rfield = $field;
-                $this->rfield_score = new CountMatcher($value);
-                if (!$this->rfield_score->test(0))
-                    $this->fieldsql = "sfields is not null";
-            }
-        } else {
-            if ($field->main_storage && is_bool($value)) {
-                if ($value)
-                    $this->fieldsql = $field->main_storage . "!=''";
-                else
-                    $this->fieldsql = "coalesce(" . $field->main_storage . ",'')=''";
-            } else {
-                $this->rfield = $field;
-                $this->rfield_text = $value;
-                if ($value)
-                    $this->fieldsql = "tfields is not null";
-            }
-        }
+        $this->rfield = $field;
+        if ($field->has_options)
+            $this->rfield_score = new CountMatcher($value);
+        else
+            $this->rfield_text = $value;
         return new Review_SearchTerm($this);
     }
     function useful_sqlexpr($table_name) {
         $where = [];
+        if ($this->completeness & ReviewSearchMatcher::COMPLETE)
+            $where[] = "reviewSubmitted is not null";
         if ($this->completeness & ReviewSearchMatcher::APPROVABLE)
             $where[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
         if ($this->has_contacts()) {
@@ -117,8 +118,28 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 $cm = "($cm or reviewToken in (" . join(",", $this->tokens) . "))";
             $where[] = $cm;
         }
-        if ($this->fieldsql)
-            $where[] = $this->fieldsql;
+        if ($this->rfield) {
+            if ($this->rfield->has_options) {
+                if ($this->rfield->main_storage) {
+                    $where[] = $this->rfield->main_storage . $this->rfield_score->countexpr();
+                    $this->rfield_sqlonly = !$this->rfield_score->test(0);
+                } else {
+                    if (!$this->rfield_score->test(0))
+                        $where[] = "sfields is not null";
+                }
+            } else {
+                if ($this->rfield->main_storage) {
+                    if (!$this->rfield_text)
+                        $where[] = "coalesce(" . $this->rfield->main_storage . ",'')=''";
+                    else
+                        $where[] = $this->rfield->main_storage . "!=''";
+                    $this->rfield_sqlonly = is_bool($this->rfield_text);
+                } else {
+                    if ($this->rfield_text)
+                        $where[] = "tfields is not null";
+                }
+            }
+        }
         if ($this->ratings && $this->ratings->must_exist())
             $where[] = "exists (select * from ReviewRating where paperId={$table_name}.paperId and reviewId={$table_name}.reviewId)";
         if ($this->requester)
@@ -159,7 +180,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             && !in_array($rrow->reviewRound, $this->round))
             // XXX can_view_review_round?
             return false;
-        if ($this->fieldsql || $this->rfield || $this->wordcountexpr || $this->ratings
+        if ($this->rfield || $this->wordcountexpr || $this->ratings
             ? !$user->can_view_review($prow, $rrow)
             : !$user->can_view_review_assignment($prow, $rrow))
             return false;
@@ -185,10 +206,11 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if ($this->view_score !== null
             && $this->view_score <= $user->view_score_bound($prow, $rrow))
             return false;
-        if ($this->rfield) {
+        if ($this->rfield && !$this->rfield_sqlonly) {
             $fid = $this->rfield->id;
             if ($this->rfield->has_options) {
-                if (!$this->rfield_score->test((int) get($rrow, $fid, 0)))
+                $score = isset($rrow->$fid) ? (int) $rrow->$fid : 0;
+                if (!$this->rfield_score->test($score))
                     return false;
             } else {
                 if ($this->rfield_text === false) {
@@ -266,13 +288,11 @@ class Review_SearchTerm extends SearchTerm {
             return $qr;
         }
 
-        $rsm->wordcountexpr = $wordcount;
-        if ($wordcount && $rsm->completeness === 0)
-            $rsm->apply_completeness("complete");
+        $rsm->apply_wordcount($wordcount);
         if ($contacts) {
             $rsm->set_contacts($srch->matching_reviewers($contacts, $quoted, $rsm->only_pc()));
             if (strcasecmp($contacts, "me") == 0)
-                $rsm->tokens = $srch->user->review_tokens();
+                $rsm->apply_tokens($srch->user->review_tokens());
         }
         return new Review_SearchTerm($rsm);
     }
@@ -384,7 +404,7 @@ class Review_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_review_signature_columns();
-        if ($this->rsm->wordcountexpr)
+        if ($this->rsm->has_wordcount())
             $sqi->add_review_word_count_columns();
 
         if (($wheres = $this->rsm->useful_sqlexpr("r"))) {

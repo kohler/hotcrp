@@ -702,7 +702,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     }
     function promote_matcher(ReviewSearchMatcher $rsm) {
         if ($this->round !== null)
-            $rsm->adjust_rounds($this->round);
+            $rsm->adjust_round_list($this->round);
         if ($this->ratings !== null)
             $rsm->adjust_ratings($this->ratings);
         $this->used_revadj = true;
