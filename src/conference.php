@@ -3370,7 +3370,7 @@ class Conf {
         if (!$user)
             return 0;
         else if (!is_numeric($user)) {
-            if ($user->email && !$user->contactId)
+            if ($user->email && !$user->contactId && !$user->is_site_contact)
                 $text .= " <{$user->email}>";
             return $user->contactId;
         } else
