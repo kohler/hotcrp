@@ -1779,12 +1779,16 @@ class Conf {
                 $csv[] = CsvGenerator::quote($dt->autosearch) . "," . CsvGenerator::quote($dt->tag);
             }
         } else {
-            $prow = $this->paperRow(is_object($paper) ? $paper->paperId : $paper);
+            if (is_object($paper))
+                $paper = $paper->paperId;
+            $rowset = $this->paper_set(null, ["paperId" => $paper]);
             foreach ($this->tags()->filter("autosearch") as $dt) {
                 $search = new PaperSearch($this->site_contact(), ["q" => $dt->autosearch, "t" => "all"]);
-                $want = $search->test($prow);
-                if ($prow->has_tag($dt->tag) !== $want)
-                    $csv[] = "{$prow->paperId}," . CsvGenerator::quote($dt->tag . ($want ? "" : "#clear"));
+                foreach ($rowset as $prow) {
+                    $want = $search->test($prow);
+                    if ($prow->has_tag($dt->tag) !== $want)
+                        $csv[] = "{$prow->paperId}," . CsvGenerator::quote($dt->tag . ($want ? "" : "#clear"));
+                }
             }
         }
         $this->_update_autosearch_tags_csv($csv);
