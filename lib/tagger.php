@@ -832,7 +832,9 @@ class Tagger {
                 $b = self::unparse_emoji_html($e, $count);
                 if (!empty($links))
                     $b = '<a class="qq" href="' . hoturl("search", ["q" => join(" OR ", $links)]) . '">' . $b . '</a>';
-                $x .= ' ' . $b;
+                if ($x === "")
+                    $x = " ";
+                $x .= $b;
             }
         }
         if ($dt->has_badges
