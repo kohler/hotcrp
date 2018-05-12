@@ -242,12 +242,7 @@ class Autoassigner {
             $scoredir = substr($scoreinfo, 0, 1) === "-" ? -1 : 1;
         }
 
-        $result = $this->conf->paper_result(null, ["paperId" => $this->papersel, "allConflictType" => true, "reviewSignatures" => true, "scores" => $score ? [$score] : []]);
-        $set = new PaperInfoSet;
-        while (($prow = PaperInfo::fetch($result, null, $this->conf))) {
-            $set->add($prow);
-        }
-        Dbl::free($result);
+        $set = $this->conf->paper_set(null, ["paperId" => $this->papersel, "allConflictType" => true, "reviewSignatures" => true, "scores" => $score ? [$score] : []]);
 
         $scorearr = [];
         foreach ($set as $prow) {

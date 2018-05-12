@@ -2784,6 +2784,15 @@ class Conf {
         return $this->qe_raw($this->paperQuery($user, $options));
     }
 
+    function paper_set(Contact $user = null, $options = []) {
+        $rowset = new PaperInfoSet;
+        $result = $this->paper_result($user, $options);
+        while (($prow = PaperInfo::fetch($result, $user, $this)))
+            $rowset->add($prow);
+        Dbl::free($result);
+        return $rowset;
+    }
+
     function preferenceConflictQuery($type, $extra) {
         $q = "select PRP.paperId, PRP.contactId, PRP.preference
                 from PaperReviewPreference PRP

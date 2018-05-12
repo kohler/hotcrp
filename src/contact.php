@@ -3683,13 +3683,7 @@ class Contact {
         } else {
             $options = $pids;
         }
-        $result = $this->conf->paper_result($this, $options);
-        $set = new PaperInfoSet;
-        while (($prow = PaperInfo::fetch($result, $this))) {
-            $set->add($prow);
-        }
-        Dbl::free($result);
-        return $set;
+        return $this->conf->paper_set($this, $options);
     }
 
     function hide_reviewer_identity_pids() {
