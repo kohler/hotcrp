@@ -100,6 +100,13 @@ class CountMatcher {
         else
             return $str;
     }
+    static function flip_countexpr_string($str) {
+        $t = new CountMatcher($str);
+        if ($t->allowed & 5)
+            return self::$oparray[$t->allowed ^ 5] . $t->value;
+        else
+            return $str;
+    }
     static function canonical_comparator($str) {
         if (($x = self::$opmap[trim($str)]))
             return self::$oparray[$x];

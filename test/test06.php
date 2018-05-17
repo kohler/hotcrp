@@ -368,6 +368,7 @@ assert_search_papers($user_chair, "sco13:3", "1");
 assert_search_papers($user_chair, "sco14:0", "1");
 assert_search_papers($user_chair, "sco15:0", "1");
 assert_search_papers($user_chair, "sco16:0", "1");
+assert_search_papers($user_chair, "sco16:none", "1");
 assert_search_papers($user_chair, "tex4:bobcat", "1");
 assert_search_papers($user_chair, "tex5:none", "1");
 assert_search_papers($user_chair, "tex6:fisher*", "1");
@@ -737,5 +738,7 @@ assert_search_papers($user_chair, "ovemer:1..2", "17 18");
 assert_search_papers($user_chair, "ovemer:1..3", "1 17 18");
 assert_search_papers($user_chair, "ovemer:1–2", "17");
 assert_search_papers($user_chair, "ovemer:1-3", "");
+assert_search_papers($user_chair, "ovemer:2..1", "17 18");
+assert_search_papers($user_chair, "ovemer:3..1", "1 17 18");
 
 xassert_exit();
