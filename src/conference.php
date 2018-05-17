@@ -202,7 +202,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 184) {
+        if ($this->sversion < 185) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);

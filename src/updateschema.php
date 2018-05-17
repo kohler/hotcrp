@@ -1299,6 +1299,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         // not constructive=-2,32; not correct=-3,64
         && $conf->ql("update ReviewRating set rating=case rating when 0 then 4 when -1 then 8 when -4 then 16 when -2 then 32 when -3 then 64 else if(rating<0,2,1) end"))
         $conf->update_schema_version(184);
+    if ($conf->sversion == 184
+        && $conf->ql("alter table PaperReview drop key `reviewSubmittedContact`"))
+        $conf->update_schema_version(185);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
