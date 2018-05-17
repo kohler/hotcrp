@@ -27,7 +27,7 @@ class CountMatcher {
             return false;
     }
     function ok() {
-        return $this->allowed != 0;
+        return $this->allowed !== 0;
     }
     function test($n) {
         return self::compare($n, $this->allowed, $this->value);
@@ -70,12 +70,12 @@ class CountMatcher {
             return $cm->filter($x);
         }
     }
+    function test_explicit_zero() {
+        return $this->value == 0 && ($this->allowed & 2);
+    }
     function countexpr() {
         assert(!!$this->allowed);
-        if ($this->allowed)
-            return self::$oparray[$this->allowed] . $this->value;
-        else
-            return $this->_countexpr;
+        return self::$oparray[$this->allowed] . $this->value;
     }
     function simplified_nonnegative_countexpr() {
         if ($this->value == 1 && $this->allowed === 6)
