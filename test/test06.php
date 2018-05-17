@@ -733,4 +733,9 @@ save_review(17, $user_pdruschel, [
 ]);
 assert_search_papers($user_chair, "17 ovemer:2<=1", "17");
 
+assert_search_papers($user_chair, "ovemer:1..2", "17 18");
+assert_search_papers($user_chair, "ovemer:1..3", "1 17 18");
+assert_search_papers($user_chair, "ovemer:1–2", "17");
+assert_search_papers($user_chair, "ovemer:1-3", "");
+
 xassert_exit();
