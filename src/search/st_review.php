@@ -114,6 +114,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         $this->rfield_scoret = $valuet;
     }
     function useful_sqlexpr($table_name) {
+        if ($this->test(0))
+            return false;
         $where = [];
         if ($this->completeness & ReviewSearchMatcher::COMPLETE)
             $where[] = "reviewSubmitted is not null";
@@ -140,10 +142,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 }
             } else {
                 if ($this->rfield->main_storage) {
-                    if ($this->rfield_text === false)
-                        $where[] = "coalesce(" . $this->rfield->main_storage . ",'')=''";
-                    else
-                        $where[] = $this->rfield->main_storage . "!=''";
+                    $where[] = $this->rfield->main_storage . "!=''";
                 } else {
                     if ($this->rfield_text)
                         $where[] = "tfields is not null";
@@ -240,10 +239,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                     return $this->rfield_score1 == 0 && ($this->rfield_scoret & 2);
                 }
             } else {
-                if ($this->rfield_text === false) {
-                    if ((string) $val !== "")
-                        return false;
-                } else if ((string) $val === "") {
+                if ((string) $val === "") {
                     return false;
                 } else if ($this->rfield_text !== true) {
                     if (!$rrow->field_match_pregexes($this->rfield_text, $fid))
@@ -361,7 +357,8 @@ class Review_SearchTerm extends SearchTerm {
             if ($word === "any" && !$sword->quoted) {
                 $val = true;
             } else if ($word === "none" && !$sword->quoted) {
-                $val = false;
+                $val = true;
+                $rsm->set_countexpr("=0");
             } else {
                 $val = Text::star_text_pregexes($word, $sword->quoted);
             }
@@ -393,7 +390,8 @@ class Review_SearchTerm extends SearchTerm {
         if ($word === "any") {
             $rsm->apply_score_field($f, 0, 0, 4);
         } else if ($word === "none") {
-            $rsm->apply_score_field($f, 0, 0, 2);
+            $rsm->set_countexpr("=0");
+            $rsm->apply_score_field($f, 0, 0, 4);
         } else if (preg_match('/\A(\d*?)\s*([=!<>]=?|≠|≤|≥)?\s*([A-Z]|\d+|none)\z/si', $word, $m)) {
             if ($m[1] === "")
                 $m[1] = "1";

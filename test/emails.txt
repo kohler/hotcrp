@@ -1565,7 +1565,7 @@ Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
 
 - Testconf I Submissions
-********
+******** test06-17external
 To: Mary Baker <mgbaker@cs.stanford.edu>
 Subject: [Testconf I] Submitted review #17B "Network Text Editor (NTE): A
  Scalable..."
@@ -1610,7 +1610,7 @@ Comments for author
 -------------------
 Bye
 
-********
+******** test06-17lixia
 To: External Reviewer <external@_.com>
 Subject: [Testconf I] Submitted review #17C "Network Text Editor (NTE): A
  Scalable..."
@@ -1655,7 +1655,7 @@ Comments for author
 -------------------
 Nonradical
 
-********
+******** test06-17lixia
 To: Mary Baker <mgbaker@cs.stanford.edu>
 Subject: [Testconf I] Submitted review #17C "Network Text Editor (NTE): A
  Scalable..."

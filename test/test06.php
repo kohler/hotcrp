@@ -368,15 +368,11 @@ assert_search_papers($user_chair, "sco13:3", "1");
 assert_search_papers($user_chair, "sco14:0", "1");
 assert_search_papers($user_chair, "sco15:0", "1");
 assert_search_papers($user_chair, "sco16:0", "1");
-assert_search_papers($user_chair, "sco16:none", "1");
 assert_search_papers($user_chair, "tex4:bobcat", "1");
-assert_search_papers($user_chair, "tex5:none", "1");
 assert_search_papers($user_chair, "tex6:fisher*", "1");
 assert_search_papers($user_chair, "tex7:tiger", "1");
 assert_search_papers($user_chair, "tex8:leopard", "1");
 assert_search_papers($user_chair, "tex9:tremolo", "1");
-assert_search_papers($user_chair, "tex10:none", "1");
-assert_search_papers($user_chair, "tex11:none", "1");
 
 // check handling of sfields and tfields: don't lose unchanged fields
 save_review(1, $user_mgbaker, [
@@ -404,12 +400,10 @@ assert_search_papers($user_chair, "comaut:author", "1");
 assert_search_papers($user_chair, "comaut:äuthor", "1");
 assert_search_papers($user_chair, "comaut:áuthor", "");
 assert_search_papers($user_chair, "tex4:bobcat", "1");
-assert_search_papers($user_chair, "tex5:none", "1");
 assert_search_papers($user_chair, "tex6:fisher*", "1");
 assert_search_papers($user_chair, "tex7:tiger", "1");
 assert_search_papers($user_chair, "tex8:leopard", "1");
 assert_search_papers($user_chair, "tex9:tremolo", "1");
-assert_search_papers($user_chair, "tex10:none", "1");
 assert_search_papers($user_chair, "tex11:butt", "1");
 
 // check handling of sfields and tfields: no changes at all
@@ -437,12 +431,10 @@ assert_search_papers($user_chair, "sco14:0", "1");
 assert_search_papers($user_chair, "sco15:0", "1");
 assert_search_papers($user_chair, "sco16:1", "1");
 assert_search_papers($user_chair, "tex4:bobcat", "1");
-assert_search_papers($user_chair, "tex5:none", "1");
 assert_search_papers($user_chair, "tex6:fisher*", "1");
 assert_search_papers($user_chair, "tex7:tiger", "1");
 assert_search_papers($user_chair, "tex8:leopard", "1");
 assert_search_papers($user_chair, "tex9:tremolo", "1");
-assert_search_papers($user_chair, "tex10:none", "1");
 assert_search_papers($user_chair, "tex11:butt", "1");
 
 // check handling of sfields and tfields: clear extension fields
@@ -485,12 +477,10 @@ assert_search_papers($user_chair, "sco14:0", "1");
 assert_search_papers($user_chair, "sco15:0", "1");
 assert_search_papers($user_chair, "sco16:1", "1");
 assert_search_papers($user_chair, "tex4:bobcat", "1");
-assert_search_papers($user_chair, "tex5:none", "1");
 assert_search_papers($user_chair, "tex6:fisher*", "1");
 assert_search_papers($user_chair, "tex7:tiger", "1");
 assert_search_papers($user_chair, "tex8:leopard", "1");
 assert_search_papers($user_chair, "tex9:tremolo", "1");
-assert_search_papers($user_chair, "tex10:none", "1");
 assert_search_papers($user_chair, "tex11:butt", "1");
 
 save_review(1, $user_mgbaker, [
@@ -513,13 +503,11 @@ assert_search_papers($user_chair, "sco14:0", "1");
 assert_search_papers($user_chair, "sco15:2", "1");
 assert_search_papers($user_chair, "sco16:1", "1");
 assert_search_papers($user_chair, "tex4:bobcat", "1");
-assert_search_papers($user_chair, "tex5:none", "1");
 assert_search_papers($user_chair, "tex6:fisher*", "1");
 assert_search_papers($user_chair, "tex7:tiger", "1");
 assert_search_papers($user_chair, "tex8:leopard", "");
 assert_search_papers($user_chair, "tex8:leopardino", "1");
 assert_search_papers($user_chair, "tex9:tremolo", "1");
-assert_search_papers($user_chair, "tex10:none", "1");
 assert_search_papers($user_chair, "tex11:butt", "1");
 
 // simplify review form
@@ -608,7 +596,7 @@ $Conf->save_setting("extrev_view", 0);
 save_review(17, $user_external, [
     "ovemer" => 2, "revexp" => 1, "papsum" => "Hi", "comaut" => "Bye", "ready" => true
 ]);
-MailChecker::check_db();
+MailChecker::check_db("test06-17external");
 xassert(!$user_external->can_view_review($paper17, $rrow17m));
 xassert(!$user_external->can_view_review_identity($paper17, $rrow17m));
 $Conf->save_setting("extrev_view", 1);
@@ -623,7 +611,7 @@ $user_lixia = $Conf->user_by_email("lixia@cs.ucla.edu");
 $tf = new ReviewValues($Conf->review_form());
 xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "Radical", "comaut" => "Nonradical"]));
 xassert($tf->check_and_save($user_lixia, $paper17));
-MailChecker::check_db();
+MailChecker::check_db("test06-17lixia");
 $rrow17h = fetch_review($paper17, $user_lixia);
 $rrow17x = fetch_review($paper17, $user_external);
 xassert_eqq($rrow17m->reviewRound, 3);
