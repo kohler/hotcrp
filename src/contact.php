@@ -3846,6 +3846,6 @@ class Contact {
             else if ($row && $row[1])
                 $needsSubmit = -1;
         }
-        return $this->conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=? where reviewId=?", $needsSubmit, $rrow->reviewId);
+        return $this->conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=? where paperId=? and reviewId=?", $needsSubmit, $rrow->paperId, $rrow->reviewId);
     }
 }
