@@ -539,7 +539,8 @@ class TextMatch_SearchTerm extends SearchTerm {
         $sqi->add_column($this->field, "Paper.{$this->field}");
         if ($this->trivial && !$this->authorish)
             return "Paper.{$this->field}!=''";
-        return "true";
+        else
+            return "true";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $data = $row->{$this->field};
