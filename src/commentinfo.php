@@ -191,6 +191,8 @@ class CommentInfo {
     private function unparse_user_pseudonym(Contact $user) {
         if ($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR)) {
             return "Author";
+        } else if ($this->commentType & COMMENTTYPE_BYSHEPHERD) {
+            return "Shepherd";
         } else if (($rrow = $this->prow->review_of_user($this->contactId))
                    && $rrow->reviewOrdinal
                    && $user->can_view_review($this->prow, $rrow)) {
@@ -277,6 +279,8 @@ class CommentInfo {
             $cj->response = $this->conf->resp_round_name($this->commentRound);
         else if ($this->commentType & COMMENTTYPE_BYAUTHOR)
             $cj->by_author = true;
+        else if ($this->commentType & COMMENTTYPE_BYSHEPHERD)
+            $cj->by_shepherd = true;
         if ($contact->can_comment($this->prow, $this))
             $cj->editable = true;
 
@@ -296,15 +300,18 @@ class CommentInfo {
             $cj->author_email = $user->email;
             if (!$idable)
                 $cj->author_hidden = true;
-            if (Contact::is_anonymous_email($cj->author_email) && $contact->review_tokens()) {
+            if (Contact::is_anonymous_email($cj->author_email)
+                && $contact->review_tokens()) {
                 foreach ($this->prow->reviews_by_id() as $rrow)
-                    if ($rrow->reviewToken && in_array($rrow->reviewToken, $contact->review_tokens())) {
+                    if ($rrow->reviewToken
+                        && in_array($rrow->reviewToken, $contact->review_tokens())) {
                         $cj->review_token = encode_token((int) $rrow->reviewToken);
                         break;
                     }
             }
         }
-        if ((!$idable || $this->commentType == (COMMENTTYPE_AUTHOR | COMMENTTYPE_BLIND))
+        if ((!$idable
+             || ($this->commentType & (COMMENTTYPE_VISIBILITY | COMMENTTYPE_BLIND)) == (COMMENTTYPE_AUTHOR | COMMENTTYPE_BLIND))
             && ($p = $this->unparse_user_pseudonym($contact))) {
             $cj->author_pseudonym = $p;
         }
@@ -424,8 +431,14 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $req_visibility = COMMENTTYPE_REVIEWER;
             $ctype = $req_visibility;
         }
-        if ($is_response ? $this->prow->blind : $this->conf->is_review_blind(!!get($req, "blind")))
+        if ($is_response
+            ? $this->prow->blind
+            : $this->conf->is_review_blind(!!get($req, "blind")))
             $ctype |= COMMENTTYPE_BLIND;
+        if ($this->commentId
+            ? $this->commentType & COMMENTTYPE_BYSHEPHERD
+            : $contact->contactId == $this->prow->shepherdContactId)
+            $ctype |= COMMENTTYPE_BYSHEPHERD;
 
         // tags
         if ($is_response) {
