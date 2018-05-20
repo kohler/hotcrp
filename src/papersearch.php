@@ -1418,11 +1418,19 @@ class PaperSearch {
     }
 
     private function _search_word($word) {
-        // check for paper number or "#TAG"
-        if (preg_match('/\A#?(\d+)(?:(?:-|–|—)#?(\d+))?\z/', $word, $m)) {
-            $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-            return new PaperID_SearchTerm(range((int) $m[1], (int) $m[2]));
-        } else if (substr($word, 0, 1) === "#") {
+        // check for paper numbers
+        if (preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/', $word)) {
+            $range = [];
+            while (preg_match('/\A#?(\d+)(?:(?:-|–|—)#?(\d+))?\s*,?\s*(.*)\z/', $word, $m)) {
+                $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
+                $range = array_merge($range, range(intval($m[1]), intval($m[2])));
+                $word = $m[3];
+            }
+            return new PaperID_SearchTerm($range);
+        }
+
+        // check for `#TAG`
+        if (substr($word, 0, 1) === "#") {
             ++$this->_quiet_count;
             $qe = $this->_search_word("hashtag:" . substr($word, 1));
             --$this->_quiet_count;
@@ -1472,13 +1480,6 @@ class PaperSearch {
             return ($str = "");
         $str = substr($str, strlen($m[0]));
         $word = ltrim($m[0]);
-
-        // commas in paper number strings turn into separate words
-        if (preg_match('/\A(#?\d+(?:(?:-|–|—)#?\d+)?),((?:#?\d+(?:(?:-|–|—)#?\d+)?,?)*)\z/', $word, $mx)) {
-            $word = $mx[1];
-            if ($mx[2] !== "")
-                $str = $mx[2] . $str;
-        }
 
         // elide colon
         if ($word === "HEADING") {

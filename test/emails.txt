@@ -1,7 +1,6 @@
 ******** create-huitema@bellcore.com
 To: Christian Huitema <huitema@bellcore.com>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -27,7 +26,6 @@ concerns.
 ******** create-christophe.diot@sophia.inria.fr
 To: Christophe Diot <christophe.diot@sophia.inria.fr>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -53,7 +51,6 @@ concerns.
 ******** create-estrin@usc.edu
 To: Deborah Estrin <estrin@usc.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -79,7 +76,6 @@ concerns.
 ******** create-kohler@seas.harvard.edu
 To: Eddie Kohler <kohler@seas.harvard.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -105,7 +101,6 @@ concerns.
 ******** create-varghese@ccrc.wustl.edu
 To: George Varghese <varghese@ccrc.wustl.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -131,7 +126,6 @@ concerns.
 ******** create-jj@cse.ucsc.edu
 To: "J. J. Garcia-Luna-Aceves" <jj@cse.ucsc.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -157,7 +151,6 @@ concerns.
 ******** create-jon@cs.ucl.ac.uk
 To: Jon Crowcroft <jon@cs.ucl.ac.uk>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -183,7 +176,6 @@ concerns.
 ******** create-lixia@cs.ucla.edu
 To: Lixia Zhang <lixia@cs.ucla.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -209,7 +201,6 @@ concerns.
 ******** create-marina@poema.ru
 To: Marina Tsvetaeva <marina@poema.ru>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -235,7 +226,6 @@ concerns.
 ******** create-mjh@isi.edu
 To: Mark Handley <mjh@isi.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -261,7 +251,6 @@ concerns.
 ******** create-mgbaker@cs.stanford.edu
 To: Mary Baker <mgbaker@cs.stanford.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -287,7 +276,6 @@ concerns.
 ******** create-pfrancis@ntt.jp
 To: Paul Francis <pfrancis@ntt.jp>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -313,7 +301,6 @@ concerns.
 ******** create-peter.danzig@usc.edu
 To: Peter Danzig <peter.danzig@usc.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -339,7 +326,6 @@ concerns.
 ******** create-pdruschel@cs.rice.edu
 To: Peter Druschel <pdruschel@cs.rice.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -365,7 +351,6 @@ concerns.
 ******** create-rguerin@ibm.com
 To: Roch Guerin <rguerin@ibm.com>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -391,7 +376,6 @@ concerns.
 ******** create-floyd@ee.lbl.gov
 To: Sally Floyd <floyd@ee.lbl.gov>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -417,7 +401,6 @@ concerns.
 ******** create-shenker@parc.xerox.com
 To: Scott Shenker <shenker@parc.xerox.com>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -443,7 +426,6 @@ concerns.
 ******** create-van@ee.lbl.gov
 To: Van Jacobson <van@ee.lbl.gov>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -469,7 +451,6 @@ concerns.
 ******** create-ojuelegba@gmail.com
 To: Wilma Ojuelegba <ojuelegba@gmail.com>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -495,7 +476,6 @@ concerns.
 ******** create-micke@cdt.luth.se
 To: Mikael Degermark <micke@cdt.luth.se>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -521,7 +501,6 @@ concerns.
 ******** create-sclin@leland.stanford.edu
 To: Steven Lin <sclin@leland.stanford.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -547,7 +526,6 @@ concerns.
 ******** create-waldvogel@tik.ee.ethz.ch
 To: Marcel Waldvogel <waldvogel@tik.ee.ethz.ch>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -573,7 +551,6 @@ concerns.
 ******** create-chane@ecse.ucsc.edu
 To: "Chane L. Fullmer" <chane@ecse.ucsc.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -599,7 +576,6 @@ concerns.
 ******** create-bnoble@cs.cmu.edu
 To: Brian Noble <bnoble@cs.cmu.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -625,7 +601,6 @@ concerns.
 ******** create-slu@crhc.uiuc.edu
 To: Songwu Lu <slu@crhc.uiuc.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -651,7 +626,6 @@ concerns.
 ******** create-sjhan@eecs.umich.edu
 To: Seungjae Han <sjhan@eecs.umich.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -677,7 +651,6 @@ concerns.
 ******** create-kienhua@cs.ucf.edu
 To: "Kien A. Hua" <kienhua@cs.ucf.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -703,7 +676,6 @@ concerns.
 ******** create-salex@dsl.cis.upenn.edu
 To: "D. Scott Alexander" <salex@dsl.cis.upenn.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -729,7 +701,6 @@ concerns.
 ******** create-labovit@eecs.umich.edu
 To: Craig Labovitz <labovit@eecs.umich.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -755,7 +726,6 @@ concerns.
 ******** create-rmalan@eecs.umich.edu
 To: "G. Robert Malan" <rmalan@eecs.umich.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -781,7 +751,6 @@ concerns.
 ******** create-farnam@eecs.umich.edu
 To: Farnam Jahanian <farnam@eecs.umich.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -807,7 +776,6 @@ concerns.
 ******** create-rtm@eecs.harvard.edu
 To: Robert Morris <rtm@eecs.harvard.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -833,7 +801,6 @@ concerns.
 ******** create-vern@ee.lbl.gov
 To: Vern Paxson <vern@ee.lbl.gov>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -859,7 +826,6 @@ concerns.
 ******** create-frystyk@w3.org
 To: Henrik Frystyk Nielsen <frystyk@w3.org>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -885,7 +851,6 @@ concerns.
 ******** create-mogul@wrl.dec.com
 To: "Jeffrey C. Mogul" <mogul@wrl.dec.com>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -911,7 +876,6 @@ concerns.
 ******** create-bala@research.att.com
 To: Balachander Krishnamurthy <bala@research.att.com>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -937,7 +901,6 @@ concerns.
 ******** create-cheshire@cs.stanford.edu
 To: Stuart Cheshire <cheshire@cs.stanford.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -963,7 +926,6 @@ concerns.
 ******** create-suvo@cs.stanford.edu
 To: Suvo Mittra <suvo@cs.stanford.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -989,7 +951,6 @@ concerns.
 ******** create-breslau@parc.xerox.com
 To: Lee Breslau <breslau@parc.xerox.com>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1015,7 +976,6 @@ concerns.
 ******** create-tripathi@cs.ucr.edu
 To: "Satish K. Tripathi" <tripathi@cs.ucr.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1041,7 +1001,6 @@ concerns.
 ******** create-guerin@watson.ibm.com
 To: "R. Guérin" <guerin@watson.ibm.com>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1067,7 +1026,6 @@ concerns.
 ******** create-sanjay@watson.ibm.com
 To: "S. Kamat" <sanjay@watson.ibm.com>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1093,7 +1051,6 @@ concerns.
 ******** create-anja@research.att.com
 To: "A. Feldmann" <anja@research.att.com>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1119,7 +1076,6 @@ concerns.
 ******** create-byers@icsi.berkeley.edu
 To: "John W. Byers" <byers@icsi.berkeley.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1145,7 +1101,6 @@ concerns.
 ******** create-luby@icsi.berkeley.edu
 To: Michael Luby <luby@icsi.berkeley.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1171,7 +1126,6 @@ concerns.
 ******** create-ckwong@cs.utexas.edu
 To: Chung Kei Wong <ckwong@cs.utexas.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1197,7 +1151,6 @@ concerns.
 ******** create-whycu@ctr.columbia.edu
 To: Huayan Amy Wang <whycu@ctr.columbia.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1223,7 +1176,6 @@ concerns.
 ******** create-kkumar@isi.edu
 To: Satish Kumar <kkumar@isi.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1249,7 +1201,6 @@ concerns.
 ******** create-istoica@cs.cmu.edu
 To: Ion Stoica <istoica@cs.cmu.edu>
 Subject: [Testconf I] Account information
-X-Landmark: test/test01.php:8
 
 Greetings,
 
@@ -1276,7 +1227,6 @@ concerns.
 To: Mary Baker <mgbaker@cs.stanford.edu>
 Subject: [Testconf I] Submitted review #1B "Scalable Timers for Soft State
  Protocols"
-X-Landmark: test/test01.php:236
 
 Greetings,
 
@@ -1312,7 +1262,7 @@ Reviewer expertise
 To: Jane Chair <chair@_.com>
 Subject: [Testconf I] Comment for #2 "Small Forwarding Tables for Fast
  Routing..."
-X-Landmark: test/test01.php:526
+X-Landmark: test/test01.php:534
 
 A comment for Test Conference I (Testconf I) paper #2 has been posted. For
 the most up-to-date comments, or to unsubscribe from email notification,

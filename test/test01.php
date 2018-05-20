@@ -174,6 +174,12 @@ foreach ([1, 2, 3, 4, 5, 15, 16, 18] as $i)
 assert_search_papers($user_chair, "re:estrin", "4 8 18");
 assert_search_papers($user_shenker, "re:estrin", "4 8 18");
 
+assert_search_papers($user_chair, "1-5 15-18", "1 2 3 4 5 15 16 17 18");
+assert_search_papers($user_chair, "#1-5 15-#18", "1 2 3 4 5 15 16 17 18");
+assert_search_papers($user_chair, "#1-#5 #15-18", "1 2 3 4 5 15 16 17 18");
+assert_search_papers($user_chair, "5–1 15—18", "5 4 3 2 1 15 16 17 18");
+assert_search_papers($user_chair, "5–1,#15—17,#20", "5 4 3 2 1 15 16 17 20");
+
 // normals don't see conflicted reviews
 assert_search_papers($user_mgbaker, "re:estrin", "4 8");
 
