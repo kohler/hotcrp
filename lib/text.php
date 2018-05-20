@@ -59,8 +59,8 @@ class Text {
 
     static function analyze_von($lastName) {
         // see also split_name
-        if (preg_match('@\A(v[oa]n|d[eu])\s+(.*)\z@s', $lastName, $m))
-            return array($m[1], $m[2]);
+        if (preg_match('@\A((?:(?:v[ao]n|d[aeiu]|de[nr]|l[ae])\s+)+)(.*)\z@s', $lastName, $m))
+            return array(rtrim($m[1]), $m[2]);
         else
             return null;
     }
@@ -116,7 +116,7 @@ class Text {
         }
         if ($ret->lastName === "" || $ret->firstName === "")
             $ret->name = $ret->firstName . $ret->lastName;
-        else if (get($ret, "lastFirst"))
+        else if ($ret->lastFirst)
             $ret->name = $ret->lastName . ", " . $ret->firstName;
         else
             $ret->name = $ret->firstName . " " . $ret->lastName;
@@ -275,8 +275,8 @@ class Text {
             $ret[0] = rtrim(substr($name, 0, strlen($name) - strlen($m[0])));
             $ret[1] = ltrim($m[0]) . $suffix . $paren;
             // see also split_von
-            if (preg_match('@^(\S.*?)\s+(v[oa]n|d[eu])$@i', $ret[0], $m))
-                list($ret[0], $ret[1]) = array($m[1], $m[2] . " " . $ret[1]);
+            if (preg_match('@^(\S.*?)((?:\s+(?:v[ao]n|d[aeiu]|de[nr]|l[ae]))+)$@i', $ret[0], $m))
+                list($ret[0], $ret[1]) = array($m[1], ltrim($m[2]) . " " . $ret[1]);
         } else
             $ret[1] = $name . $suffix . $paren;
         return $ret;

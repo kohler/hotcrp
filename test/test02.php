@@ -422,6 +422,10 @@ xassert_eqq(get(Text::split_name("Kennedy, Bob"), 0), "Bob");
 xassert_eqq(get(Text::split_name("Kennedy, Bob"), 1), "Kennedy");
 xassert_eqq(get(Text::split_name("Kennedy, Bob (Butt Pants)"), 0), "Bob (Butt Pants)");
 xassert_eqq(get(Text::split_name("Kennedy, Bob (Butt Pants)"), 1), "Kennedy");
+xassert_eqq(get(Text::split_name("Claire Le Goues"), 1), "Le Goues");
+xassert_eqq(get(Text::split_name("Claire Von La Le Goues"), 1), "Von La Le Goues");
+xassert_eqq(Text::analyze_von("Von Le Goues"), null);
+xassert_eqq(Text::analyze_von("von le Goues"), ["von le", "Goues"]);
 
 // author matching
 $aum = new PaperInfo_AuthorMatcher("ETH Zürich");
