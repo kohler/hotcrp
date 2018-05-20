@@ -533,8 +533,8 @@ class UserStatus extends MessageSet {
     static private $csv_keys = [
         ["email"],
         ["user"],
-        ["firstName", "firstname", "first"],
-        ["lastName", "lastname", "last"],
+        ["firstName", "firstname", "first", "givenName", "givenname", "given"],
+        ["lastName", "lastname", "last", "familyName", "familyname", "family"],
         ["name"],
         ["preferred_email", "preferredEmail", "preferred email"],
         ["affiliation"],
@@ -628,9 +628,9 @@ class UserStatus extends MessageSet {
         }
 
         echo '<div class="f-2col">';
-        $us->render_field("firstName", "First name",
+        $us->render_field("firstName", "First (given) name",
                   Ht::entry("firstName", get_s($reqj, "firstName"), ["size" => 24, "autocomplete" => "given-name", "class" => "fullw", "id" => "firstName", "data-default-value" => get_s($cj, "firstName")]));
-        $us->render_field("lastName", "Last name",
+        $us->render_field("lastName", "Last (family) name",
                   Ht::entry("lastName", get_s($reqj, "lastName"), ["size" => 24, "autocomplete" => "family-name", "class" => "fullw", "id" => "lastName", "data-default-value" => get_s($cj, "lastName")]));
         echo '</div>';
 
