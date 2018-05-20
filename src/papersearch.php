@@ -43,7 +43,6 @@ class SearchOperator {
             self::$list["SPACE"] = new SearchOperator("space", false, 6);
             self::$list["AND"] = new SearchOperator("and", false, 5);
             self::$list["OR"] = new SearchOperator("or", false, 4);
-            self::$list["XAND"] = new SearchOperator("space", false, 3);
             self::$list["XOR"] = new SearchOperator("or", false, 3);
             self::$list["THEN"] = new SearchOperator("then", false, 2);
             self::$list["HIGHLIGHT"] = new SearchOperator("highlight", false, 1, "");
@@ -1642,7 +1641,7 @@ class PaperSearch {
             return $qe;
         } else if (count($x->qe) == 1)
             return $x->qe[0];
-        else if ($x->op->op === "space" && $x->op->precedence == 2)
+        else if ($x->op->op === "space")
             return "(" . join(" ", $x->qe) . ")";
         else
             return "(" . join(strtoupper(" " . $x->op->op . " "), $x->qe) . ")";
@@ -1655,7 +1654,7 @@ class PaperSearch {
 
         $stack = array();
         $parens = 0;
-        $defaultop = ($type === "all" ? "XAND" : "XOR");
+        $defaultop = $type === "all" ? "SPACE" : "XOR";
         $curqe = null;
         $t = "";
 
@@ -1665,7 +1664,7 @@ class PaperSearch {
 
             if ($curqe && (!$op || $op->unary)) {
                 list($opstr, $op, $nextstr) =
-                    array("", SearchOperator::get($parens ? "XAND" : $defaultop), $str);
+                    array("", SearchOperator::get($parens ? "SPACE" : $defaultop), $str);
             }
 
             if ($opstr === null) {
@@ -1705,7 +1704,7 @@ class PaperSearch {
         return $curqe;
     }
 
-    static function canonical_query($qa, $qo = null, $qx = null, Conf $conf) {
+    static function canonical_query($qa, $qo, $qx, Conf $conf) {
         $x = array();
         if (($qa = self::_canonical_expression($qa, "all", $conf)) !== "")
             $x[] = $qa;
@@ -1714,7 +1713,7 @@ class PaperSearch {
         if (($qx = self::_canonical_expression($qx, "none", $conf)) !== "")
             $x[] = $qx;
         if (count($x) == 1)
-            return preg_replace('/\A\((.*)\)\z/', '$1', join("", $x));
+            return preg_replace('/\A\((.*)\)\z/', '$1', $x[0]);
         else
             return join(" AND ", $x);
     }
