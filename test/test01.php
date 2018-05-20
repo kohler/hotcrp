@@ -1024,5 +1024,7 @@ assert_search_papers($user_chair, "ab:(routing scalable)", "19");
 assert_search_papers($user_chair, "many", "8 25 29"); // 16 withdrawn
 assert_search_papers($user_chair, "many applications", "8 25");
 assert_search_papers($user_chair, "\"many applications\"", "8");
+assert_search_papers($user_chair, "“many applications”", "8");
+assert_search_papers($user_chair, "“many applications“", "8");
 
 xassert_exit();

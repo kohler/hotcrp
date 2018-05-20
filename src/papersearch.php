@@ -20,17 +20,22 @@ class SearchWord {
 
 class SearchSplitter {
     private $str;
+    private $utf8q;
     public $pos;
     public $strspan;
     function __construct($str) {
         $this->str = ltrim($str);
+        $this->utf8q = strpos($str, chr(0xE2)) !== false;
         $this->pos = strlen($str) - strlen($this->str);
     }
     function is_empty() {
         return $this->str === "";
     }
     function shift() {
-        if (preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":|)\s*((?:"[^"]*(?:"|\z)|[^"\s()]*)*)/s', $this->str, $m)) {
+        if ($this->utf8q
+            && preg_match('/\A([-_.a-zA-Z0-9]+:|["“”][^"“”]+["“”]:|)\s*((?:["“”][^"“”]*(?:["“”]|\z)|[^"“”\s()]*)*)/su', $this->str, $m)) {
+            $result = preg_replace('/[“”]/u', "\"", $m[1] . $m[2]);
+        } else if (preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":|)\s*((?:"[^"]*(?:"|\z)|[^"\s()]*)*)/s', $this->str, $m)) {
             $result = $m[1] . $m[2];
         } else {
             $this->pos += strlen($this->str);
