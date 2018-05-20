@@ -18,6 +18,79 @@ class SearchWord {
     }
 }
 
+class SearchSplitter {
+    private $str;
+    public $pos;
+    public $strspan;
+    function __construct($str) {
+        $this->str = ltrim($str);
+        $this->pos = strlen($str) - strlen($this->str);
+    }
+    function is_empty() {
+        return $this->str === "";
+    }
+    function shift() {
+        if (preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":|)\s*((?:"[^"]*(?:"|\z)|[^"\s()]*)*)/s', $this->str, $m)) {
+            $result = $m[1] . $m[2];
+        } else {
+            $this->pos += strlen($this->str);
+            $this->str = "";
+            $this->strspan = [$this->pos, $this->pos];
+            return "";
+        }
+        $this->set_span_and_pos($m[0]);
+        return $result;
+    }
+    function shift_past($str) {
+        assert(str_starts_with($this->str, $str));
+        $this->set_span_and_pos($str);
+    }
+    function shift_balanced_parens() {
+        $result = substr($this->str, 0, self::span_balanced_parens($this->str));
+        $this->set_span_and_pos($result);
+        return $result;
+    }
+    function match($re, &$m = null) {
+        return preg_match($re, $this->str, $m);
+    }
+    function starts_with($substr) {
+        return str_starts_with($this->str, $substr);
+    }
+    private function set_span_and_pos($prefix) {
+        $this->strspan = [$this->pos, $this->pos + strlen($prefix)];
+        $next = ltrim(substr($this->str, strlen($prefix)));
+        $this->pos += strlen($this->str) - strlen($next);
+        $this->str = $next;
+    }
+    static function span_balanced_parens($str) {
+        $pcount = $quote = 0;
+        $len = strlen($str);
+        for ($pos = 0; $pos < $len
+                 && (!ctype_space($str[$pos]) || $pcount || $quote); ++$pos) {
+            $ch = $str[$pos];
+            // translate “” -> "
+            if (ord($ch) === 0xE2 && $pos + 2 < $len && ord($str[$pos + 1]) === 0x80
+                && (ord($str[$pos + 2]) & 0xFE) === 0x9C)
+                $ch = "\"";
+            if ($quote) {
+                if ($ch === "\\" && $pos + 1 < strlen($str))
+                    ++$pos;
+                else if ($ch === "\"")
+                    $quote = 0;
+            } else if ($ch === "\"")
+                $quote = 1;
+            else if ($ch === "(" || $ch === "[" || $ch === "{")
+                ++$pcount;
+            else if ($ch === ")" || $ch === "]" || $ch === "}") {
+                if (!$pcount)
+                    break;
+                --$pcount;
+            }
+        }
+        return $pos;
+    }
+}
+
 class SearchOperator {
     public $op;
     public $unary;
@@ -32,10 +105,15 @@ class SearchOperator {
         $this->precedence = $precedence;
         $this->opinfo = $opinfo;
     }
+    function unparse() {
+        $x = strtoupper($this->op);
+        return $this->opinfo === null ? $x : $x . ":" . $this->opinfo;
+    }
 
     static function get($name) {
         if (!self::$list) {
             self::$list["("] = new SearchOperator("(", true, null);
+            self::$list[")"] = new SearchOperator(")", true, null);
             self::$list["NOT"] = new SearchOperator("not", true, 7);
             self::$list["-"] = new SearchOperator("not", true, 7);
             self::$list["!"] = new SearchOperator("not", true, 7);
@@ -1295,29 +1373,6 @@ class PaperSearch {
         return new False_SearchTerm;
     }
 
-    static private function find_end_balanced_parens($str) {
-        $pcount = $quote = 0;
-        for ($pos = 0; $pos < strlen($str)
-                 && (!ctype_space($str[$pos]) || $pcount || $quote); ++$pos) {
-            $ch = $str[$pos];
-            if ($quote) {
-                if ($ch === "\\" && $pos + 1 < strlen($str))
-                    ++$pos;
-                else if ($ch === "\"")
-                    $quote = 0;
-            } else if ($ch === "\"")
-                $quote = 1;
-            else if ($ch === "(" || $ch === "[" || $ch === "{")
-                ++$pcount;
-            else if ($ch === ")" || $ch === "]" || $ch === "}") {
-                if (!$pcount)
-                    break;
-                --$pcount;
-            }
-        }
-        return $pos;
-    }
-
     static function parse_sorter($text) {
         $text = simplify_whitespace($text);
         $sort = ListSorter::make_empty($text === "");
@@ -1334,7 +1389,7 @@ class PaperSearch {
             if ($m[1] === "" && $m[2] === "")
                 break;
             if (substr($m[2], 0, 1) === "(") {
-                $pos = self::find_end_balanced_parens($m[2]);
+                $pos = SearchSplitter::span_balanced_parens($m[2]);
                 $m[1] .= substr($m[2], 0, $pos);
                 $m[2] = substr($m[2], $pos);
             }
@@ -1416,7 +1471,7 @@ class PaperSearch {
             $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
     }
 
-    private function _search_word($word) {
+    private function _search_word($word, $defkw) {
         // check for paper numbers
         if (preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/', $word)) {
             $range = [];
@@ -1431,28 +1486,28 @@ class PaperSearch {
         // check for `#TAG`
         if (substr($word, 0, 1) === "#") {
             ++$this->_quiet_count;
-            $qe = $this->_search_word("hashtag:" . substr($word, 1));
+            $qe = $this->_search_word("hashtag:" . substr($word, 1), $defkw);
             --$this->_quiet_count;
             if (!$qe->is_false())
                 return $qe;
         }
 
-        $keyword = null;
+        $keyword = $defkw;
         if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]+")((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/', $word, $m)) {
             if ($m[2][0] === ":") {
                 $keyword = $m[1];
-                if ($keyword[0] === '"')
-                    $keyword = trim(substr($keyword, 1, strlen($keyword) - 2));
                 $word = ltrim((string) substr($m[2], 1));
             } else {
                 // Allow searches like "ovemer>2"; parse as "ovemer:>2".
                 ++$this->_quiet_count;
-                $qe = $this->_search_word($m[1] . ":" . $m[2]);
+                $qe = $this->_search_word($m[1] . ":" . $m[2], $defkw);
                 --$this->_quiet_count;
                 if (!$qe->is_false())
                     return $qe;
             }
         }
+        if ($keyword && $keyword[0] === '"')
+            $keyword = trim(substr($keyword, 1, strlen($keyword) - 2));
 
         $qt = [];
         $sword = new SearchWord($word);
@@ -1472,53 +1527,55 @@ class PaperSearch {
         return SearchTerm::make_op("or", $qt);
     }
 
-    static function shift_word(&$str, Conf $conf) {
-        $wordre = '/\A\s*([-_.a-zA-Z0-9]+:|"[^"]+":|)\s*((?:"[^"]*(?:"|\z)|[^"\s()]*)*)/s';
-
-        if (!preg_match($wordre, $str, $m))
-            return ($str = "");
-        $str = substr($str, strlen($m[0]));
-        $word = ltrim($m[0]);
-
-        // elide colon
-        if ($word === "HEADING") {
-            $str = $word . ":" . ltrim($str);
-            return self::shift_word($str, $conf);
-        }
-
-        // some keywords may be followed by a parenthesized expression
-        $kw = $m[1];
-        if ($kw)
-            $kw = substr($kw, 0, strlen($kw) - 1);
-        if ($kw && $kw[0] === '"')
-            $kw = trim(substr($kw, 1, strlen($kw) - 2));
-        if ($kw
-            && ($kwdef = $conf->search_keyword($kw))
-            && get($kwdef, "allow_parens")
-            && substr($m[2], 0, 1) !== "\""
-            && preg_match('/\A\s*\(/', $str)) {
-            $pos = self::find_end_balanced_parens($str);
-            $word .= substr($str, 0, $pos);
-            $str = substr($str, $pos);
-        }
-
-        $str = ltrim($str);
-        return $word;
-    }
-
     static function escape_word($str) {
-        $pos = self::find_end_balanced_parens($str);
+        $pos = SearchSplitter::span_balanced_parens($str);
         if ($pos === strlen($str))
             return $str;
         else
             return "\"" . str_replace("\"", "\\\"", $str) . "\"";
     }
 
-    static private function _pop_keyword($str) {
-        if (preg_match('/\A([-+!()]|(?:AND|and|OR|or|NOT|not|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $str, $m))
-            return array(strtoupper($m[1]), ltrim(substr($str, strlen($m[0]))));
-        else
-            return array(null, $str);
+    static private function _shift_keyword($splitter, $curqe) {
+        if (!$splitter->match('/\A(?:[-+!()]|(?:AND|and|OR|or|NOT|not|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $m))
+            return null;
+        $op = SearchOperator::get(strtoupper($m[0]));
+        if (!$op) {
+            $colon = strpos($m[0], ":");
+            $op = clone SearchOperator::get(strtoupper(substr($m[0], 0, $colon)));
+            $op->opinfo = substr($m[0], $colon + 1);
+        }
+        if ($curqe && $op->unary)
+            return null;
+        $splitter->shift_past($m[0]);
+        return $op;
+    }
+
+    static private function _shift_word($splitter, Conf $conf) {
+        if (($x = $splitter->shift()) === "")
+            return $x;
+        // `HEADING x` parsed as `HEADING:x`
+        if ($x === "HEADING") {
+            $lspan = $splitter->strspan[0];
+            $x .= ":" . $splitter->shift();
+            $splitter->strspan[0] = $lspan;
+            return $x;
+        }
+        // some keywords may be followed by parentheses
+        if (strpos($x, ":")
+            && preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":)(?=[^"])/', $x, $m)) {
+            if ($m[1][0] === "\"")
+                $kw = substr($m[1], 1, strlen($m[1]) - 2);
+            else
+                $kw = substr($m[1], 0, strlen($m[1]) - 1);
+            if (($kwdef = $conf->search_keyword($kw))
+                && $splitter->starts_with("(")
+                && get($kwdef, "allow_parens")) {
+                $lspan = $splitter->strspan[0];
+                $x .= $splitter->shift_balanced_parens();
+                $splitter->strspan[0] = $lspan;
+            }
+        }
+        return $x;
     }
 
     static private function _pop_expression_stack($curqe, &$stack) {
@@ -1539,83 +1596,66 @@ class PaperSearch {
         $defkw = $next_defkw = null;
         $parens = 0;
         $curqe = null;
-        $stri = $str;
+        $splitter = new SearchSplitter($str);
 
-        while ($str !== "") {
-            $oppos = strlen($stri) - strlen($str);
-            list($opstr, $nextstr) = self::_pop_keyword($str);
-            $op = $opstr ? SearchOperator::get($opstr) : null;
-            if ($opstr && !$op && ($colon = strpos($opstr, ":"))
-                && ($op = SearchOperator::get(substr($opstr, 0, $colon)))) {
-                $op = clone $op;
-                $op->opinfo = substr($opstr, $colon + 1);
-            }
-
-            if ($curqe && (!$op || $op->unary)) {
+        while (!$splitter->is_empty()) {
+            $op = self::_shift_keyword($splitter, $curqe);
+            if ($curqe && !$op)
                 $op = SearchOperator::get("SPACE");
-                $opstr = "";
-                $nextstr = $str;
-            }
             if (!$curqe && $op && $op->op === "highlight") {
                 $curqe = new True_SearchTerm;
-                $curqe->set_float("strspan", [$oppos, $oppos]);
+                $curqe->set_float("strspan", [$splitter->strspan[0], $splitter->strspan[0]]);
             }
 
-            if ($opstr === null) {
-                $word = self::shift_word($nextstr, $this->conf);
+            if (!$op) {
+                $word = self::_shift_word($splitter, $this->conf);
                 // Bare any-case "all", "any", "none" are treated as keywords.
                 if (!$curqe
                     && (empty($stack) || $stack[count($stack) - 1]->op->precedence <= 2)
                     && ($uword = strtoupper($word))
                     && ($uword === "ALL" || $uword === "ANY" || $uword === "NONE")
-                    && preg_match(',\A\s*(?:|(?:THEN|then|HIGHLIGHT(?::\w+)?)(?:\s|\().*)\z,', $nextstr))
+                    && $splitter->match('/\A(?:|(?:THEN|then|HIGHLIGHT(?::\w+)?)(?:\s|\().*)\z/'))
                     $word = $uword;
                 // Search like "ti:(foo OR bar)" adds a default keyword.
                 if ($word[strlen($word) - 1] === ":"
-                    && $nextstr !== ""
-                    && $nextstr[0] === "(")
-                    $next_defkw = $word;
+                    && preg_match('/\A(?:[-_.a-zA-Z0-9]+:|"[^"]+":)\z/', $word)
+                    && $splitter->starts_with("("))
+                    $next_defkw = [substr($word, 0, strlen($word) - 1), $splitter->strspan[0]];
                 else {
-                    // If no keyword, but default keyword exists, apply it.
-                    if ($defkw !== ""
-                        && !preg_match(',\A-?[a-zA-Z][a-zA-Z0-9]*:,', $word)) {
-                        if ($word[0] === "-")
-                            $word = "-" . $defkw . substr($word, 1);
-                        else
-                            $word = $defkw . $word;
-                    }
                     // The heart of the matter.
-                    $curqe = $this->_search_word($word);
+                    $curqe = $this->_search_word($word, $defkw);
                     if (!$curqe->is_uninteresting())
-                        $curqe->set_float("strspan", [$oppos, strlen($stri) - strlen($nextstr)]);
+                        $curqe->set_float("strspan", $splitter->strspan);
                 }
-            } else if ($opstr === ")") {
+            } else if ($op->op === ")") {
                 while (!empty($stack)
                        && $stack[count($stack) - 1]->op->op !== "(")
                     $curqe = self::_pop_expression_stack($curqe, $stack);
                 if (!empty($stack)) {
-                    $stack[count($stack) - 1]->strspan[1] = $oppos + 1;
+                    $stack[count($stack) - 1]->strspan[1] = $splitter->strspan[1];
                     $curqe = self::_pop_expression_stack($curqe, $stack);
                     --$parens;
                     $defkw = array_pop($defkwstack);
                 }
-            } else if ($opstr === "(") {
+            } else if ($op->op === "(") {
                 assert(!$curqe);
-                $stack[] = (object) ["op" => $op, "leftqe" => null, "strspan" => [$oppos, $oppos + 1]];
+                $stkelem = (object) ["op" => $op, "leftqe" => null, "strspan" => $splitter->strspan];
                 $defkwstack[] = $defkw;
-                $defkw = $next_defkw;
-                $next_defkw = null;
+                if ($next_defkw) {
+                    $defkw = $next_defkw[0];
+                    $stkelem->strspan[0] = $next_defkw[1];
+                    $next_defkw = null;
+                }
+                $stack[] = $stkelem;
                 ++$parens;
             } else if ($op->unary || $curqe) {
                 $end_precedence = $op->precedence - ($op->precedence <= 1);
                 while (!empty($stack)
                        && $stack[count($stack) - 1]->op->precedence > $end_precedence)
                     $curqe = self::_pop_expression_stack($curqe, $stack);
-                $stack[] = (object) ["op" => $op, "leftqe" => $curqe, "strspan" => [$oppos, $oppos + strlen($opstr)]];
+                $stack[] = (object) ["op" => $op, "leftqe" => $curqe, "strspan" => $splitter->strspan];
                 $curqe = null;
             }
-
-            $str = $nextstr;
         }
 
         while (!empty($stack))
@@ -1644,7 +1684,7 @@ class PaperSearch {
         else if ($x->op->op === "space")
             return "(" . join(" ", $x->qe) . ")";
         else
-            return "(" . join(strtoupper(" " . $x->op->op . " "), $x->qe) . ")";
+            return "(" . join(" " . $x->op->unparse() . " ", $x->qe) . ")";
     }
 
     static private function _canonical_expression($str, $type, Conf $conf) {
@@ -1657,19 +1697,15 @@ class PaperSearch {
         $defaultop = $type === "all" ? "SPACE" : "XOR";
         $curqe = null;
         $t = "";
+        $splitter = new SearchSplitter($str);
 
-        while ($str !== "") {
-            list($opstr, $nextstr) = self::_pop_keyword($str);
-            $op = $opstr ? SearchOperator::get($opstr) : null;
-
-            if ($curqe && (!$op || $op->unary)) {
-                list($opstr, $op, $nextstr) =
-                    array("", SearchOperator::get($parens ? "SPACE" : $defaultop), $str);
-            }
-
-            if ($opstr === null) {
-                $curqe = self::shift_word($nextstr, $conf);
-            } else if ($opstr === ")") {
+        while (!$splitter->is_empty()) {
+            $op = self::_shift_keyword($splitter, $curqe);
+            if ($curqe && !$op)
+                $op = SearchOperator::get($parens ? "SPACE" : $defaultop);
+            if (!$op) {
+                $curqe = self::_shift_word($splitter, $conf);
+            } else if ($op->op === ")") {
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->op !== "(")
                     $curqe = self::_pop_canonicalize_stack($curqe, $stack);
@@ -1677,7 +1713,7 @@ class PaperSearch {
                     array_pop($stack);
                     --$parens;
                 }
-            } else if ($opstr === "(") {
+            } else if ($op->op === "(") {
                 assert(!$curqe);
                 $stack[] = (object) array("op" => $op, "qe" => array());
                 ++$parens;
@@ -1693,8 +1729,6 @@ class PaperSearch {
                     $stack[] = (object) array("op" => $op, "qe" => array($curqe));
                 $curqe = null;
             }
-
-            $str = $nextstr;
         }
 
         if ($type === "none")

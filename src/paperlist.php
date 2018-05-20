@@ -253,7 +253,8 @@ class PaperList {
         $has_sorters = !!array_filter($this->sorters, function ($s) {
             return $s->thenmap === null;
         });
-        while (($w = PaperSearch::shift_word($str, $this->conf))) {
+        $splitter = new SearchSplitter($str);
+        while (($w = $splitter->shift()) !== "") {
             if (($colon = strpos($w, ":")) !== false) {
                 $action = substr($w, 0, $colon);
                 $w = substr($w, $colon + 1);
