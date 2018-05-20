@@ -1008,5 +1008,21 @@ xassert_eqq(PaperSearch::canonical_query("", "a b", "c x m", $Conf),
             "(a OR b) AND NOT (c OR x OR m)");
 xassert_eqq(PaperSearch::canonical_query("", "a b", "(c OR m) (x y)", $Conf),
             "(a OR b) AND NOT ((c OR m) OR (x y))");
+xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", $Conf),
+            "foo HIGHLIGHT:pink bar");
+
+// search types
+assert_search_papers($user_chair, "timers", "1 21");
+assert_search_papers($user_chair, "ti:timers", "1");
+assert_search_papers($user_chair, "routing", "2 3 4 11 19 21 27");
+assert_search_papers($user_chair, "routing scalable", "4 19");
+assert_search_papers($user_chair, "ti:routing ti:scalable", "4");
+assert_search_papers($user_chair, "ti:(routing scalable)", "4");
+assert_search_papers($user_chair, "ab:routing ab:scalable", "19");
+assert_search_papers($user_chair, "ab:routing scalable", "4 19");
+assert_search_papers($user_chair, "ab:(routing scalable)", "19");
+assert_search_papers($user_chair, "many", "8 25 29"); // 16 withdrawn
+assert_search_papers($user_chair, "many applications", "8 25");
+assert_search_papers($user_chair, "\"many applications\"", "8");
 
 xassert_exit();
