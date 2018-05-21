@@ -182,7 +182,7 @@ while (($row = edb_row($result)))
 $rev_opt = array();
 if (!$reviewer)
     $rev_opt[0] = "(Select a PC member)";
-$textarg = array("lastFirst" => $Conf->sort_by_last);
+$textarg = ["lastFirst" => $Conf->sort_by_last];
 foreach ($Conf->pc_members() as $pc)
     $rev_opt[$pc->email] = Text::name_html($pc, $textarg) . " ("
         . plural(defval($rev_count, $pc->contactId, 0), "assignment") . ")";

@@ -267,7 +267,7 @@ if ($Me->privChair) {
         $prefcount[$row[0]] = $row[1];
 
     $sel = [];
-    $textarg = ["lastFirst" => $Conf->opt("sortByLastName")];
+    $textarg = ["lastFirst" => $Conf->sort_by_last];
     foreach ($Conf->pc_members() as $p)
         $sel[$p->email] = Text::name_html($p, $textarg) . " &nbsp; [" . plural(get($prefcount, $p->contactId, 0), "pref") . "]";
     if (!isset($sel[$reviewer->email]))
