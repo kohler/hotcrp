@@ -114,10 +114,6 @@ class Text {
                 $ret->firstName =
                     (isset($ret->firstName) ? $ret->firstName : "") . " " . $m;
         }
-        if ($ret->lastFirst && ($m = self::analyze_von($ret->lastName))) {
-            $ret->firstName = trim($ret->firstName . " " . $m[0]);
-            $ret->lastName = $m[1];
-        }
         if ($ret->lastName === "" || $ret->firstName === "")
             $ret->name = $ret->firstName . $ret->lastName;
         else if ($ret->lastFirst)
