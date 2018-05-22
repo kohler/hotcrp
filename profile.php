@@ -84,9 +84,9 @@ if (!$Acct
         && $Qreq->profile_contactid !== (string) $Acct->contactId)) {
     if (!$Acct)
         Conf::msg_error("Invalid user.");
-    else if (isset($Qreq->register) || isset($Qreq->bulkregister))
+    else if (isset($Qreq->register) || isset($Qreq->savebulk))
         Conf::msg_error("You’re logged in as a different user now, so your changes were ignored.");
-    unset($Qreq->u, $Qreq->register, $Qreq->bulkregister);
+    unset($Qreq->u, $Qreq->register, $Qreq->savebulk);
     SelfHref::redirect($Qreq);
 }
 
@@ -267,14 +267,14 @@ function parseBulkFile($text, $filename) {
 
 if (!$Qreq->post_ok())
     /* do nothing */;
-else if ($Qreq->bulkregister && $newProfile && $Qreq->has_file("bulk")) {
+else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
     if (($text = $Qreq->file_contents("bulk")) === false)
         Conf::msg_error("Internal error: cannot read file.");
     else
         parseBulkFile($text, $Qreq->file_filename("bulk"));
     $Qreq->bulkentry = "";
     SelfHref::redirect($Qreq, ["anchor" => "bulk"]);
-} else if ($Qreq->bulkregister && $newProfile) {
+} else if ($Qreq->savebulk && $newProfile) {
     $success = true;
     if ($Qreq->bulkentry && $Qreq->bulkentry !== "Enter users one per line")
         $success = parseBulkFile($Qreq->bulkentry, "");
@@ -481,7 +481,7 @@ else if ($Me->contactId != $Acct->contactId)
 if (isset($Qreq->ls))
     $form_params[] = "ls=" . urlencode($Qreq->ls);
 if ($newProfile)
-    echo '<div id="foldbulk" class="fold9' . ($Qreq->bulkregister ? "o" : "c") . ' js-fold-focus"><div class="fn9">';
+    echo '<div id="foldbulk" class="fold9' . ($Qreq->savebulk ? "o" : "c") . ' js-fold-focus"><div class="fn9">';
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "accountform", "autocomplete" => "off")),
@@ -515,7 +515,7 @@ if (isset($formcj->roles) && (isset($formcj->roles->pc) || isset($formcj->roles-
     echo " fold1o";
 else
     echo " fold1c";
-echo " fold2", ($Qreq->bulkregister ? "o" : "c"), "\">\n";
+echo " fold2", ($Qreq->savebulk ? "o" : "c"), "\">\n";
 
 
 $UserStatus->user = $Acct;
@@ -587,7 +587,7 @@ if ($newProfile) {
     echo '<div class="g"><strong>OR</strong> &nbsp;',
         '<input type="file" name="bulk" size="30" /></div>';
 
-    echo '<div>', Ht::submit("bulkregister", "Save accounts", ["class" => "btn btn-primary"]), '</div>';
+    echo '<div>', Ht::submit("savebulk", "Save accounts", ["class" => "btn btn-primary"]), '</div>';
 
     echo "<p>Enter or upload CSV user data with header. For example:</p>\n",
         '<pre class="entryexample">
