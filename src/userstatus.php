@@ -692,52 +692,59 @@ class UserStatus extends MessageSet {
     }
 
     static function render_follow(UserStatus $us, $cj, $reqj, $uf) {
-        echo '<h3 class="profile">Email notification</h3>';
+        echo '<div class="profile-g"><h3 class="profile">Email notification</h3>';
         $follow = isset($reqj->follow) ? $reqj->follow : (object) [];
         $cfollow = isset($cj->follow) ? $cj->follow : (object) [];
         echo Ht::hidden("has_watchcomment", 1);
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
             echo Ht::hidden("has_watchcommentall", 1);
-            echo "<table><tr><td>Send mail for: &nbsp;</td>",
-                "<td>", Ht::checkbox("watchcomment", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]), "&nbsp;",
-                Ht::label($us->conf->_("Reviews and comments on authored or reviewed papers")), "</td></tr>",
-                "<tr><td></td><td>", Ht::checkbox("watchcommentall", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]), "&nbsp;",
-                Ht::label($us->conf->_("Reviews and comments on <i>any</i> paper")), "</td></tr>";
+            echo "<table><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td>",
+                "<td><div class=\"checki\"><label><span class=\"checkc\">",
+                Ht::checkbox("watchcomment", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]),
+                "</span>", $us->conf->_("Reviews and comments on authored or reviewed submissions"), "</label></div>\n",
+                "<div class=\"checki\"><label><span class=\"checkc\">",
+                Ht::checkbox("watchcommentall", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]),
+                "</span>", $us->conf->_("Reviews and comments on <i>all</i> submissions"), "</label></div>\n";
             if (!$us->user->is_empty() && $us->user->privChair) {
-                echo "<tr><td></td><td>", Ht::checkbox("watchfinalall", 1, !!get($follow, "allfinal"), ["data-default-checked" => !!get($cfollow, "allfinal")]), "&nbsp;",
-                    Ht::label($us->conf->_("Updates to final versions")),
-                    Ht::hidden("has_watchfinalall", 1), "</td></tr>";
+                echo "<div class=\"checki\"><label><span class=\"checkc\">",
+                    Ht::checkbox("watchfinalall", 1, !!get($follow, "allfinal"), ["data-default-checked" => !!get($cfollow, "allfinal")]),
+                    "</span>", $us->conf->_("Updates to final versions"),
+                    Ht::hidden("has_watchfinalall", 1), "</label></div>\n";
             }
-            echo "</table>";
+            echo "</td></tr></table>";
         } else
             echo Ht::checkbox("watchcomment", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]), "&nbsp;",
                 Ht::label($us->conf->_("Send mail for new comments on authored or reviewed papers"));
+        echo "</div>\n";
     }
 
     static function render_roles(UserStatus $us, $cj, $reqj, $uf) {
         if (!$us->viewer->privChair)
             return;
-        echo '<h3 class="profile">Roles</h3>', "\n",
+        echo '<div class="profile-g"><h3 class="profile">Roles</h3>', "\n",
           "<table><tr><td class=\"nw\">\n";
         $pcrole = self::pcrole_text($reqj);
         $cpcrole = self::pcrole_text($cj);
         foreach (["chair" => "PC chair", "pc" => "PC member",
                   "no" => "Not on the PC"] as $k => $v) {
-            echo Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role keep-focus", "data-default-checked" => $cpcrole === $k]),
-                "&nbsp;", Ht::label($v), "<br />\n";
+            echo '<div class="checki"><label><span class="checkc">',
+                Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role keep-focus", "data-default-checked" => $cpcrole === $k]),
+                '</span>', $v, "</label></div>\n";
         }
         Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
 
-        echo "</td><td><span class='sep'></span></td><td class='nw'>";
+        echo "</td><td><span class='sep'></span></td><td>";
         $is_ass = isset($reqj->roles) && get($reqj->roles, "sysadmin");
         $cis_ass = isset($cj->roles) && get($cj->roles, "sysadmin");
-        echo Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass]),
-            "&nbsp;</td><td>", Ht::label("Sysadmin"), "<br/>",
-            '<div class="hint">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</div></td></tr></table>', "\n";
+        echo '<div class="checki"><label><span class="checkc">',
+            Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass]),
+            '</span>Sysadmin</label>',
+            '<p class="f-h">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</p></div></td></tr></table>', "\n";
+        echo "</div>\n";
     }
 
     static function render_collaborators(UserStatus $us, $cj, $reqj, $uf) {
-        echo '<h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
+        echo '<div class="profile-g"><h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
             "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
             $us->conf->message_html("conflictdef"),
             " <p>List one conflict per line, using parentheses for affiliations.<br />
@@ -745,11 +752,11 @@ class UserStatus extends MessageSet {
         <textarea name=\"collaborators\" rows=\"5\" cols=\"80\"";
         if (($className = $us->control_class("collaborators")))
             echo ' class="', $className, '"';
-        echo ">", htmlspecialchars(get_s($cj, "collaborators")), "</textarea>\n";
+        echo ">", htmlspecialchars(get_s($cj, "collaborators")), "</textarea></div>\n";
     }
 
     static function render_topics(UserStatus $us, $cj, $reqj, $uf) {
-        echo '<div id="topicinterest" class="fx1">',
+        echo '<div id="topicinterest" class="profile-g fx1">',
             '<h3 class="profile">Topic interests</h3>', "\n",
             '<p>Please indicate your interest in reviewing papers on these conference
 topics. We use this information to help match papers to reviewers.</p>',
@@ -775,7 +782,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         if ((!$us->user->isPC || empty($reqj->tags)) && !$us->viewer->privChair)
             return;
         $tags = isset($reqj->tags) && is_array($reqj->tags) ? $reqj->tags : [];
-        echo "<div class=\"fx1\"><h3 class=\"profile\">Tags</h3>\n";
+        echo "<div class=\"profile-g fx1\"><h3 class=\"profile\">Tags</h3>\n";
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("contactTags", "f-i"), '">',
                 Ht::entry("contactTags", join(" ", $tags), ["size" => 60]),
