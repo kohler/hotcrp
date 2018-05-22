@@ -799,7 +799,8 @@ topics. We use this information to help match papers to reviewers.</p>',
             if (isset($gj->render_callback)) {
                 Conf::xt_resolve_require($gj);
                 call_user_func($gj->render_callback, $this, $cj, $reqj, $gj);
-            }
+            } else if (isset($gj->render_html))
+                echo $gj->render_html;
             if ($pc)
                 echo '</div>';
         }

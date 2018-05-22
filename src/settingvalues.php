@@ -360,7 +360,8 @@ class SettingValues extends MessageSet {
             if (isset($gj->render_callback)) {
                 Conf::xt_resolve_require($gj);
                 call_user_func($gj->render_callback, $this, $gj);
-            }
+            } else if (isset($gj->render_html))
+                echo $gj->render_html;
         }
     }
 
