@@ -521,6 +521,11 @@ echo " fold2", ($Qreq->savebulk ? "o" : "c"), "\">\n";
 $UserStatus->user = $Acct;
 $UserStatus->render_group("", $userj, $formcj);
 
+if ($UserStatus->global_user()) {
+    echo '<div class="profile-g"><div class="checki"><label><span class="checkc">',
+        Ht::checkbox("saveglobal", 1, $useRequest ? !!$Qreq->saveglobal : true, ["class" => "ignore-diff"]),
+        '</span>Update global profile</label></div></div>';
+}
 
 $buttons = [Ht::submit("save", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-primary"]),
     Ht::submit("cancel", "Cancel", ["class" => "btn"])];

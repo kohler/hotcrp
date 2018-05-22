@@ -41,6 +41,13 @@ class UserStatus extends MessageSet {
         $this->clear_messages();
         $this->unknown_topics = null;
     }
+    function global_user() {
+        if ($this->user === $this->viewer
+            && !$this->viewer->is_actas_user())
+            return $this->user->contactdb_user();
+        else
+            return null;
+    }
     private function gxt() {
         if ($this->_gxt === null)
             $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
@@ -604,6 +611,17 @@ class UserStatus extends MessageSet {
         return "no";
     }
 
+    function global_profile_difference($cj, $key) {
+        if (($cdb_user = $this->global_user())
+            && (string) get($cj, $key) !== (string) $cdb_user->$key) {
+            if ((string) $cdb_user->$key !== "")
+                return '<div class="f-h">“' . htmlspecialchars($cdb_user->$key) . '” in global profile</div>';
+            else
+                return '<div class="f-h">Empty in global profile</div>';
+        } else
+            return "";
+    }
+
     static function render_main(UserStatus $us, $cj, $reqj, $uf) {
         $actas = "";
         if ($us->user !== $us->viewer
@@ -628,14 +646,15 @@ class UserStatus extends MessageSet {
         }
 
         echo '<div class="f-2col">';
-        $us->render_field("firstName", "First (given) name",
-                  Ht::entry("firstName", get_s($reqj, "firstName"), ["size" => 24, "autocomplete" => "given-name", "class" => "fullw", "id" => "firstName", "data-default-value" => get_s($cj, "firstName")]));
-        $us->render_field("lastName", "Last (family) name",
-                  Ht::entry("lastName", get_s($reqj, "lastName"), ["size" => 24, "autocomplete" => "family-name", "class" => "fullw", "id" => "lastName", "data-default-value" => get_s($cj, "lastName")]));
+        $t = Ht::entry("firstName", get_s($reqj, "firstName"), ["size" => 24, "autocomplete" => "given-name", "class" => "fullw", "id" => "firstName", "data-default-value" => get_s($cj, "firstName")]) . $us->global_profile_difference($cj, "firstName");
+        $us->render_field("firstName", "First (given) name", $t);
+
+        $t = Ht::entry("lastName", get_s($reqj, "lastName"), ["size" => 24, "autocomplete" => "family-name", "class" => "fullw", "id" => "lastName", "data-default-value" => get_s($cj, "lastName")]) . $us->global_profile_difference($cj, "lastName");
+        $us->render_field("lastName", "Last (family) name", $t);
         echo '</div>';
 
-        $us->render_field("affiliation", "Affiliation",
-                  Ht::entry("affiliation", get_s($reqj, "affiliation"), ["size" => 52, "autocomplete" => "organization", "class" => "fullw", "id" => "affiliation", "data-default-value" => get_s($cj, "affiliation")]));
+        $t = Ht::entry("affiliation", get_s($reqj, "affiliation"), ["size" => 52, "autocomplete" => "organization", "class" => "fullw", "id" => "affiliation", "data-default-value" => get_s($cj, "affiliation")]) . $us->global_profile_difference($cj, "affiliation");
+        $us->render_field("affiliation", "Affiliation", $t);
 
         echo "</div>\n\n"; // .profile-g
     }
@@ -688,7 +707,8 @@ class UserStatus extends MessageSet {
     }
 
     static function render_demographics(UserStatus $us, $cj, $reqj, $uf) {
-        $us->render_field("country", "Country", Countries::selector("country", get_s($reqj, "country"), ["id" => "country", "data-default-value" => get_s($cj, "country")]));
+        $t = Countries::selector("country", get_s($reqj, "country"), ["id" => "country", "data-default-value" => get_s($cj, "country")]) . $us->global_profile_difference($cj, "country");
+        $us->render_field("country", "Country", $t);
     }
 
     static function render_follow(UserStatus $us, $cj, $reqj, $uf) {
