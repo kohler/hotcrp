@@ -84,9 +84,9 @@ if (!$Acct
         && $Qreq->profile_contactid !== (string) $Acct->contactId)) {
     if (!$Acct)
         Conf::msg_error("Invalid user.");
-    else if (isset($Qreq->register) || isset($Qreq->savebulk))
+    else if (isset($Qreq->save) || isset($Qreq->savebulk))
         Conf::msg_error("You’re logged in as a different user now, so your changes were ignored.");
-    unset($Qreq->u, $Qreq->register, $Qreq->savebulk);
+    unset($Qreq->u, $Qreq->save, $Qreq->savebulk);
     SelfHref::redirect($Qreq);
 }
 
@@ -281,7 +281,7 @@ else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
     if (!$success)
         $Conf->save_session("profile_bulkentry", array($Now, $Qreq->bulkentry));
     SelfHref::redirect($Qreq, ["anchor" => "bulk"]);
-} else if (isset($Qreq->register)) {
+} else if (isset($Qreq->save)) {
     assert($Acct->is_empty() === $newProfile);
     $cj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
     $UserStatus->user = $Acct;
@@ -522,7 +522,7 @@ $UserStatus->user = $Acct;
 $UserStatus->render_group("", $userj, $formcj);
 
 
-$buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-primary"]),
+$buttons = [Ht::submit("save", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-primary"]),
     Ht::submit("cancel", "Cancel", ["class" => "btn"])];
 
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
