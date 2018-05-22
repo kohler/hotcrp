@@ -262,7 +262,7 @@ function parseBulkFile($text, $filename) {
         Conf::msg_error($errorMsg);
     else
         $Conf->warnMsg("Nothing to do.");
-    return count($errors) == 0;
+    return empty($errors);
 }
 
 if (!$Qreq->post_ok())
@@ -528,25 +528,25 @@ $buttons = [Ht::submit("register", $newProfile ? "Create account" : "Save change
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
     $args = ["class" => "btn ui"];
-    if (count($tracks->soleAuthor)) {
+    if (!empty($tracks->soleAuthor)) {
         $args["class"] .= " js-cannot-delete-user";
         $args["data-sole-author"] = pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor);
     } else {
         $args["class"] .= " js-delete-user";
-        if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
-            $x = $y = array();
-            if (count($tracks->author)) {
-                $x[] = "contact for " . pluralx($tracks->author, "paper") . " " . textArrayPapers($tracks->author);
-                $y[] = "delete " . pluralx($tracks->author, "this") . " " . pluralx($tracks->author, "authorship association");
-            }
-            if (count($tracks->review)) {
-                $x[] = "reviewer for " . pluralx($tracks->review, "paper") . " " . textArrayPapers($tracks->review);
-                $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this") . " " . pluralx($tracks->review, "review");
-            }
-            if (count($tracks->comment)) {
-                $x[] = "commenter for " . pluralx($tracks->comment, "paper") . " " . textArrayPapers($tracks->comment);
-                $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
-            }
+        $x = $y = array();
+        if (!empty($tracks->author)) {
+            $x[] = "contact for " . pluralx($tracks->author, "paper") . " " . textArrayPapers($tracks->author);
+            $y[] = "delete " . pluralx($tracks->author, "this") . " " . pluralx($tracks->author, "authorship association");
+        }
+        if (!empty($tracks->review)) {
+            $x[] = "reviewer for " . pluralx($tracks->review, "paper") . " " . textArrayPapers($tracks->review);
+            $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this") . " " . pluralx($tracks->review, "review");
+        }
+        if (!empty($tracks->comment)) {
+            $x[] = "commenter for " . pluralx($tracks->comment, "paper") . " " . textArrayPapers($tracks->comment);
+            $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
+        }
+        if (!empty($x)) {
             $args["data-delete-info"] = "<p>This user is " . commajoin($x) . ". Deleting the user will also " . commajoin($y) . ".</p>";
         }
     }
