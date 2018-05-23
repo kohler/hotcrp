@@ -333,6 +333,11 @@ class PaperStatus extends MessageSet {
         $this->warning_at($o->field_key(), htmlspecialchars($o->name) . ": " . $html);
     }
 
+    function format_error_at($key, $value) {
+        $this->error_at($key, "Format error [" . htmlspecialchars($key) . "]");
+        error_log($this->conf->dbname . ": PaperStatus: format error $key " . gettype($value));
+    }
+
 
     function set_document_prow($prow) {
         // XXX this is butt ugly
@@ -356,7 +361,7 @@ class PaperStatus extends MessageSet {
         if (!is_object($docj) && is_array($docj) && count($docj) === 1)
             $docj = $docj[0];
         if (!is_object($docj)) {
-            $this->error_at($o->json_key(), "Format error [" . $o->json_key() . "]");
+            $this->format_error_at($o->field_key(), $docj);
             return false;
         } else if (get($docj, "error") || get($docj, "error_html")) {
             $this->error_at_option($o, get($docj, "error_html", "Upload error."));
@@ -442,7 +447,7 @@ class PaperStatus extends MessageSet {
         if (isset($pj->$k) && is_string($pj->$k)) {
             $pj->$k = $simplify ? simplify_whitespace($pj->$k) : trim($pj->$k);
         } else if (isset($pj->$k)) {
-            $this->error_at($k, "Format error [$k]");
+            $this->format_error_at($k, $pj->$k);
             unset($pj, $k);
         }
     }
@@ -494,7 +499,7 @@ class PaperStatus extends MessageSet {
                 if ($v && (is_int($v) || is_string($v)))
                     $new_topics->$v = true;
                 else if ($v)
-                    $this->error_at("topics", "Format error [topics]");
+                    $this->format_error_at("topics", $v);
             }
             $topics = $new_topics;
         }
@@ -531,7 +536,7 @@ class PaperStatus extends MessageSet {
                 }
             }
         } else if ($topics)
-            $this->error_at("topics", "Format error [topics]");
+            $this->format_error_at("topics", $topics);
     }
 
     private function normalize_options($pj, $options) {
@@ -564,7 +569,7 @@ class PaperStatus extends MessageSet {
             if (!($pccid = $this->conf->pc_member_by_email($email)))
                 $pj->bad_pc_conflicts->$email = true;
             else if (!is_bool($ct) && !is_int($ct) && !is_string($ct))
-                $this->error_at("pc_conflicts", "Format error [PC conflicts]");
+                $this->format_error_at("pc_conflicts", $ct);
             else {
                 if (is_int($ct) && isset(Conflict::$type_names[$ct]))
                     $ctn = $ct;
@@ -607,15 +612,18 @@ class PaperStatus extends MessageSet {
         $au_by_lemail = [];
         $pj->bad_authors = $pj->bad_email_authors = [];
         if (isset($pj->authors)) {
-            if (!is_array($pj->authors))
-                $this->error_at("authors", "Format error [authors]");
-            $input_authors = is_array($pj->authors) ? $pj->authors : [];
+            if (is_array($pj->authors))
+                $input_authors = $pj->authors;
+            else {
+                $this->format_error_at("authors", $pj->authors);
+                $input_authors = [];
+            }
             $pj->authors = [];
             foreach ($input_authors as $k => $au) {
                 if (is_string($au) || is_object($au))
                     $this->normalize_author($pj, $au, $au_by_lemail);
                 else
-                    $this->error_at("authors", "Format error [authors]");
+                    $this->format_error_at("authors", $au);
             }
         }
 
@@ -637,7 +645,7 @@ class PaperStatus extends MessageSet {
             if (($x = friendly_boolean($pj->nonblind)) !== null)
                 $pj->nonblind = $x;
             else {
-                $this->error_at("nonblind", "Format error [nonblind]");
+                $this->format_error_at("nonblind", $pj->nonblind);
                 unset($pj->nonblind);
             }
         }
@@ -657,7 +665,7 @@ class PaperStatus extends MessageSet {
             else if ($pj->options === false)
                 $pj->options = (object) array();
             else {
-                $this->error_at("options", "Format error [options]");
+                $this->format_error_at("options", $pj->options);
                 unset($pj->options);
             }
         }
@@ -670,7 +678,7 @@ class PaperStatus extends MessageSet {
         else if (get($pj, "pc_conflicts") === false)
             $pj->pc_conflicts = (object) array();
         else if (isset($pj->pc_conflicts)) {
-            $this->error_at("pc_conflicts", "Format error [PC conflicts]");
+            $this->format_error_at("pc_conflicts", $pj->pc_conflicts);
             unset($pj->pc_conflicts);
         }
 
@@ -687,7 +695,7 @@ class PaperStatus extends MessageSet {
             if (is_object($contacts) || is_array($contacts))
                 $contacts = (array) $contacts;
             else {
-                $this->error_at("contacts", "Format error [contacts]");
+                $this->format_error_at("contacts", $contacts);
                 $contacts = [];
             }
             $pj->contacts = [];
@@ -712,7 +720,7 @@ class PaperStatus extends MessageSet {
                     else
                         $pj->bad_contacts[] = $v;
                 } else
-                    $this->error_at("contacts", "Format error [contacts]");
+                    $this->format_error_at("contacts", $v);
             }
         }
 
@@ -1180,7 +1188,7 @@ class PaperStatus extends MessageSet {
             $paperid = null;
         if ($paperid !== null && !is_int($paperid)) {
             $key = isset($pj->pid) ? "pid" : "id";
-            $this->error_at($key, "Format error [$key]");
+            $this->format_error_at($key, $paperid);
             return false;
         }
 
