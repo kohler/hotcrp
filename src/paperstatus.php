@@ -356,7 +356,7 @@ class PaperStatus extends MessageSet {
         if (!is_object($docj) && is_array($docj) && count($docj) === 1)
             $docj = $docj[0];
         if (!is_object($docj)) {
-            $this->error_at($o->json_key, "Format error [{$o->json_key}]");
+            $this->error_at($o->json_key(), "Format error [" . $o->json_key() . "]");
             return false;
         } else if (get($docj, "error") || get($docj, "error_html")) {
             $this->error_at_option($o, get($docj, "error_html", "Upload error."));
