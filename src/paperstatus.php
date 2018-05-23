@@ -339,12 +339,6 @@ class PaperStatus extends MessageSet {
     }
 
 
-    function set_document_prow($prow) {
-        // XXX this is butt ugly
-        $this->prow = $prow;
-        $this->paperId = $prow->paperId ? : -1;
-    }
-
     function document_import_check_filename($docj, PaperOption $o, PaperStatus $pstatus) {
         unset($docj->filestore);
         if (isset($docj->content_file) && is_string($docj->content_file)) {
