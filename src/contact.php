@@ -453,7 +453,7 @@ class Contact {
                 $qv[] = $conf->dbname;
             }
             $qv[] = $value;
-            $result = Dbl::ql_apply($cdb, "$q where $key=?", $qv);
+            $result = Dbl::ql_apply($cdb, "$q where ContactInfo.$key=?", $qv);
             $acct = self::fetch($result, $conf);
             Dbl::free($result);
             return $acct;
