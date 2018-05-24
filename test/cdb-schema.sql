@@ -44,7 +44,6 @@ CREATE TABLE `ContactInfo` (
   `disabled` tinyint(1) NOT NULL DEFAULT '0',
   `data` varbinary(32767) DEFAULT NULL,
   `password` varbinary(2048) DEFAULT NULL,
-  `activity_at` int(11) NOT NULL DEFAULT '0',
   `passwordTime` int(11) NOT NULL DEFAULT '0',
   `country` varbinary(256) DEFAULT NULL,
   `collaborators` varbinary(8192) DEFAULT NULL,
