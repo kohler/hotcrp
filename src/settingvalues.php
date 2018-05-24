@@ -888,7 +888,7 @@ class SettingValues extends MessageSet {
                 call_user_func($cb[0], $this, $cb[1]);
 
             // contactdb may need to hear about changes to shortName
-            if ($this->has_savedv("opt.shortName") && ($cdb = Contact::contactdb()))
+            if ($this->has_savedv("opt.shortName") && ($cdb = $this->conf->contactdb()))
                 Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $this->conf->short_name, $this->conf->dbname);
         }
         return !$this->has_error();

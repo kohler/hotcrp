@@ -99,6 +99,7 @@ class Conf {
     private $_ims = null;
     private $_format_info = null;
     private $_updating_autosearch_tags = false;
+    private $_cdb = false;
 
     private $_formula_functions = null;
     private $_search_keyword_base = null;
@@ -241,8 +242,8 @@ class Conf {
             $this->opt["disableCapabilities"] = true;
 
         // GC old capabilities
-        if (defval($this->settings, "__capability_gc", 0) < $Now - 86400) {
-            foreach (array($this->dblink, Contact::contactdb()) as $db)
+        if (get($this->settings, "__capability_gc", 0) < $Now - 86400) {
+            foreach (array($this->dblink, $this->contactdb()) as $db)
                 if ($db)
                     Dbl::ql($db, "delete from Capability where timeExpires>0 and timeExpires<$Now");
             $this->q_raw("insert into Settings (name, value) values ('__capability_gc', $Now) on duplicate key update value=values(value)");
@@ -640,6 +641,15 @@ class Conf {
             error_log("$landmark: database error: $dblink->error in $query");
             self::msg_error("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
         }
+    }
+
+    function contactdb() {
+        if ($this->_cdb === false) {
+            $this->_cdb = null;
+            if (($dsn = $this->opt("contactdb_dsn")))
+                list($this->_cdb, $dbname) = Dbl::connect_dsn($dsn);
+        }
+        return $this->_cdb;
     }
 
 
@@ -3414,7 +3424,7 @@ class Conf {
 
     function capability_manager($for = null) {
         if ($for && substr($for, 0, 1) === "U") {
-            if (($cdb = Contact::contactdb()))
+            if (($cdb = $this->contactdb()))
                 return new CapabilityManager($cdb, "U");
             else
                 return null;

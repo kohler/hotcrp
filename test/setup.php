@@ -25,7 +25,7 @@ $Conf->qe_raw("delete from Settings where name='setupPhase'");
 $Conf->qe_raw("insert into Settings set name='options', value=1, data='{\"1\":{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"position\":1,\"display\":\"default\"}}'");
 $Conf->load_settings();
 // Contactdb.
-if (($cdb = Contact::contactdb())) {
+if (($cdb = $Conf->contactdb())) {
     if (!$cdb->multi_query(file_get_contents("$ConfSitePATH/test/cdb-schema.sql")))
         die_hard("* Can't reinitialize contact database.\n" . $cdb->error);
     while ($cdb->more_results())

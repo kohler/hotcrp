@@ -17,7 +17,7 @@ function user($email) {
 
 function password($email, $iscdb = false) {
     global $Conf;
-    $dblink = $iscdb ? Contact::contactdb() : $Conf->dblink;
+    $dblink = $iscdb ? $Conf->contactdb() : $Conf->dblink;
     $result = Dbl::qe($dblink, "select password from ContactInfo where email=?", $email);
     $row = Dbl::fetch_first_row($result);
     return $row[0];
@@ -25,12 +25,12 @@ function password($email, $iscdb = false) {
 
 function save_password($email, $encoded_password, $iscdb = false) {
     global $Conf, $Now;
-    $dblink = $iscdb ? Contact::contactdb() : $Conf->dblink;
+    $dblink = $iscdb ? $Conf->contactdb() : $Conf->dblink;
     Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=? where email=?", $encoded_password, $Now, $email);
     ++$Now;
 }
 
-if (!Contact::contactdb()) {
+if (!$Conf->contactdb()) {
     error_log("! Error: The test contactdb has not been initialized.");
     error_log("! You may need to run `lib/createdb.sh -c test/cdb-options.php --no-dbuser --batch`.");
     exit(1);
@@ -106,7 +106,7 @@ if (function_exists("password_needs_rehash")) {
 }
 
 // insert someone into the contactdb
-$result = Dbl::qe(Contact::contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='te@_.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+$result = Dbl::qe($Conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='te@_.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
 assert(!!$result);
 Dbl::free($result);
 xassert(!user("te@_.com"));
@@ -128,7 +128,7 @@ if (function_exists("password_needs_rehash"))
 xassert_eqq($te->collaborators, "Computational Linguistics Magazine\n");
 
 // changing email should work too, but not change cdb except for defaults
-$result = Dbl::qe(Contact::contactdb(), "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@_.com', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+$result = Dbl::qe($Conf->contactdb(), "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@_.com', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
 xassert(!!$result);
 Dbl::free($result);
 $acct = $us->save((object) ["email" => "te2@_.com", "lastName" => "Thamrongrattanarit 1", "firstName" => "Te 1"], $te);
@@ -150,7 +150,7 @@ xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 1");
 // changes by the chair don't affect the cdb
 $Me = user($marina);
 $te2_cdb = $te2->contactdb_user();
-Dbl::qe(Contact::contactdb(), "update ContactInfo set affiliation='' where email='te2@_.com'");
+Dbl::qe($Conf->contactdb(), "update ContactInfo set affiliation='' where email='te2@_.com'");
 $acct = $us->save((object) ["firstName" => "Wacky", "affiliation" => "String"], $te2);
 xassert(!!$acct);
 $te2 = user("te2@_.com");

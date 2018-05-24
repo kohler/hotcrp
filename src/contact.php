@@ -97,7 +97,6 @@ class Contact {
     public $watch = null;
 
     static private $status_info_cache = array();
-    static private $contactdb_dblink = false;
 
 
     function __construct($trueuser = null, Conf $conf = null) {
@@ -437,18 +436,9 @@ class Contact {
         }
     }
 
-    static function contactdb() {
-        if (self::$contactdb_dblink === false) {
-            self::$contactdb_dblink = null;
-            if (($dsn = opt("contactdb_dsn")))
-                list(self::$contactdb_dblink, $dbname) = Dbl::connect_dsn($dsn);
-        }
-        return self::$contactdb_dblink;
-    }
-
     static function contactdb_find_by_email($email, Conf $conf) {
         $acct = null;
-        if (($cdb = self::contactdb())) {
+        if (($cdb = $conf->contactdb())) {
             $result = Dbl::ql($cdb, "select * from ContactInfo where email=?", $email);
             $acct = self::fetch($result, $conf);
             Dbl::free($result);
@@ -458,7 +448,7 @@ class Contact {
 
     static function contactdb_find_by_id($cid, Conf $conf) {
         $acct = null;
-        if (($cdb = self::contactdb())) {
+        if (($cdb = $conf->contactdb())) {
             $result = Dbl::ql($cdb, "select * from ContactInfo where contactDbId=?", $cid);
             $acct = self::fetch($result, $conf);
             Dbl::free($result);
@@ -471,7 +461,7 @@ class Contact {
             return $this;
         else if ($refresh || $this->contactdb_user_ === false) {
             $cdbu = null;
-            if ($this->has_email() && ($cdb = self::contactdb()))
+            if ($this->has_email() && ($cdb = $this->conf->contactdb()))
                 $cdbu = self::contactdb_find_by_email($this->email, $this->conf);
             $this->contactDbId = $cdbu ? $cdbu->contactDbId : 0;
             $this->contactdb_user_ = $cdbu;
@@ -480,7 +470,7 @@ class Contact {
     }
 
     private function contactdb_user_with_roles() {
-        return Dbl::fetch_first_object(self::contactdb(),
+        return Dbl::fetch_first_object($this->conf->contactdb(),
             "select ContactInfo.contactDbId, firstName, lastName, email,
             affiliation, password, passwordTime, updateTime, country,
             collaborators, birthday, gender,
@@ -493,7 +483,7 @@ class Contact {
 
     function contactdb_update($update_keys = null, $only_update_empty = false) {
         global $Now;
-        if (!($cdb = self::contactdb()) || !$this->has_database_account())
+        if (!($cdb = $this->conf->contactdb()) || !$this->has_database_account())
             return false;
 
         $update_password = null;
@@ -989,7 +979,7 @@ class Contact {
 
         // check whether this user is changing themselves
         $changing_other = false;
-        if (self::contactdb() && $Me
+        if ($this->conf->contactdb() && $Me
             && (strcasecmp($this->email, $Me->email) != 0 || $Me->is_actas_user()))
             $changing_other = true;
 
@@ -1100,7 +1090,7 @@ class Contact {
             $this->save_authored_papers($aupapers);
 
         // Contact DB (must precede password)
-        $cdb = self::contactdb();
+        $cdb = $this->conf->contactdb();
         if ($changing_email) {
             $this->contactDbId = 0;
             $this->contactdb_user_ = false;
@@ -1467,11 +1457,11 @@ class Contact {
             && ($cdbok = $this->check_hashed_password($input, $hash, $this->email))) {
             if ($this->check_password_encryption($hash, true)) {
                 $hash = $this->hash_password($input, true);
-                Dbl::ql(self::contactdb(), "update ContactInfo set password=? where contactDbId=?", $hash, $cdbu->contactDbId);
+                Dbl::ql($this->conf->contactdb(), "update ContactInfo set password=? where contactDbId=?", $hash, $cdbu->contactDbId);
                 $cdbu->password = $hash;
             }
             if ($cdbu->passwordUseTime <= $update_use_time) {
-                Dbl::ql(self::contactdb(), "update ContactInfo set passwordUseTime=? where contactDbId=?", $Now, $cdbu->contactDbId);
+                Dbl::ql($this->conf->contactdb(), "update ContactInfo set passwordUseTime=? where contactDbId=?", $Now, $cdbu->contactDbId);
                 $cdbu->passwordUseTime = $Now;
             }
         }
@@ -1518,7 +1508,7 @@ class Contact {
             $cdbu->password = $hash;
             if (!$old || $old !== $new)
                 $cdbu->passwordTime = $Now;
-            Dbl::ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $cdbu->password, $cdbu->passwordTime, $cdbu->contactDbId);
+            Dbl::ql($this->conf->contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $cdbu->password, $cdbu->passwordTime, $cdbu->contactDbId);
             if ($this->contactId && $this->password) {
                 $this->password = "";
                 $this->passwordTime = $cdbu->passwordTime;
@@ -1590,7 +1580,7 @@ class Contact {
             if ($this->contactId)
                 $this->conf->ql("update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
             if (false && ($cdbu = $this->contactdb_user())) {
-                Dbl::ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
+                Dbl::ql($this->conf->contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
             }
         }
     }

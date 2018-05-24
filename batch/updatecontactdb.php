@@ -22,7 +22,8 @@ $collaborators = isset($arg["collaborators"]);
 if (!$users && !$papers && !$collaborators)
     $users = $papers = true;
 
-$result = Dbl::ql(Contact::contactdb(), "select * from Conferences where `dbname`=?", $Conf->dbname);
+$cdb = $Conf->contactdb();
+$result = Dbl::ql($cdb, "select * from Conferences where `dbname`=?", $Conf->dbname);
 $confrow = Dbl::fetch_first_object($result);
 if (!$confrow) {
     fwrite(STDERR, "Conference is not recorded in contactdb\n");
@@ -30,11 +31,11 @@ if (!$confrow) {
 }
 $confid = (int) $confrow->confid;
 if ($confrow->shortName !== $Conf->short_name || $confrow->longName !== $Conf->long_name)
-    Dbl::ql(Contact::contactdb(), "update Conferences set shortName=?, longName=? where confid=?", $Conf->short_name ? : $confrow->shortName, $Conf->long_name ? : $confrow->longName, $confid);
+    Dbl::ql($cdb, "update Conferences set shortName=?, longName=? where confid=?", $Conf->short_name ? : $confrow->shortName, $Conf->long_name ? : $confrow->longName, $confid);
 
 if ($users) {
     // read current cdb roles
-    $result = Dbl::ql(Contact::contactdb(), "select Roles.*, email, password
+    $result = Dbl::ql($cdb, "select Roles.*, email, password
         from Roles
         join ContactInfo using (contactDbId)
         where confid=?", $confid);
@@ -70,10 +71,10 @@ if ($users) {
 
     // perform role updates
     if (!empty($qv))
-        Dbl::ql(Contact::contactdb(), "insert into Roles (contactDbId,confid,roles,disabled,updated_at) values ?v on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $qv);
+        Dbl::ql($cdb, "insert into Roles (contactDbId,confid,roles,disabled,updated_at) values ?v on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $qv);
 
     // remove old roles
-    Dbl::ql(Contact::contactdb(), "delete from Roles where confid=? and contactDbId?A", $confid, $cdbids);
+    Dbl::ql($cdb, "delete from Roles where confid=? and contactDbId?A", $confid, $cdbids);
 }
 
 if ($papers) {
@@ -89,10 +90,10 @@ if ($papers) {
     Dbl::free($result);
 
     if (!empty($qv))
-        Dbl::ql(Contact::contactdb(), "insert into ConferencePapers (confid,paperId,title) values ?v on duplicate key update title=values(title)", $qv);
-    Dbl::ql(Contact::contactdb(), "delete from ConferencePapers where confid=? and paperId?A", $confid, $pids);
+        Dbl::ql($cdb, "insert into ConferencePapers (confid,paperId,title) values ?v on duplicate key update title=values(title)", $qv);
+    Dbl::ql($cdb, "delete from ConferencePapers where confid=? and paperId?A", $confid, $pids);
     if ($confrow->last_submission_at != $max_submitted)
-        Dbl::ql(Contact::contactdb(), "update Conferences set last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $max_submitted, $confid);
+        Dbl::ql($cdb, "update Conferences set last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $max_submitted, $confid);
 }
 
 if ($collaborators) {
@@ -100,7 +101,7 @@ if ($collaborators) {
     while (($row = edb_row($result))) {
         $time = (int) $row[2] ? : (int) $row[3];
         if ($time > 0)
-            Dbl::ql(Contact::contactdb(), "update ContactInfo set collaborators=?, updateTime=? where email=? and (collaborators is null or collaborators='' or updateTime<?)", $row[1], $time, $row[0], $time);
+            Dbl::ql($cdb, "update ContactInfo set collaborators=?, updateTime=? where email=? and (collaborators is null or collaborators='' or updateTime<?)", $row[1], $time, $row[0], $time);
     }
     Dbl::free($result);
 }
