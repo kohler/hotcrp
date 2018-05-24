@@ -1586,12 +1586,14 @@ class Contact {
 
     function mark_activity() {
         global $Now;
-        if (!$this->activity_at || $this->activity_at < $Now) {
+        if ((!$this->activity_at || $this->activity_at < $Now)
+            && !$this->is_anonymous_user()) {
             $this->activity_at = $Now;
-            if ($this->contactId && !$this->is_anonymous_user())
+            if ($this->contactId)
                 $this->conf->ql("update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
-            if ($this->contactDbId)
+            if (false && ($cdbu = $this->contactdb_user())) {
                 Dbl::ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
+            }
         }
     }
 

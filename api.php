@@ -114,18 +114,6 @@ else if ($Qreq->fn !== "status")
 
 $j = $Me->my_deadlines($Conf->paper);
 
-if ($Qreq->conflist && $Me->has_email() && ($cdb = Contact::contactdb())) {
-    $j->conflist = array();
-    $result = Dbl::ql($cdb, "select c.confid, siteclass, shortName, url
-        from Roles r join Conferences c on (c.confid=r.confid)
-        join ContactInfo u on (u.contactDbId=r.contactDbId)
-        where u.email=? order by r.updated_at desc", $Me->email);
-    while (($row = edb_orow($result))) {
-        $row->confid = (int) $row->confid;
-        $j->conflist[] = $row;
-    }
-}
-
 if ($Conf->paper && $Me->can_view_tags($Conf->paper)) {
     $pj = (object) ["pid" => $Conf->paper->paperId];
     $Conf->paper->add_tag_info_json($pj, $Me);

@@ -26,8 +26,7 @@ DROP TABLE IF EXISTS `Conferences`;
 CREATE TABLE `Conferences` (
   `confid` int(11) NOT NULL AUTO_INCREMENT,
   `dbname` varbinary(64) DEFAULT NULL,
-  PRIMARY KEY (`confid`),
-  UNIQUE KEY `dbname` (`dbname`)
+  PRIMARY KEY (`confid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -38,18 +37,17 @@ CREATE TABLE `Conferences` (
 DROP TABLE IF EXISTS `ContactInfo`;
 CREATE TABLE `ContactInfo` (
   `contactDbId` int(11) NOT NULL AUTO_INCREMENT,
-  `firstName` varchar(60) NOT NULL DEFAULT '',
-  `lastName` varchar(60) NOT NULL DEFAULT '',
-  `unaccentedName` varchar(120) NOT NULL DEFAULT '',
+  `firstName` varbinary(240) NOT NULL DEFAULT '',
+  `lastName` varbinary(240) NOT NULL DEFAULT '',
   `email` varchar(120) NOT NULL,
-  `affiliation` varchar(2048) NOT NULL DEFAULT '',
-  `country` varbinary(256) DEFAULT NULL,
-  `collaborators` varbinary(8192) DEFAULT NULL,
+  `affiliation` varbinary(2048) NOT NULL DEFAULT '',
   `disabled` tinyint(1) NOT NULL DEFAULT '0',
   `data` varbinary(32767) DEFAULT NULL,
   `password` varbinary(2048) DEFAULT NULL,
   `activity_at` int(11) NOT NULL DEFAULT '0',
   `passwordTime` int(11) NOT NULL DEFAULT '0',
+  `country` varbinary(256) DEFAULT NULL,
+  `collaborators` varbinary(8192) DEFAULT NULL,
   `passwordUseTime` int(11) NOT NULL DEFAULT '0',
   `updateTime` int(11) NOT NULL DEFAULT '0',
   `birthday` int(11) DEFAULT NULL,
