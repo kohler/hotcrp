@@ -110,7 +110,7 @@ $result = Dbl::qe(Contact::contactdb(), "insert into ContactInfo set firstName='
 assert(!!$result);
 Dbl::free($result);
 xassert(!user("te@_.com"));
-$u = Contact::contactdb_find_by_email("te@_.com");
+$u = Contact::contactdb_find_by_email("te@_.com", $Conf);
 xassert(!!$u);
 xassert_eqq($u->firstName, "Te");
 

@@ -20,7 +20,7 @@ if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD)
     error_go(false, "That password reset code has expired, or you didn’t enter it correctly.");
 
 if ($iscdb)
-    $Acct = Contact::contactdb_find_by_id($capdata->contactId);
+    $Acct = Contact::contactdb_find_by_id($capdata->contactId, $Conf);
 else
     $Acct = $Conf->user_by_id($capdata->contactId);
 if (!$Acct)

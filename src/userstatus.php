@@ -425,9 +425,9 @@ class UserStatus extends MessageSet {
         $no_old_db_account = !$old_user || !$old_user->has_database_account();
         $old_cdb_user = null;
         if ($old_user && $old_user->has_email())
-            $old_cdb_user = Contact::contactdb_find_by_email($old_user->email);
+            $old_cdb_user = Contact::contactdb_find_by_email($old_user->email, $this->conf);
         else if (is_string(get($cj, "email")) && $cj->email)
-            $old_cdb_user = Contact::contactdb_find_by_email($cj->email);
+            $old_cdb_user = Contact::contactdb_find_by_email($cj->email, $this->conf);
         $user = $old_user ? : $old_cdb_user;
 
         $this->normalize($cj, $user);

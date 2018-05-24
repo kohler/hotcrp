@@ -446,23 +446,21 @@ class Contact {
         return self::$contactdb_dblink;
     }
 
-    static function contactdb_find_by_email($email) {
-        global $Conf;
+    static function contactdb_find_by_email($email, Conf $conf) {
         $acct = null;
         if (($cdb = self::contactdb())) {
             $result = Dbl::ql($cdb, "select * from ContactInfo where email=?", $email);
-            $acct = self::fetch($result, $Conf);
+            $acct = self::fetch($result, $conf);
             Dbl::free($result);
         }
         return $acct;
     }
 
-    static function contactdb_find_by_id($cid) {
-        global $Conf;
+    static function contactdb_find_by_id($cid, Conf $conf) {
         $acct = null;
         if (($cdb = self::contactdb())) {
             $result = Dbl::ql($cdb, "select * from ContactInfo where contactDbId=?", $cid);
-            $acct = self::fetch($result, $Conf);
+            $acct = self::fetch($result, $conf);
             Dbl::free($result);
         }
         return $acct;
@@ -474,7 +472,7 @@ class Contact {
         else if ($refresh || $this->contactdb_user_ === false) {
             $cdbu = null;
             if ($this->has_email() && ($cdb = self::contactdb()))
-                $cdbu = self::contactdb_find_by_email($this->email);
+                $cdbu = self::contactdb_find_by_email($this->email, $this->conf);
             $this->contactDbId = $cdbu ? $cdbu->contactDbId : 0;
             $this->contactdb_user_ = $cdbu;
         }
@@ -1061,7 +1059,7 @@ class Contact {
         // If inserting, set initial password and creation time
         if ($inserting) {
             $cu->qv["creationTime"] = $this->creationTime = $Now;
-            $this->_create_password(self::contactdb_find_by_email($this->email), $cu);
+            $this->_create_password(self::contactdb_find_by_email($this->email, $this->conf), $cu);
         }
 
         // Initial save
@@ -1253,7 +1251,7 @@ class Contact {
         // validate email, check contactdb
         if (!get($reg, "no_validate_email") && !validate_email($email))
             return null;
-        $cdbu = Contact::contactdb_find_by_email($email);
+        $cdbu = Contact::contactdb_find_by_email($email, $conf);
         if (get($reg, "only_if_contactdb") && !$cdbu)
             return null;
 
