@@ -437,10 +437,6 @@ class Contact {
         }
     }
 
-    static function contactdb() {
-        global $Conf;
-        return $Conf->contactdb();
-    }
     static private function contactdb_find_by_key($key, $value, Conf $conf) {
         if (($cdb = $conf->contactdb())) {
             $q = "select ContactInfo.*, roles, activity_at";
