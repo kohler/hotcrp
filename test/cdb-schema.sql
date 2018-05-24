@@ -66,5 +66,6 @@ CREATE TABLE `Roles` (
   `confid` int(11) NOT NULL,
   `roles` tinyint(1) NOT NULL DEFAULT '0',
   `disabled` tinyint(1) NOT NULL DEFAULT '0',
+  `activity_at` bigint(20) NOT NULL DEFAULT '0',
   PRIMARY KEY (`contactDbId`,`confid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

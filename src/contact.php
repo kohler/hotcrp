@@ -22,6 +22,7 @@ class Contact {
     public $contactDbId = 0;
     private $cid;               // for forward compatibility
     public $conf;
+    public $confid;
 
     public $firstName = "";
     public $lastName = "";
@@ -436,24 +437,34 @@ class Contact {
         }
     }
 
-    static function contactdb_find_by_email($email, Conf $conf) {
-        $acct = null;
-        if (($cdb = $conf->contactdb())) {
-            $result = Dbl::ql($cdb, "select * from ContactInfo where email=?", $email);
-            $acct = self::fetch($result, $conf);
-            Dbl::free($result);
-        }
-        return $acct;
+    static function contactdb() {
+        global $Conf;
+        return $Conf->contactdb();
     }
-
-    static function contactdb_find_by_id($cid, Conf $conf) {
-        $acct = null;
+    static private function contactdb_find_by_key($key, $value, Conf $conf) {
         if (($cdb = $conf->contactdb())) {
-            $result = Dbl::ql($cdb, "select * from ContactInfo where contactDbId=?", $cid);
+            $q = "select ContactInfo.*, roles, activity_at";
+            $qv = [];
+            if (($confid = $conf->opt("contactdb_confid"))) {
+                $q .= ", ? confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
+                array_push($qv, $confid, $confid);
+            } else {
+                $q .= ", Conferences.confid from ContactInfo left join Conferences on (Conferences.`dbname`=?) left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)";
+                $qv[] = $conf->dbname;
+            }
+            $qv[] = $value;
+            $result = Dbl::ql_apply($cdb, "$q where $key=?", $qv);
             $acct = self::fetch($result, $conf);
             Dbl::free($result);
-        }
-        return $acct;
+            return $acct;
+        } else
+            return null;
+    }
+    static function contactdb_find_by_email($email, Conf $conf) {
+        return self::contactdb_find_by_key("email", $email, $conf);
+    }
+    static function contactdb_find_by_id($id, Conf $conf) {
+        return self::contactdb_find_by_key("contactDbId", $id, $conf);
     }
 
     function contactdb_user($refresh = false) {
