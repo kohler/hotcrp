@@ -468,7 +468,7 @@ class Contact {
             return $this;
         else if ($refresh || $this->contactdb_user_ === false) {
             $cdbu = null;
-            if ($this->has_email() && ($cdb = $this->conf->contactdb()))
+            if ($this->has_email())
                 $cdbu = self::contactdb_find_by_email($this->email, $this->conf);
             $this->contactDbId = $cdbu ? $cdbu->contactDbId : 0;
             $this->contactdb_user_ = $cdbu;
@@ -476,18 +476,10 @@ class Contact {
         return $this->contactdb_user_;
     }
 
-    private function contactdb_user_with_roles() {
-        return Dbl::fetch_first_object($this->conf->contactdb(),
-            "select ContactInfo.contactDbId, firstName, lastName, email,
-            affiliation, password, passwordTime, updateTime, country,
-            collaborators, birthday, gender,
-            Conferences.confid, roles, Roles.disabled
-            from ContactInfo
-            left join Conferences on (Conferences.`dbname`=?)
-            left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
-            where email=?", $this->conf->opt("dbName"), $this->email);
+    private function _contactdb_save_roles($cdbur) {
+        global $Now;
+        Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=values(roles), activity_at=values(activity_at)", $cdbur->contactDbId, $cdbur->confid, $this->contactdb_roles(), $Now);
     }
-
     function contactdb_update($update_keys = null, $only_update_empty = false) {
         global $Now;
         if (!($cdb = $this->conf->contactdb()) || !$this->has_database_account())
@@ -503,10 +495,10 @@ class Contact {
             $update_passwordTime = $this->passwordTime;
         }
 
-        $cdbur = $this->contactdb_user_with_roles();
+        $cdbur = self::contactdb_find_by_email($this->email, $this->conf);
         if (!$cdbur) {
             Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?, password=?, passwordTime=?, birthday=?, gender=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators, $update_password, $update_passwordTime, $this->birthday, $this->gender);
-            $cdbur = $this->contactdb_user_with_roles();
+            $cdbur = self::contactdb_find_by_email($this->email, $this->conf);
             $this->contactdb_user_ = false;
         } else {
             $qf = $qv = [];
@@ -528,7 +520,7 @@ class Contact {
             if (!empty($qf)) {
                 array_push($qv, $Now, $cdbur->contactDbId);
                 Dbl::ql_apply($cdb, "update ContactInfo set " . join(", ", $qf) . ", updateTime=? where contactDbId=?", $qv);
-                $cdbur = $this->contactdb_user_with_roles();
+                $cdbur = self::contactdb_find_by_email($this->email, $this->conf);
                 $this->contactdb_user_ = false;
             }
         }
@@ -536,9 +528,8 @@ class Contact {
             return false;
 
         if ($cdbur->confid
-            && ((int) $cdbur->roles !== $this->contactdb_roles()
-                || (int) $cdbur->disabled !== (int) $this->disabled))
-            Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, disabled=?, updated_at=? on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $cdbur->contactDbId, $cdbur->confid, $this->contactdb_roles(), (int) $this->disabled, $Now);
+            && (int) $cdbur->roles !== $this->contactdb_roles())
+            $this->_contactdb_save_roles($cdbur);
 
         return (int) $cdbur->contactDbId;
     }
@@ -1210,7 +1201,8 @@ class Contact {
 
     private function _create_password($cdbu, Contact_Update $cu) {
         global $Now;
-        if ($cdbu && ($cdbu = $cdbu->contactdb_user())
+        if ($cdbu
+            && ($cdbu = $cdbu->contactdb_user())
             && $cdbu->allow_contactdb_password()) {
             $cu->qv["password"] = $this->password = "";
             $cu->qv["passwordTime"] = $this->passwordTime = $cdbu->passwordTime;
@@ -1572,10 +1564,10 @@ class Contact {
 
     function mark_login() {
         global $Now;
-        // at least one login every 90 days is marked as activity
-        if (!$this->activity_at || $this->activity_at <= $Now - 7776000
+        // at least one login every 30 days is marked as activity
+        if ((int) $this->activity_at <= $Now - 2592000
             || (($cdbu = $this->contactdb_user())
-                && (!$cdbu->activity_at || $cdbu->activity_at <= $Now - 7776000)))
+                && ((int) $cdbu->activity_at <= $Now - 2592000)))
             $this->mark_activity();
     }
 
@@ -1586,9 +1578,10 @@ class Contact {
             $this->activity_at = $Now;
             if ($this->contactId)
                 $this->conf->ql("update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
-            if (false && ($cdbu = $this->contactdb_user())) {
-                Dbl::ql($this->conf->contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
-            }
+            if (($cdbu = $this->contactdb_user())
+                && $cdbu->confid
+                && (int) $cdbu->activity_at <= $Now - 604800)
+                $this->_contactdb_save_roles($cdbu);
         }
     }
 
