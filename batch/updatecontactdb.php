@@ -58,7 +58,8 @@ if ($users) {
         $cdbid = $cdbu ? (int) $cdbu->contactDbId : 0;
         $cdb_roles = $u->contactdb_roles();
         if ($cdbu
-            && (int) $cdbu->roles === $cdb_roles)
+            && (int) $cdbu->roles === $cdb_roles
+            && $cdbu->activity_at)
             /* skip */;
         else if ($cdbu && $cdbu->password !== null)
             $qv[] = [$cdbid, $confid, $cdb_roles, $u->lastLogin ? : $u->creationTime];
