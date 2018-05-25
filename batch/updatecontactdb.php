@@ -30,7 +30,8 @@ if (!$confrow) {
     exit(1);
 }
 $confid = (int) $confrow->confid;
-if ($confrow->shortName !== $Conf->short_name || $confrow->longName !== $Conf->long_name)
+if ($confrow->shortName !== $Conf->short_name
+    || $confrow->longName !== $Conf->long_name)
     Dbl::ql($cdb, "update Conferences set shortName=?, longName=? where confid=?", $Conf->short_name ? : $confrow->shortName, $Conf->long_name ? : $confrow->longName, $confid);
 
 if ($users) {
@@ -46,24 +47,23 @@ if ($users) {
 
     // read current db roles
     Contact::$allow_nonexistent_properties = true;
-    $result = Dbl::ql($Conf->dblink, "select ContactInfo.contactId, email, firstName, lastName, unaccentedName, disabled, roles, password, passwordTime, passwordUseTime,
+    $result = Dbl::ql($Conf->dblink, "select ContactInfo.contactId, email, firstName, lastName, unaccentedName, disabled, roles, password, passwordTime, passwordUseTime, creationTime, lastLogin,
         exists (select * from PaperConflict where contactId=ContactInfo.contactId and conflictType>=" . CONFLICT_AUTHOR . ") __isAuthor__,
         exists (select * from PaperReview where contactId=ContactInfo.contactId) __hasReview__
         from ContactInfo");
     $cdbids = [];
     $qv = [];
-    while (($contact = Contact::fetch($result, $Conf))) {
-        $cdbu = get($cdb_users, $contact->email);
+    while (($u = Contact::fetch($result, $Conf))) {
+        $cdbu = get($cdb_users, $u->email);
         $cdbid = $cdbu ? (int) $cdbu->contactDbId : 0;
-        $cdb_roles = $contact->contactdb_roles();
+        $cdb_roles = $u->contactdb_roles();
         if ($cdbu
-            && ((int) $cdbu->disabled > 0) == $contact->disabled
             && (int) $cdbu->roles === $cdb_roles)
             /* skip */;
         else if ($cdbu && $cdbu->password !== null)
-            $qv[] = [$cdbid, $confid, $cdb_roles, (int) $contact->disabled, $Now];
+            $qv[] = [$cdbid, $confid, $cdb_roles, $u->lastLogin ? : $u->creationTime];
         else
-            $cdbid = $contact->contactdb_update();
+            $cdbid = $u->contactdb_update();
         if ($cdbid)
             $cdbids[] = $cdbid;
     }
@@ -71,7 +71,7 @@ if ($users) {
 
     // perform role updates
     if (!empty($qv))
-        Dbl::ql($cdb, "insert into Roles (contactDbId,confid,roles,disabled,updated_at) values ?v on duplicate key update roles=values(roles), disabled=values(disabled), updated_at=values(updated_at)", $qv);
+        Dbl::ql($cdb, "insert into Roles (contactDbId,confid,roles,activity_at) values ?v on duplicate key update roles=values(roles), activity_at=values(activity_at)", $qv);
 
     // remove old roles
     Dbl::ql($cdb, "delete from Roles where confid=? and contactDbId?A", $confid, $cdbids);
