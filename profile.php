@@ -510,11 +510,11 @@ if ($UserStatus->has_messages()) {
     echo '<div class="msgs-wide">', Ht::xmsg($status, join("", $msgs)), "</div>\n";
 }
 
-echo '<div id="foldaccount" class="profiletext', ($need_highlight ? " alert" : "");
+echo '<div id="foldaccount" class="';
 if (isset($formcj->roles) && (isset($formcj->roles->pc) || isset($formcj->roles->chair)))
-    echo " fold1o";
+    echo "fold1o";
 else
-    echo " fold1c";
+    echo "fold1c";
 echo " fold2", ($Qreq->savebulk ? "o" : "c"), "\">\n";
 
 
