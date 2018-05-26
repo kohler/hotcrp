@@ -660,21 +660,17 @@ span.hastitle {
 	padding-left: 0;
 	list-style: none;
 	-webkit-columns: 10rem 4;
-	-moz-columns: 10rem 4;
 	columns: 10rem 4;
 	-webkit-column-gap: 18px;
-	-moz-column-gap: 18px;
 	column-gap: 18px;
 	margin: 0 0 -0.2em;
 }
 .topict.topict-medium {
 	-webkit-columns: 15rem 4;
-	-moz-columns: 15rem 4;
 	columns: 15rem 4;
 }
 .topict.topict-long {
 	-webkit-columns: 20rem 4;
-	-moz-columns: 20rem 4;
 	columns: 20rem 4;
 }
 .topict > .topictp {
@@ -1094,10 +1090,8 @@ th.settings-simplehead {
 }
 .settings-2col {
 	-webkit-columns: 20rem 2;
-	-moz-columns: 20rem 2;
 	columns: 20rem 2;
 	-webkit-column-gap: 18px;
-	-moz-column-gap: 18px;
 	column-gap: 18px;
 	margin: 0.25em 0;
 }
@@ -1168,6 +1162,10 @@ th.settings-simplehead {
 	max-width: 640px;
 	margin: 2em 0 3em;
 }
+.profile-g.wide {
+	max-width: none;
+	max-width: fill-available;
+}
 h3 + .profile-g {
 	margin-top: 1em;
 }
@@ -1236,10 +1234,8 @@ label.f-c, .f-i > label {
 	margin: -1em 0;
 	padding: 0.5em 0;
 	-webkit-columns: 300px 2;
-	-moz-columns: 300px 2;
 	columns: 300px 2;
 	-webkit-column-gap: 18px;
-	-moz-column-gap: 18px;
 	column-gap: 18px;
 }
 .f-2col > .f-i {
@@ -1545,16 +1541,13 @@ pre.email {
 }
 .ctable, .pc_ctable, .searchctable {
 	-webkit-columns: 300px 4;
-	-moz-columns: 300px 4;
 	columns: 300px 4;
 	-webkit-column-gap: 18px;
-	-moz-column-gap: 18px;
 	column-gap: 18px;
 	margin: 0 -12px -4px;
 }
 .searchctable {
 	-webkit-columns: 150px 4;
-	-moz-columns: 150px 4;
 	columns: 150px 4;
 	max-width: 800px;
 	margin: 0 -6px -4px;
@@ -1578,10 +1571,8 @@ pre.email {
 }
 .assignment-ui-options {
 	-webkit-columns: 8rem 3;
-	-moz-columns: 8rem 3;
 	columns: 8rem 3;
 	-webkit-column-gap: 0.5rem;
-	-moz-column-gap: 0.5rem;
 	column-gap: 0.5rem;
 }
 .assignment-ui-choice {
@@ -1989,10 +1980,8 @@ td.plgreen {
 }
 .pl_longtext {
 	-webkit-columns: 23rem 3;
-	-moz-columns: 23rem 3;
 	columns: 23rem 3;
 	-webkit-column-gap: 18px;
-	-moz-column-gap: 18px;
 	column-gap: 18px;
 }
 .pl_longtext > p:first-child, .pl_shorttext > p:first-child {
@@ -2489,32 +2478,26 @@ ul.xd > li {
 /* suggestions */
 .suggesttable {
 	-webkit-column-gap: 18px;
-	-moz-column-gap: 18px;
 	column-gap: 18px;
 }
 .suggesttable2 {
 	-webkit-columns: 100px 2;
-	-moz-columns: 100px 2;
 	columns: 100px 2;
 }
 .suggesttable3 {
 	-webkit-columns: 100px 3;
-	-moz-columns: 100px 3;
 	columns: 100px 3;
 }
 .suggesttable4 {
 	-webkit-columns: 100px 4;
-	-moz-columns: 100px 4;
 	columns: 100px 4;
 }
 .suggesttable5 {
 	-webkit-columns: 100px 5;
-	-moz-columns: 100px 5;
 	columns: 100px 5;
 }
 .suggesttable6 {
 	-webkit-columns: 100px 6;
-	-moz-columns: 100px 6;
 	columns: 100px 6;
 }
 .suggestion {
@@ -3141,7 +3124,6 @@ body {
 }
 .pspcard_body {
 	-webkit-column-count: 200px 2;
-	-moz-columns: 200px 2;
 	columns: 200px 2;
 }
 .papcard, .pedcard, .notecard, .revcard, .cmtcard {
