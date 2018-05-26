@@ -226,7 +226,7 @@ function parseBulkFile($text, $filename) {
     $ustatus = new UserStatus($Me, ["send_email" => true, "no_deprivilege_self" => true]);
 
     while (($line = $csv->next()) !== false) {
-        $ustatus->user = new Contact(null, $Conf);
+        $ustatus->set_user(new Contact(null, $Conf));
         $ustatus->clear_messages();
         $cj = (object) ["id" => null];
         $ustatus->parse_csv_group("", $cj, $line);
@@ -284,7 +284,7 @@ else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
 } else if (isset($Qreq->save)) {
     assert($Acct->is_empty() === $newProfile);
     $cj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
-    $UserStatus->user = $Acct;
+    $UserStatus->set_user($Acct);
     $UserStatus->parse_request_group("", $cj, $Qreq);
     if ($newProfile)
         $UserStatus->send_email = true;
@@ -457,7 +457,7 @@ if (!$newProfile) {
 }
 
 
-$UserStatus->user = $Acct;
+$UserStatus->set_user($Acct);
 $userj = $UserStatus->user_json(["include_password" => true]);
 if (!$useRequest && $Me->privChair && $Acct->is_empty()
     && ($Qreq->role === "chair" || $Qreq->role === "pc"))
@@ -484,7 +484,7 @@ if ($newProfile)
     echo '<div id="foldbulk" class="fold9' . ($Qreq->savebulk ? "o" : "c") . ' js-fold-focus"><div class="fn9">';
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
-              array("id" => "accountform", "autocomplete" => "off")),
+              array("id" => "profile-form")),
     // Don't want chrome to autofill the password changer.
     // But chrome defaults to autofilling the password changer
     // unless we supply an earlier password input.
@@ -518,7 +518,7 @@ else
 echo " fold2", ($Qreq->savebulk ? "o" : "c"), "\">\n";
 
 
-$UserStatus->user = $Acct;
+$UserStatus->set_user($Acct);
 $UserStatus->render_group("", $userj, $formcj);
 
 if ($UserStatus->global_user() && false) {
@@ -568,8 +568,7 @@ echo "</div>\n", // foldaccount
 
 if ($newProfile) {
     echo '</div><div class="fx9">';
-    echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
-                  array("id" => "accountform", "autocomplete" => "off")),
+    echo Ht::form(hoturl_post("profile", join("&amp;", $form_params))),
         "<div class='profiletext", ($UserStatus->has_error() ? " alert" : ""), "'>\n",
         // Don't want chrome to autofill the password changer.
         // But chrome defaults to autofilling the password changer
@@ -626,9 +625,9 @@ John Adams,john@earbox.org,UC Berkeley,pc
 }
 
 
-Ht::stash_script('focus_within($("#accountform"))');
+Ht::stash_script('focus_within($("#profile-form"))');
 if ($newProfile)
     Ht::stash_script("focus_fold.hash(true)");
 else
-    Ht::stash_script('hiliter_children("#accountform",true)');
+    Ht::stash_script('hiliter_children("#profile-form",true)');
 $Conf->footer();

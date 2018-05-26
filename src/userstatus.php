@@ -6,6 +6,7 @@ class UserStatus extends MessageSet {
     public $conf;
     public $user;
     public $viewer;
+    public $self;
     public $send_email = null;
     private $no_deprivilege_self = false;
     public $unknown_topics = null;
@@ -41,12 +42,21 @@ class UserStatus extends MessageSet {
         $this->clear_messages();
         $this->unknown_topics = null;
     }
+    function set_user(Contact $user) {
+        $this->user = $user;
+        $this->self = $this->user === $this->viewer
+            && !$this->viewer->is_actas_user();
+    }
     function global_user() {
-        if ($this->user === $this->viewer
-            && !$this->viewer->is_actas_user())
-            return $this->user->contactdb_user();
+        return $this->self ? $this->user->contactdb_user() : null;
+    }
+    function autocomplete($what) {
+        if ($this->self)
+            return $what;
+        else if ($what === "email" || $what === "current-password")
+            return "nope";
         else
-            return null;
+            return "off";
     }
     private function gxt() {
         if ($this->_gxt === null)
@@ -646,14 +656,14 @@ class UserStatus extends MessageSet {
         }
 
         echo '<div class="f-2col">';
-        $t = Ht::entry("firstName", get_s($reqj, "firstName"), ["size" => 24, "autocomplete" => "given-name", "class" => "fullw", "id" => "firstName", "data-default-value" => get_s($cj, "firstName")]) . $us->global_profile_difference($cj, "firstName");
+        $t = Ht::entry("firstName", get_s($reqj, "firstName"), ["size" => 24, "autocomplete" => $this->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => get_s($cj, "firstName")]) . $us->global_profile_difference($cj, "firstName");
         $us->render_field("firstName", "First (given) name", $t);
 
-        $t = Ht::entry("lastName", get_s($reqj, "lastName"), ["size" => 24, "autocomplete" => "family-name", "class" => "fullw", "id" => "lastName", "data-default-value" => get_s($cj, "lastName")]) . $us->global_profile_difference($cj, "lastName");
+        $t = Ht::entry("lastName", get_s($reqj, "lastName"), ["size" => 24, "autocomplete" => $this->autocomplete("family-name"), "class" => "fullw", "id" => "lastName", "data-default-value" => get_s($cj, "lastName")]) . $us->global_profile_difference($cj, "lastName");
         $us->render_field("lastName", "Last (family) name", $t);
         echo '</div>';
 
-        $t = Ht::entry("affiliation", get_s($reqj, "affiliation"), ["size" => 52, "autocomplete" => "organization", "class" => "fullw", "id" => "affiliation", "data-default-value" => get_s($cj, "affiliation")]) . $us->global_profile_difference($cj, "affiliation");
+        $t = Ht::entry("affiliation", get_s($reqj, "affiliation"), ["size" => 52, "autocomplete" => $this->autocomplete("organization"), "class" => "fullw", "id" => "affiliation", "data-default-value" => get_s($cj, "affiliation")]) . $us->global_profile_difference($cj, "affiliation");
         $us->render_field("affiliation", "Affiliation", $t);
 
         echo "</div>\n\n"; // .profile-g
@@ -676,16 +686,16 @@ class UserStatus extends MessageSet {
         if (!$us->viewer->can_change_password(null)) {
             echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
             echo '<div class="', $us->control_class("password", "f-i"), '"><div class="f-c">Current password</div>',
-                Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => "current-password"]),
+                Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => $this->autocomplete("current-password")]),
                 '</div>';
         }
         if ($us->conf->opt("contactdb_dsn") && $us->conf->opt("contactdb_loginFormHeading"))
             echo $us->conf->opt("contactdb_loginFormHeading");
         echo '<div class="', $us->control_class("password", "f-i"), '">
       <div class="f-c">New password</div>',
-            Ht::password("upassword", $pws[0], ["size" => 52, "class" => "fn", "autocomplete" => "new-password"]);
+            Ht::password("upassword", $pws[0], ["size" => 52, "class" => "fn", "autocomplete" => $this->autocomplete("new-password")]);
         if ($us->user->plaintext_password() && $us->viewer->privChair) {
-            echo Ht::entry("upasswordt", $pws[2], ["size" => 52, "class" => "fx", "autocomplete" => "new-password"]);
+            echo Ht::entry("upasswordt", $pws[2], ["size" => 52, "class" => "fx", "autocomplete" => $this->autocomplete("new-password")]);
         }
         echo '</div>
     <div class="', $us->control_class("password", "f-i"), ' fn">
@@ -707,7 +717,7 @@ class UserStatus extends MessageSet {
     }
 
     static function render_demographics(UserStatus $us, $cj, $reqj, $uf) {
-        $t = Countries::selector("country", get_s($reqj, "country"), ["id" => "country", "data-default-value" => get_s($cj, "country")]) . $us->global_profile_difference($cj, "country");
+        $t = Countries::selector("country", get_s($reqj, "country"), ["id" => "country", "data-default-value" => get_s($cj, "country"), "autocomplete" => $this->autocomplete("country")]) . $us->global_profile_difference($cj, "country");
         $us->render_field("country", "Country", $t);
     }
 
