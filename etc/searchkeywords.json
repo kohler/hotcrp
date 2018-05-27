@@ -55,8 +55,15 @@
         "name": "paper",
         "require": "src/search/st_pdf.php",
         "parse_callback": "PaperPDF_SearchTerm::parse",
+        "final": null, "has": "any",
+        "synonym": ["pdf"]
+    },
+    {
+        "name": "submission",
+        "require": "src/search/st_pdf.php",
+        "parse_callback": "PaperPDF_SearchTerm::parse",
         "final": false, "has": "any",
-        "synonym": ["sub", "submission"]
+        "synonym": ["sub"]
     },
     {
         "name": "final",
