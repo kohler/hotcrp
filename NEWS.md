@@ -5,6 +5,13 @@ HotCRP NEWS
 
 * Support integration with Lutz Prechelt’s [Review Quality Collector][].
 
+* Internal refactoring continues. Remove `$_REQUEST`; reduce reliance on
+  inline Javascript handlers.
+
+* Support PHP 7.2; stop supporting 5.5.
+
+* Many bug fixes and usability improvements.
+
 
 ## Version 2.101 - 18.Oct.2017
 
