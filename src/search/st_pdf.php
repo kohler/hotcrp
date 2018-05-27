@@ -10,7 +10,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
     private $format_errf;
     private $cf;
 
-    function __construct($dtype, $present, $format = null, $format_errf = null) {
+    function __construct(Conf $conf, $dtype, $present, $format = null, $format_errf = null) {
         parent::__construct("pdf");
         $this->dtype = $dtype;
         $this->fieldname = ($dtype == DTYPE_FINAL ? "finalPaperStorageId" : "paperStorageId");
@@ -18,26 +18,26 @@ class PaperPDF_SearchTerm extends SearchTerm {
         $this->format = $format;
         $this->format_errf = $format_errf;
         if ($this->format !== null)
-            $this->cf = new CheckFormat(CheckFormat::RUN_PREFER_NO);
+            $this->cf = new CheckFormat($conf, CheckFormat::RUN_PREFER_NO);
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $dtype = $sword->kwdef->final ? DTYPE_FINAL : DTYPE_SUBMISSION;
         $lword = strtolower($word);
         if ($lword === "any" || $lword === "yes")
-            return new PaperPDF_SearchTerm($dtype, true);
+            return new PaperPDF_SearchTerm($srch->conf, $dtype, true);
         else if ($lword === "none" || $lword === "no")
-            return new PaperPDF_SearchTerm($dtype, false);
-        $cf = new CheckFormat;
-        $errf = $cf->spec_error_kinds($dtype, $srch->conf);
+            return new PaperPDF_SearchTerm($srch->conf, $dtype, false);
+        $cf = new CheckFormat($srch->conf);
+        $errf = $cf->spec_error_kinds($dtype);
         if (empty($errf)) {
             $srch->warn("“" . htmlspecialchars($sword->keyword . ":" . $word) . "”: Format checking is not enabled.");
             return null;
         } else if ($lword === "good" || $lword === "ok")
-            return new PaperPDF_SearchTerm($dtype, true, true);
+            return new PaperPDF_SearchTerm($srch->conf, $dtype, true, true);
         else if ($lword === "bad")
-            return new PaperPDF_SearchTerm($dtype, true, false);
+            return new PaperPDF_SearchTerm($srch->conf, $dtype, true, false);
         else if (in_array($lword, $errf) || $lword === "error")
-            return new PaperPDF_SearchTerm($dtype, true, false, $lword);
+            return new PaperPDF_SearchTerm($srch->conf, $dtype, true, false, $lword);
         else {
             $srch->warn("“" . htmlspecialchars($word) . "” is not a valid error type for format checking.");
             return null;
@@ -82,15 +82,15 @@ class Pages_SearchTerm extends SearchTerm {
     private $cf;
     private $cm;
 
-    function __construct(CountMatcher $cm) {
+    function __construct(CountMatcher $cm, Conf $conf) {
         parent::__construct("pages");
-        $this->cf = new CheckFormat(CheckFormat::RUN_PREFER_NO);
+        $this->cf = new CheckFormat($conf, CheckFormat::RUN_PREFER_NO);
         $this->cm = $cm;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $cm = new CountMatcher($word);
         if ($cm->ok())
-            return new Pages_SearchTerm(new CountMatcher($word));
+            return new Pages_SearchTerm(new CountMatcher($word), $srch->conf);
         else {
             $srch->warn("“{$keyword}:” expects a page number comparison.");
             return null;

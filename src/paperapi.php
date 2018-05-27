@@ -282,7 +282,7 @@ class PaperApi {
         $opt = $user->conf->paper_opts->get($dtype);
         if (!$opt || !$user->can_view_paper_option($prow, $opt))
             return ["ok" => false, "error" => "Permission error."];
-        $cf = new CheckFormat;
+        $cf = new CheckFormat($prow->conf);
         $doc = $cf->fetch_document($prow, $dtype, $qreq->docid);
         $cf->check_document($prow, $doc);
         return ["ok" => !$cf->failed, "response" => $cf->document_report($prow, $doc)];

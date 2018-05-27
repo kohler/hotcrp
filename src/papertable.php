@@ -621,8 +621,10 @@ class PaperTable {
         if ($doc) {
             if ($doc->mimetype === "application/pdf") {
                 if (!$this->cf)
-                    $this->cf = new CheckFormat(CheckFormat::RUN_NO);
-                if (($has_cf = $this->cf->has_spec($dtype)))
+                    $this->cf = new CheckFormat($this->conf, CheckFormat::RUN_NO);
+                $spec = $this->conf->format_spec($dtype);
+                $has_cf = $spec && !$spec->is_empty();
+                if ($has_cf)
                     $this->cf->check_document($this->prow, $doc);
             }
 

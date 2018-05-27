@@ -269,7 +269,7 @@ class DocumentInfo implements JsonSerializable {
             if (($flags & self::L_REQUIREFORMAT)
                 || (CheckFormat::$runcount < 3 && mt_rand(0, 7) == 0))
                 $runflag = CheckFormat::RUN_PREFER_NO;
-            $cf = new CheckFormat($runflag);
+            $cf = new CheckFormat($this->conf, $runflag);
             $cf->check_document($this->prow, $this);
             if ($cf->has_error()) {
                 if (($flags & self::L_SMALL) || $cf->failed)
@@ -318,7 +318,7 @@ class DocumentInfo implements JsonSerializable {
         else if (($m = $this->metadata()) && isset($m->npages))
             return $m->npages;
         else if ($this->docclass->load_to_filestore($this)) {
-            $cf = new CheckFormat;
+            $cf = new CheckFormat($this->conf);
             $cf->clear();
             $bj = $cf->run_banal($this->filestore);
             if ($bj && is_object($bj) && isset($bj->pages)) {

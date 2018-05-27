@@ -22,11 +22,12 @@ class CheckFormat extends MessageSet implements FormatChecker {
     static private $banal_args;
     static public $runcount = 0;
 
-    function __construct($allow_run = self::RUN_YES) {
+    function __construct(Conf $conf, $allow_run = self::RUN_YES) {
         parent::__construct();
         $this->allow_run = $allow_run;
+        $this->conf = $conf;
         if (self::$banal_args === null) {
-            $z = opt("banalZoom");
+            $z = $this->conf->opt("banalZoom");
             self::$banal_args = $z ? "-zoom=$z" : "";
         }
     }
@@ -45,7 +46,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function run_banal($filename) {
-        if (($pdftohtml = opt("pdftohtml")))
+        if (($pdftohtml = $this->conf->opt("pdftohtml")))
             putenv("PHP_PDFTOHTML=" . $pdftohtml);
         $banal_run = "perl src/banal -no_app -json ";
         if (self::$banal_args)
@@ -280,7 +281,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             // (counter resets every 2 seconds)
             $t = (int) (time() / 2);
             $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
-            $limit = opt("banalLimit", 8);
+            $limit = $doc->conf->opt("banalLimit", 8);
             if ($limit > 0 && $n > $limit)
                 return $cf->msg_fail("Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");
             if ($limit > 0)
@@ -300,18 +301,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $cf->check_banal_json($bj, $spec);
         else
             $cf->msg_fail(null);
-    }
-
-    function has_spec($dtype) {
-        return ($spec = $this->spec($dtype)) && !$spec->is_empty();
-    }
-
-    function spec($dtype, Conf $conf = null) {
-        global $Conf;
-        $conf = $conf ? : $Conf;
-        if ($conf !== $this->conf)
-            $this->conf = $conf;
-        return $this->conf->format_spec($dtype);
     }
 
     function fetch_document(PaperInfo $prow, $dtype, $docid = 0) {
@@ -345,7 +334,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             return $this->msg_fail("The format checker only works for PDF files.");
 
         $done_me = false;
-        $spec = $this->spec($doc->documentType, $prow->conf);
+        $spec = $prow->conf->format_spec($doc->documentType);
         foreach ($spec->checkers ? : [] as $chk) {
             $checker = $this->checker($chk);
             $done_me = $done_me || $checker === $this;
@@ -391,7 +380,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         return $t;
     }
     function document_report(PaperInfo $prow, $doc) {
-        $spec = $this->spec($doc ? $doc->documentType : DTYPE_SUBMISSION, $prow->conf);
+        $spec = $prow->conf->format_spec($doc ? $doc->documentType : DTYPE_SUBMISSION);
         if ($doc) {
             foreach ($spec->checkers ? : [] as $chk)
                 if (($checker = $this->checker($chk)) && $checker !== $this
@@ -401,8 +390,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
         return $this->report($this, $spec, $prow, $doc);
     }
 
-    function spec_error_kinds($dtype, Conf $conf) {
-        $spec = $this->spec($dtype, $conf);
+    function spec_error_kinds($dtype) {
+        $spec = $this->conf->format_spec($dtype);
         $ekinds = $this->error_kinds($spec);
         foreach ($spec->checkers ? : [] as $chk)
             if (($checker = $this->checker($chk)) && $checker !== $this)

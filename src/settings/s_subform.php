@@ -35,7 +35,7 @@ class BanalSettings {
     }
     static private function check_banal($sv) {
         global $ConfSitePATH;
-        $cf = new CheckFormat;
+        $cf = new CheckFormat($sv->conf);
         $interesting_keys = ["papersize", "pagelimit", "textblock", "bodyfontsize", "bodylineheight"];
         $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14");
         $s1 = self::cf_status($cf);
