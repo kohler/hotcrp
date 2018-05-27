@@ -2686,7 +2686,7 @@ return function () {
 // text rendering
 window.render_text = (function ($) {
 function render0(text) {
-    var lines = text.split(/((?:\r\n?|\n)(?:[-+*][ \t])?)/), ch;
+    var lines = text.split(/((?:\r\n?|\n)(?:[-+*][ \t]|\d+\.)?)/), ch;
     for (var i = 1; i < lines.length; i += 2) {
         if (lines[i - 1].length > 49
             && lines[i].length <= 2

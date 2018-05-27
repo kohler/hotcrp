@@ -457,7 +457,7 @@ class Text {
     }
 
     static function single_line_paragraphs($text) {
-        $lines = preg_split('/((?:\r\n?|\n)(?:[-+*][ \t])?)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $lines = preg_split('/((?:\r\n?|\n)(?:[-+*][ \t]|\d+\.)?)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
         $n = count($lines);
         for ($i = 1; $i < $n; $i += 2) {
             if (strlen($lines[$i - 1]) > 49
