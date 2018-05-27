@@ -37,7 +37,6 @@ class Si {
     const X_YES = 1;
     const X_WORD = 2;
 
-    static public $all = [];
     static private $type_storage = [
         "emailheader" => self::SI_DATA, "emailstring" => self::SI_DATA,
         "htmlstring" => self::SI_DATA, "simplestring" => self::SI_DATA,
@@ -146,11 +145,11 @@ class Si {
         return false;
     }
 
-    static function get($name, $k = null) {
-        if (!isset(self::$all[$name])
+    static function get($conf, $name, $k = null) {
+        if (!isset($conf->_setting_info[$name])
             && preg_match('/\A(.*)(_(?:[^_\s]+))\z/', $name, $m)
-            && isset(self::$all[$m[1]])) {
-            $si = clone self::$all[$m[1]];
+            && isset($conf->_setting_info[$m[1]])) {
+            $si = clone $conf->_setting_info[$m[1]];
             if (!$si->extensible
                 || ($si->extensible === self::X_YES
                     && !preg_match('/\A_(?:\$|n|m?\d+)\z/', $m[2])))
@@ -160,14 +159,12 @@ class Si {
                 $si->storage .= $m[2];
             if ($si->extensible === self::X_WORD)
                 $si->title .= " (" . htmlspecialchars(substr($m[2], 1)) . ")";
-            self::$all[$name] = $si;
+            $conf->_setting_info[$name] = $si;
         }
-        if (!isset(self::$all[$name]))
+        if (!isset($conf->_setting_info[$name]))
             return null;
-        $si = self::$all[$name];
-        if ($k)
-            return $si->$k;
-        return $si;
+        $si = $conf->_setting_info[$name];
+        return $k ? $si->$k : $si;
     }
 
 
@@ -182,31 +179,22 @@ class Si {
         return $info;
     }
 
-    static function _add_json($j) {
-        if (is_object($j) && isset($j->name) && is_string($j->name)) {
-            self::$all[] = $j;
-            return true;
-        } else
-            return false;
-    }
-
-    static function initialize() {
-        global $Conf;
-        self::$all = [];
-        expand_json_includes_callback(["etc/settings.json"], "Si::_add_json");
-        if (($olist = $Conf->opt("settingSpecs")))
-            expand_json_includes_callback($olist, "Si::_add_json");
-        usort(self::$all, "Conf::xt_priority_compare");
+    static function initialize(Conf $conf) {
+        $conf->_setting_info = [];
+        expand_json_includes_callback(["etc/settings.json"], [$conf, "_add_setting_json"]);
+        if (($olist = $conf->opt("settingSpecs")))
+            expand_json_includes_callback($olist, [$conf, "_add_setting_json"]);
+        usort($conf->_setting_info, "Conf::xt_priority_compare");
 
         $all = [];
-        $nall = count(self::$all);
+        $nall = count($conf->_setting_info);
         for ($i = 0; $i < $nall; ++$i) {
-            $j = self::$all[$i];
-            if ($Conf->xt_allowed($j) && !isset($all[$j->name])) {
+            $j = $conf->_setting_info[$i];
+            if ($conf->xt_allowed($j) && !isset($all[$j->name])) {
                 while (isset($j->merge) && $j->merge && $i + 1 < $nall
-                       && $j->name === self::$all[$i + 1]->name) {
+                       && $j->name === $conf->_setting_info[$i + 1]->name) {
                     unset($j->merge);
-                    $j = object_replace_recursive(self::$all[$i + 1], $j);
+                    $j = object_replace_recursive($conf->_setting_info[$i + 1], $j);
                     ++$i;
                 }
                 Conf::xt_resolve_require($j);
@@ -214,7 +202,7 @@ class Si {
                 $all[$j->name] = new $class($j);
             }
         }
-        self::$all = $all;
+        $conf->_setting_info = $all;
     }
 }
 
@@ -292,6 +280,9 @@ class SettingValues extends MessageSet {
         $this->near_msgs = new MessageSet;
         // maybe set $Opt["contactName"] and $Opt["contactEmail"]
         $this->conf->site_contact();
+        // maybe initialize _setting_info
+        if ($this->conf->_setting_info === null)
+            Si::initialize($this->conf);
     }
     static function make_request(Contact $user, $qreq) {
         $sv = new SettingValues($user);
@@ -443,7 +434,7 @@ class SettingValues extends MessageSet {
     }
     function sjs($name, $js = array()) {
         $x = ["id" => $name];
-        if (Si::get($name, "disabled"))
+        if (Si::get($this->conf, $name, "disabled"))
             $x["disabled"] = true;
         foreach ($js ? : [] as $k => $v)
             $x[$k] = $v;
@@ -453,7 +444,7 @@ class SettingValues extends MessageSet {
     }
 
     function si($name) {
-        $si = Si::get($name);
+        $si = Si::get($this->conf, $name);
         if (!$si)
             error_log(caller_landmark(2) . ": setting $name: missing information");
         return $si;
@@ -780,7 +771,7 @@ class SettingValues extends MessageSet {
     function execute() {
         global $Now;
         // parse settings
-        foreach (Si::$all as $si)
+        foreach ($this->conf->_setting_info as $si)
             $this->account($si);
 
         // check date relationships
@@ -790,8 +781,8 @@ class SettingValues extends MessageSet {
             if (!$dv1 && $dv2)
                 $this->save($dn1, $dv2);
             else if ($dv2 && $dv1 > $dv2) {
-                $si = Si::get($dn1);
-                $this->error_at($si, "Must come before " . Si::get($dn2, "title") . ".");
+                $si = Si::get($this->conf, $dn1);
+                $this->error_at($si, "Must come before " . Si::get($this->conf, $dn2, "title") . ".");
                 $this->error_at($dn2);
             }
         if ($this->has_savedv("sub_sub"))
@@ -808,8 +799,8 @@ class SettingValues extends MessageSet {
             foreach (explode(" ", $this->newv("resp_rounds")) as $i => $rname) {
                 $isuf = $i ? "_$i" : "";
                 if ($this->newv("resp_open$isuf") > $this->newv("resp_done$isuf")) {
-                    $si = Si::get("resp_open$isuf");
-                    $this->error_at($si, "Must come before " . Si::get("resp_done", "title") . ".");
+                    $si = Si::get($this->conf, "resp_open$isuf");
+                    $this->error_at($si, "Must come before " . Si::get($this->conf, "resp_done", "title") . ".");
                     $this->error_at("resp_done$isuf");
                 }
             }
@@ -1019,5 +1010,3 @@ class SettingValues extends MessageSet {
         return $this->changes;
     }
 }
-
-Si::initialize();

@@ -315,7 +315,7 @@ class Round_SettingParser extends SettingParser {
                     $osuffix = $isuffix;
                 $ndeadlines = 0;
                 foreach (Conf::$review_deadlines as $k) {
-                    $v = $sv->parse_value(Si::get($k . $isuffix));
+                    $v = $sv->parse_value($sv->si($k . $isuffix));
                     $sv->save($k . $osuffix, $v <= 0 ? null : $v);
                     $ndeadlines += $v > 0;
                 }
@@ -328,7 +328,7 @@ class Round_SettingParser extends SettingParser {
                         $sv->save($soft, $hardv);
                     else if ($hardv && $softv > $hardv) {
                         $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
-                        $sv->error_at($soft, Si::get("{$k}soft", "title") . $desc . ": Must come before " . Si::get("{$k}hard", "title") . ".");
+                        $sv->error_at($soft, $sv->si("{$k}soft")->title . $desc . ": Must come before " . $sv->si("{$k}hard")->title . ".");
                         $sv->error_at($hard);
                     }
                 }

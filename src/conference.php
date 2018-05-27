@@ -116,6 +116,7 @@ class Conf {
     private $_hook_map = null;
     private $_hook_factories = null;
     public $_file_filters = null; // maintained externally
+    public $_setting_info = null; // maintained externally
 
     public $paper = null; // current paper row
     private $_active_list = false;
@@ -3716,6 +3717,16 @@ class Conf {
         if (($expansions = $this->xt_search_factories($this->_option_type_factories, $name, [$this, "xt_allowed"], $uf, null, "i")))
             $uf = $expansions[0];
         return $uf;
+    }
+
+
+    // Setting info
+    function _add_setting_json($j) {
+        if (is_object($j) && isset($j->name) && is_string($j->name)) {
+            $this->_setting_info[] = $j;
+            return true;
+        } else
+            return false;
     }
 
 
