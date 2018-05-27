@@ -70,24 +70,24 @@ class CommentInfo {
 
 
     static function echo_script($prow) {
-        global $Conf, $Me;
+        global $Me;
         if (Ht::mark_stash("papercomment")) {
             $t = array("papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
             if (!$prow->has_author($Me))
                 $t[] = "papercomment.nonauthor=true";
-            $crow = new CommentInfo(null, $prow, $Conf);
+            $crow = new CommentInfo(null, $prow, $prow->conf);
             $crow->commentType = COMMENTTYPE_RESPONSE;
-            foreach ($Conf->resp_round_list() as $i => $rname) {
+            foreach ($prow->conf->resp_round_list() as $i => $rname) {
                 $isuf = $i ? "_$i" : "";
-                $wl = $Conf->setting("resp_words$isuf", 500);
+                $wl = $prow->conf->setting("resp_words$isuf", 500);
                 $j = array("words" => $wl);
                 $ix = false;
                 $crow->commentRound = $i;
                 if ($Me->can_respond($prow, $crow)) {
                     if ($i)
-                        $ix = $Conf->message_html("resp_instrux_$i", array("wordlimit" => $wl));
+                        $ix = $prow->conf->message_html("resp_instrux_$i", array("wordlimit" => $wl));
                     if ($ix === false)
-                        $ix = $Conf->message_html("resp_instrux", array("wordlimit" => $wl));
+                        $ix = $prow->conf->message_html("resp_instrux", array("wordlimit" => $wl));
                     if ($ix !== false)
                         $j["instrux"] = $ix;
                 }
@@ -116,14 +116,13 @@ class CommentInfo {
             return null;
     }
 
-    static function unparse_html_id($cr) {
-        global $Conf;
+    static function unparse_html_id($cr, $conf) {
         $is_author = $cr->commentType >= COMMENTTYPE_AUTHOR;
         $o = $is_author ? $cr->authorOrdinal : $cr->ordinal;
         if (self::commenttype_needs_ordinal($cr->commentType) && $o)
             return ($is_author ? "cA" : "c") . $o;
         else if ($cr->commentType & COMMENTTYPE_RESPONSE)
-            return $Conf->resp_round_text($cr->commentRound) . "response";
+            return $conf->resp_round_text($cr->commentRound) . "response";
         else
             return "cx" . $cr->commentId;
     }
@@ -369,7 +368,7 @@ class CommentInfo {
 
     function unparse_flow_entry(Contact $contact) {
         // See also ReviewForm::reviewFlowEntry
-        $a = "<a href=\"" . hoturl("paper", "p=$this->paperId#" . self::unparse_html_id($this)) . "\"";
+        $a = "<a href=\"" . hoturl("paper", "p=$this->paperId#" . self::unparse_html_id($this, $this->conf)) . "\"";
         $t = '<tr class="pl"><td class="pl_eventicon">' . $a . ">"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_eventid pl_rowclick">'
