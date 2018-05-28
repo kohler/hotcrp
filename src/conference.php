@@ -1624,16 +1624,18 @@ class Conf {
     }
 
     function full_pc_members() {
-        if ($this->_pc_members_cache !== null) {
-            $result = $this->q("select * from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
-            while ($result && ($row = $result->fetch_object())) {
-                if (($pc = get($this->_pc_members_and_admins_cache, $row->contactId)))
-                    $pc->merge_secondary_properties($row);
+        if (!$this->_pc_members_fully_loaded) {
+            if ($this->_pc_members_cache !== null) {
+                $result = $this->q("select * from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
+                while ($result && ($row = $result->fetch_object())) {
+                    if (($pc = get($this->_pc_members_and_admins_cache, $row->contactId)))
+                        $pc->merge_secondary_properties($row);
+                }
+                Dbl::free($result);
             }
-            Dbl::free($result);
+            $this->_user_cache = null;
+            $this->_pc_members_fully_loaded = true;
         }
-        $this->_pc_members_fully_loaded = true;
-        $this->_user_cache = null;
         return $this->pc_members();
     }
 
