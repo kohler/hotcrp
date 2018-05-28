@@ -773,7 +773,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     }
     function promote(PaperSearch $srch) {
         $rsm = new ReviewSearchMatcher(">0");
-        if ($srch->limit() === "r" || $srch->limit() === "rout")
+        if (in_array($srch->limit(), ["r", "rout", "rable"]))
             $rsm->add_contact($srch->cid);
         else if ($srch->limit() === "req") {
             $rsm->apply_requester($srch->cid);
@@ -1196,10 +1196,15 @@ class PaperSearch {
             $this->_active_limit = "req";
         if ($this->_active_limit === "rable") {
             $u = $this->reviewer_user();
-            if ($u->can_accept_review_assignment_ignore_conflict(null))
-                $this->_active_limit = $this->conf->can_pc_see_all_submissions() ? "act" : "s";
-            else if (!$u->isPC)
-                $this->_active_limit = "r";
+            if ($this->privChair || $this->user === $u) {
+                if ($u->can_accept_review_assignment_ignore_conflict(null)) {
+                    if ($this->conf->can_pc_see_all_submissions())
+                        $this->_active_limit = "act";
+                    else
+                        $this->_active_limit = "s";
+                } else if (!$u->isPC)
+                    $this->_active_limit = "r";
+            }
         }
     }
 
@@ -2162,12 +2167,13 @@ class PaperSearch {
             return $prow->timeSubmitted > 0 && $prow->managerContactId == 0;
         case "rable":
             $user = $this->reviewer_user();
-            if (!$user->can_accept_review_assignment_ignore_conflict($prow))
-                return false;
-            if ($this->conf->can_pc_see_all_submissions())
-                return $prow->timeWithdrawn <= 0;
-            else
-                return $prow->timeSubmitted > 0;
+            return $user->can_accept_review_assignment_ignore_conflict($prow)
+                && ($this->conf->can_pc_see_all_submissions()
+                    ? $prow->timeWithdrawn <= 0
+                    : $prow->timeSubmitted > 0)
+                && ($this->privChair
+                    || $this->user === $user
+                    || $this->user->can_administer($prow));
         case "act":
             return $prow->timeWithdrawn <= 0;
         case "r":
