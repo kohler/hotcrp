@@ -1093,7 +1093,7 @@ class Contact {
             $this->contactDbId = 0;
             $this->contactdb_user_ = false;
         }
-        if ($cdb && (!empty($cu->cdb_qf) || $roles !== $old_roles || $disabled !== $old_disabled))
+        if ($cdb && (!empty($cu->cdb_qf) || $roles !== $old_roles))
             $this->contactdb_update($cu->cdb_qf, $changing_other);
 
         // Password
@@ -1957,12 +1957,16 @@ class Contact {
     }
 
     function can_change_password($acct) {
-        if ($this->conf->opt("chairHidePasswords"))
-            return get($_SESSION, "trueuser") && $acct && $acct->email
-                && $_SESSION["trueuser"]->email == $acct->email;
+        if ($this->privChair
+            && !$this->conf->opt("chairHidePasswords"))
+            return true;
         else
-            return $this->privChair
-                || ($acct && $this->contactId > 0 && $this->contactId == $acct->contactId);
+            return $acct
+                && $this->contactId > 0
+                && $this->contactId == $acct->contactId
+                && isset($_SESSION)
+                && isset($_SESSION["trueuser"])
+                && strcasecmp($_SESSION["trueuser"]->email, $acct->email) == 0;
     }
 
     function can_administer(PaperInfo $prow = null, $forceShow = null) {

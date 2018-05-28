@@ -182,19 +182,21 @@ function modify_confirm($j, $ok_message, $ok_message_optional) {
     global $Conf;
     if (get($j, "ok") && get($j, "warnings"))
         $Conf->warnMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $j->warnings) . "</div>");
-    if (get($j, "ok") && $ok_message && (!$ok_message_optional || !get($j, "warnings")))
+    if (get($j, "ok") && $ok_message
+        && (!$ok_message_optional || !get($j, "warnings"))
+        && (!isset($j->users) || !empty($j->users)))
         $Conf->confirmMsg($ok_message);
 }
 
 if ($Me->privChair && $Qreq->modifygo && $Qreq->post_ok() && isset($papersel)) {
     if ($Qreq->modifytype == "disableaccount")
-        modify_confirm(UserActions::disable($papersel, $Me), "Accounts disabled.", true);
+        modify_confirm(UserActions::disable($Me, $papersel), "Accounts disabled.", true);
     else if ($Qreq->modifytype == "enableaccount")
-        modify_confirm(UserActions::enable($papersel, $Me), "Accounts enabled.", true);
+        modify_confirm(UserActions::enable($Me, $papersel), "Accounts enabled.", true);
     else if ($Qreq->modifytype == "resetpassword")
-        modify_confirm(UserActions::reset_password($papersel, $Me), "Passwords reset. <a href=\"" . hoturl_post("users", "t=" . urlencode($Qreq->t) . "&amp;modifygo=1&amp;modifytype=sendaccount&amp;pap=" . join("+", $papersel)) . "\">Send account information to those accounts</a>", false);
+        modify_confirm(UserActions::reset_password($Me, $papersel), "Passwords reset. <a href=\"" . hoturl_post("users", "t=" . urlencode($Qreq->t) . "&amp;modifygo=1&amp;modifytype=sendaccount&amp;pap=" . join("+", $papersel)) . "\">Send account information to those accounts</a>", false);
     else if ($Qreq->modifytype == "sendaccount")
-        modify_confirm(UserActions::send_account_info($papersel, $Me), "Account information sent.", false);
+        modify_confirm(UserActions::send_account_info($Me, $papersel), "Account information sent.", false);
     unset($Qreq->modifygo, $Qreq->modifytype);
     SelfHref::redirect($Qreq);
 }

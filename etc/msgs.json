@@ -41,6 +41,8 @@
 
     ["Papers #%s are totally hidden when viewing the site as another user.", "Paper #%s is totally hidden when viewing the site as another user.", ["$2=1"]],
 
+    ["Skipped disabled accounts %2$s.", "Skipped disabled account %2$s.", ["$1=1"]],
+
     ["eperm", "Permission error.", "You aren’t allowed to view submission #%2$d.", ["$1=view_paper"]],
     ["eperm", "Permission error.", "You aren’t allowed to view uploaded documents for submission #%2$d.", ["$1=view_pdf"]],
     ["eperm", "Permission error.", "You aren’t allowed to view reviews for submission #%2$d.", ["$1=view_review"]],
