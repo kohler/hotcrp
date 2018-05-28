@@ -288,7 +288,7 @@ class GetCSV_ListAction extends ListAction {
         $pl = new PaperList($search, ["sort" => true, "report" => "pl", "display" => $qreq->display], $qreq);
         $pl->set_selection($ssel, true);
         $pl->set_view("sel", false);
-        list($header, $data) = $pl->text_csv($search->limitName);
+        list($header, $data) = $pl->text_csv($qreq->t);
         return $user->conf->make_csvg("data", CsvGenerator::FLAG_ITEM_COMMENTS)
             ->select($header)->add($data);
     }

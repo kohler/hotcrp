@@ -264,13 +264,13 @@ class StatusPaperColumn extends PaperColumn {
         if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
             && $pl->user->can_view_decision($row))
             $pl->mark_has("need_final");
-        $status_info = $pl->user->paper_status_info($row, $pl->search->limitName != "a" && $pl->user->allow_administer($row));
+        $status_info = $pl->user->paper_status_info($row, !$pl->search->limit_author() && $pl->user->allow_administer($row));
         if (!$this->is_long && $status_info[0] == "pstat_sub")
             return "";
         return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $status_info = $pl->user->paper_status_info($row, $pl->search->limitName != "a" && $pl->user->allow_administer($row));
+        $status_info = $pl->user->paper_status_info($row, !$pl->search->limit_author() && $pl->user->allow_administer($row));
         return $status_info[1];
     }
 }
@@ -1091,7 +1091,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $this->score = $this->format_field->id;
     }
     function prepare(PaperList $pl, $visible) {
-        $bound = $pl->user->permissive_view_score_bound($pl->search->limitName == "a");
+        $bound = $pl->user->permissive_view_score_bound($pl->search->limit_author());
         if ($this->format_field->view_score <= $bound)
             return false;
         if ($visible)

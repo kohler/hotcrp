@@ -25,7 +25,7 @@ class Formula_PaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         if (!$this->formula->check($pl->user)
-            || !$pl->user->can_view_formula($this->formula, $pl->search->limitName == "a"))
+            || !$pl->user->can_view_formula($this->formula, $pl->search->limit_author()))
             return false;
         $this->formula_function = $this->formula->compile_function();
         if ($visible)

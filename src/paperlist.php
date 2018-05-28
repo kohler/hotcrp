@@ -614,24 +614,25 @@ class PaperList {
             return "id title revstat statusfull authors collab abstract topics reviewers shepherd scores formulas";
         case "authorHome":
             return "id title statusfull";
-        case "all":
         case "act":
+        case "all":
             return "sel id title revtype revstat statusfull authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reviewerHome":
             $this->_default_linkto("finishreview");
             return "id title revtype status";
-        case "s":
-        case "acc":
+        case "ar":
         case "r":
+        case "rable":
+            $this->_default_linkto("finishreview");
+            /* fallthrough */
+        case "acc":
         case "lead":
         case "manager":
-            if ($this->report_id == "r")
-                $this->_default_linkto("finishreview");
-            return "sel id title revtype revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
-        case "rout":
-            $this->_default_linkto("review");
+        case "s":
+        case "vis":
             return "sel id title revtype revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
         case "req":
+        case "rout":
             $this->_default_linkto("review");
             return "sel id title revtype revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reqrevs":

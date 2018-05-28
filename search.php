@@ -152,7 +152,7 @@ if (isset($Qreq->forceShow))
 if (isset($Qreq->q)) {
     $pl->set_table_id_class("foldpl", "pltable_full", "p#");
     $pl->set_selection($SSel);
-    $pl_text = $pl->table_html($Search->limitName, ["fold_session_prefix" => "pldisplay.", "list" => true]);
+    $pl_text = $pl->table_html($Qreq->t, ["fold_session_prefix" => "pldisplay.", "list" => true]);
     unset($Qreq->atab);
 } else
     $pl_text = null;

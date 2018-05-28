@@ -1034,7 +1034,7 @@ class PaperSearch {
     public $privChair;
     private $amPC;
 
-    var $limitName;
+    private $limitName;
     var $qt;
     var $allowAuthor;
     private $fields;
@@ -1103,8 +1103,8 @@ class PaperSearch {
         $this->cid = $user->contactId;
 
         // paper selection
-        $ptype = get_s($options, "t");
-        if ($ptype === 0)
+        $ptype = (string) get($options, "t");
+        if ($ptype === "0")
             $ptype = "";
         if ($ptype === "vis")
             $this->limitName = "vis";
@@ -1219,9 +1219,11 @@ class PaperSearch {
     function limit() {
         return $this->_active_limit;
     }
-
     function limit_submitted() {
         return !in_array($this->_active_limit, ["a", "ar", "act", "all", "unsub"]);
+    }
+    function limit_author() {
+        return $this->_active_limit === "a";
     }
 
     function reviewer_user() {
