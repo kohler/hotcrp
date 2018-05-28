@@ -2463,6 +2463,10 @@ class Conf {
         return $this->hoturl($page, $options, self::HOTURL_SITE_RELATIVE);
     }
 
+    function hoturl_site_relative_raw($page, $options = null) {
+        return $this->hoturl($page, $options, self::HOTURL_SITE_RELATIVE | self::HOTURL_RAW);
+    }
+
     function hoturl_post($page, $options = null) {
         return $this->hoturl($page, $options, self::HOTURL_POST);
     }

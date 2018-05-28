@@ -37,10 +37,11 @@ $wheres = array();
 
 $include_pids = null;
 if ($Qreq->p !== "") {
-    $Search = new PaperSearch($Me, array("t" => "all", "q" => $Qreq->p, "allow_deleted" => true));
-    if (count($Search->warnings))
-        $Conf->warnMsg(join("<br />\n", $Search->warnings));
+    $Search = new PaperSearch($Me, ["t" => "all", "q" => $Qreq->p]);
+    $Search->set_allow_deleted(true);
     $include_pids = $Search->paper_ids();
+    if (!empty($Search->warnings))
+        $Conf->warnMsg(join("<br />\n", $Search->warnings));
     if (!empty($include_pids)) {
         $where = array();
         foreach ($include_pids as $p) {
@@ -51,7 +52,7 @@ if ($Qreq->p !== "") {
         $wheres[] = "(" . join(" or ", $where) . ")";
         $include_pids = array_flip($include_pids);
     } else {
-        if (!count($Search->warnings))
+        if (empty($Search->warnings))
             $Conf->warnMsg("No papers match that search.");
         $wheres[] = "false";
     }

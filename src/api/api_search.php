@@ -19,13 +19,7 @@ class Search_API {
         else
             return new JsonResult(400, "Missing parameter.");
 
-        $sarg = ["t" => $t, "q" => $q];
-        if ($qreq->qt)
-            $sarg["qt"] = $qreq->qt;
-        if ($qreq->urlbase)
-            $sarg["urlbase"] = $qreq->urlbase;
-
-        $search = new PaperSearch($user, $sarg);
+        $search = new PaperSearch($user, ["t" => $t, "q" => $q, "qt" => $qreq->qt, "urlbase" => $qreq->urlbase, "reviewer" => $qreq->reviewer]);
         $pl = new PaperList($search, ["sort" => true], $qreq);
         $ih = $pl->ids_and_groups();
         return ["ok" => true, "ids" => $ih[0], "groups" => $ih[1],
@@ -47,12 +41,7 @@ class Search_API {
             $qreq->q = "";
         if ($qreq->f == "au" || $qreq->f == "authors")
             $qreq->q = ((int) $qreq->aufull ? "show" : "hide") . ":aufull " . $qreq->q;
-        $reviewer = $qreq->reviewer;
-        unset($qreq->reviewer);
         $search = new PaperSearch($user, $qreq);
-        if ($reviewer && $user->email !== $reviewer
-            && ($reviewer = $user->conf->user_by_email($reveiwer)))
-            $search->set_reviewer($reviewer);
 
         $report = "pl";
         if ($qreq->session && str_starts_with($qreq->session, "pf"))

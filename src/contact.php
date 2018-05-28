@@ -578,6 +578,10 @@ class Contact {
         return $this->contactId <= 0 && !$this->capabilities && !$this->email;
     }
 
+    function owns_email($email) {
+        return (string) $email !== "" && strcasecmp($email, $this->email) === 0;
+    }
+
     function name_text() {
         if ($this->firstName === "" || $this->lastName === "")
             return $this->firstName . $this->lastName;
@@ -1986,7 +1990,7 @@ class Contact {
     }
 
     function can_view_pc() {
-        if ($this->privChair)
+        if ($this->is_manager())
             return true;
         $this->check_rights_version();
         if ($this->can_view_pc_ === null) {

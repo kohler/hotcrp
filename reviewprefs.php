@@ -20,6 +20,7 @@ if ($Qreq->reviewer
             || $Qreq->reviewer === (string) $pcm->contactId) {
             $reviewer = $pcm;
             $incorrect_reviewer = false;
+            $Qreq->reviewer = $pcm->email;
         }
 } else if (!$Qreq->reviewer && !($Me->roles & Contact::ROLE_PC)) {
     foreach ($Conf->pc_members() as $pcm) {
@@ -29,7 +30,6 @@ if ($Qreq->reviewer
         break;
     }
 }
-$Qreq->set_attachment("reviewer_contact", $reviewer);
 if ($incorrect_reviewer)
     Conf::msg_error("Reviewer " . htmlspecialchars($Qreq->reviewer) . " is not on the PC.");
 
@@ -209,7 +209,7 @@ else if ($Qreq->fn === "uploadpref")
 
 
 // Prepare search
-$Qreq->urlbase = hoturl_site_relative_raw("reviewprefs", prefs_hoturl_args());
+$Qreq->urlbase = hoturl_site_relative_raw("reviewprefs");
 $Qreq->q = get($Qreq, "q", "");
 $Qreq->t = "editpref";
 $Qreq->display = PaperList::change_display($Me, "pf");
@@ -237,8 +237,7 @@ $Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 
 // search
-$search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q]);
-$search->set_reviewer($reviewer);
+$search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q, "reviewer" => $reviewer]);
 $pl = new PaperList($search, ["sort" => true, "report" => "pf"], $Qreq);
 $pl->set_table_id_class("foldpl", "pltable_full", "p#");
 $pl_text = $pl->table_html("editpref",
@@ -329,6 +328,8 @@ Ht::stash_script("$(document).on(\"change\",\"input.paperlist-display\",plinfo.c
 $hoturl_args = prefs_hoturl_args();
 if ($Qreq->q)
     $hoturl_args["q"] = $Qreq->q;
+if ($Qreq->sort)
+    $hoturl_args["sort"] = $Qreq->sort;
 echo Ht::form_div(hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "class" => "assignpc"]),
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1);

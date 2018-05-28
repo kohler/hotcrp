@@ -1089,7 +1089,8 @@ class PaperSearch {
     ];
 
 
-    function __construct(Contact $user, $options, Contact $reviewer = null) {
+    // NB: `$options` can come from an unsanitized user request.
+    function __construct(Contact $user, $options) {
         if (is_string($options))
             $options = array("q" => $options);
 
@@ -1159,32 +1160,38 @@ class PaperSearch {
 
         // the query itself
         $this->q = trim(get_s($options, "q"));
+        $this->_default_sort = get($options, "sort");
+
+        // reviewer
+        if (($reviewer = get($options, "reviewer"))) {
+            if (is_string($reviewer)) {
+                if (strcasecmp($reviewer, $user->email) == 0)
+                    $reviewer = $user;
+                else if ($user->can_view_pc())
+                    $reviewer = $this->conf->pc_member_by_email($reviewer);
+                else
+                    $reviewer = null;
+            } else if (!is_object($reviewer) || !($reviewer instanceof Contact))
+                $reviewer = null;
+            if ($reviewer)
+                $this->_reviewer_user = $this->_context_user = $reviewer;
+        }
 
         // URL base
         if (isset($options["urlbase"]))
             $this->urlbase = $options["urlbase"];
-        else {
-            $this->urlbase = hoturl_site_relative_raw("search", "t=" . urlencode($this->limitName));
-            if ($qtype !== "n")
-                $this->urlbase .= "&qt=" . urlencode($qtype);
-        }
+        else
+            $this->urlbase = $this->conf->hoturl_site_relative_raw("search", "t=" . urlencode($this->limitName));
+        if ($qtype !== "n")
+            $this->urlbase = hoturl_add_raw($this->urlbase, "qt=" . urlencode($qtype));
+        if ($this->_reviewer_user
+            && $this->_reviewer_user->contactId !== $user->contactId
+            && strpos($this->urlbase, "reviewer=") === false)
+            $this->urlbase = hoturl_add_raw($this->urlbase, "reviewer=" . urlencode($this->_reviewer_user->email));
         if (strpos($this->urlbase, "&amp;") !== false)
             trigger_error(caller_landmark() . " PaperSearch::urlbase should be a raw URL", E_USER_NOTICE);
 
-        $this->_allow_deleted = get($options, "allow_deleted", false);
-        $this->_default_sort = get($options, "sort");
-
         $this->set_limit($this->limitName);
-        assert(!$reviewer);
-    }
-
-    function set_reviewer(Contact $reviewer = null) {
-        assert($this->_qe === null);
-        if ($reviewer && !$this->user->privChair && $reviewer !== $this->user)
-            trigger_error(caller_landmark() . ": set_reviewer for non-admin");
-        $this->_reviewer_user = $this->_context_user = $reviewer;
-        $this->set_limit($this->limitName);
-        return $this;
     }
 
     private function set_limit($limit) {
@@ -1206,6 +1213,11 @@ class PaperSearch {
                     $this->_active_limit = "r";
             }
         }
+    }
+
+    function set_allow_deleted($x) {
+        assert($this->_qe === null);
+        $this->_allow_deleted = $x;
     }
 
     function __get($name) {

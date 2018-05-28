@@ -55,6 +55,14 @@ function cvtnum($value, $default = -1) {
 
 // web helpers
 
+function hoturl_add_raw($url, $component) {
+    if (($pos = strpos($url, "#")) !== false) {
+        $component .= substr($url, $pos);
+        $url = substr($url, 0, $pos);
+    }
+    return $url . (strpos($url, "?") === false ? "?" : "&") . $component;
+}
+
 function hoturl_defaults($options = array()) {
     foreach ($options as $k => $v)
         if ($v !== null)
