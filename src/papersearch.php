@@ -1035,8 +1035,6 @@ class PaperSearch {
     private $amPC;
 
     private $limitName;
-    var $qt;
-    var $allowAuthor;
     private $fields;
     private $_reviewer_user = false;
     private $_context_user = false;
@@ -1139,12 +1137,6 @@ class PaperSearch {
         else
             $this->limitName = "ar";
 
-        // track other information
-        $this->allowAuthor = false;
-        if ($user->privChair || $user->is_author()
-            || ($this->amPC && $this->conf->submission_blindness() != Conf::BLIND_ALWAYS))
-            $this->allowAuthor = true;
-
         // default query fields
         // NB: If a complex query field, e.g., "re", "tag", or "option", is
         // default, then it must be the only default or query construction
@@ -1155,7 +1147,8 @@ class PaperSearch {
             $this->fields["ti"] = 1;
         if ($qtype === "n" || $qtype === "ab")
             $this->fields["ab"] = 1;
-        if ($this->allowAuthor && ($qtype === "n" || $qtype === "au" || $qtype === "ac"))
+        if ($user->can_view_some_authors()
+            && ($qtype === "n" || $qtype === "au" || $qtype === "ac"))
             $this->fields["au"] = 1;
         if ($this->privChair && $qtype === "ac")
             $this->fields["co"] = 1;
@@ -1163,7 +1156,6 @@ class PaperSearch {
             $this->fields["re"] = 1;
         if ($this->amPC && $qtype === "tag")
             $this->fields["tag"] = 1;
-        $this->qt = ($qtype === "n" ? "" : $qtype);
 
         // the query itself
         $this->q = trim(get_s($options, "q"));
