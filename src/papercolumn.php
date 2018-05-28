@@ -1020,6 +1020,7 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
 class ScoreGraph_PaperColumn extends PaperColumn {
     protected $contact;
     protected $not_me;
+    protected $format_field;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
@@ -1064,7 +1065,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         }
         return $x;
     }
-    function field_content(PaperList $pl, ReviewField $field, PaperInfo $row) {
+    function content(PaperList $pl, PaperInfo $row) {
         $values = $this->score_values($pl, $row);
         if (empty($values))
             return "";
@@ -1072,22 +1073,26 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         $cid = $this->contact->contactId;
         if ($this->not_me && !$row->can_view_review_identity_of($cid, $pl->user))
             $cid = 0;
-        return $field->unparse_graph($values, 1, get($values, $cid));
+        return $this->format_field->unparse_graph($values, 1, get($values, $cid));
+    }
+    function text(PaperList $pl, PaperInfo $row) {
+        $values = array_map([$this->format_field, "unparse_value"],
+            $this->score_values($pl, $row));
+        return join(" ", $values);
     }
 }
 
 class Score_PaperColumn extends ScoreGraph_PaperColumn {
     public $score;
-    private $form_field;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD;
-        $this->form_field = $conf->review_field($cj->review_field_id);
-        $this->score = $this->form_field->id;
+        $this->format_field = $conf->review_field($cj->review_field_id);
+        $this->score = $this->format_field->id;
     }
     function prepare(PaperList $pl, $visible) {
         $bound = $pl->user->permissive_view_score_bound($pl->search->limitName == "a");
-        if ($this->form_field->view_score <= $bound)
+        if ($this->format_field->view_score <= $bound)
             return false;
         if ($visible)
             $pl->qopts["scores"][$this->score] = true;
@@ -1095,8 +1100,8 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         return true;
     }
     function score_values(PaperList $pl, PaperInfo $row) {
-        $fid = $this->form_field->id;
-        $row->ensure_review_score($this->form_field);
+        $fid = $this->format_field->id;
+        $row->ensure_review_score($this->format_field);
         $scores = [];
         foreach ($row->viewable_submitted_reviews_by_user($pl->user) as $rrow)
             if (isset($rrow->$fid) && $rrow->$fid)
@@ -1104,19 +1109,16 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         return $scores;
     }
     function header(PaperList $pl, $is_text) {
-        return $is_text ? $this->form_field->search_keyword() : $this->form_field->web_abbreviation();
+        return $is_text ? $this->format_field->search_keyword() : $this->format_field->web_abbreviation();
     }
     function alternate_display_name() {
-        return $this->form_field->id;
+        return $this->format_field->id;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         // Do not use score_values to determine content emptiness, since
         // that would load the scores from the DB -- even for folded score
         // columns.
-        return !$row->may_have_viewable_scores($this->form_field, $pl->user);
-    }
-    function content(PaperList $pl, PaperInfo $row) {
-        return parent::field_content($pl, $this->form_field, $row);
+        return !$row->may_have_viewable_scores($this->format_field, $pl->user);
     }
 }
 

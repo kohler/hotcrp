@@ -16,6 +16,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
             || !($this->formula->result_format() instanceof ReviewField)
             || !$pl->user->can_view_formula($this->formula, $pl->search->limitName == "a"))
             return false;
+        $this->format_field = $this->formula->result_format();
         $this->formula_function = $this->formula->compile_sortable_function();
         $this->indexes_function = null;
         if ($this->formula->is_indexed())
@@ -43,9 +44,6 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
             return "<span class=\"need-tooltip\" data-tooltip=\"" . htmlspecialchars($this->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
         else
             return htmlspecialchars($x);
-    }
-    function content(PaperList $pl, PaperInfo $row) {
-        return parent::field_content($pl, $this->formula->result_format(), $row);
     }
 }
 
