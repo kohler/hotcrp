@@ -654,6 +654,7 @@ class PaperList {
             $this->_default_linkto("assign");
             return "sel id title status reviewers";
         default:
+            error_log($this->conf->dbname . ": No such report {$this->report_id}");
             return null;
         }
     }
