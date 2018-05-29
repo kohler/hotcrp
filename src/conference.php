@@ -546,11 +546,6 @@ class Conf {
         $Opt[$name] = $this->opt[$name] = $value;
     }
 
-    function unset_opt($name) {
-        global $Opt;
-        unset($Opt[$name], $this->opt[$name]);
-    }
-
     function opt_timestamp() {
         if ($this->_opt_timestamp === null) {
             $this->_opt_timestamp = 1;
