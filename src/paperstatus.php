@@ -1135,10 +1135,11 @@ class PaperStatus extends MessageSet {
     static function postcheck_contacts(PaperStatus $ps, $pj) {
         if (isset($ps->diffs["contacts"]) && !$ps->has_error_at("contacts")) {
             foreach (self::contacts_array($pj) as $c) {
-                $c->only_if_contactdb = !get($c, "contact");
+                $required = !!get($c, "contact");
+                $c->only_if_contactdb = !$required;
                 $c->disabled = !!$ps->disable_users;
                 if (!Contact::create($ps->conf, $c, !$ps->no_email)
-                    && get($c, "contact"))
+                    && $required)
                     $ps->error_at("contacts", $ps->_("Could not create an account for contact %s.", Text::user_html($c)));
             }
         }
