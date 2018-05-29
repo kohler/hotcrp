@@ -448,7 +448,7 @@ class UserStatus extends MessageSet {
         $user = $user ? : new Contact(null, $this->conf);
         if (($send = $this->send_email) === null)
             $send = !$old_cdb_user;
-        if ($user->save_json($cj, $actor, $send))
+        if ($user->save_json($cj, $actor, $send ? Contact::SAVE_NOTIFY : 0))
             return $user;
         else
             return false;

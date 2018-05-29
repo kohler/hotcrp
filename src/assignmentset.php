@@ -360,9 +360,7 @@ class AssignerContacts {
             foreach (["email", "firstName", "lastName", "affiliation", "password", "disabled"] as $k)
                 if ($c->$k !== null)
                     $cargs[$k] = $c->$k;
-            if ($cx->is_anonymous_user())
-                $cargs["no_validate_email"] = true;
-            $cx = Contact::create($this->conf, $cargs);
+            $cx = Contact::create($this->conf, $cargs, $cx->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0);
             $cx = $this->store($cx);
         }
         return $cx;

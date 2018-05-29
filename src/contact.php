@@ -966,7 +966,10 @@ class Contact {
         return $roles;
     }
 
-    function save_json($cj, $actor, $send) {
+    const SAVE_NOTIFY = 1;
+    const SAVE_ANY_EMAIL = 2;
+    const SAVE_IMPORT = 4;
+    function save_json($cj, $actor, $flags) {
         global $Me, $Now;
         $inserting = !$this->contactId;
         $old_roles = $this->roles;
@@ -1110,7 +1113,7 @@ class Contact {
 
         // Mark creation and activity
         if ($inserting) {
-            if ($send && !$this->disabled)
+            if (($flags & self::SAVE_NOTIFY) && !$this->disabled)
                 $this->sendAccountInfo("create", false);
             $type = $this->disabled ? "disabled " : "";
             $this->conf->log_for($Me && $Me->has_email() ? $Me : $this, $this, "Created {$type}account");
@@ -1217,7 +1220,7 @@ class Contact {
             $cu->qv["password"] = $this->password = "";
     }
 
-    static function create(Conf $conf, $reg, $send = false) {
+    static function create(Conf $conf, $reg, $flags = 0) {
         global $Me, $Now;
         if (is_array($reg))
             $reg = (object) $reg;
@@ -1237,15 +1240,15 @@ class Contact {
                 if ((string) $acct->$k === "" && ($x = get($reg, $k)))
                     $cj[$k] = $x;
             if (!empty($cj))
-                $acct->save_json((object) $cj, null, false);
+                $acct->save_json((object) $cj, null, 0);
             return $acct;
         }
 
         // validate email, check contactdb
-        if (!get($reg, "no_validate_email") && !validate_email($email))
+        if (!($flags & self::SAVE_ANY_EMAIL) && !validate_email($email))
             return null;
         $cdbu = Contact::contactdb_find_by_email($email, $conf);
-        if (get($reg, "only_if_contactdb") && !$cdbu)
+        if (($flags & self::SAVE_IMPORT) && !$cdbu)
             return null;
 
         $cj = (object) array();
@@ -1261,7 +1264,7 @@ class Contact {
             $cj->disabled = true;
 
         $acct = new Contact;
-        if ($acct->save_json($cj, null, $send)) {
+        if ($acct->save_json($cj, null, $flags)) {
             if ($Me && $Me->privChair) {
                 $type = $acct->disabled ? "disabled " : "";
                 $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($acct->email)) . "\">" . Text::user_html_nolink($acct) . "</a>.");

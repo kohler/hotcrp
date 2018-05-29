@@ -117,7 +117,7 @@ class MergeContacts extends MessageSet {
             if ($this->newu->tag_value($ti[0]) === false)
                 $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
 
-        $this->newu->save_json($cj, null, false);
+        $this->newu->save_json($cj, null, 0);
 
         // Remove the old contact record
         if (!$this->has_error()) {

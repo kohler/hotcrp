@@ -119,8 +119,7 @@ class LoginHelper {
         // auto-create account if external login
         if (!$user && $external_login) {
             $reg = Contact::safe_registration($qreq);
-            $reg->no_validate_email = true;
-            if (!($user = Contact::create($Conf, $reg)))
+            if (!($user = Contact::create($Conf, $reg, Contact::SAVE_ANY_EMAIL)))
                 return Conf::msg_error($Conf->db_error_html(true, "while adding your account"));
             if ($Conf->setting("setupPhase", false))
                 return self::first_user($user, $msg);
