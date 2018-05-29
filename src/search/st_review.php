@@ -386,7 +386,7 @@ class Review_SearchTerm extends SearchTerm {
             return $val >= 0 && $val <= count($f->options) ? $val : false;
         }
     }
-    private static function parse_score_field(ReviewSearchMatcher $rsm, $word, ReviewField $f, PaperSearch $srch, $noswitch = false) {
+    private static function parse_score_field(ReviewSearchMatcher $rsm, $word, ReviewField $f, PaperSearch $srch) {
         if ($word === "any") {
             $rsm->apply_score_field($f, 0, 0, 4);
         } else if ($word === "none") {
@@ -395,7 +395,7 @@ class Review_SearchTerm extends SearchTerm {
         } else if (preg_match('/\A(\d*?)\s*([=!<>]=?|≠|≤|≥)?\s*([A-Z]|\d+|none)\z/si', $word, $m)) {
             if ($m[1] === "")
                 $m[1] = "1";
-            if ($f->option_letter && (!$srch->conf->opt("smartScoreCompare") || $noswitch))
+            if ($f->option_letter && !$srch->conf->opt("smartScoreCompare"))
                 $m[2] = CountMatcher::flip_countexpr_string($m[2]);
             $score = self::parse_score($f, $m[3]);
             if ($score === false)
