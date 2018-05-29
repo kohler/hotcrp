@@ -240,7 +240,8 @@ class LoginHelper {
 
         // create database account
         if (!$user || !$user->has_database_account()) {
-            if (!($user = Contact::create($Conf, Contact::safe_registration($qreq))))
+            $reg = Contact::safe_registration($qreq);
+            if (!($user = Contact::create($Conf, $reg)))
                 return Conf::msg_error($Conf->db_error_html(true, "while adding your account"));
         }
 

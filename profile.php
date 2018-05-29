@@ -297,9 +297,7 @@ else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
                 $Conf->confirmMsg('Profile updated. <div class="mmm">' . join('</div><div class="mmm">', $UserStatus->errors()) . "</div>");
             else
                 $Conf->confirmMsg("Profile updated.");
-            if ($Acct->contactId == $Me->contactId)
-                $Me->update_trueuser(true);
-            else
+            if ($Acct->contactId != $Me->contactId)
                 $Qreq->u = $Acct->email;
         }
         if (isset($Qreq->redirect))

@@ -373,13 +373,24 @@ class Contact {
 
         // Maybe auto-create a user
         if ($trueuser
-            && $this->update_trueuser(false)
-            && !$this->has_database_account()
-            && $this->conf->session("trueuser_author_check", 0) + 600 < $Now) {
-            $this->conf->save_session("trueuser_author_check", $Now);
-            $aupapers = self::email_authored_papers($this->conf, $trueuser->email, $trueuser);
-            if (!empty($aupapers))
-                $this->activate_database_account();
+            && strcasecmp($trueuser->email, $this->email) == 0) {
+            $trueuser_aucheck = $this->conf->session("trueuser_author_check", 0);
+            if (!$this->has_database_account()
+                && $trueuser_aucheck + 600 < $Now) {
+                $this->conf->save_session("trueuser_author_check", $Now);
+                $aupapers = self::email_authored_papers($this->conf, $this->email, $this);
+                if (!empty($aupapers))
+                    $this->activate_database_account();
+            }
+            if ($this->has_database_account()
+                && $trueuser_aucheck) {
+                foreach ($_SESSION as $k => $v) {
+                    if (is_object($v)
+                        && isset($v["trueuser_author_check"])
+                        && $v["trueuser_author_check"] + 600 < $Now)
+                        unset($_SESSION[$k]["trueuser_author_check"]);
+                }
+            }
         }
 
         // Maybe set up the shared contacts database
@@ -425,15 +436,10 @@ class Contact {
 
     function activate_database_account() {
         assert($this->has_email());
-        if (!$this->has_database_account()) {
-            $reg = clone $_SESSION["trueuser"];
-            if (strcasecmp($reg->email, $this->email) != 0)
-                $reg = (object) array();
-            $reg->email = $this->email;
-            if (($c = Contact::create($this->conf, $reg))) {
-                $this->load_by_id($c->contactId);
-                $this->activate(null);
-            }
+        if (!$this->has_database_account()
+            && ($u = Contact::create($this->conf, $this))) {
+            $this->load_by_id($u->contactId);
+            $this->activate(null);
         }
     }
 
@@ -538,19 +544,6 @@ class Contact {
         return $this->activated_
             && isset($_SESSION["trueuser"])
             && strcasecmp($_SESSION["trueuser"]->email, $this->email) !== 0;
-    }
-
-    function update_trueuser($always) {
-        if (isset($_SESSION)
-            && ($trueuser = $_SESSION["trueuser"])
-            && strcasecmp($trueuser->email, $this->email) == 0) {
-            foreach (["firstName", "lastName", "affiliation", "country",
-                      "birthday", "gender"] as $k)
-                if ($this->$k && ($always || !get($trueuser, $k)))
-                    $trueuser->$k = $this->$k;
-            return true;
-        } else
-            return false;
     }
 
     private function activate_capabilities($qreq) {
