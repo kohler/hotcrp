@@ -113,7 +113,7 @@ class Si {
         // defaults for size, placeholder
         if (str_ends_with($this->type, "date")) {
             if ($this->size === null)
-                $this->size = 30;
+                $this->size = 32;
             if ($this->placeholder === null)
                 $this->placeholder = "N/A";
         } else if ($this->type == "grace") {

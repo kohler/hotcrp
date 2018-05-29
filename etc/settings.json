@@ -36,7 +36,7 @@
     },
     "extrev_hard": {
         "title": "External reviewer hard review deadline", "group": "reviews",
-        "type": "ndate", "size": 28, "placeholder": "same as PC", "novalue": true,
+        "type": "ndate", "placeholder": "same as PC", "novalue": true,
         "extensible": true
     },
     "extrev_roundtag": {
@@ -45,7 +45,7 @@
     },
     "extrev_soft": {
         "title": "External reviewer soft review deadline", "group": "reviews",
-        "type": "date", "size": 28, "placeholder": "same as PC", "novalue": true,
+        "type": "date", "placeholder": "same as PC", "novalue": true,
         "extensible": true
     },
     "extrev_view": {
@@ -188,12 +188,12 @@
     },
     "pcrev_hard": {
         "title": "PC review hard deadline", "group": "reviews",
-        "type": "ndate", "size": 28, "placeholder": "none", "novalue": true,
+        "type": "ndate", "placeholder": "none", "novalue": true,
         "extensible": true
     },
     "pcrev_soft": {
         "title": "PC review deadline", "group": "reviews",
-        "type": "date", "size": 28, "placeholder": "none", "novalue": true,
+        "type": "date", "placeholder": "none", "novalue": true,
         "extensible": true
     },
     "resp_active": {
