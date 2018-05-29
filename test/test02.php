@@ -177,6 +177,18 @@ $t0 = $Conf->obscure_time($t);
 xassert_eqq($Conf->unparse_time_obscure($t0), "1 Sep 2010");
 xassert_eqq($Conf->printableTime($t0), "1 Sep 2010 12pm EDT");
 
+// timezone tests
+$t = $Conf->parse_time("29 May 2018 11:00:00 EDT");
+xassert_eqq($t, 1527606000);
+$t = $Conf->parse_time("29 May 2018 03:00:00 AoE");
+xassert_eqq($t, 1527606000);
+$Conf->set_opt("timezone", "Etc/GMT+12");
+$Conf->crosscheck_options();
+$t = $Conf->parse_time("29 May 2018 03:00:00");
+xassert_eqq($t, 1527606000);
+$t = $Conf->printableTime(1527606000);
+xassert_eqq($t, "29 May 2018 3am AoE");
+
 // review ordinal tests
 foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
           53 => "BA", 54 => "BB", 702 => "ZZ"] as $n => $t) {

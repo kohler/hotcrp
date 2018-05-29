@@ -391,7 +391,7 @@ class Conf {
         $this->tracks["_"] = $default_track;
     }
 
-    private function crosscheck_options() {
+    function crosscheck_options() {
         global $ConfSitePATH;
 
         // set longName, downloadPrefix, etc.
@@ -2034,7 +2034,7 @@ class Conf {
             $z = $this->opt["dateFormatTimezone"];
             if ($z === null) {
                 $z = date("T", $value);
-                if ($z === "+12")
+                if ($z === "-12")
                     $z = "AoE";
                 else if ($z && ($z[0] === "+" || $z[0] === "-"))
                     $z = "UTC" . $z;
@@ -2059,7 +2059,7 @@ class Conf {
             }
             if (count($x) == 0) {
                 $z = date("T", $reference);
-                if ($z === "+12")
+                if ($z === "-12")
                     $x[] = "AoE";
                 $x[] = preg_quote($z);
             }
@@ -2081,10 +2081,14 @@ class Conf {
         if ($this->opt["dateFormatSimplifier"])
             $t = preg_replace($this->opt["dateFormatSimplifier"], "", $t);
         if ($type !== "obscure") {
-            if ($this->opt["dateFormatTimezone"] === null)
-                $t .= " " . date("T", $value);
-            else if ($this->opt["dateFormatTimezone"])
-                $t .= " " . $this->opt["dateFormatTimezone"];
+            $z = $this->opt["dateFormatTimezone"];
+            if ($z === null) {
+                $z = date("T", $value);
+                if ($z === "-12")
+                    $z = "AoE";
+            }
+            if ((string) $z !== "")
+                $t .= " $z";
         }
         if ($preadjust)
             $t .= $preadjust;
