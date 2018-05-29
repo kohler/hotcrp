@@ -1187,9 +1187,9 @@ class Contact {
 
     static function safe_registration($reg) {
         $safereg = (object) array();
-        foreach (array("email", "firstName", "lastName", "name",
-                       "preferredEmail", "affiliation", "collaborators",
-                       "voicePhoneNumber", "unaccentedName") as $k)
+        foreach (["email", "firstName", "lastName", "name",
+                  "preferredEmail", "affiliation", "collaborators",
+                  "voicePhoneNumber"] as $k)
             if (isset($reg[$k]))
                 $safereg->$k = $reg[$k];
         foreach (["preferred_email" => "preferredEmail",
@@ -1213,6 +1213,25 @@ class Contact {
             $cu->qv["password"] = $this->password = "";
     }
 
+    private function _create_empty_updater($reg) {
+        $cj = [];
+        if ($this->firstName === "" && $this->lastName === "") {
+            if (get_s($reg, "firstName") !== "")
+                $cj["firstName"] = $reg->firstName;
+            if (get_s($reg, "lastName") !== "")
+                $cj["lastName"] = $reg->lastName;
+        }
+        foreach (["affiliation", "collaborators", "country",
+                  "gender", "birthday", "preferredEmail"] as $k) {
+            if ((string) $this->$k === "" && get_s($reg, $k) !== "")
+                $cj[$k] = $reg->$k;
+        }
+        if ((string) $this->voicePhoneNumber === ""
+            && get_s($reg, "voicePhoneNumber") !== "")
+            $cj["phone"] = $reg->voicePhoneNumber;
+        return $cj;
+    }
+
     static function create(Conf $conf, $reg, $flags = 0) {
         global $Me, $Now;
         if (is_array($reg))
@@ -1220,49 +1239,48 @@ class Contact {
         assert(is_string($reg->email));
         $email = trim($reg->email);
         assert($email !== "");
+        if (isset($reg->name)
+            && get_s($reg, "firstName") === ""
+            && get_s($reg, "lastName") === "")
+            list($reg->firstName, $reg->lastName) = Text::split_name($reg->name);
 
-        // look up account first; if found, update name/affiliation
-        if (($acct = $conf->user_by_email($email))) {
-            $cj = [];
-            if ($acct->firstName === "" && $acct->lastName === ""
-                && (isset($reg->firstName) || isset($reg->lastName))) {
-                $cj["firstName"] = (string) get($reg, "firstName");
-                $cj["lastName"] = (string) get($reg, "lastName");
-            }
-            foreach (["affiliation", "collaborators", "country"] as $k)
-                if ((string) $acct->$k === "" && ($x = get($reg, $k)))
-                    $cj[$k] = $x;
-            if (!empty($cj))
-                $acct->save_json((object) $cj, null, 0);
-            return $acct;
+        // look up account first; if found, update user from registration
+        if (($u = $conf->user_by_email($email))) {
+            if (($updater = $u->_create_empty_updater($reg)))
+                $u->save_json((object) $updater, null, 0);
+            return $u;
         }
 
-        // validate email, check contactdb
+        // validate email
         if (!($flags & self::SAVE_ANY_EMAIL) && !validate_email($email))
             return null;
+
+        // check contactdb
         $cdbu = Contact::contactdb_find_by_email($email, $conf);
-        if (($flags & self::SAVE_IMPORT) && !$cdbu)
+        if (!$cdbu && ($flags & self::SAVE_IMPORT))
             return null;
 
-        $cj = (object) array();
-        foreach (array("firstName", "lastName", "email", "affiliation",
-                       "collaborators", "preferredEmail", "country") as $k)
-            if (($v = $cdbu && $cdbu->$k ? $cdbu->$k : get($reg, $k)))
-                $cj->$k = $v;
-        if (isset($reg->name) && !isset($cj->firstName) && !isset($cj->lastName))
-            list($cj->firstName, $cj->lastName) = Text::split_name($reg->name);
-        if (($v = $cdbu && $cdbu->voicePhoneNumber ? $cdbu->voicePhoneNumber : get($reg, "voicePhoneNumber")))
-            $cj->phone = $v;
-        if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
-            $cj->disabled = true;
+        // update contactdb from registration
+        if ($cdbu && ($updater = $cdbu->_create_empty_updater($reg))) {
+            $qk = array_map(function ($k) { return "$k=?"; }, array_keys($updater));
+            $qv = array_values($updater);
+            $qv[] = $cdbu->contactDbId;
+            Dbl::qe_apply($conf->contactdb(), "update ContactInfo set " . join(", ", $qk) . " where contactDbId=?", $qv);
+            $cdbu = Contact::contactdb_find_by_email($email, $conf);
+        }
 
-        $acct = new Contact;
-        if ($acct->save_json($cj, null, $flags)) {
+        // update local db from contactdb or registration
+        $u = new Contact;
+        $updater = $u->_create_empty_updater($cdbu ? : $reg);
+        $updater["email"] = $email;
+        if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
+            $updater["disabled"] = true;
+        if ($u->save_json((object) $updater, null, $flags)) {
             if ($Me && $Me->privChair) {
-                $type = $acct->disabled ? "disabled " : "";
-                $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($acct->email)) . "\">" . Text::user_html_nolink($acct) . "</a>.");
+                $type = $u->disabled ? "disabled " : "";
+                $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($us->email)) . "\">" . Text::user_html_nolink($u) . "</a>.");
             }
-            return $acct;
+            return $u;
         } else {
             $conf->log_for($Me, $Me, "Account $email creation failure");
             return null;
