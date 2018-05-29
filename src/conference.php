@@ -2024,40 +2024,42 @@ class Conf {
         else
             return $this->opt["dateFormat"];
     }
+    private function _unparse_timezone($value) {
+        $z = $this->opt["dateFormatTimezone"];
+        if ($z === null) {
+            $z = date("T", $value);
+            if ($z === "-12")
+                $z = "AoE";
+            else if ($z && ($z[0] === "+" || $z[0] === "-"))
+                $z = "UTC" . $z;
+        }
+        return $z;
+    }
 
     function parseableTime($value, $include_zone) {
         $f = $this->_dateFormat(false);
         $d = date($f, $value);
         if ($this->opt["dateFormatSimplifier"])
             $d = preg_replace($this->opt["dateFormatSimplifier"], "", $d);
-        if ($include_zone) {
-            $z = $this->opt["dateFormatTimezone"];
-            if ($z === null) {
-                $z = date("T", $value);
-                if ($z === "-12")
-                    $z = "AoE";
-                else if ($z && ($z[0] === "+" || $z[0] === "-"))
-                    $z = "UTC" . $z;
-            }
-            if ($z)
-                $d .= " " . $z;
-        }
+        if ($include_zone && ($z = $this->_unparse_timezone($value)))
+            $d .= " $z";
         return $d;
     }
     function parse_time($d, $reference = null) {
         global $Now;
         if ($reference === null)
             $reference = $Now;
-        if (!isset($this->opt["dateFormatTimezoneRemover"])
-            && function_exists("timezone_abbreviations_list")) {
-            $mytz = date_default_timezone_get();
+        if (!isset($this->opt["dateFormatTimezoneRemover"])) {
             $x = array();
-            foreach (timezone_abbreviations_list() as $tzname => $tzinfo) {
-                foreach ($tzinfo as $tz)
-                    if ($tz["timezone_id"] == $mytz)
-                        $x[] = preg_quote($tzname);
+            if (function_exists("timezone_abbreviations_list")) {
+                $mytz = date_default_timezone_get();
+                foreach (timezone_abbreviations_list() as $tzname => $tzinfo) {
+                    foreach ($tzinfo as $tz)
+                        if ($tz["timezone_id"] == $mytz)
+                            $x[] = preg_quote($tzname);
+                }
             }
-            if (count($x) == 0) {
+            if (empty($x)) {
                 $z = date("T", $reference);
                 if ($z === "-12")
                     $x[] = "AoE";
@@ -2080,16 +2082,8 @@ class Conf {
         $t = date($this->_dateFormat($type), $value);
         if ($this->opt["dateFormatSimplifier"])
             $t = preg_replace($this->opt["dateFormatSimplifier"], "", $t);
-        if ($type !== "obscure") {
-            $z = $this->opt["dateFormatTimezone"];
-            if ($z === null) {
-                $z = date("T", $value);
-                if ($z === "-12")
-                    $z = "AoE";
-            }
-            if ((string) $z !== "")
-                $t .= " $z";
-        }
+        if ($type !== "obscure" && ($z = $this->_unparse_timezone($value)))
+            $t .= " $z";
         if ($preadjust)
             $t .= $preadjust;
         if ($useradjust) {
