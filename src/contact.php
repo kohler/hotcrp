@@ -962,6 +962,7 @@ class Contact {
     const SAVE_NOTIFY = 1;
     const SAVE_ANY_EMAIL = 2;
     const SAVE_IMPORT = 4;
+    const SAVE_NO_EXPORT = 8;
     function save_json($cj, $actor, $flags) {
         global $Me, $Now;
         $inserting = !$this->contactId;
@@ -1091,7 +1092,8 @@ class Contact {
             $this->contactDbId = 0;
             $this->contactdb_user_ = false;
         }
-        if ($cdb && (!empty($cu->cdb_qf) || $roles !== $old_roles))
+        if ($cdb && !($flags & self::SAVE_NO_EXPORT)
+            && (!empty($cu->cdb_qf) || $roles !== $old_roles))
             $this->contactdb_update($cu->cdb_qf, $changing_other);
 
         // Password
@@ -1208,7 +1210,7 @@ class Contact {
             $cu->qv["password"] = $this->password = "";
     }
 
-    private function _create_empty_updater($reg) {
+    private function _create_empty_updater($reg, $is_cdb) {
         $cj = [];
         if ($this->firstName === "" && $this->lastName === "") {
             if (get_s($reg, "firstName") !== "")
@@ -1218,10 +1220,23 @@ class Contact {
         }
         foreach (["affiliation", "collaborators", "country",
                   "gender", "birthday", "preferredEmail", "phone"] as $k) {
-            if ((string) $this->$k === "" && get_s($reg, $k) !== "")
+            if ((string) $this->$k === "" && get_s($reg, $k) !== ""
+                && (!$is_cdb || $k !== "phone"))
                 $cj[$k] = $reg->$k;
         }
         return $cj;
+    }
+
+    static private function _contactdb_apply_updater(Conf $conf, $updater, $cdbu) {
+        assert($cdbu ? !!$cdbu->contactDbId : isset($updater["email"]));
+        $qk = array_map(function ($k) { return "$k=?"; }, array_keys($updater));
+        $qv = array_values($updater);
+        if ($cdbu) {
+            $qv[] = $cdbu->contactDbId;
+            Dbl::qe_apply($conf->contactdb(), "update ContactInfo set " . join(", ", $qk) . " where contactDbId=?", $qv);
+        } else {
+            Dbl::qe_apply($conf->contactdb(), "insert into ContactInfo set " . join(", ", $qk) . " on duplicate key update firstName=firstName", $qv);
+        }
     }
 
     static function create(Conf $conf, $reg, $flags = 0) {
@@ -1238,7 +1253,7 @@ class Contact {
 
         // look up account first; if found, update user from registration
         if (($u = $conf->user_by_email($email))) {
-            if (($updater = $u->_create_empty_updater($reg)))
+            if (($updater = $u->_create_empty_updater($reg, false)))
                 $u->save_json((object) $updater, null, 0);
             return $u;
         }
@@ -1253,24 +1268,29 @@ class Contact {
             return null;
 
         // update contactdb from registration
-        if ($cdbu && ($updater = $cdbu->_create_empty_updater($reg))) {
-            $qk = array_map(function ($k) { return "$k=?"; }, array_keys($updater));
-            $qv = array_values($updater);
-            $qv[] = $cdbu->contactDbId;
-            Dbl::qe_apply($conf->contactdb(), "update ContactInfo set " . join(", ", $qk) . " where contactDbId=?", $qv);
+        if ($cdbu && ($updater = $cdbu->_create_empty_updater($reg, true))) {
+            self::_contactdb_apply_updater($conf, $updater, $cdbu);
             $cdbu = Contact::contactdb_find_by_email($email, $conf);
         }
 
         // update local db from contactdb or registration
         $u = new Contact;
-        $updater = $u->_create_empty_updater($cdbu ? : $reg);
+        $updater = $u->_create_empty_updater($cdbu ? : $reg, false);
         $updater["email"] = $email;
+        if ($cdbu && get($reg, "phone"))
+            $updater["phone"] = $reg->phone;
         if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
             $updater["disabled"] = true;
-        if ($u->save_json((object) $updater, null, $flags)) {
+        if ($u->save_json((object) $updater, null, $flags | self::SAVE_NO_EXPORT)) {
             if ($Me && $Me->privChair) {
                 $type = $u->disabled ? "disabled " : "";
                 $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($us->email)) . "\">" . Text::user_html_nolink($u) . "</a>.");
+            }
+            if (!$cdbu && $conf->contactdb()) {
+                $cdbu = new Contact;
+                $updater = $cdbu->_create_empty_updater($reg, true);
+                $updater["email"] = $email;
+                self::_contactdb_apply_updater($conf, $updater, null);
             }
             return $u;
         } else {
