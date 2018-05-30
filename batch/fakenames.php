@@ -111,7 +111,7 @@ function new_fake_email() {
 $q = $qv = [];
 $email_map = [];
 foreach ($users as $c) {
-    $q[] = "update ContactInfo set firstName=?, lastName=?, unaccentedName=?, email=?, preferredEmail='', affiliation=?, voicePhoneNumber=null, country=?, password=? where contactId={$c->contactId}";
+    $q[] = "update ContactInfo set firstName=?, lastName=?, unaccentedName=?, email=?, preferredEmail='', affiliation=?, country=?, password=? where contactId={$c->contactId}";
     $qv[] = $f = $fakes->first();
     $qv[] = $l = $fakes->last();
     $qv[] = UnicodeHelper::deaccent("$f $l");

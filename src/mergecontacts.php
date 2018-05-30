@@ -37,11 +37,9 @@ class MergeContacts extends MessageSet {
         $cj = (object) ["email" => $this->newu->email];
 
         foreach (["firstName", "lastName", "affiliation", "country",
-                  "collaborators"] as $k)
+                  "collaborators", "phone"] as $k)
             if ($this->replace_contact_string($k))
                 $cj->$k = $this->oldu->$k;
-        if ($this->replace_contact_string("voicePhoneNumber"))
-            $cj->phone = $this->oldu->voicePhoneNumber;
 
         if (($old_data = $this->oldu->data())) {
             $cj->data = (object) [];

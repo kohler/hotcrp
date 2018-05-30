@@ -514,9 +514,10 @@ class ContactList {
 
         $aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
         $rf = ["contactId"];
+        $phone = $this->conf->sversion >= 186 ? "phone" : "voicePhoneNumber";
         $pq = "select u.contactId,
         firstName, lastName, email, affiliation, roles, contactTags,
-        voicePhoneNumber, u.collaborators, lastLogin, disabled";
+        $phone phone, u.collaborators, lastLogin, disabled";
         if (isset($queryOptions["reviews"])) {
             $rf[] = "count(if(reviewNeedsSubmit=0,reviewSubmitted,reviewId)) numReviews";
             $rf[] = "count(reviewSubmitted) numReviewsSubmitted";

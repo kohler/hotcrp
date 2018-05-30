@@ -14,7 +14,6 @@ class UserStatus extends MessageSet {
 
     static private $field_synonym_map = [
         "preferredEmail" => "preferred_email",
-        "voicePhoneNumber" => "phone",
         "addressLine1" => "address", "addressLine2" => "address",
         "zipCode" => "zip", "postal_code" => "zip",
         "contactTags" => "tags", "uemail" => "email"
@@ -92,7 +91,7 @@ class UserStatus extends MessageSet {
 
         // keys that come from user
         foreach (["preferredEmail" => "preferred_email",
-                  "voicePhoneNumber" => "phone"] as $uk => $jk) {
+                  "phone" => "phone"] as $uk => $jk) {
             if ($user->$uk !== null && $user->$uk !== "")
                 $cj->$jk = $user->$uk;
         }
@@ -467,7 +466,7 @@ class UserStatus extends MessageSet {
         // normal fields
         foreach (["firstName", "lastName", "preferredEmail", "affiliation",
                   "collaborators", "addressLine1", "addressLine2",
-                  "city", "state", "zipCode", "country", "voicePhoneNumber"] as $k) {
+                  "city", "state", "zipCode", "country", "phone"] as $k) {
             $v = $qreq[$k];
             if ($v !== null && ($cj->id !== "new" || trim($v) !== ""))
                 $cj->$k = $v;

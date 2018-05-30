@@ -117,7 +117,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     $has = (object) [];
     foreach ($users as $user) {
         $row = (object) ["first" => $user->firstName, "last" => $user->lastName,
-            "email" => $user->email, "phone" => $user->voicePhoneNumber,
+            "email" => $user->email, "phone" => $user->phone,
             "disabled" => !!$user->disabled, "affiliation" => $user->affiliation,
             "collaborators" => rtrim($user->collaborators)];
         if ($user->preferredEmail && $user->preferredEmail !== $user->email)

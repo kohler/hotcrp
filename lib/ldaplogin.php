@@ -66,7 +66,7 @@ function ldapLoginAction(Qrequest $qreq) {
         if (isset($e["mail"]) && $e["mail"]["count"] == 1)
             $qreq->preferredEmail = $e["mail"][0];
         if (isset($e["telephonenumber"]) && $e["telephonenumber"]["count"] == 1)
-            $qreq->voicePhoneNumber = $e["telephonenumber"][0];
+            $qreq->phone = $e["telephonenumber"][0];
     }
 
     ldap_close($ldapc);

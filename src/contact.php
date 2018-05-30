@@ -36,7 +36,7 @@ class Contact {
     public $affiliation = "";
     public $country;
     public $collaborators;
-    public $voicePhoneNumber;
+    public $phone;
     public $birthday;
     public $gender;
 
@@ -143,7 +143,7 @@ class Contact {
             $this->unaccentedName = $name->unaccentedName;
         else
             $this->unaccentedName = Text::unaccented_name($name);
-        foreach (["email", "preferredEmail", "affiliation", "voicePhoneNumber",
+        foreach (["email", "preferredEmail", "affiliation", "phone",
                   "country", "birthday", "gender"] as $k)
             if (isset($user->$k))
                 $this->$k = simplify_whitespace($user->$k);
@@ -223,7 +223,7 @@ class Contact {
     }
 
     function merge_secondary_properties($x) {
-        foreach (["preferredEmail", "voicePhoneNumber", "country", "password",
+        foreach (["preferredEmail", "phone", "country", "password",
                   "collaborators", "birthday", "gender"] as $k)
             if (isset($x->$k))
                 $this->$k = $x->$k;
@@ -983,14 +983,12 @@ class Contact {
 
         // Main fields
         foreach (["firstName", "lastName", "email", "affiliation", "collaborators",
-                  "preferredEmail", "country", "birthday", "gender"] as $k) {
+                  "preferredEmail", "country", "birthday", "gender", "phone"] as $k) {
             if (isset($cj->$k))
                 $this->_save_assign_field($k, $cj->$k, $cu);
         }
         if (isset($cj->preferred_email) && !isset($cj->preferredEmail))
             $this->_save_assign_field("preferredEmail", $cj->preferred_email, $cu);
-        if (isset($cj->phone))
-            $this->_save_assign_field("voicePhoneNumber", $cj->phone, $cu);
         $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $cu);
         self::set_sorter($this, $this->conf);
 
@@ -1188,14 +1186,11 @@ class Contact {
     static function safe_registration($reg) {
         $safereg = (object) array();
         foreach (["email", "firstName", "lastName", "name",
-                  "preferredEmail", "affiliation", "collaborators",
-                  "voicePhoneNumber"] as $k)
+                  "preferredEmail", "affiliation", "collaborators", "phone"] as $k)
             if (isset($reg[$k]))
                 $safereg->$k = $reg[$k];
-        foreach (["preferred_email" => "preferredEmail",
-                  "phone" => "voicePhoneNumber"] as $k1 => $k2)
-            if (isset($reg[$k1]) && !isset($safereg->$k2))
-                $safereg->$k2 = $reg[$k1];
+        if (isset($reg["preferred_email"]) && !isset($safereg->preferredEmail))
+            $safereg->preferredEmail = $reg["preferred_email"];
         return $safereg;
     }
 
@@ -1222,13 +1217,10 @@ class Contact {
                 $cj["lastName"] = $reg->lastName;
         }
         foreach (["affiliation", "collaborators", "country",
-                  "gender", "birthday", "preferredEmail"] as $k) {
+                  "gender", "birthday", "preferredEmail", "phone"] as $k) {
             if ((string) $this->$k === "" && get_s($reg, $k) !== "")
                 $cj[$k] = $reg->$k;
         }
-        if ((string) $this->voicePhoneNumber === ""
-            && get_s($reg, "voicePhoneNumber") !== "")
-            $cj["phone"] = $reg->voicePhoneNumber;
         return $cj;
     }
 
@@ -1503,7 +1495,6 @@ class Contact {
 
     const CHANGE_PASSWORD_PLAINTEXT = 1;
     const CHANGE_PASSWORD_NO_CDB = 2;
-
     function change_password($old, $new, $flags) {
         global $Now;
         assert(!$this->conf->external_login());

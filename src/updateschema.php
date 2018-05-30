@@ -1302,6 +1302,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 184
         && $conf->ql("alter table PaperReview drop key `reviewSubmittedContact`"))
         $conf->update_schema_version(185);
+    if ($conf->sversion == 185
+        && $conf->ql("alter table ContactInfo change `voicePhoneNumber` `phone` varbinary(64) DEFAULT NULL"))
+        $conf->update_schema_version(186);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
