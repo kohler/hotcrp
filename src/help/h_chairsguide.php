@@ -179,25 +179,22 @@ It is easiest to simply accept such conflicts as a fact of life. Chairs
 who can’t handle conflicts fairly shouldn’t be chairs. However, HotCRP
 does offer other mechanisms for conflicted reviews.</p>
 
-<p>The key step is to pick a PC member to manage the reviewing and
-discussion process for the relevant papers. This PC member is called the
-<em>paper administrator</em>. Use the left-hand side of the
-<a href='" . hoturl("assign") . "'>paper assignment pages</a> to enter paper administrators. (You may need to
-“Override conflicts” to access the assignment page.)
-A paper’s administrators have full privilege to assign and view reviews
-for that paper, although they cannot change conference settings.</p>
+<p>A PC member can manage the reviewing and
+discussion process for specific papers. This PC member is called the
+<em>paper administrator</em>. Use the left-hand side of a
+<a href='" . hoturl("assign") . "'>paper’s assignment page</a> to enter its administrator. (You may need to
+“Override conflicts” to access the assignment page.)</p>
 
-<p>Assigned administrators change conflicted chairs’
-access rights. Normally, a conflicted chair can easily override
-their conflict. If a paper has an administrator, however, conflicts cannot
-be overridden until the administrator is removed.</p>
+<p>Paper administrators have full privilege to assign and view reviews for their
+papers, and can, for example, use the autoassignment tool. They cannot change
+conference settings.</p>
 
-<p>Paper administrators make life easy for PC reviewers while hiding
-conflicts from chairs in most circumstances.
-However, determined chairs can still discover reviewer identities
-via HotCRP logs, review counts, and mails (and, of course,
-by removing the administrator).
-For additional privacy, a conference can use
+<p>Normally, a conflicted chair can easily override their conflict. When a paper
+has an administrator, however, chair conflicts cannot be overridden.</p>
+
+<p>Paper administrators make life easy for PC reviewers and greatly restrict
+conflicted chairs’ access. Usually this suffices.
+For additional privacy, use
 <em>review tokens</em>, which are completely anonymous
 review slots. To create a token, an administrator
 goes to an <a href='" . hoturl("assign") . "'>assignment page</a>
