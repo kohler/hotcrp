@@ -118,8 +118,7 @@ class LoginHelper {
 
         // auto-create account if external login
         if (!$user && $external_login) {
-            $reg = Contact::safe_registration($qreq);
-            if (!($user = Contact::create($Conf, $reg, Contact::SAVE_ANY_EMAIL)))
+            if (!($user = Contact::create($Conf, $qreq->make_array(), Contact::SAVE_ANY_EMAIL)))
                 return Conf::msg_error($Conf->db_error_html(true, "while adding your account"));
             if ($Conf->setting("setupPhase", false))
                 return self::first_user($user, $msg);
@@ -240,8 +239,7 @@ class LoginHelper {
 
         // create database account
         if (!$user || !$user->has_database_account()) {
-            $reg = Contact::safe_registration($qreq);
-            if (!($user = Contact::create($Conf, $reg)))
+            if (!($user = Contact::create($Conf, $qreq->make_array())))
                 return Conf::msg_error($Conf->db_error_html(true, "while adding your account"));
         }
 

@@ -1185,17 +1185,6 @@ class Contact {
         return !!$row;
     }
 
-    static function safe_registration($reg) {
-        $safereg = (object) array();
-        foreach (["email", "firstName", "lastName", "name",
-                  "preferredEmail", "affiliation", "collaborators", "phone"] as $k)
-            if (isset($reg[$k]))
-                $safereg->$k = $reg[$k];
-        if (isset($reg["preferred_email"]) && !isset($safereg->preferredEmail))
-            $safereg->preferredEmail = $reg["preferred_email"];
-        return $safereg;
-    }
-
     private function _create_password($cdbu, Contact_Update $cu) {
         global $Now;
         if ($cdbu
@@ -1214,15 +1203,16 @@ class Contact {
         $cj = [];
         if ($this->firstName === "" && $this->lastName === "") {
             if (get_s($reg, "firstName") !== "")
-                $cj["firstName"] = $reg->firstName;
+                $cj["firstName"] = (string) $reg->firstName;
             if (get_s($reg, "lastName") !== "")
-                $cj["lastName"] = $reg->lastName;
+                $cj["lastName"] = (string) $reg->lastName;
         }
         foreach (["affiliation", "collaborators", "country",
                   "gender", "birthday", "preferredEmail", "phone"] as $k) {
-            if ((string) $this->$k === "" && get_s($reg, $k) !== ""
+            if ((string) $this->$k === ""
+                && get_s($reg, $k) !== ""
                 && (!$is_cdb || $k !== "phone"))
-                $cj[$k] = $reg->$k;
+                $cj[$k] = (string) $reg->$k;
         }
         return $cj;
     }
@@ -1246,10 +1236,10 @@ class Contact {
         assert(is_string($reg->email));
         $email = trim($reg->email);
         assert($email !== "");
-        if (isset($reg->name)
-            && get_s($reg, "firstName") === ""
-            && get_s($reg, "lastName") === "")
+        if (isset($reg->name) && !isset($reg->firstName) && !isset($reg->lastName))
             list($reg->firstName, $reg->lastName) = Text::split_name($reg->name);
+        if (isset($reg->preferred_email) && !isset($reg->preferredEmail))
+            $reg->preferredEmail = $reg->preferred_email;
 
         // look up account first; if found, update user from registration
         if (($u = $conf->user_by_email($email))) {
