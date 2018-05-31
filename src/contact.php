@@ -1131,26 +1131,29 @@ class Contact {
     static function email_authored_papers(Conf $conf, $email, $reg) {
         $aupapers = array();
         $result = $conf->q("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($email) . "\t%'"));
-        while (($row = PaperInfo::fetch($result, null, $conf)))
-            foreach ($row->author_list() as $au)
+        while (($row = PaperInfo::fetch($result, null, $conf))) {
+            foreach ($row->author_list() as $au) {
                 if (strcasecmp($au->email, $email) == 0) {
                     $aupapers[] = $row->paperId;
-                    if ($reg && $au->firstName && !get($reg, "firstName"))
-                        $reg->firstName = $au->firstName;
-                    if ($reg && $au->lastName && !get($reg, "lastName"))
-                        $reg->lastName = $au->lastName;
-                    if ($reg && $au->affiliation && !get($reg, "affiliation"))
+                    if ($reg && !isset($reg->firstName) && !isset($reg->lastName)) {
+                        if ($au->firstName !== "")
+                            $reg->firstName = $au->firstName;
+                        if ($au->lastName !== "")
+                            $reg->lastName = $au->lastName;
+                    }
+                    if ($reg && !isset($reg->affiliation) && $au->affiliation !== "")
                         $reg->affiliation = $au->affiliation;
                 }
+            }
+        }
         return $aupapers;
     }
 
     private function save_authored_papers($aupapers) {
-        if (count($aupapers) && $this->contactId) {
-            $q = array();
-            foreach ($aupapers as $pid)
-                $q[] = "($pid, $this->contactId, " . CONFLICT_AUTHOR . ")";
-            $this->conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $q) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
+        if (!empty($aupapers) && $this->contactId) {
+            $this->conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")", array_map(function ($pid) {
+                return [$pid, $this->contactId, CONFLICT_AUTHOR];
+            }, $aupapers));
         }
     }
 
@@ -1215,7 +1218,7 @@ class Contact {
                 $cj[$k] = (string) $reg->$k;
         }
         if ($is_cdb ? !$this->contactDbId : !$this->contactId)
-            $cj["email"] = trim($reg->email);
+            $cj["email"] = $reg->email;
         return $cj;
     }
 
@@ -1233,34 +1236,36 @@ class Contact {
 
     static function create(Conf $conf, $reg, $flags = 0) {
         global $Me, $Now;
+
+        // clean registration
         if (is_array($reg))
             $reg = (object) $reg;
         assert(is_string($reg->email));
-        $email = trim($reg->email);
-        assert($email !== "");
+        $reg->email = trim($reg->email);
+        assert($reg->email !== "");
         if (isset($reg->name) && !isset($reg->firstName) && !isset($reg->lastName))
             list($reg->firstName, $reg->lastName) = Text::split_name($reg->name);
         if (isset($reg->preferred_email) && !isset($reg->preferredEmail))
             $reg->preferredEmail = $reg->preferred_email;
 
         // look up account first; if found, update user from registration
-        if (($u = $conf->user_by_email($email))) {
+        if (($u = $conf->user_by_email($reg->email))) {
             if (($updater = $u->_save_make_empty_updater($reg, false)))
                 $u->save_json((object) $updater, null, 0);
             return $u;
         }
 
         // validate email
-        if (!($flags & self::SAVE_ANY_EMAIL) && !validate_email($email))
+        if (!($flags & self::SAVE_ANY_EMAIL) && !validate_email($reg->email))
             return null;
 
         // update contactdb's empty portions from registration
-        $cdbu = Contact::contactdb_find_by_email($email, $conf);
+        $cdbu = Contact::contactdb_find_by_email($reg->email, $conf);
         if (!$cdbu && ($flags & self::SAVE_IMPORT))
             return null;
         if ($cdbu && ($updater = $cdbu->_save_make_empty_updater($reg, true))) {
             self::_contactdb_apply_updater($conf, $updater, $cdbu);
-            $cdbu = Contact::contactdb_find_by_email($email, $conf);
+            $cdbu = Contact::contactdb_find_by_email($reg->email, $conf);
         }
 
         // update local db from contactdb or registration
@@ -1271,7 +1276,7 @@ class Contact {
         if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
             $updater["disabled"] = true;
         if (!$u->save_json((object) $updater, null, $flags | self::SAVE_NO_EXPORT)) {
-            $conf->log_for($Me, $Me, "Account $email creation failure");
+            $conf->log_for($Me, $Me, "Account $reg->email creation failure");
             return null;
         }
 
