@@ -1199,7 +1199,7 @@ class Contact {
             $cu->qv["password"] = $this->password = "";
     }
 
-    private function _create_empty_updater($reg, $is_cdb) {
+    private function _save_make_empty_updater($reg, $is_cdb) {
         $cj = [];
         if ($this->firstName === "" && $this->lastName === "") {
             if (get_s($reg, "firstName") !== "")
@@ -1214,6 +1214,8 @@ class Contact {
                 && (!$is_cdb || $k !== "phone"))
                 $cj[$k] = (string) $reg->$k;
         }
+        if ($is_cdb ? !$this->contactDbId : !$this->contactId)
+            $cj["email"] = trim($reg->email);
         return $cj;
     }
 
@@ -1243,7 +1245,7 @@ class Contact {
 
         // look up account first; if found, update user from registration
         if (($u = $conf->user_by_email($email))) {
-            if (($updater = $u->_create_empty_updater($reg, false)))
+            if (($updater = $u->_save_make_empty_updater($reg, false)))
                 $u->save_json((object) $updater, null, 0);
             return $u;
         }
@@ -1252,41 +1254,41 @@ class Contact {
         if (!($flags & self::SAVE_ANY_EMAIL) && !validate_email($email))
             return null;
 
-        // check contactdb
+        // update contactdb's empty portions from registration
         $cdbu = Contact::contactdb_find_by_email($email, $conf);
         if (!$cdbu && ($flags & self::SAVE_IMPORT))
             return null;
-
-        // update contactdb from registration
-        if ($cdbu && ($updater = $cdbu->_create_empty_updater($reg, true))) {
+        if ($cdbu && ($updater = $cdbu->_save_make_empty_updater($reg, true))) {
             self::_contactdb_apply_updater($conf, $updater, $cdbu);
             $cdbu = Contact::contactdb_find_by_email($email, $conf);
         }
 
         // update local db from contactdb or registration
-        $u = new Contact;
-        $updater = $u->_create_empty_updater($cdbu ? : $reg, false);
-        $updater["email"] = $email;
+        $u = new Contact(null, $conf);
+        $updater = $u->_save_make_empty_updater($cdbu ? : $reg, false);
         if ($cdbu && get($reg, "phone"))
             $updater["phone"] = $reg->phone;
         if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
             $updater["disabled"] = true;
-        if ($u->save_json((object) $updater, null, $flags | self::SAVE_NO_EXPORT)) {
-            if ($Me && $Me->privChair) {
-                $type = $u->disabled ? "disabled " : "";
-                $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($us->email)) . "\">" . Text::user_html_nolink($u) . "</a>.");
-            }
-            if (!$cdbu && $conf->contactdb()) {
-                $cdbu = new Contact;
-                $updater = $cdbu->_create_empty_updater($reg, true);
-                $updater["email"] = $email;
-                self::_contactdb_apply_updater($conf, $updater, null);
-            }
-            return $u;
-        } else {
+        if (!$u->save_json((object) $updater, null, $flags | self::SAVE_NO_EXPORT)) {
             $conf->log_for($Me, $Me, "Account $email creation failure");
             return null;
         }
+
+        // insert into contactdb from local (which may include authored-paper
+        // information)
+        if (!$cdbu && $conf->contactdb()) {
+            $cdbu = new Contact(null, $conf);
+            $updater = $cdbu->_save_make_empty_updater($u, true);
+            self::_contactdb_apply_updater($conf, $updater, null);
+        }
+
+        // log, return
+        if ($Me && $Me->privChair) {
+            $type = $u->disabled ? "disabled " : "";
+            $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($us->email)) . "\">" . Text::user_html_nolink($u) . "</a>.");
+        }
+        return $u;
     }
 
 
