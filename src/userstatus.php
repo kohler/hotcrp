@@ -766,14 +766,16 @@ class UserStatus extends MessageSet {
         $is_ass = isset($reqj->roles) && get($reqj->roles, "sysadmin");
         $cis_ass = isset($cj->roles) && get($cj->roles, "sysadmin");
         echo '<div class="checki"><label><span class="checkc">',
-            Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass]),
+            Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass, "class" => "js-role keep-focus"]),
             '</span>Sysadmin</label>',
             '<p class="f-h">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</p></div></td></tr></table>', "\n";
         echo "</div>\n";
     }
 
     static function render_collaborators(UserStatus $us, $cj, $reqj, $uf) {
-        echo '<div class="profile-g"><h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
+        if (!$this->user->isPC && !$this->viewer->privChair)
+            return;
+        echo '<div class="profile-g fx2"><h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
             "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
             $us->conf->message_html("conflictdef"),
             " <p>List one conflict per line, using parentheses for affiliations.<br />

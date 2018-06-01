@@ -511,9 +511,11 @@ if ($UserStatus->has_messages()) {
 echo '<div id="foldaccount" class="';
 if (isset($formcj->roles)
     && (isset($formcj->roles->pc) || isset($formcj->roles->chair)))
-    echo "fold1o";
+    echo "fold1o fold2o";
+else if (isset($formcj->roles) && isset($formcj->roles->sysadmin))
+    echo "fold1c fold2o";
 else
-    echo "fold1c";
+    echo "fold1c fold2c";
 echo "\">\n";
 
 

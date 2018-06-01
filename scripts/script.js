@@ -6507,9 +6507,11 @@ handle_ui.on("js-plaintext-password", function (event) {
 var profile_ui = (function ($) {
 return function (event) {
     if (hasClass(this, "js-role")) {
-        var $f = $(this).closest("form");
-        var open = $f.find("input[name=pctype]:checked").val() !== "no";
-        foldup.call(this, null, {n: 1, f: !open});
+        var $f = $(this).closest("form"),
+            pctype = $f.find("input[name=pctype]:checked").val(),
+            ass = $f.find("input[name=ass]:checked").length;
+        foldup.call(this, null, {n: 1, f: !pctype || pctype === "no"});
+        foldup.call(this, null, {n: 2, f: ass === 0});
     }
 };
 })($);

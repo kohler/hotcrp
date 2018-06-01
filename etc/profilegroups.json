@@ -23,7 +23,7 @@
         "render_callback": "UserStatus::render_roles"
     },
     {
-        "name": "collaborators", "position": 6000, "allow_if": "pc",
+        "name": "collaborators", "position": 6000,
         "render_callback": "UserStatus::render_collaborators"
     },
     {
