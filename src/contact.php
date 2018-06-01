@@ -1292,7 +1292,7 @@ class Contact {
         // log, return
         if ($Me && $Me->privChair) {
             $type = $u->disabled ? "disabled " : "";
-            $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($us->email)) . "\">" . Text::user_html_nolink($u) . "</a>.");
+            $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($u->email)) . "\">" . Text::user_html_nolink($u) . "</a>.");
         }
         return $u;
     }
