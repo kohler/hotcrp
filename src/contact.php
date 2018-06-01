@@ -385,7 +385,7 @@ class Contact {
             if ($this->has_database_account()
                 && $trueuser_aucheck) {
                 foreach ($_SESSION as $k => $v) {
-                    if (is_object($v)
+                    if (is_array($v)
                         && isset($v["trueuser_author_check"])
                         && $v["trueuser_author_check"] + 600 < $Now)
                         unset($_SESSION[$k]["trueuser_author_check"]);
