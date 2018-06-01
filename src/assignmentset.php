@@ -540,7 +540,7 @@ class Assigner {
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         return null;
     }
-    function account(AssignmentCountSet $delta) {
+    function account(AssignmentSet $aset, AssignmentCountSet $delta) {
     }
     function add_locks(AssignmentSet $aset, &$locks) {
     }
@@ -795,7 +795,6 @@ class Review_Assigner extends Assigner {
                                 !$this->item->get($before, "_rsubmitted"));
     }
     function unparse_display(AssignmentSet $aset) {
-        $aset->show_column("reviewers");
         $t = $aset->user->reviewer_html_for($this->contact);
         if ($this->item->deleted())
             $t = '<del>' . $t . '</del>';
@@ -831,7 +830,8 @@ class Review_Assigner extends Assigner {
             $acsv->add(["action" => "unsubmitreview", "pid" => $this->pid,
                         "email" => $this->contact->email, "name" => $this->contact->name_text()]);
     }
-    function account(AssignmentCountSet $deltarev) {
+    function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
+        $aset->show_column("reviewers");
         if ($this->cid > 0) {
             $deltarev->rev = true;
             $ct = $deltarev->ensure($this->cid);
@@ -1587,6 +1587,9 @@ class AssignmentSet {
     }
     function echo_unparse_display() {
         $this->set_my_conflicts();
+        $deltarev = new AssignmentCountSet($this->conf);
+        foreach ($this->assigners as $assigner)
+            $assigner->account($this, $deltarev);
 
         $query = $this->assigned_pids(true);
         if ($this->unparse_search)
@@ -1604,9 +1607,6 @@ class AssignmentSet {
         $plist->set_table_id_class("foldpl", "pltable_full");
         echo $plist->table_html("reviewers", ["nofooter" => 1]);
 
-        $deltarev = new AssignmentCountSet($this->conf);
-        foreach ($this->assigners as $assigner)
-            $assigner->account($deltarev);
         if (count(array_intersect_key($deltarev->bypc, $this->conf->pc_members()))) {
             $summary = [];
             $tagger = new Tagger($this->user);

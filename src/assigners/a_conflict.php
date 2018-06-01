@@ -109,7 +109,6 @@ class Conflict_Assigner extends Assigner {
             return "";
     }
     function unparse_display(AssignmentSet $aset) {
-        $aset->show_column("pcconf");
         $t = $aset->user->reviewer_html_for($this->contact);
         if ($this->item->deleted())
             $t = '<del>' . $t . ' ' . $this->icon(true) . '</del>';
@@ -124,6 +123,9 @@ class Conflict_Assigner extends Assigner {
             "pid" => $this->pid, "action" => $this->ctype ? "conflict" : "noconflict",
             "email" => $this->contact->email, "name" => $this->contact->name_text()
         ];
+    }
+    function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
+        $aset->show_column("pcconf");
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperConflict"] = "write";

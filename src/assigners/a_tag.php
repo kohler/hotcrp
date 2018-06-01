@@ -308,7 +308,6 @@ class Tag_Assigner extends Assigner {
             . ($index ? "#$index" : "");
     }
     function unparse_display(AssignmentSet $aset) {
-        $aset->show_column("tags");
         $t = [];
         if ($this->item->existed())
             $t[] = '<del>' . $this->unparse_item(true) . '</del>';
@@ -325,6 +324,9 @@ class Tag_Assigner extends Assigner {
                 $t .= "#{$this->index}";
             return ["pid" => $this->pid, "action" => "tag", "tag" => $t];
         }
+    }
+    function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
+        $aset->show_column("tags");
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperTag"] = "write";

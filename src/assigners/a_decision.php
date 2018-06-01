@@ -59,7 +59,6 @@ class Decision_Assigner extends Assigner {
         return "<span class=\"pstat $class\">" . htmlspecialchars($dname) . "</span>";
     }
     function unparse_display(AssignmentSet $aset) {
-        $aset->show_column($this->description);
         $t = [];
         if ($this->item->existed())
             $t[] = '<del>' . self::decision_html($aset->conf, $this->item->get(true, "_decision")) . '</del>';
@@ -73,6 +72,9 @@ class Decision_Assigner extends Assigner {
         else
             $x["decision"] = $aset->conf->decision_name($this->item["_decision"]);
         return $x;
+    }
+    function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
+        $aset->show_column($this->description);
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["Paper"] = "write";

@@ -77,9 +77,6 @@ class Lead_Assigner extends Assigner {
         return $this->description;
     }
     function unparse_display(AssignmentSet $aset) {
-        $aset->show_column($this->description);
-        if (!$this->item->deleted())
-            $aset->show_column("reviewers");
         $t = [];
         if ($this->item->existed())
             $t[] = '<del>' . $aset->user->reviewer_html_for($this->item->get(true, "_cid")) . " " . $this->icon() . '</del>';
@@ -97,7 +94,10 @@ class Lead_Assigner extends Assigner {
         }
         return $x;
     }
-    function account(AssignmentCountSet $deltarev) {
+    function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
+        $aset->show_column($this->description);
+        if (!$this->item->deleted())
+            $aset->show_column("reviewers");
         $k = $this->type;
         if ($k === "lead" || $k === "shepherd") {
             $deltarev->$k = true;
