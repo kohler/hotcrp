@@ -1699,7 +1699,7 @@ class PaperInfo {
     }
 
     function can_view_review_identity_of($cid, Contact $contact) {
-        if ($contact->can_administer($this)
+        if ($contact->can_administer_for_track($this, Track::VIEWREVID)
             || $cid == $contact->contactId)
             return true;
         else {

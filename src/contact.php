@@ -70,6 +70,7 @@ class Contact {
     private $is_metareviewer_;
     private $is_lead_;
     private $is_explicit_manager_;
+    private $dangerous_track_mask_;
     private $can_view_pc_;
     public $is_site_contact = false;
     private $rights_version_ = 0;
@@ -1667,9 +1668,10 @@ class Contact {
 
     private function check_rights_version() {
         if ($this->rights_version_ !== self::$rights_version) {
-            $this->db_roles_ = $this->active_roles_ = $this->has_outstanding_review_ =
-                $this->is_lead_ = $this->is_explicit_manager_ = $this->is_metareviewer_ =
-                    $this->can_view_pc_ = null;
+            $this->db_roles_ = $this->active_roles_ =
+                $this->has_outstanding_review_ = $this->is_lead_ =
+                $this->is_explicit_manager_ = $this->is_metareviewer_ =
+                $this->can_view_pc_ = $this->dangerous_track_mask_ = null;
             $this->rights_version_ = self::$rights_version;
         }
     }
@@ -1948,6 +1950,10 @@ class Contact {
                 || ($prow->outcome > 0
                     && ($isPC || $ci->allow_review)
                     && $this->conf->time_reviewer_view_accepted_authors());
+
+            // check dangerous track mask
+            if ($ci->allow_administer && $this->dangerous_track_mask_ === null)
+                $this->dangerous_track_mask_ = $this->conf->dangerous_track_mask($this);
         }
 
         return $ci;
@@ -1977,7 +1983,8 @@ class Contact {
     function can_meaningfully_override(PaperInfo $prow) {
         if ($this->is_manager()) {
             $rights = $this->rights($prow, "any");
-            return $rights->allow_administer && $rights->conflictType > 0;
+            return $rights->allow_administer
+                && ($rights->conflictType > 0 || $this->dangerous_track_mask_);
         } else
             return false;
     }
@@ -2000,6 +2007,20 @@ class Contact {
             $rights = $this->rights($prow, $forceShow);
             return $rights->can_administer;
         } else
+            return $this->privChair;
+    }
+
+    private function _can_administer_for_track(PaperInfo $prow, $rights, $ttype) {
+        return $rights->can_administer
+            && (!($this->dangerous_track_mask_ & (1 << $ttype))
+                || $this->conf->check_tracks($prow, $this, $ttype)
+                || ($this->overrides_ & self::OVERRIDE_CONFLICT) !== 0);
+    }
+
+    function can_administer_for_track(PaperInfo $prow = null, $ttype) {
+        if ($prow)
+            return $this->_can_administer_for_track($prow, $this->rights($prow), $ttype);
+        else
             return $this->privChair;
     }
 
@@ -2555,7 +2576,7 @@ class Contact {
             error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         assert(!$rrow || $prow->paperId == $rrow->paperId);
         $rights = $this->rights($prow, $forceShow);
-        if ($rights->can_administer
+        if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREV)
             || $rights->reviewType == REVIEW_META
             || ($rrow
                 && $this->is_owned_review($rrow)
@@ -2638,7 +2659,7 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
-        if ($rights->can_administer
+        if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
             || $rights->reviewType == REVIEW_META
             || ($rrow && $rrow->requestedBy == $this->contactId && $rights->allow_pc)
             || ($rrow && $this->is_owned_review($rrow)))
@@ -2670,7 +2691,10 @@ class Contact {
             "blind" => false, "outcome" => 1,
             "paperTags" => $tags
         ], $this);
-        return $this->can_view_review_identity($prow, null);
+        $overrides = $this->add_overrides(self::OVERRIDE_CONFLICT);
+        $answer = $this->can_view_review_identity($prow, null);
+        $this->set_overrides($overrides);
+        return $answer;
     }
 
     function can_view_review_round(PaperInfo $prow, ReviewInfo $rrow = null) {
@@ -2689,7 +2713,7 @@ class Contact {
 
     function can_view_review_requester(PaperInfo $prow, ReviewInfo $rrow = null) {
         $rights = $this->rights($prow);
-        return $rights->can_administer
+        return $this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
             || ($rrow && $rrow->requestedBy == $this->contactId && $rights->allow_pc)
             || ($rrow && $this->is_owned_review($rrow))
             || ($rights->allow_pc && $this->can_view_review_identity($prow, $rrow));
@@ -3086,7 +3110,7 @@ class Contact {
         if ($crow && ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR)))
             return $this->can_view_authors($prow, $forceShow);
         $rights = $this->rights($prow, $forceShow);
-        return $rights->can_administer
+        return $this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
             || ($crow && $crow->contactId == $this->contactId)
             || (($rights->allow_pc
                  || ($rights->allow_review

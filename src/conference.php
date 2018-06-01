@@ -1250,6 +1250,18 @@ class Conf {
         return null;
     }
 
+    function dangerous_track_mask(Contact $user) {
+        $m = 0;
+        if ($this->tracks) {
+            foreach ($this->tracks as $t => $tr)
+                foreach ($tr as $i => $perm)
+                    if ($perm && $perm[0] === "-"
+                        && !Track::match_perm($user, $perm))
+                        $m |= 1 << $i;
+        }
+        return $m;
+    }
+
 
     function has_rounds() {
         return count($this->rounds) > 1;
