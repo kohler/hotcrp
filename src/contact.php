@@ -87,8 +87,8 @@ class Contact {
     const OVERRIDE_TAG_CHECKS = 4;
     private $overrides_ = 0;
     public $hidden_papers = null;
-    private $_aucollab_matchers = null;
-    private $_aucollab_general_pregexes = null;
+    private $aucollab_matchers_ = null;
+    private $aucollab_general_pregexes_ = null;
 
     // Per-paper DB information, usually null
     public $myReviewType = null;
@@ -3443,32 +3443,32 @@ class Contact {
     }
 
     function aucollab_matchers() {
-        if ($this->_aucollab_matchers === null) {
-            $this->_aucollab_matchers = [];
+        if ($this->aucollab_matchers_ === null) {
+            $this->aucollab_matchers_ = [];
             if (($m = PaperInfo_AuthorMatcher::make($this, false)))
-                $this->_aucollab_matchers[] = $m;
+                $this->aucollab_matchers_[] = $m;
             if ($this->affiliation !== ""
                 && ($m = PaperInfo_AuthorMatcher::make_affiliation($this->affiliation, false)))
-                $this->_aucollab_matchers[] = $m;
+                $this->aucollab_matchers_[] = $m;
             if ((string) $this->collaborators !== "") {
                 $collab = self::fix_collaborator_affiliations($this->collaborators);
                 foreach (explode("\n", $collab) as $co) {
                     if (($m = PaperInfo_AuthorMatcher::make($co, true)))
-                        $this->_aucollab_matchers[] = $m;
+                        $this->aucollab_matchers_[] = $m;
                 }
             }
         }
-        return $this->_aucollab_matchers;
+        return $this->aucollab_matchers_;
     }
 
     function aucollab_general_pregexes() {
-        if ($this->_aucollab_general_pregexes === null) {
+        if ($this->aucollab_general_pregexes_ === null) {
             $l = [];
             foreach ($this->aucollab_matchers() as $matcher)
                 $l[] = $matcher->general_pregexes;
-            $this->_aucollab_general_pregexes = Text::merge_pregexes($l);
+            $this->aucollab_general_pregexes_ = Text::merge_pregexes($l);
         }
-        return $this->_aucollab_general_pregexes;
+        return $this->aucollab_general_pregexes_;
     }
 
 
