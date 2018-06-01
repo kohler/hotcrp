@@ -316,7 +316,7 @@ class Review_SearchTerm extends SearchTerm {
 
         $rsm->apply_wordcount($wordcount);
         if ($contacts) {
-            $rsm->set_contacts($srch->matching_reviewers($contacts, $quoted, $rsm->only_pc()));
+            $rsm->set_contacts($srch->matching_users($contacts, $quoted, $rsm->only_pc()));
             if (strcasecmp($contacts, "me") == 0)
                 $rsm->apply_tokens($srch->user->review_tokens());
         }
@@ -346,7 +346,7 @@ class Review_SearchTerm extends SearchTerm {
                 || $rsm->apply_round($m[1], $srch->conf))
                 /* OK */;
             else
-                $rsm->set_contacts($srch->matching_reviewers($m[1], $sword->quoted, false));
+                $rsm->set_contacts($srch->matching_users($m[1], $sword->quoted, false));
             $word = ($m[2] === ":" ? $m[3] : $m[2] . $m[3]);
             $contactword .= $m[1] . ":";
         }

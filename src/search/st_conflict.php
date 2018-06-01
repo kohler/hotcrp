@@ -14,7 +14,7 @@ class Conflict_SearchTerm extends SearchTerm {
         if (($qr = PaperSearch::check_tautology($m[1])))
             return $qr;
         else {
-            $contacts = $srch->matching_reviewers($m[0], $sword->quoted, $sword->kwdef->pc_only);
+            $contacts = $srch->matching_users($m[0], $sword->quoted, $sword->kwdef->pc_only);
             return new Conflict_SearchTerm($m[1], $contacts, $srch->user);
         }
     }

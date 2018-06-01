@@ -52,7 +52,7 @@ class Revpref_SearchTerm extends SearchTerm {
                 $safe_contacts = 1;
             else {
                 $safe_contacts = -1;
-                $contacts = $srch->matching_reviewers($m[1], $sword->quoted, true);
+                $contacts = $srch->matching_users($m[1], $sword->quoted, true);
             }
             $word = str_starts_with($m[2], ":") ? substr($m[2], 1) : $m[2];
             if ($word === "")

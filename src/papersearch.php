@@ -1295,7 +1295,7 @@ class PaperSearch {
             $this->warn($scm->warn_html);
         return $scm->ids;
     }
-    function matching_reviewers($word, $quoted, $pc_only) {
+    function matching_users($word, $quoted, $pc_only) {
         $cids = $this->matching_contacts_base(ContactSearch::F_USER, $word, $quoted, $pc_only);
         return empty($cids) ? [] : $cids;
     }
