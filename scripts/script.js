@@ -5463,7 +5463,7 @@ function pidfield(pid, f, index) {
 
 
 function render_allpref() {
-    var atomre = /(\d+)([PT]\S+)/g;
+    var atomre = /(\d+)([PT])(\S+)/g;
     $(".need-allpref").each(function () {
         var t = [], m,
             pid = pidnear(this),
@@ -5477,11 +5477,22 @@ function render_allpref() {
                 x += '<span class="' + pc.color_classes + '">' + pc.name_html + '</span>';
             else
                 x += pc.name_html;
-            x += ' <span class="asspref' + (m[2].charAt(1) === "-" ? "-1" : "1") +
-                '">' + m[2].replace(/-/, "−") /* minus */ + '</span>';
-            t.push(x);
+            var pref = parseInt(m[3]);
+            x += ' <span class="asspref' + (pref < 0 ? "-1" : "1") +
+                '">' + m[2] + (pref < 0 ? m[3].replace(/-/, "−") /* minus */ : m[3]) +
+                '</span>';
+            t.push([m[2] === "P" ? pref : 0, pref, t.length, x]);
         }
         if (t.length) {
+            t.sort(function (a, b) {
+                if (a[0] !== b[0])
+                    return a[0] < b[0] ? 1 : -1;
+                else if (a[1] !== b[1])
+                    return a[1] < b[1] ? 1 : -1;
+                else
+                    return a[2] < b[2] ? -1 : 1;
+            });
+            t = t.map(function (x) { return x[3]; });
             x = '<span class="nb">' + t.join(',</span> <span class="nb">') + '</span>';
             $(this).html(x).removeClass("need-allpref");
         } else
