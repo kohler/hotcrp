@@ -702,8 +702,6 @@ class ReviewerList_PaperColumn extends PaperColumn {
             return false;
         $this->topics = $pl->conf->has_topics();
         $pl->qopts["reviewSignatures"] = true;
-        if ($visible && $pl->user->privChair)
-            $pl->qopts["allReviewerPreference"] = $pl->qopts["topics"] = true;
         if ($pl->conf->review_blindness() === Conf::BLIND_OPTIONAL)
             $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
         else
@@ -722,16 +720,12 @@ class ReviewerList_PaperColumn extends PaperColumn {
         foreach ($row->reviews_by_display() as $xrow)
             if ($pl->user->can_view_review_identity($row, $xrow)) {
                 $ranal = $pl->make_review_analysis($xrow, $row);
-                $n = $pl->user->reviewer_html_for($xrow) . "&nbsp;" . $ranal->icon_html(false);
-                if ($pl->user->privChair) {
-                    $pref = $row->reviewer_preference((int) $xrow->contactId);
-                    if ($this->topics && $row->has_topics())
-                        $pref[2] = $row->topic_interest_score((int) $xrow->contactId);
-                    $n .= unparse_preference_span($pref);
-                }
-                $x[] = '<span class="nw">' . $n . '</span>';
+                $x[] = $pl->user->reviewer_html_for($xrow) . " " . $ranal->icon_html(false);
             }
-        return join(", ", $x);
+        if ($x)
+            return '<span class="nb">' . join(',</span> <span class="nb">', $x) . '</span>';
+        else
+            return "";
     }
     function text(PaperList $pl, PaperInfo $row) {
         $x = [];
