@@ -810,10 +810,11 @@ topics. We use this information to help match papers to reviewers.</p>',
     }
 
     static function render_tags(UserStatus $us, $cj, $reqj, $uf) {
-        if ((!$us->user->isPC || empty($reqj->tags)) && !$us->viewer->privChair)
+        if ((!$us->user->isPC || empty($reqj->tags))
+            && !$us->viewer->privChair)
             return;
         $tags = isset($reqj->tags) && is_array($reqj->tags) ? $reqj->tags : [];
-        echo "<div class=\"profile-g fx1\"><h3 class=\"profile\">Tags</h3>\n";
+        echo "<div class=\"profile-g fx2\"><h3 class=\"profile\">Tags</h3>\n";
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("contactTags", "f-i"), '">',
                 Ht::entry("contactTags", join(" ", $tags), ["size" => 60]),
