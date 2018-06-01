@@ -306,7 +306,11 @@
         "alternate": [{"word": "ucsf", "if": "university california san"}]
     },
     "george": {
-        "weak": true
+        "weak": true,
+        "alternate": [{"word": "gwu", "if": "washington"}]
+    },
+    "gwu": {
+        "alternate": ["george washington university"]
     },
     "hewlett": {
         "alternate": [{"word": "hp", "if": "packard"}]
