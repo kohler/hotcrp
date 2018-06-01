@@ -713,16 +713,13 @@ class ReviewerList_PaperColumn extends PaperColumn {
     function header(PaperList $pl, $is_text) {
         return "Reviewers";
     }
-    private function reviews_with_names(PaperInfo $row) {
-        return $row->reviews_by_display();
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_review_identity($row, null);
     }
     function content(PaperList $pl, PaperInfo $row) {
         // see also search.php > getaction == "reviewers"
         $x = [];
-        foreach ($this->reviews_with_names($row) as $xrow)
+        foreach ($row->reviews_by_display() as $xrow)
             if ($pl->user->can_view_review_identity($row, $xrow)) {
                 $ranal = $pl->make_review_analysis($xrow, $row);
                 $n = $pl->user->reviewer_html_for($xrow) . "&nbsp;" . $ranal->icon_html(false);
@@ -738,7 +735,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         $x = [];
-        foreach ($this->reviews_with_names($row) as $xrow)
+        foreach ($row->reviews_by_display() as $xrow)
             if ($pl->user->can_view_review_identity($row, $xrow))
                 $x[] = $pl->user->name_text_for($xrow);
         return join("; ", $x);
