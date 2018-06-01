@@ -1164,26 +1164,26 @@ class Conf {
         return null;
     }
 
-    function check_tracks(PaperInfo $prow, Contact $contact, $type) {
+    function check_tracks(PaperInfo $prow, Contact $contact, $ttype) {
         $unmatched = true;
         if ($this->tracks) {
             foreach ($this->tracks as $t => $tr)
                 if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
                     $unmatched = false;
-                    if (Track::match_perm($contact, $tr[$type]))
+                    if (Track::match_perm($contact, $tr[$ttype]))
                         return true;
                 }
         }
         return $unmatched;
     }
 
-    function check_required_tracks(PaperInfo $prow, Contact $contact, $type) {
-        if ($this->_track_sensitivity & (1 << $type)) {
+    function check_required_tracks(PaperInfo $prow, Contact $contact, $ttype) {
+        if ($this->_track_sensitivity & (1 << $ttype)) {
             $unmatched = true;
             foreach ($this->tracks as $t => $tr)
                 if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
                     $unmatched = false;
-                    if ($tr[$type] && Track::match_perm($contact, $tr[$type]))
+                    if ($tr[$ttype] && Track::match_perm($contact, $tr[$ttype]))
                         return true;
                 }
         }
@@ -1194,16 +1194,16 @@ class Conf {
         return $this->check_required_tracks($prow, $contact, Track::ADMIN);
     }
 
-    function check_default_track(Contact $contact, $type) {
-        return !$this->tracks || Track::match_perm($contact, $this->tracks["_"][$type]);
+    function check_default_track(Contact $contact, $ttype) {
+        return !$this->tracks || Track::match_perm($contact, $this->tracks["_"][$ttype]);
     }
 
-    function check_any_tracks(Contact $contact, $type) {
+    function check_any_tracks(Contact $contact, $ttype) {
         if ($this->tracks)
             foreach ($this->tracks as $t => $tr)
-                if (($type === Track::VIEW
+                if (($ttype === Track::VIEW
                      || Track::match_perm($contact, $tr[Track::VIEW]))
-                    && Track::match_perm($contact, $tr[$type]))
+                    && Track::match_perm($contact, $tr[$ttype]))
                     return true;
         return !$this->tracks;
     }
@@ -1216,20 +1216,20 @@ class Conf {
         return false;
     }
 
-    function check_all_tracks(Contact $contact, $type) {
+    function check_all_tracks(Contact $contact, $ttype) {
         if ($this->tracks)
             foreach ($this->tracks as $t => $tr)
-                if (!(($type === Track::VIEW
+                if (!(($ttype === Track::VIEW
                        || Track::match_perm($contact, $tr[Track::VIEW]))
-                      && Track::match_perm($contact, $tr[$type])))
+                      && Track::match_perm($contact, $tr[$ttype])))
                     return false;
         return true;
     }
 
-    function check_track_sensitivity($type) {
+    function check_track_sensitivity($ttype) {
         if ($this->tracks)
             foreach ($this->tracks as $t => $tr)
-                if ($tr[$type] !== null)
+                if ($tr[$ttype] !== null)
                     return true;
         return false;
     }
@@ -1242,11 +1242,11 @@ class Conf {
         return ($this->_track_sensitivity & Track::BITS_REVIEW) != 0;
     }
 
-    function track_permission($tag, $type) {
+    function track_permission($tag, $ttype) {
         if ($this->tracks)
             foreach ($this->tracks as $t => $tr)
                 if (strcasecmp($t, $tag) == 0)
-                    return $tr[$type];
+                    return $tr[$ttype];
         return null;
     }
 
