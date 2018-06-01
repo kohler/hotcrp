@@ -509,11 +509,12 @@ if ($UserStatus->has_messages()) {
 }
 
 echo '<div id="foldaccount" class="';
-if (isset($formcj->roles) && (isset($formcj->roles->pc) || isset($formcj->roles->chair)))
+if (isset($formcj->roles)
+    && (isset($formcj->roles->pc) || isset($formcj->roles->chair)))
     echo "fold1o";
 else
     echo "fold1c";
-echo " fold2", ($Qreq->savebulk ? "o" : "c"), "\">\n";
+echo "\">\n";
 
 
 $UserStatus->set_user($Acct);
