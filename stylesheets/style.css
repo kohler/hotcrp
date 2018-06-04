@@ -1220,17 +1220,13 @@ label.f-c, .f-i > label {
 .f-c.n, .f-i > label.n {
 	font-weight: normal;
 }
-.f-d, .f-h {
+.f-h, .f-hx {
 	color: #555555;
-	margin-top: 0.25rem;
-	margin-bottom: 0.25rem;
+	font-size: 92%;
 }
 .f-h {
-	font-size: 92%;
-}
-.f-hx {
-	color: #555555;
-	font-size: 92%;
+	margin-top: 0.25rem;
+	margin-bottom: 0.25rem;
 }
 .f-2col {
 	margin: -1em 0;
