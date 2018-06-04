@@ -16,8 +16,8 @@ if (Navigation::page() !== "index") {
         include("cacheable.php");
         exit;
     } else {
-        require_once("lib/ht.php");
-        Navigation::redirect_site("index");
+        header("HTTP/1.0 404 Not Found");
+        exit;
     }
 }
 
