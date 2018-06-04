@@ -172,7 +172,7 @@ static function render(SettingValues $sv) {
 
 
     echo '<div class="settings-g">';
-    $sv->echo_checkbox('cmt_revid', "PC can see comments when reviews are anonymous", ["class" => "js-foldup", "data-fold-target" => "2"]);
+    $sv->echo_checkbox('cmt_revid', "PC can see comments when reviews are anonymous", ["class" => "js-foldup", "data-fold-target" => "2", "hint_class" => "fx2"], "Commenter names are hidden when reviews are anonymous.");
     Ht::stash_script('$("#cbcmt_revid").change()');
     echo "</div></div>\n";
 
