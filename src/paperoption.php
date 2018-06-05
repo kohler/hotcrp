@@ -119,10 +119,22 @@ class PaperOptionList {
         $this->ofinal = new DocumentPaperOption($this->conf, ["id" => DTYPE_FINAL, "name" => "Final version", "title" => "Final version", "message_title" => "final version", "json_key" => "final", "type" => null, "final" => true, "position" => 0]);
     }
 
-    function _add_json($oj) {
+    function _add_json($oj, $k, $landmark) {
+        if (!isset($oj->id) && $k === 0) {
+            $ok = true;
+            foreach (get_object_vars($oj) as $kk => $vv)
+                if (is_object($vv)) {
+                    if (!isset($vv->id))
+                        $vv->id = $kk;
+                    $ok = $this->_add_json($vv, $kk, $landmark) && $ok;
+                }
+            return $ok;
+        }
         if (is_string($oj->id) && is_numeric($oj->id))
             $oj->id = intval($oj->id);
-        if (is_int($oj->id) && $oj->id > 0 && !isset($this->jlist[$oj->id])
+        if (is_int($oj->id)
+            && $oj->id > 0
+            && !isset($this->jlist[$oj->id])
             && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed
             && ((isset($oj->name) && is_string($oj->name))
                 || (isset($oj->title) && is_string($oj->title)))) {
