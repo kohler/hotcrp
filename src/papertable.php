@@ -887,7 +887,7 @@ class PaperTable {
                 if ($au->email === "")
                     $au->email = $row->email;
             } else {
-                $contacts[] = $au = new PaperInfo_Author($row);
+                $contacts[] = $au = new Author($row);
                 $au->nonauthor = true;
             }
             $au->contactId = (int) $row->contactId;

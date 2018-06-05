@@ -116,7 +116,6 @@ class SiteLoader {
         "NumericOrderPaperColumn" => "src/papercolumn.php",
         "Option_SearchTerm" => "src/search/st_option.php",
         "PaperInfoSet" => "src/paperinfo.php",
-        "PaperInfo_AuthorMatcher" => "src/paperinfo.php",
         "PaperOptionList" => "src/paperoption.php",
         "Review_Assigner" => "src/assignmentset.php",
         "ReviewField" => "src/review.php",

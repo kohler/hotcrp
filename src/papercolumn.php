@@ -774,7 +774,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
                 if ($matcher->test($au))
                     $matchers[] = $matcher;
             if (!empty($matchers))
-                $text[] = PaperInfo_AuthorMatcher::highlight_all($au, $matchers);
+                $text[] = AuthorMatcher::highlight_all($au, $matchers);
         }
         if (!empty($text))
             unset($row->folded);

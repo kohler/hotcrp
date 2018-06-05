@@ -3469,15 +3469,15 @@ class Contact {
     function aucollab_matchers() {
         if ($this->aucollab_matchers_ === null) {
             $this->aucollab_matchers_ = [];
-            if (($m = PaperInfo_AuthorMatcher::make($this, false)))
+            if (($m = AuthorMatcher::make($this, false)))
                 $this->aucollab_matchers_[] = $m;
             if ($this->affiliation !== ""
-                && ($m = PaperInfo_AuthorMatcher::make_affiliation($this->affiliation, false)))
+                && ($m = AuthorMatcher::make_affiliation($this->affiliation, false)))
                 $this->aucollab_matchers_[] = $m;
             if ((string) $this->collaborators !== "") {
                 $collab = self::fix_collaborator_affiliations($this->collaborators);
                 foreach (explode("\n", $collab) as $co) {
-                    if (($m = PaperInfo_AuthorMatcher::make($co, true)))
+                    if (($m = AuthorMatcher::make($co, true)))
                         $this->aucollab_matchers_[] = $m;
                 }
             }

@@ -94,7 +94,7 @@ class AuthorMatch_SearchTerm extends SearchTerm {
         $type = $sword->kwdef->name;
         if ($word === "any" && $sword->kwexplicit && !$sword->quoted)
             return new TextMatch_SearchTerm(substr($type, 0, 2), true, false);
-        $matcher = new PaperInfo_AuthorMatcher($word);
+        $matcher = new AuthorMatcher($word);
         if ($matcher->general_pregexes)
             return new AuthorMatch_SearchTerm($type, $matcher);
         else

@@ -161,6 +161,8 @@ src/assigners/a_preference.php
 src/assigners/a_status.php
 src/assigners/a_tag.php
 src/assignmentset.php
+src/author.php
+src/authormatcher.php
 src/autoassigner.php
 src/banal
 src/capability.php
