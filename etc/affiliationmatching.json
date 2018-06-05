@@ -334,6 +334,15 @@
             {"word": "iit", "if": "institute technology"}
         ]
     },
+    "indiana": {
+        "alternate": [{"word": "iu", "if": "university"}]
+    },
+    "irvine": {
+        "alternate": [{"word": "uci", "if": "university california"}]
+    },
+    "iu": {
+        "alternate": ["indiana university"]
+    },
     "kaist": {
         "alternate": ["korea advanced institute science technology"]
     },
@@ -440,6 +449,9 @@
     },
     "ucsf": {
         "alternate": ["university california san francisco", "uc san francisco"]
+    },
+    "uci": {
+        "alternate": ["university california irvine", "uc irvine"]
     },
     "uiuc": {
         "alternate": ["university illinois urbana champaign"]
