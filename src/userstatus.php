@@ -407,9 +407,9 @@ class UserStatus extends MessageSet {
 
     function check_invariants($cj) {
         global $Now;
-        if (isset($cj->bad_follow) && count($cj->bad_follow))
+        if (isset($cj->bad_follow) && !empty($cj->bad_follow))
             $this->warning_at("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($cj->bad_follow)) . ").");
-        if (isset($cj->bad_topics) && count($cj->bad_topics))
+        if (isset($cj->bad_topics) && !empty($cj->bad_topics))
             $this->warning_at("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($cj->bad_topics)) . ").");
     }
 
