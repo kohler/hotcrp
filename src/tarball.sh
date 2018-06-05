@@ -89,7 +89,7 @@ batch/updatecontactdb.php
 conf/.htaccess
 
 etc/.htaccess
-etc/affiliationmatching.json
+etc/affiliationmatchers.json
 etc/apifunctions.json
 etc/assignmentparsers.json
 etc/emojicodes.json

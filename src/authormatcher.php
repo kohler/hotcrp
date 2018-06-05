@@ -186,7 +186,7 @@ class AuthorMatcher extends Author {
         global $ConfSitePATH;
         // XXX validate input JSON
         if (self::$wordinfo === null)
-            self::$wordinfo = (array) json_decode(file_get_contents("$ConfSitePATH/etc/affiliationmatching.json"));
+            self::$wordinfo = (array) json_decode(file_get_contents("$ConfSitePATH/etc/affiliationmatchers.json"));
         return self::$wordinfo;
     }
     private function test_affiliation($mtext) {
