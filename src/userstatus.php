@@ -194,7 +194,7 @@ class UserStatus extends MessageSet {
 
     private function normalize($cj, $old_user) {
         // Errors prevent saving
-        global $Me, $Now;
+        global $Now;
 
         // Canonicalize keys
         foreach (array("preferredEmail" => "preferred_email",
@@ -327,9 +327,9 @@ class UserStatus extends MessageSet {
                     $cj->bad_roles[] = $k;
             if ($old_user
                 && (($this->no_deprivilege_self
-                     && $Me
-                     && $Me->conf === $this->conf
-                     && $Me->contactId == $old_user->contactId)
+                     && $this->viewer
+                     && $this->viewer->conf === $this->conf
+                     && $this->viewer->contactId == $old_user->contactId)
                     || $old_user->data("locked"))
                 && Contact::parse_roles_json($cj->roles) < $old_user->roles) {
                 unset($cj->roles);
@@ -414,7 +414,7 @@ class UserStatus extends MessageSet {
     }
 
 
-    function save($cj, $old_user = null, $actor = null) {
+    function save($cj, $old_user = null) {
         global $Now;
         assert(is_object($cj));
         self::normalize_name($cj);
@@ -431,14 +431,13 @@ class UserStatus extends MessageSet {
             return false;
         }
 
-        $no_old_db_account = !$old_user || !$old_user->has_database_account();
         $old_cdb_user = null;
         if ($old_user && $old_user->has_email())
             $old_cdb_user = Contact::contactdb_find_by_email($old_user->email, $this->conf);
         else if (is_string(get($cj, "email")) && $cj->email)
             $old_cdb_user = Contact::contactdb_find_by_email($cj->email, $this->conf);
-        $user = $old_user ? : $old_cdb_user;
 
+        $user = $old_user ? : $old_cdb_user;
         $this->normalize($cj, $user);
         if ($this->nerrors() > $nerrors)
             return false;
@@ -447,6 +446,7 @@ class UserStatus extends MessageSet {
         $user = $user ? : new Contact(null, $this->conf);
         if (($send = $this->send_email) === null)
             $send = !$old_cdb_user;
+        $actor = $this->viewer->is_site_contact ? null : $this->viewer;
         if ($user->save_json($cj, $actor, $send ? Contact::SAVE_NOTIFY : 0))
             return $user;
         else

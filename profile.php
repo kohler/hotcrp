@@ -169,7 +169,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
     }
 
     // save account
-    return $user_status->save($cj, $Acct, $Me);
+    return $user_status->save($cj, $Acct);
 }
 
 
