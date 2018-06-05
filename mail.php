@@ -177,9 +177,9 @@ class MailSender {
             echo "<div id='foldmail' class='foldc fold2c'>",
                 "<div class='fn fx2 merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div>",
                 "<div id='mailwarnings'></div>",
-                "<span id='mailinfo'></span>",
-                "<div class='fx'><div class='confirm'>Sent mail as follows.</div>",
-                "<div class='aa'>",
+                "<div class='fx'><div class='confirm'>Sent to:&nbsp;", $this->recip->unparse(),
+                '<span id="mailinfo"></span></div>',
+                '<div class="aa">',
                 Ht::submit("go", "Prepare more mail"),
                 "</div></div>",
                 // This next is only displayed when Javascript is off
@@ -206,7 +206,7 @@ class MailSender {
                 "<div id='mailwarnings'></div>",
                 "<div class='fx info'>Verify that the mails look correct, then select “Send” to send the checked mails.<br />",
                 "Mailing to:&nbsp;", $this->recip->unparse(),
-                "<span id='mailinfo'></span>";
+                '<span id="mailinfo"></span>';
             if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $recipients)
                 && $this->qreq->plimit
                 && (string) $this->qreq->q !== "")
@@ -226,13 +226,11 @@ class MailSender {
         if (!$this->started)
             $this->echo_prologue();
         $s = "\$\$('mailcount').innerHTML=\"" . round(100 * $nrows_done / max(1, $nrows_left)) . "% done.\";";
-        if (!$this->sending) {
-            $m = plural($this->mcount, "mail") . ", "
-                . plural($this->mrecipients, "recipient");
-            if (count($this->mpapers) != 0)
-                $m .= ", " . plural($this->mpapers, "paper");
-            $s .= "\$\$('mailinfo').innerHTML=\"<span class='barsep'>·</span>" . $m . "\";";
-        }
+        $m = plural($this->mcount, "mail") . ", "
+            . plural($this->mrecipients, "recipient");
+        if (count($this->mpapers) != 0)
+            $m .= ", " . plural($this->mpapers, "paper");
+        $s .= "\$\$('mailinfo').innerHTML=\"<span class='barsep'>·</span>" . $m . "\";";
         if (!$this->sending && $this->groupable)
             $s .= "\$('.mail_groupable').show();";
         echo Ht::unstash_script($s);
