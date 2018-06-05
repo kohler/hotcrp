@@ -298,27 +298,10 @@ function expand_json_includes_callback($includelist, $callback) {
                 continue;
             $entry = $x;
         }
-        if (is_object($entry) && !isset($entry->name) && !isset($entry->match)) {
-            $isassoc = true;
-            $nassoctest = 5;
-            foreach (get_object_vars($entry) as $k => $v) {
-                if (!is_object($v))
-                    $isassoc = false;
-                if (!$isassoc || --$nassoctest === 0)
-                    break;
-            }
-            if ($isassoc)
-                $entry = get_object_vars($entry);
-        } else {
-            $isassoc = false;
-        }
         foreach (is_array($entry) ? $entry : [$entry] as $k => $v) {
-            if (is_object($v)) {
-                if ($isassoc && !isset($v->name))
-                    $v->name = $k;
+            if (is_object($v))
                 $v->__subposition = ++Conf::$next_xt_subposition;
-            }
-            if (!call_user_func($callback, $v, $k))
+            if (!call_user_func($callback, $v, $k, $landmark))
                 error_log("$landmark: Invalid expansion " . json_encode($v) . ".");
         }
     }
