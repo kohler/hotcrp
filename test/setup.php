@@ -22,7 +22,7 @@ while ($Conf->dblink->more_results())
     Dbl::free($Conf->dblink->next_result());
 // No setup phase.
 $Conf->qe_raw("delete from Settings where name='setupPhase'");
-$Conf->qe_raw("insert into Settings set name='options', value=1, data='{\"1\":{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"position\":1,\"display\":\"default\"}}'");
+$Conf->qe_raw("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"position\":1,\"display\":\"default\"}]'");
 $Conf->load_settings();
 // Contactdb.
 if (($cdb = $Conf->contactdb())) {

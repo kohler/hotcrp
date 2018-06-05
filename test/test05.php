@@ -67,8 +67,8 @@ xassert_eqq(bin2hex($ps->paper_row()->sha1), "e04c778a0af702582bb0e9345fab6540ac
 
 // test new-style options storage
 $options = $Conf->setting_json("options");
-xassert(!isset($options->{"2"}));
-$options->{"2"} = ["id" => 2, "name" => "Attachments", "abbr" => "attachments", "type" => "attachments", "position" => 2];
+xassert(!array_filter((array) $options, function ($o) { return $o->id === 2; }));
+$options[] = (object) ["id" => 2, "name" => "Attachments", "abbr" => "attachments", "type" => "attachments", "position" => 2];
 $Conf->save_setting("options", 1, json_encode($options));
 $Conf->invalidate_caches("options");
 
