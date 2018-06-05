@@ -180,10 +180,34 @@ class Si {
     }
 
     static function initialize(Conf $conf) {
+        $last_problem = 0;
+        $hook = function ($v, $k, $landmark) use ($conf, &$last_problem) {
+            if (is_object($v) && isset($v->name) && is_string($v->name)) {
+                $conf->_setting_info[] = $v;
+                return true;
+            } else if ($k === 0 && is_object($v) && !isset($v->name)) {
+                error_log("$landmark: old-style keyed-object settinginfo deprecated");
+                $ok = true;
+                foreach (get_object_vars($v) as $kk => $vv) {
+                    if (is_object($vv) && !isset($vv->name))
+                        $vv->name = $kk;
+                    else if (is_object($vv))
+                        assert($vv->name === $kk);
+                    if (is_object($vv) && isset($vv->name) && is_string($vv->name)) {
+                        $vv->__subposition = ++Conf::$next_xt_subposition;
+                        $conf->_setting_info[] = $vv;
+                    } else if ($kk !== "__subposition")
+                        $ok = false;
+                }
+                return $ok;
+            } else
+                return false;
+        };
+
         $conf->_setting_info = [];
-        expand_json_includes_callback(["etc/settings.json"], [$conf, "_add_setting_json"]);
+        expand_json_includes_callback(["etc/settings.json"], $hook);
         if (($olist = $conf->opt("settingSpecs")))
-            expand_json_includes_callback($olist, [$conf, "_add_setting_json"]);
+            expand_json_includes_callback($olist, $hook);
         usort($conf->_setting_info, "Conf::xt_priority_compare");
 
         $all = [];

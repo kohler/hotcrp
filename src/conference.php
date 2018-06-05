@@ -3731,16 +3731,6 @@ class Conf {
     }
 
 
-    // Setting info
-    function _add_setting_json($j) {
-        if (is_object($j) && isset($j->name) && is_string($j->name)) {
-            $this->_setting_info[] = $j;
-            return true;
-        } else
-            return false;
-    }
-
-
     // Hooks
     function _add_hook_json($fj) {
         if (isset($fj->callback) && is_string($fj->callback) && !isset($fj->synonym)) {
