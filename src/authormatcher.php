@@ -61,13 +61,13 @@ class AuthorMatcher extends Author {
             $aff = $x;
         }
         if ($aff !== "") {
-            self::wordinfo();
+            $wordinfo = self::wordinfo();
             preg_match_all('/[a-z0-9&]+/', strtolower(UnicodeHelper::deaccent($aff)), $m);
 
             $directs = $alts = [];
             $any_weak = false;
             foreach ($m[0] as $w) {
-                $aw = get(self::$wordinfo, $w);
+                $aw = get($wordinfo, $w);
                 if ($aw && isset($aw->stop) && $aw->stop)
                     continue;
                 $any[] = preg_quote($w);
@@ -196,8 +196,9 @@ class AuthorMatcher extends Author {
         else if (!preg_match_all($am_regex, $mtext, $m))
             return false;
         $result = true;
+        $wordinfo = self::wordinfo();
         foreach ($am_words as $w) { // $am_words contains no alternates
-            $aw = get(self::$wordinfo, $w);
+            $aw = get($wordinfo, $w);
             $weak = $aw && isset($aw->weak) && $aw->weak;
             $saw_w = in_array($w, $m[0]);
             if (!$saw_w && $aw && isset($aw->alternate)) {
@@ -220,7 +221,7 @@ class AuthorMatcher extends Author {
                     // If all are found, exit; check if the found alternate is strong
                     if ($saw_w) {
                         if ($weak && count($altws) == 1) {
-                            $aw2 = get(self::$wordinfo, $alt);
+                            $aw2 = get($wordinfo, $alt);
                             if (!$aw2 || !isset($aw2->weak) || !$aw2->weak)
                                 $weak = false;
                         }
@@ -259,5 +260,43 @@ class AuthorMatcher extends Author {
             if ($w !== "" && !in_array($w, $ws))
                 return false;
         return true;
+    }
+
+
+    static function is_likely_affiliation($s) {
+        preg_match_all('/[A-Za-z0-9&]+/', UnicodeHelper::deaccent($s), $m);
+        $has_weak = $has_nameish = false;
+        $wordinfo = self::wordinfo();
+        $nw = count($m[0]);
+        $fc = null;
+        $nc = 0;
+        foreach ($m[0] as $i => $w) {
+            $aw = get($wordinfo, strtolower($w));
+            if ($aw) {
+                if (isset($aw->nameish)) {
+                    if ($aw->nameish === false)
+                        return true;
+                    else if ($aw->nameish === true
+                             || (is_int($aw->nameish) && $i >= $aw->nameish - 1)) {
+                        $has_nameish = true;
+                        continue;
+                    }
+                }
+                if (isset($aw->weak) && $aw->weak)
+                    $has_weak = true;
+                else
+                    return true;
+            } else if (strlen($w) > 1 && ctype_upper($w)) {
+                if ($fc === null)
+                    $fc = $i;
+                ++$nc;
+            }
+        }
+        return $has_weak
+            || ($nw === 1 && !$has_nameish)
+            || ($nc > 0
+                && !$has_nameish
+                && $fc !== 1
+                && ($nc < $nw || preg_match('{[-,/]}', $s)));
     }
 }
