@@ -733,4 +733,152 @@ $Conf->save_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
 xassert_eqq($doc->docclass->filestore_path($doc), "/foo/bar/sha2-66a/sha2-66a04/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18");
 xassert_eqq(HotCRPDocument::s3_filename($doc), "doc/66a/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.txt");
 
+// collaborator fixing
+xassert_eqq(AuthorMatcher::fix_collaborators("\"University of California, San Diego\", \"University of California, Los Angeles\", \"David Culler (University of California, Berkeley)\", \"Kamin Whitehouse (University of Virginia)\", \"Yuvraj Agarwal (Carnegie Mellon University)\", \"Mario Berges (Carnegie Mellon University)\", \"Joern Ploennigs (IBM)\", \"Mikkel Baun Kjaergaard (Southern Denmark University)\", \"Donatella Sciuto (Politecnico di Milano)\", \"Santosh Kumar (University of Memphis)\""),
+    "All (University of California, San Diego)
+All (University of California, Los Angeles)
+David Culler (University of California, Berkeley)
+Kamin Whitehouse (University of Virginia)
+Yuvraj Agarwal (Carnegie Mellon University)
+Mario Berges (Carnegie Mellon University)
+Joern Ploennigs (IBM)
+Mikkel Baun Kjaergaard (Southern Denmark University)
+Donatella Sciuto (Politecnico di Milano)
+Santosh Kumar (University of Memphis)");
+xassert_eqq(AuthorMatcher::fix_collaborators("University of California, San Diego
+University of California, Los Angeles
+David Culler (University of California, Berkeley)
+Kamin Whitehouse (University of Virginia)
+Yuvraj Agarwal (Carnegie Mellon University)
+Mario Berges (Carnegie Mellon University)
+Joern Ploennigs (IBM)
+Mikkel Baun Kjaergaard (Southern Denmark University)
+Donatella Sciuto (Politecnico di Milano)
+Santosh Kumar (University of Memphis)\n"),
+    "All (University of California, San Diego)
+All (University of California, Los Angeles)
+David Culler (University of California, Berkeley)
+Kamin Whitehouse (University of Virginia)
+Yuvraj Agarwal (Carnegie Mellon University)
+Mario Berges (Carnegie Mellon University)
+Joern Ploennigs (IBM)
+Mikkel Baun Kjaergaard (Southern Denmark University)
+Donatella Sciuto (Politecnico di Milano)
+Santosh Kumar (University of Memphis)");
+xassert_eqq(AuthorMatcher::fix_collaborators("University of Wisconsin-Madison
+AMD Research
+University of Illinois at Urbana-Champaign
+Sarita Adve (UIUC) - PhD advisor
+Karu Sankaralingam (Wisconsin) - MS Advisor
+Rakesh Komuravelli (Qualcomm) - recent collaborator (last publication together: 9/2016 (ISPASS))
+Tony Gutierrez (AMD Research) – recent collaborator (last publication: 2/2018)
+Brad Beckmann (AMD Research) – recent collaborator (last publication: 2/2018)
+Alex Dutu (AMD Research) – recent collaborator (last publication: 2/2018)
+Joe Gross (Samsung Research) – recent collaborator (last publication: 2/2018)
+John Kalamatianos (AMD Research) – recent collaborator (last publication: 2/2018)
+Onur Kayiran (AMD Research) – recent collaborator (last publication: 2/2018)
+Michael LeBeane (AMD Research) – recent collaborator (last publication: 2/2018)
+Matthew Poremba (AMD Research) – recent collaborator (last publication: 2/2018)
+Brandon Potter (AMD Research) – recent collaborator (last publication: 2/2018)
+Sooraj Puthoor (AMD Research) – recent collaborator (last publication: 2/2018)
+Mark Wyse (Washington) – recent collaborator (last publication: 2/2018)
+Jieming Yin (AMD Research) – recent collaborator (last publication: 2/2018)
+Xianwei Zhang (AMD Research) – recent collaborator (last publication: 2/2018)
+Akshay Jain (Qualcomm) – recent collaborator (last publication: 2/2018)
+Tim Rogers (Purdue) – recent collaborator (last publication: 2/2018)
+"),
+    "All (University of Wisconsin-Madison)
+All (AMD Research)
+All (University of Illinois at Urbana-Champaign)
+Sarita Adve (UIUC) - PhD advisor
+Karu Sankaralingam (Wisconsin) - MS Advisor
+Rakesh Komuravelli (Qualcomm) - recent collaborator (last publication together: 9/2016 (ISPASS))
+Tony Gutierrez (AMD Research) - recent collaborator (last publication: 2/2018)
+Brad Beckmann (AMD Research) - recent collaborator (last publication: 2/2018)
+Alex Dutu (AMD Research) - recent collaborator (last publication: 2/2018)
+Joe Gross (Samsung Research) - recent collaborator (last publication: 2/2018)
+John Kalamatianos (AMD Research) - recent collaborator (last publication: 2/2018)
+Onur Kayiran (AMD Research) - recent collaborator (last publication: 2/2018)
+Michael LeBeane (AMD Research) - recent collaborator (last publication: 2/2018)
+Matthew Poremba (AMD Research) - recent collaborator (last publication: 2/2018)
+Brandon Potter (AMD Research) - recent collaborator (last publication: 2/2018)
+Sooraj Puthoor (AMD Research) - recent collaborator (last publication: 2/2018)
+Mark Wyse (Washington) - recent collaborator (last publication: 2/2018)
+Jieming Yin (AMD Research) - recent collaborator (last publication: 2/2018)
+Xianwei Zhang (AMD Research) - recent collaborator (last publication: 2/2018)
+Akshay Jain (Qualcomm) - recent collaborator (last publication: 2/2018)
+Tim Rogers (Purdue) - recent collaborator (last publication: 2/2018)");
+xassert_eqq(AuthorMatcher::fix_collaborators("T. Arselins (LLNL) S. Bagchi (Purdue) D. Bailey (LBL) D. Bailey (Williams) A. Baker (Colorado) D. Beckingsale (U. Warwick) A. Bhatele (LLNL) B. Bihari (LLNL) S. Biswas (LLNL) D. Boehme (LLNL) P.-T. Bremer (LLNL) G. Bronevetsky (LLNL) L. Carrington (SDSC) A. Cook (LLNL) B. de Supinski (LLNL) E. Draeger (LLNL) E. Elnozahy (IBM) M. Fagan (Rice) R. Fowler (UNC) S. Futral (LLNL) J. Galarowicz (Krell) J. Glosli (LLNL) J. Gonzalez (BSC) G. Gopalakrishnan (Utah) W. Gropp (Illinois) J. Gunnels (IBM)"),
+    "T. Arselins (LLNL)
+S. Bagchi (Purdue)
+D. Bailey (LBL)
+D. Bailey (Williams)
+A. Baker (Colorado)
+D. Beckingsale (U. Warwick)
+A. Bhatele (LLNL)
+B. Bihari (LLNL)
+S. Biswas (LLNL)
+D. Boehme (LLNL)
+P.-T. Bremer (LLNL)
+G. Bronevetsky (LLNL)
+L. Carrington (SDSC)
+A. Cook (LLNL)
+B. de Supinski (LLNL)
+E. Draeger (LLNL)
+E. Elnozahy (IBM)
+M. Fagan (Rice)
+R. Fowler (UNC)
+S. Futral (LLNL)
+J. Galarowicz (Krell)
+J. Glosli (LLNL)
+J. Gonzalez (BSC)
+G. Gopalakrishnan (Utah)
+W. Gropp (Illinois)
+J. Gunnels (IBM)");
+xassert_eqq(AuthorMatcher::fix_collaborators("Sal Stolfo, Guofei Gu, Manos Antonakakis, Roberto Perdisci, Weidong Cui, Xiapu Luo, Rocky Chang, Kapil Singh, Helen Wang, Zhichun Li, Junjie Zhang, David Dagon, Nick Feamster, Phil Porras."),
+    "Sal Stolfo
+Guofei Gu
+Manos Antonakakis
+Roberto Perdisci
+Weidong Cui
+Xiapu Luo
+Rocky Chang
+Kapil Singh
+Helen Wang
+Zhichun Li
+Junjie Zhang
+David Dagon
+Nick Feamster
+Phil Porras.");
+xassert_eqq(AuthorMatcher::fix_collaborators("UTEXAS
+UT Austin
+Doe Hyun Yoon \t(Google)
+Evgeni Krimer \t(NVIDIA)
+Min Kyu Jeong\t(Oracle Labs)
+Minsoo Rhu\t(NVIDIA)
+Michael Sullivan\t(NVIDIA)"), "All (UTEXAS)
+All (UT Austin)
+Doe Hyun Yoon (Google)
+Evgeni Krimer (NVIDIA)
+Min Kyu Jeong (Oracle Labs)
+Minsoo Rhu (NVIDIA)
+Michael Sullivan (NVIDIA)");
+xassert_eqq(AuthorMatcher::fix_collaborators("Vishal Misra\t\tColumbia University
+Columbia
+Francois Baccelli\tINRIA-ENS\t,\t
+Guillaume Bichot\tThomson\t\t
+Bartlomiej Blaszczyszyn\tInria-Ens\t\t
+Jeffrey Bloom\tThomson Research\t\t
+Guillaume Boisson\tThomson\t\t
+Olivier Bonaventure\tUniversitÈ catholique de Louvain\t\t
+Charles Bordenave\tINRIA / ENS\t\t\n"), "Vishal Misra (Columbia University)
+All (Columbia)
+Francois Baccelli (INRIA-ENS)
+Guillaume Bichot (Thomson)
+Bartlomiej Blaszczyszyn (Inria-Ens)
+Jeffrey Bloom (Thomson Research)
+Guillaume Boisson (Thomson)
+Olivier Bonaventure (UniversitÈ catholique de Louvain)
+Charles Bordenave (INRIA / ENS)");
+
 xassert_exit();

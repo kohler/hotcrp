@@ -299,4 +299,104 @@ class AuthorMatcher extends Author {
                 && $fc !== 1
                 && ($nc < $nw || preg_match('{[-,/]}', $s)));
     }
+
+
+    static function fix_collaborators($s) {
+        $s = cleannl($s);
+
+        // remove unicode versions
+        if (preg_match('/[\200-\377]/', $s)) {
+            $x = ["“" => "\"", "”" => "\"", "–" => "-", "—" => "-"];
+            $s = preg_replace_callback('/(?:“|”|–|—)/', function ($m) use ($x) {
+                return $x[$m[0]];
+            }, $s);
+        }
+        // remove numbers
+        $s = preg_replace('{^(?:[1-9][0-9]*\.[ \t]*|[a-z]+\.[ \t]*)}m', "", $s);
+
+        // separate multi-person lines
+        $lines = [];
+        foreach (explode("\n", $s) as $line) {
+            $line = trim($line);
+            if (strlen($line) > 35 && preg_match_all('{[,(;]}', $line) > 1) {
+                // correct assholes who don't enter one per line
+                while (1) {
+                    $line = preg_replace('{\A[\s,;.]+}', "", $line);
+                    if (str_starts_with($line, "\""))
+                        preg_match('{\A"(?:[^"]|"")*(?:"|\z)()}', $line, $m);
+                    else if (!preg_match('{\A[^,(;][^,(;]*(\(.*?\)|,\s+\(.*?\)|)}', $line, $m))
+                        break;
+                    // XXX balanced parens
+                    if (str_ends_with($m[1], ")")
+                        && substr($line, strlen($m[0]), 2) === " -")
+                        break;
+                    else if ($m[1] === "," || $m[1] === ";")
+                        $lines[] = rtrim(substr($m[0], 0, -1));
+                    else
+                        $lines[] = $m[0];
+                    $line = ltrim((string) substr($line, strlen($m[0])));
+                    while ($line !== "" && ($line[0] === "," || $line[0] === " "))
+                        $line = (string) substr($line, 1);
+                }
+                if ($line !== "")
+                    $lines[] = $line;
+            } else
+                $lines[] = $line;
+        }
+
+        list($olines, $lines) = [$lines, []];
+        foreach ($olines as $line) {
+            // remove quotes
+            if (str_starts_with($line, "\""))
+                $line = (string) str_replace("\"\"", "\"", substr($line, 1, strlen($line) - 1 - str_ends_with($line, "\"")));
+            // expand tab separation
+            if (strpos($line, "(") === false && strpos($line, "\t") !== false) {
+                $ws = explode("\t", $line);
+                $nw = count($ws);
+                if ($nw > 2 && strpos($ws[0], " ") === false) {
+                    $name = rtrim($ws[0] . " " . $ws[1]);
+                    $aff = rtrim($ws[2]);
+                    $rest = rtrim(join(" ", array_slice($ws, 3)));
+                } else {
+                    $name = $ws[0];
+                    $aff = rtrim($ws[1]);
+                    $rest = rtrim(join(" ", array_slice($ws, 2)));
+                }
+                if ($rest !== "")
+                    $rest = preg_replace('{\A[,\s]+}', "", $rest);
+                if ($aff !== "" && $aff[0] !== "(")
+                    $aff = "($aff)";
+                $line = $name;
+                if ($aff !== "")
+                    $line .= ($line === "" ? "" : " ") . $aff;
+                if ($rest !== "")
+                    $line .= ($line === "" ? "" : " - ") . $rest;
+            }
+            // simplify whitespace
+            $line = simplify_whitespace($line);
+            // apply parentheses
+            $paren = strpos($line, "(");
+            if ($paren === false) {
+                if (preg_match('{\A(.*?)([,;]| -)\s+(.*)\z}', $line, $m)
+                    && (($m[2] === ","
+                         && strpos($m[1], " ") !== false
+                         && self::is_likely_affiliation($m[3])
+                         && !self::is_likely_affiliation($m[1]))
+                        || ($m[2] !== ","
+                            && !self::is_likely_affiliation($m[1]))))
+                    $line = rtrim($m[1]) . " (" . $m[3] . ")";
+                else if (self::is_likely_affiliation($line))
+                    $line = "All ($line)";
+            } else {
+                $name = rtrim((string) substr($line, 0, $paren));
+                if (preg_match('{\A(?:|-|all|any|institution|none)\z}i', $name))
+                    $line = "All " . substr($line, $paren);
+            }
+            // append line
+            if (!preg_match('{\A(?:none|n/a|-*|\.*)\z}', $line))
+                $lines[] = $line;
+        }
+
+        return $lines ? join("\n", $lines) : "None";
+    }
 }
