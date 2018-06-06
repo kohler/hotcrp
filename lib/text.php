@@ -244,7 +244,8 @@ class Text {
 
         // `last, first`
         $suffix = "";
-        while (($comma = strrpos($name, ",")) !== false) {
+        $has_comma = $comma = strrpos($name, ",");
+        while ($comma !== false) {
             $first = ltrim(substr($name, $comma + 1));
             if (!preg_match('{\A(?:' . self::SUFFIX_REGEX . ')\z}i', $first)) {
                 $ret[0] = $first . $paren;
@@ -254,9 +255,14 @@ class Text {
             $suffix = substr($name, $comma) . $suffix . $paren;
             $paren = "";
             $name = rtrim(substr($name, 0, $comma));
+            $comma = strrpos($name, ",");
         }
 
-        if (preg_match('{[^\s,]+(?:\s+(?:' . self::SUFFIX_REGEX . '))?(?:,.*)?\z}i', $name, $m)) {
+        if ($has_comma === false
+            && preg_match('{\A((?:\p{Lu}|\pM|’|[\s-\']){2,})\s+(\p{Lu}\S*\p{Ll}.*)\z}u', $name, $m)) {
+            $ret[0] = rtrim($m[2]);
+            $ret[1] = rtrim($m[1]);
+        } else if (preg_match('{[^\s,]+(?:\s+(?:' . self::SUFFIX_REGEX . '))?(?:,.*)?\z}i', $name, $m)) {
             $ret[0] = rtrim(substr($name, 0, strlen($name) - strlen($m[0])));
             $ret[1] = ltrim($m[0]) . $suffix . $paren;
             // see also split_von
