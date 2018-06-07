@@ -297,12 +297,6 @@ class PaperStatus extends MessageSet {
             $field = $this->_($this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
             if (!$prow->collaborators)
                 $this->warning_at("collaborators", $this->_("Enter the authors’ external conflicts of interest in the %s field. If none of the authors have external conflicts, enter “None”.", $field));
-            else {
-                if ($prow->collaborators !== Contact::fix_collaborator_affiliations($prow->collaborators, true))
-                    $this->warning_at("collaborators", $this->_("Please use parentheses to indicate affiliations in the %s field. (It looks like you might have used other punctuation.)", $field));
-                if (Contact::suspect_collaborator_one_line($prow->collaborators))
-                    $this->warning_at("collaborators", $this->_("Please enter one potential conflict per line in the %s field. (It looks like you might have multiple conflicts per line.)", $field));
-            }
         }
         if (!$this->ignore_msgs
             && $can_view_authors
@@ -599,8 +593,18 @@ class PaperStatus extends MessageSet {
         $this->normalize_string($pj, "title", true);
         $this->normalize_string($pj, "abstract", false);
         $this->normalize_string($pj, "collaborators", false);
-        if (isset($pj->collaborators))
-            $pj->collaborators = Contact::clean_collaborator_lines($pj->collaborators);
+        if (isset($pj->collaborators)) {
+            $collab = rtrim(cleannl($pj->collaborators));
+            if (!$this->prow || $collab !== rtrim(cleannl($this->prow->collaborators))) {
+                $old_collab = $collab;
+                $collab = AuthorMatcher::fix_collaborators($old_collab);
+                if ($collab !== $old_collab) {
+                    $name = $this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts";
+                    $this->warning_at("collaborators", "$name changed to follow our required format. You may want to look them over.");
+                }
+            }
+            $pj->collaborators = $collab;
+        }
 
         // Authors
         $au_by_lemail = [];
