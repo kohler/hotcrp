@@ -13,7 +13,8 @@ class AuthorMatcher extends Author {
 
     function __construct($x, $precleaned = false) {
         if (is_string($x) && $x !== "") {
-            if (($hash = strpos($x, "#")) !== false)
+            if (($hash = strpos($x, "#")) !== false
+                || ($hash = strpos($x, "%")) !== false)
                 $x = substr($x, 0, $hash);
             parent::__construct($x);
             if ($this->firstName === ""

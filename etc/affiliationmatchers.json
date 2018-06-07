@@ -291,6 +291,9 @@
     "politecnico": {
         "weak": true
     },
+    "project": {
+        "weak": true
+    },
     "research": {
         "weak": true
     },
@@ -423,6 +426,9 @@
     "colorado": {
         "weak": true
     },
+    "darmstadt": {
+        "weak": true
+    },
     "data61": {
         "nameish": false
     },
@@ -438,6 +444,9 @@
     },
     "ethz": {
         "alternate": ["eth zurich"]
+    },
+    "facebook": {
+        "nameish": false
     },
     "fernuniversitat": {
         "nameish": false
@@ -531,6 +540,7 @@
         ]
     },
     "microsoft": {
+        "nameish": false,
         "alternate": [{"word": "msr", "if": "research"}]
     },
     "mit": {
