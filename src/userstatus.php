@@ -780,10 +780,9 @@ class UserStatus extends MessageSet {
             $us->conf->message_html("conflictdef"),
             " <p>Give one conflict per line, using parentheses for affiliations and institutions.<br>
         Examples: “Ping Yen Zhang (INRIA)”, “All (University College London)”</p></div>
-        <textarea name=\"collaborators\" rows=\"5\" cols=\"80\"";
-        if (($className = $us->control_class("collaborators")))
-            echo ' class="', $className, '"';
-        echo ">", htmlspecialchars(get_s($cj, "collaborators")), "</textarea></div>\n";
+        <textarea name=\"collaborators\" rows=\"5\" cols=\"80\" class=\"",
+            $us->control_class("collaborators", "need-autogrow"), "\">",
+            htmlspecialchars(get_s($cj, "collaborators")), "</textarea></div>\n";
     }
 
     static function render_topics(UserStatus $us, $cj, $reqj, $uf) {
