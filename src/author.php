@@ -37,7 +37,7 @@ class Author {
                     }
                 }
             } else {
-                if (preg_match('/\A\s*(\S.*?)\s*\((.*)\)(?:[\s,;.]*|\s*(?:-+|–|—|:)\s+.*)\z/', $x, $m)) {
+                if (preg_match('/\A\s*(\S.*?)\s*\((.*)\)(?:[\s,;:.]*|\s*(?:-+|–|—|[#:])\s+.*)\z/', $x, $m)) {
                     $this->affiliation = trim($m[2]);
                     $x = $m[1];
                 }

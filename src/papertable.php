@@ -1255,7 +1255,7 @@ class PaperTable {
         conflicts of interest. ", $this->conf->message_html("conflictdef"), "
         Be sure to include conflicted <a href='", hoturl("users", "t=pc"), "'>PC members</a>.
         We use this information when assigning PC and external reviews.";
-        echo "</div><div class=\"mmm\"><strong>List one conflict per line</strong>, using parentheses for affiliations. Examples: “Jelena Markovic (EPFL)”, “University of Southern California”.</div></div>",
+        echo "</div><div class=\"mmm\"><strong>List one conflict per line</strong>, using parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</div></div>",
             $this->messages_for("collaborators"),
             '<div class="papev">',
             $this->editable_textarea("collaborators"),

@@ -312,13 +312,16 @@ class AuthorMatcher extends Author {
             }, $s);
         }
         // remove numbers
-        $s = preg_replace('{^(?:[1-9][0-9]*\.[ \t]*|[a-z]+\.[ \t]*)}m', "", $s);
+        $s = preg_replace('{^(?:[1-9][0-9]*\.[ \t]*|[a-z]+\.[ \t]*|[-\*]*[ \t]+)}m', "", $s);
 
         // separate multi-person lines
         $lines = [];
         foreach (explode("\n", $s) as $line) {
             $line = trim($line);
-            if (strlen($line) > 35 && preg_match_all('{[,(;]}', $line) > 1) {
+            if (strlen($line) > 35
+                && (substr_count($line, ",") > 1
+                    || substr_count($line, "(") > 1
+                    || substr_count($line, ";") > 1)) {
                 // correct assholes who don't enter one per line
                 while (1) {
                     $line = preg_replace('{\A[\s,;.]+}', "", $line);
@@ -345,10 +348,19 @@ class AuthorMatcher extends Author {
         }
 
         list($olines, $lines) = [$lines, []];
+        $any = false;
         foreach ($olines as $line) {
             // remove quotes
             if (str_starts_with($line, "\""))
                 $line = (string) str_replace("\"\"", "\"", substr($line, 1, strlen($line) - 1 - str_ends_with($line, "\"")));
+            // comments
+            if (str_starts_with($line, "#")) {
+                $lines[] = $line;
+                continue;
+            } else if (str_ends_with($line, ":")) {
+                $lines[] = "# " . $line;
+                continue;
+            }
             // expand tab separation
             if (strpos($line, "(") === false && strpos($line, "\t") !== false) {
                 $ws = explode("\t", $line);
@@ -377,7 +389,7 @@ class AuthorMatcher extends Author {
             // apply parentheses
             $paren = strpos($line, "(");
             if ($paren === false) {
-                if (preg_match('{\A(.*?)([,;]| -)\s+(.*)\z}', $line, $m)
+                if (preg_match('{\A(.*?)([,;:]| -)\s+(.*)\z}', $line, $m)
                     && (($m[2] === ","
                          && strpos($m[1], " ") !== false
                          && self::is_likely_affiliation($m[3])
@@ -389,14 +401,65 @@ class AuthorMatcher extends Author {
                     $line = "All ($line)";
             } else {
                 $name = rtrim((string) substr($line, 0, $paren));
-                if (preg_match('{\A(?:|-|all|any|institution|none)\z}i', $name))
+                if (preg_match('{\A(?:|-|all|any|institution|none)\z}i', $name)) {
                     $line = "All " . substr($line, $paren);
+                    $paren = 4;
+                }
+                // match parentheses
+                $pos = $paren + 1;
+                $depth = 1;
+                $len = strlen($line);
+                if (strpos($line, ")", $pos) === $len - 1) {
+                    $pos = $len;
+                    $depth = 0;
+                } else {
+                    while ($pos < $len && $depth) {
+                        if ($line[$pos] === "(")
+                            ++$depth;
+                        else if ($line[$pos] === ")")
+                            --$depth;
+                        ++$pos;
+                    }
+                }
+                while ($depth > 0) {
+                    $line .= ")";
+                    ++$pos;
+                    ++$len;
+                    --$depth;
+                }
+                // check for suffix
+                if ($pos < $len
+                    && preg_match('{\A(\s*[,:;.#]|(?=\s+[a-z]))}',
+                                  substr($line, $pos), $m)) {
+                    $suffix = ltrim(substr($line, $pos + strlen($m[1])));
+                    $line = substr($line, 0, $pos);
+                    if ($suffix !== "")
+                        $line .= " - " . $suffix;
+                }
             }
             // append line
-            if (!preg_match('{\A(?:none|n/a|-*|\.*)\z}', $line))
+            if (!preg_match('{\A(?:none|n/a|na|-*|\.*)\z}', $line))
+                $lines[] = $line;
+            else if ($line !== "")
+                $any = true;
+            else if (!empty($lines))
                 $lines[] = $line;
         }
 
-        return $lines ? join("\n", $lines) : "None";
+        while (!empty($lines) && $lines[count($lines) - 1] === "")
+            array_pop($lines);
+        if (!empty($lines))
+            return join("\n", $lines);
+        else if ($any)
+            return "None";
+        else
+            return null;
+
+        // XXX # comments
+        // XXX ending-with-: comments
+    }
+
+    static function trim_collaborators($s) {
+        return preg_replace('{\s*#.*$|\ANone\z}im', "", $s);
     }
 }

@@ -558,6 +558,12 @@
     "san": {
         "weak": true
     },
+    "shanghai": {
+        "weak": true, "alternate": [{"word": "sjtu", "if": "jiao tong"}]
+    },
+    "sjtu": {
+        "alternate": ["shanghai jiao tong"]
+    },
     "southern": {
         "weak": true,
         "alternate": [{"word": "usc", "if": "university southern"}]
