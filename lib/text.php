@@ -282,7 +282,7 @@ class Text {
     }
 
     static function split_last_suffix($last) {
-        if (preg_match('{\A(.*?\S)(?:\s+|\s*,\s*)(' . self::SUFFIX_REGEX . ')\z}i', $last, $m)) {
+        if (preg_match('{\A(.*?)[\s,]+(' . self::SUFFIX_REGEX . ')\z}i', $last, $m)) {
             if (preg_match('{\A(?:jr|sr|esq)\z}i', $m[2]))
                 $m[2] .= ".";
             return [$m[1], $m[2]];
