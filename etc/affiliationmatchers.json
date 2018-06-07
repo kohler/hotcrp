@@ -375,6 +375,9 @@
     "anu": {
         "alternate": ["australian national university"]
     },
+    "arvind": {
+        "nameish": true
+    },
     "austin": {
         "nameish": true, "sync": "ut texas"
     },
