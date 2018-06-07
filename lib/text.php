@@ -218,20 +218,25 @@ class Text {
 
     static function split_name($name, $with_email = false) {
         $name = simplify_whitespace($name);
-        $ret = array("", "");
+
+        $ret = ["", ""];
         if ($with_email) {
-            $ret[2] = "";
-            if (preg_match('%^\s*\"?(.*?)\"?\s*<([^<>]+)>\s*$%', $name, $m)
-                || preg_match('%^\s*\"(.*)\"\s+(\S+)\s*$%', $name, $m))
-                list($name, $ret[2]) = array($m[1], $m[2]);
+            $email = "";
+            if ($name[strlen($name) - 1] === ">"
+                && preg_match('{\A\"?(.*?)\"?\s*<([^<>]+)>\z}', $name, $m))
+                list($name, $email) = [$m[1], $m[2]];
+            else if ($name[0] === "\""
+                     && preg_match('{\A\s*\"(.*)\"\s+(\S+)\z}', $name, $m))
+                list($name, $email) = [$m[1], $m[2]];
             else if (strpos($name, "@") === false)
                 /* skip */;
-            else if (!preg_match('%^\s*(.*?)\s+(\S+)\s*$%', $name, $m))
-                return array("", "", trim($name));
+            else if (!preg_match('{\A(.*?)\s+(\S+)\z}', $name, $m))
+                return ["", "", trim($name)];
             else if (strpos($m[2], "@") !== false)
-                list($name, $ret[2]) = array($m[1], $m[2]);
+                list($name, $email) = array($m[1], $m[2]);
             else if (strpos($m[1], "@") !== false)
-                list($name, $ret[2]) = array($m[2], $m[1]);
+                list($name, $email) = array($m[2], $m[1]);
+            $ret[2] = $email;
         }
 
         // parenthetical comment on name attaches to first or last whole
@@ -242,34 +247,22 @@ class Text {
             $paren = $m[2];
         }
 
-        // `last, first`
-        $suffix = "";
-        $has_comma = $comma = strrpos($name, ",");
-        while ($comma !== false) {
-            $first = ltrim(substr($name, $comma + 1));
-            if (!preg_match('{\A(?:' . self::SUFFIX_REGEX . ')\z}i', $first)) {
-                $ret[0] = $first . $paren;
-                $ret[1] = trim(substr($name, 0, $comma)) . $suffix;
-                return $ret;
-            }
-            $suffix = substr($name, $comma) . $suffix . $paren;
-            $paren = "";
-            $name = rtrim(substr($name, 0, $comma));
-            $comma = strrpos($name, ",");
-        }
-
-        if ($has_comma === false
-            && preg_match('{\A((?:\p{Lu}|\pM|’|[\s-\']){2,})\s+(\p{Lu}\S*\p{Ll}.*)\z}u', $name, $m)) {
-            $ret[0] = rtrim($m[2]);
-            $ret[1] = rtrim($m[1]);
-        } else if (preg_match('{[^\s,]+(?:\s+(?:' . self::SUFFIX_REGEX . '))?(?:,.*)?\z}i', $name, $m)) {
-            $ret[0] = rtrim(substr($name, 0, strlen($name) - strlen($m[0])));
-            $ret[1] = ltrim($m[0]) . $suffix . $paren;
+        preg_match('{\A(.*?)((?:(?:, *| )(?:' . self::SUFFIX_REGEX . '))*)\z}i', $name, $m);
+        if (($comma = strrpos($m[1], ",")) !== false) {
+            $ret[0] = ltrim(substr($m[1], $comma + 1));
+            $ret[1] = rtrim(substr($m[1], 0, $comma)) . $m[2];
+            if ($paren !== "")
+                $ret[$m[2] === "" ? 0 : 1] .= $paren;
+        } else if (($space = strrpos($m[1], " ")) !== false) {
+            $ret[0] = substr($m[1], 0, $space);
+            $ret[1] = substr($m[1], $space + 1) . $m[2] . $paren;
             // see also split_von
-            if (preg_match('@^(\S.*?)((?:\s+(?:v[ao]n|d[aeiu]|de[nr]|l[ae]))+)$@i', $ret[0], $m))
-                list($ret[0], $ret[1]) = array($m[1], ltrim($m[2]) . " " . $ret[1]);
+            if (strpos($ret[0], " ") !== false
+                && preg_match('{\A(\S.*?)((?: (?:v[ao]n|d[aeiu]|de[nr]|l[ae]))+)\z}i', $ret[0], $m))
+                list($ret[0], $ret[1]) = [$m[1], ltrim($m[2]) . " " . $ret[1]];
         } else
-            $ret[1] = $name . $suffix . $paren;
+            $ret[1] = $name . $paren;
+
         return $ret;
     }
 

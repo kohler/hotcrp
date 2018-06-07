@@ -436,10 +436,8 @@ xassert_eqq(get(Text::split_name("Kennedy, Bob (Butt Pants)"), 0), "Bob (Butt Pa
 xassert_eqq(get(Text::split_name("Kennedy, Bob (Butt Pants)"), 1), "Kennedy");
 xassert_eqq(get(Text::split_name("Claire Le Goues"), 1), "Le Goues");
 xassert_eqq(get(Text::split_name("Claire Von La Le Goues"), 1), "Von La Le Goues");
-xassert_eqq(get(Text::split_name("CLAIRE Von La Le Goues"), 1), "CLAIRE");
 xassert_eqq(get(Text::split_name("CLAIRE VON LA LE GOUES"), 1), "VON LA LE GOUES");
 xassert_eqq(get(Text::split_name("C. Von La Le Goues"), 1), "Von La Le Goues");
-xassert_eqq(get(Text::split_name("ÉTOILE Jean"), 1), "ÉTOILE");
 xassert_eqq(Text::analyze_von("Von Le Goues"), null);
 xassert_eqq(Text::analyze_von("von le Goues"), ["von le", "Goues"]);
 
