@@ -277,14 +277,18 @@ class AuthorMatcher extends Author {
         $nw = count($m[0]);
         $fc = null;
         $nc = 0;
+        $ninit = 0;
         foreach ($m[0] as $i => $w) {
             $aw = get($wordinfo, strtolower($w));
             if ($aw) {
                 if (isset($aw->nameish)) {
                     if ($aw->nameish === false)
                         return true;
-                    else if ($aw->nameish === true
-                             || (is_int($aw->nameish) && $i >= $aw->nameish - 1)) {
+                    else if ($aw->nameish === 1) {
+                        ++$ninit;
+                        continue;
+                    } else if ($aw->nameish === true
+                               || ($aw->nameish === 2 && $i > 0)) {
                         $has_nameish = true;
                         continue;
                     }
@@ -301,6 +305,7 @@ class AuthorMatcher extends Author {
         }
         return $has_weak
             || ($nw === 1 && !$has_nameish)
+            || ($ninit > 0 && $nw === $ninit)
             || ($nc > 0
                 && !$has_nameish
                 && $fc !== 1
@@ -404,7 +409,8 @@ class AuthorMatcher extends Author {
                         || ($m[2] !== ","
                             && !self::is_likely_affiliation($m[1]))))
                     $line = rtrim($m[1]) . " (" . $m[3] . ")";
-                else if (self::is_likely_affiliation($line))
+                else if ($line !== ""
+                         && self::is_likely_affiliation($line))
                     $line = "All ($line)";
             } else {
                 $name = rtrim((string) substr($line, 0, $paren));

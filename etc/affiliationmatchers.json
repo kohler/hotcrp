@@ -25,89 +25,89 @@
     },
 
     "a": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "b": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "c": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "d": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "e": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "f": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "g": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "h": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "i": {
-        "weak": true, "nameish": true,
+        "weak": true, "nameish": 1,
         "alternate": [{"word": "institute", "if": "m t"}]
     },
     "j": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "k": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "l": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "m": {
-        "weak": true, "nameish": true,
+        "weak": true, "nameish": 1,
         "alternate": [
             {"word": "mit", "if": "i t"},
             {"word": "massachusetts", "if": "i t"}
         ]
     },
     "n": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "o": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "p": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "q": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "r": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "s": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "t": {
-        "weak": true, "nameish": true,
+        "weak": true, "nameish": 1,
         "alternate": [{"word": "technology", "if": "m i"}]
     },
     "u": {
-        "weak": true,
+        "weak": true, "nameish": 1,
         "alternate": ["university"]
     },
     "v": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "w": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "x": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "y": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "z": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": 1
     },
     "an": {
         "weak": true, "nameish": true
