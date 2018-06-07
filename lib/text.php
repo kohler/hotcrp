@@ -222,8 +222,10 @@ class Text {
         $ret = ["", ""];
         if ($with_email) {
             $email = "";
-            if ($name[strlen($name) - 1] === ">"
-                && preg_match('{\A\"?(.*?)\"?\s*<([^<>]+)>\z}', $name, $m))
+            if ($name === "")
+                /* do nothing */;
+            else if ($name[strlen($name) - 1] === ">"
+                     && preg_match('{\A\"?(.*?)\"?\s*<([^<>]+)>\z}', $name, $m))
                 list($name, $email) = [$m[1], $m[2]];
             else if ($name[0] === "\""
                      && preg_match('{\A\s*\"(.*)\"\s+(\S+)\z}', $name, $m))
@@ -234,7 +236,7 @@ class Text {
                 return ["", "", trim($name)];
             else if (strpos($m[2], "@") !== false)
                 list($name, $email) = array($m[1], $m[2]);
-            else if (strpos($m[1], "@") !== false)
+            else
                 list($name, $email) = array($m[2], $m[1]);
             $ret[2] = $email;
         }
