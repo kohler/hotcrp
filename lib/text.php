@@ -247,7 +247,7 @@ class Text {
             $paren = $m[2];
         }
 
-        preg_match('{\A(.*?)((?:(?:, *| )(?:' . self::SUFFIX_REGEX . '))*)\z}i', $name, $m);
+        preg_match('{\A(.*?)((?:[, ]+(?:' . self::SUFFIX_REGEX . '))*)\z}i', $name, $m);
         if (($comma = strrpos($m[1], ",")) !== false) {
             $ret[0] = ltrim(substr($m[1], $comma + 1));
             $ret[1] = rtrim(substr($m[1], 0, $comma)) . $m[2];
