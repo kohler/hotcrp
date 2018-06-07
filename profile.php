@@ -290,26 +290,27 @@ else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
         $UserStatus->send_email = true;
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
     if (!$UserStatus->has_error()) {
-        if ($newProfile)
-            $Conf->confirmMsg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.");
-        else {
-            if ($UserStatus->errors())
-                $Conf->confirmMsg('Profile updated. <div class="mmm">' . join('</div><div class="mmm">', $UserStatus->errors()) . "</div>");
-            else
-                $Conf->confirmMsg("Profile updated.");
+        if ($UserStatus->has_messages())
+            $Conf->msg($UserStatus->problem_status(), $UserStatus->messages());
+        if ($newProfile) {
+            $Conf->msg("xconfirm", "Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.");
+        } else {
+            $Conf->msg("xconfirm", "Profile updated.");
             if ($Acct->contactId != $Me->contactId)
                 $Qreq->u = $Acct->email;
         }
         if (isset($Qreq->redirect))
             go(hoturl("index"));
         else {
+            $xcj = [];
             if ($newProfile) {
-                $xcj = (object) [];
                 foreach (["roles", "follow", "tags"] as $k)
                     if (isset($cj->$k))
-                        $xcj->$k = $cj->$k;
-                $Conf->save_session("profile_redirect", $xcj);
+                        $xcj[$k] = $cj->$k;
             }
+            if ($UserStatus->has_warning())
+                $xcj["warning_fields"] = $UserStatus->problem_fields();
+            $Conf->save_session("profile_redirect", $xcj);
             SelfHref::redirect($Qreq);
         }
     }
@@ -458,17 +459,27 @@ if (!$newProfile) {
 $UserStatus->set_user($Acct);
 $userj = $UserStatus->user_json(["include_password" => true]);
 if (!$useRequest && $Me->privChair && $Acct->is_empty()
-    && ($Qreq->role === "chair" || $Qreq->role === "pc"))
+    && ($Qreq->role === "chair" || $Qreq->role === "pc")) {
     $userj->roles = (object) [$Qreq->role => true];
+}
 
 if ($useRequest) {
     $UserStatus->ignore_msgs = true;
     $formcj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
     $UserStatus->parse_request_group("", $formcj, $Qreq);
-} else if (($formcj = $Conf->session("profile_redirect"))) {
-    $Conf->save_session("profile_redirect", null);
 } else {
     $formcj = $userj;
+}
+if (($prdj = $Conf->session("profile_redirect"))) {
+    $Conf->save_session("profile_redirect", null);
+    foreach ($prdj as $k => $v) {
+        if ($k === "warning_fields") {
+            foreach ($v as $k)
+                $UserStatus->warning_at($k, null);
+        } else {
+            $formcj->$k = $v;
+        }
+    }
 }
 
 $form_params = array();

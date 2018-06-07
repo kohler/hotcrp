@@ -99,6 +99,12 @@ class MessageSet {
     function has_messages() {
         return !empty($this->msgs);
     }
+    function problem_status() {
+        if ($this->has_error > 0)
+            return self::ERROR;
+        else
+            return $this->has_warning > 0 ? self::WARNING : self::INFO;
+    }
     function has_error_at($field) {
         $this->canonfield && ($field = $this->canonical_field($field));
         return get($this->errf, $field, 0) > 1;

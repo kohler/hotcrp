@@ -2843,15 +2843,15 @@ class Conf {
         if (PHP_SAPI == "cli") {
             if (is_array($text))
                 $text = join("\n", $text);
-            if ($type === "xmerror" || $type === "merror")
+            if ($type === "xmerror" || $type === "merror" || $type === 2)
                 fwrite(STDERR, "$text\n");
-            else if ($type === "xwarning" || $type === "warning"
+            else if ($type === "xwarning" || $type === "warning" || $type === 1
                      || !defined("HOTCRP_TESTHARNESS"))
                 fwrite(STDOUT, "$text\n");
         } else if ($conf && !$conf->headerPrinted) {
             ensure_session();
             $_SESSION[$conf->dsn]["msgs"][] = [$type, $text];
-        } else if ($type[0] == "x")
+        } else if ($type[0] == "x" || is_int($type))
             echo Ht::xmsg($type, $text);
         else {
             if (is_array($text))
