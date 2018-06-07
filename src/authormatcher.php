@@ -271,7 +271,7 @@ class AuthorMatcher extends Author {
     }
 
 
-    static function is_likely_affiliation($s) {
+    static function is_likely_affiliation($s, $default_name = false) {
         preg_match_all('/[A-Za-z0-9&]+/', UnicodeHelper::deaccent($s), $m);
         $has_weak = $has_nameish = false;
         $wordinfo = self::wordinfo();
@@ -305,7 +305,7 @@ class AuthorMatcher extends Author {
             }
         }
         return $has_weak
-            || ($nw === 1 && !$has_nameish)
+            || ($nw === 1 && !$has_nameish && !$default_name)
             || ($ninit > 0 && $nw === $ninit)
             || ($nc > 0
                 && !$has_nameish
@@ -405,7 +405,7 @@ class AuthorMatcher extends Author {
                 if (preg_match('{\A(.*?)([,;:]| -)\s+(.*)\z}', $line, $m)
                     && (($m[2] === ","
                          && strpos($m[1], " ") !== false
-                         && self::is_likely_affiliation($m[3])
+                         && self::is_likely_affiliation($m[3], true)
                          && !self::is_likely_affiliation($m[1]))
                         || ($m[2] !== ","
                             && !self::is_likely_affiliation($m[1]))))
