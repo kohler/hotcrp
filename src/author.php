@@ -21,7 +21,7 @@ class Author {
             $this->lastName = $x->lastName;
             $this->email = $x->email;
             $this->affiliation = $x->affiliation;
-        } else {
+        } else if ((string) $x !== "") {
             $a = explode("\t", $x);
             if (isset($a[1])) {
                 $this->firstName = $a[0];
@@ -37,14 +37,38 @@ class Author {
                     }
                 }
             } else {
-                if (preg_match('/\A\s*(\S.*?)\s*\((.*)\)(?:[\s,;:.]*|\s*(?:-+|–|—|[#:])\s+.*)\z/', $x, $m)) {
-                    $this->affiliation = trim($m[2]);
-                    $x = $m[1];
+                if (($paren = strpos($x, "(")) !== false) {
+                    if (preg_match('{\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:]).*)\z}', $x, $m, 0, $paren + 1)) {
+                        $this->affiliation = trim($m[1]);
+                        $x = substr($x, 0, $paren);
+                    } else {
+                        $len = strlen($x);
+                        while ($paren !== false) {
+                            $rparen = self::skip_balanced_parens($x, $paren);
+                            if ($rparen === $len
+                                || preg_match('{\A(?:[\s,;.]*|\s*(?:-+|–|—|[#:]).*)\z}', substr($x, $rparen + 1))) {
+                                $this->affiliation = trim(substr($x, $paren + 1, $rparen - $paren - 1));
+                                $x = substr($x, 0, $paren);
+                                break;
+                            }
+                            $paren = strpos($x, "(", $rparen + 1);
+                        }
+                    }
                 }
                 $this->_name = trim($x);
                 list($this->firstName, $this->lastName, $this->email) = Text::split_name($x, true);
             }
         }
+    }
+    static function skip_balanced_parens($s, $paren) {
+        for ($len = strlen($s), $depth = 1, ++$paren; $paren < $len; ++$paren)
+            if ($s[$paren] === "(")
+                ++$depth;
+            else if ($s[$paren] === ")") {
+                if (--$depth === 0)
+                    return $paren;
+            }
+        return $paren;
     }
     function name() {
         if ($this->_name !== null)

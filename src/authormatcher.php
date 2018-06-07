@@ -429,12 +429,14 @@ class AuthorMatcher extends Author {
                 }
                 // check for suffix
                 if ($pos < $len
-                    && preg_match('{\A(\s*[,:;.#]|(?=\s+[a-z]))}',
+                    && preg_match('{\A(\s*[-,:;.#]\s*|\s*(?=[a-z]))}',
                                   substr($line, $pos), $m)) {
-                    $suffix = ltrim(substr($line, $pos + strlen($m[1])));
+                    $suffix = substr($line, $pos + strlen($m[1]));
                     $line = substr($line, 0, $pos);
                     if ($suffix !== "")
                         $line .= " - " . $suffix;
+                } else if ($pos < $len) {
+                    $line .= " (unknown)";
                 }
             }
             // append line
@@ -454,9 +456,6 @@ class AuthorMatcher extends Author {
             return "None";
         else
             return null;
-
-        // XXX # comments
-        // XXX ending-with-: comments
     }
 
     static function trim_collaborators($s) {

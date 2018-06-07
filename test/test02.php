@@ -998,6 +998,19 @@ Michael Huang (University of Rochester) - advisor/student
 Jose Martinez (Cornell University) - advisor/student
 Anthony Nguyen (Intel Corporation) - advisor/student");
 xassert_eqq(AuthorMatcher::fix_collaborators("G.-Y. (Ken) Lueh"),
-    "G.-Y. (Ken) Lueh");
+    "G.-Y. (Ken) Lueh (unknown)");
+$au = new Author("G.-Y. (Ken) Lueh");
+xassert_eqq($au->firstName, "G.-Y. (Ken)");
+$au = new Author("G.-Y. (Ken (Butt)) Lueh");
+xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
+$au = new Author("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom)");
+xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
+xassert_eqq($au->affiliation, "France (Crap) Telecom");
+$au = new Author("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom)- Inc.");
+xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
+xassert_eqq($au->affiliation, "France (Crap) Telecom");
+$au = new Author("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom");
+xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
+xassert_eqq($au->affiliation, "France (Crap) Telecom");
 
 xassert_exit();
