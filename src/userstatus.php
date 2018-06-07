@@ -296,9 +296,20 @@ class UserStatus extends MessageSet {
             if (!$this->has_problem_at("collaborators"))
                 $cj->collaborators = join("\n", $cj->collaborators);
         }
-        if (get($cj, "collaborators") && !is_string($cj->collaborators)
-            && !$this->has_problem_at("collaborators"))
+        if (get($cj, "collaborators")
+            && !$this->has_problem_at("collaborators")
+            && !is_string($cj->collaborators))
             $this->error_at("collaborators", "Format error [collaborators]");
+        if (get($cj, "collaborators")
+            && !$this->has_problem_at("collaborators")) {
+            $collab = rtrim(cleannl($cj->collaborators));
+            if (!$old_user || $collab !== rtrim(cleannl($old_user->collaborators))) {
+                $new_collab = AuthorMatcher::fix_collaborators($collab);
+                if ($new_collab !== $collab)
+                    $this->warning_at("collaborators", "Your collaborators were changed to follow our required format. You may want to look them over.");
+                $cj->collaborators = $new_collab;
+            }
+        }
 
         // Disabled
         if (isset($cj->disabled)) {

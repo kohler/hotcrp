@@ -928,13 +928,11 @@ class Contact {
         "gender" => true
     ];
     static private $no_clean_fields = [
-        "defaultWatch" => true, "contactTags" => true
+        "collaborators" => true, "defaultWatch" => true, "contactTags" => true
     ];
 
     private function _save_assign_field($k, $v, Contact_Update $cu) {
-        if ($k === "collaborators")
-            $v = self::clean_collaborator_lines($v);
-        else if (!isset(self::$no_clean_fields[$k])) {
+        if (!isset(self::$no_clean_fields[$k])) {
             $v = simplify_whitespace($v);
             if ($k === "birthday" && !$v)
                 $v = null;
@@ -1211,7 +1209,7 @@ class Contact {
             if (get_s($reg, "lastName") !== "")
                 $cj["lastName"] = (string) $reg->lastName;
         }
-        foreach (["affiliation", "collaborators", "country",
+        foreach (["affiliation", "country",
                   "gender", "birthday", "preferredEmail", "phone"] as $k) {
             if ((string) $this->$k === ""
                 && get_s($reg, $k) !== ""

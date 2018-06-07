@@ -11,11 +11,25 @@ class AuthorMatcher extends Author {
 
     private static $wordinfo;
 
-    function __construct($x) {
-        if (is_string($x) && ($hash = strpos($x, "#")) !== false) {
-            $x = substr($x, 0, $hash);
+    function __construct($x, $precleaned = false) {
+        if (is_string($x) && $x !== "") {
+            if (($hash = strpos($x, "#")) !== false)
+                $x = substr($x, 0, $hash);
+            parent::__construct($x);
+            if ($this->firstName === ""
+                && (strcasecmp($this->lastName, "all") === 0
+                    || strcasecmp($this->lastName, "none") === 0))
+                $this->lastName = "";
+            if (!$precleaned
+                && $this->affiliation === ""
+                && $this->email === ""
+                && self::is_likely_affiliation($x)) {
+                $this->firstName = $this->lastName = "";
+                $this->affiliation = $x;
+            }
+        } else {
+            parent::__construct($x);
         }
-        parent::__construct($x);
 
         $any = [];
         if ($this->firstName !== "") {
@@ -50,19 +64,12 @@ class AuthorMatcher extends Author {
                     "preg_utf8" => '\A' . join("", $ur)
                 ];
         }
-
-        $aff = "";
         if ($this->affiliation !== ""
             && $this->firstName === ""
             && $this->lastName === ""
             && $this->email === "") {
-            $aff = $this->affiliation;
-        } else if ($this->affiliation === "" && is_string($x)) {
-            $aff = $x;
-        }
-        if ($aff !== "") {
             $wordinfo = self::wordinfo();
-            preg_match_all('/[a-z0-9&]+/', strtolower(UnicodeHelper::deaccent($aff)), $m);
+            preg_match_all('/[a-z0-9&]+/', strtolower(UnicodeHelper::deaccent($this->affiliation)), $m);
 
             $directs = $alts = [];
             $any_weak = false;
