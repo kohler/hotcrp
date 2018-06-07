@@ -470,11 +470,13 @@ if ($Me->can_administer($prow)) {
             $revtype = -1;
         else
             $revtype = $rrow ? $rrow->reviewType : 0;
+        $pcconfmatch = null;
+        if ($show_possible_conflicts && $revtype != -2)
+            $pcconfmatch = $prow->potential_conflict_html($pc, $conflict_type <= 0);
 
         $color = $pc->viewable_color_classes($Me);
         echo '<div class="ctelt">',
-            '<div class="ctelti', ($color ? " $color" : ""), ' has-assignment has-fold foldc"',
-            ' data-pid="', $prow->paperId,
+            '<div class="ctelti', ($color ? " $color" : ""), ' has-assignment has-fold foldc" data-pid="', $prow->paperId,
             '" data-uid="', $pc->contactId,
             '" data-review-type="', $revtype;
         if (!$revtype && $p->refused)
@@ -496,10 +498,8 @@ if ($Me->can_administer($prow)) {
         if ($revtype >= 0)
             echo unparse_preference_span($prow->reviewer_preference($pc, true));
         echo '</div>'; // .pctbname
-        if ($show_possible_conflicts
-            && $revtype != -2
-            && ($pcconfmatch = $prow->potential_conflict_html($pc, $conflict_type <= 0)))
-            echo $pcconfmatch;
+        if ($pcconfmatch)
+            echo '<div class="need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', $pcconfmatch[1]), '">', $pcconfmatch[0], '</div>';
 
         // then, number of reviews
         echo '<div class="pctbnrev">';

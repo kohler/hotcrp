@@ -1400,14 +1400,15 @@ class PaperTable {
                 $ct = Conflict::constrain_editable($this->qreq["pcc$id"], $this->admin);
             else
                 $ct = $pct;
+            $pcconfmatch = null;
+            if ($this->prow && $pct < CONFLICT_AUTHOR)
+                $pcconfmatch = $this->prow->potential_conflict_html($p, $pct <= 0);
 
-            $label = Ht::label($this->user->name_html_for($p), "pcc$id", array("class" => "taghl"));
             $label = '<span class="taghl">' . $this->user->name_html_for($p) . '</span>';
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
-            if ($this->prow && $pct < CONFLICT_AUTHOR
-                && ($pcconfmatch = $this->prow->potential_conflict_html($p, $pct <= 0)))
-                $label .= $pcconfmatch;
+            if ($pcconfmatch)
+                $label .= $pcconfmatch[0];
 
             echo '<div class="ctelt"><label><div class="ctelti';
             if (!$selectors)
@@ -1417,6 +1418,8 @@ class PaperTable {
                 echo ' ', $classes;
             if ($pct)
                 echo ' boldtag';
+            if ($pcconfmatch)
+                echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', $pcconfmatch[1]);
             echo '">';
 
             $js = ["id" => "pcc$id"];

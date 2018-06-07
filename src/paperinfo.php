@@ -549,13 +549,11 @@ class PaperInfo {
         $authors = array_unique(array_map(function ($x) { return $x[0]; }, $details));
         $authors = array_filter($authors, function ($f) { return $f !== "other conflicts"; });
         $messages = join("", array_map(function ($x) { return $x[1]; }, $details));
-        return '<div class="pcconfmatch'
+        return ['<div class="pcconfmatch'
             . ($highlight ? " pcconfmatch-highlight" : "")
-            . ' need-tooltip" data-tooltip-class="gray"'
-            . ' data-tooltip="' . str_replace('"', '&quot;', $messages)
             . '">Possible conflict'
             . (empty($authors) ? "" : " with " . pluralx($authors, "author") . " " . numrangejoin($authors))
-            . '…</div>';
+            . '…</div>', $messages];
     }
 
     function field_match_pregexes($reg, $field) {
