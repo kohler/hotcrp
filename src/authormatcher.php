@@ -325,7 +325,8 @@ class AuthorMatcher extends Author {
             }, $s);
         }
         // remove numbers
-        $s = preg_replace('{^(?:[1-9][0-9]*\.[ \t]*|[a-z]+\.[ \t]*|[-\*]*[ \t]+)}m', "", $s);
+        // XXX `[a-z][a-z]?\.[ \t]+` is weird, remove that case
+        $s = preg_replace('{^(?:[1-9][0-9]*\.[ \t]*|[a-z][a-z]?\.[ \t]+(?=[A-Z])|[-\*]*[ \t]+)}m', "", $s);
 
         // separate multi-person lines
         $lines = [];
@@ -410,12 +411,13 @@ class AuthorMatcher extends Author {
                         || ($m[2] !== ","
                             && !self::is_likely_affiliation($m[1]))))
                     $line = rtrim($m[1]) . " (" . $m[3] . ")";
-                else if ($line !== ""
-                         && self::is_likely_affiliation($line))
+                else if (preg_match('{\A(|none|n/a|na|)\s*[.,;:]?\z}i', $line, $m))
+                    $line = ($m[1] === "" ? "" : "None");
+                else if (self::is_likely_affiliation($line))
                     $line = "All ($line)";
             } else {
                 $name = rtrim((string) substr($line, 0, $paren));
-                if (preg_match('{\A(?:|-|all|any|institution|none)\z}i', $name)) {
+                if (preg_match('{\A(?:|-|all|any|institution|none)\s*[.,;]\z}i', $name)) {
                     $line = "All " . substr($line, $paren);
                     $paren = 4;
                 }
@@ -454,7 +456,7 @@ class AuthorMatcher extends Author {
                 }
             }
             // append line
-            if (!preg_match('{\A(?:none|n/a|na|-*|\.*)\z}', $line))
+            if (!preg_match('{\A(?:none|n/a|na|-*|\.*)\z}i', $line))
                 $lines[] = $line;
             else if ($line !== "")
                 $any = true;
