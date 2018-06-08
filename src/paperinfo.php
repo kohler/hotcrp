@@ -432,7 +432,7 @@ class PaperInfo {
             $this->_author_array = array();
             foreach (explode("\n", $this->authorInformation) as $line)
                 if ($line != "")
-                    $this->_author_array[] = new Author($line);
+                    $this->_author_array[] = Author::make_tabbed($line);
         }
         return $this->_author_array;
     }

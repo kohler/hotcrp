@@ -15,49 +15,72 @@ class Author {
     public $nonauthor;
     public $sorter;
 
-    function __construct($x) {
+    function __construct($x = null) {
         if (is_object($x)) {
             $this->firstName = $x->firstName;
             $this->lastName = $x->lastName;
             $this->email = $x->email;
             $this->affiliation = $x->affiliation;
         } else if ((string) $x !== "") {
-            $a = explode("\t", $x);
-            if (isset($a[1])) {
-                $this->firstName = $a[0];
-                $this->lastName = $a[1];
-                if (isset($a[3]) && $a[3] !== "") {
-                    $this->email = $a[2];
-                    $this->affiliation = $a[3];
-                } else if (isset($a[2]) && $a[2] !== "") {
-                    if (strpos($a[2], "@") === false) {
-                        $this->affiliation = $a[2];
-                    } else {
-                        $this->email = $a[2];
-                    }
-                }
+            $this->assign_string($x);
+        }
+    }
+    static function make_tabbed($s) {
+        $au = new Author;
+        $w = explode("\t", $s);
+        $au->firstName = isset($w[0]) ? $w[0] : "";
+        $au->lastName = isset($w[1]) ? $w[1] : "";
+        $au->email = isset($w[2]) ? $w[2] : "";
+        $au->affiliation = isset($w[3]) ? $w[3] : "";
+        return $au;
+    }
+    static function make_string($s) {
+        $au = new Author;
+        $au->assign_string($s);
+        return $au;
+    }
+    static function make_string_guess($s) {
+        $au = new Author;
+        $au->assign_string_guess($s);
+        return $au;
+    }
+    function assign_string($s) {
+        if (($paren = strpos($s, "(")) !== false) {
+            if (preg_match('{\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:]).*)\z}', $s, $m, 0, $paren + 1)) {
+                $this->affiliation = trim($m[1]);
+                $s = substr($s, 0, $paren);
             } else {
-                if (($paren = strpos($x, "(")) !== false) {
-                    if (preg_match('{\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:]).*)\z}', $x, $m, 0, $paren + 1)) {
-                        $this->affiliation = trim($m[1]);
-                        $x = substr($x, 0, $paren);
-                    } else {
-                        $len = strlen($x);
-                        while ($paren !== false) {
-                            $rparen = self::skip_balanced_parens($x, $paren);
-                            if ($rparen === $len
-                                || preg_match('{\A(?:[\s,;.]*|\s*(?:-+|–|—|[#:]).*)\z}', substr($x, $rparen + 1))) {
-                                $this->affiliation = trim(substr($x, $paren + 1, $rparen - $paren - 1));
-                                $x = substr($x, 0, $paren);
-                                break;
-                            }
-                            $paren = strpos($x, "(", $rparen + 1);
-                        }
+                $len = strlen($s);
+                while ($paren !== false) {
+                    $rparen = self::skip_balanced_parens($s, $paren);
+                    if ($rparen === $len
+                        || preg_match('{\A(?:[\s,;.]*|\s*(?:-+|–|—|[#:]).*)\z}', substr($s, $rparen + 1))) {
+                        $this->affiliation = trim(substr($s, $paren + 1, $rparen - $paren - 1));
+                        $s = substr($s, 0, $paren);
+                        break;
                     }
+                    $paren = strpos($s, "(", $rparen + 1);
                 }
-                $this->_name = trim($x);
-                list($this->firstName, $this->lastName, $this->email) = Text::split_name($x, true);
             }
+        }
+        $this->_name = trim($s);
+        list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
+    }
+    function assign_string_guess($s) {
+        $hash = strpos($s, "#");
+        $pct = strpos($s, "%");
+        if ($hash !== false || $pct !== false)
+            $s = substr($s, 0, $hash === false ? $pct : ($pct === false ? $hash : min($hash, $pct)));
+        $this->assign_string($s);
+        if ($this->firstName === ""
+            && (strcasecmp($this->lastName, "all") === 0
+                || strcasecmp($this->lastName, "none") === 0))
+            $this->lastName = "";
+        if ($this->affiliation === ""
+            && $this->email === ""
+            && AuthorMatcher::is_likely_affiliation($s)) {
+            $this->firstName = $this->lastName = "";
+            $this->affiliation = $s;
         }
     }
     static function skip_balanced_parens($s, $paren) {

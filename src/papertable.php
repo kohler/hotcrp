@@ -862,7 +862,7 @@ class PaperTable {
         // find contact author information, combine with author table
         $result = $this->conf->qe("select firstName, lastName, '' affiliation, email, contactId from ContactInfo where contactId?a", array_keys($this->prow->contacts()));
         $contacts = array();
-        while (($row = edb_orow($result))) {
+        while ($result && ($row = $result->fetch_object("Author"))) {
             $match = -1;
             for ($i = 0; $match < 0 && $i < count($aulist); ++$i)
                 if (strcasecmp($aulist[$i]->email, $row->email) == 0)
@@ -887,7 +887,7 @@ class PaperTable {
                 if ($au->email === "")
                     $au->email = $row->email;
             } else {
-                $contacts[] = $au = new Author($row);
+                $contacts[] = $au = $row;
                 $au->nonauthor = true;
             }
             $au->contactId = (int) $row->contactId;

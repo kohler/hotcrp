@@ -1003,17 +1003,17 @@ xassert_eqq(AuthorMatcher::fix_collaborators("none\n"), "None");
 xassert_eqq(AuthorMatcher::fix_collaborators("none.\n"), "None");
 xassert_eqq(AuthorMatcher::fix_collaborators("NONE.\n"), "None");
 
-$au = new Author("G.-Y. (Ken) Lueh");
+$au = Author::make_string("G.-Y. (Ken) Lueh");
 xassert_eqq($au->firstName, "G.-Y. (Ken)");
-$au = new Author("G.-Y. (Ken (Butt)) Lueh");
+$au = Author::make_string("G.-Y. (Ken (Butt)) Lueh");
 xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
-$au = new Author("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom)");
-xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
-xassert_eqq($au->affiliation, "France (Crap) Telecom");
-$au = new Author("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom)- Inc.");
+$au = Author::make_string("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom)");
 xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
 xassert_eqq($au->affiliation, "France (Crap) Telecom");
-$au = new Author("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom");
+$au = Author::make_string("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom)- Inc.");
+xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
+xassert_eqq($au->affiliation, "France (Crap) Telecom");
+$au = Author::make_string("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom");
 xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
 xassert_eqq($au->affiliation, "France (Crap) Telecom");
 

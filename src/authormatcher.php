@@ -13,21 +13,8 @@ class AuthorMatcher extends Author {
 
     function __construct($x, $precleaned = false) {
         if (is_string($x) && $x !== "") {
-            if (($hash = strpos($x, "#")) !== false
-                || ($hash = strpos($x, "%")) !== false)
-                $x = substr($x, 0, $hash);
-            parent::__construct($x);
-            if ($this->firstName === ""
-                && (strcasecmp($this->lastName, "all") === 0
-                    || strcasecmp($this->lastName, "none") === 0))
-                $this->lastName = "";
-            if (!$precleaned
-                && $this->affiliation === ""
-                && $this->email === ""
-                && self::is_likely_affiliation($x)) {
-                $this->firstName = $this->lastName = "";
-                $this->affiliation = $x;
-            }
+            parent::__construct();
+            $this->assign_string_guess($x);
         } else {
             parent::__construct($x);
         }
@@ -143,9 +130,8 @@ class AuthorMatcher extends Author {
         if (!$this->general_pregexes) {
             return false;
         }
-        if (is_string($au)) {
+        if (is_string($au))
             $au = new Author($au);
-        }
         if ($au->firstName_deaccent === null) {
             $au->firstName_deaccent = $au->lastName_deaccent = false;
             $au->firstName_deaccent = UnicodeHelper::deaccent($au->firstName);
@@ -445,8 +431,7 @@ class AuthorMatcher extends Author {
                 }
                 // check for suffix
                 if ($pos < $len
-                    && preg_match('{\A(\s*[-,:;.#]\s*|\s*(?=[a-z]))}',
-                                  substr($line, $pos), $m)) {
+                    && preg_match('{\G(\s*[-,:;.#]\s*|\s*(?=[a-z]))}', $line, $m, 0, $pos)) {
                     $suffix = substr($line, $pos + strlen($m[1]));
                     $line = substr($line, 0, $pos);
                     if ($suffix !== "")
