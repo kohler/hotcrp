@@ -11,7 +11,7 @@ class AuthorMatcher extends Author {
 
     private static $wordinfo;
 
-    function __construct($x, $precleaned = false) {
+    function __construct($x) {
         if (is_string($x) && $x !== "") {
             parent::__construct();
             $this->assign_string_guess($x);
@@ -131,7 +131,7 @@ class AuthorMatcher extends Author {
             return false;
         }
         if (is_string($au))
-            $au = new Author($au);
+            $au = Author::make_string_guess($au);
         if ($au->firstName_deaccent === null) {
             $au->firstName_deaccent = $au->lastName_deaccent = false;
             $au->firstName_deaccent = UnicodeHelper::deaccent($au->firstName);
@@ -305,8 +305,8 @@ class AuthorMatcher extends Author {
 
         // remove unicode versions
         if (preg_match('/[\200-\377]/', $s)) {
-            $x = ["“" => "\"", "”" => "\"", "–" => "-", "—" => "-"];
-            $s = preg_replace_callback('/(?:“|”|–|—)/', function ($m) use ($x) {
+            $x = ["“" => "\"", "”" => "\"", "–" => "-", "—" => "-", "•" => "-"];
+            $s = preg_replace_callback('/(?:“|”|–|—|•)/', function ($m) use ($x) {
                 return $x[$m[0]];
             }, $s);
         }
@@ -315,35 +315,11 @@ class AuthorMatcher extends Author {
         $s = preg_replace('{^(?:[1-9][0-9]*\.[ \t]*|[a-z][a-z]?\.[ \t]+(?=[A-Z])|[-\*]*[ \t]+)}m', "", $s);
 
         // separate multi-person lines
-        $lines = [];
-        foreach (explode("\n", $s) as $line) {
+        list($olines, $lines) = [explode("\n", $s), []];
+        foreach ($olines as $line) {
             $line = trim($line);
-            if (strlen($line) > 35
-                && (substr_count($line, ",") > 1
-                    || substr_count($line, "(") > 1
-                    || substr_count($line, ";") > 1)) {
-                // correct assholes who don't enter one per line
-                while (1) {
-                    $line = preg_replace('{\A[\s,;.]+}', "", $line);
-                    if (str_starts_with($line, "\""))
-                        preg_match('{\A"(?:[^"]|"")*(?:"|\z)()}', $line, $m);
-                    else if (!preg_match('{\A[^,(;][^,(;]*(\(.*?\)|,\s+\(.*?\)|)}', $line, $m))
-                        break;
-                    // XXX balanced parens
-                    if (str_ends_with($m[1], ")")
-                        && substr($line, strlen($m[0]), 2) === " -")
-                        break;
-                    else if ($m[1] === "," || $m[1] === ";")
-                        $lines[] = rtrim(substr($m[0], 0, -1));
-                    else
-                        $lines[] = $m[0];
-                    $line = ltrim((string) substr($line, strlen($m[0])));
-                    while ($line !== "" && ($line[0] === "," || $line[0] === " "))
-                        $line = (string) substr($line, 1);
-                }
-                if ($line !== "")
-                    $lines[] = $line;
-            } else
+            if (strlen($line) <= 35
+                || !self::fix_collaborators_split_line($line, $lines, count($olines)))
                 $lines[] = $line;
         }
 
@@ -353,13 +329,19 @@ class AuthorMatcher extends Author {
             // remove quotes
             if (str_starts_with($line, "\""))
                 $line = (string) str_replace("\"\"", "\"", substr($line, 1, strlen($line) - 1 - str_ends_with($line, "\"")));
-            // comments
-            if (str_starts_with($line, "#")) {
-                $lines[] = $line;
-                continue;
-            } else if (str_ends_with($line, ":")) {
-                $lines[] = "# " . $line;
-                continue;
+            // comments, trim punctuation
+            if ($line !== "") {
+                if ($line[0] === "#") {
+                    $lines[] = $line;
+                    continue;
+                }
+                $last_ch = $line[strlen($line) - 1];
+                if ($last_ch === ":") {
+                    $lines[] = "# " . $line;
+                    continue;
+                } else if ($last_ch === "," || $last_ch === ";") {
+                    $line = substr($line, 0, strlen($line) - 1);
+                }
             }
             // expand tab separation
             if (strpos($line, "(") === false && strpos($line, "\t") !== false) {
@@ -389,7 +371,7 @@ class AuthorMatcher extends Author {
             // apply parentheses
             $paren = strpos($line, "(");
             if ($paren === false) {
-                if (preg_match('{\A(.*?)([,;:]| -)\s+(.*)\z}', $line, $m)
+                if (preg_match('{\A(.*?)([,;:\}]| -)\s+(.*)\z}', $line, $m)
                     && (($m[2] === ","
                          && strpos($m[1], " ") !== false
                          && self::is_likely_affiliation($m[3], true)
@@ -397,13 +379,13 @@ class AuthorMatcher extends Author {
                         || ($m[2] !== ","
                             && !self::is_likely_affiliation($m[1]))))
                     $line = rtrim($m[1]) . " (" . $m[3] . ")";
-                else if (preg_match('{\A(|none|n/a|na|)\s*[.,;:]?\z}i', $line, $m))
+                else if (preg_match('{\A(|none|n/a|na|)\s*[.,;\}]?\z}i', $line, $m))
                     $line = ($m[1] === "" ? "" : "None");
                 else if (self::is_likely_affiliation($line))
                     $line = "All ($line)";
             } else {
                 $name = rtrim((string) substr($line, 0, $paren));
-                if (preg_match('{\A(?:|-|all|any|institution|none)\s*[.,;]\z}i', $name)) {
+                if (preg_match('{\A(?:|-|all|any|institution|none)\s*[.,;\}]?\z}i', $name)) {
                     $line = "All " . substr($line, $paren);
                     $paren = 4;
                 }
@@ -429,6 +411,16 @@ class AuthorMatcher extends Author {
                     ++$len;
                     --$depth;
                 }
+                // check for abbreviation, e.g., "Massachusetts Institute of Tech (MIT)"
+                if ($pos === $len) {
+                    $aff = substr($line, $paren + 1, $pos - $paren - 2);
+                    if (ctype_upper($aff)
+                        && ($aum = AuthorMatcher::make_affiliation($aff, true))
+                        && $aum->test(substr($line, 0, $paren))) {
+                        $line = "All (" . rtrim(substr($line, 0, $paren)) . ")";
+                        $pos = $len = strlen($line);
+                    }
+                }
                 // check for suffix
                 if ($pos < $len
                     && preg_match('{\G(\s*[-,:;.#]\s*|\s*(?=[a-z]))}', $line, $m, 0, $pos)) {
@@ -436,7 +428,7 @@ class AuthorMatcher extends Author {
                     $line = substr($line, 0, $pos);
                     if ($suffix !== "")
                         $line .= " - " . $suffix;
-                } else if ($pos < $len) {
+                } else if ($pos < $len && strpos($line, "(", $pos) === false) {
                     $line .= " (unknown)";
                 }
             }
@@ -457,6 +449,65 @@ class AuthorMatcher extends Author {
             return "None";
         else
             return null;
+    }
+    static private function fix_collaborators_split_line($line, &$lines, $ntext) {
+        // some assholes enter more than one per line
+        $ncomma = substr_count($line, ",");
+        $nparen = substr_count($line, "(");
+        $nsemi = substr_count($line, ";");
+        if ($ncomma <= 1 && $nparen <= 1 && $nsemi <= 1)
+            return false;
+        if ($ncomma == 0 && $nsemi == 0) {
+            $pairs = [];
+            while (($pos = strpos($line, "(")) !== false) {
+                $rpos = self::skip_balanced_parens($line, $pos);
+                $rpos = min($rpos + 1, strlen($line));
+                $pairs[] = trim(substr($line, 0, $rpos));
+                $line = ltrim(substr($line, $rpos));
+            }
+            if ($line !== "")
+                $pairs[] = $line;
+            if (count($pairs) <= 2)
+                return false;
+            else {
+                foreach ($pairs as $x)
+                    $lines[] = $x;
+                return true;
+            }
+        }
+        while (true) {
+            $line = preg_replace('{\A[-\s,;.\}]+}', "", $line);
+            if ($line === "")
+                break;
+            if (str_starts_with($line, "\""))
+                preg_match('{\A"(?:[^"]|"")*(?:"|\z)}', $line, $m);
+            else {
+                $m = [""];
+                $have_comma = false;
+                while (true) {
+                    if (!preg_match('{\A([^,(;]*)([,(;])}', $line, $mm, 0, strlen($m[0]))) {
+                        $m[0] = $line;
+                        break;
+                    }
+                    $m[0] .= $mm[1];
+                    if ($mm[2] === "(") {
+                        $rpos = self::skip_balanced_parens($line, strlen($m[0]));
+                        $rpos = min($rpos, strlen($line));
+                        if ($rpos + 2 < strlen($line) && substr($line, $rpos, 2) === " -") {
+                            $m[0] = $line;
+                            break;
+                        }
+                    } else if ($mm[2] === ";" || $ncomma - $nsemi > 2) {
+                        break;
+                    } else {
+                        $m[0] .= $mm[2];
+                    }
+                }
+            }
+            $lines[] = $m[0];
+            $line = substr($line, strlen($m[0]));
+        }
+        return true;
     }
 
     static function trim_collaborators($s) {

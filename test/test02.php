@@ -1002,6 +1002,10 @@ xassert_eqq(AuthorMatcher::fix_collaborators("G.-Y. (Ken) Lueh"),
 xassert_eqq(AuthorMatcher::fix_collaborators("none\n"), "None");
 xassert_eqq(AuthorMatcher::fix_collaborators("none.\n"), "None");
 xassert_eqq(AuthorMatcher::fix_collaborators("NONE.\n"), "None");
+xassert_eqq(AuthorMatcher::fix_collaborators("University of New South Wales (UNSW)"), "All (University of New South Wales)");
+xassert_eqq(AuthorMatcher::fix_collaborators("Gennaro Parlato, University of Southampton, UK"), "Gennaro Parlato (University of Southampton, UK)");
+xassert_eqq(AuthorMatcher::fix_collaborators("G.-Y. (Ken (Butt)) Lueh"), "G.-Y. (Ken (Butt)) Lueh (unknown)");
+xassert_eqq(AuthorMatcher::fix_collaborators("G.-Y. (Ken (Butt)) Lueh (France Telecom)"), "G.-Y. (Ken (Butt)) Lueh (France Telecom)");
 
 $au = Author::make_string("G.-Y. (Ken) Lueh");
 xassert_eqq($au->firstName, "G.-Y. (Ken)");
