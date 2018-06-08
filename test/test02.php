@@ -1006,6 +1006,15 @@ xassert_eqq(AuthorMatcher::fix_collaborators("University of New South Wales (UNS
 xassert_eqq(AuthorMatcher::fix_collaborators("Gennaro Parlato, University of Southampton, UK"), "Gennaro Parlato (University of Southampton, UK)");
 xassert_eqq(AuthorMatcher::fix_collaborators("G.-Y. (Ken (Butt)) Lueh"), "G.-Y. (Ken (Butt)) Lueh (unknown)");
 xassert_eqq(AuthorMatcher::fix_collaborators("G.-Y. (Ken (Butt)) Lueh (France Telecom)"), "G.-Y. (Ken (Butt)) Lueh (France Telecom)");
+xassert_eqq(AuthorMatcher::fix_collaborators("All (Fucktown, Fuckville, Fuck City, Fuck Prefecture, Fuckovia)"), "All (Fucktown, Fuckville, Fuck City, Fuck Prefecture, Fuckovia)");
+xassert_eqq(AuthorMatcher::fix_collaborators("Sriram Rajamani (MSR), Aditya Nori (MSR), Akash Lal (MSR), Ganesan Ramalingam (MSR)"), "Sriram Rajamani (MSR)
+Aditya Nori (MSR)
+Akash Lal (MSR)
+Ganesan Ramalingam (MSR)");
+xassert_eqq(AuthorMatcher::fix_collaborators("University of Southern California (USC), Universidade de Brasilia (UnB)"), "All (University of Southern California)
+Universidade de Brasilia (UnB)");
+xassert_eqq(AuthorMatcher::fix_collaborators("Schur, Lisa"), "Schur, Lisa");
+xassert_eqq(AuthorMatcher::fix_collaborators("Lisa Schur, Lisa"), "Lisa Schur (Lisa)");
 
 $au = Author::make_string("G.-Y. (Ken) Lueh");
 xassert_eqq($au->firstName, "G.-Y. (Ken)");

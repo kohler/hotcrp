@@ -77,10 +77,14 @@ class Author {
                 || strcasecmp($this->lastName, "none") === 0))
             $this->lastName = "";
         if ($this->affiliation === ""
-            && $this->email === ""
-            && AuthorMatcher::is_likely_affiliation($s)) {
-            $this->firstName = $this->lastName = "";
-            $this->affiliation = $s;
+            && $this->email === "") {
+            if (strpos($s, ",") !== false && strpos($this->lastName, " ") !== false) {
+                $this->affiliation = $this->firstName;
+                list($this->firstName, $this->lastName) = Text::split_name($this->lastName);
+            } else if (AuthorMatcher::is_likely_affiliation($s)) {
+                $this->firstName = $this->lastName = "";
+                $this->affiliation = $s;
+            }
         }
     }
     static function skip_balanced_parens($s, $paren) {

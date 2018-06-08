@@ -278,13 +278,14 @@ class AuthorMatcher extends Author {
                                || ($aw->nameish === 2 && $i > 0)) {
                         $has_nameish = true;
                         continue;
-                    }
+                    } else if ($aw->nameish === 0)
+                        continue;
                 }
                 if (isset($aw->weak) && $aw->weak)
                     $has_weak = true;
                 else
                     return true;
-            } else if (strlen($w) > 1 && ctype_upper($w)) {
+            } else if (strlen($w) > 2 && ctype_upper($w)) {
                 if ($fc === null)
                     $fc = $i;
                 ++$nc;
@@ -292,6 +293,7 @@ class AuthorMatcher extends Author {
         }
         return $has_weak
             || ($nw === 1 && !$has_nameish && !$default_name)
+            || ($nw === 1 && ctype_upper($m[0][0]))
             || ($ninit > 0 && $nw === $ninit)
             || ($nc > 0
                 && !$has_nameish
@@ -304,15 +306,14 @@ class AuthorMatcher extends Author {
         $s = cleannl($s);
 
         // remove unicode versions
-        if (preg_match('/[\200-\377]/', $s)) {
-            $x = ["“" => "\"", "”" => "\"", "–" => "-", "—" => "-", "•" => "-"];
-            $s = preg_replace_callback('/(?:“|”|–|—|•)/', function ($m) use ($x) {
-                return $x[$m[0]];
-            }, $s);
-        }
+        $x = ["“" => "\"", "”" => "\"", "–" => "-", "—" => "-", "•" => ";", ".~" => ". ",
+              "\\item" => "; "];
+        $s = preg_replace_callback('/(?:“|”|–|—|•|\.\~|\\\\item)/', function ($m) use ($x) {
+            return $x[$m[0]];
+        }, $s);
         // remove numbers
         // XXX `[a-z][a-z]?\.[ \t]+` is weird, remove that case
-        $s = preg_replace('{^(?:[1-9][0-9]*\.[ \t]*|[a-z][a-z]?\.[ \t]+(?=[A-Z])|[-\*]*[ \t]+)}m', "", $s);
+        $s = preg_replace('{^(?:[1-9][0-9]*\.[ \t]*|[a-z][a-z]?\.[ \t]+(?=[A-Z])|[-\*;]*[ \t]+)}m', "", $s);
 
         // separate multi-person lines
         list($olines, $lines) = [explode("\n", $s), []];
@@ -328,7 +329,9 @@ class AuthorMatcher extends Author {
         foreach ($olines as $line) {
             // remove quotes
             if (str_starts_with($line, "\""))
-                $line = (string) str_replace("\"\"", "\"", substr($line, 1, strlen($line) - 1 - str_ends_with($line, "\"")));
+                $line = preg_replace_callback('{""?}', function ($m) {
+                    return strlen($m[0]) === 1 ? "" : "\"";
+                }, $line);
             // comments, trim punctuation
             if ($line !== "") {
                 if ($line[0] === "#") {
@@ -345,7 +348,7 @@ class AuthorMatcher extends Author {
             }
             // expand tab separation
             if (strpos($line, "(") === false && strpos($line, "\t") !== false) {
-                $ws = explode("\t", $line);
+                $ws = preg_split('/\t+/', $line);
                 $nw = count($ws);
                 if ($nw > 2 && strpos($ws[0], " ") === false) {
                     $name = rtrim($ws[0] . " " . $ws[1]);
@@ -372,12 +375,8 @@ class AuthorMatcher extends Author {
             $paren = strpos($line, "(");
             if ($paren === false) {
                 if (preg_match('{\A(.*?)([,;:\}]| -)\s+(.*)\z}', $line, $m)
-                    && (($m[2] === ","
-                         && strpos($m[1], " ") !== false
-                         && self::is_likely_affiliation($m[3], true)
-                         && !self::is_likely_affiliation($m[1]))
-                        || ($m[2] !== ","
-                            && !self::is_likely_affiliation($m[1]))))
+                    && (($m[2] !== "," || strpos($m[1], " ") !== false)
+                        && !self::is_likely_affiliation($m[1])))
                     $line = rtrim($m[1]) . " (" . $m[3] . ")";
                 else if (preg_match('{\A(|none|n/a|na|)\s*[.,;\}]?\z}i', $line, $m))
                     $line = ($m[1] === "" ? "" : "None");
@@ -455,7 +454,7 @@ class AuthorMatcher extends Author {
         $ncomma = substr_count($line, ",");
         $nparen = substr_count($line, "(");
         $nsemi = substr_count($line, ";");
-        if ($ncomma <= 1 && $nparen <= 1 && $nsemi <= 1)
+        if ($ncomma <= 2 && $nparen <= 1 && $nsemi <= 1)
             return false;
         if ($ncomma == 0 && $nsemi == 0) {
             $pairs = [];
@@ -475,37 +474,46 @@ class AuthorMatcher extends Author {
                 return true;
             }
         }
-        while (true) {
-            $line = preg_replace('{\A[-\s,;.\}]+}', "", $line);
-            if ($line === "")
-                break;
-            if (str_starts_with($line, "\""))
-                preg_match('{\A"(?:[^"]|"")*(?:"|\z)}', $line, $m);
-            else {
-                $m = [""];
-                $have_comma = false;
-                while (true) {
-                    if (!preg_match('{\A([^,(;]*)([,(;])}', $line, $mm, 0, strlen($m[0]))) {
-                        $m[0] = $line;
+        $any = false;
+        while ($line !== "") {
+            if (str_starts_with($line, "\"")) {
+                preg_match('{\A"(?:[^"]|"")*(?:"|\z)([\s,;]*)}', $line, $m);
+                $skip = strlen($m[1]);
+                $pos = strlen($m[0]) - $skip;
+                $any = false;
+            } else {
+                $pos = $skip = 0;
+                $len = strlen($line);
+                while ($pos < $len) {
+                    $last = $pos;
+                    if (!preg_match('{\G([^,(;]*)([,(;])}', $line, $mm, 0, $pos)) {
+                        $pos = $len;
                         break;
                     }
-                    $m[0] .= $mm[1];
+                    $pos += strlen($mm[1]);
                     if ($mm[2] === "(") {
-                        $rpos = self::skip_balanced_parens($line, strlen($m[0]));
-                        $rpos = min($rpos, strlen($line));
-                        if ($rpos + 2 < strlen($line) && substr($line, $rpos, 2) === " -") {
-                            $m[0] = $line;
-                            break;
-                        }
-                    } else if ($mm[2] === ";" || $ncomma - $nsemi > 2) {
+                        $rpos = self::skip_balanced_parens($line, $pos);
+                        $rpos = min($rpos + 1, $len);
+                        if ($rpos + 2 < $len && substr($line, $rpos, 2) === " -")
+                            $pos = $len;
+                        else
+                            $pos = $rpos;
+                    } else if ($mm[2] === ";" || !$nsemi || $ncomma > $nsemi + 1) {
+                        $skip = 1;
                         break;
                     } else {
-                        $m[0] .= $mm[2];
+                        ++$pos;
                     }
                 }
             }
-            $lines[] = $m[0];
-            $line = substr($line, strlen($m[0]));
+            $w = substr($line, 0, $pos);
+            if ($nparen === 0 && $nsemi === 0 && $any && self::is_likely_affiliation($w))
+                $lines[count($lines) - 1] .= ", " . $w;
+            else {
+                $lines[] = $w;
+                $any = $any || strpos($w, "(") === false;
+            }
+            $line = substr($line, $pos + $skip);
         }
         return true;
     }

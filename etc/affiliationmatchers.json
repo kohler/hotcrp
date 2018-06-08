@@ -341,6 +341,12 @@
     "telecom": {
         "weak": true
     },
+    "telefonica": {
+        "nameish": false
+    },
+    "telekom": {
+        "weak": true
+    },
     "univ": {
         "stop": true
     },
@@ -562,7 +568,7 @@
         "alternate": ["new york university"]
     },
     "penn": {
-        "weak": true,
+        "weak": true, "nameish": 0,
         "alternate": ["pennsylvania"],
         "sync": "state"
     },
@@ -580,6 +586,9 @@
     "san": {
         "weak": true
     },
+    "santa": {
+        "weak": true
+    },
     "shanghai": {
         "weak": true, "alternate": [{"word": "sjtu", "if": "jiao tong"}]
     },
@@ -589,6 +598,9 @@
     "southern": {
         "weak": true,
         "alternate": [{"word": "usc", "if": "university southern"}]
+    },
+    "stanford": {
+        "weak": true
     },
     "standards": {
         "alternate": [{"word": "nist", "if": "national institute technology"}]
@@ -601,9 +613,6 @@
         "alternate": [{"word": "tu", "if": "universitat"}]
     },
     "technion": {
-        "nameish": false
-    },
-    "telefonica": {
         "nameish": false
     },
     "texas": {
