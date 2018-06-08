@@ -432,7 +432,7 @@ class AuthorMatcher extends Author {
                 }
             }
             // append line
-            if (!preg_match('{\A(?:none|n/a|na|-*|\.*)\z}i', $line))
+            if (!preg_match('{\A(?:none|n/a|na|-*|\.*)[\s,;.]*\z}i', $line))
                 $lines[] = $line;
             else if ($line !== "")
                 $any = true;
