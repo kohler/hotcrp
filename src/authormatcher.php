@@ -513,7 +513,7 @@ class AuthorMatcher extends Author {
                 $lines[] = $w;
                 $any = $any || strpos($w, "(") === false;
             }
-            $line = substr($line, $pos + $skip);
+            $line = (string) substr($line, $pos + $skip);
         }
         return true;
     }
