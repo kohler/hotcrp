@@ -806,7 +806,7 @@ Jieming Yin (AMD Research) - recent collaborator (last publication: 2/2018)
 Xianwei Zhang (AMD Research) - recent collaborator (last publication: 2/2018)
 Akshay Jain (Qualcomm) - recent collaborator (last publication: 2/2018)
 Tim Rogers (Purdue) - recent collaborator (last publication: 2/2018)");
-xassert_eqq(AuthorMatcher::fix_collaborators("T. Arselins (LLNL) S. Bagchi (Purdue) D. Bailey (LBL) D. Bailey (Williams) A. Baker (Colorado) D. Beckingsale (U. Warwick) A. Bhatele (LLNL) B. Bihari (LLNL) S. Biswas (LLNL) D. Boehme (LLNL) P.-T. Bremer (LLNL) G. Bronevetsky (LLNL) L. Carrington (SDSC) A. Cook (LLNL) B. de Supinski (LLNL) E. Draeger (LLNL) E. Elnozahy (IBM) M. Fagan (Rice) R. Fowler (UNC) S. Futral (LLNL) J. Galarowicz (Krell) J. Glosli (LLNL) J. Gonzalez (BSC) G. Gopalakrishnan (Utah) W. Gropp (Illinois) J. Gunnels (IBM)"),
+xassert_eqq(AuthorMatcher::fix_collaborators("T. Arselins (LLNL) S. Bagchi (Purdue) D. Bailey (LBL) D. Bailey (Williams) A. Baker (Colorado) D. Beckingsale (U. Warwick) A. Bhatele (LLNL) B. Bihari (LLNL) S. Biswas (LLNL) D. Boehme (LLNL) P.-T. Bremer (LLNL) G. Bronevetsky (LLNL) L. Carrington (SDSC) A. Cook (LLNL) B. de Supinski (LLNL) E. Draeger (LLNL) E. Elnozahy (IBM) M. Fagan (Rice) R. Fowler (UNC) S. Futral (LLNL) J. Galarowicz (Krell) J. Glosli (LLNL) J. Gonzalez (BSC) G. Gopalakrishnan (Utah) W. Gropp (Illinois) J. Gunnels (IBM)", 1),
     "T. Arselins (LLNL)
 S. Bagchi (Purdue)
 D. Bailey (LBL)
@@ -1011,10 +1011,13 @@ xassert_eqq(AuthorMatcher::fix_collaborators("Sriram Rajamani (MSR), Aditya Nori
 Aditya Nori (MSR)
 Akash Lal (MSR)
 Ganesan Ramalingam (MSR)");
-xassert_eqq(AuthorMatcher::fix_collaborators("University of Southern California (USC), Universidade de Brasilia (UnB)"), "All (University of Southern California)
+xassert_eqq(AuthorMatcher::fix_collaborators("University of Southern California (USC), Universidade de Brasilia (UnB)", 1), "All (University of Southern California)
 Universidade de Brasilia (UnB)");
 xassert_eqq(AuthorMatcher::fix_collaborators("Schur, Lisa"), "Schur, Lisa");
 xassert_eqq(AuthorMatcher::fix_collaborators("Lisa Schur, Lisa"), "Lisa Schur (Lisa)");
+xassert_eqq(AuthorMatcher::fix_collaborators("Danfeng(Daphne)Yao; Virginia Tech, USA", 1), "Danfeng(Daphne)Yao (Virginia Tech, USA)");
+xassert_eqq(AuthorMatcher::fix_collaborators("Danfeng(Daphne)Yao (Virginia Tech, USA)"), "Danfeng(Daphne)Yao (Virginia Tech, USA)");
+xassert_eqq(AuthorMatcher::fix_collaborators("Danfeng(Daphne)Yao (Virginia Tech, USA)", 1), "Danfeng(Daphne)Yao (Virginia Tech, USA)");
 
 $au = Author::make_string("G.-Y. (Ken) Lueh");
 xassert_eqq($au->firstName, "G.-Y. (Ken)");
