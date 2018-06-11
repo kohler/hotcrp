@@ -312,8 +312,8 @@ class AuthorMatcher extends Author {
             return $x[$m[0]];
         }, $s);
         // remove numbers
-        // XXX `[a-z][a-z]?\.[ \t]+` is weird, remove that case
-        $s = preg_replace('{^(?:\(?[1-9][0-9]*[.)][ \t]*|[a-z][a-z]?\.[ \t]+(?=[A-Z])|[-\*;\s]*[ \t]+)}m', "", $s);
+        $s = preg_replace('{^(?:\(?[1-9][0-9]*[.)][ \t]*|[-\*;\s]*[ \t]+'
+                . ($type === 1 ? '|[a-z][a-z]?\.[ \t]+(?=[A-Z])' : '') . ')}m', "", $s);
 
         // separate multi-person lines
         list($olines, $lines) = [explode("\n", $s), []];
