@@ -474,11 +474,11 @@ class Dbl {
     }
 
     static function make_multi_ql_stager($dblink = null) {
-        return self::make_multi_query_stager($dblink ? : self::$defualt_dblink, self::F_LOG);
+        return self::make_multi_query_stager($dblink ? : self::$default_dblink, self::F_LOG);
     }
 
     static function make_multi_qe_stager($dblink = null) {
-        return self::make_multi_query_stager($dblink ? : self::$defualt_dblink, self::F_ERROR);
+        return self::make_multi_query_stager($dblink ? : self::$default_dblink, self::F_ERROR);
     }
 
     static function free($result) {
