@@ -3,25 +3,21 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class AuthorMatcher extends Author {
-    public $firstName_matcher;
-    public $lastName_matcher;
-    public $affiliation_matcher;
-    public $general_pregexes;
-    public $is_author = false;
+    private $firstName_matcher;
+    private $lastName_matcher;
+    private $affiliation_matcher;
+    private $general_pregexes_;
 
     private static $wordinfo;
 
-    function __construct($x) {
-        if (is_string($x) && $x !== "") {
-            parent::__construct();
-            $this->assign_string_guess($x);
-        } else {
-            parent::__construct($x);
-        }
+    function __construct($x = null) {
+        parent::__construct($x);
+    }
 
+    private function prepare() {
         $any = [];
         if ($this->firstName !== "") {
-            preg_match_all('/[a-z0-9]+/', strtolower(UnicodeHelper::deaccent($this->firstName)), $m);
+            preg_match_all('/[a-z0-9]+/', $this->deaccent(0), $m);
             $rr = [];
             foreach ($m[0] as $w) {
                 $any[] = $rr[] = $w;
@@ -39,7 +35,7 @@ class AuthorMatcher extends Author {
                 ];
         }
         if ($this->lastName !== "") {
-            preg_match_all('/[a-z0-9]+/', strtolower(UnicodeHelper::deaccent($this->lastName)), $m);
+            preg_match_all('/[a-z0-9]+/', $this->deaccent(1), $m);
             $rr = $ur = [];
             foreach ($m[0] as $w) {
                 $any[] = $w;
@@ -52,12 +48,9 @@ class AuthorMatcher extends Author {
                     "preg_utf8" => '\A' . join("", $ur)
                 ];
         }
-        if ($this->affiliation !== ""
-            && $this->firstName === ""
-            && $this->lastName === ""
-            && $this->email === "") {
+        if ($this->affiliation !== "") {
             $wordinfo = self::wordinfo();
-            preg_match_all('/[a-z0-9&]+/', strtolower(UnicodeHelper::deaccent($this->affiliation)), $m);
+            preg_match_all('/[a-z0-9&]+/', $this->deaccent(2), $m);
 
             $directs = $alts = [];
             $any_weak = false;
@@ -101,15 +94,20 @@ class AuthorMatcher extends Author {
 
         $content = join("|", $any);
         if ($content !== "" && $content !== "none") {
-            $this->general_pregexes = (object) [
+            $this->general_pregexes_ = (object) [
                 "preg_raw" => '\b(?:' . $content . ')\b',
                 "preg_utf8" => Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
             ];
-        }
+        } else
+            $this->general_pregexes_ = false;
     }
-    function is_empty() {
-        return !$this->general_pregexes;
+
+    function general_pregexes() {
+        if ($this->general_pregexes_ === null)
+            $this->prepare();
+        return $this->general_pregexes_;
     }
+
     static function make($x, $nonauthor) {
         if ($x !== "") {
             $m = new AuthorMatcher($x);
@@ -120,35 +118,48 @@ class AuthorMatcher extends Author {
         }
         return null;
     }
-    static function make_affiliation($x, $nonauthor) {
-        return self::make((object) ["firstName" => "", "lastName" => "", "email" => "", "affiliation" => $x], $nonauthor);
+    static function make_string_guess($x) {
+        $m = new AuthorMatcher;
+        $m->assign_string_guess($x);
+        return $m;
+    }
+    static function make_affiliation($x) {
+        $m = new AuthorMatcher;
+        $m->affiliation = (string) $x;
+        return $m;
+    }
+    static function make_collaborator_line($x) {
+        if ($x === "" || strcasecmp($x, "none") === 0)
+            return null;
+        else {
+            $m = new AuthorMatcher;
+            $m->assign_string($x);
+            $m->nonauthor = true;
+            return $m;
+        }
     }
 
     const MATCH_NAME = 1;
     const MATCH_AFFILIATION = 2;
-    function test($au) {
-        if (!$this->general_pregexes) {
+    function test($au, $prefer_name = false) {
+        if ($this->general_pregexes_ === null)
+            $this->prepare();
+        if (!$this->general_pregexes_)
             return false;
-        }
         if (is_string($au))
             $au = Author::make_string_guess($au);
-        if ($au->firstName_deaccent === null) {
-            $au->firstName_deaccent = $au->lastName_deaccent = false;
-            $au->firstName_deaccent = UnicodeHelper::deaccent($au->firstName);
-            $au->lastName_deaccent = UnicodeHelper::deaccent($au->lastName);
-            $au->affiliation_deaccent = strtolower(UnicodeHelper::deaccent($au->affiliation));
-        }
         if ($this->lastName_matcher
             && $au->lastName !== ""
-            && Text::match_pregexes($this->lastName_matcher, $au->lastName, $au->lastName_deaccent)
+            && Text::match_pregexes($this->lastName_matcher, $au->lastName, $au->deaccent(1))
             && ($au->firstName === ""
                 || !$this->firstName_matcher
-                || Text::match_pregexes($this->firstName_matcher, $au->firstName, $au->firstName_deaccent))) {
+                || Text::match_pregexes($this->firstName_matcher, $au->firstName, $au->deaccent(0)))) {
             return self::MATCH_NAME;
         }
         if ($this->affiliation_matcher
             && $au->affiliation !== ""
-            && $this->test_affiliation($au->affiliation_deaccent)) {
+            && (!$prefer_name || $au->lastName === "")
+            && $this->test_affiliation($au->deaccent(2))) {
             return self::MATCH_AFFILIATION;
         }
         return false;
@@ -162,7 +173,7 @@ class AuthorMatcher extends Author {
         }
         $pregexes = [];
         foreach ($matchers as $matcher)
-            $pregexes[] = $matcher->general_pregexes;
+            $pregexes[] = $matcher->general_pregexes();
         if (count($pregexes) > 1)
             $pregexes = [Text::merge_pregexes($pregexes)];
         if (!empty($pregexes))
@@ -521,7 +532,7 @@ class AuthorMatcher extends Author {
         if ($pos === $len) {
             $aff = substr($line, $paren + 1, $pos - $paren - 2);
             if (ctype_upper($aff)
-                && ($aum = AuthorMatcher::make_affiliation($aff, true))
+                && ($aum = AuthorMatcher::make_affiliation($aff))
                 && $aum->test(substr($line, 0, $paren)))
                 $line = "All (" . rtrim(substr($line, 0, $paren)) . ")";
             return $line;

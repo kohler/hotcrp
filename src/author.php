@@ -9,9 +9,7 @@ class Author {
     public $affiliation = "";
     private $_name;
     public $contactId = null;
-    public $firstName_deaccent;
-    public $lastName_deaccent;
-    public $affiliation_deaccent;
+    private $_deaccents;
     public $nonauthor;
     public $sorter;
 
@@ -39,16 +37,11 @@ class Author {
         $au->assign_string($s);
         return $au;
     }
-    static function make_string_guess($s) {
-        $au = new Author;
-        $au->assign_string_guess($s);
-        return $au;
-    }
     function assign_string($s) {
         if (($paren = strpos($s, "(")) !== false) {
-            if (preg_match('{\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:]).*)\z}', $s, $m, 0, $paren + 1)) {
+            if (preg_match('{\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:%]).*)\z}', $s, $m, 0, $paren + 1)) {
                 $this->affiliation = trim($m[1]);
-                $s = substr($s, 0, $paren);
+                $s = rtrim(substr($s, 0, $paren));
             } else {
                 $len = strlen($s);
                 while ($paren !== false) {
@@ -56,15 +49,23 @@ class Author {
                     if ($rparen === $len
                         || preg_match('{\A(?:[\s,;.]*|\s*(?:-+|–|—|[#:]).*)\z}', substr($s, $rparen + 1))) {
                         $this->affiliation = trim(substr($s, $paren + 1, $rparen - $paren - 1));
-                        $s = substr($s, 0, $paren);
+                        $s = rtrim(substr($s, 0, $paren));
                         break;
                     }
                     $paren = strpos($s, "(", $rparen + 1);
                 }
             }
         }
-        $this->_name = trim($s);
-        list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
+        if (strlen($s) > 4
+            || ($s !== "" && strcasecmp($s, "all") && strcasecmp($s, "none"))) {
+            $this->_name = trim($s);
+            list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
+        }
+    }
+    static function make_string_guess($s) {
+        $au = new Author;
+        $au->assign_string_guess($s);
+        return $au;
     }
     function assign_string_guess($s) {
         $hash = strpos($s, "#");
@@ -78,9 +79,12 @@ class Author {
             $this->lastName = "";
         if ($this->affiliation === ""
             && $this->email === "") {
-            if (strpos($s, ",") !== false && strpos($this->lastName, " ") !== false) {
-                $this->affiliation = $this->firstName;
-                list($this->firstName, $this->lastName) = Text::split_name($this->lastName);
+            if (strpos($s, ",") !== false
+                && strpos($this->lastName, " ") !== false) {
+                if (AuthorMatcher::is_likely_affiliation($this->firstName)) {
+                    $this->affiliation = $this->firstName;
+                    list($this->firstName, $this->lastName) = Text::split_name($this->lastName);
+                }
             } else if (AuthorMatcher::is_likely_affiliation($s)) {
                 $this->firstName = $this->lastName = "";
                 $this->affiliation = $s;
@@ -148,5 +152,14 @@ class Author {
     }
     function abbrevname_html() {
         return htmlspecialchars($this->abbrevname_text());
+    }
+    function deaccent($component) {
+        if ($this->_deaccents === null)
+            $this->_deaccents = [
+                strtolower(UnicodeHelper::deaccent($this->firstName)),
+                strtolower(UnicodeHelper::deaccent($this->lastName)),
+                strtolower(UnicodeHelper::deaccent($this->affiliation))
+            ];
+        return $this->_deaccents[$component];
     }
 }

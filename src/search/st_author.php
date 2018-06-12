@@ -94,8 +94,7 @@ class AuthorMatch_SearchTerm extends SearchTerm {
         $type = $sword->kwdef->name;
         if ($word === "any" && $sword->kwexplicit && !$sword->quoted)
             return new TextMatch_SearchTerm(substr($type, 0, 2), true, false);
-        $matcher = new AuthorMatcher($word);
-        if ($matcher->general_pregexes)
+        if (($matcher = AuthorMatcher::make_string_guess($word)))
             return new AuthorMatch_SearchTerm($type, $matcher);
         else
             return new False_SearchTerm;
@@ -110,16 +109,17 @@ class AuthorMatch_SearchTerm extends SearchTerm {
         if ($row->$field === ""
             || !$srch->user->allow_view_authors($row))
             return false;
-        if (!$row->field_match_pregexes($this->matcher->general_pregexes, $field))
+        if (!$row->field_match_pregexes($this->matcher->general_pregexes(), $field))
             return false;
         $l = $this->type === "aumatch" ? $row->author_list() : $row->collaborator_list();
+        $prefer_name = $this->matcher->lastName !== "";
         foreach ($l as $au)
-            if ($this->matcher->test($au))
+            if ($this->matcher->test($au, $prefer_name))
                 return true;
         return false;
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
-        $srch->regex[substr($this->type, 0, 2)][] = $this->matcher->general_pregexes;
+        $srch->regex[substr($this->type, 0, 2)][] = $this->matcher->general_pregexes();
     }
 }

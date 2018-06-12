@@ -248,7 +248,6 @@ class PaperInfo {
     private $_rights_version = 0;
     private $_author_array = null;
     private $_collaborator_array = null;
-    private $_collaborator_general_pregexes = null;
     private $_prefs_array = null;
     private $_prefs_cid = null;
     private $_topics_array = null;
@@ -480,62 +479,52 @@ class PaperInfo {
         return $this->conflict_type($contact) >= CONFLICT_AUTHOR;
     }
 
-    function collaborator_list($matcher = false) {
-        if ($this->_collaborator_array === null
-            || ($matcher
-                && !empty($this->_collaborator_array)
-                && !($this->_collaborator_array[0] instanceof AuthorMatcher))) {
-            $klass = $matcher ? "AuthorMatcher" : "Author";
+    function collaborator_list() {
+        if ($this->_collaborator_array === null) {
             $this->_collaborator_array = [];
-            foreach (explode("\n", $this->collaborators) as $co)
-                if ($co !== "") {
-                    $m = new $klass($co);
-                    if (!$matcher || !$m->is_empty())
-                        $this->_collaborator_array[] = $m;
-                }
+            foreach (explode("\n", (string) $this->collaborators) as $co)
+                if (($m = AuthorMatcher::make_collaborator_line($co)))
+                    $this->_collaborator_array[] = $m;
         }
         return $this->_collaborator_array;
     }
 
-    function collaborator_general_pregexes() {
-        if ($this->_collaborator_general_pregexes === null) {
-            $m = array_map(function ($m) { return $m->general_pregexes; }, $this->collaborator_list(true));
-            $this->_collaborator_general_pregexes = Text::merge_pregexes($m);
-        }
-        return $this->_collaborator_general_pregexes;
-    }
-
     function potential_conflict(Contact $user, $full_info = false) {
         $details = [];
+        $problems = 0;
         if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
             foreach ($this->author_list() as $n => $au)
                 foreach ($user->aucollab_matchers() as $matcher) {
-                    if (($why = $matcher->test($au))) {
+                    if (($why = $matcher->test($au, $matcher->nonauthor))) {
                         if (!$full_info)
                             return true;
-                        if ($matcher->nonauthor)
-                            $what = "PC’s collaborator ";
-                        else if ($why == AuthorMatcher::MATCH_AFFILIATION)
-                            $what = "PC affiliation ";
+                        $who = "#" . ($n + 1);
+                        $problems |= $why;
+                        if ($matcher->nonauthor) {
+                            $aumatcher = new AuthorMatcher($au);
+                            $what = "PC’s collaborator " . $aumatcher->highlight($matcher) . "<br>matches author $who " . $matcher->highlight($au);
+                        } else if ($why == AuthorMatcher::MATCH_AFFILIATION)
+                            $what = "PC affiliation matches author $who affiliation " . $matcher->highlight($au->affiliation);
                         else
-                            $what = "PC member ";
-                        $details[] = ["#" . ($n + 1), '<div class="mmm">Author ' . $matcher->highlight($au) . '<br />matches ' . $what . $matcher->nameaff_html() . '</div>'];
+                            $what = "PC name matches author $who name " . $matcher->highlight($au->name());
+                        $details[] = ["#" . ($n + 1), '<div class="mmm">' . $what . '</div>'];
                     }
                 }
         }
-        if ((string) $this->collaborators !== ""
-            && $user->aucollab_matchers()) {
-            $au = $user->aucollab_matchers()[0];
-            $autext = $au->nameaff_text();
-            $autext_deaccent = false;
-            if (preg_match('/[\x80-\xFF]/', $autext))
-                $autext_deaccent = UnicodeHelper::deaccent($autext);
-            if (Text::match_pregexes($this->collaborator_general_pregexes(), $autext, $autext_deaccent)) {
-                foreach ($this->collaborator_list(true) as $matcher)
-                    if ($matcher->test($au)) {
+        if ((string) $this->collaborators !== "") {
+            $aum = $user->full_matcher();
+            if (Text::match_pregexes($aum->general_pregexes(), $this->collaborators, UnicodeHelper::deaccent($this->collaborators))) {
+                foreach ($this->collaborator_list() as $co)
+                    if (($co->lastName !== ""
+                         || !($problems & AuthorMatcher::MATCH_AFFILIATION))
+                        && ($why = $aum->test($co, true))) {
                         if (!$full_info)
                             return true;
-                        $details[] = ["other conflicts", '<div class="mmm">PC member ' . $matcher->highlight($au) . '<br />matches other conflict ' . $matcher->nameaff_html() . '</div>'];
+                        if ($why == AuthorMatcher::MATCH_AFFILIATION)
+                            $what = "PC affiliation matches declared conflict ";
+                        else
+                            $what = "PC name matches declared conflict ";
+                        $details[] = ["other conflicts", '<div class="mmm">' . $what . $aum->highlight($co) . '</div>'];
                     }
             }
         }

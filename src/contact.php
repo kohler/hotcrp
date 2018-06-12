@@ -3439,46 +3439,14 @@ class Contact {
     }
 
 
-    static function clean_collaborator_lines($s) {
-        $x = [];
-        foreach (preg_split('/[\r\n]+/', $s) as $l) {
-            $l = preg_replace('/[.,;\s]+\z/', "", simplify_whitespace($l));
-            if ($l !== "")
-                $x[] = "$l\n";
-        }
-        return join("", $x);
-    }
-
-    static function fix_collaborator_affiliations($s, $hard = false) {
-        if ($s === "" || (!$hard && strpos($s, "(") !== false))
-            return $s;
-        $n = preg_match_all('/[-,;:]|–|—/', $s);
-        if ($n >= 2 && $n >= 3 * substr_count($s, "("))
-            $s = preg_replace('/^(.*)(?:[-,;:]|–|—)\s*(.*)$/m', '$1 ($2)',
-                              self::clean_collaborator_lines($s));
-        return $s;
-    }
-
-    static function suspect_collaborator_one_line($s) {
-        return $s !== "" && ($n = substr_count($s, "\n")) < 4
-            && $n < 0.75 * preg_match_all('/[,;]/', $s);
-    }
-
     function aucollab_matchers() {
         if ($this->aucollab_matchers_ === null) {
-            $this->aucollab_matchers_ = [];
-            if (($m = AuthorMatcher::make($this, false)))
-                $this->aucollab_matchers_[] = $m;
-            if ($this->affiliation !== ""
-                && ($m = AuthorMatcher::make_affiliation($this->affiliation, false)))
-                $this->aucollab_matchers_[] = $m;
-            if ((string) $this->collaborators !== "") {
-                $collab = self::fix_collaborator_affiliations($this->collaborators);
-                foreach (explode("\n", $collab) as $co) {
-                    if (($m = AuthorMatcher::make($co, true)))
+            $this->aucollab_matchers_ = [new AuthorMatcher($this)];
+            if ((string) $this->collaborators !== "")
+                foreach (explode("\n", $this->collaborators) as $co) {
+                    if (($m = AuthorMatcher::make_collaborator_line($co)))
                         $this->aucollab_matchers_[] = $m;
                 }
-            }
         }
         return $this->aucollab_matchers_;
     }
@@ -3487,10 +3455,16 @@ class Contact {
         if ($this->aucollab_general_pregexes_ === null) {
             $l = [];
             foreach ($this->aucollab_matchers() as $matcher)
-                $l[] = $matcher->general_pregexes;
+                if (($r = $matcher->general_pregexes()))
+                    $l[] = $r;
             $this->aucollab_general_pregexes_ = Text::merge_pregexes($l);
         }
         return $this->aucollab_general_pregexes_;
+    }
+
+    function full_matcher() {
+        $this->aucollab_matchers();
+        return $this->aucollab_matchers_[0];
     }
 
 

@@ -771,7 +771,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         foreach ($aus as $au) {
             $matchers = [];
             foreach ($this->contact->aucollab_matchers() as $matcher)
-                if ($matcher->test($au))
+                if ($matcher->test($au, $matcher->nonauthor))
                     $matchers[] = $matcher;
             if (!empty($matchers))
                 $text[] = AuthorMatcher::highlight_all($au, $matchers);
