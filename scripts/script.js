@@ -6522,7 +6522,7 @@ return function (event) {
             pctype = $f.find("input[name=pctype]:checked").val(),
             ass = $f.find("input[name=ass]:checked").length;
         foldup.call(this, null, {n: 1, f: !pctype || pctype === "no"});
-        foldup.call(this, null, {n: 2, f: ass === 0});
+        foldup.call(this, null, {n: 2, f: (!pctype || pctype === "no") && ass === 0});
     }
 };
 })($);
