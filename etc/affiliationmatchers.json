@@ -5,6 +5,9 @@
     "and": {
         "stop": true
     },
+    "&": {
+        "stop": true
+    },
     "of": {
         "stop": true
     },
@@ -424,13 +427,17 @@
         "alternate": [{"word": "ncsu", "if": "north state university"}]
     },
     "china": {
-        "weak": true, "nameish": true
+        "weak": true, "nameish": true,
+        "alternate": [{"word": "ustc", "if": "university science technology"}]
     },
     "cmu": {
         "alternate": ["carnegie mellon"]
     },
     "colorado": {
         "weak": true
+    },
+    "cuhk": {
+        "alternate": ["chinese university hong kong"]
     },
     "darmstadt": {
         "weak": true
@@ -480,6 +487,9 @@
     "hewlett": {
         "alternate": [{"word": "hp", "if": "packard"}]
     },
+    "hong": {
+        "weak": true
+    },
     "hkust": {
         "alternate": ["hong kong university science technology"]
     },
@@ -497,6 +507,9 @@
     },
     "iit": {
         "alternate": ["indian institute technology"]
+    },
+    "illinois": {
+        "weak": true
     },
     "indian": {
         "weak": true,
@@ -528,7 +541,12 @@
     },
     "kong": {
         "weak": true, "nameish": true,
-        "alternate": [{"word": "hkust", "if": "hong university science technology"}]
+        "alternate": [
+            {"word": "hkust", "if": "hong university science technology"},
+            {"word": "cuhk", "if": "chinese hong university"},
+            {"word": "uhk", "if": "hong university", "if_not": "chinese science"}
+        ],
+        "sync": "chinese cuhk science hkust"
     },
     "korea": {
         "alternate": [{"word": "kaist", "if": "advanced institute science technology"}]
@@ -656,8 +674,14 @@
     "uci": {
         "alternate": ["university california irvine", "uc irvine"]
     },
+    "uhk": {
+        "alternate": ["university hong kong"]
+    },
     "uiuc": {
-        "alternate": ["university illinois urbana champaign"]
+        "alternate": [
+            "university illinois urbana champaign",
+            {"word": "university illinois", "if_not": "chicago"}
+        ]
     },
     "umass": {
         "alternate": ["university massachusetts"]
@@ -679,6 +703,9 @@
     },
     "usc": {
         "alternate": ["university southern california"]
+    },
+    "ustc": {
+        "alternate": ["university science technology china"]
     },
     "ut": {
         "weak": true,
