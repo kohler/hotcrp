@@ -65,8 +65,26 @@
     {
         "name": "reviews", "synonym": ["rev", "review"], "position": 500,
         "title": "Reviews",
-        "crosscheck_callback": "Reviews_SettingRenderer::crosscheck",
+        "crosscheck_callback": "Reviews_SettingRenderer::crosscheck"
+    },
+    {
+        "name": "reviews/deadlines", "position": 10,
         "render_callback": "Reviews_SettingRenderer::render"
+    },
+    {
+        "name": "reviews/pc-reviews", "position": 20,
+        "title": "PC reviews",
+        "render_callback": "Reviews_SettingRenderer::render_pc"
+    },
+    {
+        "name": "reviews/external", "position": 30,
+        "title": "External reviews",
+        "render_callback": "Reviews_SettingRenderer::render_external"
+    },
+    {
+        "name": "reviews/ratings", "position": 40,
+        "title": "Review ratings",
+        "render_callback": "Reviews_SettingRenderer::render_ratings"
     },
     {
         "name": "sub", "position": 300,
