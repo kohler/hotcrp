@@ -1485,7 +1485,10 @@ pre.email {
 	margin: 0;
 }
 
-.pcconfaff, .pcconfmatch, div.pcrevsum {
+.pcrevsum {
+	display: table;
+}
+.pcconfaff, .pcconfmatch, .pcrevsum {
 	font-size: 69%;
 }
 .pcconfmatch {
@@ -1559,6 +1562,7 @@ pre.email {
 }
 .ctelti {
 	padding: 0 6px;
+	display: block;
 }
 .checki.ctelti {
 	margin: 0;

@@ -1758,7 +1758,7 @@ class AssignmentSet {
             $data[] = self::_review_count_link($ct->lead, "lead", true, "lead", $pc);
         if ($deltarev && $deltarev->shepherd)
             $data[] = self::_review_count_link($ct->shepherd, "shepherd", true, "shepherd", $pc);
-        return '<div class="pcrevsum">' . $prefix . join(", ", $data) . "</div>";
+        return '<span class="pcrevsum">' . $prefix . join(", ", $data) . "</span>";
     }
 
     static function run($contact, $text, $forceShow = null) {

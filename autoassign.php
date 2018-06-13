@@ -253,14 +253,14 @@ class AutoassignerInterface {
                            Ht::hidden("bpb$i", $this->qreq["bpb$i"]));
                 $badpairs_arg[] = $this->qreq["bpa$i"] . "-" . $this->qreq["bpb$i"];
             }
-        echo Ht::form_div(hoturl_post("autoassign",
-                                      ["saveassignment" => 1,
-                                       "assigntypes" => join(" ", $atypes),
-                                       "assignpids" => join(" ", $apids),
-                                       "xbadpairs" => count($badpairs_arg) ? join(" ", $badpairs_arg) : null,
-                                       "profile" => $this->qreq->profile,
-                                       "XDEBUG_PROFILE" => $this->qreq->XDEBUG_PROFILE,
-                                       "seed" => $this->qreq->seed]));
+        echo Ht::form(hoturl_post("autoassign",
+                                  ["saveassignment" => 1,
+                                   "assigntypes" => join(" ", $atypes),
+                                   "assignpids" => join(" ", $apids),
+                                   "xbadpairs" => count($badpairs_arg) ? join(" ", $badpairs_arg) : null,
+                                   "profile" => $this->qreq->profile,
+                                   "XDEBUG_PROFILE" => $this->qreq->XDEBUG_PROFILE,
+                                   "seed" => $this->qreq->seed]));
 
         $atype = $assignset->type_description();
         echo "<h3>Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
@@ -309,7 +309,7 @@ class AutoassignerInterface {
         // save the assignment
         echo Ht::hidden("assignment", join("\n", $assignments)), "\n";
 
-        echo "</div></div></div></form>";
+        echo "</div></div></form>";
         return ob_get_clean();
     }
 
@@ -420,12 +420,14 @@ function echo_radio_row($name, $value, $text, $extra = null) {
         $Qreq[$name] = $value;
     $extra = ($extra ? $extra : array());
     $extra["id"] = "${name}_$value";
+    $is_open = get($extra, "open");
+    unset($extra["open"]);
     $k = Ht::control_class("{$name}-{$value}");
     echo '<tr class="js-radio-focus', $k, '"><td class="nw">',
         Ht::radio($name, $value, $checked, $extra), "&nbsp;</td><td>";
     if ($text !== "")
         echo Ht::label($text, "${name}_$value");
-    if (!get($extra, "open"))
+    if (!$is_open)
         echo "</td></tr>\n";
 }
 
@@ -649,7 +651,7 @@ $tagger = new Tagger($Me);
 $nrev = new AssignmentCountSet($Conf);
 $nrev->load_rev();
 foreach ($Conf->pc_members() as $id => $p) {
-    $t = '<div class="ctelt"><label><div class="ctelti checki';
+    $t = '<div class="ctelt"><label class="ctelti checki';
     if (($k = $p->viewable_color_classes($Me)))
         $t .= ' ' . $k;
     $t .= '"><span class="checkc">'
@@ -658,7 +660,7 @@ foreach ($Conf->pc_members() as $id => $p) {
         . ' </span>'
         . '<span class="taghl">' . $Me->name_html_for($p) . '</span>'
         . AssignmentSet::review_count_report($nrev, null, $p, "")
-        . "</div></label></div>";
+        . "</label></div>";
     $summary[] = $t;
 }
 echo '<div class="pc_ctable" style="margin-top:0.5em">', join("", $summary), "</div>\n",

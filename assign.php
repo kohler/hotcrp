@@ -399,8 +399,6 @@ confHeader();
 
 
 // begin form and table
-$loginUrl = hoturl_post("assign", "p=$prow->paperId");
-
 $paperTable->paptabBegin();
 
 
@@ -440,7 +438,7 @@ if ($Me->can_administer($prow)) {
     // PC conflicts row
     echo '<hr class="papcard_sep" />',
         "<h3 style=\"margin-top:0\">PC review assignments</h3>",
-        Ht::form_div($loginUrl, array("id" => "ass")),
+        Ht::form(hoturl_post("assign", "p=$prow->paperId"), array("id" => "ass")),
         '<p>';
     Ht::stash_script('hiliter_children("#ass", true)');
 
@@ -524,7 +522,6 @@ if ($Me->can_administer($prow)) {
         '<div class="aabut">', Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]), '</div>',
         '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
         '<div id="assresult" class="aabut"></div>',
-        '</div>',
         '</div></form>';
 }
 
@@ -535,7 +532,8 @@ echo "</div></div>\n";
 $req = "Request an external review";
 if (!$Me->allow_administer($prow) && $Conf->setting("extrev_chairreq"))
     $req = "Propose an external review";
-echo Ht::form($loginUrl), '<div class="revcard"><div class="revcard_head">',
+echo Ht::form(hoturl_post("assign", "p=$prow->paperId")),
+    '<div class="revcard"><div class="revcard_head">',
     "<h3>", $req, "</h3>\n",
     "<div class='hint'>External reviewers may view their assigned papers, including ";
 if ($Conf->setting("extrev_view") >= 2)
