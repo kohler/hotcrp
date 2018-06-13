@@ -294,11 +294,10 @@ class AutoassignerInterface {
             echo '</p>';
         }
 
-        echo "<div class='g'></div>",
-            "<div><div class='aa'>\n",
-            Ht::submit("submit", "Apply changes"), "\n&nbsp;",
-            Ht::submit("download", "Download assignment file"), "\n&nbsp;",
-            Ht::submit("cancel", "Cancel"), "\n";
+        echo '<div class="aab aabig btnp">',
+            Ht::submit("submit", "Apply changes", ["class" => "btn btn-primary"]),
+            Ht::submit("download", "Download assignment file", ["class" => "btn"]),
+            Ht::submit("cancel", "Cancel", ["class" => "btn"]);
         foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_round", "method", "haspap") as $t)
             if (isset($this->qreq[$t]))
                 echo Ht::hidden($t, $this->qreq[$t]);
@@ -309,7 +308,7 @@ class AutoassignerInterface {
         // save the assignment
         echo Ht::hidden("assignment", join("\n", $assignments)), "\n";
 
-        echo "</div></div></form>";
+        echo "</div></form>";
         return ob_get_clean();
     }
 
@@ -671,7 +670,7 @@ echo '<div class="pc_ctable" style="margin-top:0.5em">', join("", $summary), "</
 function bpSelector($i, $which) {
     global $Qreq;
     return Ht::select("bp$which$i", [], 0,
-        ["class" => "need-pcselector badpairs", "data-pcselector-selected" => $Qreq["bp$which$i"], "data-pcselector-options" => "[\"(PC member)\",\"*\"]"]);
+        ["class" => "need-pcselector badpairs", "data-pcselector-selected" => $Qreq["bp$which$i"], "data-pcselector-options" => "[\"(PC member)\",\"*\"]", "data-default-value" => $Qreq["bp$which$i"]]);
 }
 
 echo "<div class='g'></div><div class='relative'><table id=\"bptable\"><tbody>\n";
@@ -739,7 +738,7 @@ if ($Conf->opt("autoassignReviewGadget") === "expertise") {
 
 
 // Create assignment
-echo '<div style="margin-top:2em">', Ht::submit("assign", "Prepare assignments", ["class" => "btn btn-primary"]),
+echo '<div class="aab aabig">', Ht::submit("assign", "Prepare assignments", ["class" => "btn btn-primary"]),
     ' &nbsp; <span class="hint">You’ll be able to check the assignment before it is saved.</span>',
     '</div>';
 
