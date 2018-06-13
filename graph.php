@@ -54,7 +54,7 @@ function formulas_qrow($i, $q, $s, $errf) {
     if ($q === "all")
         $q = "";
     $klass = ($errf ? "has-error " : "") . "papersearch";
-    $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "placeholder" => "(All)", "class" => $klass));
+    $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q$i"));
     $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("by-tag" => "by tag", "plain" => "plain", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag");
     $t .= ' <span class="nb btnbox aumovebox" style="margin-left:1em"><a href="#" class="ui btn qx row-order-ui moveup" tabindex="-1">'
         . Icons::ui_triangle(0)
@@ -145,7 +145,7 @@ if ($Graph == "formula") {
     } else
         echo "<h2>Formulas</h2>\n";
 
-    echo Ht::form_div(hoturl("graph", "g=formula"), array("method" => "get"));
+    echo Ht::form(hoturl("graph", "g=formula"), array("method" => "get"));
     echo '<table>';
     // X axis
     echo '<tr><td class="lcaption"><label for="x_entry">X axis</label></td>',
@@ -158,7 +158,7 @@ if ($Graph == "formula") {
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</span>',
         '</td></tr>';
     // Series
-    echo '<tr><td class="lcaption"><label for="q">Search</label></td>',
+    echo '<tr><td class="lcaption"><label for="q1">Search</label></td>',
         '<td class="lentry">',
         '<table class="js-row-order"><tbody id="qcontainer" data-row-template="',
         htmlspecialchars(formulas_qrow('$', "", "by-tag", false)), '">';
@@ -170,7 +170,7 @@ if ($Graph == "formula") {
     echo '</table>';
     echo '<div class="g"></div>';
     echo Ht::submit(null, "Graph");
-    echo '</div></form>';
+    echo '</form>';
 }
 
 
