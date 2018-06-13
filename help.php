@@ -122,7 +122,7 @@ class HtHead extends Ht {
     function search_form($q, $size = 20) {
         if (is_string($q))
             $q = ["q" => $q];
-        $t = Ht::form_div(hoturl("search"), ["method" => "get", "divclass" => "nw"])
+        $t = Ht::form(hoturl("search"), ["method" => "get", "class" => "nw"])
             . Ht::entry("q", $q["q"], ["size" => $size])
             . " &nbsp;"
             . Ht::submit("go", "Search");
@@ -130,7 +130,7 @@ class HtHead extends Ht {
             if ($k !== "q")
                 $t .= Ht::hidden($k, $v);
         }
-        return $t . "</div></form>";
+        return $t . "</form>";
     }
     function search_trow($q, $entry) {
         return $this->trow($this->search_form($q, 36), $entry);
