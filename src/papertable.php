@@ -1546,7 +1546,7 @@ class PaperTable {
         echo '<div class="', $this->papstrip_tags_background_classes($viewable), '">';
 
         if ($is_editable) {
-            echo Ht::form_div(hoturl("paper", "p=" . $this->prow->paperId), ["data-pid" => $this->prow->paperId, "data-no-tag-report" => $unfolded ? 1 : null]);
+            echo Ht::form(hoturl("paper", "p=" . $this->prow->paperId), ["data-pid" => $this->prow->paperId, "data-no-tag-report" => $unfolded ? 1 : null]);
             Ht::stash_script('edit_paper_ui.prepare_pstags.call($$("foldtags"))');
         }
 
@@ -1596,7 +1596,7 @@ class PaperTable {
         echo "</div>";
 
         if ($is_editable)
-            echo "</div></form>";
+            echo "</form>";
         if ($unfolded)
             echo Ht::unstash_script('fold("tags",0)');
         echo "</div></div>\n";
@@ -1665,7 +1665,7 @@ class PaperTable {
         $totmark = $this->papstrip_tag_float($tag, "overall", "rank");
 
         $this->papstrip_tag_entry($id, "foldc fold2c");
-        echo Ht::form_div("", ["id" => "{$id}form", "data-pid" => $this->prow->paperId]);
+        echo Ht::form("", ["id" => "{$id}form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id, $this->papstrip_tag_entry_title("#$tag rank", "~$tag", $myval),
@@ -1677,7 +1677,7 @@ class PaperTable {
             ' <span class="barsep">·</span> ',
             '<a href="', hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Edit all</a>',
             " <div class='hint' style='margin-top:4px'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~{$tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
-            "</div></div></div></form></div>\n";
+            "</div></div></form></div>\n";
         Ht::stash_script('edit_paper_ui.prepare_pstagindex.call($$("' . $id . 'form"))');
     }
 
@@ -1688,7 +1688,7 @@ class PaperTable {
         $totmark = $this->papstrip_tag_float($tag, "total", "vote");
 
         $this->papstrip_tag_entry($id, "foldc fold2c");
-        echo Ht::form_div("", ["id" => "{$id}form", "data-pid" => $this->prow->paperId]);
+        echo Ht::form("", ["id" => "{$id}form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id, $this->papstrip_tag_entry_title("#$tag votes", "~$tag", $myval),
@@ -1700,7 +1700,7 @@ class PaperTable {
             " &nbsp;of $allotment",
             ' <span class="barsep">·</span> ',
             '<a href="', hoturl("search", "q=" . urlencode("editsort:-#~$tag")), '">Edit all</a>',
-            "</div></div></div></form></div>\n";
+            "</div></div></form></div>\n";
         Ht::stash_script('edit_paper_ui.prepare_pstagindex.call($$("' . $id . 'form"))');
     }
 
@@ -1711,7 +1711,7 @@ class PaperTable {
         $totmark = $this->papstrip_tag_float($tag, "total", "approval");
 
         $this->papstrip_tag_entry(null, null);
-        echo Ht::form_div("", ["id" => "{$id}form", "data-pid" => $this->prow->paperId]);
+        echo Ht::form("", ["id" => "{$id}form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id,
@@ -1721,7 +1721,7 @@ class PaperTable {
                                             "style" => "padding-left:0;margin-left:0;margin-top:0"))
                          . "&nbsp;" . Ht::label("#$tag vote"),
                          array("type" => "ps", "float" => $totmark)),
-            "</div></form></div>\n\n";
+            "</form></div>\n\n";
         Ht::stash_script('edit_paper_ui.prepare_pstagindex.call($$("' . $id . 'form"))');
     }
 

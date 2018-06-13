@@ -302,16 +302,16 @@ if (count($tOpt) > 1) {
     echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
 
-    echo Ht::form_div(hoturl("users"), array("method" => "get"));
+    echo Ht::form(hoturl("users"), array("method" => "get"));
     if (isset($Qreq->sort))
         echo Ht::hidden("sort", $Qreq->sort);
     echo Ht::select("t", $tOpt, $Qreq->t, ["class" => "want-focus"]),
-        " &nbsp;", Ht::submit("Go"), "</div></form>";
+        " &nbsp;", Ht::submit("Go"), "</form>";
 
     echo "</div><div class='tld2'>";
 
     // Display options
-    echo Ht::form_div(hoturl("users"), array("method" => "get"));
+    echo Ht::form(hoturl("users"), array("method" => "get"));
     foreach (array("t", "sort") as $x)
         if (isset($Qreq[$x]))
             echo Ht::hidden($x, $Qreq[$x]);
@@ -350,7 +350,7 @@ if (count($tOpt) > 1) {
                        ListSorter::canonical_long_score_sort($Conf->session("scoresort", "A"))),
             "</td></tr>";
     }
-    echo "</table></div></form>";
+    echo "</table></form>";
 
     echo "</div></div></td></tr>\n";
 
