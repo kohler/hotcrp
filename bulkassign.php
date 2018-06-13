@@ -151,10 +151,10 @@ if (isset($Qreq->upload)
 
             $atypes = $assignset->assigned_types();
             $apids = $assignset->assigned_pids(true);
-            echo Ht::form_div(hoturl_post("bulkassign",
-                                          ["saveassignment" => 1,
-                                           "assigntypes" => join(" ", $atypes),
-                                           "assignpids" => join(" ", $apids)])),
+            echo Ht::form(hoturl_post("bulkassign",
+                                      ["saveassignment" => 1,
+                                       "assigntypes" => join(" ", $atypes),
+                                       "assignpids" => join(" ", $apids)])),
                 Ht::hidden("default_action", get($defaults, "action", "guess")),
                 Ht::hidden("rev_round", $defaults["round"]),
                 Ht::hidden("file", $text),
@@ -171,7 +171,7 @@ if (isset($Qreq->upload)
                 Ht::submit("Apply changes", ["class" => "btn btn-primary"]),
                 Ht::submit("cancel", "Cancel")
             ], ["class" => "aab aabig"]),
-                "</div></form>\n";
+                "</form>\n";
             $Conf->footer();
             exit;
         }
@@ -187,11 +187,10 @@ if (isset($Qreq->saveassignment)
 }
 
 
-echo Ht::form_div(hoturl_post("bulkassign", "upload=1"),
-                  array("divstyle" => "margin-top:1em"));
+echo Ht::form(hoturl_post("bulkassign", "upload=1"));
 
 // Upload
-echo '<div class="f-i">',
+echo '<div class="f-i" style="margin-top:1em">',
     Ht::textarea("bulkentry", (string) $Qreq->bulkentry,
                  ["rows" => 1, "cols" => 80, "placeholder" => "Enter assignments", "class" => "need-autogrow"]),
     '</div>';
@@ -247,7 +246,7 @@ echo '<div class="lg"></div>', Ht::submit("Prepare assignments", ["class" => "bt
 
 echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "fn=get&amp;getfn=pcassignments&amp;t=manager&amp;q=&amp;p=all"), '">Download current PC assignments</a></div>';
 
-echo "</div></form>
+echo "</form>
 
 <hr style='margin-top:1em' />
 
