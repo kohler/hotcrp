@@ -197,7 +197,7 @@ function requestReviewChecks($themHtml, $reqId) {
     global $Conf, $Me, $prow;
 
     // check for outstanding review request
-    $result = $Conf->qe("select reviewId, firstName, lastName, email, password from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=? and PaperReview.contactId=?", $prow->paperId, $reqId);
+    $result = $Conf->qe("select reviewId, firstName, lastName, email from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=? and PaperReview.contactId=?", $prow->paperId, $reqId);
     if (!$result)
         return false;
     else if (($row = edb_orow($result)))
