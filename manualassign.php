@@ -167,7 +167,7 @@ else
 
 // Change PC member
 echo "<table><tr><td><div class='assignpc_pcsel'>",
-    Ht::form_div(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
+    Ht::form(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
 Ht::stash_script('hiliter_children("#selectreviewerform")');
 
 $result = $Conf->qe_raw("select ContactInfo.contactId, count(reviewId)
@@ -212,7 +212,7 @@ echo Ht::radio("kind", "a", $Qreq->kind == "a"),
 echo '<tr><td colspan="2"><div class="aab aabr">',
     '<div class="aabut">', Ht::submit("Go", ["class" => "btn btn-primary"]), '</div>',
     '</div></td></tr>',
-    "</table>\n</div></form></div></td></tr></table>\n";
+    "</table>\n</form></div></td></tr></table>\n";
 
 
 // Current PC member information

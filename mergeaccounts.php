@@ -89,7 +89,7 @@ else
 . "that account into this one. "
 );
 
-echo Ht::form_div(hoturl_post("mergeaccounts"));
+echo Ht::form(hoturl_post("mergeaccounts"));
 
 // Try to prevent glasses interactions from screwing up merges
 echo Ht::hidden("actas", $Me->contactId);
@@ -113,7 +113,7 @@ echo '<div class="', Ht::control_class("email", "f-i"), '">',
     "Keep the account named above and delete my current account</label></div>",
     '</div>',
     Ht::actions([Ht::submit("merge", "Merge accounts", ["class" => "btn btn-primary"])]),
-    '</div></form>';
+    '</form>';
 
 
 $Conf->footer();

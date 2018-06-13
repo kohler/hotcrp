@@ -222,7 +222,7 @@ if ($homelist) {
     echo ($nhome_hr ? $home_hr : ""), '<div class="homegrp" id="homelist">';
 
     // Lists
-    echo Ht::form_div(hoturl("search"), array("method" => "get")),
+    echo Ht::form(hoturl("search"), array("method" => "get")),
         '<h4><a class="qq" href="', hoturl("search"), '">Search</a>: &nbsp;&nbsp;</h4>';
 
     $tOpt = PaperSearch::search_types($Me);
@@ -232,7 +232,7 @@ if ($homelist) {
         " &nbsp;in&nbsp; ",
         PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; ", Ht::submit("Search"),
-        "</div></form></div>\n";
+        "</form></div>\n";
     ++$nhome_hr;
 }
 
@@ -255,12 +255,12 @@ function reviewTokenGroup($non_reviews) {
             '<tr><td class="fn2"><a href="" class="fn2 ui js-foldup">Add review tokens</a></td>',
             '<td class="fx2">Review tokens: &nbsp;';
 
-    echo Ht::form_div(hoturl_post("index")),
+    echo Ht::form(hoturl_post("index")),
         Ht::entry("token", join(" ", $tokens), array("size" => max(15, count($tokens) * 8))),
         " &nbsp;", Ht::submit("Save");
-    if (!count($tokens))
+    if (empty($tokens))
         echo '<div class="hint">Enter tokens to gain access to the corresponding reviews.</div>';
-    echo '</div></form>';
+    echo '</form>';
 
     if ($non_reviews)
         echo '<hr class="home" /></div>', "\n";

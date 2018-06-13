@@ -310,19 +310,19 @@ echo '<div id="searchform" class="linelinks tablinks', $activetab, ' clearfix">'
     '<div class="tlx"><div class="tld1">';
 
 // Basic search
-echo Ht::form_div(hoturl("search"), array("method" => "get")),
+echo Ht::form(hoturl("search"), array("method" => "get")),
     Ht::entry("q", (string) $Qreq->q,
               ["size" => 40, "style" => "width:30em", "tabindex" => 1,
                "class" => "papersearch want-focus",
                "placeholder" => "(All)"]),
     " &nbsp;in &nbsp;$tselect &nbsp;\n",
     Ht::submit("Search", ["tabindex" => 1]),
-    "</div></form>";
+    "</form>";
 
 echo '</div><div class="tld2">';
 
 // Advanced search
-echo Ht::form_div(hoturl("search"), array("method" => "get")),
+echo Ht::form(hoturl("search"), array("method" => "get")),
     "<table><tr>
   <td class=\"rxcaption\">Search</td>
   <td class=\"lentry\">$tselect</td>
@@ -382,7 +382,7 @@ echo Ht::select("qt", $qtOpt, $Qreq->get("qt", "n")),
     Ht::link("Search keywords", hoturl("help", "t=keywords")),
     '</div></div>
   </td>
-</tr></table></div></form>';
+</tr></table></form>';
 
 echo "</div>";
 
@@ -424,7 +424,7 @@ if ($Me->isPC || $Me->privChair) {
             }
             echo "<div class='g'></div>\n";
         }
-        echo Ht::form_div(hoturl_post("search", "savesearch=1"));
+        echo Ht::form(hoturl_post("search", "savesearch=1"));
         echo_request_as_hidden_inputs(true);
         echo "<table id=\"ssearchnew\" class=\"has-fold foldc\">",
             "<tr><td>", foldupbutton(), "</td>",
@@ -437,7 +437,7 @@ if ($Me->isPC || $Me->privChair) {
         echo " as:<br />ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;",
             Ht::submit("Save"),
             "</div></td></tr></table>",
-            "</div></form>";
+            "</form>";
 
         echo "</div>";
         $ss = true;
@@ -449,7 +449,7 @@ if ($Me->isPC || $Me->privChair) {
 if ($pl->count > 0) {
     echo "<div class='tld3' style='padding-bottom:1ex'>";
 
-    echo Ht::form_div(hoturl_post("search", "redisplay=1"), array("id" => "foldredisplay", "class" => "fn3 fold5c"));
+    echo Ht::form(hoturl_post("search", "redisplay=1"), array("id" => "foldredisplay", "class" => "fn3 fold5c"));
     echo_request_as_hidden_inputs();
 
     echo '<div class="searchctable">';
@@ -483,7 +483,7 @@ if ($pl->count > 0) {
     echo "</td></tr></table>", $display_options_extra, "</div>";
 
     // Done
-    echo "</div></form>";
+    echo "</form>";
 
     echo "</div>";
 }
@@ -517,7 +517,7 @@ if ($pl_text) {
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
     if ($pl->has("sel")) {
-        echo Ht::form_div(SelfHref::make($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel"]),
+        echo Ht::form(SelfHref::make($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel"]),
             Ht::hidden("defaultact", "", array("id" => "defaultact")),
             Ht::hidden("forceShow", (string) $Qreq->forceShow, ["id" => "forceShow"]),
             Ht::hidden_default_submit("default", 1);
@@ -538,7 +538,7 @@ if ($pl_text) {
     }
 
     if ($pl->has("sel"))
-        echo "</div></form>";
+        echo "</form>";
     echo "</div>\n";
 } else
     echo "<div class='g'></div>\n";

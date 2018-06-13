@@ -1579,8 +1579,8 @@ class PaperList {
             && !get($options, "nofooter"))
             $foot .= $this->_footer($ncol, get_s($options, "footer_extra"));
         if ($foot)
-            $enter .= ' <tfoot class="pltable' . ($rstate->hascolors ? ' pltable_colored' : "")
-                . "\">" . $foot . "</tfoot>\n";
+            $exit = ' <tfoot class="pltable' . ($rstate->hascolors ? ' pltable_colored' : "")
+                . "\">" . $foot . "</tfoot>\n" . $exit;
 
         // body
         $enter .= " <tbody class=\"$tbody_class\">\n";

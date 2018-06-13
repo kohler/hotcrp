@@ -166,7 +166,7 @@ class MailSender {
         global $Conf, $Me;
         if ($this->started)
             return;
-        echo Ht::form_div(hoturl_post("mail"));
+        echo Ht::form(hoturl_post("mail"));
         foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit", "newrev_since") as $x)
             if (isset($this->qreq[$x]))
                 echo Ht::hidden($x, $this->qreq[$x]);
@@ -428,7 +428,7 @@ class MailSender {
             $this->echo_actions();
         if ($revinform)
             $Conf->qe_raw("update PaperReview set timeRequestNotified=" . time() . " where " . join(" or ", $revinform));
-        echo "</div></form>";
+        echo "</form>";
         echo Ht::unstash_script("fold('mail', null);");
         $Conf->footer();
         exit;
@@ -485,7 +485,7 @@ if (isset($Qreq->monreq)) {
     }
 }
 
-echo Ht::form_div(hoturl_post("mail", "check=1")),
+echo Ht::form(hoturl_post("mail", "check=1")),
     Ht::hidden_default_submit("default", 1), "
 
 <div class='aa' style='padding-left:8px'>
@@ -674,6 +674,6 @@ echo "<div class='aa' style='clear:both'>\n",
 </dl>
 </div></div>
 
-</div></form>\n";
+</form>\n";
 
 $Conf->footer();

@@ -191,14 +191,14 @@ echo "</td>\n";
 if ($Me->is_reviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "<td><h3>Upload filled-out forms</h3>\n",
-        Ht::form_div(hoturl_post("offline", "uploadForm=1")),
+        Ht::form(hoturl_post("offline", "uploadForm=1")),
         Ht::hidden("postnonempty", 1),
         "<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; ",
         Ht::submit("Go", array("disabled" => !!$disabled));
     if ($pastDeadline && $Me->privChair)
         echo "<br />", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
     echo "<br /><span class='hint'><strong>Tip:</strong> You may upload a file containing several forms.</span>";
-    echo "</div></form></td>\n";
+    echo "</form></td>\n";
 }
 echo "</tr>\n";
 
@@ -215,7 +215,7 @@ if ($Conf->setting("tag_rank") && $Me->is_reviewer()) {
 
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "<td><h3>Upload ranking file</h3>\n",
-        Ht::form_div(hoturl_post("offline", "setrank=1&amp;tag=%7E$ranktag")),
+        Ht::form(hoturl_post("offline", "setrank=1&amp;tag=%7E$ranktag")),
         Ht::hidden("upload", 1),
         "<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; ",
         Ht::submit("Go", array("disabled" => !!$disabled));
@@ -223,7 +223,7 @@ if ($Conf->setting("tag_rank") && $Me->is_reviewer()) {
         echo "<br />", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
     echo "<br /><span class='hint'><strong>Tip:</strong> Use “<a href='", hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), "'>editsort:#~$ranktag</a>” to drag and drop your ranking.</span>";
     echo "<br /><span class='hint'><strong>Tip:</strong> “<a href='", hoturl("search", "q=order:%7E$ranktag"), "'>order:~$ranktag</a>” searches by your ranking.</span>";
-    echo "</div></form></td>\n";
+    echo "</form></td>\n";
     echo "</tr>\n";
 }
 

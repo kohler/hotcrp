@@ -179,12 +179,12 @@ function parseUploadedPreferences($text, $filename, $apply) {
         if ($assignset->has_error())
             pref_xmsgc($assignset->errors_div_html(true));
 
-        echo Ht::form_div(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]));
+        echo Ht::form(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]));
 
         $actions = '<div class="aab aabr aabig">'
-            . '<div class="aabut">' . Ht::submit("Save changes", ["class" => "btn btn-primary"]) . '</div>'
-            . '<div class="aabut">' . Ht::submit("cancel", "Cancel") . '</div>'
-            . '<hr class="c" /></div>';
+            . Ht::submit("Save changes", ["class" => "aabut btn btn-primary"])
+            . Ht::submit("cancel", "Cancel", ["class" => "aabut btn"])
+            . '</div>';
         if (count($assignset->assigned_pids()) >= 4)
             echo $actions;
 
@@ -194,7 +194,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
         echo '<div class="g"></div>', $actions,
             Ht::hidden("file", $assignset->unparse_csv()->unparse()),
             Ht::hidden("filename", $filename),
-            '</div></form>', "\n";
+            '</form>', "\n";
         $Conf->footer();
         exit;
     }
@@ -253,8 +253,8 @@ echo "<table id='searchform' class='tablinks1'>
 $showing_au = !$Conf->subBlindAlways() && !$pl->is_folded("au");
 $showing_anonau = (!$Conf->subBlindNever() || $Me->privChair) && !$pl->is_folded("anonau");
 
-echo Ht::form_div(hoturl("reviewprefs"), ["method" => "get", "id" => "redisplayform",
-                                          "class" => "has-fold " . ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c")]),
+echo Ht::form(hoturl("reviewprefs"), ["method" => "get", "id" => "redisplayform",
+                                      "class" => "has-fold " . ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c")]),
     "<table>";
 
 if ($Me->privChair) {
@@ -273,7 +273,7 @@ if ($Me->privChair) {
         $sel[$reviewer->email] = Text::name_html($reviewer) . " &nbsp; [" . get($prefcount, $reviewer->contactId, 0) . "; not on PC]";
 
     echo Ht::select("reviewer", $sel, $reviewer->email),
-        "<div class='g'></div></td></tr>\n";
+        "<div class='g'></div></td><td></td></tr>\n";
     Ht::stash_script('$("#redisplayform select[name=reviewer]").on("change", function () { $$("redisplayform").submit() })');
 }
 
@@ -319,7 +319,7 @@ if (!empty($show_data) && $pl->count)
     echo '<tr><td class="lxcaption"><strong>Show:</strong> &nbsp;',
         '</td><td colspan="2" class="lentry">',
         join('', $show_data), '</td></tr>';
-echo "</table></div></form>"; // </div></div>
+echo "</table></form>"; // </div></div>
 echo "</td></tr></table>\n";
 Ht::stash_script("$(document).on(\"change\",\"input.paperlist-display\",plinfo.checkbox_change);$(\"#showau\").on(\"change\", function () { foldup.call(this, null, {n:10}) })");
 
@@ -330,13 +330,13 @@ if ($Qreq->q)
     $hoturl_args["q"] = $Qreq->q;
 if ($Qreq->sort)
     $hoturl_args["sort"] = $Qreq->sort;
-echo Ht::form_div(hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "class" => "assignpc"]),
+echo Ht::form(hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "class" => "assignpc"]),
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1);
 Ht::stash_script('$("#sel").on("submit", paperlist_ui)');
 echo "<div class='pltable_full_ctr'>\n",
     '<noscript><div style="text-align:center">', Ht::submit("fn", "Save changes", ["value" => "saveprefs"]), '</div></noscript>',
     $pl_text,
-    "</div></div></form>\n";
+    "</div></form>\n";
 
 $Conf->footer();

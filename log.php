@@ -304,7 +304,7 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
     else if ($first_timestamp)
         $dplaceholder = $Conf->unparse_time_short($first_timestamp);
 
-    echo Ht::form_div(hoturl("log"), array("method" => "get"));
+    echo Ht::form(hoturl("log"), array("method" => "get"));
     if ($Qreq->forceShow)
         echo Ht::hidden("forceShow", 1);
     echo "<table id=\"searchform\"><tr>
@@ -325,7 +325,7 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
   <td class='lxcaption", get($Eclass, "date"), "'>Starting at</td>
   <td class='lentry", get($Eclass, "date"), "'>", Ht::entry("date", $date, ["size" => 40, "placeholder" => $dplaceholder]), "</td>
 </tr>
-</table></div></form>";
+</table></form>";
 
     if ($page > 1 || $lrg->has_page(2)) {
         $urls = ["q=" . urlencode($Qreq->q)];
