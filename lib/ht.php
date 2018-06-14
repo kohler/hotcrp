@@ -74,16 +74,31 @@ class Ht {
             $extra = $action;
             $action = get($extra, "action", "");
         }
+
+        // GET method requires special handling: extract params from URL
+        // and render as hidden inputs
+        $suffix = ">";
         $method = get($extra, "method") ? : "post";
-        if ($method === "get" && strpos($action, "?") !== false)
-            error_log(caller_landmark() . ": GET form action $action params will be ignored");
+        if ($method === "get"
+            && ($qpos = strpos($action, "?")) !== false) {
+            $pos = $qpos + 1;
+            while ($pos < strlen($action)
+                   && preg_match('{\G([^#=&;]*)=([^#&;]*)([#&;]|\z)}', $action, $m, 0, $pos)) {
+                $suffix .= self::hidden(urldecode($m[1]), urldecode($m[2]));
+                $pos += strlen($m[0]);
+                if ($m[3] === "#")
+                    break;
+            }
+            $action = substr($action, 0, $qpos) . (string) substr($action, $pos);
+        }
+
+        $x = '<form method="' . $method . '" action="' . $action . '"';
         $enctype = get($extra, "enctype");
         if (!$enctype && $method !== "get")
             $enctype = "multipart/form-data";
-        $x = '<form method="' . $method . '" action="' . $action . '"';
         if ($enctype)
             $x .= ' enctype="' . $enctype . '"';
-        return $x . ' accept-charset="UTF-8"' . self::extra($extra) . '>';
+        return $x . ' accept-charset="UTF-8"' . self::extra($extra) . $suffix;
     }
 
     static function form_div($action, $extra = null) {

@@ -2480,14 +2480,6 @@ class Conf {
         return $this->hoturl($page, $options, self::HOTURL_RAW);
     }
 
-    function hoturl_default_inputs($args = null) {
-        $x = "";
-        foreach (self::$hoturl_defaults ? : [] as $k => $v)
-            if ($args === null || !array_key_exists($k, $args))
-                $x .= Ht::hidden($k, urldecode($v));
-        return $x;
-    }
-
 
     //
     // Paper storage
