@@ -310,7 +310,8 @@ echo '<div id="searchform" class="linelinks tablinks', $activetab, ' clearfix">'
     '<div class="tlx"><div class="tld1">';
 
 // Basic search
-echo Ht::form(hoturl("search"), array("method" => "get")),
+echo Ht::form($Conf->hoturl("search", null, Conf::HOTURL_NO_DEFAULTS), ["method" => "get"]),
+    $Conf->hoturl_default_inputs(["q" => true]),
     Ht::entry("q", (string) $Qreq->q,
               ["size" => 40, "style" => "width:30em", "tabindex" => 1,
                "class" => "papersearch want-focus",
@@ -322,7 +323,8 @@ echo Ht::form(hoturl("search"), array("method" => "get")),
 echo '</div><div class="tld2">';
 
 // Advanced search
-echo Ht::form(hoturl("search"), array("method" => "get")),
+echo Ht::form($Conf->hoturl("search", null, Conf::HOTURL_NO_DEFAULTS), ["method" => "get"]),
+    $Conf->hoturl_default_inputs(["q" => true]),
     "<table><tr>
   <td class=\"rxcaption\">Search</td>
   <td class=\"lentry\">$tselect</td>
