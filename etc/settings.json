@@ -34,14 +34,14 @@
         "parser_class": "Decisions_SettingParser"
     },
     {
-        "name": "extrev_approve",
+        "name": "extrev_approve", "group": "reviews",
         "title": "External reviews must be approved by their requesters",
         "type": "checkbox"
     },
     {
-        "name": "extrev_chairreq",
+        "name": "extrev_chairreq", "group": "reviews",
         "title": "PC chair must approve proposed external reviewers",
-        "type": "checkbox"
+        "type": "radio", "values": [0, 1, 2], "default_value": 0
     },
     {
         "name": "extrev_hard",

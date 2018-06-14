@@ -95,6 +95,10 @@
         "callback": "MeetingTracker::trackerstatus_api"
     },
     {
+        "name": "user", "get": true,
+        "callback": "User_API::user"
+    },
+    {
         "name": "votereport", "paper": true, "get": true, "post": true,
         "callback": "PaperApi::votereport_api"
     },

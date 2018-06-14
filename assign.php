@@ -59,9 +59,7 @@ function retractRequest($email, $prow, $confirm = true) {
     $row = edb_orow($result);
 
     // check for outstanding review request
-    $result2 = Dbl::qe("select name, email, requestedBy
-                from ReviewRequest
-                where paperId=$prow->paperId and email=?", $email);
+    $result2 = Dbl::qe("select * from ReviewRequest where paperId=? and email=?", $prow->paperId, $email);
     $row2 = edb_orow($result2);
 
     // act
@@ -94,7 +92,7 @@ function retractRequest($email, $prow, $confirm = true) {
 
     // confirmation message
     if ($confirm)
-        $Conf->confirmMsg("Removed request that " . Text::user_html($row ? $row : $row2) . " review paper #$prow->paperId.");
+        $Conf->confirmMsg("Retracted request that " . Text::user_html($row ? $row : $row2) . " review paper #$prow->paperId.");
 }
 
 if (isset($Qreq->retract) && $Qreq->post_ok()) {
@@ -184,175 +182,36 @@ else if (isset($Qreq->update) && $Qreq->ajax)
 
 
 // add review requests
-function requestReviewChecks($themHtml, $reqId) {
-    global $Conf, $Me, $prow;
-
-    // check for outstanding review request
-    $result = $Conf->qe("select reviewId, firstName, lastName, email from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=? and PaperReview.contactId=?", $prow->paperId, $reqId);
-    if (!$result)
-        return false;
-    else if (($row = edb_orow($result)))
-        return Conf::msg_error(Text::user_html($row) . " has already requested a review from $themHtml.");
-
-    // check for outstanding refusal to review
-    $result = $Conf->qe("select paperId, '<conflict>' from PaperConflict where paperId=? and contactId=? union select paperId, reason from PaperReviewRefused where paperId=? and contactId=?", $prow->paperId, $reqId, $prow->paperId, $reqId);
-    if (edb_nrows($result) > 0) {
-        $row = edb_row($result);
-        if ($row[1] === "<conflict>")
-            return Conf::msg_error("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
-        else if ($Me->override_deadlines($prow)) {
-            Conf::msg_info("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : ""));
-            $Conf->qe("delete from PaperReviewRefused where paperId=? and contactId=?", $prow->paperId, $reqId);
-        } else
-            return Conf::msg_error("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? " (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : "") . ($Me->allow_administer($prow) ? " As an administrator, you can override this refusal with the “Override...” checkbox." : ""));
-    }
-
-    return true;
-}
-
-function requestReview($qreq) {
-    global $Conf, $Me, $prow;
-
-    $email = $qreq->email;
-    $Them = Contact::create($Conf, ["name" => $qreq->name, "email" => $email]);
-    if (!$Them) {
-        if (trim($email) === "" || !validate_email($email)) {
-            Conf::msg_error("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
-            Ht::error_at("email");
-        } else
-            Conf::msg_error("Error while finding account for “" . htmlspecialchars(trim($email)) . ".”");
-        return false;
-    }
-
-    $reason = trim((string) $qreq->reason);
-
-    $round = null;
-    if (isset($qreq->round) && $qreq->round != ""
-        && ($rname = $Conf->sanitize_round_name($qreq->round)) !== false)
-        $round = (int) $Conf->round_number($rname, false);
-
-    // look up the requester
-    $Requester = $Me;
-    if ($Conf->setting("extrev_chairreq")) {
-        $result = Dbl::qe("select firstName, lastName, u.email, u.contactId from ReviewRequest rr join ContactInfo u on (u.contactId=rr.requestedBy) where paperId=$prow->paperId and rr.email=?", $Them->email);
-        if (($recorded_requester = Contact::fetch($result, $Conf)))
-            $Requester = $recorded_requester;
-    }
-
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read, ActionLog write, Settings write");
-    // NB caller unlocks tables on error
-
-    // check for outstanding review request
-    if (!($result = requestReviewChecks(Text::user_html($Them), $Them->contactId)))
-        return $result;
-
-    // at this point, we think we've succeeded.
-    // store the review request
-    $Me->assign_review($prow->paperId, $Them->contactId, REVIEW_EXTERNAL,
-                       ["mark_notify" => true, "requester_contact" => $Requester,
-                        "requested_email" => $Them->email, "round_number" => $round]);
-
-    Dbl::qx_raw("unlock tables");
-
-    // send confirmation email
-    HotCRPMailer::send_to($Them, "@requestreview", $prow,
-                          array("requester_contact" => $Requester,
-                                "other_contact" => $Requester, // backwards compat
-                                "reason" => $reason));
-
-    $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
-    return true;
-}
-
-function delegate_review_round() {
-    // Use the delegator's review round
-    global $Conf, $Me, $Now, $prow;
-    $round = null;
-    if (($rrow = $prow->review_of_user($Me)) && $rrow->reviewType == REVIEW_SECONDARY)
-        $round = (int) $rrow->reviewRound;
-    return $round;
-}
-
-function proposeReview($qreq, $round) {
-    global $Conf, $Me, $Now, $prow;
-
-    $email = trim($qreq->email);
-    $name = trim($qreq->name);
-    $reason = trim($qreq->reason);
-    $reqId = $Conf->user_id_by_email($email);
-
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read");
-    // NB caller unlocks tables on error
-
-    if ($reqId > 0
-        && !($result = requestReviewChecks(htmlspecialchars($email), $reqId)))
-        return $result;
-
-    // add review request
-    $result = Dbl::qe("insert into ReviewRequest set paperId={$prow->paperId},
-        name=?, email=?, requestedBy={$Me->contactId}, reason=?, reviewRound=?
-        on duplicate key update paperId=paperId",
-                      $name, $email, $reason, $round);
-
-    // send confirmation email
-    HotCRPMailer::send_manager("@proposereview", $prow,
-                               array("permissionContact" => $Me,
-                                     "cc" => Text::user_email_to($Me),
-                                     "requester_contact" => $Me,
-                                     "reviewer_contact" => (object) array("fullName" => $name, "email" => $email),
-                                     "reason" => $reason));
-
-    // confirmation message
-    $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
-    Dbl::qx_raw("unlock tables");
-    $Me->log_activity("Logged proposal for $email to review", $prow);
-    return true;
-}
-
-function createAnonymousReview() {
-    global $Conf, $Me, $prow;
-    $aset = new AssignmentSet($Me, true);
-    $aset->enable_papers($prow);
-    $aset->parse("paper,action,user\n{$prow->paperId},review,newanonymous\n");
-    if ($aset->execute()) {
-        $aset_csv = $aset->unparse_csv();
-        assert(count($aset_csv->data) === 1);
-        $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId. The review token is " . $aset_csv->data[0]["review_token"] . ".");
-    } else
-        $Conf->errorMsg(join("<br />", $aset->errors_html()));
-}
-
-if (isset($Qreq->add) && $Qreq->post_ok()) {
-    if (($whyNot = $Me->perm_request_review($prow, true)))
-        Conf::msg_error(whyNotText($whyNot));
-    else if (!isset($Qreq->email) || !isset($Qreq->name))
-        Conf::msg_error("An email address is required to request a review.");
-    else if (trim($Qreq->email) === ""
-             && trim($Qreq->name) === ""
-             && $Me->allow_administer($prow)) {
-        if (!createAnonymousReview())
-            Dbl::qx_raw("unlock tables");
-        unset($Qreq->reason);
-        loadRows();
-    } else if (trim($Qreq->email) === "")
-        Conf::msg_error("An email address is required to request a review.");
-    else {
-        if ($Conf->setting("extrev_chairreq") && !$Me->allow_administer($prow))
-            $ok = proposeReview($Qreq, delegate_review_round());
+if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
+    && $Qreq->post_ok()) {
+    $result = RequestReview_API::requestreview($Me, $Qreq, $prow);
+    $result = JsonResult::make($result);
+    if ($result->content["ok"]) {
+        if ($result->content["action"] === "token")
+            $Conf->confirmMsg("Created a new anonymous review. The review token is " . $result->content["review_token"] . ".");
+        else if ($result->content["action"] === "propose")
+            $Conf->warnMsg($result->content["response"]);
         else
-            $ok = requestReview($Qreq);
-        if ($ok) {
-            unset($Qreq->email, $Qreq->name, $Qreq->round, $Qreq->reason);
-            SelfHref::redirect($Qreq);
-        } else
-            Dbl::qx_raw("unlock tables");
+            $Conf->confirmMsg($result->content["response"]);
+        unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override);
+        SelfHref::redirect($Qreq);
+    } else {
+        $error = $result->content["error"];
+        if (isset($result->content["errf"]) && isset($result->content["errf"]["override"]))
+            $error .= "<div>To request a review anyway, submit again with the “Override” checkbox checked.</div>";
+        Conf::msg_error($error);
+        if (isset($result->content["errf"])) {
+            foreach ($result->content["errf"] as $f => $x)
+                Ht::error_at($f);
+        }
+        Ht::error_at("need-override-requestreview-" . $Qreq->email);
         loadRows();
     }
 }
 
 
 // deny review request
-if (isset($Qreq->deny)
+if ((isset($Qreq->deny) || isset($Qreq->denyreview))
     && $Me->allow_administer($prow)
     && $Qreq->post_ok()
     && ($email = trim($Qreq->email))) {
@@ -400,7 +259,7 @@ if ($Conf->setting("extrev_chairreq")) {
         $q = " and requestedBy=?";
         $qv[] = $Me->contactId;
     }
-    $result = $Conf->qe_apply("select name, email, requestedBy, reason, reviewRound from ReviewRequest where ReviewRequest.paperId=?$q", $qv);
+    $result = $Conf->qe_apply("select * from ReviewRequest where paperId=?$q", $qv);
     $proposals = edb_orows($result);
 }
 $t = reviewTable($prow, $paperTable->all_reviews(), null, null, "assign", $proposals);
@@ -523,22 +382,38 @@ if (!$Me->allow_administer($prow) && $Conf->setting("extrev_chairreq"))
     $req = "Propose an external review";
 echo Ht::form(hoturl_post("assign", "p=$prow->paperId")),
     '<div class="revcard"><div class="revcard_head">',
-    "<h3>", $req, "</h3>\n",
-    "<div class='hint'>External reviewers may view their assigned papers, including ";
+    "<h3>", $req, "</h3></div><div class=\"revcard_body\">";
+
+echo '<p class="papertext f-h">External reviewers may view their assigned papers, including ';
 if ($Conf->setting("extrev_view") >= 2)
     echo "the other reviewers’ identities and ";
 echo "any eventual decision.  Before requesting an external review,
  you should generally check personally whether they are interested.";
 if ($Me->allow_administer($prow))
     echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
-echo '</div></div><div class="revcard_body">';
-echo '<div class="f-horizontal"><div class="f-i">',
-    Ht::label("Name", "revreq_name", ["class" => "f-c"]),
-    Ht::entry("name", (string) $Qreq->name, ["id" => "revreq_name", "size" => 32]),
-    '</div><div class="', Ht::control_class("email", "f-i"), '">',
-    Ht::label("Email", "revreq_email", ["class" => "f-c"]),
-    Ht::entry("email", (string) $Qreq->email, ["id" => "revreq_email", "size" => 28]),
-    '</div></div>', "\n\n";
+echo '</p>';
+
+if (($rrow = $prow->review_of_user($Me))
+    && $rrow->reviewType == REVIEW_SECONDARY
+    && ($round_name = $Conf->round_name($rrow->reviewRound)))
+    echo Ht::hidden("round", $round_name);
+echo '<div class="papertext g">',
+    '<div class="', Ht::control_class("email", "f-i"), '">',
+    Ht::label("Email", "revreq_email"),
+    Ht::entry("email", (string) $Qreq->email, ["id" => "revreq_email", "size" => 52, "class" => "fullw"]),
+    '</div>',
+    '<div class="f-2col">',
+    '<div class="', Ht::control_class("firstName", "f-i"), '">',
+    Ht::label("First name (given name)", "revreq_firstName"),
+    Ht::entry("firstName", (string) $Qreq->firstName, ["id" => "revreq_firstName", "size" => 24, "class" => "fullw"]),
+    '</div><div class="', Ht::control_class("lastName", "f-i"), '">',
+    Ht::label("Last name (family name)", "revreq_lastName"),
+    Ht::entry("lastName", (string) $Qreq->lastName, ["id" => "revreq_lastName", "size" => 24, "class" => "fullw"]),
+    '</div></div>',
+    '<div class="', Ht::control_class("affiliation", "f-i"), '">',
+    Ht::label("Affiliation", "revreq_affiliation"),
+    Ht::entry("affiliation", (string) $Qreq->affiliation, ["id" => "revreq_affiliation", "size" => 52, "class" => "fullw"]),
+    '</div>';
 
 // reason area
 $null_mailer = new HotCRPMailer;
@@ -547,18 +422,20 @@ if (strpos($reqbody["body"], "%REASON%") !== false) {
     echo '<div class="f-i">',
         Ht::label('Note to reviewer <span class="n">(optional)</span>', "revreq_reason"),
         Ht::textarea("reason", $Qreq->reason,
-                ["class" => "papertext", "rows" => 2, "cols" => 60, "spellcheck" => "true", "id" => "revreq_reason"]),
+                ["class" => "need-autogrow fullw", "rows" => 2, "cols" => 60, "spellcheck" => "true", "id" => "revreq_reason"]),
         "</div>\n\n";
 }
 
-echo "<div class='f-i'>\n",
-    Ht::submit("add", "Request review", ["class" => "btn btn-primary"]),
-    "</div>\n\n";
-
-
 if ($Me->can_administer($prow))
-    echo "<div class='f-checkbox'>\n  ", Ht::checkbox("override"), "&nbsp;", Ht::label("Override deadlines and any previous refusal"), "\n</div>\n";
+    echo '<div class="', Ht::control_class("override", "checki"), '"><label><span class="checkc">',
+        Ht::checkbox("override"),
+        ' </span>Override deadlines, declined requests, and potential conflicts</label></div>';
 
-echo "</div></div></form>\n";
+echo "<div class='f-i'>\n",
+    Ht::submit("requestreview", "Request review", ["class" => "btn btn-primary"]),
+    "</div>\n\n";
+Ht::stash_script("\$(\"#revreq_email\").on(\"input\",revreq_email_input)");
+
+echo "</div></div></div></form>\n";
 
 $Conf->footer();

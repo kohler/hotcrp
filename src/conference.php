@@ -204,7 +204,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 186) {
+        if ($this->sversion < 190) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -603,6 +603,9 @@ class Conf {
     }
     function fetch_first_row(/* $qstr, ... */) {
         return Dbl::fetch_first_row(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
+    }
+    function fetch_first_object(/* $qstr, ... */) {
+        return Dbl::fetch_first_object(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
     }
     function fetch_value(/* $qstr, ... */) {
         return Dbl::fetch_value(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));

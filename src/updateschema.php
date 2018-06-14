@@ -287,6 +287,28 @@ function update_schema_paper_review_drop_main_fields(Conf $conf) {
     return $ok;
 }
 
+function update_schema_split_review_request_name(Conf $conf) {
+    if (!$conf->ql("alter table ReviewRequest add `firstName` varbinary(120) DEFAULT NULL")
+        || !$conf->ql("alter table ReviewRequest add `lastName` varbinary(120) DEFAULT NULL")
+        || !$conf->ql("lock tables ReviewRequest write"))
+        return false;
+    $result = $conf->ql("select * from ReviewRequest");
+    $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
+    $q = $qv = [];
+    while ($result && ($row = $result->fetch_object())) {
+        list($first, $last) = Text::split_name($row->name);
+        $q[] = "update ReviewRequest set firstName=?, lastName=? where paperId=? and email=?";
+        array_push($qv, (string) $first === "" ? null : $first,
+                   (string) $last === "" ? null : $last,
+                   $row->paperId, $row->email);
+        $cleanf($q, $qv);
+    }
+    Dbl::free($result);
+    $cleanf($q, $qv, true);
+    $conf->ql("unlock tables");
+    return $conf->ql("alter table ReviewRequest drop column `name`");
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1305,6 +1327,24 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 185
         && $conf->ql("alter table ContactInfo change `voicePhoneNumber` `phone` varbinary(64) DEFAULT NULL"))
         $conf->update_schema_version(186);
+    if ($conf->sversion == 186
+        && $conf->ql("alter table PaperReviewRefused add primary key (`paperId`,`contactId`)")
+        && $conf->ql("alter table PaperReviewRefused drop key `paperId`")
+        && $conf->ql("alter table PaperReviewRefused drop key `contactId`")
+        && $conf->ql("alter table PaperReviewRefused drop key `requestedBy`"))
+        $conf->update_schema_version(187);
+    if ($conf->sversion == 187
+        && $conf->ql("alter table ReviewRequest add primary key (`paperId`,`email`)")
+        && $conf->ql("alter table ReviewRequest drop key `paperEmail`")
+        && $conf->ql("alter table ReviewRequest drop key `paperId`")
+        && $conf->ql("alter table ReviewRequest drop key `requestedBy`"))
+        $conf->update_schema_version(188);
+    if ($conf->sversion == 188
+        && update_schema_split_review_request_name($conf))
+        $conf->update_schema_version(189);
+    if ($conf->sversion == 189
+        && $conf->ql("alter table ReviewRequest add `affiliation` varbinary(2048) DEFAULT NULL"))
+        $conf->update_schema_version(190);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

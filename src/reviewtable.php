@@ -217,9 +217,10 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
             if ($admin) {
                 $t .= '<small>'
                     . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
-                    . '<div class="inline">'
-                    . Ht::hidden("name", $rr->name)
+                    . Ht::hidden("firstName", $rr->firstName)
+                    . Ht::hidden("lastName", $rr->lastName)
                     . Ht::hidden("email", $rr->email)
+                    . Ht::hidden("affiliation", $rr->affiliation)
                     . Ht::hidden("reason", $rr->reason);
                 if ($rr->reviewRound !== null) {
                     if ($rr->reviewRound == 0)
@@ -229,10 +230,15 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                     if ($rname)
                         $t .= Ht::hidden("round", $rname);
                 }
-                $t .= Ht::submit("add", "Approve review", array("style" => "font-size:smaller"))
+                $apptext = "Approve review";
+                if (Ht::control_class("need-override-requestreview-" . $rr->email)) {
+                    $t .= Ht::hidden("override", 1);
+                    $apptext = "Override conflict and approve review";
+                }
+                $t .= Ht::submit("approvereview", $apptext, array("style" => "font-size:smaller"))
                     . ' '
-                    . Ht::submit("deny", "Deny request", array("style" => "font-size:smaller"))
-                    . '</div></form>';
+                    . Ht::submit("denyreview", "Deny request", array("style" => "font-size:smaller"))
+                    . '</form>';
             } else if ($Me->contactId && $rr->requestedBy === $Me->contactId)
                 $t .= _retract_review_request_form($prow, $rr);
             $t .= '</td>';

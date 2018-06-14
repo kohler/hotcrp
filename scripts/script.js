@@ -2445,6 +2445,28 @@ handle_ui.on("js-assignment-fold", function (event) {
 });
 })($);
 
+function revreq_email_input(event) {
+    var v = this.value.trim(), f = $(this).closest("form")[0];
+    function success(data) {
+        if (!data || !data.ok)
+            data = {};
+        var cur_email = f.email.value.trim();
+        if (cur_email === v || f.getAttribute("data-showing-email") !== v) {
+            f.firstName.setAttribute("placeholder", data.firstName || "");
+            f.lastName.setAttribute("placeholder", data.lastName || "");
+            f.affiliation.setAttribute("placeholder", data.affiliation || "");
+            f.setAttribute("data-showing-email", v);
+        }
+    }
+    if (/^\S+\@\S+\.\S\S+$/.test(v))
+        $.ajax(hoturl_post("api/user", {email: v}), {
+            method: "GET", success: success
+        });
+    else
+        success(null);
+    event = null;
+};
+
 
 // author entry
 var row_order_ui = (function ($) {

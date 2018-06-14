@@ -321,9 +321,7 @@ CREATE TABLE `PaperReviewRefused` (
   `contactId` int(11) NOT NULL,
   `requestedBy` int(11) NOT NULL,
   `reason` varbinary(32767) DEFAULT NULL,
-  KEY `paperId` (`paperId`),
-  KEY `contactId` (`contactId`),
-  KEY `requestedBy` (`requestedBy`)
+  PRIMARY KEY (`paperId`,`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -434,14 +432,14 @@ CREATE TABLE `ReviewRating` (
 DROP TABLE IF EXISTS `ReviewRequest`;
 CREATE TABLE `ReviewRequest` (
   `paperId` int(11) NOT NULL,
-  `name` varchar(120) DEFAULT NULL,
   `email` varchar(120) DEFAULT NULL,
+  `firstName` varbinary(120) DEFAULT NULL,
+  `lastName` varbinary(120) DEFAULT NULL,
+  `affiliation` varbinary(2048) DEFAULT NULL,
   `reason` varbinary(32767) DEFAULT NULL,
   `requestedBy` int(11) NOT NULL,
   `reviewRound` int(1) DEFAULT NULL,
-  UNIQUE KEY `paperEmail` (`paperId`,`email`),
-  KEY `paperId` (`paperId`),
-  KEY `requestedBy` (`requestedBy`)
+  PRIMARY KEY (`paperId`,`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -488,7 +486,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 186);
+insert into Settings (name, value) values ('allowPaperOption', 190);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);
