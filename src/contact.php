@@ -444,39 +444,13 @@ class Contact {
         }
     }
 
-    static private function contactdb_find_by_key($key, $value, Conf $conf) {
-        if (($cdb = $conf->contactdb())) {
-            $q = "select ContactInfo.*, roles, activity_at";
-            $qv = [];
-            if (($confid = $conf->opt("contactdb_confid"))) {
-                $q .= ", ? confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
-                array_push($qv, $confid, $confid);
-            } else {
-                $q .= ", Conferences.confid from ContactInfo left join Conferences on (Conferences.`dbname`=?) left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)";
-                $qv[] = $conf->dbname;
-            }
-            $qv[] = $value;
-            $result = Dbl::ql_apply($cdb, "$q where ContactInfo.$key=?", $qv);
-            $acct = self::fetch($result, $conf);
-            Dbl::free($result);
-            return $acct;
-        } else
-            return null;
-    }
-    static function contactdb_find_by_email($email, Conf $conf) {
-        return self::contactdb_find_by_key("email", $email, $conf);
-    }
-    static function contactdb_find_by_id($id, Conf $conf) {
-        return self::contactdb_find_by_key("contactDbId", $id, $conf);
-    }
-
     function contactdb_user($refresh = false) {
         if ($this->contactDbId && !$this->contactId)
             return $this;
         else if ($refresh || $this->contactdb_user_ === false) {
             $cdbu = null;
             if ($this->has_email())
-                $cdbu = self::contactdb_find_by_email($this->email, $this->conf);
+                $cdbu = $this->conf->contactdb_user_by_email($this->email);
             $this->contactDbId = $cdbu ? $cdbu->contactDbId : 0;
             $this->contactdb_user_ = $cdbu;
         }
@@ -502,10 +476,10 @@ class Contact {
             $update_passwordTime = $this->passwordTime;
         }
 
-        $cdbur = self::contactdb_find_by_email($this->email, $this->conf);
+        $cdbur = $this->conf->contactdb_user_by_email($this->email);
         if (!$cdbur) {
             Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?, password=?, passwordTime=?, birthday=?, gender=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators, $update_password, $update_passwordTime, $this->birthday, $this->gender);
-            $cdbur = self::contactdb_find_by_email($this->email, $this->conf);
+            $cdbur = $this->conf->contactdb_user_by_email($this->email);
             $this->contactdb_user_ = false;
         } else {
             $qf = $qv = [];
@@ -527,7 +501,7 @@ class Contact {
             if (!empty($qf)) {
                 array_push($qv, $Now, $cdbur->contactDbId);
                 Dbl::ql_apply($cdb, "update ContactInfo set " . join(", ", $qf) . ", updateTime=? where contactDbId=?", $qv);
-                $cdbur = self::contactdb_find_by_email($this->email, $this->conf);
+                $cdbur = $this->conf->contactdb_user_by_email($this->email);
                 $this->contactdb_user_ = false;
             }
         }
@@ -1045,7 +1019,7 @@ class Contact {
         // If inserting, set initial password and creation time
         if ($inserting) {
             $cu->qv["creationTime"] = $this->creationTime = $Now;
-            $this->_create_password(self::contactdb_find_by_email($this->email, $this->conf), $cu);
+            $this->_create_password($this->conf->contactdb_user_by_email($this->email), $cu);
         }
 
         // Initial save
@@ -1259,12 +1233,12 @@ class Contact {
             return null;
 
         // update contactdb's empty portions from registration
-        $cdbu = Contact::contactdb_find_by_email($reg->email, $conf);
+        $cdbu = $conf->contactdb_user_by_email($reg->email);
         if (!$cdbu && ($flags & self::SAVE_IMPORT))
             return null;
         if ($cdbu && ($updater = $cdbu->_save_make_empty_updater($reg, true))) {
             self::_contactdb_apply_updater($conf, $updater, $cdbu);
-            $cdbu = Contact::contactdb_find_by_email($reg->email, $conf);
+            $cdbu = $conf->contactdb_user_by_email($reg->email);
         }
 
         // update local db from contactdb or registration

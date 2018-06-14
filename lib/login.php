@@ -106,7 +106,7 @@ class LoginHelper {
             if ($user)
                 $cdb_user = $user->contactdb_user();
             else
-                $cdb_user = Contact::contactdb_find_by_email($qreq->email, $Conf);
+                $cdb_user = $Conf->contactdb_user_by_email($qreq->email);
         }
 
         // create account if requested

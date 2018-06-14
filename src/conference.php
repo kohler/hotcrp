@@ -639,15 +639,6 @@ class Conf {
         }
     }
 
-    function contactdb() {
-        if ($this->_cdb === false) {
-            $this->_cdb = null;
-            if (($dsn = $this->opt("contactdb_dsn")))
-                list($this->_cdb, $dbname) = Dbl::connect_dsn($dsn);
-        }
-        return $this->_cdb;
-    }
-
 
     // name
 
@@ -1684,6 +1675,46 @@ class Conf {
                 }
             }
         return $map;
+    }
+
+
+    // contactdb
+
+    function contactdb() {
+        if ($this->_cdb === false) {
+            $this->_cdb = null;
+            if (($dsn = $this->opt("contactdb_dsn")))
+                list($this->_cdb, $dbname) = Dbl::connect_dsn($dsn);
+        }
+        return $this->_cdb;
+    }
+
+    private function contactdb_user_by_key($key, $value) {
+        if (($cdb = $this->contactdb())) {
+            $q = "select ContactInfo.*, roles, activity_at";
+            $qv = [];
+            if (($confid = $this->opt("contactdb_confid"))) {
+                $q .= ", ? confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
+                array_push($qv, $confid, $confid);
+            } else {
+                $q .= ", Conferences.confid from ContactInfo left join Conferences on (Conferences.`dbname`=?) left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)";
+                $qv[] = $this->dbname;
+            }
+            $qv[] = $value;
+            $result = Dbl::ql_apply($cdb, "$q where ContactInfo.$key=?", $qv);
+            $acct = Contact::fetch($result, $this);
+            Dbl::free($result);
+            return $acct;
+        } else
+            return null;
+    }
+
+    function contactdb_user_by_email($email) {
+        return $this->contactdb_user_by_key("email", $email);
+    }
+
+    function contactdb_user_by_id($id) {
+        return $this->contactdb_user_by_key("contactDbId", $id);
     }
 
 
