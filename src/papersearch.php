@@ -1578,7 +1578,7 @@ class PaperSearch {
         }
         // some keywords may be followed by parentheses
         if (strpos($x, ":")
-            && preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":)(?=[^"])/', $x, $m)) {
+            && preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":)(?=[^"]|\z)/', $x, $m)) {
             if ($m[1][0] === "\"")
                 $kw = substr($m[1], 1, strlen($m[1]) - 2);
             else
