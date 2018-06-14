@@ -176,6 +176,9 @@
     "city": {
         "weak": true
     },
+    "cnrs": {
+        "weak": true
+    },
     "college": {
         "weak": true
     },
@@ -406,11 +409,19 @@
     "berkeley": {
         "nameish": false
     },
+    "cal": {
+        "weak": true,
+        "alternate": [
+            {"word": "california", "if": "state"},
+            {"word": "csu", "if": "state"}
+        ]
+    },
     "california": {
         "weak": true,
         "alternate": [
             {"word": "uc", "if": "university"},
-            {"word": "caltech", "if": "institute technology"}
+            {"word": "caltech", "if": "institute technology"},
+            {"word": "csu", "if": "state"}
         ]
     },
     "caltech": {
@@ -435,6 +446,9 @@
     },
     "colorado": {
         "weak": true
+    },
+    "csu": {
+        "alternate": ["california state university", "cal state"]
     },
     "cuhk": {
         "alternate": ["chinese university hong kong"]
