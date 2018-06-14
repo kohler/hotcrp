@@ -27,7 +27,7 @@ function errorMsgExit($msg) {
 
 // grab paper row
 function loadRows() {
-    global $prow, $rrows, $Conf, $Me, $Qreq;
+    global $prow, $Conf, $Me, $Qreq;
     $Conf->paper = $prow = PaperTable::paperRow($Qreq, $whyNot);
     if (!$prow)
         errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
@@ -35,15 +35,6 @@ function loadRows() {
         $wnt = whyNotText($whyNot);
         error_go(hoturl("paper", ["p" => $prow->paperId]), $wnt);
     }
-    $rrows = $prow->reviews_by_id();
-}
-
-function rrow_by_reviewid($rid) {
-    global $rrows;
-    foreach ($rrows as $rr)
-        if ($rr->reviewId == $rid)
-            return $rr;
-    return null;
 }
 
 
@@ -275,17 +266,15 @@ function requestReview($qreq) {
 
 function delegate_review_round() {
     // Use the delegator's review round
-    global $Conf, $Me, $Now, $prow, $rrows;
+    global $Conf, $Me, $Now, $prow;
     $round = null;
-    foreach ($rrows as $rrow)
-        if ($rrow->contactId == $Me->contactId
-            && $rrow->reviewType == REVIEW_SECONDARY)
-            $round = (int) $rrow->reviewRound;
+    if (($rrow = $prow->review_of_user($Me)) && $rrow->reviewType == REVIEW_SECONDARY)
+        $round = (int) $rrow->reviewRound;
     return $round;
 }
 
 function proposeReview($qreq, $round) {
-    global $Conf, $Me, $Now, $prow, $rrows;
+    global $Conf, $Me, $Now, $prow;
 
     $email = trim($qreq->email);
     $name = trim($qreq->name);
