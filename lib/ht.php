@@ -86,8 +86,10 @@ class Ht {
                    && preg_match('{\G([^#=&;]*)=([^#&;]*)([#&;]|\z)}', $action, $m, 0, $pos)) {
                 $suffix .= self::hidden(urldecode($m[1]), urldecode($m[2]));
                 $pos += strlen($m[0]);
-                if ($m[3] === "#")
+                if ($m[3] === "#") {
+                    --$pos;
                     break;
+                }
             }
             $action = substr($action, 0, $qpos) . (string) substr($action, $pos);
         }
