@@ -636,7 +636,7 @@ class UserStatus extends MessageSet {
         if (($cdb_user = $this->global_user())
             && (string) get($cj, $key) !== (string) $cdb_user->$key) {
             if ((string) $cdb_user->$key !== "")
-                return '<div class="f-h">“' . htmlspecialchars($cdb_user->$key) . '” in global profile</div>';
+                return '<div class="f-h">Global profile gives “' . htmlspecialchars($cdb_user->$key) . '”</div>';
             else
                 return '<div class="f-h">Empty in global profile</div>';
         } else
@@ -668,10 +668,10 @@ class UserStatus extends MessageSet {
 
         echo '<div class="f-2col">';
         $t = Ht::entry("firstName", get_s($reqj, "firstName"), ["size" => 24, "autocomplete" => $this->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => get_s($cj, "firstName")]) . $us->global_profile_difference($cj, "firstName");
-        $us->render_field("firstName", "First (given) name", $t);
+        $us->render_field("firstName", "First name (given name)", $t);
 
         $t = Ht::entry("lastName", get_s($reqj, "lastName"), ["size" => 24, "autocomplete" => $this->autocomplete("family-name"), "class" => "fullw", "id" => "lastName", "data-default-value" => get_s($cj, "lastName")]) . $us->global_profile_difference($cj, "lastName");
-        $us->render_field("lastName", "Last (family) name", $t);
+        $us->render_field("lastName", "Last name (family name)", $t);
         echo '</div>';
 
         $t = Ht::entry("affiliation", get_s($reqj, "affiliation"), ["size" => 52, "autocomplete" => $this->autocomplete("organization"), "class" => "fullw", "id" => "affiliation", "data-default-value" => get_s($cj, "affiliation")]) . $us->global_profile_difference($cj, "affiliation");
@@ -830,7 +830,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             echo '<div class="', $us->control_class("contactTags", "f-i"), '">',
                 Ht::entry("contactTags", join(" ", $tags), ["size" => 60]),
                 "</div>
-  <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=tags"), "'>tag colors</a> to highlight subgroups in review lists.</div>\n";
+  <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=tags"), "'>tag colors</a> to highlight subgroups in review lists.</p>\n";
         } else {
             echo join(" ", $tags), "<div class='hint'>Tags represent PC subgroups and are set by administrators.</div>\n";
         }
