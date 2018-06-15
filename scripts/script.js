@@ -7444,12 +7444,16 @@ function make_input_autogrower($self) {
             ws = $self.css(["minWidth", "maxWidth"]);
             if (ws.minWidth == "0px")
                 $self.css("minWidth", width + "px");
-            if (ws.maxWidth == "none")
+            if (ws.maxWidth == "none" && !$self.hasClass("wide"))
                 $self.css("maxWidth", "640px");
         }
         shadow.text($self[0].value + "  ");
         ws = $self.css(["minWidth", "maxWidth"]);
-        $self.outerWidth(Math.max(Math.min(shadow.outerWidth(), parseFloat(ws.maxWidth), $(window).width()), parseFloat(ws.minWidth)));
+        var outerWidth = Math.min(shadow.outerWidth(), $(window).width()),
+            maxWidth = parseFloat(ws.maxWidth);
+        if (maxWidth === maxWidth)
+            outerWidth = Math.min(outerWidth, maxWidth);
+        $self.outerWidth(Math.max(outerWidth, parseFloat(ws.minWidth)));
     };
 }
 $.fn.autogrow = function () {
