@@ -22,7 +22,6 @@ class CommentInfo {
     public $commentFormat;
     public $commentOverflow;
 
-    static private $watching;
     static private $visibility_map = [
         COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc",
         COMMENTTYPE_REVIEWER => "rev", COMMENTTYPE_AUTHOR => "au"
@@ -541,11 +540,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         if ($text !== "") {
             $comments = $this->prow->fetch_comments("commentId=$cmtid");
             $this->merge($comments[$cmtid], $this->prow);
-            if ($this->timeNotified == $this->timeModified) {
-                self::$watching = $this;
-                $this->prow->notify(WATCHTYPE_REVIEW, "CommentInfo::watch_callback", $contact);
-                self::$watching = null;
-            }
+            if ($this->timeNotified == $this->timeModified)
+                $this->prow->notify(WATCHTYPE_REVIEW, [$this, "watch_callback"], $contact);
         } else {
             $this->commentId = 0;
             $this->comment = "";
@@ -555,18 +551,18 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         return true;
     }
 
-    static function watch_callback($prow, $minic) {
-        $ctype = self::$watching->commentType;
+    function watch_callback($prow, $minic) {
+        $ctype = $this->commentType;
         if (($ctype & COMMENTTYPE_RESPONSE) && ($ctype & COMMENTTYPE_DRAFT))
             $tmpl = "@responsedraftnotify";
         else if ($ctype & COMMENTTYPE_RESPONSE)
             $tmpl = "@responsenotify";
         else
             $tmpl = "@commentnotify";
-        if ($minic->can_view_comment($prow, self::$watching)
+        if ($minic->can_view_comment($prow, $this)
             // Don't send notifications about draft responses to the chair,
             // even though the chair can see draft responses.
             && ($tmpl !== "@responsedraftnotify" || $minic->act_author_view($prow)))
-            HotCRPMailer::send_to($minic, $tmpl, $prow, array("comment_row" => self::$watching));
+            HotCRPMailer::send_to($minic, $tmpl, $prow, array("comment_row" => $this));
     }
 }
