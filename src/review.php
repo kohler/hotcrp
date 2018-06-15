@@ -593,14 +593,14 @@ class ReviewForm implements JsonSerializable {
         echo "</div>\n";
     }
 
-    function author_nonempty(ReviewInfo $rrow) {
+    function nonempty_view_score(ReviewInfo $rrow) {
+        $view_score = VIEWSCORE_FALSE;
         foreach ($this->forder as $fid => $f)
             if (isset($rrow->$fid)
                 && (!$f->round_mask || $f->is_round_visible($rrow))
-                && $f->view_score >= VIEWSCORE_AUTHORDEC
                 && ($f->has_options ? (int) $rrow->$fid !== 0 : $rrow->$fid !== ""))
-                return true;
-        return false;
+                $view_score = max($view_score, $f->view_score);
+        return $view_score;
     }
 
     function word_count(ReviewInfo $rrow) {
@@ -1827,6 +1827,9 @@ class ReviewValues extends MessageSet {
         if ($newsubmit) {
             array_push($qf, "reviewSubmitted=?", "reviewNeedsSubmit=?");
             array_push($qv, $now, 0);
+            // $diffinfo->view_score should represent transition to submitted
+            if ($rrow)
+                $diffinfo->add_view_score($this->rf->nonempty_view_score($rrow));
         }
         if ($approval_requested) {
             $qf[] = "timeApprovalRequested=?";
@@ -1843,7 +1846,7 @@ class ReviewValues extends MessageSet {
                 && !$rrow->reviewOrdinal
                 && ($rrow->reviewSubmitted > 0 || $newsubmit)
                 && ($diffinfo->view_score >= VIEWSCORE_AUTHORDEC
-                    || $this->rf->author_nonempty($rrow)))) {
+                    || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
             $table_suffix = "";
             if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
                 $table_suffix = ", PaperTag read";
@@ -1920,22 +1923,25 @@ class ReviewValues extends MessageSet {
         }
         $notification_bound = $now - ReviewForm::NOTIFICATION_DELAY;
         if (!$rrow || $diffinfo->nonempty()) {
+            // XXX distinction between VIEWSCORE_AUTHOR/VIEWSCORE_AUTHORDEC?
             if ($diffinfo->view_score >= VIEWSCORE_AUTHOR) {
                 $qf[] = "reviewAuthorModified=?";
                 $qv[] = $now;
             } else if ($rrow
                        && !$rrow->reviewAuthorModified
-                       && $rrow->reviewModified) {
+                       && $rrow->reviewModified
+                       && $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHOR) {
                 $qf[] = "reviewAuthorModified=?";
                 $qv[] = $rrow->reviewModified;
             }
-            // do not notify on updates within 3 hours
+            // do not notify on updates within 3 hours, except fresh submits
             if ($submit
                 && $diffinfo->view_score > VIEWSCORE_ADMINONLY
                 && !$this->no_notify) {
                 if (!$rrow
                     || !$rrow->reviewNotified
-                    || $rrow->reviewNotified < $notification_bound) {
+                    || $rrow->reviewNotified < $notification_bound
+                    || $newsubmit) {
                     $qf[] = "reviewNotified=?";
                     $qv[] = $now;
                     $diffinfo->notify = true;

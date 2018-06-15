@@ -1683,7 +1683,7 @@ class PaperInfo {
         or conflictType>=" . CONFLICT_AUTHOR . "
         or reviewType is not null
         or exists (select * from PaperComment where paperId=$this->paperId and contactId=ContactInfo.contactId)
-        order by conflictType" /* group authors together */);
+        order by conflictType desc, reviewType desc" /* group authors together */);
 
         $watchers = [];
         $lastContactId = 0;
@@ -1691,8 +1691,9 @@ class PaperInfo {
             if ($minic->contactId == $lastContactId
                 || ($sending_user && $minic->contactId == $sending_user->contactId)
                 || Contact::is_anonymous_email($minic->email))
-                /* skip */;
-            else if ($minic->following_reviews($this, $minic->watch))
+                continue;
+            $lastContactId = $minic->contactId;
+            if ($minic->following_reviews($this, $minic->watch))
                 $watchers[$minic->contactId] = $minic;
         }
         Dbl::free($result);

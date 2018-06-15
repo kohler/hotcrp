@@ -314,7 +314,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $locked = false;
             $q = $qv = [];
             foreach ($rrows as $rrow)
-                if ($nform->author_nonempty($rrow)) {
+                if ($nform->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC) {
                     if (!$locked) {
                         $sv->conf->qe("lock tables PaperReview write");
                         $locked = true;
