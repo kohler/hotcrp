@@ -242,14 +242,19 @@ class ReviewInfo {
         $bsub = (int) $b->reviewSubmitted;
         if (($asub > 0) != ($bsub > 0))
             return $asub > 0 ? -1 : 1;
-        if ($asub != $bsub)
+        if ($asub !== $bsub)
             return $asub < $bsub ? -1 : 1;
-        // 4. reviewer
+        // 4. submission class
+        $asclass = self::submission_class($a);
+        $bsclass = self::submission_class($b);
+        if ($asclass !== $bsclass)
+            return $asclass < $bsclass ? 1 : -1;
+        // 5. reviewer
         if (isset($a->sorter)
             && isset($b->sorter)
             && ($x = strcmp($a->sorter, $b->sorter)) != 0)
             return $x;
-        // 5. review id
+        // 6. review id
         if ($a->reviewId != $b->reviewId)
             return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
         return 0;
@@ -261,6 +266,21 @@ class ReviewInfo {
         if ($a->reviewId != $b->reviewId)
             return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
         return 0;
+    }
+
+    static function submission_class($rr) {
+        if ($rr->reviewSubmitted > 0)
+            return 5;
+        else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
+            return 4;
+        else if ($rr->reviewModified > 1 && $rr->timeApprovalRequested > 0)
+            return 3;
+        else if ($rr->reviewModified > 1)
+            return 2;
+        else if ($rr->reviewModified > 0)
+            return 1;
+        else
+            return 0;
     }
 
     function ratings() {
