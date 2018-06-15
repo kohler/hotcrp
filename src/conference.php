@@ -2948,6 +2948,10 @@ class Conf {
     // Conference header, footer
     //
 
+    function has_active_list() {
+        return !!$this->_active_list;
+    }
+
     function active_list() {
         if ($this->_active_list === false)
             $this->_active_list = null;

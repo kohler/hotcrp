@@ -126,7 +126,12 @@ class PaperTable {
             $this->mode = "re";
 
         // choose list
-        $this->conf->set_active_list($this->find_session_list($prow->paperId));
+        if (!$this->conf->has_active_list())
+            $this->conf->set_active_list($this->find_session_list($prow->paperId));
+        else {
+            $list = $this->conf->active_list();
+            assert($list && ($list->set_current_id($pid) || $list->digest));
+        }
 
         $this->matchPreg = [];
         if (($list = $this->conf->active_list()) && $list->highlight
