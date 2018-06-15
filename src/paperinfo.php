@@ -1606,9 +1606,10 @@ class PaperInfo {
             return ($user->defaultWatch & ($notifytype << WATCHSHIFT_ALLON)) != 0;
     }
 
-    function notify($notifytype, $callback, $contact) {
+    function notify($notifytype, $callback, $user) {
         $wonflag = ($notifytype << WATCHSHIFT_ON) | ($notifytype << WATCHSHIFT_ALLON);
         $wsetflag = $wonflag | ($notifytype << WATCHSHIFT_ISSET);
+        $notifychair = ($notifytype === WATCHTYPE_COMMENT || $notifytype === WATCHTYPE_REVIEW) && $this->conf->setting("rev_notifychair") > 0;
 
         $q = "select ContactInfo.contactId, firstName, lastName, email,
                 password, contactTags, roles, defaultWatch,
@@ -1623,10 +1624,12 @@ class PaperInfo {
         where watch is not null
         or conflictType>=" . CONFLICT_AUTHOR . "
         or reviewType is not null
-        or (select commentId from PaperComment where paperId=$this->paperId and contactId=ContactInfo.contactId limit 1) is not null
+        or exists (select * from PaperComment where paperId=$this->paperId and contactId=ContactInfo.contactId)
         or (defaultWatch & " . ($notifytype << WATCHSHIFT_ALLON) . ")!=0";
         if ($this->managerContactId > 0)
             $q .= " or ContactInfo.contactId=" . $this->managerContactId;
+        if ($notifychair)
+            $q .= " or (roles!=0 and (roles&" . Contact::ROLE_CHAIR . ")!=0)";
         $q .= " order by conflictType"; // group authors together
 
         $result = $this->conf->qe_raw($q);
@@ -1634,12 +1637,16 @@ class PaperInfo {
         $lastContactId = 0;
         while (($row = Contact::fetch($result, $this->conf))) {
             if ($row->contactId == $lastContactId
-                || ($contact && $row->contactId == $contact->contactId)
+                || ($user && $row->contactId == $user->contactId)
                 || Contact::is_anonymous_email($row->email))
                 continue;
             $lastContactId = $row->contactId;
 
             $w = $row->defaultWatch;
+            if (!($w & $wonflag)
+                && $notifychair
+                && $row->allow_administer($this))
+                $row->defaultWatch = $w = $w | $wonflag;
             if ($row->watch & $wsetflag)
                 $w = $row->watch;
             if ($w & $wonflag)
@@ -1652,12 +1659,48 @@ class PaperInfo {
         $cimap = $this->replace_contact_info_map(null);
 
         foreach ($watchers as $minic) {
-            if ($minic->overrides()) // XXX remove soon
-                error_log("surprise overrides");
-            $old_overrides = $minic->set_overrides(0);
             $this->load_my_contact_info($minic->contactId, $minic);
             call_user_func($callback, $this, $minic);
-            $minic->set_overrides($old_overrides);
+        }
+
+        $this->replace_contact_info_map($cimap);
+    }
+
+    const NOTIFY_CHAIRS = -1000;
+    function notify_users($contactids, $callback, $user) {
+        $q = "select ContactInfo.contactId, firstName, lastName, email,
+                password, contactTags, roles,
+                PaperReview.reviewType myReviewType,
+                PaperReview.reviewSubmitted myReviewSubmitted,
+                PaperReview.reviewNeedsSubmit myReviewNeedsSubmit,
+                conflictType, preferredEmail, disabled
+        from ContactInfo
+        left join PaperConflict on (PaperConflict.paperId=$this->paperId and PaperConflict.contactId=ContactInfo.contactId)
+        left join PaperReview on (PaperReview.paperId=$this->paperId and PaperReview.contactId=ContactInfo.contactId)
+        where ContactInfo.contactId?a";
+        if (array_search(self::NOTIFY_CHAIRS, $contactids) !== false) {
+            if ($this->managerContactId > 0)
+                $contactids[] = $this->managerContactId;
+            $q .= " or (roles!=0 and (roles&" . Contact::ROLE_CHAIR . ")!=0)";
+        }
+
+        $result = $this->conf->qe($q, $contactids);
+        $watchers = [];
+        while (($row = Contact::fetch($result, $this->conf))) {
+            if (($user && $row->contactId == $user->contactId)
+                || Contact::is_anonymous_email($row->email))
+                continue;
+            $watchers[] = $row;
+        }
+        Dbl::free($result);
+
+        // save my current contact info map -- we are replacing it with another
+        // map that lacks review token information and so forth
+        $cimap = $this->replace_contact_info_map(null);
+
+        foreach ($watchers as $minic) {
+            $this->load_my_contact_info($minic->contactId, $minic);
+            call_user_func($callback, $this, $minic);
         }
 
         $this->replace_contact_info_map($cimap);

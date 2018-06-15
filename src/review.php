@@ -1999,8 +1999,10 @@ class ReviewValues extends MessageSet {
             $reviewer = $this->conf->cached_user_by_id($contactId);
         $new_rrow = $prow->fresh_review_of_id($reviewId);
 
-        $this->_mailer_info = ["rrow" => $new_rrow, "reviewer_contact" => $reviewer,
-                               "check_function" => "HotCRPMailer::check_can_view_review"];
+        $this->_mailer_info = [
+            "rrow" => $new_rrow, "reviewer_contact" => $reviewer,
+            "check_function" => "HotCRPMailer::check_can_view_review"
+        ];
         if ($new_rrow->reviewOrdinal)
             $this->_mailer_info["reviewNumber"] = $prow->paperId . unparseReviewOrdinal($new_rrow->reviewOrdinal);
         $this->_mailer_preps = [];
@@ -2009,16 +2011,13 @@ class ReviewValues extends MessageSet {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $this->_mailer_always_combine = false;
             $this->_mailer_diff_view_score = $diffinfo->view_score;
-            if ($this->conf->timeEmailChairAboutReview())
-                HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
-            $prow->notify(WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $user);
+            $prow->notify(WATCHTYPE_REVIEW, [$this, "review_watch_callback"], $user);
         } else if (!$new_rrow->reviewSubmitted
                    && $diffinfo->fields()
                    && $new_rrow->timeApprovalRequested
                    && $new_rrow->requestedBy
-                   && ($requester = $this->conf->cached_user_by_id($new_rrow->requestedBy))
                    && !$this->no_notify) {
-            if ($requester->contactId == $user->contactId)
+            if ($new_rrow->requestedBy == $user->contactId)
                 $this->_mailer_template = "@reviewpreapprovaledit";
             else if ($approval_requested)
                 $this->_mailer_template = "@reviewapprovalrequest";
@@ -2027,11 +2026,10 @@ class ReviewValues extends MessageSet {
             $this->_mailer_always_combine = true;
             $this->_mailer_diff_view_score = null;
             $this->_mailer_info["rrow_unsubmitted"] = true;
-            if ($this->conf->timeEmailChairAboutReview())
-                HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
-            if ($requester->contactId != $user->contactId)
-                $this->review_watch_callback($prow, $requester);
-            $this->review_watch_callback($prow, $reviewer);
+            $userids = [$new_rrow->requestedBy, $reviewer->contactId];
+            if ($this->conf->setting("rev_notifychair") > 0)
+                $userids[] = PaperInfo::NOTIFY_CHAIRS;
+            $prow->notify_users($userids, [$this, "review_watch_callback"], $user);
         }
         if (!empty($this->_mailer_preps))
             HotCRPMailer::send_combined_preparations($this->_mailer_preps);
@@ -2102,7 +2100,9 @@ class ReviewValues extends MessageSet {
         }
         if ($this->authorNotified)
             $this->_confirm_message("Authors were notified about updated reviews %2\$s.", $this->authorNotified);
-        if (count($this->unchanged) + count($this->ignoredBlank) > 1
+        $nunchanged = $this->unchanged ? count($this->unchanged) : 0;
+        $nignoredBlank = $this->ignoredBlank ? count($this->ignoredBlank) : 0;
+        if ($nunchanged + $nignoredBlank > 1
             || $this->text !== null
             || !$this->has_messages()) {
             if ($this->unchanged) {

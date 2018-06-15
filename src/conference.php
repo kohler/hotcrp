@@ -2299,9 +2299,6 @@ class Conf {
         else
             return !$pdf && $this->can_pc_see_all_submissions();
     }
-    function timeEmailChairAboutReview() {
-        return get($this->settings, "rev_notifychair") > 0;
-    }
 
     function submission_blindness() {
         return $this->settings["sub_blind"];

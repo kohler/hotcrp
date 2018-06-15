@@ -513,17 +513,6 @@ class HotCRPMailer extends Mailer {
             $Conf->infoMsg("Sent email to paper #{$row->paperId}’s " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
         }
     }
-
-    static function send_manager($template, $row, $rest = array()) {
-        global $Conf;
-        $rest["combination_type"] = 2;
-        if ($row && $row->managerContactId
-            && ($c = $Conf->user_by_id($row->managerContactId)))
-            self::send_to($c, $template, $row, $rest);
-        else
-            self::send_to($Conf->site_contact(), $template, $row, $rest);
-    }
-
 }
 
 // load mail templates, including local ones if any
