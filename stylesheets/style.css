@@ -978,6 +978,11 @@ tbody.secondary-settings > tr > td.lcaption {
 th.lxcaption, td.lxcaption {
 	padding: 3px 1em 3px 0;
 }
+th.ccaption {
+	padding-left: 0.25em;
+	padding-right: 0.25em;
+	font-size: 85%;
+}
 td.lmcaption {
 	padding-right: 1em;
 }
@@ -1164,7 +1169,7 @@ th.settings-simplehead {
 	max-width: 640px;
 	margin: 2em 0 3em;
 }
-.profile-g.wide {
+.profile-g.wide, input.wide {
 	max-width: none;
 	max-width: fill-available;
 }

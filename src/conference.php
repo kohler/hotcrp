@@ -1010,7 +1010,7 @@ class Conf {
             $this->_topic_map = $tx = [];
             $result = $this->qe_raw("select topicId, topicName from TopicArea");
             while (($row = edb_row($result))) {
-                if (strcasecmp(substr($row[1], 0, 7), "none of") == 0)
+                if (preg_match('{\A(?:None of |Others?(?: |\z))}', $row[1]))
                     $tx[(int) $row[0]] = $row[1];
                 else
                     $this->_topic_map[(int) $row[0]] = $row[1];

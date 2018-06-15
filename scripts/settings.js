@@ -118,6 +118,22 @@ handle_ui.on("js-settings-add-track", function () {
     suggest($j.find(".settings-track-perm-tag"), pc_tag_completion);
 });
 
+handle_ui.on("js-settings-copy-topics", function () {
+    var topics = [];
+    $(this).closest(".has-copy-topics").find("[name^=top]").each(function () {
+        topics.push(escape_entities(this.value));
+    });
+    var node = $("<div class=\"hidden\" style=\"white-space:pre-line\">" + topics.join("\n") + "</pre>")[0],
+        range = document.createRange();
+    document.body.appendChild(node);
+    range.selectNode(node);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand("copy");
+    document.body.removeChild(node);
+    window.getSelection().removeAllRanges();
+});
+
 
 window.review_round_settings = (function ($) {
 var added = 0;
