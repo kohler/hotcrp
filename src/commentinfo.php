@@ -541,7 +541,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $comments = $this->prow->fetch_comments("commentId=$cmtid");
             $this->merge($comments[$cmtid], $this->prow);
             if ($this->timeNotified == $this->timeModified)
-                $this->prow->notify(WATCHTYPE_REVIEW, [$this, "watch_callback"], $contact);
+                $this->prow->notify_reviews([$this, "watch_callback"], $contact);
         } else {
             $this->commentId = 0;
             $this->comment = "";

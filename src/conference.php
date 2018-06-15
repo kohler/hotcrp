@@ -204,7 +204,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 190) {
+        if ($this->sversion < 191) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -2776,13 +2776,19 @@ class Conf {
         if (get($options, "myReviewRequests"))
             $where[] = "exists (select * from PaperReview where paperId=Paper.paperId and requestedBy=$contactId and reviewType=" . REVIEW_EXTERNAL . ")";
         if (get($options, "myWatching") && $contact) {
-            $owhere = ["PaperReview.reviewType>0"];
+            // return the papers with explicit or implicit WATCH_REVIEW
+            // (i.e., author/reviewer/commenter); or explicitly managed
+            // papers
+            $owhere = [
+                "PaperConflict.conflictType>=" . CONFLICT_AUTHOR,
+                "PaperReview.reviewType>0",
+                "exists (select * from PaperComment where paperId=Paper.paperId and contactId=$contactId)",
+                "(PaperWatch.watch&" . Contact::WATCH_REVIEW . ")!=0"
+            ];
             if ($this->has_any_lead_or_shepherd())
                 $owhere[] = "leadContactId=$contactId";
             if ($this->has_any_manager() && $contact->is_explicit_manager())
                 $owhere[] = "managerContactId=$contactId";
-            if ($contact->privChair || ($contact->isPC && $this->setting("pc_seeallrev") > 0))
-                $owhere[] = "(watch&" . (WATCHTYPE_REVIEW << WATCHSHIFT_ON) . ")!=0";
             $where[] = "(" . join(" or ", $owhere) . ")";
         }
         if (get($options, "myConflicts"))

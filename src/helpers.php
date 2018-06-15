@@ -382,19 +382,6 @@ function tempdir($mode = 0700) {
 }
 
 
-// watch functions
-function saveWatchPreference($paperId, $contactId, $watchtype, $on, $explicit) {
-    $isset_val = ($watchtype << WATCHSHIFT_ISSET);
-    $on_val = ($watchtype << WATCHSHIFT_ON);
-    $want_val = ($on ? $on_val : 0) | ($explicit ? $isset_val : 0);
-    $mod = "(watch&~$on_val)|$want_val";
-    if (!$explicit)
-        $mod = "if(watch&$isset_val,watch,$mod)";
-    Dbl::qe("insert into PaperWatch set paperId=$paperId, contactId=$contactId, watch=$want_val on duplicate key update watch=$mod");
-    return !Dbl::has_error();
-}
-
-
 // text helpers
 function commajoin($what, $joinword = "and") {
     $what = array_values($what);

@@ -2011,7 +2011,7 @@ class ReviewValues extends MessageSet {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $this->_mailer_always_combine = false;
             $this->_mailer_diff_view_score = $diffinfo->view_score;
-            $prow->notify(WATCHTYPE_REVIEW, [$this, "review_watch_callback"], $user);
+            $prow->notify_reviews([$this, "review_watch_callback"], $user);
         } else if (!$new_rrow->reviewSubmitted
                    && $diffinfo->fields()
                    && $new_rrow->timeApprovalRequested
@@ -2027,10 +2027,7 @@ class ReviewValues extends MessageSet {
             $this->_mailer_diff_view_score = null;
             $this->_mailer_info["rrow_unsubmitted"] = true;
             $this->_mailer_info["combination_type"] = 1;
-            $userids = [$new_rrow->requestedBy, $reviewer->contactId];
-            if ($this->conf->setting("rev_notifychair") > 0)
-                $userids[] = PaperInfo::NOTIFY_CHAIRS;
-            $prow->notify_users($userids, [$this, "review_watch_callback"], $user);
+            $prow->notify_reviews([$this, "review_watch_callback"], $user);
         }
         if (!empty($this->_mailer_preps))
             HotCRPMailer::send_combined_preparations($this->_mailer_preps);

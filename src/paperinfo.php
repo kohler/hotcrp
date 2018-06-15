@@ -1548,6 +1548,14 @@ class PaperInfo {
         return $crows;
     }
 
+    function has_commenter($contact) {
+        $cid = self::contact_to_cid($contact);
+        foreach ($this->all_comment_skeletons() as $crow)
+            if ($crow->contactId == $cid)
+                return true;
+        return false;
+    }
+
     static function analyze_review_or_comment($x) {
         if (isset($x->commentId))
             return [!!($x->commentType & COMMENTTYPE_DRAFT),
@@ -1598,13 +1606,6 @@ class PaperInfo {
             return "\n\n";
     }
 
-
-    function watching($notifytype, Contact $user) {
-        if ($this->watch & ($notifytype << WATCHSHIFT_ISSET))
-            return ($this->watch & ($notifytype << WATCHSHIFT_ON)) != 0;
-        else
-            return ($user->defaultWatch & ($notifytype << WATCHSHIFT_ALLON)) != 0;
-    }
 
     function notify($notifytype, $callback, $user) {
         $wonflag = ($notifytype << WATCHSHIFT_ON) | ($notifytype << WATCHSHIFT_ALLON);
@@ -1666,31 +1667,33 @@ class PaperInfo {
         $this->replace_contact_info_map($cimap);
     }
 
-    const NOTIFY_CHAIRS = -1000;
-    function notify_users($contactids, $callback, $user) {
-        $q = "select ContactInfo.contactId, firstName, lastName, email,
-                password, contactTags, roles,
+    function notify_reviews($callback, $sending_user) {
+        $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, email,
+                password, contactTags, roles, defaultWatch,
                 PaperReview.reviewType myReviewType,
                 PaperReview.reviewSubmitted myReviewSubmitted,
                 PaperReview.reviewNeedsSubmit myReviewNeedsSubmit,
-                conflictType, preferredEmail, disabled
+                conflictType, watch, preferredEmail, disabled
         from ContactInfo
         left join PaperConflict on (PaperConflict.paperId=$this->paperId and PaperConflict.contactId=ContactInfo.contactId)
+        left join PaperWatch on (PaperWatch.paperId=$this->paperId and PaperWatch.contactId=ContactInfo.contactId)
         left join PaperReview on (PaperReview.paperId=$this->paperId and PaperReview.contactId=ContactInfo.contactId)
-        where ContactInfo.contactId?a";
-        if (array_search(self::NOTIFY_CHAIRS, $contactids) !== false) {
-            if ($this->managerContactId > 0)
-                $contactids[] = $this->managerContactId;
-            $q .= " or (roles!=0 and (roles&" . Contact::ROLE_CHAIR . ")!=0)";
-        }
+        where (watch&" . Contact::WATCH_REVIEW . ")!=0
+        or (defaultWatch&" . (Contact::WATCH_REVIEW_ALL | Contact::WATCH_REVIEW_MANAGED) . ")!=0
+        or conflictType>=" . CONFLICT_AUTHOR . "
+        or reviewType is not null
+        or exists (select * from PaperComment where paperId=$this->paperId and contactId=ContactInfo.contactId)
+        order by conflictType" /* group authors together */);
 
-        $result = $this->conf->qe($q, $contactids);
         $watchers = [];
-        while (($row = Contact::fetch($result, $this->conf))) {
-            if (($user && $row->contactId == $user->contactId)
-                || Contact::is_anonymous_email($row->email))
-                continue;
-            $watchers[] = $row;
+        $lastContactId = 0;
+        while (($minic = Contact::fetch($result, $this->conf))) {
+            if ($minic->contactId == $lastContactId
+                || ($sending_user && $minic->contactId == $sending_user->contactId)
+                || Contact::is_anonymous_email($minic->email))
+                /* skip */;
+            else if ($minic->following_reviews($this, $minic->watch))
+                $watchers[$minic->contactId] = $minic;
         }
         Dbl::free($result);
 

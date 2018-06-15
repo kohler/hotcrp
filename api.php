@@ -88,7 +88,7 @@ if ($Qreq->fn === "events") {
         $from = $Now;
     $when = $from;
     $rf = $Conf->review_form();
-    $events = new PaperEvents($Me, false);
+    $events = new PaperEvents($Me);
     $rows = [];
     foreach ($events->events($when, 10) as $xr) {
         if ($xr->crow)

@@ -113,10 +113,12 @@ class UserStatus extends MessageSet {
 
         if ($user->defaultWatch) {
             $cj->follow = (object) array();
-            if ($user->defaultWatch & (WATCHTYPE_REVIEW << WATCHSHIFT_ON))
+            if ($user->defaultWatch & Contact::WATCH_REVIEW)
                 $cj->follow->reviews = true;
-            if ($user->defaultWatch & (WATCHTYPE_REVIEW << WATCHSHIFT_ALLON))
+            if ($user->defaultWatch & Contact::WATCH_REVIEW_ALL)
                 $cj->follow->reviews = $cj->follow->allreviews = true;
+            if ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED)
+                $cj->follow->managedreviews = true;
             if ($user->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALLON))
                 $cj->follow->allfinal = true;
         }
@@ -325,7 +327,7 @@ class UserStatus extends MessageSet {
             $cj->follow = $this->make_keyed_object($cj->follow, "follow");
             $cj->bad_follow = array();
             foreach ((array) $cj->follow as $k => $v)
-                if ($v && $k !== "reviews" && $k !== "allreviews" && $k !== "allfinal")
+                if ($v && !in_array($k, ["reviews", "allreviews", "managedreviews", "allfinal"]))
                     $cj->bad_follow[] = $k;
         }
 
@@ -529,8 +531,10 @@ class UserStatus extends MessageSet {
         $follow = [];
         if ($qreq->has_watchreview)
             $follow["reviews"] = !!$qreq->watchreview;
-        if ($qreq->has_watchreviewall && ($us->viewer->privChair || $us->user->isPC))
-            $follow["allreviews"] = !!$qreq->watchreviewall;
+        if ($qreq->has_watchallreviews && ($us->viewer->privChair || $us->user->isPC))
+            $follow["allreviews"] = !!$qreq->watchallreviews;
+        if ($qreq->has_watchmanagedreviews && ($us->viewer->privChair || $us->user->isPC))
+            $follow["managedreviews"] = !!$qreq->watchmanagedreviews;
         if ($qreq->has_watchfinalall && $us->viewer->privChair)
             $follow["allfinal"] = !!$qreq->watchfinalall;
         if (!empty($follow))
@@ -738,13 +742,13 @@ class UserStatus extends MessageSet {
         $cfollow = isset($cj->follow) ? $cj->follow : (object) [];
         echo Ht::hidden("has_watchreview", 1);
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
-            echo Ht::hidden("has_watchreviewall", 1);
+            echo Ht::hidden("has_watchallreviews", 1);
             echo "<table><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td>",
                 "<td><div class=\"checki\"><label><span class=\"checkc\">",
                 Ht::checkbox("watchreview", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]),
                 "</span>", $us->conf->_("Reviews and comments on authored or reviewed submissions"), "</label></div>\n",
                 "<div class=\"checki\"><label><span class=\"checkc\">",
-                Ht::checkbox("watchreviewall", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]),
+                Ht::checkbox("watchallreviews", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]),
                 "</span>", $us->conf->_("Reviews and comments on <i>all</i> submissions"), "</label></div>\n";
             if (!$us->user->is_empty() && $us->user->privChair) {
                 echo "<div class=\"checki\"><label><span class=\"checkc\">",

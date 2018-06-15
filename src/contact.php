@@ -54,7 +54,12 @@ class Contact {
     private $topic_interest_map_ = null;
     private $name_for_map_ = [];
     private $contact_sorter_map_ = [];
-    public $defaultWatch = WATCHTYPE_REVIEW;
+    const WATCH_REVIEW_EXPLICIT = 1;  // only in PaperWatch
+    const WATCH_REVIEW = 2;
+    const WATCH_REVIEW_ALL = 4;
+    const WATCH_REVIEW_MANAGED = 8;
+    const WATCH_FINAL_SUBMIT_ALL = 32;
+    public $defaultWatch = self::WATCH_REVIEW;
 
     // Roles
     const ROLE_PC = 1;
@@ -995,9 +1000,11 @@ class Contact {
         if (isset($cj->follow)) {
             $w = 0;
             if (get($cj->follow, "reviews"))
-                $w |= (WATCHTYPE_REVIEW << WATCHSHIFT_ON);
+                $w |= self::WATCH_REVIEW;
             if (get($cj->follow, "allreviews"))
-                $w |= (WATCHTYPE_REVIEW << WATCHSHIFT_ALLON);
+                $w |= self::WATCH_REVIEW_ALL;
+            if (get($cj->follow, "managedreviews"))
+                $w |= self::WATCH_REVIEW_MANAGED;
             if (get($cj->follow, "allfinal"))
                 $w |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALLON);
             $this->_save_assign_field("defaultWatch", $w, $cu);
@@ -3439,6 +3446,22 @@ class Contact {
     function full_matcher() {
         $this->aucollab_matchers();
         return $this->aucollab_matchers_[0];
+    }
+
+
+    // following / email notifications
+
+    function following_reviews(PaperInfo $prow, $watch) {
+        if ($watch & self::WATCH_REVIEW_EXPLICIT)
+            return ($watch & self::WATCH_REVIEW) != 0;
+        else
+            return ($this->defaultWatch & self::WATCH_REVIEW_ALL)
+                || (($this->defaultWatch & self::WATCH_REVIEW_MANAGED)
+                    && $this->allow_administer($prow))
+                || (($this->defaultWatch & self::WATCH_REVIEW)
+                    && ($prow->has_author($this)
+                        || $prow->has_reviewer($this)
+                        || $prow->has_commenter($this)));
     }
 
 

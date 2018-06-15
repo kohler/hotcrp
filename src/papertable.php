@@ -31,7 +31,6 @@ class PaperTable {
     private $npapstrip_tag_entry;
     private $allFolded;
     private $matchPreg;
-    private $watchCheckbox = WATCHTYPE_REVIEW;
     private $entryMatches;
     private $canUploadFinal;
 
@@ -130,7 +129,7 @@ class PaperTable {
             $this->conf->set_active_list($this->find_session_list($prow->paperId));
         else {
             $list = $this->conf->active_list();
-            assert($list && ($list->set_current_id($pid) || $list->digest));
+            assert($list && ($list->set_current_id($prow->paperId) || $list->digest));
         }
 
         $this->matchPreg = [];
@@ -1733,38 +1732,21 @@ class PaperTable {
     private function papstripWatch() {
         $prow = $this->prow;
         $conflictType = $prow->conflict_type($this->user);
-        if (!($this->watchCheckbox
-              && $prow->timeSubmitted > 0
+        if (!($prow->timeSubmitted > 0
               && ($conflictType >= CONFLICT_AUTHOR
                   || $conflictType <= 0
                   || $this->user->is_admin_force())
               && $this->user->contactId > 0))
             return;
         // watch note
-        $result = $this->conf->q_raw("select
-        ContactInfo.contactId, reviewType, commentId, conflictType, watch
-        from ContactInfo
-        left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
-        left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId)
-        left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId)
-        left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId)
-        where ContactInfo.contactId={$this->user->contactId}");
-        $row = edb_row($result);
+        $watch = $this->conf->fetch_ivalue("select watch from PaperWatch where paperId=? and contactId=?", $prow->paperId, $this->user->contactId);
 
         $this->_papstripBegin();
-
-        if ($row[4] && ($row[4] & ($this->watchCheckbox << WATCHSHIFT_ISSET)))
-            $watchValue = $row[4];
-        else if ($row[1] || $row[2] || $row[3] >= CONFLICT_AUTHOR
-                 || $prow->managerContactId == $this->user->contactId)
-            $watchValue = $this->user->defaultWatch;
-        else
-            $watchValue = 0;
 
         echo '<form class="submit-ui"><div>',
             $this->papt("watch",
                         Ht::checkbox("follow", 1,
-                                     $watchValue & ($this->watchCheckbox << WATCHSHIFT_ON),
+                                     $this->user->following_reviews($prow, $watch),
                                      ["class" => "js-follow-change",
                                       "style" => "padding-left:0;margin-left:0"])
                         . "&nbsp;" . Ht::label("Email notification"),

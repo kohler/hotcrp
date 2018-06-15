@@ -1346,6 +1346,13 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 189
         && $conf->ql("alter table ReviewRequest add `affiliation` varbinary(2048) DEFAULT NULL"))
         $conf->update_schema_version(190);
+    if ($conf->sversion == 190) {
+        if ($conf->setting("rev_notifychair") > 0) {
+            $conf->ql("update ContactInfo set defaultWatch=defaultWatch|" . Contact::WATCH_REVIEW_ALL . " where roles!=0 and (roles&" . Contact::ROLE_CHAIR . ")!=0");
+            $conf->ql("delete from Settings where name=?", "rev_notifychair");
+        }
+        $conf->update_schema_version(191);
+    }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

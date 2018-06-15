@@ -293,8 +293,10 @@ class PaperApi {
         $following = friendly_boolean($qreq->following);
         if ($following === null)
             return ["ok" => false, "error" => "Bad 'following'."];
-        saveWatchPreference($prow->paperId, $reviewer->contactId,
-            WATCHTYPE_REVIEW, $following, true);
+        $bits = Contact::WATCH_REVIEW_EXPLICIT | ($following ? Contact::WATCH_REVIEW : 0);
+        $user->conf->qe("insert into PaperWatch set paperId=?, contactId=?, watch=? on duplicate key update watch=(watch&~?)|?",
+            $prow->paperId, $reviewer->contactId, $bits,
+            Contact::WATCH_REVIEW_EXPLICIT | Contact::WATCH_REVIEW, $bits);
         return ["ok" => true, "following" => $following];
     }
 
