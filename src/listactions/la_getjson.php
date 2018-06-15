@@ -26,8 +26,9 @@ class GetJson_ListAction extends ListAction {
             $ps->on_document_export([$this, "document_callback"]);
         }
         foreach ($user->paper_set($ssel, ["topics" => true, "options" => true]) as $prow) {
-            if ($user->allow_administer($prow))
-                $pj[$prow->paperId] = $ps->paper_json($prow);
+            $pj1 = $ps->paper_json($prow);
+            if ($pj1)
+                $pj[$prow->paperId] = $pj1;
             else {
                 $pj[$prow->paperId] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
                 if ($this->iszip)
