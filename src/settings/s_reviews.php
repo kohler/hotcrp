@@ -61,8 +61,6 @@ static function render(SettingValues $sv) {
                                Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"),
         '<strong>Review anonymity:</strong> Are reviewer names hidden from authors?');
 
-    $sv->echo_checkbox('rev_notifychair', 'Notify PC chairs of newly completed reviews by email');
-
 
     // Deadlines
     echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";

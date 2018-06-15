@@ -40,6 +40,7 @@ class MailPreparation {
         if (is_array($to))
             $to = join(", ", $to);
         $to = MimeText::encode_email_header("To: ", $to);
+        error_log("Mailing $to");
         $headers["to"] = $to . $eol;
 
         // set sendmail parameters

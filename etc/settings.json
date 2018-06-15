@@ -288,11 +288,6 @@
         "group": "reviews"
     },
     {
-        "name": "rev_notifychair",
-        "title": "Notify PC chairs of new reviews by email",
-        "type": "checkbox"
-    },
-    {
         "name": "rev_open",
         "title": "Open site for reviewing",
         "type": "cdate",
