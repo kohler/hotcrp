@@ -1006,7 +1006,7 @@ class Contact {
             if (get($cj->follow, "managedreviews"))
                 $w |= self::WATCH_REVIEW_MANAGED;
             if (get($cj->follow, "allfinal"))
-                $w |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALLON);
+                $w |= self::WATCH_FINAL_SUBMIT_ALL;
             $this->_save_assign_field("defaultWatch", $w, $cu);
         }
 

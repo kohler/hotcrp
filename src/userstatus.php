@@ -119,7 +119,7 @@ class UserStatus extends MessageSet {
                 $cj->follow->reviews = $cj->follow->allreviews = true;
             if ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED)
                 $cj->follow->managedreviews = true;
-            if ($user->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALLON))
+            if ($user->defaultWatch & Contact::WATCH_FINAL_SUBMIT_ALL)
                 $cj->follow->allfinal = true;
         }
 
@@ -535,8 +535,8 @@ class UserStatus extends MessageSet {
             $follow["allreviews"] = !!$qreq->watchallreviews;
         if ($qreq->has_watchmanagedreviews && ($us->viewer->privChair || $us->user->isPC))
             $follow["managedreviews"] = !!$qreq->watchmanagedreviews;
-        if ($qreq->has_watchfinalall && $us->viewer->privChair)
-            $follow["allfinal"] = !!$qreq->watchfinalall;
+        if ($qreq->has_watchallfinal && ($us->viewer->privChair || $us->user->is_manager()))
+            $follow["allfinal"] = !!$qreq->watchallfinal;
         if (!empty($follow))
             $cj->follow = (object) $follow;
 
@@ -746,15 +746,21 @@ class UserStatus extends MessageSet {
             echo "<table><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td>",
                 "<td><div class=\"checki\"><label><span class=\"checkc\">",
                 Ht::checkbox("watchreview", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]),
-                "</span>", $us->conf->_("Reviews and comments on authored or reviewed submissions"), "</label></div>\n",
-                "<div class=\"checki\"><label><span class=\"checkc\">",
+                "</span>", $us->conf->_("Reviews and comments on authored or reviewed submissions"), "</label></div>\n";
+            if (!$us->user->is_empty() && $us->user->is_manager()) {
+                echo "<div class=\"checki\"><label><span class=\"checkc\">",
+                    Ht::checkbox("watchmanagedreviews", 1, !!get($follow, "managedreviews"), ["data-default-checked" => !!get($cfollow, "managedreviews")]),
+                    "</span>", $us->conf->_("Reviews and comments on submissions you administer"),
+                    Ht::hidden("has_watchmanagedreviews", 1), "</label></div>\n";
+            }
+            echo "<div class=\"checki\"><label><span class=\"checkc\">",
                 Ht::checkbox("watchallreviews", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]),
                 "</span>", $us->conf->_("Reviews and comments on <i>all</i> submissions"), "</label></div>\n";
-            if (!$us->user->is_empty() && $us->user->privChair) {
+            if (!$us->user->is_empty() && $us->user->is_manager()) {
                 echo "<div class=\"checki\"><label><span class=\"checkc\">",
-                    Ht::checkbox("watchfinalall", 1, !!get($follow, "allfinal"), ["data-default-checked" => !!get($cfollow, "allfinal")]),
-                    "</span>", $us->conf->_("Updates to final versions"),
-                    Ht::hidden("has_watchfinalall", 1), "</label></div>\n";
+                    Ht::checkbox("watchallfinal", 1, !!get($follow, "allfinal"), ["data-default-checked" => !!get($cfollow, "allfinal")]),
+                    "</span>", $us->conf->_("Updates to final versions for submissions you administer"),
+                    Ht::hidden("has_watchallfinal", 1), "</label></div>\n";
             }
             echo "</td></tr></table>";
         } else

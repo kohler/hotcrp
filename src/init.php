@@ -19,16 +19,6 @@ define("CONFLICT_CHAIRMARK", 8);
 define("CONFLICT_AUTHOR", 9);
 define("CONFLICT_CONTACTAUTHOR", 10);
 
-// User explicitly set notification preference (only in PaperWatch.watch)
-define("WATCHSHIFT_ISSET", 0);
-// Notify if author, reviewer, commenter
-define("WATCHSHIFT_ON", 1);
-// Always notify (only in ContactInfo.defaultWatch, generally admin only)
-define("WATCHSHIFT_ALLON", 2);
-
-define("WATCHTYPE_REVIEW", (1 << 0));
-define("WATCHTYPE_FINAL_SUBMIT", (1 << 3));
-
 define("REV_RATINGS_PC", 0);
 define("REV_RATINGS_PC_EXTERNAL", 1);
 define("REV_RATINGS_NONE", 2);

@@ -141,7 +141,8 @@ if (isset($Qreq->revive) && !$newPaper && $Qreq->post_ok()) {
 
 // send watch messages
 function final_submit_watch_callback($prow, $minic) {
-    if ($minic->can_view_paper($prow))
+    if ($minic->can_view_paper($prow)
+        && $minic->allow_administer($prow))
         HotCRPMailer::send_to($minic, "@finalsubmitnotify", $prow);
 }
 
@@ -291,7 +292,7 @@ function update_paper(Qrequest $qreq, $action) {
 
         // other mail confirmations
         if ($action == "final" && !Dbl::has_error() && !$ps->has_error())
-            $prow->notify(WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
+            $prow->notify_final_submit("final_submit_watch_callback", $Me);
     }
 
     return true;
