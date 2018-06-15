@@ -113,9 +113,9 @@ class UserStatus extends MessageSet {
 
         if ($user->defaultWatch) {
             $cj->follow = (object) array();
-            if ($user->defaultWatch & (WATCHTYPE_COMMENT << WATCHSHIFT_ON))
+            if ($user->defaultWatch & (WATCHTYPE_REVIEW << WATCHSHIFT_ON))
                 $cj->follow->reviews = true;
-            if ($user->defaultWatch & (WATCHTYPE_COMMENT << WATCHSHIFT_ALLON))
+            if ($user->defaultWatch & (WATCHTYPE_REVIEW << WATCHSHIFT_ALLON))
                 $cj->follow->reviews = $cj->follow->allreviews = true;
             if ($user->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALLON))
                 $cj->follow->allfinal = true;

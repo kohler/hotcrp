@@ -129,9 +129,9 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
             $row->$k = $i;
         }
         $f = array();
-        if ($user->defaultWatch & (WATCHTYPE_COMMENT << WATCHSHIFT_ON))
+        if ($user->defaultWatch & (WATCHTYPE_REVIEW << WATCHSHIFT_ON))
             $f[] = "reviews";
-        if (($user->defaultWatch & (WATCHTYPE_COMMENT << WATCHSHIFT_ALLON))
+        if (($user->defaultWatch & (WATCHTYPE_REVIEW << WATCHSHIFT_ALLON))
             && ($user->roles & Contact::ROLE_PCLIKE))
             $f[] = "allreviews";
         if (($user->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALLON))

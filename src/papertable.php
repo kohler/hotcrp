@@ -31,7 +31,7 @@ class PaperTable {
     private $npapstrip_tag_entry;
     private $allFolded;
     private $matchPreg;
-    private $watchCheckbox = WATCHTYPE_COMMENT;
+    private $watchCheckbox = WATCHTYPE_REVIEW;
     private $entryMatches;
     private $canUploadFinal;
 

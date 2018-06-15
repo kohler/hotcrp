@@ -1609,7 +1609,7 @@ class PaperInfo {
     function notify($notifytype, $callback, $user) {
         $wonflag = ($notifytype << WATCHSHIFT_ON) | ($notifytype << WATCHSHIFT_ALLON);
         $wsetflag = $wonflag | ($notifytype << WATCHSHIFT_ISSET);
-        $notifychair = ($notifytype === WATCHTYPE_COMMENT || $notifytype === WATCHTYPE_REVIEW) && $this->conf->setting("rev_notifychair") > 0;
+        $notifychair = $notifytype === WATCHTYPE_REVIEW && $this->conf->setting("rev_notifychair") > 0;
 
         $q = "select ContactInfo.contactId, firstName, lastName, email,
                 password, contactTags, roles, defaultWatch,

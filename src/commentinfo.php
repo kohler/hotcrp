@@ -543,7 +543,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $this->merge($comments[$cmtid], $this->prow);
             if ($this->timeNotified == $this->timeModified) {
                 self::$watching = $this;
-                $this->prow->notify(WATCHTYPE_COMMENT, "CommentInfo::watch_callback", $contact);
+                $this->prow->notify(WATCHTYPE_REVIEW, "CommentInfo::watch_callback", $contact);
                 self::$watching = null;
             }
         } else {

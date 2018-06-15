@@ -294,7 +294,7 @@ class PaperApi {
         if ($following === null)
             return ["ok" => false, "error" => "Bad 'following'."];
         saveWatchPreference($prow->paperId, $reviewer->contactId,
-            WATCHTYPE_COMMENT, $following, true);
+            WATCHTYPE_REVIEW, $following, true);
         return ["ok" => true, "following" => $following];
     }
 
