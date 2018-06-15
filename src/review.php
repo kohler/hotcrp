@@ -2026,6 +2026,7 @@ class ReviewValues extends MessageSet {
             $this->_mailer_always_combine = true;
             $this->_mailer_diff_view_score = null;
             $this->_mailer_info["rrow_unsubmitted"] = true;
+            $this->_mailer_info["combination_type"] = 1;
             $userids = [$new_rrow->requestedBy, $reviewer->contactId];
             if ($this->conf->setting("rev_notifychair") > 0)
                 $userids[] = PaperInfo::NOTIFY_CHAIRS;
