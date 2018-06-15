@@ -17,9 +17,16 @@ function die_hard($message) {
 
 // Initialize from an empty database.
 if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql")))
-    die_hard("* Can't reinitialize database.\n" . $Conf->dblink->error);
-while ($Conf->dblink->more_results())
-    Dbl::free($Conf->dblink->next_result());
+    die_hard("* Can't reinitialize database.\n" . $Conf->dblink->error . "\n");
+do {
+    if (($result = $Conf->dblink->store_result()))
+        $result->free();
+    else if ($Conf->dblink->errno)
+        break;
+} while ($Conf->dblink->more_results() && $Conf->dblink->next_result());
+if ($Conf->dblink->errno)
+    die_hard("* Error initializing database.\n" . $Conf->dblink->error . "\n");
+
 // No setup phase.
 $Conf->qe_raw("delete from Settings where name='setupPhase'");
 $Conf->qe_raw("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"position\":1,\"display\":\"default\"}]'");
