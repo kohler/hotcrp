@@ -432,7 +432,7 @@ CREATE TABLE `ReviewRating` (
 DROP TABLE IF EXISTS `ReviewRequest`;
 CREATE TABLE `ReviewRequest` (
   `paperId` int(11) NOT NULL,
-  `email` varchar(120) DEFAULT NULL,
+  `email` varchar(120) NOT NULL,
   `firstName` varbinary(120) DEFAULT NULL,
   `lastName` varbinary(120) DEFAULT NULL,
   `affiliation` varbinary(2048) DEFAULT NULL,

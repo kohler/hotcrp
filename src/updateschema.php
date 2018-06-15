@@ -1334,6 +1334,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperReviewRefused drop key `requestedBy`"))
         $conf->update_schema_version(187);
     if ($conf->sversion == 187
+        && $conf->ql("alter table ReviewRequest change `email` `email` varchar(120) NOT NULL")
         && $conf->ql("alter table ReviewRequest add primary key (`paperId`,`email`)")
         && $conf->ql("alter table ReviewRequest drop key `paperEmail`")
         && $conf->ql("alter table ReviewRequest drop key `paperId`")
