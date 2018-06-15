@@ -527,10 +527,10 @@ class UserStatus extends MessageSet {
         }
 
         $follow = [];
-        if ($qreq->has_watchcomment)
-            $follow["reviews"] = !!$qreq->watchcomment;
-        if ($qreq->has_watchcommentall && ($us->viewer->privChair || $us->user->isPC))
-            $follow["allreviews"] = !!$qreq->watchcommentall;
+        if ($qreq->has_watchreview)
+            $follow["reviews"] = !!$qreq->watchreview;
+        if ($qreq->has_watchreviewall && ($us->viewer->privChair || $us->user->isPC))
+            $follow["allreviews"] = !!$qreq->watchreviewall;
         if ($qreq->has_watchfinalall && $us->viewer->privChair)
             $follow["allfinal"] = !!$qreq->watchfinalall;
         if (!empty($follow))
@@ -736,15 +736,15 @@ class UserStatus extends MessageSet {
         echo '<div class="profile-g"><h3 class="profile">Email notification</h3>';
         $follow = isset($reqj->follow) ? $reqj->follow : (object) [];
         $cfollow = isset($cj->follow) ? $cj->follow : (object) [];
-        echo Ht::hidden("has_watchcomment", 1);
+        echo Ht::hidden("has_watchreview", 1);
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
-            echo Ht::hidden("has_watchcommentall", 1);
+            echo Ht::hidden("has_watchreviewall", 1);
             echo "<table><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td>",
                 "<td><div class=\"checki\"><label><span class=\"checkc\">",
-                Ht::checkbox("watchcomment", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]),
+                Ht::checkbox("watchreview", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]),
                 "</span>", $us->conf->_("Reviews and comments on authored or reviewed submissions"), "</label></div>\n",
                 "<div class=\"checki\"><label><span class=\"checkc\">",
-                Ht::checkbox("watchcommentall", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]),
+                Ht::checkbox("watchreviewall", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]),
                 "</span>", $us->conf->_("Reviews and comments on <i>all</i> submissions"), "</label></div>\n";
             if (!$us->user->is_empty() && $us->user->privChair) {
                 echo "<div class=\"checki\"><label><span class=\"checkc\">",
@@ -754,7 +754,7 @@ class UserStatus extends MessageSet {
             }
             echo "</td></tr></table>";
         } else
-            echo Ht::checkbox("watchcomment", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]), "&nbsp;",
+            echo Ht::checkbox("watchreview", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]), "&nbsp;",
                 Ht::label($us->conf->_("Send mail for new comments on authored or reviewed papers"));
         echo "</div>\n";
     }

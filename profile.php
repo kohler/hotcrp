@@ -429,7 +429,7 @@ if ($newProfile) {
 }
 $Conf->header($title, "account", ["action_bar" => actionBar("account")]);
 
-$useRequest = !$Acct->has_database_account() && isset($Qreq->watchcomment);
+$useRequest = !$Acct->has_database_account() && isset($Qreq->watchreview);
 if ($UserStatus->has_error())
     $need_highlight = $useRequest = true;
 
