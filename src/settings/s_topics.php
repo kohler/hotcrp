@@ -6,14 +6,12 @@ class Topics_SettingRenderer {
     static function render(SettingValues $sv) {
         // Topics
         // load topic interests
-        $result = $sv->conf->q_raw("select topicId, if(interest>0,1,0), count(*) from TopicInterest where interest!=0 group by topicId, interest>0");
-        $interests = array();
-        $ninterests = 0;
+        $result = $sv->conf->q_raw("select topicId, interest from TopicInterest where interest!=0");
+        $interests = [];
         while (($row = edb_row($result))) {
             if (!isset($interests[$row[0]]))
-                $interests[$row[0]] = array();
-            $interests[$row[0]][$row[1]] = $row[2];
-            $ninterests += ($row[2] ? 1 : 0);
+                $interests[$row[0]] = [0, 0];
+            $interests[$row[0]][$row[1] > 0] += 1;
         }
         Dbl::free($result);
 
@@ -26,10 +24,10 @@ class Topics_SettingRenderer {
 
         if ($sv->conf->topic_map()) {
             echo '<div class="mg has-copy-topics"><table><thead><tr><th style="text-align:left">';
-            if ($ninterests)
-                echo '<small class="floatright"># PC interests:</small>';
+            if (!empty($interests))
+                echo '<span class="floatright n"># PC interests: </span>';
             echo '<strong>Current topics</strong></th>';
-            if ($ninterests)
+            if (!empty($interests))
                 echo '<th class="ccaption">Low</th><th class="ccaption">High</th>';
             echo '</tr></thead><tbody>';
             foreach ($sv->conf->topic_map() as $tid => $tname) {
@@ -38,9 +36,11 @@ class Topics_SettingRenderer {
                 echo '<tr><td class="lentry">',
                     Ht::entry("top$tid", $tname, ["size" => 80, "class" => "need-autogrow wide" . ($sv->has_problem_at("top$tid") ? " has-error" : "")]),
                     '</td>';
-                $tinterests = defval($interests, $tid, array());
-                echo '<td class="fx rpentry">', (get($tinterests, 0) ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
-                    '<td class="fx rpentry">', (get($tinterests, 1) ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
+                if (!empty($interests)) {
+                    $tinterests = defval($interests, $tid, array());
+                    echo '<td class="fx rpentry">', (get($tinterests, 0) ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
+                        '<td class="fx rpentry">', (get($tinterests, 1) ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
+                }
             }
             echo '</tbody></table>',
                 Ht::link("Copy current topics to clipboard", "", ["class" => "ui js-settings-copy-topics"]),

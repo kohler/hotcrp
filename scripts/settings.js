@@ -123,15 +123,11 @@ handle_ui.on("js-settings-copy-topics", function () {
     $(this).closest(".has-copy-topics").find("[name^=top]").each(function () {
         topics.push(escape_entities(this.value));
     });
-    var node = $("<div class=\"hidden\" style=\"white-space:pre-line\">" + topics.join("\n") + "</pre>")[0],
-        range = document.createRange();
-    document.body.appendChild(node);
-    range.selectNode(node);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
+    var node = $("<textarea></textarea>").appendTo(document.body);
+    node.val(topics.join("\n"));
+    node[0].select();
     document.execCommand("copy");
-    document.body.removeChild(node);
-    window.getSelection().removeAllRanges();
+    node.remove();
 });
 
 
