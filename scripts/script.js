@@ -4504,7 +4504,7 @@ function search_sort_success(tbl, data_href, data) {
     reorder(tbl, data.ids, data.groups, true);
     $(tbl).data("groups", data.groups);
     tbl.setAttribute("data-hotlist", data.hotlist || "");
-    var want_sorter = data.fwd_sorter || href_sorter(data_href),
+    var want_sorter = data.fwd_sorter || href_sorter(data_href) || "id",
         want_fwd_sorter = want_sorter && sorter_toggle_reverse(want_sorter, false);
     var $sorters = $(tbl).children("thead").find("a.pl_sort");
     $sorters.removeClass("pl_sorting_fwd pl_sorting_rev")
