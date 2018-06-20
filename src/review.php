@@ -561,7 +561,7 @@ class ReviewForm implements JsonSerializable {
                 echo '<div class="revvis">(secret)</div>';
             else if ($f->view_score < VIEWSCORE_PC)
                 echo '<div class="revvis">(shown only to chairs)</div>';
-            else if ($f->view_score < VIEWSCORE_AUTHOR)
+            else if ($f->view_score < VIEWSCORE_AUTHORDEC)
                 echo '<div class="revvis">(hidden from authors)</div>';
             echo '</label></div>';
 
