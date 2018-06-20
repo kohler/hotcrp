@@ -2125,15 +2125,8 @@ function fold(elt, dofold, foldnum) {
 
         // check for session
         var ses = elt.getAttribute("data-fold-session");
-        if (ses) {
-            if (typeof ses === "string" && ses.charAt(0) === "{") {
-                ses = (JSON.parse(ses) || {})[foldnum];
-            } else if (typeof ses === "object") {
-                ses = ses[foldnum];
-            }
-            if (ses) {
-                $.post(hoturl_post("api/setsession", {v: ses + (isopen ? "=1" : "=0")}));
-            }
+        if (ses && (ses = (JSON.parse(ses) || {})[foldnum])) {
+            $.post(hoturl_post("api/setsession", {v: ses + (isopen ? "=1" : "=0")}));
         }
     }
 
@@ -5874,19 +5867,18 @@ plinfo.initialize = function (sel, fo) {
     self = $(sel)[0];
     field_order = fo;
     fields = {};
-    var fold_prefix = $(self).data("foldSessionPrefix");
-    var fold_session = fold_prefix ? {"2": fold_prefix + "anonau", "5": fold_prefix + "force", "6": fold_prefix + "rownum", "7": fold_prefix + "statistics"} : null;
+    var fold_prefix = self.getAttribute("data-fold-session-prefix");
+    if (fold_prefix) {
+        var fs = {"2": fold_prefix + "anonau", "5": fold_prefix + "force", "6": fold_prefix + "rownum", "7": fold_prefix + "statistics"};
+        self.setAttribute("data-fold-session", JSON.stringify(fs));
+    }
     for (var i = 0; i < fo.length; ++i) {
         fields[fo[i].name] = fo[i];
         if (/^(?:#|tag:|tagval:)\S+$/.test(fo[i].name))
             set_tags_callbacks.push(make_tag_column_callback(fo[i]));
-        if (fo[i].foldnum && fold_session)
-            fold_session[fo[i].foldnum] = fold_prefix + fo[i].name;
     }
     if (fields.authors)
         fields.au = fields.anonau = fields.aufull = fields.authors;
-    if (fold_session)
-        $(self).data("foldSession", fold_session);
 };
 plinfo.set_scoresort = function (ss) {
     var re = / (?:counts|average|median|variance|minmax|my)$/;
