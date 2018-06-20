@@ -3135,6 +3135,11 @@ class Contact {
         return $this->conf->can_some_author_view_decision();
     }
 
+    static function can_some_author_view_decision(PaperInfo $prow) {
+        return $prow->outcome
+            && $prow->conf->can_some_author_view_decision();
+    }
+
     function can_set_decision(PaperInfo $prow) {
         return $this->can_administer($prow);
     }
@@ -3627,6 +3632,8 @@ class Contact {
                 }
                 if (self::can_some_author_view_submitted_review($prow))
                     $perm->some_author_can_view_review = true;
+                if (self::can_some_author_view_decision($prow))
+                    $perm->some_author_can_view_decision = true;
                 if ($this->isPC
                     && !$this->conf->can_some_external_reviewer_view_comment())
                     $perm->default_comment_visibility = "pc";

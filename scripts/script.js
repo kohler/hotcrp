@@ -2891,10 +2891,14 @@ function render_review_body(rrow) {
 
         t += '<div class="rv rv' + "glr".charAt(display) + '" data-rf="' + f.uid +
             '"><div class="revvt"><div class="revfn">' + f.name_html;
-        if (f.visibility != "au" && f.visibility != "audec") {
+        x = f.visibility;
+        if (x == "audec" && hotcrp_status && hotcrp_status.myperm
+            && hotcrp_status.myperm.some_author_can_view_decision)
+            x = "au";
+        if (x != "au") {
             t += '<div class="revvis">(' +
                 (({secret: "secret", admin: "shown only to chairs",
-                   pc: "hidden from authors"})[f.visibility] || f.visibility) +
+                   pc: "hidden from authors", audec: "hidden from authors until decision"})[x] || x) +
                 ')</div>';
         }
         t += '</div></div><div class="revv revv' + "glr".charAt(display);
