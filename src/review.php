@@ -784,7 +784,7 @@ $blind\n";
                 $x .= "==-== Secret field.\n";
             else if ($f->view_score < VIEWSCORE_PC)
                 $x .= "==-== Shown only to chairs.\n";
-            else if ($f->view_score < VIEWSCORE_AUTHOR)
+            else if ($f->view_score < VIEWSCORE_AUTHORDEC)
                 $x .= "==-== Hidden from authors.\n";
             if ($f->has_options) {
                 if ($f->allow_empty)
