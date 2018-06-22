@@ -1382,7 +1382,7 @@ class ReviewValues extends MessageSet {
                     }
                     $field = get($this->rf->fieldName, strtolower($match[1]));
                     if (!$field) {
-                        $fname = preg_replace('/\s*\((hidden from authors|PC only|shown only to chairs|secret)\)\z/i', "", $match[1]);
+                        $fname = preg_replace('/\s*\((?:hidden from authors(?: until decision)?|PC only|shown only to chairs|secret)\)\z/i', "", $match[1]);
                         $field = get($this->rf->fieldName, strtolower($fname));
                     }
                     if ($field) {
