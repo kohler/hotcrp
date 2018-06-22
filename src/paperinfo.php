@@ -10,7 +10,6 @@ class PaperContactInfo {
     public $reviewSubmitted = 0;
     public $reviewNeedsSubmit = 1;
     public $review_status = 0;
-    public $review_token_cid = 0;
 
     //public $reviewId;
     //public $reviewToken;
@@ -47,9 +46,6 @@ class PaperContactInfo {
             $ci->reviewSubmitted = (int) $object->myReviewSubmitted;
         if (property_exists($object, "myReviewNeedsSubmit"))
             $ci->reviewNeedsSubmit = (int) $object->myReviewNeedsSubmit;
-        if (property_exists($object, "myReviewContactId")
-            && $object->myReviewContactId != $cid)
-            $ci->review_token_cid = (int) $object->myReviewContactId;
         $ci->update_review_status();
         return $ci;
     }
@@ -71,10 +67,6 @@ class PaperContactInfo {
                   "reviewSubmitted", "reviewOrdinal", "timeApprovalRequested",
                   "reviewNeedsSubmit"] as $k)
             $this->$k = $rrow->$k;*/
-        if ($rrow->contactId == $this->contactId)
-            $this->review_token_cid = 0;
-        else
-            $this->review_token_cid = $rrow->contactId;
         $this->update_review_status();
     }
 
@@ -89,9 +81,6 @@ class PaperContactInfo {
             $this->reviewNeedsSubmit = (int) $this->reviewNeedsSubmit;
         else
             $this->reviewNeedsSubmit = 1;
-        $this->review_token_cid = (int) $this->review_token_cid;
-        if ($this->review_token_cid == $this->contactId)
-            $this->review_token_cid = 0;
         $this->update_review_status();
     }
 
@@ -99,8 +88,7 @@ class PaperContactInfo {
         global $Me;
         $conf = $prow->conf;
         $pid = $prow->paperId;
-        $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit,
-                PaperReview.contactId as review_token_cid";
+        $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit";
         if ($cid && !$rev_tokens
             && $prow->_row_set && $prow->_row_set->size() > 1) {
             $result = $conf->qe("$q, Paper.paperId paperId, $cid contactId
@@ -1194,6 +1182,15 @@ class PaperInfo {
         return null;
     }
 
+    function reviews_of_user($contact) {
+        $cid = self::contact_to_cid($contact);
+        $rrows = [];
+        foreach ($this->reviews_by_id() as $rrow)
+            if ($rrow->contactId == $cid)
+                $rrows[] = $rrow;
+        return $rrows;
+    }
+
     function review_of_ordinal($ordinal) {
         foreach ($this->reviews_by_id() as $rrow)
             if ($rrow->reviewOrdinal == $ordinal)
@@ -1331,11 +1328,10 @@ class PaperInfo {
         if ($contact->can_administer_for_track($this, Track::VIEWREVID)
             || $cid == $contact->contactId)
             return true;
-        else {
-            $rrow = $this->review_of_user($cid);
-            return $rrow
-                && $contact->can_view_review_identity($this, $rrow);
-        }
+        foreach ($this->reviews_of_user($cid) as $rrow)
+            if ($contact->can_view_review_identity($this, $rrow))
+                return true;
+        return false;
     }
 
     function may_have_viewable_scores($field, Contact $contact) {

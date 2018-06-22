@@ -981,7 +981,7 @@ $blind\n";
 
         $open = $sep = " <span class='revinfo'>";
         $xsep = " <span class='barsep'>·</span> ";
-        $showtoken = $rrow && $Me->review_token_cid($prow, $rrow);
+        $showtoken = $rrow && $Me->active_review_token_for($prow, $rrow);
         $type = "";
         if ($rrow && $Me->can_view_review_round($prow, $rrow)) {
             $type = review_type_icon($rrow->reviewType);
@@ -1127,7 +1127,7 @@ $blind\n";
             $rj["editable"] = true;
 
         // identity and time
-        $showtoken = $editable && $contact->review_token_cid($prow, $rrow);
+        $showtoken = $editable && $contact->active_review_token_for($prow, $rrow);
         if ($contact->can_view_review_identity($prow, $rrow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
             $rj["reviewer"] = Text::user_html($rrow);
@@ -1871,7 +1871,7 @@ class ReviewValues extends MessageSet {
         }
 
         // check whether used a review token
-        $usedReviewToken = $user->review_token_cid($prow, $rrow);
+        $usedReviewToken = $user->active_review_token_for($prow, $rrow);
 
         // blind? reviewer type? edit version?
         $reviewBlind = $this->conf->is_review_blind(!!get($this->req, "blind"));

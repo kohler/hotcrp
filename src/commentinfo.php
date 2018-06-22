@@ -254,14 +254,13 @@ class CommentInfo {
         if (!$this->commentId) {
             if (!$contact->can_comment($this->prow, $this))
                 return false;
-            $cj = (object) array("pid" => $this->prow->paperId, "is_new" => true, "editable" => true);
+            $cj = (object) ["pid" => $this->prow->paperId, "is_new" => true, "editable" => true];
             if ($this->commentType & COMMENTTYPE_RESPONSE)
                 $cj->response = $this->conf->resp_round_name($this->commentRound);
             else if ($this->commentType & COMMENTTYPE_BYAUTHOR)
                 $cj->by_author = true;
-            else if (($token_cid = $contact->review_token_cid($this->prow))
-                     && ($rrow = $this->prow->review_of_user($token_cid)))
-                $cj->review_token = encode_token((int) $rrow->reviewToken);
+            else if (($token = $contact->active_review_token_for($this->prow)))
+                $cj->review_token = encode_token($token);
             return $cj;
         }
 

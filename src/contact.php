@@ -1756,16 +1756,18 @@ class Contact {
         return $this->review_tokens_ ? : [];
     }
 
-    function review_token_cid(PaperInfo $prow, ReviewInfo $rrow = null) {
-        if (!$this->review_tokens_)
-            return 0;
-        if (!$rrow) {
-            $ci = $prow->contact_info($this);
-            return $ci->review_token_cid;
-        } else if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->review_tokens_))
-            return (int) $rrow->contactId;
-        else
-            return 0;
+    function active_review_token_for(PaperInfo $prow, ReviewInfo $rrow = null) {
+        if ($this->review_tokens_) {
+            if ($rrow) {
+                if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->review_tokens_))
+                    return (int) $rrow->reviewToken;
+            } else {
+                foreach ($prow->reviews_by_id() as $rrow)
+                    if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->review_tokens_))
+                        return (int) $rrow->reviewToken;
+            }
+        }
+        return false;
     }
 
     function change_review_token($token, $on) {
@@ -2467,7 +2469,9 @@ class Contact {
     function is_my_review(ReviewInfo $rrow = null) {
         return $rrow
             && ($rrow->contactId == $this->contactId
-                || ($this->review_tokens_ && $rrow->reviewToken && in_array($rrow->reviewToken, $this->review_tokens_)));
+                || ($this->review_tokens_
+                    && $rrow->reviewToken
+                    && in_array($rrow->reviewToken, $this->review_tokens_)));
     }
 
     function is_owned_review(ReviewInfo $rrow = null) {
@@ -2929,6 +2933,17 @@ class Contact {
     }
 
 
+    function is_my_comment(PaperInfo $prow, $crow) {
+        if ($crow->contactId == $this->contactId)
+            return true;
+        if ($this->review_tokens_) {
+            foreach ($prow->reviews_of_user($crow->contactId) as $rrow)
+                if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->review_tokens_))
+                    return true;
+        }
+        return false;
+    }
+
     function can_comment(PaperInfo $prow, $crow, $submit = false) {
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
             return $this->can_respond($prow, $crow, $submit);
@@ -2947,10 +2962,8 @@ class Contact {
                             && (!$submit || $this->override_deadlines($rights))))))
             && (!$crow
                 || !$crow->contactId
-                || $crow->contactId == $this->contactId
                 || $rights->allow_administer
-                || ($crow->contactId == $rights->review_token_cid
-                    && $rights->review_token_cid)
+                || $this->is_my_comment($prow, $crow)
                 || ($author
                     && ($crow->commentType & COMMENTTYPE_BYAUTHOR)));
     }
@@ -3046,9 +3059,7 @@ class Contact {
     function can_view_comment(PaperInfo $prow, $crow, $forceShow = null) {
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
         $rights = $this->rights($prow, $forceShow);
-        return ($crow
-                && ($crow->contactId == $this->contactId // wrote this comment
-                    || $crow->contactId == $rights->review_token_cid))
+        return ($crow && $this->is_my_comment($prow, $crow))
             || $rights->can_administer
             || ($rights->act_author_view
                 && ($ctype & (COMMENTTYPE_BYAUTHOR | COMMENTTYPE_RESPONSE)))
