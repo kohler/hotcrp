@@ -1057,4 +1057,13 @@ $au = Author::make_string("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom");
 xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
 xassert_eqq($au->affiliation, "France (Crap) Telecom");
 
+// mailer expansion
+$mailer = new HotCRPMailer(null, null, ["width" => false]);
+xassert_eqq($mailer->expand("%CONFNAME%//%CONFLONGNAME%//%CONFSHORTNAME%"),
+    "Test Conference I (Testconf I)//Test Conference I//Testconf I\n");
+xassert_eqq($mailer->expand("%SITECONTACT%//%ADMINEMAIL%"),
+    "Eddie Kohler <ekohler@hotcrp.lcdf.org>//ekohler@hotcrp.lcdf.org\n");
+xassert_eqq($mailer->expand("%URLENC(ADMINEMAIL)% : %OPT(ADMINEMAIL)% : %OPT(NULL)% : %OPT(EMAIL)%"),
+    "ekohler%40hotcrp.lcdf.org : ekohler@hotcrp.lcdf.org :  : %OPT(EMAIL)%\n");
+
 xassert_exit();

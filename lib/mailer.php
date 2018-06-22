@@ -219,6 +219,8 @@ class Mailer {
         }
 
         // expansions that do not require a recipient
+        if ($what == "%NULL%")
+            return $isbool ? false : "";
         if ($what == "%CONFNAME%")
             return $Conf->full_name();
         if ($what == "%CONFSHORTNAME%")
@@ -251,7 +253,7 @@ class Mailer {
                     $this->preparation->preparation_owner = $this->recipient->email;
                 return $this->expand_user($this->recipient, $m[1]);
             } else if ($isbool)
-                return false;
+                return null;
         }
 
         if ($what == "%LOGINNOTICE%") {

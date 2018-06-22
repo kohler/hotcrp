@@ -121,24 +121,23 @@ class MailChecker {
         sort($wants);
         foreach ($wants as $i => $want) {
             ++Xassert::$n;
-            if (isset($haves[$i])) {
-                if ($haves[$i] === $want
-                    || preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($want)) . "\\z=", $haves[$i])) {
-                    ++Xassert::$nsuccess;
-                } else {
-                    fwrite(STDERR, "Mail assertion failure: " . var_export($haves[$i], true) . " !== " . var_export($want, true) . "\n");
-                    $havel = explode("\n", $haves[$i]);
-                    foreach (explode("\n", $want) as $j => $wantl) {
-                        if (!isset($havel[$j])
-                            || ($havel[$j] !== $wantl
-                                && !preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($wantl, "#\"")) . "\\z=", $havel[$j]))) {
-                            fwrite(STDERR, "... line " . ($j + 1) . " differs near " . $havel[$j] . "\n"
-                                   . "... expected " . $wantl . "\n");
-                            break;
-                        }
+            $have = isset($haves[$i]) ? $haves[$i] : "";
+            if ($have === $want
+                || preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($want)) . "\\z=", $have)) {
+                ++Xassert::$nsuccess;
+            } else {
+                fwrite(STDERR, "Mail assertion failure: " . var_export($have, true) . " !== " . var_export($want, true) . "\n");
+                $havel = explode("\n", $have);
+                foreach (explode("\n", $want) as $j => $wantl) {
+                    if (!isset($havel[$j])
+                        || ($havel[$j] !== $wantl
+                            && !preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($wantl, "#\"")) . "\\z=", $havel[$j]))) {
+                        fwrite(STDERR, "... line " . ($j + 1) . " differs near " . $havel[$j] . "\n"
+                               . "... expected " . $wantl . "\n");
+                        break;
                     }
-                    trigger_error("Assertion failed at " . assert_location() . "\n", E_USER_WARNING);
                 }
+                trigger_error("Assertion failed at " . assert_location() . "\n", E_USER_WARNING);
             }
         }
         self::$preps = [];
