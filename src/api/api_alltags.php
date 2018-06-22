@@ -33,8 +33,10 @@ class AllTags_API {
         $qwhere = ["timeSubmitted>0"];
         $hidden = false;
         if (!$user->privChair) {
-            $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$user->contactId})";
-            $qwhere[] = "conflictType is null";
+            if (!$user->conf->tag_seeall) {
+                $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$user->contactId})";
+                $qwhere[] = "conflictType is null";
+            }
             $tagmap = $user->conf->tags();
             $hidden = $tagmap->has_hidden;
         }
