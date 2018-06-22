@@ -1221,19 +1221,15 @@ class Conf {
     }
 
     function check_track_sensitivity($ttype) {
-        if ($this->tracks)
-            foreach ($this->tracks as $t => $tr)
-                if ($tr[$ttype] !== null)
-                    return true;
-        return false;
+        return ($this->_track_sensitivity & (1 << $ttype)) !== 0;
     }
 
     function check_track_view_sensitivity() {
-        return ($this->_track_sensitivity & Track::BITS_VIEW) != 0;
+        return ($this->_track_sensitivity & Track::BITS_VIEW) !== 0;
     }
 
     function check_track_review_sensitivity() {
-        return ($this->_track_sensitivity & Track::BITS_REVIEW) != 0;
+        return ($this->_track_sensitivity & Track::BITS_REVIEW) !== 0;
     }
 
     function track_permission($tag, $ttype) {

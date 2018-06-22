@@ -8,10 +8,10 @@ class AllTags_API {
             json_exit(403, "Permission error.");
         else if ($user->conf->check_track_view_sensitivity()
                  || (!$user->conf->tag_seeall
-                     && $user->is_explicit_manager())
-                 || (!$user->conf->tag_seeall
-                     && $user->privChair
-                     && $user->conf->has_any_manager()))
+                     && ($user->privChair
+                         ? $user->conf->has_any_manager()
+                         : $user->is_explicit_manager()
+                           || $user->conf->check_track_sensitivity(Track::HIDDENTAG))))
             return self::hard_alltags_api($user);
         else
             return self::easy_alltags_api($user);
