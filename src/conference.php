@@ -743,7 +743,8 @@ class Conf {
     static private function xt_combine($xt1, $xt2) {
         foreach (get_object_vars($xt2) as $k => $v)
             if (!property_exists($xt1, $k)
-                && !in_array($k, ["match", "expand_function", "expand_callback"]))
+                && $k !== "match"
+                && $k !== "expand_callback")
                 $xt1->$k = $v;
     }
     static function xt_enabled($xt) {
@@ -753,12 +754,14 @@ class Conf {
         return !$xt || (isset($xt->disabled) && $xt->disabled);
     }
     static function xt_resolve_require($xt) {
-        if ($xt && isset($xt->require) && !isset(self::$xt_require_resolved[$xt->require])) {
+        if ($xt
+            && isset($xt->require)
+            && !isset(self::$xt_require_resolved[$xt->require])) {
             foreach (expand_includes($xt->require, ["autoload" => true]) as $f)
                 require_once($f);
             self::$xt_require_resolved[$xt->require] = true;
         }
-        return $xt;
+        return $xt && (!isset($xt->disabled) || !$xt->disabled) ? $xt : null;
     }
     function xt_check($expr, $xt, Contact $user = null) {
         $es = is_array($expr) ? $expr : [$expr];
@@ -830,7 +833,10 @@ class Conf {
             if (!call_user_func($checkf, $fxt))
                 continue;
             self::xt_resolve_require($fxt);
-            $r = call_user_func($fxt->expand_callback, $name, $this, $fxt, $m);
+            if (isset($fxt->expand_callback))
+                $r = call_user_func($fxt->expand_callback, $name, $this, $fxt, $m);
+            else
+                $r = (object) ["name" => $name, "match_data" => $m];
             if (is_object($r))
                 $r = [$r];
             foreach ($r ? : [] as $xt) {
@@ -883,8 +889,6 @@ class Conf {
         $uf = $this->xt_search_name($this->_search_keyword_base, $keyword, $checkf);
         if (($expansions = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $checkf, $uf, $user)))
             $uf = $expansions[0];
-        if (self::xt_disabled($uf))
-            $uf = null;
         return self::xt_resolve_require($uf);
     }
 
@@ -904,10 +908,8 @@ class Conf {
         }
         $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
         $uf = $this->xt_search_name($this->_assignment_parsers, $keyword, $checkf);
-        if (self::xt_disabled($uf))
-            $uf = null;
+        $uf = self::xt_resolve_require($uf);
         if ($uf && !isset($uf->__parser)) {
-            self::xt_resolve_require($uf);
             $p = $uf->parser_class;
             $uf->__parser = new $p($this, $uf);
         }
@@ -929,8 +931,6 @@ class Conf {
         }
         $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
         $uf = $this->xt_search_name($this->_formula_functions, $fname, $checkf);
-        if (self::xt_disabled($uf))
-            $uf = null;
         return self::xt_resolve_require($uf);
     }
 
@@ -3651,8 +3651,7 @@ class Conf {
                 $ok = self::xt_add($this->_list_action_renderers, $fj->name, $fj);
             if (isset($fj->callback) && is_string($fj->callback))
                 $ok = self::xt_add($this->_list_action_map, $fj->name, $fj);
-        } else if (isset($fj->match) && is_string($fj->match)
-                   && isset($fj->expand_callback) && is_string($fj->expand_callback)) {
+        } else if (is_string($fj->match) && is_string($fj->expand_callback)) {
             $this->_list_action_factories[] = $fj;
             $ok = true;
         }
@@ -3684,8 +3683,6 @@ class Conf {
             $uf = $this->xt_search_name($this->list_action_map(), substr($name, 0, $s), $checkf, $uf);
         if (($expansions = $this->xt_search_factories($this->_list_action_factories, $name, $checkf, $uf, $user)))
             $uf = $expansions[0];
-        if (self::xt_disabled($uf))
-            $uf = null;
         return self::xt_resolve_require($uf);
     }
 
@@ -3698,11 +3695,10 @@ class Conf {
 
     // Paper columns
     function _add_paper_column_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)
-            && isset($fj->callback) && is_string($fj->callback)) {
+        $cb = isset($fj->callback) && is_string($fj->callback);
+        if (isset($fj->name) && is_string($fj->name) && $cb) {
             return self::xt_add($this->_paper_column_map, $fj->name, $fj);
-        } else if (isset($fj->match) && is_string($fj->match)
-                   && isset($fj->expand_callback) && is_string($fj->expand_callback)) {
+        } else if (is_string($fj->match) && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
             $this->_paper_column_factories[] = $fj;
             return true;
         } else
@@ -3732,17 +3728,16 @@ class Conf {
         $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $checkf);
         $expansions = $this->xt_search_factories($this->_paper_column_factories, $name, $checkf, $uf, $user, "i");
-        return array_filter($expansions ? : [$uf], "Conf::xt_enabled");
+        return array_filter($expansions ? : [$uf], "Conf::xt_resolve_require");
     }
 
 
     // Option types
     function _add_option_type_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)
-            && isset($fj->callback) && is_string($fj->callback))
+        $cb = isset($fj->callback) && is_string($fj->callback);
+        if (isset($fj->name) && is_string($fj->name) && $cb)
             return self::xt_add($this->_option_type_map, $fj->name, $fj);
-        else if (isset($fj->match) && is_string($fj->match)
-                 && isset($fj->expand_callback) && is_string($fj->expand_callback)) {
+        else if (is_string($fj->match) && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
             $this->_option_type_factories[] = $fj;
             return true;
         } else
