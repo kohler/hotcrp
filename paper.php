@@ -113,7 +113,7 @@ if (isset($Qreq->withdraw) && !$newPaper && $Qreq->post_ok()) {
                         $p->unique_preparation = true;
                     $preps[] = $p;
                 }
-            }, $user);
+            }, $Me);
             HotCRPMailer::send_combined_preparations($preps);
         }
 
