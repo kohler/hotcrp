@@ -42,7 +42,6 @@ class HotCRPMailer extends Mailer {
     protected $_tagger = null;
     protected $_statistics = null;
     protected $_tagless = array();
-    protected $_tags = array();
 
 
     function __construct(Conf $conf, $recipient = null, $row = null,
@@ -64,6 +63,7 @@ class HotCRPMailer extends Mailer {
         foreach (array("requester", "reviewer", "other") as $k)
             $this->contacts[$k] = get($rest, $k . "_contact");
         $this->row = $row;
+        assert(!$row || $this->row->paperId > 0);
         foreach (array("rrow", "reviewNumber", "comment_row", "newrev_since") as $k)
             $this->$k = get($rest, $k);
         if (get($rest, "rrow_unsubmitted"))
@@ -201,179 +201,143 @@ class HotCRPMailer extends Mailer {
         }
     }
 
-    function expandvar_generic($what, $isbool) {
-        if ($what == "%REVIEWDEADLINE%") {
-            if ($this->row && @$this->row->reviewType > 0)
-                $rev = ($this->row->reviewType >= REVIEW_PC ? "pc" : "ext");
-            else if ($this->row && isset($this->row->roles))
-                $rev = ($this->row->roles & Contact::ROLE_PCLIKE ? "pc" : "ext");
-            else if ($this->conf->setting("pcrev_soft") != $this->conf->setting("extrev_soft")) {
-                if ($isbool && ($this->conf->setting("pcrev_soft") > 0) == ($this->conf->setting("extrev_soft") > 0))
-                    return $this->conf->setting("pcrev_soft") > 0;
+    function kw_deadline($args, $isbool, $uf) {
+        if ($uf->is_review && $args)
+            $args .= "rev_soft";
+        else if ($uf->is_review) {
+            assert(!$this->row || !isset($this->row->roles));
+            if ($this->row && $this->row->reviewType > 0)
+                $rt = $this->row->reviewType;
+            else {
+                $p = $this->conf->setting("pcrev_soft");
+                $e = $this->conf->setting("extrev_soft");
+                if ($p == $e)
+                    $rt = REVIEW_EXTERNAL;
+                else if ($isbool && ($p > 0) == ($e > 0))
+                    return $p > 0;
                 else
-                    return ($isbool ? null : $what);
-            } else
-                $rev = "ext";
-            $what = "%DEADLINE(" . $rev . "rev_soft)%";
-        }
-        $len = strlen($what);
-        if ($len > 12 && substr($what, 0, 10) == "%DEADLINE(" && substr($what, $len - 2) == ")%") {
-            $inner = substr($what, 10, $len - 12);
-            if ($isbool)
-                return $this->conf->setting($inner) > 0;
-            else
-                return $this->conf->printableTimeSetting($inner);
-        }
-
-        if (($what == "%NUMACCEPTED%" || $what == "%NUMSUBMITTED%")
-            && $this->_statistics === null) {
-            $this->_statistics = array(0, 0);
-            $result = $this->conf->q("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome");
-            while (($row = edb_row($result))) {
-                $this->_statistics[0] += $row[1];
-                if ($row[0] > 0)
-                    $this->_statistics[1] += $row[1];
+                    return null;
             }
+            $args = ($rt >= REVIEW_PC ? "pc" : "ext") . "rev_soft";
         }
-        if ($what == "%NUMSUBMITTED%")
-            return $this->_statistics[0];
-        if ($what == "%NUMACCEPTED%")
-            return $this->_statistics[1];
-
-        if ($what == "%CONTACTDBDESCRIPTION%")
-            return $this->conf->opt("contactdb_description") ? : "HotCRP";
-
-        if (preg_match('/\A%(OTHER|REQUESTER|REVIEWER)(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
-            if ($m[1] === "REVIEWER") {
-                $x = $this->_expand_reviewer($m[2], $isbool);
-                if ($x !== false || $isbool)
-                    return $x;
-            } else if (($c = $this->contacts[strtolower($m[1])]))
-                return $this->expand_user($c, $m[2]);
-            else if ($isbool)
-                return false;
-        }
-
-        if ($what == "%AUTHORVIEWCAPABILITY%"
-            && $this->conf->opt("disableCapabilities"))
-            return "";
-
-        return self::EXPANDVAR_CONTINUE;
+        if ($args && $isbool)
+            return $this->conf->setting($args) > 0;
+        else if ($args)
+            return $this->conf->printableTimeSetting($args);
+        else
+            return null;
+    }
+    function kw_statistic($args, $isbool, $uf) {
+        if ($this->_statistics === null)
+            $this->_statistics = $this->conf->count_submitted_accepted();
+        return $this->_statistics[$uf->index];
+    }
+    function kw_contactdbdescription() {
+        return $this->conf->opt("contactdb_description") ? : "HotCRP";
+    }
+    function kw_reviewercontact($args, $isbool, $uf) {
+        if ($uf->match_data[1] === "REVIEWER") {
+            if (($x = $this->_expand_reviewer($uf->match_data[2], $isbool)) !== false)
+                return $x;
+        } else if (($u = $this->contacts[strtolower($uf->match_data[1])]))
+            return $this->expand_user($u, $uf->match_data[2]);
+        return $isbool ? false : null;
     }
 
-    function expandvar_recipient($what, $isbool) {
-        if ($what == "%NEWASSIGNMENTS%")
-            return $this->get_new_assignments($this->recipient);
+    function kw_newassignments() {
+        return $this->get_new_assignments($this->recipient);
+    }
+    function kw_haspaper() {
+        if ($this->row && $this->row->paperId > 0) {
+            if ($this->preparation)
+                ++$this->preparation->paper_expansions;
+            return true;
+        } else
+            return false;
+    }
 
-        // rest is only there if we have a real paper
-        if (!$this->row || get($this->row, "paperId") <= 0)
-            return self::EXPANDVAR_CONTINUE;
-        if ($this->preparation)
-            ++$this->preparation->paper_expansions;
-
-        if ($what == "%TITLE%")
-            return $this->row->title;
-        if ($what == "%TITLEHINT%") {
-            if (($tw = UnicodeHelper::utf8_abbreviate($this->row->title, 40)))
-                return "\"$tw\"";
-            else
-                return "";
-        }
-        if ($what == "%NUMBER%" || $what == "%PAPER%")
-            return $this->row->paperId;
-        if ($what == "%REVIEWNAME(SUBJECT)%") {
-            if ($this->reviewNumber !== "")
-                return "review #" . $this->reviewNumber;
-            else
-                return "review";
-        }
-        if ($what == "%REVIEWNAME%" || str_starts_with($what, "%REVIEWNAME(")) {
-            if ($this->reviewNumber !== "")
-                return "Review #" . $this->reviewNumber;
-            else
-                return "A review";
-        }
-        if ($what == "%REVIEWNUMBER%")
-            return $this->reviewNumber;
-        if ($what == "%REVIEWID%") {
-            if ($isbool && !$this->rrow)
-                return false;
-            else
-                return $this->rrow ? $this->rrow->reviewId : "";
-        }
-        if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
-            if (!$this->permissionContact->is_site_contact
-                && !$this->row->has_author($this->permissionContact)
-                && !$this->permissionContact->can_view_authors($this->row, false))
-                return ($isbool ? false : "Hidden for blind review");
-            return rtrim($this->row->pretty_text_author_list());
-        }
-        if ($what == "%AUTHORVIEWCAPABILITY%" && isset($this->row->capVersion)
-            && $this->permissionContact->act_author_view($this->row))
+    function kw_title() {
+        return $this->row->title;
+    }
+    function kw_titlehint() {
+        if (($tw = UnicodeHelper::utf8_abbreviate($this->row->title, 40)))
+            return "\"$tw\"";
+        else
+            return "";
+    }
+    function kw_pid() {
+        return $this->row->paperId;
+    }
+    function kw_authors($args, $isbool) {
+        if (!$this->permissionContact->is_site_contact
+            && !$this->row->has_author($this->permissionContact)
+            && !$this->permissionContact->can_view_authors($this->row, false))
+            return $isbool ? false : "Hidden for blind review";
+        return rtrim($this->row->pretty_text_author_list());
+    }
+    function kw_authorviewcapability($args, $isbool) {
+        if ($this->conf->opt("disableCapabilities"))
+            return "";
+        else if ($this->row
+                 && $this->row->capVersion > 0
+                 && $this->permissionContact->act_author_view($this->row))
             return "cap=" . $this->conf->capability_text($this->row, "a");
-        if ($what == "%SHEPHERD%" || $what == "%SHEPHERDNAME%"
-            || $what == "%SHEPHERDEMAIL%") {
-            $pc = $this->conf->pc_members();
-            if (defval($this->row, "shepherdContactId") <= 0
-                || !defval($pc, $this->row->shepherdContactId, null)) {
-                if ($isbool)
-                    return false;
-                else if ($this->expansionType == self::EXPAND_EMAIL)
-                    return "<none>";
-                else
-                    return "(no shepherd assigned)";
-            }
-            $shep = $pc[$this->row->shepherdContactId];
-            if ($what == "%SHEPHERD%")
-                return $this->expand_user($shep, "CONTACT");
-            else if ($what == "%SHEPHERDNAME%")
-                return $this->expand_user($shep, "NAME");
+        else
+            return null;
+    }
+    function kw_tagvalue($args, $isbool, $uf) {
+        $tag = isset($uf->match_data) ? $uf->match_data[1] : $args;
+        $tag = $this->tagger()->check($tag, Tagger::NOVALUE | Tagger::NOPRIVATE);
+        if (!$tag)
+            return null;
+        $value = $this->row->tag_value($tag);
+        if ($isbool)
+            return $value !== false;
+        else if ($value !== false)
+            return (string) $value;
+        else {
+            $this->_tagless[$this->row->paperId] = true;
+            return "(none)";
+        }
+    }
+    function kw_paperpc($args, $isbool, $uf) {
+        $cid = get($this->row, $uf->pctype . "ContactId");
+        if ($cid <= 0 || !($u = $this->conf->cached_user_by_id($cid))) {
+            if ($isbool)
+                return false;
+            else if ($this->expansionType == self::EXPAND_EMAIL
+                     || $uf->userx === "EMAIL")
+                return "<none>";
             else
-                return $this->expand_user($shep, "EMAIL");
+                return "(no $uf->pctype assigned)";
         }
-
-        if ($what == "%REVIEWAUTHOR%" && $this->contacts["reviewer"])
-            return $this->_expand_reviewer("CONTACT", $isbool);
-        if ($what == "%REVIEWS%")
-            return $this->get_reviews();
-        if ($what == "%COMMENTS%")
-            return $this->get_comments(null);
-        $len = strlen($what);
-        if ($len > 12 && substr($what, 0, 10) == "%COMMENTS("
-            && substr($what, $len - 2) == ")%") {
-            if (($t = $this->tagger()->check(substr($what, 10, $len - 12), Tagger::NOVALUE)))
-                return $this->get_comments($t);
-        }
-
-        if (substr($what, 0, 2) == "%#" && substr($what, $len - 1) == "%") {
-            $what = "%TAGVALUE(" . substr($what, 2, $len - 3) . ")%";
-            $len = strlen($what);
-        }
-        if ($len > 12 && substr($what, 0, 10) == "%TAGVALUE("
-            && substr($what, $len - 2) == ")%") {
-            if (($t = $this->tagger()->check(substr($what, 10, $len - 12), Tagger::NOVALUE | Tagger::NOPRIVATE))) {
-                if (!isset($this->_tags[$t])) {
-                    $this->_tags[$t] = array();
-                    $result = $this->conf->qe("select paperId, tagIndex from PaperTag where tag=?", $t);
-                    while (($row = edb_row($result)))
-                        $this->_tags[$t][$row[0]] = $row[1];
-                    Dbl::free($result);
-                }
-                $tv = defval($this->_tags[$t], $this->row->paperId);
-                if ($isbool)
-                    return $tv !== null;
-                else if ($tv !== null)
-                    return $tv;
-                else {
-                    $this->_tagless[$this->row->paperId] = true;
-                    return "(none)";
-                }
-            }
-        }
-
-        if ($this->preparation)
-            --$this->preparation->paper_expansions;
-        return self::EXPANDVAR_CONTINUE;
+        return $this->expand_user($u, $uf->userx);
+    }
+    function kw_reviewname($args) {
+        $s = $args === "SUBJECT";
+        if ($this->reviewNumber !== "")
+            return ($s ? "review #" : "Review #") . $this->reviewNumber;
+        else
+            return ($s ? "review" : "A review");
+    }
+    function kw_reviewnumber() {
+        return $this->reviewNumber;
+    }
+    function kw_reviewid($args, $isbool) {
+        if ($isbool && !$this->rrow)
+            return false;
+        else
+            return $this->rrow ? $this->rrow->reviewId : "";
+    }
+    function kw_reviews() {
+        return $this->get_reviews();
+    }
+    function kw_comments($args, $isbool) {
+        $tag = null;
+        if ($args !== ""
+            && !($tag = $this->tagger()->check($args, Tagger::NOVALUE)))
+            return null;
+        return $this->get_comments($tag);
     }
 
 

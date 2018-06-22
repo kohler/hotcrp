@@ -93,13 +93,11 @@ class Mailer {
     const EXPAND_HEADER = 1;
     const EXPAND_EMAIL = 2;
 
-    const EXPANDVAR_CONTINUE = -9999;
-
     public static $email_fields = array("to" => "To", "cc" => "Cc", "bcc" => "Bcc",
                                         "reply-to" => "Reply-To");
 
     public $conf;
-    protected $recipient = null;
+    public $recipient = null;
 
     protected $width = 75;
     protected $sensitivity = null;
@@ -196,147 +194,157 @@ class Mailer {
     function infer_user_name($r, $contact) {
     }
 
-    function expandvar($what, $isbool = false) {
-        $len = strlen($what);
 
-        // generic expansions: OPT, URLENC
-        if ($len > 7 && substr($what, 0, 5) == "%OPT(" && substr($what, $len - 2) == ")%") {
-            $inner = "%" . substr($what, 5, $len - 7) . "%";
-            $yes = $this->expandvar($inner, true);
-            if ($isbool)
-                return $yes;
-            else if ($yes)
-                return $this->expandvar($inner, false);
-            else
-                return ($yes === null ? $what : "");
-        }
+    static function kw_null() {
+        return false;
+    }
 
-        if ($len > 10 && substr($what, 0, 8) == "%URLENC(" && substr($what, $len - 2) == ")%") {
-            $inner = "%" . substr($what, 8, $len - 10) . "%";
-            $yes = $this->expandvar($inner, true);
-            if ($isbool)
-                return $yes;
-            else if ($yes)
-                return urlencode($this->expandvar($inner, false));
-            else
-                return ($yes === null ? $what : "");
-        }
+    function kw_opt($args, $isbool) {
+        $hasinner = $this->expandvar("%$args%", true);
+        if ($hasinner && !$isbool)
+            return $this->expandvar("%$args%", false);
+        else
+            return $hasinner;
+    }
 
-        // expansions that do not require a recipient
-        if ($what == "%NULL%")
-            return $isbool ? false : "";
-        if ($what == "%CONFNAME%")
+    static function kw_urlenc($args, $isbool, $m) {
+        $hasinner = $m->expandvar("%$args%", true);
+        if ($hasinner && !$isbool)
+            return urlencode($m->expandvar("%$args%", false));
+        else
+            return $hasinner;
+    }
+
+    function kw_confnames($args, $isbool, $uf) {
+        if ($uf->name === "CONFNAME")
             return $this->conf->full_name();
-        if ($what == "%CONFSHORTNAME%")
+        else if ($uf->name == "CONFSHORTNAME")
             return $this->conf->short_name;
-        if ($what == "%CONFLONGNAME%")
+        else
             return $this->conf->long_name;
-        if ($what == "%SIGNATURE%")
-            return $this->conf->opt("emailSignature") ? : "- " . $this->conf->short_name . " Submissions";
-        if ($what == "%ADMIN%" || $what == "%SITECONTACT%")
-            return $this->expand_user($this->conf->site_contact(), "CONTACT");
-        if ($what == "%ADMINNAME%")
-            return $this->expand_user($this->conf->site_contact(), "NAME");
-        if ($what == "%ADMINEMAIL%" || $what == "%SITEEMAIL%")
-            return $this->expand_user($this->conf->site_contact(), "EMAIL");
-        if ($what == "%URL%")
-            return $this->conf->opt("paperSite");
-        else if ($len > 7 && substr($what, 0, 5) == "%URL(" && substr($what, $len - 2) == ")%") {
-            $a = preg_split('/\s*,\s*/', substr($what, 5, $len - 7));
-            for ($i = 0; $i < count($a); ++$i) {
-                $a[$i] = $this->expand($a[$i], "urlpart");
-                $a[$i] = preg_replace('/\&(?=\&|\z)/', "", $a[$i]);
+    }
+
+    function kw_siteuser($args, $isbool, $uf) {
+        return $this->expand_user($this->conf->site_contact(), $uf->userx);
+    }
+
+    static function kw_signature($args, $isbool, $m) {
+        return $m->conf->opt("emailSignature") ? : "- " . $m->conf->short_name . " Submissions";
+    }
+
+    static function kw_url($args, $isbool, $m) {
+        if (!$args)
+            return $m->conf->opt("paperSite");
+        else {
+            $a = preg_split('/\s*,\s*/', $args);
+            foreach ($a as &$t) {
+                $t = preg_replace('/\&(?=\&|\z)/', "", $m->expand($t, "urlpart"));
             }
             return hoturl_absolute_nodefaults($a[0], isset($a[1]) ? $a[1] : "");
         }
-        if ($what == "%PHP%")
-            return Navigation::php_suffix();
-        if (preg_match('/\A%(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
-            if ($this->recipient) {
-                if ($this->preparation)
-                    $this->preparation->preparation_owner = $this->recipient->email;
-                return $this->expand_user($this->recipient, $m[1]);
-            } else if ($isbool)
-                return null;
-        }
+    }
 
-        if ($what == "%LOGINNOTICE%") {
-            if ($this->conf->opt("disableCapabilities"))
-                return $this->expand($this->conf->opt("mailtool_loginNotice", " To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
-            else
-                return "";
-        }
-        if ($what == "%REASON%" || $what == "%ADMINUPDATE%" || $what == "%NOTES%") {
-            $which = strtolower(substr($what, 1, strlen($what) - 2));
-            $value = $this->$which;
-            if ($value === null && !$this->recipient)
-                return ($isbool ? null : $what);
-            else if ($what == "%ADMINUPDATE%")
-                return $value ? "An administrator performed this update. " : "";
-            else
-                return $value === null ? "" : $value;
-        }
+    static function kw_loginnotice($args, $isbool, $m) {
+        if ($m->conf->opt("disableCapabilities"))
+            return $m->expand($m->conf->opt("mailtool_loginNotice", " To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
+        else
+            return "";
+    }
 
-        $result = $this->expandvar_generic($what, $isbool);
-        if ($result !== self::EXPANDVAR_CONTINUE)
-            return $result;
+    static function kw_adminupdate($args, $isbool, $m) {
+        if ($m->adminupdate)
+            return "An administrator performed this update. ";
+        else
+            return $m->recipient ? "" : null;
+    }
 
-        // exit if no recipient
+    static function kw_notes($args, $isbool, $m, $uf) {
+        $which = strtolower($uf->name);
+        $value = $m->$which;
+        if ($value !== null || $m->recipient)
+            return (string) $value;
+        else
+            return null;
+    }
+
+    static function kw_recipient($args, $isbool, $m, $uf) {
+        if ($m->preparation)
+            $m->preparation->preparation_owner = $m->recipient->email;
+        return $m->expand_user($m->recipient, $uf->userx);
+    }
+
+    static function kw_capability($args, $isbool, $m, $uf) {
+        return $isbool || $m->capability ? $m->capability : "";
+    }
+
+    function kw_login($args, $isbool, $uf) {
         $external_password = $this->conf->external_login();
-        if (!$this->recipient) {
-            if ($isbool && $what == "%PASSWORD%" && $external_password)
-                return false;
-            else
-                return ($isbool ? null : $what);
+        if (!$this->recipient)
+            return $external_password ? false : null;
+
+        $password = false;
+        if (!$external_password) {
+            $pwd_plaintext = $this->recipient->plaintext_password();
+            if ($pwd_plaintext && !$this->sensitivity)
+                $password = $pwd_plaintext;
+            else if ($pwd_plaintext && $this->sensitivity === "display")
+                $password = "HIDDEN";
         }
 
-        // expansions that require a recipient
-        if ($what == "%LOGINURL%"
-            || $what == "%LOGINURLPARTS%"
-            || $what == "%PASSWORD%") {
-            $password = false;
-            if (!$external_password) {
-                $pwd_plaintext = $this->recipient->plaintext_password();
-                if ($pwd_plaintext && !$this->sensitivity)
-                    $password = $pwd_plaintext;
-                else if ($pwd_plaintext && $this->sensitivity === "display")
-                    $password = "HIDDEN";
-            }
-            $loginparts = "";
-            if (!$this->conf->opt("httpAuthLogin")) {
-                $loginparts = "email=" . urlencode($this->recipient->email);
-                if ($password)
-                    $loginparts .= "&password=" . urlencode($password);
-            }
-            if ($what == "%LOGINURL%")
-                return $this->conf->opt("paperSite") . ($loginparts ? "/?" . $loginparts : "/");
-            else if ($what == "%LOGINURLPARTS%")
-                return $loginparts;
-            else
-                return ($isbool || $password ? $password : "");
+        $loginparts = "";
+        if (!$this->conf->opt("httpAuthLogin")) {
+            $loginparts = "email=" . urlencode($this->recipient->email);
+            if ($password)
+                $loginparts .= "&password=" . urlencode($password);
         }
-        if ($what == "%CAPABILITY%")
-            return ($isbool || $this->capability ? $this->capability : "");
 
-        $result = $this->expandvar_recipient($what, $isbool);
-        if ($result !== self::EXPANDVAR_CONTINUE)
-            return $result;
+        if ($uf->name === "LOGINURL")
+            return $this->conf->opt("paperSite") . ($loginparts ? "/?" . $loginparts : "/");
+        else if ($uf->name === "LOGINURLPARTS")
+            return $loginparts;
+        else
+            return $password;
+    }
 
-        // fallback
+    function expandvar($what, $isbool = false) {
+        if (str_ends_with($what, ")%") && ($paren = strpos($what, "("))) {
+            $name = substr($what, 1, $paren - 1);
+            $args = substr($what, $paren + 1, strlen($what) - $paren - 3);
+        } else {
+            $name = substr($what, 1, strlen($what) - 2);
+            $args = "";
+        }
+
+        $mks = $this->conf->mail_keywords($name);
+        foreach ($mks as $uf) {
+            $ok = $this->recipient || (isset($uf->global) && $uf->global);
+            if ($ok && isset($uf->expand_if)) {
+                if (is_string($uf->expand_if)) {
+                    if ($uf->expand_if[0] === "*")
+                        $ok = call_user_func([$this, substr($uf->expand_if, 1)], $uf);
+                    else
+                        $ok = call_user_func($uf->expand_if, $this, $uf);
+                } else
+                    $ok = $uf->expand_if;
+            }
+
+            if (!$ok)
+                $x = null;
+            else if ($uf->callback[0] === "*")
+                $x = call_user_func([$this, substr($uf->callback, 1)], $args, $isbool, $uf);
+            else
+                $x = call_user_func($uf->callback, $args, $isbool, $this, $uf);
+
+            if ($x !== null)
+                return $isbool ? $x : (string) $x;
+        }
+
         if ($isbool)
-            return false;
+            return $mks ? null : false;
         else {
             $this->_unexpanded[$what] = true;
             return $what;
         }
-    }
-
-    function expandvar_generic($what, $isbool) {
-        return self::EXPANDVAR_CONTINUE;
-    }
-
-    function expandvar_recipient($what, $isbool) {
-        return self::EXPANDVAR_CONTINUE;
     }
 
 
@@ -412,10 +420,9 @@ class Mailer {
 
     function expand($text, $field = null) {
         if (is_array($text)) {
-            $a = array();
-            foreach ($text as $k => $t)
-                $a[$k] = $this->expand($t, $k);
-            return $a;
+            foreach ($text as $k => &$t)
+                $t = $this->expand($t, $k);
+            return $text;
         }
 
         // leave early on empty string

@@ -96,6 +96,7 @@ etc/emojicodes.json
 etc/formulafunctions.json
 etc/helptopics.json
 etc/listactions.json
+etc/mailkeywords.json
 etc/msgs.json
 etc/optiontypes.json
 etc/papercolumns.json

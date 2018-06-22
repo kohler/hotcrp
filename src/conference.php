@@ -117,6 +117,8 @@ class Conf {
     private $_hook_factories = null;
     public $_file_filters = null; // maintained externally
     public $_setting_info = null; // maintained externally
+    private $_mail_keyword_map = null;
+    private $_mail_keyword_factories = null;
 
     public $paper = null; // current paper row
     private $_active_list = false;
@@ -3766,6 +3768,35 @@ class Conf {
         if (($expansions = $this->xt_search_factories($this->_option_type_factories, $name, [$this, "xt_allowed"], $uf, null, "i")))
             $uf = $expansions[0];
         return $uf;
+    }
+
+
+    // Mail keywords
+    function _add_mail_keyword_json($fj) {
+        $cb = isset($fj->callback) && is_string($fj->callback);
+        if (isset($fj->name) && is_string($fj->name) && $cb)
+            return self::xt_add($this->_mail_keyword_map, $fj->name, $fj);
+        else if (is_string($fj->match) && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
+            $this->_mail_keyword_factories[] = $fj;
+            return true;
+        } else
+            return false;
+    }
+    function mail_keyword_map() {
+        if ($this->_mail_keyword_map === null) {
+            $this->_mail_keyword_map = $this->_mail_keyword_factories = [];
+            expand_json_includes_callback(["etc/mailkeywords.json"], [$this, "_add_mail_keyword_json"]);
+            if (($mks = $this->opt("mailKeywords")))
+                expand_json_includes_callback($mks, [$this, "_add_mail_keyword_json"]);
+            usort($this->_mail_keyword_factories, "Conf::xt_priority_compare");
+        }
+        return $this->_mail_keyword_map;
+    }
+    function mail_keywords($name) {
+        $checkf = [$this, "xt_allowed"];
+        $uf = $this->xt_search_name($this->mail_keyword_map(), $name, $checkf);
+        $expansions = $this->xt_search_factories($this->_mail_keyword_factories, $name, $checkf, $uf, null, "");
+        return array_filter($expansions ? : [$uf], "Conf::xt_resolve_require");
     }
 
 
