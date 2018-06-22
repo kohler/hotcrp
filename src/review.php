@@ -632,8 +632,8 @@ class ReviewForm implements JsonSerializable {
             foreach (self::$review_author_seen as $x)
                 if ($x[0] === $conf) {
                     $q[] = $x[1];
-                    $qv[] = $x[2];
-                    $qv[] = $x[3];
+                    for ($i = 2; $i < count($x); ++$i)
+                        $qv[] = $x[$i];
                 } else
                     $next[] = $x;
             self::$review_author_seen = $next;
@@ -645,7 +645,8 @@ class ReviewForm implements JsonSerializable {
     static private function check_review_author_seen($prow, $rrow, $contact,
                                                      $no_update = false) {
         global $Now;
-        if ($rrow && !$rrow->reviewAuthorSeen
+        if ($rrow
+            && !$rrow->reviewAuthorSeen
             && $contact->act_author_view($prow)
             && !$contact->is_actas_user()) {
             // XXX combination of review tokens & authorship gets weird
@@ -657,8 +658,8 @@ class ReviewForm implements JsonSerializable {
                     self::$review_author_seen = [];
                 }
                 self::$review_author_seen[] = [$contact->conf,
-                    "update PaperReview set reviewAuthorSeen=? where reviewId=?",
-                    $rrow->reviewAuthorSeen, $rrow->reviewId];
+                    "update PaperReview set reviewAuthorSeen=? where paperId=? and reviewId=?",
+                    $rrow->reviewAuthorSeen, $rrow->paperId, $rrow->reviewId];
             }
         }
     }
