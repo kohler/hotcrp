@@ -513,8 +513,7 @@ class Mailer {
     }
 
     function create_preparation() {
-        global $Conf;
-        return new MailPreparation($Conf);
+        return new MailPreparation($this->conf);
     }
 
     function make_preparation($template, $rest = array()) {

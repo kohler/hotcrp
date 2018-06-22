@@ -169,7 +169,7 @@ class HotCRPMailer extends Mailer {
         $since = "";
         if ($this->newrev_since)
             $since = " and r.timeRequested>=$this->newrev_since";
-        $result = Dbl::qe("select r.paperId, p.title
+        $result = $this->conf->qe("select r.paperId, p.title
                 from PaperReview r join Paper p using (paperId)
                 where r.contactId=" . $contact->contactId . "
                 and r.timeRequested>r.timeRequestNotified$since
@@ -228,7 +228,7 @@ class HotCRPMailer extends Mailer {
         if (($what == "%NUMACCEPTED%" || $what == "%NUMSUBMITTED%")
             && $this->_statistics === null) {
             $this->_statistics = array(0, 0);
-            $result = Dbl::q("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome");
+            $result = $this->conf->q("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome");
             while (($row = edb_row($result))) {
                 $this->_statistics[0] += $row[1];
                 if ($row[0] > 0)
@@ -354,7 +354,7 @@ class HotCRPMailer extends Mailer {
             if (($t = $this->tagger()->check(substr($what, 10, $len - 12), Tagger::NOVALUE | Tagger::NOPRIVATE))) {
                 if (!isset($this->_tags[$t])) {
                     $this->_tags[$t] = array();
-                    $result = Dbl::qe("select paperId, tagIndex from PaperTag where tag=?", $t);
+                    $result = $this->conf->qe("select paperId, tagIndex from PaperTag where tag=?", $t);
                     while (($row = edb_row($result)))
                         $this->_tags[$t][$row[0]] = $row[1];
                     Dbl::free($result);
@@ -404,8 +404,7 @@ class HotCRPMailer extends Mailer {
     }
 
     function create_preparation() {
-        global $Conf;
-        $prep = new HotCRPMailPreparation($Conf);
+        $prep = new HotCRPMailPreparation($this->conf);
         if ($this->row && get($this->row, "paperId") > 0) {
             $prep->paperId = $this->row->paperId;
             $prep->conflictType = $this->row->has_author($this->recipient);
@@ -422,7 +421,7 @@ class HotCRPMailer extends Mailer {
     static function prepare_to($recipient, $template, $row, $rest = array()) {
         if (defval($recipient, "disabled"))
             return null;
-    $mailer = new HotCRPMailer($recipient->conf, $recipient, $row, $rest);
+        $mailer = new HotCRPMailer($recipient->conf, $recipient, $row, $rest);
         if (($checkf = get($rest, "check_function"))
             && !call_user_func($checkf, $recipient, $mailer->row, $mailer->rrow))
             return null;
@@ -435,9 +434,9 @@ class HotCRPMailer extends Mailer {
     }
 
     static function send_contacts($template, $row, $rest = array()) {
-        global $Conf, $Me;
+        global $Me;
 
-        $result = Dbl::qe("select ContactInfo.contactId,
+        $result = $row->conf->qe("select ContactInfo.contactId,
                 firstName, lastName, email, preferredEmail, password,
                 roles, disabled, contactTags,
                 conflictType, 0 myReviewType
@@ -450,7 +449,7 @@ class HotCRPMailer extends Mailer {
 
         $preps = $contacts = array();
         $rest["combination_type"] = 1;
-        while (($contact = Contact::fetch($result, $Conf))) {
+        while (($contact = Contact::fetch($result, $row->conf))) {
             $row->load_my_contact_info($contact->contactId, $contact);
             if (($p = self::prepare_to($contact, $template, $row, $rest))) {
                 $preps[] = $p;
@@ -467,48 +466,9 @@ class HotCRPMailer extends Mailer {
                 $contactsmsg = pluralx($contacts, "contact") . ", " . commajoin($contacts);
             else
                 $contactsmsg = "contact(s)";
-            $Conf->infoMsg("Sent email to paper #{$row->paperId}’s $contactsmsg$endmsg");
+            $row->conf->infoMsg("Sent email to paper #{$row->paperId}’s $contactsmsg$endmsg");
         }
         return count($contacts) > 0;
-    }
-
-    static function send_reviewers($template, $row, $rest = array()) {
-        global $Conf, $Me;
-
-        $result = Dbl::qe("select ContactInfo.contactId,
-                firstName, lastName, email, preferredEmail, password,
-                roles, disabled, contactTags,
-                conflictType, reviewType myReviewType
-                from ContactInfo
-                join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$row->paperId)
-                left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$row->paperId)
-                group by ContactInfo.contactId");
-
-        if (!isset($rest["cc"]) && $Conf->opt("emailCc"))
-            $rest["cc"] = $Conf->opt("emailCc");
-        else if (!isset($rest["cc"]))
-            $rest["cc"] = Text::user_email_to($Conf->site_contact());
-
-        // must set the current conflict type in $row for each contact
-        $contact_info_map = $row->replace_contact_info_map(null);
-
-        $preps = $contacts = array();
-        while (($contact = Contact::fetch($result, $Conf))) {
-            $row->load_my_contact_info($contact->contactId, $contact);
-            $rest["combination_type"] = $contact->can_view_review_identity($row, null, true) ? 1 : 0;
-            if (($p = self::prepare_to($contact, $template, $row, $rest))) {
-                $preps[] = $p;
-                $contacts[] = Text::user_html($contact);
-            }
-        }
-        self::send_combined_preparations($preps);
-
-        $row->replace_contact_info_map($contact_info_map);
-        if ($Me->allow_administer($row) && !$row->has_author($Me)
-            && count($contacts)) {
-            $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
-            $Conf->infoMsg("Sent email to paper #{$row->paperId}’s " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
-        }
     }
 }
 

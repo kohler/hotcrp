@@ -105,8 +105,17 @@ if (isset($Qreq->withdraw) && !$newPaper && $Qreq->post_ok()) {
         }
 
         // email reviewers
-        if ($prow->reviews_by_id())
-            HotCRPMailer::send_reviewers("@withdrawreviewer", $prow, ["reason" => $reason]);
+        if ($prow->reviews_by_id()) {
+            $preps = [];
+            $prow->notify_reviews(function ($prow, $minic) use ($reason, &$preps) {
+                if (($p = HotCRPMailer::prepare_to($minic, "@withdrawreviewer", $prow, ["reason" => $reason]))) {
+                    if (!$minic->can_view_review_identity($prow, null))
+                        $p->unique_preparation = true;
+                    $preps[] = $p;
+                }
+            }, $user);
+            HotCRPMailer::send_combined_preparations($preps);
+        }
 
         // remove voting tags so people don't have phantom votes
         if ($Conf->tags()->has_vote) {
