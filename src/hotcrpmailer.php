@@ -45,7 +45,9 @@ class HotCRPMailer extends Mailer {
     protected $_tags = array();
 
 
-    function __construct($recipient = null, $row = null, $rest = array()) {
+    function __construct(Conf $conf, $recipient = null, $row = null,
+                         $rest = array()) {
+        parent::__construct($conf);
         $this->reset($recipient, $row, $rest);
         if (isset($rest["combination_type"]))
             $this->combination_type = $rest["combination_type"];
@@ -76,7 +78,7 @@ class HotCRPMailer extends Mailer {
         else if (!$this->contacts["reviewer"] && $this->comment_row && get($this->comment_row, "reviewEmail"))
             $this->contacts["reviewer"] = self::make_reviewer_contact($this->comment_row);
         // Do not put passwords in email that is cc'd elsewhere
-        if ((!$Me || !$Me->privChair || opt("chairHidePasswords"))
+        if ((!$Me || !$Me->privChair || $this->conf->opt("chairHidePasswords"))
             && (get($rest, "cc") || get($rest, "bcc"))
             && (get($rest, "sensitivity") === null || get($rest, "sensitivity") === "display"))
             $this->sensitivity = "high";
@@ -85,12 +87,11 @@ class HotCRPMailer extends Mailer {
 
     // expansion helpers
     private function _expand_reviewer($type, $isbool) {
-        global $Conf;
         if (!($c = $this->contacts["reviewer"]))
             return false;
         if ($this->row
             && $this->rrow
-            && $Conf->is_review_blind($this->rrow)
+            && $this->conf->is_review_blind($this->rrow)
             && !get($this->permissionContact, "privChair")
             && (!($this->permissionContact instanceof Contact)
                 || !$this->permissionContact->can_view_review_identity($this->row, $this->rrow, false))) {
@@ -111,7 +112,6 @@ class HotCRPMailer extends Mailer {
     }
 
     private function get_reviews() {
-        global $Conf;
         if ($this->rrow)
             $rrows = array($this->rrow);
         else {
@@ -120,11 +120,11 @@ class HotCRPMailer extends Mailer {
         }
 
         // save old au_seerev setting, and reset it so authors can see them.
-        if (!($au_seerev = $Conf->au_seerev))
-            $Conf->au_seerev = Conf::AUSEEREV_YES;
+        if (!($au_seerev = $this->conf->au_seerev))
+            $this->conf->au_seerev = Conf::AUSEEREV_YES;
 
         $text = "";
-        $rf = $Conf->review_form();
+        $rf = $this->conf->review_form();
         foreach ($rrows as $rrow)
             if (($rrow->reviewSubmitted
                  || ($rrow == $this->rrow && $this->rrow_unsubmitted))
@@ -134,19 +134,18 @@ class HotCRPMailer extends Mailer {
                 $text .= $rf->pretty_text($this->row, $rrow, $this->permissionContact, $this->no_send, true);
             }
 
-        $Conf->au_seerev = $au_seerev;
+        $this->conf->au_seerev = $au_seerev;
         if ($text === "" && $au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE && !empty($rrows))
             $text = "[Reviews are hidden since you have incomplete reviews of your own.]\n";
         return $text;
     }
 
     private function get_comments($tag) {
-        global $Conf;
         $crows = $this->comment_row ? array($this->comment_row) : $this->row->all_comments();
 
         // save old au_seerev setting, and reset it so authors can see them.
-        if (!($au_seerev = $Conf->au_seerev))
-            $Conf->au_seerev = Conf::AUSEEREV_YES;
+        if (!($au_seerev = $this->conf->au_seerev))
+            $this->conf->au_seerev = Conf::AUSEEREV_YES;
 
         $crows = array_filter($crows, function ($crow) use ($tag) {
             return (!$tag || $crow->has_tag($tag))
@@ -162,12 +161,11 @@ class HotCRPMailer extends Mailer {
             $text .= $crow->unparse_text($this->permissionContact, true);
         }
 
-        $Conf->au_seerev = $au_seerev;
+        $this->conf->au_seerev = $au_seerev;
         return $text;
     }
 
     private function get_new_assignments($contact) {
-        global $Conf;
         $since = "";
         if ($this->newrev_since)
             $since = " and r.timeRequested>=$this->newrev_since";
@@ -204,15 +202,14 @@ class HotCRPMailer extends Mailer {
     }
 
     function expandvar_generic($what, $isbool) {
-        global $Conf;
         if ($what == "%REVIEWDEADLINE%") {
             if ($this->row && @$this->row->reviewType > 0)
                 $rev = ($this->row->reviewType >= REVIEW_PC ? "pc" : "ext");
             else if ($this->row && isset($this->row->roles))
                 $rev = ($this->row->roles & Contact::ROLE_PCLIKE ? "pc" : "ext");
-            else if ($Conf->setting("pcrev_soft") != $Conf->setting("extrev_soft")) {
-                if ($isbool && ($Conf->setting("pcrev_soft") > 0) == ($Conf->setting("extrev_soft") > 0))
-                    return $Conf->setting("pcrev_soft") > 0;
+            else if ($this->conf->setting("pcrev_soft") != $this->conf->setting("extrev_soft")) {
+                if ($isbool && ($this->conf->setting("pcrev_soft") > 0) == ($this->conf->setting("extrev_soft") > 0))
+                    return $this->conf->setting("pcrev_soft") > 0;
                 else
                     return ($isbool ? null : $what);
             } else
@@ -223,9 +220,9 @@ class HotCRPMailer extends Mailer {
         if ($len > 12 && substr($what, 0, 10) == "%DEADLINE(" && substr($what, $len - 2) == ")%") {
             $inner = substr($what, 10, $len - 12);
             if ($isbool)
-                return $Conf->setting($inner) > 0;
+                return $this->conf->setting($inner) > 0;
             else
-                return $Conf->printableTimeSetting($inner);
+                return $this->conf->printableTimeSetting($inner);
         }
 
         if (($what == "%NUMACCEPTED%" || $what == "%NUMSUBMITTED%")
@@ -244,7 +241,7 @@ class HotCRPMailer extends Mailer {
             return $this->_statistics[1];
 
         if ($what == "%CONTACTDBDESCRIPTION%")
-            return opt("contactdb_description") ? : "HotCRP";
+            return $this->conf->opt("contactdb_description") ? : "HotCRP";
 
         if (preg_match('/\A%(OTHER|REQUESTER|REVIEWER)(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
             if ($m[1] === "REVIEWER") {
@@ -257,14 +254,14 @@ class HotCRPMailer extends Mailer {
                 return false;
         }
 
-        if ($what == "%AUTHORVIEWCAPABILITY%" && opt("disableCapabilities"))
+        if ($what == "%AUTHORVIEWCAPABILITY%"
+            && $this->conf->opt("disableCapabilities"))
             return "";
 
         return self::EXPANDVAR_CONTINUE;
     }
 
     function expandvar_recipient($what, $isbool) {
-        global $Conf;
         if ($what == "%NEWASSIGNMENTS%")
             return $this->get_new_assignments($this->recipient);
 
@@ -313,10 +310,10 @@ class HotCRPMailer extends Mailer {
         }
         if ($what == "%AUTHORVIEWCAPABILITY%" && isset($this->row->capVersion)
             && $this->permissionContact->act_author_view($this->row))
-            return "cap=" . $Conf->capability_text($this->row, "a");
+            return "cap=" . $this->conf->capability_text($this->row, "a");
         if ($what == "%SHEPHERD%" || $what == "%SHEPHERDNAME%"
             || $what == "%SHEPHERDEMAIL%") {
-            $pc = $Conf->pc_members();
+            $pc = $this->conf->pc_members();
             if (defval($this->row, "shepherdContactId") <= 0
                 || !defval($pc, $this->row->shepherdContactId, null)) {
                 if ($isbool)
@@ -425,7 +422,7 @@ class HotCRPMailer extends Mailer {
     static function prepare_to($recipient, $template, $row, $rest = array()) {
         if (defval($recipient, "disabled"))
             return null;
-        $mailer = new HotCRPMailer($recipient, $row, $rest);
+    $mailer = new HotCRPMailer($recipient->conf, $recipient, $row, $rest);
         if (($checkf = get($rest, "check_function"))
             && !call_user_func($checkf, $recipient, $mailer->row, $mailer->rrow))
             return null;
@@ -487,8 +484,8 @@ class HotCRPMailer extends Mailer {
                 left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$row->paperId)
                 group by ContactInfo.contactId");
 
-        if (!isset($rest["cc"]) && opt("emailCc"))
-            $rest["cc"] = opt("emailCc");
+        if (!isset($rest["cc"]) && $Conf->opt("emailCc"))
+            $rest["cc"] = $Conf->opt("emailCc");
         else if (!isset($rest["cc"]))
             $rest["cc"] = Text::user_email_to($Conf->site_contact());
 

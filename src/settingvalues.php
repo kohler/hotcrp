@@ -267,13 +267,6 @@ class SettingParser {
         else
             return null;
     }
-
-    static private $null_mailer;
-    static function expand_mail_template($name, $default) {
-        if (!self::$null_mailer)
-            self::$null_mailer = new HotCRPMailer(null, null, array("width" => false));
-        return self::$null_mailer->expand_template($name, $default);
-    }
 }
 
 class SettingValues extends MessageSet {
@@ -294,6 +287,7 @@ class SettingValues extends MessageSet {
     private $hint_status = array();
     private $has_req = array();
     private $near_msgs = null;
+    private $null_mailer;
 
     private $_gxt = null;
 
@@ -791,6 +785,12 @@ class SettingValues extends MessageSet {
             return false;
     }
 
+    function expand_mail_template($name, $default) {
+        if (!$this->null_mailer)
+            $this->null_mailer = new HotCRPMailer($this->conf, null, null, array("width" => false));
+        return $this->null_mailer->expand_template($name, $default);
+    }
+
 
     function execute() {
         global $Now;
@@ -975,7 +975,7 @@ class SettingValues extends MessageSet {
         } else if ($si->type === "string") {
             // Avoid storing the default message in the database
             if (substr($si->name, 0, 9) == "mailbody_") {
-                $t = SettingParser::expand_mail_template(substr($si->name, 9), true);
+                $t = $this->expand_mail_template(substr($si->name, 9), true);
                 $v = cleannl($v);
                 if ($t["body"] == $v)
                     return "";

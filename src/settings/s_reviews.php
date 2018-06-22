@@ -188,9 +188,9 @@ static function render(SettingValues $sv) {
         $sv->echo_checkbox("extrev_approve", "Requesters must approve external reviews after they are submitted", ["item_class" => "fx2"]);
         echo "</div>\n";
 
-        $t = SettingParser::expand_mail_template("requestreview", false);
+        $t = $sv->expand_mail_template("requestreview", false);
         echo '<div id="foldmailbody_requestreview" class="settings-g ',
-            ($t == SettingParser::expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
+            ($t == $sv->expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
             '">';
         echo '<div class="f-i"><div class="f-c n">',
             '<a class="ui q js-foldup" href="">', expander(null, 0),

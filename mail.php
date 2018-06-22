@@ -38,7 +38,7 @@ if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t]))
 
 // mailer
 $mailer_options = array("requester_contact" => $Me);
-$null_mailer = new HotCRPMailer(null, null, array_merge(array("width" => false), $mailer_options));
+$null_mailer = new HotCRPMailer($Conf, null, null, array_merge(array("width" => false), $mailer_options));
 
 // template options
 if (isset($Qreq->monreq))
@@ -344,7 +344,7 @@ class MailSender {
         $rest = array_merge($rest, $mailer_options);
 
         // test whether this mail is paper-sensitive
-        $mailer = new HotCRPMailer($Me, null, $rest);
+        $mailer = new HotCRPMailer($Conf, $Me, null, $rest);
         $prep = $mailer->make_preparation($template, $rest);
         $paper_sensitive = preg_match('/%[A-Z0-9]+[(%]/', $prep->subject . $prep->body);
 
@@ -368,7 +368,7 @@ class MailSender {
         } else
             $rest["no_send"] = true;
 
-        $mailer = new HotCRPMailer;
+        $mailer = new HotCRPMailer($Conf);
         $mailer->combination_type = $this->recip->combination_type($paper_sensitive);
         $fake_prep = new HotCRPMailPreparation($Conf);
         $fake_prep->fake = true;

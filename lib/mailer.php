@@ -98,6 +98,7 @@ class Mailer {
     public static $email_fields = array("to" => "To", "cc" => "Cc", "bcc" => "Bcc",
                                         "reply-to" => "Reply-To");
 
+    public $conf;
     protected $recipient = null;
 
     protected $width = 75;
@@ -114,7 +115,8 @@ class Mailer {
 
     static private $eol = null;
 
-    function __construct($recipient = null, $settings = array()) {
+    function __construct(Conf $conf, $recipient = null, $settings = array()) {
+        $this->conf = $conf;
         $this->reset($recipient, $settings);
     }
 
@@ -151,8 +153,11 @@ class Mailer {
             $r->email = $contact->preferredEmail;
 
         // maybe infer username
-        if ($r->firstName == "" && $r->lastName == "" && is_object($contact)
-            && (get_s($contact, "email") !== "" || get_s($contact, "preferredEmail") !== ""))
+        if ($r->firstName == ""
+            && $r->lastName == ""
+            && is_object($contact)
+            && (get_s($contact, "email") !== ""
+                || get_s($contact, "preferredEmail") !== ""))
             $this->infer_user_name($r, $contact);
 
         if ($out == "NAME" || $out == "CONTACT")
@@ -192,7 +197,6 @@ class Mailer {
     }
 
     function expandvar($what, $isbool = false) {
-        global $Conf;
         $len = strlen($what);
 
         // generic expansions: OPT, URLENC
@@ -222,21 +226,21 @@ class Mailer {
         if ($what == "%NULL%")
             return $isbool ? false : "";
         if ($what == "%CONFNAME%")
-            return $Conf->full_name();
+            return $this->conf->full_name();
         if ($what == "%CONFSHORTNAME%")
-            return $Conf->short_name;
+            return $this->conf->short_name;
         if ($what == "%CONFLONGNAME%")
-            return $Conf->long_name;
+            return $this->conf->long_name;
         if ($what == "%SIGNATURE%")
-            return $Conf->opt("emailSignature") ? : "- " . $Conf->short_name . " Submissions";
+            return $this->conf->opt("emailSignature") ? : "- " . $this->conf->short_name . " Submissions";
         if ($what == "%ADMIN%" || $what == "%SITECONTACT%")
-            return $this->expand_user($Conf->site_contact(), "CONTACT");
+            return $this->expand_user($this->conf->site_contact(), "CONTACT");
         if ($what == "%ADMINNAME%")
-            return $this->expand_user($Conf->site_contact(), "NAME");
+            return $this->expand_user($this->conf->site_contact(), "NAME");
         if ($what == "%ADMINEMAIL%" || $what == "%SITEEMAIL%")
-            return $this->expand_user($Conf->site_contact(), "EMAIL");
+            return $this->expand_user($this->conf->site_contact(), "EMAIL");
         if ($what == "%URL%")
-            return $Conf->opt("paperSite");
+            return $this->conf->opt("paperSite");
         else if ($len > 7 && substr($what, 0, 5) == "%URL(" && substr($what, $len - 2) == ")%") {
             $a = preg_split('/\s*,\s*/', substr($what, 5, $len - 7));
             for ($i = 0; $i < count($a); ++$i) {
@@ -257,8 +261,8 @@ class Mailer {
         }
 
         if ($what == "%LOGINNOTICE%") {
-            if ($Conf->opt("disableCapabilities"))
-                return $this->expand($Conf->opt("mailtool_loginNotice", " To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
+            if ($this->conf->opt("disableCapabilities"))
+                return $this->expand($this->conf->opt("mailtool_loginNotice", " To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
             else
                 return "";
         }
@@ -278,7 +282,7 @@ class Mailer {
             return $result;
 
         // exit if no recipient
-        $external_password = $Conf->external_login();
+        $external_password = $this->conf->external_login();
         if (!$this->recipient) {
             if ($isbool && $what == "%PASSWORD%" && $external_password)
                 return false;
@@ -299,13 +303,13 @@ class Mailer {
                     $password = "HIDDEN";
             }
             $loginparts = "";
-            if (!$Conf->opt("httpAuthLogin")) {
+            if (!$this->conf->opt("httpAuthLogin")) {
                 $loginparts = "email=" . urlencode($this->recipient->email);
                 if ($password)
                     $loginparts .= "&password=" . urlencode($password);
             }
             if ($what == "%LOGINURL%")
-                return $Conf->opt("paperSite") . ($loginparts ? "/?" . $loginparts : "/");
+                return $this->conf->opt("paperSite") . ($loginparts ? "/?" . $loginparts : "/");
             else if ($what == "%LOGINURLPARTS%")
                 return $loginparts;
             else
@@ -514,8 +518,6 @@ class Mailer {
     }
 
     function make_preparation($template, $rest = array()) {
-        global $Conf;
-
         // look up template
         if (is_string($template) && $template[0] === "@")
             $template = self::get_template(substr($template, 1));
@@ -549,10 +551,10 @@ class Mailer {
         $prep->sendable = self::allow_send($recipient->email);
 
         // parse headers
-        if (!$Conf->opt("emailFromHeader"))
-            $Conf->set_opt("emailFromHeader", MimeText::encode_email_header("From: ", $Conf->opt("emailFrom")));
+        if (!$this->conf->opt("emailFromHeader"))
+            $this->conf->set_opt("emailFromHeader", MimeText::encode_email_header("From: ", $this->conf->opt("emailFrom")));
         $eol = self::eol();
-        $prep->headers = array("from" => $Conf->opt("emailFromHeader") . $eol, "subject" => $subject . $eol, "to" => "");
+        $prep->headers = array("from" => $this->conf->opt("emailFromHeader") . $eol, "subject" => $subject . $eol, "to" => "");
         foreach (self::$email_fields as $lcfield => $field)
             if (($text = get_s($mail, $lcfield)) !== "" && $text !== "<none>") {
                 if (($hdr = MimeText::encode_email_header($field . ": ", $text)))
@@ -781,5 +783,4 @@ class MimeText {
         } else
             return $text;
     }
-
 }

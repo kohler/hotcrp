@@ -416,7 +416,7 @@ echo '<div class="papertext g">',
     '</div>';
 
 // reason area
-$null_mailer = new HotCRPMailer;
+$null_mailer = new HotCRPMailer($Conf);
 $reqbody = $null_mailer->expand_template("requestreview", false);
 if (strpos($reqbody["body"], "%REASON%") !== false) {
     echo '<div class="f-i">',
