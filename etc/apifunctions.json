@@ -5,7 +5,8 @@
         "synonym": ["manager"]
     },
     {
-        "name": "alltags", "get": true, "callback": "PaperApi::alltags_api"
+        "name": "alltags", "get": true,
+        "callback": "AllTags_API::run"
     },
     {
         "name": "checkformat", "paper": true, "get": true, "post": true,

@@ -175,53 +175,6 @@ class PaperApi {
             json_exit(["ok" => true, "result" => '<span class="nw">' . join(',</span> <span class="nw">', $result) . '</span>']);
     }
 
-    static function alltags_api(Contact $user, $qreq, $prow) {
-        if (!$user->isPC)
-            json_exit(["ok" => false]);
-
-        $need_paper = $cflt_where = false;
-        $where = $args = array();
-
-        if ($user->allow_administer(null)) {
-            $need_paper = true;
-            if ($user->conf->has_any_manager() && !$user->conf->tag_seeall)
-                $cflt_where = "(p.managerContactId=0 or p.managerContactId=$user->contactId or pc.conflictType is null)";
-        } else if ($user->conf->check_track_sensitivity(Track::VIEW)) {
-            $where[] = "t.paperId ?a";
-            $args[] = $user->list_submitted_papers_with_viewable_tags();
-        } else {
-            $need_paper = true;
-            if ($user->conf->has_any_manager() && !$user->conf->tag_seeall)
-                $cflt_where = "(p.managerContactId=$user->contactId or pc.conflictType is null)";
-            else if (!$user->conf->tag_seeall)
-                $cflt_where = "pc.conflictType is null";
-        }
-
-        $q = "select distinct tag from PaperTag t";
-        if ($need_paper) {
-            $q .= " join Paper p on (p.paperId=t.paperId)";
-            $where[] = "p.timeSubmitted>0";
-        }
-        if ($cflt_where) {
-            $q .= " left join PaperConflict pc on (pc.paperId=t.paperId and pc.contactId=$user->contactId)";
-            $where[] = $cflt_where;
-        }
-        $q .= " where " . join(" and ", $where);
-
-        $tags = array();
-        $result = $user->conf->qe_apply($q, $args);
-        while (($row = edb_row($result))) {
-            $twiddle = strpos($row[0], "~");
-            if ($twiddle === false
-                || ($twiddle == 0 && $row[0][1] === "~" && $user->privChair))
-                $tags[] = $row[0];
-            else if ($twiddle > 0 && substr($row[0], 0, $twiddle) == $user->contactId)
-                $tags[] = substr($row[0], $twiddle);
-        }
-        Dbl::free($result);
-        json_exit(["ok" => true, "tags" => $tags]);
-    }
-
     static function get_user(Contact $user, Qrequest $qreq, $forceShow = null) {
         $u = $user;
         if (isset($qreq->u) || isset($qreq->reviewer)) {

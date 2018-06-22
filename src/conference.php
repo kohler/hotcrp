@@ -2606,6 +2606,7 @@ class Conf {
         //   "myConflicts"      Only conflicted papers
         //   "commenterName"    Include commenter names
         //   "tags"             Include paperTags
+        //   "minimal"          Only include minimal paper fields
         //   "tagIndex" => $tag Include tagIndex of named tag
         //   "tagIndex" => tag array -- include tagIndex, tagIndex1, ...
         //   "topics"
@@ -2648,7 +2649,10 @@ class Conf {
 
         $joins = array("Paper");
 
-        $cols = array("Paper.*, PaperConflict.conflictType");
+        if (get($options, "minimal"))
+            $cols = ["Paper.paperId, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.outcome, Paper.leadContactId, PaperConflict.conflictType"];
+        else
+            $cols = ["Paper.*, PaperConflict.conflictType"];
 
         $aujoinwhere = null;
         if (get($options, "author") && $contact
@@ -2798,6 +2802,8 @@ class Conf {
             . "\nfrom " . join("\n    ", $joins);
         if (!empty($where))
             $pq .= "\nwhere " . join("\n    and ", $where);
+        if (get($options, "tags") === "require")
+            $pq .= "\nhaving paperTags!=''";
 
         // grouping and ordering
         $pq .= "\ngroup by Paper.paperId\n"

@@ -3214,8 +3214,7 @@ class Contact {
     }
 
     function can_view_tags(PaperInfo $prow = null) {
-        // see also PaperApi::alltags,
-        // Contact::list_submitted_papers_with_viewable_tags
+        // see also AllTags_API::alltags
         if (!$prow)
             return $this->isPC;
         $rights = $this->rights($prow);
@@ -3270,47 +3269,6 @@ class Contact {
     function can_view_any_peruser_tags($tag) {
         return $this->is_manager()
             || ($this->isPC && $this->conf->tags()->is_votish($tag));
-    }
-
-    function list_submitted_papers_with_viewable_tags() {
-        $pids = array();
-        if (!$this->isPC)
-            return $pids;
-        else if (!$this->privChair && $this->conf->check_track_view_sensitivity()) {
-            $q = "select p.paperId, pt.paperTags, r.reviewType from Paper p
-                left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag where tag ?a group by paperId) as pt on (pt.paperId=p.paperId)
-                left join PaperReview r on (r.paperId=p.paperId and r.contactId=$this->contactId)";
-            if ($this->conf->tag_seeall)
-                $q .= "\nwhere p.timeSubmitted>0";
-            else
-                $q .= "\nleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=$this->contactId)
-                where p.timeSubmitted>0 and (pc.conflictType is null or p.managerContactId=$this->contactId)";
-            $result = $this->conf->qe($q, $this->conf->track_tags());
-            while ($result && ($prow = PaperInfo::fetch($result, $this)))
-                if ((int) $prow->reviewType >= REVIEW_PC
-                    || $this->conf->check_tracks($prow, $this, Track::VIEW))
-                    $pids[] = (int) $prow->paperId;
-            Dbl::free($result);
-            return $pids;
-        } else if (!$this->privChair && !$this->conf->tag_seeall) {
-            $q = "select p.paperId from Paper p
-                left join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=$this->contactId)
-                where p.timeSubmitted>0 and ";
-            if ($this->conf->has_any_manager())
-                $q .= "(pc.conflictType is null or p.managerContactId=$this->contactId)";
-            else
-                $q .= "pc.conflictType is null";
-        } else if ($this->privChair && $this->conf->has_any_manager() && !$this->conf->tag_seeall)
-            $q = "select p.paperId from Paper p
-                left join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=$this->contactId)
-                where p.timeSubmitted>0 and (pc.conflictType is null or p.managerContactId=$this->contactId or p.managerContactId=0)";
-        else
-            $q = "select p.paperId from Paper p where p.timeSubmitted>0";
-        $result = $this->conf->qe($q);
-        while (($row = edb_row($result)))
-            $pids[] = (int) $row[0];
-        Dbl::free($result);
-        return $pids;
     }
 
     function can_change_tag(PaperInfo $prow, $tag, $previndex, $index) {
@@ -3706,7 +3664,8 @@ class Contact {
     function paper_set($pids, $options = null) {
         if (is_int($pids)) {
             $options["paperId"] = $pids;
-        } else if (is_array($pids) && !is_associative_array($pids)
+        } else if (is_array($pids)
+                   && !is_associative_array($pids)
                    && (!empty($pids) || $options !== null)) {
             $options["paperId"] = $pids;
         } else if (is_object($pids) && $pids instanceof SearchSelection) {
