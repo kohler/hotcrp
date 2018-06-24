@@ -972,11 +972,10 @@ class SearchQueryInfo {
         if ($this->_has_my_review)
             return;
         $this->_has_my_review = true;
+        $this->add_conflict_columns();
         $tokens = $this->user->review_tokens();
         if (!$tokens && !$this->user->contactId) {
             $this->add_column("myReviewType", "null");
-            $this->add_column("myReviewNeedsSubmit", "null");
-            $this->add_column("myReviewSubmitted", "null");
         } else {
             if (($tokens = $this->user->review_tokens()))
                 $this->add_table("MyReview", ["left join", "(select paperId, max(reviewType) reviewType, max(reviewNeedsSubmit) reviewNeedsSubmit, max(reviewSubmitted) reviewSubmitted from PaperReview where contactId={$this->user->contactId} or reviewToken in (" . join(",", $tokens) . ") group by paperId)"]);

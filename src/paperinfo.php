@@ -38,14 +38,11 @@ class PaperContactInfo {
 
     static function make_my(PaperInfo $prow, $cid, $object) {
         $ci = PaperContactInfo::make_empty($prow, $cid);
-        if (property_exists($object, "conflictType"))
-            $ci->conflictType = (int) $object->conflictType;
-        if (property_exists($object, "myReviewType"))
-            $ci->reviewType = (int) $object->myReviewType;
-        if (property_exists($object, "myReviewSubmitted"))
+        $ci->conflictType = (int) $object->conflictType;
+        if (($ci->reviewType = (int) $object->myReviewType)) {
             $ci->reviewSubmitted = (int) $object->myReviewSubmitted;
-        if (property_exists($object, "myReviewNeedsSubmit"))
             $ci->reviewNeedsSubmit = (int) $object->myReviewNeedsSubmit;
+        }
         $ci->update_review_status();
         return $ci;
     }
@@ -273,14 +270,15 @@ class PaperInfo {
                 $this->$k = $v;
         $this->paperId = (int) $this->paperId;
         $this->managerContactId = (int) $this->managerContactId;
-        if ($contact && (property_exists($this, "conflictType")
-                         || property_exists($this, "myReviewType"))) {
+        if ($contact && property_exists($this, "myReviewType")) {
             if ($contact === true)
                 $cid = property_exists($this, "contactId") ? $this->contactId : null;
             else
                 $cid = is_object($contact) ? $contact->contactId : $contact;
             $this->_rights_version = Contact::$rights_version;
             $this->load_my_contact_info($cid, $this);
+        } else if ($contact && property_exists($this, "conflictType")) {
+            assert("conflictType exists but myReviewType does not " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         }
         foreach (["paperTags", "optionIds"] as $k)
             if (property_exists($this, $k) && $this->$k === null)
