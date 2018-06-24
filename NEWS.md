@@ -8,9 +8,10 @@ HotCRP NEWS
 * Internal refactoring continues. Remove `$_REQUEST`; reduce reliance on
   inline Javascript handlers.
 
-* Support PHP 7.2; stop supporting 5.5.
+* Support PHP 7.2; stop supporting PHP 5.5.
 
-* Many bug fixes and usability improvements.
+* Many bug fixes and usability improvements, including a bug where reviews
+  looked ugly.
 
 
 ## Version 2.101 - 18.Oct.2017
