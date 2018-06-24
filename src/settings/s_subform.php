@@ -59,7 +59,7 @@ class BanalSettings {
         }
     }
     static function parse($suffix, $sv, $check) {
-        global $ConfSitePATH, $Now;
+        global $Now;
         if (!isset($sv->req["sub_banal$suffix"])) {
             $fs = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
             $sv->save("sub_banal$suffix", $fs->is_banal_empty() ? 0 : -1);
