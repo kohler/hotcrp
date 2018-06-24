@@ -4,47 +4,58 @@
 
 class GroupedExtensions {
     private $_subgroups;
+    static private $next_placeholder;
 
     function _add_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)) {
-            if (!isset($fj->group)) {
-                if (($pos = strrpos($fj->name, "/")) !== false)
-                    $fj->group = substr($fj->name, 0, $pos);
-                else
-                    $fj->group = $fj->name;
-            }
-            if (!isset($fj->synonym))
-                $fj->synonym = [];
-            else if (is_string($fj->synonym))
-                $fj->synonym = [$fj->synonym];
-            if (!isset($fj->anchorid)
-                && ($pos = strpos($fj->name, "/")) !== false) {
-                $x = substr($fj->name, $pos + 1);
-                $fj->anchorid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9_:.]+/', "-", strtolower($x));
-            }
-            $this->_subgroups[] = $fj;
-            return true;
-        } else
-            return false;
+        if (!isset($fj->name)) {
+            $fj->name = "__" . self::$next_placeholder . "__";
+            ++self::$next_placeholder;
+        }
+        if (!isset($fj->group)) {
+            if (($pos = strrpos($fj->name, "/")) !== false)
+                $fj->group = substr($fj->name, 0, $pos);
+            else
+                $fj->group = $fj->name;
+        }
+        if (!isset($fj->synonym))
+            $fj->synonym = [];
+        else if (is_string($fj->synonym))
+            $fj->synonym = [$fj->synonym];
+        if (!isset($fj->anchorid)
+            && !str_starts_with($fj->name, "__")
+            && ($pos = strpos($fj->name, "/")) !== false) {
+            $x = substr($fj->name, $pos + 1);
+            $fj->anchorid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9_:.]+/', "-", strtolower($x));
+        }
+        $this->_subgroups[] = $fj;
+        return true;
     }
     function __construct(Contact $user, $args /* ... */) {
+        self::$next_placeholder = 1;
         $this->_subgroups = [];
         foreach (func_get_args() as $i => $arg) {
             if ($i > 0 && $arg)
                 expand_json_includes_callback($arg, [$this, "_add_json"]);
         }
         usort($this->_subgroups, "Conf::xt_priority_compare");
-        $sgs = $known = [];
+        $sgs = [];
         foreach ($this->_subgroups as $gj) {
-            if (isset($known[$gj->name]) || !$user->conf->xt_allowed($gj, $user))
-                continue;
-            $known[$gj->name] = true;
-            foreach ($gj->synonym as $syn)
-                $known[$syn] = true;
-            if (Conf::xt_enabled($gj))
-                $sgs[$gj->name] = $gj;
+            if ($user->conf->xt_allowed($gj, $user)) {
+                if (isset($sgs[$gj->name])) {
+                    $pgj = $sgs[$gj->name];
+                    if (isset($pgj->merge) && $pgj->merge) {
+                        unset($pgj->merge);
+                        $sgs[$gj->name] = object_replace_recursive($gj, $pgj);
+                    }
+                } else
+                    $sgs[$gj->name] = $gj;
+            }
         }
-        $this->_subgroups = $sgs;
+        $this->_subgroups = [];
+        foreach ($sgs as $name => $gj) {
+            if (Conf::xt_enabled($gj))
+                $this->_subgroups[$name] = $gj;
+        }
         uasort($this->_subgroups, function ($aj, $bj) {
             if ($aj->group !== $bj->group) {
                 if (isset($this->_subgroups[$aj->group]))
