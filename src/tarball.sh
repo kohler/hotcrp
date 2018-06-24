@@ -105,6 +105,7 @@ etc/reviewformlibrary.json
 etc/searchkeywords.json
 etc/settings.json
 etc/settinggroups.json
+etc/submissioneditgroups.json
 
 lib/.htaccess
 lib/abbreviationmatcher.php

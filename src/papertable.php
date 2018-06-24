@@ -674,17 +674,20 @@ class PaperTable {
     }
 
     private function echo_editable_abstract() {
-        $title = $this->field_name("Abstract");
-        if ($this->conf->opt("noAbstract") === 2)
-            $title .= ' <span class="n">(optional)</span>';
-        echo $this->editable_papt("abstract", $title, ["for" => "abstract"]),
-            $this->field_hint("Abstract"),
-            $this->messages_for("abstract"),
-            '<div class="papev abstract">';
-        if (($fi = $this->conf->format_info($this->prow ? $this->prow->paperFormat : null)))
-            echo $fi->description_preview_html();
-        echo $this->editable_textarea("abstract"),
-            "</div></div>\n\n";
+        $noAbstract = $this->conf->opt("noAbstract");
+        if ($noAbstract !== 1 && $noAbstract !== true) {
+            $title = $this->field_name("Abstract");
+            if ($noAbstract === 2)
+                $title .= ' <span class="n">(optional)</span>';
+            echo $this->editable_papt("abstract", $title, ["for" => "abstract"]),
+                $this->field_hint("Abstract"),
+                $this->messages_for("abstract"),
+                '<div class="papev abstract">';
+            if (($fi = $this->conf->format_info($this->prow ? $this->prow->paperFormat : null)))
+                echo $fi->description_preview_html();
+            echo $this->editable_textarea("abstract"),
+                "</div></div>\n\n";
+        }
     }
 
     private function paptabAbstract() {
@@ -1152,22 +1155,26 @@ class PaperTable {
     }
 
     private function echo_editable_new_contact_author() {
-        echo $this->editable_papt("contactAuthor", $this->field_name("Contact")),
-            '<div class="papev js-row-order">';
-        echo '<div data-row-template="',
-            htmlspecialchars($this->editable_newcontact_row('$')),
-            '">';
-        if ($this->useRequest) {
-            for ($i = 1; isset($this->qreq["newcontact_email_{$i}"]); ++$i)
-                echo $this->editable_newcontact_row($i);
+        if ($this->admin) {
+            echo $this->editable_papt("contactAuthor", $this->field_name("Contact")),
+                '<div class="papev js-row-order">';
+            echo '<div data-row-template="',
+                htmlspecialchars($this->editable_newcontact_row('$')),
+                '">';
+            if ($this->useRequest) {
+                for ($i = 1; isset($this->qreq["newcontact_email_{$i}"]); ++$i)
+                    echo $this->editable_newcontact_row($i);
+            }
+            echo '</div><div class="ug">',
+                Ht::button("Add contact", ["class" => "ui btn row-order-ui addrow"]),
+                "</div></div></div>\n\n";
         }
-        echo '</div><div class="ug">',
-            Ht::button("Add contact", ["class" => "ui btn row-order-ui addrow"]),
-            "</div></div></div>\n\n";
     }
 
     private function echo_editable_contact_author() {
-        $paperId = $this->prow->paperId;
+        if (!$this->prow)
+            return $this->echo_editable_new_contact_author();
+
         list($aulist, $contacts) = $this->_analyze_authors();
         $contacts = array_merge($aulist, $contacts);
         usort($contacts, "Contact::compare");
@@ -1231,7 +1238,9 @@ class PaperTable {
     }
 
     private function echo_editable_anonymity() {
-        assert(!!$this->editable);
+        if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL
+            || $this->editable !== "f")
+            return;
         $pblind = !$this->prow || $this->prow->blind;
         $blind = $this->useRequest ? !!$this->qreq->blind : $pblind;
         $heading = Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "&nbsp;" . $this->field_name("Anonymous submission");
@@ -1242,10 +1251,10 @@ class PaperTable {
     }
 
     private function echo_editable_collaborators() {
-        if (!$this->conf->setting("sub_collab"))
+        if (!$this->conf->setting("sub_collab")
+            || ($this->editable === "f" && !$this->admin))
             return;
         $sub_pcconf = $this->conf->setting("sub_pcconf");
-        assert(!!$this->editable);
 
         echo $this->editable_papt("collaborators", $this->field_name($sub_pcconf ? "Other conflicts" : "Potential conflicts"), ["for" => "collaborators"]),
             '<div class="paphint"><div class="mmm">';
@@ -1331,7 +1340,6 @@ class PaperTable {
     }
 
     private function echo_editable_topics() {
-        assert(!!$this->editable);
         if (!$this->conf->has_topics())
             return;
         echo $this->editable_papt("topics", $this->field_name("Topics")),
@@ -1361,19 +1369,9 @@ class PaperTable {
         echo $this->messages_for($o->formid), Ht::hidden("has_{$o->formid}", 1);
     }
 
-    private function make_echo_editable_option($o) {
-        return function () use ($o) {
-            $ov = null;
-            if ($this->prow)
-                $ov = $this->prow->option($o->id);
-            $ov = $ov ? : new PaperOptionValue($this->prow, $o);
-            $o->echo_editable_html($ov, $this->useRequest ? $this->qreq[$o->formid] : null, $this);
-        };
-    }
-
     private function echo_editable_pc_conflicts() {
-        assert(!!$this->editable);
-        if (!$this->conf->setting("sub_pcconf"))
+        if (!$this->conf->setting("sub_pcconf")
+            || ($this->editable === "f" && !$this->admin))
             return;
         $pcm = $this->conf->full_pc_members();
         if (empty($pcm))
@@ -2084,10 +2082,6 @@ class PaperTable {
         echo "</form></div></div>";
     }
 
-    private function add_edit_field($prio, $callback, $name) {
-        $this->edit_fields[] = [$prio, count($this->edit_fields), $callback, $name];
-    }
-
     private function _echo_editable_form() {
         $form_js = ["id" => "paperform"];
         if ($this->prow && $this->prow->timeSubmitted > 0)
@@ -2106,7 +2100,22 @@ class PaperTable {
         Ht::stash_script('$(function(){$("#paperform input[name=paperUpload]").trigger("change")})');
     }
 
+    private function make_echo_editable_option($o) {
+        return (object) [
+            "position" => $o->form_position(),
+            "option" => $o,
+            "callback" => function () use ($o) {
+                $ov = null;
+                if ($this->prow)
+                    $ov = $this->prow->option($o->id);
+                $ov = $ov ? : new PaperOptionValue($this->prow, $o);
+                $o->echo_editable_html($ov, $this->useRequest ? $this->qreq[$o->formid] : null, $this);
+            }
+        ];
+    }
+
     private function _echo_editable_body() {
+        global $ConfSitePATH;
         $this->_echo_editable_form();
         echo '<div>';
 
@@ -2119,35 +2128,24 @@ class PaperTable {
 
         $this->echoActions(true);
 
-        $this->edit_fields = [];
-        $this->add_edit_field(0, [$this, "echo_editable_title"], "title");
-        $this->add_edit_field(10000, [$this, "echo_editable_submission"], "submission");
-        $this->add_edit_field(20000, [$this, "echo_editable_authors"], "authors");
-        if ($this->prow)
-            $this->add_edit_field(20200, [$this, "echo_editable_contact_author"], "contact_author");
-        else if ($this->user->privChair)
-            $this->add_edit_field(20200, [$this, "echo_editable_new_contact_author"], "new_contact_author");
-        if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL
-            && $this->editable !== "f")
-            $this->add_edit_field(20100, [$this, "echo_editable_anonymity"], "anonymity");
-        if (($x = $this->conf->opt("noAbstract")) !== 1 && $x !== true)
-            $this->add_edit_field(30000, [$this, "echo_editable_abstract"], "abstract");
-        $this->add_edit_field(40000, [$this, "echo_editable_topics"], "topics");
-        if ($this->editable !== "f" || $this->admin) {
-            $this->add_edit_field(60000, [$this, "echo_editable_pc_conflicts"], "pc_conflicts");
-            $this->add_edit_field(61000, [$this, "echo_editable_collaborators"], "collaborators");
-        }
-        $olist = $this->conf->paper_opts->option_list_type(!$this->canUploadFinal);
-        foreach ($olist as $opt)
+        $ofields = [];
+        foreach ($this->conf->paper_opts->option_list_type(!$this->canUploadFinal) as $opt)
             if (!$this->prow || get($this->view_options, $opt->id))
-                $this->add_edit_field($opt->form_position(), $this->make_echo_editable_option($opt), $opt);
-        usort($this->edit_fields, function ($a, $b) {
-            return $a[0] - $b[0] ? : $a[1] - $b[1];
-        });
+                $ofields[] = $this->make_echo_editable_option($opt);
+        $gxt = new GroupedExtensions($this->user, ["etc/submissioneditgroups.json"], $this->conf->opt("submissionEditGroups"), $ofields);
+        $this->edit_fields = array_values($gxt->groups());
         for ($this->edit_fields_position = 0;
              $this->edit_fields_position < count($this->edit_fields);
-             ++$this->edit_fields_position)
-            call_user_func($this->edit_fields[$this->edit_fields_position][2]);
+             ++$this->edit_fields_position) {
+            $uf = $this->edit_fields[$this->edit_fields_position];
+            $cb = get($uf, "callback");
+            if ($cb instanceof Closure)
+                call_user_func($cb, $uf);
+            else if (is_string($cb) && str_starts_with($cb, "*"))
+                call_user_func([$this, substr($cb, 1)], $uf);
+            else if ($cb)
+                call_user_func($cb, $this, $uf);
+        }
 
         // Submit button
         $this->echo_editable_complete();
@@ -2203,7 +2201,7 @@ class PaperTable {
 
         if (!$this->editable && $this->mode === "edit") {
             $this->_echo_editable_form();
-            $this->echo_editable_contact_author(true);
+            $this->echo_editable_contact_author();
             $this->echoActions(false);
             echo "</form>";
         } else if (!$this->editable && $this->user->act_author_view($prow)
