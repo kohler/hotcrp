@@ -416,7 +416,7 @@ class PaperTable {
 
     private function editable_textarea($fieldName) {
         $js = ["id" => $fieldName,
-               "class" => "papertext" . $this->has_error_class($fieldName),
+               "class" => "papertext need-autogrow" . $this->has_error_class($fieldName),
                "rows" => self::$textAreaRows[$fieldName], "cols" => 60];
         if ($fieldName === "abstract")
             $js["spellcheck"] = true;
@@ -2152,7 +2152,6 @@ class PaperTable {
         $this->echoActions(false);
 
         echo "</div></form>";
-        Ht::stash_script("jQuery('textarea.papertext').autogrow()");
     }
 
     function paptabBegin() {

@@ -985,7 +985,7 @@ class TextPaperOption extends PaperOption {
         $fi = $pt->prow ? $pt->prow->edit_format() : $pt->conf->format_info(null);
         echo '<div class="papev">',
             ($fi ? $fi->description_preview_html() : ""),
-            Ht::textarea($this->formid, $reqv, ["id" => $this->formid, "class" => "papertext" . $pt->has_error_class($this->formid), "rows" => max($this->display_space, 1), "cols" => 60, "spellcheck" => "true", "data-default-value" => $ov->data()]),
+            Ht::textarea($this->formid, $reqv, ["id" => $this->formid, "class" => "papertext need-autogrow" . $pt->has_error_class($this->formid), "rows" => max($this->display_space, 1), "cols" => 60, "spellcheck" => "true", "data-default-value" => $ov->data()]),
             "</div></div>\n\n";
     }
 
