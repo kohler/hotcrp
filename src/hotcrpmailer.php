@@ -230,7 +230,7 @@ class HotCRPMailer extends Mailer {
     function kw_statistic($args, $isbool, $uf) {
         if ($this->_statistics === null)
             $this->_statistics = $this->conf->count_submitted_accepted();
-        return $this->_statistics[$uf->index];
+        return $this->_statistics[$uf->statindex];
     }
     function kw_contactdbdescription() {
         return $this->conf->opt("contactdb_description") ? : "HotCRP";
