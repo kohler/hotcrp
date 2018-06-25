@@ -3274,7 +3274,7 @@ function render_editing(hc, cj) {
 
         // tags
         hc.push('<div class="f-i"><label for="' + cid + '-tags">Tags</label>', '</div>')
-        hc.push('<input id="' + cid + '-tags" name="commenttags" size="40" class="reviewtext" style="font-size:smaller">');
+        hc.push('<input id="' + cid + '-tags" name="commenttags" type="text" size="40" class="reviewtext" style="font-size:smaller">');
         hc.pop(2);
 
         // actions
