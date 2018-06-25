@@ -92,11 +92,11 @@ fi
 get_dboptions runsql.sh
 
 if test "$mode" = json_dbopt; then
-    echo_n '{'
-    eval "x=$dbname"; echo_n '"dbName":'; echo_n "$x" | json_quote
-    eval "x=$dbuser"; echo_n ',"dbUser":'; echo_n "$x" | json_quote
-    eval "x=$dbpass"; echo_n ',"dbPassword":'; echo_n "$x" | json_quote
-    eval "x=$dbhost"; echo_n ',"dbHost":'; if [ -z "$x" ]; then echo_n 'null'; else echo_n "$x" | json_quote; fi
+    eval "x0=$dbname;x1=$dbuser;x2=$dbpass;x3=$dbhost"
+    echo_n '{"dbName":'; echo_n "$x0" | json_quote
+    echo_n ',"dbUser":'; echo_n "$x1" | json_quote
+    echo_n ',"dbPassword":'; echo_n "$x2" | json_quote
+    echo_n ',"dbHost":'; if [ -z "$x3" ]; then echo_n 'null'; else echo_n "$x3" | json_quote; fi
     echo '}'
     exit
 fi
