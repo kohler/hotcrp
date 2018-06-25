@@ -989,6 +989,15 @@ class PaperInfo {
         return get($this->options(), $id);
     }
 
+    function force_option($id) {
+        if (($oa = get($this->options(), $id)))
+            return $oa;
+        else if (($opt = $this->conf->paper_opts->get($id)))
+            return new PaperOptionValue($this, $opt);
+        else
+            return null;
+    }
+
     function all_options() {
         if ($this->_all_option_array === null)
             $this->_all_option_array = $this->_make_option_array(true);
@@ -1033,7 +1042,8 @@ class PaperInfo {
                 $did = $this->paperStorageId;
             else if ($dtype == DTYPE_FINAL)
                 $did = $this->finalPaperStorageId;
-            else if (($oa = $this->option($dtype)) && $oa->option->is_document())
+            else if (($oa = $this->force_option($dtype))
+                     && $oa->option->is_document())
                 return $oa->document(0);
         }
         if ($did <= 1)
