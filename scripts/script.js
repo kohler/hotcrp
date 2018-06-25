@@ -2125,8 +2125,11 @@ function fold(elt, dofold, foldnum) {
 
         // check for session
         var ses = elt.getAttribute("data-fold-session");
-        if (ses && (ses = (JSON.parse(ses) || {})[foldnum])) {
-            $.post(hoturl_post("api/setsession", {v: ses + (isopen ? "=1" : "=0")}));
+        if (ses) {
+            if (ses.charAt(0) === "{" || ses.charAt(0) === "[")
+                ses = (JSON.parse(ses) || {})[foldnum];
+            if (ses)
+                $.post(hoturl_post("api/setsession", {v: ses + (isopen ? "=1" : "=0")}));
         }
     }
 
