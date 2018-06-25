@@ -322,7 +322,7 @@ class MailRecipients {
         else
             $q .= ", -1 as paperId";
         if ($needreview)
-            $q .= ", PaperReview.reviewType, PaperReview.reviewType as myReviewType";
+            $q .= ", PaperReview.reviewType, PaperReview.reviewType as myReviewType, PaperReview.reviewSubmitted as myReviewSubmitted, PaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
         if ($needconflict)
             $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId)";
         $q .= "\nfrom " . join("\n", $joins) . "\nwhere "
