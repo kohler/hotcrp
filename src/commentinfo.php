@@ -71,9 +71,7 @@ class CommentInfo {
     static function echo_script($prow) {
         global $Me;
         if (Ht::mark_stash("papercomment")) {
-            $t = array("papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
-            if (!$prow->has_author($Me))
-                $t[] = "papercomment.nonauthor=true";
+            $t = [];
             $crow = new CommentInfo(null, $prow, $prow->conf);
             $crow->commentType = COMMENTTYPE_RESPONSE;
             foreach ($prow->conf->resp_round_list() as $i => $rname) {

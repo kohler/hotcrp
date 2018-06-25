@@ -3191,7 +3191,7 @@ function comment_identity_time(cj) {
         x = [];
         for (i in cj.tags) {
             tag = cj.tags[i].replace(detwiddle, "~");
-            x.push('<a class="qq" href="' + papercomment.commenttag_search_url.replace(/\$/g, encodeURIComponent(tag)) + '">#' + tag + '</a>');
+            x.push('<a class="qq" href="' + hoturl_html("search", {q: "cmt:#" + tag}) + '">#' + tag + '</a>');
         }
         t.push('<div class="cmttags">' + x.join(" ") + '</div>');
     }
@@ -3215,7 +3215,7 @@ function render_editing(hc, cj) {
     var msgx = [];
     if (cj.response && resp_rounds[cj.response].instrux)
         msgx.push(resp_rounds[cj.response].instrux);
-    if (cj.response && papercomment.nonauthor)
+    if (cj.response && !hotcrp_status.myperm.act_author)
         msgx.push('You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.');
     else if (cj.review_token && hotcrp_status.myperm.review_tokens
              && hotcrp_status.myperm.review_tokens.indexOf(cj.review_token) >= 0)
