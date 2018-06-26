@@ -41,7 +41,15 @@ $Opt["dbName"] = "FIXME";
 //   paperSite       [OPTIONAL] URL for this HotCRP installation. Used in
 //                   emails. Default is derived from the access URL.
 //   conferenceSite  [OPTIONAL] Conference site URL (CFP, registration).
-
+//   httpHostOverride   [OPTIONAL] This overrides the HTTP_HOST value when
+//                      creating the base_url for redirections. Use the
+//                      pure host name without trailing http[s]:// and without
+//                      the following slash; non-standard port numbers are fine
+//                      Example:
+//                      $Opt["httpHostOverride"] = "sub123.example.com";
+//                      $Opt["httpHostOverride"] = "sub123.example.com:8080";
+//                      This option is useful if the CMS system is used
+//                      behind a redirecting proxy server
 
 // EMAIL
 //

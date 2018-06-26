@@ -84,6 +84,15 @@ function set_path_variables() {
 }
 set_path_variables();
 
+global $Opt;
+$opt_reloaded = false;
+if (!$Opt)
+    $Opt = array();
+if (!array_key_exists("loaded",$Opt) || !$Opt["loaded"]) {
+    SiteLoader::read_main_options();
+    $opt_reloaded = true;
+}
+require_once("$ConfSitePATH/lib/navigation.php");
 
 // Load code
 class SiteLoader {
@@ -295,11 +304,7 @@ function expand_json_includes_callback($includelist, $callback) {
     }
 }
 
-global $Opt;
-if (!$Opt)
-    $Opt = array();
-if (!get($Opt, "loaded")) {
-    SiteLoader::read_main_options();
+if($opt_reloaded) {
     if (get($Opt, "multiconference"))
         Multiconference::init();
     if (get($Opt, "include"))

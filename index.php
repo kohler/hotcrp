@@ -2,7 +2,7 @@
 // index.php -- HotCRP home page
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
-require_once("lib/navigation.php");
+require_once("src/init.php");
 
 if (Navigation::page() !== "index") {
     $page = Navigation::page();

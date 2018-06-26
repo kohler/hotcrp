@@ -19,10 +19,13 @@ class NavigationState {
     //   optional: HTTP_HOST, SERVER_NAME, HTTPS, SERVER_SOFTWARE
 
     function __construct($server, $index_name = "index") {
+        global $Opt;
         if (!$server)
             return;
 
         $this->host = null;
+        if(isset($Opt) && array_key_exists("httpHostOverride", $Opt))
+            $this->host = $Opt["httpHostOverride"];
         if (isset($server["HTTP_HOST"]))
             $this->host = $server["HTTP_HOST"];
         if (!$this->host && isset($server["SERVER_NAME"]))
