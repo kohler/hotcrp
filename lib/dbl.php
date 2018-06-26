@@ -52,6 +52,8 @@ class Dbl {
     const F_ERROR = 8;
     const F_ALLOWERROR = 16;
     const F_MULTI = 32;
+    const F_ECHO = 64;
+    const F_NOEXEC = 128;
 
     static public $nerrors = 0;
     static public $default_dblink;
@@ -309,7 +311,11 @@ class Dbl {
         return self::format_query_args($dblink, $qstr, $argv);
     }
 
-    static private function call_query($dblink, $qfunc, $qstr) {
+    static private function call_query($dblink, $flags, $qfunc, $qstr) {
+        if ($flags & self::F_ECHO)
+            error_log($qstr);
+        if ($flags & self::F_NOEXEC)
+            return null;
         if (self::$query_log_key) {
             $time = microtime(true);
             $result = $dblink->$qfunc($qstr);
@@ -327,7 +333,7 @@ class Dbl {
             error_log(self::landmark() . ": empty query");
             return false;
         }
-        return self::do_result($dblink, $flags, $qstr, self::call_query($dblink, "query", $qstr));
+        return self::do_result($dblink, $flags, $qstr, self::call_query($dblink, $flags, "query", $qstr));
     }
 
     static private function do_query($args, $flags) {
@@ -364,7 +370,7 @@ class Dbl {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         if (!($flags & self::F_RAW))
             $qstr = self::format_query_args($dblink, $qstr, $argv);
-        return new Dbl_MultiResult($dblink, $flags, $qstr, self::call_query($dblink, "multi_query", $qstr));
+        return new Dbl_MultiResult($dblink, $flags, $qstr, self::call_query($dblink, $flags, "multi_query", $qstr));
     }
 
     static function query(/* [$dblink,] $qstr, ... */) {
@@ -464,11 +470,16 @@ class Dbl {
     }
 
     static function make_multi_query_stager($dblink, $flags) {
-        return function (&$q, &$qv, $finish = false) use ($dblink, $flags) {
-            if (($finish && !empty($q)) || count($q) >= 50) {
-                $mresult = Dbl::do_multi_query([$dblink, join("; ", $q), $qv], self::F_MULTI | self::F_APPLY | $flags);
+        $qs = $qvs = [];
+        return function ($q, $qv = []) use ($dblink, $flags, &$qs, &$qvs) {
+            if ($q && $q !== true) {
+                $qs[] = $q;
+                $qvs = array_merge($qvs, $qv);
+            }
+            if ((!$q || $q === true || count($qs) >= 50) && !empty($qs)) {
+                $mresult = Dbl::do_multi_query([$dblink, join("; ", $qs), $qvs], self::F_MULTI | self::F_APPLY | $flags);
                 $mresult->free_all();
-                $q = $qv = [];
+                $qs = $qvs = [];
             }
         };
     }

@@ -229,17 +229,13 @@ function update_schema_paper_review_tfields(Conf $conf) {
         return false;
     $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
     $result = $conf->ql("select * from PaperReview");
-    $q = $qv = [];
     while (($row = ReviewInfo::fetch($result, $conf))) {
         $data = $row->unparse_tfields();
-        if ($data !== null) {
-            $q[] = "update PaperReview set `tfields`=? where paperId=? and reviewId=?";
-            array_push($qv, $data, $row->paperId, $row->reviewId);
-            $cleanf($q, $qv);
-        }
+        if ($data !== null)
+            $cleanf("update PaperReview set `tfields`=? where paperId=? and reviewId=?", [$data, $row->paperId, $row->reviewId]);
     }
     Dbl::free($result);
-    $cleanf($q, $qv, true);
+    $cleanf(true);
     return true;
 }
 
@@ -294,17 +290,14 @@ function update_schema_split_review_request_name(Conf $conf) {
         return false;
     $result = $conf->ql("select * from ReviewRequest");
     $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
-    $q = $qv = [];
     while ($result && ($row = $result->fetch_object())) {
         list($first, $last) = Text::split_name($row->name);
-        $q[] = "update ReviewRequest set firstName=?, lastName=? where paperId=? and email=?";
-        array_push($qv, (string) $first === "" ? null : $first,
+        $cleanf("update ReviewRequest set firstName=?, lastName=? where paperId=? and email=?", [(string) $first === "" ? null : $first,
                    (string) $last === "" ? null : $last,
-                   $row->paperId, $row->email);
-        $cleanf($q, $qv);
+                   $row->paperId, $row->email]);
     }
     Dbl::free($result);
-    $cleanf($q, $qv, true);
+    $cleanf(true);
     $conf->ql("unlock tables");
     return $conf->ql("alter table ReviewRequest drop column `name`");
 }

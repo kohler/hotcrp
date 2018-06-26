@@ -204,7 +204,6 @@ class ReviewForm_SettingParser extends SettingParser {
         // clear fields from json storage
         $clearf = Dbl::make_multi_qe_stager($conf->dblink);
         $result = $conf->qe("select * from PaperReview where sfields is not null or tfields is not null");
-        $q = $qv = [];
         while (($rrow = ReviewInfo::fetch($result, $conf))) {
             $cleared = false;
             foreach ($clear_sfields as $f)
@@ -212,23 +211,18 @@ class ReviewForm_SettingParser extends SettingParser {
                     unset($rrow->{$f->id}, $rrow->{$f->short_id});
                     $cleared = true;
                 }
-            if ($cleared) {
-                $q[] = "update PaperReview set sfields=? where paperId=? and reviewId=?";
-                array_push($qv, $rrow->unparse_sfields(), $rrow->paperId, $rrow->reviewId);
-            }
+            if ($cleared)
+                $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", [$rrow->unparse_sfields(), $rrow->paperId, $rrow->reviewId]);
             $cleared = false;
             foreach ($clear_tfields as $f)
                 if (isset($rrow->{$f->id})) {
                     unset($rrow->{$f->id}, $rrow->{$f->short_id});
                     $cleared = true;
                 }
-            if ($cleared) {
-                $q[] = "update PaperReview set tfields=? where paperId=? and reviewId=?";
-                array_push($qv, $rrow->unparse_tfields(), $rrow->paperId, $rrow->reviewId);
-            }
-            $clearf($q, $qv);
+            if ($cleared)
+                $clearf("update PaperReview set tfields=? where paperId=? and reviewId=?", [$rrow->unparse_tfields(), $rrow->paperId, $rrow->reviewId]);
         }
-        $clearf($q, $qv, true);
+        $clearf(null);
     }
 
     private function clear_nonexisting_options($fields, Conf $conf) {
@@ -245,27 +239,24 @@ class ReviewForm_SettingParser extends SettingParser {
             if ($f->json_storage)
                 $clear_sfields[] = $f;
         }
-        if (!$clear_sfields)
-            return array_keys($updates);
 
-        // clear options from json storage
-        $clearf = Dbl::make_multi_qe_stager($conf->dblink);
-        $result = $conf->qe("select * from PaperReview where sfields is not null");
-        $q = $qv = [];
-        while (($rrow = ReviewInfo::fetch($result, $conf))) {
-            $cleared = false;
-            foreach ($clear_sfields as $f)
-                if (isset($rrow->{$f->id}) && $rrow->{$f->id} > count($f->options)) {
-                    unset($rrow->{$f->id}, $rrow->{$f->short_id});
-                    $cleared = $updates[$f->name] = true;
-                }
-            if ($cleared) {
-                $q[] = "update PaperReview set sfields=? where paperId=? and reviewId=?";
-                array_push($qv, $rrow->unparse_sfields(), $rrow->paperId, $rrow->reviewId);
+        if ($clear_sfields) {
+            // clear options from json storage
+            $clearf = Dbl::make_multi_qe_stager($conf->dblink);
+            $result = $conf->qe("select * from PaperReview where sfields is not null");
+            while (($rrow = ReviewInfo::fetch($result, $conf))) {
+                $cleared = false;
+                foreach ($clear_sfields as $f)
+                    if (isset($rrow->{$f->id}) && $rrow->{$f->id} > count($f->options)) {
+                        unset($rrow->{$f->id}, $rrow->{$f->short_id});
+                        $cleared = $updates[$f->name] = true;
+                    }
+                if ($cleared)
+                    $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", [$rrow->unparse_sfields(), $rrow->paperId, $rrow->reviewId]);
             }
-            $clearf($q, $qv);
+            $clearf(null);
         }
-        $clearf($q, $qv, true);
+
         return array_keys($updates);
     }
 
@@ -312,7 +303,6 @@ class ReviewForm_SettingParser extends SettingParser {
             $result = $sv->conf->qe("select * from PaperReview where reviewOrdinal=0 and reviewSubmitted>0");
             $rrows = edb_orows($result);
             $locked = false;
-            $q = $qv = [];
             foreach ($rrows as $rrow)
                 if ($nform->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC) {
                     if (!$locked) {
