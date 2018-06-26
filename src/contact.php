@@ -1407,7 +1407,7 @@ class Contact {
         $safe = $this->conf->opt($iscdb ? "contactdb_safePasswords" : "safePasswords");
         if ($safe < 1
             || ($method = $this->password_hash_method()) === false
-            || ($hash !== "" && $safe == 1 && $hash[0] !== " "))
+            || ($hash !== "" && $hash[0] !== " " && $safe == 1))
             return false;
         else if ($hash === "" || $hash[0] !== " ")
             return true;
@@ -1470,6 +1470,7 @@ class Contact {
 
     const CHANGE_PASSWORD_PLAINTEXT = 1;
     const CHANGE_PASSWORD_NO_CDB = 2;
+    const CHANGE_PASSWORD_ENABLE = 4;
     function change_password($new, $flags) {
         global $Now;
         assert(!$this->conf->external_login());
@@ -1480,6 +1481,11 @@ class Contact {
         $cdbu = null;
         if (!($flags & self::CHANGE_PASSWORD_NO_CDB))
             $cdbu = $this->contactdb_user();
+        if (($flags & self::CHANGE_PASSWORD_ENABLE)
+            && (($this->password !== "" && $this->password !== "*")
+                || ($cdbu && $cdbu->password !== "" && $cdbu->password !== "*")))
+            return false;
+
         if ($cdbu) {
             $hash = $new;
             if ($hash
@@ -1504,6 +1510,7 @@ class Contact {
             $this->passwordTime = $Now;
             $this->conf->ql("update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
         }
+        return true;
     }
 
 

@@ -39,30 +39,27 @@ class UserActions {
         // maybe create some passwords
         $result = $user->conf->qe("select * from ContactInfo where contactId?a", $activate_ids);
         while (($xuser = Contact::fetch($result, $user->conf))) {
-            $cdbu = $xuser->contactdb_user();
-            if ($xuser->password === "" && (!$cdbu || $cdbu->password === "")) {
-                $xuser->change_password(null, Contact::CHANGE_PASSWORD_NO_CDB);
+            if ($xuser->change_password(null, Contact::CHANGE_PASSWORD_ENABLE))
                 $xuser->sendAccountInfo("create", false);
-            }
         }
         Dbl::free($result);
         return (object) ["ok" => true];
     }
 
     static function reset_password(Contact $user, $ids) {
+        global $Now;
         $done = $skipped = [];
         $result = $user->conf->qe("select * from ContactInfo where contactId?a", $ids);
         while (($xuser = Contact::fetch($result, $user->conf))) {
-            $cdbu = $xuser->contactdb_user();
-            if ((!$cdbu || $cdbu->password === "")
-                && $user->can_change_password($xuser)) {
-                $xuser->change_password(null, Contact::CHANGE_PASSWORD_NO_CDB);
+            if ($user->can_change_password($xuser))
                 $done[] = $xuser->email;
-            } else
+            else
                 $skipped[] = $xuser->email;
         }
         Dbl::free($result);
 
+        if (!empty($done))
+            $user->conf->qe("update ContactInfo set password='', passwordTime=? where email ?a", $Now, $done);
         $j = (object) ["ok" => true, "users" => $done];
         if (!empty($skipped))
             $j->warnings[] = $user->conf->_("Skipped accounts %2\$s.", count($skipped), htmlspecialchars(commajoin($skipped)));
