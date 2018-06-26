@@ -300,7 +300,7 @@ assert_search_papers($user_shenker, "has:shepherd", "11 12");
 // tag searches
 assert_search_papers($user_chair, "#green", "3 9 13 17");
 Dbl::qe("insert into PaperTag (paperId,tag,tagIndex) values (1,?,10), (1,?,5), (2,?,3)",
-        $user_jon->cid . "~vote", $user_marina->cid . "~vote", $user_marina->cid . "~vote");
+        $user_jon->contactId . "~vote", $user_marina->contactId . "~vote", $user_marina->contactId . "~vote");
 assert_search_papers($user_jon, "#~vote", "1");
 assert_search_papers($user_jon, "#~vote≥10", "1");
 assert_search_papers($user_jon, "#~vote>10", "");
