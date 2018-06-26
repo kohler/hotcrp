@@ -3012,6 +3012,8 @@ class Conf {
                 $integrity = "sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=";
             else if ($jqueryVersion === "3.2.1")
                 $integrity = "sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=";
+            else if ($jqueryVersion === "3.3.1")
+                $integrity = "sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=";
             $jquery = "//code.jquery.com/jquery-{$jqueryVersion}.min.js";
         } else
             $jquery = "scripts/jquery-{$jqueryVersion}.min.js";
@@ -3112,7 +3114,7 @@ class Conf {
         if (isset($this->opt["jqueryUrl"]))
             Ht::stash_html($this->make_script_file($this->opt["jqueryUrl"], true) . "\n");
         else {
-            $jqueryVersion = get($this->opt, "jqueryVersion", "1.12.4");
+            $jqueryVersion = get($this->opt, "jqueryVersion", "3.3.1");
             if ($jqueryVersion[0] === "3") {
                 Ht::stash_html("<!--[if lt IE 9]>" . $this->make_jquery_script_file("1.12.4") . "<![endif]-->\n");
                 Ht::stash_html("<![if !IE|gte IE 9]>" . $this->make_jquery_script_file($jqueryVersion) . "<![endif]>\n");
