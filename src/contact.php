@@ -954,7 +954,8 @@ class Contact {
 
         // check whether this user is changing themselves
         $changing_other = false;
-        if ($this->conf->contactdb() && $Me
+        if ($this->conf->contactdb()
+            && $Me
             && (strcasecmp($this->email, $Me->email) != 0 || $Me->is_actas_user()))
             $changing_other = true;
 

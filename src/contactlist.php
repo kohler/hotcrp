@@ -476,12 +476,12 @@ class ContactList {
                 . Ht::entry("tag", $this->qreq->tag, ["size" => 15, "class" => "want-focus js-autosubmit", "data-autosubmit-type" => "tagact"])
                 . ' &nbsp;' . Ht::submit("tagact", "Go")];
 
+            $mods = ["disableaccount" => "Disable", "enableaccount" => "Enable"];
+            if ($this->user->can_change_password(null))
+                $mods["resetpassword"] = "Reset password";
+            $mods["sendaccount"] = "Send account information";
             $lllgroups[] = ["", "Modify",
-                Ht::select("modifytype", ["disableaccount" => "Disable",
-                                          "enableaccount" => "Enable",
-                                          "resetpassword" => "Reset password",
-                                          "sendaccount" => "Send account information"],
-                           null, ["class" => "want-focus"])
+                Ht::select("modifytype", $mods, null, ["class" => "want-focus"])
                 . "&nbsp; " . Ht::submit("modifygo", "Go")];
         }
 
