@@ -42,15 +42,19 @@ class TagSearchMatcher {
     function evaluate(Contact $user, $taglist) {
         if (!$this->_re) {
             $res = [];
-            foreach ($this->tags as $tm)
-                if (($starpos = strpos($tm, "*")) !== false)
+            foreach ($this->tags as $tm) {
+                $starpos = strpos($tm, "*");
+                if ($starpos === 0)
                     $res[] = '(?!.*~)' . str_replace('\\*', '.*', preg_quote($tm));
+                else if ($starpos !== false)
+                    $res[] = str_replace('\\*', '.*', preg_quote($tm));
                 else if ($tm === "any" && $user->privChair)
                     $res[] = "(?:{$user->contactId}~.*|~~.*|(?!.*~).*)";
                 else if ($tm === "any")
                     $res[] = "(?:{$user->contactId}~.*|(?!.*~).*)";
                 else
                     $res[] = preg_quote($tm);
+            }
             $this->_re = '{\A(?:' . join("|", $res) . ')\z}i';
         }
         foreach (TagInfo::split_unpack($taglist) as $ti) {

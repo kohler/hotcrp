@@ -306,6 +306,7 @@ assert_search_papers($user_jon, "#~vote≥10", "1");
 assert_search_papers($user_jon, "#~vote>10", "");
 assert_search_papers($user_jon, "#~vote=10", "1");
 assert_search_papers($user_jon, "#~vote<10", "");
+assert_search_papers($user_jon, "#~v*", "1");
 assert_search_papers($user_marina, "#~vote", "2 1");
 assert_search_papers($user_marina, "#~vote≥5", "1");
 assert_search_papers($user_marina, "#~vote>5", "");
@@ -361,6 +362,7 @@ xassert_assign($Admin, "paper,tag\n1,~fart\n1,~~fart\n1,varghese~fart\n1,mjh~far
 $paper1->load_tags();
 xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "fart chair~fart mjh~fart varghese~fart jon~vote#10 marina~vote#5 ~~fart");
+assert_search_papers($user_chair, "#~~*art", "1");
 
 xassert_assign($Admin, "paper,tag\n1,all#none\n");
 $paper1->load_tags();
