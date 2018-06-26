@@ -1276,8 +1276,8 @@ class Contact {
 
     // PASSWORDS
     //
-    // password "": disabled user; example: anonymous users for review tokens
-    // password "*": invalid password, used to require the contactdb
+    // password "": disabled password (login disabled)
+    // password "*": reset password (user must recreate password)
     // password starting with " ": legacy hashed password using hash_hmac
     //     format: " HASHMETHOD KEYID SALT[16B]HMAC"
     // password starting with " $": password hashed by password_hash
@@ -1328,19 +1328,19 @@ class Contact {
 
     function allow_contactdb_password() {
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password;
+        return $cdbu && $cdbu->password && $cdbu->password !== "*";
     }
 
     private function prefer_contactdb_password() {
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password
+        return $cdbu && $cdbu->password && $cdbu->password !== "*"
             && (!$this->has_database_account() || $this->password === "");
     }
 
     function plaintext_password() {
         // Return the currently active plaintext password. This might not
         // equal $this->password because of the cdb.
-        if ($this->password === "") {
+        if ($this->password === "" || $this->password === "*") {
             if ($this->contactId
                 && ($cdbu = $this->contactdb_user()))
                 return $cdbu->plaintext_password();
@@ -1350,6 +1350,11 @@ class Contact {
             return false;
         else
             return $this->password;
+    }
+
+    function password_is_reset() {
+        return $this->password === "*"
+            || (($cdbu = $this->contactdb_user()) && $cdbu->password === "*");
     }
 
 
@@ -1369,8 +1374,9 @@ class Contact {
         return $key;
     }
 
-    private function check_hashed_password($input, $pwhash, $email) {
-        if ($input == "" || $input === "*" || $pwhash === null || $pwhash === "")
+    private function check_hashed_password($input, $pwhash) {
+        if ($input == "" || $input === "*"
+            || (string) $pwhash === "" || $pwhash === "*")
             return false;
         else if ($pwhash[0] !== " ")
             return $pwhash === $input;

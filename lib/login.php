@@ -157,7 +157,10 @@ class LoginHelper {
 
             if (!$xuser->check_password($password)) {
                 Ht::error_at("password");
-                return Conf::msg_error("Incorrect password.");
+                if ($xuser->password_is_reset())
+                    return Conf::msg_error("Your previous password has been disabled. Use “Forgot your password?” to create a new password.");
+                else
+                    return Conf::msg_error("Incorrect password.");
             }
         }
 
