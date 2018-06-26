@@ -456,7 +456,6 @@ class Contact {
             $cdbu = null;
             if ($this->has_email())
                 $cdbu = $this->conf->contactdb_user_by_email($this->email);
-            $this->contactDbId = $cdbu ? $cdbu->contactDbId : 0;
             $this->contactdb_user_ = $cdbu;
         }
         return $this->contactdb_user_;
@@ -1068,10 +1067,8 @@ class Contact {
 
         // Contact DB (must precede password)
         $cdb = $this->conf->contactdb();
-        if ($changing_email) {
-            $this->contactDbId = 0;
+        if ($changing_email)
             $this->contactdb_user_ = false;
-        }
         if ($cdb && !($flags & self::SAVE_NO_EXPORT)
             && (!empty($cu->cdb_qf) || $roles !== $old_roles))
             $this->contactdb_update($cu->cdb_qf, $changing_other);
@@ -1520,7 +1517,7 @@ class Contact {
                  && ($this->conf->opt("safePasswords") <= 1 || $sendtype != "forgot"))
             $template = "@accountinfo";
         else {
-            if ($this->contactDbId && $this->prefer_contactdb_password())
+            if ($this->prefer_contactdb_password())
                 $capmgr = $this->conf->capability_manager("U");
             else
                 $capmgr = $this->conf->capability_manager();

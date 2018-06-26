@@ -6,15 +6,20 @@ class CapabilityManager {
     private $dblink;
     private $prefix;
 
-    public function __construct($dblink, $prefix) {
+    function __construct($dblink, $prefix) {
         $this->dblink = $dblink;
         $this->prefix = $prefix;
     }
 
-    public function create($capabilityType, $options = array()) {
+    function create($capabilityType, $options = array()) {
         $contactId = get($options, "contactId", 0);
-        if (!$contactId && ($user = get($options, "user")))
-            $contactId = $this->prefix === "U" ? $user->contactDbId : $user->contactId;
+        if (!$contactId
+            && ($user = get($options, "user"))) {
+            if ($this->prefix === "U")
+                $contactId = $user->contactdb_user()->contactDbId;
+            else
+                $contactId = $user->contactId;
+        }
         $paperId = get($options, "paperId", 0);
         $timeExpires = get($options, "timeExpires", time() + 259200);
         $data = get($options, "data");
@@ -33,7 +38,7 @@ class CapabilityManager {
                           array("-a", "-b", ""), base64_encode($salt));
     }
 
-    public function check($capabilityText) {
+    function check($capabilityText) {
         if (substr($capabilityText, 0, strlen($this->prefix) + 1) !== $this->prefix . "1")
             return false;
         $value = base64_decode(str_replace(array("-a", "-b", "-", "_"), // -, _ obsolete
@@ -48,7 +53,7 @@ class CapabilityManager {
             return false;
     }
 
-    public function delete($capdata) {
+    function delete($capdata) {
         assert(!$capdata || is_string($capdata->salt));
         if ($capdata)
             Dbl::ql($this->dblink, "delete from Capability where salt=?", $capdata->salt);
