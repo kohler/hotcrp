@@ -1074,7 +1074,7 @@ class Contact {
 
         // Password
         if (isset($cj->new_password))
-            $this->change_password(get($cj, "old_password"), $cj->new_password, 0);
+            $this->change_password($cj->new_password, 0);
 
         // Beware PC cache
         if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
@@ -1469,7 +1469,7 @@ class Contact {
 
     const CHANGE_PASSWORD_PLAINTEXT = 1;
     const CHANGE_PASSWORD_NO_CDB = 2;
-    function change_password($old, $new, $flags) {
+    function change_password($new, $flags) {
         global $Now;
         assert(!$this->conf->external_login());
         if ($new === null)
@@ -1479,33 +1479,28 @@ class Contact {
         $cdbu = null;
         if (!($flags & self::CHANGE_PASSWORD_NO_CDB))
             $cdbu = $this->contactdb_user();
-        if ($cdbu
-            && (!$old || $cdbu->password)
-            && (!$old || $this->check_hashed_password($old, $cdbu->password, $this->email))) {
+        if ($cdbu) {
             $hash = $new;
             if ($hash
                 && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && $this->check_password_encryption("", true))
                 $hash = $this->hash_password($hash, true);
             $cdbu->password = $hash;
-            if (!$old || $old !== $new)
-                $cdbu->passwordTime = $Now;
+            $cdbu->passwordTime = $Now;
             Dbl::ql($this->conf->contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $cdbu->password, $cdbu->passwordTime, $cdbu->contactDbId);
             if ($this->contactId && $this->password) {
                 $this->password = "";
                 $this->passwordTime = $cdbu->passwordTime;
                 $this->conf->ql("update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
             }
-        } else if ($this->contactId
-                   && (!$old || $this->check_hashed_password($old, $this->password, $this->email))) {
+        } else if ($this->contactId) {
             $hash = $new;
             if ($hash
                 && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && $this->check_password_encryption("", false))
                 $hash = $this->hash_password($hash, false);
             $this->password = $hash;
-            if (!$old || $old !== $new)
-                $this->passwordTime = $Now;
+            $this->passwordTime = $Now;
             $this->conf->ql("update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
         }
     }

@@ -209,7 +209,7 @@ class UserStatus extends MessageSet {
 
         // Stringiness
         foreach (array("firstName", "lastName", "email", "preferred_email",
-                       "affiliation", "phone", "old_password", "new_password",
+                       "affiliation", "phone", "new_password",
                        "city", "state", "zip", "country") as $k)
             if (isset($cj->$k) && !is_string($cj->$k)) {
                 $this->error_at($k, "Format error [$k]");
@@ -504,12 +504,11 @@ class UserStatus extends MessageSet {
                 $us->error_at("password", "Those passwords do not match.");
             else if (!Contact::valid_password($pw))
                 $us->error_at("password", "Invalid new password.");
-            else if ($us->viewer->can_change_password(null)) {
-                $cj->old_password = null;
+            else if ($us->viewer->can_change_password(null)
+                     && strcasecmp($us->viewer->email, $us->user->email))
                 $cj->new_password = $pw;
-            } else {
-                $cj->old_password = trim((string) $qreq->oldpassword);
-                if ($us->user->check_password($cj->old_password))
+            else {
+                if ($us->user->check_password(trim((string) $qreq->oldpassword)))
                     $cj->new_password = $pw;
                 else
                     $us->error_at("password", "Incorrect current password. New password ignored.");
@@ -698,7 +697,8 @@ class UserStatus extends MessageSet {
         echo Ht::button("Change password", ["class" => "btn ui js-foldup fn3", "data-fold-target" => "3o"]);
         // Display the following after the button is clicked
         echo '<div class="fx3">';
-        if (!$us->viewer->can_change_password(null)) {
+        if (!$us->viewer->can_change_password(null)
+            || !strcasecmp($us->user->email, $us->viewer->email)) {
             echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
             echo '<div class="', $us->control_class("password", "f-i"), '"><div class="f-c">Current password</div>',
                 Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => $this->autocomplete("current-password")]),

@@ -41,7 +41,7 @@ class UserActions {
         while (($xuser = Contact::fetch($result, $user->conf))) {
             $cdbu = $xuser->contactdb_user();
             if ($xuser->password === "" && (!$cdbu || $cdbu->password === "")) {
-                $xuser->change_password(null, null, Contact::CHANGE_PASSWORD_NO_CDB);
+                $xuser->change_password(null, Contact::CHANGE_PASSWORD_NO_CDB);
                 $xuser->sendAccountInfo("create", false);
             }
         }
@@ -56,7 +56,7 @@ class UserActions {
             $cdbu = $xuser->contactdb_user();
             if ((!$cdbu || $cdbu->password === "")
                 && $user->can_change_password($xuser)) {
-                $xuser->change_password(null, null, Contact::CHANGE_PASSWORD_NO_CDB);
+                $xuser->change_password(null, Contact::CHANGE_PASSWORD_NO_CDB);
                 $done[] = $xuser->email;
             } else
                 $skipped[] = $xuser->email;

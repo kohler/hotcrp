@@ -42,7 +42,7 @@ if (isset($Qreq->go) && $Qreq->post_ok()) {
         $flags = 0;
         if ($Qreq->password === $Qreq->autopassword)
             $flags |= Contact::CHANGE_PASSWORD_PLAINTEXT;
-        $Acct->change_password(null, $Qreq->password, $flags);
+        $Acct->change_password($Qreq->password, $flags);
         if (!$iscdb || !($log_acct = $Conf->user_by_email($Acct->email)))
             $log_acct = $Acct;
         $log_acct->log_activity("Password reset via " . substr($resetcap, 0, 8) . "...");

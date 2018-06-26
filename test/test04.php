@@ -41,11 +41,11 @@ $marina = "marina@poema.ru";
 
 $Conf->set_opt("safePasswords", 0);
 $Conf->set_opt("contactdb_safePasswords", 0);
-user($marina)->change_password(null, "rosdevitch", 0);
+user($marina)->change_password("rosdevitch", 0);
 xassert_eqq(password($marina), "");
 xassert_eqq(password($marina, true), "rosdevitch");
 xassert(user($marina)->check_password("rosdevitch"));
-user($marina)->change_password(null, "rosdevitch", Contact::CHANGE_PASSWORD_NO_CDB);
+user($marina)->change_password("rosdevitch", Contact::CHANGE_PASSWORD_NO_CDB);
 xassert_eqq(password($marina), "rosdevitch");
 xassert_eqq(password($marina, true), "rosdevitch");
 xassert(user($marina)->check_password("rosdevitch"));
@@ -55,14 +55,8 @@ save_password($marina, "crapdevitch", false);
 xassert(user($marina)->check_password("crapdevitch"));
 xassert(user($marina)->check_password("rosdevitch"));
 
-// change local password => only local password changes
-user($marina)->change_password("crapdevitch", "assdevitch", 0);
-xassert(user($marina)->check_password("assdevitch"));
-xassert(user($marina)->check_password("rosdevitch"));
-xassert(!user($marina)->check_password("crapdevitch"));
-
 // change contactdb password => both passwords change
-user($marina)->change_password("rosdevitch", "dungdevitch", 0);
+user($marina)->change_password("dungdevitch", 0);
 xassert(user($marina)->check_password("dungdevitch"));
 xassert(!user($marina)->check_password("assdevitch"));
 xassert(!user($marina)->check_password("rosdevitch"));
@@ -75,7 +69,7 @@ xassert(user($marina)->check_password("isdevitch"));
 xassert(!user($marina)->check_password("dungdevitch"));
 
 // update local password only
-user($marina)->change_password(null, "ncurses", Contact::CHANGE_PASSWORD_NO_CDB);
+user($marina)->change_password("ncurses", Contact::CHANGE_PASSWORD_NO_CDB);
 xassert_eqq(password($marina), "ncurses");
 xassert_eqq(password($marina, true), "isdevitch");
 xassert(user($marina)->check_password("ncurses"));
@@ -87,7 +81,7 @@ save_password($marina, null, true);
 xassert(user($marina)->check_password("ncurses"));
 
 // restore to "this is a cdb password"
-user($marina)->change_password(null, "isdevitch", 0);
+user($marina)->change_password("isdevitch", 0);
 xassert_eqq(password($marina), "");
 xassert_eqq(password($marina, true), "isdevitch");
 
