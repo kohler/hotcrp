@@ -80,10 +80,10 @@ echo "</div>
     htmlspecialchars($Qreq->autopassword), '</div>';
 echo '<div class="', Ht::control_class("password", "f-i"), '">
   <label for="reset_password">New password</label>',
-    Ht::password("password", "", ["class" => "want-focus", "tabindex" => 1, "size" => 36, "id" => "reset_password"]), '</div>
+    Ht::password("password", "", ["class" => "want-focus", "tabindex" => 1, "size" => 36, "id" => "reset_password", "autocomplete" => "new-password"]), '</div>
 <div class="', Ht::control_class("password", "f-i"), '">
   <label for="reset_password2">New password (again)</label>',
-    Ht::password("password2", "", ["tabindex" => 1, "size" => 36, "id" => "reset_password2"]), '</div>
+    Ht::password("password2", "", ["tabindex" => 1, "size" => 36, "id" => "reset_password2", "autocomplete" => "new-password"]), '</div>
 <div class="f-i" style="margin-top:2em">',
     Ht::submit("go", "Reset password", ["class" => "btn btn-primary"]),
     "</div>
