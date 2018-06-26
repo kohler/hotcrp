@@ -92,18 +92,21 @@ xassert_eqq(password($marina), "");
 xassert_eqq(password($marina, true), "isdevitch");
 
 // start upgrading passwords
-if (function_exists("password_needs_rehash")) {
-    $Conf->set_opt("safePasswords", 2);
-    $Conf->set_opt("contactdb_safePasswords", 2);
-    xassert(user($marina)->check_password("isdevitch"));
-    xassert_eqq(substr(password($marina, true), 0, 2), " \$");
-    xassert_eqq(password($marina), "");
+$Conf->set_opt("safePasswords", 2);
+$Conf->set_opt("contactdb_safePasswords", 2);
+// current status: local password is empty, global password "isdevitch"
 
-    save_password($marina, ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm', true);
-    save_password($marina, '', false);
-    xassert(user($marina)->check_password("isdevitch"));
-    xassert_eqq(password($marina, true), ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm');
-}
+// checking an unencrypted password encrypts it
+$mu = user($marina);
+xassert($mu->check_password("isdevitch"));
+xassert_eqq(substr(password($marina, true), 0, 2), " \$");
+xassert_eqq(password($marina), "");
+
+// checking an encrypted password doesn't change it
+save_password($marina, ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm', true);
+save_password($marina, '', false);
+xassert(user($marina)->check_password("isdevitch"));
+xassert_eqq(password($marina, true), ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm');
 
 // insert someone into the contactdb
 $result = Dbl::qe($Conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='te@_.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
@@ -123,8 +126,7 @@ xassert(!!$te);
 xassert_eqq($te->firstName, "Te");
 xassert_eqq($te->lastName, "Thamrongrattanarit");
 xassert_eqq($te->affiliation, "Brandeis University");
-if (function_exists("password_needs_rehash"))
-    xassert($te->check_password("isdevitch"));
+xassert($te->check_password("isdevitch"));
 xassert_eqq($te->collaborators, "Computational Linguistics Magazine");
 
 // changing email should work too, but not change cdb except for defaults

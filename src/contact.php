@@ -1377,10 +1377,9 @@ class Contact {
             return false;
         else if ($pwhash[0] !== " ")
             return $pwhash === $input;
-        else if ($pwhash[1] === "\$") {
-            if (function_exists("password_verify"))
-                return password_verify($input, substr($pwhash, 2));
-        } else {
+        else if ($pwhash[1] === "\$")
+            return password_verify($input, substr($pwhash, 2));
+        else {
             if (($method_pos = strpos($pwhash, " ", 1)) !== false
                 && ($keyid_pos = strpos($pwhash, " ", $method_pos + 1)) !== false
                 && strlen($pwhash) > $keyid_pos + 17
@@ -1398,20 +1397,7 @@ class Contact {
 
     private function password_hash_method() {
         $m = $this->conf->opt("passwordHashMethod");
-        if (function_exists("password_verify") && !is_string($m))
-            return is_int($m) ? $m : PASSWORD_DEFAULT;
-        if (!function_exists("hash_hmac"))
-            return false;
-        if (is_string($m))
-            return $m;
-        return PHP_INT_SIZE == 8 ? "sha512" : "sha256";
-    }
-
-    private function preferred_password_keyid($iscdb) {
-        if ($iscdb)
-            return $this->conf->opt("contactdb_passwordHmacKeyid", 0);
-        else
-            return $this->conf->opt("passwordHmacKeyid", 0);
+        return is_int($m) ? $m : PASSWORD_DEFAULT;
     }
 
     private function check_password_encryption($hash, $iscdb) {
@@ -1422,28 +1408,17 @@ class Contact {
             return false;
         else if ($hash === "" || $hash[0] !== " ")
             return true;
-        else if (is_int($method))
+        else
             return $hash[1] !== "\$"
                 || password_needs_rehash(substr($hash, 2), $method);
-        else {
-            $prefix = " " . $method . " " . $this->preferred_password_keyid($iscdb) . " ";
-            return !str_starts_with($hash, $prefix);
-        }
     }
 
     private function hash_password($input, $iscdb) {
         $method = $this->password_hash_method();
         if ($method === false)
             return $input;
-        else if (is_int($method))
+        else
             return " \$" . password_hash($input, $method);
-        else {
-            $keyid = $this->preferred_password_keyid($iscdb);
-            $key = $this->password_hmac_key($keyid);
-            $salt = random_bytes(16);
-            return " " . $method . " " . $keyid . " " . $salt
-                . hash_hmac($method, $salt . $input, $key, true);
-        }
     }
 
     function check_password($input) {
