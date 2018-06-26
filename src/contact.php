@@ -1331,12 +1331,6 @@ class Contact {
         return $cdbu && $cdbu->password && $cdbu->password !== "*";
     }
 
-    private function prefer_contactdb_password() {
-        $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password && $cdbu->password !== "*"
-            && (!$this->has_database_account() || $this->password === "");
-    }
-
     function plaintext_password() {
         // Return the currently active plaintext password. This might not
         // equal $this->password because of the cdb.
@@ -1474,9 +1468,6 @@ class Contact {
     function change_password($new, $flags) {
         global $Now;
         assert(!$this->conf->external_login());
-        if ($new === null)
-            $new = self::random_password();
-        assert(self::valid_password($new));
 
         $cdbu = null;
         if (!($flags & self::CHANGE_PASSWORD_NO_CDB))
@@ -1485,6 +1476,12 @@ class Contact {
             && (($this->password !== "" && $this->password !== "*")
                 || ($cdbu && $cdbu->password !== "" && $cdbu->password !== "*")))
             return false;
+
+        if ($new === null) {
+            $new = self::random_password();
+            $flags |= self::CHANGE_PASSWORD_PLAINTEXT;
+        }
+        assert(self::valid_password($new));
 
         if ($cdbu) {
             $hash = $new;
@@ -1516,22 +1513,28 @@ class Contact {
 
     function sendAccountInfo($sendtype, $sensitive) {
         assert(!$this->disabled);
+
+        $cdbu = $this->contactdb_user();
         $rest = array();
-        if ($sendtype == "create" && $this->prefer_contactdb_password())
-            $template = "@activateaccount";
-        else if ($sendtype == "create")
-            $template = "@createaccount";
-        else if ($this->plaintext_password()
-                 && ($this->conf->opt("safePasswords") <= 1 || $sendtype != "forgot"))
-            $template = "@accountinfo";
-        else {
-            if ($this->prefer_contactdb_password())
-                $capmgr = $this->conf->capability_manager("U");
+        if ($sendtype === "create") {
+            if ($cdbu && $cdbu->passwordUseTime)
+                $template = "@activateaccount";
             else
-                $capmgr = $this->conf->capability_manager();
-            $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
-            $this->conf->log_for($this, null, "Created password reset " . substr($rest["capability"], 0, 8) . "...");
-            $template = "@resetpassword";
+                $template = "@createaccount";
+        } else if ($sendtype === "forgot") {
+            if ($this->conf->opt("safePasswords") <= 1 && $this->plaintext_password())
+                $template = "@accountinfo";
+            else {
+                $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
+                $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
+                $this->conf->log_for($this, null, "Created password reset " . substr($rest["capability"], 0, 8) . "...");
+                $template = "@resetpassword";
+            }
+        } else {
+            if ($this->plaintext_password())
+                $template = "@accountinfo";
+            else
+                return false;
         }
 
         $mailer = new HotCRPMailer($this->conf, $this, null, $rest);

@@ -176,6 +176,7 @@ xassert(!user($anna));
 $acct = $us->save((object) ["email" => $anna, "first" => "Anna", "last" => "Akhmatova"]);
 xassert(!!$acct);
 Dbl::qe("delete from ContactInfo where email=?", $anna);
+Dbl::qe($Conf->contactdb(), "update ContactInfo set passwordUseTime=1 where email=?", $anna);
 save_password($anna, "aquablouse", true);
 xassert(!user($anna));
 
