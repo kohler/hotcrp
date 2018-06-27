@@ -71,7 +71,7 @@ class AssignmentState {
     function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->user = $this->reviewer = $user;
-        $this->cmap = new AssignerContacts($this->conf);
+        $this->cmap = new AssignerContacts($this->conf, $this->user);
     }
 
     function mark_type($type, $keys, $realizer) {
@@ -258,15 +258,17 @@ class AssignmentState {
 
 class AssignerContacts {
     private $conf;
+    private $viewer;
     private $by_id = array();
     private $by_lemail = array();
     private $has_pc = false;
     private $none_user;
     static private $next_fake_id = -10;
     static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, roles, contactTags";
-    function __construct(Conf $conf) {
+    function __construct(Conf $conf, Contact $viewer) {
         global $Me;
         $this->conf = $conf;
+        $this->viewer = $viewer;
         if ($Me && $Me->contactId > 0 && $Me->conf === $conf)
             $this->store($Me);
     }
@@ -329,7 +331,6 @@ class AssignerContacts {
                 $cargs["firstName"] = "Jane Q.";
                 $cargs["lastName"] = "Public";
                 $cargs["affiliation"] = "Unaffiliated";
-                $cargs["password"] = "";
                 $cargs["disabled"] = 1;
             }
             $c = new Contact($cargs, $this->conf);
@@ -357,10 +358,10 @@ class AssignerContacts {
         if ($cx === $c) {
             // XXX assume that never fails:
             $cargs = [];
-            foreach (["email", "firstName", "lastName", "affiliation", "password", "disabled"] as $k)
+            foreach (["email", "firstName", "lastName", "affiliation", "disabled"] as $k)
                 if ($c->$k !== null)
                     $cargs[$k] = $c->$k;
-            $cx = Contact::create($this->conf, $cargs, $cx->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0);
+            $cx = Contact::create($this->conf, $this->viewer, $cargs, $cx->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0);
             $cx = $this->store($cx);
         }
         return $cx;

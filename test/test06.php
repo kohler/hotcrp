@@ -587,7 +587,7 @@ ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch());
 xassert_eqq($rrow18d2->t01, $gettysburg);
 
 // check some review visibility policies
-$user_external = Contact::create($Conf, ["email" => "external@_.com", "name" => "External Reviewer"]);
+$user_external = Contact::create($Conf, null, ["email" => "external@_.com", "name" => "External Reviewer"]);
 $user_mgbaker->assign_review(17, $user_external->contactId, REVIEW_EXTERNAL,
     ["round_number" => 3]);
 xassert(!$user_external->can_view_review($paper17, $rrow17m));

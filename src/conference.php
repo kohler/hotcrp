@@ -1929,11 +1929,6 @@ class Conf {
         if ($any)
             trigger_error("$this->dbname invariant error: anonymous user is not disabled");
 
-        // no one has password '*'
-        $any = $this->invariantq("select email from ContactInfo where password='*' limit 1");
-        if ($any)
-            trigger_error("$this->dbname invariant error: password '*'");
-
         // paper denormalizations match
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any)

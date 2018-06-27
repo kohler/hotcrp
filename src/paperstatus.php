@@ -1142,7 +1142,7 @@ class PaperStatus extends MessageSet {
                 $flags = (get($c, "contact") ? 0 : Contact::SAVE_IMPORT)
                     | ($ps->no_email ? 0 : Contact::SAVE_NOTIFY);
                 $c->disabled = !!$ps->disable_users;
-                if (!Contact::create($ps->conf, $c, $flags)
+                if (!Contact::create($ps->conf, $ps->user, $c, $flags)
                     && !($flags & Contact::SAVE_IMPORT))
                     $ps->error_at("contacts", $ps->_("Could not create an account for contact %s.", Text::user_html($c)));
             }

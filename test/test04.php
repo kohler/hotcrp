@@ -10,11 +10,6 @@ $Opt = array("contactdb_dsn" => "mysql://hotcrp_testdb:m5LuaN23j26g@localhost/ho
              "contactdb_passwordHmacKeyid" => "c1");
 require_once("$ConfSitePATH/test/setup.php");
 
-function user($email) {
-    global $Conf;
-    return $Conf->user_by_email($email);
-}
-
 function password($email, $iscdb = false) {
     global $Conf;
     $dblink = $iscdb ? $Conf->contactdb() : $Conf->dblink;
@@ -179,6 +174,7 @@ Dbl::qe("delete from ContactInfo where email=?", $anna);
 Dbl::qe($Conf->contactdb(), "update ContactInfo set passwordUseTime=1 where email=?", $anna);
 save_password($anna, "aquablouse", true);
 xassert(!user($anna));
+MailChecker::check0();
 
 $user_estrin = user("estrin@usc.edu");
 $user_floyd = user("floyd@EE.lbl.gov");
@@ -190,7 +186,7 @@ $ps->save_paper_json((object) [
     "authors" => ["puneet@catarina.usc.edu", $user_estrin->email,
                   $user_floyd->email, $user_van->email, $anna]
 ]);
-MailChecker::check_db();
+MailChecker::check_db("test04-akhmatova");
 
 $paper1 = $Conf->paperRow(1, $user_chair);
 $user_anna = user($anna);
@@ -225,26 +221,27 @@ xassert($paper1->has_conflict($user_anne1));
 
 // creation interactions
 Dbl::qe($Conf->dblink, "insert into ContactInfo (email, password) values ('betty2@_.com','')");
-Dbl::qe($Conf->contactdb(), "insert into ContactInfo (email, password, firstName, lastName) values ('betty3@_.com','','Betty','Shabazz'), ('betty4@_.com','','Betty','Kelly'),('betty5@_.com','','Betty','Davis')");
-$u = Contact::create($Conf, ["email" => "betty1@_.com", "name" => "Betty Grable"]);
+Dbl::qe($Conf->contactdb(), "insert into ContactInfo (email, password, firstName, lastName) values ('betty3@_.com','','Betty','Shabazz'), ('betty4@_.com','','Betty','Kelly'),('betty5@_.com','','Betty','Davis'),
+    ('cengiz@isi.edu','TEST PASSWORD','','')");
+$u = Contact::create($Conf, null, ["email" => "betty1@_.com", "name" => "Betty Grable"]);
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Grable");
 $u = $Conf->contactdb_user_by_email("betty1@_.com");
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Grable");
-$u = Contact::create($Conf, ["email" => "betty2@_.com", "name" => "Betty Apiafi"]);
+$u = Contact::create($Conf, null, ["email" => "betty2@_.com", "name" => "Betty Apiafi"]);
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Apiafi");
 $u = $Conf->contactdb_user_by_email("betty2@_.com");
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Apiafi");
-$u = Contact::create($Conf, ["email" => "betty3@_.com", "name" => "Betty Crocker"]);
+$u = Contact::create($Conf, null, ["email" => "betty3@_.com", "name" => "Betty Crocker"]);
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Shabazz");
 $u = $Conf->contactdb_user_by_email("betty3@_.com");
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Shabazz");
-$u = Contact::create($Conf, ["email" => "betty4@_.com", "name" => "Betty Crocker", "affiliation" => "France"]);
+$u = Contact::create($Conf, null, ["email" => "betty4@_.com", "name" => "Betty Crocker", "affiliation" => "France"]);
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Kelly");
 xassert_eqq($u->affiliation, "France");
@@ -260,5 +257,13 @@ $u = $Conf->user_by_email("betty5@_.com");
 xassert($u->has_database_account());
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Davis");
+
+$u = Contact::create($Conf, null, ["email" => "cengiz@isi.edu"]);
+xassert($u->contactId > 0);
+xassert_eqq($u->firstName, "Cengiz");
+xassert_eqq($u->contactdb_user()->firstName, "Cengiz");
+xassert_eqq($u->lastName, "Alaettinoğlu");
+xassert_eqq($u->contactdb_user()->lastName, "Alaettinoğlu");
+xassert_eqq($u->plaintext_password(), "TEST PASSWORD");
 
 xassert_exit();

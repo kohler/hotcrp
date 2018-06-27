@@ -84,7 +84,7 @@ class RequestReview_API {
 
         // create account
         if (!$reviewer)
-            $reviewer = Contact::create($user->conf, $xreviewer);
+            $reviewer = Contact::create($user->conf, $user, $xreviewer);
         if (!$reviewer)
             return new JsonResult(400, "Error while creating account.");
 

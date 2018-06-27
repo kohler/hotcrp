@@ -457,11 +457,12 @@ class UserStatus extends MessageSet {
             return false;
         $this->check_invariants($cj);
 
-        $user = $user ? : new Contact(null, $this->conf);
         if (($send = $this->send_email) === null)
             $send = !$old_cdb_user;
         $actor = $this->viewer->is_site_contact ? null : $this->viewer;
-        if ($user->save_json($cj, $actor, $send ? Contact::SAVE_NOTIFY : 0))
+        if (!$old_user)
+            $user = Contact::create($this->conf, $actor, $cj, $send ? Contact::SAVE_NOTIFY : 0);
+        if ($user && $user->save_json($cj, $actor, 0))
             return $user;
         else
             return false;

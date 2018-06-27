@@ -20,7 +20,6 @@ class Contact {
 
     public $contactId = 0;
     public $contactDbId = 0;
-    private $cid;               // for forward compatibility
     public $conf;
     public $confid;
 
@@ -131,9 +130,7 @@ class Contact {
             $user = (object) $user;
         if (!isset($user->dsn) || $user->dsn == $this->conf->dsn) {
             if (isset($user->contactId))
-                $this->contactId = $this->cid = (int) $user->contactId;
-            //else if (isset($user->cid))
-            //    $this->contactId = $this->cid = (int) $user->cid;
+                $this->contactId = (int) $user->contactId;
         }
         if (isset($user->contactDbId))
             $this->contactDbId = (int) $user->contactDbId;
@@ -200,7 +197,7 @@ class Contact {
     }
 
     private function db_load() {
-        $this->contactId = $this->cid = (int) $this->contactId;
+        $this->contactId = (int) $this->contactId;
         $this->contactDbId = (int) $this->contactDbId;
         if ($this->unaccentedName === "")
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
@@ -243,21 +240,10 @@ class Contact {
             $this->data = array_to_object_recursive($x->data);
     }
 
-    // begin changing contactId to cid
-    function __get($name) {
-        if ($name === "cid")
-            return $this->contactId;
-        else
-            return null;
-    }
-
     function __set($name, $value) {
         if (!self::$allow_nonexistent_properties)
             error_log(caller_landmark(1) . ": writing nonexistent property $name");
-        if ($name === "cid")
-            $this->contactId = $this->cid = $value;
-        else
-            $this->$name = $value;
+        $this->$name = $value;
     }
 
     static function set_sorter($c, Conf $conf) {
@@ -316,7 +302,7 @@ class Contact {
         // new account must exist
         $u = $this->conf->user_by_email($email);
         if (!$u && validate_email($email) && get($this->conf->opt, "debugShowSensitiveEmail"))
-            $u = Contact::create($this->conf, ["email" => $email]);
+            $u = Contact::create($this->conf, null, ["email" => $email]);
         if (!$u)
             return $this;
 
@@ -442,8 +428,10 @@ class Contact {
     function activate_database_account() {
         assert($this->has_email());
         if (!$this->has_database_account()
-            && ($u = Contact::create($this->conf, $this))) {
-            $this->load_by_id($u->contactId);
+            && ($u = Contact::create($this->conf, null, $this))) {
+            $this->merge($u);
+            $this->contactDbId = 0;
+            $this->contactdb_user_ = false;
             $this->activate(null);
         }
     }
@@ -466,7 +454,9 @@ class Contact {
     }
     function contactdb_update($update_keys = null, $only_update_empty = false) {
         global $Now;
-        if (!($cdb = $this->conf->contactdb()) || !$this->has_database_account())
+        if (!($cdb = $this->conf->contactdb())
+            || !$this->has_database_account()
+            || !validate_email($this->email))
             return false;
 
         $update_password = null;
@@ -941,12 +931,12 @@ class Contact {
     const SAVE_NO_EXPORT = 8;
     function save_json($cj, $actor, $flags) {
         global $Me, $Now;
-        $inserting = !$this->contactId;
+        assert(!!$this->contactId);
         $old_roles = $this->roles;
         $old_email = $this->email;
         $old_disabled = $this->disabled ? 1 : 0;
         $changing_email = isset($cj->email) && strtolower($cj->email) !== strtolower((string) $old_email);
-        $cu = new Contact_Update($inserting, $changing_email);
+        $cu = new Contact_Update(false, $changing_email);
 
         $aupapers = null;
         if ($changing_email)
@@ -1022,22 +1012,13 @@ class Contact {
             $this->_save_assign_field("contactTags", $t, $cu);
         }
 
-        // If inserting, set initial password and creation time
-        if ($inserting) {
-            $cu->qv["creationTime"] = $this->creationTime = $Now;
-            $this->_create_password($this->conf->contactdb_user_by_email($this->email), $cu);
-        }
-
         // Initial save
         if (count($cu->qv)) { // always true if $inserting
-            $q = ($inserting ? "insert into" : "update")
-                . " ContactInfo set "
+            $q = "update ContactInfo set "
                 . join("=?, ", array_keys($cu->qv)) . "=?"
-                . ($inserting ? "" : " where contactId=$this->contactId");;
+                . " where contactId=$this->contactId";
             if (!($result = $this->conf->qe_apply($q, array_values($cu->qv))))
                 return $result;
-            if ($inserting)
-                $this->contactId = $this->cid = (int) $result->insert_id;
             Dbl::free($result);
         }
 
@@ -1081,14 +1062,6 @@ class Contact {
         if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
             $this->conf->invalidate_caches(["pc" => 1]);
 
-        // Mark creation and activity
-        if ($inserting) {
-            if (($flags & self::SAVE_NOTIFY) && !$this->disabled)
-                $this->sendAccountInfo("create", false);
-            $type = $this->disabled ? "disabled " : "";
-            $this->conf->log_for($Me && $Me->has_email() ? $Me : $this, $this, "Created {$type}account");
-        }
-
         $actor = $actor ? : $Me;
         if ($actor && $this->contactId == $actor->contactId)
             $this->mark_activity();
@@ -1112,14 +1085,18 @@ class Contact {
             foreach ($row->author_list() as $au) {
                 if (strcasecmp($au->email, $email) == 0) {
                     $aupapers[] = $row->paperId;
-                    if ($reg && !isset($reg->firstName) && !isset($reg->lastName)) {
-                        if ($au->firstName !== "")
-                            $reg->firstName = $au->firstName;
-                        if ($au->lastName !== "")
-                            $reg->lastName = $au->lastName;
+                    if ($reg
+                        && ($au->firstName !== "" || $au->lastName !== "")
+                        && !isset($reg->firstName)
+                        && !isset($reg->lastName)) {
+                        $reg->firstName = $au->firstName;
+                        $reg->lastName = $au->lastName;
                     }
-                    if ($reg && !isset($reg->affiliation) && $au->affiliation !== "")
+                    if ($reg
+                        && $au->affiliation !== ""
+                        && !isset($reg->affiliation)) {
                         $reg->affiliation = $au->affiliation;
+                    }
                 }
             }
         }
@@ -1157,14 +1134,6 @@ class Contact {
         return $old_roles != $new_roles;
     }
 
-    private function load_by_id($cid) {
-        $result = $this->conf->q("select * from ContactInfo where contactId=?", $cid);
-        if (($row = $result ? $result->fetch_object() : null))
-            $this->merge($row);
-        Dbl::free($result);
-        return !!$row;
-    }
-
     private function _create_password($cdbu, Contact_Update $cu) {
         global $Now;
         if ($cdbu
@@ -1179,7 +1148,7 @@ class Contact {
             $cu->qv["password"] = $this->password = "";
     }
 
-    private function _save_make_empty_updater($reg, $is_cdb) {
+    private function _make_create_updater($reg, $is_cdb) {
         $cj = [];
         if ($this->firstName === "" && $this->lastName === "") {
             if (get_s($reg, "firstName") !== "")
@@ -1187,11 +1156,11 @@ class Contact {
             if (get_s($reg, "lastName") !== "")
                 $cj["lastName"] = (string) $reg->lastName;
         }
-        foreach (["affiliation", "country",
-                  "gender", "birthday", "preferredEmail", "phone"] as $k) {
+        foreach (["affiliation", "country", "gender", "birthday",
+                  "preferredEmail", "phone"] as $k) {
             if ((string) $this->$k === ""
-                && get_s($reg, $k) !== ""
-                && (!$is_cdb || $k !== "phone"))
+                && isset($reg->$k)
+                && $reg->$k !== "")
                 $cj[$k] = (string) $reg->$k;
         }
         if ($is_cdb ? !$this->contactDbId : !$this->contactId)
@@ -1199,19 +1168,45 @@ class Contact {
         return $cj;
     }
 
-    static private function _contactdb_apply_updater(Conf $conf, $updater, $cdbu) {
-        assert($cdbu ? !!$cdbu->contactDbId : isset($updater["email"]));
-        $qk = array_map(function ($k) { return "$k=?"; }, array_keys($updater));
-        $qv = array_values($updater);
-        if ($cdbu) {
-            $qv[] = $cdbu->contactDbId;
-            Dbl::qe_apply($conf->contactdb(), "update ContactInfo set " . join(", ", $qk) . " where contactDbId=?", $qv);
+    function apply_updater($updater, $is_cdb) {
+        global $Now;
+        if ($is_cdb) {
+            $db = $this->conf->contactdb();
+            $idk = "contactDbId";
         } else {
-            Dbl::qe_apply($conf->contactdb(), "insert into ContactInfo set " . join(", ", $qk) . " on duplicate key update firstName=firstName", $qv);
+            $db = $this->conf->dblink;
+            $idk = "contactId";
+            if (isset($updater["firstName"]) || isset($updater["lastName"])) {
+                $updater["firstName"] = get($updater, "firstName", $this->firstName);
+                $updater["lastName"] = get($updater, "lastName", $this->lastName);
+                $updater["unaccentedName"] = Text::unaccented_name($updater["firstName"], $updater["lastName"]);
+            }
         }
+        if ($this->$idk) {
+            $qv = array_values($updater);
+            $qv[] = $this->$idk;
+            $result = Dbl::qe_apply($db, "update ContactInfo set " . join("=?, ", array_keys($updater)) . "=? where $idk=?", $qv);
+        } else {
+            assert(isset($updater["email"]));
+            if (!isset($updater["password"])) {
+                $updater["password"] = validate_email($updater["email"]) ? self::random_password() : "*";
+                $updater["passwordTime"] = $Now;
+            }
+            if (!$is_cdb)
+                $updater["creationTime"] = $Now;
+            $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join("=?, ", array_keys($updater)) . "=? on duplicate key update firstName=firstName", array_values($updater));
+            if ($result)
+                $updater[$idk] = (int) $result->insert_id;
+        }
+        if (($ok = !!$result)) {
+            foreach ($updater as $k => $v)
+                $this->$k = $v;
+        }
+        Dbl::free($result);
+        return $ok;
     }
 
-    static function create(Conf $conf, $reg, $flags = 0) {
+    static function create(Conf $conf, $actor, $reg, $flags = 0) {
         global $Me, $Now;
 
         // clean registration
@@ -1220,70 +1215,88 @@ class Contact {
         assert(is_string($reg->email));
         $reg->email = trim($reg->email);
         assert($reg->email !== "");
+        if (!isset($reg->firstName) && isset($reg->first))
+            $reg->firstName = $reg->first;
+        if (!isset($reg->lastName) && isset($reg->last))
+            $reg->lastName = $reg->last;
         if (isset($reg->name) && !isset($reg->firstName) && !isset($reg->lastName))
             list($reg->firstName, $reg->lastName) = Text::split_name($reg->name);
         if (isset($reg->preferred_email) && !isset($reg->preferredEmail))
             $reg->preferredEmail = $reg->preferred_email;
 
-        // look up account first; if found, update user from registration
-        if (($u = $conf->user_by_email($reg->email))) {
-            if (($updater = $u->_save_make_empty_updater($reg, false)))
-                $u->save_json((object) $updater, null, 0);
-            return $u;
-        }
-
-        // validate email
-        if (!($flags & self::SAVE_ANY_EMAIL) && !validate_email($reg->email))
-            return null;
-
-        // update contactdb's empty portions from registration
-        $cdbu = $conf->contactdb_user_by_email($reg->email);
-        if (!$cdbu && ($flags & self::SAVE_IMPORT))
-            return null;
-        if ($cdbu && ($updater = $cdbu->_save_make_empty_updater($reg, true))) {
-            self::_contactdb_apply_updater($conf, $updater, $cdbu);
+        // look up existing accounts
+        $valid_email = validate_email($reg->email);
+        $u = $conf->user_by_email($reg->email) ? : new Contact(null, $conf);
+        if (($cdb = $conf->contactdb()) && $valid_email)
             $cdbu = $conf->contactdb_user_by_email($reg->email);
+        else
+            $cdbu = null;
+        $create = !$u->contactId;
+        $aupapers = [];
+
+        // if local does not exist, create it
+        if (!$u->contactId) {
+            if (($flags & self::SAVE_IMPORT) && !$cdbu)
+                return null;
+            if (!$valid_email && !($flags & self::SAVE_ANY_EMAIL))
+                return null;
+            if ($valid_email)
+                // update registration from authorship information
+                $aupapers = self::email_authored_papers($conf, $reg->email, $reg);
         }
 
-        // update local db from contactdb or registration
-        $u = new Contact(null, $conf);
-        $updater = $u->_save_make_empty_updater($cdbu ? : $reg, false);
-        if ($cdbu && get($reg, "phone"))
-            $updater["phone"] = $reg->phone;
-        if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
-            $updater["disabled"] = true;
-        if (!$u->save_json((object) $updater, null, $flags | self::SAVE_NO_EXPORT)) {
-            $conf->log_for($Me, $Me, "Account $reg->email creation failure");
-            return null;
+        // create or update contactdb user
+        if ($cdb && $valid_email) {
+            $cdbu = $cdbu ? : new Contact(null, $conf);
+            if (($upd = $cdbu->_make_create_updater($reg, true)))
+                $cdbu->apply_updater($upd, true);
         }
 
-        // insert into contactdb from local (which may include authored-paper
-        // information)
-        if (!$cdbu && $conf->contactdb()) {
-            $cdbu = new Contact(null, $conf);
-            $updater = $cdbu->_save_make_empty_updater($u, true);
-            self::_contactdb_apply_updater($conf, $updater, null);
+        // create or update local user
+        $upd = $u->_make_create_updater($cdbu ? : $reg, false);
+        if (!$u->contactId) {
+            if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
+                $upd["disabled"] = 1;
+            if ($cdbu) {
+                $upd["password"] = $cdbu->password;
+                $upd["passwordTime"] = $cdbu->passwordTime;
+            }
+        }
+        if ($upd) {
+            if (!($u->apply_updater($upd, false)))
+                // failed because concurrent create (unlikely)
+                $u = $conf->user_by_email($reg->email);
         }
 
-        // log, return
-        if ($Me && $Me->privChair) {
+        // update paper authorship
+        if ($aupapers) {
+            $u->save_authored_papers($aupapers);
+            if ($cdbu)
+                // can't use `$cdbu` itself b/c no `confid`
+                $u->_contactdb_save_roles($u->contactdb_user());
+        }
+
+        // notify on creation
+        if ($create) {
+            if (($flags & self::SAVE_NOTIFY) && !$u->disabled)
+                $u->sendAccountInfo("create", false);
             $type = $u->disabled ? "disabled " : "";
-            $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($u->email)) . "\">" . Text::user_html_nolink($u) . "</a>.");
+            $conf->log_for($actor && $actor->has_email() ? $actor : $u, $u, "Created {$type}account");
+            // if ($Me && $Me->privChair)
+            //    $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($u->email)) . "\">" . Text::user_html_nolink($u) . "</a>.");
         }
+
         return $u;
     }
 
 
     // PASSWORDS
     //
-    // password "": disabled password (login disabled)
-    // password "*": reset password (user must recreate password)
+    // password "" or null: reset password (user must recreate password)
+    // password "*": invalid password, cannot be reset by user
     // password starting with " ": legacy hashed password using hash_hmac
     //     format: " HASHMETHOD KEYID SALT[16B]HMAC"
     // password starting with " $": password hashed by password_hash
-    //
-    // contactdb_user password falsy: contactdb password unusable
-    // contactdb_user password truthy: follows rules above (but no "*")
     //
     // PASSWORD PRINCIPLES
     //
@@ -1340,15 +1353,15 @@ class Contact {
                 return $cdbu->plaintext_password();
             else
                 return false;
-        } else if ($this->password[0] === " ")
+        } else if ($this->password[0] === " " || $this->password === "*")
             return false;
         else
             return $this->password;
     }
 
     function password_is_reset() {
-        return $this->password === "*"
-            || (($cdbu = $this->contactdb_user()) && $cdbu->password === "*");
+        return $this->password === ""
+            || (($cdbu = $this->contactdb_user()) && $cdbu->password === "");
     }
 
 
@@ -1369,8 +1382,10 @@ class Contact {
     }
 
     private function check_hashed_password($input, $pwhash) {
-        if ($input == "" || $input === "*"
-            || (string) $pwhash === "" || $pwhash === "*")
+        if ($input == ""
+            || $input === "*"
+            || (string) $pwhash === ""
+            || $pwhash === "*")
             return false;
         else if ($pwhash[0] !== " ")
             return $pwhash === $input;
@@ -1388,7 +1403,6 @@ class Contact {
                     == substr($pwhash, $keyid_pos + 17);
             }
         }
-        error_log("cannot check hashed password for user $email");
         return false;
     }
 
@@ -1423,39 +1437,31 @@ class Contact {
         if (($this->contactId && $this->disabled)
             || !self::valid_password($input))
             return false;
-        // update passwordUseTime once a month
-        $update_use_time = $Now - 31 * 86400;
 
         $cdbu = $this->contactdb_user();
         $cdbok = false;
         if ($cdbu
             && ($hash = $cdbu->password)
             && $cdbu->allow_contactdb_password()
-            && ($cdbok = $this->check_hashed_password($input, $hash, $this->email))) {
+            && ($cdbok = $this->check_hashed_password($input, $hash))) {
+            $updater = ["passwordUseTime" => $Now];
             if ($this->check_password_encryption($hash, true)) {
-                $hash = $this->hash_password($input);
-                Dbl::ql($this->conf->contactdb(), "update ContactInfo set password=? where contactDbId=?", $hash, $cdbu->contactDbId);
-                $cdbu->password = $hash;
+                $updater["password"] = $this->hash_password($input);
+                $updater["passwordTime"] = $Now;
             }
-            if ($cdbu->passwordUseTime <= $update_use_time) {
-                Dbl::ql($this->conf->contactdb(), "update ContactInfo set passwordUseTime=? where contactDbId=?", $Now, $cdbu->contactDbId);
-                $cdbu->passwordUseTime = $Now;
-            }
+            $cdbu->apply_updater($updater, true);
         }
 
         $localok = false;
         if ($this->contactId
             && ($hash = $this->password)
-            && ($localok = $this->check_hashed_password($input, $hash, $this->email))) {
+            && ($localok = $this->check_hashed_password($input, $hash))) {
+            $updater = ["passwordUseTime" => $Now];
             if ($this->check_password_encryption($hash, false)) {
-                $hash = $this->hash_password($input);
-                $this->conf->ql("update ContactInfo set password=? where contactId=?", $hash, $this->contactId);
-                $this->password = $hash;
+                $updater["password"] = $cdbok ? $cdbu->password : $this->hash_password($input);
+                $updater["passwordTime"] = $Now;
             }
-            if ($this->passwordUseTime <= $update_use_time) {
-                $this->conf->ql("update ContactInfo set passwordUseTime=? where contactId=?", $Now, $this->contactId);
-                $this->passwordUseTime = $Now;
-            }
+            $this->apply_updater($updater, false);
         }
 
         return $cdbok || $localok;
@@ -1469,8 +1475,7 @@ class Contact {
 
         $cdbu = $this->contactdb_user();
         if (($flags & self::CHANGE_PASSWORD_ENABLE)
-            && (($this->password !== "" && $this->password !== "*")
-                || ($cdbu && $cdbu->password !== "" && $cdbu->password !== "*")))
+            && ($this->password !== "" || ($cdbu && (string) $cdbu->password !== "")))
             return false;
 
         if ($new === null) {

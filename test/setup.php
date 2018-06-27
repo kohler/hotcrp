@@ -162,8 +162,7 @@ MailChecker::add_messagedb(file_get_contents("$ConfSitePATH/test/emails.txt"));
 $Conf->add_hook((object) ["event" => "send_mail", "callback" => "MailChecker::send_hook", "priority" => 1000]);
 
 // Create initial administrator user.
-$Admin = Contact::create($Conf, ["email" => "chair@_.com", "name" => "Jane Chair",
-                                 "password" => "testchair"]);
+$Admin = Contact::create($Conf, null, ["email" => "chair@_.com", "name" => "Jane Chair"]);
 $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $Admin);
 
 // Load data.
@@ -405,7 +404,7 @@ function call_api($fn, $user, $qreq, $prow) {
     return $result;
 }
 
-function fetch_paper($pid, $contact) {
+function fetch_paper($pid, $contact = null) {
     global $Conf;
     return $Conf->paperRow($pid, $contact);
 }
@@ -423,6 +422,11 @@ function save_review($paper, $contact, $revreq) {
     $tf->parse_web(new Qrequest("POST", $revreq), false);
     $tf->check_and_save($contact, $prow, fetch_review($prow, $contact));
     return fetch_review($prow, $contact);
+}
+
+function user($email) {
+    global $Conf;
+    return $Conf->user_by_email($email);
 }
 
 MailChecker::clear();

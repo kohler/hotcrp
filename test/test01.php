@@ -570,7 +570,7 @@ $review2d = fetch_review($paper2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == 1);
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
-$user_external = Contact::create($Conf, ["email" => "external@_.com", "name" => "External Reviewer"]);
+$user_external = Contact::create($Conf, null, ["email" => "external@_.com", "name" => "External Reviewer"]);
 $user_mgbaker->assign_review(2, $user_external->contactId, REVIEW_EXTERNAL);
 $review2d = fetch_review($paper2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
@@ -1026,5 +1026,53 @@ assert_search_papers($user_chair, "many applications", "8 25");
 assert_search_papers($user_chair, "\"many applications\"", "8");
 assert_search_papers($user_chair, "“many applications”", "8");
 assert_search_papers($user_chair, "“many applications“", "8");
+
+// users
+xassert(!user("sclinx@leland.stanford.edu"));
+$u = Contact::create($Conf, null, ["email" => "sclinx@leland.stanford.edu", "name" => "Stephen Lon", "affiliation" => "Fart World"]);
+xassert(!!$u);
+xassert($u->contactId > 0);
+xassert_eqq($u->email, "sclinx@leland.stanford.edu");
+xassert_eqq($u->firstName, "Stephen");
+xassert_eqq($u->lastName, "Lon");
+xassert_eqq($u->affiliation, "Fart World");
+xassert(preg_match('/\A[-a-zA-Z0-9_=+@]+\z/', $u->plaintext_password()));
+
+xassert(!user("scliny@leland.stanford.edu"));
+$u = Contact::create($Conf, null, ["email" => "scliny@leland.stanford.edu", "affiliation" => "Fart World"]);
+xassert(!!$u);
+xassert($u->contactId > 0);
+xassert_eqq($u->email, "scliny@leland.stanford.edu");
+xassert_eqq($u->firstName, "");
+xassert_eqq($u->lastName, "");
+xassert_eqq($u->affiliation, "Fart World");
+xassert(preg_match('/\A[-a-zA-Z0-9_=+@]+\z/', $u->plaintext_password()));
+
+xassert(!user("thalerd@eecs.umich.edu"));
+$u = Contact::create($Conf, null, ["email" => "thalerd@eecs.umich.edu"]);
+xassert(!!$u);
+xassert($u->contactId > 0);
+xassert_eqq($u->email, "thalerd@eecs.umich.edu");
+xassert_eqq($u->firstName, "David");
+xassert_eqq($u->lastName, "Thaler");
+xassert_eqq($u->affiliation, "University of Michigan");
+xassert(preg_match('/\A[-a-zA-Z0-9_=+@]+\z/', $u->plaintext_password()));
+xassert(fetch_paper(27)->has_author($u));
+
+xassert(!user("cengiz@isi.edu"));
+$u = Contact::create($Conf, null, ["email" => "cengiz@isi.edu", "first" => "cengiz!", "last" => "ALAETTINOGLU", "affiliation" => "USC ISI"]);
+xassert(!!$u);
+xassert($u->contactId > 0);
+xassert_eqq($u->email, "cengiz@isi.edu");
+xassert_eqq($u->firstName, "cengiz!");
+xassert_eqq($u->lastName, "ALAETTINOGLU");
+xassert_eqq($u->affiliation, "USC ISI");
+xassert(preg_match('/\A[-a-zA-Z0-9_=+@]+\z/', $u->plaintext_password()));
+xassert(fetch_paper(27)->has_author($u));
+
+xassert(!user("anonymous10"));
+$u = Contact::create($Conf, null, ["email" => "anonymous10"], Contact::SAVE_ANY_EMAIL);
+xassert($u->contactId > 0);
+xassert_eqq($Conf->fetch_value("select password from ContactInfo where email='anonymous10'"), "*");
 
 xassert_exit();

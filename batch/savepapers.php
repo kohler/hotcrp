@@ -239,7 +239,7 @@ foreach ($jp as &$j) {
                 $tf->paperId = $pid;
                 $user_req = Text::analyze_name(["firstName" => get($tf->req, "reviewerFirst"), "lastName" => get($tf->req, "reviewerLast"), "email" => $tf->req["reviewerEmail"], "affiliation" => get($tf->req, "reviewerAffiliation")]);
                 $user_req->disabled = $disable_users;
-                $user = Contact::create($Conf, $user_req);
+                $user = Contact::create($Conf, null, $user_req);
                 $tf->check_and_save($site_contact, $prow, null);
             } else
                 $tf->msg(null, "invalid review @$reviewindex", MessageSet::ERROR);
