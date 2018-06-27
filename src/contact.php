@@ -1410,12 +1410,11 @@ class Contact {
                 || password_needs_rehash(substr($hash, 2), $method);
     }
 
-    private function hash_password($input, $iscdb) {
-        $method = $this->password_hash_method();
-        if ($method === false)
-            return $input;
-        else
+    private function hash_password($input) {
+        if (($method = $this->password_hash_method()) !== false)
             return " \$" . password_hash($input, $method);
+        else
+            return $input;
     }
 
     function check_password($input) {
@@ -1434,7 +1433,7 @@ class Contact {
             && $cdbu->allow_contactdb_password()
             && ($cdbok = $this->check_hashed_password($input, $hash, $this->email))) {
             if ($this->check_password_encryption($hash, true)) {
-                $hash = $this->hash_password($input, true);
+                $hash = $this->hash_password($input);
                 Dbl::ql($this->conf->contactdb(), "update ContactInfo set password=? where contactDbId=?", $hash, $cdbu->contactDbId);
                 $cdbu->password = $hash;
             }
@@ -1449,7 +1448,7 @@ class Contact {
             && ($hash = $this->password)
             && ($localok = $this->check_hashed_password($input, $hash, $this->email))) {
             if ($this->check_password_encryption($hash, false)) {
-                $hash = $this->hash_password($input, false);
+                $hash = $this->hash_password($input);
                 $this->conf->ql("update ContactInfo set password=? where contactId=?", $hash, $this->contactId);
                 $this->password = $hash;
             }
@@ -1488,7 +1487,7 @@ class Contact {
             if ($hash
                 && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && $this->check_password_encryption("", true))
-                $hash = $this->hash_password($hash, true);
+                $hash = $this->hash_password($hash);
             $cdbu->password = $hash;
             $cdbu->passwordTime = $Now;
             Dbl::ql($this->conf->contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $cdbu->password, $cdbu->passwordTime, $cdbu->contactDbId);
@@ -1502,7 +1501,7 @@ class Contact {
             if ($hash
                 && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && $this->check_password_encryption("", false))
-                $hash = $this->hash_password($hash, false);
+                $hash = $this->hash_password($hash);
             $this->password = $hash;
             $this->passwordTime = $Now;
             $this->conf->ql("update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
