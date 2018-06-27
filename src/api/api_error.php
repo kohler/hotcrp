@@ -4,6 +4,9 @@
 
 class Error_API {
     static function jserror(Contact $user, Qrequest $qreq) {
+        if (isset($_SERVER["HTTP_USER_AGENT"])
+            && preg_match('/MSIE [78]|MetaSr/', $_SERVER["HTTP_USER_AGENT"]))
+            return new JsonResult(true);
         $url = (string) $qreq->url;
         if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
             $url = $m[1];
