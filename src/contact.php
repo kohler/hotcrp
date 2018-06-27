@@ -1410,7 +1410,7 @@ class Contact {
                 || password_needs_rehash(substr($hash, 2), $method);
     }
 
-    private function hash_password($input) {
+    function hash_password($input) {
         if (($method = $this->password_hash_method()) !== false)
             return " \$" . password_hash($input, $method);
         else
@@ -1462,15 +1462,12 @@ class Contact {
     }
 
     const CHANGE_PASSWORD_PLAINTEXT = 1;
-    const CHANGE_PASSWORD_NO_CDB = 2;
-    const CHANGE_PASSWORD_ENABLE = 4;
+    const CHANGE_PASSWORD_ENABLE = 2;
     function change_password($new, $flags) {
         global $Now;
         assert(!$this->conf->external_login());
 
-        $cdbu = null;
-        if (!($flags & self::CHANGE_PASSWORD_NO_CDB))
-            $cdbu = $this->contactdb_user();
+        $cdbu = $this->contactdb_user();
         if (($flags & self::CHANGE_PASSWORD_ENABLE)
             && (($this->password !== "" && $this->password !== "*")
                 || ($cdbu && $cdbu->password !== "" && $cdbu->password !== "*")))

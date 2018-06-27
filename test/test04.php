@@ -45,7 +45,7 @@ user($marina)->change_password("rosdevitch", 0);
 xassert_eqq(password($marina), "");
 xassert_eqq(password($marina, true), "rosdevitch");
 xassert(user($marina)->check_password("rosdevitch"));
-user($marina)->change_password("rosdevitch", Contact::CHANGE_PASSWORD_NO_CDB);
+$Conf->qe("update ContactInfo set password=? where contactId=?", "rosdevitch", user($marina)->contactId);
 xassert_eqq(password($marina), "rosdevitch");
 xassert_eqq(password($marina, true), "rosdevitch");
 xassert(user($marina)->check_password("rosdevitch"));
@@ -69,7 +69,7 @@ xassert(user($marina)->check_password("isdevitch"));
 xassert(!user($marina)->check_password("dungdevitch"));
 
 // update local password only
-user($marina)->change_password("ncurses", Contact::CHANGE_PASSWORD_NO_CDB);
+$Conf->qe("update ContactInfo set password=? where contactId=?", "ncurses", user($marina)->contactId);
 xassert_eqq(password($marina), "ncurses");
 xassert_eqq(password($marina, true), "isdevitch");
 xassert(user($marina)->check_password("ncurses"));
