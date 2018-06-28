@@ -1134,20 +1134,6 @@ class Contact {
         return $old_roles != $new_roles;
     }
 
-    private function _create_password($cdbu, Contact_Update $cu) {
-        global $Now;
-        if ($cdbu
-            && ($cdbu = $cdbu->contactdb_user())
-            && $cdbu->allow_contactdb_password()) {
-            $cu->qv["password"] = $this->password = "";
-            $cu->qv["passwordTime"] = $this->passwordTime = $cdbu->passwordTime;
-        } else if (!$this->conf->external_login()) {
-            $cu->qv["password"] = $this->password = self::random_password();
-            $cu->qv["passwordTime"] = $this->passwordTime = $Now;
-        } else
-            $cu->qv["password"] = $this->password = "";
-    }
-
     private function _make_create_updater($reg, $is_cdb) {
         $cj = [];
         if ($this->firstName === "" && $this->lastName === "") {
