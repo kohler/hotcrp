@@ -6,9 +6,7 @@ class Contact_Update {
     public $qv = [];
     public $cdb_qf = [];
     public $changing_email;
-    function __construct($inserting, $changing_email) {
-        if ($inserting)
-            $this->qv["firstName"] = $this->qv["lastName"] = "";
+    function __construct($changing_email) {
         $this->changing_email = $changing_email;
     }
 }
@@ -459,53 +457,34 @@ class Contact {
             || !validate_email($this->email))
             return false;
 
-        $update_password = null;
-        $update_passwordTime = 0;
-        if (!$this->disabled
-            && $this->password
-            && ($this->password[0] !== " " || $this->password[1] === "\$")
-            && $this->passwordTime) {
-            $update_password = $this->password;
-            $update_passwordTime = $this->passwordTime;
-        }
-
         $cdbur = $this->conf->contactdb_user_by_email($this->email);
+        $cdbux = $cdbur ? : new Contact(null, $this->conf);
+        $upd = [];
+        foreach (["firstName", "lastName", "affiliation", "country", "collaborators",
+                  "birthday", "gender"] as $k)
+            if ($this->$k !== null
+                && $this->$k !== ""
+                && (!$only_update_empty || $cdbux->$k === null || $cdbux->$k === "")
+                && (!$cdbur || in_array($k, $update_keys ? : [])))
+                $upd[$k] = $this->$k;
         if (!$cdbur) {
-            Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?, password=?, passwordTime=?, birthday=?, gender=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators, $update_password, $update_passwordTime, $this->birthday, $this->gender);
-            $cdbur = $this->conf->contactdb_user_by_email($this->email);
-            $this->contactdb_user_ = false;
-        } else {
-            $qf = $qv = [];
-            foreach ($update_keys ? : [] as $k)
-                if ((string) $this->$k !== (string) $cdbur->$k
-                    && (!$only_update_empty || (string) $cdbur->$k === "")) {
-                    if ($only_update_empty)
-                        $qf[] = "$k=if(coalesce($k,'')='',?,$k)";
-                    else
-                        $qf[] = "$k=?";
-                    $qv[] = $this->$k;
-                }
-            if ($update_password
-                && $update_passwordTime > $cdbur->passwordTime
-                && (string) $cdbur->password === "") {
-                $qf[] = "password=?, passwordTime=?";
-                array_push($qv, $update_password, $update_passwordTime);
-            }
-            if (!empty($qf)) {
-                array_push($qv, $Now, $cdbur->contactDbId);
-                Dbl::ql_apply($cdb, "update ContactInfo set " . join(", ", $qf) . ", updateTime=? where contactDbId=?", $qv);
-                $cdbur = $this->conf->contactdb_user_by_email($this->email);
-                $this->contactdb_user_ = false;
+            $upd["email"] = $this->email;
+            if ($this->password
+                && $this->password !== "*"
+                && ($this->password[0] !== " " || $this->password[1] === "\$")) {
+                $upd["password"] = $this->password;
+                $upd["passwordTime"] = $this->passwordTime;
             }
         }
-        if (!$cdbur)
-            return false;
-
+        if (!empty($upd)) {
+            $cdbux->apply_updater($upd, true);
+            $this->contactdb_user_ = false;
+        }
+        $cdbur = $cdbur ? : $this->conf->contactdb_user_by_email($this->email);
         if ($cdbur->confid
             && (int) $cdbur->roles !== $this->contactdb_roles())
             $this->_contactdb_save_roles($cdbur);
-
-        return (int) $cdbur->contactDbId;
+        return $cdbur ? (int) $cdbur->contactDbId : false;
     }
 
     function is_actas_user() {
@@ -936,7 +915,7 @@ class Contact {
         $old_email = $this->email;
         $old_disabled = $this->disabled ? 1 : 0;
         $changing_email = isset($cj->email) && strtolower($cj->email) !== strtolower((string) $old_email);
-        $cu = new Contact_Update(false, $changing_email);
+        $cu = new Contact_Update($changing_email);
 
         $aupapers = null;
         if ($changing_email)

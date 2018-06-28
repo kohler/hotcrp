@@ -266,4 +266,17 @@ xassert_eqq($u->lastName, "Alaettinoğlu");
 xassert_eqq($u->contactdb_user()->lastName, "Alaettinoğlu");
 xassert_eqq($u->plaintext_password(), "TEST PASSWORD");
 
+// contactdb_update
+Dbl::qe($Conf->dblink, "insert into ContactInfo set email='betty6@_.com', password='Fart', firstName='Betty', lastName='Knowles'");
+$u = $Conf->user_by_email("betty6@_.com");
+xassert(!!$u);
+xassert_eqq($u->plaintext_password(), "Fart");
+xassert(!$u->contactdb_user());
+$u->contactdb_update();
+$v = $u->contactdb_user();
+xassert(!!$v);
+xassert_eqq($v->firstName, "Betty");
+xassert_eqq($v->lastName, "Knowles");
+xassert_eqq($v->plaintext_password(), "Fart");
+
 xassert_exit();
