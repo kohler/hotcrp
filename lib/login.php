@@ -231,7 +231,7 @@ class LoginHelper {
             return Conf::msg_error("An account already exists for " . htmlspecialchars($qreq->email) . ". Enter your password or select “Forgot your password?” to reset it.");
         } else if ($cdb_user
                    && $cdb_user->allow_contactdb_password()
-                   && $cdb_user->passwordUseTime > 0) {
+                   && $cdb_user->password_used()) {
             $desc = $Conf->opt("contactdb_description") ? : "HotCRP";
             Ht::error_at("email");
             return Conf::msg_error("An account already exists for " . htmlspecialchars($qreq->email) . " on $desc. Sign in using your $desc password or select “Forgot your password?” to reset it.");

@@ -1329,6 +1329,10 @@ class Contact {
             || (($cdbu = $this->contactdb_user()) && $cdbu->password === "");
     }
 
+    function password_used() {
+        return $this->passwordUseTime > 0;
+    }
+
 
     // obsolete
     private function password_hmac_key($keyid) {
