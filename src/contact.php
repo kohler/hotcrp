@@ -1421,6 +1421,11 @@ class Contact {
         if ($this->contactId
             && ($hash = $this->password)
             && ($localok = $this->check_hashed_password($input, $hash))) {
+            if ($cdbu
+                && !$cdbok
+                && $this->passwordTime
+                && $cdbu->passwordTime > $this->passwordTime)
+                error_log($this->conf->dbname . ": " . $this->email . ": using old local password");
             $updater = ["passwordUseTime" => $Now];
             if ($this->check_password_encryption($hash, false)) {
                 $updater["password"] = $cdbok ? $cdbu->password : $this->hash_password($input);
