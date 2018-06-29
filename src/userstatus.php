@@ -269,7 +269,7 @@ class UserStatus extends MessageSet {
             $this->error_at("preferred_email", "Invalid email address “" . htmlspecialchars($cj->preferred_email) . "”");
 
         // Address
-        $address = array();
+        $address = null;
         if (is_array(get($cj, "address")))
             $address = $cj->address;
         else {
@@ -284,11 +284,19 @@ class UserStatus extends MessageSet {
             else if (get($cj, "address2") || get($cj, "addressLine2"))
                 $this->error_at("address2", "Format error [address2]");
         }
-        foreach ($address as $a)
-            if (!is_string($a))
-                $this->error_at("address", "Format error [address]");
-        if (!empty($address))
+        if ($address !== null) {
+            foreach ($address as &$a) {
+                if (!is_string($a))
+                    $this->error_at("address", "Format error [address]");
+                else
+                    $a = simplify_whitespace($a);
+            }
+            unset($a);
+            while (is_string($address[count($address) - 1])
+                   && $address[count($address) - 1] === "")
+                array_pop($address);
             $cj->address = $address;
+        }
 
         // Collaborators
         if (is_array(get($cj, "collaborators"))) {
