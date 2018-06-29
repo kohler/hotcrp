@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class ZipDocument {
+    private $conf;
     public $filename;
     public $filestore;
     public $sha1; // `ZipDocument` can pun as a `DocumentInfo`;
@@ -19,6 +20,8 @@ class ZipDocument {
     private $_pending_memory;
 
     function __construct($filename, $mimetype = "application/zip") {
+        global $Conf;
+        $this->conf = $Conf;
         $this->filename = $filename;
         $this->mimetype = $mimetype;
         $this->clean();
@@ -198,8 +201,9 @@ class ZipDocument {
 
         // maybe cache zipfile in docstore
         $this->filestore = "$tmpdir/_hotcrp.zip";
-        if (!empty($this->_pending) && opt("docstore")
-            && opt("docstoreAccelRedirect")) {
+        if (!empty($this->_pending)
+            && $this->conf->opt("docstore")
+            && $this->conf->opt("docstoreAccelRedirect")) {
             // calculate hash for zipfile contents
             $sorted_pending = $this->_pending;
             usort($sorted_pending, function ($a, $b) {
@@ -212,7 +216,7 @@ class ZipDocument {
                 $hash_input .= "README-warnings.txt\n" . join("\n", $this->warnings) . "\n";
             $this->sha1 = sha1($hash_input, false);
             // look for zipfile
-            $dstore_prefix = Filer::docstore_fixed_prefix(opt("docstore"));
+            $dstore_prefix = Filer::docstore_fixed_prefix($this->conf->opt("docstore"));
             $zfn = $dstore_prefix . "tmp/" . $this->sha1 . ".zip";
             if (Filer::prepare_filestore($dstore_prefix, $zfn)) {
                 $this->filestore = $zfn;
@@ -225,7 +229,7 @@ class ZipDocument {
         }
 
         // actually run zip
-        if (!($zipcmd = opt("zipCommand", "zip")))
+        if (!($zipcmd = $this->conf->opt("zipCommand", "zip")))
             return set_error_html("<code>zip</code> is not supported on this installation.");
         $this->_resolve_pending();
         if (count($this->warnings))
@@ -386,7 +390,8 @@ class Filer {
     function load_to_memory(DocumentInfo $doc) {
         if (!$this->load($doc, false))
             return false;
-        if (isset($doc->filestore) && !isset($doc->content)
+        if (isset($doc->filestore)
+            && !isset($doc->content)
             && ($content = @file_get_contents($doc->filestore)) !== false)
             $doc->content = $content;
         return isset($doc->content);
@@ -769,18 +774,23 @@ class Filer {
     const FPATH_EXISTS = 1;
     const FPATH_MKDIR = 2;
     function filestore_path(DocumentInfo $doc, $flags = 0, $storeinfo = null) {
+        global $Now;
         if ($doc->error || !($pattern = $this->filestore_pattern($doc)))
             return null;
         if (!($f = $this->_expand_filestore($pattern, $doc, true)))
             return null;
-        if (($flags & self::FPATH_EXISTS) && !is_readable($f)) {
-            // clean up presence of old files saved w/o extension
-            $g = $this->_expand_filestore($pattern, $doc, false);
-            if ($f && $g !== $f && is_readable($g)) {
-                if (!@rename($g, $f))
-                    $f = $g;
-            } else
-                return null;
+        if ($flags & self::FPATH_EXISTS) {
+            if (!is_readable($f)) {
+                // clean up presence of old files saved w/o extension
+                $g = $this->_expand_filestore($pattern, $doc, false);
+                if ($f && $g !== $f && is_readable($g)) {
+                    if (!@rename($g, $f))
+                        $f = $g;
+                } else
+                    return null;
+            }
+            if (filemtime($f) < $Now - 172800)
+                touch($f, $Now);
         }
         if (($flags & self::FPATH_MKDIR)
             && !self::prepare_filestore(self::docstore_fixed_prefix($pattern), $f)) {

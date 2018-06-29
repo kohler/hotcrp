@@ -73,7 +73,7 @@ class S3Document {
             $resource = "/" . $resource;
 
         if (($query = $m[3]) !== "") {
-            $a = array();
+            $a = [];
             foreach (explode("&", $query) as $x)
                 if (($pos = strpos($x, "=")) !== false) {
                     $k = substr($x, 0, $pos);
@@ -85,7 +85,7 @@ class S3Document {
             $query = join("&", $a);
         }
 
-        $chdr = array("Host" => $host);
+        $chdr = ["Host" => $host];
         foreach ($hdr as $k => $v)
             if (strcasecmp($k, "host")) {
                 $v = trim($v);
@@ -209,14 +209,16 @@ class S3Document {
     }
 
     private function run($filename, $method, $args) {
-        for ($i = 1; $i <= 5; ++$i) {
+        for ($i = 1; true; ++$i) {
             if (!$this->run_setup($filename))
                 return;
             $this->run_stream_once($filename, $method, $args);
-            if (($this->status !== null && $this->status !== 500)
-                || self::$retry_timeout_allowance <= 0)
+            if ($this->status !== null && $this->status !== 500)
                 return;
-            trigger_error("S3 warning: $method $filename: retrying", E_USER_WARNING);
+            if (self::$retry_timeout_allowance <= 0 || $i >= 5) {
+                trigger_error("S3 error: $method $filename: failed", E_USER_WARNING);
+                return;
+            }
             $timeout = 0.005 * (1 << $i);
             self::$retry_timeout_allowance -= $timeout;
             usleep(1000000 * $timeout);
