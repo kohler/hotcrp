@@ -20,8 +20,7 @@ class PaperStatus extends MessageSet {
     private $_on_document_import = [];
 
     public $diffs;
-    private $_paper_qf;
-    private $_paper_qv;
+    private $_paper_upd;
     private $_topic_ins;
     private $_option_delid;
     private $_option_ins;
@@ -47,7 +46,7 @@ class PaperStatus extends MessageSet {
         $this->uploaded_documents = [];
         $this->prow = null;
         $this->diffs = [];
-        $this->_paper_qf = $this->_paper_qv = [];
+        $this->_paper_upd = [];
         $this->_topic_ins = null;
         $this->_option_delid = $this->_option_ins = [];
         $this->_new_conflicts = $this->_conflict_ins = null;
@@ -1171,9 +1170,8 @@ class PaperStatus extends MessageSet {
     }
 
     private function save_paperf($f, $v, $diff = null) {
-        assert(!isset($this->_paper_qv[$f]));
-        $this->_paper_qf[] = "$f=?";
-        $this->_paper_qv[$f] = $v;
+        assert(!isset($this->_paper_upd[$f]));
+        $this->_paper_upd[$f] = $v;
         if ($diff)
             $this->diffs[$diff] = true;
     }
@@ -1228,7 +1226,7 @@ class PaperStatus extends MessageSet {
 
     function execute_save_paper_json($pj) {
         global $Now;
-        if (!empty($this->_paper_qf)) {
+        if (!empty($this->_paper_upd)) {
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER)
                 $this->save_paperf("blind", 0);
             else if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL)
@@ -1237,8 +1235,8 @@ class PaperStatus extends MessageSet {
             $old_joindoc = $this->prow ? $this->prow->joindoc() : null;
             $old_joinid = $old_joindoc ? $old_joindoc->paperStorageId : 0;
 
-            $new_final_docid = get($this->_paper_qv, "finalPaperStorageId");
-            $new_sub_docid = get($this->_paper_qv, "paperStorageId");
+            $new_final_docid = get($this->_paper_upd, "finalPaperStorageId");
+            $new_sub_docid = get($this->_paper_upd, "paperStorageId");
 
             if ($new_final_docid > 0)
                 $new_joindoc = $pj->final;
@@ -1282,17 +1280,18 @@ class PaperStatus extends MessageSet {
 
             $need_insert = $this->paperId <= 0;
             if (!$need_insert) {
-                $this->_paper_qv[] = $this->paperId;
-                $result = $this->conf->qe_apply("update Paper set " . join(", ", $this->_paper_qf) . " where paperId=?", array_values($this->_paper_qv));
+                $qv = array_values($this->_paper_upd);
+                $qv[] = $this->paperId;
+                $result = $this->conf->qe_apply("update Paper set " . join("=?, ", array_keys($this->_paper_upd)) . "=? where paperId=?", $qv);
                 if ($result
                     && $result->affected_rows === 0
                     && !$this->conf->fetch_value("select paperId from Paper where paperId=?", $this->paperId)) {
-                    $this->_paper_qf[] = "paperId=?";
+                    $this->_paper_upd["paperId"] = $this->paperId;
                     $need_insert = true;
                 }
             }
             if ($need_insert) {
-                $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $this->_paper_qf), array_values($this->_paper_qv));
+                $result = $this->conf->qe_apply("insert into Paper set " . join("=?, ", array_keys($this->_paper_upd)) . "=?", array_values($this->_paper_upd));
                 if (!$result || !$result->insert_id)
                     return $this->error_at(false, $this->_("Could not create paper."));
                 $pj->pid = $this->paperId = (int) $result->insert_id;
