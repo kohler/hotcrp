@@ -177,11 +177,10 @@ class DocumentInfo implements JsonSerializable {
         $pfx = ($algorithm === "sha1" ? "" : "sha2-");
         if (is_string($this->content))
             return $pfx . hash($algorithm, $this->content, true);
-        else if ($this->filestore && is_readable($this->filestore)) {
-            $hctx = hash_init($algorithm);
-            if (hash_update_file($hctx, $this->filestore))
-                return $pfx . hash_final($hctx, true);
-        }
+        if ($this->filestore
+            && is_readable($this->filestore)
+            && ($h = hash_file($algorithm, $this->filestore, true)) !== false)
+            return $pfx . $h;
         return false;
     }
 

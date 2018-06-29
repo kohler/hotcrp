@@ -208,7 +208,8 @@ class HotCRPDocument extends Filer {
         if (!$dbNoPapers && $doc->paperStorageId > 1)
             $ok = $this->load_content_db($doc);
 
-        if (!$ok && ($s3 = $this->conf->s3_docstore())
+        if (!$ok
+            && ($s3 = $this->conf->s3_docstore())
             && ($filename = self::s3_filename($doc))) {
             $content = $s3->load($filename);
             if ($s3->status == 404
