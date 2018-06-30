@@ -120,10 +120,6 @@ class HotCRPDocument extends Filer {
         return $dbstore;
     }
 
-    function filestore_pattern(DocumentInfo $doc) {
-        return $this->conf->docstore();
-    }
-
     private function load_content_db($doc) {
         $result = $this->conf->q("select paper, compression from PaperStorage where paperStorageId=?", $doc->paperStorageId);
         $ok = false;

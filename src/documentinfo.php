@@ -122,6 +122,9 @@ class DocumentInfo implements JsonSerializable {
         $this->mimetype = $mimetype;
         $this->sha1 = "";
     }
+    function filestore_pattern() {
+        return $this->conf->docstore();
+    }
 
 
     function has_hash() {

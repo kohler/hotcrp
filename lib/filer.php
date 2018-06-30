@@ -309,11 +309,6 @@ class Filer {
         // `$doc->filestore` must be set.
         return false;
     }
-    function filestore_pattern(DocumentInfo $doc) {
-        // load()/store() callback. Return the filestore pattern suitable for
-        // `$doc`.
-        return null;
-    }
     function dbstore(DocumentInfo $doc) {
         // store() callback. Return a `Filer_Dbstore` object to tell how to
         // store the document in the database.
@@ -775,7 +770,7 @@ class Filer {
     const FPATH_MKDIR = 2;
     function filestore_path(DocumentInfo $doc, $flags = 0, $storeinfo = null) {
         global $Now;
-        if ($doc->error || !($pattern = $this->filestore_pattern($doc)))
+        if ($doc->error || !($pattern = $doc->filestore_pattern()))
             return null;
         if (!($f = $this->_expand_filestore($pattern, $doc, true)))
             return null;
