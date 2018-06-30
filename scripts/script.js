@@ -5246,7 +5246,7 @@ return plinfo_tags;
 
 
 // archive expansion
-function expand_archive(evt) {
+handle_ui.on("js-expand-archive", function (evt) {
     var $j = $(evt ? evt.target : this).closest(".archive");
     fold($j[0]);
     if (!$j.find(".archiveexpansion").length) {
@@ -5259,7 +5259,8 @@ function expand_archive(evt) {
         });
     }
     return false;
-}
+});
+
 
 // popup dialogs
 function popup_skeleton(options) {
