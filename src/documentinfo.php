@@ -313,6 +313,11 @@ class DocumentInfo implements JsonSerializable {
         return $this->docclass->load_to_filestore($this);
     }
 
+    function is_archive() {
+        return $this->filename
+            && preg_match('/\.(?:zip|tar|tgz|tar\.[gx]?z|tar\.bz2)\z/i', $this->filename);
+    }
+
     function npages() {
         if ($this->mimetype && $this->mimetype != "application/pdf")
             return null;

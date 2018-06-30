@@ -819,11 +819,6 @@ class Filer {
     }
 
 
-    function is_archive(DocumentInfo $doc) {
-        return $doc->filename
-            && preg_match('/\.(?:zip|tar|tgz|tar\.[gx]?z|tar\.bz2)\z/i', $doc->filename);
-    }
-
     function archive_listing(DocumentInfo $doc, $max_length = -1) {
         if (!$this->load_to_filestore($doc))
             return false;
