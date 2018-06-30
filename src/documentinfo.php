@@ -247,7 +247,21 @@ class DocumentInfo implements JsonSerializable {
     function url($filters = null, $rest = null) {
         if ($filters === null)
             $filters = $this->filters_applied;
-        return HotCRPDocument::url($this, $filters, $rest);
+        if ($this->mimetype)
+            $f = "file=" . rawurlencode($this->export_filename($filters));
+        else {
+            $f = "p=$this->paperId";
+            if ($this->documentType == DTYPE_FINAL)
+                $f .= "&amp;final=1";
+            else if ($this->documentType > 0)
+                $f .= "&amp;dt=$this->documentType";
+        }
+        if ($rest && is_array($rest)) {
+            foreach ($rest as $k => $v)
+                $f .= "&amp;" . urlencode($k) . "=" . urlencode($v);
+        } else if ($rest)
+            $f .= "&amp;" . $rest;
+        return $this->conf->hoturl("doc", $f);
     }
 
     const L_SMALL = 1;

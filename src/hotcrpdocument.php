@@ -197,23 +197,4 @@ class HotCRPDocument extends Filer {
         $this->store_filestore($doc, new Filer_StoreStatus);
         return $ok;
     }
-
-    static function url(DocumentInfo $doc, $filters = null, $rest = null) {
-        assert(property_exists($doc, "mimetype") && isset($doc->documentType));
-        if ($doc->mimetype)
-            $f = "file=" . rawurlencode($doc->export_filename($filters));
-        else {
-            $f = "p=$doc->paperId";
-            if ($doc->documentType == DTYPE_FINAL)
-                $f .= "&amp;final=1";
-            else if ($doc->documentType > 0)
-                $f .= "&amp;dt=$doc->documentType";
-        }
-        if ($rest && is_array($rest)) {
-            foreach ($rest as $k => $v)
-                $f .= "&amp;" . urlencode($k) . "=" . urlencode($v);
-        } else if ($rest)
-            $f .= "&amp;" . $rest;
-        return hoturl("doc", $f);
-    }
 }
