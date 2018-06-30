@@ -109,6 +109,7 @@ etc/submissioneditgroups.json
 
 lib/.htaccess
 lib/abbreviationmatcher.php
+lib/archiveinfo.php
 lib/backupdb.sh
 lib/base.php
 lib/cleanhtml.php

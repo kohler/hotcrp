@@ -317,6 +317,9 @@ class DocumentInfo implements JsonSerializable {
         return $this->filename
             && preg_match('/\.(?:zip|tar|tgz|tar\.[gx]?z|tar\.bz2)\z/i', $this->filename);
     }
+    function archive_listing($max_length = -1) {
+        return ArchiveInfo::archive_listing($this, $max_length);
+    }
 
     function npages() {
         if ($this->mimetype && $this->mimetype != "application/pdf")

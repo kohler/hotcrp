@@ -264,12 +264,12 @@ function document_download($qreq) {
     if ($qreq->fn === "listing" || $qreq->fn === "consolidatedlisting") {
         if (!$doc->is_archive())
             json_exit(["ok" => false, "error" => "That file is not an archive."]);
-        else if (($listing = $doc->docclass->archive_listing($doc, 65536)) === false)
+        else if (($listing = $doc->archive_listing(65536)) === false)
             json_exit(["ok" => false, "error" => isset($doc->error) ? $doc->error_text : "Internal error."]);
         else {
-            $listing = $doc->docclass->clean_archive_listing($listing);
+            $listing = ArchiveInfo::clean_archive_listing($listing);
             if ($qreq->fn === "consolidatedlisting")
-                $listing = join(", ", $doc->docclass->consolidate_archive_listing($listing));
+                $listing = join(", ", ArchiveInfo::consolidate_archive_listing($listing));
             json_exit(["ok" => true, "result" => $listing]);
         }
     }
