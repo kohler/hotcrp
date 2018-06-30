@@ -254,13 +254,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $this->check_banal_json($bj, $spec);
     }
 
-    function load_to_filestore($doc) {
-        if ($doc->docclass->load_to_filestore($doc))
-            return true;
-        $this->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
-        return false;
-    }
-
     function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
         global $Now;
         $bj = null;
@@ -274,9 +267,11 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $bj = null;
         }
 
-        if (!$bj && $cf->allow_run == CheckFormat::RUN_NO)
+        if ($bj)
+            /* got info */;
+        else if ($cf->allow_run == CheckFormat::RUN_NO)
             $cf->need_run = true;
-        else if (!$bj && $cf->load_to_filestore($doc)) {
+        else if ($doc->load_to_filestore()) {
             // constrain the number of concurrent banal executions to banalLimit
             // (counter resets every 2 seconds)
             $t = (int) (time() / 2);
@@ -295,7 +290,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
 
             if ($limit > 0)
                 $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
-        }
+        } else
+            $cf->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
 
         if ($bj)
             $cf->check_banal_json($bj, $spec);
