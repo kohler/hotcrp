@@ -2547,7 +2547,7 @@ class Conf {
         }
 
         foreach ($docs as $doc)
-            $doc->filename = HotCRPDocument::filename($doc);
+            $doc->filename = $doc->export_filename();
         $downloadname = false;
         if (count($docs) > 1) {
             $o = $this->paper_opts->get($docs[0]->documentType);

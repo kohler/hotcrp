@@ -10,7 +10,7 @@ class GetJson_ListAction extends ListAction {
     }
     function document_callback($dj, DocumentInfo $doc, $dtype, PaperStatus $pstatus) {
         if ($doc->docclass->load($doc, true)) {
-            $dj->content_file = HotCRPDocument::filename($doc);
+            $dj->content_file = $doc->export_filename();
             $this->zipdoc->add_as($doc, $dj->content_file);
         }
     }

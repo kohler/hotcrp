@@ -26,50 +26,6 @@ class HotCRPDocument extends Filer {
         $this->no_filestore = true;
     }
 
-    static function filename(DocumentInfo $doc, $filters = null) {
-        $fn = $doc->conf->download_prefix;
-        if ($doc->documentType == DTYPE_SUBMISSION)
-            $fn .= "paper" . $doc->paperId;
-        else if ($doc->documentType == DTYPE_FINAL)
-            $fn .= "final" . $doc->paperId;
-        else {
-            $o = $doc->conf->paper_opts->get($doc->documentType);
-            if ($o && $o->nonpaper && $doc->paperId < 0) {
-                $fn .= $o->dtype_name();
-                $oabbr = "";
-            } else {
-                $fn .= "paper" . $doc->paperId;
-                $oabbr = $o ? "-" . $o->dtype_name() : "-unknown";
-            }
-            if ($o && $o->has_attachments()
-                && ($afn = $doc->unique_filename ? : $doc->filename))
-                // do not decorate with MIME type suffix
-                return $fn . $oabbr . "/" . $afn;
-            $fn .= $oabbr;
-        }
-        $mimetype = $doc->mimetype;
-        if ($filters === null && isset($doc->filters_applied))
-            $filters = $doc->filters_applied;
-        if ($filters)
-            foreach (is_array($filters) ? $filters : [$filters] as $filter) {
-                if (is_string($filter))
-                    $filter = FileFilter::find_by_name($filter);
-                if ($filter instanceof FileFilter) {
-                    $fn .= "-" . $filter->name;
-                    $mimetype = $filter->mimetype($doc, $mimetype);
-                }
-            }
-        if ($mimetype) {
-            if (($ext = Mimetype::extension($mimetype)))
-                $fn .= $ext;
-            else if ($doc->filename
-                     && preg_match('/(\.[A-Za-z0-9]{1,5})\z/', $doc->filename, $m)
-                     && (!$filters || $mimetype === $doc->mimetype))
-                $fn .= $m[1];
-        }
-        return $fn;
-    }
-
     function validate_upload(DocumentInfo $doc) {
         if ($this->option && !get($doc, "filterType"))
             return $this->option->validate_document($doc);
@@ -245,7 +201,7 @@ class HotCRPDocument extends Filer {
     static function url(DocumentInfo $doc, $filters = null, $rest = null) {
         assert(property_exists($doc, "mimetype") && isset($doc->documentType));
         if ($doc->mimetype)
-            $f = "file=" . rawurlencode(self::filename($doc, $filters));
+            $f = "file=" . rawurlencode($doc->export_filename($filters));
         else {
             $f = "p=$doc->paperId";
             if ($doc->documentType == DTYPE_FINAL)

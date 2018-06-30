@@ -429,7 +429,7 @@ class Filer {
             || $storeinfo->error_html) {
             error_log($doc->conf->dbname . ": "
                 . ($storeinfo->content_success && !$storeinfo->error ? "Recoverable error" : "Error")
-                . " saving document " . $doc->filename() . ": "
+                . " saving document " . $doc->export_filename() . ": "
                 . join("; ", $storeinfo->error_html ? : ["Unknown error"]));
         }
         if (!$storeinfo->error && $storeinfo->content_success) {

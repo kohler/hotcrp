@@ -124,11 +124,6 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
-    function filename($filters = null) {
-        return HotCRPDocument::filename($this, $filters);
-    }
-
-
     function has_hash() {
         return !!$this->sha1;
     }
@@ -202,6 +197,51 @@ class DocumentInfo implements JsonSerializable {
         if (!$this->docclass)
             $this->docclass = $this->conf->docclass($this->documentType);
         return $this->docclass->upload($this);
+    }
+
+    function export_filename($filters = null) {
+        $fn = $this->conf->download_prefix;
+        if ($this->documentType == DTYPE_SUBMISSION)
+            $fn .= "paper" . $this->paperId;
+        else if ($this->documentType == DTYPE_FINAL)
+            $fn .= "final" . $this->paperId;
+        else {
+            $o = $this->conf->paper_opts->get($this->documentType);
+            if ($o && $o->nonpaper && $this->paperId < 0) {
+                $fn .= $o->dtype_name();
+                $oabbr = "";
+            } else {
+                $fn .= "paper" . $this->paperId;
+                $oabbr = $o ? "-" . $o->dtype_name() : "-unknown";
+            }
+            if ($o
+                && $o->has_attachments()
+                && ($afn = $this->unique_filename ? : $this->filename))
+                // do not decorate with MIME type suffix
+                return $fn . $oabbr . "/" . $afn;
+            $fn .= $oabbr;
+        }
+        $mimetype = $this->mimetype;
+        if ($filters === null && isset($this->filters_applied))
+            $filters = $this->filters_applied;
+        if ($filters)
+            foreach (is_array($filters) ? $filters : [$filters] as $filter) {
+                if (is_string($filter))
+                    $filter = FileFilter::find_by_name($filter);
+                if ($filter instanceof FileFilter) {
+                    $fn .= "-" . $filter->name;
+                    $mimetype = $filter->mimetype($this, $mimetype);
+                }
+            }
+        if ($mimetype) {
+            if (($ext = Mimetype::extension($mimetype)))
+                $fn .= $ext;
+            else if ($this->filename
+                     && preg_match('/(\.[A-Za-z0-9]{1,5})\z/', $this->filename, $m)
+                     && (!$filters || $mimetype === $this->mimetype))
+                $fn .= $m[1];
+        }
+        return $fn;
     }
 
     function url($filters = null, $rest = null) {

@@ -18,7 +18,7 @@ $result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
 $killable = array();
 while (($doc = DocumentInfo::fetch($result, $Conf)))
     $killable[$doc->paperStorageId] = "[" . $Conf->unparse_time_log($doc->timestamp)
-        . "] " . HotCRPDocument::filename($doc) . " ($doc->paperStorageId)";
+        . "] " . $doc->export_filename() . " ($doc->paperStorageId)";
 
 if (count($killable)) {
     fwrite(STDOUT, join("\n", $killable) . "\n");

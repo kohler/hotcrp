@@ -42,7 +42,7 @@ foreach ($sids as $sid) {
         $saved = $doc->docclass->s3_store($doc, null);
     }
     $front = "[" . $Conf->unparse_time_log($doc->timestamp) . "] "
-        . HotCRPDocument::filename($doc) . " ($sid)";
+        . $doc->export_filename() . " ($sid)";
     if ($checked)
         fwrite(STDOUT, "$front: " . HotCRPDocument::s3_filename($doc) . " exists\n");
     else if ($saved)
