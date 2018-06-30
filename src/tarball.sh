@@ -75,7 +75,6 @@ settings.php
 users.php
 
 batch/.htaccess
-batch/adddoc.php
 batch/addusers.php
 batch/checkinvariants.php
 batch/fixdelegation.php

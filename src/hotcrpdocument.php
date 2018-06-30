@@ -6,8 +6,6 @@ class HotCRPDocument extends Filer {
     private $conf;
     private $dtype;
     private $option = null;
-    private $no_database = false;
-    private $no_filestore = false;
 
     function __construct(Conf $conf, $dtype, PaperOption $option = null) {
         $this->conf = $conf;
@@ -16,14 +14,6 @@ class HotCRPDocument extends Filer {
             $this->option = $option;
         else
             $this->option = $this->conf->paper_opts->get($dtype);
-    }
-
-    function set_no_database_storage() {
-        $this->no_database = true;
-    }
-
-    function set_no_file_storage() {
-        $this->no_filestore = true;
     }
 
     function validate_upload(DocumentInfo $doc) {
@@ -97,8 +87,6 @@ class HotCRPDocument extends Filer {
     }
 
     function dbstore(DocumentInfo $doc) {
-        if ($this->no_database)
-            return null;
         $doc->documentType = $this->dtype;
         $dbstore = new Filer_Dbstore;
         $dbstore->dblink = $this->conf->dblink;
@@ -133,7 +121,7 @@ class HotCRPDocument extends Filer {
     }
 
     function filestore_pattern(DocumentInfo $doc) {
-        return $this->no_filestore ? null : $this->conf->docstore();
+        return $this->conf->docstore();
     }
 
     private function load_content_db($doc) {
