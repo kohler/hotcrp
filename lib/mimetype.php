@@ -177,7 +177,8 @@ class Mimetype {
                 return self::RAR_TYPE;
         }
         // eliminate invalid types, canonicalize
-        if ($type && !isset(self::$tinfo[$type])
+        if ($type
+            && !isset(self::$tinfo[$type])
             && ($tx = self::type($type)))
             $type = $tx;
         // unreliable sniffs
@@ -192,7 +193,8 @@ class Mimetype {
                 self::$finfo = new finfo(FILEINFO_MIME_TYPE);
             $type = self::$finfo->buffer($content);
             // canonicalize
-            if ($type && !isset(self::$tinfo[$type])
+            if ($type
+                && !isset(self::$tinfo[$type])
                 && ($tx = self::type($type)))
                 $type = $tx;
         }

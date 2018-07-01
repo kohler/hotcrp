@@ -444,15 +444,15 @@ class Filer {
         $while = "while storing document in database";
 
         $qk = $qv = [];
-        foreach ($dbinfo->columns as $k => $v)
+        foreach ($dbinfo->upd as $k => $v)
             if ($k !== $idcol) {
                 $qk[] = "`$k`=?";
                 $qv[] = substr($v, 0, $N);
             }
 
-        if (isset($dbinfo->columns[$idcol])) {
+        if (isset($dbinfo->upd[$idcol])) {
             $q = "update $dbinfo->table set " . join(", ", $qk) . " where $idcol=?";
-            $qv[] = $dbinfo->columns[$idcol];
+            $qv[] = $dbinfo->upd[$idcol];
         } else
             $q = "insert into $dbinfo->table set " . join(", ", $qk);
         if (!($result = Dbl::qe_apply($dbinfo->dblink, $q, $qv))) {
@@ -461,8 +461,8 @@ class Filer {
             return;
         }
 
-        if (isset($dbinfo->columns[$idcol]))
-            $doc->$idcol = $dbinfo->columns[$idcol];
+        if (isset($dbinfo->upd[$idcol]))
+            $doc->$idcol = $dbinfo->upd[$idcol];
         else {
             $doc->$idcol = $result->insert_id;
             if (!$doc->$idcol) {
@@ -474,7 +474,7 @@ class Filer {
 
         for ($pos = $N; true; $pos += $N) {
             $qk = $qv = [];
-            foreach ($dbinfo->columns as $k => $v)
+            foreach ($dbinfo->upd as $k => $v)
                 if (strlen($v) > $pos) {
                     $qk[] = "`{$k}`=concat(`{$k}`,?)";
                     $qv[] = substr($v, $pos, $N);
@@ -777,6 +777,9 @@ class Filer {
         if ($flags & self::FPATH_EXISTS) {
             if (!is_readable($f)) {
                 // clean up presence of old files saved w/o extension
+                if ($f
+                    && str_ends_with($pattern, "%x")
+                    )
                 $g = $this->_expand_filestore($pattern, $doc, false);
                 if ($f && $g !== $f && is_readable($g)) {
                     if (!@rename($g, $f))
@@ -817,7 +820,7 @@ class Filer {
 class Filer_Dbstore {
     public $dblink;
     public $table;
+    public $upd;
     public $id_column;
-    public $columns;
     public $content_column;
 }

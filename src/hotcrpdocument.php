@@ -92,31 +92,31 @@ class HotCRPDocument extends Filer {
         $dbstore->dblink = $this->conf->dblink;
         $dbstore->table = "PaperStorage";
         $dbstore->id_column = "paperStorageId";
-        $dbstore->columns = array("paperId" => $doc->paperId,
+        $dbstore->upd = array("paperId" => $doc->paperId,
                          "timestamp" => $doc->timestamp,
                          "mimetype" => $doc->mimetype,
                          "sha1" => $doc->binary_hash(),
                          "documentType" => $doc->documentType,
                          "mimetype" => $doc->mimetype);
         if (!$this->conf->opt("dbNoPapers")) {
-            $dbstore->columns["paper"] = $doc->content;
+            $dbstore->upd["paper"] = $doc->content;
             $dbstore->content_column = "paper";
         }
         if (get($doc, "filename"))
-            $dbstore->columns["filename"] = $doc->filename;
+            $dbstore->upd["filename"] = $doc->filename;
         $infoJson = get($doc, "infoJson");
         if (is_string($infoJson))
-            $dbstore->columns["infoJson"] = $infoJson;
+            $dbstore->upd["infoJson"] = $infoJson;
         else if (is_object($infoJson) || is_associative_array($infoJson))
-            $dbstore->columns["infoJson"] = json_encode_db($infoJson);
+            $dbstore->upd["infoJson"] = json_encode_db($infoJson);
         else if (is_object(get($doc, "metadata")))
-            $dbstore->columns["infoJson"] = json_encode_db($doc->metadata);
+            $dbstore->upd["infoJson"] = json_encode_db($doc->metadata);
         if ($doc->size)
-            $dbstore->columns["size"] = $doc->size;
+            $dbstore->upd["size"] = $doc->size;
         if ($doc->filterType)
-            $dbstore->columns["filterType"] = $doc->filterType;
+            $dbstore->upd["filterType"] = $doc->filterType;
         if ($doc->originalStorageId)
-            $dbstore->columns["originalStorageId"] = $doc->originalStorageId;
+            $dbstore->upd["originalStorageId"] = $doc->originalStorageId;
         return $dbstore;
     }
 
