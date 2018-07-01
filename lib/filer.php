@@ -262,33 +262,6 @@ class ZipDocument {
     }
 }
 
-class Filer_UploadJson implements JsonSerializable {
-    public $docid;
-    public $content;
-    public $filename;
-    public $mimetype;
-    public $timestamp;
-    function __construct($upload) {
-        $this->content = file_get_contents($upload["tmp_name"]);
-        if (isset($upload["name"])
-            && strlen($upload["name"]) <= 255
-            && is_valid_utf8($upload["name"]))
-            $this->filename = $upload["name"];
-        $this->mimetype = Mimetype::type(get($upload, "type", "application/octet-stream"));
-        $this->timestamp = time();
-    }
-    function jsonSerialize() {
-        $x = array();
-        foreach (get_object_vars($this) as $k => $v)
-            if ($k === "content" && $v !== null) {
-                $v = strlen($v) < 50 ? $v : substr($v, 0, 50) . "...";
-                $x[$k] = convert_to_utf8($v);
-            } else if ($v !== null)
-                $x[$k] = $v;
-        return $x;
-    }
-}
-
 class Filer_StoreStatus {
     public $error = false;
     public $content_success = false;
