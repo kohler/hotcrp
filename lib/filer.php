@@ -750,9 +750,6 @@ class Filer {
         if ($flags & self::FPATH_EXISTS) {
             if (!is_readable($f)) {
                 // clean up presence of old files saved w/o extension
-                if ($f
-                    && str_ends_with($pattern, "%x")
-                    )
                 $g = $this->_expand_filestore($pattern, $doc, false);
                 if ($f && $g !== $f && is_readable($g)) {
                     if (!@rename($g, $f))
