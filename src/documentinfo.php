@@ -5,23 +5,29 @@
 class DocumentInfo implements JsonSerializable {
     public $conf;
     public $prow;
-    public $paperStorageId = 0;
+
+    // database fields
     public $paperId = 0;
-    public $documentType = 0;
+    public $paperStorageId = 0;
     public $timestamp;
     public $mimetype;
-    public $mimetypeid;
-    public $sha1; // should be binary hash
-    public $size;
-    public $content;
+    // $paper - translated to $content on load
     public $compression;
+    public $sha1; // should be binary hash
+    public $documentType = 0;
     public $filename;
-    public $unique_filename;
-    public $filestore;
     public $infoJson;
-    public $infoJson_str;
-    public $filterType = 0;
+    public $size;
+    public $filterType;
     public $originalStorageId;
+
+    public $content;
+    public $content_base64;
+    public $content_file;
+    public $filestore;
+
+    public $unique_filename;
+    public $infoJson_str;
     public $sourceHash;
     public $docclass;
     public $is_partial = false;
@@ -44,10 +50,10 @@ class DocumentInfo implements JsonSerializable {
                 else
                     $this->$k = $v;
         }
-        $this->paperStorageId = (int) $this->paperStorageId;
         $this->paperId = (int) $this->paperId;
-        $this->documentType = (int) $this->documentType;
+        $this->paperStorageId = (int) $this->paperStorageId;
         $this->timestamp = (int) $this->timestamp;
+        $this->documentType = (int) $this->documentType;
         assert($this->paperStorageId <= 1 || !!$this->mimetype);
         if ($this->sha1 != "")
             $this->sha1 = Filer::hash_as_binary($this->sha1);
@@ -59,27 +65,17 @@ class DocumentInfo implements JsonSerializable {
             $this->infoJson = array_to_object_recursive($this->infoJson);
         else if (!is_object($this->infoJson))
             $this->infoJson = null;
-        $this->filterType = $this->filterType ? (int) $this->filterType : null;
-        $this->originalStorageId = $this->originalStorageId ? (int) $this->originalStorageId : null;
+        $this->filterType = (int) $this->filterType ? : null;
+        $this->originalStorageId = (int) $this->originalStorageId ? : null;
         if ($this->sourceHash != "")
             $this->sourceHash = Filer::hash_as_binary($this->sourceHash);
         $this->docclass = $this->conf->docclass($this->documentType);
-        if (isset($this->paper) && !isset($this->content))
+        if (isset($this->paper) && !isset($this->content)) {
             $this->content = $this->paper;
+            unset($this->paper);
+        }
         if ($this->error_html)
             $this->error = true;
-
-        // set sha1
-        if ($this->sha1 == "" && $this->paperStorageId > 1
-            && $this->docclass->load_content($this)) {
-            // store sha1 in database if needed (backwards compat)
-            $this->conf->q("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", $this->binary_hash(), $this->paperId, $this->paperStorageId);
-            // we might also need to update the joindoc
-            if ($this->documentType == DTYPE_SUBMISSION)
-                $this->conf->q("update Paper set sha1=? where paperId=? and paperStorageId=? and finalPaperStorageId<=0", $this->binary_hash(), $this->paperId, $this->paperStorageId);
-            else if ($this->documentType == DTYPE_FINAL)
-                $this->conf->q("update Paper set sha1=? where paperId=? and finalPaperStorageId=?", $this->binary_hash(), $this->paperStorageId);
-        }
     }
 
     static function fetch($result, Conf $conf = null, PaperInfo $prow = null) {

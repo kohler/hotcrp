@@ -302,6 +302,21 @@ function update_schema_split_review_request_name(Conf $conf) {
     return $conf->ql("alter table ReviewRequest drop column `name`");
 }
 
+function update_schema_missing_sha1($conf) {
+    $result = $conf->ql("select * from PaperStorage where sha1='' and paper is not null and paper!='' and paperStorageId>1");
+    $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
+    while (($doc = DocumentInfo::fetch($result, $conf))) {
+        $hash = $doc->content_binary_hash();
+        $cleanf("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", [$hash, $doc->paperId, $doc->paperStorageId]);
+        if ($doc->documentType == DTYPE_SUBMISSION)
+            $cleanf("update Paper set sha1=? where paperId=? and paperStorageId=? and finalPaperStorageId<=0", [$hash, $doc->paperId, $doc->paperStorageId]);
+        else if ($doc->documentType == DTYPE_FINAL)
+            $cleanf("update Paper set sha1=? where paperId=? and finalPaperStorageId=?", [$hash, $doc->paperId, $doc->paperStorageId]);
+    }
+    Dbl::free($result);
+    $cleanf(true);
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1345,6 +1360,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
             $conf->ql("delete from Settings where name=?", "rev_notifychair");
         }
         $conf->update_schema_version(191);
+    }
+    if ($conf->sversion == 191) {
+        update_schema_missing_sha1($conf);
+        $conf->update_schema_version(192);
     }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
