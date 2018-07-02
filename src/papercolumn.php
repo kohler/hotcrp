@@ -239,6 +239,7 @@ class StatusPaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->is_long = $cj->name === "statusfull";
+        $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         foreach ($rows as $row) {
@@ -265,7 +266,7 @@ class StatusPaperColumn extends PaperColumn {
         if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
             && $pl->user->can_view_decision($row))
             $pl->mark_has("need_final");
-        $status_info = $pl->user->paper_status_info($row, !$pl->search->limit_author() && $pl->user->allow_administer($row));
+        $status_info = $pl->user->paper_status_info($row, !$pl->search->limit_author() && $pl->user->can_administer($row));
         if (!$this->is_long && $status_info[0] == "pstat_sub")
             return "";
         return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
