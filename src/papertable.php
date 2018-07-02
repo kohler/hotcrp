@@ -3,8 +3,6 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class PaperTable {
-    const ENABLESUBMIT = 8;
-
     public $conf;
     public $prow;
     public $user;
@@ -585,7 +583,7 @@ class PaperTable {
         return $t . join(" ", $k) . '" />';
     }
 
-    function echo_editable_document(PaperOption $docx, $storageId, $flags) {
+    function echo_editable_document(PaperOption $docx, $storageId) {
         $dtype = $docx->id;
         if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL) {
             $noPapers = $this->conf->opt("noPapers");
@@ -663,13 +661,10 @@ class PaperTable {
     }
 
     private function echo_editable_submission() {
-        $flags = 0;
-        if (!$this->prow || $this->prow->size == 0)
-            $flags |= PaperTable::ENABLESUBMIT;
         if ($this->canUploadFinal)
-            $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
+            $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0);
         else
-            $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0, $flags);
+            $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0);
         echo "</div>\n\n";
     }
 
