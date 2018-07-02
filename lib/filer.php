@@ -47,34 +47,21 @@ class ZipDocument {
         return $this->tmpdir_;
     }
 
-    private function _add_load($doc, $filename, $to_filestore) {
-        if ($doc->docclass && $doc->docclass->load($doc, $to_filestore)) {
-            $doc->_content_reset = true;
-            return true;
-        } else {
-            if (!isset($doc->error_text))
-                $this->warnings[] = "$filename: Couldn’t load document.";
-            else if ($doc->error_text)
-                $this->warnings[] = $doc->error_text;
-            return false;
-        }
-    }
-
     private function _add($doc, $filename, $check_filename) {
         if (is_string($doc))
             $doc = new DocumentInfo(["content" => $doc]);
         assert($doc instanceof DocumentInfo);
 
+        if ($filename == "" && $doc->filename != "")
+            $filename = $doc->filename;
+
         // maybe this is a warning container
-        if ($doc->error) {
-            $this->warnings[] = ($doc->filename != "" ? $doc->filename . ": " : "")
-                . ($doc->error_html ? htmlspecialchars_decode($doc->error_html) : "Unknown error.");
-            return;
+        if ($doc->error || !$doc->ensure_content()) {
+            $this->warnings[] = "$filename: " . ($doc->error_html ? htmlspecialchars_decode($doc->error_html) : "Unknown error.");
+            return false;
         }
 
         // check filename
-        if ($filename == "" && $doc->filename != "")
-            $filename = $doc->filename;
         if ($filename == ""
             || ($check_filename
                 && !preg_match(',\A[^.*/\s\000-\017\\\\\'"][^*/\000-\017\\\\\'"]*\z,', $filename))) {
@@ -82,35 +69,28 @@ class ZipDocument {
             return false;
         }
 
-        // load document
-        if (!isset($doc->filestore)
-            && !isset($doc->content)
-            && !$this->_add_load($doc, $filename, true))
-            return false;
-
         // add document to filestore list
-        if (is_array($this->_pending)
-            && (isset($doc->filestore)
-                || (isset($doc->content)
-                    && $doc->content !== ""
-                    && strlen($doc->content) + $this->_pending_memory <= 4000000))
-            && $doc->binary_hash() !== false) {
-            $this->_pending[] = new DocumentInfo(["filename" => $filename, "filestore" => $doc->filestore, "sha1" => $doc->binary_hash(), "content" => $doc->content]);
-            if (!isset($doc->filestore))
+        if (is_array($this->_pending) && $doc->binary_hash() !== false) {
+            if (($path = $doc->available_content_file())) {
+                $this->_pending[] = new DocumentInfo(["filename" => $filename, "content_file" => $path, "sha1" => $doc->binary_hash()]);
+                return true;
+            } else if (strlen($doc->content) + $this->_pending_memory <= 4000000) {
+                $this->_pending[] = new DocumentInfo(["filename" => $filename, "content" => $doc->content, "sha1" => $doc->binary_hash()]);
                 $this->_pending_memory += strlen($doc->content);
-            return self::_add_done($doc, true);
+                return true;
+            }
         }
 
         // At this point, we will definitely create a new zipfile.
 
         // construct temporary directory
         if (!($tmpdir = $this->tmpdir()))
-            return self::_add_done($doc, false);
+            return false;
         $zip_filename = "$tmpdir/";
 
         // populate with pending contents, if any
         if (!$this->_resolve_pending())
-            return self::_add_done($doc, false);
+            return false;
 
         // construct subdirectories
         $fn = $filename;
@@ -119,24 +99,22 @@ class ZipDocument {
             if (!is_dir($zip_filename)
                 && (file_exists($zip_filename) || !@mkdir($zip_filename, 0777))) {
                 $this->warnings[] = "$filename: Couldn’t save document to this name.";
-                return self::_add_done($doc, false);
+                return false;
             }
             $zip_filename .= "/";
             $fn = substr($fn, $p + 1);
         }
         if ($fn === "") {
             $this->warnings[] = "$filename: Bad filename.";
-            return self::_add_done($doc, false);
+            return false;
         }
         $zip_filename .= $fn;
 
         // store file in temporary directory
-        if (isset($doc->filestore)
-            && @symlink($doc->filestore, $zip_filename))
+        if (($path = $doc->available_content_file())
+            && @symlink($path, $zip_filename))
             /* OK */;
         else {
-            if (!isset($doc->content) && !$this->_add_load($doc, $filename, false))
-                return false;
             $trylen = file_put_contents($zip_filename, $doc->content);
             if ($trylen != strlen($doc->content)) {
                 clean_tempdirs();
@@ -144,7 +122,7 @@ class ZipDocument {
             }
             if ($trylen != strlen($doc->content)) {
                 $this->warnings[] = "$filename: Could not save.";
-                return self::_add_done($doc, false);
+                return false;
             }
         }
 
@@ -159,13 +137,7 @@ class ZipDocument {
         // complete
         if (time() - $this->start_time >= 0)
             set_time_limit(30);
-        return self::_add_done($doc, true);
-    }
-
-    static private function _add_done($doc, $result) {
-        if (isset($doc->_content_reset) && $doc->_content_reset)
-            unset($doc->content, $doc->_content_reset);
-        return $result;
+        return true;
     }
 
     private function _resolve_pending() {
@@ -218,7 +190,7 @@ class ZipDocument {
             // look for zipfile
             $dstore_prefix = Filer::docstore_fixed_prefix($this->conf->opt("docstore"));
             $zfn = $dstore_prefix . "tmp/" . $this->sha1 . ".zip";
-            if (Filer::prepare_filestore($dstore_prefix, $zfn)) {
+            if (Filer::prepare_docstore($dstore_prefix, $zfn)) {
                 $this->filestore = $zfn;
                 if (file_exists($this->filestore)) {
                     if (($mtime = @filemtime($zfn)) < $Now - 21600)
@@ -262,273 +234,9 @@ class ZipDocument {
     }
 }
 
-class Filer_StoreStatus {
-    public $error = false;
-    public $content_success = false;
-    public $error_html = null;
-}
-
 class Filer {
     static public $tempdir;
-
-    function validate_content(DocumentInfo $doc) {
-        // load() callback. Return `true` if content of $doc is up to date and
-        // need not be checked by load_content.
-        return true;
-    }
-    function load_content(DocumentInfo $doc) {
-        // load() callback. Return `true` if content was successfully loaded.
-        // On return true, at least one of `$doc->content` and
-        // `$doc->filestore` must be set.
-        return false;
-    }
-    function dbstore(DocumentInfo $doc) {
-        // store() callback. Return a `Filer_Dbstore` object to tell how to
-        // store the document in the database.
-        return null;
-    }
-    function store_other(DocumentInfo $doc, $storeinfo) {
-        // store() callback. Store `$doc` elsewhere (e.g. S3) if appropriate.
-    }
-    function validate_upload(DocumentInfo $doc) {
-        // upload() callback. Return false if $doc should not be stored.
-        return true;
-    }
-
-    // main accessors
-    static function has_content($doc) {
-        return is_string(get($doc, "content"))
-            || is_string(get($doc, "content_base64"))
-            || self::content_filename($doc);
-    }
-    static function content_filename($doc) {
-        if (is_string(get($doc, "content_file")) && is_readable($doc->content_file))
-            return $doc->content_file;
-        if (is_string(get($doc, "filestore")) && is_readable($doc->filestore))
-            return $doc->filestore;
-        return false;
-    }
-    static function content($doc) {
-        if (is_string(get($doc, "content")))
-            return $doc->content;
-        if (is_string(get($doc, "content_base64")))
-            return $doc->content = base64_decode($doc->content_base64);
-        if (($filename = self::content_filename($doc)))
-            return $doc->content = @file_get_contents($filename);
-        return false;
-    }
-    function load(DocumentInfo $doc, $to_filestore = false) {
-        // Return true iff `$doc` can be loaded.
-        $has_content = self::has_content($doc);
-        if (!$has_content
-            && ($fspath = $this->filestore_path($doc, self::FPATH_EXISTS))) {
-            $doc->filestore = $fspath;
-            $has_content = true;
-        }
-        if ($has_content && $this->validate_content($doc))
-            return true;
-        else if ($this->load_content($doc)) {
-            if ($to_filestore && $doc->filestore)
-                $doc->content = null;
-            return true;
-        } else
-            return false;
-    }
-    function load_to_filestore(DocumentInfo $doc) {
-        if (!$this->load($doc, true))
-            return false;
-        if (!isset($doc->filestore)) {
-            if (!self::$tempdir && (self::$tempdir = tempdir()) == false) {
-                set_error_html($doc, "Cannot create temporary directory.");
-                return false;
-            }
-            if (($hash = $doc->text_hash()) === false) {
-                set_error_html($doc, "Failed to hash contents.");
-                return false;
-            }
-            $path = self::$tempdir . "/" . $hash . Mimetype::extension($doc->mimetype);
-            if (file_put_contents($path, $doc->content) != strlen($doc->content)) {
-                set_error_html($doc, "Failed to save document to temporary file.");
-                return false;
-            }
-            $doc->filestore = $path;
-        }
-        return true;
-    }
-    function load_to_memory(DocumentInfo $doc) {
-        if (!$this->load($doc, false))
-            return false;
-        if (isset($doc->filestore)
-            && !isset($doc->content)
-            && ($content = @file_get_contents($doc->filestore)) !== false)
-            $doc->content = $content;
-        return isset($doc->content);
-    }
-    function store(DocumentInfo $doc) {
-        // load content (if unloaded)
-        // XXX loading enormous documents into memory...?
-        if (!$this->load($doc, false)
-            || ($content = self::content($doc)) === null
-            || $content === false
-            || $doc->error)
-            return false;
-        // calculate hash, complain on mismatch
-        if ($doc->has_hash()) {
-            $bhash = $doc->content_binary_hash($doc->binary_hash());
-            if ($bhash !== $doc->binary_hash()) {
-                set_error_html($doc, "Document claims checksum " . $doc->text_hash() . ", but has checksum " . bin2hex($bhash) . ".");
-                return false;
-            }
-        }
-        if (isset($doc->size) && $doc->size && $doc->size != strlen($content))
-            set_error_html($doc, "Document claims length " . $doc->size . ", but has length " . strlen($content) . ".");
-        $doc->size = strlen($content);
-        $content = null;
-
-        // actually store
-        $storeinfo = new Filer_StoreStatus;
-        if (($dbinfo = $this->dbstore($doc)))
-            $this->store_database($dbinfo, $doc, $storeinfo);
-        $this->store_filestore($doc, $storeinfo);
-        $this->store_other($doc, $storeinfo);
-
-        if ($storeinfo->error
-            || !$storeinfo->content_success
-            || $storeinfo->error_html) {
-            error_log($doc->conf->dbname . ": "
-                . ($storeinfo->content_success && !$storeinfo->error ? "Recoverable error" : "Error")
-                . " saving document " . $doc->export_filename() . ": "
-                . join("; ", $storeinfo->error_html ? : ["Unknown error"]));
-        }
-        if (!$storeinfo->error && $storeinfo->content_success) {
-            return true;
-        } else {
-            $doc->error = true;
-            $doc->error_html = rtrim("This document was not saved. " . join(" ", $storeinfo->error_html ? : []));
-            return false;
-        }
-    }
-
-    // dbstore functions
-    function store_database($dbinfo, DocumentInfo $doc, $storeinfo) {
-        global $Conf;
-        $N = 400000;
-        $idcol = $dbinfo->id_column;
-        $while = "while storing document in database";
-
-        $qk = $qv = [];
-        foreach ($dbinfo->upd as $k => $v)
-            if ($k !== $idcol) {
-                $qk[] = "`$k`=?";
-                $qv[] = substr($v, 0, $N);
-            }
-
-        if (isset($dbinfo->upd[$idcol])) {
-            $q = "update $dbinfo->table set " . join(", ", $qk) . " where $idcol=?";
-            $qv[] = $dbinfo->upd[$idcol];
-        } else
-            $q = "insert into $dbinfo->table set " . join(", ", $qk);
-        if (!($result = Dbl::qe_apply($dbinfo->dblink, $q, $qv))) {
-            $storeinfo->error = true;
-            $storeinfo->error_html[] = $Conf->db_error_html(true, $while);
-            return;
-        }
-
-        if (isset($dbinfo->upd[$idcol]))
-            $doc->$idcol = $dbinfo->upd[$idcol];
-        else {
-            $doc->$idcol = $result->insert_id;
-            if (!$doc->$idcol) {
-                $storeinfo->error = true;
-                $storeinfo->error_html[] = $Conf->db_error_html(true, $while);
-                return;
-            }
-        }
-
-        for ($pos = $N; true; $pos += $N) {
-            $qk = $qv = [];
-            foreach ($dbinfo->upd as $k => $v)
-                if (strlen($v) > $pos) {
-                    $qk[] = "`{$k}`=concat(`{$k}`,?)";
-                    $qv[] = substr($v, $pos, $N);
-                }
-            if (empty($qk))
-                break;
-            $q = "update $dbinfo->table set " . join(", ", $qk) . " where $idcol=?";
-            $qv[] = $doc->$idcol;
-            if (!Dbl::qe_apply($dbinfo->dblink, $q, $qv)) {
-                $storeinfo->error = true;
-                $storeinfo->error_html[] = $Conf->db_error_html(true, $while);
-                return;
-            }
-        }
-
-        // check that paper storage succeeded
-        if ($dbinfo->content_column) {
-            $len = Dbl::fetch_ivalue($dbinfo->dblink, "select length({$dbinfo->content_column}) from $dbinfo->table where $idcol=?", $doc->$idcol);
-            if ($len == strlen(self::content($doc)))
-                $storeinfo->content_success = true;
-            else
-                $storeinfo->error_html[] = "Failed to store your document. Usually this is because the file you tried to upload was too big for our system. Please try again.";
-        }
-    }
-
-    // filestore functions
-    function filestore_check(DocumentInfo $doc) {
-        return !!$this->filestore_path($doc, self::FPATH_EXISTS);
-    }
-    static function docstore_fixed_prefix($pattern) {
-        if ($pattern == "")
-            return $pattern;
-        $prefix = "";
-        while (($pos = strpos($pattern, "%")) !== false) {
-            if ($pos == strlen($pattern) - 1)
-                break;
-            else if ($pattern[$pos + 1] === "%") {
-                $prefix .= substr($pattern, 0, $pos + 1);
-                $pattern = substr($pattern, $pos + 2);
-            } else {
-                $prefix .= substr($pattern, 0, $pos);
-                if (($rslash = strrpos($prefix, "/")) !== false)
-                    return substr($prefix, 0, $rslash + 1);
-                else
-                    return "";
-            }
-        }
-        $prefix .= $pattern;
-        if ($prefix[strlen($prefix) - 1] !== "/")
-            $prefix .= "/";
-        return $prefix;
-    }
-    static function prepare_filestore($parent, $path) {
-        if (!self::_make_fpath_parents($parent, $path))
-            return false;
-        // Ensure an .htaccess file exists, even if someone else made the
-        // filestore directory
-        $htaccess = "$parent/.htaccess";
-        if (!is_file($htaccess)
-            && @file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n") === false) {
-            @unlink($htaccess);
-            return false;
-        }
-        return true;
-    }
-    function store_filestore(DocumentInfo $doc, $storeinfo) {
-        if (!($fspath = $this->filestore_path($doc, self::FPATH_MKDIR, $storeinfo)))
-            return false;
-        $content = self::content($doc);
-        if (!is_readable($fspath)
-            || file_get_contents($fspath) !== $content) {
-            if (file_put_contents($fspath, $content) !== strlen($content)) {
-                @unlink($fspath);
-                $storeinfo->error_html[] = "Error saving document to file system.";
-                return;
-            }
-            @chmod($fspath, 0660 & ~umask());
-        }
-        $doc->filestore = $fspath;
-        $storeinfo->content_success = true;
-    }
+    static public $tempcounter = 0;
 
     // download
     static function download_file($filename, $no_accel = false) {
@@ -557,11 +265,6 @@ class Filer {
         // read file directly to output
         readfile($filename);
     }
-    function download($doc, $downloadname = null, $attachment = null) {
-        if (is_object($doc) && !isset($doc->docclass))
-            $doc->docclass = $this;
-        return self::multidownload($doc, $downloadname, $attachment);
-    }
     static function multidownload($doc, $downloadname = null, $opts = null) {
         global $Now, $zlib_output_compression;
         if (is_array($doc) && count($doc) == 1) {
@@ -576,12 +279,12 @@ class Filer {
                 $z->add($d);
             return $z->download();
         }
-        if (!self::has_content($doc)
-            && (!get($doc, "docclass") || !$doc->docclass->load($doc, true))) {
+
+        if (!$doc->ensure_content()) {
             $error_html = "Don’t know how to download.";
-            if (get($doc, "error") && isset($doc->error_html))
+            if ($doc->error && isset($doc->error_html))
                 $error_html = $doc->error_html;
-            else if (get($doc, "error") && isset($doc->error_text))
+            else if ($doc->error && isset($doc->error_text))
                 $error_html = htmlspecialchars($doc->error_text);
             return set_error_html($error_html);
         }
@@ -609,35 +312,14 @@ class Filer {
         header("X-Content-Type-Options: nosniff");
         if ($doc->has_hash())
             header("ETag: \"" . $doc->text_hash() . "\"");
-        if (($filename = self::content_filename($doc)))
-            self::download_file($filename, get($doc, "no_cache") || get($doc, "no_accel"));
+        if (($path = $doc->available_content_file()))
+            self::download_file($path, get($doc, "no_cache") || get($doc, "no_accel"));
         else {
-            $content = self::content($doc);
             if (!$zlib_output_compression)
-                header("Content-Length: " . strlen($content));
-            echo $content;
+                header("Content-Length: " . strlen($doc->content));
+            echo $doc->content;
         }
         return (object) array("error" => false);
-    }
-
-    // upload
-    function upload(DocumentInfo $doc) {
-        global $Conf;
-        if (!$this->load($doc, false) && !$doc->error_html)
-            set_error_html($doc, "Empty document.");
-        if ($doc->error)
-            return false;
-
-        // Clean up mimetype and timestamp.
-        if (!isset($doc->mimetype) && isset($doc->type) && is_string($doc->type))
-            $doc->mimetype = $doc->type;
-        $doc->mimetype = Mimetype::content_type($doc->content, $doc->mimetype);
-        $doc->timestamp = $doc->timestamp ? : time();
-
-        if ($this->validate_upload($doc))
-            return $this->store($doc);
-        else
-            return false;
     }
 
     // hash helpers
@@ -698,8 +380,73 @@ class Filer {
             return false;
     }
 
-    // private functions
-    private function _expand_filestore($pattern, DocumentInfo $doc, $extension) {
+    // filestore path functions
+    const FPATH_EXISTS = 1;
+    const FPATH_MKDIR = 2;
+    static function docstore_path(DocumentInfo $doc, $flags = 0) {
+        global $Now;
+        if ($doc->error || !($pattern = $doc->conf->docstore()))
+            return null;
+        if (!($path = self::_expand_docstore($pattern, $doc, true)))
+            return null;
+        if ($flags & self::FPATH_EXISTS) {
+            if (!is_readable($path)) {
+                // clean up presence of old files saved w/o extension
+                $g = self::_expand_docstore($pattern, $doc, false);
+                if ($path && $g !== $path && is_readable($g)) {
+                    if (!@rename($g, $path))
+                        $path = $g;
+                } else
+                    return null;
+            }
+            if (filemtime($path) < $Now - 172800)
+                touch($path, $Now);
+        }
+        if (($flags & self::FPATH_MKDIR)
+            && !self::prepare_docstore(self::docstore_fixed_prefix($pattern), $path))
+            return $doc->add_error_html("File system storage cannot be initialized.", true);
+        return $path;
+    }
+
+    static function docstore_fixed_prefix($pattern) {
+        if ($pattern == "")
+            return $pattern;
+        $prefix = "";
+        while (($pos = strpos($pattern, "%")) !== false) {
+            if ($pos == strlen($pattern) - 1)
+                break;
+            else if ($pattern[$pos + 1] === "%") {
+                $prefix .= substr($pattern, 0, $pos + 1);
+                $pattern = substr($pattern, $pos + 2);
+            } else {
+                $prefix .= substr($pattern, 0, $pos);
+                if (($rslash = strrpos($prefix, "/")) !== false)
+                    return substr($prefix, 0, $rslash + 1);
+                else
+                    return "";
+            }
+        }
+        $prefix .= $pattern;
+        if ($prefix[strlen($prefix) - 1] !== "/")
+            $prefix .= "/";
+        return $prefix;
+    }
+
+    static function prepare_docstore($parent, $path) {
+        if (!self::_make_fpath_parents($parent, $path))
+            return false;
+        // Ensure an .htaccess file exists, even if someone else made the
+        // filestore directory
+        $htaccess = "$parent/.htaccess";
+        if (!is_file($htaccess)
+            && @file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n") === false) {
+            @unlink($htaccess);
+            return false;
+        }
+        return true;
+    }
+
+    static private function _expand_docstore($pattern, DocumentInfo $doc, $extension) {
         $x = "";
         $hash = false;
         while (preg_match('/\A(.*?)%(\d*)([%hxHjaA])(.*)\z/', $pattern, $m)) {
@@ -739,36 +486,8 @@ class Filer {
         }
         return $x . $pattern;
     }
-    const FPATH_EXISTS = 1;
-    const FPATH_MKDIR = 2;
-    function filestore_path(DocumentInfo $doc, $flags = 0, $storeinfo = null) {
-        global $Now;
-        if ($doc->error || !($pattern = $doc->filestore_pattern()))
-            return null;
-        if (!($f = $this->_expand_filestore($pattern, $doc, true)))
-            return null;
-        if ($flags & self::FPATH_EXISTS) {
-            if (!is_readable($f)) {
-                // clean up presence of old files saved w/o extension
-                $g = $this->_expand_filestore($pattern, $doc, false);
-                if ($f && $g !== $f && is_readable($g)) {
-                    if (!@rename($g, $f))
-                        $f = $g;
-                } else
-                    return null;
-            }
-            if (filemtime($f) < $Now - 172800)
-                touch($f, $Now);
-        }
-        if (($flags & self::FPATH_MKDIR)
-            && !self::prepare_filestore(self::docstore_fixed_prefix($pattern), $f)) {
-            if ($storeinfo)
-                $storeinfo->error_html[] = "File system storage cannot be initialized.";
-            return false;
-        }
-        return $f;
-    }
-    private static function _make_fpath_parents($fdir, $fpath) {
+
+    static private function _make_fpath_parents($fdir, $fpath) {
         $lastslash = strrpos($fpath, "/");
         $container = substr($fpath, 0, $lastslash);
         while (str_ends_with($container, "/"))
@@ -785,12 +504,4 @@ class Filer {
         }
         return $container;
     }
-}
-
-class Filer_Dbstore {
-    public $dblink;
-    public $table;
-    public $upd;
-    public $id_column;
-    public $content_column;
 }

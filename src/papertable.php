@@ -590,7 +590,6 @@ class PaperTable {
             if ($noPapers === 1 || $noPapers === true)
                 return;
         }
-        $docclass = $this->conf->docclass($docx->id);
         $inputid = $dtype > 0 ? "opt" . $dtype : "paperUpload";
 
         $accepts = $docx->mimetypes();

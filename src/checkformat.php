@@ -271,7 +271,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             /* got info */;
         else if ($cf->allow_run == CheckFormat::RUN_NO)
             $cf->need_run = true;
-        else if ($doc->load_to_filestore()) {
+        else if (($path = $doc->content_file())) {
             // constrain the number of concurrent banal executions to banalLimit
             // (counter resets every 2 seconds)
             $t = (int) (time() / 2);
@@ -282,7 +282,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             if ($limit > 0)
                 $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
 
-            $bj = $cf->run_banal($doc->filestore);
+            $bj = $cf->run_banal($path);
             if ($bj && is_object($bj) && isset($bj->pages)) {
                 $cf->metadata_updates["npages"] = count($bj->pages);
                 $cf->metadata_updates["banal"] = $bj;

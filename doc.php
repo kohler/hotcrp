@@ -265,7 +265,7 @@ function document_download($qreq) {
         if (!$doc->is_archive())
             json_exit(["ok" => false, "error" => "That file is not an archive."]);
         else if (($listing = $doc->archive_listing(65536)) === false)
-            json_exit(["ok" => false, "error" => isset($doc->error) ? $doc->error_text : "Internal error."]);
+            json_exit(["ok" => false, "error" => $doc->error ? $doc->error_html : "Internal error."]);
         else {
             $listing = ArchiveInfo::clean_archive_listing($listing);
             if ($qreq->fn === "consolidatedlisting")

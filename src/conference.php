@@ -90,7 +90,6 @@ class Conf {
     private $_review_form_cache = null;
     private $_abbrev_matcher = null;
     private $_date_format_initialized = false;
-    private $_docclass_cache = [];
     private $_formatspec_cache = [];
     private $_docstore = false;
     private $_defined_formulas = null;
@@ -654,12 +653,6 @@ class Conf {
             return $this->long_name;
     }
 
-
-    function docclass($dtype) {
-        if (!isset($this->_docclass_cache[$dtype]))
-            $this->_docclass_cache[$dtype] = new HotCRPDocument($this, $dtype);
-        return $this->_docclass_cache[$dtype];
-    }
 
     function format_spec($dtype) {
         if (!isset($this->_formatspec_cache[$dtype])) {
@@ -2012,7 +2005,6 @@ class Conf {
                 $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_members_and_admins_cache = $this->_user_cache = null;
             if (!$caches || isset($caches["options"])) {
                 $this->paper_opts->invalidate_option_list();
-                $this->_docclass_cache = [];
                 $this->_formatspec_cache = [];
                 $this->_abbrev_matcher = null;
             }

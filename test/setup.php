@@ -182,13 +182,14 @@ foreach ($json->papers as $p) {
     if (!$ps->save_paper_json($p))
         die_hard("* failed to create paper $p->title:\n" . htmlspecialchars_decode(join("\n", $ps->messages())) . "\n");
 }
+
 function setup_assignments($assignments, Contact $user) {
     if (is_array($assignments))
         $assignments = join("\n", $assignments);
     $assignset = new AssignmentSet($user, true);
     $assignset->parse($assignments, null, null);
     if (!$assignset->execute())
-        die_hard("* failed to run assignments:\n" . $assignset->errors_text(true));
+        die_hard("* failed to run assignments:\n" . join("\n", $assignset->errors_text(true)) . "\n");
 }
 setup_assignments($json->assignments_1, $Admin);
 

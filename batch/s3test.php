@@ -39,7 +39,7 @@ foreach ($arg["_"] as $fn) {
             $doc->mimetype = $mtx->mimetype;
         else
             $doc->mimetype = Mimetype::content_type($content);
-        $s3fn = HotCRPDocument::s3_filename($doc);
+        $s3fn = $doc->s3_key();
         if (!$s3doc->check($s3fn)) {
             if (!$quiet)
                 echo "$fn: $s3fn not found\n";

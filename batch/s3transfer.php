@@ -27,26 +27,36 @@ $failures = 0;
 foreach ($sids as $sid) {
     if ($active !== false && !isset($active[$sid]))
         continue;
+
     $result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
         compression, sha1, documentType, filename, infoJson, paper
         from PaperStorage where paperStorageId=$sid");
     $doc = DocumentInfo::fetch($result, $Conf);
     Dbl::free($result);
-    if ($doc->content === null && !$doc->docclass->filestore_check($doc))
+    if ($doc->content === null && !$doc->load_docstore())
         continue;
-    $saved = $checked = $doc->docclass->s3_check($doc);
-    if (!$saved)
-        $saved = $doc->docclass->s3_store($doc, null);
-    if (!$saved) {
-        sleep(0.5);
-        $saved = $doc->docclass->s3_store($doc, null);
-    }
     $front = "[" . $Conf->unparse_time_log($doc->timestamp) . "] "
         . $doc->export_filename() . " ($sid)";
+
+    $chash = $doc->content_binary_hash($doc->binary_hash());
+    if ($chash !== $doc->binary_hash()) {
+        $saved = $checked = false;
+        error_log("$front: S3 upload cancelled: data claims checksum " . $doc->text_hash()
+                  . ", has checksum " . Filer::hash_as_text($chash));
+    } else {
+        $saved = $checked = $doc->check_s3();
+        if (!$saved)
+            $saved = $doc->store_s3();
+        if (!$saved) {
+            sleep(0.5);
+            $saved = $doc->store_s3();
+        }
+    }
+
     if ($checked)
-        fwrite(STDOUT, "$front: " . HotCRPDocument::s3_filename($doc) . " exists\n");
+        fwrite(STDOUT, "$front: " . $doc->s3_key() . " exists\n");
     else if ($saved)
-        fwrite(STDOUT, "$front: " . HotCRPDocument::s3_filename($doc) . " saved\n");
+        fwrite(STDOUT, "$front: " . $doc->s3_key() . " saved\n");
     else {
         fwrite(STDOUT, "$front: SAVE FAILED\n");
         ++$failures;

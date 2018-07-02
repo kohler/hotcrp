@@ -4,7 +4,7 @@
 
 class ArchiveInfo {
     static function archive_listing(DocumentInfo $doc, $max_length = -1) {
-        if (!$doc->load_to_filestore())
+        if (!($path = $doc->content_file()))
             return false;
         $type = null;
         if (preg_match('/\.zip\z/i', $doc->filename))
@@ -12,7 +12,7 @@ class ArchiveInfo {
         else if (preg_match('/\.(?:tar|tgz|tar\.[gx]?z|tar\.bz2)\z/i', $doc->filename))
             $type = "tar";
         else if (!$doc->filename) {
-            $contents = file_get_contents($doc->filestore, false, null, 0, 1000);
+            $contents = file_get_contents($path, false, null, 0, 1000);
             if (str_starts_with($contents, "\x1F\x9D")
                 || str_starts_with($contents, "\x1F\xA0")
                 || str_starts_with($contents, "BZh")
@@ -33,7 +33,7 @@ class ArchiveInfo {
             $cmd = "zipinfo -1 ";
         else
             $cmd = "tar tf ";
-        $cmd .= escapeshellarg($doc->filestore);
+        $cmd .= escapeshellarg($path);
         $pipes = null;
         $proc = proc_open($cmd, [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
         // Some versions of PHP experience timeouts here; work around that.

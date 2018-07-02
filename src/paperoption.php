@@ -42,7 +42,6 @@ class PaperOptionValue {
         assert($this->option->has_document());
         if ($this->_documents === null) {
             $this->_documents = $by_unique_filename = array();
-            $docclass = null;
             $this->option->refresh_documents($this);
             foreach ($this->sorted_values() as $docid)
                 if ($docid > 1 && ($d = $this->prow->document($this->id, $docid))) {
@@ -65,11 +64,8 @@ class PaperOptionValue {
         return get($this->documents(), $index);
     }
     function document_content($index) {
-        if (($doc = $this->document($index))
-            && $doc->docclass->load($doc, false)
-            && ($content = Filer::content($doc)))
-            return $content;
-        return false;
+        $doc = $this->document($index);
+        return $doc ? $doc->content() : false;
     }
     function document_by_id($docid) {
         foreach ($this->documents() as $doc)
@@ -842,7 +838,7 @@ class DocumentPaperOption extends PaperOption {
     function store_json($pj, PaperStatus $ps) {
         if ($pj !== null) {
             $xpj = $ps->upload_document($pj, $this);
-            return $xpj ? $xpj->docid : null;
+            return $xpj ? $xpj->paperStorageId : null;
         }
     }
 
@@ -1095,7 +1091,6 @@ class AttachmentsPaperOption extends PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", false);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '">';
-        $docclass = new HotCRPDocument($this->conf, $this->id, $this);
         foreach ($ov->documents() as $doc) {
             $oname = "opt" . $this->id . "_" . $doc->paperStorageId;
             echo '<div class="has-document" data-document-name="', $oname, '">',
@@ -1143,7 +1138,7 @@ class AttachmentsPaperOption extends PaperOption {
         $result = [];
         foreach ($pj as $docj) {
             if (($xdocj = $ps->upload_document($docj, $this)))
-                $result[] = (int) $xdocj->docid;
+                $result[] = $xdocj->paperStorageId;
         }
         if (count($result) >= 2) {
             // Duplicate the document IDs in the first option’s sort data.

@@ -408,7 +408,6 @@ function random_index($di) {
 }
 
 
-$hotcrpdoc = new HotCRPDocument($Conf, DTYPE_SUBMISSION);
 $ndone = $nsuccess = $bytesremoved = 0;
 
 while ($count > 0 && ($usage_threshold === null || $bytesremoved < $usage_threshold)) {
@@ -445,7 +444,7 @@ while ($count > 0 && ($usage_threshold === null || $bytesremoved < $usage_thresh
         fwrite(STDERR, "{$fm->fname}: is unreadable\n");
     else if ($chash !== $doc->binary_hash_data())
         fwrite(STDERR, "{$fm->fname}: incorrect hash\n");
-    else if ($hotcrpdoc->s3_check($doc)) {
+    else if ($doc->check_s3()) {
         $size = filesize($fm->fname);
         if ($dry_run) {
             if ($verbose)

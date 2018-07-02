@@ -9,7 +9,7 @@ class GetJson_ListAction extends ListAction {
         $this->iszip = $fj->name === "get/jsonattach";
     }
     function document_callback($dj, DocumentInfo $doc, $dtype, PaperStatus $pstatus) {
-        if ($doc->docclass->load($doc, true)) {
+        if ($doc->ensure_content()) {
             $dj->content_file = $doc->export_filename();
             $this->zipdoc->add_as($doc, $dj->content_file);
         }

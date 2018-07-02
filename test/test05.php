@@ -37,6 +37,8 @@ $doc = DocumentInfo::make_file_upload(-1, DTYPE_SUBMISSION, [
     ]);
 $ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
 xassert(!$ps->has_error());
+if ($ps->has_error())
+    error_log(join("\n", $ps->errors()));
 
 $paper1c = $ps->paper_json(1);
 xassert_eqq($paper1c->submission->hash, "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");

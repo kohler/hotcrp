@@ -107,8 +107,8 @@ class PaperStatus extends MessageSet {
         if ($meta)
             $d->metadata = $meta;
         if ($this->export_content
-            && $doc->docclass->load($doc))
-            $d->content_base64 = base64_encode(Filer::content($doc));
+            && ($content = $doc->content()) !== false)
+            $d->content_base64 = base64_encode($content);
         foreach ($this->_on_document_export as $cb)
             if (call_user_func($cb, $d, $doc, $dtype, $this) === false)
                 return null;
@@ -333,8 +333,9 @@ class PaperStatus extends MessageSet {
 
 
     function document_import_check_filename($docj, PaperOption $o, PaperStatus $pstatus) {
-        unset($docj->filestore);
-        if (isset($docj->content_file) && is_string($docj->content_file)) {
+        if (isset($docj->content_file)
+            && is_string($docj->content_file)
+            && !($docj instanceof DocumentInfo)) {
             if (!$this->allow_any_content_file && preg_match(',\A/|(?:\A|/)\.\.(?:/|\z),', $docj->content_file)) {
                 $pstatus->error_at_option($o, "Bad content_file: only simple filenames allowed.");
                 return false;
@@ -345,89 +346,64 @@ class PaperStatus extends MessageSet {
     }
 
     function upload_document($docj, PaperOption $o) {
-        if (!is_object($docj) && is_array($docj) && count($docj) === 1)
+        // $docj can be a DocumentInfo or a JSON.
+        // If it is a JSON, its format is set by document_to_json.
+        if (is_array($docj) && count($docj) === 1 && isset($docj[0]))
             $docj = $docj[0];
         if (!is_object($docj)) {
             $this->format_error_at($o->field_key(), $docj);
-            return false;
+            return null;
         } else if (get($docj, "error") || get($docj, "error_html")) {
             $this->error_at_option($o, get($docj, "error_html", "Upload error."));
-            $docj->docid = 1;
-            return $docj;
+            return null;
         }
+        assert(!isset($docj->filter));
 
         // check on_document_import
         foreach ($this->_on_document_import as $cb)
-            if (call_user_func($cb, $docj, $o, $this) === false) {
-                $docj->docid = 1;
-                return $docj;
+            if (call_user_func($cb, $docj, $o, $this) === false)
+                return null;
+
+        // validate JSON
+        if ($docj instanceof DocumentInfo)
+            $doc = $docj;
+        else {
+            $doc = null;
+            if (!isset($docj->hash) && isset($docj->sha1))
+                $dochash = (string) Filer::sha1_hash_as_text($docj->sha1);
+            else
+                $dochash = (string) get($docj, "hash");
+
+            if ($this->prow
+                && ($docid = get($docj, "docid"))
+                && is_int($docid)) {
+                $result = $this->conf->qe("select * from PaperStorage where paperId=? and paperStorageId=? and documentType=?", $this->prow->paperId, $docid, $o->id);
+                $doc = DocumentInfo::fetch($result, $this->conf, $this->prow);
+                Dbl::free($result);
+                if (!$doc || ($dochash !== "" && !Filer::check_text_hash($doc->sha1, $dochash)))
+                    $doc = null;
             }
 
-        // look for an existing document with same hash;
-        // check existing docid's hash
-        $docid = get($docj, "docid");
-        if (!isset($docj->hash) && isset($docj->sha1)) {
-            if (($hash = Filer::sha1_hash_as_text($docj->sha1)) !== false)
-                $docj->hash = $hash;
-            unset($docj->sha1);
-        }
-        $dochash = (string) get($docj, "hash");
-
-        if ($docid) {
-            $oldj = $this->document_to_json($o->id, $docid);
-            if (!$oldj
-                || ($dochash !== "" && !isset($oldj->hash))
-                || ($dochash !== "" && !Filer::check_text_hash($oldj->hash, $dochash)))
-                $docid = null;
-        } else if ($this->paperId != -1 && $dochash !== "") {
-            $oldj = Dbl::fetch_first_object($this->conf->dblink, "select paperStorageId, sha1 as hash, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and PaperStorage.sha1=?", $this->paperId, $o->id, Filer::hash_as_binary($dochash));
-            if ($oldj)
-                $docid = (int) $oldj->paperStorageId;
-        }
-        if ($docid) {
-            $docj->docid = $docid;
-            $docj->hash = Filer::hash_as_binary($oldj->hash);
-            $docj->timestamp = (int) $oldj->timestamp;
-            $docj->size = (int) $oldj->size;
-            $docj->mimetype = $oldj->mimetype;
-            return $docj;
+            if (!$doc) {
+                $args = ["paperId" => $this->paperId, "sha1" => $dochash, "documentType" => $o->id];
+                foreach (["timestamp", "mimetype", "content", "content_base64",
+                          "content_file", "metadata", "filename"] as $k)
+                    if (isset($docj->$k))
+                        $args[$k] = $docj->$k;
+                DocumentInfo::fix_mimetype($args);
+                $doc = new DocumentInfo($args, $this->conf, $this->prow);
+            }
         }
 
-        // check filter
-        if (get($docj, "filter") && is_int($docj->filter)) {
-            if (is_int(get($docj, "original_id")))
-                $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $docj->original_id);
-            else if (is_string(get($docj, "original_hash")))
-                $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $this->paperId, Filer::hash_as_binary($docj->original_hash));
-            else if ($o->id == DTYPE_SUBMISSION || $o->id == DTYPE_FINAL)
-                $result = $this->conf->qe("select PaperStorage.paperStorageId, PaperStorage.timestamp, PaperStorage.sha1 from PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper." . ($o->id == DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId") . "=PaperStorage.paperStorageId) where Paper.paperId=?", $this->paperId);
-            else
-                $result = null;
-            if (($row = edb_orow($result))) {
-                $docj->original_id = (int) $row->paperStorageId;
-                $docj->original_timestamp = (int) $row->timestamp;
-                $docj->original_hash = $row->sha1;
-                if (get($docj, "preserve_timestamp"))
-                    $docj->timestamp = (int) $docj->original_timestamp;
-            } else
-                unset($docj->original_id);
-            Dbl::free($result);
-        }
-
-        // if no hash match, upload
-        $docclass = $this->conf->docclass($o->id);
-        $docj->paperId = $this->paperId;
-        $newdoc = new DocumentInfo($docj);
-        if ($docclass->upload($newdoc) && $newdoc->paperStorageId > 1) {
-            foreach (["size", "mimetype", "timestamp"] as $k)
-                $docj->$k = $newdoc->$k;
-            $docj->hash = $newdoc->text_hash();
-            $this->uploaded_documents[] = $docj->docid = $newdoc->paperStorageId;
+        // save
+        if ($doc->paperStorageId > 0 || $doc->save()) {
+            $this->uploaded_documents[] = $doc->paperStorageId;
+            return $doc;
         } else {
-            $docj->docid = 1;
-            $this->error_at_option($o, $newdoc ? $newdoc->error_html : "Empty document.");
+            error_log($doc->error_html);
+            $this->error_at_option($o, $doc->error_html);
+            return false;
         }
-        return $docj;
     }
 
     private function normalize_string($pj, $k, $simplify) {
@@ -834,7 +810,7 @@ class PaperStatus extends MessageSet {
                 || (isset($pj->$k)
                     && !$ps->has_error_at($i ? "final" : "paper"))) {
                 $null_id = $i ? 0 : 1;
-                $new_id = isset($pj->$k) && $pj->$k ? $pj->$k->docid : $null_id;
+                $new_id = isset($pj->$k) && $pj->$k ? $pj->$k->paperStorageId : $null_id;
                 $prowk = $i ? "finalPaperStorageId" : "paperStorageId";
                 if (($ps->prow ? $ps->prow->$prowk : $null_id) != $new_id)
                     $ps->save_paperf($prowk, $new_id, $k);
@@ -1252,18 +1228,12 @@ class PaperStatus extends MessageSet {
                 $new_joindoc = $this->prow->document(DTYPE_SUBMISSION);
             else
                 $new_joindoc = null;
-            if ($new_joindoc && isset($new_joindoc->docid))
-                $new_joinid = $new_joindoc->docid;
-            else
-                $new_joinid = $new_joindoc ? $new_joindoc->paperStorageId : 0;
+            $new_joinid = $new_joindoc ? $new_joindoc->paperStorageId : 0;
 
             if ($new_joindoc && $new_joinid != $old_joinid) {
                 $this->save_paperf("size", $new_joindoc->size);
                 $this->save_paperf("mimetype", $new_joindoc->mimetype);
-                if ($new_joindoc instanceof DocumentInfo)
-                    $this->save_paperf("sha1", $new_joindoc->binary_hash());
-                else
-                    $this->save_paperf("sha1", Filer::hash_as_binary($new_joindoc->hash));
+                $this->save_paperf("sha1", $new_joindoc->binary_hash());
                 $this->save_paperf("timestamp", $new_joindoc->timestamp);
                 if ($this->conf->sversion >= 145)
                     $this->save_paperf("pdfFormatStatus", 0);
