@@ -5,6 +5,7 @@
 class PaperColumn extends Column {
     const OVERRIDE_NONE = 0;
     const OVERRIDE_FOLD = 1;
+    const OVERRIDE_FOLD_IFEMPTY = 1;
     const OVERRIDE_FOLD_BOTH = 2;
     const OVERRIDE_ALWAYS = 3;
     public $override = 0;
@@ -249,9 +250,9 @@ class StatusPaperColumn extends PaperColumn {
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $x = $b->_status_sort_info - $a->_status_sort_info;
-        $x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
-        $x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
-        return $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
+        $x = $x ? : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
+        $x = $x ? : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
+        return $x ? : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
     }
     function header(PaperList $pl, $is_text) {
         return "Status";
@@ -441,7 +442,7 @@ class Authors_PaperColumn extends PaperColumn {
 class Collab_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD;
+        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
     }
     function prepare(PaperList $pl, $visible) {
         return !!$pl->conf->setting("sub_collab") && $pl->user->can_view_some_authors();
@@ -705,7 +706,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
         if ($pl->conf->review_blindness() === Conf::BLIND_OPTIONAL)
             $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
         else
-            $this->override = PaperColumn::OVERRIDE_FOLD;
+            $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
         return true;
     }
     function header(PaperList $pl, $is_text) {
@@ -843,7 +844,7 @@ class Tag_PaperColumn extends PaperColumn {
     protected $emoji = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD;
+        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
         $this->dtag = $cj->tag;
         $this->is_value = get($cj, "tagvalue");
     }
@@ -1077,7 +1078,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     public $score;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD;
+        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
         $this->format_field = $conf->review_field($cj->review_field_id);
         $this->score = $this->format_field->id;
     }

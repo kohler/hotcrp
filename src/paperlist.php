@@ -804,7 +804,7 @@ class PaperList {
 
     private function _row_field_content(PaperColumn $fdef, PaperInfo $row) {
         $content = "";
-        if ($this->row_overridable && $fdef->override === PaperColumn::OVERRIDE_FOLD) {
+        if ($this->row_overridable && $fdef->override === PaperColumn::OVERRIDE_FOLD_IFEMPTY) {
             $empty = $fdef->content_empty($this, $row);
             if ($empty) {
                 $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);

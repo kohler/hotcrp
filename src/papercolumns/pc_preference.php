@@ -11,7 +11,7 @@ class Preference_PaperColumn extends PaperColumn {
     private $prefix;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD;
+        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
         $this->editable = !!get($cj, "edit");
         if ($conf && isset($cj->user))
             $this->contact = $conf->pc_member_by_email($cj->user);
