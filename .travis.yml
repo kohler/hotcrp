@@ -9,9 +9,4 @@ php:
   - 7.1
   - 7.2
 script:
-  - php -d error_reporting=E_ALL test/test01.php
-  - php -d error_reporting=E_ALL test/test02.php
-  - php -d error_reporting=E_ALL test/test03.php
-  - php -d error_reporting=E_ALL test/test04.php
-  - php -d error_reporting=E_ALL test/test05.php
-  - php -d error_reporting=E_ALL test/test06.php
+  - test/check.sh
