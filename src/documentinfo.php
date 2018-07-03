@@ -473,6 +473,96 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
+    static function prefetch_content($docs) {
+        $pfdocs = [];
+        foreach ($docs as $doc) {
+            if (!$doc->available_content_file()
+                && $doc->content === null
+                && !$doc->load_docstore()
+                && $doc->conf->s3_docstore())
+                $pfdocs[] = $doc;
+        }
+        if (empty($pfdocs) || !function_exists("curl_multi_init"))
+            return;
+
+        $adocs = [];
+        $curlm = curl_multi_init();
+        $stoptime = null;
+
+        while (1) {
+            // check time
+            $time = microtime(true);
+            if ($stoptime === null)
+                $stoptime = $time + 15;
+            if ($time >= $stoptime)
+                break;
+
+            // add documents to sliding window
+            while (count($adocs) < 8 && !empty($pfdocs)) {
+                $doc = array_pop($pfdocs);
+                $s3 = $doc->conf->s3_docstore();
+                if (($s3k = $doc->s3_key())
+                    && ($dspath = Filer::docstore_path($doc, Filer::FPATH_MKDIR))
+                    && ($stream = @fopen($dspath . "~", "x+b"))) {
+                    $s3l = $s3->make_curl_loader($s3k, $stream);
+                    $adocs[] = [$doc, $s3l, 0, $dspath];
+                }
+            }
+            if (empty($adocs))
+                break;
+
+            // block if needed
+            $mintime = $stoptime;
+            foreach ($adocs as &$adoc) {
+                if ($adoc[2] === 0 || $adoc[2] >= $time) {
+                    $adoc[1]->prepare();
+                    curl_multi_add_handle($curlm, $adoc[1]->curlh);
+                    $adoc[2] = -1;
+                }
+                $mintime = min($mintime, $adoc[2]);
+            }
+            unset($adoc);
+            if ($mintime > $time) {
+                usleep((int) (($mintime - $time) * 1000000));
+                continue;
+            }
+
+            // call multi_exec
+            while (($mstat = curl_multi_exec($curlm, $mrunning)) == CURLM_CALL_MULTI_PERFORM) {
+            }
+            if ($mstat !== CURLM_OK)
+                break;
+
+            // handle results
+            while (($minfo = curl_multi_info_read($curlm))) {
+                $curlh = $minfo["handle"];
+                for ($i = 0; $i < count($adocs) && $adocs[$i][1]->curlh !== $curlh; ++$i) {
+                }
+                $s3l = $adocs[$i][1];
+                curl_multi_remove_handle($curlm, $s3l->curlh);
+                $s3l->parse_result();
+                if (($s3l->status !== null && $s3l->status !== 500) || $s3l->runindex >= 5) {
+                    $adocs[$i][0]->handle_load_s3_curl($s3l, $adocs[$i][3]);
+                    array_splice($adocs, $i, 1);
+                } else {
+                    $adocs[$i][2] = microtime(true) + 0.005 * (1 << $s3l->runindex);
+                }
+            }
+
+            // maybe block
+            if ($mrunning)
+                curl_multi_select($curlm, $stoptime - microtime(true));
+        }
+
+        // clean up leftovers
+        foreach ($adocs as $adoc) {
+            $adoc[1]->status = null;
+            $adoc[0]->handle_load_s3_curl($adoc[1], $adoc[3]);
+        }
+        curl_multi_close($curlm);
+    }
+
+
     function has_hash() {
         assert($this->sha1 !== null);
         return (bool) $this->sha1;

@@ -200,6 +200,8 @@ class ZipDocument {
             return $this->_make_document("Could not create temporary directory.");
         if (!($zipcmd = $this->conf->opt("zipCommand", "zip")))
             return $this->_make_document("<code>zip</code> is not supported on this installation.");
+
+        DocumentInfo::prefetch_content($this->_docs);
         while ($this->_saveindex < count($this->_docs))
             $this->_save_one();
 
