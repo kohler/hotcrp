@@ -290,11 +290,11 @@ class Conf {
         foreach (array("s3_bucket", "s3_key", "s3_secret") as $k)
             if (!get($this->settingTexts, $k) && ($x = get($this->opt, $k)))
                 $this->settingTexts[$k] = $x;
-        if (!get($this->settingTexts, "s3_bucket")
-            || !get($this->settingTexts, "s3_key")
-            || !get($this->settingTexts, "s3_secret"))
-            unset($this->settingTexts["s3_bucket"], $this->settingTexts["s3_key"],
-                  $this->settingTexts["s3_secret"]);
+        if (!get($this->settingTexts, "s3_key")
+            || !get($this->settingTexts, "s3_secret")
+            || !get($this->settingTexts, "s3_bucket"))
+            unset($this->settingTexts["s3_key"], $this->settingTexts["s3_secret"],
+                  $this->settingTexts["s3_bucket"]);
         if (get($this->opt, "dbNoPapers") && !get($this->opt, "docstore")
             && !get($this->opt, "filestore") && !get($this->settingTexts, "s3_bucket"))
             unset($this->opt["dbNoPapers"]);
@@ -671,12 +671,12 @@ class Conf {
         global $Now;
         if ($this->_s3_document === false) {
             if ($this->setting_data("s3_bucket")) {
-                $opts = ["bucket" => $this->setting_data("s3_bucket"),
-                         "key" => $this->setting_data("s3_key"),
+                $opts = ["key" => $this->setting_data("s3_key"),
                          "secret" => $this->setting_data("s3_secret"),
+                         "bucket" => $this->setting_data("s3_bucket"),
                          "scope" => $this->setting_data("__s3_scope"),
                          "signing_key" => $this->setting_data("__s3_signing_key")];
-                $this->_s3_document = new S3Document($opts);
+                $this->_s3_document = S3Document::make($opts);
                 list($scope, $signing_key) = $this->_s3_document->scope_and_signing_key($Now);
                 if ($opts["scope"] !== $scope || $opts["signing_key"] !== $signing_key) {
                     $this->__save_setting("__s3_scope", 1, $scope);

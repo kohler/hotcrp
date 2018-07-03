@@ -160,15 +160,12 @@ class DocumentInfo implements JsonSerializable {
         if (!$dbNoPapers && $this->load_database())
             return true;
         // 3. check S3
-        if ($this->load_s3()) {
-            $this->store_docstore();
+        if ($this->load_s3())
             return true;
-        }
         // 4. check db as last resort
         if ($dbNoPapers && $this->load_database())
             return true;
-        // fail
-        return $this->set_error_html("Cannot load document.");
+        return $this->add_error_html("Cannot load document.");
     }
 
     function ensure_size() {
@@ -293,18 +290,58 @@ class DocumentInfo implements JsonSerializable {
     function load_s3() {
         if (($s3 = $this->conf->s3_docstore())
             && ($s3k = $this->s3_key())) {
-            $content = $s3->load($s3k);
-            if ($s3->status == 404
-                // maybe it’s in S3 under a different extension
-                && $this->s3_upgrade_extension($s3, $s3k))
-                $content = $s3->load($s3k);
-            if ($content !== "" && $content !== null) {
-                $this->content = $content;
-                $this->size = strlen($content);
-                return true;
-            } else if ($s3->status != 200)
-                error_log("S3 error: GET $s3k: $s3->status $s3->status_text " . json_encode_db($s3->response_headers));
+            if (($dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR))
+                && function_exists("curl_init")
+                && ($stream = @fopen($dspath . "~", "x+b"))) {
+                $s3l = $s3->make_curl_loader($s3k, $stream);
+                $s3l->run();
+                return $this->handle_load_s3_curl($s3l, $dspath);
+            } else
+                return $this->load_s3_direct($s3, $s3k, $dspath);
         }
+        return false;
+    }
+
+    private function handle_load_s3_curl($s3l, $dspath) {
+        if ($s3l->status == 404
+            && $this->s3_upgrade_extension($s3l->s3, $s3l->skey))
+            $s3l->run();
+        fflush($s3l->dstream);
+        fclose($s3l->dstream);
+        $unlink = true;
+        if ($s3l->status == 200) {
+            if (rename($dspath . "~", $dspath)) {
+                $this->filestore = $dspath;
+                $this->size = 0;
+                $unlink = false;
+            } else {
+                $this->content = file_get_contents($dspath . "~");
+                $this->size = strlen($this->content);
+            }
+        } else
+            error_log("S3 error: GET $s3l->skey: $s3l->status $s3l->status_text " . json_encode_db($s3l->response_headers));
+        if ($unlink)
+            @unlink($dspath . "~");
+        $s3l->close();
+        return $s3l->status == 200;
+    }
+
+    private function load_s3_direct($s3, $s3k, $dspath) {
+        $content = $s3->load($s3k);
+        if ($s3->status == 404
+            && $this->s3_upgrade_extension($s3, $s3k))
+            $content = $s3->load($s3k);
+        if ($s3->status == 200 && (string) $content !== "") {
+            if ($dspath
+                && file_put_contents($dspath, $content) === strlen($content))
+                $this->filestore = $dspath;
+            else
+                $this->content = $content;
+            $this->size = strlen($content);
+            return true;
+        }
+        if ($s3->status != 200)
+            error_log("S3 error: GET $s3k: $s3->status $s3->status_text " . json_encode_db($s3->response_headers));
         return false;
     }
 

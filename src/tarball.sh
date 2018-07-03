@@ -117,6 +117,7 @@ lib/countmatcher.php
 lib/countries.php
 lib/createdb.sh
 lib/csv.php
+lib/curls3document.php
 lib/dbhelper.sh
 lib/dbl.php
 lib/filer.php
