@@ -1365,6 +1365,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         update_schema_missing_sha1($conf);
         $conf->update_schema_version(192);
     }
+    if ($conf->sversion == 192
+        && $conf->ql("alter table PaperStorage drop key `byPaper`"))
+        $conf->update_schema_version(193);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
