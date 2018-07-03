@@ -300,8 +300,11 @@ class ReviewForm_SettingParser extends SettingParser {
             $sv->conf->qe("update PaperReview set reviewWordCount=null");
         // assign review ordinals if necessary
         if ($assign_ordinal) {
+            $rrows = [];
             $result = $sv->conf->qe("select * from PaperReview where reviewOrdinal=0 and reviewSubmitted>0");
-            $rrows = edb_orows($result);
+            while (($rrow = ReviewInfo::fetch($result, $sv->conf)))
+                $rrows[] = $rrow;
+            Dbl::free($result);
             $locked = false;
             foreach ($rrows as $rrow)
                 if ($nform->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC) {
