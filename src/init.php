@@ -118,8 +118,7 @@ class SiteLoader {
         "TagInfo" => "lib/tagger.php",
         "TagMap" => "lib/tagger.php",
         "TextPaperOption" => "src/paperoption.php",
-        "XlsxGenerator" => "lib/xlsx.php",
-        "ZipDocument" => "lib/filer.php"
+        "XlsxGenerator" => "lib/xlsx.php"
     ];
 
     static $suffix_map = [
