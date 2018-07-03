@@ -345,12 +345,8 @@ function rm_rf_tempdir($tempdir) {
 }
 
 function clean_tempdirs() {
-    $dir = null;
-    if (function_exists("sys_get_temp_dir"))
-        $dir = sys_get_temp_dir();
-    if (!$dir)
-        $dir = "/tmp";
-    while (substr($dir, -1) == "/")
+    $dir = sys_get_temp_dir() ? : "/";
+    while (substr($dir, -1) === "/")
         $dir = substr($dir, 0, -1);
     $dirh = opendir($dir);
     $now = time();
@@ -364,12 +360,8 @@ function clean_tempdirs() {
 }
 
 function tempdir($mode = 0700) {
-    $dir = null;
-    if (function_exists("sys_get_temp_dir"))
-        $dir = sys_get_temp_dir();
-    if (!$dir)
-        $dir = "/tmp";
-    while (substr($dir, -1) == "/")
+    $dir = sys_get_temp_dir() ? : "/";
+    while (substr($dir, -1) === "/")
         $dir = substr($dir, 0, -1);
     for ($i = 0; $i < 100; $i++) {
         $path = $dir . "/hotcrptmp" . mt_rand(0, 9999999);
