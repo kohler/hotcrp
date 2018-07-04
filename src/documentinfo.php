@@ -240,8 +240,9 @@ class DocumentInfo implements JsonSerializable {
 
     function store_database() {
         if (!$this->conf->opt("dbNoPapers")) {
-            for ($p = 0; $p < strlen($this->content); $p += 400000) {
-                $result = $this->conf->qe("update PaperStorage set paper=concat(coalesce(paper,''),?) where paperId=? and paperStorageId=?", substr($this->content, $p, 400000), $this->paperId, $this->paperStorageId);
+            $content = $this->content();
+            for ($p = 0; $p < strlen($content); $p += 400000) {
+                $result = $this->conf->qe("update PaperStorage set paper=concat(coalesce(paper,''),?) where paperId=? and paperStorageId=?", substr($content, $p, 400000), $this->paperId, $this->paperStorageId);
                 if (!$result)
                     break;
                 Dbl::free($result);
