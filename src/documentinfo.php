@@ -255,8 +255,15 @@ class DocumentInfo implements JsonSerializable {
 
     private function store_docstore() {
         if (($dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR))) {
-            $content = $this->content;
-            if (file_put_contents($dspath, $this->content) === strlen($this->content)) {
+            if ($this->content_file !== null
+                && copy($this->content_file, $dspath)
+                && @filesize($dspath) === @filesize($this->content_file))
+                $ok = true;
+            else {
+                $content = $this->content();
+                $ok = file_put_contents($dspath, $content) === strlen($content);
+            }
+            if ($ok) {
                 $this->filestore = $dspath;
                 @chmod($dspath, 0660 & ~umask());
                 return true;
