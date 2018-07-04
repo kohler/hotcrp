@@ -204,7 +204,7 @@ class S3Document extends S3Result {
     function stream_headers($skey, $method, $args) {
         list($url, $hdr, $content, $content_type) =
             $this->signed_headers($skey, $method, $args);
-        if ((string) $content === "" && $content_type)
+        if ((string) $content !== "" && $content_type)
             $hdr[] = "Content-Type: $content_type";
         return [$url,
             ["header" => $hdr, "content" => (string) $content,
