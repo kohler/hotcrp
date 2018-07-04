@@ -247,7 +247,7 @@ class DocumentInfo implements JsonSerializable {
                     break;
                 Dbl::free($result);
             }
-            if ($this->conf->fetch_ivalue("select length(paper) from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId) === strlen($this->content))
+            if ($this->conf->fetch_ivalue("select length(paper) from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId) === strlen($content))
                 return true;
             return $this->add_error_html("Error while saving document content to database.", true);
         }
