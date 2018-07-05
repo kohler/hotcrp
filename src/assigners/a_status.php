@@ -129,7 +129,7 @@ class Status_Assigner extends Assigner {
     function execute(AssignmentSet $aset) {
         global $Now;
         $submitted = $this->item["_submitted"];
-        $aset->conf->qe("update Paper set timeSubmitted=?, timeWithdrawn=?, withdrawReason=? where paperId=?", $submitted, $this->item["_withdrawn"], $this->item["_withdraw_reason"], $this->pid);
+        $aset->stage_qe("update Paper set timeSubmitted=?, timeWithdrawn=?, withdrawReason=? where paperId=?", $submitted, $this->item["_withdrawn"], $this->item["_withdraw_reason"], $this->pid);
         if (($submitted > 0) !== ($this->item->get(true, "_submitted") > 0))
             $aset->cleanup_callback("papersub", function ($aset, $vals) {
                 $aset->conf->update_papersub_setting(min($vals));

@@ -82,12 +82,12 @@ class Decision_Assigner extends Assigner {
     function execute(AssignmentSet $aset) {
         global $Now;
         $dec = $this->item->deleted() ? 0 : $this->item["_decision"];
-        $aset->conf->qe("update Paper set outcome=? where paperId=?", $dec, $this->pid);
+        $aset->stage_qe("update Paper set outcome=? where paperId=?", $dec, $this->pid);
         if ($dec > 0) {
             // accepted papers are always submitted
             $prow = $aset->prow($this->pid);
             if ($prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0) {
-                $aset->conf->qe("update Paper set timeSubmitted=$Now where paperId=?", $this->pid);
+                $aset->stage_qe("update Paper set timeSubmitted=? where paperId=?", $Now, $this->pid);
                 $aset->cleanup_callback("papersub", function ($aset, $vals) {
                     $aset->conf->update_papersub_setting(min($vals));
                 }, 1);

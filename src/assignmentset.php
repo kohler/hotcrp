@@ -943,9 +943,10 @@ class AssignmentSet {
     private $search_type = "s";
     private $unparse_search = false;
     private $unparse_columns = array();
-    private $assignment_type = null;
+    private $assignment_type;
     private $cleanup_callbacks;
     private $cleanup_notify_tracker;
+    private $qe_stager;
 
     function __construct(Contact $user, $overrides = null) {
         $this->conf = $user->conf;
@@ -1685,10 +1686,13 @@ class AssignmentSet {
             $tables[] = "$t $type";
         $this->conf->qe("lock tables " . join(", ", $tables));
         $this->cleanup_callbacks = $this->cleanup_notify_tracker = [];
+        $this->qe_stager = null;
 
         foreach ($this->assigners as $assigner)
             $assigner->execute($this);
 
+        if ($this->qe_stager)
+            call_user_func($this->qe_stager, null);
         $this->conf->qe("unlock tables");
         $this->conf->save_logs(false);
 
@@ -1712,6 +1716,15 @@ class AssignmentSet {
             $this->conf->update_autosearch_tags(array_keys($pids));
 
         return true;
+    }
+
+    function stage_qe($query /* ... */) {
+        $this->stage_qe_apply($query, array_slice(func_get_args(), 1));
+    }
+    function stage_qe_apply($query, $args) {
+        if (!$this->qe_stager)
+            $this->qe_stager = Dbl::make_multi_qe_stager($this->conf->dblink);
+        call_user_func($this->qe_stager, $query, $args);
     }
 
     function cleanup_callback($name, $func, $arg = null) {

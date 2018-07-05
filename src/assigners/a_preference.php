@@ -151,11 +151,11 @@ class Preference_Assigner extends Assigner {
     }
     function execute(AssignmentSet $aset) {
         if (($p = $this->preference_data(false)))
-            $aset->conf->qe("insert into PaperReviewPreference
+            $aset->stage_qe("insert into PaperReviewPreference
                 set paperId=?, contactId=?, preference=?, expertise=?
                 on duplicate key update preference=values(preference), expertise=values(expertise)",
                     $this->pid, $this->cid, $p[0], $p[1]);
         else
-            $aset->conf->qe("delete from PaperReviewPreference where paperId=? and contactId=?", $this->pid, $this->cid);
+            $aset->stage_qe("delete from PaperReviewPreference where paperId=? and contactId=?", $this->pid, $this->cid);
     }
 }

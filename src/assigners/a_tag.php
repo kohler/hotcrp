@@ -333,9 +333,9 @@ class Tag_Assigner extends Assigner {
     }
     function execute(AssignmentSet $aset) {
         if ($this->index === null)
-            $aset->conf->qe("delete from PaperTag where paperId=? and tag=?", $this->pid, $this->tag);
+            $aset->stage_qe("delete from PaperTag where paperId=? and tag=?", $this->pid, $this->tag);
         else
-            $aset->conf->qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=values(tagIndex)", $this->pid, $this->tag, $this->index);
+            $aset->stage_qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=values(tagIndex)", $this->pid, $this->tag, $this->index);
         if ($this->index !== null
             && str_ends_with($this->tag, ':'))
             $aset->cleanup_callback("colontag", function ($aset) {

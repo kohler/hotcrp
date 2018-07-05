@@ -119,7 +119,7 @@ class Lead_Assigner extends Assigner {
     function execute(AssignmentSet $aset) {
         $new_cid = $this->item->get(false, "_cid") ? : 0;
         $old_cid = $this->item->get(true, "_cid") ? : 0;
-        $aset->conf->qe("update Paper set {$this->type}ContactId=? where paperId=? and {$this->type}ContactId=?", $new_cid, $this->pid, $old_cid);
+        $aset->stage_qe("update Paper set {$this->type}ContactId=? where paperId=? and {$this->type}ContactId=?", $new_cid, $this->pid, $old_cid);
         if ($new_cid)
             $aset->user->log_activity_for($new_cid, "Set {$this->description}", $this->pid);
         else

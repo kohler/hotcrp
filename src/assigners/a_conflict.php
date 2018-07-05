@@ -132,8 +132,8 @@ class Conflict_Assigner extends Assigner {
     }
     function execute(AssignmentSet $aset) {
         if ($this->ctype)
-            $aset->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid,$this->ctype) on duplicate key update conflictType=values(conflictType)");
+            $aset->stage_qe("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=values(conflictType)", $this->pid, $this->cid, $this->ctype);
         else
-            $aset->conf->qe("delete from PaperConflict where paperId=$this->pid and contactId=$this->cid");
+            $aset->stage_qe("delete from PaperConflict where paperId=? and contactId=?", $this->pid, $this->cid);
     }
 }
