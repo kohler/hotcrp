@@ -1429,7 +1429,7 @@ class Contact {
                 && !$cdbok
                 && $this->passwordTime
                 && $cdbu->passwordTime > $this->passwordTime)
-                error_log($this->conf->dbname . ": " . $this->email . ": using old local password");
+                error_log($this->conf->dbname . ": " . $this->email . ": using old local password (" . post_value(true) . ")");
             $updater = ["passwordUseTime" => $Now];
             if ($this->check_password_encryption($hash, false)) {
                 $updater["password"] = $cdbok ? $cdbu->password : $this->hash_password($input);
