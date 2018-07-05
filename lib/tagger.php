@@ -39,8 +39,12 @@ class TagMapItem {
             $this->colors[] = $color;
             $this->basic_color = true;
         }
-        if ($tag[0] === "~" && $tag[1] !== "~")
-            $this->is_private = true;
+        if ($tag[0] === "~") {
+            if ($tag[1] !== "~")
+                $this->is_private = true;
+            else
+                $this->chair = true;
+        }
     }
     function merge(TagMapItem $t) {
         foreach (["chair", "readonly", "hidden", "track", "votish", "vote", "approval", "sitewide", "rank", "autosearch"] as $property)
