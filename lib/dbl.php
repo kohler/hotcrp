@@ -476,7 +476,8 @@ class Dbl {
                 $qs[] = $q;
                 $qvs = array_merge($qvs, $qv);
             }
-            if ((!$q || $q === true || count($qs) >= 50) && !empty($qs)) {
+            if ((!$q || $q === true || count($qs) >= 50 || count($qv) >= 1000)
+                && !empty($qs)) {
                 $mresult = Dbl::do_multi_query([$dblink, join("; ", $qs), $qvs], self::F_MULTI | self::F_APPLY | $flags);
                 $mresult->free_all();
                 $qs = $qvs = [];
