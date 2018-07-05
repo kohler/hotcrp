@@ -203,10 +203,11 @@ class Xassert {
                                 E_USER_ERROR => "PHP Error",
                                 E_USER_WARNING => "PHP Warning",
                                 E_USER_NOTICE => "PHP Notice");
+    static public $disabled = 0;
 }
 
 function xassert_error_handler($errno, $emsg, $file, $line) {
-    if (error_reporting() || $errno != E_NOTICE) {
+    if ((error_reporting() || $errno != E_NOTICE) && Xassert::$disabled <= 0) {
         if (get(Xassert::$emap, $errno))
             $emsg = Xassert::$emap[$errno] . ":  $emsg";
         else

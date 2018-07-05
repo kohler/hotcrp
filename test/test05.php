@@ -35,6 +35,7 @@ $doc = DocumentInfo::make_file_upload(-1, DTYPE_SUBMISSION, [
         "tmp_name" => "$ConfSitePATH/src/sample.pdf",
         "type" => "application/pdf"
     ]);
+xassert_eqq($doc->content_text_signature(), "starts with “%PDF-1.2”");
 $ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
 xassert(!$ps->has_error());
 if ($ps->has_error())
@@ -213,5 +214,19 @@ xassert(!$newpaper->option(1));
 xassert(!!$newpaper->option(2));
 xassert(count($newpaper->option(2)->documents()) == 1);
 xassert_eqq($newpaper->option(2)->document(0)->text_hash(), "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
+
+// check some content_text_signature functionality
+$doc = new DocumentInfo(["content" => "ABCdefGHIjklMNO"]);
+xassert_eqq($doc->content_text_signature(), "starts with “ABCdefGH”");
+$doc = new DocumentInfo(["content" => "\x02\x00A\x80BCdefGHIjklMN"]);
+xassert_eqq($doc->content_text_signature(), "starts with “\\x02\\x00A\\x80BCde”");
+$doc = new DocumentInfo(["content" => ""]);
+xassert_eqq($doc->content_text_signature(), "is empty");
+
+$doc = new DocumentInfo(["content_file" => "/tmp/this-file-is-expected-not-to-exist.png.zip"]);
+++Xassert::$disabled;
+$s = $doc->content_text_signature();
+--Xassert::$disabled;
+xassert_eqq($s, "cannot be loaded");
 
 xassert_exit();

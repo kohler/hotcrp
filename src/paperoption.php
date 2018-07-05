@@ -829,9 +829,14 @@ class DocumentPaperOption extends PaperOption {
         for ($i = 0; $i < count($mimetypes); ++$i)
             if ($mimetypes[$i]->mimetype === $doc->mimetype)
                 return true;
-        $e = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
-        $e .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
-        set_error_html($doc, $e);
+        $desc = htmlspecialchars(Mimetype::description($mimetypes));
+        $e = "I only accept $desc files."
+            . " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and "
+            . htmlspecialchars($doc->content_text_signature())
+            . ".)<br>Please convert your file to "
+            . (count($mimetypes) > 3 ? "a supported type" : $desc)
+            . " and try again.";
+        $doc->add_error_html($e);
         return false;
     }
 

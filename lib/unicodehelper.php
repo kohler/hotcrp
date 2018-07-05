@@ -213,7 +213,7 @@ class UnicodeHelper {
 
     static function utf8_prefix($str, $len) {
         preg_match('/\A\pM*\X{0,' . $len . '}/u', $str, $m);
-        return $m[0];
+        return isset($m[0]) ? $m[0] : false;
     }
 
     static function utf8_word_prefix($str, $len, &$rest = null) {

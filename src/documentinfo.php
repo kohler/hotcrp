@@ -430,10 +430,9 @@ class DocumentInfo implements JsonSerializable {
         $this->ensure_content();
         if ($this->content !== null)
             return $this->content;
-        else if ($this->content_file !== null)
-            return file_get_contents($this->content_file);
-        else if ($this->filestore !== null)
-            return file_get_contents($this->filestore);
+        else if (($path = $this->content_file) !== null
+                 || ($path = $this->filestore) !== null)
+            return @file_get_contents($path);
         else
             return false;
     }
@@ -478,6 +477,33 @@ class DocumentInfo implements JsonSerializable {
             $base = "__temp" . Filer::$tempcounter . "__";
         }
         return Filer::$tempdir . "/" . $base . Mimetype::extension($this->mimetype);
+    }
+
+    function content_text_signature() {
+        $s = false;
+        if (($path = $this->available_content_file()))
+            $s = file_get_contents($path, false, null, 0, 16);
+        if ($s === false)
+            $s = $this->content();
+        if ($s === false)
+            return "cannot be loaded";
+        else if ($s === "")
+            return "is empty";
+        else {
+            $t = substr($s, 0, 8);
+            if (!is_valid_utf8($s)) {
+                $t = UnicodeHelper::utf8_prefix(UnicodeHelper::utf8_truncate_invalid($s), 8);
+                if (strlen($t) < 7)
+                    $t = join("", array_map(function ($ch) {
+                        $c = ord($ch);
+                        if ($c >= 0x20 && $c <= 0x7E)
+                            return $ch;
+                        else
+                            return sprintf("\\x%02X", $c);
+                    }, str_split(substr($s, 0, 8))));
+            }
+            return "starts with “{$t}”";
+        }
     }
 
 
