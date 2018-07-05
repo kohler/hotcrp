@@ -433,6 +433,11 @@ $Conf->save_setting("tag_approval", 1, "chair*");
 $ct = $Conf->tags()->check("chairtest0");
 xassert($ct && $ct->readonly && $ct->approval);
 
+// colon tag setting
+xassert(!$Conf->setting("has_colontag"));
+xassert_assign($Admin, "paper,tag\n1,:poop:\n", true);
+xassert(!!$Conf->setting("has_colontag"));
+
 // numeric order sort
 assert_search_papers($user_chair, "13 10 8 9 12", "13 10 8 9 12");
 
