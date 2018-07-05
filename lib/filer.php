@@ -39,7 +39,7 @@ class Filer {
             $downloadname = null;
         }
         if (!$doc || (is_object($doc) && isset($doc->size) && $doc->size == 0))
-            return set_error_html("Empty file.");
+            return (object) ["error" => true, "error_html" => "Empty file."];
         if (is_array($doc)) {
             $z = new ZipDocument($downloadname);
             foreach ($doc as $d)
@@ -51,9 +51,7 @@ class Filer {
             $error_html = "Don’t know how to download.";
             if ($doc->error && isset($doc->error_html))
                 $error_html = $doc->error_html;
-            else if ($doc->error && isset($doc->error_text))
-                $error_html = htmlspecialchars($doc->error_text);
-            return set_error_html($error_html);
+            return (object) ["error" => true, "error_html" => $error_html];
         }
 
         // Print paper
@@ -86,7 +84,7 @@ class Filer {
                 header("Content-Length: " . strlen($doc->content));
             echo $doc->content;
         }
-        return (object) array("error" => false);
+        return (object) ["error" => false];
     }
 
     // hash helpers

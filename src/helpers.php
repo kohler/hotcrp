@@ -22,16 +22,6 @@ function mkarray($value) {
         return array($value);
 }
 
-function set_error_html($x, $error_html = null) {
-    if (!$error_html) {
-        $error_html = $x;
-        $x = (object) array();
-    }
-    $x->error = true;
-    $x->error_html = $error_html;
-    return $x;
-}
-
 
 // string helpers
 
