@@ -449,10 +449,10 @@ CREATE TABLE `ReviewRequest` (
 
 DROP TABLE IF EXISTS `Settings`;
 CREATE TABLE `Settings` (
-  `name` varbinary(256) DEFAULT NULL,
+  `name` varbinary(256) NOT NULL,
   `value` bigint(11) NOT NULL,
   `data` varbinary(32767) DEFAULT NULL,
-  UNIQUE KEY `name` (`name`)
+  PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -485,7 +485,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 193);
+insert into Settings (name, value) values ('allowPaperOption', 194);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

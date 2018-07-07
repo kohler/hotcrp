@@ -1368,6 +1368,11 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 192
         && $conf->ql("alter table PaperStorage drop key `byPaper`"))
         $conf->update_schema_version(193);
+    if ($conf->sversion == 193
+        && $conf->ql("alter table Settings change `name` `name` varbinary(256) NOT NULL")
+        && $conf->ql("alter table Settings add primary key (`name`)")
+        && $conf->ql("alter table Settings drop key `name`"))
+        $conf->update_schema_version(194);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
