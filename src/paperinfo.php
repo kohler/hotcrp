@@ -163,7 +163,6 @@ class PaperInfoSet implements IteratorAggregate {
             $this->by_pid[$prow->paperId] = $prow;
         if (!$copy) {
             assert(!$prow->_row_set);
-            if ($prow->_row_set) error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
             $prow->_row_set = $this;
         }
     }
@@ -266,7 +265,7 @@ class PaperInfo {
             $this->_rights_version = Contact::$rights_version;
             $this->load_my_contact_info($cid, $this);
         } else if ($contact && property_exists($this, "conflictType")) {
-            error_log("conflictType exists but myReviewType does not " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            //error_log("conflictType exists but myReviewType does not " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         }
         foreach (["paperTags", "optionIds"] as $k)
             if (property_exists($this, $k) && $this->$k === null)

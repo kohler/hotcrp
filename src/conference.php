@@ -2661,7 +2661,8 @@ class Conf {
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
 
         // review signatures
-        if (get($options, "reviewSignatures") || get($options, "scores")
+        if (get($options, "reviewSignatures")
+            || get($options, "scores")
             || get($options, "reviewWordCounts")) {
             $cols[] = "R_alls.reviewSignatures";
             $j = "";
