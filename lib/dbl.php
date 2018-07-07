@@ -60,6 +60,7 @@ class Dbl {
     static private $error_handler = "Dbl::default_error_handler";
     static private $query_log = false;
     static private $query_log_key = false;
+    static private $query_log_file = null;
     static public $check_warnings = true;
     static public $landmark_sanitizer = "/^Dbl::/";
 
@@ -597,14 +598,15 @@ class Dbl {
         }
     }
 
-    static function log_queries($limit) {
+    static function log_queries($limit, $file = false) {
         if (is_float($limit))
             $limit = $limit >= 1 || ($limit > 0 && mt_rand() < $limit * mt_getrandmax());
         if (!$limit)
             self::$query_log = false;
         else if (self::$query_log === false) {
             register_shutdown_function("Dbl::shutdown");
-            self::$query_log = array();
+            self::$query_log = [];
+            self::$query_log_file = $file;
         }
     }
 
@@ -617,14 +619,19 @@ class Dbl {
             $i = 1;
             $n = count(self::$query_log);
             $t = [0, 0];
+            $qlog = "";
             foreach (self::$query_log as $where => $what) {
                 $a = [$what[0], $what[1], $what[2], $where];
-                error_log("query_log: $self #$i/$n: " . json_encode($a));
+                $qlog .= "query_log: $self #$i/$n: " . json_encode($a) . "\n";
                 ++$i;
                 $t[0] += $what[0];
                 $t[1] += $what[1];
             }
-            error_log("query_log: total: " . json_encode($t));
+            $qlog .= "query_log: total: " . json_encode($t) . "\n";
+            if (self::$query_log_file)
+                file_put_contents(self::$query_log_file, $qlog, FILE_APPEND);
+            else
+                error_log($qlog);
         }
         self::$query_log = false;
     }

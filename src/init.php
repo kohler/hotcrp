@@ -308,7 +308,7 @@ if (!get($Opt, "loaded")) {
 if (!get($Opt, "loaded") || get($Opt, "missing"))
     Multiconference::fail_bad_options();
 if (get($Opt, "dbLogQueries"))
-    Dbl::log_queries($Opt["dbLogQueries"]);
+    Dbl::log_queries($Opt["dbLogQueries"], get($Opt, "dbLogQueryFile"));
 
 
 // Allow lots of memory
