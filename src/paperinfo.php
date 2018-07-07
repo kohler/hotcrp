@@ -14,9 +14,22 @@ class PaperContactInfo {
     public $rights_forced = null;
     public $forced_rights_link = null;
 
-    public $vsreviews_array = null;
-    public $vsreviews_cid_array = null;
-    public $vsreviews_version = null;
+    // set by Contact::rights()
+    public $allow_administer;
+    public $can_administer;
+    public $allow_pc_broad;
+    public $allow_pc;
+    public $potential_reviewer;
+    public $allow_review;
+    public $act_author;
+    public $allow_author;
+    public $view_conflict_type;
+    public $act_author_view;
+    public $allow_author_view;
+    public $nonblind;
+
+    public $vsreviews_array;
+    public $vsreviews_version;
 
     static function make_empty(PaperInfo $prow, $cid) {
         $ci = new PaperContactInfo;
@@ -131,7 +144,7 @@ class PaperContactInfo {
     function get_forced_rights() {
         if (!$this->forced_rights_link) {
             $ci = $this->forced_rights_link = clone $this;
-            $ci->vsreviews_array = $ci->vsreviews_cid_array = null;
+            $ci->vsreviews_array = null;
         }
         return $this->forced_rights_link;
     }
@@ -1307,22 +1320,16 @@ class PaperInfo {
                     && $contact->can_view_review($this, $rrow))
                     $cinfo->vsreviews_array[$id] = $rrow;
             }
-            $cinfo->vsreviews_cid_array = null;
             $cinfo->vsreviews_version = $this->_review_array_version;
         }
         return $cinfo->vsreviews_array;
     }
 
     function viewable_submitted_reviews_by_user(Contact $contact) {
-        $cinfo = $contact->__rights($this, null);
-        if ($cinfo->vsreviews_cid_array === null
-            || $cinfo->vsreviews_version !== $this->_review_array_version) {
-            $rrows = $this->viewable_submitted_reviews_by_display($contact);
-            $cinfo->vsreviews_cid_array = [];
-            foreach ($rrows as $rrow)
-                $cinfo->vsreviews_cid_array[$rrow->contactId] = $rrow;
-        }
-        return $cinfo->vsreviews_cid_array;
+        $rrows = [];
+        foreach ($this->viewable_submitted_reviews_by_display($contact) as $rrow)
+            $rrows[$rrow->contactId] = $rrow;
+        return $rrows;
     }
 
     function can_view_review_identity_of($cid, Contact $contact) {
