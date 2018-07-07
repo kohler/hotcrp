@@ -276,17 +276,20 @@ class PaperApi {
     static function review_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$user->can_view_review($prow, null))
             return new JsonResult(403, "Permission error.");
+        $need_id = false;
         if (isset($qreq->r)) {
             $rrow = $prow->full_review_of_textual_id($qreq->r);
             if ($rrow === false)
                 return new JsonResult(400, "Parameter error.");
             $rrows = $rrow ? [$rrow] : [];
         } else if (isset($qreq->u)) {
+            $need_id = true;
             $u = self::get_user($user, $qreq);
-            $rrow = $prow->full_review_of_user($u);
-            if (!$user->can_view_review_identity($prow, $rrow))
+            $rrows = $prow->full_reviews_of_user($u);
+            if (!$rrows
+                && $user->contactId !== $u->contactId
+                && !$user->can_view_review_identity($prow, null))
                 return new JsonResult(403, "Permission error.");
-            $rrows = $rrow ? [$rrow] : [];
         } else {
             $prow->ensure_full_reviews();
             $rrows = $prow->viewable_submitted_reviews_by_display($user);
@@ -294,7 +297,8 @@ class PaperApi {
         $vrrows = [];
         $rf = $user->conf->review_form();
         foreach ($rrows as $rrow)
-            if ($user->can_view_review($prow, $rrow))
+            if ($user->can_view_review($prow, $rrow)
+                && (!$need_id || $user->can_view_review_identity($prow, $rrow)))
                 $vrrows[] = $rf->unparse_review_json($prow, $rrow, $user);
         if (!$vrrows && $rrows)
             return new JsonResult(403, "Permission error.");

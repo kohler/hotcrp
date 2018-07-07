@@ -11,15 +11,6 @@ class PaperContactInfo {
     public $reviewNeedsSubmit = 1;
     public $review_status = 0;
 
-    //public $reviewId;
-    //public $reviewToken;
-    //public $reviewModified;
-    //public $reviewOrdinal;
-    //public $reviewBlind;
-    //public $requestedBy;
-    //public $timeApprovalRequested;
-    //public $reviewRound;
-
     public $rights_forced = null;
     public $forced_rights_link = null;
 
@@ -31,7 +22,9 @@ class PaperContactInfo {
         $ci = new PaperContactInfo;
         $ci->paperId = $prow->paperId;
         $ci->contactId = $cid;
-        if ($cid > 0 && isset($prow->leadContactId) && $prow->leadContactId == $cid)
+        if ($cid > 0
+            && isset($prow->leadContactId)
+            && $prow->leadContactId == $cid)
             $ci->review_status = 1;
         return $ci;
     }
@@ -59,11 +52,6 @@ class PaperContactInfo {
     function merge_review(ReviewInfo $rrow) {
         foreach (["reviewType", "reviewSubmitted", "reviewNeedsSubmit"] as $k)
             $this->$k = $rrow->$k;
-        /*foreach (["reviewId", "reviewToken", "reviewType", "reviewRound",
-                  "requestedBy", "reviewBlind", "reviewModified",
-                  "reviewSubmitted", "reviewOrdinal", "timeApprovalRequested",
-                  "reviewNeedsSubmit"] as $k)
-            $this->$k = $rrow->$k;*/
         $this->update_review_status();
     }
 
@@ -248,7 +236,7 @@ class PaperInfo {
     private $_review_array_version = 0;
     private $_reviews_have = [];
     private $_full_review = null;
-    private $_full_review_id = null;
+    private $_full_review_key = null;
     private $_comment_array = null;
     private $_comment_skeleton_array = null;
     public $_row_set;
@@ -347,7 +335,8 @@ class PaperInfo {
         }
         $cid = self::contact_to_cid($contact);
         if (!array_key_exists($cid, $this->_contact_info)) {
-            if ($this->_review_array || property_exists($this, "reviewSignatures")) {
+            if ($this->_review_array
+                || property_exists($this, "reviewSignatures")) {
                 $ci = PaperContactInfo::make_empty($this, $cid);
                 if (($c = get($this->conflicts(), $cid)))
                     $ci->conflictType = $c->conflictType;
@@ -1225,56 +1214,61 @@ class PaperInfo {
     }
 
     private function ensure_full_review_name() {
-        if ($this->_full_review
-            && ($u = $this->conf->cached_user_by_id($this->_full_review->contactId)))
-            $this->_full_review->assign_name($u);
+        if (($rrows = $this->_full_review)) {
+            foreach (is_array($rrows) ? $rrows : [$rrows] as $rrow)
+                if (($u = $this->conf->cached_user_by_id($rrow->contactId)))
+                    $rrow->assign_name($u);
+        }
     }
 
     function full_review_of_id($id) {
-        if ($this->_full_review_id === null && !isset($this->_reviews_have["full"])) {
-            $this->_full_review_id = "r$id";
+        if ($this->_full_review_key === null
+            && !isset($this->_reviews_have["full"])) {
+            $this->_full_review_key = "r$id";
             $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId=? and reviewId=?", $this->paperId, $id);
             $this->_full_review = ReviewInfo::fetch($result, $this->conf);
             Dbl::free($result);
             $this->ensure_full_review_name();
         }
-        if ($this->_full_review_id === "r$id")
+        if ($this->_full_review_key === "r$id")
             return $this->_full_review;
         $this->ensure_full_reviews();
         return $this->review_of_id($id);
     }
 
-    function full_review_of_user($contact) {
+    function full_reviews_of_user($contact) {
         $cid = self::contact_to_cid($contact);
-        if ($this->_full_review_id === null && !isset($this->_reviews_have["full"])) {
+        if ($this->_full_review_key === null
+            && !isset($this->_reviews_have["full"])) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
             foreach ($row_set as $prow) {
-                $prow->_full_review = null;
-                $prow->_full_review_id = "u$cid";
+                $prow->_full_review = [];
+                $prow->_full_review_key = "u$cid";
             }
             $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId?a and contactId=? order by paperId, reviewId", $row_set->paper_ids(), $cid);
             while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
                 $prow = $row_set->get($rrow->paperId);
-                $prow->_full_review = $rrow;
+                $prow->_full_review[] = $rrow;
             }
             Dbl::free($result);
             $this->ensure_full_review_name();
         }
-        if ($this->_full_review_id === "u$cid")
+        if ($this->_full_review_key === "u$cid")
             return $this->_full_review;
         $this->ensure_full_reviews();
-        return $this->review_of_user($contact);
+        return $this->reviews_of_user($contact);
     }
 
     function full_review_of_ordinal($ordinal) {
-        if ($this->_full_review_id === null && !isset($this->_reviews_have["full"])) {
-            $this->_full_review_id = "o$ordinal";
+        if ($this->_full_review_key === null
+            && !isset($this->_reviews_have["full"])) {
+            $this->_full_review_key = "o$ordinal";
             $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId=? and reviewOrdinal=?", $this->paperId, $ordinal);
             $this->_full_review = ReviewInfo::fetch($result, $this->conf);
             Dbl::free($result);
             $this->ensure_full_review_name();
         }
-        if ($this->_full_review_id === "o$ordinal")
+        if ($this->_full_review_key === "o$ordinal")
             return $this->_full_review;
         $this->ensure_full_reviews();
         return $this->review_of_ordinal($ordinal);

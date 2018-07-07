@@ -93,8 +93,8 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
         }
 
         $texts = $errors = [];
-        foreach ($user->paper_set($ssel) as $row) {
-            $whyNot = $user->perm_review($row, null);
+        foreach ($user->paper_set($ssel) as $prow) {
+            $whyNot = $user->perm_review($prow, null);
             if ($whyNot && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"]))
                 $errors[whyNotText($whyNot, true)] = true;
@@ -103,10 +103,10 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
                     $t = whyNotText($whyNot, true);
                     $errors[$t] = false;
                     if (!isset($whyNot["deadline"]))
-                        defappend($texts[$row->paperId], prefix_word_wrap("==-== ", strtoupper($t) . "\n\n", "==-== "));
+                        defappend($texts[$prow->paperId], prefix_word_wrap("==-== ", strtoupper($t) . "\n\n", "==-== "));
                 }
-                $rrow = $row->full_review_of_user($user);
-                defappend($texts[$row->paperId], $rf->textForm($row, $rrow, $user, null) . "\n");
+                foreach ($prow->full_reviews_of_user($user) as $rrow)
+                    defappend($texts[$prow->paperId], $rf->textForm($prow, $rrow, $user, null) . "\n");
             }
         }
 
