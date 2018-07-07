@@ -1325,8 +1325,12 @@ class Contact {
     }
 
     function password_is_reset() {
-        return $this->password === ""
-            || (($cdbu = $this->contactdb_user()) && $cdbu->password === "");
+        if (($cdbu = $this->contactdb_user()))
+            return (string) $cdbu->password === ""
+                && ((string) $this->password === ""
+                    || $this->passwordTime < $cdbu->passwordTime);
+        else
+            return $this->password === "";
     }
 
     function password_used() {
