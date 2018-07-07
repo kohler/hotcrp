@@ -278,7 +278,7 @@ class PaperInfo {
             $this->_rights_version = Contact::$rights_version;
             $this->load_my_contact_info($cid, $this);
         } else if ($contact && property_exists($this, "conflictType")) {
-            assert("conflictType exists but myReviewType does not " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            error_log("conflictType exists but myReviewType does not " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         }
         foreach (["paperTags", "optionIds"] as $k)
             if (property_exists($this, $k) && $this->$k === null)
