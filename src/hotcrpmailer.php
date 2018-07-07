@@ -279,7 +279,7 @@ class HotCRPMailer extends Mailer {
         if ($this->conf->opt("disableCapabilities"))
             return "";
         else if ($this->row
-                 && $this->row->capVersion > 0
+                 && isset($this->row->capVersion)
                  && $this->permissionContact->act_author_view($this->row))
             return "cap=" . $this->conf->capability_text($this->row, "a");
         else
