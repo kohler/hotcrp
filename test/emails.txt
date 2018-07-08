@@ -1316,43 +1316,7 @@ Reviewer expertise
 4. Expert
 
 ******** test01-review2B
-To: Jon Crowcroft <jon@cs.ucl.ac.uk>
-Subject: [Testconf I] Submitted review #2B "Small Forwarding Tables for Fast
- Routing..."
-X-Landmark: test/test01.php:555
-
-Greetings,
-
-Review #2B for Test Conference I (Testconf I) paper #2 has been submitted.
-The review is available at the paper site.
-
-  Paper site: http://hotcrp.lcdf.org/test/paper/2
-       Title: Small Forwarding Tables for Fast Routing Lookups
-   Review by: Peter Druschel <pdruschel@cs.rice.edu>
-
-For the most up-to-date reviews and comments, or to unsubscribe from email
-notification, see the paper site.
-
-Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
-concerns.
-
-- Testconf I Submissions
-
-Review #2B
-===========================================================================
-* Reviewer: Peter Druschel <pdruschel@cs.rice.edu>
-* Updated: {{}}
-
-Overall merit
--------------
-5. Strong accept
-
-Reviewer expertise
-------------------
-4. Expert
-
-******** test01-review2B
-To: Jane Chair <chair@_.com>
+To: Jane Chair <chair@_.com>, Jon Crowcroft <jon@cs.ucl.ac.uk>
 Subject: [Testconf I] Submitted review #2B "Small Forwarding Tables for Fast
  Routing..."
 X-Landmark: test/test01.php:555
@@ -1388,79 +1352,7 @@ Reviewer expertise
 4. Expert
 
 ******** test01-review2C
-To: Jon Crowcroft <jon@cs.ucl.ac.uk>
-Subject: [Testconf I] Submitted review #2C "Small Forwarding Tables for Fast
- Routing..."
-X-Landmark: test/test01.php:573
-
-Greetings,
-
-Review #2C for Test Conference I (Testconf I) paper #2 has been submitted.
-The review is available at the paper site.
-
-  Paper site: http://hotcrp.lcdf.org/test/paper/2
-       Title: Small Forwarding Tables for Fast Routing Lookups
-   Review by: External Reviewer <external@_.com>
-
-For the most up-to-date reviews and comments, or to unsubscribe from email
-notification, see the paper site.
-
-Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
-concerns.
-
-- Testconf I Submissions
-
-Review #2C
-===========================================================================
-* Reviewer: External Reviewer <external@_.com>
-* Updated: {{}}
-
-Overall merit
--------------
-5. Strong accept
-
-Reviewer expertise
-------------------
-4. Expert
-
-******** test01-review2C
-To: Jane Chair <chair@_.com>
-Subject: [Testconf I] Submitted review #2C "Small Forwarding Tables for Fast
- Routing..."
-X-Landmark: test/test01.php:573
-
-Greetings,
-
-Review #2C for Test Conference I (Testconf I) paper #2 has been submitted.
-The review is available at the paper site.
-
-  Paper site: http://hotcrp.lcdf.org/test/paper/2
-       Title: Small Forwarding Tables for Fast Routing Lookups
-   Review by: External Reviewer <external@_.com>
-
-For the most up-to-date reviews and comments, or to unsubscribe from email
-notification, see the paper site.
-
-Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
-concerns.
-
-- Testconf I Submissions
-
-Review #2C
-===========================================================================
-* Reviewer: External Reviewer <external@_.com>
-* Updated: {{}}
-
-Overall merit
--------------
-5. Strong accept
-
-Reviewer expertise
-------------------
-4. Expert
-
-******** test01-review2C
-To: Peter Druschel <pdruschel@cs.rice.edu>
+To: Jane Chair <chair@_.com>, Jon Crowcroft <jon@cs.ucl.ac.uk>, Peter Druschel <pdruschel@cs.rice.edu>
 Subject: [Testconf I] Submitted review #2C "Small Forwarding Tables for Fast
  Routing..."
 X-Landmark: test/test01.php:573
@@ -1560,52 +1452,7 @@ Comments for author
 Bye
 
 ******** test06-17lixia
-To: External Reviewer <external@_.com>
-Subject: [Testconf I] Submitted review #17C "Network Text Editor (NTE): A
- Scalable..."
-X-Landmark: test/test06.php:622
-
-Greetings,
-
-Review #17C for Test Conference I (Testconf I) paper #17 has been
-submitted. The review is available at the paper site.
-
-  Paper site: http://hotcrp.lcdf.org/test/paper/17
-       Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
-              the MBone
-   Review by: Lixia Zhang <lixia@cs.ucla.edu>
-
-For the most up-to-date reviews and comments, or to unsubscribe from email
-notification, see the paper site.
-
-Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
-concerns.
-
-- Testconf I Submissions
-
-Review #17C [R1]
-===========================================================================
-* Reviewer: Lixia Zhang <lixia@cs.ucla.edu>
-* Updated: {{}}
-
-Overall merit
--------------
-2. Weak reject
-
-Reviewer expertise
-------------------
-1. No familiarity
-
-Paper summary
--------------
-Radical
-
-Comments for author
--------------------
-Nonradical
-
-******** test06-17lixia
-To: Mary Baker <mgbaker@cs.stanford.edu>
+To: Mary Baker <mgbaker@cs.stanford.edu>, External Reviewer <external@_.com>
 Subject: [Testconf I] Submitted review #17C "Network Text Editor (NTE): A
  Scalable..."
 X-Landmark: test/test06.php:622
